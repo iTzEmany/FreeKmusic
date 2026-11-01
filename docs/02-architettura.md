@@ -33,6 +33,7 @@ lib/
     tags/metadata_god_tag_writer.dart     # implementazione con metadata_god (Rust/lofty)
     tags/safe_tag_writer.dart             # copia → scrittura → rilettura → backup → rename atomico
     tags/tag_backups.dart                 # TagBackupStore (ultimi 200 / 2 GB), installFile
+    tags/fingerprinter.dart               # impronta audio (Rust) per AcoustID (fase 69d)
     scanner/library_scanner.dart
     covers/cover_store.dart               # salva/trova copertine su disco
     audio/play_queue.dart                 # logica pura di coda/shuffle/repeat
@@ -48,7 +49,10 @@ lib/
     online/enrich_runner.dart, enrich_completer.dart                    # giro a blocchi e suo involucro per il background
     online/enrich_writer.dart          # unico scrittore di enrich_status
     online/metadata_resolver.dart, cover_fetcher.dart                   # metadati e copertine per il motore
+    online/acoustid_client.dart, ytm_song_parser.dart                   # riconoscimento: AcoustID e parser di `songOf` (fase 69d)
     online/youtube_service.dart
+    recognition/track_recognizer.dart, track_identity.dart              # la cascata del riconoscimento e il suo risultato (fase 69d)
+    recognition/channel_detector.dart, video_id.dart                    # tag dubbi (canali) e id YouTube dal file
     import/csv_parser.dart, exportify_reader.dart, track_matcher.dart,
            import_candidate.dart, playlist_import_service.dart            # (fase 12)
     share/lan_server.dart, lan_client.dart, offers.dart, discovery.dart  # (fase 6)
@@ -340,6 +344,10 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
 - **Motore unico (fase 69b).** Download, brani ricevuti, card dei crediti, completamento in background e lavoro manuale passano tutti dallo stesso motore a parti, quindi una fonte si interroga una volta sola per brano.
   - **`EnrichEngine`** (`enrich_engine.dart`): `gather` prenota il brano in `_inFlight` (per proprietario) prima del primo await, salva il file della copertina e rilascia la prenotazione se lancia o il brano non c'è. `commit` (`EnrichCommitter`, `enrich_commit.dart`) scrive un savepoint per brano, parte per parte (≤ 3 letture a brano), e rilascia le prenotazioni in `finally`. `completeOne` aspetta un brano già in lavorazione, poi fa gather e commit.
   - **`EnrichRunner`** (`enrich_runner.dart`): gli id arrivano da `FixedIds` (una lista) o `MarkCursor` (segnalibro `enrichMark`, legato al dispositivo, con un giro di ritorno limitato in SQL da `upTo`; il punto si salva prima di scrivere il blocco). Lavora a blocchi di 10 brani e pezzi di 20, e si ferma dopo 5 gather muti di fila (una fonte a riposo, cioè limitata, non è silenzio). Aspetta l'utente a riposo solo in `AskMode.due`, dopo aver scritto il blocco in corso. Un `CancelToken` fa sì che «Interrompi» o la pausa fermino il brano in corso senza spostare il segnalibro. `processed`, `endedSilent` e `allRefused` danno il «k di n» vero, il messaggio «interrotto da un errore» (D-295) e «servizio non disponibile».
+  - **Riconoscimento (69d).** Prima delle parti `gather` chiama `TrackRecognizer.recognize`, ma solo se `recognizer != null`, il brano non è `userEdited`, almeno una parte è dovuta e non c'è già un `rec` di questa versione. La ricerca testuale del riconoscimento (`textProbe`) parte solo se la parte meta è dovuta e il suo risultato è riusato dalla meta (nessuna seconda chiamata). Un'identità diversa dai tag riapre i segni «niente» (`retryNone`), perché valevano per i tag grezzi. Senza identità le chiamate delle parti sono quelle di prima.
+  - **`details` condiviso.** `track_enrich.details` contiene `TrackDetails` e `rec`; `mergeDetails` è l'unico scrittore e tiene le chiavi dell'altro. `decodeDetails` restituisce null se c'è solo `rec`. `CreditsEnricher.save(baseDetails)` riceve il JSON già letto e restituisce quello scritto; `CreditsRepository.moveInto` unisce anche `rec`. `ImportRepository.videoIdOfTrack` dà il video id del brano collegato (solo scaricati). I byte di `rec` contano sotto «crediti» in Memoria.
+  - **Registro.** La riga del giro porta `detail.sources` e la UI scrive «Riconosciuti: …».
+  - **Debito noto (69e).** Il valutatore YTM del riconoscimento (durata ±10 s) e quello di `SecondOpinion` (±3 s) sono due: la 69e li riduce a uno.
   - **`AskMode {due, retryNone, force}`** sostituisce force/ignoreMarks/«subito». La regola «parte dovuta» è una sola, in `enrich_parts.dart`: `isDue`, `dueSql`, `eligibleSql`, `fillableFields`.
   - **Stato:** `statusAfter` scrive tramite `EnrichWriter.writeStatus` (`enrich_writer.dart`), l'UNICO scrittore di `enrich_status`. Lo stato 2 «niente trovato» si scrive solo se i metadati sono stati chiesti e non è venuto niente; crediti, curiosità e testi da soli non lo toccano.
   - **`EnrichCompleter`** (`enrich_completer.dart`): involucro sottile (runner più `MarkCursor`). Non c'è più una modalità «subito», né `runNow`, né «Completa l'arricchimento». Mentre aspetta l'utente l'attività mostra «Completamento: in attesa», senza barra. `EnrichCompleterNotifier` (`enrich_completer_providers.dart`) lo collega a pausa e Registro.

@@ -55,9 +55,9 @@ Al massimo 4 task per fase, un commit per task.
 **Fatto quando:** i test a tabella sono verdi, con 0 falsi «dubbio» sugli artisti veri.
 
 #### Passo: La cascata
-- `TrackRecognizer.recognize(track, tags)` restituisce `Identity?`, con fonte, score, `sure`, titolo, artista, durata, ISRC e MBID. L'ordine è quello di R-161 e si ferma al primo che riesce:
+- `TrackRecognizer.recognize(t, {textProbe, cancel})` restituisce `RecogOutcome {rec, lost, asked, limited}`; `rec` porta l'identità (titolo, artista, durata, ISRC, MBID) e fonte, score e `sure`. L'ordine è quello di R-161 e si ferma al primo che riesce:
   1. ISRC/MBID → MusicBrainz (durata ±10 s);
-  2. 1b: video id → YouTube Music `next`/player per `musicVideoType` e descrizione «Provided to YouTube by…»: sicuro se ufficiale o Topic, altrimenti non sicuro;
+  2. 1b: video id → YouTube Music `next` per `musicVideoType`: sicuro se `ATV` o `OMV`, altrimenti non sicuro;
   3. testo (iTunes, Deezer) solo con tag affidabili;
   4. AcoustID (salvo Opus/WebM, R-184, e con l'interruttore acceso) con soglia ≥ 0,9 e durata ±10 s; si sceglie il recording più vicino al nome del file e ai tag (R-165);
   5. YouTube Music con durata ±10 s e titolo che si sovrappone, sempre non sicuro (D-304).

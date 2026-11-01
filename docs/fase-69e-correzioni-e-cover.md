@@ -20,6 +20,14 @@
 
 ## Task
 
+### 69e.0 — Debiti della 69d (da fare per primi)
+1. `needsRecognition` nel gate del motore (oggi `todo.isNotEmpty`), per il ripasso dei già arricchiti (R-176).
+2. `_commitRec` unisce il `rec` vecchio: tiene `discarded` se l'identità è la stessa, tiene `was`, e non scrive proposte se la riga fresca è `userEdited`. Valutare di salvare nel `rec` anche titolo e artista di partenza.
+3. Un solo lettore degli ID del file: `readFileIds` del recognizer duplica `_loftyIds` di `audio_metadata_tag_reader.dart` e `TagInfo.mbid` si legge ma non si salva. L'`mbid` di `rec` va ai crediti al posto di rifare `recordingsByIsrc`.
+4. Un solo valutatore YTM (recognizer ±10 s contro `SecondOpinion` ±3 s), descritto in `02-architettura.md`.
+5. L'originale delle cover con il browse `recording?work=<id>&inc=artist-credits` (dà `first-release-date`), non con `work()` e `recording-rels`.
+6. `clockMs` più severo (priorità bassa).
+
 ### 69e.1 — Correzioni e proposte (R-169, R-170, R-171, R-185, D-318)
 
 #### Passo: `TrackCorrections`
