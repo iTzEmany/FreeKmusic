@@ -63,6 +63,23 @@ void main() {
     });
   });
 
+  group('uploader as artist', () {
+    test('«Real Artist - Title» under an uploader reads as such, keeping the tagged query', () {
+      final c = cleanSearchQuery('Adele - Skyfall', '7clouds Rock');
+      expect([c.title, c.artist], ['Skyfall', 'Adele']);
+      expect([c.tagged!.title, c.tagged!.artist], ['Adele - Skyfall', '7clouds Rock']);
+    });
+
+    test('a version tail (not a version in brackets), the artist in the title, or a generic artist is not split this way', () {
+      expect(cleanSearchQuery('Bohemian Rhapsody - Live', 'Queen').tagged, isNull);
+      expect(cleanSearchQuery('Imagine Dragons - Believer (Romy Wave Cover)', 'Trap City').artist,
+          'Imagine Dragons');
+      final q = cleanSearchQuery('Queen - Bohemian Rhapsody', 'Queen');
+      expect([q.title, q.artist, q.tagged], ['Bohemian Rhapsody', 'Queen', null]);
+      expect(cleanSearchQuery('Adele - Skyfall', 'Adele VEVO').tagged, isNull);
+    });
+  });
+
   test('splitArtists keeps names and original separators', () {
     final r = splitArtists('A, B feat. C');
     expect(r.map((e) => e.name), ['A', 'B', 'C']);

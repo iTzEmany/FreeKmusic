@@ -30,6 +30,11 @@ final _albumNoise = RegExp(
     r'\s*[\(\[][^\)\]]*(deluxe|bonus|remastered|expanded|anniversary)[^\)\]]*[\)\]]',
     caseSensitive: false);
 
+/// Music videos have intros and outros, so this is looser than Deezer's 3 s.
+const _maxDurationGapMs = 20000;
+const _closeGapMs = 3000, _nearGapMs = 10000;
+const _closeBonus = 4, _nearBonus = 2;
+
 class ItunesClient {
   /// [country] (ISO code, e.g. `IT`) picks the store: each one has its own
   /// catalogue, and the default (US) lacks much local music.
@@ -66,7 +71,7 @@ class ItunesClient {
   /// [strict]: a network error throws [WebUnavailableException] instead of
   /// looking like «no match» (the completion must not remember that as «nothing»).
   Future<ItunesMatch?> search(String title, String artist,
-      {CancelToken? cancel, bool strict = false}) async {
+      {CancelToken? cancel, bool strict = false, int? durationMs}) async {
     for (final q in buildQueries(title, artist)) {
       final data = await _web.getJson(_endpoint,
           query: {
@@ -80,7 +85,7 @@ class ItunesClient {
           strict: strict);
       final results = data is Map ? data['results'] : null;
       if (results is! List) continue;
-      final best = _pickBest(results, title, artist);
+      final best = _pickBest(results, title, artist, durationMs);
       if (best != null) return best;
     }
     return null;
@@ -150,7 +155,8 @@ class ItunesClient {
     ];
   }
 
-  ItunesMatch? _pickBest(List<dynamic> results, String title, String artist) {
+  ItunesMatch? _pickBest(
+      List<dynamic> results, String title, String artist, int? durationMs) {
     final wantTitle = _lc(title), wantTitleCore = _lc(coreTitle(title));
     final wantArtist = _lc(artist);
     final artistKnown = wantArtist.isNotEmpty;
@@ -171,7 +177,13 @@ class ItunesClient {
           (titleScore < 12 || wantTitle.split(' ').length < 2)) {
         continue;
       }
-      final total = titleScore + artistScore;
+      var total = titleScore + artistScore;
+      final theirs = r['trackTimeMillis'];
+      if (durationMs != null && theirs is num) {
+        final gap = (theirs - durationMs).abs();
+        if (gap > _maxDurationGapMs) continue;
+        total += gap <= _closeGapMs ? _closeBonus : (gap <= _nearGapMs ? _nearBonus : 0);
+      }
       if (total > bestScore) {
         bestScore = total;
         best = _toMatch(r);
