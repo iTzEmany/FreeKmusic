@@ -1172,10 +1172,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 69b.4 Controlli di fase (metriche, review Opus, misura sul Motorola: 1 brano al minuto per il limite Wikimedia da anonima; stima dei minuti rifatta a 40 s a brano)
 
 ## Fase 69c — Fondamenta del riconoscimento (`fase-69c-fondamenta-riconoscimento.md`)
-- [ ] 69c.1 Prova dell'impronta (Rust vs fpcalc, build Android, peso APK) — blocca il resto se fallisce
-- [ ] 69c.2 Tag: MBID/ISRC con `read_ids`, bug della data con lofty
-- [ ] 69c.3 Query e impostazioni (rumore nei titoli, Deezer con query pulita e acceso di serie, 7 s a brano)
-- [ ] 69c.4 Controlli di fase
+- [x] 69c.1 Prova dell'impronta (Rust vs fpcalc, build Android, peso APK) — blocca il resto se fallisce
+- [x] 69c.2 Tag: MBID/ISRC con `read_ids`, bug della data con lofty
+- [x] 69c.3 Query e impostazioni (rumore nei titoli, Deezer con query pulita e acceso di serie, 7 s a brano)
+- [x] 69c.4 Controlli di fase
 
 ## Fase 69d — La cascata del riconoscimento (`fase-69d-cascata-riconoscimento.md`)
 - [ ] 69d.1 Rete, client AcoustID, MusicBrainz esteso e quote
