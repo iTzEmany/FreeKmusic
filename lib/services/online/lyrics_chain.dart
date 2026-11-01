@@ -38,7 +38,7 @@ class LyricsChain {
     required this.lrclib,
     this.netease,
     this.ovh,
-    this.rest = const Duration(minutes: 10),
+    this.rest = const Duration(minutes: 3),
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -80,7 +80,8 @@ class LyricsChain {
     }
 
     final resting = _lrclibRestUntil?.isAfter(_now()) ?? false;
-    if (resting) failed = limited = true;
+    // Failed, not limited: a limit would make the runner drop the lyrics part for the whole round.
+    if (resting) failed = true;
     final lr = resting
         ? null
         : await fallback(() async {

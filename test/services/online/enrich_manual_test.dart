@@ -55,6 +55,13 @@ void main() {
     expect([round.allRefused, round.processed], [true, 1]);
   });
 
+  test('every part refused by the last track: the list is used up, the round is not stopped', () async {
+    r.web.itunes = ItunesMode.limited;
+    r.chain.limited = true;
+    final round = await r.runManual([await r.add()], parts: {EnrichPart.meta, EnrichPart.lyrics});
+    expect([round.allRefused, round.processed], [false, 1]);
+  });
+
   test('a track refused by its only source is alive: neither silent nor failed', () async {
     r.web.itunes = ItunesMode.limited;
     r.chain.limited = true;

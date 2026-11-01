@@ -113,7 +113,7 @@ void main() {
       expect(lr.calls, 1);
       expect([first.source, second.source], ['lyricsovh', 'lyricsovh']);
       expect(second.failed, isFalse); // a text was found
-      t = t.add(const Duration(minutes: 11));
+      t = t.add(const Duration(minutes: 4));
       await chain.find(_track());
       expect(lr.calls, 2);
     },
@@ -249,7 +249,7 @@ void main() {
     expect(ovh.calls, 0);
   });
 
-  test('LRCLIB resting: limited, though another source gave a text', () async {
+  test('LRCLIB resting: failed but not limited, so the run does not drop the lyrics part', () async {
     final t = DateTime(2026);
     final chain = LyricsChain(
       lrclib: _Lrclib(null, error: const WebUnavailableException('u', 503)),
@@ -258,7 +258,7 @@ void main() {
     );
     final first = await chain.find(_track());
     final second = await chain.find(_track());
-    expect([first.limited, second.limited], [false, true]);
+    expect([first.limited, second.limited, second.syncedFailed], [false, false, true]);
     expect(second.lyrics, isNotNull);
   });
 

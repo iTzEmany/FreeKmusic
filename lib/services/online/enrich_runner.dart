@@ -272,7 +272,7 @@ class EnrichRunner {
     final refused = <EnrichPart>{}; // a source that said «too many requests»: not again in this round
     final block = <EnrichGather>[];
     var wanted = parts();
-    var exhausted = false;
+    var exhausted = false, skipped = false; // skipped: a track of the chunk was left unvisited
     var stuck = 0; // tracks in a row that asked a source and got no answer (offline); one that asked nothing doesn't count
     Set<EnrichPart> switchedOn() => wanted = parts().difference(refused);
     try {
@@ -294,7 +294,10 @@ class EnrichRunner {
             await engine.limiter.wait();
             if (_cancelled) break;
             // The switches may have changed since the chunk was read.
-            if (switchedOn().isEmpty) break;
+            if (switchedOn().isEmpty) {
+              skipped = true;
+              break;
+            }
             try {
               final g = await engine.gather(id, wanted, mode: mode, cancel: _token);
               block.add(g);
@@ -344,6 +347,11 @@ class EnrichRunner {
       }
       round.endedSilent = stuck > 0 && !_cancelled;
       round.allRefused = !exhausted && !_cancelled && stuck < _maxStuck && refused.isNotEmpty && wanted.isEmpty;
+      // The last track may have refused the last part: then nothing was left, the run is done.
+      if (round.allRefused && !skipped) {
+        final more = await ids.chunk(parts(), mode, DateTime.fromMillisecondsSinceEpoch(_nowMs()), 1);
+        round.allRefused = more.isNotEmpty;
+      }
     } on Object catch (e, st) {
       if (e is Error) {
         AppLog.e('completion: round stopped', e, st);
