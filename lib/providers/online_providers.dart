@@ -30,6 +30,7 @@ import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
 import '../services/library/track_file_sync.dart';
+import '../services/recognition/track_recognizer.dart';
 import '../services/tags/fingerprinter.dart';
 import '../services/tags/tag_writer.dart';
 import '../services/online/wikipedia_client.dart';
@@ -39,7 +40,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'player_providers.dart';
-import 'youtube_providers.dart' show resolveDownloadFolder;
+import 'youtube_providers.dart' show innerTubeClientProvider, resolveDownloadFolder;
 
 final webClientProvider = Provider<WebClient>((ref) => DioWebClient());
 
@@ -64,6 +65,15 @@ final acoustIdClientProvider = Provider((ref) {
   return c;
 });
 final fingerprinterProvider = Provider<Fingerprinter>((ref) => RustFingerprinter());
+final trackRecognizerProvider = Provider(
+  (ref) => TrackRecognizer(
+    musicBrainz: ref.watch(musicBrainzClientProvider),
+    innerTube: ref.watch(innerTubeClientProvider),
+    acoustId: ref.watch(acoustIdClientProvider),
+    fingerprinter: ref.watch(fingerprinterProvider),
+    useAcoustId: () => ref.read(settingsProvider).acoustId,
+  ),
+);
 final deezerGwClientProvider = Provider(
   // shortcut: a one-off Registro line needs a LogEntry kind (phase 53); AppLog until then.
   (ref) => DeezerGwClient(onPaused: () => AppLog.w('deezer_gw: paused for 24 hours after 3 errors')),

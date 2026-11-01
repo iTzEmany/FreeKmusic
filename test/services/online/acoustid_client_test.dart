@@ -69,14 +69,16 @@ void main() {
           'score': 1,
           'recordings': [
             {'id': 'r', 'title': 5},
-            {'id': 'r2', 'title': 't', 'artists': [1, {'name': 'A'}], 'releases': 3},
+            {'id': 'r2', 'title': 't', 'artists': [1, {'name': 'A'}], 'releases': 3, 'duration': 'long'},
+            {'id': 'r3', 'title': 't', 'duration': double.nan},
           ],
         },
         'junk',
       ],
     });
-    expect(hits.single.recordings.single.artists, ['A']);
-    expect(hits.single.recordings.single.year, isNull);
+    expect(hits.single.recordings.first.artists, ['A']);
+    expect(hits.single.recordings.first.year, isNull);
+    expect(hits.single.recordings.map((r) => r.durationS), [null, null]);
   });
 
   test('sends a gzip form body with the key, duration and fingerprint, never audio', () async {

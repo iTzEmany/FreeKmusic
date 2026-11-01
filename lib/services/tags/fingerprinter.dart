@@ -5,15 +5,20 @@ import 'metadata_god_init.dart';
 
 /// Chromaprint of a file: `fp` as `fpcalc` prints it, `secs` the whole duration.
 abstract class Fingerprinter {
+  /// Opus and WebM cannot be decoded (R-184): they are never fingerprinted.
+  static bool supports(String path) {
+    final p = path.toLowerCase();
+    return !p.endsWith('.opus') && !p.endsWith('.webm');
+  }
+
   Future<({String fp, int secs})?> of(String path);
 }
 
 class RustFingerprinter implements Fingerprinter {
   @override
   Future<({String fp, int secs})?> of(String path) async {
-    final p = path.toLowerCase();
-    // The decoder cannot read them (R-184): do not even ask Rust.
-    if (p.endsWith('.opus') || p.endsWith('.webm')) return null;
+    // Do not even ask Rust.
+    if (!Fingerprinter.supports(path)) return null;
     try {
       await ensureMetadataGod();
       final f = await rust.fingerprint(path: path);

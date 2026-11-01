@@ -127,7 +127,9 @@ List<AcoustIdHit> parseAcoustId(Map data) {
                           for (final a in rec['artists'] as List)
                             if (a is Map && a['name'] is String) a['name'] as String,
                       ],
-                      durationS: (rec['duration'] as num?)?.round(),
+                      durationS: rec['duration'] is num && (rec['duration'] as num).isFinite
+                          ? (rec['duration'] as num).round()
+                          : null,
                       year: _minYear(rec['releases']),
                     ),
             ],
