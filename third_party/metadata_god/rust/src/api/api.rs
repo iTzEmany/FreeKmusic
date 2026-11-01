@@ -169,7 +169,9 @@ fn open_or_create_tag_for_file(file: &str) -> Result<(TaggedFile, Tag)> {
 }
 
 fn get_tag_for_file(file: &str) -> Result<(TaggedFile, Tag)> {
-    let mut tagged_file = lofty::read_from_path(file)?;
+    // Relaxed: a bad frame (e.g. TYER "abc") must not hide the other tags.
+    let opts = lofty::config::ParseOptions::new().parsing_mode(lofty::config::ParsingMode::Relaxed);
+    let mut tagged_file = lofty::probe::Probe::open(file)?.options(opts).read()?;
 
     let tag = match tagged_file.primary_tag_mut() {
         Some(primary_tag) => primary_tag,

@@ -50,3 +50,30 @@ fn bad_inputs_are_errors_not_panics() {
         assert!(fingerprint(p.to_string()).is_err(), "{p}");
     }
 }
+
+/// An ID3v2 tag of ~3 MB (big cover) must not stop the probe.
+#[test]
+fn huge_id3v2_tag_is_skipped() {
+    let dir = env!("CARGO_TARGET_TMPDIR");
+    let src = format!("{dir}/big-src.mp3");
+    let out = format!("{dir}/big.mp3");
+    let ok = |a: &[&str]| std::process::Command::new("ffmpeg").args(["-v", "error", "-y"]).args(a).status().unwrap().success();
+    assert!(ok(&["-f", "lavfi", "-i", "sine=d=8", "-map_metadata", "-1", &src]));
+    let apic = {
+        let mut f = vec![0u8, b'i', b'm', b'a', b'g', b'e', b'/', b'j', b'p', b'e', b'g', 0, 3, 0];
+        f.extend(vec![0xAB; 3_000_000]);
+        f
+    };
+    let mut frame = b"APIC".to_vec();
+    frame.extend((apic.len() as u32).to_be_bytes());
+    frame.extend([0, 0]);
+    frame.extend(&apic);
+    let n = frame.len() as u32;
+    let mut bytes = b"ID3\x03\x00\x00".to_vec();
+    bytes.extend([(n >> 21) as u8 & 0x7f, (n >> 14) as u8 & 0x7f, (n >> 7) as u8 & 0x7f, n as u8 & 0x7f]);
+    bytes.extend(frame);
+    bytes.extend(std::fs::read(&src).unwrap());
+    std::fs::write(&out, bytes).unwrap();
+    let fp = fingerprint(out).unwrap();
+    assert_eq!(fp.duration_s, 8);
+}

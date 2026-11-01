@@ -1,5 +1,5 @@
 use anyhow::Result;
-use lofty::{config::ParseOptions, file::TaggedFileExt, probe::Probe, tag::ItemKey};
+use lofty::{config::{ParseOptions, ParsingMode}, file::TaggedFileExt, probe::Probe, tag::ItemKey};
 
 pub struct TrackIds {
     /// MusicBrainz recording id (MP3 UFID "http://musicbrainz.org", Vorbis, M4A).
@@ -10,7 +10,7 @@ pub struct TrackIds {
 /// MusicBrainz recording id and ISRC of an mp3, flac, ogg or m4a file.
 pub fn read_ids(path: String) -> Result<TrackIds> {
     let file = Probe::open(&path)?
-        .options(ParseOptions::new().read_cover_art(false).read_properties(false))
+        .options(ParseOptions::new().parsing_mode(ParsingMode::Relaxed).read_cover_art(false).read_properties(false))
         .read()?;
     let text = |key: &ItemKey| {
         file.tags()

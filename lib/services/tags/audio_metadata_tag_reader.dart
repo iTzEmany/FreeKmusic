@@ -45,7 +45,7 @@ class AudioMetadataTagReader implements TagReader {
       final ids = await (loftyIds ?? _loftyIds)(path);
       info = info.withIds(
         isrc: info.isrc ?? normalizeIsrc(ids.isrc),
-        mbid: ids.mbid?.trim(),
+        mbid: _clean(ids.mbid),
       );
     } on Object catch (e, st) {
       AppLog.w('ids read failed: $path', e, st);
@@ -66,7 +66,7 @@ class AudioMetadataTagReader implements TagReader {
         genre: _clean(m.genre),
         trackNumber: m.trackNumber,
         discNumber: m.discNumber,
-        year: (m.year ?? 0) > 0 ? m.year : null,
+        year: (m.year ?? 0) >= 1000 && m.year! <= 2100 ? m.year : null,
         durationMs: (ms == null || ms <= 0) ? null : ms,
         coverBytes: pic?.data,
         coverMime: pic?.mimeType,

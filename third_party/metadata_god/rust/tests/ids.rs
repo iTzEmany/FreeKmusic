@@ -134,3 +134,22 @@ fn garbage_ufid_is_none() {
     id3v3(&p, &[("UFID", [&b"http://musicbrainz.org\0"[..], b"not-a-uuid"].concat())]);
     assert!(read_ids(p).unwrap().mbid.is_none());
 }
+
+#[test]
+fn zzz_ufid_is_none() {
+    let p = gen("i.mp3");
+    id3v3(&p, &[("UFID", [&b"http://musicbrainz.org\0"[..], b"zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz"].concat())]);
+    assert!(read_ids(p).unwrap().mbid.is_none());
+}
+
+/// A junk year must not hide the other tags (Dart fallback would be empty).
+#[test]
+fn invalid_year_keeps_other_tags() {
+    for (i, year) in ["abc", "-1", "2"].iter().enumerate() {
+        let p = gen(&format!("j{i}.mp3"));
+        id3v3(&p, &[("TIT2", text_frame("T")), ("TYER", text_frame(year)), ("TSRC", text_frame(ISRC))]);
+        let m = read_metadata(p.clone()).unwrap();
+        assert_eq!(m.title.as_deref(), Some("T"), "{year}");
+        assert_eq!(read_ids(p).unwrap().isrc.as_deref(), Some(ISRC), "{year}");
+    }
+}

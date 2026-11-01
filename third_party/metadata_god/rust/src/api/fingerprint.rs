@@ -30,8 +30,9 @@ pub fn fingerprint(path: String) -> Result<Fingerprint> {
 /// Uncompressed 32-bit values and the file duration; used by the tests.
 #[flutter_rust_bridge::frb(ignore)]
 pub fn fingerprint_raw(path: &str) -> Result<(Vec<u32>, u32)> {
-    let file = File::open(path).with_context(|| format!("cannot open {path}"))?;
-    let mss = MediaSourceStream::new(Box::new(file), Default::default());
+    let mut file = File::open(path).with_context(|| format!("cannot open {path}"))?;
+    let off = id3v2_len(&mut file)?;
+    let mss = MediaSourceStream::new(Box::new(FromOffset { file, off }), Default::default());
     let mut hint = Hint::new();
     if let Some(ext) = std::path::Path::new(path).extension().and_then(|e| e.to_str()) {
         hint.with_extension(ext);
@@ -126,6 +127,53 @@ pub fn fingerprint_raw(path: &str) -> Result<(Vec<u32>, u32)> {
             .as_secs() as u32
     };
     Ok((raw, secs))
+}
+
+/// A file that starts `off` bytes in: symphonia's probe gives up on a huge ID3v2 tag
+/// (big cover), so the tag is hidden from it.
+struct FromOffset {
+    file: File,
+    off: u64,
+}
+
+impl std::io::Read for FromOffset {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.file.read(buf)
+    }
+}
+
+impl std::io::Seek for FromOffset {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+        use std::io::SeekFrom::*;
+        let abs = self.file.seek(match pos {
+            Start(p) => Start(p + self.off),
+            other => other,
+        })?;
+        Ok(abs.saturating_sub(self.off))
+    }
+}
+
+impl symphonia::core::io::MediaSource for FromOffset {
+    fn is_seekable(&self) -> bool {
+        true
+    }
+    fn byte_len(&self) -> Option<u64> {
+        self.file.metadata().ok().map(|m| m.len().saturating_sub(self.off))
+    }
+}
+
+/// Bytes taken by a leading ID3v2 tag (0 when there is none).
+fn id3v2_len(file: &mut File) -> Result<u64> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut h = [0u8; 10];
+    let n = if file.read_exact(&mut h).is_ok() && &h[..3] == b"ID3" {
+        let size = h[6..].iter().fold(0u64, |a, &b| a << 7 | u64::from(b & 0x7f));
+        10 + size + if h[5] & 0x10 != 0 { 10 } else { 0 }
+    } else {
+        0
+    };
+    file.seek(SeekFrom::Start(n))?;
+    Ok(n)
 }
 
 fn base64_url(data: &[u8]) -> String {

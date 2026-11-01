@@ -39,15 +39,32 @@ void main() {
     });
   }
 
-  test('mbid comes from read_ids; the parser ISRC wins over it', () async {
+  test('mbid comes from read_ids, trimmed; blank is null', () async {
+    final ids = ['  abc-123 ', '   '];
     final reader = AudioMetadataTagReader(
-      loftyIds: (_) async =>
-          const mg.TrackIds(mbid: ' abc-123 ', isrc: 'zz-zz-0000000'),
+      loftyIds: (_) async => mg.TrackIds(mbid: ids.removeAt(0)),
     );
-    final t = await reader.read('test/fixtures/sample.mp3');
-    expect(t.title, 'Fixture Song');
-    expect(t.mbid, 'abc-123');
-    expect(t.isrc, 'ZZZZ0000000'); // sample.mp3 has no TSRC: lofty's is used
+    expect((await reader.read('test/fixtures/sample.mp3')).mbid, 'abc-123');
+    expect((await reader.read('test/fixtures/sample.mp3')).mbid, isNull);
+  });
+
+  test('the ISRC from the parser wins over read_ids', () async {
+    final reader = AudioMetadataTagReader(
+      loftyIds: (_) async => const mg.TrackIds(isrc: 'zz-zz-0000000'),
+    );
+    expect((await reader.read('$_fixtures/isrc.mp3')).isrc, 'GBAYE0601498');
+    // without a parser ISRC, lofty's is used (normalized)
+    expect((await reader.read('test/fixtures/sample.mp3')).isrc, 'ZZZZ0000000');
+  });
+
+  test('a bogus year from lofty is dropped', () async {
+    final reader = AudioMetadataTagReader(
+      loftyRead: (_) async => mg.Metadata(title: 'T', year: 5),
+      loftyIds: noIds,
+    );
+    final t = await reader.read('$_fixtures/fulldate.mp3');
+    expect(t.title, 'T');
+    expect(t.year, isNull);
   });
 
   test('a failing read_ids keeps the tags', () async {
