@@ -3,6 +3,7 @@ import 'package:codecore/services/online/http_client.dart' show RateLimitedExcep
 import 'package:codecore/services/online/musicbrainz_client.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_song_parser.dart';
+import 'package:codecore/services/recognition/channel_detector.dart' show tagsDubious;
 import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -192,6 +193,32 @@ void main() {
     test('a title with extra words in the same script as the file is sure; in another script it is not', () async {
       expect((await pick('Million Dollar', 'Million Dollar ミリオン')).sure, isFalse);
       expect((await pick('Million Dollar', 'Million Dollar Baby')).sure, isTrue);
+    });
+
+    test('a different artist in the tags makes it a proposal; a channel or the same artists do not', () async {
+      Future<Recognition> withArtist(String? artist, List<String> recArtists) async {
+        r.hits = [
+          AcoustIdHit(id: 'h', score: 0.96, recordings: [
+            AcoustIdRecording(id: 'r', title: 'Happier', artists: recArtists, durationS: 200),
+          ]),
+        ];
+        return (await r.recognize(track('Happier', artist, path: '/m/Happier.mp3', durationMs: 200000))).rec!;
+      }
+
+      final wrong = await withArtist('Marshmello ft. Bastille', ['Guster']);
+      expect(wrong.src, RecogSource.acoustid);
+      expect(wrong.sure, isFalse);
+      expect((await withArtist('Marshmello ft. Bastille', ['Marshmello', 'Bastille'])).sure, isTrue);
+      expect((await withArtist('7clouds Rock', ['Guster'])).sure, isTrue);
+      // dubious tags («Artist - Title» in the title): the artist is not compared
+      r.hits = [
+        AcoustIdHit(id: 'h', score: 0.96, recordings: [
+          AcoustIdRecording(id: 'r', title: 'Super Mario World OST - Star Road', artists: const ['Other'], durationS: 200),
+        ]),
+      ];
+      final t = track('Super Mario World OST - Star Road', 'retrovgnamusic', path: '/m/x.mp3', durationMs: 200000);
+      expect(tagsDubious(t), isTrue);
+      expect((await r.recognize(t)).rec!.sure, isTrue);
     });
 
     test('limits: score 0.9 is in; 10 s off is in, 10.001 s is out', () async {

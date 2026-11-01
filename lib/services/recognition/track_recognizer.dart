@@ -107,9 +107,9 @@ class TrackRecognizer {
 
     final c = cleanSearchQuery(t.title, t.artist ?? '');
     // A channel is not an artist: it is neither searched nor compared with.
-    final artist = artistIsChannel(c.artist) ? '' : c.artist;
+    final artist = artistIsChannel(c.artist) || isGenericArtist(c.artist) ? '' : c.artist;
     final dubious = tagsDubious(t);
-    final hay = _Hay(t, c.title, artist);
+    final hay = _Hay(t, c.title, artist, trustArtist: !dubious);
     Recognition? rec;
     ResolvedMeta? meta;
     rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got));
@@ -262,7 +262,7 @@ class TrackRecognizer {
             ms: best.durationS! * 1000,
             mbid: best.id),
         score: bestHit,
-        sure: hay.titleCoherent(best.title));
+        sure: hay.titleCoherent(best.title) && hay.artistCoherent(best.artists));
   }
 
   /// Step 4: YouTube Music, a proposal at most (D-304).
@@ -294,17 +294,19 @@ class TrackRecognizer {
 /// What the file name and the cleaned tags say, to compare a candidate with.
 /// [artist] is the cleaned artist, '' when it is a channel.
 class _Hay {
-  _Hay(Track t, String title, String artist)
+  _Hay(Track t, String title, String artist, {bool trustArtist = true})
       : key = matchKey([
           if (keyOfStreamPath(t.path) == null) p.basenameWithoutExtension(t.path),
           title,
           artist,
-        ].join(' ')) {
+        ].join(' ')),
+        artistKey = trustArtist ? matchKey(artist) : '' {
     tokens = _words(key);
     scripts = _scripts(key);
   }
 
   final String key;
+  final String artistKey;
   late final Set<String> tokens;
   late final Set<int> scripts;
 
@@ -340,6 +342,17 @@ class _Hay {
         _extraVersions(k) == 0 &&
         s.length == scripts.length &&
         s.containsAll(scripts);
+  }
+
+  /// With a real tag artist, the recording shares one of its names with the file or
+  /// tags, or one significant word of the tag artist («Marshmello ft. Bastille»
+  /// vs «Marshmello, Bastille»). Without a tag artist there is nothing to contradict.
+  bool artistCoherent(List<String> artists) {
+    if (artistKey.isEmpty) return true;
+    final names = [for (final a in artists) matchKey(a)].where((a) => a.isNotEmpty).toList();
+    if (names.any((a) => hasPhrase(key, a))) return true;
+    final theirs = {for (final n in names) ..._words(n)};
+    return _words(artistKey).any((w) => w.length > 2 && theirs.contains(w));
   }
 
   /// Non-Latin writing systems in [s], as small ids.
