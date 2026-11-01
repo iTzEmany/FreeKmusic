@@ -52,6 +52,9 @@ class LyricsChain {
   final DateTime Function() _now;
   DateTime? _lrclibRestUntil;
 
+  /// LRCLIB is being left alone: a «limited» answer from it is temporary, not a quota.
+  bool get isResting => _lrclibRestUntil?.isAfter(_now()) ?? false;
+
   static bool _has(String? s) => s != null && s.isNotEmpty;
 
   /// Cancellation propagates; a rate limit gives [LyricsChainResult.limited] (a text already found is kept) and any other source error (LRCLIB included) is logged and reported as [LyricsChainResult.failed].
@@ -79,9 +82,8 @@ class LyricsChain {
       }
     }
 
-    final resting = _lrclibRestUntil?.isAfter(_now()) ?? false;
-    // Failed, not limited: a limit would make the runner drop the lyrics part for the whole round.
-    if (resting) failed = true;
+    final resting = isResting;
+    if (resting) failed = limited = true;
     final lr = resting
         ? null
         : await fallback(() async {

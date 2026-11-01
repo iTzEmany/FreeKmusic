@@ -309,9 +309,11 @@ class EnrichRunner {
                 case GatherSignal.askedNothing:
                   break;
               }
+              // LRCLIB resting is temporary: the lyrics parts stay on and the chain asks it again when the rest ends.
+              final lyricsRest = engine.chain.isResting;
               final limited = [
                 for (final e in g.out.entries)
-                  if (e.value == PartOutcome.limited) e.key,
+                  if (e.value == PartOutcome.limited && !(lyricsRest && (e.key == EnrichPart.lyrics || e.key == EnrichPart.synced))) e.key,
               ];
               if (limited.isNotEmpty) round.limited = true;
               refused.addAll(limited);
@@ -347,10 +349,10 @@ class EnrichRunner {
       }
       round.endedSilent = stuck > 0 && !_cancelled;
       round.allRefused = !exhausted && !_cancelled && stuck < _maxStuck && refused.isNotEmpty && wanted.isEmpty;
-      // The last track may have refused the last part: then nothing was left, the run is done.
+      // The last track may have refused the last part: nothing was left (read-only, no cursor move).
       if (round.allRefused && !skipped) {
-        final more = await ids.chunk(parts(), mode, DateTime.fromMillisecondsSinceEpoch(_nowMs()), 1);
-        round.allRefused = more.isNotEmpty;
+        final c = await ids.progress(parts(), DateTime.fromMillisecondsSinceEpoch(_nowMs()));
+        round.allRefused = c.done < c.total;
       }
     } on Object catch (e, st) {
       if (e is Error) {

@@ -62,6 +62,14 @@ void main() {
     expect([round.allRefused, round.processed], [false, 1]);
   });
 
+  test('LRCLIB resting: lyrics-only tracks are not «no answer», and the part is asked again after the rest', () async {
+    r.chain.during = () async => r.chain.resting = r.chain.limited = r.chain.failed = r.chain.calls <= 6;
+    final ids = [for (var i = 0; i < 8; i++) await r.add(path: '/$i.mp3')];
+    final round = await r.runManual(ids, parts: {EnrichPart.lyrics});
+    expect([round.noAnswer, round.allRefused, round.limited, round.processed], [false, false, false, 8]);
+    expect(round.worked, 2); // the two after the rest
+  });
+
   test('a track refused by its only source is alive: neither silent nor failed', () async {
     r.web.itunes = ItunesMode.limited;
     r.chain.limited = true;

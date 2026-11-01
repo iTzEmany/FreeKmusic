@@ -192,6 +192,7 @@ class FakeChain extends LyricsChain {
   );
   bool failed = false;
   bool limited = false;
+  bool resting = false; // «limited» because LRCLIB rests, not because of a quota
   bool syncedFailed = false;
   bool? wantSyncedSeen;
 
@@ -203,6 +204,9 @@ class FakeChain extends LyricsChain {
 
   /// While set, the search never answers by itself; only a cancel ends it.
   Completer<void>? hold;
+
+  @override
+  bool get isResting => resting;
 
   @override
   Future<LyricsChainResult> find(
