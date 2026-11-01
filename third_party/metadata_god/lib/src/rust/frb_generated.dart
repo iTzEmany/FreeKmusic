@@ -5,6 +5,7 @@
 
 import 'api/api.dart';
 import 'api/fingerprint.dart';
+import 'api/ids.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -71,7 +72,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -2071707303;
+  int get rustContentHash => -1002518042;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -85,6 +86,8 @@ abstract class RustLibApi extends BaseApi {
   Future<Fingerprint> crateApiFingerprintFingerprint({required String path});
 
   Future<void> crateApiApiInitApp();
+
+  Future<TrackIds> crateApiIdsReadIds({required String path});
 
   Future<Metadata> crateApiApiReadMetadata({required String file});
 
@@ -149,13 +152,37 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<TrackIds> crateApiIdsReadIds({required String path}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_String(path, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 3, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_track_ids,
+        decodeErrorData: sse_decode_AnyhowException,
+      ),
+      constMeta: kCrateApiIdsReadIdsConstMeta,
+      argValues: [path],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiIdsReadIdsConstMeta => const TaskConstMeta(
+        debugName: "read_ids",
+        argNames: ["path"],
+      );
+
+  @override
   Future<Metadata> crateApiApiReadMetadata({required String file}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
         final serializer = SseSerializer(generalizedFrbRustBinding);
         sse_encode_String(file, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 3, port: port_);
+            funcId: 4, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_metadata,
@@ -181,7 +208,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(file, serializer);
         sse_encode_box_autoadd_metadata(metadata, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 4, port: port_);
+            funcId: 5, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_unit,
@@ -344,6 +371,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return Picture(
       mimeType: dco_decode_String(arr[0]),
       data: dco_decode_list_prim_u_8_strict(arr[1]),
+    );
+  }
+
+  @protected
+  TrackIds dco_decode_track_ids(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return TrackIds(
+      mbid: dco_decode_opt_String(arr[0]),
+      isrc: dco_decode_opt_String(arr[1]),
     );
   }
 
@@ -561,6 +600,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TrackIds sse_decode_track_ids(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_mbid = sse_decode_opt_String(deserializer);
+    var var_isrc = sse_decode_opt_String(deserializer);
+    return TrackIds(mbid: var_mbid, isrc: var_isrc);
+  }
+
+  @protected
   int sse_decode_u_16(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint16();
@@ -756,6 +803,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.mimeType, serializer);
     sse_encode_list_prim_u_8_strict(self.data, serializer);
+  }
+
+  @protected
+  void sse_encode_track_ids(TrackIds self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.mbid, serializer);
+    sse_encode_opt_String(self.isrc, serializer);
   }
 
   @protected

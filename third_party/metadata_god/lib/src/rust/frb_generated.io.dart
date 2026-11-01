@@ -5,6 +5,7 @@
 
 import 'api/api.dart';
 import 'api/fingerprint.dart';
+import 'api/ids.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' as ffi;
@@ -80,6 +81,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Picture dco_decode_picture(dynamic raw);
 
   @protected
+  TrackIds dco_decode_track_ids(dynamic raw);
+
+  @protected
   int dco_decode_u_16(dynamic raw);
 
   @protected
@@ -153,6 +157,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Picture sse_decode_picture(SseDeserializer deserializer);
+
+  @protected
+  TrackIds sse_decode_track_ids(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_16(SseDeserializer deserializer);
@@ -234,6 +241,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_picture(Picture self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_track_ids(TrackIds self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_16(int self, SseSerializer serializer);

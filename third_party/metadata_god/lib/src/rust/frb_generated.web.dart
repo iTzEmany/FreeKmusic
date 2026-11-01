@@ -9,6 +9,7 @@
 
 import 'api/api.dart';
 import 'api/fingerprint.dart';
+import 'api/ids.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -67,6 +68,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 
 @protected Picture dco_decode_picture(dynamic raw);
 
+@protected TrackIds dco_decode_track_ids(dynamic raw);
+
 @protected int dco_decode_u_16(dynamic raw);
 
 @protected int dco_decode_u_32(dynamic raw);
@@ -116,6 +119,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 @protected BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
 
 @protected Picture sse_decode_picture(SseDeserializer deserializer);
+
+@protected TrackIds sse_decode_track_ids(SseDeserializer deserializer);
 
 @protected int sse_decode_u_16(SseDeserializer deserializer);
 
@@ -168,6 +173,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 @protected void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
 @protected void sse_encode_picture(Picture self, SseSerializer serializer);
+
+@protected void sse_encode_track_ids(TrackIds self, SseSerializer serializer);
 
 @protected void sse_encode_u_16(int self, SseSerializer serializer);
 

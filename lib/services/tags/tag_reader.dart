@@ -17,9 +17,10 @@ class TagInfo {
     this.coverMime,
     this.replayGainDb,
     this.isrc,
+    this.mbid,
   });
 
-  final String? title, artist, albumArtist, album, genre, isrc;
+  final String? title, artist, albumArtist, album, genre, isrc, mbid;
   final int? trackNumber, discNumber, year, durationMs;
   final int? bitrateKbps, sampleRateHz, bitDepth, channels;
   final List<int>? coverBytes;
@@ -27,6 +28,28 @@ class TagInfo {
 
   /// REPLAYGAIN_TRACK_GAIN in dB (negative = quieter), when present.
   final double? replayGainDb;
+
+  /// Same tags with the ISRC and MusicBrainz id set.
+  TagInfo withIds({String? isrc, String? mbid}) => TagInfo(
+    title: title,
+    artist: artist,
+    albumArtist: albumArtist,
+    album: album,
+    genre: genre,
+    trackNumber: trackNumber,
+    discNumber: discNumber,
+    year: year,
+    durationMs: durationMs,
+    bitrateKbps: bitrateKbps,
+    sampleRateHz: sampleRateHz,
+    bitDepth: bitDepth,
+    channels: channels,
+    coverBytes: coverBytes,
+    coverMime: coverMime,
+    replayGainDb: replayGainDb,
+    isrc: isrc,
+    mbid: mbid,
+  );
 }
 
 /// Uppercase, no dashes or spaces; null when nothing is left.

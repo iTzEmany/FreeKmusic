@@ -52,7 +52,7 @@ pub fn read_metadata(file: String) -> Result<Metadata> {
         track_total: tag.track_total().map(|f| f as u16),
         disc_number: tag.disk().map(|f| f as u16),
         disc_total: tag.disk_total().map(|f| f as u16),
-        year: tag.year().map(|f| f as i32),
+        year: tag.year().map(|f| f as i32).or_else(|| id3_year_text(&file)),
         genre: tag.genre().and_then(|s| Some(s.to_string())),
         picture: (match cover {
             Some(cover) => Some(Picture {
@@ -66,6 +66,16 @@ pub fn read_metadata(file: String) -> Result<Metadata> {
         }),
         file_size: Some(21231_u64),
     })
+}
+
+/// lofty loses a TYER holding a full date ("20151119") when it upgrades v2.3 tags;
+/// read the raw frame and take its first 4 digits.
+fn id3_year_text(path: &str) -> Option<i32> {
+    use lofty::{config::ParseOptions, file::AudioFile, id3::v2::FrameId, mpeg::MpegFile};
+    let mut f = std::fs::File::open(path).ok()?;
+    let mpeg = MpegFile::read_from(&mut f, ParseOptions::new().implicit_conversions(false)).ok()?;
+    let text = mpeg.id3v2()?.get_text(&FrameId::Valid("TYER".into()))?;
+    text.get(..4)?.parse().ok()
 }
 
 pub fn write_metadata(file: String, metadata: Metadata) -> Result<()> {

@@ -2,20 +2,66 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:metadata_god/metadata_god.dart' as mg;
 
 import '../../core/app_log.dart';
+import 'metadata_god_init.dart';
 import 'tag_reader.dart';
 
+/// The Rust (lofty) side: injectable so tests run without the native library.
+typedef LoftyRead = Future<mg.Metadata> Function(String path);
+typedef LoftyIds = Future<mg.TrackIds> Function(String path);
+
+Future<mg.Metadata> _loftyRead(String path) async {
+  await ensureMetadataGod();
+  return mg.MetadataGod.readMetadata(file: path);
+}
+
+Future<mg.TrackIds> _loftyIds(String path) async {
+  await ensureMetadataGod();
+  return mg.readIds(path: path);
+}
+
 class AudioMetadataTagReader implements TagReader {
-  const AudioMetadataTagReader();
+  const AudioMetadataTagReader({this.loftyRead, this.loftyIds});
+
+  final LoftyRead? loftyRead;
+  final LoftyIds? loftyIds;
 
   @override
   Future<TagInfo> read(String path, {bool withCover = true}) async {
+    var info = const TagInfo();
     try {
       // Off the UI thread; TagInfo holds only strings, numbers and bytes.
-      return await Isolate.run(() => _parse(path, withCover));
+      info = await Isolate.run(() => _parse(path, withCover));
     } on Object catch (e, st) {
+      // e.g. a date like "20151119" breaks the parser: lofty reads the basics.
       AppLog.w('tag read failed: $path', e, st);
+      info = await _fallback(path);
+    }
+    try {
+      final ids = await (loftyIds ?? _loftyIds)(path);
+      info = info.withIds(
+        isrc: info.isrc ?? normalizeIsrc(ids.isrc),
+        mbid: ids.mbid?.trim(),
+      );
+    } on Object catch (e, st) {
+      AppLog.w('ids read failed: $path', e, st);
+    }
+    return info;
+  }
+
+  Future<TagInfo> _fallback(String path) async {
+    try {
+      final m = await (loftyRead ?? _loftyRead)(path);
+      return TagInfo(
+        title: _clean(m.title),
+        artist: _clean(m.artist),
+        album: _clean(m.album),
+        year: (m.year ?? 0) > 0 ? m.year : null,
+      );
+    } on Object catch (e, st) {
+      AppLog.w('lofty tag read failed: $path', e, st);
       return const TagInfo();
     }
   }
