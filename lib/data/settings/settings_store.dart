@@ -35,7 +35,7 @@ class AppSettings {
     this.language = 'it',
     this.autoEnrich = false,
     this.autoLyrics = false,
-    this.deezerMeta = false,
+    this.deezerMeta = true,
     this.creditsDetails = false,
     this.autoCuriosities = false,
     this.showUndoSnackbar = true,
@@ -89,7 +89,7 @@ class AppSettings {
   final bool spinCover;
   final bool compactMode, reducedMotion, autoEnrich, autoLyrics, showUndoSnackbar;
 
-  /// Deezer as a metadata source (data only); off until the user asks.
+  /// Deezer as a metadata source (data only); on unless the user turned it off.
   final bool deezerMeta, creditsDetails, autoCuriosities;
 
   /// Applies ReplayGain (track gain) at playback time.
@@ -311,7 +311,7 @@ class SettingsStore {
         language: _prefs.getString('language') ?? 'it',
         autoEnrich: _prefs.getBool('autoEnrich') ?? false,
         autoLyrics: _prefs.getBool('autoLyrics') ?? false,
-        deezerMeta: _prefs.getBool('deezerMeta') ?? false,
+        deezerMeta: _prefs.getBool('deezerMeta') ?? true,
         creditsDetails: _prefs.getBool('creditsDetails') ?? false,
         autoCuriosities: _prefs.getBool('autoCuriosities') ?? false,
         showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,

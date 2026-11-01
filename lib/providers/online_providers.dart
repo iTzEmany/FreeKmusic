@@ -241,9 +241,15 @@ Set<EnrichPart> manualParts(AppSettings s) => {
   if (s.creditsDetails) EnrichPart.credits,
 };
 
-/// Rough minutes for [tracks]: 3 s each when identified (unmeasured, limiter only).
+/// Seconds per track for the whole enrichment, identified vs anonymous.
+const kEnrichSecondsIdentified = 7;
 // 40 s: measured on the phone (phase 69b.4), Wikimedia anonymous tier.
-int enrichMinutes(int tracks) => (tracks * (apiIdentified ? 3 : 40) / 60).ceil();
+const kEnrichSecondsAnonymous = 40;
+
+/// Rough minutes for [tracks].
+int enrichMinutes(int tracks) =>
+    (tracks * (apiIdentified ? kEnrichSecondsIdentified : kEnrichSecondsAnonymous) / 60)
+        .ceil();
 
 /// Tracks with something due for a manual job, and how many are all (live).
 final manualDueCountProvider = StreamProvider.autoDispose<int>((ref) {

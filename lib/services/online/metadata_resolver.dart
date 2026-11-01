@@ -135,7 +135,9 @@ class MetadataResolver {
       final x = await dz.trackByIsrc(t.isrc!, cancel: cancel);
       return x != null && acceptIsrcHit(want, x) ? x : null;
     }
-    return pickDeezerTrack(
-        want, await dz.searchTracks(deezerQuery(want), cancel: cancel));
+    // The same cleaned text iTunes gets, not the raw file name.
+    final c = cleanSearchQuery(t.title, t.artist ?? '');
+    final q = deezerQuery(DeezerWant(title: c.title, artist: c.artist, album: t.album));
+    return pickDeezerTrack(want, await dz.searchTracks(q, cancel: cancel));
   }
 }
