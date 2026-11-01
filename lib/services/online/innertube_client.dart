@@ -7,6 +7,7 @@ import '../../core/text_utils.dart';
 import 'innertube_json.dart';
 import 'request_budget.dart';
 import 'ytm_lyrics_parser.dart';
+import 'ytm_song_parser.dart';
 import 'ytm_radio_parser.dart';
 import 'youtube_service.dart';
 
@@ -167,6 +168,11 @@ class InnerTubeClient {
     final id = await _musicPage('next', {'videoId': videoId}, 'en', lyricsBrowseId, null, null, cancel);
     return id == null ? null : browseMusic(id, parseLyrics, cancel: cancel);
   }
+
+  /// What YouTube Music knows of the video [videoId]: title, artists, album,
+  /// length and kind (see [YtmSong]). Unmasked: the answer is small.
+  Future<YtmSong> songOf(String videoId, {CancelToken? cancel}) =>
+      _musicPage('next', {'videoId': videoId}, 'en', parseYtmSong, null, null, cancel);
 
   Future<T> _musicPage<T>(
     String endpoint,

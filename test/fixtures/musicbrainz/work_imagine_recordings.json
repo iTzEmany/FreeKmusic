@@ -1,0 +1,27 @@
+{
+ "id": "517ff96c-5970-3eac-9ae5-bcafc15f5bc7",
+ "title": "Imagine",
+ "relations": [
+  {
+   "type": "performance",
+   "attributes": [
+    "cover",
+    "live"
+   ],
+   "recording": {
+    "id": "5a69c5a7-2953-4008-9094-c89e3da1663b",
+    "title": "Imagine",
+    "length": 325800
+   }
+  },
+  {
+   "type": "performance",
+   "attributes": [],
+   "recording": {
+    "id": "53f15236-ffdb-4f29-bfaf-de800cecece4",
+    "title": "Imagine (take 1, 5.1 mix)",
+    "length": 207000
+   }
+  }
+ ]
+}

@@ -23,6 +23,45 @@ class MbRecording {
   final int? length;
 }
 
+/// A recording read by id: enough to say who sings it, when it first came
+/// out, and which works (songs) it performs.
+class MbRecordingDetail {
+  const MbRecordingDetail({
+    required this.id,
+    required this.title,
+    required this.artist,
+    this.length,
+    this.isrcs = const [],
+    this.year,
+    this.works = const [],
+  });
+
+  final String id, title, artist;
+  final int? length;
+  final List<String> isrcs;
+
+  /// The earliest year among its releases.
+  final int? year;
+  final List<MbWorkLink> works;
+}
+
+/// A link recording <-> work; [cover] is set when MusicBrainz marks that
+/// performance as a cover (not the original song).
+class MbWorkLink {
+  const MbWorkLink(this.id, {this.cover = false});
+
+  final String id;
+  final bool cover;
+}
+
+/// A recording of a work, as listed on the work.
+class MbWorkRecording {
+  const MbWorkRecording(this.id, this.title, {this.cover = false});
+
+  final String id, title;
+  final bool cover;
+}
+
 /// MusicBrainz did not answer (503 or network) even after the second try.
 class MusicBrainzUnavailable implements Exception {
   const MusicBrainzUnavailable(this.what);
@@ -68,6 +107,7 @@ class MusicBrainzClient {
       Object? res;
       try {
         res = await _web.getJson('$_base/$path', query: {...query, 'fmt': 'json'}, cancel: cancel, strict: strict);
+        if (strict && res == null) return null; // strict: null is a 404, final
       } on WebUnavailableException catch (e) {
         if (attempt == (retry ? 1 : 0)) throw MusicBrainzUnavailable(path);
         AppLog.w('musicbrainz $path: $e');
@@ -141,7 +181,7 @@ class MusicBrainzClient {
   /// A recording counts only if its title or its first artist is the local
   /// [title] / [artist] (an ISRC is sometimes reused for another song).
   Future<List<MbRecording>> recordingsByIsrc(String isrc, int durationMs,
-      {required String title, required String artist, CancelToken? cancel, bool strict = false}) async {
+      {String? title, String? artist, CancelToken? cancel, bool strict = false}) async {
     final code = isrc.trim().toUpperCase();
     if (code.isEmpty) return const [];
     // 404 means an unknown ISRC: no retry. With [strict] (credits) a network
@@ -150,8 +190,10 @@ class MusicBrainzClient {
     final data = await _get('isrc/$code', {'inc': 'artist-credits'}, cancel, retry: false, strict: strict);
     final list = data?['recordings'];
     if (list is! List) return const [];
-    final wantTitle = matchKey(title);
-    final wantArtist = matchKey(extractPrimaryArtist(artist));
+    // Without a [title] and an [artist] (dirty tags) nothing is filtered out.
+    final filter = title != null && artist != null;
+    final wantTitle = matchKey(title ?? '');
+    final wantArtist = matchKey(extractPrimaryArtist(artist ?? ''));
     final out = <MbRecording>[];
     for (final r in list) {
       if (r is! Map || r['id'] is! String || r['title'] is! String) continue;
@@ -161,7 +203,7 @@ class MusicBrainzClient {
         AppLog.i('musicbrainz isrc $code: recording ${r['id']} has no artist credit');
         continue;
       }
-      if (matchKey(r['title'] as String) != wantTitle && matchKey(a['name'] as String) != wantArtist) {
+      if (filter && matchKey(r['title'] as String) != wantTitle && matchKey(a['name'] as String) != wantArtist) {
         AppLog.i('musicbrainz isrc $code: recording ${r['id']} is another song, skipped');
         continue;
       }
@@ -177,6 +219,53 @@ class MusicBrainzClient {
     out.sort((a, b) => gap(a).compareTo(gap(b)));
     return out;
   }
+
+  /// The recording [mbid] with its ISRCs, release years and works; null when
+  /// MusicBrainz does not know it. A 503 or no network ends in
+  /// [MusicBrainzUnavailable] after the second try.
+  Future<MbRecordingDetail?> recordingById(String mbid, {CancelToken? cancel}) async {
+    final r = await _get('recording/$mbid', {'inc': 'isrcs+artist-credits+releases+work-rels'}, cancel, strict: true);
+    if (r == null || r['id'] is! String || r['title'] is! String) return null;
+    final credit = r['artist-credit'];
+    final artist = credit is List
+        ? credit.whereType<Map>().map((c) => '${c['name'] ?? ''}${c['joinphrase'] ?? ''}').join().trim()
+        : '';
+    int? year;
+    for (final rel in r['releases'] is List ? r['releases'] as List : const []) {
+      final y = rel is Map && rel['date'] is String ? int.tryParse((rel['date'] as String).split('-').first) : null;
+      if (y != null && (year == null || y < year)) year = y;
+    }
+    final works = <MbWorkLink>[];
+    for (final rel in r['relations'] is List ? r['relations'] as List : const []) {
+      final w = rel is Map ? rel['work'] : null;
+      if (w is! Map || w['id'] is! String) continue;
+      works.add(MbWorkLink(w['id'] as String, cover: _isCover(rel)));
+    }
+    return MbRecordingDetail(
+      id: r['id'] as String,
+      title: r['title'] as String,
+      artist: artist,
+      length: r['length'] is num ? (r['length'] as num).toInt() : null,
+      isrcs: [for (final i in r['isrcs'] is List ? r['isrcs'] as List : const []) if (i is String) i],
+      year: year,
+      works: works,
+    );
+  }
+
+  /// The recordings linked to the work [id]; null when it is unknown.
+  Future<List<MbWorkRecording>?> work(String id, {CancelToken? cancel}) async {
+    final w = await _get('work/$id', {'inc': 'recording-rels'}, cancel, strict: true);
+    final rels = w?['relations'];
+    if (w == null) return null;
+    return [
+      for (final rel in rels is List ? rels : const [])
+        if (rel is Map && rel['recording'] is Map && (rel['recording'] as Map)['id'] is String)
+          MbWorkRecording((rel['recording'] as Map)['id'] as String,
+              '${(rel['recording'] as Map)['title'] ?? ''}', cover: _isCover(rel)),
+    ];
+  }
+
+  static bool _isCover(Map rel) => rel['attributes'] is List && (rel['attributes'] as List).contains('cover');
 
   /// The genre of a recording of [title] by [artist] that lasts [durationMs]
   /// (within 3 s when MusicBrainz knows its length), null when none is sure.
