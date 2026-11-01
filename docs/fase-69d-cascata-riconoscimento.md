@@ -108,4 +108,34 @@ Al massimo 4 task per fase, un commit per task.
 - sotto 110 o con un `sure` sbagliato si corregge prima di chiudere, oppure si chiede all'utente.
 
 ## Esiti di 69d.4
-_(da scrivere)_
+Prova del 2026-11-02 su Linux, sotto xvfb con un profilo separato. Motore vero, rete vera e impronta Rust vera. Il percorso è quello di «Arricchisci tutta la libreria» (`enrichJobProvider.startDue()`). I file sono 147: 124 mp3 e 23 m4a, nessun Opus/WebM.
+
+| Voce | Valore |
+|---|---|
+| Riconosciuti | **124/147** (criterio ≥ 110: raggiunto) |
+| Per fonte | AcoustID 81 (67 sicure) · video id 13 (sicure) · testo 24 · YTM 6 · tag 0 (nessun ISRC/MBID nei file) |
+| Non riconosciuti | 23 («niente» da tutte le fonti, nessuno perso). Sono musiche di giochi e anime, cover, loop e AMV, trailer, più «Can't Hold Us». |
+| Meta nuova | 71 brani · curiosità 37 · testi 6 (vedi sotto) |
+| Tempo | 34 min · 13,9 s a brano (mediana 13,1 s, p90 20,6 s) |
+| Errori | nessun errore. 9 avvisi: 5 `InnerTubeChanged` su video senza canzone YTM, 2 impronte illeggibili (poi riconosciute da YTM), 2 LRCLIB 503 |
+
+**Identità `sure` sbagliate: 1, corretta.** Il brano è «Happier» di Marshmello ft. Bastille. Dentro ±10 s AcoustID dava solo il recording dei Guster, che era stato preso come sicuro e aveva portato album, anno e copertina dei Guster.
+
+La correzione: con tag affidabili, `sure` di AcoustID richiede anche che l'artista del recording sia coerente con quello dei tag (`_Hay.artistCoherent`). Con tag dubbi, cioè con un canale caricatore come artista, la regola resta quella di prima: lì le identità AcoustID erano giuste, per esempio Super Mario World → 近藤浩治. La correzione non cambia il numero dei riconosciuti.
+
+Le altre `sure` sono coerenti con nome del file e tag, controllate a vista, non ascoltate.
+
+**Identità non sicure sbagliate (ammesse, diventano proposte nella 69e).** Hanno già riempito la meta del brano sbagliato, come prevede D-304:
+- «Bad Romance» → Club Mix di un altro artista (testo);
+- tre risultati YTM di altri artisti;
+- tre remix al posto dell'originale (Here, Blue, Ola).
+
+**Fuori dal riconoscimento, per una fase successiva:**
+- un solo 503 di LRCLIB ha tolto i testi a tutto il giro, con il riposo di 10 minuti e la parte rifiutata fino alla fine;
+- il Registro scrive `done 146 / total 147, stopped` per un giro finito.
+
+**Scheggia di fase:** non fatta nell'app. Le parti sono coperte così:
+- fonte che lancia, 429/503 di AcoustID e Opus: dai test;
+- impronta illeggibile → fonte in errore → YTM: dalla prova.
+
+Restano da provare a mano la rete staccata a metà e il file di 0 byte.
