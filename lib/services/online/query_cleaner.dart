@@ -1,9 +1,14 @@
 import '../../core/text_utils.dart';
 
 class CleanQuery {
-  const CleanQuery(this.title, this.artist);
+  const CleanQuery(this.title, this.artist, {this.tagged});
 
   final String title, artist;
+
+  /// The query as the tags say it, set only when «A - B» was read as
+  /// «uploader / Artist - Title»: a legit «Symphony No. 5 - I. Allegro» is
+  /// still found by retrying with it.
+  final CleanQuery? tagged;
 
   @override
   String toString() => 'CleanQuery($title | $artist)';
@@ -28,6 +33,13 @@ final _noisePhrase = RegExp(
     r'\b(official video|official audio|lyric video|4k remaster|remastered)\b',
     caseSensitive: false);
 final _separator = RegExp(r' [-–—] ');
+/// B of «A - B» that is a version of the song, not its title («Song - Live»);
+/// read outside brackets, so «Believer (Romy Wave Cover)» is still a title.
+/// Mirrors `otherVersions` (track_matcher imports this file, so no import).
+final _versionTail = RegExp(
+    r'\b(live|cover|karaoke|remix|mix|edit|radio|extended|original|version|acoustic|demo|instrumental|remaster(?:ed)?|unplugged|slowed|sped up|nightcore|reverb|mashup|from|feat|ft)\b',
+    caseSensitive: false);
+final _bracketGroup = RegExp(r'[\(\[\{][^\)\]\}]*[\)\]\}]');
 final _artistSuffix =
     RegExp(r'\s*(?:-\s*)?(official|vevo|topic)$', caseSensitive: false);
 
@@ -58,34 +70,47 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   title = _fixQuotes(title).replaceAll(RegExp(r'\s+'), ' ').trim();
   artist = _fixQuotes(artist);
 
+  CleanQuery? tagged;
   final m = _separator.firstMatch(title);
   if (m != null) {
     final a = title.substring(0, m.start).trim();
     final b = title.substring(m.end).trim();
     if (a.isNotEmpty && b.isNotEmpty) {
       if (genericArtist) {
-        artist = a;
-        title = b;
-        // «Fueled By Ramen and twenty one pilots - twenty one pilots Stressed
-        // Out»: when the title repeats one side of an «and», that side is the
-        // artist and the other is a label or a guest.
-        for (final side in a.split(RegExp(r'\s+(?:and|&)\s+', caseSensitive: false)).reversed) {
-          final sideTrim = side.trim();
-          if (sideTrim.isNotEmpty &&
-              sideTrim != a &&
-              b.toLowerCase().startsWith('${sideTrim.toLowerCase()} ')) {
-            artist = sideTrim;
-            title = b.substring(sideTrim.length).trim();
-            break;
-          }
+        (artist, title) = _creditSplit(a, b);
+      } else {
+        final tag = normalize(artist.replaceFirst(_artistSuffix, ''));
+        if (normalize(a) == tag) {
+          title = b;
+        } else if (tag.isNotEmpty &&
+            !normalize(a).contains(tag) &&
+            !normalize(b).contains(tag) &&
+            !_versionTail.hasMatch(b.replaceAll(_bracketGroup, ' '))) {
+          // The tagged artist is the YouTube uploader: «Real Artist - Title».
+          tagged = CleanQuery(title, artist.replaceFirst(_artistSuffix, '').trim());
+          (artist, title) = _creditSplit(a, b);
         }
-      } else if (normalize(a) == normalize(artist.replaceFirst(_artistSuffix, ''))) {
-        title = b;
       }
     }
   }
   artist = artist.replaceFirst(_artistSuffix, '');
-  return CleanQuery(title.trim(), artist.trim());
+  return CleanQuery(title.trim(), artist.trim(), tagged: tagged);
+}
+
+/// (artist, title) of «a - b» when the artist is not known.
+(String, String) _creditSplit(String a, String b) {
+  // «Fueled By Ramen and twenty one pilots - twenty one pilots Stressed
+  // Out»: when the title repeats one side of an «and», that side is the
+  // artist and the other is a label or a guest.
+  for (final side in a.split(RegExp(r'\s+(?:and|&)\s+', caseSensitive: false)).reversed) {
+    final sideTrim = side.trim();
+    if (sideTrim.isNotEmpty &&
+        sideTrim != a &&
+        b.toLowerCase().startsWith('${sideTrim.toLowerCase()} ')) {
+      return (sideTrim, b.substring(sideTrim.length).trim());
+    }
+  }
+  return (a, b);
 }
 
 /// Splits a credit line like «A, B feat. C» into its artists.

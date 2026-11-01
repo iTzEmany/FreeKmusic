@@ -46,9 +46,16 @@ class MetadataResolver {
       {bool strict = false}) async {
     final dz = useDeezer() && deezer != null ? await _deezerLookup(t, cancel, strict: strict) : null;
     final needItunes = dz == null || dz.match.artworkUrl == null || needGenre;
-    final it = needItunes
-        ? await itunes.search(c.title, c.artist, cancel: cancel, strict: strict)
+    final ms = t.durationMs > 0 ? t.durationMs : null;
+    var it = needItunes
+        ? await itunes.search(c.title, c.artist,
+            cancel: cancel, strict: strict, durationMs: ms)
         : null;
+    final tagged = c.tagged;
+    if (it == null && needItunes && tagged != null) {
+      it = await itunes.search(tagged.title, tagged.artist,
+          cancel: cancel, strict: strict, durationMs: ms);
+    }
     if (dz == null && it == null) return null;
     if (dz == null) return ResolvedMeta(it!, 'itunes');
     final d = dz.match;

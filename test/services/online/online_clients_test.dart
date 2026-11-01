@@ -130,6 +130,37 @@ void main() {
       expect(await ItunesClient(web).search('Intro', ''), isNull);
     });
 
+    group('duration', () {
+      Map<String, Object?> timed(String t, String a, int ms, String album) =>
+          {...song(t, a, album: album), 'trackTimeMillis': ms};
+
+      test('a candidate more than 20 s off is rejected', () async {
+        final web = FakeWeb((_, _) => {
+              'results': [timed('Here', 'A', 225000, 'Remix')]
+            });
+        expect(await ItunesClient(web).search('Here', 'A', durationMs: 200000), isNull);
+        expect(await ItunesClient(web).search('Here', 'A', durationMs: 210000), isNotNull);
+      });
+
+      test('between equal titles the closest length wins', () async {
+        final web = FakeWeb((_, _) => {
+              'results': [
+                timed('Here', 'A', 190000, 'Far'),
+                timed('Here', 'A', 201000, 'Close'),
+              ]
+            });
+        expect((await ItunesClient(web).search('Here', 'A', durationMs: 200000))!.album, 'Close');
+      });
+
+      test('an unknown length on either side changes nothing', () async {
+        final web = FakeWeb((_, _) => {
+              'results': [timed('Here', 'A', 999000, 'Long'), song('Here', 'A', album: 'NoTime')]
+            });
+        expect((await ItunesClient(web).search('Here', 'A'))!.album, 'Long');
+        expect(await ItunesClient(web).search('Here', 'A', durationMs: 200000), isNotNull);
+      });
+    });
+
     test('query order and dedupe', () {
       final q = ItunesClient(FakeWeb((_, _) => null))
           .buildQueries('Song (Live)', 'A & B');
