@@ -8,6 +8,7 @@ import 'curiosity_service.dart';
 import 'enrich_parts.dart';
 import 'http_client.dart';
 import 'metadata_resolver.dart';
+import '../recognition/track_identity.dart';
 
 /// How a [EnrichGather] went, for the runner's «nobody answers» count: the
 /// sources [answered] (or refused: a source that says «too many requests» is
@@ -38,10 +39,12 @@ class EnrichGather {
   String? plain, synced;
   CreditsPart? credits;
   CuriosityLookup? curio;
+  Recognition? rec; // freshly recognized, to write; null when saved already or lost
+  bool recAsked = false; // the recognizer answered (also «nothing»)
   CoverResult? cover; // the file fetched, for the album key [coverAlbum]
   String? coverAlbum;
 
-  GatherSignal get signal => metaAsked || out.values.any((o) => o.answered || o == PartOutcome.limited)
+  GatherSignal get signal => metaAsked || recAsked || out.values.any((o) => o.answered || o == PartOutcome.limited)
       ? GatherSignal.answered
       : out.values.any((o) => o != PartOutcome.skipped)
       ? GatherSignal.silent

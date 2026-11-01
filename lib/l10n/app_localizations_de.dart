@@ -5823,4 +5823,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get activityEnrichWaiting => 'Vervollständigung: wartet';
+
+  @override
+  String logRecogSources(String list) {
+    return 'Erkannt: $list';
+  }
+
+  @override
+  String get recogSrcTags => 'Tags';
+
+  @override
+  String get recogSrcVideo => 'Video';
+
+  @override
+  String get recogSrcText => 'Text';
 }

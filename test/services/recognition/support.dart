@@ -37,6 +37,7 @@ class Rig {
   ResolvedMeta? text;
   ({String? isrc, String? mbid}) ids = (isrc: null, mbid: null);
   bool acoustIdOn = true;
+  bool acoustIdResting = false;
   bool fingerprintable = true;
   final isrcArgs = <String?>[];
   final ytmQueries = <String>[];
@@ -115,6 +116,9 @@ class _Yt implements InnerTubeClient {
 class _Aid implements AcoustIdClient {
   _Aid(this.r);
   final Rig r;
+
+  @override
+  bool get isResting => r.acoustIdResting;
 
   @override
   Future<List<AcoustIdHit>> lookup(String fp, int secs, {CancelToken? cancel}) async {

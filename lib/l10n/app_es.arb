@@ -3142,5 +3142,9 @@
   },
   "enrichLibraryComplete": "Biblioteca completa",
   "enrichLibraryStop": "Detener",
-  "activityEnrichWaiting": "Completando: en espera"
+  "activityEnrichWaiting": "Completando: en espera",
+  "logRecogSources": "Reconocidas: {list}",
+  "recogSrcTags": "etiquetas",
+  "recogSrcVideo": "vídeo",
+  "recogSrcText": "texto"
 }

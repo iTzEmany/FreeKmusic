@@ -9204,6 +9204,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Completamento: in attesa'**
   String get activityEnrichWaiting;
+
+  /// No description provided for @logRecogSources.
+  ///
+  /// In it, this message translates to:
+  /// **'Riconosciuti: {list}'**
+  String logRecogSources(String list);
+
+  /// No description provided for @recogSrcTags.
+  ///
+  /// In it, this message translates to:
+  /// **'tag'**
+  String get recogSrcTags;
+
+  /// No description provided for @recogSrcVideo.
+  ///
+  /// In it, this message translates to:
+  /// **'video'**
+  String get recogSrcVideo;
+
+  /// No description provided for @recogSrcText.
+  ///
+  /// In it, this message translates to:
+  /// **'testo'**
+  String get recogSrcText;
 }
 
 class _AppLocalizationsDelegate

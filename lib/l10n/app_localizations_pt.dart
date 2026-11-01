@@ -5805,4 +5805,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get activityEnrichWaiting => 'A completar: em espera';
+
+  @override
+  String logRecogSources(String list) {
+    return 'Reconhecidas: $list';
+  }
+
+  @override
+  String get recogSrcTags => 'tags';
+
+  @override
+  String get recogSrcVideo => 'vídeo';
+
+  @override
+  String get recogSrcText => 'texto';
 }

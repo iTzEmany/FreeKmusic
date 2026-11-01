@@ -35,6 +35,9 @@ class EnrichRound {
   final Map<EnrichPart, List<int>> updated = {};
   final Map<EnrichPart, List<int>> none = {};
 
+  /// Tracks recognised in this run, by `RecogSource.name`.
+  final Map<String, int> sources = {};
+
   static Set<int> _tracks(Map<EnrichPart, List<int>> m) => {for (final l in m.values) ...l};
 
   /// Distinct tracks that got something.
@@ -358,8 +361,10 @@ class EnrichRunner {
     final items = [...block];
     block.clear();
     try {
-      for (final r in await engine.commit(items)) {
+      for (final (i, r) in (await engine.commit(items)).indexed) {
         if (r.lost) round.failed = true;
+        final src = items[i].rec?.src;
+        if (src != null && !r.lost) round.sources.update(src.name, (n) => n + 1, ifAbsent: () => 1);
         if (!r.out.values.any((o) => o.answered)) continue;
         round.worked++;
         for (final MapEntry(key: part, value: o) in r.out.entries) {

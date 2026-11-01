@@ -9,6 +9,7 @@ import '../online/acoustid_client.dart';
 import '../online/innertube_client.dart';
 import '../online/ytm_song_parser.dart' show YtmSong;
 import '../online/metadata_resolver.dart' show ResolvedMeta;
+import '../online/http_client.dart' show RateLimitedException;
 import '../online/musicbrainz_client.dart';
 import '../online/query_cleaner.dart';
 import '../stream/stream_key.dart' show keyOfStreamPath;
@@ -43,12 +44,16 @@ Future<({String? isrc, String? mbid})> readFileIds(String path) async {
 
 /// [rec] null with [lost] = a source failed and none found anything: ask again
 /// later. [rec] with no `src` = every source answered «nothing».
+/// [asked]: a source really got an answer from the network (a «nothing» with
+/// none asked says nothing of being online); [limited]: a source refused.
 class RecogOutcome {
-  const RecogOutcome({this.rec, this.meta, this.lost = false});
+  const RecogOutcome({this.rec, this.meta, this.lost = false, this.asked = false, this.limited = false});
 
   final Recognition? rec;
   final ResolvedMeta? meta;
   final bool lost;
+  final bool asked;
+  final bool limited;
 }
 
 final _uuid = RegExp(
@@ -83,7 +88,8 @@ class TrackRecognizer {
 
   Future<RecogOutcome> recognize(Track t,
       {required TextProbe textProbe, CancelToken? cancel}) async {
-    var lost = false;
+    var lost = false, limited = false, asked = false;
+    void got() => asked = true;
     // A source that throws is skipped (R-168); only a cancel goes up.
     Future<R?> attempt<R>(String name, Future<R?> Function() run) async {
       try {
@@ -91,6 +97,7 @@ class TrackRecognizer {
       } catch (e, st) {
         if (e is DioException && e.type == DioExceptionType.cancel) rethrow;
         lost = true;
+        if (e is RateLimitedException) limited = true;
         AppLog.w('recognition: $name failed for ${t.path}', e, st);
         return null;
       }
@@ -103,10 +110,14 @@ class TrackRecognizer {
     final hay = _Hay(t, c.title, artist);
     Recognition? rec;
     ResolvedMeta? meta;
-    rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel));
-    rec ??= await attempt('video id', () => _fromVideoId(t, cancel));
+    rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got));
+    rec ??= await attempt('video id', () => _fromVideoId(t, cancel, got));
     if (rec == null && !dubious) {
-      meta = await attempt('text', () => textProbe(t, c, cancel));
+      meta = await attempt('text', () async {
+        final m = await textProbe(t, c, cancel);
+        got();
+        return m;
+      });
       if (meta != null) rec = _text(meta);
     }
     if (rec == null) {
@@ -114,14 +125,16 @@ class TrackRecognizer {
         // No file, or Opus/WebM (R-184): a definite «no».
       } else if (!useAcoustId()) {
         lost = true; // not answered: ask again if the user turns it on
+      } else if (acoustId.isResting) {
+        lost = limited = true; // refused a moment ago: no point in decoding the file
       } else {
-        rec = await attempt('acoustid', () => _fromAcoustId(t, hay, cancel));
+        rec = await attempt('acoustid', () => _fromAcoustId(t, hay, cancel, got));
       }
     }
-    rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel));
-    if (rec != null) return RecogOutcome(rec: rec, meta: meta);
-    if (lost) return const RecogOutcome(lost: true);
-    return RecogOutcome(rec: Recognition(at: _now().millisecondsSinceEpoch));
+    rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
+    if (rec != null) return RecogOutcome(rec: rec, meta: meta, asked: asked);
+    if (lost) return RecogOutcome(lost: true, asked: asked, limited: limited);
+    return RecogOutcome(rec: Recognition(at: _now().millisecondsSinceEpoch), asked: asked);
   }
 
   Recognition _found(RecogSource src, TrackIdentity id, {double? score, bool sure = false}) =>
@@ -130,7 +143,7 @@ class TrackRecognizer {
   /// Step 1: the MusicBrainz id or the ISRC of the tags, checked against the length.
   /// With reliable tags ([query] set) the ISRC answer is filtered by title and
   /// artist and is sure; with dubious ones any recording of that ISRC is only a proposal.
-  Future<Recognition?> _fromIds(Track t, CleanQuery? query, CancelToken? cancel) async {
+  Future<Recognition?> _fromIds(Track t, CleanQuery? query, CancelToken? cancel, void Function() got) async {
     var isrc = normalizeIsrc(t.isrc);
     String? mbid;
     if (keyOfStreamPath(t.path) == null && !t.path.toLowerCase().endsWith('.webm')) {
@@ -146,6 +159,7 @@ class TrackRecognizer {
     bool close(int? ms) => ms == null || t.durationMs <= 0 || (ms - t.durationMs).abs() <= kDurationSlackMs;
     if (mbid != null) {
       final d = await musicBrainz.recordingById(mbid, cancel: cancel);
+      got();
       if (d != null && close(d.length)) {
         return _found(
             RecogSource.tags,
@@ -161,6 +175,7 @@ class TrackRecognizer {
     if (isrc != null) {
       final recs = await musicBrainz.recordingsByIsrc(isrc, t.durationMs,
           title: query?.title, artist: query?.artist, cancel: cancel, strict: true);
+      got();
       final r = recs.where((r) => close(r.length)).firstOrNull;
       if (r != null) {
         return _found(RecogSource.tags,
@@ -173,12 +188,13 @@ class TrackRecognizer {
 
   /// Step 1b: what YouTube Music says of the video this file came from. Sure
   /// only for a studio or official video (D-312).
-  Future<Recognition?> _fromVideoId(Track t, CancelToken? cancel) async {
+  Future<Recognition?> _fromVideoId(Track t, CancelToken? cancel, void Function() got) async {
     final id = await videoIdFor?.call(t) ?? videoIdOf(t.path);
     if (id == null) return null;
     final YtmSong s;
     try {
       s = await innerTube.songOf(id, cancel: cancel);
+      got();
     } on InnerTubeChanged catch (e) {
       // shortcut: a deleted or private video and a changed YouTube format look the same here; both are «nothing», the log tells.
       AppLog.w('recognition: no song for video $id', e);
@@ -205,11 +221,12 @@ class TrackRecognizer {
   }
 
   /// Step 3: AcoustID by fingerprint (only the fingerprint travels).
-  Future<Recognition?> _fromAcoustId(Track t, _Hay hay, CancelToken? cancel) async {
+  Future<Recognition?> _fromAcoustId(Track t, _Hay hay, CancelToken? cancel, void Function() got) async {
     final fp = await fingerprinter.of(t.path);
     if (fp == null) return null; // too short, silent or unreadable: a definite «no»
     final wantMs = t.durationMs > 0 ? t.durationMs : fp.secs * 1000;
     final hits = await acoustId.lookup(fp.fp, fp.secs, cancel: cancel);
+    got();
     final seen = <String>{};
     AcoustIdRecording? best;
     double? bestScore, bestHit;
@@ -242,9 +259,10 @@ class TrackRecognizer {
 
   /// Step 4: YouTube Music, a proposal at most (D-304).
   Future<Recognition?> _fromYtm(
-      Track t, String title, String artist, _Hay hay, CancelToken? cancel) async {
+      Track t, String title, String artist, _Hay hay, CancelToken? cancel, void Function() got) async {
     if (t.durationMs <= 0) return null;
     final results = await innerTube.searchSongs('$title $artist'.trim(), cancel: cancel);
+    got();
     var bestScore = double.negativeInfinity;
     Recognition? best;
     for (final r in results) {

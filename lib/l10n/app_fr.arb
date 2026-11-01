@@ -3376,5 +3376,9 @@
   },
   "enrichLibraryComplete": "Bibliothèque complète",
   "enrichLibraryStop": "Interrompre",
-  "activityEnrichWaiting": "Complétion : en attente"
+  "activityEnrichWaiting": "Complétion : en attente",
+  "logRecogSources": "Reconnus : {list}",
+  "recogSrcTags": "tags",
+  "recogSrcVideo": "vidéo",
+  "recogSrcText": "texte"
 }

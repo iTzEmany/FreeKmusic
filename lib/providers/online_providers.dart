@@ -40,7 +40,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'player_providers.dart';
-import 'youtube_providers.dart' show innerTubeClientProvider, resolveDownloadFolder;
+import 'youtube_providers.dart' show downloadIndexProvider, innerTubeClientProvider, resolveDownloadFolder;
 
 final webClientProvider = Provider<WebClient>((ref) => DioWebClient());
 
@@ -72,6 +72,10 @@ final trackRecognizerProvider = Provider(
     acoustId: ref.watch(acoustIdClientProvider),
     fingerprinter: ref.watch(fingerprinterProvider),
     useAcoustId: () => ref.read(settingsProvider).acoustId,
+    // Where the file came from: the download index (memory), then the CSV import row.
+    videoIdFor: (t) async =>
+        (await ref.read(downloadIndexProvider.future)).idForPath(t.path) ??
+        await ref.read(importRepositoryProvider).videoIdOfTrack(t.id),
   ),
 );
 final deezerGwClientProvider = Provider(
@@ -205,6 +209,7 @@ final enrichEngineProvider = Provider<EnrichEngine>((ref) {
     curiosities: ref.watch(curiosityServiceProvider),
     language: () => ref.read(settingsProvider).language,
     useCredits: () => ref.read(settingsProvider).creditsDetails,
+    recognizer: ref.watch(trackRecognizerProvider),
     limiter: ref.watch(enrichLimiterProvider),
   );
 });
@@ -220,9 +225,13 @@ class EnrichJobResult {
     this.failed = false,
     this.cancelled = false,
     this.rateLimited = false,
+    this.sources = const {},
   });
 
   final int done, total, updated, notFound;
+
+  /// Tracks recognised, by `RecogSource.name`.
+  final Map<String, int> sources;
 
   /// The job stopped on an error, or because no source answered.
   final bool failed;
@@ -232,11 +241,14 @@ class EnrichJobResult {
   bool get stopped => cancelled || rateLimited;
 
   /// The `detail` of the Registro line; `updated` and `notFound` are always counts (int).
-  Map<String, Object?>? get logDetail => failed
-      ? {'updated': updated, 'notFound': notFound}
-      : stopped
-      ? const {'stopped': true}
-      : null;
+  Map<String, Object?>? get logDetail {
+    final base = failed
+        ? {'updated': updated, 'notFound': notFound}
+        : stopped
+        ? const {'stopped': true}
+        : null;
+    return sources.isEmpty ? base : {...?base, 'sources': sources};
+  }
 }
 
 class EnrichJobState {
@@ -355,6 +367,7 @@ class EnrichJobNotifier extends Notifier<EnrichJobState> {
             failed: failed,
             cancelled: cancelled,
             rateLimited: refused || ((round?.limited ?? false) && round!.worked == 0),
+            sources: round?.sources ?? const {},
           ),
         );
         if (!failed && !cancelled) {

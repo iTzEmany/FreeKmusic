@@ -260,6 +260,35 @@ void main() {
       expect([out.rec, out.lost], [null, true]);
     });
 
+    test('AcoustID resting: the file is not decoded, the source is limited, the next one answers', () async {
+      r.acoustIdResting = true;
+      r.ytm = [ytResult('Song', 'Artist', 200)];
+      final out = await r.recognize(track('Song', null));
+      expect(r.calls, ['ytm']);
+      expect([out.rec!.src, out.lost], [RecogSource.ytm, false]);
+      r.ytm = [];
+      final none = await r.recognize(track('Song', null));
+      expect([none.rec, none.lost, none.limited], [null, true, true]);
+    });
+
+    test('a refusal (429) of a source is limited; a plain error is not', () async {
+      r.acoustIdError = const RateLimitedException(429);
+      expect((await r.recognize(track('Song', null))).limited, isTrue);
+      r.acoustIdError = Exception('offline');
+      expect((await r.recognize(track('Song', null))).limited, isFalse);
+    });
+
+    test('asked: true when a source answered, false when none was asked, false when all failed', () async {
+      expect((await r.recognize(track('Song', 'Artist'))).asked, isTrue); // «nothing», but really answered
+      r.calls.clear();
+      final mute = await r.recognize(track('Song', 'Foo - Topic', path: '/m/x.opus', durationMs: 0));
+      expect([r.calls, mute.rec!.src, mute.asked], [<String>[], null, false]);
+      r.acoustIdError = Exception('offline');
+      r.ytmError = Exception('offline');
+      final down = await r.recognize(track('Song', null));
+      expect([down.rec, down.lost, down.asked], [null, true, false]);
+    });
+
     test('a cancel is not swallowed', () async {
       final cancel = CancelToken();
       r.mbError = DioException.requestCancelled(requestOptions: RequestOptions(path: '/'), reason: 'x');

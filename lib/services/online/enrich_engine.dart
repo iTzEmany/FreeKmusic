@@ -5,7 +5,9 @@ import 'package:dio/dio.dart';
 import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/credits_repository.dart' show decodeRec;
 import '../../data/repositories/track_repository.dart';
+import '../import/track_matcher.dart' show matchKey;
 import 'cover_fetcher.dart';
 import 'credits_enricher.dart';
 import 'curiosity_service.dart';
@@ -17,6 +19,8 @@ import 'http_client.dart' show RateLimiter;
 import 'lyrics_chain.dart';
 import 'metadata_resolver.dart';
 import 'query_cleaner.dart';
+import '../recognition/track_identity.dart';
+import '../recognition/track_recognizer.dart';
 
 export 'enrich_gather.dart' show CommitResult, EnrichGather, GatherSignal;
 
@@ -35,6 +39,7 @@ class EnrichEngine {
     this.curiosities,
     required this.language,
     this.useCredits = _never,
+    this.recognizer,
     RateLimiter? limiter,
   }) : limiter = limiter ?? RateLimiter(),
        _writer = EnrichWriter(db, tracks) {
@@ -62,6 +67,10 @@ class EnrichEngine {
   /// The automatic curiosity search (`curio` part); without it that part is skipped.
   final CuriosityService? curiosities;
   final String Function() language;
+
+  /// Who the track is, asked before the parts; without it nothing new is
+  /// asked and no `rec` is written.
+  final TrackRecognizer? recognizer;
 
   /// The pause between online lookups.
   final RateLimiter limiter;
@@ -141,40 +150,89 @@ class EnrichEngine {
     )..where((e) => e.trackId.equals(trackId))).getSingleOrNull();
     final now = g.now = nowMs();
     final at = DateTime.fromMillisecondsSinceEpoch(now);
-    bool due(EnrichPart p) =>
-        parts.contains(p) && isDue(p, t, enrich, at, mode: mode);
-    final doMeta = due(EnrichPart.meta);
-    final doLyrics = due(EnrichPart.lyrics);
-    final doSynced = due(EnrichPart.synced);
-    final doCredits =
-        _creditsOn &&
-        parts.contains(EnrichPart.credits) &&
-        credits!.canAsk &&
-        (mode == AskMode.force ||
-            isDue(
-              EnrichPart.credits,
-              t,
-              enrich,
-              at,
-              mode: mode,
-              hasCredits: (await credits!.repo.creditsOf(trackId)).isNotEmpty,
-            ));
-    final doCurio = curiosities != null && due(EnrichPart.curio);
+    bool? hasCredits; // read once, only when credits are due-checked
+    Future<Set<EnrichPart>> dueUnder(AskMode m) async {
+      bool due(EnrichPart p) => parts.contains(p) && isDue(p, t, enrich, at, mode: m);
+      return {
+        if (due(EnrichPart.meta)) EnrichPart.meta,
+        if (due(EnrichPart.lyrics)) EnrichPart.lyrics,
+        if (due(EnrichPart.synced)) EnrichPart.synced,
+        if (_creditsOn &&
+            parts.contains(EnrichPart.credits) &&
+            credits!.canAsk &&
+            (m == AskMode.force ||
+                isDue(
+                  EnrichPart.credits,
+                  t,
+                  enrich,
+                  at,
+                  mode: m,
+                  hasCredits: hasCredits ??= (await credits!.repo.creditsOf(trackId)).isNotEmpty,
+                )))
+          EnrichPart.credits,
+        if (curiosities != null && due(EnrichPart.curio)) EnrichPart.curio,
+      };
+    }
+
+    var todo = await dueUnder(mode);
+    // Who the track is: a saved answer of this version, else asked now (only
+    // when a part is due). Without an identity everything below is as before.
+    // A hand-edited track keeps its tags: no recognition, no saved identity used.
+    var known = t.userEdited ? null : decodeRec(enrich?.details, trackId);
+    if (known?.v != kRecogVersion) known = null;
+    ResolvedMeta? recMeta;
+    Future<ResolvedMeta?>? probe; // the text search the recognizer made
+    if (recognizer != null && !t.userEdited && todo.isNotEmpty && known == null) {
+      final r = await attemptSource(
+        'recognition',
+        () => recognizer!.recognize(
+          t,
+          cancel: cancel,
+          textProbe: (t, c, cancel) => probe = resolver
+              .resolve(t, c, cancel, t.genre == null, strict: true)
+              .timeout(const Duration(seconds: 25)),
+        ),
+        timeout: false,
+      );
+      final o = r.value;
+      known = g.rec = o?.rec;
+      // Alive when a source answered or refused; a «nothing» asked of no one proves nothing.
+      g.recAsked = o != null && (o.asked || o.limited);
+      recMeta = o?.meta;
+      // An identity that differs from the tags: the «nothing» marks were set for wrong ones.
+      final id = known?.identity;
+      if (id != null &&
+          mode == AskMode.due &&
+          (matchKey(id.title) != matchKey(t.title) || matchKey(id.artist) != matchKey(t.artist ?? ''))) {
+        todo = await dueUnder(AskMode.retryNone);
+      }
+    }
+    final identity = known?.identity;
+    final q = identity?.applyTo(t) ?? t; // only for the searches: writes use [t]
+    final doMeta = todo.contains(EnrichPart.meta);
+    final doLyrics = todo.contains(EnrichPart.lyrics);
+    final doSynced = todo.contains(EnrichPart.synced);
+    final doCredits = todo.contains(EnrichPart.credits);
+    final doCurio = todo.contains(EnrichPart.curio);
     // now = searched with nothing, null = found
     void settle(EnrichPart p, PartOutcome o) => g.settle(p, o, now);
 
-    final c = cleanSearchQuery(t.title, t.artist ?? '');
-    final metaF = doMeta
-        ? attemptSource(
+    final c = cleanSearchQuery(q.title, q.artist ?? '');
+    final Future<({ResolvedMeta? value, bool failed, bool limited})>? metaF = !doMeta
+        ? null
+        : recMeta != null
+        ? Future.value((value: recMeta, failed: false, limited: false)) // already asked by the recognizer
+        : attemptSource(
             'metadata',
-            () => resolver.resolve(t, c, cancel, t.genre == null, strict: true),
-          )
-        : null;
+            () => identity == null && probe != null
+                ? probe! // the same search, not asked twice
+                : resolver.resolve(q, c, cancel, t.genre == null, strict: true),
+          );
     final lyrF = doLyrics || doSynced
         ? attemptSource(
             'lyrics',
             () => chain.find(
-              t,
+              q,
               wantSynced: parts.contains(EnrichPart.synced),
               cancel: cancel,
             ),
@@ -245,7 +303,7 @@ class EnrichEngine {
     if (doCurio) {
       final r = await attemptSource(
         'curiosity',
-        () => curiosities!.find(t, language(), cancel: cancel),
+        () => curiosities!.find(q, language(), cancel: cancel),
         timeout: false,
       );
       final l = g.curio = r.value;

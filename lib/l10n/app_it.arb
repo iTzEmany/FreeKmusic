@@ -3695,5 +3695,16 @@
   },
   "enrichLibraryComplete": "Libreria completa",
   "enrichLibraryStop": "Interrompi",
-  "activityEnrichWaiting": "Completamento: in attesa"
+  "activityEnrichWaiting": "Completamento: in attesa",
+  "logRecogSources": "Riconosciuti: {list}",
+  "@logRecogSources": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "recogSrcTags": "tag",
+  "recogSrcVideo": "video",
+  "recogSrcText": "testo"
 }
