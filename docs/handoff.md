@@ -1,5 +1,21 @@
 # Handoff — 2026-10-31 (fasi 69a e 69b chiuse: un solo motore di arricchimento)
 
+## Riconoscimento del brano (kickoff 2026-11-01, fasi 69c–69e)
+Feature nuova, **prima della fase 70**: prima di arricchire, l'app riconosce il brano (ISRC/MBID → video id → testo → AcoustID → YouTube Music) e arricchisce dall'identità; le cover portano le curiosità dell'originale. Documento: `docs/feature-riconoscimento.md` (R-160…R-188, rischi K-RB-01…09); decisioni D-299…D-323; fasi `docs/fase-69c-*.md`, `fase-69d-*.md`, `fase-69e-*.md`.
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 69c
+```
+Poi `/obiettivo fase 69d` e `/obiettivo fase 69e`; solo dopo si torna alla 70.
+
+Da sapere:
+- **69c.1 blocca tutto:** se l'impronta di rusty-chromaprint non coincide con fpcalc, si applica D-316 (copia in `third_party/` e un passo di correzione), poi ci si ferma e si chiede.
+- **Strumenti mancanti sul PC:** fpcalc (va scaricato nello scratchpad, solo per la prova) e `flutter_rust_bridge_codegen` 2.11.1 (c'è la 2.13.0).
+- **Test.zip** (147 brani dell'amico) è in `~/Downloads/Test.zip`: serve alla prova di 69c.1, 69d.4 e 69e.4, non entra mai nel repo. La prova si fa su un DB separato, non sulla libreria dell'utente.
+- **Chiavi AcoustID:** `Hsn5w6Tjwv` è la chiave dell'applicazione e va in `lib/core/app_info.dart`. La chiave utente non serve (si usa solo per inviare impronte, R-187 rimandato) e non entra mai nel repo né nei documenti.
+- **Trappole dell'architettura:** `CreditsEnricher.save` sovrascrive tutto `track_enrich.details` (serve un solo punto di scrittura che unisce `rec`); `userEdited` vale per tutto il brano (una correzione automatica non lo segna, D-318).
+
 ## Prima di tutto (per la prossima chat)
 Il refactor «arricchimento-unico» è chiuso: 69a (PR #72) e 69b (PR #73). Si torna alla fase 70, a partire dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`.
 
