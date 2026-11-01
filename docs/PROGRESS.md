@@ -1171,6 +1171,24 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 69b.3 Il manuale sul motore unico e via il vecchio
 - [x] 69b.4 Controlli di fase (metriche, review Opus, misura sul Motorola: 1 brano al minuto per il limite Wikimedia da anonima; stima dei minuti rifatta a 40 s a brano)
 
+## Fase 69c — Fondamenta del riconoscimento (`fase-69c-fondamenta-riconoscimento.md`)
+- [ ] 69c.1 Prova dell'impronta (Rust vs fpcalc, build Android, peso APK) — blocca il resto se fallisce
+- [ ] 69c.2 Tag: MBID/ISRC con `read_ids`, bug della data con lofty
+- [ ] 69c.3 Query e impostazioni (rumore nei titoli, Deezer con query pulita e acceso di serie, 7 s a brano)
+- [ ] 69c.4 Controlli di fase
+
+## Fase 69d — La cascata del riconoscimento (`fase-69d-cascata-riconoscimento.md`)
+- [ ] 69d.1 Rete, client AcoustID, MusicBrainz esteso e quote
+- [ ] 69d.2 `TrackRecognizer`: la cascata
+- [ ] 69d.3 Il motore arricchisce dall'identità
+- [ ] 69d.4 Controlli di fase e prova su Test.zip (≥ 110/147, 0 `sure` sbagliati)
+
+## Fase 69e — Correzioni, cover e ripasso (`fase-69e-correzioni-e-cover.md`)
+- [ ] 69e.1 Correzioni e proposte
+- [ ] 69e.2 Cover
+- [ ] 69e.3 Ripasso e brani online
+- [ ] 69e.4 Chiusura della feature (Motorola, testi, review Opus)
+
 ## Fase 70 — Ponte e protocollo (`fase-70-ponte-jam-distanza.md`)
 - [ ] 70.1 `JamProtocol`
 - [ ] 70.2 `JamBridge` e riserva

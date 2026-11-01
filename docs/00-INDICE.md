@@ -87,6 +87,9 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 69 | `fase-69-fondamenta-jam-distanza.md` | Jam a distanza: anti-spam in LAN (2/min, Sospendi, Blocca), `JamGuestLink`, `sodium` con vettori noti, broker e «Prova connessione» |
 | 69a | `fase-69a-coda-arricchimento.md` | Refactor «arricchimento-unico» (1/2): il completamento in background riparte (segnalibro, testi «a riposo», contatore, copertine, errori Deezer) ed escono gli errori nascosti |
 | 69b | `fase-69b-arricchimento-unico.md` | Refactor «arricchimento-unico» (2/2): regola e stato in un punto, un solo motore per manuale e background, un solo comando in Impostazioni, `EnrichmentService` diviso |
+| 69c | `fase-69c-fondamenta-riconoscimento.md` | Riconoscimento del brano (1/3): impronta Chromaprint in Rust uguale a fpcalc, MBID/ISRC dai tag, bug della data, query pulite, Deezer acceso |
+| 69d | `fase-69d-cascata-riconoscimento.md` | Riconoscimento del brano (2/3): cascata ISRC/MBID → video id → testo → AcoustID → YTM, il motore arricchisce dall'identità |
+| 69e | `fase-69e-correzioni-e-cover.md` | Riconoscimento del brano (3/3): correzioni e proposte, cover → curiosità dell'originale, ripasso, brani online, misura sul Motorola |
 | 70 | `fase-70-ponte-jam-distanza.md` | Ponte MQTT cifrato: protocollo, riserva fra broker, ospiti remoti, ingresso con codice o QR, servizio in primo piano |
 | 71 | `fase-71-coda-remota.md` | Coda dell'ospite remoto: video id o ricerca titolo + artista, «Coda insieme», copertine e scheda dal video id |
 | 72 | `fase-72-bluetooth-e-amici.md` | Annuncio Bluetooth con gettone che ruota, Jam vicine, permessi, amici della Jam |
