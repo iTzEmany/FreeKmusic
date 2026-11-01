@@ -111,7 +111,7 @@ List<AcoustIdHit> parseAcoustId(Map data) {
   return [
     if (results is List)
       for (final r in results)
-        if (r is Map && r['id'] is String && r['score'] is num)
+        if (r is Map && r['id'] is String && r['score'] is num && (r['score'] as num).isFinite)
           AcoustIdHit(
             id: r['id'] as String,
             score: (r['score'] as num).toDouble(),

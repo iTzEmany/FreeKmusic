@@ -42,7 +42,7 @@ class Rig {
   final isrcArgs = <String?>[];
   final ytmQueries = <String>[];
   Future<String?> Function(Track t)? videoIdFor;
-  Object? mbError, acoustIdError, ytmError, textError;
+  Object? mbError, acoustIdError, ytmError, textError, fingerprintError;
 
   late final recognizer = TrackRecognizer(
     musicBrainz: _Mb(this),
@@ -138,6 +138,7 @@ class _Fp implements Fingerprinter {
   @override
   Future<({String fp, int secs})?> of(String path) async {
     r.calls.add('fp');
+    if (r.fingerprintError != null) throw r.fingerprintError!;
     return r.fingerprintable ? (fp: 'AQAA', secs: 200) : null;
   }
 }

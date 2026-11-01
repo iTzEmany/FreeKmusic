@@ -82,12 +82,11 @@ void main() {
       expect(r.calls, ['songOf:AAAAAAAAAAA']);
     });
 
-    test('reliable tags found by the text search: no AcoustID, and the meta comes back', () async {
+    test('reliable tags found by the text search: no AcoustID', () async {
       r.text = meta('Believer', 'Imagine Dragons');
       final out = await r.recognize(track('Believer', 'Imagine Dragons'));
       expect(r.calls, ['text']);
       expect([out.rec!.src, out.rec!.sure], [RecogSource.text, false]);
-      expect(out.meta, same(r.text));
     });
 
     test('dubious tags go to AcoustID and skip the text search', () async {
@@ -170,6 +169,40 @@ void main() {
     });
   });
 
+  group('R-165, sure only for the same song', () {
+    Future<Recognition> pick(String file, String title, {int secs = 200, double score = 0.97, int ms = 200000}) async {
+      r.hits = [
+        AcoustIdHit(id: 'h', score: score, recordings: [
+          AcoustIdRecording(id: 'r', title: title, artists: const ['X'], durationS: secs),
+        ]),
+      ];
+      return (await r.recognize(track(file, null, path: '/m/$file.mp3', durationMs: ms))).rec!;
+    }
+
+    test('another version or another song is a proposal, the same song is sure', () async {
+      for (final other in ['Believer (Live)', 'Believer (Instrumental)', 'Believer (Karaoke)', 'Believer Remix', 'Believer (Cover)']) {
+        expect((await pick('Believer', other)).sure, isFalse, reason: other);
+      }
+      expect((await pick('Love Story', 'Love Me')).sure, isFalse); // overlap exactly 0.5
+      expect((await pick('Believer', 'Believer')).sure, isTrue);
+      expect((await pick('Believer (Live)', 'Believer (Live)')).sure, isTrue); // the file names the version
+      expect((await pick('Love Story Baby Tonight', 'Story Love Zebra')).sure, isTrue); // 2 of 3 words
+    });
+
+    test('a title with extra words in the same script as the file is sure; in another script it is not', () async {
+      expect((await pick('Million Dollar', 'Million Dollar ミリオン')).sure, isFalse);
+      expect((await pick('Million Dollar', 'Million Dollar Baby')).sure, isTrue);
+    });
+
+    test('limits: score 0.9 is in; 10 s off is in, 10.001 s is out', () async {
+      expect((await pick('Song', 'Song', score: 0.9)).src, RecogSource.acoustid);
+      expect((await pick('Song', 'Song', secs: 210)).src, RecogSource.acoustid);
+      expect((await pick('Song', 'Song', secs: 210, ms: 199999)).src, isNull);
+      expect((await pick('Song', 'Song', secs: 190)).src, RecogSource.acoustid);
+      expect((await pick('Song', 'Song', secs: 190, ms: 200001)).src, isNull);
+    });
+  });
+
   group('R-165, whole words and channels', () {
     AcoustIdHit hit(List<AcoustIdRecording> rs) => AcoustIdHit(id: 'h', score: 0.97, recordings: rs);
     AcoustIdRecording rec(String id, String title, String artist) =>
@@ -193,6 +226,37 @@ void main() {
     test('a generic artist is left out of the YouTube Music query', () async {
       await r.recognize(track('Song', 'Unknown Artist'));
       expect(r.ytmQueries, ['Song']);
+    });
+  });
+
+  group('the 10 s slack of the other sources', () {
+    test('a MusicBrainz id: 10 s off is a match, 10.001 s is not', () async {
+      r.ids = (isrc: null, mbid: '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4');
+      r.mbById = const MbRecordingDetail(id: 'x', title: 'Song', artist: 'Artist', length: 210000, isrcs: []);
+      expect((await r.recognize(track('Song', 'Artist'))).rec!.src, RecogSource.tags);
+      r.mbById = const MbRecordingDetail(id: 'x', title: 'Song', artist: 'Artist', length: 210001, isrcs: []);
+      expect((await r.recognize(track('Song', 'Artist'))).rec!.src, isNot(RecogSource.tags));
+    });
+
+    test('a video id: 10 s off is a match, 10.001 s is not', () async {
+      YtmSong song(int ms) => YtmSong(title: 'S', artists: const ['A'], videoType: 'MUSIC_VIDEO_TYPE_ATV', durationMs: ms);
+      r.song = song(210000);
+      expect((await r.recognize(track('S', 'A', path: '/m/S [sZrTJesvJeo].mp3'))).rec!.src, RecogSource.ytid);
+      r.song = song(210001);
+      expect((await r.recognize(track('S', 'A', path: '/m/S [sZrTJesvJeo].mp3'))).rec!.src, isNot(RecogSource.ytid));
+    });
+
+    test('YouTube Music: 10 s off is a match, 10.001 s is not', () async {
+      r.ytm = [ytResult('Song', 'Artist', 210)];
+      expect((await r.recognize(track('Song', 'Artist'))).rec!.src, RecogSource.ytm);
+      expect((await r.recognize(track('Song', 'Artist', durationMs: 199999))).rec!.src, isNull);
+    });
+
+    test('YouTube Music: a title with half of the words is a candidate, a third is not', () async {
+      r.ytm = [ytResult('Love Me', 'Artist', 200)];
+      expect((await r.recognize(track('Love Story', 'Artist'))).rec!.src, RecogSource.ytm);
+      r.ytm = [ytResult('Love Me Tender', 'Artist', 200)];
+      expect((await r.recognize(track('Love Story', 'Artist'))).rec!.src, isNull);
     });
   });
 
@@ -287,6 +351,30 @@ void main() {
       r.ytmError = Exception('offline');
       final down = await r.recognize(track('Song', null));
       expect([down.rec, down.lost, down.asked], [null, true, false]);
+    });
+
+    test('a file that cannot be read now is a lost source, not a saved «nothing»', () async {
+      r.fingerprintError = Exception('io');
+      final out = await r.recognize(track('Song', null));
+      expect(r.calls, ['fp', 'ytm']);
+      expect([out.rec, out.lost], [null, true]);
+      r.ytm = [ytResult('Song', 'Artist', 200)];
+      expect((await r.recognize(track('Song', null))).rec!.src, RecogSource.ytm);
+    });
+
+    test('an ISRC that is not an ISRC never reaches MusicBrainz', () async {
+      await r.recognize(track('Song', 'Artist', isrc: '../../artist/x?x=1#'));
+      r.ids = (isrc: 'US/UM?71700626', mbid: null);
+      await r.recognize(track('Song', 'Artist'));
+      expect(r.calls, isNot(contains('mb.isrc')));
+      r.ids = (isrc: 'us-um7 1700626', mbid: null); // normalised, then valid
+      await r.recognize(track('Song', 'Artist'));
+      expect(r.calls, contains('mb.isrc'));
+    });
+
+    test('Opus with dubious tags where YouTube Music answers «nothing»: asked', () async {
+      final out = await r.recognize(track('Song', null, path: '/m/Song.opus'));
+      expect([r.calls, out.rec!.src, out.asked], [['ytm'], null, true]);
     });
 
     test('a cancel is not swallowed', () async {

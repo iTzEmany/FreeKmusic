@@ -26,11 +26,12 @@ const kAcoustIdMinScore = 0.9;
 /// How far a source's duration may be from the track's (D-300).
 const kDurationSlackMs = 10000;
 
-/// A title shares at least this part of its words with the file to be «coherent».
+/// A title shares at least this part of its words with the file to be a candidate
+/// (more than this, to be «coherent» and sure).
 const kTitleOverlap = 0.5;
 
 /// The text search of the engine (`MetadataResolver.resolve`): with reliable
-/// tags it is step 2, and its answer comes back in [RecogOutcome.meta].
+/// tags it is step 2 (skipped when the engine passes none).
 typedef TextProbe = Future<ResolvedMeta?> Function(Track t, CleanQuery c, CancelToken? cancel);
 
 /// The ISRC and MusicBrainz id written in a file's tags.
@@ -47,14 +48,15 @@ Future<({String? isrc, String? mbid})> readFileIds(String path) async {
 /// [asked]: a source really got an answer from the network (a «nothing» with
 /// none asked says nothing of being online); [limited]: a source refused.
 class RecogOutcome {
-  const RecogOutcome({this.rec, this.meta, this.lost = false, this.asked = false, this.limited = false});
+  const RecogOutcome({this.rec, this.lost = false, this.asked = false, this.limited = false});
 
   final Recognition? rec;
-  final ResolvedMeta? meta;
   final bool lost;
   final bool asked;
   final bool limited;
 }
+
+final _isrcShape = RegExp(r'^[A-Z]{2}[A-Z0-9]{3}\d{7}$');
 
 final _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
@@ -87,7 +89,7 @@ class TrackRecognizer {
   final DateTime Function() _now;
 
   Future<RecogOutcome> recognize(Track t,
-      {required TextProbe textProbe, CancelToken? cancel}) async {
+      {required TextProbe? textProbe, CancelToken? cancel}) async {
     var lost = false, limited = false, asked = false;
     void got() => asked = true;
     // A source that throws is skipped (R-168); only a cancel goes up.
@@ -112,7 +114,7 @@ class TrackRecognizer {
     ResolvedMeta? meta;
     rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got));
     rec ??= await attempt('video id', () => _fromVideoId(t, cancel, got));
-    if (rec == null && !dubious) {
+    if (rec == null && !dubious && textProbe != null) {
       meta = await attempt('text', () async {
         final m = await textProbe(t, c, cancel);
         got();
@@ -132,7 +134,7 @@ class TrackRecognizer {
       }
     }
     rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
-    if (rec != null) return RecogOutcome(rec: rec, meta: meta, asked: asked);
+    if (rec != null) return RecogOutcome(rec: rec, asked: asked);
     if (lost) return RecogOutcome(lost: true, asked: asked, limited: limited);
     return RecogOutcome(rec: Recognition(at: _now().millisecondsSinceEpoch), asked: asked);
   }
@@ -144,12 +146,18 @@ class TrackRecognizer {
   /// With reliable tags ([query] set) the ISRC answer is filtered by title and
   /// artist and is sure; with dubious ones any recording of that ISRC is only a proposal.
   Future<Recognition?> _fromIds(Track t, CleanQuery? query, CancelToken? cancel, void Function() got) async {
-    var isrc = normalizeIsrc(t.isrc);
+    // Untrusted tag text goes into a URL: only a real ISRC.
+    String? validIsrc(String? raw) {
+      final n = normalizeIsrc(raw);
+      return n != null && _isrcShape.hasMatch(n) ? n : null;
+    }
+
+    var isrc = validIsrc(t.isrc);
     String? mbid;
     if (keyOfStreamPath(t.path) == null && !t.path.toLowerCase().endsWith('.webm')) {
       try {
         final ids = await fileIds(t.path);
-        isrc ??= normalizeIsrc(ids.isrc);
+        isrc ??= validIsrc(ids.isrc);
         // Untrusted tag text goes into a URL: only a real UUID.
         mbid = ids.mbid != null && _uuid.hasMatch(ids.mbid!) ? ids.mbid : null;
       } catch (e, st) {
@@ -223,7 +231,7 @@ class TrackRecognizer {
   /// Step 3: AcoustID by fingerprint (only the fingerprint travels).
   Future<Recognition?> _fromAcoustId(Track t, _Hay hay, CancelToken? cancel, void Function() got) async {
     final fp = await fingerprinter.of(t.path);
-    if (fp == null) return null; // too short, silent or unreadable: a definite «no»
+    if (fp == null) return null; // too short or silent: a definite «no» (a read error throws instead)
     final wantMs = t.durationMs > 0 ? t.durationMs : fp.secs * 1000;
     final hits = await acoustId.lookup(fp.fp, fp.secs, cancel: cancel);
     got();
@@ -316,15 +324,22 @@ class _Hay {
     final names = [for (final a in artists) matchKey(a)].where((a) => a.isNotEmpty);
     final artistHit = names.isEmpty ? 0 : names.where((a) => hasPhrase(key, a)).length / names.length;
     final k = matchKey(title);
-    final extra = otherVersions.where((v) => hasPhrase(k, v) && !hasPhrase(key, v)).length;
-    return 2 * titleOverlap(title) + artistHit - 1.5 * extra;
+    return 2 * titleOverlap(title) + artistHit - 1.5 * _extraVersions(k);
   }
 
-  /// The title reads like the file: it shares its words and uses the same
-  /// non-Latin scripts, if any (K-RB-04: a Japanese title for a Latin file is a proposal).
+  int _extraVersions(String titleKey) =>
+      otherVersions.where((v) => hasPhrase(titleKey, v) && !hasPhrase(key, v)).length;
+
+  /// The title reads like the file: it shares more than half of its words, names
+  /// no version the file does not, and uses the same non-Latin scripts, if any
+  /// (K-RB-04: a Japanese title for a Latin file is a proposal).
   bool titleCoherent(String title) {
-    final s = _scripts(matchKey(title));
-    return titleOverlap(title) >= kTitleOverlap && s.length == scripts.length && s.containsAll(scripts);
+    final k = matchKey(title);
+    final s = _scripts(k);
+    return titleOverlap(title) > kTitleOverlap &&
+        _extraVersions(k) == 0 &&
+        s.length == scripts.length &&
+        s.containsAll(scripts);
   }
 
   /// Non-Latin writing systems in [s], as small ids.

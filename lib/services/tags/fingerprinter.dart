@@ -1,6 +1,5 @@
 import 'package:metadata_god/metadata_god.dart' as rust;
 
-import '../../core/app_log.dart';
 import 'metadata_god_init.dart';
 
 /// Chromaprint of a file: `fp` as `fpcalc` prints it, `secs` the whole duration.
@@ -15,17 +14,13 @@ abstract class Fingerprinter {
 }
 
 class RustFingerprinter implements Fingerprinter {
+  /// null = the format is not fingerprintable; a read failure throws, so the
+  /// caller can tell a «no» from a file that could not be read this time.
   @override
   Future<({String fp, int secs})?> of(String path) async {
-    // Do not even ask Rust.
     if (!Fingerprinter.supports(path)) return null;
-    try {
-      await ensureMetadataGod();
-      final f = await rust.fingerprint(path: path);
-      return (fp: f.fingerprint, secs: f.durationS);
-    } catch (e, st) {
-      AppLog.w('fingerprint failed: $path', e, st);
-      return null;
-    }
+    await ensureMetadataGod();
+    final f = await rust.fingerprint(path: path);
+    return f.fingerprint.isEmpty ? null : (fp: f.fingerprint, secs: f.durationS);
   }
 }

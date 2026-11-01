@@ -64,6 +64,8 @@ void main() {
     final hits = parseAcoustId({
       'results': [
         {'id': 'a', 'score': 'x'},
+        {'id': 'inf', 'score': double.infinity},
+        {'id': 'nan', 'score': double.nan},
         {
           'id': 'b',
           'score': 1,
@@ -79,6 +81,11 @@ void main() {
     expect(hits.single.recordings.first.artists, ['A']);
     expect(hits.single.recordings.first.year, isNull);
     expect(hits.single.recordings.map((r) => r.durationS), [null, null]);
+  });
+
+  test('a score JSON writes as infinity is skipped, so it never reaches jsonEncode', () async {
+    final (c, _) = _client(200, '{"results":[{"id":"a","score":1e999,"recordings":[]},{"id":"b","score":0.95}]}');
+    expect((await c.lookup('fp', 1)).map((h) => h.id), ['b']);
   });
 
   test('sends a gzip form body with the key, duration and fingerprint, never audio', () async {
