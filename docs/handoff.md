@@ -3,11 +3,18 @@
 ## Riconoscimento del brano (kickoff 2026-11-01, fasi 69c–69e)
 Feature nuova, **prima della fase 70**: prima di arricchire, l'app riconosce il brano (ISRC/MBID → video id → testo → AcoustID → YouTube Music) e arricchisce dall'identità; le cover portano le curiosità dell'originale. Documento: `docs/feature-riconoscimento.md` (R-160…R-188, rischi K-RB-01…09); decisioni D-299…D-323; fasi `docs/fase-69c-*.md`, `fase-69d-*.md`, `fase-69e-*.md`.
 
+**Fase 69c chiusa** (PR #77):
+- impronta Chromaprint in Rust: 145/147 brani di Test.zip danno lo stesso primo recording di fpcalc, +1,2…2,2 MB per ABI, 0,7 s sul Mi A3;
+- `read_ids` per MBID e ISRC, ripiego su lofty per le date strane;
+- query più pulite, Deezer acceso di serie.
+
+Esiti in `docs/fase-69c-fondamenta-riconoscimento.md`.
+
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 69c
+/obiettivo fase 69d
 ```
-Poi `/obiettivo fase 69d` e `/obiettivo fase 69e`; solo dopo si torna alla 70.
+Poi `/obiettivo fase 69e`; solo dopo si torna alla 70. In 69d.4 si rimisura Test.zip: dopo il taglio dell'impronta a 120 s esatti non è stato rifatto.
 
 Da sapere:
 - **69c.1 blocca tutto:** se l'impronta di rusty-chromaprint non coincide con fpcalc, si applica D-316 (copia in `third_party/` e un passo di correzione), poi ci si ferma e si chiede.
