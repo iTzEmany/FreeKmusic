@@ -8,7 +8,7 @@ const _langs = ['en', 'de', 'es', 'fr', 'pt'];
 /// Strings that may read the same as the Italian: names, formats, units and
 /// words that are the same in the other languages.
 const _sameAsItalian = {
-  'speakerNo', 'releaseAlbumYear', 'releaseAlbumPlain', 'settingsPageBackup', 'summaryCrossfade',
+  'speakerNo', 'recogSrcVideo', 'releaseAlbumYear', 'releaseAlbumPlain', 'settingsPageBackup', 'summaryCrossfade',
   'tokenSurface1', 'tokenSurface2', 'tokenSurface3', 'themeCopyName',
   'accentRosa', 'backupSection', 'accentVerde', 'activityDownload', 'albumMeta', 'appName',
   'hoursAndMinutes', 'ytmArtistWithAudience', 'csvImportPause', 'csvOutHeaderAlbum', 'csvOutHeaderIsrc',

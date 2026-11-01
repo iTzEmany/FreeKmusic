@@ -5385,7 +5385,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get acoustIdHint =>
-      'Seule l\'empreinte du morceau est envoyée, jamais l\'audio';
+      'Seule l’empreinte du morceau est envoyée, jamais l’audio';
 
   @override
   String get settingsSpinCover => 'Pochette qui tourne';
