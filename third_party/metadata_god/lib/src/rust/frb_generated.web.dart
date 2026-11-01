@@ -8,6 +8,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/api.dart';
+import 'api/fingerprint.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -44,6 +45,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 
 @protected double dco_decode_f_64(dynamic raw);
 
+@protected Fingerprint dco_decode_fingerprint(dynamic raw);
+
 @protected int dco_decode_i_32(dynamic raw);
 
 @protected Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -65,6 +68,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 @protected Picture dco_decode_picture(dynamic raw);
 
 @protected int dco_decode_u_16(dynamic raw);
+
+@protected int dco_decode_u_32(dynamic raw);
 
 @protected BigInt dco_decode_u_64(dynamic raw);
 
@@ -90,6 +95,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 
 @protected double sse_decode_f_64(SseDeserializer deserializer);
 
+@protected Fingerprint sse_decode_fingerprint(SseDeserializer deserializer);
+
 @protected int sse_decode_i_32(SseDeserializer deserializer);
 
 @protected Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -111,6 +118,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 @protected Picture sse_decode_picture(SseDeserializer deserializer);
 
 @protected int sse_decode_u_16(SseDeserializer deserializer);
+
+@protected int sse_decode_u_32(SseDeserializer deserializer);
 
 @protected BigInt sse_decode_u_64(SseDeserializer deserializer);
 
@@ -138,6 +147,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 
 @protected void sse_encode_f_64(double self, SseSerializer serializer);
 
+@protected void sse_encode_fingerprint(Fingerprint self, SseSerializer serializer);
+
 @protected void sse_encode_i_32(int self, SseSerializer serializer);
 
 @protected void sse_encode_list_prim_u_8_strict(Uint8List self, SseSerializer serializer);
@@ -159,6 +170,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
 @protected void sse_encode_picture(Picture self, SseSerializer serializer);
 
 @protected void sse_encode_u_16(int self, SseSerializer serializer);
+
+@protected void sse_encode_u_32(int self, SseSerializer serializer);
 
 @protected void sse_encode_u_64(BigInt self, SseSerializer serializer);
 

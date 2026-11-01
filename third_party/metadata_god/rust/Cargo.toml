@@ -4,9 +4,11 @@ version = "0.5.3"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib", "lib"]
 
 [dependencies]
 anyhow = "1.0.99"
 flutter_rust_bridge = "=2.11.1"
 lofty = "0.22.4"
+rusty-chromaprint = "0.3.0"
+symphonia = { version = "0.6.1", default-features = false, features = ["mp3", "aac", "isomp4", "flac", "vorbis", "ogg", "wav", "pcm"] }
