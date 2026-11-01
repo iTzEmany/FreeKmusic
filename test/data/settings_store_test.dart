@@ -7,6 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('deezerMeta is on when absent and a saved false stays false', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().deezerMeta, true);
+    SharedPreferences.setMockInitialValues({'deezerMeta': false});
+    store = await SettingsStore.open();
+    expect(store.readSettings().deezerMeta, false);
+  });
   streamCacheSettingTests();
   test('playback state round trip', () async {
     SharedPreferences.setMockInitialValues({});

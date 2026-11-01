@@ -14,6 +14,32 @@ void main() {
     ['Imagine Dragons - Believer (Lyric Video)', 'Sconosciuto', 'Believer', 'Imagine Dragons'],
     ['12. Hotel California', 'Eagles', 'Hotel California', 'Eagles'],
     ['Song - Live', 'Band', 'Song - Live', 'Band'],
+    // noisy YouTube file names (R-178)
+    ['Adele - Skyfall (Lyrics) [sZrTJesvJeo]', '7clouds Rock', 'Skyfall', 'Adele'],
+    [
+      'Inscryption - OST Preview - _The Trapper & The Trader_ by Jonah Senzel',
+      '',
+      'The Trapper & The Trader',
+      'Jonah Senzel'
+    ],
+    ['Coronation Day - Pokémon Black & Pokémon White (OST) [8OAOTK]', '', 'Pokémon Black & Pokémon White', 'Coronation Day'],
+    ['Luma - Super Mario Galaxy [nr-cpmEb7KM]', '', 'Super Mario Galaxy', 'Luma'],
+    ['🔥 Trap City - Song 🔥', '', 'Song', 'Trap City'],
+    ['[Copyright Free] Song Name', 'Chill', 'Song Name', 'Chill'],
+    ['【Nightcore】 Song Name', 'Chill', 'Song Name', 'Chill'],
+    ['Chill Song - No.19', 'Lofi', 'Chill Song', 'Lofi'],
+    ['No. 19 - Chill Song', 'Lofi', 'Chill Song', 'Lofi'],
+    ['Chill Song (No. 19)', 'Lofi', 'Chill Song', 'Lofi'],
+    ['Symphony No. 5', 'Beethoven', 'Symphony No. 5', 'Beethoven'],
+    ['Stand by Me', 'Ben E. King', 'Stand by Me', 'Ben E. King'],
+    ['Song [Remix]', 'Band', 'Song [Remix]', 'Band'],
+    ['"Song" by ArtistVEVO', 'Chill Channel', 'Song', 'Chill Channel'],
+    ['"Song" by ArtistVEVO', '', 'Song', 'Artist'],
+    ['"" by Real Artist', '', 'by Real Artist', ''],
+    ['[Intro]', '', '[Intro]', ''],
+    ['Artist - [Intro]', '', '[Intro]', 'Artist'],
+    ['"Song" by (Official Video)', '', 'Song', ''],
+    ['"Song Name" by Real Artist', 'Chill Channel', 'Song Name', 'Chill Channel'],
   ];
 
   for (final r in table) {
@@ -23,6 +49,17 @@ void main() {
       expect(c.artist, r[3]);
     });
   }
+
+  test('«Symphony No. 5 - I. Allegro» keeps its number in the tagged query', () {
+    final c = cleanSearchQuery('Symphony No. 5 - I. Allegro', 'Beethoven');
+    expect(c.tagged!.title, 'Symphony No. 5 - I. Allegro');
+  });
+
+  test('a pathological 20000-char title is cut and stays fast', () {
+    final sw = Stopwatch()..start();
+    cleanSearchQuery('[' * 20000, '');
+    expect(sw.elapsedMilliseconds, lessThan(200));
+  });
 
   test('extractPrimaryArtist', () {
     expect(extractPrimaryArtist('A & B'), 'A');

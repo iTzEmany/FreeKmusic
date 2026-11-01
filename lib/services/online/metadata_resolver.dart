@@ -44,7 +44,7 @@ class MetadataResolver {
   Future<ResolvedMeta?> resolve(
       Track t, CleanQuery c, CancelToken? cancel, bool needGenre,
       {bool strict = false}) async {
-    final dz = useDeezer() && deezer != null ? await _deezerLookup(t, cancel, strict: strict) : null;
+    final dz = useDeezer() && deezer != null ? await _deezerLookup(t, c, cancel, strict: strict) : null;
     final needItunes = dz == null || dz.match.artworkUrl == null || needGenre;
     final ms = t.durationMs > 0 ? t.durationMs : null;
     var it = needItunes
@@ -74,7 +74,7 @@ class MetadataResolver {
 
   /// Null when Deezer does not confirm the track (or cannot answer). With
   /// [strict] «cannot answer» (resting, refused, unreachable) throws instead.
-  Future<ResolvedMeta?> _deezerLookup(Track t, CancelToken? cancel,
+  Future<ResolvedMeta?> _deezerLookup(Track t, CleanQuery c, CancelToken? cancel,
       {bool strict = false}) async {
     final dz = deezer!;
     if (dz.isResting) {
@@ -82,7 +82,7 @@ class MetadataResolver {
       return null;
     }
     try {
-      final hit = await deezerHit(t, cancel);
+      final hit = await deezerHit(t, cancel, c);
       if (hit == null) return null;
       final ref = hit.album;
       var album = ref == null ? null : _albums[ref.id];
@@ -122,20 +122,27 @@ class MetadataResolver {
 
   /// The Deezer track [t] is, by ISRC or else by text; null when Deezer does
   /// not confirm it. Throws what the client throws.
-  Future<DeezerTrack?> deezerHit(Track t, CancelToken? cancel) async {
+  Future<DeezerTrack?> deezerHit(Track t, CancelToken? cancel, [CleanQuery? clean]) async {
     final dz = deezer!;
-    final want = DeezerWant(
-      title: t.title,
-      artist: t.artist ?? '',
-      album: t.album,
-      durationMs: t.durationMs > 0 ? t.durationMs : null,
-      isrc: t.isrc,
-    );
+    final c = clean ?? cleanSearchQuery(t.title, t.artist ?? '');
+    DeezerWant wantOf(CleanQuery q) => DeezerWant(
+          title: q.title,
+          artist: q.artist,
+          album: t.album,
+          durationMs: t.durationMs > 0 ? t.durationMs : null,
+          isrc: t.isrc,
+        );
+    final want = wantOf(c);
     if (t.isrc != null) {
       final x = await dz.trackByIsrc(t.isrc!, cancel: cancel);
       return x != null && acceptIsrcHit(want, x) ? x : null;
     }
-    return pickDeezerTrack(
-        want, await dz.searchTracks(deezerQuery(want), cancel: cancel));
+    // Like iTunes: if the uploader split finds nothing, ask again as tagged.
+    for (final q in [c, if (c.tagged != null) c.tagged!]) {
+      final w = wantOf(q);
+      final hit = pickDeezerTrack(w, await dz.searchTracks(deezerQuery(w), cancel: cancel));
+      if (hit != null) return hit;
+    }
+    return null;
   }
 }

@@ -39,6 +39,23 @@ final _separator = RegExp(r' [-–—] ');
 final _versionTail = RegExp(
     r'\b(live|cover|karaoke|remix|mix|edit|radio|extended|original|version|acoustic|demo|instrumental|remaster(?:ed)?|unplugged|slowed|sped up|nightcore|reverb|mashup|from|feat|ft)\b',
     caseSensitive: false);
+
+/// Pictographs, dingbats and joiners that YouTube titles decorate with.
+final _emoji = RegExp(
+    '[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\uFE0F\\u200D]',
+    unicode: true);
+final _cjkBrackets = RegExp('【[^】]*】');
+final _emptyPiece = RegExp(r'^\s*$|^\s*[-–—]\s|\s[-–—]\s*$');
+final _squareGroup = RegExp(r'\[[^\]]*\]');
+final _ostTag = RegExp(r'[\(\[]\s*ost\s*[\)\]]', caseSensitive: false);
+/// Channel numbering «No.19»: only bracketed, or leading/trailing around a
+/// separator, so «Symphony No. 5 - I. Allegro» keeps its number.
+final _channelNo = RegExp(
+    r'[\(\[]\s*no\.?\s*\d+\s*[\)\]]|^no\.?\s*\d+\s*[-–—|:]\s*|\s[-–—|]\s*no\.?\s*\d+\s*$',
+    caseSensitive: false);
+/// «"Song" by X» / «_Song_ by X»: only after a closing quote or underscore,
+/// so «Stand by Me» is not split.
+final _byArtist = RegExp(r'(?<=["”_])\s+by\s+([^"”_]+)$', caseSensitive: false);
 final _bracketGroup = RegExp(r'[\(\[\{][^\)\]\}]*[\)\]\}]');
 final _artistSuffix =
     RegExp(r'\s*(?:-\s*)?(official|vevo|topic)$', caseSensitive: false);
@@ -58,15 +75,47 @@ bool _isGenericArtist(String artist) {
       a.endsWith(' - topic');
 }
 
+/// Longer input is cut: the regexes below are quadratic on pathological text.
+const _maxInput = 300;
+String _cut(String s) => s.length > _maxInput ? s.substring(0, _maxInput) : s;
+
 CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
+  rawTitle = _cut(rawTitle);
+  rawArtist = _cut(rawArtist);
   var title = rawTitle.trim().replaceFirst(_ext, '');
   title = title.replaceFirst(_prefix, '');
   title = title.replaceFirst(_numbering, '');
   title = title.replaceFirst(_copyNumber, '').replaceFirst(_remasterTail, '');
-  final genericArtist = _isGenericArtist(rawArtist);
+  var genericArtist = _isGenericArtist(rawArtist);
   var artist = rawArtist.trim();
 
   title = title.replaceAll(_noiseGroup, ' ').replaceAll(_noisePhrase, ' ');
+  title = title
+      .replaceAll(_emoji, ' ')
+      .replaceAll(_cjkBrackets, ' ')
+      .replaceAll(_ostTag, ' ')
+      .replaceAll(_channelNo, ' ');
+  final noSquare = title.replaceAllMapped(
+      _squareGroup, (m) => _versionTail.hasMatch(m[0]!) ? m[0]! : ' ');
+  // «[Intro]» or «Artist - [Intro]» is all title: keep the brackets then.
+  if (!_emptyPiece.hasMatch(noSquare)) title = noSquare;
+  final by = _byArtist.firstMatch(title);
+  if (by != null) {
+    var song = title.substring(0, by.start);
+    // The quoted song is the last « - » piece: «Game - OST - _Song_».
+    final i = song.lastIndexOf(_separator);
+    if (genericArtist && i >= 0) song = song.substring(i + 3);
+    song = _fixQuotes(song.replaceAll('_', ' ')).trim();
+    // An empty song keeps the title as it was; the by-artist only fills a generic tag.
+    if (song.isNotEmpty) {
+      title = song;
+      final who = _fixQuotes(by[1]!).replaceFirst(_artistSuffix, '').trim();
+      if (genericArtist && who.isNotEmpty) {
+        artist = who;
+        genericArtist = false;
+      }
+    }
+  }
   title = _fixQuotes(title).replaceAll(RegExp(r'\s+'), ' ').trim();
   artist = _fixQuotes(artist);
 

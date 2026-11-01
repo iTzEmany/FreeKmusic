@@ -127,4 +127,25 @@ Se non passa, si applica D-316:
 - gli esiti di 69c.1 (impronte, peso, tempo) sono in questo documento.
 
 ## Esiti di 69c.1
-_(da scrivere)_
+
+Esito della prova: **passata**, senza ricorrere a D-316 (rusty-chromaprint resta dipendenza di crates.io) né a D-325.
+
+- **Strumenti**: `flutter_rust_bridge_codegen` 2.11.1; `fpcalc` 1.6.2 (statico, x86_64) nello scratchpad. Dipendenze: rusty-chromaprint 0.3.0, symphonia 0.6.1 con mp3, aac, isomp4, flac, vorbis, ogg, wav, pcm (`pcm` serve al wav). `crate-type` del crate ora include anche `lib`, altrimenti i test d'integrazione in `rust/tests/` non lo collegano.
+- **API**: `fingerprint(path) -> {fingerprint: String, duration_s: u32}` (base64url senza `=`, come fpcalc; primi 120 s; preset test2). Il ricampionamento a 11025 Hz e il mix a mono li fa rusty-chromaprint. Opus/WebM, codec non supportati, file vuoti o corrotti, impronta vuota (issue #22): `Err` con messaggio, mai panic.
+- **Fixture** (5 file generati con ffmpeg, 2,4 MB in `rust/tests/fixtures/`, con l'output di fpcalc accanto): valori a 32 bit identici a fpcalc 100% (mp3, flac, wav), 99,68% (ogg), 60,69% (m4a/AAC, distanza di Hamming media 0,54 bit: il decoder AAC arrotonda in modo diverso). Tutte sopra la soglia (≥ 98% o ≤ 2 bit).
+- **Test.zip** (147 brani: 124 mp3, 23 m4a; lookup AcoustID con `meta=recordings`): stesso primo recording di fpcalc in **145/147** (target 140). Di questi 117 hanno un recording e 28 non ne hanno per entrambi. Differenza di score fra le due impronte: massima 0,016, media 0,003. Le impronte come testo non sono quasi mai identiche (diversi decoder), ma i risultati sì. I 2 casi che mancano sono formati non supportati (errore, il chiamante passa oltre): un WebM/Opus con estensione `.mp3` (D-311) e un m4a HE-AAC (SBR, che symphonia non decodifica).
+- **Peso** di `libmetadata_god.so` (release, prima, dopo): arm64-v8a 1.890.432 B, 3.612.952 B (+1,72 MB); armeabi-v7a 1.259.100 B, 2.470.276 B (+1,21 MB); x86_64 2.082.704 B, 4.281.216 B (+2,20 MB). APK release 224,5 MB, 226,7 MB. Tutto sotto i +3 MB per ABI: D-325 non serve. Il profilo release del crate non è stato toccato.
+- **Mi A3** (D-324, binario Rust cross-compilato aarch64, tre brani da 5,4, 4,8 e 3,8 minuti): 0,66-0,70 s per brano (120 s di audio), sul PC 0,17 s; target ≤ 1 s rispettato. Le impronte coincidono byte per byte con quelle del PC.
+- Build debug riuscita; `.so` debug (non finiscono nell'APK dell'utente) prima, dopo: arm64-v8a 4,69 MB, 14,48 MB; armeabi-v7a 2,63 MB, 6,65 MB; x86_64 5,54 MB, 23,18 MB (simboli di debug).
+- Non fatto in questo task: `flutter test` mirato dell'app (task 69c.2), scheggia, review.
+
+## Esiti di 69c.4
+- `flutter analyze` pulito; test mirati verdi (Rust: `cargo test --release`; Dart: tags, tag writer, query cleaner, resolver Deezer, impostazioni, stima dei minuti; più i 921 test di online/providers/ui toccati da `deezerMeta` acceso di serie).
+- `/code-review high` sul diff della fase: 10 rilievi, 8 corretti. Il ripiego lofty ora porta tutti i campi (durata compresa). Deezer assegna il punteggio sul testo pulito e riprova con la divisione «Artista - Titolo». «by X» passa dai passi finali comuni. `read_ids` legge senza copertina. L'anno da data intera viene da TYER/TDRC, solo negli mp3. L'MBID si accetta solo se è un UUID. L'impronta si ferma a 120 s esatti, senza decodificare tutto il file. Scartati: la copia esplicita dei campi in `withIds` (stesso stile del resto, rischio basso) e «una init per isolate» (il lettore non gira in isolate).
+- Scheggia (1704 file assurdi sulle funzioni Rust, 1683 letture Dart): nessun panic, nessun crash, nessun file modificato; un'ora di audio in meno di 0,1 s. Bug trovati e corretti con il test di regressione:
+  - alto: gli mp3 con un tag ID3v2 di 1,5 MB o più (copertina grande) non davano l'impronta;
+  - medio: un titolo tutto fra parentesi quadre veniva svuotato;
+  - bassi: regex quadratiche su titoli lunghissimi (input limitato a 300 caratteri), un TYER non valido che faceva perdere tutti i tag, anni fuori intervallo;
+  - mutanti rafforzati: l'UUID non esadecimale e la precedenza dell'ISRC.
+- Doppia inizializzazione della libreria Rust fra lettore e scrittore (trovata in review di 69c.2): ora c'è un solo `ensureMetadataGod()`.
+- Limite noto: dopo il taglio a 120 s esatti, Test.zip e il Mi A3 non sono stati rimisurati; le 5 fixture restano sopra la soglia. Si rimisura nella prova Test.zip di 69d.4.

@@ -4,7 +4,7 @@
 
 ## Documenti da leggere all'avvio
 - `CLAUDE.md`, `docs/01-regole-di-lavoro.md`, `docs/PROGRESS.md`, `docs/decisioni.md`, `docs/handoff.md`, `docs/gotchas.md`
-- Feature in corso: `docs/feature-jam-distanza.md` (fasi 69–73) e solo il `docs/fase-N-*.md` corrente; `docs/feature-streaming-veloce.md`, `docs/feature-streaming.md` e `docs/feature-arricchimento.md` solo se servono
+- Feature in corso: `docs/feature-riconoscimento.md` (fasi 69c–69e, prima della 70), poi `docs/feature-jam-distanza.md` (fasi 70–73) e solo il `docs/fase-N-*.md` corrente; `docs/feature-streaming-veloce.md`, `docs/feature-streaming.md` e `docs/feature-arricchimento.md` solo se servono
 
 ## Modalità
 - **PR**: ramo da `origin/master` → PR → `gh pr merge --auto --squash`. **Una PR per fase, un commit per task** (memoria).
