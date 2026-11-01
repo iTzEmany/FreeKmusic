@@ -86,4 +86,29 @@ void main() {
     await r.db.transaction(() => r.credits.moveInto(id, {drop}));
     expect([decodeDetails(id, await raw())?.bpm, decodeRec(await raw())?.at], [120, 7]);
   });
+
+  test('merging duplicates with a rec in both keeps the keeper\'s', () async {
+    final drop = await r.add(path: '/b.mp3');
+    await r.credits.saveEnrich(TrackEnrichCompanion(
+        trackId: Value(drop), details: Value(mergeDetails(null, rec: const Recognition(at: 9)))));
+    await put(mergeDetails(null, rec: _rec));
+    await r.db.transaction(() => r.credits.moveInto(id, {drop}));
+    expect(decodeRec(await raw())?.at, 7);
+  });
+
+  test('merging duplicates survives a corrupt details column and still carries the rec', () async {
+    final drop = await r.add(path: '/b.mp3');
+    await r.credits.saveEnrich(TrackEnrichCompanion(
+        trackId: Value(drop), details: Value(mergeDetails(null, rec: _rec))));
+    await put('{not json');
+    await r.db.transaction(() => r.credits.moveInto(id, {drop}));
+    expect(decodeRec(await raw())?.at, 7);
+
+    // The corrupt one is the dropped row: the keeper keeps its details and rec.
+    final drop2 = await r.add(path: '/c.mp3');
+    await r.credits.saveEnrich(TrackEnrichCompanion(trackId: Value(drop2), details: const Value('{not json')));
+    await put(mergeDetails(mergeDetails(null, details: _bpm), rec: _rec));
+    await r.db.transaction(() => r.credits.moveInto(id, {drop2}));
+    expect([decodeDetails(id, await raw())?.bpm, decodeRec(await raw())?.at], [120, 7]);
+  });
 }

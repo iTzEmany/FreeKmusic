@@ -39,7 +39,7 @@ class _Fixed implements TrackRecognizer {
   final RecogOutcome out;
 
   @override
-  Future<RecogOutcome> recognize(Track t, {required TextProbe textProbe, CancelToken? cancel}) async => out;
+  Future<RecogOutcome> recognize(Track t, {required TextProbe? textProbe, CancelToken? cancel}) async => out;
 
   @override
   dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
@@ -218,6 +218,61 @@ void main() {
     await r.credits.saveEnrich(TrackEnrichCompanion(trackId: Value(id), metaNoneAt: Value(now)));
     await r.engine.completeOne(id, {EnrichPart.meta, EnrichPart.lyrics});
     expect([recOf(await r.enrichOf(id))!.src, r.web.count('itunes')], [RecogSource.ytid, 0]);
+  });
+
+  test('a saved rec of another version is not used: the track is recognized again', () async {
+    rec.song = _studio;
+    final id = await setUp3();
+    const stale = Recognition(
+        v: kRecogVersion + 1,
+        at: 1,
+        src: RecogSource.ytid,
+        sure: true,
+        identity: TrackIdentity(title: 'Old', artist: 'Name'));
+    await r.credits.saveEnrich(
+        TrackEnrichCompanion(trackId: Value(id), details: Value(mergeDetails(null, rec: stale))));
+    await r.engine.completeOne(id, _parts);
+    expect(rec.calls.where((c) => c.startsWith('songOf')), hasLength(1));
+    expect(r.chain.askedWith, ['Song|Band']);
+    final saved = recOf(await r.enrichOf(id))!;
+    expect([saved.v, saved.identity!.title], [kRecogVersion, 'Song']);
+  });
+
+  test('an identity with the same title and another artist reopens the «nothing» marks', () async {
+    rec.song = _studio;
+    final id = await setUp3(path: '/m/Song [dQw4w9WgXcQ].mp3', title: 'Song', artist: 'Other Band');
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await r.credits.saveEnrich(TrackEnrichCompanion(trackId: Value(id), metaNoneAt: Value(now)));
+    await r.engine.completeOne(id, {EnrichPart.meta, EnrichPart.lyrics});
+    expect(r.web.count('itunes'), greaterThan(0));
+    expect((await r.repo.getById(id))!.album, 'New Album');
+  });
+
+  test('a rec is written even when no part leaves a mark (meta and lyrics lost)', () async {
+    rec.song = _studio;
+    final id = await setUp3();
+    r.web.itunes = ItunesMode.down;
+    r.chain.failed = true;
+    await r.engine.completeOne(id, {EnrichPart.meta, EnrichPart.lyrics});
+    final e = (await r.enrichOf(id))!;
+    expect([e.metaNoneAt, e.lyricsNoneAt], [null, null]);
+    expect(recOf(e)!.src, RecogSource.ytid);
+  });
+
+  test('D-304: an unsure identity guides the searches, and the row keeps its tags', () async {
+    rec.song = const YtmSong(
+      title: 'Song',
+      artists: ['Band'],
+      videoType: 'MUSIC_VIDEO_TYPE_UGC',
+      durationMs: 200000,
+    );
+    final id = await setUp3();
+    await r.engine.completeOne(id, _parts);
+    expect(recOf(await r.enrichOf(id))!.sure, isFalse);
+    expect(r.chain.askedWith, ['Song|Band']);
+    expect(r.web.queries.any((q) => q.contains('itunes') && q.contains('Band Song')), isTrue);
+    final t = (await r.repo.getById(id))!;
+    expect([t.title, t.artist], ['Whatever (Romy Wave Cover)', '7clouds Rock']);
   });
 
   group('the runner\'s offline count', () {

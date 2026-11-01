@@ -12,12 +12,14 @@ import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/itunes_client.dart';
 import 'package:codecore/services/online/lrclib_client.dart';
 import 'package:codecore/services/online/wikipedia_client.dart';
+import 'package:codecore/services/recognition/track_recognizer.dart';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 import '../../support/enrich_fakes.dart';
+import '../recognition/support.dart';
 
 /// Records what the curiosity step asks the finder.
 class _SpyFinder extends FakeFinder {
@@ -74,7 +76,13 @@ void main() {
   });
 
   // Real lyrics chain and curiosity service over the spy web/finder.
-  Future<Track> run(String title, String? artist, {required bool deezer}) async {
+  Future<Track> run(
+    String title,
+    String? artist, {
+    required bool deezer,
+    TrackRecognizer? recognizer,
+    Set<EnrichPart> parts = const {EnrichPart.meta, EnrichPart.lyrics, EnrichPart.curio},
+  }) async {
     final stack = enrichStack(
       db: r.db,
       tracks: r.repo,
@@ -92,6 +100,7 @@ void main() {
       web: web,
       language: () => 'it',
       limiter: RateLimiter(minGap: Duration.zero),
+      recognizer: recognizer,
     );
     final id = await r.db.into(r.db.tracks).insert(
       TracksCompanion.insert(
@@ -106,11 +115,7 @@ void main() {
         artist: Value(artist),
       ),
     );
-    await stack.engine.completeOne(id, {
-      EnrichPart.meta,
-      EnrichPart.lyrics,
-      EnrichPart.curio,
-    });
+    await stack.engine.completeOne(id, parts);
     return (await r.repo.getById(id))!;
   }
 
@@ -195,10 +200,12 @@ void main() {
     ),
   ];
 
+  // A recognizer whose sources all answer «nothing» must change none of it (invariant 2).
   for (final (name, title, artist, itunes, deezer, lrclib, ask) in cases) {
     for (final useDeezer in [false, true]) {
-      test('$name (${useDeezer ? 'Deezer' : 'iTunes'})', () async {
-        final t = await run(title, artist, deezer: useDeezer);
+      for (final recognized in [false, true]) {
+      test('$name (${useDeezer ? 'Deezer' : 'iTunes'}${recognized ? ', recognizer: nothing' : ''})', () async {
+        final t = await run(title, artist, deezer: useDeezer, recognizer: recognized ? Rig().recognizer : null);
         expect(web.asked, unorderedEquals([...(useDeezer ? deezer : itunes), ...lrclib]));
         expect(finder.asked, ['$ask|it|null|200000']);
         // The fake hits do not match: nothing but the curiosity is written.
@@ -211,6 +218,12 @@ void main() {
         expect([e.deezerId, e.mbid], [null, null]);
         expect([e.metaNoneAt != null, e.lyricsNoneAt != null, e.curioNoneAt != null], [!useDeezer, true, false]);
       });
+      }
     }
+    // Meta not due: reliable tags still cost no iTunes/Deezer search.
+    test('$name: lyrics and curiosity only, with a recognizer', () async {
+      await run(title, artist, deezer: false, recognizer: Rig().recognizer, parts: {EnrichPart.lyrics, EnrichPart.curio});
+      expect(web.asked, unorderedEquals(lrclib));
+    });
   }
 }

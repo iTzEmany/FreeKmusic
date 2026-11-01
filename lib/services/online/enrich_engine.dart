@@ -180,7 +180,6 @@ class EnrichEngine {
     // A hand-edited track keeps its tags: no recognition, no saved identity used.
     var known = t.userEdited ? null : decodeRec(enrich?.details, trackId);
     if (known?.v != kRecogVersion) known = null;
-    ResolvedMeta? recMeta;
     Future<ResolvedMeta?>? probe; // the text search the recognizer made
     if (recognizer != null && !t.userEdited && todo.isNotEmpty && known == null) {
       final r = await attemptSource(
@@ -188,9 +187,12 @@ class EnrichEngine {
         () => recognizer!.recognize(
           t,
           cancel: cancel,
-          textProbe: (t, c, cancel) => probe = resolver
-              .resolve(t, c, cancel, t.genre == null, strict: true)
-              .timeout(const Duration(seconds: 25)),
+          // Invariant 2: no metadata search the engine would not have made.
+          textProbe: !todo.contains(EnrichPart.meta)
+              ? null
+              : (t, c, cancel) => probe = resolver
+                    .resolve(t, c, cancel, t.genre == null, strict: true)
+                    .timeout(const Duration(seconds: 25)),
         ),
         timeout: false,
       );
@@ -198,7 +200,6 @@ class EnrichEngine {
       known = g.rec = o?.rec;
       // Alive when a source answered or refused; a «nothing» asked of no one proves nothing.
       g.recAsked = o != null && (o.asked || o.limited);
-      recMeta = o?.meta;
       // An identity that differs from the tags: the «nothing» marks were set for wrong ones.
       final id = known?.identity;
       if (id != null &&
@@ -220,11 +221,9 @@ class EnrichEngine {
     final c = cleanSearchQuery(q.title, q.artist ?? '');
     final Future<({ResolvedMeta? value, bool failed, bool limited})>? metaF = !doMeta
         ? null
-        : recMeta != null
-        ? Future.value((value: recMeta, failed: false, limited: false)) // already asked by the recognizer
         : attemptSource(
             'metadata',
-            () => identity == null && probe != null
+            () => probe != null && (identity == null || known?.src == RecogSource.text)
                 ? probe! // the same search, not asked twice
                 : resolver.resolve(q, c, cancel, t.genre == null, strict: true),
           );
