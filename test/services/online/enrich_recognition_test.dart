@@ -1,7 +1,7 @@
 import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
-import 'package:codecore/services/online/enrich_engine.dart' show GatherSignal;
+import 'package:codecore/services/online/enrich_engine.dart' show GatherSignal, needsRecognition;
 import 'package:codecore/services/online/enrich_parts.dart';
 import 'package:codecore/services/online/musicbrainz_client.dart';
 import 'package:codecore/services/online/ytm_song_parser.dart';
@@ -118,6 +118,125 @@ void main() {
     expect(recOf(e)!.src, RecogSource.ytid);
     expect(decodeDetails(id, e.details)?.bpm, 120);
     expect(await r.credits.creditsOf(id), isNotEmpty);
+  });
+
+  group('needsRecognition', () {
+    setUp(() => r = EnrichRig()); // the shared tearDown disposes one
+    Track full({String? artist = 'Band', bool userEdited = false}) => track('Song', artist).copyWith(
+        album: const Value('Alb'),
+        year: const Value(2020),
+        genre: const Value('Rock'),
+        trackNumber: const Value(1),
+        hasCover: true,
+        curiosities: const Value('x'),
+        userEdited: userEdited);
+    String stored(int v) => mergeDetails(null, rec: Recognition(at: 1, v: v));
+    TrackEnrichData row(String details) => TrackEnrichData(trackId: 1, details: details, lyricsByUser: false);
+
+    test('a complete track with reliable tags is left alone', () => expect(needsRecognition(full(), null, null), isFalse));
+    test('a channel as artist asks', () => expect(needsRecognition(full(artist: '7clouds Rock'), null, null), isTrue));
+    test('an empty meta field asks', () => expect(needsRecognition(full().copyWith(year: const Value(null)), null, null), isTrue));
+    test('no curiosities asks', () => expect(needsRecognition(full().copyWith(curiosities: const Value(null)), null, null), isTrue));
+    test('a saved rec of this version does not ask again',
+        () => expect(needsRecognition(full(artist: '7clouds Rock'), row(stored(kRecogVersion)), decodeRec(stored(kRecogVersion))), isFalse));
+    test('a saved rec of another version asks',
+        () => expect(needsRecognition(full(artist: '7clouds Rock'), row(stored(kRecogVersion + 1)), decodeRec(stored(kRecogVersion + 1))), isTrue));
+    test('a hand-edited track never asks', () => expect(needsRecognition(full(artist: '7clouds Rock', userEdited: true), null, null), isFalse));
+  });
+
+  test('a track with no part due but dubious tags is recognized', () async {
+    rec.song = _studio;
+    r = EnrichRig(recognizer: rec.recognizer);
+    final id = await r.add(
+        title: 'Whatever (Romy Wave Cover)',
+        artist: '7clouds Rock',
+        path: _video,
+        album: 'A',
+        genre: 'G',
+        year: 2020,
+        trackNumber: 1,
+        plain: 'la',
+        curiosities: 'c',
+        hasCover: true);
+    final g = await r.engine.gather(id, _parts);
+    await r.engine.commit([g]);
+    expect(rec.calls.where((c) => c.startsWith('songOf')), hasLength(1));
+    expect(recOf(await r.enrichOf(id))!.src, RecogSource.ytid);
+  });
+
+  group('the saved rec is merged', () {
+    const old = RecogSource.ytid;
+    Future<int> withStale(String title, String artist, {String? prop}) async {
+      rec.song = _studio;
+      final id = await setUp3();
+      final stale = Recognition(
+          v: kRecogVersion + 1,
+          at: 1,
+          src: old,
+          identity: TrackIdentity(title: title, artist: artist),
+          prop: prop,
+          was: const {'title': 'T0', 'artist': 'A0'},
+          original: const {'title': 'Orig'});
+      await r.credits.saveEnrich(TrackEnrichCompanion(trackId: Value(id), details: Value(mergeDetails(null, rec: stale))));
+      return id;
+    }
+
+    test('a discarded proposal stays discarded for the same identity, and was is kept', () async {
+      final id = await withStale('Song', 'Band', prop: 'discarded');
+      await r.engine.completeOne(id, _parts);
+      final saved = recOf(await r.enrichOf(id))!;
+      expect([saved.v, saved.prop, saved.was, saved.original],
+          [kRecogVersion, 'discarded', {'title': 'T0', 'artist': 'A0'}, {'title': 'Orig'}]);
+    });
+
+    test('an accepted proposal stays accepted for the same identity', () async {
+      final id = await withStale('Song', 'Band', prop: 'accepted');
+      await r.engine.completeOne(id, _parts);
+      expect(recOf(await r.enrichOf(id))!.prop, 'accepted');
+    });
+
+    test('a discarded proposal is dropped for another identity', () async {
+      final id = await withStale('Old', 'Name', prop: 'discarded');
+      await r.engine.completeOne(id, _parts);
+      expect(recOf(await r.enrichOf(id))!.prop, isNull);
+    });
+
+    test('a row edited by hand meanwhile gets no open proposal', () async {
+      r = EnrichRig(
+          recognizer: _Fixed(RecogOutcome(
+              rec: Recognition(at: 1, src: old, identity: const TrackIdentity(title: 'X', artist: 'Y'), prop: 'open'),
+              asked: true)));
+      final id = await r.add();
+      final g = await r.engine.gather(id, {EnrichPart.meta});
+      await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(userEdited: Value(true)));
+      await r.engine.commit([g]);
+      expect(recOf(await r.enrichOf(id))!.prop, isNull);
+    });
+  });
+
+  test('credits use the recognised MusicBrainz id and skip the ISRC lookup', () async {
+    const mbid = '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4';
+    rec.ids = (isrc: null, mbid: mbid);
+    rec.mbById = const MbRecordingDetail(id: mbid, title: 'Song', artist: 'Band', length: 200000);
+    final id = await setUp3(path: '/a.mp3', title: 'Song', artist: 'Band', isrc: 'ITABC2400001');
+    await r.engine.completeOne(id, {EnrichPart.credits});
+    expect(r.web.count('musicbrainz.org/ws/2/isrc/'), 0);
+    expect(r.web.count('musicbrainz.org/ws/2/recording/$mbid'), 1);
+    expect((await r.enrichOf(id))!.mbid, mbid);
+  });
+
+  test('the mbid of a proposal (not sure) does not drive the credits', () async {
+    const mbid = '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4';
+    r = EnrichRig(
+        recognizer: _Fixed(RecogOutcome(
+            rec: Recognition(
+                at: 1,
+                src: RecogSource.ytm,
+                identity: const TrackIdentity(title: 'Song', artist: 'Band', mbid: mbid)),
+            asked: true)));
+    final id = await r.add();
+    await r.engine.completeOne(id, {EnrichPart.credits});
+    expect(r.web.count('musicbrainz.org/ws/2/isrc/'), 1);
   });
 
   group('track_enrich.mbid', () {

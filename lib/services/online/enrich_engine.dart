@@ -19,12 +19,26 @@ import 'http_client.dart' show RateLimiter;
 import 'lyrics_chain.dart';
 import 'metadata_resolver.dart';
 import 'query_cleaner.dart';
+import '../recognition/channel_detector.dart' show tagsDubious;
 import '../recognition/track_identity.dart';
 import '../recognition/track_recognizer.dart';
 
 export 'enrich_gather.dart' show CommitResult, EnrichGather, GatherSignal;
 
 bool _never() => false;
+
+/// Whether a track is worth asking «who is this?» even with no part due (the
+/// base of the one-time pass over what was enriched before, R-176/D-301; the
+/// pass itself needs its own cursor): [stored] is its saved identity, none of
+/// this version, and the tags are dubious or the meta or the curiosities are
+/// empty. A hand-edited track never is.
+bool needsRecognition(Track t, TrackEnrichData? e, Recognition? stored) {
+  if (t.userEdited || stored?.v == kRecogVersion) return false;
+  final at = DateTime.fromMillisecondsSinceEpoch(nowMs());
+  // retryNone: «empty», whatever the «nothing» marks say.
+  bool empty(EnrichPart p) => isDue(p, t, e, at, mode: AskMode.retryNone);
+  return tagsDubious(t) || empty(EnrichPart.meta) || empty(EnrichPart.curio);
+}
 
 /// The one engine that fills a track's parts: [gather] asks the sources,
 /// [commit] writes, [completeOne] does both. Never calls `EnrichmentService`.
@@ -181,7 +195,7 @@ class EnrichEngine {
     var known = t.userEdited ? null : decodeRec(enrich?.details, trackId);
     if (known?.v != kRecogVersion) known = null;
     Future<ResolvedMeta?>? probe; // the text search the recognizer made
-    if (recognizer != null && !t.userEdited && todo.isNotEmpty && known == null) {
+    if (recognizer != null && !t.userEdited && known == null && (todo.isNotEmpty || needsRecognition(t, enrich, known))) {
       final r = await attemptSource(
         'recognition',
         () => recognizer!.recognize(
@@ -285,7 +299,7 @@ class EnrichEngine {
     if (doCredits) {
       final r = await attemptSource(
         'credits',
-        () => credits!.fetch(t, meta?.hit, cancel),
+        () => credits!.fetch(t, meta?.hit, cancel, knownMbid: known != null && known.sure && known.prop != 'discarded' ? identity?.mbid : null),
         timeout: false,
       );
       final creditsPart = g.credits = r.value;

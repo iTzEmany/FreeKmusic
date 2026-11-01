@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 
 import '../../data/db/app_database.dart';
-import '../../data/repositories/credits_repository.dart' show mergeDetails;
+import '../../data/repositories/credits_repository.dart' show decodeRec, mergeDetails;
+import '../import/track_matcher.dart' show matchKey;
+import '../recognition/track_identity.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import 'cover_fetcher.dart';
@@ -176,11 +178,33 @@ class EnrichCommitter {
   }
 
   /// The recognition joins the shared `details` JSON (written with the marks).
-  /// Nothing to write when it was saved already or got no answer. In 69d it
-  /// never proposes or corrects: the row's title and artist stay.
+  /// Nothing to write when it was saved already or got no answer. It is merged
+  /// with the stored one: a proposal the user discarded (or accepted, or applied) keeps
+  /// its state while the identity is the same, `was` is kept, and a hand-edited row (read fresh
+  /// here) never gets an open proposal. The row's title and artist stay.
   void _commitRec(_Commit c) {
-    final rec = c.g.rec;
+    var rec = c.g.rec;
     if (rec == null) return;
+    final old = decodeRec(c.raw, c.g.trackId);
+    var prop = rec.prop;
+    final same = old != null && _sameIdentity(old.identity, rec.identity);
+    // The same song keeps what was decided about it.
+    if (same && const {'discarded', 'accepted', 'auto'}.contains(old.prop)) prop = old.prop;
+    if (prop == 'open' && c.f.userEdited) prop = null;
+    final original = rec.original ?? (same ? old.original : null);
+    if (prop != rec.prop || (rec.was == null && old?.was != null) || original != rec.original) {
+      rec = Recognition(
+        at: rec.at,
+        v: rec.v,
+        src: rec.src,
+        score: rec.score,
+        sure: rec.sure,
+        identity: rec.identity,
+        prop: prop,
+        was: rec.was ?? old?.was,
+        original: original,
+      );
+    }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
     if ((c.enrichRow?.mbid ?? '').isEmpty) c.mbid = rec.identity?.mbid;
@@ -217,4 +241,11 @@ class EnrichCommitter {
     );
     await db.into(db.trackEnrich).insert(row, onConflict: DoUpdate((_) => row));
   }
+}
+
+/// The same song: the same MusicBrainz id, else the same title and artist.
+bool _sameIdentity(TrackIdentity? a, TrackIdentity? b) {
+  if (a == null || b == null) return false;
+  if (a.mbid != null && a.mbid == b.mbid) return true;
+  return matchKey(a.title) == matchKey(b.title) && matchKey(a.artist) == matchKey(b.artist);
 }

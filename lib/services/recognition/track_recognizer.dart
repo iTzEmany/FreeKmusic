@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart' show CancelToken, DioException, DioExceptionType;
-import 'package:metadata_god/metadata_god.dart' as mg;
 import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
@@ -7,14 +6,14 @@ import '../../data/db/app_database.dart' show Track;
 import '../import/track_matcher.dart' show hasPhrase, matchKey, otherVersions;
 import '../online/acoustid_client.dart';
 import '../online/innertube_client.dart';
-import '../online/ytm_song_parser.dart' show YtmSong;
+import '../online/ytm_song_parser.dart' show YtmSong, ytmMatches;
 import '../online/metadata_resolver.dart' show ResolvedMeta;
 import '../online/http_client.dart' show RateLimitedException;
 import '../online/musicbrainz_client.dart';
 import '../online/query_cleaner.dart';
 import '../stream/stream_key.dart' show keyOfStreamPath;
 import '../tags/fingerprinter.dart';
-import '../tags/metadata_god_init.dart';
+import '../tags/audio_metadata_tag_reader.dart' show readTrackIds;
 import '../tags/tag_reader.dart' show normalizeIsrc;
 import 'channel_detector.dart';
 import 'track_identity.dart';
@@ -36,12 +35,6 @@ typedef TextProbe = Future<ResolvedMeta?> Function(Track t, CleanQuery c, Cancel
 
 /// The ISRC and MusicBrainz id written in a file's tags.
 typedef FileIds = Future<({String? isrc, String? mbid})> Function(String path);
-
-Future<({String? isrc, String? mbid})> readFileIds(String path) async {
-  await ensureMetadataGod();
-  final ids = await mg.readIds(path: path);
-  return (isrc: ids.isrc, mbid: ids.mbid);
-}
 
 /// [rec] null with [lost] = a source failed and none found anything: ask again
 /// later. [rec] with no `src` = every source answered «nothing».
@@ -71,7 +64,7 @@ class TrackRecognizer {
     required this.fingerprinter,
     required this.useAcoustId,
     this.videoIdFor,
-    this.fileIds = readFileIds,
+    this.fileIds = readTrackIds,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -275,8 +268,9 @@ class TrackRecognizer {
     Recognition? best;
     for (final r in results) {
       final d = r.duration;
-      if (d == null || r.artists.isEmpty) continue;
-      if ((d.inMilliseconds - t.durationMs).abs() > kDurationSlackMs) continue;
+      if (r.artists.isEmpty) continue;
+      // The length first: it is cheaper than the title.
+      if (!ytmMatches(d, t.durationMs, slackMs: kDurationSlackMs, titleOk: true)) continue;
       if (hay.titleOverlap(r.title) < kTitleOverlap) continue;
       final s = hay.similarity(r.title, r.artists);
       if (s > bestScore) {
@@ -284,7 +278,7 @@ class TrackRecognizer {
         best = _found(
             RecogSource.ytm,
             TrackIdentity(
-                title: r.title, artist: r.artists.join(', '), ms: d.inMilliseconds, vid: r.id));
+                title: r.title, artist: r.artists.join(', '), ms: d!.inMilliseconds, vid: r.id));
       }
     }
     return best;

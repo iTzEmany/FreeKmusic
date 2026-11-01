@@ -72,8 +72,9 @@ class CreditsEnricher {
   Future<CreditsPart> fetch(
     Track t,
     DeezerTrack? known,
-    CancelToken? cancel,
-  ) async {
+    CancelToken? cancel, {
+    String? knownMbid,
+  }) async {
     final failed = <String>{};
     var limited = false;
     // [origin] is the credit source that gets no answer when [ask] fails
@@ -148,27 +149,31 @@ class CreditsEnricher {
         failed.add('musicbrainz');
         return (null, const <TrackCredit>[]);
       }
-      if (isrc == null) return (null, const <TrackCredit>[]);
-      final recs = await source(
-        'musicbrainz',
-        'musicbrainz isrc',
-        () => mb.recordingsByIsrc(
-          isrc,
-          t.durationMs,
-          title: t.title,
-          artist: t.artist ?? '',
-          cancel: cancel,
-          strict: true,
-        ),
-      );
-      final mbid = recs?.firstOrNull?.id;
-      if (mbid == null) return (null, const <TrackCredit>[]);
+      var id = knownMbid; // the recognised recording, no ISRC lookup needed
+      if (id == null) {
+        if (isrc == null) return (null, const <TrackCredit>[]);
+        final recs = await source(
+          'musicbrainz',
+          'musicbrainz isrc',
+          () => mb.recordingsByIsrc(
+            isrc,
+            t.durationMs,
+            title: t.title,
+            artist: t.artist ?? '',
+            cancel: cancel,
+            strict: true,
+          ),
+        );
+        id = recs?.firstOrNull?.id;
+        if (id == null) return (null, const <TrackCredit>[]);
+      }
+      final recId = id;
       final credits = await source(
         'musicbrainz',
         'musicbrainz credits',
-        () => mb.recordingCredits(mbid, cancel: cancel),
+        () => mb.recordingCredits(recId, cancel: cancel),
       );
-      return (mbid, credits ?? const <TrackCredit>[]);
+      return (recId, credits ?? const <TrackCredit>[]);
     }
 
     // Different services: asked side by side. (Not a record `.wait`, which
