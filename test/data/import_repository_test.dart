@@ -250,4 +250,16 @@ void main() {
       expect(all.firstWhere((t) => t.id == set).isrc, 'KEEP');
     },
   );
+
+  test('videoIdOfTrack answers only for a downloaded row', () async {
+    final id = await repo.create(playlistId: playlistId, sourceName: 'x', rows: rows(2));
+    Future<int> track(String path) => db.into(db.tracks).insert(TracksCompanion.insert(
+        path: path, title: path, albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    final got = await track('/d.mp3'), guessed = await track('/l.mp3');
+    await repo.setItem(id, 0,
+        status: ImportItemStatus.downloaded, videoId: const Value('sZrTJesvJeo'), trackId: Value(got));
+    await repo.setItem(id, 1,
+        status: ImportItemStatus.linked, videoId: const Value('aaaaaaaaaaa'), trackId: Value(guessed));
+    expect([await repo.videoIdOfTrack(got), await repo.videoIdOfTrack(guessed)], ['sZrTJesvJeo', null]);
+  });
 }

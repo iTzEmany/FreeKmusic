@@ -326,6 +326,12 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
           onChanged: (v) => notifier.update((c) => c.copyWith(deezerMeta: v)),
         ),
         SwitchListTile(
+          title: Text(l.acoustId),
+          subtitle: Text(l.acoustIdHint),
+          value: s.acoustId,
+          onChanged: (v) => notifier.update((c) => c.copyWith(acoustId: v)),
+        ),
+        SwitchListTile(
           title: Text(l.creditsDetails),
           subtitle: Text('${l.creditsDetailsHint}\n${l.creditsDetailsNote}'),
           isThreeLine: true,

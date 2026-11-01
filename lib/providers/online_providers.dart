@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import '../data/repositories/credits_repository.dart';
 import '../data/settings/settings_store.dart' show AppSettings;
+import '../services/online/acoustid_client.dart';
 import '../services/online/cover_fetcher.dart';
 import '../services/online/credits_enricher.dart';
 import '../services/online/enrich_engine.dart';
@@ -29,6 +30,8 @@ import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
 import '../services/library/track_file_sync.dart';
+import '../services/recognition/track_recognizer.dart';
+import '../services/tags/fingerprinter.dart';
 import '../services/tags/tag_writer.dart';
 import '../services/online/wikipedia_client.dart';
 import '../services/online/ytm_artist_resolver.dart';
@@ -37,7 +40,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'player_providers.dart';
-import 'youtube_providers.dart' show resolveDownloadFolder;
+import 'youtube_providers.dart' show downloadIndexProvider, innerTubeClientProvider, resolveDownloadFolder;
 
 final webClientProvider = Provider<WebClient>((ref) => DioWebClient());
 
@@ -55,6 +58,25 @@ final itunesClientProvider = Provider(
 );
 final deezerClientProvider = Provider(
   (ref) => DeezerClient(ref.watch(webClientProvider)),
+);
+final acoustIdClientProvider = Provider((ref) {
+  final c = AcoustIdClient();
+  ref.onDispose(c.close);
+  return c;
+});
+final fingerprinterProvider = Provider<Fingerprinter>((ref) => RustFingerprinter());
+final trackRecognizerProvider = Provider(
+  (ref) => TrackRecognizer(
+    musicBrainz: ref.watch(musicBrainzClientProvider),
+    innerTube: ref.watch(innerTubeClientProvider),
+    acoustId: ref.watch(acoustIdClientProvider),
+    fingerprinter: ref.watch(fingerprinterProvider),
+    useAcoustId: () => ref.read(settingsProvider).acoustId,
+    // Where the file came from: the download index (memory), then the CSV import row.
+    videoIdFor: (t) async =>
+        (await ref.read(downloadIndexProvider.future)).idForPath(t.path) ??
+        await ref.read(importRepositoryProvider).videoIdOfTrack(t.id),
+  ),
 );
 final deezerGwClientProvider = Provider(
   // shortcut: a one-off Registro line needs a LogEntry kind (phase 53); AppLog until then.
@@ -187,6 +209,7 @@ final enrichEngineProvider = Provider<EnrichEngine>((ref) {
     curiosities: ref.watch(curiosityServiceProvider),
     language: () => ref.read(settingsProvider).language,
     useCredits: () => ref.read(settingsProvider).creditsDetails,
+    recognizer: ref.watch(trackRecognizerProvider),
     limiter: ref.watch(enrichLimiterProvider),
   );
 });
@@ -202,9 +225,13 @@ class EnrichJobResult {
     this.failed = false,
     this.cancelled = false,
     this.rateLimited = false,
+    this.sources = const {},
   });
 
   final int done, total, updated, notFound;
+
+  /// Tracks recognised, by `RecogSource.name`.
+  final Map<String, int> sources;
 
   /// The job stopped on an error, or because no source answered.
   final bool failed;
@@ -214,11 +241,14 @@ class EnrichJobResult {
   bool get stopped => cancelled || rateLimited;
 
   /// The `detail` of the Registro line; `updated` and `notFound` are always counts (int).
-  Map<String, Object?>? get logDetail => failed
-      ? {'updated': updated, 'notFound': notFound}
-      : stopped
-      ? const {'stopped': true}
-      : null;
+  Map<String, Object?>? get logDetail {
+    final base = failed
+        ? {'updated': updated, 'notFound': notFound}
+        : stopped
+        ? const {'stopped': true}
+        : null;
+    return sources.isEmpty ? base : {...?base, 'sources': sources};
+  }
 }
 
 class EnrichJobState {
@@ -337,6 +367,7 @@ class EnrichJobNotifier extends Notifier<EnrichJobState> {
             failed: failed,
             cancelled: cancelled,
             rateLimited: refused || ((round?.limited ?? false) && round!.worked == 0),
+            sources: round?.sources ?? const {},
           ),
         );
         if (!failed && !cancelled) {

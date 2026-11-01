@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../data/db/app_database.dart';
+import '../../data/repositories/credits_repository.dart' show mergeDetails;
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import 'cover_fetcher.dart';
@@ -15,7 +16,7 @@ import 'lrclib_client.dart' show LyricsResult;
 /// One track's commit in flight: the row and `track_enrich` read once, and
 /// what the parts decided on the way.
 class _Commit {
-  _Commit(this.g, this.f, this.enrichRow, this.fields);
+  _Commit(this.g, this.f, this.enrichRow, this.fields) : raw = enrichRow?.details ?? '{}';
 
   final EnrichGather g;
   final Track f;
@@ -24,6 +25,12 @@ class _Commit {
   List<TrackCreditRow>? stored; // read when credits were gathered
   String? plain, synced; // to write
   bool fills = false, coverPending = false;
+
+  /// The `details` column as it will be: the stored one with `rec` merged in
+  /// ([rawDirty]: to write with the marks), and the identity's MBID if the row has none.
+  String raw;
+  bool rawDirty = false, credited = false;
+  String? mbid;
 
   bool get byUser => enrichRow?.lyricsByUser ?? false;
 
@@ -61,6 +68,7 @@ class EnrichCommitter {
     final f = await tracks.getById(trackId);
     if (f == null) {
       g.out.updateAll((_, _) => PartOutcome.skipped); // nothing was saved
+      g.rec = null; // and no recognition counts
       return;
     }
     final enrichRow = await (db.select(
@@ -70,6 +78,7 @@ class EnrichCommitter {
     if (g.credits != null) c.stored = await credits!.repo.creditsOf(trackId);
     _commitLyrics(c);
     await _commitMeta(c);
+    _commitRec(c);
     await _commitCredits(c);
     await _commitCurio(c);
     await _writeMarks(c);
@@ -161,8 +170,20 @@ class EnrichCommitter {
     if (g.mode != AskMode.force && c.stored!.isNotEmpty) {
       c.leave(EnrichPart.credits);
     } else {
-      await credits!.save(g.trackId, g.credits, trackKnown: true, stored: c.stored);
+      c.raw = await credits!.save(g.trackId, g.credits, trackKnown: true, stored: c.stored, baseDetails: c.raw) ?? c.raw;
+      c.credited = true;
     }
+  }
+
+  /// The recognition joins the shared `details` JSON (written with the marks).
+  /// Nothing to write when it was saved already or got no answer. In 69d it
+  /// never proposes or corrects: the row's title and artist stay.
+  void _commitRec(_Commit c) {
+    final rec = c.g.rec;
+    if (rec == null) return;
+    c.raw = mergeDetails(c.raw, rec: rec);
+    c.rawDirty = true;
+    if ((c.enrichRow?.mbid ?? '').isEmpty) c.mbid = rec.identity?.mbid;
   }
 
   Future<void> _commitCurio(_Commit c) async {
@@ -180,11 +201,15 @@ class EnrichCommitter {
   /// The «searched, nothing» marks (and their clearing) of the parts that settled.
   Future<void> _writeMarks(_Commit c) async {
     final marks = c.g.marks;
-    if (marks.isEmpty) return;
+    if (marks.isEmpty && !c.rawDirty) return;
+    // A MBID the credits just saved is not «empty».
+    final mbid = c.credited && c.g.credits?.mbid != null ? null : c.mbid;
     Value<int?> mark(EnrichPart p) =>
         marks.containsKey(p) ? Value(marks[p]) : const Value.absent();
     final row = TrackEnrichCompanion(
       trackId: Value(c.g.trackId),
+      details: c.rawDirty ? Value(c.raw) : const Value.absent(),
+      mbid: mbid == null ? const Value.absent() : Value(mbid),
       metaNoneAt: mark(EnrichPart.meta),
       lyricsNoneAt: mark(EnrichPart.lyrics),
       syncedNoneAt: mark(EnrichPart.synced),

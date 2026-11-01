@@ -230,6 +230,7 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
           if (round.noAnswer) 'noAnswer': true,
           'updated': byPart(round.updated),
           'none': byPart(round.none),
+          if (round.sources.isNotEmpty) 'sources': round.sources,
         },
       ),
     );

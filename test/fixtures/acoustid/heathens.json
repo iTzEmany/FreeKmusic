@@ -1,0 +1,398 @@
+{
+ "status": "ok",
+ "results": [
+  {
+   "id": "01e8c2c9-3369-4b7a-8807-4770ca5d6774",
+   "score": 0.9645965,
+   "recordings": [
+    {
+     "id": "12b16d98-4857-4be5-9041-20fcb0c536d0"
+    },
+    {
+     "id": "3075e6ce-241b-4eaf-ad63-173962e543a6",
+     "title": "Heathens",
+     "artists": [
+      {
+       "name": "twenty one pilots"
+      }
+     ],
+     "duration": 217.939,
+     "releases": [
+      {
+       "date": {
+        "year": 2016
+       }
+      }
+     ]
+    },
+    {
+     "id": "32a4e370-050a-4bec-9b77-a17d4da964e3",
+     "title": "Dare You (radio edit)",
+     "artists": [
+      {
+       "name": "Hardwell"
+      },
+      {
+       "name": "Matthew Koma"
+      }
+     ],
+     "duration": 218.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2013
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2013
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2013
+       }
+      }
+     ]
+    },
+    {
+     "id": "3bf798f4-b3fa-4a0b-a7bb-655af72429b2",
+     "title": "Heathens",
+     "artists": [
+      {
+       "name": "twenty one pilots"
+      }
+     ],
+     "duration": 195.92,
+     "releases": [
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2024
+       }
+      },
+      {
+       "date": {
+        "year": 2024
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2024
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2025
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2025
+       }
+      },
+      {
+       "date": {
+        "year": 2025
+       }
+      },
+      {
+       "date": {
+        "year": 2025
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2016
+       }
+      },
+      {
+       "date": {
+        "year": 2026
+       }
+      },
+      {
+       "date": {
+        "year": 2026
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

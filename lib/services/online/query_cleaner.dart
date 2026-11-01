@@ -65,7 +65,7 @@ String _fixQuotes(String s) => s
     .replaceAll('’', "'")
     .replaceAll('‘', "'");
 
-bool _isGenericArtist(String artist) {
+bool isGenericArtist(String artist) {
   final a = artist.trim().toLowerCase();
   return a.isEmpty ||
       a.contains('sconosciuto') ||
@@ -86,7 +86,7 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   title = title.replaceFirst(_prefix, '');
   title = title.replaceFirst(_numbering, '');
   title = title.replaceFirst(_copyNumber, '').replaceFirst(_remasterTail, '');
-  var genericArtist = _isGenericArtist(rawArtist);
+  var genericArtist = isGenericArtist(rawArtist);
   var artist = rawArtist.trim();
 
   title = title.replaceAll(_noiseGroup, ' ').replaceAll(_noisePhrase, ' ');

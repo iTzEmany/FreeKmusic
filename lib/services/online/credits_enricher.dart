@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 
@@ -196,15 +194,25 @@ class CreditsEnricher {
   /// Writes `track_credits` and `track_enrich` only. Found → the none mark is
   /// cleared; valid and empty → marked now; any failure → left as it was.
   /// [trackKnown]: the caller has just read the track row. [stored]: the
-  /// credits it has just read.
-  Future<void> save(int trackId, CreditsPart? part,
-      {bool trackKnown = false, List<TrackCreditRow>? stored}) async {
-    if (part == null) return;
+  /// credits it has just read. [baseDetails]: the `details` column it has just
+  /// read (none: read here). Returns the `details` written, if any.
+  Future<String?> save(int trackId, CreditsPart? part,
+      {bool trackKnown = false, List<TrackCreditRow>? stored, String? baseDetails}) async {
+    if (part == null) return null;
     // The track may have been deleted while the sources were asked (FK).
     if (!trackKnown && await tracks.getById(trackId) == null) {
       AppLog.i('credits: track $trackId is gone, nothing saved');
-      return;
+      return null;
     }
+    if (baseDetails == null && part.details != null) {
+      // Read and write in one transaction: a recognition saved meanwhile is not lost.
+      return repo.atomic(
+          () async => _write(trackId, part, stored, (await repo.enrichOf(trackId))?.details));
+    }
+    return _write(trackId, part, stored, baseDetails);
+  }
+
+  Future<String?> _write(int trackId, CreditsPart part, List<TrackCreditRow>? stored, String? baseDetails) async {
     var list = part.credits;
     if (list.isNotEmpty && !part.complete) {
       // A source was down: keep only what it gave in an earlier run.
@@ -214,11 +222,13 @@ class CreditsEnricher {
             TrackCredit(c.name, c.role, c.source),
       ]);
     }
+    // The column is shared with the recognition: merge, never overwrite.
+    final details = part.details == null
+        ? null
+        : mergeDetails(baseDetails, details: part.details);
     final row = TrackEnrichCompanion(
       trackId: Value(trackId),
-      details: part.details == null
-          ? const Value.absent()
-          : Value(jsonEncode(part.details!.toJson())),
+      details: details == null ? const Value.absent() : Value(details),
       deezerId: part.deezerId == null
           ? const Value.absent()
           : Value(part.deezerId),
@@ -230,7 +240,10 @@ class CreditsEnricher {
           : const Value.absent(),
     );
     // Empty and complete replaces what was stored: credits and the none mark never coexist.
-    if (list.isEmpty && !part.complete) return repo.saveEnrich(row);
+    if (list.isEmpty && !part.complete) {
+      await repo.saveEnrich(row);
+      return details;
+    }
     await repo.save(trackId, [
       for (final c in list)
         TrackCreditsCompanion.insert(
@@ -241,5 +254,6 @@ class CreditsEnricher {
           source: c.source,
         ),
     ], row);
+    return details;
   }
 }

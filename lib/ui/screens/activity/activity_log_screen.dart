@@ -7,6 +7,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../providers/activity_providers.dart';
 import '../../../services/import/playlist_import_service.dart';
+import '../../../services/recognition/track_identity.dart' show RecogSource;
 import '../../theme/tokens.dart';
 import '../../widgets/empty_state.dart';
 import '../library/second_opinion_log_screen.dart';
@@ -14,6 +15,25 @@ import '../../shell/shell_nav.dart';
 import 'activity_sheet.dart';
 import 'enrich_round_screen.dart';
 import '../../widgets/cc_app_bar.dart';
+
+/// «Recognized: AcoustID 3, text 5» from the `sources` of a round's `detail`.
+@visibleForTesting
+String? recogSourcesLine(AppLocalizations l, Map<String, Object?>? detail) {
+  final raw = detail?['sources'];
+  if (raw is! Map) return null;
+  final shown = [
+    for (final s in RecogSource.values)
+      if (raw[s.name] case final int n when n > 0)
+        '${switch (s) {
+          RecogSource.tags => l.recogSrcTags,
+          RecogSource.ytid => l.recogSrcVideo,
+          RecogSource.text => l.recogSrcText,
+          RecogSource.acoustid => 'AcoustID',
+          RecogSource.ytm => 'YouTube Music',
+        }} $n',
+  ];
+  return shown.isEmpty ? null : l.logRecogSources(shown.join(', '));
+}
 
 /// What ended in the background (downloads, transfers, imports, scans and
 /// other jobs), newest first, with the time and how it went.
@@ -86,6 +106,7 @@ class ActivityLogScreen extends ConsumerWidget {
                     }
                     final e = entries[i];
                     final item = e.item;
+                    final src = recogSourcesLine(l, e.detail);
                     return ListTile(
                       onTap: switch (item?.kind) {
                         ActivityKind.secondOpinion => () => ShellNav.open<void>(
@@ -124,7 +145,7 @@ class ActivityLogScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        '${time.format(e.at)}, ${_outcome(l, e)}',
+                        '${time.format(e.at)}, ${_outcome(l, e)}${src == null ? '' : ', $src'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.bodyMedium?.copyWith(

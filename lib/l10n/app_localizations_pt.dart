@@ -5336,6 +5336,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Uso privado e não comercial. Os termos do Deezer proíbem promover o download não autorizado, e o Codecore baixa do YouTube: o risco é seu.';
 
   @override
+  String get acoustId => 'Reconhecer pelo som (AcoustID)';
+
+  @override
+  String get acoustIdHint =>
+      'Só a impressão digital da faixa é enviada, nunca o áudio';
+
+  @override
   String get settingsSpinCover => 'Capa giratória';
 
   @override
@@ -5798,4 +5805,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get activityEnrichWaiting => 'A completar: em espera';
+
+  @override
+  String logRecogSources(String list) {
+    return 'Reconhecidas: $list';
+  }
+
+  @override
+  String get recogSrcTags => 'tags';
+
+  @override
+  String get recogSrcVideo => 'vídeo';
+
+  @override
+  String get recogSrcText => 'texto';
 }

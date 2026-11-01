@@ -1178,10 +1178,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 69c.4 Controlli di fase
 
 ## Fase 69d — La cascata del riconoscimento (`fase-69d-cascata-riconoscimento.md`)
-- [ ] 69d.1 Rete, client AcoustID, MusicBrainz esteso e quote
-- [ ] 69d.2 `TrackRecognizer`: la cascata
-- [ ] 69d.3 Il motore arricchisce dall'identità
-- [ ] 69d.4 Controlli di fase e prova su Test.zip (≥ 110/147, 0 `sure` sbagliati)
+- [x] 69d.1 Rete, client AcoustID, MusicBrainz esteso e quote
+- [x] 69d.2 `TrackRecognizer`: la cascata
+- [x] 69d.3 Il motore arricchisce dall'identità
+- [x] 69d.4 Controlli di fase e prova su Test.zip (≥ 110/147, 0 `sure` sbagliati)
 
 ## Fase 69e — Correzioni, cover e ripasso (`fase-69e-correzioni-e-cover.md`)
 - [ ] 69e.1 Correzioni e proposte

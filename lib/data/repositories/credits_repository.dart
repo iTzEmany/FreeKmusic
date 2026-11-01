@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../core/app_log.dart';
 import '../../services/online/credits.dart';
 import '../../services/online/enrich_parts.dart';
+import '../../services/recognition/track_identity.dart';
 import '../db/app_database.dart';
 import 'light_tracks.dart';
 
@@ -132,6 +133,9 @@ class CreditsRepository {
   Future<void> saveCredits(int trackId, List<TrackCreditsCompanion> credits) =>
       _db.transaction(() => _replace(trackId, credits));
 
+  /// Runs [body] in one transaction (read-merge-write of the shared `details`).
+  Future<T> atomic<T>(Future<T> Function() body) => _db.transaction(body);
+
   /// Upserts the enrichment row; columns absent from [row] keep their value.
   Future<void> saveEnrich(TrackEnrichCompanion row) => _upsert(row);
 
@@ -192,7 +196,7 @@ class CreditsRepository {
           .insertOnConflictUpdate(
             TrackEnrichCompanion.insert(
               trackId: Value(keepId),
-              details: Value(first((r) => r.details)),
+              details: Value(_mergedRaw(rows)),
               deezerId: Value(first((r) => r.deezerId)),
               mbid: Value(first((r) => r.mbid)),
               metaNoneAt: Value(first((r) => r.metaNoneAt)),
@@ -207,6 +211,20 @@ class CreditsRepository {
           );
     }
     await (_db.delete(e)..where((t) => t.trackId.isIn(drops))).go();
+  }
+
+  /// The column of the first row with details (else the first with any), plus
+  /// the recognition of another row if that one has none.
+  static String? _mergedRaw(List<TrackEnrichData> rows) {
+    // Each row's JSON is decoded once.
+    final ds = [
+      for (final r in rows) (raw: r.details, j: _decodeMap(r.details, r.trackId)),
+    ];
+    final chosen =
+        ds.where((d) => _hasDetails(d.j)).firstOrNull ?? ds.where((d) => d.raw != null).firstOrNull;
+    if (chosen == null || _recOf(chosen.j) != null) return chosen?.raw;
+    final rec = ds.map((d) => _recOf(d.j)).nonNulls.firstOrNull;
+    return rec == null ? chosen.raw : mergeDetails(chosen.raw, rec: rec);
   }
 
   /// Credits and details as they travel (backup, share, Jam).
@@ -277,9 +295,8 @@ class CreditsRepository {
   ) => _db.transaction(() async {
     final hasCredits = (await creditsOf(trackId)).isNotEmpty;
     final saveCredits = credits.isNotEmpty && !hasCredits;
-    final saveDetails =
-        details != null &&
-        decodeDetails(trackId, (await enrichOf(trackId))?.details) == null;
+    final raw = details == null ? null : (await enrichOf(trackId))?.details;
+    final saveDetails = details != null && decodeDetails(trackId, raw) == null;
     if (saveCredits) {
       await _replace(trackId, [
         for (final c in credits)
@@ -297,7 +314,7 @@ class CreditsRepository {
         TrackEnrichCompanion(
           trackId: Value(trackId),
           details: saveDetails
-              ? Value(jsonEncode(details.toJson()))
+              ? Value(mergeDetails(raw, details: details))
               : const Value.absent(),
           creditsNoneAt: saveCredits ? const Value(null) : const Value.absent(),
         ),
@@ -323,13 +340,38 @@ class CreditsRepository {
       _db.into(_db.trackEnrich).insert(row, onConflict: DoUpdate((_) => row));
 }
 
-/// The stored details JSON; a corrupt row logs and gives null.
-TrackDetails? decodeDetails(int trackId, String? raw) {
+/// The keys of [TrackDetails] in the shared `details` column; `rec` is the other.
+final _detailKeys = const TrackDetails().toJson().keys.toSet();
+
+Map<Object?, Object?>? _decodeMap(String? raw, [int? trackId]) {
   if (raw == null) return null;
   try {
-    return TrackDetails.fromJson(jsonDecode(raw) as Map);
+    return jsonDecode(raw) as Map;
   } on Object catch (e, st) {
     AppLog.w('track $trackId: details not readable', e, st);
     return null;
   }
+}
+
+/// The stored details JSON; a corrupt row logs and gives null, and so does a
+/// row with no key of [TrackDetails] (e.g. only `rec`).
+TrackDetails? decodeDetails(int trackId, String? raw) {
+  final j = _decodeMap(raw, trackId);
+  return _hasDetails(j) ? TrackDetails.fromJson(j!) : null;
+}
+
+bool _hasDetails(Map<Object?, Object?>? j) => j != null && _detailKeys.any(j.containsKey);
+
+Recognition? _recOf(Map<Object?, Object?>? j) => Recognition.fromJson(j?['rec']);
+
+/// The recognition stored under `rec`, or null. [trackId] is for the log.
+Recognition? decodeRec(String? raw, [int? trackId]) => _recOf(_decodeMap(raw, trackId));
+
+/// The only way to write `details`: [raw] (what is stored) with [details] and
+/// [rec] put in, whatever the other one owns kept.
+String mergeDetails(String? raw, {TrackDetails? details, Recognition? rec}) {
+  final j = <Object?, Object?>{...?_decodeMap(raw)};
+  if (details != null) j.addAll(details.toJson()); // all its keys, null or not
+  if (rec != null) j['rec'] = rec.toJson();
+  return jsonEncode(j);
 }

@@ -23,6 +23,7 @@ import 'package:codecore/services/online/lrclib_client.dart';
 import 'package:codecore/services/online/lyrics_chain.dart';
 import 'package:codecore/services/online/musicbrainz_client.dart';
 import 'package:codecore/services/online/wikipedia_client.dart';
+import 'package:codecore/services/recognition/track_recognizer.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show ApplyInterceptor, QueryInterceptor, Value;
 import 'package:drift/native.dart';
@@ -43,6 +44,9 @@ class EnrichWeb implements WebClient {
   /// Runs on every JSON request (e.g. to cancel a token «on the network»).
   void Function(String url)? onUrl;
   final urls = <String>[];
+
+  /// `url query` of every JSON request.
+  final queries = <String>[];
   int bytes = 0;
 
   int count(String part) => urls.where((u) => u.contains(part)).length;
@@ -55,6 +59,7 @@ class EnrichWeb implements WebClient {
     bool strict = false,
   }) async {
     urls.add(url);
+    queries.add('$url ${query ?? {}}');
     onUrl?.call(url);
     if (musicBrainzLimited && url.contains('musicbrainz')) {
       throw const RateLimitedException(429);
@@ -178,6 +183,9 @@ class FakeChain extends LyricsChain {
   FakeChain(WebClient web) : super(lrclib: LrclibClient(web));
 
   int calls = 0;
+
+  /// The title and artist of every search.
+  final askedWith = <String>[];
   LyricsResult? result = const LyricsResult(
     plain: 'la la',
     synced: '[00:01.00]la la',
@@ -203,6 +211,7 @@ class FakeChain extends LyricsChain {
     CancelToken? cancel,
   }) async {
     calls++;
+    askedWith.add('${t.title}|${t.artist}');
     wantSyncedSeen = wantSynced;
     await during?.call();
     final h = hold;
@@ -233,6 +242,9 @@ class FakeChain extends LyricsChain {
 class FakeFinder implements CuriosityFinder {
   int calls = 0;
 
+  /// `title|artist|isrc|durationMs` of every search.
+  final askedFor = <String>[];
+
   /// Thrown by every search, when set (offline).
   Object? error;
   CuriosityPair pair = CuriosityPair(
@@ -258,6 +270,7 @@ class FakeFinder implements CuriosityFinder {
     cancel,
   }) async {
     calls++;
+    askedFor.add('$title|$artist|$isrc|$durationMs');
     if (error != null) throw error!;
     return pair;
   }
@@ -286,6 +299,7 @@ class FakeFinder implements CuriosityFinder {
   required WebClient web,
   required String Function() language,
   required RateLimiter limiter,
+  TrackRecognizer? recognizer,
 }) {
   final resolver = MetadataResolver(
     itunes: itunes,
@@ -336,6 +350,7 @@ class FakeFinder implements CuriosityFinder {
       curiosities: curiosities,
       language: language,
       useCredits: useCredits ?? () => false,
+      recognizer: recognizer,
       limiter: limiter,
     ),
     fetcher: fetcher,
@@ -347,7 +362,7 @@ class EnrichRig {
   EnrichRig._(this.tmp);
 
   /// [interceptor] sees every query of the database (e.g. to count reads).
-  factory EnrichRig({QueryInterceptor? interceptor}) {
+  factory EnrichRig({QueryInterceptor? interceptor, TrackRecognizer? recognizer}) {
     final r = EnrichRig._(Directory.systemTemp.createTempSync('enrich_rig'));
     final executor = NativeDatabase.memory();
     r.db = AppDatabase(
@@ -380,6 +395,7 @@ class EnrichRig {
       web: r.web,
       language: () => 'it',
       limiter: RateLimiter(minGap: Duration.zero),
+      recognizer: recognizer,
     );
     r.svc = stack.svc;
     r.engine = stack.engine;
@@ -417,6 +433,9 @@ class EnrichRig {
   }
 
   Future<int> add({
+    String title = 'Song',
+    String artist = 'Band',
+    String? isrc = 'ITABC2400001',
     String? album,
     String? genre,
     int? year,
@@ -437,15 +456,15 @@ class EnrichRig {
         .insert(
           TracksCompanion.insert(
             path: path,
-            title: 'Song',
+            title: title,
             albumKey: 'k',
             format: 'mp3',
             sizeBytes: 1,
             mtimeMs: 1,
             addedAt: 1,
             durationMs: const Value(200000),
-            artist: const Value('Band'),
-            isrc: const Value('ITABC2400001'),
+            artist: Value(artist),
+            isrc: Value(isrc),
             album: Value(album),
             genre: Value(genre),
             year: Value(year),

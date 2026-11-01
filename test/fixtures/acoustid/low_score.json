@@ -1,0 +1,293 @@
+{
+ "status": "ok",
+ "results": [
+  {
+   "id": "4b0648d1-84e2-4e2d-b807-27e0ba769eee",
+   "score": 0.9746176,
+   "recordings": [
+    {
+     "id": "38d29f47-6151-4ffc-990d-0a86e576cccc",
+     "title": "Don Raffae’",
+     "artists": [
+      {
+       "name": "Roberto Murolo"
+      },
+      {
+       "name": "Fabrizio De André"
+      }
+     ],
+     "duration": 261.866,
+     "releases": [
+      {
+       "date": {
+        "year": 2000
+       }
+      },
+      {
+       "date": {
+        "year": 2008
+       }
+      }
+     ]
+    },
+    {
+     "id": "515b3c13-3277-4552-b0e6-b3f8dd59da3d",
+     "title": "Don Raffae’",
+     "artists": [
+      {
+       "name": "Fabrizio De André"
+      }
+     ],
+     "duration": 249.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1991
+       }
+      },
+      {
+       "date": {
+        "year": 1995
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2004
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 2005
+       }
+      },
+      {
+       "date": {
+        "year": 2017
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 2001
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 2002
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      }
+     ]
+    },
+    {
+     "id": "be99a9ac-a92d-4024-beac-17567bc819a7",
+     "title": "Don Raffaè",
+     "artists": [
+      {
+       "name": "Fabrizio De André"
+      }
+     ],
+     "duration": 248.653,
+     "releases": [
+      {
+       "date": {
+        "year": 1999
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "85c13a74-6285-4f48-8578-53d51bd9cfcb",
+   "score": 0.6288238,
+   "recordings": [
+    {
+     "id": "515b3c13-3277-4552-b0e6-b3f8dd59da3d",
+     "title": "Don Raffae’",
+     "artists": [
+      {
+       "name": "Fabrizio De André"
+      }
+     ],
+     "duration": 249.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1991
+       }
+      },
+      {
+       "date": {
+        "year": 1995
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2004
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 2005
+       }
+      },
+      {
+       "date": {
+        "year": 2017
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 1990
+       }
+      },
+      {
+       "date": {
+        "year": 2001
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 2002
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

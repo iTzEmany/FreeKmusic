@@ -3108,6 +3108,8 @@
   "deezerMeta": "Métadonnées de Deezer",
   "deezerMetaHint": "Données seulement (pochettes, numéros de piste), jamais de musique",
   "deezerMetaNote": "Usage privé et non commercial. Les conditions de Deezer interdisent de promouvoir le téléchargement non autorisé, et Codecore télécharge depuis YouTube : le risque est le vôtre.",
+  "acoustId": "Reconnaître au son (AcoustID)",
+  "acoustIdHint": "Seule l’empreinte du morceau est envoyée, jamais l’audio",
   "settingsSpinCover": "Pochette qui tourne",
   "settingsSpinCoverHint": "Dans le lecteur, pendant la lecture",
   "themeLowContrastWarning": "Certaines couleurs de texte se lisent mal sur le fond (moins de 4,5:1). Le thème reste tel quel.",
@@ -3374,5 +3376,9 @@
   },
   "enrichLibraryComplete": "Bibliothèque complète",
   "enrichLibraryStop": "Interrompre",
-  "activityEnrichWaiting": "Complétion : en attente"
+  "activityEnrichWaiting": "Complétion : en attente",
+  "logRecogSources": "Reconnus : {list}",
+  "recogSrcTags": "tags",
+  "recogSrcVideo": "vidéo",
+  "recogSrcText": "texte"
 }

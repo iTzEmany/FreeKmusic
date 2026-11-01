@@ -5315,6 +5315,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Private, non-commercial use. Deezer’s terms forbid promoting unauthorised downloading, and Codecore downloads from YouTube: the risk is yours.';
 
   @override
+  String get acoustId => 'Recognise by sound (AcoustID)';
+
+  @override
+  String get acoustIdHint =>
+      'Only the track\'s fingerprint is sent, never the audio';
+
+  @override
   String get settingsSpinCover => 'Spinning cover';
 
   @override
@@ -5776,4 +5783,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityEnrichWaiting => 'Completing: waiting';
+
+  @override
+  String logRecogSources(String list) {
+    return 'Recognized: $list';
+  }
+
+  @override
+  String get recogSrcTags => 'tags';
+
+  @override
+  String get recogSrcVideo => 'video';
+
+  @override
+  String get recogSrcText => 'text';
 }

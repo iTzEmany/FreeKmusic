@@ -2874,6 +2874,8 @@
   "deezerMeta": "Metadaten von Deezer",
   "deezerMetaHint": "Nur Daten (Cover, Titelnummern), nie Musik",
   "deezerMetaNote": "Nur privat und nicht kommerziell. Die Bedingungen von Deezer verbieten die Förderung nicht autorisierter Downloads, und Codecore lädt von YouTube: das Risiko trägst du.",
+  "acoustId": "Per Klang erkennen (AcoustID)",
+  "acoustIdHint": "Nur der Fingerabdruck des Titels wird gesendet, nie das Audio",
   "settingsSpinCover": "Drehendes Cover",
   "settingsSpinCoverHint": "Im Player, während Musik läuft",
   "themeLowContrastWarning": "Einige Textfarben sind auf dem Hintergrund schlecht lesbar (unter 4,5:1). Das Theme bleibt unverändert.",
@@ -3140,5 +3142,9 @@
   },
   "enrichLibraryComplete": "Bibliothek vollständig",
   "enrichLibraryStop": "Abbrechen",
-  "activityEnrichWaiting": "Vervollständigung: wartet"
+  "activityEnrichWaiting": "Vervollständigung: wartet",
+  "logRecogSources": "Erkannt: {list}",
+  "recogSrcTags": "Tags",
+  "recogSrcVideo": "Video",
+  "recogSrcText": "Text"
 }

@@ -45,6 +45,18 @@ class ImportRepository {
 
   final AppDatabase _db;
 
+  /// The YouTube video a library track was downloaded from, if a row says so
+  /// (a linked or reviewed row only guessed it).
+  Future<String?> videoIdOfTrack(int trackId) async =>
+      (await (_db.select(_db.playlistImportItems)
+                ..where((i) =>
+                    i.trackId.equals(trackId) &
+                    i.videoId.isNotNull() &
+                    i.status.equals(ImportItemStatus.downloaded.index))
+                ..limit(1))
+              .getSingleOrNull())
+          ?.videoId;
+
   /// Creates the import and all its rows in one transaction.
   Future<int> create({
     required int playlistId,

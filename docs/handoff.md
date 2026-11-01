@@ -1,4 +1,4 @@
-# Handoff — 2026-10-31 (fasi 69a e 69b chiuse: un solo motore di arricchimento)
+# Handoff — 2026-11-02 (fase 69d chiusa: la cascata del riconoscimento)
 
 ## Riconoscimento del brano (kickoff 2026-11-01, fasi 69c–69e)
 Feature nuova, **prima della fase 70**: prima di arricchire, l'app riconosce il brano (ISRC/MBID → video id → testo → AcoustID → YouTube Music) e arricchisce dall'identità; le cover portano le curiosità dell'originale. Documento: `docs/feature-riconoscimento.md` (R-160…R-188, rischi K-RB-01…09); decisioni D-299…D-323; fasi `docs/fase-69c-*.md`, `fase-69d-*.md`, `fase-69e-*.md`.
@@ -10,11 +10,20 @@ Feature nuova, **prima della fase 70**: prima di arricchire, l'app riconosce il 
 
 Esiti in `docs/fase-69c-fondamenta-riconoscimento.md`.
 
+**Fase 69d chiusa** (PR #79):
+- `TrackRecognizer` in `lib/services/recognition/`; l'identità è salvata in `track_enrich.details.rec`;
+- il motore arricchisce dall'identità;
+- Test.zip: 124/147 riconosciuti, 0 `sure` sbagliate dopo la correzione «artista coerente».
+
+Esiti e numeri in `docs/fase-69d-cascata-riconoscimento.md`.
+
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 69d
+/obiettivo fase 69e
 ```
-Poi `/obiettivo fase 69e`; solo dopo si torna alla 70. In 69d.4 si rimisura Test.zip: dopo il taglio dell'impronta a 120 s esatti non è stato rifatto.
+Si comincia dal task **69e.0** (debiti della 69d, il primo è `needsRecognition` per il ripasso dei brani già arricchiti). Poi si torna alla 70. Fuori dal riconoscimento, ma da mettere nel piano:
+- un solo 503 di LRCLIB toglie i testi a tutto il giro;
+- il Registro scrive «stopped 146/147» per un giro finito.
 
 Da sapere:
 - **69c.1 blocca tutto:** se l'impronta di rusty-chromaprint non coincide con fpcalc, si applica D-316 (copia in `third_party/` e un passo di correzione), poi ci si ferma e si chiede.

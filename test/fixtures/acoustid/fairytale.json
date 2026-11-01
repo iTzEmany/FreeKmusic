@@ -1,0 +1,751 @@
+{
+ "status": "ok",
+ "results": [
+  {
+   "id": "51436370-5ebf-46e3-a7f0-39584ec9252e",
+   "score": 0.9682775,
+   "recordings": [
+    {
+     "id": "384a659b-c628-4858-863e-342c3cf2ed63",
+     "title": "Fairytale",
+     "artists": [
+      {
+       "name": "The Pointer Sisters"
+      }
+     ],
+     "duration": 306.0,
+     "releases": [
+      {
+       "date": {
+        "year": 1993
+       }
+      },
+      {
+       "date": {
+        "year": 2006
+       }
+      },
+      {
+       "date": {
+        "year": 2001
+       }
+      },
+      {
+       "date": {
+        "year": 1974
+       }
+      },
+      {
+       "date": {
+        "year": 1974
+       }
+      },
+      {
+       "date": {
+        "year": 2007
+       }
+      },
+      {
+       "date": {
+        "year": 2005
+       }
+      },
+      {
+       "date": {
+        "year": 1998
+       }
+      },
+      {
+       "date": {
+        "year": 2004
+       }
+      },
+      {
+       "date": {
+        "year": 2002
+       }
+      },
+      {
+       "date": {
+        "year": 1996
+       }
+      },
+      {
+       "date": {
+        "year": 2024
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      }
+     ]
+    },
+    {
+     "id": "6190f4cf-2396-4827-a9cc-c05a0ff3a5b4",
+     "title": "Fairytale",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "releases": [
+      {
+       "date": {
+        "year": 2010
+       }
+      }
+     ]
+    },
+    {
+     "id": "7e0328c7-06d2-4c76-a10f-7bb1bc93bcc9",
+     "title": "Fairytale",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "duration": 183.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2011
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2011
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      }
+     ]
+    },
+    {
+     "id": "e63ef88b-ae1e-4b07-9e1c-fe5e25068bb6",
+     "title": "Fairytale (karaoke version)",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "duration": 183.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "7cd48c02-b083-46f6-9fb2-bccb8a2f5a8d",
+   "score": 0.96446466,
+   "recordings": [
+    {
+     "id": "6190f4cf-2396-4827-a9cc-c05a0ff3a5b4",
+     "title": "Fairytale",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "releases": [
+      {
+       "date": {
+        "year": 2010
+       }
+      }
+     ]
+    },
+    {
+     "id": "7e0328c7-06d2-4c76-a10f-7bb1bc93bcc9",
+     "title": "Fairytale",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "duration": 183.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2011
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2014
+       }
+      },
+      {
+       "date": {
+        "year": 2011
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2010
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      }
+     ]
+    },
+    {
+     "id": "ba299837-87c4-4c93-b72c-ca684d342654",
+     "title": "Fairytale (Holter / Erixson radio remix)",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "duration": 174.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      }
+     ]
+    },
+    {
+     "id": "e63ef88b-ae1e-4b07-9e1c-fe5e25068bb6",
+     "title": "Fairytale (karaoke version)",
+     "artists": [
+      {
+       "name": "Alexander Rybak"
+      }
+     ],
+     "duration": 183.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2009
+       }
+      },
+      {
+       "date": {
+        "year": 2009
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
