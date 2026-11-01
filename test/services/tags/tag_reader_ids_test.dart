@@ -26,6 +26,7 @@ void main() {
           artist: 'Full Date Artist',
           album: 'Full Date Album',
           year: 2015,
+          durationMs: 1000,
         ),
         loftyIds: noIds,
       );
@@ -34,6 +35,7 @@ void main() {
       expect(t.artist, 'Full Date Artist');
       expect(t.album, 'Full Date Album');
       expect(t.year, 2015);
+      expect(t.durationMs, 1000);
     });
   }
 

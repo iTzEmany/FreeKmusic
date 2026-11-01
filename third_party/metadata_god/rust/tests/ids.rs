@@ -127,3 +127,10 @@ fn full_date_year_is_read() {
         assert_eq!(m.year, Some(2015), "{p}");
     }
 }
+
+#[test]
+fn garbage_ufid_is_none() {
+    let p = gen("h.mp3");
+    id3v3(&p, &[("UFID", [&b"http://musicbrainz.org\0"[..], b"not-a-uuid"].concat())]);
+    assert!(read_ids(p).unwrap().mbid.is_none());
+}

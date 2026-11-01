@@ -37,8 +37,10 @@ class AudioMetadataTagReader implements TagReader {
     } on Object catch (e, st) {
       // e.g. a date like "20151119" breaks the parser: lofty reads the basics.
       AppLog.w('tag read failed: $path', e, st);
-      info = await _fallback(path);
+      info = await _fallback(path, withCover);
     }
+    // lofty cannot read these; skip instead of logging a warning per file.
+    if (path.toLowerCase().endsWith('.webm')) return info;
     try {
       final ids = await (loftyIds ?? _loftyIds)(path);
       info = info.withIds(
@@ -51,14 +53,23 @@ class AudioMetadataTagReader implements TagReader {
     return info;
   }
 
-  Future<TagInfo> _fallback(String path) async {
+  Future<TagInfo> _fallback(String path, bool withCover) async {
     try {
       final m = await (loftyRead ?? _loftyRead)(path);
+      final ms = m.durationMs?.round();
+      final pic = withCover ? m.picture : null;
       return TagInfo(
         title: _clean(m.title),
         artist: _clean(m.artist),
+        albumArtist: _clean(m.albumArtist),
         album: _clean(m.album),
+        genre: _clean(m.genre),
+        trackNumber: m.trackNumber,
+        discNumber: m.discNumber,
         year: (m.year ?? 0) > 0 ? m.year : null,
+        durationMs: (ms == null || ms <= 0) ? null : ms,
+        coverBytes: pic?.data,
+        coverMime: pic?.mimeType,
       );
     } on Object catch (e, st) {
       AppLog.w('lofty tag read failed: $path', e, st);

@@ -50,11 +50,18 @@ pub fn fingerprint_raw(path: &str) -> Result<(Vec<u32>, u32)> {
         .context("unsupported audio codec (Opus/WebM are not supported)")?;
     let track_id = track.id;
     let known_frames = track.num_frames;
+    let known_secs = match (track.duration, track.time_base) {
+        (Some(d), Some(tb)) => tb
+            .calc_time(symphonia::core::units::Timestamp::new(d.get() as i64))
+            .map(|t| t.as_secs_f64() as u32),
+        _ => None,
+    };
 
     let mut printer = Fingerprinter::new(&Configuration::preset_test2());
     let mut started = false;
     let (mut rate, mut fed, mut total) = (0u64, 0u64, 0u64);
     let mut buf: Vec<i16> = Vec::new();
+    let mut reached_eof = true;
 
     loop {
         let packet = match format.next_packet() {
@@ -84,11 +91,14 @@ pub fn fingerprint_raw(path: &str) -> Result<(Vec<u32>, u32)> {
             }
             buf.resize(audio.samples_interleaved(), 0);
             audio.copy_to_slice_interleaved(&mut buf);
-            printer.consume(&buf);
-            fed += frames;
+            // Stop exactly at MAX_SECS: feed only the frames still needed.
+            let take = frames.min(MAX_SECS * rate - fed);
+            printer.consume(&buf[..(take as usize * spec.channels().count())]);
+            fed += take;
         }
-        // With a known length the rest of the file need not be decoded.
-        if known_frames.is_some() && fed >= MAX_SECS * rate {
+        // The rest of the file need not be decoded.
+        if fed >= MAX_SECS * rate {
+            reached_eof = false;
             break;
         }
     }
@@ -100,8 +110,22 @@ pub fn fingerprint_raw(path: &str) -> Result<(Vec<u32>, u32)> {
     if raw.is_empty() {
         bail!("empty fingerprint (audio too short or silent)");
     }
-    let total = known_frames.unwrap_or(total);
-    Ok((raw, (total / rate) as u32))
+    let secs = if reached_eof {
+        (total / rate) as u32
+    } else if let Some(n) = known_frames {
+        (n / rate) as u32
+    } else if let Some(s) = known_secs {
+        s
+    } else {
+        // Decoding stopped early and the container gave no length: ask lofty.
+        use lofty::file::AudioFile;
+        lofty::read_from_path(path)
+            .context("cannot read the duration")?
+            .properties()
+            .duration()
+            .as_secs() as u32
+    };
+    Ok((raw, secs))
 }
 
 fn base64_url(data: &[u8]) -> String {
