@@ -1,0 +1,589 @@
+{
+ "status": "ok",
+ "results": [
+  {
+   "id": "c477076d-a797-46c9-b5da-42b976207f81",
+   "score": 0.9626846,
+   "recordings": [
+    {
+     "id": "4315cfa8-8e2d-4fd6-879b-bbffe87e90a8",
+     "title": "Happier",
+     "artists": [
+      {
+       "name": "Guster"
+      }
+     ],
+     "duration": 276.0,
+     "releases": [
+      {
+       "date": {
+        "year": 2004
+       }
+      }
+     ]
+    },
+    {
+     "id": "623b7611-08d9-4115-acd6-69f734dd3f24",
+     "title": "Happier",
+     "artists": [
+      {
+       "name": "Marshmello"
+      },
+      {
+       "name": "Bastille"
+      }
+     ],
+     "duration": 214.29,
+     "releases": [
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2024
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2022
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2020
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 2023
+       }
+      },
+      {
+       "date": {
+        "year": 2021
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      },
+      {
+       "date": {
+        "year": 2018
+       }
+      }
+     ]
+    },
+    {
+     "id": "ab641c78-3f63-47b9-b5c7-94fa75d606b1",
+     "title": "Happier",
+     "artists": [
+      {
+       "name": "Guster"
+      }
+     ],
+     "duration": 266.333,
+     "releases": []
+    },
+    {
+     "id": "ca431429-83c1-4c38-9b8f-5239122fb707",
+     "title": "Happier",
+     "artists": [
+      {
+       "name": "Guster"
+      }
+     ],
+     "duration": 232.04,
+     "releases": [
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 2000
+       }
+      },
+      {
+       "date": {
+        "year": 2019
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      },
+      {
+       "date": {
+        "year": 1999
+       }
+      }
+     ]
+    },
+    {
+     "id": "ecd8dedf-3e67-43af-81f5-1d68fac5e94e"
+    }
+   ]
+  }
+ ]
+}

@@ -3427,6 +3427,8 @@
   "deezerMeta": "Metadati da Deezer",
   "deezerMetaHint": "Solo dati (copertine, numeri di traccia), mai musica",
   "deezerMetaNote": "Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e Codecore scarica da YouTube: è un rischio tuo.",
+  "acoustId": "Riconosci dal suono (AcoustID)",
+  "acoustIdHint": "Parte solo l'impronta del brano, mai l'audio",
   "settingsSpinCover": "Copertina che ruota",
   "settingsSpinCoverHint": "Nel player, quando la musica suona",
   "themeLowContrastWarning": "Alcuni colori del testo si leggono male sullo sfondo (sotto 4,5:1). Il tema resta com'è.",

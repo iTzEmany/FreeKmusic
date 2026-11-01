@@ -5328,6 +5328,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e Codecore scarica da YouTube: è un rischio tuo.';
 
   @override
+  String get acoustId => 'Riconosci dal suono (AcoustID)';
+
+  @override
+  String get acoustIdHint => 'Parte solo l\'impronta del brano, mai l\'audio';
+
+  @override
   String get settingsSpinCover => 'Copertina che ruota';
 
   @override

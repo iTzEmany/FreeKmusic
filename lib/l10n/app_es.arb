@@ -2874,6 +2874,8 @@
   "deezerMeta": "Metadatos de Deezer",
   "deezerMetaHint": "Solo datos (carátulas, números de pista), nunca música",
   "deezerMetaNote": "Uso privado y no comercial. Las condiciones de Deezer prohíben promover la descarga no autorizada, y Codecore descarga de YouTube: el riesgo es tuyo.",
+  "acoustId": "Reconocer por el sonido (AcoustID)",
+  "acoustIdHint": "Solo se envía la huella del tema, nunca el audio",
   "settingsSpinCover": "Carátula giratoria",
   "settingsSpinCoverHint": "En el reproductor, mientras suena la música",
   "themeLowContrastWarning": "Algunos colores de texto se leen mal sobre el fondo (menos de 4,5:1). El tema se queda como está.",

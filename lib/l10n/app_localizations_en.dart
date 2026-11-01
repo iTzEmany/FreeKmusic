@@ -5315,6 +5315,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Private, non-commercial use. Deezer’s terms forbid promoting unauthorised downloading, and Codecore downloads from YouTube: the risk is yours.';
 
   @override
+  String get acoustId => 'Recognise by sound (AcoustID)';
+
+  @override
+  String get acoustIdHint =>
+      'Only the track\'s fingerprint is sent, never the audio';
+
+  @override
   String get settingsSpinCover => 'Spinning cover';
 
   @override

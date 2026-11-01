@@ -8361,6 +8361,18 @@ abstract class AppLocalizations {
   /// **'Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e Codecore scarica da YouTube: è un rischio tuo.'**
   String get deezerMetaNote;
 
+  /// No description provided for @acoustId.
+  ///
+  /// In it, this message translates to:
+  /// **'Riconosci dal suono (AcoustID)'**
+  String get acoustId;
+
+  /// No description provided for @acoustIdHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Parte solo l\'impronta del brano, mai l\'audio'**
+  String get acoustIdHint;
+
   /// No description provided for @settingsSpinCover.
   ///
   /// In it, this message translates to:

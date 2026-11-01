@@ -2874,6 +2874,8 @@
   "deezerMeta": "Metadata from Deezer",
   "deezerMetaHint": "Data only (covers, track numbers), never music",
   "deezerMetaNote": "Private, non-commercial use. Deezer’s terms forbid promoting unauthorised downloading, and Codecore downloads from YouTube: the risk is yours.",
+  "acoustId": "Recognise by sound (AcoustID)",
+  "acoustIdHint": "Only the track's fingerprint is sent, never the audio",
   "settingsSpinCover": "Spinning cover",
   "settingsSpinCoverHint": "In the player, while music plays",
   "themeLowContrastWarning": "Some text colours are hard to read on the background (under 4.5:1). The theme stays as is.",

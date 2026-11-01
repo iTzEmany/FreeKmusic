@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import '../data/repositories/credits_repository.dart';
 import '../data/settings/settings_store.dart' show AppSettings;
+import '../services/online/acoustid_client.dart';
 import '../services/online/cover_fetcher.dart';
 import '../services/online/credits_enricher.dart';
 import '../services/online/enrich_engine.dart';
@@ -29,6 +30,7 @@ import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
 import '../services/library/track_file_sync.dart';
+import '../services/tags/fingerprinter.dart';
 import '../services/tags/tag_writer.dart';
 import '../services/online/wikipedia_client.dart';
 import '../services/online/ytm_artist_resolver.dart';
@@ -56,6 +58,12 @@ final itunesClientProvider = Provider(
 final deezerClientProvider = Provider(
   (ref) => DeezerClient(ref.watch(webClientProvider)),
 );
+final acoustIdClientProvider = Provider((ref) {
+  final c = AcoustIdClient();
+  ref.onDispose(c.close);
+  return c;
+});
+final fingerprinterProvider = Provider<Fingerprinter>((ref) => RustFingerprinter());
 final deezerGwClientProvider = Provider(
   // shortcut: a one-off Registro line needs a LogEntry kind (phase 53); AppLog until then.
   (ref) => DeezerGwClient(onPaused: () => AppLog.w('deezer_gw: paused for 24 hours after 3 errors')),

@@ -36,6 +36,7 @@ class AppSettings {
     this.autoEnrich = false,
     this.autoLyrics = false,
     this.deezerMeta = true,
+    this.acoustId = true,
     this.creditsDetails = false,
     this.autoCuriosities = false,
     this.showUndoSnackbar = true,
@@ -90,7 +91,7 @@ class AppSettings {
   final bool compactMode, reducedMotion, autoEnrich, autoLyrics, showUndoSnackbar;
 
   /// Deezer as a metadata source (data only); on unless the user turned it off.
-  final bool deezerMeta, creditsDetails, autoCuriosities;
+  final bool deezerMeta, acoustId, creditsDetails, autoCuriosities;
 
   /// Applies ReplayGain (track gain) at playback time.
   final bool normalizeVolume;
@@ -183,6 +184,7 @@ class AppSettings {
     bool? autoEnrich,
     bool? autoLyrics,
     bool? deezerMeta,
+    bool? acoustId,
     bool? creditsDetails,
     bool? autoCuriosities,
     bool? showUndoSnackbar,
@@ -231,6 +233,7 @@ class AppSettings {
         autoEnrich: autoEnrich ?? this.autoEnrich,
         autoLyrics: autoLyrics ?? this.autoLyrics,
         deezerMeta: deezerMeta ?? this.deezerMeta,
+        acoustId: acoustId ?? this.acoustId,
         creditsDetails: creditsDetails ?? this.creditsDetails,
         autoCuriosities: autoCuriosities ?? this.autoCuriosities,
         showUndoSnackbar: showUndoSnackbar ?? this.showUndoSnackbar,
@@ -312,6 +315,7 @@ class SettingsStore {
         autoEnrich: _prefs.getBool('autoEnrich') ?? false,
         autoLyrics: _prefs.getBool('autoLyrics') ?? false,
         deezerMeta: _prefs.getBool('deezerMeta') ?? true,
+        acoustId: _prefs.getBool('acoustId') ?? true,
         creditsDetails: _prefs.getBool('creditsDetails') ?? false,
         autoCuriosities: _prefs.getBool('autoCuriosities') ?? false,
         showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,
@@ -391,6 +395,7 @@ class SettingsStore {
     await _prefs.setBool('autoEnrich', s.autoEnrich);
     await _prefs.setBool('autoLyrics', s.autoLyrics);
     await _prefs.setBool('deezerMeta', s.deezerMeta);
+    await _prefs.setBool('acoustId', s.acoustId);
     await _prefs.setBool('creditsDetails', s.creditsDetails);
     await _prefs.setBool('autoCuriosities', s.autoCuriosities);
     await _prefs.setBool('showUndoSnackbar', s.showUndoSnackbar);

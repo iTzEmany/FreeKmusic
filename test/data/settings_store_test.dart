@@ -15,6 +15,14 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().deezerMeta, false);
   });
+  test('acoustId is on when absent and a saved false stays false', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().acoustId, true);
+    SharedPreferences.setMockInitialValues({'acoustId': false});
+    store = await SettingsStore.open();
+    expect(store.readSettings().acoustId, false);
+  });
   streamCacheSettingTests();
   test('playback state round trip', () async {
     SharedPreferences.setMockInitialValues({});

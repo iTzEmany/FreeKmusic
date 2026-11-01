@@ -11,3 +11,7 @@ const kReleaseRepo = 'iTzEmany/codecore-music-player';
 /// Wikimedia allows 200 requests a minute instead of 10. Empty = not sent.
 /// It is public: put in it only what you are happy to show those services.
 const kApiContact = 'https://github.com/iTzEmany/codecore-music-player';
+
+/// Application key of Codecore at AcoustID (public by design, D-313). The
+/// user's own key never goes in the repo.
+const kAcoustIdClient = 'Hsn5w6Tjwv';
