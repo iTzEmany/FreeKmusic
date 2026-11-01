@@ -33,6 +33,9 @@ void main() {
     ['Symphony No. 5', 'Beethoven', 'Symphony No. 5', 'Beethoven'],
     ['Stand by Me', 'Ben E. King', 'Stand by Me', 'Ben E. King'],
     ['Song [Remix]', 'Band', 'Song [Remix]', 'Band'],
+    ['"Song" by ArtistVEVO', 'Chill Channel', 'Song', 'Chill Channel'],
+    ['"Song" by ArtistVEVO', '', 'Song', 'Artist'],
+    ['"" by Real Artist', '', 'by Real Artist', ''],
     ['"Song Name" by Real Artist', 'Chill Channel', 'Song Name', 'Chill Channel'],
   ];
 

@@ -79,7 +79,7 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   title = title.replaceFirst(_prefix, '');
   title = title.replaceFirst(_numbering, '');
   title = title.replaceFirst(_copyNumber, '').replaceFirst(_remasterTail, '');
-  final genericArtist = _isGenericArtist(rawArtist);
+  var genericArtist = _isGenericArtist(rawArtist);
   var artist = rawArtist.trim();
 
   title = title.replaceAll(_noiseGroup, ' ').replaceAll(_noisePhrase, ' ');
@@ -89,21 +89,24 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
       .replaceAll(_ostTag, ' ')
       .replaceAll(_channelNo, ' ')
       .replaceAllMapped(_squareGroup, (m) => _versionTail.hasMatch(m[0]!) ? m[0]! : ' ');
-  String? byArtist;
   final by = _byArtist.firstMatch(title);
   if (by != null) {
-    byArtist = by[1]!.trim();
-    title = title.substring(0, by.start);
+    var song = title.substring(0, by.start);
     // The quoted song is the last « - » piece: «Game - OST - _Song_».
-    final i = title.lastIndexOf(_separator);
-    if (genericArtist && i >= 0) title = title.substring(i + 3);
-    title = title.replaceAll('_', ' ');
+    final i = song.lastIndexOf(_separator);
+    if (genericArtist && i >= 0) song = song.substring(i + 3);
+    song = _fixQuotes(song.replaceAll('_', ' ')).trim();
+    // An empty song keeps the title as it was; the by-artist only fills a generic tag.
+    if (song.isNotEmpty) {
+      title = song;
+      if (genericArtist) {
+        artist = by[1]!.trim();
+        genericArtist = false;
+      }
+    }
   }
   title = _fixQuotes(title).replaceAll(RegExp(r'\s+'), ' ').trim();
   artist = _fixQuotes(artist);
-  if (byArtist != null && genericArtist && byArtist.isNotEmpty) {
-    return CleanQuery(title, byArtist);
-  }
 
   CleanQuery? tagged;
   final m = _separator.firstMatch(title);
