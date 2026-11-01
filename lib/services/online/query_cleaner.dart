@@ -45,6 +45,7 @@ final _emoji = RegExp(
     '[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\uFE0F\\u200D]',
     unicode: true);
 final _cjkBrackets = RegExp('【[^】]*】');
+final _emptyPiece = RegExp(r'^\s*$|^\s*[-–—]\s|\s[-–—]\s*$');
 final _squareGroup = RegExp(r'\[[^\]]*\]');
 final _ostTag = RegExp(r'[\(\[]\s*ost\s*[\)\]]', caseSensitive: false);
 /// Channel numbering «No.19»: only bracketed, or leading/trailing around a
@@ -74,7 +75,13 @@ bool _isGenericArtist(String artist) {
       a.endsWith(' - topic');
 }
 
+/// Longer input is cut: the regexes below are quadratic on pathological text.
+const _maxInput = 300;
+String _cut(String s) => s.length > _maxInput ? s.substring(0, _maxInput) : s;
+
 CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
+  rawTitle = _cut(rawTitle);
+  rawArtist = _cut(rawArtist);
   var title = rawTitle.trim().replaceFirst(_ext, '');
   title = title.replaceFirst(_prefix, '');
   title = title.replaceFirst(_numbering, '');
@@ -87,8 +94,11 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
       .replaceAll(_emoji, ' ')
       .replaceAll(_cjkBrackets, ' ')
       .replaceAll(_ostTag, ' ')
-      .replaceAll(_channelNo, ' ')
-      .replaceAllMapped(_squareGroup, (m) => _versionTail.hasMatch(m[0]!) ? m[0]! : ' ');
+      .replaceAll(_channelNo, ' ');
+  final noSquare = title.replaceAllMapped(
+      _squareGroup, (m) => _versionTail.hasMatch(m[0]!) ? m[0]! : ' ');
+  // «[Intro]» or «Artist - [Intro]» is all title: keep the brackets then.
+  if (!_emptyPiece.hasMatch(noSquare)) title = noSquare;
   final by = _byArtist.firstMatch(title);
   if (by != null) {
     var song = title.substring(0, by.start);
@@ -99,8 +109,9 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
     // An empty song keeps the title as it was; the by-artist only fills a generic tag.
     if (song.isNotEmpty) {
       title = song;
-      if (genericArtist) {
-        artist = by[1]!.trim();
+      final who = _fixQuotes(by[1]!).replaceFirst(_artistSuffix, '').trim();
+      if (genericArtist && who.isNotEmpty) {
+        artist = who;
         genericArtist = false;
       }
     }

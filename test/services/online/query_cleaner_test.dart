@@ -36,6 +36,9 @@ void main() {
     ['"Song" by ArtistVEVO', 'Chill Channel', 'Song', 'Chill Channel'],
     ['"Song" by ArtistVEVO', '', 'Song', 'Artist'],
     ['"" by Real Artist', '', 'by Real Artist', ''],
+    ['[Intro]', '', '[Intro]', ''],
+    ['Artist - [Intro]', '', '[Intro]', 'Artist'],
+    ['"Song" by (Official Video)', '', 'Song', ''],
     ['"Song Name" by Real Artist', 'Chill Channel', 'Song Name', 'Chill Channel'],
   ];
 
@@ -50,6 +53,12 @@ void main() {
   test('«Symphony No. 5 - I. Allegro» keeps its number in the tagged query', () {
     final c = cleanSearchQuery('Symphony No. 5 - I. Allegro', 'Beethoven');
     expect(c.tagged!.title, 'Symphony No. 5 - I. Allegro');
+  });
+
+  test('a pathological 20000-char title is cut and stays fast', () {
+    final sw = Stopwatch()..start();
+    cleanSearchQuery('[' * 20000, '');
+    expect(sw.elapsedMilliseconds, lessThan(200));
   });
 
   test('extractPrimaryArtist', () {
