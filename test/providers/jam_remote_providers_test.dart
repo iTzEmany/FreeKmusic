@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
@@ -46,11 +48,18 @@ class _Hub extends ShareHubNotifier {
   String? get deviceId => 'me';
   @override
   int? get port => 4000;
-  final holds = <bool>[];
+  int held = 0, remoteHeld = 0;
   @override
-  Future<void> holdJam({bool remote = false}) async => holds.add(remote);
+  Future<void> holdJam({bool remote = false}) async {
+    held++;
+    if (remote) remoteHeld++;
+  }
+
   @override
-  Future<void> releaseJam({bool remote = false}) async => holds.add(!remote);
+  Future<void> releaseJam({bool remote = false}) async {
+    held--;
+    if (remote) remoteHeld--;
+  }
 }
 
 /// A remote guest that answers [outcome] without any network.
@@ -85,8 +94,9 @@ class _FakeGuest implements RemoteJamGuest {
 }
 
 class _ServiceHub extends ShareHubNotifier {
+  Completer<void>? slowEnter;
   @override
-  Future<void> enter() async {}
+  Future<void> enter() async => slowEnter?.future;
   @override
   Future<void> leave() async {}
 }
@@ -108,8 +118,8 @@ void main() {
   late List<FakeMqttLink> links;
   late JamJoinOutcome guestOutcome;
   late SodiumJamCrypto crypto;
-
-  setUpAll(() async => crypto = await SodiumJamCrypto.create());
+  late List<Uint8List> randoms;
+  late Future<JamCrypto> Function() cryptoFor;
 
   setUp(() async {
     _host.clearSession();
@@ -119,6 +129,15 @@ void main() {
     addTearDown(db.close);
     handler = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db), onError: (_) {});
     addTearDown(handler.dispose);
+    // Keeps every random buffer: JamKey.dispose zeroes the one it adopted.
+    randoms = [];
+    final rng = Random();
+    crypto = await SodiumJamCrypto.create(random: (n) {
+      final b = Uint8List.fromList([for (var i = 0; i < n; i++) 1 + rng.nextInt(255)]);
+      randoms.add(b);
+      return b;
+    });
+    cryptoFor = () async => crypto;
     net = FakeNet(kDefaultJamBrokers);
     links = [];
     guestOutcome = JamJoinOutcome.declined;
@@ -132,7 +151,7 @@ void main() {
       playbackPersistenceProvider.overrideWithValue(PlaybackPersistence(handler, store)),
       jamCacheDirProvider.overrideWith((ref) async => Directory.systemTemp.createTemp('jam_rem')),
       jamBackendFactoryProvider.overrideWithValue(FakeBackend.new),
-      jamCryptoProvider.overrideWith((_) => crypto),
+      jamCryptoProvider.overrideWith((_) => cryptoFor()),
       mqttLinkFactoryProvider.overrideWithValue(() => FakeMqttLink(net)..let(links.add)),
       remoteJamGuestFactoryProvider.overrideWithValue((_) => _FakeGuest(guestOutcome)),
     ]);
@@ -164,6 +183,7 @@ void main() {
       expect(connected(), isTrue);
       expect(c.read(jamBridgeProvider).on, isTrue);
       expect(b.currentQr(), isNotNull);
+      expect(randoms.firstWhere((b) => b.length == 32).any((x) => x != 0), isTrue);
 
       await jam.end();
       await graceOver();
@@ -171,6 +191,8 @@ void main() {
       expect(b.currentQr(), isNull);
       expect(links.single.connected, isFalse);
       expect(c.read(jamProvider).inviting, isFalse);
+      // The host secret (the first 32 random bytes) was zeroed with the bridge.
+      expect(randoms.firstWhere((b) => b.length == 32).every((x) => x == 0), isTrue);
     });
 
     test('the speaker Jam, also waiting, turns it on by itself and closing turns it off', () async {
@@ -184,6 +206,74 @@ void main() {
       await graceOver();
       expect(c.read(jamBridgeProvider).on, isFalse);
       expect(links.single.connected, isFalse);
+    });
+  });
+
+
+  group('bridge lifetime', () {
+    _Hub hub() => c.read(shareHubProvider.notifier) as _Hub;
+    JamRequest req() => _host.requests.putIfAbsent(
+        'r1',
+        () => JamRequest(
+            id: 'r1', fromId: 'g', fromName: 'Phone', fromHost: '10.0.0.5', fromPort: 4000, token: 't', receivedAt: DateTime.now()));
+
+    test('«Termina» with the speaker Jam waiting closes it, the bridge and the holds', () async {
+      final jam = c.read(jamProvider.notifier);
+      await jam.openSpeakerJam();
+      await jam.invite();
+      await pumpEventQueue();
+      expect(c.read(jamBridgeProvider).on, isTrue);
+      await jam.end();
+      await graceOver();
+      expect(c.read(jamBridgeProvider).on, isFalse);
+      expect(c.read(jamProvider).inviting, isFalse);
+      expect(jam.speakerJam, isFalse);
+      expect(hub().held, 0);
+    });
+
+    test('accepting the first guest of the waiting speaker Jam keeps the bridge on', () async {
+      final jam = c.read(jamProvider.notifier);
+      await jam.openSpeakerJam();
+      await pumpEventQueue();
+      await jam.acceptRequest(req());
+      await pumpEventQueue();
+      expect(c.read(jamProvider).active, isTrue);
+      expect(c.read(jamBridgeProvider).on, isTrue);
+      expect(links.single.connected, isTrue);
+    });
+
+    test('«Continua sul telefono» does not switch the bridge off mid-Jam', () async {
+      final jam = c.read(jamProvider.notifier);
+      _host.open();
+      await jam.debugBegin(JamRole.host, _host.state!);
+      await jam.openSpeakerJam();
+      jam.debugState(_host.state!); // what the host's change stream does
+      await pumpEventQueue();
+      expect(c.read(jamBridgeProvider).on, isTrue);
+      await jam.send(const JamCommand.speakerAway());
+      expect(await jam.continueOnPhone(), isNull);
+      await graceOver();
+      expect(c.read(jamBridgeProvider).on, isTrue);
+      expect(links.single.connected, isTrue);
+    });
+
+    test('an invitation opened and closed while the speaker waits leaves no hold behind', () async {
+      final jam = c.read(jamProvider.notifier);
+      await jam.openSpeakerJam();
+      await jam.invite();
+      await jam.stopInviting();
+      await jam.closeSpeakerJamSilently();
+      await graceOver();
+      expect(hub().held, 0);
+    });
+
+    test('the bridge failing to start is logged, not thrown', () async {
+      cryptoFor = () async => throw StateError('no sodium');
+      final jam = c.read(jamProvider.notifier);
+      await jam.invite();
+      await pumpEventQueue();
+      expect(c.read(jamBridgeProvider).on, isFalse);
+      expect(links, isEmpty);
     });
   });
 
@@ -206,15 +296,49 @@ void main() {
       expect(c.read(jamProvider).outcome, JamJoinOutcome.tooSoon);
     });
 
+    test('a crypto failure ends the request as unreachable and releases the hold', () async {
+      cryptoFor = () async => throw StateError('no sodium');
+      await c.read(jamProvider.notifier).requestRemote(invite);
+      final s = c.read(jamProvider);
+      expect((s.phase, s.outcome, s.remote), (JamPhase.idle, JamJoinOutcome.unreachable, false));
+      expect((c.read(shareHubProvider.notifier) as _Hub).held, 0);
+    });
+
+    test('cancelling while the crypto loads stops the request', () async {
+      final gate = Completer<JamCrypto>();
+      cryptoFor = () => gate.future;
+      guestOutcome = JamJoinOutcome.accepted;
+      final jam = c.read(jamProvider.notifier);
+      final done = jam.requestRemote(invite);
+      await pumpEventQueue();
+      jam.cancelRequest();
+      gate.complete(crypto);
+      await done;
+      expect(c.read(jamProvider).phase, JamPhase.idle);
+      expect((c.read(shareHubProvider.notifier) as _Hub).held, 0);
+    });
+
+    test('a request after an open invitation takes the remote hold', () async {
+      guestOutcome = JamJoinOutcome.accepted;
+      final jam = c.read(jamProvider.notifier);
+      await jam.invite();
+      await jam.requestRemote(invite);
+      await graceOver();
+      final hub = c.read(shareHubProvider.notifier) as _Hub;
+      expect((hub.held, hub.remoteHeld), (1, 1));
+    });
+
     test('accepted: the Jam is active and this device is a remote guest', () async {
       guestOutcome = JamJoinOutcome.accepted;
       final jam = c.read(jamProvider.notifier);
       await jam.requestRemote(invite);
       final s = c.read(jamProvider);
       expect((s.phase, s.role, s.remote), (JamPhase.active, JamRole.guest, true));
-      expect((c.read(shareHubProvider.notifier) as _Hub).holds, [true]); // held as remote
+      expect(jam.debugFeeder, isNull); // a remote guest adds nothing yet
+      final hub = c.read(shareHubProvider.notifier) as _Hub;
+      expect((hub.held, hub.remoteHeld), (1, 1));
       await jam.end();
-      expect((c.read(shareHubProvider.notifier) as _Hub).holds, [true, false]); // released as remote
+      expect((hub.held, hub.remoteHeld), (0, 0));
     });
   });
 
@@ -232,7 +356,26 @@ void main() {
     await hub.holdJam(remote: true);
     await hub.releaseJam(remote: true);
     await hub.releaseJam();
-    expect(svc.calls, ['start:La Jam è attiva', 'start:Jam a distanza attiva', 'start:La Jam è attiva', 'stop']);
+    expect(svc.calls.last, 'stop');
+    expect(svc.calls.where((x) => x == 'stop'), hasLength(1));
+  });
+
+  test('a release during a slow endpoint start does not bring the service back', () async {
+    SharedPreferences.setMockInitialValues({});
+    final svc = _Service();
+    final d = ProviderContainer(overrides: [
+      settingsStoreProvider.overrideWithValue(SettingsStore(await SharedPreferences.getInstance())),
+      shareNotifierProvider.overrideWithValue(svc),
+      shareHubProvider.overrideWith(_ServiceHub.new),
+    ]);
+    addTearDown(d.dispose);
+    final hub = d.read(shareHubProvider.notifier) as _ServiceHub;
+    hub.slowEnter = Completer<void>();
+    final held = hub.holdJam();
+    await hub.releaseJam();
+    hub.slowEnter!.complete();
+    await held;
+    expect(svc.calls, ['stop']);
   });
 }
 

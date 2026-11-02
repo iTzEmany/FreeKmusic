@@ -84,7 +84,13 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
   late ShareHubNotifier _hub;
   late JamController _jam;
 
-  bool get _wanted => _hub.jamHost != null && (ref.read(jamProvider).inviting || _jam.speakerJam);
+  /// Once on, the bridge stays on until the Jam ends (even if the speaker leaves
+  /// or the first guest is still being admitted).
+  bool get _wanted {
+    final s = ref.read(jamProvider);
+    final carry = _bh != null && (_jam.hostStarting || (s.active && s.isHost && !(s.jam?.ended ?? false)));
+    return _hub.jamHost != null && (s.inviting || _jam.speakerJam || carry);
+  }
 
   /// QR of the current window; null while off.
   String? currentQr() => _bh?.currentQr();
@@ -106,7 +112,12 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
     try {
       do {
         _again = false;
-        await _step();
+        try {
+          await _step();
+        } on Object catch (e, st) {
+          AppLog.w('jam bridge: could not run', e, st);
+          await _stop();
+        }
       } while (_again && ref.mounted);
     } finally {
       _busy = false;
@@ -137,9 +148,10 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
     if (ref.mounted) state = const JamBridgeState();
     try {
       await bh.dispose(); // says goodbye, drops every key, disconnects
-      bridge?.dispose();
     } on Object catch (e, st) {
       AppLog.w('jam bridge: stop failed', e, st);
+    } finally {
+      bridge?.dispose();
     }
     if (!ref.mounted) return;
     _codeChanged.add(null);

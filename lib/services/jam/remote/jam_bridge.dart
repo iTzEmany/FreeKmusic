@@ -100,7 +100,11 @@ class JamBridge {
 
   void unsubscribe(String topic) {
     if (_topics.remove(topic) && _st == JamBridgeStatus.up) {
-      _link.unsubscribe(topic);
+      try {
+        _link.unsubscribe(topic);
+      } on Object catch (e, st) {
+        AppLog.w('bridge: unsubscribe failed: $topic', e, st);
+      }
     }
   }
 

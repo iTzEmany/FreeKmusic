@@ -123,7 +123,8 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     _jamHolds++;
     if (remote) _remoteHolds++;
     await enter();
-    await _startJamService();
+    // Released while the endpoint was starting: do not bring the service back.
+    if (_jamHolds > 0) await _startJamService();
   }
 
   Future<void> releaseJam({bool remote = false}) async {
@@ -131,10 +132,21 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     if (remote && _remoteHolds > 0) _remoteHolds--;
     if (_jamHolds > 0) {
       await _startJamService(); // the text may change
-    } else if (!ref.read(settingsProvider).receiveFromLan) {
+    } else if (ref.read(settingsProvider).receiveFromLan) {
+      await _startReceiveService(); // back to the receiving texts
+    } else {
       await _platform.stopService();
     }
     await leave();
+  }
+
+  Future<void> _startReceiveService() {
+    final l = _l10n;
+    return _platform.startService(
+      title: l.receiveServiceTitle,
+      text: l.receiveServiceText,
+      disable: l.receiveServiceDisable,
+    );
   }
 
   /// Keeps the process alive with the screen off (Android foreground service).
@@ -205,12 +217,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         }
       }
       await _ensureRunning();
-      final l = _l10n;
-      await _platform.startService(
-        title: l.receiveServiceTitle,
-        text: l.receiveServiceText,
-        disable: l.receiveServiceDisable,
-      );
+      await _startReceiveService();
     } else {
       await _platform.stopService();
       _maybeStop();

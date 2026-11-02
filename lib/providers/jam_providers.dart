@@ -34,6 +34,7 @@ import '../services/stream/stream_cache.dart';
 import '../services/jam/jam_transport.dart';
 import '../services/jam/remote/jam_invite.dart';
 import '../services/jam/remote/jam_protocol.dart';
+import '../services/jam/remote/remote_jam_guest.dart' show RemoteJamGuest;
 import '../services/jam/speaker_jam.dart';
 import '../services/share/discovery.dart';
 import 'database_providers.dart';
@@ -382,13 +383,32 @@ class JamController extends Notifier<JamUiState> {
     }
     _giveUpSpeakerWait();
     state = const JamUiState(phase: JamPhase.requesting, remote: true);
-    await _hold(remote: true);
-    final protocol = JamProtocol(await ref.read(jamCryptoProvider.future));
-    final guest = ref.read(remoteJamGuestFactoryProvider)(protocol);
-    _guest = guest;
-    final outcome = await guest.join(invite, ownDeviceId: _ownId, ownName: ref.read(deviceNameProvider));
+    _remoteCancelled = false;
+    RemoteJamGuest? guest;
+    final JamJoinOutcome outcome;
+    try {
+      await _hold(remote: true);
+      final protocol = JamProtocol(await ref.read(jamCryptoProvider.future));
+      if (_remoteCancelled) {
+        await _release();
+        state = state.copyWith(phase: JamPhase.idle, remote: false);
+        return;
+      }
+      guest = ref.read(remoteJamGuestFactoryProvider)(protocol);
+      _guest = guest;
+      outcome = await guest.join(invite, ownDeviceId: _ownId, ownName: ref.read(deviceNameProvider));
+    } on Object catch (e, st) {
+      AppLog.w('jam: remote request failed', e, st);
+      _guest = null;
+      await guest?.dispose();
+      await _release();
+      state = state.copyWith(phase: JamPhase.idle, outcome: JamJoinOutcome.unreachable, remote: false);
+      return;
+    }
     await _joined(guest, outcome, recent, sentAt);
   }
+
+  var _remoteCancelled = false;
 
   static const _remoteKey = '#remote';
 
@@ -404,10 +424,12 @@ class JamController extends Notifier<JamUiState> {
   Future<void> stopInviting() async {
     if (!state.inviting || state.active) return;
     state = state.copyWith(inviting: false);
-    if (state.phase == JamPhase.idle && !_speakerPending) await _release();
+    if (state.phase == JamPhase.idle) await _release(); // the bridge has its own hold
   }
 
   /// This host's Jam is the speaker's, or waits to become so: the bridge is on (D-226).
+  bool get hostStarting => _starting;
+
   bool get speakerJam => _speakerPending || (state.active && state.isHost && (state.jam?.speaker ?? false));
 
   /// Requests sent to [key] in the last minute, older ones dropped.
@@ -427,7 +449,10 @@ class JamController extends Notifier<JamUiState> {
     await _begin(JamRole.guest, guest.state!);
   }
 
-  void cancelRequest() => _guest?.cancelJoin();
+  void cancelRequest() {
+    _remoteCancelled = true; // a request still loading its crypto
+    _guest?.cancelJoin();
+  }
 
   /// The user accepted [req]: the host admits it directly; a guest forwards
   /// the invitation to the host.
@@ -448,6 +473,7 @@ class JamController extends Notifier<JamUiState> {
       await _acceptFirst(host, req);
     } finally {
       _starting = false;
+      _speakerChanges.add(null); // the bridge re-evaluates (it may stay on)
     }
   }
 
@@ -638,7 +664,9 @@ class JamController extends Notifier<JamUiState> {
     // Lost or ended while saving: _finish already tore everything down.
     if (state.phase == JamPhase.ended) return;
     final saved = _saved;
-    if (role == JamRole.guest && saved != null) {
+    if (state.remote) {
+      // A remote guest adds nothing to the Jam before phase 71.
+    } else if (role == JamRole.guest && saved != null) {
       _part.start(rotateQueueFromCurrent(saved.ids, saved.index), _sendResult);
     } else if (role == JamRole.host) {
       _part.start(seed, _sendResult); // an empty queue still gets suggestions (R-102)
@@ -1047,6 +1075,13 @@ class JamController extends Notifier<JamUiState> {
 
   /// Host ends for both; the guest just leaves.
   Future<void> end() async {
+    if (state.phase == JamPhase.idle) {
+      // No Jam yet: a waiting speaker Jam or an open invitation.
+      await closeSpeakerJamSilently();
+      state = state.copyWith(inviting: false);
+      await _release();
+      return;
+    }
     if (state.role == JamRole.host) {
       _host?.endSession();
       await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -1110,6 +1145,13 @@ class JamController extends Notifier<JamUiState> {
   var _heldRemote = false;
 
   Future<void> _hold({bool remote = false}) async {
+    if (_held && remote && !_heldRemote) {
+      // Held as a LAN Jam, now remote: take the remote hold first, no gap.
+      await _hub.holdJam(remote: true);
+      _heldRemote = true;
+      await _hub.releaseJam();
+      return;
+    }
     if (_held) return;
     _held = true;
     _heldRemote = remote;
