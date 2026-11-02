@@ -69,6 +69,7 @@ class MainActivity : AudioServiceActivity() {
         NotifyBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         LinkBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         IconBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
+        JamBeaconBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
         NotifyBridge.handleIntent(intent)
         IncomingBridge.register(flutterEngine.dartExecutor.binaryMessenger)
         if (!restored) IncomingBridge.handleIntent(applicationContext, intent)
@@ -175,6 +176,7 @@ class MainActivity : AudioServiceActivity() {
         ImportBridge.channel = null
         NotifyBridge.detach()
         IncomingBridge.detach()
+        JamBeaconBridge.detach()
         MediaDeleteBridge.detach()
         SaveFileBridge.detach()
         super.cleanUpFlutterEngine(flutterEngine)
@@ -197,6 +199,7 @@ class MainActivity : AudioServiceActivity() {
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray,
     ) {
+        if (JamBeaconBridge.onRequestPermissionsResult(requestCode)) return
         if (requestCode == BT_REQUEST) {
             answerPermissionRequests()
             return
