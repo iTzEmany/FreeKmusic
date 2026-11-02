@@ -3706,5 +3706,86 @@
   },
   "recogSrcTags": "tag",
   "recogSrcVideo": "video",
-  "recogSrcText": "testo"
+  "recogSrcText": "testo",
+  "recogIdent": "{title} – {artist}",
+  "@recogIdent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "recogProposal": "Proposta: {identity}",
+  "@recogProposal": {
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "recogAccept": "Accetta",
+  "recogDiscard": "Scarta",
+  "recogAcceptSem": "Accetta la proposta {identity}",
+  "@recogAcceptSem": {
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "recogDiscardSem": "Scarta la proposta {identity}",
+  "@recogDiscardSem": {
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "recogCover": "Cover",
+  "recogCoverOf": "Cover di {identity}",
+  "@recogCoverOf": {
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "recogToConfirm": "Da confermare ({count})",
+  "@recogToConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recogAcceptAll": "Accetta tutte",
+  "recogNoProposals": "Nessuna proposta da confermare",
+  "recogFromTo": "Da {from} a {to}",
+  "@recogFromTo": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "logCorrection": "Corretto da {from} a {to}",
+  "@logCorrection": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "logRevert": "Ripristina",
+  "recogActionFailed": "Operazione non riuscita",
+  "logRevertFailed": "Impossibile ripristinare questa correzione"
 }

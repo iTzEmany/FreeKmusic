@@ -31,6 +31,10 @@ class Rig {
 
   MbRecordingDetail? mbById;
   List<MbRecording> mbByIsrc = [];
+  MbRecording? mbOriginal;
+  Object? workError;
+  List<MbRecording> mbSearch = [];
+  final searches = <String>[];
   YtmSong? song;
   List<AcoustIdHit> hits = [];
   List<YtResult> ytm = [];
@@ -76,6 +80,21 @@ class _Mb implements MusicBrainzClient {
     r.calls.add('mb.id');
     if (r.mbError != null) throw r.mbError!;
     return r.mbById;
+  }
+
+  @override
+  Future<MbRecording?> workOriginal(String workId, {CancelToken? cancel}) async {
+    r.calls.add('mb.work:$workId');
+    if (r.workError != null) throw r.workError!;
+    return r.mbOriginal;
+  }
+
+  @override
+  Future<List<MbRecording>> recordings(String title, String artist,
+      {bool studioOnly = false, CancelToken? cancel}) async {
+    r.calls.add('mb.search');
+    r.searches.add('$title|$artist');
+    return r.mbSearch;
   }
 
   @override

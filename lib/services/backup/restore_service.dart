@@ -12,6 +12,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
 import 'user_data.dart';
+import '../../data/settings/settings_store.dart' show recogPassAfterKey, recogPassDoneKey;
 import 'backup_service.dart';
 
 class RestoreException implements Exception {
@@ -153,6 +154,9 @@ Future<bool> applyPendingRestore({
       if (side.existsSync()) side.deleteSync();
     }
     stagedDb.renameSync(dbFile.path);
+    // The restored rows may be older: the recognition pass must run again.
+    await prefs.remove(recogPassAfterKey);
+    await prefs.remove(recogPassDoneKey);
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {

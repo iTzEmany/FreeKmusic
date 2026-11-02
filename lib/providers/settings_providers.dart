@@ -20,7 +20,14 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 
   void update(AppSettings Function(AppSettings) change) {
+    final before = state;
     state = change(state);
+    // Tracks passed over while AcoustID was off must be asked again.
+    if (!before.acoustId && state.acoustId) {
+      ref.read(settingsStoreProvider).writeRecogPassDone(0).catchError((Object e, StackTrace st) {
+        AppLog.w('save settings failed', e, st);
+      });
+    }
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
       ref.read(settingsStoreProvider).writeSettings(state).catchError((

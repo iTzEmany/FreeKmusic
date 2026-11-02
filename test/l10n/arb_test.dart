@@ -26,7 +26,7 @@ const _sameAsItalian = {
   'radioGenreHipHop', 'radioGenreLoFi', 'radioGenreChillout', 'radioGenreOldies',
   'radioGenreMetal', 'radioGenreReggae', 'radioGenreLatin', 'radioGenreSoul',
   'radioGenreSports', 'reportKindIdea', 'sortAToZ',
-  'jamBrokerPort', 'coverSourceOnline', 'coverSizePx', 'creditRolePiano', 'creditRoleMastering', 'creditsBpm', 'creditsKindEp',
+  'recogIdent', 'recogCover', 'jamBrokerPort', 'coverSourceOnline', 'coverSizePx', 'creditRolePiano', 'creditRoleMastering', 'creditsBpm', 'creditsKindEp',
 };
 
 Map<String, dynamic> _arb(String lang) =>

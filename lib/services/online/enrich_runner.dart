@@ -182,6 +182,94 @@ class MarkCursor implements EnrichIds {
   }
 }
 
+/// The one-off re-pass of R-176: tracks with a finished enrichment and no
+/// recognition of this version, by id, from a bookmark. [query] gives the
+/// candidates (see `recogPassQuery`); [needs] is `needsRecognition` on one of
+/// them, so a track that needs nothing is skipped here with two reads and no
+/// wait. The bookmark never passes a track that needed recognition and did not
+/// get its rec saved (lost in a failed block, offline, cancelled): those come
+/// back at the next start, and the pass is [complete] only without them.
+class RecogPassIds implements EnrichIds {
+  RecogPassIds(this.query, this.needs, {int Function()? load, this.save, this.interrupt}) {
+    _scan = _saved = load?.call() ?? 0;
+  }
+
+  final Future<List<int>> Function(int after, int limit) query;
+  final Future<bool> Function(int id) needs;
+  final void Function(int id)? save;
+
+  /// Asked between chunks: true stops the pass (the bookmark stays) to let other work go first.
+  final Future<bool> Function()? interrupt;
+  late int _scan, _saved;
+  int? _hold; // the first track that needed recognition and was not saved
+  var _pending = <int>[];
+  var _exhausted = false;
+
+  /// The pass stopped on [interrupt] before the end.
+  bool interrupted = false;
+
+  /// Settles the last block and says whether the whole pass went through with nothing lost.
+  /// [healthy]: the round itself had no failure, silence, limit or cancel; a track still unsaved
+  /// then is stably lost (no source knows it, an unreadable file): it is passed over, not held.
+  Future<bool> complete({required bool healthy}) async {
+    await _settle();
+    if (healthy && _hold != null) {
+      AppLog.i('recognition pass: track $_hold not recognised, passed over');
+      _hold = null;
+      await _settle();
+    }
+    return _exhausted && _hold == null;
+  }
+
+  Future<void> _settle() async {
+    for (final id in _pending) {
+      if (_hold == null && await needs(id)) _hold = id;
+    }
+    _pending = [];
+    final mark = _hold == null ? _scan : _hold! - 1;
+    if (mark != _saved) {
+      _saved = mark;
+      save?.call(mark);
+    }
+  }
+
+  @override
+  Future<List<int>> chunk(Set<EnrichPart> parts, AskMode mode, DateTime now, int limit) async {
+    await _settle();
+    if (await interrupt?.call() ?? false) {
+      interrupted = true;
+      return const [];
+    }
+    while (true) {
+      final cands = await query(_scan, limit);
+      if (cands.isEmpty) {
+        _exhausted = true;
+        return const [];
+      }
+      _scan = cands.last;
+      final work = [
+        for (final id in cands)
+          if (await needs(id)) id,
+      ];
+      if (work.isNotEmpty) return _pending = work;
+      await _settle(); // a block of tracks that need nothing: the bookmark moves on
+    }
+  }
+
+  @override
+  void tried(int id) {}
+
+  @override
+  void checkpoint() {}
+
+  @override
+  bool get perTrack => false;
+
+  // shortcut: the pass shows no progress of its own (the state keeps the first round's numbers); add it when the pass gets a bar.
+  @override
+  Future<({int done, int total})> progress(Set<EnrichPart> parts, DateTime now) async => (done: 0, total: 0);
+}
+
 /// One run over the ids of an [EnrichIds]: tracks with a part that is on and
 /// due, one at a time, their writes gathered into one transaction every
 /// [blockSize] tracks. No Riverpod; the state lives in the database, so a new
@@ -272,7 +360,7 @@ class EnrichRunner {
     final refused = <EnrichPart>{}; // a source that said «too many requests»: not again in this round
     final block = <EnrichGather>[];
     var wanted = parts();
-    var exhausted = false;
+    var exhausted = false, skipped = false; // skipped: a track of the chunk was left unvisited
     var stuck = 0; // tracks in a row that asked a source and got no answer (offline); one that asked nothing doesn't count
     Set<EnrichPart> switchedOn() => wanted = parts().difference(refused);
     try {
@@ -294,7 +382,10 @@ class EnrichRunner {
             await engine.limiter.wait();
             if (_cancelled) break;
             // The switches may have changed since the chunk was read.
-            if (switchedOn().isEmpty) break;
+            if (switchedOn().isEmpty) {
+              skipped = true;
+              break;
+            }
             try {
               final g = await engine.gather(id, wanted, mode: mode, cancel: _token);
               block.add(g);
@@ -306,9 +397,11 @@ class EnrichRunner {
                 case GatherSignal.askedNothing:
                   break;
               }
+              // LRCLIB resting is temporary: the lyrics parts stay on and the chain asks it again when the rest ends.
+              final lyricsRest = engine.chain.isResting;
               final limited = [
                 for (final e in g.out.entries)
-                  if (e.value == PartOutcome.limited) e.key,
+                  if (e.value == PartOutcome.limited && !(lyricsRest && (e.key == EnrichPart.lyrics || e.key == EnrichPart.synced))) e.key,
               ];
               if (limited.isNotEmpty) round.limited = true;
               refused.addAll(limited);
@@ -344,6 +437,11 @@ class EnrichRunner {
       }
       round.endedSilent = stuck > 0 && !_cancelled;
       round.allRefused = !exhausted && !_cancelled && stuck < _maxStuck && refused.isNotEmpty && wanted.isEmpty;
+      // The last track may have refused the last part: nothing was left (read-only, no cursor move).
+      if (round.allRefused && !skipped) {
+        final c = await ids.progress(parts(), DateTime.fromMillisecondsSinceEpoch(_nowMs()));
+        round.allRefused = c.done < c.total;
+      }
     } on Object catch (e, st) {
       if (e is Error) {
         AppLog.e('completion: round stopped', e, st);

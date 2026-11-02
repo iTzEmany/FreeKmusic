@@ -19,12 +19,26 @@ import 'http_client.dart' show RateLimiter;
 import 'lyrics_chain.dart';
 import 'metadata_resolver.dart';
 import 'query_cleaner.dart';
+import '../recognition/channel_detector.dart' show tagsDubious;
 import '../recognition/track_identity.dart';
 import '../recognition/track_recognizer.dart';
 
 export 'enrich_gather.dart' show CommitResult, EnrichGather, GatherSignal;
 
 bool _never() => false;
+
+/// Whether a track is worth asking «who is this?» even with no part due (the
+/// base of the one-time pass over what was enriched before, R-176/D-301; the
+/// pass itself needs its own cursor): [stored] is its saved identity, none of
+/// this version, and the tags are dubious or the meta or the curiosities are
+/// empty. A hand-edited track never is.
+bool needsRecognition(Track t, TrackEnrichData? e, Recognition? stored) {
+  if (t.userEdited || stored?.v == kRecogVersion) return false;
+  final at = DateTime.fromMillisecondsSinceEpoch(nowMs());
+  // retryNone: «empty», whatever the «nothing» marks say.
+  bool empty(EnrichPart p) => isDue(p, t, e, at, mode: AskMode.retryNone);
+  return tagsDubious(t) || empty(EnrichPart.meta) || empty(EnrichPart.curio);
+}
 
 /// The one engine that fills a track's parts: [gather] asks the sources,
 /// [commit] writes, [completeOne] does both. Never calls `EnrichmentService`.
@@ -40,6 +54,7 @@ class EnrichEngine {
     required this.language,
     this.useCredits = _never,
     this.recognizer,
+    this.onSure,
     RateLimiter? limiter,
   }) : limiter = limiter ?? RateLimiter(),
        _writer = EnrichWriter(db, tracks) {
@@ -49,6 +64,7 @@ class EnrichEngine {
       _writer,
       credits: credits,
       curiosities: curiosities,
+      onSure: onSure,
     );
   }
 
@@ -71,6 +87,9 @@ class EnrichEngine {
   /// Who the track is, asked before the parts; without it nothing new is
   /// asked and no `rec` is written.
   final TrackRecognizer? recognizer;
+
+  /// Applies a sure recognition after the commit (`TrackCorrections`); without it none is.
+  final Future<void> Function(Track, Recognition)? onSure;
 
   /// The pause between online lookups.
   final RateLimiter limiter;
@@ -181,7 +200,7 @@ class EnrichEngine {
     var known = t.userEdited ? null : decodeRec(enrich?.details, trackId);
     if (known?.v != kRecogVersion) known = null;
     Future<ResolvedMeta?>? probe; // the text search the recognizer made
-    if (recognizer != null && !t.userEdited && todo.isNotEmpty && known == null) {
+    if (recognizer != null && !t.userEdited && known == null && (todo.isNotEmpty || needsRecognition(t, enrich, known))) {
       final r = await attemptSource(
         'recognition',
         () => recognizer!.recognize(
@@ -208,6 +227,7 @@ class EnrichEngine {
         todo = await dueUnder(AskMode.retryNone);
       }
     }
+    if (known != null && !known.usable) known = null; // discarded: searches use the tags
     final identity = known?.identity;
     final q = identity?.applyTo(t) ?? t; // only for the searches: writes use [t]
     final doMeta = todo.contains(EnrichPart.meta);
@@ -285,7 +305,7 @@ class EnrichEngine {
     if (doCredits) {
       final r = await attemptSource(
         'credits',
-        () => credits!.fetch(t, meta?.hit, cancel),
+        () => credits!.fetch(t, meta?.hit, cancel, knownMbid: known != null && known.sure ? identity?.mbid : null),
         timeout: false,
       );
       final creditsPart = g.credits = r.value;
@@ -302,7 +322,7 @@ class EnrichEngine {
     if (doCurio) {
       final r = await attemptSource(
         'curiosity',
-        () => curiosities!.find(q, language(), cancel: cancel),
+        () => curiosities!.find(q, language(), cancel: cancel, original: known?.original),
         timeout: false,
       );
       final l = g.curio = r.value;
@@ -349,12 +369,14 @@ class EnrichEngine {
   /// come out `failed`; the others are kept. Returns one result per item.
   Future<List<CommitResult>> commit(List<EnrichGather> items) async {
     final lost = <int>{};
+    final fixes = <(Track, Recognition)>[];
     try {
       await db.transaction(() async {
         for (final g in items) {
           if (g.track == null) continue;
           try {
-            await db.transaction(() => _committer.commitOne(g));
+            final fix = await db.transaction(() => _committer.commitOne(g));
+            if (fix != null) fixes.add(fix);
           } on Object catch (e, st) {
             if (e is Error) {
               AppLog.e('completion: track ${g.trackId} not saved', e, st);
@@ -371,6 +393,8 @@ class EnrichEngine {
     } finally {
       items.forEach(_release);
     }
+    // Only after the outer transaction held: a rollback leaves nothing to apply.
+    await _committer.runCorrections(fixes);
     return [
       for (final g in items)
         (trackId: g.trackId, out: g.out, lost: lost.contains(g.trackId)),

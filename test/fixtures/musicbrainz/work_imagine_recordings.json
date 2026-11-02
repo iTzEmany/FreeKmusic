@@ -1,27 +1,24 @@
 {
- "id": "517ff96c-5970-3eac-9ae5-bcafc15f5bc7",
- "title": "Imagine",
- "relations": [
+ "recording-count": 4,
+ "recordings": [
   {
-   "type": "performance",
-   "attributes": [
-    "cover",
-    "live"
-   ],
-   "recording": {
-    "id": "5a69c5a7-2953-4008-9094-c89e3da1663b",
-    "title": "Imagine",
-    "length": 325800
-   }
+   "id": "5a69c5a7-2953-4008-9094-c89e3da1663b", "title": "Imagine", "length": 325800,
+   "first-release-date": "1960-01-01",
+   "artist-credit": [{"name": "Cover Band", "artist": {"id": "a-cover", "name": "Cover Band"}}],
+   "relations": [{"type": "performance", "attributes": ["cover", "live"], "work": {"id": "w", "title": "Imagine"}}]
   },
   {
-   "type": "performance",
-   "attributes": [],
-   "recording": {
-    "id": "53f15236-ffdb-4f29-bfaf-de800cecece4",
-    "title": "Imagine (take 1, 5.1 mix)",
-    "length": 207000
-   }
+   "id": "late", "title": "Imagine (remaster)", "length": 184000, "first-release-date": "2010-10-04",
+   "artist-credit": [{"name": "John Lennon", "artist": {"id": "a-jl", "name": "John Lennon"}}],
+   "relations": [{"type": "performance", "attributes": [], "work": {"id": "w", "title": "Imagine"}}]
+  },
+  {
+   "id": "ec04e3c5-0548-4e73-bfc3-19a26108f302", "title": "Imagine", "length": 184000, "first-release-date": "1971-09-09",
+   "artist-credit": [{"name": "John Lennon", "artist": {"id": "a-jl", "name": "John Lennon"}}],
+   "relations": [{"type": "performance", "attributes": [], "work": {"id": "w", "title": "Imagine"}}]
+  },
+  {
+   "id": "undated", "title": "Imagine", "artist-credit": [{"name": "X", "artist": {"id": "a-x", "name": "X"}}]
   }
  ]
 }

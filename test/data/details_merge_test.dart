@@ -111,4 +111,10 @@ void main() {
     await r.db.transaction(() => r.credits.moveInto(id, {drop2}));
     expect([decodeDetails(id, await raw())?.bpm, decodeRec(await raw())?.at], [120, 7]);
   });
+
+  test('a stored number that decodes to infinity does not make the merge throw', () {
+    final merged = mergeDetails('{"at":1e999,"bpm":120}', rec: _rec);
+    expect(decodeRec(merged)!.at, 7);
+    expect(jsonDecode(merged)['bpm'], 120);
+  });
 }

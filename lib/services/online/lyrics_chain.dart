@@ -38,7 +38,7 @@ class LyricsChain {
     required this.lrclib,
     this.netease,
     this.ovh,
-    this.rest = const Duration(minutes: 10),
+    this.rest = const Duration(minutes: 3),
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -51,6 +51,9 @@ class LyricsChain {
   final Duration rest;
   final DateTime Function() _now;
   DateTime? _lrclibRestUntil;
+
+  /// LRCLIB is being left alone: a «limited» answer from it is temporary, not a quota.
+  bool get isResting => _lrclibRestUntil?.isAfter(_now()) ?? false;
 
   static bool _has(String? s) => s != null && s.isNotEmpty;
 
@@ -79,7 +82,7 @@ class LyricsChain {
       }
     }
 
-    final resting = _lrclibRestUntil?.isAfter(_now()) ?? false;
+    final resting = isResting;
     if (resting) failed = limited = true;
     final lr = resting
         ? null
