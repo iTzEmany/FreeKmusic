@@ -40,7 +40,7 @@ JamItem item(int id, String title, {String? artist, String? album}) => JamItem(
 Map<String, Object?> acceptBody(JamState s, JamProtocol p) => {
   'host': 'host',
   'name': 'Host',
-  'state': p.fitState(s),
+  'state': p.fitState(s)!,
   'brokers': <Object?>[],
   'ak': b64u(Uint8List(32)),
   't': 1,
@@ -134,6 +134,22 @@ void main() {
       expect(host.openRequest(g2.bytes, h2, hostMs: t0 + 60000), isNull);
     });
 
+    test('exact edges: window w is valid until the end of window w+1', () {
+      const w10 = 10 * 30000;
+      final old = request(ms: w10);
+      expect(
+        host.openRequest(old.bytes, secrets, hostMs: 12 * 30000 - 1),
+        isNotNull,
+      );
+      final late = request(ms: w10);
+      expect(host.openRequest(late.bytes, secrets, hostMs: 12 * 30000), isNull);
+    });
+
+    test('a token of a future window is refused', () {
+      final g = request(ms: 11 * 30000); // host is still in window 10
+      expect(host.openRequest(g.bytes, secrets, hostMs: t0), isNull);
+    });
+
     test('a token of another host does not open the request', () {
       final other = host.newHostSecrets();
       final g = request(proof: host.token(other, t0));
@@ -166,6 +182,12 @@ void main() {
               .sublist(2, 34),
         );
       expect(host.openRequest(forged, secrets, hostMs: t0), isNull);
+    });
+
+    test('an intermediary request with its own Gpk and a wrong key: auth', () {
+      final g = request(proof: Uint8List(6)); // fresh Gpk, not the token
+      expect(host.openRequest(g.bytes, secrets, hostMs: t0), isNull);
+      expect(lines.single, contains('auth=1'));
     });
 
     test('a reply sealed by someone without the pair keys is refused', () {
@@ -318,13 +340,17 @@ void main() {
       gone: false,
     );
     final sealed = host.sealCode(hostKeys.kc, info);
-    final opened = guest.openCode(sealed, guestKeys.kc)!;
+    final opened = guest.openCode(sealed, guestKeys.kc, nowMs: 50)!;
     expect(opened.hpk, secrets.hpk);
     expect(opened.jamId, secrets.jamId);
     expect(opened.expMs, 99);
     expect(opened.brokers, info.brokers);
     final wrong = await guest.deriveCode('ABCD2346');
-    expect(guest.openCode(sealed, wrong.kc), isNull);
+    expect(guest.openCode(sealed, wrong.kc, nowMs: 50), isNull);
+    expect(guest.openCode(sealed, guestKeys.kc, nowMs: 98), isNotNull);
+    clock = clock.add(const Duration(minutes: 2));
+    expect(guest.openCode(sealed, guestKeys.kc, nowMs: 99), isNull);
+    expect(lines.last, contains('expired=1'));
 
     final g = guest.buildRequest(
       jamId: opened.jamId,
@@ -335,16 +361,25 @@ void main() {
     )!;
     final r = host.openRequest(g.bytes, secrets, hostMs: t0, kc: hostKeys.kc)!;
     expect(r.viaCode, isTrue);
+    guestKeys.dispose();
+    expect(() => guestKeys.kc.bytes, throwsStateError);
   });
 
   test('lobby: 34 B, cleared lobby is not a drop', () {
     final l = host.lobby(secrets.hpk);
     expect(l.length, JamWire.lobbyLength);
-    expect(guest.parseLobby(l), secrets.hpk);
-    expect(guest.parseLobby(Uint8List(0)), isNull);
+    final fp = host.fingerprint(secrets.hpk);
+    expect(guest.parseLobby(l, fpH: fp), secrets.hpk);
+    expect(guest.parseLobby(Uint8List(0), fpH: fp), isNull);
     expect(lines, isEmpty);
-    expect(guest.parseLobby(Uint8List(33)), isNull);
+    expect(guest.parseLobby(Uint8List(33), fpH: fp), isNull);
     expect(lines, hasLength(1));
+  });
+
+  test('LOBBY with a replaced Hpk is refused', () {
+    final fake = host.lobby(host.newHostSecrets().hpk);
+    expect(guest.parseLobby(fake, fpH: host.fingerprint(secrets.hpk)), isNull);
+    expect(lines.single, contains('hpk=1'));
   });
 
   test('friend proof is checked with the saved pair key', () {
@@ -375,7 +410,7 @@ void main() {
     test('200 items with long texts stay under 64 KB and still parse', () {
       final (h, g) = pair();
       final sealed = h.seal(JamMsg.state, {
-        'state': host.fitState(stateOf(bigItems())),
+        'state': host.fitState(stateOf(bigItems()))!,
       });
       expect(sealed, isNotNull);
       expect(sealed!.length, lessThan(64 * 1024));
@@ -406,15 +441,115 @@ void main() {
           ),
       ];
       final s = stateOf(heavy, current: 150);
-      final j = host.fitState(s);
+      final j = host.fitState(s)!;
       expect((j['items'] as List).length, 50);
       expect(j['current'], 0);
+      expect(
+        ZLibCodec().encode(utf8.encode(jsonEncode({'state': j}))).length,
+        lessThanOrEqualTo(JamWire.stateBudget),
+      );
     });
+
+    test(
+      'still too big with nothing to drop: null, never an oversized state',
+      () {
+        final rnd = Random(9);
+        const abc =
+            'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
+        String id() => String.fromCharCodes(
+          List.generate(64, (_) => abc.codeUnitAt(rnd.nextInt(64))),
+        );
+        final heavy = [
+          for (final it in bigItems())
+            JamItem(
+              id: it.id,
+              ownerDeviceId: id(),
+              title: it.title,
+              artist: it.artist,
+              album: it.album,
+              ext: 'mp3',
+              ref: 'yt:youtube:${id()}',
+              videoId: id(),
+              partKey: id(),
+            ),
+        ];
+        expect(host.fitState(stateOf(heavy)), isNull);
+      },
+    );
 
     test('a small state is left untouched', () {
       final s = stateOf([item(1, 'x' * 150)]);
-      expect(host.fitState(s)['items'], s.toJson()['items']);
+      expect(host.fitState(s)!['items'], s.toJson()['items']);
     });
+  });
+
+  test('QR cuts to 4 brokers and skips a host over 255 bytes', () {
+    final qr = JamQr(
+      jamId: secrets.jamId,
+      token: host.token(secrets, t0),
+      hpk: secrets.hpk,
+      friendLabel: Uint8List(4),
+      brokers: [
+        BrokerEntry(host: '${'a' * 256}.org', port: 1),
+        for (var i = 0; i < 5; i++) BrokerEntry(host: 'b$i.org', port: 8883),
+      ],
+    );
+    final back = guest.decodeQr(host.encodeQr(qr))!;
+    expect(back.brokers.map((b) => b.host), [
+      for (var i = 0; i < 4; i++) 'b$i.org',
+    ]);
+    expect(JamProtocol.brokersJson(qr.brokers), hasLength(JamWire.maxBrokers));
+  });
+
+  test('ACCEPT brokers are validated and typed', () {
+    final (h, g) = pair();
+    Map<String, Object?> body(Object brokers) => {
+      ...acceptBody(stateOf([item(1, 'x')]), host),
+      'brokers': brokers,
+    };
+    final ok = g.open(
+      h.seal(
+        JamMsg.accept,
+        body([
+          {'host': 'b.example', 'port': 8883, 'tls': true},
+        ]),
+      )!,
+    )!;
+    expect(ok.brokers, const [BrokerEntry(host: 'b.example', port: 8883)]);
+    for (final bad in [
+      [
+        {'host': 'a b', 'port': 1},
+      ],
+      [
+        {'host': 'x', 'port': 'y'},
+      ],
+      [
+        for (var i = 0; i < 5; i++) {'host': 'b$i', 'port': 1},
+      ],
+    ]) {
+      expect(g.open(h.seal(JamMsg.accept, body(bad))!), isNull);
+    }
+    expect(
+      g.open(h.seal(JamMsg.accept, {...body([]), 'host': ''})!),
+      isNull,
+      reason: 'empty host name',
+    );
+  });
+
+  test('after dispose, keys, channels and host secrets throw StateError', () {
+    final (h, g) = pair();
+    final ok = h.seal(JamMsg.ping, {'v': 1, 't': 1})!;
+    g.dispose();
+    expect(() => g.open(ok), throwsStateError);
+    expect(() => g.seal(JamMsg.leave, {}), throwsStateError);
+    expect(() => g.keys.kG2h.bytes, throwsStateError);
+    final req = request();
+    secrets.dispose();
+    expect(() => host.token(secrets, t0), throwsStateError);
+    expect(
+      () => host.openRequest(req.bytes, secrets, hostMs: t0),
+      throwsStateError,
+    );
   });
 
   test('a decompression bomb is dropped, not inflated', () {

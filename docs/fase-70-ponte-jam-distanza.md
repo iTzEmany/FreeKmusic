@@ -32,6 +32,7 @@
 - `JamCrypto` non espone più tipi di `sodium`: `JamKey` (byte, `dispose()` li azzera), `JamKeyPair`, `JamSessionKeys`. Dentro `SodiumJamCrypto` ogni chiave passa in memoria di libsodium solo per la durata della chiamata.
 - `JamProtocol` (con `JamDropLog`, `JamChannel`, `JamHostSecrets`) sta in `jam_protocol.dart`. Scelte dove la specifica tace: `CODE` ≤ 2 048 B; `Gpk` segnato come visto solo dopo AEAD e schema validi; il log degli scarti scrive subito al primo scarto e poi al massimo una riga al minuto, senza timer; stato oltre 60 KB compressi: testi a 64 caratteri, poi via gli item già suonati.
 - Il vettore dell'intero scambio (`kVector` nel test) è fissato dal codice stesso con casualità fissa: serve a vedere cambiamenti involontari, non è un vettore esterno.
+- Dopo la review del commit 4997edd: `JamKey` dopo `dispose()` lancia `StateError` a ogni uso dei byte (anche `JamChannel.seal/open`, `token`, `openRequest`); `JamKey.adopt` prende possesso del buffer. Chi codifica limita i broker a `JamWire.maxBrokers` = 4 (QR, CODE, ACCEPT via `JamProtocol.brokersJson`); nel QR un host oltre 255 B UTF-8 è saltato, non troncato. `ACCEPT` espone `JamMessage.brokers` già validati. `parseLobby` richiede l'impronta di `Hpk` (`fpH`), `openCode` rifiuta un `exp` passato (`nowMs`), `fitState` dà null se lo stato non entra nemmeno ridotto.
 - **Argon2id sul Mi A3: non misurato.** La build di prova (`integration_test`) è arrivata sul telefono ma lo schermo era bloccato e il test non è partito; sbloccare a mano e rilanciare, oppure misurare nella prova 70.6. Se sul Mi A3 supera 2 s si applicano i parametri di K-JD-08 (32 MiB, `opsLimit` 3).
 
 ### 70.2 — `JamBridge` e riserva (R-123, R-125, R-126, D-244, D-246)
@@ -43,6 +44,8 @@
 `JamParticipant.remote` (JSON `rem`), `addMember(..., remote: true)`, cancello in `apply` (`offerSpeaker` da un remoto, `setOutput`/`setOutputs` verso un remoto → `JamError.forbidden`), `dropStale` a 10 min per i remoti e `unreachableIds(60 s)`, `touch(id)`, `JamRequest.remote/.friend/.silent/.ttl` (60 s remoto). `jamSelfFetchTargets` include gli item dei partecipanti remoti.
 
 **Fatto quando:** test del reducer e dell'host per ogni punto, con orologio finto per 60 s e 10 min; i test LAN di oggi invariati.
+
+**Note 70.3:** `expire()` notifica quando una richiesta scade o sparisce e lo chiama anche il timer `_alive` da 10 s (R-150). `addMember` su un id già dentro con `remote` diverso lo sostituisce (token nuovo, flag giusto, ripubblica; K-JD-02). `ttl` di serie 60 s se remota, `jamRequestTtl` se LAN. `_tokenOk` rifiuta un token atteso vuoto (richieste remote). Il cancello `gate.allow` prima di full/busy vale anche in LAN: l'ospite LAN mappa 409 e 429 entrambi su busy.
 
 ### 70.4 — `JamBridgeHost` e `RemoteJamGuest` (R-120, R-124, R-126, R-127, R-130 … R-132, R-142, R-150, R-156, R-158)
 `jam_bridge_host.dart`, `remote_jam_guest.dart` e `jam_invite.dart` come in §Componenti e nei flussi 3–7: lobby e codice `retain`, richieste (al massimo 10 decifrature al secondo, `Gpk` ripetuti scartati), `ACCEPT`/`NO`/`STATE`/`RESULT`/`PING`/`SYNC`/`BYE`/`LEAVE`, chiavi per coppia buttate a uscita, rimozione, blocco e fine. `JamJoinOutcome` con `codeInvalid`, `codeExpired`, `customBroker`, `tooSoon`.

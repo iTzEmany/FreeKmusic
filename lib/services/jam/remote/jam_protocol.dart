@@ -17,6 +17,9 @@ abstract final class JamWire {
   static const lobbyLength = 34;
   static const maxInflated = 512 * 1024;
 
+  /// Brokers in a QR, a CODE or an ACCEPT: encoders cut to it, decoders refuse more.
+  static const maxBrokers = 4;
+
   /// Compressed state above this is shrunk (titles cut, played items dropped).
   static const stateBudget = 60 * 1024;
   static const windowMs = 30000;
@@ -89,6 +92,7 @@ class JamHostSecrets {
 
   Uint8List get hpk => hk.publicKey;
 
+  /// After this, [JamProtocol.token] / `openRequest` throw [StateError].
   void dispose() {
     _s.dispose();
     hk.dispose();
@@ -113,12 +117,21 @@ class JamPairKeys {
 /// A message that passed every check. [state] / [command] are set for the
 /// types that carry them.
 class JamMessage {
-  const JamMessage(this.type, this.body, {this.state, this.command});
+  const JamMessage(
+    this.type,
+    this.body, {
+    this.state,
+    this.command,
+    this.brokers = const [],
+  });
 
   final int type;
   final Map<String, Object?> body;
   final JamState? state;
   final JamCommand? command;
+
+  /// Validated brokers of an ACCEPT, empty for the other types.
+  final List<BrokerEntry> brokers;
 }
 
 class JamHostRequest {
@@ -165,6 +178,8 @@ class JamCodeKeys {
 
   final Uint8List topicId;
   final JamKey kc;
+
+  void dispose() => kc.dispose();
 }
 
 class JamQr {
@@ -215,11 +230,17 @@ class JamChannel {
   String get sendTopic => JamProtocol.pairTopic(keys.tp, toGuest: _host);
   String get recvTopic => JamProtocol.pairTopic(keys.tp, toGuest: !_host);
 
+  /// After this, [seal] and [open] throw [StateError].
   void dispose() => keys.dispose();
+
+  void _live() {
+    if (keys.kReq.isDisposed) throw StateError('JamChannel used after dispose');
+  }
 
   /// Null when the envelope would pass [JamWire.maxEnvelope]; the counter is
   /// then not consumed.
   Uint8List? seal(int type, Object? body) {
+    _live();
     final ctr = _sent + 1;
     var raw = Uint8List.fromList(utf8.encode(jsonEncode(body)));
     var flag = 0;
@@ -246,6 +267,7 @@ class JamChannel {
 
   /// Receive order (R-132): size, version and type, AEAD, counter, schema.
   JamMessage? open(Uint8List bytes) {
+    _live();
     final drops = _p.drops;
     if (bytes.length > JamWire.maxEnvelope || bytes.length < 10 + 24 + 16) {
       drops.drop('size');
@@ -307,7 +329,7 @@ class JamProtocol {
   // ---- derivations -------------------------------------------------------
 
   JamHostSecrets newHostSecrets() {
-    final s = JamKey(crypto.randomBytes(32));
+    final s = JamKey.adopt(crypto.randomBytes(32));
     final hk = crypto.kxKeyPair();
     final prk = crypto.hkdfExtract(ikm: s.bytes);
     final jamId = crypto.hkdfExpand(
@@ -404,8 +426,8 @@ class JamProtocol {
       outLen: 64,
     );
     final keys = JamCodeKeys(
-      Uint8List.fromList(x.bytes.sublist(0, 16)),
-      JamKey(Uint8List.fromList(x.bytes.sublist(32, 64))),
+      x.bytes.sublist(0, 16),
+      JamKey.adopt(x.bytes.sublist(32, 64)), // sublist copies: x is wiped next
     );
     x.dispose();
     return keys;
@@ -413,15 +435,21 @@ class JamProtocol {
 
   // ---- QR and announcement ----------------------------------------------
 
+  /// At most [JamWire.maxBrokers] brokers; one whose host does not fit the
+  /// 1-byte length is skipped, not cut.
   String encodeQr(JamQr q) {
+    final brokers = [
+      for (final b in q.brokers)
+        if (utf8.encode(b.host).length <= 255) b,
+    ].take(JamWire.maxBrokers).toList();
     final out = BytesBuilder()
       ..addByte(JamWire.version)
       ..add(q.jamId)
       ..add(q.token)
       ..add(q.hpk)
       ..add(q.friendLabel)
-      ..addByte(q.brokers.length);
-    for (final b in q.brokers) {
+      ..addByte(brokers.length);
+    for (final b in brokers) {
       final host = utf8.encode(b.host);
       out
         ..addByte(b.tls ? 1 : 0)
@@ -438,7 +466,7 @@ class JamProtocol {
     final b = unb64u(text.substring(5));
     if (b == null || b.length < 50 || b[0] != JamWire.version) return null;
     final n = b[49];
-    if (n < 1 || n > 4) return null;
+    if (n < 1 || n > JamWire.maxBrokers) return null;
     final brokers = <BrokerEntry>[];
     var i = 50;
     for (var k = 0; k < n; k++) {
@@ -497,8 +525,9 @@ class JamProtocol {
     hpk,
   ]);
 
-  /// `Hpk`, or null for a cleared lobby (empty payload, not a drop) or a bad one.
-  Uint8List? parseLobby(Uint8List bytes) {
+  /// `Hpk`, or null for a cleared lobby (empty payload, not a drop), a bad one,
+  /// or one whose fingerprint is not [fpH] (the Hpk the guest was told about).
+  Uint8List? parseLobby(Uint8List bytes, {required Uint8List fpH}) {
     if (bytes.isEmpty) return null;
     if (bytes.length != JamWire.lobbyLength) {
       drops.drop('size');
@@ -512,7 +541,39 @@ class JamProtocol {
       drops.drop('type');
       return null;
     }
-    return bytes.sublist(2);
+    final hpk = bytes.sublist(2);
+    final fp = fingerprint(hpk);
+    var diff = fp.length ^ fpH.length; // constant time over the fingerprint
+    for (var i = 0; i < fp.length && i < fpH.length; i++) {
+      diff |= fp[i] ^ fpH[i];
+    }
+    if (diff != 0) {
+      drops.drop('hpk');
+      return null;
+    }
+    return hpk;
+  }
+
+  /// Wire form of the brokers of a CODE or an ACCEPT, cut to [JamWire.maxBrokers].
+  static List<Map<String, Object>> brokersJson(List<BrokerEntry> l) => [
+    for (final b in l.take(JamWire.maxBrokers)) b.toJson(),
+  ];
+
+  /// Null when [raw] is not a list of at most [JamWire.maxBrokers] valid entries.
+  static List<BrokerEntry>? _parseBrokers(Object? raw) {
+    if (raw is! List || raw.length > JamWire.maxBrokers) return null;
+    final out = <BrokerEntry>[];
+    for (final r in raw) {
+      if (r is! Map || r['host'] is! String || r['port'] is! int) return null;
+      final b = BrokerEntry(
+        host: r['host'] as String,
+        port: r['port'] as int,
+        tls: r['tls'] is bool ? r['tls'] as bool : true,
+      );
+      if (!b.isValid) return null;
+      out.add(b);
+    }
+    return out;
   }
 
   Uint8List sealCode(JamKey kc, JamCodeInfo c) {
@@ -520,7 +581,7 @@ class JamProtocol {
       'jam': b64u(c.jamId),
       'hpk': b64u(c.hpk),
       'exp': c.expMs,
-      'brokers': [for (final b in c.brokers) b.toJson()],
+      'brokers': brokersJson(c.brokers),
       'gone': c.gone,
     });
     return _cat([
@@ -539,7 +600,8 @@ class JamProtocol {
     ]);
   }
 
-  JamCodeInfo? openCode(Uint8List bytes, JamKey kc) {
+  /// Null (and a drop) too when the code expired: `exp <= nowMs`.
+  JamCodeInfo? openCode(Uint8List bytes, JamKey kc, {required int nowMs}) {
     if (bytes.length > JamWire.maxCode || bytes.length < 2 + 24 + 16) {
       drops.drop('size');
       return null;
@@ -567,37 +629,24 @@ class JamProtocol {
     final j = _unpadJson(plain);
     if (j is Map) {
       final jam = unb64u(j['jam']), hpk = unb64u(j['hpk']);
-      final exp = j['exp'], rawBrokers = j['brokers'], gone = j['gone'];
+      final exp = j['exp'], gone = j['gone'];
+      final brokers = _parseBrokers(j['brokers']);
       if (jam?.length == 6 &&
           hpk?.length == 32 &&
           exp is int &&
           gone is bool &&
-          rawBrokers is List &&
-          rawBrokers.length <= 4) {
-        final brokers = <BrokerEntry>[];
-        for (final r in rawBrokers) {
-          final b = r is Map && r['host'] is String && r['port'] is int
-              ? BrokerEntry(
-                  host: r['host'] as String,
-                  port: r['port'] as int,
-                  tls: r['tls'] is bool ? r['tls'] as bool : true,
-                )
-              : null;
-          if (b == null || !b.isValid) {
-            brokers.clear();
-            break;
-          }
-          brokers.add(b);
+          brokers != null) {
+        if (exp <= nowMs) {
+          drops.drop('expired');
+          return null;
         }
-        if (brokers.length == rawBrokers.length) {
-          return JamCodeInfo(
-            jamId: jam!,
-            hpk: hpk!,
-            expMs: exp,
-            brokers: brokers,
-            gone: gone,
-          );
-        }
+        return JamCodeInfo(
+          jamId: jam!,
+          hpk: hpk!,
+          expMs: exp,
+          brokers: brokers,
+          gone: gone,
+        );
       }
     }
     drops.drop('schema');
@@ -624,8 +673,10 @@ class JamProtocol {
     );
     gk.dispose();
     if (session == null) return null;
-    final keys = _pairKeys(_cat([session.tx.bytes, session.rx.bytes]), proof);
+    final ikm = _cat([session.tx.bytes, session.rx.bytes]);
     session.dispose();
+    final keys = _pairKeys(ikm, proof);
+    ikm.fillRange(0, ikm.length, 0);
     final json = jsonEncode({
       'id': id,
       'name': name,
@@ -678,6 +729,21 @@ class JamProtocol {
     }
     final ikm = _cat([session.rx.bytes, session.tx.bytes]);
     session.dispose();
+    try {
+      return _openWithProofs(bytes, h, gpk, ikm, hostMs, kc);
+    } finally {
+      ikm.fillRange(0, ikm.length, 0);
+    }
+  }
+
+  JamHostRequest? _openWithProofs(
+    Uint8List bytes,
+    JamHostSecrets h,
+    Uint8List gpk,
+    Uint8List ikm,
+    int hostMs,
+    JamKey? kc,
+  ) {
     final proofs = [
       ...acceptedTokens(h, hostMs).map((t) => (t, false)),
       if (kc != null) (kc.bytes, true),
@@ -746,7 +812,7 @@ class JamProtocol {
       ex('g2h'),
       ex('h2g'),
       ex('friend'),
-      Uint8List.fromList(topic.bytes.sublist(0, 16)),
+      topic.bytes.sublist(0, 16),
     );
     topic.dispose();
     prk.dispose();
@@ -817,15 +883,14 @@ class JamProtocol {
     switch (type) {
       case JamMsg.accept:
         final s = JamState.tryParse(b['state']);
-        final brokers = b['brokers'];
+        final brokers = _parseBrokers(b['brokers']);
         return s != null &&
-                str('host', 64) &&
+                str('host', 64, min: 1) &&
                 str('name', 60) &&
                 key('ak') &&
                 integer('t') &&
-                brokers is List &&
-                brokers.length <= 4
-            ? JamMessage(type, b, state: s)
+                brokers != null
+            ? JamMessage(type, b, state: s, brokers: brokers)
             : null;
       case JamMsg.state:
         final s = JamState.tryParse(b['state']);
@@ -870,7 +935,8 @@ class JamProtocol {
   /// The state as JSON that fits an envelope: if it is over the budget once
   /// compressed, titles, artists and albums are cut to 64 characters, and if
   /// that is not enough the already played items go (`current` recomputed).
-  Map<String, Object?> fitState(JamState s) {
+  /// Null when it still does not fit: the caller must not send that state.
+  Map<String, Object?>? fitState(JamState s) {
     final j = s.toJson();
     if (_fits(j)) return j;
     final items = (j['items'] as List).cast<Map<String, Object?>>();
@@ -886,7 +952,7 @@ class JamProtocol {
       items.removeRange(0, cur);
       j['current'] = 0;
     }
-    return j;
+    return _fits(j) ? j : null;
   }
 
   bool _fits(Map<String, Object?> j) =>

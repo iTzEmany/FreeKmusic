@@ -169,6 +169,25 @@ void main() {
     );
   });
 
+  test('a disposed key is zeroed and every crypto use of it throws', () {
+    final key = JamKey(_seq(32));
+    key.dispose();
+    expect(key.isDisposed, isTrue);
+    expect(() => key.bytes, throwsStateError);
+    expect(() => c.mac(key: key, message: Uint8List(1)), throwsStateError);
+    expect(
+      () => c.aeadEncrypt(key: key, message: Uint8List(1)),
+      throwsStateError,
+    );
+    final adopted = Uint8List.fromList([1, 2, 3]);
+    JamKey.adopt(adopted).dispose();
+    expect(adopted, [
+      0,
+      0,
+      0,
+    ], reason: 'adopt shares the buffer, dispose wipes it');
+  });
+
   test('unpad on invalid padding gives null', () {
     expect(c.unpad(Uint8List(256), 256), isNull);
   });

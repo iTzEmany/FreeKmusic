@@ -2,18 +2,32 @@ import 'dart:typed_data';
 
 import 'package:sodium/sodium_sumo.dart';
 
-import '../../../core/app_log.dart';
-
 /// A secret key held as plain bytes, so the interface does not leak the crypto
-/// library's types (D-272). [dispose] zeroes it; use it when the key is done.
+/// library's types (D-272). [dispose] zeroes it; after that any use of [bytes]
+/// throws [StateError].
 class JamKey {
-  JamKey(Uint8List bytes) : bytes = Uint8List.fromList(bytes);
+  /// Copies [bytes].
+  JamKey(Uint8List bytes) : _bytes = Uint8List.fromList(bytes);
 
-  final Uint8List bytes;
+  /// Takes ownership of [bytes] (no copy): the caller must not keep or reuse it.
+  JamKey.adopt(this._bytes);
 
-  int get length => bytes.length;
+  final Uint8List _bytes;
+  bool _disposed = false;
 
-  void dispose() => bytes.fillRange(0, bytes.length, 0);
+  Uint8List get bytes {
+    if (_disposed) throw StateError('JamKey used after dispose');
+    return _bytes;
+  }
+
+  bool get isDisposed => _disposed;
+
+  int get length => _bytes.length;
+
+  void dispose() {
+    _disposed = true;
+    _bytes.fillRange(0, _bytes.length, 0);
+  }
 }
 
 class JamKeyPair {
@@ -170,9 +184,8 @@ class SodiumJamCrypto implements JamCrypto {
           ),
         ),
       );
-    } on SodiumException catch (e) {
-      AppLog.d('jam kx client: peer key refused', e);
-      return null;
+    } on SodiumException {
+      return null; // low-order peer key: the caller counts it as a drop
     }
   }
 
@@ -193,9 +206,8 @@ class SodiumJamCrypto implements JamCrypto {
           ),
         ),
       );
-    } on SodiumException catch (e) {
-      AppLog.d('jam kx server: peer key refused', e);
-      return null;
+    } on SodiumException {
+      return null; // low-order peer key: the caller counts it as a drop
     }
   }
 
