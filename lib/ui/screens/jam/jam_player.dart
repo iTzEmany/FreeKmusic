@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/share_hub.dart';
 import '../../../providers/jam_providers.dart';
 import '../../../services/jam/jam_models.dart';
 import '../../theme/tokens.dart';
@@ -117,7 +116,7 @@ class _JamPlayerViewState extends ConsumerState<JamPlayerView> {
     final jam = _jam;
     final cur = jam.current;
     final ctrl = ref.read(jamProvider.notifier);
-    final header = JamHeader(jam: jam, isHost: s.isHost, onEnd: ctrl.end, unreachable: ref.read(shareHubProvider.notifier).jamHost?.unreachableIds() ?? const []);
+    final header = JamHeader(jam: jam, isHost: s.isHost, onEnd: ctrl.end, unreachable: ref.watch(jamProvider.select((j) => j.unreachable)));
     if (jam.items.isEmpty) {
       return Column(
         children: [

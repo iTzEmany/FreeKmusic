@@ -7,11 +7,13 @@ import '../data/repositories/library_queries.dart';
 import '../data/repositories/track_repository.dart';
 import '../services/jam/jam_models.dart';
 import '../services/jam/jam_part_feeder.dart';
+import '../services/jam/remote/jam_remote_items.dart';
+import '../services/online/download_index.dart';
 import '../services/jam/jam_suggestion.dart';
 
 /// The Jam item of library track [t] owned by [ownId]; null when its format cannot go in a Jam.
 JamItem? jamItemOfTrack(Track t, String ownId,
-    {bool inherited = false, String? partKey, bool suggested = false}) {
+    {bool inherited = false, String? partKey, bool suggested = false, String? videoId}) {
   final ext = p.extension(t.path).replaceFirst('.', '').toLowerCase();
   if (!jamExts.contains(ext)) return null;
   return JamItem(
@@ -24,6 +26,7 @@ JamItem? jamItemOfTrack(Track t, String ownId,
     ext: ext,
     sizeBytes: t.sizeBytes,
     ref: t.id.toString(),
+    videoId: videoId, // not `yt:`: still not selfFetchable, D-93 keeps treating it as a file
     inherited: inherited,
     suggested: suggested,
     partKey: partKey,
@@ -33,11 +36,20 @@ JamItem? jamItemOfTrack(Track t, String ownId,
 /// Our part of «Coda insieme» (R-99) for one Jam: the feeder, the queue from before the
 /// Jam (genres of the suggestions, R-102) and the part worked out on «Esci».
 class JamPart {
-  JamPart({required this.ownId, required this.tracks, required this.queries});
+  JamPart({
+    required this.ownId,
+    required this.tracks,
+    required this.queries,
+    required this.downloads,
+    required this.remoteItems,
+  });
 
   final String Function() ownId;
   final TrackRepository Function() tracks;
   final LibraryQueries Function() queries;
+  final Future<DownloadIndex> Function() downloads;
+  final JamRemoteItems Function() remoteItems;
+  var _remote = false;
 
   JamPartFeeder? feeder;
   var _beforeIds = const <int>[];
@@ -47,8 +59,14 @@ class JamPart {
   /// Our part worked out when the guest presses «Esci», before the host drops our tracks.
   List<int>? exitPart;
 
-  /// A fresh feeder for the queue [ids] (the old one, if any, is stopped).
-  void start(List<int> ids, Future<JamResult> Function(JamCommand) send) {
+  /// A fresh feeder for the queue [ids] (the old one, if any, is stopped). [remote]: items
+  /// go as video ids (R-153); a track not found online is skipped.
+  void start(
+    List<int> ids,
+    Future<JamResult> Function(JamCommand) send, {
+    bool remote = false,
+  }) {
+    _remote = remote;
     feeder?.dispose();
     _beforeIds = ids;
     _genres = null;
@@ -58,6 +76,7 @@ class JamPart {
       send: send,
       itemOf: _item,
       suggest: _suggestion,
+      keepUnavailable: remote,
     );
   }
 
@@ -76,6 +95,7 @@ class JamPart {
     _beforeIds = const [];
     _genres = null;
     exitPart = null;
+    _remote = false;
   }
 
   /// The part key of our own item that [cmd] removes in [js], if any.
@@ -88,7 +108,28 @@ class JamPart {
   Future<JamItem?> _item(String key) async {
     final id = jamPartKeyId(key);
     final t = id == null ? null : await tracks().getById(id);
-    return t == null || t.missing ? null : jamItemOfTrack(t, ownId(), partKey: key);
+    return t == null || t.missing ? null : itemOfTrack(t, partKey: key, rethrowErrors: true);
+  }
+
+  /// The Jam item of [t]: a video id when [remote] (default: this Jam's mode), else the
+  /// library item with the video id of its download. Null: not found online / format.
+  Future<JamItem?> itemOfTrack(
+    Track t, {
+    String? partKey,
+    bool suggested = false,
+    bool inherited = false,
+    bool? remote,
+    bool rethrowErrors = false,
+  }) async {
+    if (remote ?? _remote) {
+      return remoteItems().of(t, ownId(),
+          partKey: partKey, suggested: suggested, rethrowErrors: rethrowErrors);
+    }
+    return jamItemOfTrack(t, ownId(),
+        inherited: inherited,
+        partKey: partKey,
+        suggested: suggested,
+        videoId: (await downloads()).idForPath(t.path));
   }
 
   /// A track for a part that ran out: by the genres of our queue from before, none played in this Jam.
@@ -110,6 +151,6 @@ class JamPart {
       ],
       isPlayed: (t) => ids.contains(t.id) || titles.contains(suggestionKey(t.title, t.artist)),
     );
-    return t == null ? null : jamItemOfTrack(t, own, suggested: true);
+    return t == null ? null : itemOfTrack(t, suggested: true, rethrowErrors: true);
   }
 }

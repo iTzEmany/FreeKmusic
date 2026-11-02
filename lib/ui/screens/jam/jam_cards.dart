@@ -65,13 +65,15 @@ class JamInfoCard extends ConsumerWidget {
     final raw = ref.watch(jamTrackMetaProvider(item.id)).value?.curiosities;
     final text = jamTriviaText(raw);
     final has = text != null;
+    final remote = ref.watch(jamProvider.select((j) => j.remote));
     return NpCard(
       title: l.fieldCuriosity,
       onTap: () => _openInfo(context, item),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CoverLine(videoId: item.videoId),
+          // A LAN library item has a video id too, but asking about it would hit the network.
+          CoverLine(videoId: item.selfFetchable || remote ? item.videoId : null),
           Text(
             has ? text : l.curiosityNoSong,
             maxLines: 8,

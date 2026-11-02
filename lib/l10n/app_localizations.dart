@@ -8995,6 +8995,12 @@ abstract class AppLocalizations {
   /// **'Non aggiunto alla Jam'**
   String get jamAddFailed;
 
+  /// No description provided for @jamNotFoundOnline.
+  ///
+  /// In it, this message translates to:
+  /// **'Non trovato online, non si può aggiungere'**
+  String get jamNotFoundOnline;
+
   /// No description provided for @jamLeft.
   ///
   /// In it, this message translates to:

@@ -1,12 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
-import '../core/paths.dart';
-import '../data/settings/jam_secret_store.dart';
-import '../services/jam/jam_gate.dart';
 import '../services/jam/remote/jam_bridge.dart';
 import '../services/jam/remote/jam_bridge_host.dart';
 import '../services/jam/remote/jam_crypto.dart';
@@ -15,27 +11,6 @@ import '../services/jam/remote/remote_jam_guest.dart';
 import 'jam_broker_providers.dart';
 import 'jam_providers.dart';
 import 'share_hub.dart';
-
-final jamSecretStoreProvider = Provider<JamSecretStore>(
-  (_) => Platform.isAndroid ? PrefsJamSecretStore() : _LazyFileStore(),
-);
-
-/// The support dir is async: resolve it on first use.
-class _LazyFileStore implements JamSecretStore {
-  late final Future<FileJamSecretStore> _inner = appSupportDir().then(FileJamSecretStore.new);
-  @override
-  Future<String?> read(String key) async => (await _inner).read(key);
-  @override
-  Future<void> write(String key, String value) async =>
-      (await _inner).write(key, value);
-}
-
-/// Suspended and blocked senders of Jam requests (the UI reads and edits it; it is a Listenable).
-final jamGateProvider = Provider<JamGate>((ref) {
-  final gate = JamGate(ref.watch(jamSecretStoreProvider));
-  ref.onDispose(gate.dispose);
-  return gate;
-});
 
 /// Libsodium, initialised once on first use.
 final jamCryptoProvider = FutureProvider<JamCrypto>((_) => SodiumJamCrypto.create());
@@ -47,6 +22,11 @@ final remoteJamGuestFactoryProvider = Provider<RemoteJamGuest Function(JamProtoc
         linkFactory: ref.read(mqttLinkFactoryProvider),
         brokers: ref.read(jamBrokersProvider),
       ),
+);
+
+/// Pause before the host bridge disconnects after saying goodbye; tests shorten it.
+final jamStopGraceProvider = Provider<Duration>(
+  (_) => const Duration(milliseconds: 500),
 );
 
 class JamBridgeState {
@@ -131,7 +111,7 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
     final host = _hub.jamHost;
     if (!ref.mounted || !_wanted || host == null) return;
     final bridge = _bridge = JamBridge(ref.read(mqttLinkFactoryProvider)(), ref.read(jamBrokersProvider));
-    final bh = _bh = JamBridgeHost(protocol: JamProtocol(crypto), host: host, bridge: bridge);
+    final bh = _bh = JamBridgeHost(protocol: JamProtocol(crypto), host: host, bridge: bridge, stopGrace: ref.read(jamStopGraceProvider));
     _statusSub = bridge.statuses.listen((s) => state = JamBridgeState(on: true, status: s));
     _codeSub = bh.codeChanges.listen(_codeChanged.add);
     await _hub.holdJam(remote: true);

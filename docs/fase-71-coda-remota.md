@@ -36,3 +36,9 @@ Il feeder della parte di un ospite remoto e i suoi suggeriti passano da `JamRemo
 `flutter analyze`, comando mirato, `/code-review high` su 71.1 e 71.2, scheggia in modalità passo su 71.1, review Opus. Prova in autonomia: Linux host, Mi A3 ospite remoto col codice; aggiunte dalla libreria (con e senza video id) e dalla Ricerca, «Coda insieme» con un brano introvabile.
 
 **Fatto quando:** tutto verde; esiti qui sotto; colonna Fase di R-151 … R-155 compilata.
+
+## Esiti (2026-11-02)
+- 71.1–71.3 fatti in una PR (ramo `feat/71-coda-remota`), più i rilievi «ordine sparso» della fase 70: ciclo `share_hub` ↔ `jam_remote_providers` rotto (`jam_gate_providers.dart`), la shell tiene vivo `jamBridgeProvider`, attese dei test iniettabili (`JamBridge.waits`, `jamStopGraceProvider`), «non raggiungibile» in `JamUiState`. Il doppio `expire()` resta voluto (D-335).
+- Controlli: `flutter analyze` pulito, comando mirato verde, `/code-review high` (10 rilievi, tutti corretti), scheggia in modalità passo (4 bug riprodotti e corretti, mutanti scoperti coperti), review di architettura Opus (rilievi da fare corretti; tre rimandati in `fase-72-bluetooth-e-amici.md`).
+- Scelte: D-335, D-336. Testo e curiosità dell'ospite remoto cercati sul suo telefono per titolo e artista, senza scrivere nel DB, in cache per la durata della Jam.
+- Prova dal vivo (Linux host, Mi A3 ospite remoto col codice): da fare dopo la fusione, esiti qui sotto.

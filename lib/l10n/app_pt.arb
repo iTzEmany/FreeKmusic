@@ -3301,6 +3301,7 @@
   "speakerAwayNotice": "Liga uma coluna",
   "jamFull": "A Jam está cheia",
   "jamAddFailed": "Não adicionado à Jam",
+  "jamNotFoundOnline": "Não encontrado online, não pode ser adicionado",
   "jamLeft": "Saiu da Jam",
   "speakerContinueOnPhone": "Continuar no telemóvel",
   "speakerContinueOnPhoneLabel": "Continuar no telemóvel: a Jam toca no altifalante deste telemóvel, sem a coluna",

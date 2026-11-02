@@ -6,6 +6,11 @@
 
 **Comando mirato:** `flutter test test/jam test/ui/app_shell_test.dart test/ui/jam_screen_test.dart test/ui/settings_index_test.dart test/services/share`; build `flutter build apk --debug` per il lato nativo (con `sorveglia.sh --pesante`).
 
+## Rilievi dalla fase 71 (review di architettura, da fare dentro i task sotto o in un passo a parte)
+- Host e ospiti LAN non vedono testo e curiosità dei brani di un ospite remoto (`_remoteUri` è null senza `owner.host`): in `fetchMeta`, con uri null usare `_remoteMeta` al posto del controllo `state.remote`.
+- `JamController` cresce (lyrics chain, curiosity service, cache `_remoteMetas`): estrarre un `JamRemoteMeta` in `lib/services/jam/remote/` con le ricerche iniettate; il `Track` sintetico di `_remoteMeta` e `_syntheticTrack` di `stream_providers.dart` in un costruttore condiviso.
+- Ciclo di import residuo `jam_providers` ↔ `jam_remote_providers` (`jamCryptoProvider`, `remoteJamGuestFactoryProvider`): spostarli in `jam_broker_providers.dart`.
+
 ## Task
 
 ### 72.1 — `JamBeaconBridge.kt` e permessi (R-136, R-138, D-234, D-254, K-JD-06)

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/import_providers.dart';
-import '../../../providers/jam_providers.dart' show jamTrackCoverProvider;
+import '../../../providers/jam_providers.dart' show jamProvider, jamTrackCoverProvider;
 import '../../../providers/library_providers.dart' show artistsProvider;
 import '../../../providers/share_hub.dart';
 import '../../../services/jam/jam_models.dart';
@@ -82,7 +82,10 @@ class JamCover extends ConsumerWidget {
       return CoverImage(coverKey: key, size: size, radius: radius);
     }
     final vid = it.videoId;
-    if (vid != null) {
+    final remote = ref.watch(jamProvider.select((j) => j.remote));
+    // Another device's library item has a video id too, but in LAN its owner's bytes win.
+    final libraryOfOther = !own && int.tryParse(it.ref ?? '') != null;
+    if (vid != null && (remote || !libraryOfOther)) {
       return NetThumbnail(
         url: smallVideoThumbnail(vid),
         width: size,
@@ -92,7 +95,7 @@ class JamCover extends ConsumerWidget {
       );
     }
     // Cached per queue item by the autoDispose family while this widget watches it.
-    final bytes = own || int.tryParse(it.ref ?? '') == null
+    final bytes = own || remote || !libraryOfOther
         ? null
         : ref.watch(jamTrackCoverProvider(it.id)).value;
     if (bytes == null) return CoverImage(coverKey: null, size: size, radius: radius);

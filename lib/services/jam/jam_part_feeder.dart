@@ -37,6 +37,7 @@ class JamPartFeeder {
     required this.send,
     required this.itemOf,
     required this.suggest,
+    this.keepUnavailable = false,
   })  : _waiting = [...part],
         _ord = {for (final (i, k) in part.indexed) k: i};
 
@@ -51,6 +52,12 @@ class JamPartFeeder {
   /// A suggested item (`suggested: true`) for a part that ran out, or null.
   final Future<JamItem?> Function(JamState) suggest;
 
+  /// A part track [itemOf] cannot give stays in the part, never sent, for the restore on exit
+  /// (remote guest: not found online). Otherwise it is dropped.
+  final bool keepUnavailable;
+
+  final _skipped = <String>{};
+  final _fails = <String, int>{}; // lookups that threw, in a row, per key
   final List<String> _waiting;
   final Map<String, int> _ord; // position in the original part
   final _played = <String>{};
@@ -70,28 +77,36 @@ class JamPartFeeder {
 
   /// Keys not yet in the Jam, in part order (what the guest finds when it leaves).
   List<String> get unsent =>
-      {..._pending.keys, ..._uncertain.keys, ?_flying, ..._waiting}.toList()..sort((a, b) => _ord[a]!.compareTo(_ord[b]!));
+      {..._pending.keys, ..._uncertain.keys, ?_flying, ..._waiting, ..._skipped}.toList()..sort((a, b) => _ord[a]!.compareTo(_ord[b]!));
 
   /// Library ids of our part left to play, for [js] in «Coda insieme»: our items after the
   /// current one, in order, then what the feeder still holds. Online items stay in the Jam
   /// for the host (D-93) and are not part of it. Empty in «Coda dell'host».
   List<int> remaining(JamState js) {
     if (js.mode != JamMode.together) return const [];
-    final inJam = {
-      for (final (n, i) in js.items.indexed)
-        if (n > js.currentIndex && i.ownerDeviceId == ownId) i.partKey,
-    };
-    return [
-      for (final (n, i) in js.items.indexed)
-        if (n > js.currentIndex && i.ownerDeviceId == ownId) ?int.tryParse(i.ref ?? ''),
-      for (final k in unsent)
-        if (!inJam.contains(k)) ?jamPartKeyId(k),
-    ];
+    final inJam = <String?>{};
+    // (position in the part or null, library id): Jam order, then what is not in the Jam.
+    final all = <(int?, int?)>[];
+    for (final (n, i) in js.items.indexed) {
+      if (n <= js.currentIndex || i.ownerDeviceId != ownId) continue;
+      inJam.add(i.partKey);
+      final k = i.partKey;
+      all.add((_ord[k], int.tryParse(i.ref ?? '') ?? (k == null ? null : jamPartKeyId(k))));
+    }
+    for (final k in unsent) {
+      if (!inJam.contains(k)) all.add((_ord[k], jamPartKeyId(k)));
+    }
+    // Part tracks keep the part's order (a skipped one stays in its place), others where they are.
+    final keyed = [for (final e in all) if (e.$1 != null) e]..sort((a, b) => a.$1!.compareTo(b.$1!));
+    var next = 0;
+    return [for (final e in all) ?(e.$1 == null ? e : keyed[next++]).$2];
   }
 
   /// The owner removed [key] from the Jam: it leaves the part for good (R-100).
   void forget(String key) {
     _ord.remove(key);
+    _skipped.remove(key);
+    _fails.remove(key);
     _waiting.remove(key);
     _pending.remove(key);
     _uncertain.remove(key);
@@ -207,12 +222,27 @@ class JamPartFeeder {
       try {
         item = await itemOf(key);
       } on Object {
-        putBack(); // a failure never loses a track
+        // A failure never loses a track; a lookup that keeps failing is skipped (remote only).
+        if (keepUnavailable && (_fails[key] = (_fails[key] ?? 0) + 1) >= 3) {
+          AppLog.w('jam: part track $key failed 3 times, skipped');
+          _skipped.add(key);
+        } else {
+          putBack();
+        }
         rethrow;
       }
+      _fails.remove(key);
+      if (_disposed) return false; // stopped during a slow lookup: nothing is sent
+      void drop() {
+        if (keepUnavailable) {
+          _skipped.add(key);
+        } else {
+          _ord.remove(key);
+        }
+      }
       if (item == null) {
-        AppLog.d('jam: part track $key is not available, dropped');
-        _ord.remove(key);
+        AppLog.d('jam: part track $key is not available, ${keepUnavailable ? 'skipped' : 'dropped'}');
+        drop();
         return true;
       }
       void unsure() {
@@ -227,7 +257,7 @@ class JamPartFeeder {
         final e = r.error;
         if (e == JamError.forbidden || e == JamError.invalid) {
           AppLog.w('jam: part track $key refused ($e), dropped');
-          _ord.remove(key);
+          drop();
           return true;
         }
         if (e == JamError.notFound) {

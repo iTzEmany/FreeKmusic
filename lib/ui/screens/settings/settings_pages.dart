@@ -35,7 +35,7 @@ import 'report_issue_tile.dart';
 import 'missing_tracks_screen.dart';
 import 'transition_settings_tiles.dart';
 import 'speaker_jam_tiles.dart';
-import '../../../providers/jam_remote_providers.dart';
+import '../../../providers/jam_gate_providers.dart';
 import 'jam_gate_tiles.dart';
 import 'jam_remote_settings.dart';
 import 'trusted_devices_tiles.dart';

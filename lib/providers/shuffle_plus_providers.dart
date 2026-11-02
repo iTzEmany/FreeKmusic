@@ -12,19 +12,19 @@ import '../services/import/track_matcher.dart';
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
-import '../services/shuffle_plus/seed_index.dart';
-import '../services/shuffle_plus/seed_resolver.dart';
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
 import '../services/shuffle_plus/suggestion_log.dart';
 import 'database_providers.dart';
 import 'jam_providers.dart';
+import 'seed_resolver_provider.dart';
 import 'player_providers.dart';
 import 'settings_providers.dart';
 import 'stream_providers.dart';
 import 'youtube_providers.dart';
 
 export '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
+export 'seed_resolver_provider.dart' show seedIndexProvider;
 
 /// The user's Shuffle+ choices, read from the settings. [set] is for tests.
 class ShufflePlusConfigNotifier extends Notifier<ShufflePlusConfig> {
@@ -76,13 +76,6 @@ final suggestionLogProvider = Provider<SuggestionLog>((ref) {
       file: () async => File(p.join(await appSupportDir(), 'suggestions.json')));
   ref.onDispose(() => unawaited(log.flush()));
   return log;
-});
-
-final seedIndexProvider = Provider<SeedIndex>((ref) {
-  final index = SeedIndex(
-      file: () async => File(p.join(await appSupportDir(), 'seed_ids.json')));
-  ref.onDispose(() => unawaited(index.flush()));
-  return index;
 });
 
 final ytmRadioServiceProvider = Provider<YtmRadioService>((ref) => YtmRadioService(
@@ -165,11 +158,7 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
     host: host,
     online: online,
     log: ref.watch(suggestionLogProvider),
-    resolver: SeedResolver(
-      downloads: downloads,
-      index: ref.watch(seedIndexProvider),
-      searchSongs: (q) => ref.read(youtubeServiceProvider).searchSongs(q),
-    ),
+    resolver: await ref.watch(seedResolverProvider.future),
     radio: ref.watch(ytmRadioServiceProvider),
     config: () => ref.read(shufflePlusConfigProvider),
     jamActive: () => ref.read(jamProvider).active,

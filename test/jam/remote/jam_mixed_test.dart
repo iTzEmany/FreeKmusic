@@ -48,7 +48,7 @@ void main() {
     bh = JamBridgeHost(
       protocol: protocol,
       host: host,
-      bridge: JamBridge(hostLink, [brokerA, brokerB]),
+      bridge: JamBridge(hostLink, [brokerA, brokerB], waits: const [Duration(milliseconds: 5)]),
       now: () => clock,
       stopGrace: Duration.zero,
     )..start();
@@ -70,6 +70,7 @@ void main() {
       linkFactory: () => FakeMqttLink(net),
       brokers: const [brokerA, brokerB],
       now: () => clock,
+      bridgeWaits: const [Duration(milliseconds: 5)],
     );
     guests.add(g);
     return g;
@@ -88,6 +89,7 @@ void main() {
       clock = clock.add(step);
       g.tick();
       bh.tick();
+      host.expire();
     }
     return f;
   }
@@ -214,7 +216,7 @@ void main() {
     final g = await joined('rem-1');
     net[brokerA].goDown();
     host.apply(JamCommand.add(track('host-dev-id', 'Durante')));
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     await pump();
     expect(g.state!.version, host.state!.version);
     expect(g.state!.items.map((i) => i.title), ['Durante']);
