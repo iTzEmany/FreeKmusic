@@ -53,6 +53,9 @@ Future<bool> askBlePermission(BuildContext context, WidgetRef ref, {bool force =
   final beacon = ref.read(jamBeaconProvider);
   final store = ref.read(settingsStoreProvider);
   final scan = ref.read(jamNearbyScanProvider.notifier);
+  // Read before the awaits: the widget (and its ref) may be gone by then; the notifiers live in the container.
+  final nearby = ref.read(jamNearbyProvider.notifier);
+  final container = ProviderScope.containerOf(context);
   final caps = await beacon.capabilities();
   if (!caps.scan && !caps.advertise) return false; // no Bluetooth LE here
   var p = await beacon.permissions();
@@ -73,8 +76,9 @@ Future<bool> askBlePermission(BuildContext context, WidgetRef ref, {bool force =
     scan.set(true);
   }
   if (!granted) return false;
-  ref.read(jamNearbyProvider.notifier).refresh();
-  if ((await beacon.capabilities()).locationOff && context.mounted) {
+  nearby.refresh();
+  // Only worth saying when the search is wanted.
+  if (container.read(jamNearbyScanProvider) && (await beacon.capabilities()).locationOff && context.mounted) {
     showMsg(context, context.l10n.jamBleLocationOff);
   }
   return true;

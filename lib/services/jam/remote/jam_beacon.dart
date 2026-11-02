@@ -45,7 +45,13 @@ abstract class JamBeacon {
   Future<bool> startScan();
   Future<void> stopScan();
   Stream<JamBeaconFound> get found;
+
+  /// The native side lost the scan (`scan`) or the announcement (`advertise`) by itself:
+  /// failure, Bluetooth switched off. Whoever thought it active must try again later.
+  Stream<JamBeaconKind> get failed;
 }
+
+enum JamBeaconKind { scan, advertise }
 
 /// On Android over `codecore/jam_beacon`; elsewhere the channel is missing and
 /// every call answers empty.
@@ -56,8 +62,11 @@ class ChannelJamBeacon implements JamBeacon {
   }
   final MethodChannel _channel;
   final _found = StreamController<JamBeaconFound>.broadcast();
+  final _failed = StreamController<JamBeaconKind>.broadcast();
 
   Future<dynamic> _onCall(MethodCall call) async {
+    if (call.method == 'scanFailed') return _failed.add(JamBeaconKind.scan);
+    if (call.method == 'advertiseFailed') return _failed.add(JamBeaconKind.advertise);
     if (call.method != 'found') return;
     final a = call.arguments;
     if (a is! Map || a['bytes'] is! Uint8List || a['rssi'] is! int) return;
@@ -120,6 +129,8 @@ class ChannelJamBeacon implements JamBeacon {
 
   @override
   Stream<JamBeaconFound> get found => _found.stream;
+  @override
+  Stream<JamBeaconKind> get failed => _failed.stream;
 }
 
 /// For tests: records calls, lets a test play beacons heard.
@@ -136,6 +147,14 @@ class FakeJamBeacon implements JamBeacon {
   bool scanning = false;
   int requests = 0;
   final _found = StreamController<JamBeaconFound>.broadcast();
+  final _failed = StreamController<JamBeaconKind>.broadcast();
+
+  /// The native side drops the scan or the announcement by itself.
+  void fail(JamBeaconKind kind) {
+    if (kind == JamBeaconKind.scan) scanning = false;
+    if (kind == JamBeaconKind.advertise) advertising = null;
+    _failed.add(kind);
+  }
 
   /// A beacon heard, only while scanning.
   void hear(Uint8List bytes, [int rssi = -60]) {
@@ -173,4 +192,6 @@ class FakeJamBeacon implements JamBeacon {
   Future<void> stopScan() async => scanning = false;
   @override
   Stream<JamBeaconFound> get found => _found.stream;
+  @override
+  Stream<JamBeaconKind> get failed => _failed.stream;
 }

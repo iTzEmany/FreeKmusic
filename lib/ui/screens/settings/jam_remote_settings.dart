@@ -103,7 +103,8 @@ class _JamRemoteSettingsState extends ConsumerState<JamRemoteSettings> {
               ),
             ListTile(leading: const Icon(Icons.add), title: Text(l.jamBrokerAdd), onTap: _add),
           ]),
-          SettingsGroup(children: [
+          if (ref.watch(jamBleAvailableProvider))
+            SettingsGroup(children: [
             SwitchListTile(
               title: Text(l.jamNearbyScanTitle),
               subtitle: Text(l.jamNearbyScanHint),

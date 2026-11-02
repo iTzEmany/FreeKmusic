@@ -22,11 +22,15 @@ final jamBeaconProvider = Provider<JamBeacon>((_) {
     ..perms = const JamBeaconPermissions();
 });
 
+/// Whether the platform has the Bluetooth beacon at all (settings hide its switch otherwise).
+final jamBleAvailableProvider = Provider<bool>((_) => isAndroid);
+
 /// Time source of the nearby list; tests replace it.
 final jamNearbyNowProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
-/// An entry goes after this long without a packet (R-137).
-const jamNearbyTtl = Duration(seconds: 90);
+/// An entry goes after this long without a packet (R-137). Under the 60 s a token
+/// is accepted for (this window and the one before), so a listed Jam still lets you in.
+const jamNearbyTtl = Duration(seconds: 45);
 
 /// «Cerca Jam vicine»: off after a refused permission, back on from the settings (R-138).
 class JamNearbyScanNotifier extends Notifier<bool> {
@@ -93,22 +97,33 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
   List<JamNearbyJam> build() {
     _beacon = ref.watch(jamBeaconProvider);
     final s = WidgetsBinding.instance.lifecycleState;
-    _foreground = s == null || s == AppLifecycleState.resumed;
+    _foreground = _isForeground(s);
     final life = AppLifecycleListener(
       onStateChange: (s) {
-        _foreground = s == AppLifecycleState.resumed;
+        _foreground = _isForeground(s);
         refresh();
       },
     );
+    // The native scan died (error, Bluetooth off): not active any more, retried at the next refresh.
+    final failSub = _beacon.failed.listen((k) {
+      if (k != JamBeaconKind.scan || !_scanning) return;
+      AppLog.w('jam nearby: the scan was lost');
+      unawaited(_stop(stopNative: false));
+    });
     ref.listen(jamNearbyScanProvider, (_, _) => refresh());
     ref.listen(jamProvider.select((j) => j.phase != JamPhase.idle || j.inviting), (_, _) => refresh());
     ref.onDispose(() {
       life.dispose();
+      unawaited(failSub.cancel());
       unawaited(_stop(clear: false));
     });
     scheduleMicrotask(refresh);
     return const [];
   }
+
+  // `inactive` (a dialog, the permission prompt) is still in front of the user.
+  static bool _isForeground(AppLifecycleState? s) =>
+      s == null || (s != AppLifecycleState.paused && s != AppLifecycleState.hidden && s != AppLifecycleState.detached);
 
   /// Re-evaluates the conditions; also after a permission answer.
   void refresh() {
@@ -162,14 +177,14 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
     _prune = Timer.periodic(const Duration(seconds: 10), (_) => _expire());
   }
 
-  Future<void> _stop({bool clear = true}) async {
+  Future<void> _stop({bool clear = true, bool stopNative = true}) async {
     final was = _scanning;
     _scanning = false;
     _prune?.cancel();
     _prune = null;
     unawaited(_sub?.cancel());
     _sub = null;
-    if (was) await _beacon.stopScan();
+    if (was && stopNative) await _beacon.stopScan();
     if (clear && ref.mounted && state.isNotEmpty) state = const [];
   }
 
@@ -180,18 +195,17 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
     if (adv == null) return;
     final now = ref.read(jamNearbyNowProvider)();
     final key = b64u(adv.jamId);
-    final friend = ref.read(jamFriendsProvider).match(p, adv.friendLabel, now.millisecondsSinceEpoch);
+    final friend = ref.read(jamFriendsProvider).match(p, adv.friendLabel, now.millisecondsSinceEpoch, adv.fingerprint);
     final old = state.where((e) => e.key == key).firstOrNull;
-    final next = old == null
-        ? JamNearbyJam(
-            key: key,
-            advert: adv,
-            rssi: f.rssi,
-            seen: now,
-            friendName: friend?.name,
-            dismissed: _dismissed.contains(key),
-          )
-        : old.copyWith(advert: adv, rssi: f.rssi, seen: now, friendName: friend?.name);
+    // The friend is recomputed each time: a forgotten friend loses the name.
+    final next = JamNearbyJam(
+      key: key,
+      advert: adv,
+      rssi: f.rssi,
+      seen: now,
+      friendName: friend?.name,
+      dismissed: old?.dismissed ?? _dismissed.contains(key),
+    );
     final rest = state.where((e) => e.key != key);
     state = [...rest, next]..sort(_order);
   }

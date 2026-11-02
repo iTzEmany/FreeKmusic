@@ -18,7 +18,7 @@ import '../../theme/tokens.dart';
 import '../jam/ble_permission.dart';
 import '../jam/jam_remote_sheets.dart';
 import '../jam/jam_screen.dart';
-import '../jam/speaker_notices.dart' show nearbyJamText;
+import '../jam/speaker_notices.dart' show joinNearbyJam, nearbyJamText;
 import '../share/share_screen.dart';
 import '../share/track_picker_screen.dart';
 import 'peer_card.dart';
@@ -97,9 +97,8 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
 
   void _startNearby(JamNearbyJam n) {
     final nav = Navigator.of(context, rootNavigator: true);
-    unawaited(ref.read(jamProvider.notifier).requestRemote(n.invite));
     nav.pop();
-    nav.push(MaterialPageRoute<void>(builder: (_) => const JamScreen()));
+    joinNearbyJam(nav.context, ref, n);
   }
 
   void _openJam() {

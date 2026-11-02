@@ -191,6 +191,7 @@ class MainActivity : AudioServiceActivity() {
     }
 
     override fun onDestroy() {
+        JamBeaconBridge.onActivityDestroyed(this)
         unregisterBluetoothReceiver()
         answerPermissionRequests()
         super.onDestroy()

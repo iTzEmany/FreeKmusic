@@ -71,10 +71,11 @@ void main() {
     return (p.advertAt(s, now.millisecondsSinceEpoch, ak: hostAk ?? ak, broker: 0), s);
   }
 
-  Future<Harness> open(WidgetTester t, Widget child, {List<Override> extra = const []}) async {
+  Future<Harness> open(WidgetTester t, Widget child, {List<Override> extra = const [], bool ble = false}) async {
     final h = await Harness.create(t);
     await h.pump(t, child, extraOverrides: [
       jamBeaconProvider.overrideWithValue(beacon),
+      if (!ble) jamBleAvailableProvider.overrideWithValue(true),
       jamCryptoProvider.overrideWith((_) => crypto),
       jamSecretStoreProvider.overrideWithValue(MemoryJamSecretStore()),
       jamNearbyNowProvider.overrideWithValue(() => now),
@@ -152,6 +153,48 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('inactive (a dialog on top) keeps the scan going', (t) async {
+    final h = await open(t, banner);
+    beacon.hear(packet().$1);
+    await settle(t);
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await settle(t);
+    expect(beacon.scanning, isTrue);
+    expect(find.textContaining('Unisciti'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('a scan lost natively is no longer active and starts again at the next refresh', (t) async {
+    final h = await open(t, banner);
+    beacon.hear(packet().$1);
+    await settle(t);
+    beacon.fail(JamBeaconKind.scan);
+    await settle(t);
+    final c = ProviderScope.containerOf(t.element(find.byType(JamInviteBanner)));
+    expect(c.read(jamNearbyProvider), isEmpty);
+    // Still believing it ran, a refresh would do nothing: it must scan again.
+    c.read(jamNearbyProvider.notifier).refresh();
+    await settle(t);
+    expect(beacon.scanning, isTrue);
+    await h.dispose(t);
+  });
+
+  testWidgets('a forgotten friend loses the name at the next packet', (t) async {
+    final h = await open(t, banner);
+    final c = ProviderScope.containerOf(t.element(find.byType(JamInviteBanner)));
+    final friends = c.read(jamFriendsProvider);
+    await t.runAsync(() => friends.save('f1', 'Ale', ak, Uint8List(32)));
+    final (bytes, _) = packet();
+    beacon.hear(bytes);
+    await settle(t);
+    expect(c.read(jamNearbyProvider).single.friendName, 'Ale');
+    await t.runAsync(() => friends.remove('f1'));
+    beacon.hear(bytes);
+    await settle(t);
+    expect(c.read(jamNearbyProvider).single.friendName, isNull);
+    await h.dispose(t);
+  });
+
   testWidgets('no scan with the setting off or without the permission', (t) async {
     beacon.perms = const JamBeaconPermissions();
     final h = await open(t, banner);
@@ -159,14 +202,15 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('an entry with no packet for 90 s goes away', (t) async {
+  testWidgets('an entry with no packet for 45 s goes away', (t) async {
     final h = await open(t, banner);
     beacon.hear(packet().$1);
     await settle(t);
-    now = now.add(const Duration(seconds: 80));
+    expect(jamNearbyTtl, lessThanOrEqualTo(const Duration(seconds: 60)));
+    now = now.add(const Duration(seconds: 40));
     await t.pump(const Duration(seconds: 10));
     expect(find.textContaining('Unisciti'), findsOneWidget);
-    now = now.add(const Duration(seconds: 20));
+    now = now.add(const Duration(seconds: 10));
     await t.pump(const Duration(seconds: 10));
     expect(find.textContaining('Unisciti'), findsNothing);
     await h.dispose(t);
@@ -226,6 +270,28 @@ void main() {
       await h.dispose(t);
     });
 
+    testWidgets('location off is not mentioned when the search is off', (t) async {
+      final h = await sheet(t, legacy: true, locationOff: true);
+      final c = ProviderScope.containerOf(t.element(find.text('ask')));
+      c.read(jamNearbyScanProvider.notifier).set(false);
+      beacon.perms = const JamBeaconPermissions(scan: true, advertise: true);
+      await t.tap(find.text('ask'));
+      await t.pumpAndSettle();
+      expect(find.textContaining('Accendi la posizione'), findsNothing);
+      await h.dispose(t);
+    });
+
+    testWidgets('the widget going away during the sheet does not throw', (t) async {
+      final h = await sheet(t, legacy: false);
+      await t.tap(find.text('ask'));
+      await t.pumpAndSettle();
+      // Replace the tree while the sheet is open, then answer.
+      await t.pumpWidget(const SizedBox());
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      await h.dispose(t);
+    });
+
     testWidgets('refusal turns the scan off, is not asked again, and the switch brings it back', (t) async {
       final h = await sheet(t, legacy: false, grant: false);
       final c = ProviderScope.containerOf(t.element(find.text('ask')));
@@ -241,6 +307,12 @@ void main() {
       await t.tap(find.text('ask'));
       await t.pumpAndSettle();
       expect(find.text('Consenti'), findsNothing);
+      await h.dispose(t);
+    });
+
+    testWidgets('the settings hide the search switch where there is no Bluetooth beacon', (t) async {
+      final h = await open(t, const JamRemoteSettings(), ble: true, extra: [jamBleAvailableProvider.overrideWithValue(false)]);
+      expect(find.text('Cerca Jam vicine'), findsNothing);
       await h.dispose(t);
     });
 
