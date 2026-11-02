@@ -138,7 +138,14 @@ void main() {
   }
 
   JamItem track(String owner, String title) =>
-      JamItem(id: 0, ownerDeviceId: owner, title: title, ext: 'mp3');
+      JamItem(
+        id: 0,
+        ownerDeviceId: owner,
+        title: title,
+        ext: 'm4a',
+        ref: 'yt:youtube:abc',
+        videoId: 'abc',
+      );
 
   test('LAN and remote guests see the same queue and version', () async {
     await lanJoin('lan-1');
@@ -178,7 +185,7 @@ void main() {
     );
   });
 
-  test('LEAVE removes the guest and its own items', () async {
+  test('LEAVE removes the guest; its online track stays', () async {
     final g = await joined('rem-1');
     final add = await g.send(JamCommand.add(track('rem-1', 'Mio')));
     expect(add.isOk, isTrue);
@@ -186,7 +193,8 @@ void main() {
     await g.leave();
     await pump();
     expect(host.memberIds, isEmpty);
-    expect(host.state!.items, isEmpty);
+    // Its online track stays: any output downloads it by video id (D-93).
+    expect(host.state!.items.single.ownerDeviceId, 'rem-1');
   });
 
   test('a removed guest is told, and its keys no longer work', () async {

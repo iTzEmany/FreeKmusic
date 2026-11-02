@@ -59,6 +59,10 @@ JamResult applyCommand(
     case JamCommandType.add:
       final item = cmd.item!;
       if (item.ownerDeviceId != from) return const JamResult.fail(JamError.forbidden);
+      // A remote guest owns no files: only tracks any output can fetch (R-157).
+      if (!item.selfFetchable && s.participant(from)?.remote == true) {
+        return const JamResult.fail(JamError.forbidden);
+      }
       // A fed track sent twice (lost answer, resend) is in the Jam once (invariant 3).
       final pk = item.partKey;
       if (pk != null && items.any((i) => i.ownerDeviceId == from && i.partKey == pk)) {

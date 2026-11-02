@@ -871,6 +871,15 @@ void remoteTests() {
     expect(err(s, const JamCommand.setOutput('lan'), host), isNull);
   });
 
+  test('a remote may add only online items; a LAN guest anything', () {
+    final s = withRemote().copyWith(speaker: false, clearSpeakerAway: true);
+    JamItem mk(String owner, {String? ref, String? vid}) => JamItem(
+        id: 0, ownerDeviceId: owner, title: 't', ext: 'm4a', ref: ref, videoId: vid);
+    expect(err(s, JamCommand.add(mk('rem', ref: 'lib:1')), 'rem'), JamError.forbidden);
+    expect(err(s, JamCommand.add(mk('rem', ref: 'yt:youtube:abc', vid: 'abc')), 'rem'), isNull);
+    expect(err(s, JamCommand.add(mk('lan', ref: 'lib:1')), 'lan'), isNull);
+  });
+
   test('a remote online item is a self-fetch target; a LAN guest item is not', () {
     JamItem yt(String owner, int id) => JamItem(
         id: id, ownerDeviceId: owner, title: 't', ext: 'm4a', ref: 'yt:youtube:abc', videoId: 'abc');
