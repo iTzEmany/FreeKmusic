@@ -202,4 +202,29 @@ void main() {
       await h.dispose(t);
     });
   }
+
+  testWidgets('opening and closing the invite sheet may change the Jam state (as the real controller does)', (t) async {
+    final fake = _StateChangingJam();
+    final shown = ValueNotifier(true);
+    final h = await open(t, ValueListenableBuilder(valueListenable: shown, builder: (_, on, _) => on ? const JamInviteSheet() : const SizedBox()), [
+      jamProvider.overrideWith(() => fake),
+      jamBridgeProvider.overrideWith(() => _FakeBridge(const JamBridgeState(on: true, status: JamBridgeStatus.up))),
+    ]);
+    await t.pump();
+    expect(fake.state.inviting, isTrue);
+    shown.value = false;
+    await t.pump();
+    await t.pump();
+    expect(fake.state.inviting, isFalse);
+    expect(t.takeException(), isNull);
+    await h.dispose(t);
+  });
+}
+
+/// Like the real controller: invite() and stopInviting() assign the state at once.
+class _StateChangingJam extends _FakeJam {
+  @override
+  Future<void> invite() async => state = state.copyWith(inviting: true);
+  @override
+  Future<void> stopInviting() async => state = state.copyWith(inviting: false);
 }

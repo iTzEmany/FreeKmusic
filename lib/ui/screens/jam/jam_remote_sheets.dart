@@ -43,7 +43,8 @@ class _JamInviteSheetState extends ConsumerState<JamInviteSheet> {
   @override
   void initState() {
     super.initState();
-    unawaited(_jam.invite());
+    // Riverpod forbids changing a provider while the tree builds.
+    scheduleMicrotask(_jam.invite);
     // The QR changes every 30 s and the code counts down: redraw each second.
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
     // The bridge comes up a moment after invite(): the code starts with it.
@@ -55,8 +56,11 @@ class _JamInviteSheetState extends ConsumerState<JamInviteSheet> {
   @override
   void dispose() {
     _tick?.cancel();
-    _bridge.stopCode();
-    unawaited(_jam.stopInviting());
+    final jam = _jam, bridge = _bridge;
+    scheduleMicrotask(() {
+      bridge.stopCode();
+      jam.stopInviting();
+    });
     super.dispose();
   }
 
