@@ -207,8 +207,10 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
         final end = r.kind == ActivityKind.enrich
             ? ref.read(enrichJobProvider).result
             : null;
-        final done = end?.done ?? r.done;
-        final total = end?.total ?? r.total;
+        // Likewise the scan: its state keeps the last progress, which says «all done».
+        final scanned = r.kind == ActivityKind.scan ? ref.read(scanStateProvider).progress : null;
+        final done = end?.done ?? scanned?.done ?? r.done;
+        final total = end?.total ?? scanned?.total ?? r.total;
         final failed = end?.failed ?? false;
         add(
           LogEntry(
