@@ -32,6 +32,8 @@ import '../services/online/youtube_service.dart' show YtResult;
 import '../services/share/track_meta.dart';
 import '../services/stream/stream_cache.dart';
 import '../services/jam/jam_transport.dart';
+import '../services/jam/remote/jam_invite.dart';
+import '../services/jam/remote/jam_protocol.dart';
 import '../services/jam/speaker_jam.dart';
 import '../services/share/discovery.dart';
 import 'database_providers.dart';
@@ -42,6 +44,7 @@ import 'settings_providers.dart';
 import 'share_hub.dart';
 import 'share_providers.dart';
 import 'jam_part.dart';
+import 'jam_remote_providers.dart' show jamCryptoProvider, remoteJamGuestFactoryProvider;
 import 'youtube_providers.dart' show downloadIndexProvider;
 import 'stream_providers.dart';
 
@@ -63,6 +66,8 @@ class JamUiState {
     this.left = false,
     this.syncErrorMs,
     this.link = JamLinkState.ok,
+    this.remote = false,
+    this.inviting = false,
   });
 
   final JamPhase phase;
@@ -83,6 +88,12 @@ class JamUiState {
   /// State of the guest's connection to the host (always ok in LAN).
   final JamLinkState link;
 
+  /// This device is a remote guest (joined through the bridge, no LAN files).
+  final bool remote;
+
+  /// «Invita chi è vicino» is on: the bridge runs for this host.
+  final bool inviting;
+
   bool get active => phase == JamPhase.active;
   bool get isHost => role == JamRole.host;
 
@@ -97,6 +108,8 @@ class JamUiState {
     bool? left,
     int? syncErrorMs,
     JamLinkState? link,
+    bool? remote,
+    bool? inviting,
   }) => JamUiState(
     phase: phase ?? this.phase,
     role: role ?? this.role,
@@ -108,6 +121,8 @@ class JamUiState {
     left: left ?? this.left,
     syncErrorMs: syncErrorMs ?? this.syncErrorMs,
     link: link ?? this.link,
+    remote: remote ?? this.remote,
+    inviting: inviting ?? this.inviting,
   );
 }
 
@@ -302,12 +317,7 @@ class JamController extends Notifier<JamUiState> {
       state = JamUiState(phase: JamPhase.idle, peerName: peer.name, peerId: peer.id, outcome: JamJoinOutcome.tooSoon);
       return;
     }
-    if (_speakerPending) {
-      // Joining another Jam: the waiting speaker Jam is given up.
-      _speakerPending = false;
-      _hub.speakerJamName = null;
-      _speakerChanges.add(null);
-    }
+    _giveUpSpeakerWait();
     state = JamUiState(
       phase: JamPhase.requesting,
       peerName: peer.name,
@@ -332,17 +342,73 @@ class JamController extends Notifier<JamUiState> {
       ownName: ref.read(deviceNameProvider),
       ownPort: port,
     );
+    await _joined(guest, outcome, recent, sentAt);
+  }
+
+  /// Joining another Jam: the waiting speaker Jam is given up.
+  void _giveUpSpeakerWait() {
+    if (!_speakerPending) return;
+    _speakerPending = false;
+    _hub.speakerJamName = null;
+    _speakerChanges.add(null);
+  }
+
+  Future<void> _joined(JamGuestLink guest, JamJoinOutcome outcome, List<DateTime> recent, DateTime sentAt) async {
     // An unreachable device never saw the request: it does not count.
     if (outcome != JamJoinOutcome.unreachable) recent.add(sentAt);
     if (outcome != JamJoinOutcome.accepted) {
       _guest = null;
       await guest.dispose();
       await _release();
-      state = state.copyWith(phase: JamPhase.idle, outcome: outcome);
+      state = state.copyWith(phase: JamPhase.idle, outcome: outcome, remote: false);
       return;
     }
     await _attach(guest);
   }
+
+  /// Asks to enter the remote Jam of [invite] (QR or code); null is a malformed
+  /// code (no network). The counter is shared by all remote requests (R-147).
+  Future<void> requestRemote(JamInvite? invite) async {
+    if (state.phase == JamPhase.requesting || state.active) return;
+    if (invite == null) {
+      state = const JamUiState(outcome: JamJoinOutcome.codeInvalid);
+      return;
+    }
+    final sentAt = now();
+    final recent = _recentFor(_remoteKey, sentAt);
+    if (recent.length >= 2) {
+      state = const JamUiState(outcome: JamJoinOutcome.tooSoon);
+      return;
+    }
+    _giveUpSpeakerWait();
+    state = const JamUiState(phase: JamPhase.requesting, remote: true);
+    await _hold(remote: true);
+    final protocol = JamProtocol(await ref.read(jamCryptoProvider.future));
+    final guest = ref.read(remoteJamGuestFactoryProvider)(protocol);
+    _guest = guest;
+    final outcome = await guest.join(invite, ownDeviceId: _ownId, ownName: ref.read(deviceNameProvider));
+    await _joined(guest, outcome, recent, sentAt);
+  }
+
+  static const _remoteKey = '#remote';
+
+  /// «Invita chi è vicino»: the bridge of this host runs until the Jam ends (or [stopInviting]).
+  Future<void> invite() async {
+    if (state.inviting || state.remote || state.phase == JamPhase.requesting || state.phase == JamPhase.ended) return;
+    if (state.active && !state.isHost) return;
+    state = state.copyWith(inviting: true);
+    await _hold(); // the hub's Jam endpoint must be up for the bridge
+  }
+
+  /// Closes the invitation before any Jam started; during a Jam it goes on.
+  Future<void> stopInviting() async {
+    if (!state.inviting || state.active) return;
+    state = state.copyWith(inviting: false);
+    if (state.phase == JamPhase.idle && !_speakerPending) await _release();
+  }
+
+  /// This host's Jam is the speaker's, or waits to become so: the bridge is on (D-226).
+  bool get speakerJam => _speakerPending || (state.active && state.isHost && (state.jam?.speaker ?? false));
 
   /// Requests sent to [key] in the last minute, older ones dropped.
   List<DateTime> _recentFor(String key, DateTime at) {
@@ -996,7 +1062,7 @@ class JamController extends Notifier<JamUiState> {
 
   Future<void> _finish({bool lost = false, bool left = false}) async {
     if (state.phase == JamPhase.ended || state.phase == JamPhase.idle) return;
-    state = state.copyWith(phase: JamPhase.ended, lost: lost, left: left);
+    state = state.copyWith(phase: JamPhase.ended, lost: lost, left: left, inviting: false);
     await _teardown();
   }
 
@@ -1041,16 +1107,19 @@ class JamController extends Notifier<JamUiState> {
     if (release) await _release();
   }
 
-  Future<void> _hold() async {
+  var _heldRemote = false;
+
+  Future<void> _hold({bool remote = false}) async {
     if (_held) return;
     _held = true;
-    await _hub.holdJam();
+    _heldRemote = remote;
+    await _hub.holdJam(remote: remote);
   }
 
   Future<void> _release() async {
     if (!_held) return;
     _held = false;
-    if (ref.mounted) await _hub.releaseJam();
+    if (ref.mounted) await _hub.releaseJam(remote: _heldRemote);
   }
 
   /// Back to idle after the "ended" screen was shown.

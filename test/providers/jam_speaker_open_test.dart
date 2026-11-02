@@ -42,9 +42,9 @@ class _Hub extends ShareHubNotifier {
   @override
   int? get port => 4000;
   @override
-  Future<void> holdJam() async {}
+  Future<void> holdJam({bool remote = false}) async {}
   @override
-  Future<void> releaseJam() async {}
+  Future<void> releaseJam({bool remote = false}) async {}
 }
 
 void main() {

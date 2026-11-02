@@ -117,27 +117,38 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
   int? get port => _node?.port;
 
   /// Ensures the endpoint is up for a Jam and keeps it up until [releaseJam].
-  Future<void> holdJam() async {
-    _jamHeld = true;
+  /// [remote]: the notification says the Jam is a remote one (D-243). Holders
+  /// are counted: the host's own and the bridge's can overlap.
+  Future<void> holdJam({bool remote = false}) async {
+    _jamHolds++;
+    if (remote) _remoteHolds++;
     await enter();
-    // Keeps the process alive with the screen off (Android foreground service).
-    final l = _l10n;
-    await _platform.startService(
-      title: l.jamPlaying,
-      text: l.jamIncomingBody,
-      disable: l.jamEnd,
-    );
+    await _startJamService();
   }
 
-  Future<void> releaseJam() async {
-    _jamHeld = false;
-    if (!ref.read(settingsProvider).receiveFromLan) {
+  Future<void> releaseJam({bool remote = false}) async {
+    if (_jamHolds > 0) _jamHolds--;
+    if (remote && _remoteHolds > 0) _remoteHolds--;
+    if (_jamHolds > 0) {
+      await _startJamService(); // the text may change
+    } else if (!ref.read(settingsProvider).receiveFromLan) {
       await _platform.stopService();
     }
     await leave();
   }
 
-  bool _jamHeld = false;
+  /// Keeps the process alive with the screen off (Android foreground service).
+  Future<void> _startJamService() {
+    final l = _l10n;
+    return _platform.startService(
+      title: _remoteHolds > 0 ? l.jamRemoteTitle : l.jamPlaying,
+      text: _remoteHolds > 0 ? l.jamPlaying : l.jamIncomingBody,
+      disable: l.jamEnd,
+    );
+  }
+
+  int _jamHolds = 0, _remoteHolds = 0;
+  bool get _jamHeld => _jamHolds > 0;
 
   /// Set by the Jam controller: "End" pressed on the service notification.
   void Function()? onJamEnd;

@@ -8,6 +8,7 @@ import '../services/audio/speaker_monitor.dart';
 import '../services/jam/speaker_jam.dart';
 import '../services/share/discovery.dart' show Peer;
 import 'jam_providers.dart';
+import 'jam_remote_providers.dart' show jamBridgeProvider;
 import 'share_hub.dart';
 
 /// The monitor; started once the shell asks for it. Inert off Android.
@@ -44,6 +45,7 @@ final speakerPromptsProvider = StreamProvider<SpeakerPrompt>(
 /// is inert: the monitor never reports a speaker.
 final speakerJamProvider = Provider<SpeakerJam>((ref) {
   final monitor = ref.watch(speakerMonitorProvider);
+  ref.read(jamBridgeProvider); // the shell keeps the remote bridge's switch alive
   final jam = SpeakerJam(
     speakerConnected: monitor.speakerConnected,
     connected: () => monitor.connected,
