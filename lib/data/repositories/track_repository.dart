@@ -587,6 +587,28 @@ class TrackRepository {
         TracksCompanion(durationMs: Value(ms)),
       );
 
+  /// Local mp3 files (no stream shadow rows), for the one-off length fix.
+  Future<List<({int id, String path, int durationMs, int? bitrateKbps})>> mp3LengthRows() async {
+    final rows = await (_db.select(_db.tracks)
+          ..where((t) => t.format.equals('mp3') & t.kind.isNotValue(kStreamKind)))
+        .get();
+    return [
+      for (final r in rows)
+        if (!r.path.startsWith('stream:'))
+          (id: r.id, path: r.path, durationMs: r.durationMs, bitrateKbps: r.bitrateKbps),
+    ];
+  }
+
+  /// Only the length and the bitrate: titles, artists and the rest stay as they are.
+  Future<void> setLengths(List<({int id, int durationMs, int bitrateKbps})> rows) =>
+      _db.transaction(() async {
+        for (final r in rows) {
+          await (_db.update(_db.tracks)..where((t) => t.id.equals(r.id))).write(
+            TracksCompanion(durationMs: Value(r.durationMs), bitrateKbps: Value(r.bitrateKbps)),
+          );
+        }
+      });
+
   /// Hides or shows tracks (the duplicates a merge leaves behind). The
   /// scanner never touches the flag, so a hidden file stays hidden.
   Future<void> setIgnored(Set<int> ids, bool value) async {
