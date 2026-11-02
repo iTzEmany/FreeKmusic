@@ -1199,10 +1199,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 70.6 Controlli di fase e prova in autonomia (esiti in `fase-70-ponte-jam-distanza.md`: tre prove dal vivo, R-128 compreso; corretta anche la durata degli mp3 col frame Info)
 
 ## Fase 71 — Coda dell'ospite remoto (`fase-71-coda-remota.md`)
-- [ ] 71.1 `JamRemoteItems` e aggiunte
-- [ ] 71.2 «Coda insieme» da remoto
-- [ ] 71.3 Copertine, scheda e testo
-- [ ] 71.4 Controlli di fase
+- [x] 71.1 `JamRemoteItems` e aggiunte
+- [x] 71.2 «Coda insieme» da remoto
+- [x] 71.3 Copertine, scheda e testo
+- [~] 71.4 Controlli di fase (analyze, mirato, code-review high, scheggia, review Opus fatti; prova dal vivo Linux + Mi A3 dopo la fusione, esiti in `fase-71-coda-remota.md`)
 
 ## Fase 72 — Bluetooth e amici (`fase-72-bluetooth-e-amici.md`)
 - [ ] 72.1 `JamBeaconBridge.kt` e permessi
