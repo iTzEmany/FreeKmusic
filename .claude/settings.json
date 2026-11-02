@@ -1,7 +1,9 @@
 {
   "env": {
     "ANDROID_HOME": "/home/emanuele/Android/Sdk",
-    "ANDROID_SDK_ROOT": "/home/emanuele/Android/Sdk"
+    "ANDROID_SDK_ROOT": "/home/emanuele/Android/Sdk",
+    "OBIETTIVO_MAX_DI_FILA": "6",
+    "OBIETTIVO_MAX_TOTALE": "400"
   },
   "permissions": {
     "allow": [
@@ -45,7 +47,6 @@
       "Bash(pkg-config:*)",
       "Bash(pwd:*)",
       "Bash(rm:*)",
-      "Bash(scripts/obiettivo.sh:*)",
       "Bash(scripts/sorveglia.sh:*)",
       "Bash(sed:*)",
       "Bash(sort:*)",
@@ -74,16 +75,6 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/obiettivo-stop.sh"
           }
         ]
       }
