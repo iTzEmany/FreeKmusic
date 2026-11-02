@@ -100,7 +100,7 @@ List<JamItem> jamSelfFetchTargets(JamState s, String ownId, {Set<String> failed 
   return [
     for (final i in [s.current, if (next > 0 && next < s.items.length) s.items[next]])
       if (i != null && i.ownerDeviceId != ownId && i.selfFetchable &&
-          s.participant(i.ownerDeviceId) == null && !failed.contains(i.ref!.substring(3)))
+          (s.participant(i.ownerDeviceId)?.remote ?? true) && !failed.contains(i.ref!.substring(3)))
         i,
   ];
 }

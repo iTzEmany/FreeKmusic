@@ -15,6 +15,15 @@ import 'jam_turns.dart';
 import 'jam_state.dart';
 
 const jamRequestTtl = Duration(minutes: 5);
+
+/// A remote request nobody answers ends after this (R-150).
+const jamRemoteRequestTtl = Duration(seconds: 60);
+
+/// A remote guest silent this long shows «unreachable» (R-127).
+const jamRemoteUnreachable = Duration(seconds: 60);
+
+/// A remote guest silent this long is removed (R-127).
+const jamRemoteStale = Duration(minutes: 10);
 const jamPollWait = Duration(seconds: 25);
 
 /// Header with the participant's identity token (state, commands, invites).
@@ -44,11 +53,23 @@ class JamRequest {
     required this.token,
     required this.receivedAt,
     this.silent = false,
+    this.remote = false,
+    this.friend = false,
+    this.ttl = jamRequestTtl,
   });
 
   final String id, fromId, fromName, fromHost, token;
   final int fromPort;
   final DateTime receivedAt;
+
+  /// Came through the remote bridge (no address, no token of its own).
+  final bool remote;
+
+  /// The requester proved to be a saved friend.
+  final bool friend;
+
+  /// Unanswered, the request expires after this.
+  final Duration ttl;
 
   /// Sender is blocked or suspended: kept only so it expires unanswered.
   final bool silent;
@@ -62,12 +83,19 @@ class JamRequest {
 }
 
 class _Member {
-  _Member(this.id, this.name, this.host, this.port, this.token, this.seen);
+  _Member(this.id, this.name, this.host, this.port, this.token, this.seen,
+      {this.remote = false});
 
   final String id, name, host, token;
   final int port;
+  final bool remote;
   DateTime seen;
 }
+
+enum JamAdmitStatus { accepted, full, busy, tooMany, bad }
+
+/// Outcome of [JamHost.admitRequest]; [request] is set when accepted.
+typedef JamAdmission = ({JamAdmitStatus status, JamRequest? request});
 
 /// Routes of the Jam protocol, mounted under `/jam` by [OfferNode].
 ///
@@ -136,15 +164,14 @@ class JamHost {
   }
 
   void expire() {
-    final limit = _now().subtract(jamRequestTtl);
+    final now = _now();
     for (final r in requests.values) {
-      if (r.status == JamRequestStatus.pending && r.receivedAt.isBefore(limit)) {
+      if (r.status == JamRequestStatus.pending && r.receivedAt.isBefore(now.subtract(r.ttl))) {
         r.status = JamRequestStatus.expired;
       }
     }
     // Answerable for a while after the TTL, then gone (silent or not alike).
-    requests.removeWhere(
-        (_, r) => r.receivedAt.isBefore(limit.subtract(jamRequestTtl)));
+    requests.removeWhere((_, r) => r.receivedAt.isBefore(now.subtract(r.ttl * 2)));
   }
 
   // ---- host API ------------------------------------------------------------
@@ -152,7 +179,8 @@ class JamHost {
   List<JamParticipant> _roster() => [
         JamParticipant(id: deviceId, name: deviceName),
         for (final m in _members.values)
-          JamParticipant(id: m.id, name: m.name, host: m.host, port: m.port),
+          JamParticipant(
+              id: m.id, name: m.name, host: m.host, port: m.port, remote: m.remote),
       ];
 
   void _publish(JamState s) {
@@ -196,8 +224,9 @@ class JamHost {
   ({String sid, String token, String fileToken})? addMember(
       {required String id,
       required String name,
-      required String host,
-      required int port}) {
+      String host = '',
+      int port = 0,
+      bool remote = false}) {
     if (_state?.ended ?? false) return null;
     final existing = _members[id];
     if (existing != null) {
@@ -205,7 +234,7 @@ class JamHost {
     }
     if (_members.length + 1 >= maxParticipants || id == deviceId) return null;
     open();
-    final m = _Member(id, name, host, port, newToken(), _now());
+    final m = _Member(id, name, host, port, newToken(), _now(), remote: remote);
     _members[id] = m;
     _publish(_state!);
     return (sid: _sid!, token: m.token, fileToken: _fileToken!);
@@ -217,7 +246,11 @@ class JamHost {
     final r = requests[requestId];
     if (r == null || r.status != JamRequestStatus.pending) return null;
     final c = addMember(
-        id: r.fromId, name: r.fromName, host: r.fromHost, port: r.fromPort);
+        id: r.fromId,
+        name: r.fromName,
+        host: r.fromHost,
+        port: r.fromPort,
+        remote: r.remote);
     if (c == null) return null;
     r.status = JamRequestStatus.accepted;
     r.sessionId = c.sid;
@@ -288,17 +321,30 @@ class JamHost {
     _publish(s);
   }
 
-  /// Drops guests that have not been heard from for [timeout]; returns them.
+  /// Drops guests that have not been heard from for [timeout] (remote ones:
+  /// [jamRemoteStale]); returns them.
   List<String> dropStale(Duration timeout) {
     final now = _now();
     final stale = [
       for (final m in _members.values)
-        if (now.difference(m.seen) > timeout) m.id
+        if (now.difference(m.seen) > (m.remote ? jamRemoteStale : timeout)) m.id
     ];
     for (final id in stale) {
       removeMember(id);
     }
     return stale;
+  }
+
+  /// A valid message arrived from a remote guest: it is reachable.
+  void touch(String id) => _members[id]?.seen = _now();
+
+  /// Remote guests silent for more than [silence] (the «unreachable» sign).
+  List<String> unreachableIds([Duration silence = jamRemoteUnreachable]) {
+    final now = _now();
+    return [
+      for (final m in _members.values)
+        if (m.remote && now.difference(m.seen) > silence) m.id
+    ];
   }
 
   /// Marks the session ended; guests see `ended` on their next poll.
@@ -374,54 +420,58 @@ class JamHost {
   }
 
   /// Validates and registers a join request. [ip] is null for requests that
-  /// do not come from the LAN (the remote bridge); the per-IP limit lives in
-  /// the router. Blocked or suspended senders get a normal 202 but the request
+  /// do not come from the LAN (the remote bridge, which passes [remote] and no
+  /// [port]/[token]); the per-IP limit lives in the router. The gate comes
+  /// before full and busy: on the bridge every refusal costs an encryption.
+  /// Blocked or suspended senders get a normal acceptance but the request
   /// stays silent: never shown, never "busy", it just expires.
-  Response admitRequest(Object? body, {String? ip}) {
-    if (body is! Map) return Response(400, body: 'bad request');
-    final fromId = body['fromId'], fromName = body['fromName'];
-    final port = body['port'], token = body['token'];
-    if (fromId is! String ||
-        fromId.isEmpty ||
-        fromId.length > 64 ||
-        fromName is! String ||
-        port is! int ||
-        port < 1 ||
-        port > 65535 ||
-        token is! String ||
-        token.length < 8 ||
-        token.length > 64) {
-      return Response(400, body: 'bad request');
-    }
+  JamAdmission admitRequest({
+    required String id,
+    required String name,
+    int? port,
+    String? token,
+    bool remote = false,
+    bool friend = false,
+    Duration ttl = jamRequestTtl,
+    String? ip,
+  }) {
+    const bad = (status: JamAdmitStatus.bad, request: null);
+    if (id.isEmpty || id.length > 64) return bad;
+    if (!remote && (port == null || token == null)) return bad;
+    if (port != null && (port < 1 || port > 65535)) return bad;
+    if (token != null && (token.length < 8 || token.length > 64)) return bad;
     expire();
+    if (gate != null && !gate!.allow(id)) {
+      return (status: JamAdmitStatus.tooMany, request: null);
+    }
     // Muted senders go through the same checks as everybody else.
     if (hosting && _members.length + 1 >= maxParticipants) {
-      return Response(409, body: 'full');
+      return (status: JamAdmitStatus.full, request: null);
     }
     if (requests.values
-        .any((q) => q.status == JamRequestStatus.pending && (!q.silent || q.fromId == fromId))) {
-      return Response(409, body: 'busy');
+        .any((q) => q.status == JamRequestStatus.pending && (!q.silent || q.fromId == id))) {
+      return (status: JamAdmitStatus.busy, request: null);
     }
-    if (gate != null && !gate!.allow(fromId)) {
-      return Response(429, body: 'too many requests');
-    }
-    final silent = gate?.isMuted(fromId) ?? false;
+    final silent = gate?.isMuted(id) ?? false;
     final req = JamRequest(
       id: newToken(),
-      fromId: fromId,
-      fromName: fromName.length > 60 ? fromName.substring(0, 60) : fromName,
+      fromId: id,
+      fromName: name.length > 60 ? name.substring(0, 60) : name,
       fromHost: ip ?? '',
-      fromPort: port,
-      token: token,
+      fromPort: port ?? 0,
+      token: token ?? '',
       receivedAt: _now(),
       silent: silent,
+      remote: remote,
+      friend: friend,
+      ttl: ttl,
     );
     requests[req.id] = req;
     if (!silent) {
       _notify();
       onRequest?.call(req);
     }
-    return _json({'requestId': req.id}, 202);
+    return (status: JamAdmitStatus.accepted, request: req);
   }
 
   Router buildRouter({String Function(Request)? clientIp}) {
@@ -447,9 +497,21 @@ class JamHost {
       } on FormatException {
         return Response(400, body: 'bad json');
       }
-      final res = admitRequest(body, ip: ip);
-      if (res.statusCode == 202) times.add(_now());
-      return res;
+      if (body is! Map) return Response(400, body: 'bad request');
+      final id = body['fromId'], name = body['fromName'];
+      final port = body['port'], token = body['token'];
+      if (id is! String || name is! String || port is! int || token is! String) {
+        return Response(400, body: 'bad request');
+      }
+      final res = admitRequest(id: id, name: name, port: port, token: token, ip: ip);
+      if (res.status == JamAdmitStatus.accepted) times.add(_now());
+      return switch (res.status) {
+        JamAdmitStatus.accepted => _json({'requestId': res.request!.id}, 202),
+        JamAdmitStatus.full => Response(409, body: 'full'),
+        JamAdmitStatus.busy => Response(409, body: 'busy'),
+        JamAdmitStatus.tooMany => Response(429, body: 'too many requests'),
+        JamAdmitStatus.bad => Response(400, body: 'bad request'),
+      };
     });
 
     // The requester polls the answer (token = its own request token).

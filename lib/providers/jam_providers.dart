@@ -910,7 +910,7 @@ class JamController extends Notifier<JamUiState> {
     for (final (n, t) in tracks.indexed) {
       // The rest of the seed stays in the feeder, the last seats are for hand-made adds (D-264).
       final hs = _host?.state;
-      if (keyed && hs != null && hs.mode == JamMode.together && jamAutoFillFull(hs)) break;
+      if (keyed && hs != null && hs.mode == JamMode.together && jamQueueFull(hs, reserve: jamManualSeats)) break;
       final item = jamItemOfTrack(t, _ownId, inherited: inherited, partKey: keys?[n]);
       if (item == null) continue;
       final err = await send(JamCommand.add(item));
@@ -926,7 +926,7 @@ class JamController extends Notifier<JamUiState> {
   /// «Coda insieme» is full from the current track back: the reducer refuses every add (D-194).
   bool get queueFull {
     final s = (state.isHost ? _host?.state : null) ?? state.jam; // the host's own state is the freshest
-    return s != null && s.mode == JamMode.together && s.items.length >= maxJamItems && s.currentIndex <= 0;
+    return s != null && s.mode == JamMode.together && jamQueueFull(s);
   }
 
   /// Accepts [r] for the shared queue right away (false: no Jam). It is added when its

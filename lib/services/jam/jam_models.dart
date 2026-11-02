@@ -150,13 +150,22 @@ class JamParticipant {
     required this.name,
     this.host = '',
     this.port = 0,
+    this.remote = false,
   });
 
   final String id, name, host;
   final int port;
 
-  Map<String, Object?> toJson() =>
-      {'id': id, 'name': name, 'host': host, 'port': port};
+  /// Joined through the remote bridge: never an output, owns no files (R-157).
+  final bool remote;
+
+  Map<String, Object?> toJson() => {
+        'id': id,
+        'name': name,
+        'host': host,
+        'port': port,
+        if (remote) 'rem': true,
+      };
 
   static JamParticipant? tryParse(Object? j) {
     if (j is! Map) return null;
@@ -165,7 +174,8 @@ class JamParticipant {
     if (name is! String || name.length > 60) return null;
     if (host is! String || host.length > 64) return null;
     if (port is! int || port < 0 || port > 65535) return null;
-    return JamParticipant(id: id, name: name, host: host, port: port);
+    return JamParticipant(
+        id: id, name: name, host: host, port: port, remote: j['rem'] == true);
   }
 }
 
@@ -534,11 +544,6 @@ class JamResult {
   final JamError? error;
   bool get isOk => state != null;
 }
-
-/// The automatic fill stops here: from the current track on, only [jamManualSeats] seats are left (D-264).
-/// [inFlight]: adds sent but not yet in [s].
-bool jamAutoFillFull(JamState s, {int inFlight = 0}) =>
-    s.items.length + inFlight - (s.currentIndex < 0 ? 0 : s.currentIndex) >= maxJamItems - jamManualSeats;
 
 /// What an add to the shared queue did: how many got in, and whether a full queue refused one (D-194).
 typedef JamAddResult = ({int added, bool full});

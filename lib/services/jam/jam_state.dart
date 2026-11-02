@@ -1,6 +1,12 @@
 import 'jam_models.dart';
 import 'jam_turns.dart';
 
+/// The one «queue full» rule (D-194, D-264): the seats from the current track on, played
+/// tracks excluded, are taken. [reserve] seats stay free (the automatic fill leaves
+/// [jamManualSeats] for hand-made adds); [inFlight]: adds sent but not yet in [s].
+bool jamQueueFull(JamState s, {int reserve = 0, int inFlight = 0}) =>
+    s.items.length + inFlight - (s.currentIndex < 0 ? 0 : s.currentIndex) >= maxJamItems - reserve;
+
 /// Pure reducer for the authoritative Jam state (lives on the host).
 ///
 /// [from] is the device id issuing the command; [nowMs] is the host clock.
@@ -63,7 +69,7 @@ JamResult applyCommand(
       final first = s.currentIndex < 0;
       var cur = s.currentIndex;
       if (items.length >= maxJamItems) {
-        if (together && cur > 0) {
+        if (together && !jamQueueFull(s)) {
           // The window slides: the oldest played track makes room (D-194).
           items.removeAt(0);
           cur--;
@@ -171,6 +177,7 @@ JamResult applyCommand(
 
     case JamCommandType.setOutput:
       final d = cmd.deviceId!;
+      if (s.participant(d)?.remote == true) return const JamResult.fail(JamError.forbidden); // R-157
       // Invariant 4: with a speaker the host is the only output.
       if (s.speaker && d != s.hostDeviceId) {
         return const JamResult.fail(JamError.forbidden);
@@ -189,6 +196,9 @@ JamResult applyCommand(
 
     case JamCommandType.setOutputs:
       final ids = cmd.deviceIds!.toSet().toList();
+      if (ids.any((d) => s.participant(d)?.remote == true)) {
+        return const JamResult.fail(JamError.forbidden); // R-157
+      }
       if (s.speaker && (ids.length != 1 || ids.first != s.hostDeviceId)) {
         return const JamResult.fail(JamError.forbidden);
       }
@@ -255,7 +265,9 @@ JamResult applyCommand(
       return commit(s.copyWith(clearSpeakerAway: true));
 
     case JamCommandType.offerSpeaker:
-      if (isHost) return const JamResult.fail(JamError.forbidden);
+      if (isHost || s.participant(from)?.remote == true) {
+        return const JamResult.fail(JamError.forbidden); // R-157: LAN only
+      }
       if (!s.speaker || s.speakerAwaySince == null) {
         return const JamResult.fail(JamError.invalid);
       }
