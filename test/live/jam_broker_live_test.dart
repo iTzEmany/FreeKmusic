@@ -17,7 +17,7 @@ void main() {
   }, skip: skip, timeout: timeout);
 
   test('test.mosquitto.org:8886 echoes a message', () async {
-    expect(await testBroker(MqttClientLink(), kDefaultJamBrokers[1]), isTrue);
+    expect(await testBroker(MqttClientLink(), const BrokerEntry(host: 'test.mosquitto.org', port: 8886)), isTrue);
   }, skip: skip, timeout: timeout);
 
   test('test.mosquitto.org:8883 is refused for its certificate', () async {

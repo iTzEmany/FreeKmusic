@@ -14,19 +14,28 @@ class BrokerEntry {
   /// characters), port 1..65535.
   bool get isValid =>
       host.isNotEmpty &&
-      !host.contains(RegExp(r'[\s:/\x00-\x1f\x7f-\x9f\u200b-\u200f\u2028\u2029\u2060\ufeff]')) &&
+      !host.contains(
+        RegExp(
+          r'[\s:/\x00-\x1f\x7f-\x9f\u200b-\u200f\u2028\u2029\u2060\ufeff]',
+        ),
+      ) &&
       port >= 1 &&
       port <= 65535;
 
   /// Same broker, host compared ignoring case.
   bool sameAs(BrokerEntry o) =>
-      o.host.toLowerCase() == host.toLowerCase() && o.port == port && o.tls == tls;
+      o.host.toLowerCase() == host.toLowerCase() &&
+      o.port == port &&
+      o.tls == tls;
 
   Map<String, Object> toJson() => {'host': host, 'port': port, 'tls': tls};
 
   @override
   bool operator ==(Object other) =>
-      other is BrokerEntry && other.host == host && other.port == port && other.tls == tls;
+      other is BrokerEntry &&
+      other.host == host &&
+      other.port == port &&
+      other.tls == tls;
 
   @override
   int get hashCode => Object.hash(host, port, tls);
@@ -36,12 +45,10 @@ class BrokerEntry {
 }
 
 /// Append only: the BLE announcement carries an index into this list.
-const kDefaultJamBrokers = [
-  BrokerEntry(host: 'broker.emqx.io', port: 8883),
-  BrokerEntry(host: 'test.mosquitto.org', port: 8886),
-];
+const kDefaultJamBrokers = [BrokerEntry(host: 'broker.emqx.io', port: 8883)];
 
-String encodeBrokers(List<BrokerEntry> l) => jsonEncode([for (final b in l) b.toJson()]);
+String encodeBrokers(List<BrokerEntry> l) =>
+    jsonEncode([for (final b in l) b.toJson()]);
 
 /// Reads `[{host, port, tls}]`. A broken entry drops only itself, duplicates go;
 /// null, broken text or nothing valid gives the defaults (D-270).

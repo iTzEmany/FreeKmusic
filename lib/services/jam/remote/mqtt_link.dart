@@ -19,7 +19,12 @@ abstract class MqttLink {
   void subscribe(String topic);
   void unsubscribe(String topic);
   void publish(String topic, Uint8List bytes, {bool retain = false});
+
+  /// Broadcast, owned by the link: it survives reconnections.
   Stream<MqttIncoming> get messages;
+
+  /// Fires when an established connection is lost (not on our own `disconnect`).
+  Stream<void> get onDisconnected;
   bool get connected;
   void disconnect();
 }
@@ -38,9 +43,13 @@ class MqttClientLink implements MqttLink {
 
   final Duration timeout;
   MqttServerClient? _c;
+  StreamSubscription<void>? _updates;
+  final _msgs = StreamController<MqttIncoming>.broadcast();
+  final _disc = StreamController<void>.broadcast();
 
   @override
   Future<void> connect(BrokerEntry b) async {
+    _updates?.cancel();
     _c?.disconnect();
     final id = randomClientId();
     final c =
@@ -58,6 +67,13 @@ class MqttClientLink implements MqttLink {
               .withClientIdentifier(id)
               .startClean();
     _c = c;
+    c.onDisconnected = () {
+      if (identical(c, _c) &&
+          c.connectionStatus?.disconnectionOrigin ==
+              MqttDisconnectionOrigin.unsolicited) {
+        _disc.add(null);
+      }
+    };
     // The socket's `done` error is never listened to by mqtt_client: catch it in a guarded zone.
     final done = Completer<MqttClientConnectionStatus?>();
     runZonedGuarded(
@@ -69,6 +85,10 @@ class MqttClientLink implements MqttLink {
       if (st?.state != MqttConnectionState.connected) {
         throw StateError('MQTT refused: ${st?.returnCode}');
       }
+      _updates = c.updates!.expand((l) => l).listen((m) {
+        final p = (m.payload as MqttPublishMessage).payload.message;
+        _msgs.add((topic: m.topic, payload: Uint8List.fromList(p)));
+      });
     } on Object {
       c.disconnect();
       rethrow;
@@ -94,15 +114,18 @@ class MqttClientLink implements MqttLink {
   }
 
   @override
-  Stream<MqttIncoming> get messages => _c!.updates!.expand((l) => l).map((m) {
-    final p = (m.payload as MqttPublishMessage).payload.message;
-    return (topic: m.topic, payload: Uint8List.fromList(p));
-  });
+  Stream<MqttIncoming> get messages => _msgs.stream;
+
+  @override
+  Stream<void> get onDisconnected => _disc.stream;
 
   @override
   bool get connected =>
       _c?.connectionStatus?.state == MqttConnectionState.connected;
 
   @override
-  void disconnect() => _c?.disconnect();
+  void disconnect() {
+    _updates?.cancel();
+    _c?.disconnect();
+  }
 }
