@@ -3763,7 +3763,7 @@
   },
   "recogAcceptAll": "Accetta tutte",
   "recogNoProposals": "Nessuna proposta da confermare",
-  "recogFromTo": "{from} → {to}",
+  "recogFromTo": "Da {from} a {to}",
   "@recogFromTo": {
     "placeholders": {
       "from": {
@@ -3774,7 +3774,7 @@
       }
     }
   },
-  "logCorrection": "Corretto: {from} → {to}",
+  "logCorrection": "Corretto da {from} a {to}",
   "@logCorrection": {
     "placeholders": {
       "from": {

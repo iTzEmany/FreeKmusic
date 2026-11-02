@@ -5885,12 +5885,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String recogFromTo(String from, String to) {
-    return '$from → $to';
+    return 'Von $from zu $to';
   }
 
   @override
   String logCorrection(String from, String to) {
-    return 'Korrigiert: $from → $to';
+    return 'Korrigiert von $from zu $to';
   }
 
   @override

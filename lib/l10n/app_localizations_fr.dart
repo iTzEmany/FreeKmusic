@@ -5913,19 +5913,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String recogFromTo(String from, String to) {
-    return '$from → $to';
+    return 'De $from à $to';
   }
 
   @override
   String logCorrection(String from, String to) {
-    return 'Corrigé : $from → $to';
+    return 'Corrigé de $from à $to';
   }
 
   @override
   String get logRevert => 'Rétablir';
 
   @override
-  String get recogActionFailed => 'L\'action a échoué';
+  String get recogActionFailed => 'L’action a échoué';
 
   @override
   String get logRevertFailed => 'Impossible de rétablir cette correction';

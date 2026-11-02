@@ -3158,8 +3158,8 @@
   "recogToConfirm": "Zu bestätigen ({count})",
   "recogAcceptAll": "Alle annehmen",
   "recogNoProposals": "Keine Vorschläge zu bestätigen",
-  "recogFromTo": "{from} → {to}",
-  "logCorrection": "Korrigiert: {from} → {to}",
+  "recogFromTo": "Von {from} zu {to}",
+  "logCorrection": "Korrigiert von {from} zu {to}",
   "logRevert": "Wiederherstellen",
   "recogActionFailed": "Aktion fehlgeschlagen",
   "logRevertFailed": "Diese Korrektur konnte nicht wiederhergestellt werden"

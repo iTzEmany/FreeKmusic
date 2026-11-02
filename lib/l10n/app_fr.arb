@@ -3392,9 +3392,9 @@
   "recogToConfirm": "À confirmer ({count})",
   "recogAcceptAll": "Tout accepter",
   "recogNoProposals": "Aucune proposition à confirmer",
-  "recogFromTo": "{from} → {to}",
-  "logCorrection": "Corrigé : {from} → {to}",
+  "recogFromTo": "De {from} à {to}",
+  "logCorrection": "Corrigé de {from} à {to}",
   "logRevert": "Rétablir",
-  "recogActionFailed": "L'action a échoué",
+  "recogActionFailed": "L’action a échoué",
   "logRevertFailed": "Impossible de rétablir cette correction"
 }

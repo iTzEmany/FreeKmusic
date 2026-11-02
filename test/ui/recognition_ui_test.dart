@@ -138,15 +138,15 @@ void main() {
     expect(find.text('Da confermare (1)'), findsOneWidget);
     await tester.tap(find.text('Da confermare (1)'));
     await _settle(tester);
-    expect(find.textContaining('→ Nuovo – Band'), findsOneWidget);
+    expect(find.textContaining('a Nuovo – Band'), findsOneWidget);
     await tester.tap(find.text('Accetta tutte'));
     await _settle(tester);
-    expect(find.textContaining('→ Nuovo – Band'), findsNothing);
+    expect(find.textContaining('a Nuovo – Band'), findsNothing);
     expect(find.text('Nessuna proposta da confermare'), findsOneWidget);
     await h.dispose(tester);
   });
 
-  testWidgets('a correction in the Registro reads «Corretto: vecchio → nuovo» and can be restored', (tester) async {
+  testWidgets('a correction in the Registro reads «Corretto da vecchio a nuovo» and can be restored', (tester) async {
     final (h, _, _) = await open(tester, null, (_) => const SizedBox());
     final fix = _Fix(h.db)..revertOk = false;
     await tester.runAsync(
@@ -165,7 +165,7 @@ void main() {
     );
     await h.pump(tester, const ActivityLogScreen(), extraOverrides: [trackCorrectionsProvider.overrideWithValue(fix)]);
     await _settle(tester);
-    expect(find.text('Corretto: Vecchio – Chan → Nuovo – Band'), findsOneWidget);
+    expect(find.text('Corretto da Vecchio – Chan a Nuovo – Band'), findsOneWidget);
     await tester.tap(find.text('Ripristina'));
     await _settle(tester);
     expect(fix.reverted, isNonZero);

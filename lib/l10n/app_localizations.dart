@@ -9298,13 +9298,13 @@ abstract class AppLocalizations {
   /// No description provided for @recogFromTo.
   ///
   /// In it, this message translates to:
-  /// **'{from} → {to}'**
+  /// **'Da {from} a {to}'**
   String recogFromTo(String from, String to);
 
   /// No description provided for @logCorrection.
   ///
   /// In it, this message translates to:
-  /// **'Corretto: {from} → {to}'**
+  /// **'Corretto da {from} a {to}'**
   String logCorrection(String from, String to);
 
   /// No description provided for @logRevert.

@@ -5867,12 +5867,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String recogFromTo(String from, String to) {
-    return '$from → $to';
+    return 'De $from para $to';
   }
 
   @override
   String logCorrection(String from, String to) {
-    return 'Corrigido: $from → $to';
+    return 'Corrigido de $from para $to';
   }
 
   @override
