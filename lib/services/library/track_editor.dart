@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/track_repository.dart';
@@ -17,10 +18,15 @@ class TrackEdit {
     this.year,
     this.trackNumber,
     this.genre,
+    this.isrc,
+    this.mbid,
   });
 
   final String title;
   final String? artist, album, albumArtist, genre;
+
+  /// Written into the file only (the row keeps its own); empty removes the file's.
+  final String? isrc, mbid;
   final int? year, trackNumber;
 
   /// What goes into the file: blank fields are left alone there (the tag
@@ -33,6 +39,8 @@ class TrackEdit {
     year: year,
     genre: _blankToNull(genre),
     trackNumber: trackNumber,
+    isrc: isrc?.trim(),
+    mbid: mbid?.trim(),
   );
 }
 
@@ -70,6 +78,17 @@ class TrackEditor {
     return files.write(tracks, changes);
   }
 
+  /// The ISRC and MBID the file has now (null: unknown, the file could not be read).
+  Future<({String? isrc, String? mbid})?> fileIds(Track t) async {
+    try {
+      final i = await _tags.read(t.path, withCover: false);
+      return (isrc: i.isrc ?? '', mbid: i.mbid ?? '');
+    } on Object catch (e, st) {
+      AppLog.w('ids of ${t.path} not read', e, st);
+      return null;
+    }
+  }
+
   Future<bool> _isAlbumPick(String coverKey) async =>
       await (_db.select(_db.tracks)
             ..where((t) => t.coverKey.equals(coverKey) & t.coverSource.equals(1))
@@ -77,7 +96,8 @@ class TrackEditor {
           .getSingleOrNull() !=
       null;
 
-  Future<void> save(Track track, TrackEdit e) async {
+  /// [markEdited] false: an automatic correction, the track stays open to others (D-318).
+  Future<void> save(Track track, TrackEdit e, {bool markEdited = true}) async {
     final artist = _blankToNull(e.artist);
     final album = _blankToNull(e.album);
     final albumArtist = _blankToNull(e.albumArtist);
@@ -97,7 +117,7 @@ class TrackEditor {
         trackNumber: Value(e.trackNumber),
         genre: Value(_blankToNull(e.genre)),
         albumKey: Value(key),
-        userEdited: const Value(true),
+        userEdited: markEdited ? const Value(true) : const Value.absent(),
       ),
     );
     await TrackRepository(_db).settleMovedCover(track, key);

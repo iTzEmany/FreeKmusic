@@ -153,3 +153,50 @@ fn invalid_year_keeps_other_tags() {
         assert_eq!(read_ids(p).unwrap().isrc.as_deref(), Some(ISRC), "{year}");
     }
 }
+
+/// write_metadata puts the ISRC and the MBID in the file, whatever the format (R-185).
+#[test]
+fn write_metadata_writes_ids() {
+    use metadata_god::api::api::{write_metadata, Metadata};
+    for name in ["w.mp3", "w.flac", "w.m4a", "w.ogg"] {
+        let p = gen(name);
+        let m = Metadata {
+            title: Some("T".into()),
+            duration_ms: None,
+            artist: None,
+            album: None,
+            album_artist: None,
+            track_number: None,
+            track_total: None,
+            disc_number: None,
+            disc_total: None,
+            year: None,
+            genre: None,
+            picture: None,
+            file_size: None,
+            isrc: Some(ISRC.into()),
+            mbid: Some(MBID.into()),
+        };
+        write_metadata(p.clone(), m).unwrap();
+        check(&p);
+    }
+}
+
+/// An empty string removes the ids that were written.
+#[test]
+fn write_metadata_empty_ids_remove() {
+    use metadata_god::api::api::{write_metadata, Metadata};
+    let meta = |isrc: &str, mbid: &str| Metadata {
+        title: Some("T".into()), duration_ms: None, artist: None, album: None, album_artist: None,
+        track_number: None, track_total: None, disc_number: None, disc_total: None, year: None,
+        genre: None, picture: None, file_size: None, isrc: Some(isrc.into()), mbid: Some(mbid.into()),
+    };
+    for name in ["x.mp3", "x.flac", "x.m4a", "x.ogg"] {
+        let p = gen(name);
+        write_metadata(p.clone(), meta(ISRC, MBID)).unwrap();
+        check(&p);
+        write_metadata(p.clone(), meta("", "")).unwrap();
+        let ids = read_ids(p).unwrap();
+        assert!(ids.mbid.is_none() && ids.isrc.is_none(), "{name}");
+    }
+}

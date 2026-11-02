@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:codecore/data/repositories/artist_info_repository.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
@@ -304,6 +305,7 @@ class FakeFinder implements CuriosityFinder {
   required String Function() language,
   required RateLimiter limiter,
   TrackRecognizer? recognizer,
+  Future<void> Function(Track, Recognition)? onSure,
 }) {
   final resolver = MetadataResolver(
     itunes: itunes,
@@ -355,6 +357,7 @@ class FakeFinder implements CuriosityFinder {
       language: language,
       useCredits: useCredits ?? () => false,
       recognizer: recognizer,
+      onSure: onSure,
       limiter: limiter,
     ),
     fetcher: fetcher,
@@ -366,7 +369,11 @@ class EnrichRig {
   EnrichRig._(this.tmp);
 
   /// [interceptor] sees every query of the database (e.g. to count reads).
-  factory EnrichRig({QueryInterceptor? interceptor, TrackRecognizer? recognizer}) {
+  factory EnrichRig({
+    QueryInterceptor? interceptor,
+    TrackRecognizer? recognizer,
+    Future<void> Function(Track, Recognition)? onSure,
+  }) {
     final r = EnrichRig._(Directory.systemTemp.createTempSync('enrich_rig'));
     final executor = NativeDatabase.memory();
     r.db = AppDatabase(
@@ -400,6 +407,7 @@ class EnrichRig {
       language: () => 'it',
       limiter: RateLimiter(minGap: Duration.zero),
       recognizer: recognizer,
+      onSure: onSure,
     );
     r.svc = stack.svc;
     r.engine = stack.engine;

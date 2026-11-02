@@ -247,6 +247,28 @@ class CreditsRepository {
       .watch()
       .asyncMap((_) => portableOf(trackId));
 
+  /// The open proposals (a sure-enough identity that differs, not yet decided) of
+  /// the tracks the user has not edited. A row whose JSON is broken is left out (K-RB-08).
+  Stream<List<({Track track, Recognition rec})>> watchProposals() => _db
+      .customSelect(
+        'SELECT e.track_id AS id, e.details AS d FROM track_enrich e '
+        'JOIN tracks t ON t.id = e.track_id '
+        "WHERE json_valid(e.details) AND json_extract(e.details, '\$.rec.prop') = 'open' "
+        'AND t.user_edited = 0',
+        readsFrom: {_db.trackEnrich, _db.tracks},
+      )
+      .watch()
+      .asyncMap((rows) async {
+        final recs = <int, Recognition>{};
+        for (final r in rows) {
+          final id = r.read<int>('id');
+          final rec = decodeRec(r.read<String>('d'), id);
+          if (rec?.identity != null) recs[id] = rec!;
+        }
+        final tracks = await (_db.select(_db.tracks)..where((t) => t.id.isIn(recs.keys))).get();
+        return [for (final t in tracks) (track: t, rec: recs[t.id]!)];
+      });
+
   /// [creditedTracks] again whenever credits with this key change.
   Stream<List<({String role, Track track})>> watchCreditedTracks(
     String nameKey,

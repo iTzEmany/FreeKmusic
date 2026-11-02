@@ -31,6 +31,8 @@ class MetadataGodTagWriter implements TagWriter {
           genre: c.genre,
           trackNumber: c.trackNumber,
           discNumber: c.discNumber,
+          isrc: c.isrc,
+          mbid: c.mbid,
           picture: c.cover == null
               ? null
               : Picture(data: Uint8List.fromList(c.cover!.bytes), mimeType: c.cover!.mime),

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/credits_repository.dart' show decodeRec, mergeDetails;
 import '../import/track_matcher.dart' show matchKey;
@@ -34,6 +35,9 @@ class _Commit {
   bool rawDirty = false, credited = false;
   String? mbid;
 
+  /// The recognition to apply to the track once the transaction is closed.
+  Recognition? correct;
+
   bool get byUser => enrichRow?.lyricsByUser ?? false;
 
   /// A part the row no longer needs (filled meanwhile by another track of the
@@ -55,6 +59,7 @@ class EnrichCommitter {
     this._writer, {
     this.credits,
     this.curiosities,
+    this.onSure,
   });
 
   final AppDatabase db;
@@ -63,15 +68,30 @@ class EnrichCommitter {
   final CreditsEnricher? credits;
   final CuriosityService? curiosities;
 
-  /// Writes one gathered track; the caller holds the transaction.
-  Future<void> commitOne(EnrichGather g) async {
+  /// Applies a sure recognition to the track (`TrackCorrections.apply`, not by the user).
+  final Future<void> Function(Track, Recognition)? onSure;
+
+  /// Applies the sure corrections [commitOne] returned, once the transaction is closed.
+  Future<void> runCorrections(List<(Track, Recognition)> todo) async {
+    for (final (t, rec) in todo) {
+      try {
+        await onSure!(t, rec);
+      } on Object catch (e, st) {
+        AppLog.w('correction of track ${t.id} not applied', e, st);
+      }
+    }
+  }
+
+  /// Writes one gathered track; the caller holds the transaction. Returns the
+  /// correction to apply when the transaction is closed, if the recognition is sure.
+  Future<(Track, Recognition)?> commitOne(EnrichGather g) async {
     final trackId = g.trackId;
     // The row may have changed (or be gone) while the sources were asked.
     final f = await tracks.getById(trackId);
     if (f == null) {
       g.out.updateAll((_, _) => PartOutcome.skipped); // nothing was saved
       g.rec = null; // and no recognition counts
-      return;
+      return null;
     }
     final enrichRow = await (db.select(
       db.trackEnrich,
@@ -88,6 +108,7 @@ class EnrichCommitter {
     if (status != null && status.code != f.enrichStatus) {
       await _writer.writeStatus(trackId, status);
     }
+    return c.correct == null ? null : (f, c.correct!);
   }
 
   void _commitLyrics(_Commit c) {
@@ -190,23 +211,21 @@ class EnrichCommitter {
     final same = old != null && _sameIdentity(old.identity, rec.identity);
     // The same song keeps what was decided about it.
     if (same && const {'discarded', 'accepted', 'auto'}.contains(old.prop)) prop = old.prop;
+    final id = rec.identity;
+    final differs = id != null &&
+        (matchKey(id.title) != matchKey(c.f.title) ||
+            (id.artist.isNotEmpty && matchKey(id.artist) != matchKey(c.f.artist ?? '')));
+    final decided = const {'discarded', 'accepted', 'auto'}.contains(prop);
+    final fixes = differs && !c.f.userEdited && !decided;
+    if (fixes && !rec.sure) prop = 'open';
     if (prop == 'open' && c.f.userEdited) prop = null;
     final original = rec.original ?? (same ? old.original : null);
     if (prop != rec.prop || (rec.was == null && old?.was != null) || original != rec.original) {
-      rec = Recognition(
-        at: rec.at,
-        v: rec.v,
-        src: rec.src,
-        score: rec.score,
-        sure: rec.sure,
-        identity: rec.identity,
-        prop: prop,
-        was: rec.was ?? old?.was,
-        original: original,
-      );
+      rec = rec.copyWith(prop: prop, was: rec.was ?? old?.was, original: original);
     }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
+    if (fixes && rec.sure && onSure != null) c.correct = rec;
     if ((c.enrichRow?.mbid ?? '').isEmpty) c.mbid = rec.identity?.mbid;
   }
 

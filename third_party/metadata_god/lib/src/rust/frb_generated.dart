@@ -307,8 +307,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Metadata dco_decode_metadata(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 13)
-      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
+    if (arr.length != 15)
+      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
     return Metadata(
       title: dco_decode_opt_String(arr[0]),
       durationMs: dco_decode_opt_box_autoadd_f_64(arr[1]),
@@ -323,6 +323,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       genre: dco_decode_opt_String(arr[10]),
       picture: dco_decode_opt_box_autoadd_picture(arr[11]),
       fileSize: dco_decode_opt_box_autoadd_u_64(arr[12]),
+      isrc: dco_decode_opt_String(arr[13]),
+      mbid: dco_decode_opt_String(arr[14]),
     );
   }
 
@@ -509,6 +511,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_genre = sse_decode_opt_String(deserializer);
     var var_picture = sse_decode_opt_box_autoadd_picture(deserializer);
     var var_fileSize = sse_decode_opt_box_autoadd_u_64(deserializer);
+    var var_isrc = sse_decode_opt_String(deserializer);
+    var var_mbid = sse_decode_opt_String(deserializer);
     return Metadata(
         title: var_title,
         durationMs: var_durationMs,
@@ -522,7 +526,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         year: var_year,
         genre: var_genre,
         picture: var_picture,
-        fileSize: var_fileSize);
+        fileSize: var_fileSize,
+        isrc: var_isrc,
+        mbid: var_mbid);
   }
 
   @protected
@@ -735,6 +741,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.genre, serializer);
     sse_encode_opt_box_autoadd_picture(self.picture, serializer);
     sse_encode_opt_box_autoadd_u_64(self.fileSize, serializer);
+    sse_encode_opt_String(self.isrc, serializer);
+    sse_encode_opt_String(self.mbid, serializer);
   }
 
   @protected

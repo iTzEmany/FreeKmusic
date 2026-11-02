@@ -1,9 +1,11 @@
 import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
+import 'package:codecore/services/online/curiosity_finder.dart' show CuriosityPair;
 import 'package:codecore/services/online/enrich_engine.dart' show GatherSignal, needsRecognition;
 import 'package:codecore/services/online/enrich_parts.dart';
 import 'package:codecore/services/online/musicbrainz_client.dart';
+import 'package:codecore/services/online/wikipedia_client.dart' show Curiosity;
 import 'package:codecore/services/online/ytm_song_parser.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:codecore/services/recognition/track_recognizer.dart';
@@ -418,5 +420,19 @@ void main() {
     await r.db.delete(r.db.tracks).go();
     await r.engine.commit([g]);
     expect(g.rec, isNull);
+  });
+
+  test('a cover without a page of its own: the engine hands rec.original to the curiosities', () async {
+    final cover = Recognition(
+        at: 1,
+        src: RecogSource.ytid,
+        identity: const TrackIdentity(title: 'Believer (cover)', artist: 'Romy Wave'),
+        cover: true,
+        original: const {'title': 'Believer', 'artist': 'Imagine Dragons'});
+    r = EnrichRig(recognizer: _Fixed(RecogOutcome(rec: cover, asked: true)));
+    r.finder.pair = CuriosityPair(artist: Curiosity('bio', Uri.parse('https://it.wikipedia.org/wiki/Y'), 'it'));
+    final id = await r.add(title: 'Whatever', artist: 'Chan');
+    await r.engine.completeOne(id, {EnrichPart.curio});
+    expect(r.finder.askedFor.map((a) => a.split('|').take(2).join('|')), ['Believer (cover)|Romy Wave', 'Believer|Imagine Dragons']);
   });
 }

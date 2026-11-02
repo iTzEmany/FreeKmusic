@@ -29,6 +29,7 @@ import '../services/online/request_budget.dart' show apiIdentified;
 import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
+import '../services/library/track_corrections.dart';
 import '../services/library/track_file_sync.dart';
 import '../services/recognition/track_recognizer.dart';
 import '../services/tags/fingerprinter.dart';
@@ -40,6 +41,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'player_providers.dart';
+import 'tag_backup_providers.dart' show tagWritableProvider;
 import 'youtube_providers.dart' show downloadIndexProvider, innerTubeClientProvider, resolveDownloadFolder;
 
 final webClientProvider = Provider<WebClient>((ref) => DioWebClient());
@@ -198,6 +200,16 @@ final enrichmentServiceProvider = Provider<EnrichmentService>((ref) {
   );
 });
 
+/// Puts a recognised title and artist in a track (automatically or accepted by the user).
+final trackCorrectionsProvider = Provider<TrackCorrections>((ref) {
+  return TrackCorrections(
+    ref.watch(databaseProvider),
+    ref.watch(trackEditorProvider),
+    ref.watch(creditsRepositoryProvider),
+    fileBlock: (path) => ref.read(tagWritableProvider(path).future),
+  );
+});
+
 final enrichEngineProvider = Provider<EnrichEngine>((ref) {
   return EnrichEngine(
     db: ref.watch(databaseProvider),
@@ -210,6 +222,7 @@ final enrichEngineProvider = Provider<EnrichEngine>((ref) {
     language: () => ref.read(settingsProvider).language,
     useCredits: () => ref.read(settingsProvider).creditsDetails,
     recognizer: ref.watch(trackRecognizerProvider),
+    onSure: (t, rec) => ref.read(trackCorrectionsProvider).apply(t, rec, byUser: false).then((_) {}),
     limiter: ref.watch(enrichLimiterProvider),
   );
 });
