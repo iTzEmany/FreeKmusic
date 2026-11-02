@@ -295,7 +295,8 @@ Set<EnrichPart> manualParts(AppSettings s) => {
 };
 
 /// Seconds per track for the whole enrichment, identified vs anonymous.
-const kEnrichSecondsIdentified = 7;
+// 12 s: measured on the Motorola with recognition (phase 69e.4, 10–12 s while working).
+const kEnrichSecondsIdentified = 12;
 // 40 s: measured on the phone (phase 69b.4), Wikimedia anonymous tier.
 const kEnrichSecondsAnonymous = 40;
 

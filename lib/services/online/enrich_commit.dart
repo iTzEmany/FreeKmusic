@@ -15,6 +15,7 @@ import 'enrich_parts.dart';
 import 'enrich_writer.dart';
 import 'enrichment_proposal.dart';
 import 'lrclib_client.dart' show LyricsResult;
+import 'query_cleaner.dart' show isGenericArtist;
 
 /// One track's commit in flight: the row and `track_enrich` read once, and
 /// what the parts decided on the way.
@@ -208,7 +209,10 @@ class EnrichCommitter {
   /// Nothing to write when it was saved already or got no answer. It is merged
   /// with the stored one: a proposal the user discarded (or accepted, or applied) keeps
   /// its state while the identity is the same, `was` is kept, and a hand-edited row (read fresh
-  /// here) never gets an open proposal. The row's title and artist stay.
+  /// here) never gets an open proposal. The row's title and artist stay, except for an automatic
+  /// correction (R-169). On a track enriched with `found` only an empty or generic artist is filled
+  /// (same title, the track's title is kept); any other difference is a proposal, even if sure (D-333).
+  /// `untried` and `nothing` tracks follow R-169.
   void _commitRec(_Commit c) {
     var rec = c.g.rec;
     if (rec == null) return;
@@ -223,7 +227,13 @@ class EnrichCommitter {
             (id.artist.isNotEmpty && matchKey(id.artist) != matchKey(c.f.artist ?? '')));
     final decided = const {'discarded', 'accepted', 'auto'}.contains(prop);
     final fixes = differs && !c.f.userEdited && !decided;
-    if (fixes && !rec.sure) prop = 'open';
+    final fillsArtist = id != null &&
+        matchKey(id.title) == matchKey(c.f.title) &&
+        id.artist.isNotEmpty &&
+        isGenericArtist(c.f.artist ?? '');
+    final found = c.f.enrichStatus == EnrichStatus.found.code;
+    final auto = rec.sure && (!found || fillsArtist);
+    if (fixes && !auto) prop = 'open';
     if (prop == 'open' && c.f.userEdited) prop = null;
     final original = rec.original ?? (same ? old.original : null);
     if (prop != rec.prop || (rec.was == null && old?.was != null) || original != rec.original) {
@@ -231,7 +241,13 @@ class EnrichCommitter {
     }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
-    if (fixes && rec.sure && onSure != null) c.correct = rec;
+    if (fixes && auto && onSure != null) {
+      // Same title by matchKey: the correction fills the artist and keeps the track's title.
+      c.correct = found
+          ? rec.copyWith(
+              identity: TrackIdentity(title: c.f.title, artist: id.artist, ms: id.ms, isrc: id.isrc, mbid: id.mbid, vid: id.vid))
+          : rec;
+    }
     if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) c.mbid = rec.identity?.mbid;
   }
 
