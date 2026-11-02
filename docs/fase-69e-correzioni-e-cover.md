@@ -106,6 +106,29 @@
 - c'è la PR con la CI verde;
 - esiti numerici di Test.zip, del Motorola e dei testi sono in questo documento.
 
+### 69e.5 — Titolo ufficiale dal video id (aperto il 2026-11-02)
+**Problema.** Il passo 1b (`_fromVideoId` → `_ytmSong` → `InnerTubeClient.songOf`) prende il titolo che YouTube Music dà al video.
+- Per un brano audio di studio (ATV) è il nome ufficiale della canzone.
+- Per un video ufficiale (OMV) o caricato da chiunque (UGC) è il titolo del video, per esempio «Get Lucky (Official Audio) (feat. Pharrell Williams & Nile Rodgers)».
+- L'OMV conta come `sure` (D-312), quindi su un brano **mai arricchito** diventa una correzione automatica: D-333 copre solo i già arricchiti.
+- Prova dal vivo del 2/11: la risposta anonima di `next` non porta la «controparte» canzone (ATV) di un OMV, né con `playlistId RDAMVM…`. Il nome ufficiale non arriva da lì.
+
+**Cosa fare.**
+- ATV: come oggi, titolo e artisti del video, `sure`.
+- OMV e UGC: si cerca la canzone su YouTube Music, solo fra le canzoni (la ricerca del passo 4), con il titolo pulito da `cleanSearchQuery` e l'artista del video.
+  - Si prende l'ATV con un artista in comune e la durata entro ±3 s (`ytmMatches`). Trovato → identità con il titolo dell'ATV; resta `sure` solo per un OMV.
+  - Non trovato → titolo pulito da `cleanSearchQuery` e identità **non sicura**, quindi una proposta.
+- Coerenza della versione, per tutte e tre: un titolo che nomina una versione che il file non nomina (Live, Remaster, Edit, Extended, Remix) non è `sure`. Si riusa la regola delle versioni di `_Hay`.
+- Lo stesso vale per i brani online (`recognizeOnline`).
+
+**Fatto quando.**
+- Ci sono fixture (risposte vere salvate una volta) e test:
+  - l'OMV di «Get Lucky» con l'ATV trovato → «Get Lucky», `sure`;
+  - un OMV senza ATV → titolo pulito, proposta;
+  - un UGC «… (Lyrics)» → mai `sure`;
+  - un ATV «Seven Nation Army (Live)» per un file senza «Live» → proposta.
+- Il conteggio di Test.zip non peggiora: 0 correzioni automatiche sbagliate.
+
 ## Esiti di 69e.4
 Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo e DB separati, motore, rete e impronta Rust veri, percorso `enrichJobProvider.startDue()`. I 147 file sono gli stessi di 69d.4.
 
