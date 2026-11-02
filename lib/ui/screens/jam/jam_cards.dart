@@ -6,6 +6,7 @@ import '../../../providers/jam_providers.dart';
 import '../../../services/jam/jam_models.dart';
 import '../../theme/tokens.dart';
 import '../now_playing/now_playing_cards.dart' show NpCard;
+import '../now_playing/proposal_card.dart' show CoverLine;
 import 'jam_parts.dart' show jamTriviaText;
 import 'jam_track_info_screen.dart';
 
@@ -67,13 +68,19 @@ class JamInfoCard extends ConsumerWidget {
     return NpCard(
       title: l.fieldCuriosity,
       onTap: () => _openInfo(context, item),
-      child: Text(
-        has ? text : l.curiosityNoSong,
-        maxLines: 8,
-        overflow: TextOverflow.ellipsis,
-        style: has
-            ? theme.bodyMedium
-            : theme.bodyMedium?.copyWith(color: context.cc.textMuted),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CoverLine(videoId: item.videoId),
+          Text(
+            has ? text : l.curiosityNoSong,
+            maxLines: 8,
+            overflow: TextOverflow.ellipsis,
+            style: has
+                ? theme.bodyMedium
+                : theme.bodyMedium?.copyWith(color: context.cc.textMuted),
+          ),
+        ],
       ),
     );
   }

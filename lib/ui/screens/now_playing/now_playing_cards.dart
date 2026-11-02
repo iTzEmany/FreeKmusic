@@ -18,6 +18,7 @@ import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../lyrics/lyrics_translate_flow.dart';
+import 'proposal_card.dart' show CoverLine;
 import 'queue_sheet.dart';
 import '../../widgets/track_art.dart';
 import '../../widgets/show_msg.dart';
@@ -219,14 +220,17 @@ class _InfoCardState extends ConsumerState<InfoCard> {
     if (raw == null && artistInfo == null && !searched) {
       return NpCard(
         title: l.fieldCuriosity,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: loading
-              ? spinner
-              : OutlinedButton(
-                  onPressed: _fetch,
-                  child: Text(l.searchCuriosity),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CoverLine(trackId: t.id),
+            loading
+                ? spinner
+                : OutlinedButton(
+                    onPressed: _fetch,
+                    child: Text(l.searchCuriosity),
+                  ),
+          ],
         ),
       );
     }
@@ -237,6 +241,7 @@ class _InfoCardState extends ConsumerState<InfoCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          CoverLine(trackId: t.id),
           if (raw != null)
             _CuriosityText(
               heading: l.curiositySong,

@@ -3380,5 +3380,21 @@
   "logRecogSources": "Reconnus : {list}",
   "recogSrcTags": "tags",
   "recogSrcVideo": "vidéo",
-  "recogSrcText": "texte"
+  "recogSrcText": "texte",
+  "recogIdent": "{title} – {artist}",
+  "recogProposal": "Proposition : {identity}",
+  "recogAccept": "Accepter",
+  "recogDiscard": "Ignorer",
+  "recogAcceptSem": "Accepter la proposition {identity}",
+  "recogDiscardSem": "Ignorer la proposition {identity}",
+  "recogCover": "Reprise",
+  "recogCoverOf": "Reprise de {identity}",
+  "recogToConfirm": "À confirmer ({count})",
+  "recogAcceptAll": "Tout accepter",
+  "recogNoProposals": "Aucune proposition à confirmer",
+  "recogFromTo": "{from} → {to}",
+  "logCorrection": "Corrigé : {from} → {to}",
+  "logRevert": "Rétablir",
+  "recogActionFailed": "L'action a échoué",
+  "logRevertFailed": "Impossible de rétablir cette correction"
 }

@@ -247,6 +247,16 @@ class CreditsRepository {
       .watch()
       .asyncMap((_) => portableOf(trackId));
 
+  /// The recognition stored for [trackId] (null when none), again whenever it changes.
+  Stream<Recognition?> watchRec(int trackId) => _db
+      .customSelect(
+        'SELECT details FROM track_enrich WHERE track_id = ?1',
+        variables: [Variable<int>(trackId)],
+        readsFrom: {_db.trackEnrich},
+      )
+      .watch()
+      .map((rows) => rows.isEmpty ? null : decodeRec(rows.first.read<String?>('details'), trackId));
+
   /// The open proposals (a sure-enough identity that differs, not yet decided) of
   /// the tracks the user has not edited. A row whose JSON is broken is left out (K-RB-08).
   Stream<List<({Track track, Recognition rec})>> watchProposals() => _db

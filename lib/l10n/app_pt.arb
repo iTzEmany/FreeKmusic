@@ -3380,5 +3380,21 @@
   "logRecogSources": "Reconhecidas: {list}",
   "recogSrcTags": "tags",
   "recogSrcVideo": "vídeo",
-  "recogSrcText": "texto"
+  "recogSrcText": "texto",
+  "recogIdent": "{title} – {artist}",
+  "recogProposal": "Sugestão: {identity}",
+  "recogAccept": "Aceitar",
+  "recogDiscard": "Descartar",
+  "recogAcceptSem": "Aceitar a sugestão {identity}",
+  "recogDiscardSem": "Descartar a sugestão {identity}",
+  "recogCover": "Cover",
+  "recogCoverOf": "Cover de {identity}",
+  "recogToConfirm": "Por confirmar ({count})",
+  "recogAcceptAll": "Aceitar todas",
+  "recogNoProposals": "Nenhuma sugestão por confirmar",
+  "recogFromTo": "{from} → {to}",
+  "logCorrection": "Corrigido: {from} → {to}",
+  "logRevert": "Restaurar",
+  "recogActionFailed": "A ação falhou",
+  "logRevertFailed": "Não foi possível restaurar esta correção"
 }

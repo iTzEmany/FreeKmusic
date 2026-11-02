@@ -3146,5 +3146,21 @@
   "logRecogSources": "Erkannt: {list}",
   "recogSrcTags": "Tags",
   "recogSrcVideo": "Video",
-  "recogSrcText": "Text"
+  "recogSrcText": "Text",
+  "recogIdent": "{title} – {artist}",
+  "recogProposal": "Vorschlag: {identity}",
+  "recogAccept": "Annehmen",
+  "recogDiscard": "Verwerfen",
+  "recogAcceptSem": "Vorschlag {identity} annehmen",
+  "recogDiscardSem": "Vorschlag {identity} verwerfen",
+  "recogCover": "Cover",
+  "recogCoverOf": "Cover von {identity}",
+  "recogToConfirm": "Zu bestätigen ({count})",
+  "recogAcceptAll": "Alle annehmen",
+  "recogNoProposals": "Keine Vorschläge zu bestätigen",
+  "recogFromTo": "{from} → {to}",
+  "logCorrection": "Korrigiert: {from} → {to}",
+  "logRevert": "Wiederherstellen",
+  "recogActionFailed": "Aktion fehlgeschlagen",
+  "logRevertFailed": "Diese Korrektur konnte nicht wiederhergestellt werden"
 }

@@ -9228,6 +9228,102 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'testo'**
   String get recogSrcText;
+
+  /// No description provided for @recogIdent.
+  ///
+  /// In it, this message translates to:
+  /// **'{title} – {artist}'**
+  String recogIdent(String title, String artist);
+
+  /// No description provided for @recogProposal.
+  ///
+  /// In it, this message translates to:
+  /// **'Proposta: {identity}'**
+  String recogProposal(String identity);
+
+  /// No description provided for @recogAccept.
+  ///
+  /// In it, this message translates to:
+  /// **'Accetta'**
+  String get recogAccept;
+
+  /// No description provided for @recogDiscard.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarta'**
+  String get recogDiscard;
+
+  /// No description provided for @recogAcceptSem.
+  ///
+  /// In it, this message translates to:
+  /// **'Accetta la proposta {identity}'**
+  String recogAcceptSem(String identity);
+
+  /// No description provided for @recogDiscardSem.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarta la proposta {identity}'**
+  String recogDiscardSem(String identity);
+
+  /// No description provided for @recogCover.
+  ///
+  /// In it, this message translates to:
+  /// **'Cover'**
+  String get recogCover;
+
+  /// No description provided for @recogCoverOf.
+  ///
+  /// In it, this message translates to:
+  /// **'Cover di {identity}'**
+  String recogCoverOf(String identity);
+
+  /// No description provided for @recogToConfirm.
+  ///
+  /// In it, this message translates to:
+  /// **'Da confermare ({count})'**
+  String recogToConfirm(int count);
+
+  /// No description provided for @recogAcceptAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Accetta tutte'**
+  String get recogAcceptAll;
+
+  /// No description provided for @recogNoProposals.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna proposta da confermare'**
+  String get recogNoProposals;
+
+  /// No description provided for @recogFromTo.
+  ///
+  /// In it, this message translates to:
+  /// **'{from} → {to}'**
+  String recogFromTo(String from, String to);
+
+  /// No description provided for @logCorrection.
+  ///
+  /// In it, this message translates to:
+  /// **'Corretto: {from} → {to}'**
+  String logCorrection(String from, String to);
+
+  /// No description provided for @logRevert.
+  ///
+  /// In it, this message translates to:
+  /// **'Ripristina'**
+  String get logRevert;
+
+  /// No description provided for @recogActionFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Operazione non riuscita'**
+  String get recogActionFailed;
+
+  /// No description provided for @logRevertFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile ripristinare questa correzione'**
+  String get logRevertFailed;
 }
 
 class _AppLocalizationsDelegate

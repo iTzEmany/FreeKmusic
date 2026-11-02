@@ -26,6 +26,7 @@ class LogEntry {
     this.importName,
     this.event,
     this.detail,
+    this.correction,
   });
 
   final DateTime at;
@@ -41,6 +42,9 @@ class LogEntry {
   /// enrichment round).
   final Map<String, Object?>? detail;
 
+  /// The stored row of a title/artist correction (D-308), for «Ripristina».
+  final ActivityLogRow? correction;
+
   /// A job that left `running` before its work was done (see [ActivityLogNotifier]).
   bool get stopped => detail?['stopped'] == true;
 
@@ -51,16 +55,18 @@ class LogEntry {
           event != ImportEventKind.planned);
 
   static const _importKind = 'import';
+  static const _correctionKind = 'correction';
 
   LogEntry.fromRow(ActivityLogRow r)
     : at = DateTime.fromMillisecondsSinceEpoch(r.at),
       detail = _decode(r.detail),
+      correction = r.kind == _correctionKind ? r : null,
       importName = r.kind == _importKind ? r.name : null,
       event = r.kind == _importKind
           ? ImportEventKind.values.asNameMap()[_decode(r.detail)?['event']] ??
                 ImportEventKind.completed
           : null,
-      item = r.kind == _importKind
+      item = r.kind == _importKind || r.kind == _correctionKind
           ? null
           : ActivityItem(
               kind: _kindOf(r.kind),
@@ -162,20 +168,21 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
         ),
       );
     });
-    unawaited(
-      _run(() async {
-        await _repo.prune(nowMs());
-        final rows = await _repo.page(limit: pageSize);
-        final total = await _repo.count();
-        if (ref.mounted) {
-          state = ActivityLogState([
-            for (final r in rows) LogEntry.fromRow(r),
-          ], total);
-        }
-      }),
-    );
+    unawaited(reload());
     return const ActivityLogState([], 0);
   }
+
+  /// Reads the first page again (corrections are written straight to the database).
+  Future<void> reload() => _run(() async {
+    await _repo.prune(nowMs());
+    final rows = await _repo.page(limit: pageSize);
+    final total = await _repo.count();
+    if (ref.mounted) {
+      state = ActivityLogState([
+        for (final r in rows) LogEntry.fromRow(r),
+      ], total);
+    }
+  });
 
   /// Database jobs one after the other, so the lines keep their order.
   Future<void> _run(Future<void> Function() job) =>
