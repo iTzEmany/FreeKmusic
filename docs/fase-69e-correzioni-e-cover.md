@@ -129,6 +129,8 @@
   - un ATV «Seven Nation Army (Live)» per un file senza «Live» → proposta.
 - Il conteggio di Test.zip non peggiora: 0 correzioni automatiche sbagliate.
 
+**Esito:** codice fatto in `_ytmSong`/`_fromVideoId` (test con i fake del recognizer); manca la prova su Test.zip.
+
 ## Esiti di 69e.4
 Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo e DB separati, motore, rete e impronta Rust veri, percorso `enrichJobProvider.startDue()`. I 147 file sono gli stessi di 69d.4.
 
