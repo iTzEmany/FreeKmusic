@@ -3190,5 +3190,6 @@
   "jamRemoteActive": "Jam a distancia activa",
   "jamRemoteEnd": "Terminar",
   "jamDeclinedHost": "El anfitrión rechazó la solicitud",
-  "jamBusyHost": "El anfitrión ya tiene una Jam en curso"
+  "jamBusyHost": "El anfitrión ya tiene una Jam en curso",
+  "jamWaitingHost": "Esperando a que el anfitrión acepte…"
 }

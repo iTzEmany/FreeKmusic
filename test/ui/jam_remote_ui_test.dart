@@ -136,6 +136,21 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('waiting for a remote host without a name gets the generic text', (t) async {
+    final h = await open(
+        t,
+        Builder(
+            builder: (c) => TextButton(
+                onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(builder: (_) => const JamScreen())),
+                child: const Text('apri'))),
+        [jamProvider.overrideWith(() => _FakeJam(const JamUiState(phase: JamPhase.requesting, remote: true)))]);
+    await t.tap(find.text('apri'));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 600));
+    expect(find.text('In attesa che l’host accetti…'), findsOneWidget);
+    await h.dispose(t);
+  });
+
   testWidgets('a busy remote host without a name gets the generic message', (t) async {
     final h = await open(
         t,

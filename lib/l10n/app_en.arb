@@ -3190,5 +3190,6 @@
   "jamRemoteActive": "Remote Jam on",
   "jamRemoteEnd": "End",
   "jamDeclinedHost": "The host declined the request",
-  "jamBusyHost": "The host already has a Jam running"
+  "jamBusyHost": "The host already has a Jam running",
+  "jamWaitingHost": "Waiting for the host to accept…"
 }

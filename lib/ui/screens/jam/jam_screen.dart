@@ -124,7 +124,7 @@ class _Requesting extends StatelessWidget {
             children: [
               _PulsingAvatars(names: [peerName]),
               const SizedBox(height: 24),
-              Text(l.jamWaiting(peerName), textAlign: TextAlign.center),
+              Text(peerName.isEmpty ? l.jamWaitingHost : l.jamWaiting(peerName), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               OutlinedButton(onPressed: onCancel, child: Text(l.cancel)),
             ],

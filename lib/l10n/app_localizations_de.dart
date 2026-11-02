@@ -5969,4 +5969,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get jamBusyHost => 'Der Host hat bereits eine Jam laufen';
+
+  @override
+  String get jamWaitingHost => 'Warten, bis der Host annimmt…';
 }

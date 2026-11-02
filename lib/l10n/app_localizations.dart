@@ -9450,6 +9450,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'L’host ha già una Jam in corso'**
   String get jamBusyHost;
+
+  /// No description provided for @jamWaitingHost.
+  ///
+  /// In it, this message translates to:
+  /// **'In attesa che l’host accetti…'**
+  String get jamWaitingHost;
 }
 
 class _AppLocalizationsDelegate

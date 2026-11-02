@@ -3424,5 +3424,6 @@
   "jamRemoteActive": "Jam à distance active",
   "jamRemoteEnd": "Terminer",
   "jamDeclinedHost": "L’hôte a refusé la demande",
-  "jamBusyHost": "L’hôte a déjà une Jam en cours"
+  "jamBusyHost": "L’hôte a déjà une Jam en cours",
+  "jamWaitingHost": "En attente de l’acceptation de l’hôte…"
 }
