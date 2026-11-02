@@ -1202,7 +1202,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 71.1 `JamRemoteItems` e aggiunte
 - [x] 71.2 «Coda insieme» da remoto
 - [x] 71.3 Copertine, scheda e testo
-- [~] 71.4 Controlli di fase (analyze, mirato, code-review high, scheggia, review Opus fatti; prova dal vivo Linux + Mi A3 dopo la fusione, esiti in `fase-71-coda-remota.md`)
+- [x] 71.4 Controlli di fase (analyze, mirato, code-review high, scheggia, review Opus; prova dal vivo Linux + Mi A3 del 3/11 tutta ok, esiti in `fase-71-coda-remota.md`)
 
 ## Fase 72 — Bluetooth e amici (`fase-72-bluetooth-e-amici.md`)
 - [ ] 72.1 `JamBeaconBridge.kt` e permessi
