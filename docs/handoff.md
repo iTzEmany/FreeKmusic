@@ -10,9 +10,8 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 Si comincia dai «Rilievi dalla fase 70» in `docs/fase-71-coda-remota.md` (feeder dell'ospite remoto, «Aggiungi alla Jam» nascosto, segno «non raggiungibile» da portare in `JamUiState`, ...).
 
 ## Da riprovare o capire
-- **Stato iniziale dell'ospite remoto** (df406d1): dopo «Accetta» perdeva lo STATE e vedeva la coda vuota; corretto, ma da riprovare dal vivo.
-- **R-128 non provato**: host Mi A3 in pausa a schermo spento per 10 min con Linux ospite che rimette play.
-- **Durata 4:34 invece di 4:00**: in Jam un brano di 4:00 appare di 4:34 su host e ospite. Causa da trovare (con un test che la riproduce, prima di correggere).
+- Fase 70 provata dal vivo tre volte (stato iniziale dell'ospite, R-128, foglio dell'invito, ruoli invertiti): tutto chiuso, esiti nel documento di fase.
+- Durata degli mp3 corretta alla radice (frame Info di LAME letto come bitrate): libreria corretta una volta all'avvio (`mp3DurationFix1`).
 - Wi-Fi spento 30 s: l'ospite torna dopo circa 70 s; se è troppo, vedere le attese di `JamBridge`.
 
 ## Fasi chiuse da sapere
@@ -53,5 +52,5 @@ Si comincia dai «Rilievi dalla fase 70» in `docs/fase-71-coda-remota.md` (feed
 
 ## Prossimi obiettivi
 1. **(Consigliato) Fase 71, coda dell'ospite remoto** (`/obiettivo fase 71`).
-2. Riprove della fase 70 (stato iniziale dell'ospite, R-128, durata 4:34).
+2. (nessuna riprova aperta della fase 70)
 3. Unificare le due code delle domande sulla cassa; ricerca «notte», build p99 (D-176).

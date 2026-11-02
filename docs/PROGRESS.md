@@ -1196,7 +1196,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 70.3 Ospiti remoti in `JamHost`
 - [x] 70.4 `JamBridgeHost` e `RemoteJamGuest`
 - [x] 70.5 Accensione, servizio e fogli
-- [x] 70.6 Controlli di fase e prova in autonomia (esiti in `fase-70-ponte-jam-distanza.md`; R-128, host Mi A3 in pausa a schermo spento 10 min, non provato)
+- [x] 70.6 Controlli di fase e prova in autonomia (esiti in `fase-70-ponte-jam-distanza.md`: tre prove dal vivo, R-128 compreso; corretta anche la durata degli mp3 col frame Info)
 
 ## Fase 71 — Coda dell'ospite remoto (`fase-71-coda-remota.md`)
 - [ ] 71.1 `JamRemoteItems` e aggiunte
