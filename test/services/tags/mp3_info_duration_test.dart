@@ -39,20 +39,19 @@ void main() {
   });
 
   test('VBR with no header: the frames are counted, not size / first-frame bitrate', () async {
-    // 100 frames at 160 kbps then 1000 at 32 kbps, then an ID3v1 tag: 1100 * 1152 / 44100 = 28.7 s.
+    // 1100 frames alternating 160 and 32 kbps (so not CBR), then an ID3v1 tag: 1100 * 1152 / 44100 = 28.7 s.
     Uint8List frame(int idx, int kbps) =>
         Uint8List(144 * kbps * 1000 ~/ 44100)..setAll(0, [0xFF, 0xFB, idx << 4, 0xC0]);
     final dir = Directory.systemTemp.createTempSync('vbr_dur');
     addTearDown(() => dir.deleteSync(recursive: true));
     final f = File('${dir.path}/v.mp3')
       ..writeAsBytesSync([
-        for (var i = 0; i < 100; i++) ...frame(10, 160),
-        for (var i = 0; i < 1000; i++) ...frame(1, 32),
+        for (var i = 0; i < 1100; i++) ...(i.isEven ? frame(10, 160) : frame(1, 32)),
         0x54, 0x41, 0x47, ...List.filled(125, 0),
       ]);
     final m = mp3Length(f.path)!;
     expect(m.ms, closeTo(28734, 30));
-    expect(m.bps ~/ 1000, closeTo(43, 1)); // (100*160 + 1000*32) / 1100 would be 43.6
+    expect(m.bps ~/ 1000, closeTo(96, 1)); // (160 + 32) / 2
     final t = await AudioMetadataTagReader(loftyIds: (_) async => const mg.TrackIds()).read(f.path);
     expect(t.durationMs, closeTo(28734, 30));
   });

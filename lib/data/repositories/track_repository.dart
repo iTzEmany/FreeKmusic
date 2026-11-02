@@ -587,10 +587,11 @@ class TrackRepository {
         TracksCompanion(durationMs: Value(ms)),
       );
 
-  /// Local mp3 files (no stream shadow rows), for the one-off length fix.
+  /// Local mp3 music files that are there (no episodes: the player corrects their length; no
+  /// stream shadow rows), for the one-off length fix.
   Future<List<({int id, String path, int durationMs, int? bitrateKbps})>> mp3LengthRows() async {
     final rows = await (_db.select(_db.tracks)
-          ..where((t) => t.format.equals('mp3') & t.kind.isNotValue(kStreamKind)))
+          ..where((t) => t.format.equals('mp3') & t.kind.equals(kMusicKind) & t.missing.equals(false)))
         .get();
     return [
       for (final r in rows)
