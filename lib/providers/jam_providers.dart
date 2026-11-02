@@ -40,7 +40,7 @@ import '../services/jam/speaker_jam.dart';
 import '../services/share/discovery.dart';
 import 'database_providers.dart';
 import 'library_providers.dart' show coverStoreProvider, libraryQueriesProvider;
-import 'online_providers.dart' show creditsRepositoryProvider;
+import 'online_providers.dart' show creditsRepositoryProvider, curiosityServiceProvider, lyricsChainProvider;
 import 'player_providers.dart';
 import 'settings_providers.dart';
 import 'share_hub.dart';
@@ -71,6 +71,7 @@ class JamUiState {
     this.link = JamLinkState.ok,
     this.remote = false,
     this.inviting = false,
+    this.unreachable = const [],
   });
 
   final JamPhase phase;
@@ -97,6 +98,9 @@ class JamUiState {
   /// «Invita chi è vicino» is on: the bridge runs for this host.
   final bool inviting;
 
+  /// Ids of the guests the host cannot reach right now (host only).
+  final List<String> unreachable;
+
   bool get active => phase == JamPhase.active;
   bool get isHost => role == JamRole.host;
 
@@ -113,6 +117,7 @@ class JamUiState {
     JamLinkState? link,
     bool? remote,
     bool? inviting,
+    List<String>? unreachable,
   }) => JamUiState(
     phase: phase ?? this.phase,
     role: role ?? this.role,
@@ -126,6 +131,7 @@ class JamUiState {
     link: link ?? this.link,
     remote: remote ?? this.remote,
     inviting: inviting ?? this.inviting,
+    unreachable: unreachable ?? this.unreachable,
   );
 }
 
@@ -782,11 +788,14 @@ class JamController extends Notifier<JamUiState> {
 
   // ---- state & playback ----------------------------------------------------
 
+  List<String> _unreachableIds() =>
+      ref.read(shareHubProvider.notifier).jamHost?.unreachableIds() ?? const [];
+
   void _onState(JamState s) {
     if (state.phase != JamPhase.active) return;
     // Leaving: the part to give back is already worked out; a late state without our tracks is ignored.
     if (_part.exitPart != null) return;
-    state = state.copyWith(jam: s);
+    state = state.copyWith(jam: s, unreachable: _unreachableIds());
     _transport?.update(s);
     if (s.ended) {
       unawaited(_finish());
@@ -882,7 +891,8 @@ class JamController extends Notifier<JamUiState> {
 
   /// The owner's cover image, or null (ours: the screen has it locally; any failure: no cover).
   Future<Uint8List?> fetchCover(JamItem item) async {
-    final uri = item.ownerDeviceId == _ownId ? null : _remoteUri(item, route: 'cover');
+    // A remote guest has no route to the owner: covers come from the video id (R-154).
+    final uri = item.ownerDeviceId == _ownId || state.remote ? null : _remoteUri(item, route: 'cover');
     if (uri == null) return null;
     try {
       final r = await _http.getUri<List<int>>(uri,
@@ -904,7 +914,58 @@ class JamController extends Notifier<JamUiState> {
       return await _localMeta(item) ??
           TrackMeta(title: item.title, artist: item.artist, album: item.album);
     }
+    // A remote guest has no route to the owner: the item's own fields, plus lyrics and
+    // curiosities looked up here and written nowhere (R-155).
+    if (state.remote) return _remoteMeta(item);
     return jamFetchMeta(item, _remoteUri(item, route: 'meta'), _headers, dio: _http);
+  }
+
+  Future<TrackMeta> _remoteMeta(JamItem item) async {
+    final t = Track(
+      id: 0,
+      path: '',
+      title: item.title,
+      artist: item.artist,
+      album: item.album,
+      albumKey: '',
+      durationMs: item.durationMs,
+      format: item.ext,
+      sizeBytes: 0,
+      mtimeMs: 0,
+      hasCover: false,
+      isFavorite: false,
+      enrichStatus: 0,
+      userEdited: false,
+      missing: false,
+      ignored: false,
+      kind: 0,
+      addedAt: 0,
+      playCount: 0,
+      coverSource: 0,
+    );
+    Future<T?> part<T>(Future<T> Function() f) async {
+      try {
+        return await f().timeout(const Duration(seconds: 15));
+      } on Object catch (e, st) {
+        AppLog.w('jam: no lookup for ${item.title}', e, st);
+        return null;
+      }
+    }
+
+    final (lyr, cur) = await (
+      part(() => ref.read(lyricsChainProvider).find(t)),
+      part(() => ref.read(curiosityServiceProvider).find(t, ref.read(settingsProvider).language)),
+    ).wait;
+    final song = cur?.pair.song ?? cur?.pair.artist;
+    return TrackMeta(
+      title: item.title,
+      artist: item.artist,
+      album: item.album,
+      lyricsPlain: lyr?.lyrics?.plain,
+      lyricsSynced: lyr?.lyrics?.synced,
+      // Same text the library saves: the text, then its source address.
+      curiosities: song == null ? null : '${song.text}\n${song.source}',
+    );
   }
 
   Future<File?> _selfFetch(JamItem item) {

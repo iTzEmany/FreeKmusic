@@ -1,8 +1,16 @@
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/jam_providers.dart';
+import 'package:codecore/data/db/app_database.dart' show Track;
+import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/services/jam/jam_models.dart';
+import 'package:codecore/services/online/curiosity_finder.dart';
+import 'package:codecore/services/online/curiosity_service.dart';
+import 'package:codecore/services/online/lrclib_client.dart';
+import 'package:codecore/services/online/lyrics_chain.dart';
+import 'package:codecore/services/online/wikipedia_client.dart';
 import 'package:codecore/services/online/credits.dart';
 import 'package:codecore/services/share/track_meta.dart';
+import 'package:codecore/ui/screens/jam/jam_parts.dart' show jamTriviaText;
 import 'package:codecore/ui/screens/jam/jam_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +30,46 @@ class _FakeJam extends JamController {
   Future<JamError?> send(JamCommand cmd) async {
     sent.add(cmd);
     return null;
+  }
+}
+
+class _FakeChain implements LyricsChain {
+  _FakeChain({this.fail = false});
+  final bool fail;
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+  @override
+  Future<LyricsChainResult> find(Track t, {bool wantSynced = true, cancel}) async {
+    if (fail) throw StateError('down');
+    return const LyricsChainResult(lyrics: LyricsResult(plain: 'parole remote'));
+  }
+}
+
+class _FakeCurio implements CuriosityService {
+  _FakeCurio({this.fail = false});
+  final bool fail;
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+  @override
+  Future<CuriosityLookup> find(Track t, String lang, {cancel, Map<String, String>? original}) async {
+    if (fail) throw StateError('down');
+    return CuriosityLookup(
+      pair: CuriosityPair(song: Curiosity('storia remota', Uri.parse('https://a.b/x'), 'it')),
+      artist: 'Band',
+      outcome: const CuriosityOutcome(),
+    );
+  }
+}
+
+/// The real controller (fetchMeta/fetchCover included) in a remote guest state.
+class _RemoteJam extends JamController {
+  _RemoteJam(this.initial);
+  final JamUiState initial;
+
+  @override
+  JamUiState build() {
+    super.build();
+    return initial;
   }
 }
 
@@ -179,6 +227,82 @@ void main() {
     expect(find.text('Crediti e dettagli'), findsOneWidget);
     expect(find.text('Mario Rossi'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
+    await h.dispose(tester);
+  });
+
+  testWidgets('remote guest: meta and cover of an item come from its own fields, no host call',
+      (tester) async {
+    const item = JamItem(
+        id: 5, ownerDeviceId: 'peer', title: 'Remota', ext: 'mp3', artist: 'Band', ref: '12',
+        videoId: 'abcdefghijk');
+    final h = await Harness.create(tester);
+    final c = ProviderContainer(overrides: [
+      ...h.overrides,
+      lyricsChainProvider.overrideWithValue(_FakeChain()),
+      curiosityServiceProvider.overrideWithValue(_FakeCurio()),
+      jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
+          phase: JamPhase.active,
+          role: JamRole.guest,
+          remote: true,
+          jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host')))),
+    ]);
+    addTearDown(c.dispose);
+    final ctrl = c.read(jamProvider.notifier);
+    final meta = await ctrl.fetchMeta(item);
+    expect((meta.title, meta.artist), ('Remota', 'Band'));
+    expect(meta.lyricsPlain, 'parole remote');
+    expect(jamTriviaText(meta.curiosities), 'storia remota');
+    expect(await ctrl.fetchCover(item), isNull);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the host\'s unreachable mark comes from JamUiState', (tester) async {
+    tester.view.physicalSize = const Size(500, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    final base = active(host: true);
+    final st = base.copyWith(
+      unreachable: ['peer'],
+      jam: base.jam!.copyWith(participants: const [
+        JamParticipant(id: 'host', name: 'Io', host: '', port: 0),
+        JamParticipant(id: 'peer', name: 'Telefono', host: '', port: 0),
+      ]),
+    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [...h.overrides, jamProvider.overrideWith(() => _FakeJam(st))],
+      child: MaterialApp(
+        locale: const Locale('it'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const JamScreen(),
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('Telefono (', findRichText: true), findsWidgets);
+    await tester.pumpWidget(const SizedBox());
+    await h.dispose(tester);
+  });
+
+  testWidgets('remote guest: a failing lyrics or curiosity source still gives title and artist',
+      (tester) async {
+    const item = JamItem(
+        id: 5, ownerDeviceId: 'peer', title: 'Remota', ext: 'mp3', artist: 'Band',
+        videoId: 'abcdefghijk');
+    final h = await Harness.create(tester);
+    final c = ProviderContainer(overrides: [
+      ...h.overrides,
+      lyricsChainProvider.overrideWithValue(_FakeChain(fail: true)),
+      curiosityServiceProvider.overrideWithValue(_FakeCurio(fail: true)),
+      jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
+          phase: JamPhase.active,
+          role: JamRole.guest,
+          remote: true,
+          jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host')))),
+    ]);
+    addTearDown(c.dispose);
+    final meta = await c.read(jamProvider.notifier).fetchMeta(item);
+    expect((meta.title, meta.artist, meta.lyricsPlain, meta.curiosities), ('Remota', 'Band', null, null));
     await h.dispose(tester);
   });
 }
