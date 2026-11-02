@@ -3162,5 +3162,34 @@
   "logCorrection": "Corregido de {from} a {to}",
   "logRevert": "Restaurar",
   "recogActionFailed": "La acción falló",
-  "logRevertFailed": "No se pudo restaurar esta corrección"
+  "logRevertFailed": "No se pudo restaurar esta corrección",
+  "jamInviteNearby": "Invitar a quien está cerca",
+  "jamInviteHint": "Quien escanee el QR o escriba el código entra en la Jam.",
+  "jamBridgeConnecting": "Conectando…",
+  "jamBridgeRetrying": "Conexión interrumpida, reintentando…",
+  "jamBridgeUnreachable": "Broker inaccesible",
+  "jamCodeExpiresIn": "Caduca en {seconds} s",
+  "@jamCodeExpiresIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "jamEnterCode": "Entrar con un código",
+  "jamCodeLabel": "Código",
+  "jamScanQr": "Escanear el QR",
+  "jamJoinAction": "Entrar",
+  "jamCodeInvalid": "Código no válido",
+  "jamCodeExpired": "Código caducado, pide uno nuevo",
+  "jamHostNoAnswer": "El anfitrión no respondió",
+  "jamCustomBroker": "Esta Jam usa un broker personalizado: escanea el QR",
+  "jamLinkReconnecting": "Conexión perdida, reintentando…",
+  "jamHostSilent": "Anfitrión inaccesible, reintentando…",
+  "jamMemberUnreachable": "inaccesible",
+  "jamRemoteActive": "Jam a distancia activa",
+  "jamRemoteEnd": "Terminar",
+  "jamDeclinedHost": "El anfitrión rechazó la solicitud",
+  "jamBusyHost": "El anfitrión ya tiene una Jam en curso",
+  "jamWaitingHost": "Esperando a que el anfitrión acepte…"
 }

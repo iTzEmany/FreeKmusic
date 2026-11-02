@@ -3162,5 +3162,34 @@
   "logCorrection": "Corrected from {from} to {to}",
   "logRevert": "Restore",
   "recogActionFailed": "The action failed",
-  "logRevertFailed": "This correction could not be restored"
+  "logRevertFailed": "This correction could not be restored",
+  "jamInviteNearby": "Invite people nearby",
+  "jamInviteHint": "Anyone who scans the QR or types the code joins the Jam.",
+  "jamBridgeConnecting": "Connecting…",
+  "jamBridgeRetrying": "Link interrupted, retrying…",
+  "jamBridgeUnreachable": "Broker unreachable",
+  "jamCodeExpiresIn": "Expires in {seconds} s",
+  "@jamCodeExpiresIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "jamEnterCode": "Join with a code",
+  "jamCodeLabel": "Code",
+  "jamScanQr": "Scan the QR",
+  "jamJoinAction": "Join",
+  "jamCodeInvalid": "Invalid code",
+  "jamCodeExpired": "Code expired, ask for a new one",
+  "jamHostNoAnswer": "The host did not answer",
+  "jamCustomBroker": "This Jam uses a custom broker: scan the QR",
+  "jamLinkReconnecting": "Connection lost, retrying…",
+  "jamHostSilent": "Host unreachable, retrying…",
+  "jamMemberUnreachable": "unreachable",
+  "jamRemoteActive": "Remote Jam on",
+  "jamRemoteEnd": "End",
+  "jamDeclinedHost": "The host declined the request",
+  "jamBusyHost": "The host already has a Jam running",
+  "jamWaitingHost": "Waiting for the host to accept…"
 }

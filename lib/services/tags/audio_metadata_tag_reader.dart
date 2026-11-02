@@ -6,6 +6,7 @@ import 'package:metadata_god/metadata_god.dart' as mg;
 
 import '../../core/app_log.dart';
 import 'metadata_god_init.dart';
+import 'mp3_length.dart';
 import 'tag_reader.dart';
 
 /// The Rust (lofty) side: injectable so tests run without the native library.
@@ -85,8 +86,10 @@ class AudioMetadataTagReader implements TagReader {
   static TagInfo _parse(String path, bool withCover) {
     final m = readMetadata(File(path), getImage: withCover);
     final pic = m.pictures.isEmpty ? null : _bestPicture(m.pictures);
-    final ms = m.duration?.inMilliseconds;
-    final br = m.bitrate;
+    final lame = path.toLowerCase().endsWith('.mp3') ? mp3Length(path) : null;
+    final ms = lame?.ms ?? m.duration?.inMilliseconds;
+    // The package reports the first frame's bitrate; with the real length it is the average.
+    final br = lame?.bps ?? m.bitrate;
     final extras = _extras(path);
     return TagInfo(
       title: _clean(m.title),

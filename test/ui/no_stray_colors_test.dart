@@ -9,6 +9,7 @@ void main() {
   const allowed = {
     // A QR code is only read reliably as dark on white, in any theme.
     'lib/ui/screens/share/send_tab.dart',
+    'lib/ui/screens/jam/jam_remote_sheets.dart',
     // The picker paints the hue/saturation/brightness gradients of the colour being chosen.
     'lib/ui/widgets/color_picker.dart',
   };

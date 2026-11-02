@@ -136,7 +136,8 @@ List<TrackActionGroup> bulkActions(
         if (outer.mounted) showQueued(outer, (added: added, full: full), wanted: n, ok: l.addedToQueueMany(n));
         done();
       }),
-      if (ref.read(jamProvider).active)
+      // A remote guest cannot add before phase 71.
+      if (ref.read(jamProvider).active && !ref.read(jamProvider).remote)
         TrackAction(Icons.queue_music_rounded, l.jamAddToJam, () async {
           final r = await ref.read(jamProvider.notifier).addTracks(tracks);
           if (outer.mounted) showQueued(outer, r, wanted: n, ok: l.jamAdded(r.added));

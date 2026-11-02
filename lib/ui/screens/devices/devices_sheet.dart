@@ -14,6 +14,7 @@ import '../../../providers/share_hub.dart';
 import '../../../providers/speaker_providers.dart';
 import '../../../services/share/discovery.dart';
 import '../../theme/tokens.dart';
+import '../jam/jam_remote_sheets.dart';
 import '../jam/jam_screen.dart';
 import '../share/share_screen.dart';
 import '../share/track_picker_screen.dart';
@@ -93,6 +94,13 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     nav.push(MaterialPageRoute<void>(builder: (_) => const JamScreen()));
   }
 
+  /// Closes this sheet, then opens the remote-Jam [sheet] on the root navigator.
+  void _remote(Future<void> Function(BuildContext) sheet) {
+    final nav = Navigator.of(context, rootNavigator: true);
+    nav.pop();
+    unawaited(sheet(nav.context));
+  }
+
   void _manual() {
     final nav = Navigator.of(context, rootNavigator: true);
     nav.pop();
@@ -164,6 +172,21 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
           if (hub.peers.isEmpty)
             _NoPeers(visible: visible, hubActive: hub.active),
           const SizedBox(height: 8),
+          // Remote Jam: invite (host, or no Jam yet) and join with a code (no Jam yet).
+          if (!jam.active || jam.isHost)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.qr_code_2_rounded),
+              title: Text(l.jamInviteNearby),
+              onTap: () => _remote(JamInviteSheet.show),
+            ),
+          if (!jam.active)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.keyboard_rounded),
+              title: Text(l.jamEnterCode),
+              onTap: () => _remote(JamJoinSheet.show),
+            ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.link_rounded),

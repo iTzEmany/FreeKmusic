@@ -1,86 +1,29 @@
-# Handoff — 2026-11-02 (fase 69e chiusa: correzioni, cover e ripasso)
+# Handoff — 2026-11-02 (fase 70 chiusa: ponte della Jam a distanza)
 
-## Riconoscimento del brano (kickoff 2026-11-01, fasi 69c–69e)
-Feature nuova, **prima della fase 70**: prima di arricchire, l'app riconosce il brano (ISRC/MBID → video id → testo → AcoustID → YouTube Music) e arricchisce dall'identità; le cover portano le curiosità dell'originale. Documento: `docs/feature-riconoscimento.md` (R-160…R-188, rischi K-RB-01…09); decisioni D-299…D-323; fasi `docs/fase-69c-*.md`, `fase-69d-*.md`, `fase-69e-*.md`.
-
-**Fase 69c chiusa** (PR #77):
-- impronta Chromaprint in Rust: 145/147 brani di Test.zip danno lo stesso primo recording di fpcalc, +1,2…2,2 MB per ABI, 0,7 s sul Mi A3;
-- `read_ids` per MBID e ISRC, ripiego su lofty per le date strane;
-- query più pulite, Deezer acceso di serie.
-
-Esiti in `docs/fase-69c-fondamenta-riconoscimento.md`.
-
-**Fase 69d chiusa** (PR #79):
-- `TrackRecognizer` in `lib/services/recognition/`; l'identità è salvata in `track_enrich.details.rec`;
-- il motore arricchisce dall'identità;
-- Test.zip: 124/147 riconosciuti, 0 `sure` sbagliate dopo la correzione «artista coerente».
-
-Esiti e numeri in `docs/fase-69d-cascata-riconoscimento.md`.
-
-**Fase 69e chiusa** (PR della fase 69e):
-- `TrackCorrections`: le correzioni automatiche e le proposte da confermare, con «Ripristina» nel Registro;
-- cover e originale (`cover_detector.dart`, `workOriginal`);
-- ripasso `RecogPassIds` dei brani già arricchiti; riconoscimento dei brani online.
-- Test.zip: 126/147 riconosciuti, 77 correzioni automatiche e 0 sbagliate.
-
-Esiti in `docs/fase-69e-correzioni-e-cover.md`; i rimandati 9–12 sono in «Dopo questa feature».
+## Stato
+**Fase 70 chiusa** (PR #86): ponte MQTT cifrato, ospiti remoti nell'host, «Invita chi è vicino», «Entra con un codice», servizio in primo piano «Jam a distanza attiva». Esiti della prova dal vivo (Linux host, Mi A3 ospite) in `docs/fase-70-ponte-jam-distanza.md` §«Esiti della prova 70.6».
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 70
+/obiettivo fase 71
 ```
-Il passo 69e.5 (titolo ufficiale dal video id) è chiuso: PR #84, Test.zip con 0 correzioni sbagliate.
-Si comincia dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`. La misura sul Motorola è fatta (2/11, PR #82): ha fatto nascere D-333, cioè il ripasso dei brani già arricchiti propone e non corregge da solo.
+Si comincia dai «Rilievi dalla fase 70» in `docs/fase-71-coda-remota.md` (feeder dell'ospite remoto, «Aggiungi alla Jam» nascosto, segno «non raggiungibile» da portare in `JamUiState`, ...).
 
-Da sapere:
-- **69c.1 blocca tutto:** se l'impronta di rusty-chromaprint non coincide con fpcalc, si applica D-316 (copia in `third_party/` e un passo di correzione), poi ci si ferma e si chiede.
-- **Strumenti mancanti sul PC:** fpcalc (va scaricato nello scratchpad, solo per la prova) e `flutter_rust_bridge_codegen` 2.11.1 (c'è la 2.13.0).
-- **Test.zip** (147 brani dell'amico) è in `~/Downloads/Test.zip`: serve alla prova di 69c.1, 69d.4 e 69e.4, non entra mai nel repo. La prova si fa su un DB separato, non sulla libreria dell'utente.
-- **Chiavi AcoustID:** `Hsn5w6Tjwv` è la chiave dell'applicazione e va in `lib/core/app_info.dart`. La chiave utente non serve (si usa solo per inviare impronte, R-187 rimandato) e non entra mai nel repo né nei documenti.
-- **Trappole dell'architettura:** `CreditsEnricher.save` sovrascrive tutto `track_enrich.details` (serve un solo punto di scrittura che unisce `rec`); `userEdited` vale per tutto il brano (una correzione automatica non lo segna, D-318).
+## Da riprovare o capire
+- Fase 70 provata dal vivo tre volte (stato iniziale dell'ospite, R-128, foglio dell'invito, ruoli invertiti): tutto chiuso, esiti nel documento di fase.
+- Durata degli mp3 corretta alla radice (frame Info di LAME letto come bitrate): libreria corretta una volta all'avvio (`mp3DurationFix1`).
+- Wi-Fi spento 30 s: l'ospite torna dopo circa 70 s; se è troppo, vedere le attese di `JamBridge`.
 
-## Prima di tutto (per la prossima chat)
-Il refactor «arricchimento-unico» è chiuso: 69a (PR #72) e 69b (PR #73). Si torna alla fase 70, a partire dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`.
-
-## Arricchimento (69a, 69b)
-- **Motore unico** in `lib/services/online/enrich_*.dart`: `EnrichEngine` (gather/commit con gli id in volo), `EnrichRunner` (blocchi di 10, segnalibro o lista fissa), `EnrichWriter` (l'unico che scrive `enrich_status`), regola `isDue`/`AskMode`. Descritto in `docs/02-architettura.md` §«Arricchimento».
-- Manuale e background usano lo stesso runner. In Impostazioni c'è un solo comando, «Arricchisci tutta la libreria», e nel pannello una sola barra.
-- **Misura sul Motorola (31/10):** circa 1 brano al minuto, per il limite Wikimedia da anonima. La stima dei minuti ora conta 40 s a brano.
-- **Rimandati** (elenco in `docs/fase-69b-arricchimento-unico.md`): `propose` fuori dal motore, cache del motore nel completer, `completeOne(AskMode)`, il conteggio in `retryNone` che arriva di rado a «Libreria completa».
-- **Contatto nello User-Agent** (D-298): dal 31/10 è l'indirizzo del repo, e Wikimedia concede 150 richieste al minuto invece di 8. Il ritmo nuovo non è misurato: la stima ora usa 3 s a brano, la cifra di prima del 69b.4.
-- **Scelta tua:** se «Libreria completa» debba contare in `due` invece che in `retryNone`.
-
-## Fase 69 (chiusa, PR #67)
-La fase 69 è nel codice (PR #67). Comprende i rilievi della prova 68.3 (69.1…69.3) e i mattoni della Jam a distanza:
-- `JamGuestLink`;
-- `JamGate` (2 richieste al minuto, Sospendi, Blocca), salvato in `JamSecretStore`;
-- `jam_crypto` su `sodium`;
-- broker MQTT con «Prova connessione».
-
-Decisioni D-264…D-273 in `docs/decisioni.md`. Ora si passa alla fase 70 (`docs/fase-70-ponte-jam-distanza.md`): prima la sezione «Rilievi dalla fase 69», poi 70.1.
-
-## Stato
-- **69.1**: la Jam della cassa si riapre quando l'hub torna attivo.
-- **69.2**: l'ospite che esce di sua volontà vede «Sei uscito dalla Jam» (D-266).
-- **69.3**: 20 posti per le aggiunte a mano (D-264). «Jam piena» solo quando lo è davvero, altrimenti «Non aggiunto alla Jam».
-- **69.5–69.9**: interfaccia dell'ospite, gate con le liste in «Rete e dispositivi» (D-271), cifratura, broker. Secondo archivio delle cose segrete: `jam_secrets.json` su desktop, DataStore su Android, fuori dai backup (D-269).
-- **69.10**: prova in LAN sul Mi A3 con Linux riuscita (esiti nel documento di fase).
-- Broker in diretta: `broker.emqx.io:8883` funziona; `test.mosquitto.org` 8883 è rifiutato per il certificato, come previsto, e 8886 chiude dopo il CONNECT.
+## Fasi chiuse da sapere
+- **Riconoscimento (69c–69e, PR #77, #79, #84):** impronta Chromaprint in Rust, `TrackRecognizer`, `TrackCorrections`, cover e ripasso; Test.zip: 126/147 riconosciuti, 0 correzioni sbagliate. Documento `docs/feature-riconoscimento.md`, D-299…D-323, D-333; il resto in `docs/fase-69c-*`, `69d-*`, `69e-*`.
+- **Arricchimento unico (69a, 69b):** motore in `lib/services/online/enrich_*.dart` (`docs/02-architettura.md` §«Arricchimento»); circa 1 brano al minuto dal Motorola; rimandati in `docs/fase-69b-arricchimento-unico.md`.
+- **Fase 69 (PR #67):** `JamGuestLink`, `JamGate`, `JamSecretStore`, `jam_crypto` su `sodium`, broker MQTT con «Prova connessione» (D-264…D-273).
+- Trappole: `CreditsEnricher.save` sovrascrive tutto `track_enrich.details`; `userEdited` vale per tutto il brano (D-318). Test.zip (`~/Downloads/Test.zip`) non entra mai nel repo.
 
 ## Tocca a te
-- **69.4 finita in autonomia (D-274)**, esiti in §69.4. Restano solo:
-  - «Scarica» che sparisce a foglio aperto, da provare con un brano lungo;
-  - decidere se la schermata Jam debba avere il ⋮ con «Scarica».
-- **Coda del Motorola**: dopo la prova del 30/10 i primi 6 brani della coda sono quelli di prima, il seguito no (D-186: l'ospite ritrova la sua parte non suonata). Il volume A2DP del Mi A3 è tornato a 7.
-- **Mosquitto 8886 da decidere** (D-258): chiude ogni connessione dopo il CONNECT, in tre giri, con TLS valido. Puoi toglierlo dalla lista predefinita (`kDefaultJamBrokers`) o sostituirlo con un altro broker TLS pubblico.
-- **Prova a mano del gate**: «Fino alla fine della Jam» durante una Jam vera (e che sparisca al riavvio); una sospensione di 15 minuti che scade.
-- **Dalle fasi 66–68** (sezione «Tocca a te» del handoff precedente, nella storia di git):
-  - fase 67 sul Motorola;
-  - scoperta su /16;
-  - fase 66 a mano;
-  - pulizia del Mi A3 (Scheggia66, `com.codecore.player.perf`);
-  - «La Jam è terminata» per l'ospite che esce: risolto da D-266, da riprovare in 69.4;
-  - ascolto 57.7, APK di release con NewPipe, tag `v1.3.0`.
+- **Mosquitto 8886** (D-258): chiude ogni connessione dopo il CONNECT; toglierlo da `kDefaultJamBrokers` o sostituirlo con un altro broker TLS pubblico.
+- Prova a mano del gate (sospensione di 15 minuti che scade; «Fino alla fine della Jam»); 69.4: «Scarica» che sparisce a foglio aperto.
+- Dalle fasi 66–68: fase 67 sul Motorola, scoperta su /16, fase 66 a mano, pulizia del Mi A3 (`com.codecore.player.perf`), ascolto 57.7, APK di release con NewPipe, tag `v1.3.0`.
 
 ## Dispositivi
 - **Motorola edge 40** `ZY22HKD85K`: libreria vera. Solo `install -r`; mai disinstallare né `pm clear`. 120 Hz.
@@ -107,13 +50,7 @@ Decisioni D-264…D-273 in `docs/decisioni.md`. Ora si passa alla fase 70 (`docs
 - Gli interruttori del completamento che fermano il giro manuale.
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
-## Prompt di avvio della prossima sessione
-```
-/obiettivo fase 70 (ponte e protocollo della «Jam a distanza», docs/fase-70-ponte-jam-distanza.md: prima §Rilievi dalla fase 69)
-```
-
 ## Prossimi obiettivi
-1. **(Consigliato) Fase 70, ponte e protocollo**: si parte dai rilievi della fase 69 scritti in cima al documento di fase. La prima scelta è il tipo delle chiavi in `JamCrypto` (D-272).
-2. **69.4 a mano**: chiude anche i `[~]` delle fasi 67 e 68.
-3. **Unificare le due code delle domande sulla cassa**.
-4. **Ricerca «notte», build p99** (D-176) e prove d'ascolto 57.7.
+1. **(Consigliato) Fase 71, coda dell'ospite remoto** (`/obiettivo fase 71`).
+2. (nessuna riprova aperta della fase 70)
+3. Unificare le due code delle domande sulla cassa; ricerca «notte», build p99 (D-176).

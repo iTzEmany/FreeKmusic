@@ -3,6 +3,7 @@ import 'dart:math';
 
 import '../../core/app_log.dart';
 import 'jam_models.dart';
+import 'jam_state.dart';
 
 /// Part keys of library track [ids], in order: the id itself, and `id~n` for the
 /// n-th repeat of the same track (a key is unique within a part, invariant 3).
@@ -182,7 +183,7 @@ class JamPartFeeder {
   }
 
   Future<bool> _stepInner(JamState s) async {
-    if (jamAutoFillFull(s, inFlight: _pending.length + _uncertain.length)) return false; // the last seats are for hand-made adds (D-264)
+    if (jamQueueFull(s, reserve: jamManualSeats, inFlight: _pending.length + _uncertain.length)) return false; // the last seats are for hand-made adds (D-264)
     final quota = (maxJamItems / max(1, s.participants.length)).ceil();
     var mine = _pending.length + _uncertain.length + (_sugVersion == null ? 0 : 1);
     for (final (n, it) in s.items.indexed) {

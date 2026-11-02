@@ -51,10 +51,14 @@ class _JamScreenState extends ConsumerState<JamScreen> {
   }
 
   String _outcomeText(AppLocalizations l, JamUiState s) => switch (s.outcome) {
-    JamJoinOutcome.declined => l.jamDeclined(s.peerName),
-    JamJoinOutcome.busy => l.jamBusy(s.peerName),
+    JamJoinOutcome.declined => s.peerName.isEmpty ? l.jamDeclinedHost : l.jamDeclined(s.peerName),
+    JamJoinOutcome.busy => s.peerName.isEmpty ? l.jamBusyHost : l.jamBusy(s.peerName),
     JamJoinOutcome.cancelled => '',
     JamJoinOutcome.tooSoon => l.jamTooSoon,
+    JamJoinOutcome.expired => l.jamHostNoAnswer,
+    JamJoinOutcome.codeInvalid => l.jamCodeInvalid,
+    JamJoinOutcome.codeExpired => l.jamCodeExpired,
+    JamJoinOutcome.customBroker => l.jamCustomBroker,
     _ => l.jamUnreachable,
   };
 
@@ -92,6 +96,7 @@ class _JamScreenState extends ConsumerState<JamScreen> {
         child: Column(
           children: [
             const SpeakerAwayNotice(),
+            const JamLinkNotice(),
             Expanded(child: JamPlayerView(state: s)),
           ],
         ),
@@ -119,7 +124,7 @@ class _Requesting extends StatelessWidget {
             children: [
               _PulsingAvatars(names: [peerName]),
               const SizedBox(height: 24),
-              Text(l.jamWaiting(peerName), textAlign: TextAlign.center),
+              Text(peerName.isEmpty ? l.jamWaitingHost : l.jamWaiting(peerName), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               OutlinedButton(onPressed: onCancel, child: Text(l.cancel)),
             ],

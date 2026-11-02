@@ -9324,6 +9324,138 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Impossibile ripristinare questa correzione'**
   String get logRevertFailed;
+
+  /// No description provided for @jamInviteNearby.
+  ///
+  /// In it, this message translates to:
+  /// **'Invita chi è vicino'**
+  String get jamInviteNearby;
+
+  /// No description provided for @jamInviteHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Chi inquadra il QR o scrive il codice entra nella Jam.'**
+  String get jamInviteHint;
+
+  /// No description provided for @jamBridgeConnecting.
+  ///
+  /// In it, this message translates to:
+  /// **'Mi collego…'**
+  String get jamBridgeConnecting;
+
+  /// No description provided for @jamBridgeRetrying.
+  ///
+  /// In it, this message translates to:
+  /// **'Ponte interrotto, riprovo…'**
+  String get jamBridgeRetrying;
+
+  /// No description provided for @jamBridgeUnreachable.
+  ///
+  /// In it, this message translates to:
+  /// **'Broker irraggiungibile'**
+  String get jamBridgeUnreachable;
+
+  /// No description provided for @jamCodeExpiresIn.
+  ///
+  /// In it, this message translates to:
+  /// **'Scade tra {seconds} s'**
+  String jamCodeExpiresIn(int seconds);
+
+  /// No description provided for @jamEnterCode.
+  ///
+  /// In it, this message translates to:
+  /// **'Entra con un codice'**
+  String get jamEnterCode;
+
+  /// No description provided for @jamCodeLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Codice'**
+  String get jamCodeLabel;
+
+  /// No description provided for @jamScanQr.
+  ///
+  /// In it, this message translates to:
+  /// **'Inquadra il QR'**
+  String get jamScanQr;
+
+  /// No description provided for @jamJoinAction.
+  ///
+  /// In it, this message translates to:
+  /// **'Entra'**
+  String get jamJoinAction;
+
+  /// No description provided for @jamCodeInvalid.
+  ///
+  /// In it, this message translates to:
+  /// **'Codice non valido'**
+  String get jamCodeInvalid;
+
+  /// No description provided for @jamCodeExpired.
+  ///
+  /// In it, this message translates to:
+  /// **'Codice scaduto, chiedi quello nuovo'**
+  String get jamCodeExpired;
+
+  /// No description provided for @jamHostNoAnswer.
+  ///
+  /// In it, this message translates to:
+  /// **'L’host non ha risposto'**
+  String get jamHostNoAnswer;
+
+  /// No description provided for @jamCustomBroker.
+  ///
+  /// In it, this message translates to:
+  /// **'Questa Jam usa un broker personalizzato: inquadra il QR'**
+  String get jamCustomBroker;
+
+  /// No description provided for @jamLinkReconnecting.
+  ///
+  /// In it, this message translates to:
+  /// **'Connessione persa, riprovo…'**
+  String get jamLinkReconnecting;
+
+  /// No description provided for @jamHostSilent.
+  ///
+  /// In it, this message translates to:
+  /// **'Host non raggiungibile, riprovo…'**
+  String get jamHostSilent;
+
+  /// No description provided for @jamMemberUnreachable.
+  ///
+  /// In it, this message translates to:
+  /// **'non raggiungibile'**
+  String get jamMemberUnreachable;
+
+  /// No description provided for @jamRemoteActive.
+  ///
+  /// In it, this message translates to:
+  /// **'Jam a distanza attiva'**
+  String get jamRemoteActive;
+
+  /// No description provided for @jamRemoteEnd.
+  ///
+  /// In it, this message translates to:
+  /// **'Termina'**
+  String get jamRemoteEnd;
+
+  /// No description provided for @jamDeclinedHost.
+  ///
+  /// In it, this message translates to:
+  /// **'L’host ha rifiutato la richiesta'**
+  String get jamDeclinedHost;
+
+  /// No description provided for @jamBusyHost.
+  ///
+  /// In it, this message translates to:
+  /// **'L’host ha già una Jam in corso'**
+  String get jamBusyHost;
+
+  /// No description provided for @jamWaitingHost.
+  ///
+  /// In it, this message translates to:
+  /// **'In attesa che l’host accetti…'**
+  String get jamWaitingHost;
 }
 
 class _AppLocalizationsDelegate

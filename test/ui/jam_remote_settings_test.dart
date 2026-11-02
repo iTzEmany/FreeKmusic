@@ -40,10 +40,14 @@ class FakeMqttLink implements MqttLink {
   @override
   Stream<MqttIncoming> get messages => _ctl.stream;
   @override
+  Stream<void> get onDisconnected => const Stream.empty();
+  @override
   bool get connected => true;
   @override
   void disconnect() => disconnected = true;
 }
+
+const _mosquitto = BrokerEntry(host: 'test.mosquitto.org', port: 8886);
 
 void main() {
   Future<Harness> open(WidgetTester t, {bool failLink = false, FakeMqttLink? link}) async {
@@ -54,6 +58,8 @@ void main() {
     await h.pump(t, const JamRemoteSettings(), extraOverrides: [
       mqttLinkFactoryProvider.overrideWithValue(() => link ?? FakeMqttLink(fail: failLink)),
     ]);
+    ProviderScope.containerOf(t.element(find.byType(JamRemoteSettings))).read(jamBrokersProvider.notifier).add(_mosquitto); // a second broker to move and remove
+    await t.pumpAndSettle();
     return h;
   }
 
@@ -166,6 +172,7 @@ void main() {
     final c = ProviderContainer(overrides: [settingsStoreProvider.overrideWithValue(store)]);
     addTearDown(c.dispose);
     final n = c.read(jamBrokersProvider.notifier);
+    n.add(_mosquitto);
     n.add(const BrokerEntry(host: 'c.net', port: 1));
     n.move(0, 2); // the UI passes index + 1 for "down by one"
     expect(c.read(jamBrokersProvider).map((b) => b.host), ['test.mosquitto.org', 'broker.emqx.io', 'c.net']);

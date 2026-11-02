@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:codecore/data/settings/jam_secret_store.dart';
+import 'package:codecore/services/jam/jam_gate.dart';
 import 'package:codecore/services/jam/jam_host.dart';
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/share/track_meta.dart';
@@ -340,5 +342,113 @@ void main() {
         body: const JamCommand.play().toJson(), headers: {'x-jam-token': s.token});
     expect(r.statusCode, 409);
     expect(await r.readAsString(), 'no speaker');
+  });
+
+  group('remote guests', () {
+    String join(String id, {bool remote = true}) {
+      final a = host.admitRequest(
+          id: id, name: id, remote: remote, ttl: jamRemoteRequestTtl,
+          port: remote ? null : 4000, token: remote ? null : 'reqtoken-123');
+      expect(a.status, JamAdmitStatus.accepted);
+      expect(host.accept(a.request!.id), isNotNull);
+      return id;
+    }
+
+    test('a remote request needs no port or token; a LAN one does', () {
+      expect(host.admitRequest(id: 'r', name: 'R', remote: true).status, JamAdmitStatus.accepted);
+      expect(host.admitRequest(id: 'l', name: 'L').status, JamAdmitStatus.bad);
+    });
+
+    test('accept makes a remote participant, rem in the JSON only when true', () {
+      join('r');
+      final p = host.state!.participant('r')!;
+      expect(p.remote, isTrue);
+      expect(p.toJson()['rem'], true);
+      expect(host.state!.participant('host')!.toJson().containsKey('rem'), isFalse);
+      expect(JamParticipant.tryParse({'id': 'a', 'name': 'A', 'host': '', 'port': 0})!.remote, isFalse);
+      expect(JamState.tryParse(host.state!.toJson())!.participant('r')!.remote, isTrue);
+    });
+
+    test('a remote request ends after 60 s, a LAN one keeps jamRequestTtl', () {
+      final r = host.admitRequest(id: 'r', name: 'R', remote: true).request!;
+      now = now.add(const Duration(seconds: 61));
+      host.expire();
+      expect(r.status, JamRequestStatus.expired);
+      final l = host.admitRequest(id: 'l', name: 'L', port: 4000, token: 'reqtoken-123').request!;
+      now = now.add(const Duration(minutes: 4));
+      host.expire();
+      expect(l.status, JamRequestStatus.pending);
+    });
+
+    test('expire notifies when a request expires', () async {
+      host.admitRequest(id: 'r', name: 'R', remote: true);
+      var n = 0;
+      final sub = host.changes.listen((_) => n++);
+      host.expire();
+      await Future<void>.delayed(Duration.zero);
+      expect(n, 0);
+      now = now.add(const Duration(seconds: 61));
+      host.expire();
+      await Future<void>.delayed(Duration.zero);
+      expect(n, 1);
+      await sub.cancel();
+    });
+
+    test('a guest rejoining with the other transport gets a new token and flag', () {
+      join('g', remote: false);
+      final t = host.addMember(id: 'g', name: 'g', remote: true)!.token;
+      expect(host.state!.participant('g')!.remote, isTrue);
+      expect(host.addMember(id: 'g', name: 'g', remote: true)!.token, t);
+    });
+
+    test('a remote request id with an empty x-token does not leak tokens', () async {
+      final r = host.admitRequest(id: 'r', name: 'R', remote: true).request!;
+      host.accept(r.id);
+      final res = await call('GET', 'request/${r.id}', headers: {'x-token': ''});
+      expect(res.statusCode, 401);
+    });
+
+    test('unreachable after 60 s, touch clears it, removed after 10 min', () {
+      join('r');
+      join('lan', remote: false);
+      now = now.add(const Duration(seconds: 61));
+      expect(host.unreachableIds(), ['r']); // a LAN guest is never flagged
+      host.touch('r');
+      expect(host.unreachableIds(), isEmpty);
+      now = now.add(const Duration(minutes: 9, seconds: 59));
+      expect(host.dropStale(const Duration(seconds: 75)), ['lan']);
+      now = now.add(const Duration(seconds: 2));
+      expect(host.dropStale(const Duration(seconds: 75)), ['r']);
+      expect(host.memberIds, isEmpty);
+    });
+
+    test('a remote cannot be an output, nor offer the speaker', () {
+      join('r');
+      join('lan', remote: false);
+      expect(host.apply(const JamCommand.setOutput('r')).error, JamError.forbidden);
+      expect(host.apply(const JamCommand.setOutputs(['lan', 'r'])).error, JamError.forbidden);
+      expect(host.apply(const JamCommand.setOutput('lan')).isOk, isTrue);
+      host.makeSpeaker();
+      host.apply(const JamCommand.speakerAway());
+      expect(host.apply(const JamCommand.offerSpeaker(), from: 'r').error, JamError.forbidden);
+    });
+
+    test('the sixth participant is full, LAN and remote together', () {
+      for (var i = 0; i < 4; i++) {
+        join('r$i', remote: i.isEven);
+      }
+      expect(host.admitRequest(id: 'x', name: 'X', remote: true).status, JamAdmitStatus.full);
+    });
+
+    test('gate.allow is checked before full and busy', () {
+      final g = JamGate(MemoryJamSecretStore({}), now: () => now);
+      final h2 = JamHost(deviceId: 'h', deviceName: 'H', now: () => now, gate: g);
+      for (var i = 0; i < 2; i++) {
+        h2.admitRequest(id: 'a', name: 'A', remote: true);
+      }
+      // 'a' is pending (busy for anybody else), yet a third try says tooMany, not busy.
+      expect(h2.admitRequest(id: 'a', name: 'A', remote: true).status, JamAdmitStatus.tooMany);
+      expect(h2.admitRequest(id: 'b', name: 'B', remote: true).status, JamAdmitStatus.busy);
+    });
   });
 }

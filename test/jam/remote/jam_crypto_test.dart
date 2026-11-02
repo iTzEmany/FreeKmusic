@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:codecore/services/jam/remote/jam_crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sodium/sodium_sumo.dart';
 
 Uint8List hex(String s) => Uint8List.fromList([
   for (var i = 0; i < s.length; i += 2)
@@ -28,18 +29,18 @@ void main() {
       ikm: ikm,
     );
     expect(
-      toHex(c.keyBytes(prk)),
+      toHex(prk.bytes),
       '077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5',
     );
     // RFC 5869 A.3: empty salt and info (A.1 info 0xf0.. is not a valid String context)
     final prk3 = c.hkdfExtract(ikm: ikm);
     expect(
-      toHex(c.keyBytes(prk3)),
+      toHex(prk3.bytes),
       '19ef24a32c717b167f33a91d6f648bdf96596776afdb6377ac434c1c293ccb04',
     );
     final okm = c.hkdfExpand(prk: prk3, context: '', outLen: 42);
     expect(
-      toHex(c.keyBytes(okm)),
+      toHex(okm.bytes),
       '8da4e775a563c18f715f802a063c5a31b8a11f5c5ee1879ec3454e5f3c738d2d9d201395faa4b61a96c8',
     );
   });
@@ -61,7 +62,7 @@ void main() {
     test('encrypt gives nonce || ciphertext || tag', () {
       nonce = hex(ivHex);
       final out = c.aeadEncrypt(
-        key: c.keyFromBytes(hex(keyHex)),
+        key: JamKey(hex(keyHex)),
         message: pt,
         additionalData: aad,
       );
@@ -69,7 +70,7 @@ void main() {
     });
 
     test('decrypt, and a flipped tag is rejected', () {
-      final key = c.keyFromBytes(hex(keyHex));
+      final key = JamKey(hex(keyHex));
       final input = Uint8List.fromList([...hex(ivHex), ...ct]);
       expect(
         c.aeadDecrypt(key: key, nonceAndCipher: input, additionalData: aad),
@@ -109,19 +110,19 @@ void main() {
         clientPublicKey: client.publicKey,
       );
       expect(
-        toHex(c.keyBytes(ss!.rx)),
+        toHex(ss!.rx.bytes),
         '62c8f4fa81800abd0577d99918d129b65deb789af8c8351f391feb0cbf238604',
       );
       expect(
-        toHex(c.keyBytes(ss.tx)),
+        toHex(ss.tx.bytes),
         '749519c68059bce69f7cfcc7b387a3de1a1e8237d110991323bf62870115731a',
       );
       expect(
-        toHex(c.keyBytes(cs!.rx)),
+        toHex(cs!.rx.bytes),
         '749519c68059bce69f7cfcc7b387a3de1a1e8237d110991323bf62870115731a',
       );
       expect(
-        toHex(c.keyBytes(cs.tx)),
+        toHex(cs.tx.bytes),
         '62c8f4fa81800abd0577d99918d129b65deb789af8c8351f391feb0cbf238604',
       );
     });
@@ -129,7 +130,7 @@ void main() {
 
   test('auth: libsodium test/default/auth.exp (HMAC-SHA-512-256)', () {
     // key "Jefe" zero-padded to 32 B, message from RFC 4231 case 2, as in auth.c
-    final key = c.keyFromBytes(Uint8List(32)..setAll(0, utf8.encode('Jefe')));
+    final key = JamKey(Uint8List(32)..setAll(0, utf8.encode('Jefe')));
     final msg = Uint8List.fromList(utf8.encode('what do ya want for nothing?'));
     final tag = c.mac(key: key, message: msg);
     expect(
@@ -168,12 +169,31 @@ void main() {
     );
   });
 
+  test('a disposed key is zeroed and every crypto use of it throws', () {
+    final key = JamKey(_seq(32));
+    key.dispose();
+    expect(key.isDisposed, isTrue);
+    expect(() => key.bytes, throwsStateError);
+    expect(() => c.mac(key: key, message: Uint8List(1)), throwsStateError);
+    expect(
+      () => c.aeadEncrypt(key: key, message: Uint8List(1)),
+      throwsStateError,
+    );
+    final adopted = Uint8List.fromList([1, 2, 3]);
+    JamKey.adopt(adopted).dispose();
+    expect(adopted, [
+      0,
+      0,
+      0,
+    ], reason: 'adopt shares the buffer, dispose wipes it');
+  });
+
   test('unpad on invalid padding gives null', () {
     expect(c.unpad(Uint8List(256), 256), isNull);
   });
 
   test('macVerify with a short tag is false', () {
-    final key = c.keyFromBytes(Uint8List(32));
+    final key = JamKey(Uint8List(32));
     expect(
       c.macVerify(key: key, message: Uint8List(1), tag: Uint8List(5)),
       isFalse,
@@ -181,7 +201,7 @@ void main() {
   });
 
   test('aeadDecrypt: wrong AD or too-short input gives null', () {
-    final key = c.keyFromBytes(Uint8List(32));
+    final key = JamKey(Uint8List(32));
     final sealed = c.aeadEncrypt(
       key: key,
       message: Uint8List.fromList([1, 2, 3]),
@@ -198,12 +218,23 @@ void main() {
     expect(c.aeadDecrypt(key: key, nonceAndCipher: Uint8List(39)), isNull);
   });
 
-  test('pwhash: 64 B and deterministic for the same input', () async {
+  test('pwhash in the isolate equals Argon2id computed in place', () async {
     final salt = Uint8List.fromList(utf8.encode('codecore-jam-c1!'));
+    final sodium = await SodiumSumoInit.init();
+    final direct = sodium.crypto.pwhash.callStr(
+      outLen: 64,
+      password: 'ABCD2345',
+      salt: salt,
+      opsLimit: sodium.crypto.pwhash.opsLimitInteractive,
+      memLimit: sodium.crypto.pwhash.memLimitInteractive,
+      alg: CryptoPwhashAlgorithm.argon2id13,
+    );
+    final expected = direct.runUnlockedSync((b) => Uint8List.fromList(b));
     final a = await c.pwhash(password: 'ABCD2345', salt: salt, outLen: 64);
-    final b = await c.pwhash(password: 'ABCD2345', salt: salt, outLen: 64);
     expect(a.length, 64);
-    expect(c.keyBytes(a), c.keyBytes(b));
+    expect(a.bytes, expected);
+    final other = await c.pwhash(password: 'ABCD2346', salt: salt, outLen: 64);
+    expect(other.bytes, isNot(expected));
   });
 }
 

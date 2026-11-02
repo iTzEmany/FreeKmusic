@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/jam_providers.dart';
 import '../../../providers/speaker_providers.dart';
+import '../../../services/jam/jam_guest_link.dart' show JamLinkState;
 import '../../../services/jam/jam_models.dart';
 import '../../../services/share/discovery.dart';
 import '../../theme/tokens.dart';
@@ -129,6 +130,38 @@ class SpeakerAwayNotice extends ConsumerWidget {
                       child: Text(l.speakerContinueOnPhone),
                     ),
                   ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «Connessione persa, riprovo…» for a remote guest whose link to the host is down.
+class JamLinkNotice extends ConsumerWidget {
+  const JamLinkNotice({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final link = ref.watch(jamProvider.select((j) => j.remote ? j.link : JamLinkState.ok));
+    if (link == JamLinkState.ok) return const SizedBox.shrink();
+    final l = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(CcDims.margin, 4, CcDims.margin, 0),
+      child: Semantics(
+        liveRegion: true,
+        child: Material(
+          color: context.cc.surface2,
+          borderRadius: BorderRadius.circular(CcDims.dockRadius),
+          child: Padding(
+            padding: const EdgeInsets.all(CcDims.gap12),
+            child: Row(
+              children: [
+                Icon(Icons.cloud_off_rounded, color: context.cc.accent),
+                const SizedBox(width: 12),
+                Expanded(child: Text(link == JamLinkState.hostSilent ? l.jamHostSilent : l.jamLinkReconnecting)),
               ],
             ),
           ),

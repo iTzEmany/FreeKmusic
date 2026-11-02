@@ -188,7 +188,7 @@ void main() {
         ownPort: portB);
     expect(o, JamJoinOutcome.accepted);
     expect(hostJam.memberIds, containsAll(['guest', 'guestB']));
-    expect(guestB.hostBase, 'http://127.0.0.1:$hostPort/jam');
+    expect(guestB.files!.hostBase, 'http://127.0.0.1:$hostPort/jam');
 
     // everyone sees the same roster
     await reach(guestB, (s) => s.participants.length == 3);
@@ -205,8 +205,8 @@ void main() {
     final owner = guest.state!.participant('guestB')!;
     final dio = Dio(BaseOptions(responseType: ResponseType.bytes));
     final got = await dio.get<List<int>>(
-        'http://${owner.host}:${owner.port}/jam/${guest.sessionId}/file/1',
-        options: Options(headers: {'x-jam-file': guest.fileToken}));
+        'http://${owner.host}:${owner.port}/jam/${guest.files!.sessionId}/file/1',
+        options: Options(headers: {'x-jam-file': guest.files!.fileToken}));
     expect(got.data, [5, 6, 7]);
 
     // B leaves: its track vanishes, the others stay
@@ -264,7 +264,7 @@ void main() {
       final hostCache = JamCache(Directory(p.join(dir.path, 'jc')));
       final got = await hostCache.fetch(
           items.first,
-          Uri.parse('http://127.0.0.1:$guestPort/jam/${guest.sessionId}/file/${items.first.id}'),
+          Uri.parse('http://127.0.0.1:$guestPort/jam/${guest.files!.sessionId}/file/${items.first.id}'),
           {'x-jam-file': hostJam.fileToken!});
       expect(got!.readAsBytesSync(), [1]);
     });

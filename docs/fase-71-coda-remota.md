@@ -6,6 +6,15 @@
 
 **Comando mirato:** `flutter test test/jam test/ui/jam_screen_test.dart test/ui/jam_parts_test.dart test/ui/jam_track_info_screen_test.dart` (più i test di `SeedResolver` se cambia).
 
+## Rilievi dalla fase 70 (review di architettura, da fare dentro i task sotto)
+- **71.1**: in 70 l'ospite remoto non avvia il feeder (`_part.start` saltato con `state.remote`) e «Aggiungi alla Jam» è nascosto: riaccenderli qui; il riduttore rifiuta già da un remoto gli item non `yt:`.
+- **Ordine sparso**:
+  - il segno «non raggiungibile» lo legge la UI da `shareHubProvider.notifier.jamHost?.unreachableIds()` in `jam_player.dart`: spostarlo in `JamUiState` (si aggiorna oggi solo col timer da 10 s);
+  - la shell deve guardare `jamBridgeProvider` direttamente (oggi lo tiene vivo `speakerJamProvider`);
+  - ciclo di import `share_hub` ↔ `jam_remote_providers` ↔ `jam_providers`: spostare `jamGateProvider` e `jamSecretStoreProvider` fuori da `jam_remote_providers.dart` (servono anche alla LAN);
+  - `expire()` chiamata due volte (timer del controller ogni 10 s e `JamBridgeHost.tick` ogni secondo): ne basta una;
+  - test che aspettano tempo reale (`jam_mixed_test.dart` ~1,5 s, `remote_jam_guest_test.dart` ~1,2 s, `graceOver` 700 ms): iniettare il timer dei tentativi di `JamBridge` e `stopGrace` nel provider.
+
 ## Task
 
 ### 71.1 — `JamRemoteItems` e aggiunte (R-151, R-152, D-240)

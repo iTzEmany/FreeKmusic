@@ -5929,4 +5929,74 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logRevertFailed => 'Impossible de rétablir cette correction';
+
+  @override
+  String get jamInviteNearby => 'Inviter les personnes à proximité';
+
+  @override
+  String get jamInviteHint =>
+      'Quiconque scanne le QR ou saisit le code rejoint la Jam.';
+
+  @override
+  String get jamBridgeConnecting => 'Connexion…';
+
+  @override
+  String get jamBridgeRetrying => 'Liaison interrompue, nouvel essai…';
+
+  @override
+  String get jamBridgeUnreachable => 'Broker injoignable';
+
+  @override
+  String jamCodeExpiresIn(int seconds) {
+    return 'Expire dans $seconds s';
+  }
+
+  @override
+  String get jamEnterCode => 'Rejoindre avec un code';
+
+  @override
+  String get jamCodeLabel => 'Code';
+
+  @override
+  String get jamScanQr => 'Scanner le QR';
+
+  @override
+  String get jamJoinAction => 'Rejoindre';
+
+  @override
+  String get jamCodeInvalid => 'Code non valide';
+
+  @override
+  String get jamCodeExpired => 'Code expiré, demandez-en un nouveau';
+
+  @override
+  String get jamHostNoAnswer => 'L’hôte n’a pas répondu';
+
+  @override
+  String get jamCustomBroker =>
+      'Cette Jam utilise un broker personnalisé : scannez le QR';
+
+  @override
+  String get jamLinkReconnecting => 'Connexion perdue, nouvel essai…';
+
+  @override
+  String get jamHostSilent => 'Hôte injoignable, nouvel essai…';
+
+  @override
+  String get jamMemberUnreachable => 'injoignable';
+
+  @override
+  String get jamRemoteActive => 'Jam à distance active';
+
+  @override
+  String get jamRemoteEnd => 'Terminer';
+
+  @override
+  String get jamDeclinedHost => 'L’hôte a refusé la demande';
+
+  @override
+  String get jamBusyHost => 'L’hôte a déjà une Jam en cours';
+
+  @override
+  String get jamWaitingHost => 'En attente de l’acceptation de l’hôte…';
 }

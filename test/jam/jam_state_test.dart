@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:codecore/services/jam/jam_models.dart';
+import 'package:codecore/services/jam/jam_online_adder.dart';
 import 'package:codecore/services/jam/jam_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -37,6 +38,7 @@ JamError? err(JamState s, JamCommand c, String from) =>
     applyCommand(s, c, from: from, nowMs: 1000).error;
 
 void main() {
+  remoteTests();
   speakerTests();
   videoIdTests();
   togetherTests();
@@ -841,5 +843,62 @@ void speakerTests() {
       final plain = speakerJam().copyWith(speaker: false);
       expect(ok(plain, const JamCommand.setOutput(guest), host).outputs, [guest]);
     });
+  });
+}
+
+void remoteTests() {
+  JamState withRemote() => const JamState(
+        hostDeviceId: host,
+        outputDeviceId: host,
+        speaker: true,
+        speakerAwaySince: 1,
+        participants: [
+          JamParticipant(id: host, name: 'H'),
+          JamParticipant(id: 'lan', name: 'L', host: '1.2.3.4', port: 5),
+          JamParticipant(id: 'rem', name: 'R', remote: true),
+        ],
+      );
+
+  test('a remote cannot offer the speaker; a LAN guest can', () {
+    expect(err(withRemote(), const JamCommand.offerSpeaker(), 'rem'), JamError.forbidden);
+    expect(err(withRemote(), const JamCommand.offerSpeaker(), 'lan'), isNull);
+  });
+
+  test('setOutput and setOutputs toward a remote are forbidden', () {
+    final s = withRemote().copyWith(speaker: false, clearSpeakerAway: true);
+    expect(err(s, const JamCommand.setOutput('rem'), host), JamError.forbidden);
+    expect(err(s, const JamCommand.setOutputs(['lan', 'rem']), host), JamError.forbidden);
+    expect(err(s, const JamCommand.setOutput('lan'), host), isNull);
+  });
+
+  test('a remote may add only online items; a LAN guest anything', () {
+    final s = withRemote().copyWith(speaker: false, clearSpeakerAway: true);
+    JamItem mk(String owner, {String? ref, String? vid}) => JamItem(
+        id: 0, ownerDeviceId: owner, title: 't', ext: 'm4a', ref: ref, videoId: vid);
+    expect(err(s, JamCommand.add(mk('rem', ref: 'lib:1')), 'rem'), JamError.forbidden);
+    expect(err(s, JamCommand.add(mk('rem', ref: 'yt:youtube:abc', vid: 'abc')), 'rem'), isNull);
+    expect(err(s, JamCommand.add(mk('lan', ref: 'lib:1')), 'lan'), isNull);
+  });
+
+  test('a remote online item is a self-fetch target; a LAN guest item is not', () {
+    JamItem yt(String owner, int id) => JamItem(
+        id: id, ownerDeviceId: owner, title: 't', ext: 'm4a', ref: 'yt:youtube:abc', videoId: 'abc');
+    var s = withRemote().copyWith(speaker: false, clearSpeakerAway: true, items: [yt('rem', 1), yt('lan', 2)], currentIndex: 0);
+    expect(jamSelfFetchTargets(s, host).map((i) => i.id), [1]);
+    s = s.copyWith(currentIndex: 1);
+    expect(jamSelfFetchTargets(s, host), isEmpty);
+  });
+
+  test('jamQueueFull: one rule for the reducer, the reserve and the in-flight adds', () {
+    JamState filled(int n, int cur) => JamState(
+        hostDeviceId: host,
+        outputDeviceId: host,
+        currentIndex: cur,
+        items: [for (var i = 0; i < n; i++) item(host)]);
+    expect(jamQueueFull(filled(maxJamItems, 0)), isTrue);
+    expect(jamQueueFull(filled(maxJamItems, 3)), isFalse); // the window slides
+    expect(jamQueueFull(filled(maxJamItems - jamManualSeats, 0)), isFalse);
+    expect(jamQueueFull(filled(maxJamItems - jamManualSeats, 0), reserve: jamManualSeats), isTrue);
+    expect(jamQueueFull(filled(10, 0), reserve: jamManualSeats, inFlight: maxJamItems - jamManualSeats - 10), isTrue);
   });
 }

@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/tags/mp3_length_fix.dart';
 import 'activity_log_providers.dart';
+import 'database_providers.dart' show trackRepositoryProvider;
 import 'enrich_completer_providers.dart';
 import 'library_providers.dart' show scanStateProvider;
 import 'online_providers.dart' show autoParts;
@@ -38,5 +41,21 @@ final enrichCompleterStartProvider = Provider<void>((ref) {
     if (ref.mounted && !ref.read(scanStateProvider).running) {
       unawaited(completer.start());
     }
+  });
+});
+
+/// Once after the scan (or, with no scan, once settled): the mp3 lengths read wrong before the
+/// Info / header-less fix. A flag in the preferences makes it run a single time. Watched from the root.
+final mp3LengthFixStartProvider = Provider<void>((ref) {
+  Future<void> run() async {
+    final fix = Mp3LengthFix(ref.read(trackRepositoryProvider), await SharedPreferences.getInstance());
+    await fix.runOnce();
+  }
+
+  ref.listen(scanStateProvider.select((s) => s.running), (was, now) {
+    if (was == true && !now) unawaited(run());
+  });
+  ref.read(startupSettledProvider.future).then((_) {
+    if (ref.mounted && !ref.read(scanStateProvider).running) unawaited(run());
   });
 });

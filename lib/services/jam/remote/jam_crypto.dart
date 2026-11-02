@@ -2,55 +2,100 @@ import 'dart:typed_data';
 
 import 'package:sodium/sodium_sumo.dart';
 
-import '../../../core/app_log.dart';
+/// A secret key held as plain bytes, so the interface does not leak the crypto
+/// library's types (D-272). [dispose] zeroes it; after that any use of [bytes]
+/// throws [StateError].
+class JamKey {
+  /// Copies [bytes].
+  JamKey(Uint8List bytes) : _bytes = Uint8List.fromList(bytes);
+
+  /// Takes ownership of [bytes] (no copy): the caller must not keep or reuse it.
+  JamKey.adopt(this._bytes);
+
+  final Uint8List _bytes;
+  bool _disposed = false;
+
+  Uint8List get bytes {
+    if (_disposed) throw StateError('JamKey used after dispose');
+    return _bytes;
+  }
+
+  bool get isDisposed => _disposed;
+
+  int get length => _bytes.length;
+
+  void dispose() {
+    _disposed = true;
+    _bytes.fillRange(0, _bytes.length, 0);
+  }
+}
+
+class JamKeyPair {
+  const JamKeyPair(this.publicKey, this.secretKey);
+
+  final Uint8List publicKey;
+  final JamKey secretKey;
+
+  void dispose() => secretKey.dispose();
+}
+
+/// Key-exchange result: [rx] decrypts what the peer sends, [tx] encrypts.
+class JamSessionKeys {
+  const JamSessionKeys(this.rx, this.tx);
+
+  final JamKey rx, tx;
+
+  void dispose() {
+    rx.dispose();
+    tx.dispose();
+  }
+}
 
 /// Only the libsodium primitives the remote Jam protocol needs (D-250, D-252).
 abstract interface class JamCrypto {
   Uint8List randomBytes(int length);
-  SecureKey keyFromBytes(Uint8List bytes);
-  Uint8List keyBytes(SecureKey key);
 
-  KeyPair kxKeyPair();
+  JamKeyPair kxKeyPair();
 
   /// Null for a low-order or invalid peer public key.
-  SessionKeys? kxClientSessionKeys({
+  JamSessionKeys? kxClientSessionKeys({
     required Uint8List clientPublicKey,
-    required SecureKey clientSecretKey,
+    required JamKey clientSecretKey,
     required Uint8List serverPublicKey,
   });
 
   /// Null for a low-order or invalid peer public key.
-  SessionKeys? kxServerSessionKeys({
+  JamSessionKeys? kxServerSessionKeys({
     required Uint8List serverPublicKey,
-    required SecureKey serverSecretKey,
+    required JamKey serverSecretKey,
     required Uint8List clientPublicKey,
   });
 
-  SecureKey hkdfExtract({Uint8List? salt, required Uint8List ikm});
-  SecureKey hkdfExpand({
-    required SecureKey prk,
+  JamKey hkdfExtract({Uint8List? salt, required Uint8List ikm});
+  JamKey hkdfExpand({
+    required JamKey prk,
     required String context,
     required int outLen,
   });
 
   /// Returns `nonce(24) || ciphertext || tag(16)`; the nonce comes from [randomBytes].
   Uint8List aeadEncrypt({
-    required SecureKey key,
+    required JamKey key,
     required Uint8List message,
     Uint8List? additionalData,
   });
 
   /// Null when authentication fails or the input is too short.
   Uint8List? aeadDecrypt({
-    required SecureKey key,
+    required JamKey key,
     required Uint8List nonceAndCipher,
     Uint8List? additionalData,
   });
 
   /// HMAC-SHA-512-256, 32 B tag.
-  Uint8List mac({required SecureKey key, required Uint8List message});
+  Uint8List mac({required JamKey key, required Uint8List message});
   bool macVerify({
-    required SecureKey key,
+    required JamKey key,
     required Uint8List message,
     required Uint8List tag,
   });
@@ -58,7 +103,7 @@ abstract interface class JamCrypto {
   Uint8List genericHash(Uint8List message, {required int outLen});
 
   /// Argon2id (interactive limits) raw output, computed in a separate isolate.
-  Future<SecureKey> pwhash({
+  Future<JamKey> pwhash({
     required String password,
     required Uint8List salt,
     required int outLen,
@@ -87,104 +132,138 @@ class SodiumJamCrypto implements JamCrypto {
   @override
   Uint8List randomBytes(int length) => _random(length);
 
-  @override
-  SecureKey keyFromBytes(Uint8List bytes) => _s.secureCopy(bytes);
+  /// Copies [key] into libsodium memory for one call, then wipes that copy.
+  T _with<T>(JamKey key, T Function(SecureKey) use) {
+    final k = _s.secureCopy(key.bytes);
+    try {
+      return use(k);
+    } finally {
+      k.dispose();
+    }
+  }
+
+  /// Moves a libsodium key into a [JamKey] and wipes the original.
+  JamKey _take(SecureKey k) {
+    try {
+      return k.runUnlockedSync(JamKey.new);
+    } finally {
+      k.dispose();
+    }
+  }
 
   @override
-  Uint8List keyBytes(SecureKey key) =>
-      key.runUnlockedSync((b) => Uint8List.fromList(b));
-
-  @override
-  KeyPair kxKeyPair() {
+  JamKeyPair kxKeyPair() {
     final raw = _random(_c.kx.seedBytes);
     final seed = _s.secureCopy(raw);
     raw.fillRange(0, raw.length, 0);
     try {
-      return _c.kx.seedKeyPair(seed);
+      final kp = _c.kx.seedKeyPair(seed);
+      return JamKeyPair(kp.publicKey, _take(kp.secretKey));
     } finally {
       seed.dispose();
     }
   }
 
+  JamSessionKeys _takeSession(SessionKeys k) =>
+      JamSessionKeys(_take(k.rx), _take(k.tx));
+
   @override
-  SessionKeys? kxClientSessionKeys({
+  JamSessionKeys? kxClientSessionKeys({
     required Uint8List clientPublicKey,
-    required SecureKey clientSecretKey,
+    required JamKey clientSecretKey,
     required Uint8List serverPublicKey,
   }) {
     try {
-      return _c.kx.clientSessionKeys(
-        clientPublicKey: clientPublicKey,
-        clientSecretKey: clientSecretKey,
-        serverPublicKey: serverPublicKey,
+      return _with(
+        clientSecretKey,
+        (sk) => _takeSession(
+          _c.kx.clientSessionKeys(
+            clientPublicKey: clientPublicKey,
+            clientSecretKey: sk,
+            serverPublicKey: serverPublicKey,
+          ),
+        ),
       );
-    } on SodiumException catch (e) {
-      AppLog.d('jam kx client: peer key refused', e);
-      return null;
+    } on SodiumException {
+      return null; // low-order peer key: the caller counts it as a drop
     }
   }
 
   @override
-  SessionKeys? kxServerSessionKeys({
+  JamSessionKeys? kxServerSessionKeys({
     required Uint8List serverPublicKey,
-    required SecureKey serverSecretKey,
+    required JamKey serverSecretKey,
     required Uint8List clientPublicKey,
   }) {
     try {
-      return _c.kx.serverSessionKeys(
-        serverPublicKey: serverPublicKey,
-        serverSecretKey: serverSecretKey,
-        clientPublicKey: clientPublicKey,
+      return _with(
+        serverSecretKey,
+        (sk) => _takeSession(
+          _c.kx.serverSessionKeys(
+            serverPublicKey: serverPublicKey,
+            serverSecretKey: sk,
+            clientPublicKey: clientPublicKey,
+          ),
+        ),
       );
-    } on SodiumException catch (e) {
-      AppLog.d('jam kx server: peer key refused', e);
-      return null;
+    } on SodiumException {
+      return null; // low-order peer key: the caller counts it as a drop
     }
   }
 
   @override
-  SecureKey hkdfExtract({Uint8List? salt, required Uint8List ikm}) =>
-      _c.kdfHkdfSha256.extract(salt: salt, ikm: ikm);
+  JamKey hkdfExtract({Uint8List? salt, required Uint8List ikm}) =>
+      _take(_c.kdfHkdfSha256.extract(salt: salt, ikm: ikm));
 
   @override
-  SecureKey hkdfExpand({
-    required SecureKey prk,
+  JamKey hkdfExpand({
+    required JamKey prk,
     required String context,
     required int outLen,
-  }) =>
-      _c.kdfHkdfSha256.expand(masterKey: prk, context: context, outLen: outLen);
+  }) => _with(
+    prk,
+    (k) => _take(
+      _c.kdfHkdfSha256.expand(masterKey: k, context: context, outLen: outLen),
+    ),
+  );
 
   @override
   Uint8List aeadEncrypt({
-    required SecureKey key,
+    required JamKey key,
     required Uint8List message,
     Uint8List? additionalData,
   }) {
     final aead = _c.aeadXChaCha20Poly1305IETF;
     final nonce = _random(aead.nonceBytes);
-    final ct = aead.encrypt(
-      message: message,
-      nonce: nonce,
-      key: key,
-      additionalData: additionalData,
+    final ct = _with(
+      key,
+      (k) => aead.encrypt(
+        message: message,
+        nonce: nonce,
+        key: k,
+        additionalData: additionalData,
+      ),
     );
     return Uint8List.fromList([...nonce, ...ct]);
   }
 
   @override
   Uint8List? aeadDecrypt({
-    required SecureKey key,
+    required JamKey key,
     required Uint8List nonceAndCipher,
     Uint8List? additionalData,
   }) {
     final aead = _c.aeadXChaCha20Poly1305IETF;
     if (nonceAndCipher.length < aead.nonceBytes + aead.aBytes) return null;
     try {
-      return aead.decrypt(
-        cipherText: Uint8List.sublistView(nonceAndCipher, aead.nonceBytes),
-        nonce: Uint8List.sublistView(nonceAndCipher, 0, aead.nonceBytes),
-        key: key,
-        additionalData: additionalData,
+      return _with(
+        key,
+        (k) => aead.decrypt(
+          cipherText: Uint8List.sublistView(nonceAndCipher, aead.nonceBytes),
+          nonce: Uint8List.sublistView(nonceAndCipher, 0, aead.nonceBytes),
+          key: k,
+          additionalData: additionalData,
+        ),
       );
     } on SodiumException {
       return null; // forged or corrupted message: the caller drops and counts it
@@ -192,30 +271,30 @@ class SodiumJamCrypto implements JamCrypto {
   }
 
   @override
-  Uint8List mac({required SecureKey key, required Uint8List message}) =>
-      _c.auth(message: message, key: key);
+  Uint8List mac({required JamKey key, required Uint8List message}) =>
+      _with(key, (k) => _c.auth(message: message, key: k));
 
   @override
   bool macVerify({
-    required SecureKey key,
+    required JamKey key,
     required Uint8List message,
     required Uint8List tag,
   }) =>
       tag.length == _c.auth.bytes &&
-      _c.auth.verify(tag: tag, message: message, key: key);
+      _with(key, (k) => _c.auth.verify(tag: tag, message: message, key: k));
 
   @override
   Uint8List genericHash(Uint8List message, {required int outLen}) =>
       _c.genericHash(message: message, outLen: outLen);
 
   @override
-  Future<SecureKey> pwhash({
+  Future<JamKey> pwhash({
     required String password,
     required Uint8List salt,
     required int outLen,
-  }) {
+  }) async {
     final s = _s; // capture the sodium instance, not `this` (holds _random)
-    return s.runIsolated(
+    final raw = await s.runIsolated(
       (keys, pairs) => s.crypto.pwhash.callStr(
         outLen: outLen,
         password: password,
@@ -225,6 +304,7 @@ class SodiumJamCrypto implements JamCrypto {
         alg: CryptoPwhashAlgorithm.argon2id13,
       ),
     );
+    return _take(raw);
   }
 
   @override

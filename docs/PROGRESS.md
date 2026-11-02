@@ -1191,12 +1191,12 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 69e.5 Titolo ufficiale dal video id (OMV/UGC → nome della canzone, versione coerente; Test.zip: 0 correzioni sbagliate)
 
 ## Fase 70 — Ponte e protocollo (`fase-70-ponte-jam-distanza.md`)
-- [ ] 70.1 `JamProtocol`
-- [ ] 70.2 `JamBridge` e riserva
-- [ ] 70.3 Ospiti remoti in `JamHost`
-- [ ] 70.4 `JamBridgeHost` e `RemoteJamGuest`
-- [ ] 70.5 Accensione, servizio e fogli
-- [ ] 70.6 Controlli di fase
+- [x] 70.1 `JamProtocol`
+- [x] 70.2 `JamBridge` e riserva
+- [x] 70.3 Ospiti remoti in `JamHost`
+- [x] 70.4 `JamBridgeHost` e `RemoteJamGuest`
+- [x] 70.5 Accensione, servizio e fogli
+- [x] 70.6 Controlli di fase e prova in autonomia (esiti in `fase-70-ponte-jam-distanza.md`: tre prove dal vivo, R-128 compreso; corretta anche la durata degli mp3 col frame Info)
 
 ## Fase 71 — Coda dell'ospite remoto (`fase-71-coda-remota.md`)
 - [ ] 71.1 `JamRemoteItems` e aggiunte

@@ -3787,5 +3787,34 @@
   },
   "logRevert": "Ripristina",
   "recogActionFailed": "Operazione non riuscita",
-  "logRevertFailed": "Impossibile ripristinare questa correzione"
+  "logRevertFailed": "Impossibile ripristinare questa correzione",
+  "jamInviteNearby": "Invita chi è vicino",
+  "jamInviteHint": "Chi inquadra il QR o scrive il codice entra nella Jam.",
+  "jamBridgeConnecting": "Mi collego…",
+  "jamBridgeRetrying": "Ponte interrotto, riprovo…",
+  "jamBridgeUnreachable": "Broker irraggiungibile",
+  "jamCodeExpiresIn": "Scade tra {seconds} s",
+  "@jamCodeExpiresIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "jamEnterCode": "Entra con un codice",
+  "jamCodeLabel": "Codice",
+  "jamScanQr": "Inquadra il QR",
+  "jamJoinAction": "Entra",
+  "jamCodeInvalid": "Codice non valido",
+  "jamCodeExpired": "Codice scaduto, chiedi quello nuovo",
+  "jamHostNoAnswer": "L’host non ha risposto",
+  "jamCustomBroker": "Questa Jam usa un broker personalizzato: inquadra il QR",
+  "jamLinkReconnecting": "Connessione persa, riprovo…",
+  "jamHostSilent": "Host non raggiungibile, riprovo…",
+  "jamMemberUnreachable": "non raggiungibile",
+  "jamRemoteActive": "Jam a distanza attiva",
+  "jamRemoteEnd": "Termina",
+  "jamDeclinedHost": "L’host ha rifiutato la richiesta",
+  "jamBusyHost": "L’host ha già una Jam in corso",
+  "jamWaitingHost": "In attesa che l’host accetti…"
 }

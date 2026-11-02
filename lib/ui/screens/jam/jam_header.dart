@@ -18,8 +18,11 @@ class JamHeader extends StatelessWidget {
     required this.jam,
     required this.isHost,
     required this.onEnd,
+    this.unreachable = const [],
   });
 
+  /// Remote guests the host has not heard from for a while.
+  final List<String> unreachable;
   final JamState jam;
   final bool isHost;
   final VoidCallback onEnd;
@@ -68,8 +71,11 @@ class JamHeader extends StatelessWidget {
       ...jam.participants.where((p) => p.id == jam.hostDeviceId),
       ...jam.participants.where((p) => p.id != jam.hostDeviceId),
     ];
-    String label(JamParticipant p) =>
-        p.id == jam.hostDeviceId ? '${p.name} (${l.jamHostTag})' : p.name;
+    String label(JamParticipant p) => p.id == jam.hostDeviceId
+        ? '${p.name} (${l.jamHostTag})'
+        : unreachable.contains(p.id)
+            ? '${p.name} (${l.jamMemberUnreachable})'
+            : p.name;
     final shown = ps.take(jamHeaderMaxShown).toList();
     final extra = ps.length - shown.length;
     final all = ps.map(label).join(', ');

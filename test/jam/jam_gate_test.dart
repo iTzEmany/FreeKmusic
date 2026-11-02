@@ -91,8 +91,14 @@ void main() {
   group('admitRequest', () {
     late JamHost h;
     final seen = <String>[];
-    Map<String, Object?> body(String id) =>
-        {'fromId': id, 'fromName': 'P', 'port': 4000, 'token': 'tok-12345'};
+    JamAdmission adm(String id) =>
+        h.admitRequest(id: id, name: 'P', port: 4000, token: 'tok-12345');
+    int code(JamAdmission a) => switch (a.status) {
+          JamAdmitStatus.accepted => 202,
+          JamAdmitStatus.full || JamAdmitStatus.busy => 409,
+          JamAdmitStatus.tooMany => 429,
+          JamAdmitStatus.bad => 400,
+        };
 
     setUp(() {
       seen.clear();
@@ -102,11 +108,11 @@ void main() {
 
     test('silent request: 202, not shown, not busy, expires', () async {
       gate.suspend('s', 'S', null);
-      final r = h.admitRequest(body('s'));
-      expect(r.statusCode, 202);
-      expect(jsonDecode(await r.readAsString())['requestId'], isNotNull);
+      final r = adm('s');
+      expect(code(r), 202);
+      expect(r.request!.id, isNotEmpty);
       expect(seen, isEmpty);
-      expect(h.admitRequest(body('ok')).statusCode, 202); // not busy
+      expect(code(adm('ok')), 202); // not busy
       expect(seen, ['ok']);
       final silent = h.requests.values.firstWhere((q) => q.silent);
       now = now.add(jamRequestTtl + const Duration(seconds: 1));
@@ -117,10 +123,10 @@ void main() {
     test('a blocked id is rate-limited like anyone', () {
       gate.block('x', 'X');
       for (var i = 0; i < 2; i++) {
-        expect(h.admitRequest(body('x')).statusCode, 202);
+        expect(code(adm('x')), 202);
         h.decline(h.requests.values.last.id);
       }
-      expect(h.admitRequest(body('x')).statusCode, 429);
+      expect(code(adm('x')), 429);
     });
 
     test('a blocked id and a normal id get the same statuses, also after expiry', () async {
@@ -129,9 +135,9 @@ void main() {
         final out = <int>[];
         String? rid;
         for (var i = 0; i < 2; i++) {
-          final r = h.admitRequest(body(id));
-          out.add(r.statusCode);
-          if (r.statusCode == 202) rid = jsonDecode(await r.readAsString())['requestId'] as String;
+          final r = adm(id);
+          out.add(code(r));
+          if (r.request != null) rid = r.request!.id;
         }
         now = now.add(jamRequestTtl * 2 + const Duration(seconds: 1));
         h.expire();
@@ -152,10 +158,10 @@ void main() {
 
     test('third request in a minute from the same id is 429', () {
       for (var i = 0; i < 2; i++) {
-        expect(h.admitRequest(body('a')).statusCode, 202);
+        expect(code(adm('a')), 202);
         h.decline(h.requests.values.last.id);
       }
-      expect(h.admitRequest(body('a')).statusCode, 429);
+      expect(code(adm('a')), 429);
     });
   });
 
