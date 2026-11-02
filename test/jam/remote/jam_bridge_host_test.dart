@@ -156,7 +156,7 @@ void main() {
     guestProtocol = JamProtocol(base, drops: log);
     net = FakeNet([entry]);
     host = JamHost(deviceId: 'host', deviceName: 'Host', now: () => clock);
-    bridge = JamBridge(FakeMqttLink(net), [entry]);
+    bridge = JamBridge(FakeMqttLink(net), [entry], waits: const [Duration(milliseconds: 5)]);
     bh = JamBridgeHost(
       protocol: protocol,
       host: host,
@@ -399,6 +399,7 @@ void main() {
     final g = await guest('dev-1');
     clock = clock.add(const Duration(seconds: 61));
     bh.tick();
+    host.expire();
     await pumpEventQueue();
     expect(host.requests.values.single.status, JamRequestStatus.expired);
     expect(g.inbox, isEmpty);
@@ -508,7 +509,7 @@ void main() {
     await g.link.connect(entry);
     g.link.subscribe(g.ch.recvTopic);
     expect(g.inbox, isEmpty);
-    await Future<void>.delayed(const Duration(milliseconds: 1300));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     await pumpEventQueue();
     expect(g.inbox.first.type, JamMsg.accept);
     expect(g.of(JamMsg.accept), hasLength(1));

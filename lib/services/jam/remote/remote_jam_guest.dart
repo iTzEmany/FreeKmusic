@@ -26,6 +26,7 @@ class RemoteJamGuest implements JamGuestLink {
     this.brokers = kDefaultJamBrokers,
     DateTime Function()? now,
     this.leaveGrace = const Duration(milliseconds: 500),
+    this.bridgeWaits = kJamBridgeWaits,
   }) : _now = now ?? DateTime.now;
 
   final JamProtocol protocol;
@@ -37,6 +38,7 @@ class RemoteJamGuest implements JamGuestLink {
 
   /// Time left to the LEAVE to go out before the bridge is stopped.
   final Duration leaveGrace;
+  final List<Duration> bridgeWaits;
 
   /// 60 s of the host (R-150) plus a margin, counted from the publication.
   static const requestWait = Duration(seconds: 62);
@@ -153,7 +155,7 @@ class RemoteJamGuest implements JamGuestLink {
     }
     if (_stopped) return JamJoinOutcome.cancelled;
     // A growable copy: the host's own list is appended to it on ACCEPT.
-    final bridge = _bridge = JamBridge(linkFactory(), [...route]);
+    final bridge = _bridge = JamBridge(linkFactory(), [...route], waits: bridgeWaits);
     _msgSub = bridge.messages.listen(_onIncoming);
     _connSub = bridge.connections.listen((_) => _onConnected());
     _statusSub = bridge.statuses.listen((_) => _refreshLink());

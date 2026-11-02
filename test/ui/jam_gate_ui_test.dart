@@ -1,6 +1,6 @@
 import 'package:codecore/data/settings/jam_secret_store.dart';
 import 'package:codecore/providers/jam_providers.dart';
-import 'package:codecore/providers/jam_remote_providers.dart';
+import 'package:codecore/providers/jam_gate_providers.dart';
 import 'package:codecore/services/jam/jam_gate.dart';
 import 'package:codecore/services/jam/jam_host.dart';
 import 'package:codecore/ui/screens/jam/jam_request_dialog.dart';

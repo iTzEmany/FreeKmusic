@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/jam_providers.dart';
-import '../../../providers/jam_remote_providers.dart';
+import '../../../providers/jam_gate_providers.dart';
 import '../../../services/jam/jam_host.dart';
 import '../../widgets/duration_choice_sheet.dart';
 import 'jam_screen.dart';

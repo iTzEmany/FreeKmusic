@@ -12,7 +12,7 @@ import '../core/app_log.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/playlist_sync_repository.dart';
 import '../services/jam/jam_host.dart';
-import 'jam_remote_providers.dart';
+import 'jam_gate_providers.dart';
 import '../services/share/device_identity.dart';
 import '../services/share/discovery.dart';
 import '../services/share/lan_client.dart';

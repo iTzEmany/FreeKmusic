@@ -66,6 +66,7 @@ void main() {
       brokers: const [a],
       now: () => clock,
       leaveGrace: Duration.zero,
+      bridgeWaits: const [Duration(milliseconds: 5)],
     );
     guest.lost.listen((_) => lostCount++);
   });
@@ -368,7 +369,7 @@ void main() {
       net[a].goDown();
       await pump();
       expect(guest.link, JamLinkState.reconnecting);
-      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await pump();
       expect(guest.link, JamLinkState.ok);
       hostPull();

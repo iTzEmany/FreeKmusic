@@ -21,6 +21,7 @@ import '../screens/library/library_screen.dart';
 import '../screens/memory/memory_screen.dart';
 import '../screens/share/incoming_offer_dialog.dart';
 import '../../providers/jam_providers.dart';
+import '../../providers/jam_remote_providers.dart' show jamBridgeProvider;
 import '../../providers/share_hub.dart';
 import '../screens/jam/jam_request_dialog.dart';
 import '../screens/jam/speaker_notices.dart';
@@ -305,7 +306,8 @@ class AppShell extends ConsumerWidget {
       final p = next.value;
       if (p != null) showSpeakerPrompt(context, p);
     });
-    // The speaker's Jam lives as long as the shell.
+    // The remote bridge's switch and the speaker's Jam live as long as the shell.
+    ref.listen(jamBridgeProvider, (_, _) {}); // keep-alive only, no rebuild
     final speakerJam = ref.watch(speakerJamProvider);
     ref.listen(speakerOfferProvider, (_, next) {
       if (next.value == true) {

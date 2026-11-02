@@ -24,9 +24,11 @@ const kJamBridgeWaits = [
 /// same broker at once, then the next ones in a loop with growing waits, and
 /// redoes the subscriptions on every (re)connection (R-123, R-125, R-126).
 class JamBridge {
-  JamBridge(this._link, this.brokers) : assert(brokers.isNotEmpty);
+  JamBridge(this._link, this.brokers, {this.waits = kJamBridgeWaits}) : assert(brokers.isNotEmpty);
 
   final MqttLink _link;
+  /// Injectable so tests need no real waiting.
+  final List<Duration> waits;
   final List<BrokerEntry> brokers;
 
   final _topics = <String>{};
@@ -162,7 +164,7 @@ class JamBridge {
       }
       final c = Completer<void>();
       _wait = Timer(
-        kJamBridgeWaits[(failures - 1).clamp(0, kJamBridgeWaits.length - 1)],
+        waits[(failures - 1).clamp(0, waits.length - 1)],
         c.complete,
       );
       await c.future;
