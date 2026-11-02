@@ -107,7 +107,40 @@
 - esiti numerici di Test.zip, del Motorola e dei testi sono in questo documento.
 
 ## Esiti di 69e.4
-_(da scrivere)_
+Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo e DB separati, motore, rete e impronta Rust veri, percorso `enrichJobProvider.startDue()`. I 147 file sono gli stessi di 69d.4.
+
+| Voce | 69d.4 | 69e.4 |
+|---|---|---|
+| Riconosciuti | 124/147 | **126/147** |
+| Per fonte | AcoustID 81 · video id 13 · testo 24 · YTM 6 | AcoustID 81 (65 sicure, 16 no) · video id 13 (sicure) · testo 24 (non sicure) · YTM 8 · tag 0 |
+| Non riconosciuti | 23 | 21 (nessuno perso) |
+| Correzioni automatiche (`prop` auto, righe `correction` nel Registro) | non c'erano | **77** (AcoustID 65, video id 12) |
+| Proposte aperte (`prop` open) | non c'erano | **35** |
+| Correzioni automatiche sbagliate | 1 `sure` sbagliata (poi corretta) | **0** (controllate a vista contro nome del file e tag) |
+| Cover (`rec.cover`) | non c'erano | 4 trovate, **0 con originale** |
+| Meta nuova · curiosità | 71 · 37 | 71 · 38 |
+| Testi (R-182) | 6 | **11** (4 testo semplice, 8 sincronizzati, 1 in entrambi) |
+| Tempo | 34 min · 13,9 s a brano (mediana 13,1, p90 20,6) | 29 min · 11,8 s a brano (mediana 11,5, p90 16,6) |
+| `[E]` · avvisi | 0 · 9 | 0 · 10 |
+
+**Correzioni automatiche.** Sono tutte coerenti con file e tag: nomi caricati da canali («Rammstein Official», «retrovgnamusic», «Am Project - Topic») portati al titolo e all'artista veri, artisti mancanti riempiti. Per esempio:
+- «Soap&Skin - Me and the Devil (Lyrics)» / The Vibe Guide → «Me and the Devil» / Soap&Skin;
+- «Super Mario World OST - Swimming» / retrovgnamusic → «Swimming» / 近藤浩治;
+- «Una storia disonesta» / nessuno → Stefano Rosso;
+- «Devil in Disguise» / nessuno → Marino, con durata uguale al file (104,0 s contro 104,5 s).
+
+**Proposte aperte (35).** «Happier» (Marshmello) con identità dei Guster resta una proposta e non si applica più da sola: la correzione di 69d è tenuta. Restano proposte anche i remix al posto dell'originale (Here, Blue, Ola), «Bad Romance» → Club Mix di Liam C, i risultati YTM di altri artisti e le musiche di giochi e anime con titolo giapponese. Nessuna di queste ha cambiato il titolo.
+
+**Da notare:**
+- il flag `cover` ha 3 falsi positivi su 4: i due «The Trapper & The Trader» di Inscryption e «TEST ME» (opening di Oshi no Ko) non sono cover; «Distortion World (Arrangement)» sì. Nessun originale è stato trovato, quindi «Cover di» non compare mai in questa prova;
+- il Registro ha una riga di scansione `scan 100/147` con `stopped: true` (la riga dell'arricchimento è `147/147`, corretta): l'etichetta «interrotto» è ancora sbagliata per un giro finito, come già annotato in 69d.4;
+- la copertina dell'album non è stata contata a parte: sta dentro «meta nuova».
+
+**Testi (R-182).** LRCLIB ha risposto, ma con un solo 503 (`LRCLIB answered 503: resting 3 min`, più `lyrics fallback failed ... 503`): il riposo è di 3 minuti e il giro non ha perso i testi, a differenza di 69d.4 dove il 503 li aveva tolti a tutto il giro. Trovati 11 testi contro 6.
+
+**Avvisi (10, nessun errore):** 5 `InnerTubeChanged` su video senza canzone YTM, 2 impronte illeggibili (`unsupported audio codec` e `unsupported or unreadable audio format`), 1 tag illeggibile in «Paint It, Black», i 2 sul 503 di LRCLIB.
+
+**Master di 69b:** il confronto dei testi «prima» (master di 69b su Test.zip) non è stato rifatto, perché il disco è corto. Il «prima» è il dato di 69d.4 (6 testi).
 
 ## Dopo questa feature
 - R-187 Invio delle impronte ad AcoustID (chiave utente nelle impostazioni, mai nel repo).
