@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_log.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/track_repository.dart';
+import '../services/online/synthetic_track.dart';
 import '../services/online/enrichment_service.dart';
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/stream/stream_cache.dart';
@@ -86,26 +87,12 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
 });
 
 /// What `propose` reads (title, artist, album, length) before the row exists.
-Track _syntheticTrack(YtResult r) => Track(coverSource: 0, 
-      id: 0,
-      path: '',
+Track _syntheticTrack(YtResult r) => syntheticTrack(
       title: r.title,
       artist: displayArtist(r),
       album: r.album,
-      albumKey: '',
       durationMs: r.duration?.inMilliseconds ?? 0,
-      format: '',
-      sizeBytes: 0,
-      mtimeMs: 0,
-      hasCover: false,
-      isFavorite: false,
-      enrichStatus: 0,
-      userEdited: false,
-      missing: false,
-      ignored: false,
       kind: 2,
-      addedAt: 0,
-      playCount: 0,
     );
 
 /// «Scarica» on a cached track moves the file instead of downloading it (46.3).
