@@ -142,6 +142,31 @@ Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo
 
 **Master di 69b:** il confronto dei testi «prima» (master di 69b su Test.zip) non è stato rifatto, perché il disco è corto. Il «prima» è il dato di 69d.4 (6 testi).
 
+## Misura sul Motorola (2026-11-02, R-181)
+Libreria vera di 2463 brani. Prima di ogni `install -r` c'è la copia di DB e preferenze in `.backup-motorola/codecore-2026-11-02-1058/` (D-292). Musica in pausa e app in primo piano (D-296).
+
+**Prima prova (master 5f6aedd, 11:04–11:20).**
+- In 7 minuti il ripasso ha riconosciuto 35 brani (video id 17, tag 18, tutti `sure`), circa 12 s a brano; poi il sottofondo è rimasto fermo fino al giro successivo.
+- Ha fatto **9 correzioni automatiche su titoli e artisti già pieni**, spesso peggiorative, e le ha scritte anche nei file:
+  - «Get Lucky» → «Get Lucky (Official Audio) (feat. …)»;
+  - «Purple Rain» → «Purple Rain (7" Single Edit) (7" Single Edit; 2017 Remaster)»;
+  - «Seven Nation Army» → «Seven Nation Army (Live)»;
+  - «Kiss (Extended)» → «Kiss»;
+  - coartisti tolti.
+- È contro «il ripasso riempie solo i buchi». L'app è stata fermata.
+- Decisioni dell'utente:
+  - **D-333**: su un brano già arricchito (`found`) la correzione automatica riempie solo un artista vuoto o generico; il resto diventa proposta;
+  - **D-334**: le 9 correzioni sono state ripristinate dal Registro con «Ripristina» (verificato nel DB: valori originali, `prop = discarded`, nessun brano segnato a mano).
+
+**Seconda prova (APK con D-333, 11:39–11:55).**
+- 48 brani riconosciuti fra le 11:42 e le 11:50, circa **10 s a brano** mentre lavora (19 s di media sui 15 minuti, per la pausa fra i giri del sottofondo).
+- Fonti in totale: video id 47, tag 27, YTM 8.
+- **0 correzioni automatiche, 12 proposte aperte**, quasi tutte brani caricati da canali («The Weeknd - Blinding Lights (Lyrics)» / 7clouds), che ora aspettano «Da confermare».
+- **0 `[E]`**. I 24 `[W]` sono di rete: LRCLIB 503 e timeout, NetEase, lyrics.ovh, una richiesta ISRC di MusicBrainz.
+- `kEnrichSecondsIdentified` passa da 7 (non misurato) a **12 s**.
+
+**Da notare:** il sottofondo lavora a giri di circa 8 minuti con pause lunghe. Il ripasso dei 2463 brani richiede quindi molte sessioni con l'app aperta.
+
 ## Dopo questa feature
 - R-187 Invio delle impronte ad AcoustID (chiave utente nelle impostazioni, mai nel repo).
 - R-188 Riconoscimento dal microfono (solo Android, da misurare prima).

@@ -29,7 +29,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 ```
 /obiettivo fase 70
 ```
-Si comincia dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`. **Tocca a te:** la misura sul Motorola (R-181 enrichMinutes), quando il telefono è collegato.
+Si comincia dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`. La misura sul Motorola è fatta (2/11, PR #82): ha fatto nascere D-333, cioè il ripasso dei brani già arricchiti propone e non corregge da solo.
 
 Da sapere:
 - **69c.1 blocca tutto:** se l'impronta di rusty-chromaprint non coincide con fpcalc, si applica D-316 (copia in `third_party/` e un passo di correzione), poi ci si ferma e si chiede.
