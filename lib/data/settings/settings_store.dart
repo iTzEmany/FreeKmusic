@@ -6,6 +6,7 @@ import '../../services/audio/audio_backend.dart' show TransitionMode;
 import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
 import '../../services/online/youtube_service.dart' show DownloadFormat;
+import '../../services/recognition/track_identity.dart' show kRecogVersion;
 
 /// The equalizer curve chosen for one kind of output (speaker or headphones).
 class EqProfile {
@@ -295,6 +296,8 @@ class SavedPlayback {
 }
 
 const enrichMarkKey = 'enrichMark';
+const recogPassAfterKey = 'recogPassAfter';
+const recogPassDoneKey = 'recogPassDone';
 
 class SettingsStore {
   SettingsStore(this._prefs);
@@ -483,6 +486,18 @@ class SettingsStore {
   /// Device-bound, never in a backup.
   int get enrichMark => _prefs.getInt(enrichMarkKey) ?? 0;
   Future<void> writeEnrichMark(int id) => _prefs.setInt(enrichMarkKey, id);
+
+  /// Recognition re-pass (R-176): the bookmark is kept as `version:id` and only
+  /// holds for [kRecogVersion]; [recogPassDone] is the version it finished for.
+  /// Device-bound, never in a backup.
+  int get recogPassAfter {
+    final parts = (_prefs.getString(recogPassAfterKey) ?? '').split(':');
+    return parts.length == 2 && int.tryParse(parts[0]) == kRecogVersion ? int.tryParse(parts[1]) ?? 0 : 0;
+  }
+
+  Future<void> writeRecogPassAfter(int id) => _prefs.setString(recogPassAfterKey, '$kRecogVersion:$id');
+  int get recogPassDone => _prefs.getInt(recogPassDoneKey) ?? 0;
+  Future<void> writeRecogPassDone(int v) => _prefs.setInt(recogPassDoneKey, v);
 
   // New releases of followed artists (phase 34).
 

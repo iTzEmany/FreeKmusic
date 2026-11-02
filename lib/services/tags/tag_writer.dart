@@ -11,9 +11,14 @@ class TagChanges {
     this.trackNumber,
     this.discNumber,
     this.cover,
+    this.isrc,
+    this.mbid,
   });
 
   final String? title, artist, album, albumArtist, genre;
+
+  /// Recording ids (ISRC, MusicBrainz): null leaves the file's, an empty string removes it.
+  final String? isrc, mbid;
   final int? year, trackNumber, discNumber;
 
   /// Front cover to embed.
@@ -28,6 +33,8 @@ class TagChanges {
       genre == null &&
       trackNumber == null &&
       discNumber == null &&
+      isrc == null &&
+      mbid == null &&
       cover == null;
 }
 

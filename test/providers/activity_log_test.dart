@@ -10,6 +10,7 @@ import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/providers/second_opinion_providers.dart';
 import 'package:codecore/services/online/download_queue.dart';
+import 'package:codecore/services/scanner/library_scanner.dart' show ScanProgress;
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
 import 'package:codecore/core/import_row.dart';
@@ -39,6 +40,11 @@ class _SecondOpinion extends SecondOpinionNotifier {
 class _Scan extends ScanNotifier {
   @override
   ScanState build() => const ScanState(error: 'disk gone');
+}
+
+class _DoneScan extends ScanNotifier {
+  @override
+  ScanState build() => const ScanState(progress: ScanProgress(done: 147, total: 147, finished: true));
 }
 
 class _Job extends EnrichJobNotifier {
@@ -239,6 +245,25 @@ void main() {
     await pumpEventQueue();
     final line = c.read(activityLogProvider).entries.single;
     expect([line.stopped, line.failed, line.item!.done, line.item!.total], [true, false, 1, 4]);
+  });
+
+  test('a scan that finished is not «stopped» by a snapshot at 100 of 147', () async {
+    final c = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        activityProvider.overrideWith((ref) => ref.watch(_activity)),
+        scanStateProvider.overrideWith(_DoneScan.new),
+      ],
+    );
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    const scan = ActivityItem(kind: ActivityKind.scan, key: 'scan', name: null, done: 100, total: 147);
+    c.read(_activity.notifier).set(const ActivityState([scan], []));
+    await pumpEventQueue();
+    c.read(_activity.notifier).set(const ActivityState([], []));
+    await pumpEventQueue();
+    final line = c.read(activityLogProvider).entries.single;
+    expect([line.stopped, line.item!.done, line.item!.total], [false, 147, 147]);
   });
 
   test('a scan that ends with an error leaves its line as failed', () async {

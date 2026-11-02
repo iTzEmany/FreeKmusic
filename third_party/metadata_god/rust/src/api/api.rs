@@ -4,7 +4,8 @@ use lofty::{
     file::{AudioFile, TaggedFile, TaggedFileExt},
     picture::{MimeType, PictureType},
     properties::FileProperties,
-    tag::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem},
+    id3::v2::{Frame, Id3v2Tag, UniqueFileIdentifierFrame},
+    tag::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType},
 };
 
 #[derive(Debug)]
@@ -30,6 +31,8 @@ pub struct Metadata {
     pub genre: Option<String>,
     pub picture: Option<Picture>,
     pub file_size: Option<u64>,
+    pub isrc: Option<String>,
+    pub mbid: Option<String>,
 }
 
 pub fn read_metadata(file: String) -> Result<Metadata> {
@@ -65,6 +68,8 @@ pub fn read_metadata(file: String) -> Result<Metadata> {
             None => None,
         }),
         file_size: Some(21231_u64),
+        isrc: None,
+        mbid: None,
     })
 }
 
@@ -121,6 +126,24 @@ pub fn write_metadata(file: String, metadata: Metadata) -> Result<()> {
     if metadata.genre.is_some() {
         tag.set_genre(metadata.genre.unwrap());
     }
+    // An empty string removes the item.
+    match metadata.isrc.as_deref() {
+        Some("") => tag.remove_key(&ItemKey::Isrc),
+        Some(isrc) => {
+            tag.insert_text(ItemKey::Isrc, isrc.to_string());
+        }
+        None => {}
+    }
+    let mbid = metadata.mbid;
+    if tag.tag_type() != TagType::Id3v2 {
+        match mbid.as_deref() {
+            Some("") => tag.remove_key(&ItemKey::MusicBrainzRecordingId),
+            Some(m) => {
+                tag.insert_text(ItemKey::MusicBrainzRecordingId, m.to_string());
+            }
+            None => {}
+        }
+    }
     if metadata.picture.is_some() {
         let image = metadata.picture.unwrap();
         tag.push_picture(lofty::picture::Picture::new_unchecked(
@@ -131,6 +154,19 @@ pub fn write_metadata(file: String, metadata: Metadata) -> Result<()> {
         ));
     }
 
+    if let (Some(mbid), TagType::Id3v2) = (mbid, tag.tag_type()) {
+        // lofty drops this key when it is inserted in a generic tag: the UFID frame goes in by hand.
+        let mut id3 = Id3v2Tag::from(tag);
+        id3.retain(|f| !matches!(f, Frame::UniqueFileIdentifier(u) if u.owner == "http://musicbrainz.org"));
+        if !mbid.is_empty() {
+            id3.insert(Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame::new(
+                "http://musicbrainz.org".to_string(),
+                mbid.into_bytes(),
+            )));
+        }
+        id3.save_to_path(&file, WriteOptions::default())?;
+        return Ok(());
+    }
     tag.save_to_path(&file, WriteOptions::default())?;
     Ok(())
 }

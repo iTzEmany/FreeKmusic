@@ -61,10 +61,20 @@ void main() {
     expect(_mb(w).recordingById('x'), throwsA(isA<MusicBrainzUnavailable>()));
   });
 
-  test('work: the recordings, the cover flag read from the attributes', () async {
-    final recs = (await _mb(_Web(['work_imagine_recordings'])).work('w'))!;
-    expect(recs.map((r) => r.cover), [true, false]);
-    expect(recs.first.id, '5a69c5a7-2953-4008-9094-c89e3da1663b');
+  test('recordingById: the cover attribute of the performance is kept on the work link', () async {
+    final r = (await _mb(_Web(['recording_cover_work'])).recordingById('x'))!;
+    expect([r.works.single.id, r.works.single.cover], ['w-believer', true]);
+  });
+
+  test('workOriginal: the oldest recording that is not a cover, one browse request', () async {
+    final w = _Web(['work_imagine_recordings']);
+    final o = (await _mb(w).workOriginal('w'))!;
+    expect(w.asked.single, contains('artist-credits'));
+    expect([o.id, o.artistName], ['ec04e3c5-0548-4e73-bfc3-19a26108f302', 'John Lennon']);
+  });
+
+  test('workOriginal: unknown work is null', () async {
+    expect(await _mb(_Web([null])).workOriginal('w'), isNull);
   });
 
   test('recordingsByIsrc without title and artist: nothing is filtered out', () async {

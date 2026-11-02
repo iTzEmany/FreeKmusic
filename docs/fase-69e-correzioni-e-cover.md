@@ -106,10 +106,115 @@
 - c'è la PR con la CI verde;
 - esiti numerici di Test.zip, del Motorola e dei testi sono in questo documento.
 
+### 69e.5 — Titolo ufficiale dal video id (aperto il 2026-11-02)
+**Problema.** Il passo 1b (`_fromVideoId` → `_ytmSong` → `InnerTubeClient.songOf`) prende il titolo che YouTube Music dà al video.
+- Per un brano audio di studio (ATV) è il nome ufficiale della canzone.
+- Per un video ufficiale (OMV) o caricato da chiunque (UGC) è il titolo del video, per esempio «Get Lucky (Official Audio) (feat. Pharrell Williams & Nile Rodgers)».
+- L'OMV conta come `sure` (D-312), quindi su un brano **mai arricchito** diventa una correzione automatica: D-333 copre solo i già arricchiti.
+- Prova dal vivo del 2/11: la risposta anonima di `next` non porta la «controparte» canzone (ATV) di un OMV, né con `playlistId RDAMVM…`. Il nome ufficiale non arriva da lì.
+
+**Cosa fare.**
+- ATV: come oggi, titolo e artisti del video, `sure`.
+- OMV e UGC: si cerca la canzone su YouTube Music, solo fra le canzoni (la ricerca del passo 4), con il titolo pulito da `cleanSearchQuery` e l'artista del video.
+  - Si prende l'ATV con un artista in comune e la durata entro ±3 s (`ytmMatches`). Trovato → identità con il titolo dell'ATV; resta `sure` solo per un OMV.
+  - Non trovato → titolo pulito da `cleanSearchQuery` e identità **non sicura**, quindi una proposta.
+- Coerenza della versione, per tutte e tre: un titolo che nomina una versione che il file non nomina (Live, Remaster, Edit, Extended, Remix) non è `sure`. Si riusa la regola delle versioni di `_Hay`.
+- Lo stesso vale per i brani online (`recognizeOnline`).
+
+**Fatto quando.**
+- Ci sono fixture (risposte vere salvate una volta) e test:
+  - l'OMV di «Get Lucky» con l'ATV trovato → «Get Lucky», `sure`;
+  - un OMV senza ATV → titolo pulito, proposta;
+  - un UGC «… (Lyrics)» → mai `sure`;
+  - un ATV «Seven Nation Army (Live)» per un file senza «Live» → proposta.
+- Il conteggio di Test.zip non peggiora: 0 correzioni automatiche sbagliate.
+
+**Esito:** codice in `_ytmSong`/`_fromVideoId` (PR #84).
+
+**Prova su Test.zip (2026-11-02, codice della 69e.5, come in 69e.4).**
+
+| Voce | 69e.4 | 69e.5 |
+|---|---|---|
+| Riconosciuti | 126/147 | **126/147** |
+| Video id | 13 (sicure) | 13 (**9 sicure, 4 no**) |
+| Correzioni automatiche | 77 (video id 12) | **74** (video id 9) |
+| Proposte aperte | 35 | **39** |
+| Correzioni automatiche sbagliate | 0 | **0** |
+| Testi · curiosità | 11 · 38 | 11 · 39 |
+| Tempo | 11,8 s a brano | 11,1 s a brano |
+| `[E]` · avvisi | 0 · 10 | 0 · 9 |
+
+- Le 9 correzioni dal video id prendono il titolo della canzone, per esempio «NEFFEX - Careless 💔 [Copyright Free] No.19» → «Careless» e «Adele - Skyfall (Lyrics)» / 7clouds Rock → «Skyfall» / Adele. Nessun titolo da video («Official», «Lyrics») è entrato in una correzione automatica.
+- 4 video ufficiali senza ATV trovato sono diventati proposte con il titolo pulito: Rammstein «Sonne», Tiny Tim, Jagwar Twin, 椎名もた.
+- Da guardare, ma non toccate dalla 69e.5: le due «The Trapper & The Trader» (Inscryption) diventano «The Trapper» da AcoustID.
+
 ## Esiti di 69e.4
-_(da scrivere)_
+Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo e DB separati, motore, rete e impronta Rust veri, percorso `enrichJobProvider.startDue()`. I 147 file sono gli stessi di 69d.4.
+
+| Voce | 69d.4 | 69e.4 |
+|---|---|---|
+| Riconosciuti | 124/147 | **126/147** |
+| Per fonte | AcoustID 81 · video id 13 · testo 24 · YTM 6 | AcoustID 81 (65 sicure, 16 no) · video id 13 (sicure) · testo 24 (non sicure) · YTM 8 · tag 0 |
+| Non riconosciuti | 23 | 21 (nessuno perso) |
+| Correzioni automatiche (`prop` auto, righe `correction` nel Registro) | non c'erano | **77** (AcoustID 65, video id 12) |
+| Proposte aperte (`prop` open) | non c'erano | **35** |
+| Correzioni automatiche sbagliate | 1 `sure` sbagliata (poi corretta) | **0** (controllate a vista contro nome del file e tag) |
+| Cover (`rec.cover`) | non c'erano | 4 trovate, **0 con originale** |
+| Meta nuova · curiosità | 71 · 37 | 71 · 38 |
+| Testi (R-182) | 6 | **11** (4 testo semplice, 8 sincronizzati, 1 in entrambi) |
+| Tempo | 34 min · 13,9 s a brano (mediana 13,1, p90 20,6) | 29 min · 11,8 s a brano (mediana 11,5, p90 16,6) |
+| `[E]` · avvisi | 0 · 9 | 0 · 10 |
+
+**Correzioni automatiche.** Sono tutte coerenti con file e tag: nomi caricati da canali («Rammstein Official», «retrovgnamusic», «Am Project - Topic») portati al titolo e all'artista veri, artisti mancanti riempiti. Per esempio:
+- «Soap&Skin - Me and the Devil (Lyrics)» / The Vibe Guide → «Me and the Devil» / Soap&Skin;
+- «Super Mario World OST - Swimming» / retrovgnamusic → «Swimming» / 近藤浩治;
+- «Una storia disonesta» / nessuno → Stefano Rosso;
+- «Devil in Disguise» / nessuno → Marino, con durata uguale al file (104,0 s contro 104,5 s).
+
+**Proposte aperte (35).** «Happier» (Marshmello) con identità dei Guster resta una proposta e non si applica più da sola: la correzione di 69d è tenuta. Restano proposte anche i remix al posto dell'originale (Here, Blue, Ola), «Bad Romance» → Club Mix di Liam C, i risultati YTM di altri artisti e le musiche di giochi e anime con titolo giapponese. Nessuna di queste ha cambiato il titolo.
+
+**Da notare:**
+- il flag `cover` ha 3 falsi positivi su 4: i due «The Trapper & The Trader» di Inscryption e «TEST ME» (opening di Oshi no Ko) non sono cover; «Distortion World (Arrangement)» sì. Nessun originale è stato trovato, quindi «Cover di» non compare mai in questa prova;
+- il Registro ha una riga di scansione `scan 100/147` con `stopped: true` (la riga dell'arricchimento è `147/147`, corretta): l'etichetta «interrotto» è ancora sbagliata per un giro finito, come già annotato in 69d.4;
+- la copertina dell'album non è stata contata a parte: sta dentro «meta nuova».
+
+**Testi (R-182).** LRCLIB ha risposto, ma con un solo 503 (`LRCLIB answered 503: resting 3 min`, più `lyrics fallback failed ... 503`): il riposo è di 3 minuti e il giro non ha perso i testi, a differenza di 69d.4 dove il 503 li aveva tolti a tutto il giro. Trovati 11 testi contro 6.
+
+**Avvisi (10, nessun errore):** 5 `InnerTubeChanged` su video senza canzone YTM, 2 impronte illeggibili (`unsupported audio codec` e `unsupported or unreadable audio format`), 1 tag illeggibile in «Paint It, Black», i 2 sul 503 di LRCLIB.
+
+**Master di 69b:** il confronto dei testi «prima» (master di 69b su Test.zip) non è stato rifatto, perché il disco è corto. Il «prima» è il dato di 69d.4 (6 testi).
+
+## Misura sul Motorola (2026-11-02, R-181)
+Libreria vera di 2463 brani. Prima di ogni `install -r` c'è la copia di DB e preferenze in `.backup-motorola/codecore-2026-11-02-1058/` (D-292). Musica in pausa e app in primo piano (D-296).
+
+**Prima prova (master 5f6aedd, 11:04–11:20).**
+- In 7 minuti il ripasso ha riconosciuto 35 brani (video id 17, tag 18, tutti `sure`), circa 12 s a brano; poi il sottofondo è rimasto fermo fino al giro successivo.
+- Ha fatto **9 correzioni automatiche su titoli e artisti già pieni**, spesso peggiorative, e le ha scritte anche nei file:
+  - «Get Lucky» → «Get Lucky (Official Audio) (feat. …)»;
+  - «Purple Rain» → «Purple Rain (7" Single Edit) (7" Single Edit; 2017 Remaster)»;
+  - «Seven Nation Army» → «Seven Nation Army (Live)»;
+  - «Kiss (Extended)» → «Kiss»;
+  - coartisti tolti.
+- È contro «il ripasso riempie solo i buchi». L'app è stata fermata.
+- Decisioni dell'utente:
+  - **D-333**: su un brano già arricchito (`found`) la correzione automatica riempie solo un artista vuoto o generico; il resto diventa proposta;
+  - **D-334**: le 9 correzioni sono state ripristinate dal Registro con «Ripristina» (verificato nel DB: valori originali, `prop = discarded`, nessun brano segnato a mano).
+
+**Seconda prova (APK con D-333, 11:39–11:55).**
+- 48 brani riconosciuti fra le 11:42 e le 11:50, circa **10 s a brano** mentre lavora (19 s di media sui 15 minuti, per la pausa fra i giri del sottofondo).
+- Fonti in totale: video id 47, tag 27, YTM 8.
+- **0 correzioni automatiche, 12 proposte aperte**, quasi tutte brani caricati da canali («The Weeknd - Blinding Lights (Lyrics)» / 7clouds), che ora aspettano «Da confermare».
+- **0 `[E]`**. I 24 `[W]` sono di rete: LRCLIB 503 e timeout, NetEase, lyrics.ovh, una richiesta ISRC di MusicBrainz.
+- `kEnrichSecondsIdentified` passa da 7 (non misurato) a **12 s**.
+
+**Da notare:** il sottofondo lavora a giri di circa 8 minuti con pause lunghe. Il ripasso dei 2463 brani richiede quindi molte sessioni con l'app aperta.
 
 ## Dopo questa feature
 - R-187 Invio delle impronte ad AcoustID (chiave utente nelle impostazioni, mai nel repo).
 - R-188 Riconoscimento dal microfono (solo Android, da misurare prima).
 - Opus nell'impronta, quando symphonia lo supporterà (D-311).
+- Dalla review di architettura della 69e:
+  - `recog_pass_query.dart` (data) importa `enrich_engine.dart` (services), e la regola del ripasso è scritta tre volte (SQL, `needsRecognition`, gate del motore);
+  - `ytmMatches` confronta solo la durata: o va tolto, o va usato anche nel passo 1b;
+  - l'attributo «cover» di MusicBrainz si legge solo con il MBID dei tag; una ricerca dell'originale fallita fa perdere tutto il `rec` e rifà l'impronta al giro dopo;
+  - debiti `shortcut:`: niente avanzamento del ripasso, una sola pagina da 100 in `workOriginal`, video cancellato uguale a `InnerTubeChanged`, «Walking by X», «Roxy Music» segnato come dubbio, `kKnownChannels` tarato su Test.zip.

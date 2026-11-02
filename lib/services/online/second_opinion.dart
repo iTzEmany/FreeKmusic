@@ -12,6 +12,7 @@ import 'itunes_client.dart';
 import 'lrclib_client.dart';
 import 'musicbrainz_client.dart';
 import 'youtube_service.dart';
+import 'ytm_song_parser.dart' show ytmMatches;
 import 'ytm_catalog.dart';
 
 enum SecondOpinionKind {
@@ -106,8 +107,11 @@ class SecondOpinion {
     var bestScore = 0.0;
     for (final (r, score) in scored) {
       final d = r.duration;
-      if (r.albumId == null || d == null || d > _maxDuration || score < sureThreshold) continue;
-      if ((d.inMilliseconds - t.durationMs).abs() > _durationSlack.inMilliseconds) continue;
+      if (r.albumId == null || (d != null && d > _maxDuration)) continue;
+      if (!ytmMatches(d, t.durationMs,
+          slackMs: _durationSlack.inMilliseconds, titleOk: score >= sureThreshold)) {
+        continue;
+      }
       if (artist.isEmpty) {
         // Homonyms: with no artist to compare, the title must be the same and
         // no other artist may sing a song just as good a match.

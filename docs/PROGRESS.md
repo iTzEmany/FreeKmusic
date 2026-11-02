@@ -1184,10 +1184,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 69d.4 Controlli di fase e prova su Test.zip (≥ 110/147, 0 `sure` sbagliati)
 
 ## Fase 69e — Correzioni, cover e ripasso (`fase-69e-correzioni-e-cover.md`)
-- [ ] 69e.1 Correzioni e proposte
-- [ ] 69e.2 Cover
-- [ ] 69e.3 Ripasso e brani online
-- [ ] 69e.4 Chiusura della feature (Motorola, testi, review Opus)
+- [x] 69e.1 Correzioni e proposte
+- [x] 69e.2 Cover
+- [x] 69e.3 Ripasso e brani online
+- [x] 69e.4 Chiusura della feature (testi, review Opus, Test.zip, misura sul Motorola del 2/11 con la correzione D-333)
+- [x] 69e.5 Titolo ufficiale dal video id (OMV/UGC → nome della canzone, versione coerente; Test.zip: 0 correzioni sbagliate)
 
 ## Fase 70 — Ponte e protocollo (`fase-70-ponte-jam-distanza.md`)
 - [ ] 70.1 `JamProtocol`

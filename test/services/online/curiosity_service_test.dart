@@ -85,4 +85,48 @@ void main() {
     expect(failed.foundEmpty, isFalse);
     expect(failed.failed, isTrue);
   });
+
+  group('a cover (69e)', () {
+    const original = {'title': 'Believer', 'artist': 'Imagine Dragons'};
+    final bio = Curiosity('bio', Uri.parse('https://it.wikipedia.org/wiki/Y'), 'it');
+
+    Future<(List<String>, CuriosityLookup)> find(CuriosityPair own) async {
+      final f = _AskedFinder({'Song': own, 'Believer': CuriosityPair(song: _c('orig'))});
+      final l = await CuriosityService(
+        finder: f,
+        tracks: TrackRepository(db),
+        artistInfos: ArtistInfoRepository(db),
+      ).find(track, 'it', original: original);
+      return (f.asked, l);
+    }
+
+    test('no page of its own: the original is searched, the bio stays the cover artist\'s', () async {
+      final (asked, l) = await find(CuriosityPair(artist: bio));
+      expect(asked, ['Song|Band', 'Believer|Imagine Dragons']);
+      expect([l.pair.song?.text, l.pair.artist?.text, l.artist], ['orig', 'bio', 'Band']);
+    });
+
+    test('a page of its own is kept and the original is not asked', () async {
+      final (asked, l) = await find(CuriosityPair(song: _c('own'), artist: bio));
+      expect(asked, ['Song|Band']);
+      expect(l.pair.song?.text, 'own');
+    });
+  });
+}
+
+class _AskedFinder implements CuriosityFinder {
+  _AskedFinder(this.byTitle);
+
+  final Map<String, CuriosityPair> byTitle;
+  final asked = <String>[];
+
+  @override
+  Future<CuriosityPair> find(String title, String artist, String lang,
+      {String? isrc, int durationMs = 0, cancel}) async {
+    asked.add('$title|$artist');
+    return byTitle[title]!;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation i) => throw UnimplementedError();
 }

@@ -1,7 +1,10 @@
 import 'package:drift/drift.dart';
 
+import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
-import '../../data/repositories/credits_repository.dart' show mergeDetails;
+import '../../data/repositories/credits_repository.dart' show CreditsRepository, decodeRec, mergeDetails;
+import '../import/track_matcher.dart' show matchKey;
+import '../recognition/track_identity.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import 'cover_fetcher.dart';
@@ -12,6 +15,7 @@ import 'enrich_parts.dart';
 import 'enrich_writer.dart';
 import 'enrichment_proposal.dart';
 import 'lrclib_client.dart' show LyricsResult;
+import 'query_cleaner.dart' show isGenericArtist;
 
 /// One track's commit in flight: the row and `track_enrich` read once, and
 /// what the parts decided on the way.
@@ -31,6 +35,9 @@ class _Commit {
   String raw;
   bool rawDirty = false, credited = false;
   String? mbid;
+
+  /// The recognition to apply to the track once the transaction is closed.
+  Recognition? correct;
 
   bool get byUser => enrichRow?.lyricsByUser ?? false;
 
@@ -53,6 +60,7 @@ class EnrichCommitter {
     this._writer, {
     this.credits,
     this.curiosities,
+    this.onSure,
   });
 
   final AppDatabase db;
@@ -61,15 +69,36 @@ class EnrichCommitter {
   final CreditsEnricher? credits;
   final CuriosityService? curiosities;
 
-  /// Writes one gathered track; the caller holds the transaction.
-  Future<void> commitOne(EnrichGather g) async {
+  /// Applies a sure recognition to the track (`TrackCorrections.apply`, not by the user).
+  final Future<void> Function(Track, Recognition)? onSure;
+
+  /// Applies the sure corrections [commitOne] returned, once the transaction is closed.
+  Future<void> runCorrections(List<(Track, Recognition)> todo) async {
+    for (final (t, rec) in todo) {
+      try {
+        await onSure!(t, rec);
+      } on Object catch (e, st) {
+        AppLog.w('correction of track ${t.id} not applied', e, st);
+        // Not lost: the user can still accept it.
+        try {
+          await CreditsRepository(db).setRecDecision(t.id, 'open', from: rec);
+        } on Object catch (e2, st2) {
+          AppLog.w('proposal of track ${t.id} not kept', e2, st2);
+        }
+      }
+    }
+  }
+
+  /// Writes one gathered track; the caller holds the transaction. Returns the
+  /// correction to apply when the transaction is closed, if the recognition is sure.
+  Future<(Track, Recognition)?> commitOne(EnrichGather g) async {
     final trackId = g.trackId;
     // The row may have changed (or be gone) while the sources were asked.
     final f = await tracks.getById(trackId);
     if (f == null) {
       g.out.updateAll((_, _) => PartOutcome.skipped); // nothing was saved
       g.rec = null; // and no recognition counts
-      return;
+      return null;
     }
     final enrichRow = await (db.select(
       db.trackEnrich,
@@ -86,6 +115,7 @@ class EnrichCommitter {
     if (status != null && status.code != f.enrichStatus) {
       await _writer.writeStatus(trackId, status);
     }
+    return c.correct == null ? null : (f, c.correct!);
   }
 
   void _commitLyrics(_Commit c) {
@@ -176,14 +206,49 @@ class EnrichCommitter {
   }
 
   /// The recognition joins the shared `details` JSON (written with the marks).
-  /// Nothing to write when it was saved already or got no answer. In 69d it
-  /// never proposes or corrects: the row's title and artist stay.
+  /// Nothing to write when it was saved already or got no answer. It is merged
+  /// with the stored one: a proposal the user discarded (or accepted, or applied) keeps
+  /// its state while the identity is the same, `was` is kept, and a hand-edited row (read fresh
+  /// here) never gets an open proposal. The row's title and artist stay, except for an automatic
+  /// correction (R-169). On a track enriched with `found` only an empty or generic artist is filled
+  /// (same title, the track's title is kept); any other difference is a proposal, even if sure (D-333).
+  /// `untried` and `nothing` tracks follow R-169.
   void _commitRec(_Commit c) {
-    final rec = c.g.rec;
+    var rec = c.g.rec;
     if (rec == null) return;
+    final old = decodeRec(c.raw, c.g.trackId);
+    var prop = rec.prop;
+    final same = old != null && _sameIdentity(old.identity, rec.identity);
+    // The same song keeps what was decided about it.
+    if (same && const {'discarded', 'accepted', 'auto'}.contains(old.prop)) prop = old.prop;
+    final id = rec.identity;
+    final differs = id != null &&
+        (matchKey(id.title) != matchKey(c.f.title) ||
+            (id.artist.isNotEmpty && matchKey(id.artist) != matchKey(c.f.artist ?? '')));
+    final decided = const {'discarded', 'accepted', 'auto'}.contains(prop);
+    final fixes = differs && !c.f.userEdited && !decided;
+    final fillsArtist = id != null &&
+        matchKey(id.title) == matchKey(c.f.title) &&
+        id.artist.isNotEmpty &&
+        isGenericArtist(c.f.artist ?? '');
+    final found = c.f.enrichStatus == EnrichStatus.found.code;
+    final auto = rec.sure && (!found || fillsArtist);
+    if (fixes && !auto) prop = 'open';
+    if (prop == 'open' && c.f.userEdited) prop = null;
+    final original = rec.original ?? (same ? old.original : null);
+    if (prop != rec.prop || (rec.was == null && old?.was != null) || original != rec.original) {
+      rec = rec.copyWith(prop: prop, was: rec.was ?? old?.was, original: original);
+    }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
-    if ((c.enrichRow?.mbid ?? '').isEmpty) c.mbid = rec.identity?.mbid;
+    if (fixes && auto && onSure != null) {
+      // Same title by matchKey: the correction fills the artist and keeps the track's title.
+      c.correct = found
+          ? rec.copyWith(
+              identity: TrackIdentity(title: c.f.title, artist: id.artist, ms: id.ms, isrc: id.isrc, mbid: id.mbid, vid: id.vid))
+          : rec;
+    }
+    if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) c.mbid = rec.identity?.mbid;
   }
 
   Future<void> _commitCurio(_Commit c) async {
@@ -217,4 +282,11 @@ class EnrichCommitter {
     );
     await db.into(db.trackEnrich).insert(row, onConflict: DoUpdate((_) => row));
   }
+}
+
+/// The same song: the same MusicBrainz id, else the same title and artist.
+bool _sameIdentity(TrackIdentity? a, TrackIdentity? b) {
+  if (a == null || b == null) return false;
+  if (a.mbid != null && a.mbid == b.mbid) return true;
+  return matchKey(a.title) == matchKey(b.title) && matchKey(a.artist) == matchKey(b.artist);
 }

@@ -293,6 +293,8 @@ impl SseDecode for crate::api::api::Metadata {
         let mut var_genre = <Option<String>>::sse_decode(deserializer);
         let mut var_picture = <Option<crate::api::api::Picture>>::sse_decode(deserializer);
         let mut var_fileSize = <Option<u64>>::sse_decode(deserializer);
+        let mut var_isrc = <Option<String>>::sse_decode(deserializer);
+        let mut var_mbid = <Option<String>>::sse_decode(deserializer);
         return crate::api::api::Metadata {
             title: var_title,
             duration_ms: var_durationMs,
@@ -307,6 +309,8 @@ impl SseDecode for crate::api::api::Metadata {
             genre: var_genre,
             picture: var_picture,
             file_size: var_fileSize,
+            isrc: var_isrc,
+            mbid: var_mbid,
         };
     }
 }
@@ -511,6 +515,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::api::Metadata {
             self.genre.into_into_dart().into_dart(),
             self.picture.into_into_dart().into_dart(),
             self.file_size.into_into_dart().into_dart(),
+            self.isrc.into_into_dart().into_dart(),
+            self.mbid.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -616,6 +622,8 @@ impl SseEncode for crate::api::api::Metadata {
         <Option<String>>::sse_encode(self.genre, serializer);
         <Option<crate::api::api::Picture>>::sse_encode(self.picture, serializer);
         <Option<u64>>::sse_encode(self.file_size, serializer);
+        <Option<String>>::sse_encode(self.isrc, serializer);
+        <Option<String>>::sse_encode(self.mbid, serializer);
     }
 }
 

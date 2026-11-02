@@ -1,0 +1,5 @@
+{
+ "id": "c0c0c0c0-0548-4e73-bfc3-19a26108f302", "title": "Believer (cover)", "length": 200000,
+ "artist-credit": [{"name": "Romy Wave", "joinphrase": ""}],
+ "relations": [{"type": "performance", "attributes": ["cover"], "work": {"id": "w-believer", "title": "Believer"}}]
+}

@@ -29,7 +29,9 @@ import '../services/online/request_budget.dart' show apiIdentified;
 import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
+import '../services/library/track_corrections.dart';
 import '../services/library/track_file_sync.dart';
+import '../services/recognition/track_identity.dart' show Recognition;
 import '../services/recognition/track_recognizer.dart';
 import '../services/tags/fingerprinter.dart';
 import '../services/tags/tag_writer.dart';
@@ -40,6 +42,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'player_providers.dart';
+import 'tag_backup_providers.dart' show tagWritableProvider;
 import 'youtube_providers.dart' show downloadIndexProvider, innerTubeClientProvider, resolveDownloadFolder;
 
 final webClientProvider = Provider<WebClient>((ref) => DioWebClient());
@@ -78,6 +81,14 @@ final trackRecognizerProvider = Provider(
         await ref.read(importRepositoryProvider).videoIdOfTrack(t.id),
   ),
 );
+/// The recognition of an online item (`yt:`, stream) by video id (R-186): step 1b
+/// and the cover, nothing written. Kept in memory for the session.
+final onlineRecognitionProvider = FutureProvider.autoDispose.family<Recognition?, String>((ref, videoId) async {
+  final link = ref.keepAlive();
+  final rec = await ref.watch(trackRecognizerProvider).recognizeOnline(videoId);
+  if (rec == null) link.close(); // «nothing» and a failed source are not kept: the next look asks again
+  return rec;
+});
 final deezerGwClientProvider = Provider(
   // shortcut: a one-off Registro line needs a LogEntry kind (phase 53); AppLog until then.
   (ref) => DeezerGwClient(onPaused: () => AppLog.w('deezer_gw: paused for 24 hours after 3 errors')),
@@ -198,6 +209,17 @@ final enrichmentServiceProvider = Provider<EnrichmentService>((ref) {
   );
 });
 
+/// Puts a recognised title and artist in a track (automatically or accepted by the user).
+final trackCorrectionsProvider = Provider<TrackCorrections>((ref) {
+  return TrackCorrections(
+    ref.watch(databaseProvider),
+    ref.watch(trackEditorProvider),
+    ref.watch(creditsRepositoryProvider),
+    fileBlock: (path) => ref.read(tagWritableProvider(path).future),
+    playingPath: () => ref.read(audioHandlerProvider).currentTrack?.path,
+  );
+});
+
 final enrichEngineProvider = Provider<EnrichEngine>((ref) {
   return EnrichEngine(
     db: ref.watch(databaseProvider),
@@ -210,6 +232,7 @@ final enrichEngineProvider = Provider<EnrichEngine>((ref) {
     language: () => ref.read(settingsProvider).language,
     useCredits: () => ref.read(settingsProvider).creditsDetails,
     recognizer: ref.watch(trackRecognizerProvider),
+    onSure: (t, rec) => ref.read(trackCorrectionsProvider).apply(t, rec, byUser: false).then((_) {}),
     limiter: ref.watch(enrichLimiterProvider),
   );
 });
@@ -272,7 +295,8 @@ Set<EnrichPart> manualParts(AppSettings s) => {
 };
 
 /// Seconds per track for the whole enrichment, identified vs anonymous.
-const kEnrichSecondsIdentified = 7;
+// 12 s: measured on the Motorola with recognition (phase 69e.4, 10–12 s while working).
+const kEnrichSecondsIdentified = 12;
 // 40 s: measured on the phone (phase 69b.4), Wikimedia anonymous tier.
 const kEnrichSecondsAnonymous = 40;
 

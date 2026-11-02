@@ -5827,4 +5827,68 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get recogSrcText => 'texto';
+
+  @override
+  String recogIdent(String title, String artist) {
+    return '$title – $artist';
+  }
+
+  @override
+  String recogProposal(String identity) {
+    return 'Propuesta: $identity';
+  }
+
+  @override
+  String get recogAccept => 'Aceptar';
+
+  @override
+  String get recogDiscard => 'Descartar';
+
+  @override
+  String recogAcceptSem(String identity) {
+    return 'Aceptar la propuesta $identity';
+  }
+
+  @override
+  String recogDiscardSem(String identity) {
+    return 'Descartar la propuesta $identity';
+  }
+
+  @override
+  String get recogCover => 'Versión';
+
+  @override
+  String recogCoverOf(String identity) {
+    return 'Versión de $identity';
+  }
+
+  @override
+  String recogToConfirm(int count) {
+    return 'Por confirmar ($count)';
+  }
+
+  @override
+  String get recogAcceptAll => 'Aceptar todas';
+
+  @override
+  String get recogNoProposals => 'No hay propuestas por confirmar';
+
+  @override
+  String recogFromTo(String from, String to) {
+    return 'De $from a $to';
+  }
+
+  @override
+  String logCorrection(String from, String to) {
+    return 'Corregido de $from a $to';
+  }
+
+  @override
+  String get logRevert => 'Restaurar';
+
+  @override
+  String get recogActionFailed => 'La acción falló';
+
+  @override
+  String get logRevertFailed => 'No se pudo restaurar esta corrección';
 }

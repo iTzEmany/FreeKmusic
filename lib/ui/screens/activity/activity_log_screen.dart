@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
+import '../../../data/db/app_database.dart' show ActivityLogRow;
 import '../../../providers/activity_providers.dart';
+import '../../../providers/online_providers.dart' show trackCorrectionsProvider;
+import '../../../providers/recognition_providers.dart';
 import '../../../services/import/playlist_import_service.dart';
 import '../../../services/recognition/track_identity.dart' show RecogSource;
 import '../../theme/tokens.dart';
@@ -13,7 +16,9 @@ import '../../widgets/empty_state.dart';
 import '../library/second_opinion_log_screen.dart';
 import '../../shell/shell_nav.dart';
 import 'activity_sheet.dart';
+import '../now_playing/proposal_card.dart' show ActionButton, identLabel;
 import 'enrich_round_screen.dart';
+import 'proposals_screen.dart';
 import '../../widgets/cc_app_bar.dart';
 
 /// «Recognized: AcoustID 3, text 5» from the `sources` of a round's `detail`.
@@ -37,8 +42,19 @@ String? recogSourcesLine(AppLocalizations l, Map<String, Object?>? detail) {
 
 /// What ended in the background (downloads, transfers, imports, scans and
 /// other jobs), newest first, with the time and how it went.
-class ActivityLogScreen extends ConsumerWidget {
+class ActivityLogScreen extends ConsumerStatefulWidget {
   const ActivityLogScreen({super.key});
+
+  @override
+  ConsumerState<ActivityLogScreen> createState() => _ActivityLogScreenState();
+}
+
+class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(ref.read(activityLogProvider.notifier).reload);
+  }
 
   String _outcome(AppLocalizations l, LogEntry e) => switch (e.event) {
     null =>
@@ -67,11 +83,28 @@ class ActivityLogScreen extends ConsumerWidget {
     };
   }
 
+  Widget _correctionTile(AppLocalizations l, LogEntry e, ActivityLogRow fix, DateFormat time) {
+    String ident(Object? m) => m is Map ? identLabel(l, '${m['title'] ?? ''}', m['artist'] as String?) : '';
+    final from = ident(e.detail?['old']);
+    return ListTile(
+      leading: Icon(Icons.edit_note_rounded, color: context.cc.accentSoft),
+      title: Text(l.logCorrection(from, ident(e.detail?['new'])), maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(time.format(e.at)),
+      trailing: ActionButton(
+        label: l.logRevert,
+        semantics: '${l.logRevert}: $from',
+        failed: l.logRevertFailed,
+        action: () => ref.read(trackCorrectionsProvider).revert(fix),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
+    final proposals = ref.watch(proposalsProvider).value?.length ?? 0;
     final log = ref.watch(activityLogProvider);
     final entries = log.entries;
     final time = DateFormat.Hm(Localizations.localeOf(context).toLanguageTag());
@@ -90,7 +123,18 @@ class ActivityLogScreen extends ConsumerWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
-          child: entries.isEmpty
+          child: Column(
+            children: [
+              if (proposals > 0)
+                ListTile(
+                  key: const ValueKey('to-confirm'),
+                  leading: Icon(Icons.rule_rounded, color: cc.accentSoft),
+                  title: Text(l.recogToConfirm(proposals)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => ShellNav.open<void>(context, const ProposalsScreen()),
+                ),
+              Expanded(
+                child: entries.isEmpty
               ? EmptyState(
                   icon: Icons.receipt_long_rounded,
                   message: l.activityLogEmpty,
@@ -107,6 +151,8 @@ class ActivityLogScreen extends ConsumerWidget {
                     final e = entries[i];
                     final item = e.item;
                     final src = recogSourcesLine(l, e.detail);
+                    final fix = e.correction;
+                    if (fix != null) return _correctionTile(l, e, fix, time);
                     return ListTile(
                       onTap: switch (item?.kind) {
                         ActivityKind.secondOpinion => () => ShellNav.open<void>(
@@ -155,6 +201,9 @@ class ActivityLogScreen extends ConsumerWidget {
                     );
                   },
                 ),
+              ),
+            ],
+          ),
         ),
       ),
     );

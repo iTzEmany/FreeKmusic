@@ -22,6 +22,14 @@ Future<mg.TrackIds> _loftyIds(String path) async {
   return mg.readIds(path: path);
 }
 
+/// The one reader of the ISRC and MusicBrainz id in a file's tags (ISRC
+/// normalised, blanks null). [read] is injectable for tests.
+Future<({String? isrc, String? mbid})> readTrackIds(String path, {LoftyIds? read}) async {
+  final ids = await (read ?? _loftyIds)(path);
+  final mbid = ids.mbid?.trim();
+  return (isrc: normalizeIsrc(ids.isrc), mbid: mbid == null || mbid.isEmpty ? null : mbid);
+}
+
 class AudioMetadataTagReader implements TagReader {
   const AudioMetadataTagReader({this.loftyRead, this.loftyIds});
 
@@ -42,11 +50,8 @@ class AudioMetadataTagReader implements TagReader {
     // lofty cannot read these; skip instead of logging a warning per file.
     if (path.toLowerCase().endsWith('.webm')) return info;
     try {
-      final ids = await (loftyIds ?? _loftyIds)(path);
-      info = info.withIds(
-        isrc: info.isrc ?? normalizeIsrc(ids.isrc),
-        mbid: _clean(ids.mbid),
-      );
+      final ids = await readTrackIds(path, read: loftyIds);
+      info = info.withIds(isrc: info.isrc ?? ids.isrc, mbid: ids.mbid);
     } on Object catch (e, st) {
       AppLog.w('ids read failed: $path', e, st);
     }

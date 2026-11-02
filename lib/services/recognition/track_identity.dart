@@ -3,7 +3,9 @@ import 'package:drift/drift.dart' show Value;
 import '../../data/db/app_database.dart' show Track;
 
 /// Bump to redo the recognition pass with new rules (R-176).
-const kRecogVersion = 1;
+const kRecogVersion = 2;
+
+const _keep = Object();
 
 /// Where an identity came from; the name is the JSON value of `rec.src`.
 enum RecogSource { tags, ytid, text, acoustid, ytm }
@@ -46,6 +48,7 @@ class Recognition {
     this.prop,
     this.was,
     this.original,
+    this.cover = false,
   });
 
   final int v, at;
@@ -62,6 +65,35 @@ class Recognition {
 
   /// The original song of a cover (69e).
   final Map<String, String>? original;
+
+  /// False once the user discarded (or reverted) the proposal: it must not drive searches.
+  bool get usable => prop != 'discarded';
+
+  /// The track is a cover, an arrangement or a remix; [original] may still be unknown.
+  final bool cover;
+
+  /// A copy with other [sure], [identity], [prop], [was], [original] or [cover]; the rest is kept.
+  /// A nullable field is replaced even by null when it is passed.
+  Recognition copyWith({
+    bool? sure,
+    TrackIdentity? identity,
+    Object? prop = _keep,
+    Object? was = _keep,
+    Object? original = _keep,
+    bool? cover,
+  }) =>
+      Recognition(
+        v: v,
+        at: at,
+        src: src,
+        score: score,
+        sure: sure ?? this.sure,
+        identity: identity ?? this.identity,
+        prop: identical(prop, _keep) ? this.prop : prop as String?,
+        was: identical(was, _keep) ? this.was : was as Map<String, String>?,
+        original: identical(original, _keep) ? this.original : original as Map<String, String>?,
+        cover: cover ?? this.cover,
+      );
 
   Map<String, Object?> toJson() {
     final i = identity;
@@ -82,6 +114,7 @@ class Recognition {
       'prop': ?prop,
       'was': ?was,
       'original': ?original,
+      if (cover) 'cover': true,
     };
   }
 
@@ -89,7 +122,7 @@ class Recognition {
   /// is left out, and anything that is not a map is null. Never throws.
   static Recognition? fromJson(Object? json) {
     if (json is! Map) return null;
-    String? str(String k) => json[k] is String && (json[k] as String).isNotEmpty ? json[k] as String : null;
+    String? str(String k) => json[k] is String && (json[k] as String).trim().isNotEmpty ? (json[k] as String).trim() : null;
     int? integer(String k) {
       final x = json[k];
       return x is num && x.isFinite ? x.toInt() : null;
@@ -126,6 +159,7 @@ class Recognition {
       prop: _props.contains(json['prop']) ? json['prop'] as String : null,
       was: strings('was'),
       original: strings('original'),
+      cover: json['cover'] == true,
     );
   }
 }

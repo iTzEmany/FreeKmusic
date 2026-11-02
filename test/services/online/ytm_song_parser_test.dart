@@ -39,6 +39,29 @@ void main() {
     expect(clockMs('1:75'), isNull);
     expect(clockMs('-1:20'), isNull);
     expect(clockMs(''), isNull);
+    expect(clockMs('3:5'), isNull);
+    expect(clockMs('3:005'), isNull);
+    expect(clockMs('3: 45'), isNull);
+    expect(clockMs('+3:45'), isNull);
+    expect(clockMs('1:02:3'), isNull);
+    expect(clockMs('1:2:03:04'), isNull);
+    expect(clockMs('3:+45'), isNull);
+    expect(clockMs(' 3:45'), 225000);
+    expect(clockMs('3:45\u00A0'), 225000);
+    expect(clockMs('99999999999999999999:00'), isNull);
+    expect(clockMs('1234:00'), isNull);
+  });
+
+  test('ytmMatches: length within the slack and the title check', () {
+    const s = Duration(seconds: 1);
+    bool m(Duration? d, {int slack = 10000, bool ok = true}) =>
+        ytmMatches(d, 200000, slackMs: slack, titleOk: ok);
+    expect(m(const Duration(seconds: 209)), isTrue);
+    expect(m(const Duration(seconds: 211)), isFalse);
+    expect(m(const Duration(seconds: 203), slack: 3000), isTrue);
+    expect(m(const Duration(seconds: 204), slack: 3000), isFalse);
+    expect(m(null), isFalse);
+    expect(m(s * 200, ok: false), isFalse);
   });
 
   test('an answer without the song is InnerTubeChanged', () {

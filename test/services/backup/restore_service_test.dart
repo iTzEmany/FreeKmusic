@@ -124,6 +124,14 @@ void main() {
       expect(staging.existsSync(), isFalse);
     });
 
+    test('the recognition pass bookmarks are cleared: the restored rows may be older', () async {
+      await prefs.setInt('recogPassDone', 2);
+      await prefs.setString('recogPassAfter', '2:50');
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect([prefs.containsKey('recogPassDone'), prefs.containsKey('recogPassAfter')], [false, false]);
+    });
+
     test('a v14 backup is accepted and upgraded to the current schema', () async {
       final old = AppDatabase(NativeDatabase.memory());
       await old.into(old.tracks).insert(TracksCompanion.insert(

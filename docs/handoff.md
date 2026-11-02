@@ -1,4 +1,4 @@
-# Handoff — 2026-11-02 (fase 69d chiusa: la cascata del riconoscimento)
+# Handoff — 2026-11-02 (fase 69e chiusa: correzioni, cover e ripasso)
 
 ## Riconoscimento del brano (kickoff 2026-11-01, fasi 69c–69e)
 Feature nuova, **prima della fase 70**: prima di arricchire, l'app riconosce il brano (ISRC/MBID → video id → testo → AcoustID → YouTube Music) e arricchisce dall'identità; le cover portano le curiosità dell'originale. Documento: `docs/feature-riconoscimento.md` (R-160…R-188, rischi K-RB-01…09); decisioni D-299…D-323; fasi `docs/fase-69c-*.md`, `fase-69d-*.md`, `fase-69e-*.md`.
@@ -17,13 +17,20 @@ Esiti in `docs/fase-69c-fondamenta-riconoscimento.md`.
 
 Esiti e numeri in `docs/fase-69d-cascata-riconoscimento.md`.
 
+**Fase 69e chiusa** (PR della fase 69e):
+- `TrackCorrections`: le correzioni automatiche e le proposte da confermare, con «Ripristina» nel Registro;
+- cover e originale (`cover_detector.dart`, `workOriginal`);
+- ripasso `RecogPassIds` dei brani già arricchiti; riconoscimento dei brani online.
+- Test.zip: 126/147 riconosciuti, 77 correzioni automatiche e 0 sbagliate.
+
+Esiti in `docs/fase-69e-correzioni-e-cover.md`; i rimandati 9–12 sono in «Dopo questa feature».
+
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 69e
+/obiettivo fase 70
 ```
-Si comincia dal task **69e.0** (debiti della 69d, il primo è `needsRecognition` per il ripasso dei brani già arricchiti). Poi si torna alla 70. Fuori dal riconoscimento, ma da mettere nel piano:
-- un solo 503 di LRCLIB toglie i testi a tutto il giro;
-- il Registro scrive «stopped 146/147» per un giro finito.
+Il passo 69e.5 (titolo ufficiale dal video id) è chiuso: PR #84, Test.zip con 0 correzioni sbagliate.
+Si comincia dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`. La misura sul Motorola è fatta (2/11, PR #82): ha fatto nascere D-333, cioè il ripasso dei brani già arricchiti propone e non corregge da solo.
 
 Da sapere:
 - **69c.1 blocca tutto:** se l'impronta di rusty-chromaprint non coincide con fpcalc, si applica D-316 (copia in `third_party/` e un passo di correzione), poi ci si ferma e si chiede.

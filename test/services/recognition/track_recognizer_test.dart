@@ -33,7 +33,7 @@ void main() {
     test('an ISRC with dubious tags is not filtered and only a proposal, still without text or AcoustID', () async {
       r.mbByIsrc = [const MbRecording(id: 'm1', title: 'Believer', artistId: 'a', artistName: 'Imagine Dragons', length: 204000)];
       final out = await r.recognize(track('Believer (Romy Wave Cover)', '7clouds Rock', isrc: 'USUM71700626'));
-      expect(r.calls, ['mb.isrc']);
+      expect(r.calls, ['mb.isrc', 'mb.search']); // the title says cover: the original is looked for
       expect(r.isrcArgs, ['null|null']);
       expect([out.rec!.src, out.rec!.sure], [RecogSource.tags, false]);
     });
@@ -76,11 +76,68 @@ void main() {
       expect([out.rec!.src, out.rec!.sure], [RecogSource.ytid, false]);
     });
 
+    group('official title from the video id (69e.5)', () {
+      const omv = YtmSong(
+          title: 'Get Lucky (Official Audio) (feat. Pharrell Williams & Nile Rodgers)',
+          artists: ['Daft Punk'], videoType: 'MUSIC_VIDEO_TYPE_OMV', durationMs: 248000);
+      YtResult atv(String title) => YtResult(
+          id: 'ATVATVATV01', title: title, channel: 'Daft Punk', artists: const ['Daft Punk'],
+          duration: const Duration(milliseconds: 248500));
+      final file = track('Get Lucky', 'Daft Punk', path: '/m/Get Lucky [5NV6Rdv1a3I].mp3', durationMs: 248000);
+
+      test('an OMV takes the title of the song found, and stays sure', () async {
+        r.song = omv;
+        r.ytm = [atv('Get Lucky')];
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky', true]);
+      });
+
+      test('an OMV without a song found gets the cleaned title, as a proposal', () async {
+        r.song = omv;
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky (feat. Pharrell Williams & Nile Rodgers)', false]);
+      });
+
+      test('a lyrics upload takes the song title but is never sure', () async {
+        r.song = const YtmSong(
+            title: 'Daft Punk - Get Lucky (Lyrics)', artists: ['Daft Punk'],
+            videoType: 'MUSIC_VIDEO_TYPE_UGC', durationMs: 248000);
+        r.ytm = [atv('Get Lucky')];
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky', false]);
+      });
+
+      test('a studio title naming a version the file does not is a proposal', () async {
+        r.song = const YtmSong(
+            title: 'Seven Nation Army (Live)', artists: ['The White Stripes'],
+            videoType: 'MUSIC_VIDEO_TYPE_ATV', durationMs: 248000);
+        final out = await r.recognize(track('Seven Nation Army', null,
+            path: '/m/Seven Nation Army [5NV6Rdv1a3I].mp3', durationMs: 248000));
+        expect([out.rec!.src, out.rec!.sure], [RecogSource.ytid, false]);
+      });
+
+      test('a song with another title of the same artist is not taken', () async {
+        r.song = const YtmSong(
+            title: 'Song A (Official Video)', artists: ['Daft Punk'],
+            videoType: 'MUSIC_VIDEO_TYPE_OMV', durationMs: 248000);
+        r.ytm = [atv('Song B')];
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Song A', false]);
+      });
+
+      test('a search that throws loses the source, nothing is saved', () async {
+        r.song = omv;
+        r.ytmError = StateError('boom');
+        final out = await r.recognize(file);
+        expect([out.rec, out.lost], [null, true]);
+      });
+    });
+
     test('a video id known from outside wins over the file name', () async {
       r.videoIdFor = (_) async => 'AAAAAAAAAAA';
       r.song = const YtmSong(title: 'S', artists: ['A'], videoType: 'MUSIC_VIDEO_TYPE_OMV');
       await r.recognize(track('S', 'A', path: '/m/S [sZrTJesvJeo].mp3'));
-      expect(r.calls, ['songOf:AAAAAAAAAAA']);
+      expect(r.calls, ['songOf:AAAAAAAAAAA', 'ytm']);
     });
 
     test('reliable tags found by the text search: no AcoustID', () async {
@@ -88,6 +145,12 @@ void main() {
       final out = await r.recognize(track('Believer', 'Imagine Dragons'));
       expect(r.calls, ['text']);
       expect([out.rec!.src, out.rec!.sure], [RecogSource.text, false]);
+    });
+
+    test('reliable tags and no text search due: no fingerprint, no AcoustID, no YouTube Music', () async {
+      final out = await r.recognizer.recognize(track('Believer', 'Imagine Dragons'), textProbe: null);
+      expect(r.calls, isEmpty);
+      expect([out.rec!.src, out.lost], [null, false]);
     });
 
     test('dubious tags go to AcoustID and skip the text search', () async {
@@ -409,6 +472,102 @@ void main() {
       r.mbError = DioException.requestCancelled(requestOptions: RequestOptions(path: '/'), reason: 'x');
       await expectLater(r.recognize(track('Song', 'Artist', isrc: 'USUM71700626'), cancel: cancel),
           throwsA(isA<DioException>()));
+    });
+  });
+
+  group('R-172 / R-173, covers', () {
+    const mbid = '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4';
+    const orig = MbRecording(id: 'o1', title: 'Believer', artistId: 'a', artistName: 'Imagine Dragons');
+
+    test('a cover work in MusicBrainz: the original comes from the work, the identity stays the cover', () async {
+      r.ids = (isrc: null, mbid: mbid);
+      r.mbById = const MbRecordingDetail(
+          id: 'c1', title: 'Believer (cover)', artist: 'Romy Wave', length: 200000, works: [MbWorkLink('w1', cover: true)]);
+      r.mbOriginal = orig;
+      final rec = (await r.recognize(track('Believer', 'Romy Wave'))).rec!;
+      expect(r.calls, ['mb.id', 'mb.work:w1']);
+      expect([rec.cover, rec.sure, rec.identity!.title], [true, true, 'Believer (cover)']);
+      expect(rec.original, {'title': 'Believer', 'artist': 'Imagine Dragons', 'mbid': 'o1'});
+    });
+
+    test('a cover only the title hints at: original from the search of the cleaned title, never sure if the identity is the original', () async {
+      r.mbByIsrc = [const MbRecording(id: 'x1', title: 'Believer', artistId: 'a', artistName: 'Imagine Dragons', length: 200000)];
+      r.mbSearch = [orig];
+      final rec = (await r.recognize(track('Believer (Romy Wave Cover)', 'Romy Wave', isrc: 'USUM71700626'))).rec!;
+      expect(r.searches, ['Believer|Imagine Dragons']);
+      expect([rec.cover, rec.sure, rec.identity!.mbid], [true, false, 'x1']);
+      expect(rec.original!['mbid'], 'o1');
+    });
+
+    test('«by X» is the performer: not a cover when X is the identity artist (dubious tags too)', () async {
+      for (final (title, tagArtist, who) in [
+        ('Inscryption - OST Preview - The Trapper & The Trader by Jonah Senzel', '7clouds Rock', 'Jonah Senzel'),
+        ('_TEST ME_ by CHANMINA (Lyrics)', 'Some Uploader', 'CHANMINA'),
+      ]) {
+        r = Rig();
+        r.mbByIsrc = [MbRecording(id: 'x1', title: 'Song', artistId: 'a', artistName: who, length: 200000)];
+        final rec = (await r.recognize(track(title, tagArtist, isrc: 'USUM71700626'))).rec!;
+        expect(rec.cover, isFalse, reason: title);
+      }
+    });
+
+    test('no original found: cover true and no original; the JSON keeps both', () async {
+      r.text = meta('Believer', 'Imagine Dragons');
+      final rec = (await r.recognize(track('Believer (Romy Wave Cover)', 'Romy Wave'))).rec!;
+      expect(r.searches, ['Believer|Imagine Dragons']);
+      expect([rec.cover, rec.original], [true, null]);
+      final back = Recognition.fromJson(rec.toJson())!;
+      expect([back.cover, back.original], [true, null]);
+    });
+
+    test('the original is saved in the JSON and read back; a normal song has no cover key', () async {
+      r.text = meta('Believer', 'Imagine Dragons');
+      r.mbSearch = [orig];
+      final rec = (await r.recognize(track('Believer (Romy Wave Cover)', 'Romy Wave'))).rec!;
+      final json = rec.toJson();
+      expect(json['original'], {'title': 'Believer', 'artist': 'Imagine Dragons', 'mbid': 'o1'});
+      expect(Recognition.fromJson(json)!.original, rec.original);
+      final plain = (await r.recognize(track('Believer', 'Imagine Dragons'))).rec!;
+      expect(plain.toJson().containsKey('cover'), isFalse);
+    });
+
+    test('the cover artist\'s own recording is never the original', () async {
+      r.text = meta('Believer', 'Imagine Dragons');
+      r.mbSearch = [const MbRecording(id: 'c1', title: 'Believer', artistId: 'b', artistName: 'Romy Wave'), orig];
+      final rec = (await r.recognize(track('Believer (Piano Cover)', 'Romy Wave'))).rec!;
+      expect(rec.original!['mbid'], 'o1');
+    });
+
+    test('a remix by the song\'s own artist is no cover, and stays sure', () async {
+      r.ids = (isrc: null, mbid: mbid);
+      r.mbById = const MbRecordingDetail(id: 'k1', title: 'Believer (Kaskade Remix)', artist: 'Imagine Dragons', length: 200000);
+      final rec = (await r.recognize(track('Believer (Kaskade Remix)', 'Imagine Dragons'))).rec!;
+      expect([rec.cover, rec.sure, rec.original], [false, true, null]);
+      expect(r.calls, ['mb.id']);
+    });
+
+    test('a cover by the artist of its own recording stays a cover, the original is searched by title only', () async {
+      r.text = meta('Believer', 'Romy Wave');
+      r.mbSearch = [const MbRecording(id: 'c1', title: 'Believer', artistId: 'b', artistName: 'Romy Wave'), orig];
+      final rec = (await r.recognize(track('Believer (Romy Wave Cover)', 'Romy Wave'))).rec!;
+      expect(r.searches, ['Believer|']);
+      expect([rec.cover, rec.original!['mbid']], [true, 'o1']);
+    });
+
+    test('«Take Cover» is a title, not a cover: no original search', () async {
+      r.mbByIsrc = [const MbRecording(id: 't1', title: 'Take Cover', artistId: 'a', artistName: 'Daughter', length: 200000)];
+      final rec = (await r.recognize(track('Take Cover', 'Daughter', isrc: 'GBAYE1000769'))).rec!;
+      expect(rec.cover, isFalse);
+      expect(r.calls, ['mb.isrc']);
+    });
+
+    test('a failing cover lookup is a lost source: no rec is saved', () async {
+      r.ids = (isrc: null, mbid: mbid);
+      r.mbById = const MbRecordingDetail(
+          id: 'c1', title: 'Believer', artist: 'Romy Wave', length: 200000, works: [MbWorkLink('w1', cover: true)]);
+      r.workError = const MusicBrainzUnavailable('work');
+      final out = await r.recognize(track('Believer', 'Romy Wave'));
+      expect([out.rec, out.lost], [null, true]);
     });
   });
 }

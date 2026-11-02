@@ -6,6 +6,7 @@ import 'package:codecore/services/online/enrich_parts.dart' as parts_lib;
 import 'package:codecore/services/online/enrich_engine.dart';
 import 'package:codecore/services/online/enrichment_service.dart';
 import 'package:codecore/services/online/lrclib_client.dart';
+import 'package:codecore/services/online/lyrics_chain.dart';
 import 'package:codecore/services/online/http_client.dart' show RateLimiter;
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:drift/drift.dart' show TableUpdateQuery, Value;
@@ -26,6 +27,9 @@ class _Flaky implements EnrichEngine {
 
   @override
   RateLimiter get limiter => s.limiter;
+
+  @override
+  LyricsChain get chain => s.chain;
 
   @override
   Future<EnrichGather> gather(

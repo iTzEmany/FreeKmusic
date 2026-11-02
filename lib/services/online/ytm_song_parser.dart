@@ -55,12 +55,23 @@ YtmSong parseYtmSong(Map next) {
   );
 }
 
+final _clockField = RegExp(r'^\d{1,3}$'); // 3 digits: no overflow on junk
+final _clockTail = RegExp(r'^\d{2}$');
+
 /// «m:ss» or «h:mm:ss» in milliseconds, null when it is not a time.
 @visibleForTesting
 int? clockMs(String text) {
-  final parts = text.split(':').map(int.tryParse).toList();
-  if (parts.length > 3 || parts.contains(null)) return null;
-  // Every field after the first is seconds or minutes: 0..59.
-  if (parts.skip(1).any((p) => p! < 0 || p > 59) || parts.first! < 0) return null;
-  return parts.fold<int>(0, (a, p) => a * 60 + p!) * 1000;
+  final raw = text.trim().split(':'); // trim also drops a no-break space
+  if (raw.length > 3) return null;
+  // Digits only, and every field after the first exactly two (0..59).
+  if (!_clockField.hasMatch(raw.first) || raw.skip(1).any((f) => !_clockTail.hasMatch(f))) return null;
+  final parts = raw.map(int.parse).toList();
+  if (parts.skip(1).any((p) => p > 59)) return null;
+  return parts.fold<int>(0, (a, p) => a * 60 + p) * 1000;
 }
+
+/// The one rule for «this YouTube Music result can be this track»: it has a
+/// length within [slackMs] of [wantMs] and the caller's own title check passed.
+/// Recognition uses ±10 s (D-300); the second opinion is stricter (±3 s).
+bool ytmMatches(Duration? length, int wantMs, {required int slackMs, required bool titleOk}) =>
+    titleOk && length != null && (length.inMilliseconds - wantMs).abs() <= slackMs;

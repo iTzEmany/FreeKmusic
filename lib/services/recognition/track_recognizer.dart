@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart' show CancelToken, DioException, DioExceptionType;
-import 'package:metadata_god/metadata_god.dart' as mg;
 import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
@@ -7,16 +6,17 @@ import '../../data/db/app_database.dart' show Track;
 import '../import/track_matcher.dart' show hasPhrase, matchKey, otherVersions;
 import '../online/acoustid_client.dart';
 import '../online/innertube_client.dart';
-import '../online/ytm_song_parser.dart' show YtmSong;
+import '../online/ytm_song_parser.dart' show YtmSong, ytmMatches;
 import '../online/metadata_resolver.dart' show ResolvedMeta;
 import '../online/http_client.dart' show RateLimitedException;
 import '../online/musicbrainz_client.dart';
 import '../online/query_cleaner.dart';
 import '../stream/stream_key.dart' show keyOfStreamPath;
 import '../tags/fingerprinter.dart';
-import '../tags/metadata_god_init.dart';
+import '../tags/audio_metadata_tag_reader.dart' show readTrackIds;
 import '../tags/tag_reader.dart' show normalizeIsrc;
 import 'channel_detector.dart';
+import 'cover_detector.dart';
 import 'track_identity.dart';
 import 'video_id.dart';
 
@@ -30,18 +30,15 @@ const kDurationSlackMs = 10000;
 /// (more than this, to be «coherent» and sure).
 const kTitleOverlap = 0.5;
 
+/// Length tolerance when looking up the song of an official or uploaded video (as SecondOpinion).
+const kVideoSongSlackMs = 3000;
+
 /// The text search of the engine (`MetadataResolver.resolve`): with reliable
 /// tags it is step 2 (skipped when the engine passes none).
 typedef TextProbe = Future<ResolvedMeta?> Function(Track t, CleanQuery c, CancelToken? cancel);
 
 /// The ISRC and MusicBrainz id written in a file's tags.
 typedef FileIds = Future<({String? isrc, String? mbid})> Function(String path);
-
-Future<({String? isrc, String? mbid})> readFileIds(String path) async {
-  await ensureMetadataGod();
-  final ids = await mg.readIds(path: path);
-  return (isrc: ids.isrc, mbid: ids.mbid);
-}
 
 /// [rec] null with [lost] = a source failed and none found anything: ask again
 /// later. [rec] with no `src` = every source answered «nothing».
@@ -71,7 +68,7 @@ class TrackRecognizer {
     required this.fingerprinter,
     required this.useAcoustId,
     this.videoIdFor,
-    this.fileIds = readFileIds,
+    this.fileIds = readTrackIds,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -112,7 +109,8 @@ class TrackRecognizer {
     final hay = _Hay(t, c.title, artist, trustArtist: !dubious);
     Recognition? rec;
     ResolvedMeta? meta;
-    rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got));
+    final works = <MbWorkLink>[];
+    rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got, works));
     rec ??= await attempt('video id', () => _fromVideoId(t, cancel, got));
     if (rec == null && !dubious && textProbe != null) {
       meta = await attempt('text', () async {
@@ -122,7 +120,9 @@ class TrackRecognizer {
       });
       if (meta != null) rec = _text(meta);
     }
-    if (rec == null) {
+    // Reliable tags and no text search due: the text search already worked once, nothing to correct.
+    final nothingToCorrect = !dubious && textProbe == null;
+    if (rec == null && !nothingToCorrect) {
       if (keyOfStreamPath(t.path) != null || !Fingerprinter.supports(t.path)) {
         // No file, or Opus/WebM (R-184): a definite «no».
       } else if (!useAcoustId()) {
@@ -133,8 +133,14 @@ class TrackRecognizer {
         rec = await attempt('acoustid', () => _fromAcoustId(t, hay, cancel, got));
       }
     }
-    rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
-    if (rec != null) return RecogOutcome(rec: rec, asked: asked);
+    if (!nothingToCorrect) rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
+    if (rec != null) {
+      final found = rec;
+      // A failed cover lookup is a lost source: nothing is saved, the next run asks again.
+      rec = await attempt('cover', () => _coverOf(t.title, t.artist, found, works, artist, cancel, got, byCounts: !dubious));
+      if (rec == null) return RecogOutcome(lost: true, asked: asked, limited: limited);
+      return RecogOutcome(rec: rec, asked: asked);
+    }
     if (lost) return RecogOutcome(lost: true, asked: asked, limited: limited);
     return RecogOutcome(rec: Recognition(at: _now().millisecondsSinceEpoch), asked: asked);
   }
@@ -145,7 +151,8 @@ class TrackRecognizer {
   /// Step 1: the MusicBrainz id or the ISRC of the tags, checked against the length.
   /// With reliable tags ([query] set) the ISRC answer is filtered by title and
   /// artist and is sure; with dubious ones any recording of that ISRC is only a proposal.
-  Future<Recognition?> _fromIds(Track t, CleanQuery? query, CancelToken? cancel, void Function() got) async {
+  Future<Recognition?> _fromIds(
+      Track t, CleanQuery? query, CancelToken? cancel, void Function() got, List<MbWorkLink> works) async {
     // Untrusted tag text goes into a URL: only a real ISRC.
     String? validIsrc(String? raw) {
       final n = normalizeIsrc(raw);
@@ -169,6 +176,7 @@ class TrackRecognizer {
       final d = await musicBrainz.recordingById(mbid, cancel: cancel);
       got();
       if (d != null && close(d.length)) {
+        works.addAll(d.works);
         return _found(
             RecogSource.tags,
             TrackIdentity(
@@ -194,11 +202,80 @@ class TrackRecognizer {
     return null;
   }
 
+  /// R-172/R-173: marks [rec] as a cover (MusicBrainz says so, or the file title
+  /// does) and looks for the original. The identity stays the cover's own recording,
+  /// and a hinted cover that resolves to the original's artist is never sure.
+  Future<Recognition> _coverOf(String title, String? tagArtistRaw, Recognition rec, List<MbWorkLink> works, String artist,
+      CancelToken? cancel, void Function() got, {bool byCounts = true}) async {
+    final link = works.where((w) => w.cover).firstOrNull;
+    final hint = coverHint(title, tagArtistRaw, identityArtist: rec.identity?.artist, byCounts: byCounts);
+    if (link == null && !hint.cover) return rec;
+    final id = rec.identity!;
+    final tagArtist = matchKey(artist);
+    final sameArtist = tagArtist.isNotEmpty && matchKey(id.artist) == tagArtist;
+    // An artist's remix of their own song is not a cover (a «cover» by the same artist is).
+    if (link == null && hint.remixOnly && sameArtist) return rec;
+    MbRecording? orig;
+    if (link != null) {
+      orig = await musicBrainz.workOriginal(link.id, cancel: cancel);
+      got();
+    }
+    if (orig == null && hint.original.isNotEmpty) {
+      // The tag artist is the cover's: the original is searched by the identity's artist when that
+      // is another one, else by title only (also skipping the tag artist's own recordings) (MusicBrainz's best match stands in for the oldest).
+      final by = tagArtist.isNotEmpty && !sameArtist ? id.artist : '';
+      final found = await musicBrainz.recordings(hint.original, by, studioOnly: true, cancel: cancel);
+      got();
+      orig = found.where((r) => r.id != id.mbid && (tagArtist.isEmpty || matchKey(r.artistName) != tagArtist)).firstOrNull;
+    }
+    // Only a hinted cover whose identity is the original's own artist is no correction to apply.
+    final isOriginal = link == null && orig != null && matchKey(id.artist) == matchKey(orig.artistName);
+    return rec.copyWith(
+        cover: true,
+        sure: rec.sure && !isOriginal,
+        original: orig == null
+            ? null
+            : {'title': orig.title, 'artist': orig.artistName, 'mbid': orig.id});
+  }
+
+  /// An online item (`yt:`, stream) has no track row: only step 1b and the cover
+  /// step, by video id alone. Null when YouTube Music has no song for it or a
+  /// source failed (logged; the caller may ask again). Nothing is written.
+  Future<Recognition?> recognizeOnline(String videoId, {CancelToken? cancel}) async {
+    try {
+      String? videoTitle;
+      final rec = await _ytmSong(videoId, 0, cancel, () {}, onVideoTitle: (v) => videoTitle = v);
+      if (rec == null) return null;
+      final id = rec.identity!;
+      final c = cleanSearchQuery(id.title, id.artist);
+      // The video's own title tells a cover, not the official song title found for it.
+      return await _coverOf(videoTitle ?? id.title, id.artist, rec, const [],
+          artistIsChannel(c.artist) || isGenericArtist(c.artist) ? '' : c.artist, cancel, () {});
+    } catch (e, st) {
+      if (e is DioException && e.type == DioExceptionType.cancel) rethrow;
+      AppLog.w('recognition: online item $videoId failed', e, st);
+      return null;
+    }
+  }
+
   /// Step 1b: what YouTube Music says of the video this file came from. Sure
-  /// only for a studio or official video (D-312).
+  /// only for a studio video, or an official one whose studio song was found (69e.5,
+  /// narrows D-312), and not when the title names a version the file does not.
   Future<Recognition?> _fromVideoId(Track t, CancelToken? cancel, void Function() got) async {
     final id = await videoIdFor?.call(t) ?? videoIdOf(t.path);
     if (id == null) return null;
+    final rec = await _ytmSong(id, t.durationMs, cancel, got);
+    final hay = _Hay(t, t.title, t.artist ?? '');
+    return rec != null && rec.sure && hay._extraVersions(matchKey(rec.identity!.title)) > 0
+        ? rec.copyWith(sure: false)
+        : rec;
+  }
+
+  /// The song of video [id], as an identity; [durationMs] > 0 must match its length.
+  /// Studio audio (ATV) gives its own title; an official or uploaded video gives the
+  /// video's title, so the song is looked up among YouTube Music songs (69e.5).
+  Future<Recognition?> _ytmSong(String id, int durationMs, CancelToken? cancel, void Function() got,
+      {void Function(String)? onVideoTitle}) async {
     final YtmSong s;
     try {
       s = await innerTube.songOf(id, cancel: cancel);
@@ -208,12 +285,36 @@ class TrackRecognizer {
       AppLog.w('recognition: no song for video $id', e);
       return null;
     }
-    final gap = s.durationMs == null ? 0 : (s.durationMs! - t.durationMs).abs();
-    if (s.artists.isEmpty || (t.durationMs > 0 && gap > kDurationSlackMs)) return null;
-    return _found(
-        RecogSource.ytid,
-        TrackIdentity(title: s.title, artist: s.artists.join(', '), ms: s.durationMs, vid: id),
-        sure: s.official);
+    onVideoTitle?.call(s.title);
+    final gap = s.durationMs == null ? 0 : (s.durationMs! - durationMs).abs();
+    if (s.artists.isEmpty || (durationMs > 0 && gap > kDurationSlackMs)) return null;
+    var title = s.title, artists = s.artists, sure = s.official;
+    if (s.videoType != 'MUSIC_VIDEO_TYPE_ATV') {
+      final c = cleanSearchQuery(s.title, s.artists.join(', '));
+      if (c.title.isNotEmpty) title = c.title;
+      sure = false;
+      final wantMs = durationMs > 0 ? durationMs : s.durationMs ?? 0;
+      if (c.title.isNotEmpty && wantMs > 0) {
+        // A failing search goes up: the caller marks the source lost and asks again (R-168).
+        final results = await innerTube.searchSongs('${c.title} ${s.artists.first}'.trim(), cancel: cancel);
+        got();
+        final mine = {for (final a in s.artists) matchKey(a)};
+        final want = matchKey(c.title);
+        final song = results.where((r) {
+          final k = matchKey(r.title);
+          return r.artists.any((a) => mine.contains(matchKey(a))) &&
+              ytmMatches(r.duration, wantMs, slackMs: kVideoSongSlackMs, titleOk: true) &&
+              (hasPhrase(want, k) || hasPhrase(k, want));
+        }).firstOrNull;
+        if (song != null) {
+          title = song.title;
+          artists = song.artists;
+          sure = s.videoType == 'MUSIC_VIDEO_TYPE_OMV';
+        }
+      }
+    }
+    return _found(RecogSource.ytid,
+        TrackIdentity(title: title, artist: artists.join(', '), ms: s.durationMs, vid: id), sure: sure);
   }
 
   /// Step 2: the text search found it. Not sure: the tags may be as wrong as the match.
@@ -275,8 +376,9 @@ class TrackRecognizer {
     Recognition? best;
     for (final r in results) {
       final d = r.duration;
-      if (d == null || r.artists.isEmpty) continue;
-      if ((d.inMilliseconds - t.durationMs).abs() > kDurationSlackMs) continue;
+      if (r.artists.isEmpty) continue;
+      // The length first: it is cheaper than the title.
+      if (!ytmMatches(d, t.durationMs, slackMs: kDurationSlackMs, titleOk: true)) continue;
       if (hay.titleOverlap(r.title) < kTitleOverlap) continue;
       final s = hay.similarity(r.title, r.artists);
       if (s > bestScore) {
@@ -284,7 +386,7 @@ class TrackRecognizer {
         best = _found(
             RecogSource.ytm,
             TrackIdentity(
-                title: r.title, artist: r.artists.join(', '), ms: d.inMilliseconds, vid: r.id));
+                title: r.title, artist: r.artists.join(', '), ms: d!.inMilliseconds, vid: r.id));
       }
     }
     return best;

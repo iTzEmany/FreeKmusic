@@ -26,6 +26,7 @@ import '../../widgets/mini_player.dart' show coverHeroTagFor;
 import '../../widgets/track_actions.dart';
 import 'now_playing_cards.dart';
 import 'credits_card.dart';
+import 'proposal_card.dart';
 import 'now_playing_controls.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/ring_progress.dart';
@@ -160,6 +161,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 if (!online) ...[
                   LyricsCard(track: track),
                   const SizedBox(height: 12),
+                  ProposalCard(track: track),
                   InfoCard(track: track),
                   const SizedBox(height: 12),
                   CreditsCard(track: track, key: ValueKey(track.id)),

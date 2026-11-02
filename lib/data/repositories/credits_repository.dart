@@ -136,6 +136,19 @@ class CreditsRepository {
   /// Runs [body] in one transaction (read-merge-write of the shared `details`).
   Future<T> atomic<T>(Future<T> Function() body) => _db.transaction(body);
 
+  /// Sets the decision (`prop`, and `was` when given) of the stored `rec`, or of
+  /// [from] when none is stored; read-merge-write, so it can join an outer transaction.
+  Future<void> setRecDecision(int trackId, String prop, {Map<String, String>? was, Recognition? from}) =>
+      _db.transaction(() async {
+        final row = await enrichOf(trackId);
+        final r = decodeRec(row?.details, trackId) ?? from;
+        if (r == null) return;
+        await _upsert(TrackEnrichCompanion(
+          trackId: Value(trackId),
+          details: Value(mergeDetails(row?.details, rec: r.copyWith(prop: prop, was: was ?? r.was))),
+        ));
+      });
+
   /// Upserts the enrichment row; columns absent from [row] keep their value.
   Future<void> saveEnrich(TrackEnrichCompanion row) => _upsert(row);
 
@@ -246,6 +259,38 @@ class CreditsRepository {
       )
       .watch()
       .asyncMap((_) => portableOf(trackId));
+
+  /// The recognition stored for [trackId] (null when none), again whenever it changes.
+  Stream<Recognition?> watchRec(int trackId) => _db
+      .customSelect(
+        'SELECT details FROM track_enrich WHERE track_id = ?1',
+        variables: [Variable<int>(trackId)],
+        readsFrom: {_db.trackEnrich},
+      )
+      .watch()
+      .map((rows) => rows.isEmpty ? null : decodeRec(rows.first.read<String?>('details'), trackId));
+
+  /// The open proposals (a sure-enough identity that differs, not yet decided) of
+  /// the tracks the user has not edited. A row whose JSON is broken is left out (K-RB-08).
+  Stream<List<({Track track, Recognition rec})>> watchProposals() => _db
+      .customSelect(
+        'SELECT e.track_id AS id, e.details AS d FROM track_enrich e '
+        'JOIN tracks t ON t.id = e.track_id '
+        "WHERE json_valid(e.details) AND json_extract(e.details, '\$.rec.prop') = 'open' "
+        'AND t.user_edited = 0',
+        readsFrom: {_db.trackEnrich, _db.tracks},
+      )
+      .watch()
+      .asyncMap((rows) async {
+        final recs = <int, Recognition>{};
+        for (final r in rows) {
+          final id = r.read<int>('id');
+          final rec = decodeRec(r.read<String>('d'), id);
+          if (rec?.identity != null) recs[id] = rec!;
+        }
+        final tracks = await (_db.select(_db.tracks)..where((t) => t.id.isIn(recs.keys))).get();
+        return [for (final t in tracks) (track: t, rec: recs[t.id]!)];
+      });
 
   /// [creditedTracks] again whenever credits with this key change.
   Stream<List<({String role, Track track})>> watchCreditedTracks(
@@ -367,10 +412,18 @@ Recognition? _recOf(Map<Object?, Object?>? j) => Recognition.fromJson(j?['rec'])
 /// The recognition stored under `rec`, or null. [trackId] is for the log.
 Recognition? decodeRec(String? raw, [int? trackId]) => _recOf(_decodeMap(raw, trackId));
 
+// A stored number like 1e999 decodes to infinity, which jsonEncode refuses.
+bool _encodable(Object? v) => switch (v) {
+  double() => v.isFinite,
+  Map() => v.values.every(_encodable),
+  List() => v.every(_encodable),
+  _ => true,
+};
+
 /// The only way to write `details`: [raw] (what is stored) with [details] and
 /// [rec] put in, whatever the other one owns kept.
 String mergeDetails(String? raw, {TrackDetails? details, Recognition? rec}) {
-  final j = <Object?, Object?>{...?_decodeMap(raw)};
+  final j = <Object?, Object?>{...?_decodeMap(raw)}..removeWhere((_, v) => !_encodable(v));
   if (details != null) j.addAll(details.toJson()); // all its keys, null or not
   if (rec != null) j['rec'] = rec.toJson();
   return jsonEncode(j);

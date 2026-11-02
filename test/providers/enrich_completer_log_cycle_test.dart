@@ -9,6 +9,7 @@ import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/providers/user_activity_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:codecore/services/recognition/track_identity.dart' show kRecogVersion;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,7 +35,7 @@ void main() {
   late ProviderContainer c;
 
   Future<void> open({AppSettings? settings}) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'recogPassDone': kRecogVersion}); // the re-pass is a test of its own
     final store = SettingsStore(await SharedPreferences.getInstance());
     r = EnrichRig();
     addTearDown(r.dispose);

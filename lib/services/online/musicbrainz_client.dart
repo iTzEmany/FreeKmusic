@@ -54,14 +54,6 @@ class MbWorkLink {
   final bool cover;
 }
 
-/// A recording of a work, as listed on the work.
-class MbWorkRecording {
-  const MbWorkRecording(this.id, this.title, {this.cover = false});
-
-  final String id, title;
-  final bool cover;
-}
-
 /// MusicBrainz did not answer (503 or network) even after the second try.
 class MusicBrainzUnavailable implements Exception {
   const MusicBrainzUnavailable(this.what);
@@ -252,17 +244,38 @@ class MusicBrainzClient {
     );
   }
 
-  /// The recordings linked to the work [id]; null when it is unknown.
-  Future<List<MbWorkRecording>?> work(String id, {CancelToken? cancel}) async {
-    final w = await _get('work/$id', {'inc': 'recording-rels'}, cancel, strict: true);
-    final rels = w?['relations'];
-    if (w == null) return null;
-    return [
-      for (final rel in rels is List ? rels : const [])
-        if (rel is Map && rel['recording'] is Map && (rel['recording'] as Map)['id'] is String)
-          MbWorkRecording((rel['recording'] as Map)['id'] as String,
-              '${(rel['recording'] as Map)['title'] ?? ''}', cover: _isCover(rel)),
-    ];
+  /// The original recording of the work [workId]: of those not marked as a
+  /// cover, the one first released earliest (ties: the first listed). Null when
+  /// MusicBrainz has none with a date. One browse request (69e.0 point 5);
+  /// `work-rels` is there only to read the cover mark of each recording.
+  // shortcut: one page of 100 recordings, no paging; a work with more may miss its original, upgrade if one is seen.
+  Future<MbRecording?> workOriginal(String workId, {CancelToken? cancel}) async {
+    final data = await _get(
+        'recording', {'work': workId, 'inc': 'artist-credits+work-rels', 'limit': '100'}, cancel,
+        strict: true);
+    final list = data?['recordings'];
+    if (list is! List) return null;
+    MbRecording? best;
+    String? bestDate;
+    for (final r in list) {
+      if (r is! Map || r['id'] is! String || r['title'] is! String || r['first-release-date'] is! String) continue;
+      final date = r['first-release-date'] as String;
+      if (date.isEmpty || (bestDate != null && date.compareTo(bestDate) >= 0)) continue;
+      final rels = r['relations'] is List ? r['relations'] as List : const [];
+      if (rels.any((rel) => rel is Map && rel['work'] is Map && (rel['work'] as Map)['id'] == workId && _isCover(rel))) continue;
+      final credit = r['artist-credit'];
+      final a = credit is List && credit.isNotEmpty && credit.first is Map ? (credit.first as Map)['artist'] : null;
+      if (a is! Map || a['id'] is! String || a['name'] is! String) continue;
+      bestDate = date;
+      best = MbRecording(
+        id: r['id'] as String,
+        title: r['title'] as String,
+        artistId: a['id'] as String,
+        artistName: a['name'] as String,
+        length: r['length'] is num ? (r['length'] as num).toInt() : null,
+      );
+    }
+    return best;
   }
 
   static bool _isCover(Map rel) => rel['attributes'] is List && (rel['attributes'] as List).contains('cover');

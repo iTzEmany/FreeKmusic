@@ -31,6 +31,8 @@ class Metadata {
   final String? genre;
   final Picture? picture;
   final BigInt? fileSize;
+  final String? isrc;
+  final String? mbid;
 
   const Metadata({
     this.title,
@@ -46,6 +48,8 @@ class Metadata {
     this.genre,
     this.picture,
     this.fileSize,
+    this.isrc,
+    this.mbid,
   });
 
   @override
@@ -62,7 +66,9 @@ class Metadata {
       year.hashCode ^
       genre.hashCode ^
       picture.hashCode ^
-      fileSize.hashCode;
+      fileSize.hashCode ^
+      isrc.hashCode ^
+      mbid.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -81,7 +87,9 @@ class Metadata {
           year == other.year &&
           genre == other.genre &&
           picture == other.picture &&
-          fileSize == other.fileSize;
+          fileSize == other.fileSize &&
+          isrc == other.isrc &&
+          mbid == other.mbid;
 }
 
 class Picture {
