@@ -116,11 +116,20 @@ void main() {
         expect([out.rec!.src, out.rec!.sure], [RecogSource.ytid, false]);
       });
 
-      test('a search that throws keeps the video, cleaned and not sure', () async {
+      test('a song with another title of the same artist is not taken', () async {
+        r.song = const YtmSong(
+            title: 'Song A (Official Video)', artists: ['Daft Punk'],
+            videoType: 'MUSIC_VIDEO_TYPE_OMV', durationMs: 248000);
+        r.ytm = [atv('Song B')];
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Song A', false]);
+      });
+
+      test('a search that throws loses the source, nothing is saved', () async {
         r.song = omv;
         r.ytmError = StateError('boom');
         final out = await r.recognize(file);
-        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky (feat. Pharrell Williams & Nile Rodgers)', false]);
+        expect([out.rec, out.lost], [null, true]);
       });
     });
 
