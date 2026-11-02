@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:codecore/data/settings/jam_secret_store.dart';
@@ -35,6 +36,7 @@ void main() {
   late List<RemoteJamGuest> guests;
   late List<String> asked, auto;
   var autoOn = false;
+  FutureOr<void> Function(JamRequest)? autoHandler;
   late Future<Object?> lastJoin;
 
   setUp(() async {
@@ -47,6 +49,7 @@ void main() {
     asked = [];
     auto = [];
     autoOn = false;
+    autoHandler = (r) => host.accept(r.id);
     hostStore = MemoryJamSecretStore();
     guestStore = MemoryJamSecretStore();
     hostFriends = JamFriends(hostStore);
@@ -58,6 +61,7 @@ void main() {
       }
       ..onAutoAccept = (r) {
         auto.add(r.fromId);
+        return autoHandler?.call(r);
       };
     bridge = JamBridge(FakeMqttLink(net), [entry], waits: const [Duration(milliseconds: 5)]);
     bh = JamBridgeHost(
@@ -148,11 +152,12 @@ void main() {
   test('a removed friend no longer recognises the host: AK is rotated', () async {
     await befriend();
     final label = bh.friendLabel();
-    expect(guestFriends.match(guestP, label, clock.millisecondsSinceEpoch), isNotNull);
+    final fpH = hostP.decodeAdvert(bh.advert()!)!.fingerprint;
+    expect(guestFriends.match(guestP, label, clock.millisecondsSinceEpoch, fpH), isNotNull);
     await hostFriends.remove('guest-1');
     expect(hostFriends.byId('guest-1'), isNull);
-    expect(guestFriends.match(guestP, bh.friendLabel(), clock.millisecondsSinceEpoch), isNull);
-    expect(guestFriends.match(guestP, Uint8List(4), clock.millisecondsSinceEpoch), isNull);
+    expect(guestFriends.match(guestP, bh.friendLabel(), clock.millisecondsSinceEpoch, fpH), isNull);
+    expect(guestFriends.match(guestP, Uint8List(4), clock.millisecondsSinceEpoch, fpH), isNull);
   });
 
   test('auto-accept on: a friend skips the sheet; off: the sheet is asked', () async {
@@ -161,7 +166,7 @@ void main() {
     await join('guest-1');
     expect(auto, ['guest-1']);
     expect(asked, isEmpty);
-    host.decline(host.requests.values.single.id);
+    expect(host.requests.values.single.status, JamRequestStatus.accepted);
 
     autoOn = false;
     clock = clock.add(const Duration(minutes: 2));
@@ -175,6 +180,104 @@ void main() {
     await join('guest-9');
     expect(auto, isEmpty);
     expect(asked, ['guest-9']);
+  });
+
+  test('an impostor with the id and name of a friend changes nothing and is not a friend', () async {
+    await befriend();
+    final before = hostFriends.byId('guest-1')!;
+    autoOn = true;
+    final stranger = JamFriends(MemoryJamSecretStore());
+    await stranger.ready;
+    await join('guest-1', friends: stranger); // no proof
+    final r = host.requests.values.single;
+    expect(r.friend, isFalse);
+    expect(r.fromName, 'Declared guest-1'); // not the saved «Anna»
+    expect(auto, isEmpty);
+    expect(asked, ['guest-1']);
+    host.accept(r.id);
+    await lastJoin;
+    await _pump();
+    final after = hostFriends.byId('guest-1')!;
+    expect(after.name, 'Anna');
+    expect(after.ak, before.ak);
+    expect(after.fkp, before.fkp);
+  });
+
+  test('a friend with the proof still updates its entry after a Jam', () async {
+    await befriend();
+    final before = hostFriends.byId('guest-1')!;
+    await join('guest-1');
+    host.accept(host.requests.values.single.id);
+    await lastJoin;
+    await _pump();
+    // Updated with the new pair key (D-236); both sides hold the same one.
+    expect(hostFriends.byId('guest-1')!.fkp, guestFriends.byId('host')!.fkp);
+    expect(hostFriends.byId('guest-1')!.fkp, isNot(before.fkp));
+  });
+
+  test('an ACCEPT naming a saved friend that the label did not announce leaves the entry alone', () async {
+    final oldAk = crypto.randomBytes(32), oldFkp = crypto.randomBytes(32);
+    await guestFriends.save('host', 'Old host', oldAk, oldFkp); // not this host's AK: no recognition
+    await join('guest-1');
+    host.accept(host.requests.values.single.id);
+    await lastJoin;
+    await _pump();
+    final g = guestFriends.byId('host')!;
+    expect(g.name, 'Old host');
+    expect(g.ak, oldAk);
+    expect(g.fkp, oldFkp);
+    expect(hostFriends.byId('guest-1'), isNull); // no FRIEND was sent
+  });
+
+  test('auto-accept without a handler, or one that throws or leaves it pending: the sheet is asked', () async {
+    await befriend();
+    autoOn = true;
+    host.onAutoAccept = null;
+    await join('guest-1');
+    expect(asked, ['guest-1']);
+    host.decline(host.requests.values.single.id);
+
+    clock = clock.add(const Duration(minutes: 2));
+    host.onAutoAccept = (r) => throw StateError('no controller');
+    await join('guest-1');
+    await _pump();
+    expect(asked, ['guest-1', 'guest-1']);
+    host.decline(host.requests.values.last.id);
+
+    clock = clock.add(const Duration(minutes: 2));
+    host.onAutoAccept = (r) async {}; // starts nothing
+    await join('guest-1');
+    await _pump();
+    expect(asked.length, 3);
+  });
+
+  test('a friend goes before a stranger who holds the only slot (R-144)', () async {
+    await befriend();
+    final stranger = JamFriends(MemoryJamSecretStore());
+    await stranger.ready;
+    await join('guest-9', friends: stranger);
+    final first = host.requests.values.single;
+    expect(first.status, JamRequestStatus.pending);
+    clock = clock.add(const Duration(seconds: 1));
+    await join('guest-1');
+    expect(first.status, JamRequestStatus.expired);
+    final mine = host.requests.values.where((q) => q.status == JamRequestStatus.pending).single;
+    expect(mine.fromId, 'guest-1');
+    expect(mine.friend, isTrue);
+    // A stranger does not take it back from a friend.
+    await join('guest-8', friends: stranger);
+    expect(host.requests.values.where((q) => q.fromId == 'guest-8'), isEmpty);
+  });
+
+  test('the label of A copied into the announcement of another Jam is not recognised', () async {
+    await befriend();
+    final a = hostP.decodeAdvert(bh.advert()!)!;
+    final other = hostP.newHostSecrets();
+    final otherFp = hostP.fingerprint(other.hpk);
+    final now = clock.millisecondsSinceEpoch;
+    expect(guestFriends.match(guestP, a.friendLabel, now, a.fingerprint), isNotNull);
+    expect(guestFriends.match(guestP, a.friendLabel, now, otherFp), isNull);
+    other.dispose();
   });
 
   test('the list and AK survive a restart', () async {

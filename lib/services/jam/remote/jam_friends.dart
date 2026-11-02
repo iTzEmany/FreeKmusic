@@ -63,10 +63,10 @@ class JamFriends extends ChangeNotifier {
     return Future.wait([_saveList(), _store.write(jamAnnounceKeyKey, b64u(_ak!))]);
   }
 
-  /// The friend whose label matches [label] around [nowMs]; null for a stranger.
-  JamFriend? match(JamProtocol p, Uint8List label, int nowMs) {
+  /// The friend whose label matches [label] around [nowMs] for the Jam [fpH]; null for a stranger.
+  JamFriend? match(JamProtocol p, Uint8List label, int nowMs, Uint8List fpH) {
     final list = all;
-    final i = p.matchFriendLabel([for (final f in list) f.ak], label, nowMs);
+    final i = p.matchFriendLabel([for (final f in list) f.ak], label, nowMs, fpH);
     return i == null ? null : list[i];
   }
 

@@ -343,7 +343,8 @@ void main() {
     expect(d.jamId, secrets.jamId);
     expect(d.token, host.token(secrets, t0));
     expect(d.fingerprint, host.fingerprint(secrets.hpk));
-    expect(guest.matchFriendLabel([ak], d.friendLabel, t0), 0);
+    expect(guest.matchFriendLabel([ak], d.friendLabel, t0, d.fingerprint), 0);
+    expect(guest.matchFriendLabel([ak], d.friendLabel, t0, other.hpk.sublist(0, 8)), isNull); // bound to the Jam
     expect(d.broker, 0);
     // The next window: another token and label.
     final n = guest.decodeAdvert(host.advertAt(secrets, t0 + 30000, ak: ak, broker: 0xFF))!;

@@ -68,6 +68,7 @@ class RemoteJamGuest implements JamGuestLink {
   String? _requestTopic;
   bool _requestSent = false;
   Completer<JamJoinOutcome?>? _accept;
+  String? _recognisedId; // the saved friend whose label the announcement carried
   final _wakers = <void Function()>[];
   DateTime? _syncAt;
   Timer? _timer;
@@ -159,8 +160,11 @@ class RemoteJamGuest implements JamGuestLink {
       final label = invite.friendLabel, f = friends;
       if (label != null && f != null) {
         await f.ready;
-        final fr = f.match(protocol, label, _now().millisecondsSinceEpoch);
-        if (fr != null) friendKey = JamKey(fr.fkp);
+        final fr = f.match(protocol, label, _now().millisecondsSinceEpoch, protocol.fingerprint(hpk));
+        if (fr != null) {
+          friendKey = JamKey(fr.fkp);
+          _recognisedId = fr.id;
+        }
       }
       final req = protocol.buildRequest(
         jamId: jamId,
@@ -336,10 +340,15 @@ class RemoteJamGuest implements JamGuestLink {
     final f = friends, ch = _channel, ak = unb64u(accept['ak']);
     if (f == null || ch == null || ak == null) return;
     final id = accept['host'] as String, name = accept['name'] as String;
-    final fkp = Uint8List.fromList(ch.keys.fkp.bytes);
+    final fkp = Uint8List.fromList(ch.keys.fkp.bytes), recognised = _recognisedId;
     unawaited(() async {
       try {
         await f.ready;
+        // A saved entry changes only if this host was recognised as that very friend.
+        if (f.byId(id) != null && recognised != id) {
+          AppLog.w('remote jam: ACCEPT names a saved friend id that was not recognised, entry kept');
+          return;
+        }
         await f.save(id, name, ak, fkp);
         _sendMsg(JamMsg.friend, {'ak': b64u(f.announceKey)});
       } on Object catch (e, st) {

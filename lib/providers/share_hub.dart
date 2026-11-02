@@ -175,7 +175,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
   void Function()? onJamEnd;
 
   /// Set by the Jam controller: the user answered a request from a notification.
-  void Function(JamRequest request, bool accept)? onJamAction;
+  FutureOr<void> Function(JamRequest request, bool accept)? onJamAction;
 
   ShareNotifier get _platform => ref.read(shareNotifierProvider);
 

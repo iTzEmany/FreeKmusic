@@ -226,6 +226,32 @@ void main() {
     expect(beacon.advertising, isNull);
   });
 
+  test('beacon: the native side loses the announcement, the next window starts it again', () async {
+    final beacon = FakeJamBeacon();
+    final b2 = JamBridge(FakeMqttLink(net), [entry], waits: const [Duration(milliseconds: 5)]);
+    final h2 = JamBridgeHost(
+      protocol: protocol,
+      host: host,
+      bridge: b2,
+      now: () => clock,
+      beacon: beacon,
+      stopGrace: Duration.zero,
+    )..start();
+    await pumpEventQueue();
+    expect(beacon.advertising, isNotNull);
+    beacon.fail(JamBeaconKind.advertise);
+    await pumpEventQueue();
+    expect(beacon.advertising, isNull);
+    h2.tick(); // same window: no hammering
+    await pumpEventQueue();
+    expect(beacon.advertising, isNull);
+    clock = clock.add(const Duration(seconds: 30));
+    h2.tick();
+    await pumpEventQueue();
+    expect(beacon.advertising, isNotNull);
+    await h2.dispose();
+  });
+
   test('start: LOBBY retained and /r subscribed', () {
     final lobby = net[entry].retained[JamProtocol.lobbyTopic(qr.jamId)]!;
     expect(lobby, protocol.lobby(qr.hpk));

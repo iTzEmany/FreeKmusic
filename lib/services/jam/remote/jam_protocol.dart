@@ -363,29 +363,31 @@ class JamProtocol {
       _tag(h.kt, 'ccj1-tok', _u64(w), 6),
   ];
 
-  /// 4 B label of the friends' announcement for window [w].
-  Uint8List friendLabel(JamKey ak, int w) => _tag(ak, 'ccj1-ft', _u64(w), 4);
+  /// 4 B label of the friends' announcement for window [w], bound to the Jam
+  /// by its fingerprint [fpH]: a label copied into another Jam matches nothing.
+  Uint8List friendLabel(JamKey ak, int w, Uint8List fpH) =>
+      _tag(ak, 'ccj1-ft', _cat([_u64(w), fpH]), 4);
 
-  /// The label to announce at [ms] (host clock) for the announce key [ak].
-  Uint8List friendLabelAt(Uint8List ak, int ms) {
+  /// The label to announce at [ms] (host clock) for the announce key [ak] and the Jam [fpH].
+  Uint8List friendLabelAt(Uint8List ak, int ms, Uint8List fpH) {
     final k = JamKey(ak);
     try {
-      return friendLabel(k, windowOf(ms));
+      return friendLabel(k, windowOf(ms), fpH);
     } finally {
       k.dispose();
     }
   }
 
   /// Index of the first key in [aks] whose label for `w-1`, `w` or `w+1` of
-  /// [nowMs] (the guest's clock) equals [label]; null for a stranger.
-  int? matchFriendLabel(List<Uint8List> aks, Uint8List label, int nowMs) {
+  /// [nowMs] (the guest's clock) for the Jam [fpH] equals [label]; null for a stranger.
+  int? matchFriendLabel(List<Uint8List> aks, Uint8List label, int nowMs, Uint8List fpH) {
     if (label.length != 4) return null;
     final w = windowOf(nowMs);
     for (var i = 0; i < aks.length; i++) {
       final k = JamKey(aks[i]);
       try {
         for (final d in [0, -1, 1]) {
-          final l = friendLabel(k, w + d);
+          final l = friendLabel(k, w + d, fpH);
           if (l[0] == label[0] && l[1] == label[1] && l[2] == label[2] && l[3] == label[3]) {
             return i;
           }
@@ -553,7 +555,7 @@ class JamProtocol {
       jamId: s.jamId,
       token: token(s, hostMs),
       fingerprint: fingerprint(s.hpk),
-      friendLabel: friendLabelAt(ak, hostMs),
+      friendLabel: friendLabelAt(ak, hostMs, fingerprint(s.hpk)),
       broker: broker,
     ),
   );

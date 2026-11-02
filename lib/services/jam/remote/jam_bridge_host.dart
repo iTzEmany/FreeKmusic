@@ -64,6 +64,8 @@ class JamBridgeHost {
   Uint8List? _ownAk; // used only without [friends]
   final _pending = <String, JamChannel>{}; // JamRequest.id -> channel
   final _members = <String, JamChannel>{}; // member id -> channel
+  // Channels whose request carried a valid friend proof: only they may overwrite a saved friend.
+  final _proven = Expando<bool>();
   final _codeChanged = StreamController<void>.broadcast();
   _Code? _code, _prev;
   DateTime? _prevUntil;
@@ -72,6 +74,7 @@ class JamBridgeHost {
   int _codeGen = 0;
   bool _codeBusy = false;
   int _advWindow = -1;
+  bool _advOn = false; // believed to be announcing
   int _sentVersion = -1;
   int _rateSec = 0, _rateN = 0;
   late DateTime _lastPing;
@@ -95,7 +98,8 @@ class JamBridgeHost {
   Uint8List get _announceKey => friends?.announceKey ?? _ownAk!;
 
   /// The friends' label to announce now (BLE packet and QR), changes every 30 s.
-  Uint8List friendLabel() => protocol.friendLabelAt(_announceKey, _ms);
+  Uint8List friendLabel() =>
+      protocol.friendLabelAt(_announceKey, _ms, protocol.fingerprint(_s!.hpk));
 
   /// 26 B Bluetooth announcement of the current window; null when off.
   Uint8List? advert() {
@@ -110,9 +114,12 @@ class JamBridgeHost {
     final b = beacon, bytes = advert();
     if (b == null || bytes == null) return;
     _advWindow = JamProtocol.windowOf(_ms);
+    _advOn = true;
     (first ? b.startAdvertising(bytes) : b.updateAdvertising(bytes)).catchError((Object e, StackTrace st) {
       AppLog.w('jam bridge: advertising failed', e, st);
       return false;
+    }).then((ok) {
+      if (!ok) _advOn = false; // the next window starts it again
     });
   }
 
@@ -131,6 +138,12 @@ class JamBridgeHost {
       ..add(bridge.messages.listen(_onMessage))
       ..add(bridge.connections.listen((_) => _republish()))
       ..add(host.changes.listen((_) => _onChanges()));
+    final b = beacon;
+    if (b != null) {
+      _subs.add(b.failed.listen((k) {
+        if (k == JamBeaconKind.advertise) _advOn = false; // retried at the next window
+      }));
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
     bridge.start();
     _advertise(first: true);
@@ -141,7 +154,7 @@ class JamBridgeHost {
   void tick() {
     if (_s == null) return;
     host.expire();
-    if (JamProtocol.windowOf(_ms) != _advWindow) _advertise(first: false);
+    if (JamProtocol.windowOf(_ms) != _advWindow) _advertise(first: !_advOn);
     final now = _now();
     if (now.difference(_lastPing) >= _pingEvery) {
       _lastPing = now;
@@ -342,6 +355,7 @@ class JamBridgeHost {
     switch (a.status) {
       case JamAdmitStatus.accepted:
         _pending[a.request!.id] = r.channel;
+        if (friend) _proven[r.channel] = true;
       case JamAdmitStatus.full || JamAdmitStatus.busy:
         _send(r.channel, JamMsg.no, {'why': 'busy'});
         r.channel.dispose();
@@ -454,6 +468,11 @@ class JamBridgeHost {
   void _befriend(String id, JamChannel ch, String akText) {
     final f = friends, ak = unb64u(akText);
     if (f == null || ak == null) return;
+    // A saved entry changes only for a guest that proved it is that friend.
+    if (f.byId(id) != null && _proven[ch] != true) {
+      AppLog.w('jam bridge: FRIEND for a saved id without proof, entry kept');
+      return;
+    }
     final name = host.state?.participant(id)?.name ?? id;
     f.save(id, name, ak, Uint8List.fromList(ch.keys.fkp.bytes)).catchError((Object e, StackTrace st) {
       AppLog.w('jam bridge: could not save a friend', e, st);
@@ -517,6 +536,7 @@ class JamBridgeHost {
     _s = null;
     _timer?.cancel();
     _advWindow = -1;
+    _advOn = false;
     unawaited(beacon?.stopAdvertising());
     for (final x in _subs) {
       unawaited(x.cancel());

@@ -306,8 +306,13 @@ class JamController extends Notifier<JamUiState> {
     ref.listen(shareHubProvider.select((s) => s.active), (_, _) => _speakerChanges.add(null));
     _reqSub = hub.newJamRequests.listen(_incoming.add);
     hub.onJamEnd = end;
-    hub.onJamAction = (req, accept) =>
-        accept ? acceptRequest(req) : decline(req);
+    hub.onJamAction = (req, accept) async {
+      if (accept) {
+        await acceptRequest(req);
+      } else {
+        decline(req);
+      }
+    };
     return const JamUiState();
   }
 

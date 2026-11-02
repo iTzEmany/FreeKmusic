@@ -128,8 +128,9 @@ class JamHost {
   /// A new valid request arrived (the UI asks the user).
   void Function(JamRequest request)? onRequest;
 
-  /// Called instead of [onRequest] for a friend admitted with `autoAccept`.
-  void Function(JamRequest request)? onAutoAccept;
+  /// Called instead of [onRequest] for a friend admitted with `autoAccept`. If
+  /// it throws or leaves the request pending, [onRequest] gets it after all.
+  FutureOr<void> Function(JamRequest request)? onAutoAccept;
 
   final requests = <String, JamRequest>{};
   final _recent = <String, List<DateTime>>{};
@@ -462,6 +463,14 @@ class JamHost {
     if (hosting && _members.length + 1 >= maxParticipants) {
       return (status: JamAdmitStatus.full, request: null);
     }
+    // The slot is taken by a stranger: a friend (proof checked) goes first (R-144).
+    if (friend) {
+      for (final q in requests.values) {
+        if (q.status == JamRequestStatus.pending && !q.silent && !q.friend && q.fromId != id) {
+          q.status = JamRequestStatus.expired;
+        }
+      }
+    }
     if (requests.values
         .any((q) => q.status == JamRequestStatus.pending && (!q.silent || q.fromId == id))) {
       return (status: JamAdmitStatus.busy, request: null);
@@ -486,12 +495,22 @@ class JamHost {
       // A friend with «Accetta gli amici senza chiedere» on skips the sheet.
       final auto = onAutoAccept;
       if (friend && autoAccept && auto != null) {
-        auto(req);
+        unawaited(_autoAccept(req, auto));
       } else {
         onRequest?.call(req);
       }
     }
     return (status: JamAdmitStatus.accepted, request: req);
+  }
+
+  Future<void> _autoAccept(JamRequest req, FutureOr<void> Function(JamRequest) auto) async {
+    try {
+      await auto(req);
+    } on Object catch (e, st) {
+      AppLog.w('jam: automatic acceptance failed, asking the user', e, st);
+    }
+    // Not started (no controller yet, one already starting): the user decides.
+    if (req.status == JamRequestStatus.pending) onRequest?.call(req);
   }
 
   Router buildRouter({String Function(Request)? clientIp}) {
