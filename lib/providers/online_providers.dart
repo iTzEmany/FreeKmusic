@@ -31,6 +31,7 @@ import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
 import '../services/library/track_corrections.dart';
 import '../services/library/track_file_sync.dart';
+import '../services/recognition/track_identity.dart' show Recognition;
 import '../services/recognition/track_recognizer.dart';
 import '../services/tags/fingerprinter.dart';
 import '../services/tags/tag_writer.dart';
@@ -80,6 +81,12 @@ final trackRecognizerProvider = Provider(
         await ref.read(importRepositoryProvider).videoIdOfTrack(t.id),
   ),
 );
+/// The recognition of an online item (`yt:`, stream) by video id (R-186): step 1b
+/// and the cover, nothing written. Kept in memory for the session.
+final onlineRecognitionProvider = FutureProvider.autoDispose.family<Recognition?, String>((ref, videoId) {
+  ref.keepAlive();
+  return ref.watch(trackRecognizerProvider).recognizeOnline(videoId);
+});
 final deezerGwClientProvider = Provider(
   // shortcut: a one-off Registro line needs a LogEntry kind (phase 53); AppLog until then.
   (ref) => DeezerGwClient(onPaused: () => AppLog.w('deezer_gw: paused for 24 hours after 3 errors')),

@@ -132,7 +132,7 @@ class TrackRecognizer {
     if (rec != null) {
       final found = rec;
       // A failed cover lookup is a lost source: nothing is saved, the next run asks again.
-      rec = await attempt('cover', () => _coverOf(t, found, works, artist, cancel, got));
+      rec = await attempt('cover', () => _coverOf(t.title, t.artist, found, works, artist, cancel, got));
       if (rec == null) return RecogOutcome(lost: true, asked: asked, limited: limited);
       return RecogOutcome(rec: rec, asked: asked);
     }
@@ -200,10 +200,10 @@ class TrackRecognizer {
   /// R-172/R-173: marks [rec] as a cover (MusicBrainz says so, or the file title
   /// does) and looks for the original. The identity stays the cover's own recording,
   /// and a hinted cover that resolves to the original's artist is never sure.
-  Future<Recognition> _coverOf(Track t, Recognition rec, List<MbWorkLink> works, String artist,
+  Future<Recognition> _coverOf(String title, String? tagArtistRaw, Recognition rec, List<MbWorkLink> works, String artist,
       CancelToken? cancel, void Function() got) async {
     final link = works.where((w) => w.cover).firstOrNull;
-    final hint = coverHint(t.title, t.artist);
+    final hint = coverHint(title, tagArtistRaw);
     if (link == null && !hint.cover) return rec;
     final id = rec.identity!;
     final tagArtist = matchKey(artist);
@@ -231,6 +231,31 @@ class TrackRecognizer {
         original: orig == null
             ? null
             : {'title': orig.title, 'artist': orig.artistName, 'mbid': orig.id});
+  }
+
+  /// An online item (`yt:`, stream) has no track row: only step 1b and the cover
+  /// step, by video id alone. Null when YouTube Music has no song for it. The
+  /// duration is not compared (there is no file); nothing is written.
+  Future<Recognition?> recognizeOnline(String videoId, {CancelToken? cancel}) async {
+    final YtmSong s;
+    try {
+      s = await innerTube.songOf(videoId, cancel: cancel);
+    } on InnerTubeChanged catch (e) {
+      AppLog.w('recognition: no song for video $videoId', e);
+      return null;
+    }
+    if (s.artists.isEmpty) return null;
+    final artist = s.artists.join(', ');
+    final c = cleanSearchQuery(s.title, artist);
+    return _coverOf(
+        s.title,
+        artist,
+        _found(RecogSource.ytid, TrackIdentity(title: s.title, artist: artist, ms: s.durationMs, vid: videoId),
+            sure: s.official),
+        const [],
+        artistIsChannel(c.artist) || isGenericArtist(c.artist) ? '' : c.artist,
+        cancel,
+        () {});
   }
 
   /// Step 1b: what YouTube Music says of the video this file came from. Sure

@@ -484,6 +484,12 @@ class SettingsStore {
   int get enrichMark => _prefs.getInt(enrichMarkKey) ?? 0;
   Future<void> writeEnrichMark(int id) => _prefs.setInt(enrichMarkKey, id);
 
+  /// Recognition re-pass (R-176): bookmark, and the `kRecogVersion` it finished for.
+  int get recogPassAfter => _prefs.getInt('recogPassAfter') ?? 0;
+  Future<void> writeRecogPassAfter(int id) => _prefs.setInt('recogPassAfter', id);
+  int get recogPassDone => _prefs.getInt('recogPassDone') ?? 0;
+  Future<void> writeRecogPassDone(int v) => _prefs.setInt('recogPassDone', v);
+
   // New releases of followed artists (phase 34).
 
   /// «Più ascoltati»: follow the most listened artists automatically (off).

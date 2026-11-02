@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_log.dart';
 import '../core/clock.dart';
 import '../data/db/app_database.dart';
+import '../data/repositories/recog_pass_query.dart';
 import '../services/online/enrich_completer.dart';
 import '../services/online/enrich_parts.dart';
+import '../services/recognition/track_identity.dart' show kRecogVersion;
 import 'activity_log_providers.dart';
 import 'activity_providers.dart';
 import 'database_providers.dart';
@@ -83,6 +85,19 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
             AppLog.w('completion: mark not saved', e, st);
           }),
     ),
+    recogQuery: recogPassQuery(ref.read(databaseProvider)),
+    loadPassAfter: () => ref.read(settingsStoreProvider).recogPassAfter,
+    savePassAfter: (id) => unawaited(
+      ref.read(settingsStoreProvider).writeRecogPassAfter(id).catchError((Object e, StackTrace st) {
+        AppLog.w('completion: re-pass mark not saved', e, st);
+      }),
+    ),
+    passDone: () => ref.read(settingsStoreProvider).recogPassDone >= kRecogVersion,
+    markPassDone: () => unawaited(
+      ref.read(settingsStoreProvider).writeRecogPassDone(kRecogVersion).catchError((Object e, StackTrace st) {
+        AppLog.w('completion: re-pass done not saved', e, st);
+      }),
+    ),
     onProgress: (c, t) {
       if (ref.mounted) state = state.copyWith(complete: c, total: t);
     },
@@ -152,7 +167,9 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
             DateTime.fromMillisecondsSinceEpoch(nowMs()),
           );
       if (_halt || !ref.mounted) return; // stopped while counting
-      if (c.complete >= c.total) return;
+      // A complete library still gets the one-off re-pass (R-176).
+      final passDue = ref.read(settingsStoreProvider).recogPassDone < kRecogVersion && autoParts(ref.read(settingsProvider)).isNotEmpty;
+      if (c.complete >= c.total && !passDue) return;
       state = EnrichCompleterState(
         running: true,
         complete: c.complete,
@@ -161,6 +178,10 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
       final round = await _completer.run();
       if (round.worked > 0 || round.failed) {
         await _log(round, stopped: _halt, failed: round.failed);
+      }
+      final pass = _completer.pass;
+      if (pass != null && (pass.worked > 0 || pass.failed)) {
+        await _log(pass, stopped: _halt, failed: pass.failed, recogPass: true);
       }
     } on Object catch (e, st) {
       // A programming error is not a warning.
@@ -204,6 +225,7 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
     EnrichRound round, {
     required bool stopped,
     required bool failed,
+    bool recogPass = false,
   }) {
     Map<String, List<int>> byPart(Map<EnrichPart, List<int>> m) => {
       for (final e in m.entries) e.key.name: e.value,
@@ -226,6 +248,7 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
           failed: failed,
         ),
         detail: {
+          if (recogPass) 'recogPass': true,
           if (stopped) 'stopped': true,
           if (round.noAnswer) 'noAnswer': true,
           'updated': byPart(round.updated),

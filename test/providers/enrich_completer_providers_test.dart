@@ -13,6 +13,7 @@ import 'package:codecore/providers/user_activity_provider.dart';
 import 'package:codecore/services/online/lrclib_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:codecore/services/recognition/track_identity.dart' show kRecogVersion;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -127,7 +128,7 @@ void main() {
   }
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'recogPassDone': kRecogVersion}); // the re-pass is a test of its own
     store = SettingsStore(await SharedPreferences.getInstance());
     r = EnrichRig();
     user = UserActivity()..busy = true; // the user is busy until a test says no

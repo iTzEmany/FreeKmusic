@@ -21,6 +21,11 @@ class EnrichCompleter {
     this.onWaiting,
     this.loadMark,
     this.saveMark,
+    this.recogQuery,
+    this.loadPassAfter,
+    this.savePassAfter,
+    this.passDone,
+    this.markPassDone,
     int Function()? nowMs,
   }) : _nowMs = nowMs ?? _clock;
 
@@ -45,7 +50,19 @@ class EnrichCompleter {
   /// every run starts from the first track.
   final int Function()? loadMark;
   final void Function(int id)? saveMark;
+
+  /// The one-off recognition re-pass (R-176), run after a clean round; without
+  /// [recogQuery] there is none. [passDone] says it already ran for this
+  /// `kRecogVersion`; [markPassDone] is called when it went through every track.
+  final Future<List<int>> Function(int after, int limit)? recogQuery;
+  final int Function()? loadPassAfter;
+  final void Function(int id)? savePassAfter;
+  final bool Function()? passDone;
+  final void Function()? markPassDone;
   final int Function() _nowMs;
+
+  /// The re-pass that followed the last [run]; null when none ran.
+  EnrichRound? pass;
 
   EnrichRunner? _runner;
   Future<EnrichRound>? _current;
@@ -56,23 +73,42 @@ class EnrichCompleter {
   /// stays before it), no track is started, and a wait for the user ends at once.
   void cancel() => _runner?.cancel();
 
-  /// One run until nothing is due, [cancel] or an error. Called during a run
-  /// it joins it: the same future comes back.
+  /// One run until nothing is due, [cancel] or an error, then the re-pass if
+  /// it is due. Called during a run it joins it: the same future comes back.
   Future<EnrichRound> run() {
     final current = _current;
     if (current != null) return current;
-    final runner = _runner = EnrichRunner(
-      engine: engine,
-      ids: MarkCursor(repo, load: loadMark, save: saveMark),
-      parts: parts,
-      waitIdle: waitIdle,
-      onProgress: onProgress,
-      onWaiting: onWaiting,
-      nowMs: _nowMs,
-    );
-    return _current = runner.run().whenComplete(() {
+    return _current = _go().whenComplete(() {
       _current = null;
       _runner = null;
     });
+  }
+
+  EnrichRunner _newRunner(EnrichIds ids, {bool progress = true}) => _runner = EnrichRunner(
+    engine: engine,
+    ids: ids,
+    parts: parts,
+    waitIdle: waitIdle,
+    onProgress: progress ? onProgress : null,
+    onWaiting: onWaiting,
+    nowMs: _nowMs,
+  );
+
+  Future<EnrichRound> _go() async {
+    pass = null;
+    final first = _newRunner(MarkCursor(repo, load: loadMark, save: saveMark));
+    final round = await first.run();
+    final query = recogQuery;
+    if (query == null || round.failed || first.cancelled || (passDone?.call() ?? false) || parts().isEmpty) {
+      return round;
+    }
+    final ids = RecogPassIds(query, load: loadPassAfter, save: savePassAfter);
+    final runner = _newRunner(ids, progress: false);
+    final r = pass = await runner.run();
+    if (ids.finished && !r.failed && !runner.cancelled) {
+      savePassAfter?.call(0); // the next version starts from the first track
+      markPassDone?.call();
+    }
+    return round;
   }
 }

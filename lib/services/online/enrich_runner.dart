@@ -182,6 +182,48 @@ class MarkCursor implements EnrichIds {
   }
 }
 
+/// The one-off re-pass of R-176: tracks with a finished enrichment and no
+/// recognition of this version, by id, from a bookmark. [query] is the SQL
+/// (see `recogPassQuery`); the real filter is `needsRecognition` in the gather,
+/// so a track that does not need it costs one read and no calls.
+class RecogPassIds implements EnrichIds {
+  RecogPassIds(this.query, {int Function()? load, this.save}) : _after = load?.call() ?? 0 {
+    _saved = _after;
+  }
+
+  final Future<List<int>> Function(int after, int limit) query;
+  final void Function(int id)? save;
+  int _after;
+  late int _saved;
+
+  /// The ids ran out: the whole pass has been through.
+  bool finished = false;
+
+  @override
+  Future<List<int>> chunk(Set<EnrichPart> parts, AskMode mode, DateTime now, int limit) async {
+    final ids = await query(_after, limit);
+    if (ids.isEmpty) finished = true;
+    return ids;
+  }
+
+  @override
+  void tried(int id) => _after = id;
+
+  @override
+  void checkpoint() {
+    if (_after != _saved) {
+      _saved = _after;
+      save?.call(_after);
+    }
+  }
+
+  @override
+  bool get perTrack => false;
+
+  @override
+  Future<({int done, int total})> progress(Set<EnrichPart> parts, DateTime now) async => (done: 0, total: 0);
+}
+
 /// One run over the ids of an [EnrichIds]: tracks with a part that is on and
 /// due, one at a time, their writes gathered into one transaction every
 /// [blockSize] tracks. No Riverpod; the state lives in the database, so a new
