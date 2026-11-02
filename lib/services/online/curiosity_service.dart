@@ -60,13 +60,14 @@ class CuriosityService {
     Track t,
     String lang, {
     CancelToken? cancel,
+    Map<String, String>? original,
   }) async {
     final c = cleanSearchQuery(t.title, t.artist ?? '');
     var songLimited = false, artistLimited = false, failed = false;
 
     // Identity first (MusicBrainz → Wikidata → the exact pages), the names
     // after; each part reports on its own, so one failing does not lose the other.
-    final found = await finder.find(
+    var found = await finder.find(
       c.title,
       c.artist,
       lang,
@@ -74,6 +75,18 @@ class CuriosityService {
       durationMs: t.durationMs,
       cancel: cancel,
     );
+    // A cover with no page of its own speaks of the original; the bio stays the cover artist's.
+    final o = original?['title'];
+    if (o != null && found.song == null && found.songError == null) {
+      final orig = await finder.find(o, original?['artist'] ?? '', lang, cancel: cancel);
+      found = CuriosityPair(
+        song: orig.song,
+        artist: found.artist,
+        songError: orig.songError,
+        artistError: found.artistError,
+        recordingId: found.recordingId,
+      );
+    }
     for (final (err, isSong) in [
       (found.songError, true),
       (found.artistError, false),

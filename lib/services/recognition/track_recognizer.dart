@@ -16,6 +16,7 @@ import '../tags/fingerprinter.dart';
 import '../tags/audio_metadata_tag_reader.dart' show readTrackIds;
 import '../tags/tag_reader.dart' show normalizeIsrc;
 import 'channel_detector.dart';
+import 'cover_detector.dart';
 import 'track_identity.dart';
 import 'video_id.dart';
 
@@ -105,7 +106,8 @@ class TrackRecognizer {
     final hay = _Hay(t, c.title, artist, trustArtist: !dubious);
     Recognition? rec;
     ResolvedMeta? meta;
-    rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got));
+    final works = <MbWorkLink>[];
+    rec = await attempt('tags', () => _fromIds(t, dubious ? null : c, cancel, got, works));
     rec ??= await attempt('video id', () => _fromVideoId(t, cancel, got));
     if (rec == null && !dubious && textProbe != null) {
       meta = await attempt('text', () async {
@@ -127,7 +129,13 @@ class TrackRecognizer {
       }
     }
     rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
-    if (rec != null) return RecogOutcome(rec: rec, asked: asked);
+    if (rec != null) {
+      final found = rec;
+      // A failed cover lookup is a lost source: nothing is saved, the next run asks again.
+      rec = await attempt('cover', () => _coverOf(t, found, works, artist, cancel, got));
+      if (rec == null) return RecogOutcome(lost: true, asked: asked, limited: limited);
+      return RecogOutcome(rec: rec, asked: asked);
+    }
     if (lost) return RecogOutcome(lost: true, asked: asked, limited: limited);
     return RecogOutcome(rec: Recognition(at: _now().millisecondsSinceEpoch), asked: asked);
   }
@@ -138,7 +146,8 @@ class TrackRecognizer {
   /// Step 1: the MusicBrainz id or the ISRC of the tags, checked against the length.
   /// With reliable tags ([query] set) the ISRC answer is filtered by title and
   /// artist and is sure; with dubious ones any recording of that ISRC is only a proposal.
-  Future<Recognition?> _fromIds(Track t, CleanQuery? query, CancelToken? cancel, void Function() got) async {
+  Future<Recognition?> _fromIds(
+      Track t, CleanQuery? query, CancelToken? cancel, void Function() got, List<MbWorkLink> works) async {
     // Untrusted tag text goes into a URL: only a real ISRC.
     String? validIsrc(String? raw) {
       final n = normalizeIsrc(raw);
@@ -162,6 +171,7 @@ class TrackRecognizer {
       final d = await musicBrainz.recordingById(mbid, cancel: cancel);
       got();
       if (d != null && close(d.length)) {
+        works.addAll(d.works);
         return _found(
             RecogSource.tags,
             TrackIdentity(
@@ -185,6 +195,42 @@ class TrackRecognizer {
       }
     }
     return null;
+  }
+
+  /// R-172/R-173: marks [rec] as a cover (MusicBrainz says so, or the file title
+  /// does) and looks for the original. The identity stays the cover's own recording,
+  /// and a hinted cover that resolves to the original's artist is never sure.
+  Future<Recognition> _coverOf(Track t, Recognition rec, List<MbWorkLink> works, String artist,
+      CancelToken? cancel, void Function() got) async {
+    final link = works.where((w) => w.cover).firstOrNull;
+    final hint = coverHint(t.title, t.artist);
+    if (link == null && !hint.cover) return rec;
+    final id = rec.identity!;
+    final tagArtist = matchKey(artist);
+    final sameArtist = tagArtist.isNotEmpty && matchKey(id.artist) == tagArtist;
+    // An artist's remix of their own song is not a cover (a «cover» by the same artist is).
+    if (link == null && hint.remixOnly && sameArtist) return rec;
+    MbRecording? orig;
+    if (link != null) {
+      orig = await musicBrainz.workOriginal(link.id, cancel: cancel);
+      got();
+    }
+    if (orig == null && hint.original.isNotEmpty) {
+      // The tag artist is the cover's: the original is searched by the identity's artist when that
+      // is another one, else by title only (also skipping the tag artist's own recordings) (MusicBrainz's best match stands in for the oldest).
+      final by = tagArtist.isNotEmpty && !sameArtist ? id.artist : '';
+      final found = await musicBrainz.recordings(hint.original, by, studioOnly: true, cancel: cancel);
+      got();
+      orig = found.where((r) => r.id != id.mbid && (tagArtist.isEmpty || matchKey(r.artistName) != tagArtist)).firstOrNull;
+    }
+    // Only a hinted cover whose identity is the original's own artist is no correction to apply.
+    final isOriginal = link == null && orig != null && matchKey(id.artist) == matchKey(orig.artistName);
+    return rec.copyWith(
+        cover: true,
+        sure: rec.sure && !isOriginal,
+        original: orig == null
+            ? null
+            : {'title': orig.title, 'artist': orig.artistName, 'mbid': orig.id});
   }
 
   /// Step 1b: what YouTube Music says of the video this file came from. Sure
