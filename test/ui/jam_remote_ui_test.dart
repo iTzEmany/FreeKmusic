@@ -200,7 +200,7 @@ void main() {
   });
 
   for (final remote in [false, true]) {
-    testWidgets('«Aggiungi alla Jam» is ${remote ? 'hidden' : 'offered'} for a ${remote ? 'remote' : 'LAN'} guest', (t) async {
+    testWidgets('«Aggiungi alla Jam» is offered for a ${remote ? 'remote' : 'LAN'} guest', (t) async {
       late BuildContext ctx;
       late WidgetRef ref;
       final h = await open(
@@ -215,7 +215,7 @@ void main() {
       final rows = await t.runAsync(() => (h.db.select(h.db.tracks)).get());
       final groups = bulkActions(ctx, ref, rows!, const BulkContext(), done: () {});
       final labels = [for (final g in groups) for (final a in g.actions) a.label];
-      expect(labels.contains('Aggiungi alla Jam'), !remote);
+      expect(labels.contains('Aggiungi alla Jam'), true);
       await h.dispose(t);
     });
   }

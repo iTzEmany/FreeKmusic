@@ -3301,6 +3301,7 @@
   "speakerAwayNotice": "Connecte une enceinte",
   "jamFull": "La Jam est pleine",
   "jamAddFailed": "Non ajouté à la Jam",
+  "jamNotFoundOnline": "Introuvable en ligne, impossible à ajouter",
   "jamLeft": "Vous avez quitté la Jam",
   "speakerContinueOnPhone": "Continuer sur le téléphone",
   "speakerContinueOnPhoneLabel": "Continuer sur le téléphone : la Jam joue sur le haut-parleur de ce téléphone, sans l’enceinte",

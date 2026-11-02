@@ -5688,6 +5688,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get jamAddFailed => 'Não adicionado à Jam';
 
   @override
+  String get jamNotFoundOnline =>
+      'Não encontrado online, não pode ser adicionado';
+
+  @override
   String get jamLeft => 'Saiu da Jam';
 
   @override

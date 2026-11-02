@@ -12,6 +12,8 @@ import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_hub.dart';
 import 'package:codecore/providers/share_providers.dart' show deviceNameProvider;
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
+import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/play_queue.dart';
@@ -87,6 +89,7 @@ void main() {
       playbackPersistenceProvider.overrideWithValue(PlaybackPersistence(handler, store)),
       jamCacheDirProvider.overrideWith((ref) async => Directory.systemTemp.createTemp('jam_spk')),
       jamBackendFactoryProvider.overrideWithValue(FakeBackend.new),
+      downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/dl.json'))),
     ]);
     addTearDown(c.dispose);
   });

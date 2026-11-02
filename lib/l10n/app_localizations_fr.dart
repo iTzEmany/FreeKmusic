@@ -5734,6 +5734,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get jamAddFailed => 'Non ajouté à la Jam';
 
   @override
+  String get jamNotFoundOnline => 'Introuvable en ligne, impossible à ajouter';
+
+  @override
   String get jamLeft => 'Vous avez quitté la Jam';
 
   @override

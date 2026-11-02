@@ -27,6 +27,7 @@ import '../services/jam/jam_online_adder.dart';
 import '../services/jam/jam_output.dart';
 import '../services/jam/jam_part_feeder.dart';
 import '../services/jam/jam_state.dart';
+import '../services/jam/remote/jam_remote_items.dart';
 import '../services/online/download_index.dart';
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/share/track_meta.dart';
@@ -47,6 +48,7 @@ import 'share_providers.dart';
 import 'jam_part.dart';
 import 'jam_remote_providers.dart' show jamCryptoProvider, remoteJamGuestFactoryProvider;
 import 'youtube_providers.dart' show downloadIndexProvider;
+import 'seed_resolver_provider.dart' show seedResolverProvider;
 import 'stream_providers.dart';
 
 export 'jam_part.dart' show jamItemOfTrack;
@@ -250,6 +252,13 @@ class JamController extends Notifier<JamUiState> {
     ownId: () => _ownId,
     tracks: () => ref.read(trackRepositoryProvider),
     queries: () => ref.read(libraryQueriesProvider),
+    downloads: () => ref.read(downloadIndexProvider.future),
+    remoteItems: _remoteItems,
+  );
+
+  /// Library tracks as video ids for a remote guest (R-152).
+  JamRemoteItems _remoteItems() => JamRemoteItems(
+    (t) async => (await ref.read(seedResolverProvider.future)).resolve(t),
   );
 
   @visibleForTesting
@@ -667,10 +676,12 @@ class JamController extends Notifier<JamUiState> {
     // Lost or ended while saving: _finish already tore everything down.
     if (state.phase == JamPhase.ended) return;
     final saved = _saved;
-    if (state.remote) {
-      // A remote guest adds nothing to the Jam before phase 71.
-    } else if (role == JamRole.guest && saved != null) {
-      _part.start(rotateQueueFromCurrent(saved.ids, saved.index), _sendResult);
+    if (role == JamRole.guest && saved != null) {
+      _part.start(
+        rotateQueueFromCurrent(saved.ids, saved.index),
+        _sendResult,
+        remote: state.remote,
+      );
     } else if (role == JamRole.host) {
       _part.start(seed, _sendResult); // an empty queue still gets suggestions (R-102)
     }
@@ -739,7 +750,6 @@ class JamController extends Notifier<JamUiState> {
       // A guest that vanished (crash, Wi-Fi off) must not keep the Jam open.
       _alive = Timer.periodic(const Duration(seconds: 10), (_) {
         _host?.dropStale(const Duration(seconds: 75));
-        _host?.expire(); // a 60 s remote request leaves the host sheet
         final js = _host?.state;
         if (js != null) _onState(js);
       });
@@ -1022,12 +1032,19 @@ class JamController extends Notifier<JamUiState> {
   /// [keyed]: each track carries its part key (the host's seed, see [jamPartKeys]).
   Future<JamAddResult> _addTracks(List<Track> tracks, {bool inherited = false, bool keyed = false}) async {
     var added = 0, full = false;
+    final remote = state.remote;
+    final downloads = remote
+        ? null
+        : await ref.read(downloadIndexProvider.future);
     final keys = keyed ? jamPartKeys(tracks.map((t) => t.id)) : null;
     for (final (n, t) in tracks.indexed) {
       // The rest of the seed stays in the feeder, the last seats are for hand-made adds (D-264).
       final hs = _host?.state;
       if (keyed && hs != null && hs.mode == JamMode.together && jamQueueFull(hs, reserve: jamManualSeats)) break;
-      final item = jamItemOfTrack(t, _ownId, inherited: inherited, partKey: keys?[n]);
+      final item = remote
+          ? await _remoteItems().of(t, _ownId, partKey: keys?[n])
+          : jamItemOfTrack(t, _ownId,
+              inherited: inherited, partKey: keys?[n], videoId: downloads!.idForPath(t.path));
       if (item == null) continue;
       final err = await send(JamCommand.add(item));
       if (err == null) added++;
@@ -1049,6 +1066,35 @@ class JamController extends Notifier<JamUiState> {
   /// file is ready, in the order of the calls; a failed download goes to [onlineFailures].
   bool addOnline(YtResult r) {
     if (!state.active || queueFull) return false;
+    if (state.remote) {
+      // The host downloads or streams it itself: only the video id travels (R-151).
+      // A SoundCloud result has no id the reducer accepts from a remote guest.
+      if (!r.indexKey.startsWith('youtube:')) {
+        _onlineFailed.add(r);
+        return true;
+      }
+      unawaited(
+        send(
+          JamCommand.add(
+            JamItem(
+              id: 0,
+              ownerDeviceId: _ownId,
+              title: r.title,
+              artist: displayArtist(r),
+              album: r.album,
+              durationMs: r.duration?.inMilliseconds ?? 0,
+              ext: 'webm',
+              sizeBytes: 0,
+              ref: 'yt:${r.indexKey}',
+              videoId: r.id,
+            ),
+          ),
+        ).then((err) {
+          if (err != null) _onlineFailed.add(r);
+        }),
+      );
+      return true;
+    }
     (_adder ??= JamOnlineAdder(
       ownId: _ownId,
       cache: ref.read(streamCacheProvider),

@@ -3620,6 +3620,7 @@
   "speakerAwayNotice": "Collega una cassa",
   "jamFull": "La Jam è piena",
   "jamAddFailed": "Non aggiunto alla Jam",
+  "jamNotFoundOnline": "Non trovato online, non si può aggiungere",
   "jamLeft": "Sei uscito dalla Jam",
   "speakerContinueOnPhone": "Continua sul telefono",
   "speakerContinueOnPhoneLabel": "Continua sul telefono: la Jam suona dall’altoparlante di questo telefono, senza la cassa",

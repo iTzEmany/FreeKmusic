@@ -158,6 +158,7 @@ void main() {
       playbackPersistenceProvider.overrideWithValue(PlaybackPersistence(handler, store)),
       jamCacheDirProvider.overrideWith((ref) async => Directory.systemTemp.createTemp('jam_rem')),
       jamBackendFactoryProvider.overrideWithValue(FakeBackend.new),
+      jamStopGraceProvider.overrideWithValue(const Duration(milliseconds: 10)),
       jamCryptoProvider.overrideWith((_) => cryptoFor()),
       mqttLinkFactoryProvider.overrideWithValue(() => FakeMqttLink(net)..let(links.add)),
       remoteJamGuestFactoryProvider.overrideWithValue((_) => _FakeGuest(guestOutcome)),
@@ -167,7 +168,7 @@ void main() {
   });
 
   /// The bridge says goodbye, then disconnects after its short grace.
-  Future<void> graceOver() => Future<void>.delayed(const Duration(milliseconds: 700));
+  Future<void> graceOver() => Future<void>.delayed(const Duration(milliseconds: 60));
 
   bool connected() => links.any((l) => l.connectAttempts.isNotEmpty);
 
@@ -347,7 +348,7 @@ void main() {
       await jam.requestRemote(invite);
       final s = c.read(jamProvider);
       expect((s.phase, s.role, s.remote), (JamPhase.active, JamRole.guest, true));
-      expect(jam.debugFeeder, isNull); // a remote guest adds nothing yet
+      expect(jam.debugFeeder, isNotNull); // a remote guest feeds its part as video ids (R-153)
       final hub = c.read(shareHubProvider.notifier) as _Hub;
       expect((hub.held, hub.remoteHeld), (1, 1));
       await jam.end();
