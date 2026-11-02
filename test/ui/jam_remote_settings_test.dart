@@ -88,7 +88,7 @@ void main() {
     await t.tap(find.text('Aggiungi broker'));
     await t.pumpAndSettle();
     expect(find.textContaining('Senza TLS'), findsNothing);
-    await t.tap(find.byType(Switch));
+    await t.tap(find.byType(Switch).last); // the sheet is above the friends switch
     await t.pumpAndSettle();
     expect(find.textContaining('Senza TLS'), findsOneWidget);
     await t.enterText(find.widgetWithText(TextField, 'Indirizzo'), 'plain.net');

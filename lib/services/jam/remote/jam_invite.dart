@@ -12,10 +12,14 @@ class JamInvite {
     this.token,
     this.brokers = const [],
     this.code,
+    this.friendLabel,
   });
 
   /// Null for a code: the CODE message tells it.
   final Uint8List? jamId, hpk, token;
+
+  /// The 4 B friends' label of the announcement or QR (R-143); null for a code.
+  final Uint8List? friendLabel;
   final List<BrokerEntry> brokers;
 
   /// Normalized 8-character code.
@@ -31,6 +35,7 @@ class JamInvite {
             hpk: q.hpk,
             token: q.token,
             brokers: q.brokers,
+            friendLabel: q.friendLabel,
           );
   }
 

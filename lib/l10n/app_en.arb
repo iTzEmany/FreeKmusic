@@ -3192,5 +3192,20 @@
   "jamRemoteEnd": "End",
   "jamDeclinedHost": "The host declined the request",
   "jamBusyHost": "The host already has a Jam running",
-  "jamWaitingHost": "Waiting for the host to accept…"
+  "jamWaitingHost": "Waiting for the host to accept…",
+  "jamFriendsTitle": "Jam friends",
+  "jamFriendsEmpty": "No friends yet. After the first accepted join, the two devices save each other.",
+  "jamFriendRemove": "Remove",
+  "jamFriendRemoveTitle": "Remove {name}?",
+  "@jamFriendRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "jamFriendRemoveBody": "You will no longer recognise each other without asking. This device changes its announce key.",
+  "jamAutoAcceptFriends": "Accept friends without asking",
+  "jamAutoAcceptFriendsHint": "If a friend's phone is stolen, whoever has it can join your Jam when nearby.",
+  "jamFriendBadge": "Friend"
 }

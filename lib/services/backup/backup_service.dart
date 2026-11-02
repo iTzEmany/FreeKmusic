@@ -23,6 +23,8 @@ const kDeviceBoundKeys = {
   'trustedDevices',
   jamBlockedKey,
   jamSuspendedKey,
+  jamFriendsKey,
+  jamAnnounceKeyKey,
   enrichMarkKey,
   recogPassAfterKey,
   recogPassDoneKey,

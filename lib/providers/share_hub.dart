@@ -342,7 +342,9 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         deviceId: service.deviceId,
         deviceName: service.deviceName,
         gate: gate,
-      )..onRequest = _surfaceJamRequest;
+      )
+        ..onRequest = _surfaceJamRequest
+        ..onAutoAccept = (r) => onJamAction?.call(r, true);
       // HTTPS needs the device identity; without it (it could not be made) the
       // hub runs plain HTTP as before (R59).
       DeviceIdentity? identity;

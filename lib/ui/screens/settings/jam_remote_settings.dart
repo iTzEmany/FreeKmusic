@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/jam_broker_providers.dart';
+import '../../../providers/jam_gate_providers.dart';
 import '../../../services/jam/remote/broker_entry.dart';
+import '../../../services/jam/remote/jam_friends.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_sheet.dart';
@@ -37,9 +39,26 @@ class _JamRemoteSettingsState extends ConsumerState<JamRemoteSettings> {
         builder: (_) => const _AddBrokerSheet(),
       );
 
+  Future<void> _removeFriend(JamFriend f) async {
+    final l = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.jamFriendRemoveTitle(f.name)),
+        content: Text(l.jamFriendRemoveBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l.cancel)),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(l.jamFriendRemove)),
+        ],
+      ),
+    );
+    if (ok == true) await ref.read(jamFriendsProvider).remove(f.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final friends = ref.watch(jamFriendsProvider);
     final brokers = ref.watch(jamBrokersProvider);
     final notifier = ref.read(jamBrokersProvider.notifier);
     return Scaffold(
@@ -81,6 +100,34 @@ class _JamRemoteSettingsState extends ConsumerState<JamRemoteSettings> {
                 ]),
               ),
             ListTile(leading: const Icon(Icons.add), title: Text(l.jamBrokerAdd), onTap: _add),
+          ]),
+          SettingsGroup(title: l.jamFriendsTitle, children: [
+            SwitchListTile(
+              title: Text(l.jamAutoAcceptFriends),
+              subtitle: Text(l.jamAutoAcceptFriendsHint),
+              value: ref.watch(jamAutoAcceptFriendsProvider),
+              onChanged: ref.read(jamAutoAcceptFriendsProvider.notifier).set,
+            ),
+            // The list lives in a ChangeNotifier: rebuild on it.
+            ListenableBuilder(
+              listenable: friends,
+              builder: (context, _) {
+                final all = friends.all;
+                if (all.isEmpty) return ListTile(dense: true, title: Text(l.jamFriendsEmpty));
+                return Column(children: [
+                  for (final f in all)
+                    ListTile(
+                      leading: const Icon(Icons.person_outline),
+                      title: Text(f.name),
+                      trailing: IconButton(
+                        tooltip: '${l.jamFriendRemove} ${f.name}',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _removeFriend(f),
+                      ),
+                    ),
+                ]);
+              },
+            ),
           ]),
         ],
       ),

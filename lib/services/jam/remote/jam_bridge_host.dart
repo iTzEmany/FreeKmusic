@@ -6,6 +6,8 @@ import '../jam_host.dart';
 import '../jam_models.dart';
 import 'broker_entry.dart';
 import 'jam_bridge.dart';
+import 'jam_crypto.dart' show JamKey;
+import 'jam_friends.dart';
 import 'jam_protocol.dart';
 
 const _codeLife = Duration(minutes: 2);
@@ -33,6 +35,8 @@ class JamBridgeHost {
     required this.host,
     required this.bridge,
     DateTime Function()? now,
+    this.friends,
+    this.autoAcceptFriends,
     this.stopGrace = const Duration(milliseconds: 500),
   }) : _now = now ?? DateTime.now;
 
@@ -41,12 +45,18 @@ class JamBridgeHost {
   final JamBridge bridge;
   final DateTime Function() _now;
 
+  /// Saved friends and the announce key `AK`; null = no friends (a random `AK` per switch-on).
+  final JamFriends? friends;
+
+  /// «Accetta gli amici senza chiedere», read at every request.
+  final bool Function()? autoAcceptFriends;
+
   /// [stop] waits this long before disconnecting: the MQTT client may drop
   /// buffered writes on disconnect.
   final Duration stopGrace;
 
   JamHostSecrets? _s;
-  Uint8List? _ak;
+  Uint8List? _ownAk; // used only without [friends]
   final _pending = <String, JamChannel>{}; // JamRequest.id -> channel
   final _members = <String, JamChannel>{}; // member id -> channel
   final _codeChanged = StreamController<void>.broadcast();
@@ -73,6 +83,11 @@ class JamBridgeHost {
 
   int get _ms => _now().millisecondsSinceEpoch;
 
+  Uint8List get _announceKey => friends?.announceKey ?? _ownAk!;
+
+  /// The friends' label to announce now (BLE packet and QR), changes every 30 s.
+  Uint8List friendLabel() => protocol.friendLabelAt(_announceKey, _ms);
+
   /// Members that already got their ACCEPT (the first envelope of a pair).
   Iterable<MapEntry<String, JamChannel>> get _live =>
       _members.entries.where((e) => !_unsent.containsKey(e.key));
@@ -80,7 +95,7 @@ class JamBridgeHost {
   void start() {
     if (_s != null) return;
     final s = _s = protocol.newHostSecrets();
-    _ak = protocol.crypto.randomBytes(32);
+    _ownAk = friends == null ? protocol.crypto.randomBytes(32) : null;
     _lastPing = _now();
     _sentVersion = -1;
     bridge.subscribe(JamProtocol.requestTopic(s.jamId));
@@ -221,7 +236,7 @@ class JamBridgeHost {
         jamId: s.jamId,
         token: protocol.token(s, _ms),
         hpk: s.hpk,
-        friendLabel: protocol.crypto.randomBytes(4), // friends arrive in phase 72
+        friendLabel: friendLabel(),
         brokers: _brokers(),
       ),
     );
@@ -279,7 +294,21 @@ class JamBridgeHost {
       r = protocol.openRequest(bytes, s, hostMs: _ms, kc: prev.keys.kc);
     }
     if (r == null) return;
-    final a = host.admitRequest(id: r.id, name: r.name, remote: true);
+    // A friend is recognised by the proof made with the FKp saved for its id (R-143).
+    final saved = r.friendProof == null ? null : friends?.byId(r.id);
+    var friend = false;
+    if (saved != null) {
+      final k = JamKey(saved.fkp);
+      friend = protocol.friendProofValid(k, s.jamId, r.gpk, r.friendProof!);
+      k.dispose();
+    }
+    final a = host.admitRequest(
+      id: r.id,
+      name: friend ? saved!.name : r.name,
+      remote: true,
+      friend: friend,
+      autoAccept: friend && (autoAcceptFriends?.call() ?? false),
+    );
     switch (a.status) {
       case JamAdmitStatus.accepted:
         _pending[a.request!.id] = r.channel;
@@ -312,6 +341,8 @@ class JamBridgeHost {
         }
       case JamMsg.leave:
         host.removeMember(id);
+      case JamMsg.friend:
+        _befriend(id, ch, m.body['ak'] as String);
       case JamMsg.gTime:
         _send(ch, JamMsg.time, {'t0': m.body['t0'], 't': _ms});
     }
@@ -376,7 +407,7 @@ class JamBridgeHost {
       'name': host.deviceName,
       'state': fitted,
       'brokers': JamProtocol.brokersJson(_brokers()),
-      'ak': b64u(_ak!),
+      'ak': b64u(_announceKey),
       't': _ms,
     });
     if (b == null) {
@@ -387,6 +418,16 @@ class JamBridgeHost {
     }
     if (!bridge.publish(ch.sendTopic, b)) _unsent[id] = b; // resent on reconnect
     return true;
+  }
+
+  /// The guest's `AK` came after the ACCEPT: both sides save each other (R-143).
+  void _befriend(String id, JamChannel ch, String akText) {
+    final f = friends, ak = unb64u(akText);
+    if (f == null || ak == null) return;
+    final name = host.state?.participant(id)?.name ?? id;
+    f.save(id, name, ak, Uint8List.fromList(ch.keys.fkp.bytes)).catchError((Object e, StackTrace st) {
+      AppLog.w('jam bridge: could not save a friend', e, st);
+    });
   }
 
   void _release(String id) {
@@ -468,8 +509,8 @@ class JamBridgeHost {
       ch.dispose();
     }
     _pending.clear();
-    _ak?.fillRange(0, 32, 0);
-    _ak = null;
+    _ownAk?.fillRange(0, 32, 0);
+    _ownAk = null;
     s.dispose();
     await Future<void>.delayed(stopGrace);
     bridge.stop();

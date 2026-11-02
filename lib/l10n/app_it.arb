@@ -3817,5 +3817,20 @@
   "jamRemoteEnd": "Termina",
   "jamDeclinedHost": "L’host ha rifiutato la richiesta",
   "jamBusyHost": "L’host ha già una Jam in corso",
-  "jamWaitingHost": "In attesa che l’host accetti…"
+  "jamWaitingHost": "In attesa che l’host accetti…",
+  "jamFriendsTitle": "Amici della Jam",
+  "jamFriendsEmpty": "Nessun amico. Dopo il primo ingresso accettato, i due dispositivi si salvano a vicenda.",
+  "jamFriendRemove": "Rimuovi",
+  "jamFriendRemoveTitle": "Rimuovere {name}?",
+  "@jamFriendRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "jamFriendRemoveBody": "Non vi riconoscerete più senza chiedere. Questo dispositivo cambia la sua chiave d’annuncio.",
+  "jamAutoAcceptFriends": "Accetta gli amici senza chiedere",
+  "jamAutoAcceptFriendsHint": "Se il telefono di un amico viene rubato, chi lo ha può entrare nella tua Jam stando vicino.",
+  "jamFriendBadge": "Amico"
 }

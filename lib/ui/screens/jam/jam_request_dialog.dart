@@ -75,7 +75,10 @@ class _JamRequestDialogState extends ConsumerState<JamRequestDialog> {
     final ctrl = ref.read(jamProvider.notifier);
     return AlertDialog(
       title: Text(l.jamIncomingTitle(request.fromName)),
-      content: Text(l.jamIncomingDialog),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (request.friend) Chip(avatar: const Icon(Icons.person_outline, size: 18), label: Text(l.jamFriendBadge)),
+        Text(l.jamIncomingDialog),
+      ]),
       actions: [
         TextButton(onPressed: _suspend, child: Text(l.jamSuspend)),
         TextButton(onPressed: () => _mute(block: true), child: Text(l.jamBlock)),

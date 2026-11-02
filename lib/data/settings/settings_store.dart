@@ -467,6 +467,11 @@ class SettingsStore {
   Future<void> writeJamBrokersRaw(String? raw) =>
       raw == null ? _prefs.remove('jamBrokers') : _prefs.setString('jamBrokers', raw);
 
+  /// «Accetta gli amici senza chiedere» of the remote Jam: off unless turned on (R-145).
+  bool readJamAutoAcceptFriends() => _prefs.getBool('jamAutoAcceptFriends') ?? false;
+
+  Future<void> writeJamAutoAcceptFriends(bool v) => _prefs.setBool('jamAutoAcceptFriends', v);
+
   /// The user's own themes, as written by `CustomThemes.encode`.
   String? readCustomThemesRaw() => _prefs.getString('customThemes');
 

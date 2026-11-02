@@ -128,6 +128,9 @@ class JamHost {
   /// A new valid request arrived (the UI asks the user).
   void Function(JamRequest request)? onRequest;
 
+  /// Called instead of [onRequest] for a friend admitted with `autoAccept`.
+  void Function(JamRequest request)? onAutoAccept;
+
   final requests = <String, JamRequest>{};
   final _recent = <String, List<DateTime>>{};
   final _changes = StreamController<void>.broadcast();
@@ -441,6 +444,7 @@ class JamHost {
     String? token,
     bool remote = false,
     bool friend = false,
+    bool autoAccept = false,
     Duration? ttl,
     String? ip,
   }) {
@@ -479,7 +483,13 @@ class JamHost {
     requests[req.id] = req;
     if (!silent) {
       _notify();
-      onRequest?.call(req);
+      // A friend with «Accetta gli amici senza chiedere» on skips the sheet.
+      final auto = onAutoAccept;
+      if (friend && autoAccept && auto != null) {
+        auto(req);
+      } else {
+        onRequest?.call(req);
+      }
     }
     return (status: JamAdmitStatus.accepted, request: req);
   }

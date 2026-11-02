@@ -366,6 +366,37 @@ class JamProtocol {
   /// 4 B label of the friends' announcement for window [w].
   Uint8List friendLabel(JamKey ak, int w) => _tag(ak, 'ccj1-ft', _u64(w), 4);
 
+  /// The label to announce at [ms] (host clock) for the announce key [ak].
+  Uint8List friendLabelAt(Uint8List ak, int ms) {
+    final k = JamKey(ak);
+    try {
+      return friendLabel(k, windowOf(ms));
+    } finally {
+      k.dispose();
+    }
+  }
+
+  /// Index of the first key in [aks] whose label for `w-1`, `w` or `w+1` of
+  /// [nowMs] (the guest's clock) equals [label]; null for a stranger.
+  int? matchFriendLabel(List<Uint8List> aks, Uint8List label, int nowMs) {
+    if (label.length != 4) return null;
+    final w = windowOf(nowMs);
+    for (var i = 0; i < aks.length; i++) {
+      final k = JamKey(aks[i]);
+      try {
+        for (final d in [0, -1, 1]) {
+          final l = friendLabel(k, w + d);
+          if (l[0] == label[0] && l[1] == label[1] && l[2] == label[2] && l[3] == label[3]) {
+            return i;
+          }
+        }
+      } finally {
+        k.dispose();
+      }
+    }
+    return null;
+  }
+
   Uint8List fingerprint(Uint8List hpk) =>
       Uint8List.fromList(crypto.genericHash(hpk, outLen: 16).sublist(0, 8));
 
@@ -666,6 +697,7 @@ class JamProtocol {
     required String id,
     required String name,
     Uint8List? friendProof,
+    JamKey? friendKey,
   }) {
     final gk = crypto.kxKeyPair();
     final session = crypto.kxClientSessionKeys(
@@ -679,10 +711,14 @@ class JamProtocol {
     session.dispose();
     final keys = _pairKeys(ikm, proof);
     ikm.fillRange(0, ikm.length, 0);
+    // [friendKey] is the saved `FKp` of the host recognised from its label.
+    final fp =
+        friendProof ??
+        (friendKey == null ? null : this.friendProof(friendKey, jamId, gk.publicKey));
     final json = jsonEncode({
       'id': id,
       'name': name,
-      if (friendProof != null) 'fp': b64u(friendProof),
+      if (fp != null) 'fp': b64u(fp),
     });
     final sealed = crypto.aeadEncrypt(
       key: keys.kReq,

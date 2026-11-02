@@ -9462,6 +9462,54 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'In attesa che l’host accetti…'**
   String get jamWaitingHost;
+
+  /// No description provided for @jamFriendsTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Amici della Jam'**
+  String get jamFriendsTitle;
+
+  /// No description provided for @jamFriendsEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun amico. Dopo il primo ingresso accettato, i due dispositivi si salvano a vicenda.'**
+  String get jamFriendsEmpty;
+
+  /// No description provided for @jamFriendRemove.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovi'**
+  String get jamFriendRemove;
+
+  /// No description provided for @jamFriendRemoveTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovere {name}?'**
+  String jamFriendRemoveTitle(String name);
+
+  /// No description provided for @jamFriendRemoveBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Non vi riconoscerete più senza chiedere. Questo dispositivo cambia la sua chiave d’annuncio.'**
+  String get jamFriendRemoveBody;
+
+  /// No description provided for @jamAutoAcceptFriends.
+  ///
+  /// In it, this message translates to:
+  /// **'Accetta gli amici senza chiedere'**
+  String get jamAutoAcceptFriends;
+
+  /// No description provided for @jamAutoAcceptFriendsHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Se il telefono di un amico viene rubato, chi lo ha può entrare nella tua Jam stando vicino.'**
+  String get jamAutoAcceptFriendsHint;
+
+  /// No description provided for @jamFriendBadge.
+  ///
+  /// In it, this message translates to:
+  /// **'Amico'**
+  String get jamFriendBadge;
 }
 
 class _AppLocalizationsDelegate

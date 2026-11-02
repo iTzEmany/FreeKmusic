@@ -5933,4 +5933,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get jamWaitingHost => 'Waiting for the host to accept…';
+
+  @override
+  String get jamFriendsTitle => 'Jam friends';
+
+  @override
+  String get jamFriendsEmpty =>
+      'No friends yet. After the first accepted join, the two devices save each other.';
+
+  @override
+  String get jamFriendRemove => 'Remove';
+
+  @override
+  String jamFriendRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get jamFriendRemoveBody =>
+      'You will no longer recognise each other without asking. This device changes its announce key.';
+
+  @override
+  String get jamAutoAcceptFriends => 'Accept friends without asking';
+
+  @override
+  String get jamAutoAcceptFriendsHint =>
+      'If a friend\'s phone is stolen, whoever has it can join your Jam when nearby.';
+
+  @override
+  String get jamFriendBadge => 'Friend';
 }

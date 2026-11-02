@@ -9,6 +9,8 @@ import '../jam_host.dart' show JamRequest;
 import '../jam_models.dart';
 import 'broker_entry.dart';
 import 'jam_bridge.dart';
+import 'jam_crypto.dart' show JamKey;
+import 'jam_friends.dart';
 import 'jam_invite.dart';
 import 'jam_protocol.dart';
 import 'mqtt_link.dart';
@@ -25,12 +27,16 @@ class RemoteJamGuest implements JamGuestLink {
     required this.linkFactory,
     this.brokers = kDefaultJamBrokers,
     DateTime Function()? now,
+    this.friends,
     this.leaveGrace = const Duration(milliseconds: 500),
     this.bridgeWaits = kJamBridgeWaits,
   }) : _now = now ?? DateTime.now;
 
   final JamProtocol protocol;
   final MqttLink Function() linkFactory;
+
+  /// Saved friends: recognise the host from its label, swap `AK` after the ACCEPT.
+  final JamFriends? friends;
 
   /// Brokers tried, in order, for the retained CODE of a typed code.
   final List<BrokerEntry> brokers;
@@ -139,13 +145,23 @@ class RemoteJamGuest implements JamGuestLink {
       if (jamId == null || hpk == null || proof == null || route.isEmpty) {
         return JamJoinOutcome.codeInvalid;
       }
+      // The proof of a friend only goes out when the label of the announcement is theirs.
+      JamKey? friendKey;
+      final label = invite.friendLabel, f = friends;
+      if (label != null && f != null) {
+        await f.ready;
+        final fr = f.match(protocol, label, _now().millisecondsSinceEpoch);
+        if (fr != null) friendKey = JamKey(fr.fkp);
+      }
       final req = protocol.buildRequest(
         jamId: jamId,
         hpk: hpk,
         proof: proof,
         id: ownId,
         name: ownName,
+        friendKey: friendKey,
       );
+      friendKey?.dispose();
       if (req == null) return JamJoinOutcome.codeInvalid;
       _channel = req.channel;
       _requestBytes = req.bytes;
@@ -267,6 +283,7 @@ class RemoteJamGuest implements JamGuestLink {
         _phase = _Phase.running;
         _lastHeard = _lastPing = _lastSync = _now();
         _apply(msg.state!);
+        _befriend(msg.body);
         c.complete(JamJoinOutcome.accepted);
       case JamMsg.no:
         c.complete(
@@ -275,6 +292,23 @@ class RemoteJamGuest implements JamGuestLink {
               : JamJoinOutcome.declined,
         );
     }
+  }
+
+  /// Saves the host as a friend and sends our `AK` (nobody gives it before the accept).
+  void _befriend(Map<String, Object?> accept) {
+    final f = friends, ch = _channel, ak = unb64u(accept['ak']);
+    if (f == null || ch == null || ak == null) return;
+    final id = accept['host'] as String, name = accept['name'] as String;
+    final fkp = Uint8List.fromList(ch.keys.fkp.bytes);
+    unawaited(() async {
+      try {
+        await f.ready;
+        await f.save(id, name, ak, fkp);
+        _sendMsg(JamMsg.friend, {'ak': b64u(f.announceKey)});
+      } on Object catch (e, st) {
+        AppLog.w('remote jam: could not save the host as a friend', e, st);
+      }
+    }());
   }
 
   void _onRunning(JamMessage msg) {

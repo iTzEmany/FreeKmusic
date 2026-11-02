@@ -9,6 +9,7 @@ import '../services/jam/remote/jam_crypto.dart';
 import '../services/jam/remote/jam_protocol.dart';
 import '../services/jam/remote/remote_jam_guest.dart';
 import 'jam_broker_providers.dart';
+import 'jam_gate_providers.dart';
 import 'jam_providers.dart';
 import 'share_hub.dart';
 
@@ -21,6 +22,7 @@ final remoteJamGuestFactoryProvider = Provider<RemoteJamGuest Function(JamProtoc
         protocol: protocol,
         linkFactory: ref.read(mqttLinkFactoryProvider),
         brokers: ref.read(jamBrokersProvider),
+        friends: ref.read(jamFriendsProvider),
       ),
 );
 
@@ -108,10 +110,12 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
     if (!_wanted) return _stop();
     if (_bh != null) return;
     final crypto = await ref.read(jamCryptoProvider.future);
+    final friends = ref.read(jamFriendsProvider);
+    await friends.ready;
     final host = _hub.jamHost;
     if (!ref.mounted || !_wanted || host == null) return;
     final bridge = _bridge = JamBridge(ref.read(mqttLinkFactoryProvider)(), ref.read(jamBrokersProvider));
-    final bh = _bh = JamBridgeHost(protocol: JamProtocol(crypto), host: host, bridge: bridge, stopGrace: ref.read(jamStopGraceProvider));
+    final bh = _bh = JamBridgeHost(protocol: JamProtocol(crypto), host: host, bridge: bridge, friends: friends, autoAcceptFriends: () => ref.read(jamAutoAcceptFriendsProvider), stopGrace: ref.read(jamStopGraceProvider));
     _statusSub = bridge.statuses.listen((s) => state = JamBridgeState(on: true, status: s));
     _codeSub = bh.codeChanges.listen(_codeChanged.add);
     await _hub.holdJam(remote: true);
