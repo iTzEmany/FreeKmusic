@@ -216,6 +216,7 @@ final trackCorrectionsProvider = Provider<TrackCorrections>((ref) {
     ref.watch(trackEditorProvider),
     ref.watch(creditsRepositoryProvider),
     fileBlock: (path) => ref.read(tagWritableProvider(path).future),
+    playingPath: () => ref.read(audioHandlerProvider).currentTrack?.path,
   );
 });
 

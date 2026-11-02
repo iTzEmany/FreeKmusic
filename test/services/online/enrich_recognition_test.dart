@@ -258,6 +258,20 @@ void main() {
     expect(r.web.count('musicbrainz.org/ws/2/recording/$mbid'), 0);
   });
 
+  test('a discarded identity does not drive the searches: the tags do', () async {
+    r = EnrichRig(
+        recognizer: _Fixed(RecogOutcome(
+            rec: Recognition(
+                at: 1,
+                src: RecogSource.text,
+                prop: 'discarded',
+                identity: const TrackIdentity(title: 'Song', artist: 'Band')),
+            asked: true)));
+    final id = await r.add(title: 'Mine', artist: 'Me');
+    await r.engine.completeOne(id, {EnrichPart.lyrics});
+    expect(r.chain.askedWith, ['Mine|Me']);
+  });
+
   group('track_enrich.mbid', () {
     const mbid = '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4';
     setUp(() {

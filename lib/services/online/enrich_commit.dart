@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
-import '../../data/repositories/credits_repository.dart' show decodeRec, mergeDetails;
+import '../../data/repositories/credits_repository.dart' show CreditsRepository, decodeRec, mergeDetails;
 import '../import/track_matcher.dart' show matchKey;
 import '../recognition/track_identity.dart';
 import '../../data/repositories/track_repository.dart';
@@ -78,6 +78,12 @@ class EnrichCommitter {
         await onSure!(t, rec);
       } on Object catch (e, st) {
         AppLog.w('correction of track ${t.id} not applied', e, st);
+        // Not lost: the user can still accept it.
+        try {
+          await CreditsRepository(db).setRecDecision(t.id, 'open', from: rec);
+        } on Object catch (e2, st2) {
+          AppLog.w('proposal of track ${t.id} not kept', e2, st2);
+        }
       }
     }
   }
@@ -226,7 +232,7 @@ class EnrichCommitter {
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
     if (fixes && rec.sure && onSure != null) c.correct = rec;
-    if ((c.enrichRow?.mbid ?? '').isEmpty) c.mbid = rec.identity?.mbid;
+    if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) c.mbid = rec.identity?.mbid;
   }
 
   Future<void> _commitCurio(_Commit c) async {

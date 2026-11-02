@@ -65,17 +65,21 @@ class TrackEditor {
   final TrackFileSync? files;
   final bool Function() _enabled;
 
+  /// Whether [writeToFiles] would write at all.
+  bool get writesFiles => files != null && _enabled();
+
   /// Writes [changes] of each track into its file; never throws, and does
   /// nothing at all (no writer call) when file writes are off.
   Future<TagFileOutcome> writeToFiles(
     List<Track> tracks,
-    TagChanges Function(Track) changes,
-  ) async {
+    TagChanges Function(Track) changes, {
+    bool backup = true,
+  }) async {
     final files = this.files;
     if (files == null || !_enabled() || tracks.isEmpty) {
       return TagFileOutcome.none;
     }
-    return files.write(tracks, changes);
+    return files.write(tracks, changes, backup: backup);
   }
 
   /// The ISRC and MBID the file has now (null: unknown, the file could not be read).

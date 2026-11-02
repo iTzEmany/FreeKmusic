@@ -24,7 +24,9 @@ const _notNames = {'me', 'you', 'my', 'your', 'the', 'a', 'an', 'us', 'him', 'he
 /// D-303: does the file [title] say it is a cover, an arrangement or a remix?
 /// [artist] is the file's artist: «by X» counts when X is somebody else.
 /// shortcut: «Walking by Someone» (a real title with a name after «by») is a false hit; it only adds a search.
-CoverHint coverHint(String title, String? artist) {
+///
+/// «X by Y» names the performer: it counts only when [byCounts], and Y is neither [artist] nor [identityArtist].
+CoverHint coverHint(String title, String? artist, {String? identityArtist, bool byCounts = true}) {
   // Capped: the regexes below are quadratic on huge input.
   var t = title.trim();
   if (t.length > 300) t = t.substring(0, 300);
@@ -47,11 +49,15 @@ CoverHint coverHint(String title, String? artist) {
     hit(bare[0]!.replaceFirst(RegExp(r'^[-–—|\s]+'), ''));
     t = t.substring(0, bare.start);
   }
-  final by = _by.firstMatch(t);
+  final by = byCounts ? _by.firstMatch(t) : null;
   if (by != null) {
     final who = normalize(by[2]!);
-    final a = normalize(artist ?? '');
-    if (who.isNotEmpty && !_notNames.contains(who.split(' ').first) && !(a.isNotEmpty && (a.contains(who) || who.contains(a)))) {
+    bool same(String? name) {
+      final a = normalize(name ?? '');
+      return a.isNotEmpty && (a.contains(who) || who.contains(a));
+    }
+
+    if (who.isNotEmpty && !_notNames.contains(who.split(' ').first) && !same(artist) && !same(identityArtist)) {
       cover = other = true;
       t = by[1]!;
     }

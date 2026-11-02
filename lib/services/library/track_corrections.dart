@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
-
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/activity_log_repository.dart';
@@ -21,7 +19,9 @@ class TrackCorrections {
     this._credits, {
     Future<TagWriteReason?> Function(String path)? fileBlock,
     int Function()? now,
-  }) : _fileBlock = fileBlock ?? ((_) async => null),
+    String? Function()? playingPath,
+  }) : _playingPath = playingPath ?? (() => null),
+       _fileBlock = fileBlock ?? ((_) async => null),
        _now = now ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   final AppDatabase _db;
@@ -32,50 +32,80 @@ class TrackCorrections {
   final Future<TagWriteReason?> Function(String path) _fileBlock;
   final int Function() _now;
 
+  /// The file playing now: an automatic correction leaves it alone (DB only).
+  final String? Function() _playingPath;
+
   /// Puts the identity of [rec] in [track]. [byUser] marks the track as edited
-  /// (an accepted proposal); otherwise it is an automatic correction. A track
-  /// the user edited is never touched (invariant 1). True if something changed.
+  /// (an accepted proposal); otherwise it is an automatic correction (no file
+  /// backup, and the file playing now is left alone). A track the user edited
+  /// is never touched (invariant 1). The DB part (row, Registro, decision) is
+  /// one transaction; the file comes after. True if something changed.
   Future<bool> apply(Track track, Recognition rec, {required bool byUser}) async {
     final id = rec.identity;
-    final t = await TrackRepository(_db).getById(track.id);
-    if (id == null || id.title.trim().isEmpty || t == null || t.userEdited) return false;
-    final artist = id.artist.isEmpty ? t.artist : id.artist;
-    final changed = id.title != t.title || artist != t.artist;
-    if (changed) {
-      final ids = await _editor.fileIds(t); // what the file has, to put back
-      await _write(t, id.title, artist, markEdited: byUser, isrc: id.isrc, mbid: id.mbid);
-      await ActivityLogRepository(_db).add(
-        at: _now(),
-        kind: 'correction',
-        name: id.title,
-        detail: jsonEncode({
-          'trackId': t.id,
-          'old': {'title': t.title, 'artist': t.artist, 'isrc': ?ids?.isrc, 'mbid': ?ids?.mbid},
-          'new': {'title': id.title, 'artist': artist},
-          'src': rec.src?.name,
-        }),
-      );
-    }
-    await _setProp(t.id, rec, byUser ? 'accepted' : 'auto', was: changed ? {'title': t.title, 'artist': t.artist ?? ''} : rec.was);
-    return changed;
+    final first = await TrackRepository(_db).getById(track.id);
+    if (id == null || id.title.trim().isEmpty || first == null || first.userEdited) return false;
+    final toFile = _fileWanted(first, byUser: byUser);
+    // What the file has, to put back; read before the transaction (file I/O).
+    final ids = toFile && changedBy(first, id) ? await _editor.fileIds(first) : null;
+    TrackEdit? edit;
+    Track? t;
+    await _db.transaction(() async {
+      t = await TrackRepository(_db).getById(track.id);
+      final cur = t;
+      if (cur == null || cur.userEdited) return;
+      final artist = id.artist.isEmpty ? cur.artist : id.artist;
+      final changed = id.title != cur.title || artist != cur.artist;
+      if (changed) {
+        edit = await _save(cur, id.title, artist, markEdited: byUser, isrc: id.isrc, mbid: id.mbid);
+        await ActivityLogRepository(_db).add(
+          at: _now(),
+          kind: 'correction',
+          name: id.title,
+          detail: jsonEncode({
+            'trackId': cur.id,
+            'old': {'title': cur.title, 'artist': cur.artist, 'isrc': ?ids?.isrc, 'mbid': ?ids?.mbid},
+            'new': {'title': id.title, 'artist': artist},
+            'src': rec.src?.name,
+          }),
+        );
+      }
+      await _credits.setRecDecision(cur.id, byUser ? 'accepted' : 'auto',
+          was: changed ? {'title': cur.title, 'artist': cur.artist ?? ''} : rec.was, from: rec);
+    });
+    final e = edit;
+    if (e == null) return false;
+    if (toFile) await _toFile(t!, e, backup: byUser);
+    return true;
   }
 
+  bool changedBy(Track t, TrackIdentity id) => id.title != t.title || (id.artist.isNotEmpty && id.artist != t.artist);
+
   /// The proposal of [trackId] is refused and does not come back.
-  Future<void> discard(int trackId) => _setProp(trackId, null, 'discarded');
+  Future<void> discard(int trackId) => _credits.setRecDecision(trackId, 'discarded');
 
   /// Puts back what the Registro [row] (kind `correction`) says was there; the
-  /// proposal is then discarded. Returns false for a row it cannot read.
+  /// proposal is then discarded. Returns false for a row it cannot read, or
+  /// when the track no longer holds the corrected title and artist (edited since).
   Future<bool> revert(ActivityLogRow row) async {
     try {
       final j = jsonDecode(row.detail ?? '') as Map;
       final id = j['trackId'] as int;
       final old = j['old'] as Map;
-      final t = await TrackRepository(_db).getById(id);
-      if (t == null) return false;
-      // Missing keys (older rows) leave the file's ids alone.
-      await _write(t, old['title'] as String, old['artist'] as String?,
-          markEdited: false, isrc: old['isrc'] as String?, mbid: old['mbid'] as String?);
-      await _setProp(id, null, 'discarded');
+      final now = j['new'] as Map;
+      TrackEdit? edit;
+      Track? t;
+      await _db.transaction(() async {
+        t = await TrackRepository(_db).getById(id);
+        final cur = t;
+        if (cur == null || cur.title != now['title'] || cur.artist != now['artist']) return;
+        // Missing keys (older rows) leave the file's ids alone.
+        edit = await _save(cur, old['title'] as String, old['artist'] as String?,
+            markEdited: false, isrc: old['isrc'] as String?, mbid: old['mbid'] as String?);
+        await _credits.setRecDecision(id, 'discarded');
+      });
+      final e = edit;
+      if (e == null) return false;
+      await _toFile(t!, e);
       return true;
     } on Object catch (e, st) {
       AppLog.w('correction ${row.id} not readable', e, st);
@@ -92,7 +122,18 @@ class TrackCorrections {
     return n;
   }
 
-  Future<void> _write(Track t, String title, String? artist, {required bool markEdited, String? isrc, String? mbid}) async {
+  /// Whether the file of [t] is to be rewritten: a hand decision always, an automatic one not on the playing file.
+  bool _fileWanted(Track t, {required bool byUser}) {
+    if (!_editor.writesFiles) return false;
+    if (!byUser && _playingPath() == t.path) {
+      AppLog.i('correction of ${t.path}: file left alone, it is playing');
+      return false;
+    }
+    return true;
+  }
+
+  /// The DB part of an edit.
+  Future<TrackEdit> _save(Track t, String title, String? artist, {required bool markEdited, String? isrc, String? mbid}) async {
     final edit = TrackEdit(
       title: title,
       artist: artist,
@@ -105,21 +146,12 @@ class TrackCorrections {
       mbid: mbid,
     );
     await _editor.save(t, edit, markEdited: markEdited);
-    if (await _fileBlock(t.path) == null) {
-      await _editor.writeToFiles([t], (_) => edit.toChanges());
-    }
+    return edit;
   }
 
-  Future<TrackEnrichData?> _enrichRow(int trackId) =>
-      (_db.select(_db.trackEnrich)..where((e) => e.trackId.equals(trackId))).getSingleOrNull();
-
-  /// Writes the decision in `rec` of the track (the stored one, or [from] when none).
-  Future<void> _setProp(int trackId, Recognition? from, String prop, {Map<String, String>? was}) async {
-    final row = await _enrichRow(trackId);
-    final r = decodeRec(row?.details, trackId) ?? from;
-    if (r == null) return;
-    final rec = r.copyWith(prop: prop, was: was ?? r.was);
-    final companion = TrackEnrichCompanion(trackId: Value(trackId), details: Value(mergeDetails(row?.details, rec: rec)));
-    await _db.into(_db.trackEnrich).insert(companion, onConflict: DoUpdate((_) => companion));
+  Future<void> _toFile(Track t, TrackEdit edit, {bool backup = true}) async {
+    if (await _fileBlock(t.path) == null) {
+      await _editor.writeToFiles([t], (_) => edit.toChanges(), backup: backup);
+    }
   }
 }

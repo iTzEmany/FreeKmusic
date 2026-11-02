@@ -49,6 +49,13 @@ void main() {
     test('not a cover: $title', () => expect(coverHint(title, artist).cover, isFalse));
   }
 
+  test('«by X» is no cover when X is the identity artist, or when it may not count', () {
+    const t = 'Song Name Here by Jonah Senzel';
+    expect(coverHint(t, 'Channel').cover, isTrue);
+    expect(coverHint(t, 'Channel', identityArtist: 'Jonah Senzel').cover, isFalse);
+    expect(coverHint(t, 'Channel', byCounts: false).cover, isFalse);
+  });
+
   test('a huge title with unclosed brackets is answered fast', () {
     final sw = Stopwatch()..start();
     coverHint('(' * 20000, null);

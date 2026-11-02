@@ -117,7 +117,9 @@ class TrackRecognizer {
       });
       if (meta != null) rec = _text(meta);
     }
-    if (rec == null) {
+    // Reliable tags and no text search due: the text search already worked once, nothing to correct.
+    final nothingToCorrect = !dubious && textProbe == null;
+    if (rec == null && !nothingToCorrect) {
       if (keyOfStreamPath(t.path) != null || !Fingerprinter.supports(t.path)) {
         // No file, or Opus/WebM (R-184): a definite «no».
       } else if (!useAcoustId()) {
@@ -128,11 +130,11 @@ class TrackRecognizer {
         rec = await attempt('acoustid', () => _fromAcoustId(t, hay, cancel, got));
       }
     }
-    rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
+    if (!nothingToCorrect) rec ??= await attempt('ytm', () => _fromYtm(t, c.title, artist, hay, cancel, got));
     if (rec != null) {
       final found = rec;
       // A failed cover lookup is a lost source: nothing is saved, the next run asks again.
-      rec = await attempt('cover', () => _coverOf(t.title, t.artist, found, works, artist, cancel, got));
+      rec = await attempt('cover', () => _coverOf(t.title, t.artist, found, works, artist, cancel, got, byCounts: !dubious));
       if (rec == null) return RecogOutcome(lost: true, asked: asked, limited: limited);
       return RecogOutcome(rec: rec, asked: asked);
     }
@@ -201,9 +203,9 @@ class TrackRecognizer {
   /// does) and looks for the original. The identity stays the cover's own recording,
   /// and a hinted cover that resolves to the original's artist is never sure.
   Future<Recognition> _coverOf(String title, String? tagArtistRaw, Recognition rec, List<MbWorkLink> works, String artist,
-      CancelToken? cancel, void Function() got) async {
+      CancelToken? cancel, void Function() got, {bool byCounts = true}) async {
     final link = works.where((w) => w.cover).firstOrNull;
-    final hint = coverHint(title, tagArtistRaw);
+    final hint = coverHint(title, tagArtistRaw, identityArtist: rec.identity?.artist, byCounts: byCounts);
     if (link == null && !hint.cover) return rec;
     final id = rec.identity!;
     final tagArtist = matchKey(artist);

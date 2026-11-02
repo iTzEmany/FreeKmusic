@@ -136,6 +136,19 @@ class CreditsRepository {
   /// Runs [body] in one transaction (read-merge-write of the shared `details`).
   Future<T> atomic<T>(Future<T> Function() body) => _db.transaction(body);
 
+  /// Sets the decision (`prop`, and `was` when given) of the stored `rec`, or of
+  /// [from] when none is stored; read-merge-write, so it can join an outer transaction.
+  Future<void> setRecDecision(int trackId, String prop, {Map<String, String>? was, Recognition? from}) =>
+      _db.transaction(() async {
+        final row = await enrichOf(trackId);
+        final r = decodeRec(row?.details, trackId) ?? from;
+        if (r == null) return;
+        await _upsert(TrackEnrichCompanion(
+          trackId: Value(trackId),
+          details: Value(mergeDetails(row?.details, rec: r.copyWith(prop: prop, was: was ?? r.was))),
+        ));
+      });
+
   /// Upserts the enrichment row; columns absent from [row] keep their value.
   Future<void> saveEnrich(TrackEnrichCompanion row) => _upsert(row);
 

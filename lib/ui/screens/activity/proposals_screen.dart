@@ -22,9 +22,14 @@ class ProposalsScreen extends ConsumerWidget {
         title: l.recogToConfirm(list.length),
         actions: [
           if (list.isNotEmpty)
-            TextButton(
-              onPressed: fixes.acceptAll,
-              child: Text(l.recogAcceptAll),
+            ActionButton(
+              label: l.recogAcceptAll,
+              semantics: l.recogAcceptAll,
+              failed: l.recogActionFailed,
+              action: () async {
+                await fixes.acceptAll();
+                return true;
+              },
             ), // D-331: no dialog
         ],
       ),

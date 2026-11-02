@@ -66,6 +66,9 @@ class Recognition {
   /// The original song of a cover (69e).
   final Map<String, String>? original;
 
+  /// False once the user discarded (or reverted) the proposal: it must not drive searches.
+  bool get usable => prop != 'discarded';
+
   /// The track is a cover, an arrangement or a remix; [original] may still be unknown.
   final bool cover;
 

@@ -90,6 +90,12 @@ void main() {
       expect([out.rec!.src, out.rec!.sure], [RecogSource.text, false]);
     });
 
+    test('reliable tags and no text search due: no fingerprint, no AcoustID, no YouTube Music', () async {
+      final out = await r.recognizer.recognize(track('Believer', 'Imagine Dragons'), textProbe: null);
+      expect(r.calls, isEmpty);
+      expect([out.rec!.src, out.lost], [null, false]);
+    });
+
     test('dubious tags go to AcoustID and skip the text search', () async {
       r.hits = acoustIdFixture('heathens');
       final out = await r.recognize(track('Heathens', '7clouds Rock', durationMs: 218000));
@@ -434,6 +440,18 @@ void main() {
       expect(r.searches, ['Believer|Imagine Dragons']);
       expect([rec.cover, rec.sure, rec.identity!.mbid], [true, false, 'x1']);
       expect(rec.original!['mbid'], 'o1');
+    });
+
+    test('«by X» is the performer: not a cover when X is the identity artist (dubious tags too)', () async {
+      for (final (title, tagArtist, who) in [
+        ('Inscryption - OST Preview - The Trapper & The Trader by Jonah Senzel', '7clouds Rock', 'Jonah Senzel'),
+        ('_TEST ME_ by CHANMINA (Lyrics)', 'Some Uploader', 'CHANMINA'),
+      ]) {
+        r = Rig();
+        r.mbByIsrc = [MbRecording(id: 'x1', title: 'Song', artistId: 'a', artistName: who, length: 200000)];
+        final rec = (await r.recognize(track(title, tagArtist, isrc: 'USUM71700626'))).rec!;
+        expect(rec.cover, isFalse, reason: title);
+      }
     });
 
     test('no original found: cover true and no original; the JSON keeps both', () async {

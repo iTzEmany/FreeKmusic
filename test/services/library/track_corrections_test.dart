@@ -60,6 +60,13 @@ class _Fixed implements TrackRecognizer {
 /// Fails the status write of a commit while [on].
 class _FailStatus extends QueryInterceptor {
   bool on = false;
+  bool failLog = false;
+
+  @override
+  Future<int> runInsert(QueryExecutor e, String sql, List<Object?> args) {
+    if (failLog && sql.contains('activity_log')) throw StateError('log broken');
+    return super.runInsert(e, sql, args);
+  }
 
   @override
   Future<int> runUpdate(QueryExecutor e, String sql, List<Object?> args) {
@@ -83,6 +90,7 @@ void main() {
   late _Fixed recognizer;
   late TrackCorrections corrections;
   late bool fileWrites;
+  String? playing;
   late String path;
   late _FailStatus failStatus;
 
@@ -116,7 +124,9 @@ void main() {
         fileWritesEnabled: () => fileWrites,
       ),
       r.credits,
+      playingPath: () => playing,
     );
+    playing = null;
   });
   tearDown(() async {
     await r.dispose();
@@ -139,7 +149,7 @@ void main() {
     final d = jsonDecode(rows.single.detail!) as Map;
     expect([d['trackId'], d['old'], d['new']], [
       id,
-      {'title': 'Junk', 'artist': 'Channel', 'isrc': '', 'mbid': ''},
+      {'title': 'Junk', 'artist': 'Channel'}, // the file is not written: its ids are not read
       {'title': 'Real Title', 'artist': 'Real Artist'},
     ]);
     final rec = (await recOf(id))!;
@@ -228,6 +238,49 @@ void main() {
     await corrections.revert((await log()).single);
     final c = writer.writes.single;
     expect([c.title, c.isrc, c.mbid], ['Junk', '', '']);
+  });
+
+  test('an error in the Registro rolls the whole correction back', () async {
+    final id = await track();
+    failStatus.failLog = true;
+    await expectLater(corrections.apply(await row(id), _rec(), byUser: true), throwsStateError);
+    expect(((await row(id)).title, (await row(id)).userEdited), ('Junk', false));
+    expect(await recOf(id), isNull);
+  });
+
+  test('an automatic correction that fails stays open for the user', () async {
+    final id = await track();
+    failStatus.failLog = true;
+    await enrich(id);
+    failStatus.failLog = false;
+    expect((await row(id)).title, 'Junk');
+    expect((await recOf(id))!.prop, 'open');
+    expect((await r.credits.watchProposals().first).map((p) => p.track.id), [id]);
+  });
+
+  test('revert does nothing when the track was edited after the correction', () async {
+    final id = await track();
+    await enrich(id);
+    await r.repo.getById(id);
+    await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(title: Value('Mine')));
+    expect(await corrections.revert((await log()).single), isFalse);
+    expect((await row(id)).title, 'Mine');
+  });
+
+  test('an automatic correction leaves the playing file alone, the DB is corrected', () async {
+    fileWrites = true;
+    playing = path;
+    await enrich(await track());
+    expect(writer.writes, isEmpty);
+    expect((await r.db.select(r.db.tracks).get()).single.title, 'Real Title');
+  });
+
+  test('an automatic correction makes no backup of the file', () async {
+    fileWrites = true;
+    final id = await track();
+    await enrich(id);
+    expect(writer.writes, hasLength(1));
+    expect(Directory(p.join(root.path, 'bk')).existsSync() && Directory(p.join(root.path, 'bk')).listSync().isNotEmpty, isFalse);
   });
 
   group('proposals', () {

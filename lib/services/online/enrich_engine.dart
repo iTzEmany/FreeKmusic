@@ -227,6 +227,7 @@ class EnrichEngine {
         todo = await dueUnder(AskMode.retryNone);
       }
     }
+    if (known != null && !known.usable) known = null; // discarded: searches use the tags
     final identity = known?.identity;
     final q = identity?.applyTo(t) ?? t; // only for the searches: writes use [t]
     final doMeta = todo.contains(EnrichPart.meta);
@@ -304,7 +305,7 @@ class EnrichEngine {
     if (doCredits) {
       final r = await attemptSource(
         'credits',
-        () => credits!.fetch(t, meta?.hit, cancel, knownMbid: known != null && known.sure && known.prop != 'discarded' ? identity?.mbid : null),
+        () => credits!.fetch(t, meta?.hit, cancel, knownMbid: known != null && known.sure ? identity?.mbid : null),
         timeout: false,
       );
       final creditsPart = g.credits = r.value;
