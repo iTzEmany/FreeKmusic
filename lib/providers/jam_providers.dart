@@ -216,7 +216,7 @@ class JamController extends Notifier<JamUiState> {
   DateTime Function() now = DateTime.now;
 
   @visibleForTesting
-  JamGuestLink Function(JamHost) guestFactory = (h) => JamGuest(local: h);
+  JamGuest Function(JamHost) guestFactory = (h) => JamGuest(local: h);
   JamOutput? _output;
   JamCache? _cache;
   JamClock? _clock;
@@ -323,8 +323,7 @@ class JamController extends Notifier<JamUiState> {
       );
       return;
     }
-    // The LAN request is the only caller: join() is not part of the link interface.
-    final guest = guestFactory(host) as JamGuest;
+    final guest = guestFactory(host);
     _guest = guest;
     final outcome = await guest.join(
       host: peer.host,

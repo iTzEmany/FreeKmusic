@@ -139,6 +139,19 @@ void main() {
     });
   });
 
+  test('next gives up the broker in use for the following one', () {
+    fakeAsync((t) {
+      setUp_();
+      bridge.start();
+      t.flushMicrotasks();
+      bridge.next();
+      expect(bridge.status, JamBridgeStatus.retrying);
+      t.flushMicrotasks();
+      expect(bridge.broker, b);
+      expect(link.connectAttempts, [a, b]);
+    });
+  });
+
   test('stop cancels the retries', () {
     fakeAsync((t) {
       setUp_();

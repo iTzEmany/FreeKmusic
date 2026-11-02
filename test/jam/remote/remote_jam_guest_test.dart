@@ -9,6 +9,8 @@ import 'package:codecore/services/jam/remote/jam_crypto.dart';
 import 'package:codecore/services/jam/remote/jam_invite.dart';
 import 'package:codecore/services/jam/remote/jam_protocol.dart';
 import 'package:codecore/services/jam/remote/remote_jam_guest.dart';
+// ignore: depend_on_referenced_packages
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
@@ -40,6 +42,7 @@ void main() {
   JamChannel? ch; // host side of the pair
   late List<JamMessage> inbox;
   var lostCount = 0;
+  late List<FakeMqttLink> guestLinks;
 
   setUp(() async {
     net = FakeNet([a, b]);
@@ -52,11 +55,17 @@ void main() {
     ch = null;
     inbox = [];
     lostCount = 0;
+    guestLinks = [];
     guest = RemoteJamGuest(
       protocol: guestP,
-      linkFactory: () => FakeMqttLink(net),
+      linkFactory: () {
+        final l = FakeMqttLink(net);
+        guestLinks.add(l);
+        return l;
+      },
       brokers: const [a],
       now: () => clock,
+      leaveGrace: Duration.zero,
     );
     guest.lost.listen((_) => lostCount++);
   });
@@ -186,7 +195,7 @@ void main() {
           JamCodeInfo(
             jamId: secrets.jamId,
             hpk: secrets.hpk,
-            expMs: clock.millisecondsSinceEpoch + (gone ? 120000 : -1000),
+            expMs: clock.millisecondsSinceEpoch + (gone ? 120000 : -180000),
             brokers: const [a],
             gone: gone,
           ),
@@ -199,6 +208,31 @@ void main() {
       );
     });
   }
+
+  test('a code only 60 s past its exp (skewed clock) still works', () async {
+    final keys = await hostP.deriveCode('ABCD2345');
+    hostLink.publish(
+      JamProtocol.codeTopic(keys.topicId),
+      hostP.sealCode(
+        keys.kc,
+        JamCodeInfo(
+          jamId: secrets.jamId,
+          hpk: secrets.hpk,
+          expMs: clock.millisecondsSinceEpoch - 60000,
+          brokers: const [a],
+          gone: false,
+        ),
+      ),
+      retain: true,
+    );
+    final f = join(JamInvite.fromCode('ABCD2345')!);
+    for (var i = 0; i < 50 && hostTakesRequest(kc: keys.kc) == null; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(ch, isNotNull);
+    hostSend(JamMsg.accept, acceptBody(stateV(1)));
+    expect(await f, JamJoinOutcome.accepted);
+  });
 
   for (final why in ['busy', 'declined']) {
     test('NO $why ends the join', () async {
@@ -216,12 +250,47 @@ void main() {
   test('no answer in 60 s: expired', () async {
     final f = join(qr());
     await pump();
-    clock = clock.add(const Duration(seconds: 59));
+    clock = clock.add(const Duration(seconds: 61));
     guest.tick();
     await pump();
     clock = clock.add(const Duration(seconds: 2));
     guest.tick();
     expect(await f, JamJoinOutcome.expired);
+  });
+
+  test('dispose during the wait for the host: cancelled', () async {
+    final f = join(qr());
+    await pump();
+    await guest.dispose();
+    expect(await f, JamJoinOutcome.cancelled);
+  });
+
+  test('dispose during the code derivation: cancelled, no bridge', () async {
+    final f = join(JamInvite.fromCode('ABCD2345')!);
+    await guest.dispose();
+    expect(await f, JamJoinOutcome.cancelled);
+    expect(net.brokers.values.every((b) => b.log.isEmpty), isTrue);
+    expect(guestLinks.length <= 1, isTrue); // at most the CODE lookup link
+  });
+
+  test('a failing derivation stops the timer', () {
+    fakeAsync((t) {
+      final g = RemoteJamGuest(
+        protocol: JamProtocol(_BrokenCrypto()),
+        linkFactory: () => FakeMqttLink(net),
+        now: () => clock,
+      );
+      Object? error;
+      g
+          .join(JamInvite.fromCode('ABCD2345')!, ownDeviceId: 'd', ownName: 'n')
+          .catchError((Object e) {
+            error = e;
+            return JamJoinOutcome.unreachable;
+          });
+      t.flushMicrotasks();
+      expect(error, isNotNull);
+      expect(t.periodicTimerCount, 0);
+    });
   });
 
   test('cancelJoin ends the wait', () async {
@@ -238,8 +307,10 @@ void main() {
     hostPull();
     final cmd = inbox.singleWhere((m) => m.type == JamMsg.cmd);
     expect(cmd.command!.type, JamCommandType.play);
+    hostSend(JamMsg.state, {'state': hostP.fitState(stateV(2))});
     hostSend(JamMsg.result, {'req': cmd.body['req'], 'v': 2});
-    expect((await f).isOk, isTrue);
+    final r = await f;
+    expect(r.state!.version, 2); // STATE came first: the result carries it
   });
 
   test('send: RESULT with an error maps to JamError', () async {
@@ -306,6 +377,22 @@ void main() {
     },
   );
 
+  test(
+    'a SYNC nobody answers in 5 s moves the bridge to the next broker',
+    () async {
+      await joined();
+      clock = clock.add(const Duration(seconds: 46));
+      guest.tick(); // SYNC
+      await pump();
+      clock = clock.add(const Duration(seconds: 6));
+      guest.tick();
+      await pump();
+      expect(guestLinks.last.connectAttempts, [a, b]);
+      hostPull();
+      expect(inbox.where((m) => m.type == JamMsg.sync).length, 2);
+    },
+  );
+
   test('BYE: the Jam is lost', () async {
     await joined();
     hostSend(JamMsg.bye, {'why': 'removed'});
@@ -346,4 +433,10 @@ void main() {
     hostPull();
     expect(inbox.any((m) => m.type == JamMsg.leave), isTrue);
   });
+}
+
+/// Any call fails: only the Argon2id derivation is reached in its test.
+class _BrokenCrypto implements JamCrypto {
+  @override
+  dynamic noSuchMethod(Invocation i) => throw StateError('broken crypto');
 }

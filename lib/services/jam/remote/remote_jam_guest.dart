@@ -25,6 +25,7 @@ class RemoteJamGuest implements JamGuestLink {
     required this.linkFactory,
     this.brokers = kDefaultJamBrokers,
     DateTime Function()? now,
+    this.leaveGrace = const Duration(milliseconds: 500),
   }) : _now = now ?? DateTime.now;
 
   final JamProtocol protocol;
@@ -34,7 +35,15 @@ class RemoteJamGuest implements JamGuestLink {
   final List<BrokerEntry> brokers;
   final DateTime Function() _now;
 
-  static const requestWait = Duration(seconds: 60);
+  /// Time left to the LEAVE to go out before the bridge is stopped.
+  final Duration leaveGrace;
+
+  /// 60 s of the host (R-150) plus a margin, counted from the publication.
+  static const requestWait = Duration(seconds: 62);
+  static const nextBrokerAfter = Duration(seconds: 5);
+
+  /// A CODE counts as expired only this long after its `exp` (clock skew).
+  static const codeSlackMs = 2 * 60 * 1000;
   static const codeWait = Duration(seconds: 4);
   static const resultWait = Duration(seconds: 10);
   static const timeWait = Duration(seconds: 3);
@@ -50,7 +59,8 @@ class RemoteJamGuest implements JamGuestLink {
   String? _requestTopic;
   bool _requestSent = false;
   Completer<JamJoinOutcome?>? _accept;
-  void Function()? _wake;
+  final _wakers = <void Function()>[];
+  DateTime? _syncAt;
   Timer? _timer;
   StreamSubscription<Object?>? _msgSub, _connSub, _statusSub;
   JamState? _state;
@@ -87,10 +97,17 @@ class RemoteJamGuest implements JamGuestLink {
     if (_phase != _Phase.idle) return JamJoinOutcome.unreachable;
     _phase = _Phase.joining;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
-    final o = await _join(invite, ownDeviceId, ownName);
-    if (o != JamJoinOutcome.accepted) await _shutdown();
-    return o;
+    try {
+      final o = await _join(invite, ownDeviceId, ownName);
+      if (o != JamJoinOutcome.accepted) await _shutdown();
+      return o;
+    } on Object {
+      await _shutdown();
+      rethrow;
+    }
   }
+
+  bool get _stopped => _cancelled || _phase == _Phase.closed;
 
   Future<JamJoinOutcome> _join(
     JamInvite invite,
@@ -104,10 +121,11 @@ class RemoteJamGuest implements JamGuestLink {
       if (invite.code != null) {
         codeKeys = await protocol.deriveCode(invite.code!);
         final found = await _lookupCode(codeKeys);
-        if (_cancelled) return JamJoinOutcome.cancelled;
+        if (_stopped) return JamJoinOutcome.cancelled;
         if (found == null) return JamJoinOutcome.codeInvalid;
         final (info, on) = found;
-        if (info.gone || info.expMs <= _now().millisecondsSinceEpoch) {
+        if (info.gone ||
+            info.expMs + codeSlackMs < _now().millisecondsSinceEpoch) {
           return JamJoinOutcome.codeExpired;
         }
         jamId = info.jamId;
@@ -115,6 +133,7 @@ class RemoteJamGuest implements JamGuestLink {
         proof = codeKeys.kc.bytes;
         route = info.brokers.isEmpty ? [on] : info.brokers;
       }
+      if (_stopped) return JamJoinOutcome.cancelled;
       if (jamId == null || hpk == null || proof == null || route.isEmpty) {
         return JamJoinOutcome.codeInvalid;
       }
@@ -132,6 +151,7 @@ class RemoteJamGuest implements JamGuestLink {
     } finally {
       codeKeys?.dispose();
     }
+    if (_stopped) return JamJoinOutcome.cancelled;
     // A growable copy: the host's own list is appended to it on ACCEPT.
     final bridge = _bridge = JamBridge(linkFactory(), [...route]);
     _msgSub = bridge.messages.listen(_onIncoming);
@@ -141,16 +161,17 @@ class RemoteJamGuest implements JamGuestLink {
       ..subscribe(_channel!.recvTopic)
       ..start();
     final c = _accept = Completer<JamJoinOutcome?>();
-    final r = await _within(c, requestWait);
+    // The 62 s start when the REQUEST is published, see _onConnected.
+    final r = await c.future;
     if (r != null) return r;
-    return _cancelled ? JamJoinOutcome.cancelled : JamJoinOutcome.expired;
+    return _stopped ? JamJoinOutcome.cancelled : JamJoinOutcome.expired;
   }
 
   /// The CODE of [keys] on each of [brokers] in turn, 4 s per broker.
   Future<(JamCodeInfo, BrokerEntry)?> _lookupCode(JamCodeKeys keys) async {
     final topic = JamProtocol.codeTopic(keys.topicId);
     for (final b in brokers) {
-      if (_cancelled) return null;
+      if (_stopped) return null;
       final link = linkFactory();
       final got = Completer<JamCodeInfo?>();
       // nowMs 0: expiry is judged here, so "expired" differs from "invalid".
@@ -181,20 +202,37 @@ class RemoteJamGuest implements JamGuestLink {
     }
 
     _deadlines.add((at: _now().add(d), fire: giveUp));
-    _wake = giveUp;
-    return c.future;
+    _wakers.add(giveUp);
+    return c.future.whenComplete(() => _wakers.remove(giveUp));
   }
 
   @override
   void cancelJoin() {
     _cancelled = true;
-    _wake?.call();
+    _wakeAll();
+  }
+
+  void _wakeAll() {
+    for (final w in [..._wakers]) {
+      w();
+    }
+    final a = _accept;
+    if (a != null && !a.isCompleted) a.complete(null);
   }
 
   void _onConnected() {
     if (_phase == _Phase.joining) {
       if (!_requestSent) {
         _requestSent = _bridge!.publish(_requestTopic!, _requestBytes!);
+        if (_requestSent) {
+          final c = _accept!;
+          _deadlines.add((
+            at: _now().add(requestWait),
+            fire: () {
+              if (!c.isCompleted) c.complete(null);
+            },
+          ));
+        }
       }
     } else if (_phase == _Phase.running) {
       _sync();
@@ -239,6 +277,7 @@ class RemoteJamGuest implements JamGuestLink {
 
   void _onRunning(JamMessage msg) {
     _lastHeard = _now();
+    _syncAt = null;
     _silent = false;
     switch (msg.type) {
       case JamMsg.state:
@@ -285,7 +324,10 @@ class RemoteJamGuest implements JamGuestLink {
     return bytes != null && b.publish(ch.sendTopic, bytes);
   }
 
-  void _sync() => _sendMsg(JamMsg.sync, {'v': _state?.version ?? -1});
+  void _sync() {
+    _syncAt = _now();
+    _sendMsg(JamMsg.sync, {'v': _state?.version ?? -1});
+  }
 
   void _refreshLink() {
     final st = _bridge?.status;
@@ -322,6 +364,11 @@ class RemoteJamGuest implements JamGuestLink {
     if (_silent && t.difference(since) >= silentAfter) {
       _lastSync = t;
       _sync();
+    }
+    final sa = _syncAt;
+    if (sa != null && t.difference(sa) >= nextBrokerAfter) {
+      _syncAt = null; // the new connection sends its own SYNC
+      _bridge?.next();
     }
     _refreshLink();
   }
@@ -371,7 +418,10 @@ class RemoteJamGuest implements JamGuestLink {
 
   @override
   Future<void> leave() async {
-    if (_phase == _Phase.running) _sendMsg(JamMsg.leave, <String, Object?>{});
+    if (_phase == _Phase.running) {
+      _sendMsg(JamMsg.leave, <String, Object?>{});
+      if (leaveGrace > Duration.zero) await Future<void>.delayed(leaveGrace);
+    }
     await _shutdown();
   }
 
@@ -384,6 +434,7 @@ class RemoteJamGuest implements JamGuestLink {
   Future<void> _shutdown() async {
     if (_phase == _Phase.closed) return;
     _phase = _Phase.closed;
+    _wakeAll();
     _timer?.cancel();
     _timer = null;
     await _msgSub?.cancel();

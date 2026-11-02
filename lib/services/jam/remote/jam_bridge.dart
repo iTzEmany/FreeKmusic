@@ -61,6 +61,13 @@ class JamBridge {
     _connect(0);
   }
 
+  /// Gives up the broker in use for the next one (the host went quiet there).
+  void next() {
+    if (!_running || _st != JamBridgeStatus.up) return;
+    _set(JamBridgeStatus.retrying);
+    _connect((_idx + 1) % brokers.length);
+  }
+
   void stop() {
     _running = false;
     _gen++;
