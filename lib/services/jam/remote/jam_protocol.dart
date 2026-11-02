@@ -406,6 +406,8 @@ class JamProtocol {
 
   /// Null when the length or a character is wrong ("Codice non valido").
   static String? normalizeCode(String input) {
+    // Before toUpperCase: it maps some Unicode letters (ı, ß, ſ) into the alphabet.
+    if (RegExp(r'[^A-Za-z0-9\s-]').hasMatch(input)) return null;
     final c = input
         .toUpperCase()
         .replaceAll(RegExp(r'[\s-]'), '')

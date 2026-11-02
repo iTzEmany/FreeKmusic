@@ -246,6 +246,28 @@ void main() {
       expect(lines.last, contains('counter=2'));
     });
 
+    test('a wrong schema does not consume the counter', () {
+      final (h, g) = pair();
+      final bad = _forge(
+        h.keys.kH2g,
+        JamMsg.ping,
+        1,
+        'h2g',
+        '{"v":"x"}',
+        hostCrypto,
+      );
+      expect(g.open(bad), isNull);
+      final ok = _forge(
+        h.keys.kH2g,
+        JamMsg.ping,
+        1,
+        'h2g',
+        '{"v":1,"t":2}',
+        hostCrypto,
+      );
+      expect(g.open(ok), isNotNull);
+    });
+
     test('size, version and direction are checked before decrypting', () {
       final (h, g) = pair();
       final ok = h.seal(JamMsg.ping, {'v': 1, 't': 1})!;
@@ -318,6 +340,9 @@ void main() {
     expect(JamProtocol.normalizeCode('ABCD234'), isNull, reason: 'length');
     expect(JamProtocol.normalizeCode('ABCD234U'), isNull, reason: 'U');
     expect(JamProtocol.normalizeCode('ABCD234!'), isNull);
+    for (final u in ['ıııı-ıııı', 'ßßßß', 'ſſſſ']) {
+      expect(JamProtocol.normalizeCode(u), isNull, reason: u);
+    }
     final c = host.generateCode();
     expect(JamProtocol.normalizeCode(c), c);
     expect(JamProtocol.formatCode('ABCD2345'), 'ABCD-2345');

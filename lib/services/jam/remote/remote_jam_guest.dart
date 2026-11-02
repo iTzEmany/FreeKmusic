@@ -69,7 +69,7 @@ class RemoteJamGuest implements JamGuestLink {
   var _reqSeq = 0;
   late DateTime _lastHeard, _lastPing, _lastSync;
   final _pending = <String, Completer<JamResult>>{};
-  final _probes = <int, Completer<int?>>{};
+  final _probes = <int, List<Completer<int?>>>{};
   final _deadlines = <({DateTime at, void Function() fire})>[];
   final _states = StreamController<JamState>.broadcast();
   final _lost = StreamController<void>.broadcast();
@@ -305,7 +305,9 @@ class RemoteJamGuest implements JamGuestLink {
         _markLost();
       case JamMsg.time:
         final t0 = msg.body['t0'] as int;
-        _probes.remove(t0)?.complete(msg.body['t'] as int);
+        for (final c in _probes.remove(t0) ?? <Completer<int?>>[]) {
+          c.complete(msg.body['t'] as int);
+        }
     }
     _refreshLink();
   }
@@ -393,21 +395,24 @@ class RemoteJamGuest implements JamGuestLink {
     return c.future;
   }
 
+  /// Gives up on one probe (timeout or send failure).
+  void _drop(int t0, Completer<int?> c) {
+    _probes[t0]?.remove(c);
+    if (_probes[t0]?.isEmpty ?? false) _probes.remove(t0);
+    if (!c.isCompleted) c.complete(null);
+  }
+
   @override
   Future<JamTimeSample?> probeHostTime(int Function() localNow) async {
     if (_phase != _Phase.running) return null;
     final t0 = localNow();
-    final c = _probes[t0] = Completer<int?>();
+    final c = Completer<int?>();
+    (_probes[t0] ??= []).add(c);
     if (!_sendMsg(JamMsg.gTime, {'t0': t0})) {
-      _probes.remove(t0);
+      _drop(t0, c);
       return null;
     }
-    _deadlines.add((
-      at: _now().add(timeWait),
-      fire: () {
-        if (_probes.remove(t0) != null) c.complete(null);
-      },
-    ));
+    _deadlines.add((at: _now().add(timeWait), fire: () => _drop(t0, c)));
     final hostMs = await c.future;
     return hostMs == null ? null : (t0: t0, hostMs: hostMs, t1: localNow());
   }
@@ -449,8 +454,10 @@ class RemoteJamGuest implements JamGuestLink {
       c.complete(const JamResult.fail(JamError.ended));
     }
     _pending.clear();
-    for (final c in _probes.values) {
-      c.complete(null);
+    for (final l in _probes.values) {
+      for (final c in l) {
+        c.complete(null);
+      }
     }
     _probes.clear();
     _deadlines.clear();

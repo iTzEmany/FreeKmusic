@@ -427,6 +427,26 @@ void main() {
     expect((await f)!.hostMs, 5000);
   });
 
+  test('two probes with the same t0 are both completed', () async {
+    await joined();
+    final f1 = guest.probeHostTime(() => 1000);
+    final f2 = guest.probeHostTime(() => 1000);
+    await pump();
+    hostPull();
+    final t = inbox.lastWhere((m) => m.type == JamMsg.gTime);
+    hostSend(JamMsg.time, {'t0': t.body['t0'], 't': 5000});
+    expect((await f1)!.hostMs, 5000);
+    expect((await f2)!.hostMs, 5000);
+  });
+
+  test('dispose completes pending probes', () async {
+    await joined();
+    final f = guest.probeHostTime(() => 1000);
+    await pump();
+    await guest.dispose();
+    expect(await f, isNull);
+  });
+
   test('leave publishes LEAVE', () async {
     await joined();
     await guest.leave();
