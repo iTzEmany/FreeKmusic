@@ -67,6 +67,7 @@ class JamBridge {
     _wait?.cancel();
     _lostSub?.cancel();
     _link.disconnect();
+    _set(JamBridgeStatus.connecting); // before dispose closes the controllers
   }
 
   void dispose() {
@@ -78,7 +79,16 @@ class JamBridge {
   /// Remembered and redone after every reconnection.
   void subscribe(String topic) {
     if (!_topics.add(topic)) return;
-    if (_st == JamBridgeStatus.up) _link.subscribe(topic);
+    if (_st != JamBridgeStatus.up) return;
+    try {
+      _link.subscribe(topic);
+    } on Object catch (e, st) {
+      AppLog.w(
+        'bridge: subscribe failed: $topic',
+        e,
+        st,
+      ); // redone on reconnect
+    }
   }
 
   void unsubscribe(String topic) {
@@ -90,8 +100,14 @@ class JamBridge {
   /// False when not connected: the message is dropped, the owner resends on `connections`.
   bool publish(String topic, Uint8List bytes, {bool retain = false}) {
     if (_st != JamBridgeStatus.up) return false;
-    _link.publish(topic, bytes, retain: retain);
-    return true;
+    try {
+      _link.publish(topic, bytes, retain: retain);
+      return true;
+    } on Object catch (e, st) {
+      // Socket gone but onDisconnected not fired yet.
+      AppLog.w('bridge: publish failed: $topic', e, st);
+      return false;
+    }
   }
 
   void _set(JamBridgeStatus s) {
@@ -108,7 +124,10 @@ class JamBridge {
       try {
         await _link.connect(brokers[i]);
         if (gen != _gen) {
-          _link.disconnect(); // stopped while connecting
+          // Else a newer attempt owns the link.
+          if (!_running) {
+            _link.disconnect();
+          }
           return;
         }
         _idx = i;

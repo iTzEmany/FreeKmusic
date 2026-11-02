@@ -51,20 +51,26 @@ class FakeMqttLink implements MqttLink {
   final _disc = StreamController<void>.broadcast();
   FakeBroker? _b;
 
+  /// When set before a connect, that connect completes only after it resolves.
+  Future<void>? hold;
+
   @override
   Future<void> connect(BrokerEntry broker) async {
     _b?._links.remove(this);
     _b = null;
     connectAttempts.add(broker);
+    final h = hold;
     final b = net.brokers[broker];
     if (b == null || !b.up) throw StateError('unreachable: $broker');
     _b = b;
     subscribed.clear(); // a fresh session: subscriptions are lost
     b._links.add(this);
+    if (h != null) await h;
   }
 
   @override
   void subscribe(String topic) {
+    if (_b == null) throw StateError('not connected');
     subscribed.add(topic);
     final r = _b?.retained[topic];
     if (r != null) _deliver(topic, r);
@@ -75,7 +81,11 @@ class FakeMqttLink implements MqttLink {
 
   @override
   void publish(String topic, Uint8List bytes, {bool retain = false}) =>
-      _b!._publish(topic, Uint8List.fromList(bytes), retain);
+      (_b ?? (throw StateError('not connected')))._publish(
+        topic,
+        Uint8List.fromList(bytes),
+        retain,
+      );
 
   @override
   Stream<MqttIncoming> get messages => _msgs.stream;

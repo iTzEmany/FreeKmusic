@@ -44,7 +44,8 @@ class BrokerEntry {
   String toString() => '$host:$port';
 }
 
-/// Append only: the BLE announcement carries an index into this list.
+/// Append only: the BLE announcement (phase 72) carries an index into this list.
+/// Mosquitto 8886 was dropped before that index was used (D-328).
 const kDefaultJamBrokers = [BrokerEntry(host: 'broker.emqx.io', port: 8883)];
 
 String encodeBrokers(List<BrokerEntry> l) =>

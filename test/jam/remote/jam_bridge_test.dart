@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:codecore/services/jam/remote/broker_entry.dart';
@@ -150,4 +151,92 @@ void main() {
       expect(link.connectAttempts.length, 1);
     });
   });
+
+  test('after stop the status is connecting and publish is false', () {
+    fakeAsync((t) {
+      setUp_();
+      bridge.start();
+      t.flushMicrotasks();
+      bridge.stop();
+      expect(bridge.status, JamBridgeStatus.connecting);
+      expect(bridge.publish('t', Uint8List(1)), isFalse);
+    });
+  });
+
+  test('stop during a connect leaves the link disconnected', () {
+    fakeAsync((t) {
+      setUp_();
+      final gate = Completer<void>();
+      link.hold = gate.future;
+      bridge.start();
+      t.flushMicrotasks();
+      bridge.stop();
+      gate.complete();
+      t.flushMicrotasks();
+      expect(link.connected, isFalse);
+      expect(bridge.status, JamBridgeStatus.connecting);
+    });
+  });
+
+  test(
+    'stop then start: an old connect finishing does not drop the new link',
+    () {
+      fakeAsync((t) {
+        setUp_();
+        final gate = Completer<void>();
+        link.hold = gate.future;
+        bridge.start();
+        t.flushMicrotasks();
+        bridge.stop();
+        link.hold = null;
+        bridge.start();
+        t.flushMicrotasks();
+        gate.complete();
+        t.flushMicrotasks();
+        expect(link.connected, isTrue);
+        expect(bridge.status, JamBridgeStatus.up);
+      });
+    },
+  );
+
+  test('dispose with a pending attempt is quiet', () {
+    fakeAsync((t) {
+      setUp_();
+      final gate = Completer<void>();
+      link.hold = gate.future;
+      bridge.start();
+      t.flushMicrotasks();
+      bridge.dispose();
+      gate.complete();
+      t.flushMicrotasks();
+      expect(link.connected, isFalse);
+    });
+  });
+
+  test('a restart without network ends unreachable', () {
+    fakeAsync((t) {
+      setUp_();
+      bridge.start();
+      t.flushMicrotasks();
+      bridge.stop();
+      net[a].goDown();
+      net[b].goDown();
+      bridge.start();
+      t.elapse(const Duration(seconds: 2));
+      expect(bridge.status, JamBridgeStatus.unreachable);
+    });
+  });
+
+  test(
+    'publish between the socket dying and onDisconnected is false, no throw',
+    () {
+      fakeAsync((t) {
+        setUp_();
+        bridge.start();
+        t.flushMicrotasks();
+        link.disconnect(); // gone, onDisconnected not fired
+        expect(bridge.publish('t', Uint8List(1)), isFalse);
+      });
+    },
+  );
 }

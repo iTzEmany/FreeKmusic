@@ -58,6 +58,8 @@ class MqttClientLink implements MqttLink {
           ..securityContext = SecurityContext
               .defaultContext // R-129: onBadCertificate stays null
           ..keepAlivePeriod = 30
+          ..disconnectOnNoResponsePeriod =
+              10 // a silently dead socket fires onDisconnected
           ..autoReconnect = false
           ..logging(on: false)
           ..setProtocolV311()
