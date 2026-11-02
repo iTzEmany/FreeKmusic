@@ -25,6 +25,7 @@ class _FakeBridge extends JamBridgeNotifier {
 
   @override
   JamBridgeState build() => initial;
+  void set(JamBridgeState s) => state = s;
   @override
   String? currentQr() => 'CCJ1:test';
   @override
@@ -41,6 +42,7 @@ class _FakeJam extends JamController {
   _FakeJam([this.initial = const JamUiState()]);
   final JamUiState initial;
   final requested = <JamInvite?>[];
+  void set(JamUiState s) => state = s;
 
   @override
   JamUiState build() => initial;
@@ -199,6 +201,30 @@ void main() {
       final groups = bulkActions(ctx, ref, rows!, const BulkContext(), done: () {});
       final labels = [for (final g in groups) for (final a in g.actions) a.label];
       expect(labels.contains('Aggiungi alla Jam'), !remote);
+      await h.dispose(t);
+    });
+  }
+
+  for (final jamStarts in [true, false]) {
+    testWidgets(jamStarts ? 'the invite sheet closes when the Jam becomes active' : 'the invite sheet closes when the bridge goes off', (t) async {
+      final fake = _FakeJam();
+      final bridge = _FakeBridge(const JamBridgeState(on: true, status: JamBridgeStatus.up));
+      final h = await open(
+          t,
+          Builder(builder: (c) => TextButton(onPressed: () => JamInviteSheet.show(c), child: const Text('apri'))),
+          [jamProvider.overrideWith(() => fake), jamBridgeProvider.overrideWith(() => bridge)]);
+      await t.tap(find.text('apri'));
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byType(JamInviteSheet), findsOneWidget);
+      if (jamStarts) {
+        fake.set(const JamUiState(phase: JamPhase.active));
+      } else {
+        bridge.set(const JamBridgeState());
+      }
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byType(JamInviteSheet), findsNothing);
+      expect(find.text('Mi collego…'), findsNothing);
       await h.dispose(t);
     });
   }

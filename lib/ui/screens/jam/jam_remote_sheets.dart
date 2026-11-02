@@ -48,9 +48,14 @@ class _JamInviteSheetState extends ConsumerState<JamInviteSheet> {
     // The QR changes every 30 s and the code counts down: redraw each second.
     _tick = Timer.periodic(const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
     // The bridge comes up a moment after invite(): the code starts with it.
-    ref.listenManual(jamBridgeProvider.select((s) => s.on), (_, on) {
+    ref.listenManual(jamBridgeProvider.select((s) => s.on), (was, on) {
       if (on) unawaited(_bridge.startCode());
+      if (was == true && !on) _close(); // the Jam is over: nothing left to invite to
     }, fireImmediately: true);
+    // The guest got in: the bridge stays on for the Jam, the sheet has done its job.
+    ref.listenManual(jamProvider.select((s) => s.active), (_, active) {
+      if (active) _close();
+    });
   }
 
   @override
@@ -62,6 +67,10 @@ class _JamInviteSheetState extends ConsumerState<JamInviteSheet> {
       jam.stopInviting();
     });
     super.dispose();
+  }
+
+  void _close() {
+    if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) Navigator.of(context).pop();
   }
 
   void _openSettings() {
