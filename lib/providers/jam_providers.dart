@@ -447,6 +447,9 @@ class JamController extends Notifier<JamUiState> {
     _guestSub = guest.states.listen(_onState);
     _linkSub = guest.links.listen((l) => state = state.copyWith(link: l));
     await _begin(JamRole.guest, guest.state!);
+    // States that came while starting were dropped by _onState (not active yet).
+    final latest = guest.state;
+    if (latest != null && state.active && latest.version > (state.jam?.version ?? -1)) _onState(latest);
   }
 
   void cancelRequest() {

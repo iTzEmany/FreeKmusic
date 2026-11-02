@@ -66,10 +66,17 @@ class _Hub extends ShareHubNotifier {
 class _FakeGuest implements RemoteJamGuest {
   _FakeGuest(this.outcome);
   final JamJoinOutcome outcome;
+  JamState _cur = const JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h');
+
+  /// Pushes a newer state as soon as the controller listens, i.e. while it is still starting.
+  late final StreamController<JamState> _ctl = StreamController<JamState>.broadcast(onListen: () => scheduleMicrotask(() {
+        _cur = _cur.copyWith(version: 2);
+        _ctl.add(_cur);
+      }));
   @override
-  JamState? get state => const JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h');
+  JamState? get state => _cur;
   @override
-  Stream<JamState> get states => const Stream.empty();
+  Stream<JamState> get states => _ctl.stream;
   @override
   Stream<void> get lost => const Stream.empty();
   @override
@@ -326,6 +333,12 @@ void main() {
       await graceOver();
       final hub = c.read(shareHubProvider.notifier) as _Hub;
       expect((hub.held, hub.remoteHeld), (1, 1));
+    });
+
+    test('a state that arrives while the Jam is starting is not lost', () async {
+      guestOutcome = JamJoinOutcome.accepted;
+      await c.read(jamProvider.notifier).requestRemote(invite);
+      expect(c.read(jamProvider).jam!.version, 2);
     });
 
     test('accepted: the Jam is active and this device is a remote guest', () async {
