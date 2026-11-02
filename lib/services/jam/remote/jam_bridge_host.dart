@@ -12,6 +12,9 @@ const _codeLife = Duration(minutes: 2);
 const _pingEvery = Duration(seconds: 30);
 const _maxTriesPerSecond = 10;
 
+/// The code before a renewal still opens requests for this long.
+const _prevCodeGrace = Duration(seconds: 10);
+
 class _Code {
   _Code(this.text, this.keys, this.madeAt);
   final String text;
@@ -30,6 +33,7 @@ class JamBridgeHost {
     required this.host,
     required this.bridge,
     DateTime Function()? now,
+    this.stopGrace = const Duration(milliseconds: 500),
   }) : _now = now ?? DateTime.now;
 
   final JamProtocol protocol;
@@ -37,12 +41,18 @@ class JamBridgeHost {
   final JamBridge bridge;
   final DateTime Function() _now;
 
+  /// [stop] waits this long before disconnecting: the MQTT client may drop
+  /// buffered writes on disconnect.
+  final Duration stopGrace;
+
   JamHostSecrets? _s;
   Uint8List? _ak;
   final _pending = <String, JamChannel>{}; // JamRequest.id -> channel
   final _members = <String, JamChannel>{}; // member id -> channel
   final _codeChanged = StreamController<void>.broadcast();
-  _Code? _code;
+  _Code? _code, _prev;
+  DateTime? _prevUntil;
+  final _unsent = <String, Uint8List>{}; // member id -> ACCEPT not published
   String? _goneTopic;
   int _codeGen = 0;
   bool _codeBusy = false;
@@ -62,6 +72,10 @@ class JamBridgeHost {
   Stream<void> get codeChanges => _codeChanged.stream;
 
   int get _ms => _now().millisecondsSinceEpoch;
+
+  /// Members that already got their ACCEPT (the first envelope of a pair).
+  Iterable<MapEntry<String, JamChannel>> get _live =>
+      _members.entries.where((e) => !_unsent.containsKey(e.key));
 
   void start() {
     if (_s != null) return;
@@ -87,10 +101,12 @@ class JamBridgeHost {
     if (now.difference(_lastPing) >= _pingEvery) {
       _lastPing = now;
       final v = host.state?.version ?? 0;
-      for (final ch in _members.values) {
-        _send(ch, JamMsg.ping, {'v': v, 't': _ms});
+      for (final e in _live) {
+        _send(e.value, JamMsg.ping, {'v': v, 't': _ms});
       }
     }
+    final pu = _prevUntil;
+    if (pu != null && !now.isBefore(pu)) _dropPrev();
     final c = _code;
     if (c != null && !_codeBusy && now.difference(c.madeAt) >= _codeLife) {
       unawaited(_newCode());
@@ -114,8 +130,15 @@ class JamBridgeHost {
         keys.dispose();
         return;
       }
-      _dropCode(clear: true);
+      _dropPrev();
       _clearGone();
+      final old = _code;
+      if (old != null) {
+        _publishCode(old, gone: true);
+        _goneTopic = old.topic;
+        _prev = old;
+        _prevUntil = _now().add(_prevCodeGrace);
+      }
       final c = _code = _Code(text, keys, _now());
       _publishCode(c, gone: false);
       _codeChanged.add(null);
@@ -131,6 +154,7 @@ class JamBridgeHost {
     _codeGen++;
     final c = _code;
     if (c == null) return;
+    _clearGone();
     _publishCode(c, gone: true);
     _goneTopic = c.topic;
     _dropCode(clear: false);
@@ -143,6 +167,12 @@ class JamBridgeHost {
     if (clear) _retain(c.topic, Uint8List(0));
     c.keys.dispose();
     _code = null;
+  }
+
+  void _dropPrev() {
+    _prev?.keys.dispose();
+    _prev = null;
+    _prevUntil = null;
   }
 
   void _clearGone() {
@@ -215,16 +245,30 @@ class JamBridgeHost {
   }
 
   void _onRequest(JamHostSecrets s, Uint8List bytes) {
-    final sec = _ms ~/ 1000;
-    if (sec != _rateSec) {
-      _rateSec = sec;
-      _rateN = 0;
+    // Only messages that would reach the AEAD use the budget; each attempt counts.
+    final wellFormed =
+        bytes.length >= 2 + 32 + 24 + 16 &&
+        bytes.length <= JamWire.maxRequest &&
+        bytes[0] == JamWire.version &&
+        bytes[1] == JamWire.tRequest;
+    final codes = [?_code, ?_prev];
+    if (wellFormed) {
+      final sec = _ms ~/ 1000;
+      if (sec != _rateSec) {
+        _rateSec = sec;
+        _rateN = 0;
+      }
+      final cost = 2 + codes.length; // T_w, T_(w-1) and each live KC
+      if (_rateN + cost > _maxTriesPerSecond) {
+        protocol.drops.drop('rate'); // dropped before any decryption
+        return;
+      }
+      _rateN += cost;
     }
-    if (++_rateN > _maxTriesPerSecond) {
-      protocol.drops.drop('rate'); // dropped before any decryption
-      return;
+    var r = protocol.openRequest(bytes, s, hostMs: _ms, kc: _code?.keys.kc);
+    if (r == null && wellFormed && _prev != null) {
+      r = protocol.openRequest(bytes, s, hostMs: _ms, kc: _prev!.keys.kc);
     }
-    final r = protocol.openRequest(bytes, s, hostMs: _ms, kc: _code?.keys.kc);
     if (r == null) return;
     final a = host.admitRequest(id: r.id, name: r.name, remote: true);
     switch (a.status) {
@@ -245,13 +289,18 @@ class JamBridgeHost {
     switch (m.type) {
       case JamMsg.cmd:
         final r = host.apply(m.command!, from: id);
+        _onChanges(); // the new STATE goes out before the RESULT
         _send(ch, JamMsg.result, {
           'req': m.body['req'],
           if (r.isOk) 'v': r.state!.version else 'err': r.error!.name,
         });
       case JamMsg.sync:
         final st = host.state;
-        if (st != null && (m.body['v'] as int) < st.version) _sendState(ch, st);
+        if (st != null && (m.body['v'] as int) < st.version) {
+          _sendState(ch, st);
+        } else {
+          _send(ch, JamMsg.ping, {'v': st?.version ?? 0, 't': _ms}); // alive
+        }
       case JamMsg.leave:
         host.removeMember(id);
       case JamMsg.gTime:
@@ -277,14 +326,17 @@ class JamBridgeHost {
         ch.dispose(); // expired or vanished: nothing is answered
       }
     }
+    final st = host.state;
+    // Also gone: replaced by a LAN guest of the same id (K-JD-02).
     final gone = [
       for (final id in _members.keys)
-        if (!host.memberIds.contains(id)) id,
+        if (!host.memberIds.contains(id) ||
+            st?.participant(id)?.remote != true)
+          id,
     ];
-    final st = host.state;
     if (st != null && st.version != _sentVersion) {
       _sentVersion = st.version;
-      for (final e in _members.entries) {
+      for (final e in _live) {
         if (!fresh.contains(e.key) && !gone.contains(e.key)) {
           _sendState(e.value, st);
         }
@@ -310,7 +362,7 @@ class JamBridgeHost {
     if (_members.containsKey(id)) _release(id);
     _members[id] = ch;
     bridge.subscribe(ch.recvTopic);
-    _send(ch, JamMsg.accept, {
+    final b = ch.seal(JamMsg.accept, {
       'host': host.deviceId,
       'name': host.deviceName,
       'state': fitted,
@@ -318,11 +370,19 @@ class JamBridgeHost {
       'ak': b64u(_ak!),
       't': _ms,
     });
+    if (b == null) {
+      AppLog.w('jam bridge: ACCEPT too big, member removed');
+      _release(id);
+      host.removeMember(id);
+      return false;
+    }
+    if (!bridge.publish(ch.sendTopic, b)) _unsent[id] = b; // resent on reconnect
     return true;
   }
 
   void _release(String id) {
     final ch = _members.remove(id);
+    _unsent.remove(id);
     if (ch == null) return;
     bridge.unsubscribe(ch.recvTopic);
     ch.dispose();
@@ -330,13 +390,13 @@ class JamBridgeHost {
 
   // ---- sending -------------------------------------------------------------
 
-  void _send(JamChannel ch, int type, Map<String, Object?> body) {
+  bool _send(JamChannel ch, int type, Map<String, Object?> body) {
     final b = ch.seal(type, body);
     if (b == null) {
       AppLog.w('jam bridge: message $type too big, not sent');
-      return;
+      return false;
     }
-    bridge.publish(ch.sendTopic, b);
+    return bridge.publish(ch.sendTopic, b);
   }
 
   void _sendState(JamChannel ch, JamState st) {
@@ -355,19 +415,26 @@ class JamBridgeHost {
     _retain(JamProtocol.lobbyTopic(s.jamId), protocol.lobby(s.hpk));
     final c = _code;
     if (c != null) _publishCode(c, gone: false);
+    // ACCEPT first: the guest takes envelopes in counter order.
+    for (final e in [..._unsent.entries]) {
+      if (bridge.publish(_members[e.key]!.sendTopic, e.value)) {
+        _unsent.remove(e.key);
+      }
+    }
     final st = host.state;
     if (st != null) {
-      for (final ch in _members.values) {
-        _sendState(ch, st);
+      for (final e in _live) {
+        _sendState(e.value, st);
       }
     }
   }
 
   // ---- off -----------------------------------------------------------------
 
-  void stop() {
+  Future<void> stop() async {
     final s = _s;
     if (s == null) return;
+    _s = null;
     _timer?.cancel();
     for (final x in _subs) {
       unawaited(x.cancel());
@@ -375,14 +442,15 @@ class JamBridgeHost {
     _subs.clear();
     final st = host.state;
     if (st != null && st.ended && st.version != _sentVersion) {
-      for (final ch in _members.values) {
-        _sendState(ch, st);
+      for (final e in _live) {
+        _sendState(e.value, st);
       }
     }
     _retain(JamProtocol.lobbyTopic(s.jamId), Uint8List(0));
     _clearGone();
     _codeGen++;
     _dropCode(clear: true);
+    _dropPrev();
     bridge.unsubscribe(JamProtocol.requestTopic(s.jamId));
     for (final id in [..._members.keys]) {
       _release(id);
@@ -391,16 +459,16 @@ class JamBridgeHost {
       ch.dispose();
     }
     _pending.clear();
-    bridge.stop();
     _ak?.fillRange(0, 32, 0);
     _ak = null;
     s.dispose();
-    _s = null;
+    await Future<void>.delayed(stopGrace);
+    bridge.stop();
   }
 
   /// [stop] and close [codeChanges].
-  void dispose() {
-    stop();
-    _codeChanged.close();
+  Future<void> dispose() async {
+    await stop();
+    await _codeChanged.close();
   }
 }

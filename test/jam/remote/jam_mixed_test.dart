@@ -50,6 +50,7 @@ void main() {
       host: host,
       bridge: JamBridge(hostLink, [brokerA, brokerB]),
       now: () => clock,
+      stopGrace: Duration.zero,
     )..start();
     guests = [];
     await pump();
@@ -59,7 +60,7 @@ void main() {
     for (final g in guests) {
       await g.dispose();
     }
-    bh.dispose();
+    await bh.dispose();
     host.dispose();
   });
 
@@ -244,7 +245,7 @@ void main() {
   test('an expired code is codeExpired', () async {
     await bh.startCode();
     final code = bh.code!;
-    clock = clock.add(const Duration(minutes: 3)); // no host tick: no renewal
+    clock = clock.add(const Duration(minutes: 5)); // past exp plus the guest slack
     final g = newGuest();
     final f = g.join(
       JamInvite.fromCode(code)!,

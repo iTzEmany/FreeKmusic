@@ -64,13 +64,14 @@ void main() {
       host: host,
       bridge: bridge,
       now: () => clock,
+      stopGrace: Duration.zero,
     )..start();
     await pumpEventQueue();
     qr = guestProtocol.decodeQr(bh.currentQr()!)!;
   });
 
-  tearDown(() {
-    bh.dispose();
+  tearDown(() async {
+    await bh.dispose();
     host.dispose();
   });
 
@@ -126,12 +127,26 @@ void main() {
     expect(a.of(JamMsg.no).single.body['why'], 'declined');
   });
 
-  test('the 11th request in a second is not even decrypted', () async {
-    final gs = [for (var i = 0; i < 11; i++) await guest('g$i')];
-    // g0 is pending, g1..g9 were answered busy, g10 got nothing.
-    expect(gs.sublist(1, 10).every((g) => g.of(JamMsg.no).isNotEmpty), isTrue);
-    expect(gs[10].inbox, isEmpty);
+  test('decryption attempts are capped at 10 a second, not messages', () async {
+    // No code: 2 attempts each, so 5 requests fit. g0 pending, g1..g4 busy.
+    final gs = [for (var i = 0; i < 6; i++) await guest('g$i')];
+    expect(gs.sublist(1, 5).every((g) => g.of(JamMsg.no).isNotEmpty), isTrue);
+    expect(gs[5].inbox, isEmpty);
     expect(drops.join(), contains('rate=1'));
+  });
+
+  test('malformed junk does not use the decryption budget', () async {
+    final junk = Uint8List(10);
+    final l = FakeMqttLink(net);
+    await l.connect(entry);
+    for (var i = 0; i < 20; i++) {
+      l.publish(JamProtocol.requestTopic(qr.jamId), junk);
+    }
+    await pumpEventQueue();
+    final g = await guest('a');
+    expect(host.requests.length, 1);
+    expect(g.inbox, isEmpty);
+    expect(drops.join(), isNot(contains('rate')));
   });
 
   test('a repeated Gpk is dropped', () async {
@@ -169,6 +184,15 @@ void main() {
     expect(g.of(JamMsg.result).last.body, {'req': 'r2', 'err': 'forbidden'});
   });
 
+  test('the new STATE goes out before the RESULT of a CMD', () async {
+    final g = await joined('dev-1');
+    g.send(JamMsg.cmd, {'req': 'r', 'cmd': const JamCommand.volume(0.5).toJson()});
+    await pumpEventQueue();
+    final i = g.inbox.lastIndexWhere((m) => m.type == JamMsg.result);
+    expect(g.inbox[i - 1].type, JamMsg.state);
+    expect(g.inbox[i - 1].state!.version, g.inbox[i].body['v']);
+  });
+
   test('a new version is pushed as STATE to every remote', () async {
     final g = await joined('dev-1');
     host.apply(const JamCommand.volume(0.3));
@@ -176,12 +200,13 @@ void main() {
     expect(g.of(JamMsg.state).last.state!.version, host.state!.version);
   });
 
-  test('SYNC with an old version gets STATE, a current one nothing', () async {
+  test('SYNC with an old version gets STATE, a current one a PING', () async {
     final g = await joined('dev-1');
     final n = g.of(JamMsg.state).length;
     g.send(JamMsg.sync, {'v': host.state!.version});
     await pumpEventQueue();
     expect(g.of(JamMsg.state).length, n);
+    expect(g.of(JamMsg.ping).single.body['v'], host.state!.version);
     g.send(JamMsg.sync, {'v': 0});
     await pumpEventQueue();
     expect(g.of(JamMsg.state).length, n + 1);
@@ -268,7 +293,22 @@ void main() {
     bh.tick();
     await bh.codeChanges.first;
     expect(bh.code!.replaceAll('-', ''), isNot(text));
-    expect(net[entry].retained[topic], isEmpty); // old one cleared
+    final old = guestProtocol.openCode(
+      net[entry].retained[topic]!,
+      keys.kc,
+      nowMs: clock.millisecondsSinceEpoch,
+    )!;
+    expect(old.gone, isTrue); // the old one says «gone», it is not erased
+    // The old code still opens a request for 10 s after the renewal.
+    await guest('dev-2', proof: keys.kc.bytes);
+    expect(host.requests.values.where((r) => r.fromId == 'dev-2'), hasLength(1));
+    clock = clock.add(const Duration(seconds: 11));
+    bh.tick();
+    final late = await guest('dev-3', proof: keys.kc.bytes);
+    expect(host.requests.values.where((r) => r.fromId == 'dev-3'), isEmpty);
+    expect(late.inbox, isEmpty);
+    await bh.stop();
+    expect(net[entry].retained[topic], isEmpty);
   });
 
   test('stopCode publishes gone', () async {
@@ -289,7 +329,7 @@ void main() {
     await bh.startCode();
     final codeTopics = net[entry].retained.keys.where((t) => t.startsWith('ccj1/c/'));
     host.endSession();
-    bh.stop();
+    await bh.stop();
     await pumpEventQueue();
     expect(g.of(JamMsg.state).last.state!.ended, isTrue);
     expect(net[entry].retained[JamProtocol.lobbyTopic(qr.jamId)], isEmpty);
@@ -299,6 +339,31 @@ void main() {
     expect(bh.running, isFalse);
     expect(bh.currentQr(), isNull);
     expect(bridge.status, JamBridgeStatus.connecting);
+  });
+
+  test('a member replaced by a LAN guest of the same id gets BYE', () async {
+    final g = await joined('dev-1');
+    host.addMember(id: 'dev-1', name: 'Lan', host: '10.0.0.5', port: 4000);
+    await pumpEventQueue();
+    expect(g.of(JamMsg.bye).single.body['why'], 'removed');
+    expect(host.memberIds, ['dev-1']);
+  });
+
+  test('an ACCEPT lost while the bridge is down is sent on return', () async {
+    final g = await guest('dev-1');
+    final b = net[entry];
+    b.goDown();
+    await pumpEventQueue();
+    host.accept(host.requests.values.single.id);
+    await pumpEventQueue();
+    b.comeBack();
+    await g.link.connect(entry);
+    g.link.subscribe(g.ch.recvTopic);
+    expect(g.inbox, isEmpty);
+    await Future<void>.delayed(const Duration(milliseconds: 1300));
+    await pumpEventQueue();
+    expect(g.inbox.first.type, JamMsg.accept);
+    expect(g.of(JamMsg.accept), hasLength(1));
   });
 
   test('broker drops and returns: LOBBY and STATE are published again', () async {
