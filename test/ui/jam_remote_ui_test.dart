@@ -6,11 +6,13 @@ import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/jam/remote/jam_bridge.dart' show JamBridgeStatus;
 import 'package:codecore/services/jam/remote/jam_invite.dart';
 import 'package:codecore/ui/screens/jam/jam_header.dart';
+import 'package:codecore/ui/widgets/bulk_actions.dart';
 import 'package:codecore/ui/screens/jam/jam_remote_sheets.dart';
 import 'package:codecore/ui/screens/jam/jam_screen.dart';
 import 'package:codecore/ui/screens/jam/speaker_notices.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -51,11 +53,11 @@ class _FakeJam extends JamController {
 }
 
 void main() {
-  Future<Harness> open(WidgetTester t, Widget child, List<Override> overrides) async {
+  Future<Harness> open(WidgetTester t, Widget child, List<Override> overrides, {int tracks = 0}) async {
     t.view.physicalSize = const Size(500, 1200);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final h = await Harness.create(t);
+    final h = await Harness.create(t, tracks: tracks);
     await h.pump(t, Scaffold(body: child), extraOverrides: overrides);
     return h;
   }
@@ -179,4 +181,25 @@ void main() {
     expect(find.textContaining('Telefono (non raggiungibile)'), findsOneWidget);
     await h.dispose(t);
   });
+
+  for (final remote in [false, true]) {
+    testWidgets('«Aggiungi alla Jam» is ${remote ? 'hidden' : 'offered'} for a ${remote ? 'remote' : 'LAN'} guest', (t) async {
+      late BuildContext ctx;
+      late WidgetRef ref;
+      final h = await open(
+          t,
+          Consumer(builder: (c, r, _) {
+            ctx = c;
+            ref = r;
+            return const SizedBox();
+          }),
+          [jamProvider.overrideWith(() => _FakeJam(JamUiState(phase: JamPhase.active, remote: remote)))],
+          tracks: 2);
+      final rows = await t.runAsync(() => (h.db.select(h.db.tracks)).get());
+      final groups = bulkActions(ctx, ref, rows!, const BulkContext(), done: () {});
+      final labels = [for (final g in groups) for (final a in g.actions) a.label];
+      expect(labels.contains('Aggiungi alla Jam'), !remote);
+      await h.dispose(t);
+    });
+  }
 }

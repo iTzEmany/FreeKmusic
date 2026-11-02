@@ -63,6 +63,8 @@ lib/
     jam/jam_state.dart, jam_host.dart, jam_guest.dart, jam_output.dart, jam_cache.dart  # (fase 8)
     jam/jam_gate.dart, jam_guest_link.dart                              # anti-spam e confine dell'ospite (fase 69)
     jam/remote/jam_crypto.dart, mqtt_link.dart, broker_entry.dart       # Jam a distanza (fase 69)
+    jam/remote/jam_protocol.dart, jam_bridge.dart, broker_probe.dart    # protocollo puro, link con riconnessione, prova del broker (fase 70)
+    jam/remote/jam_bridge_host.dart, remote_jam_guest.dart, jam_invite.dart  # lato host, lato ospite, QR e codice (fase 70)
   providers/                      # provider Riverpod (database, settings, player, library, ...)
   ui/
     theme/tokens.dart             # colori (CcColors), dimensioni e scala gap/r (CcDims), movimento, font
@@ -129,7 +131,8 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
   - `JamGate` filtra le richieste di tutti, in LAN e sul ponte: 2 al minuto per id, Sospendi, Blocca. Lo legge `JamHost.admitRequest`.
   - `JamGuestLink` è ciò che `JamController` usa dell'ospite: lo implementano `JamGuest` (LAN) e, dalla fase 70, l'ospite remoto.
   - Secondo archivio persistente: `JamSecretStore` (`lib/data/settings/jam_secret_store.dart`), con il gate e, dalla fase 70, le chiavi degli amici. Su Android sta in DataStore (`SharedPreferencesAsync`), su desktop in `<appSupportDir>/jam_secrets.json`. È escluso dal backup di sistema e da quello dell'app (D-269, R-135).
-  - I provider stanno in `jam_remote_providers.dart` (gate, archivio) e `jam_broker_providers.dart` (lista dei broker).
+  - I provider stanno in `jam_remote_providers.dart` (gate, archivio, `jamBridgeProvider`, che accende il ponte guardando `jamProvider`) e `jam_broker_providers.dart` (lista dei broker).
+  - Fase 70: `JamGuestLink` ha `files: JamHostFiles?` (null per l'ospite remoto) e `link`/`links`. Il servizio in primo piano tiene due conteggi in `ShareHubNotifier` (`holdJam`/`releaseJam`, di cui uno per il ponte) e il testo cambia con essi. I fogli sono in `lib/ui/screens/jam/jam_remote_sheets.dart`.
 - Fase 10: uscite multiple sincronizzate. `JamClock` (offset verso l'orologio dell'host, rotta `/time`, filtro sui giri lenti), `JamSyncController` (decisioni pure: avvio programmato, velocità ±2 %, seek), `JamOutput` in modalità sincrona (cache obbligatoria, anticipo di `jamStartLeadMs`), compensazione manuale della latenza in `AppSettings.jamLatencyMs`.
 - Fase 66: coda insieme. `JamMode` (`host`/`together`) in `JamState`; in `together` il riduttore ordina con `togetherOrder` (`jam_turns.dart`, turni tra i partecipanti).
   `JamPartFeeder` (`jam_part_feeder.dart`) manda i brani della parte di ognuno con `partKey`, i suggeriti locali vengono da `pickSuggestion` (`jam_suggestion.dart`).
