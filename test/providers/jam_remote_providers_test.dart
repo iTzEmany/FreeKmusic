@@ -232,7 +232,7 @@ void main() {
     await hub.holdJam(remote: true);
     await hub.releaseJam(remote: true);
     await hub.releaseJam();
-    expect(svc.calls, ['start:La Jam è attiva', 'start:Jam a distanza', 'start:La Jam è attiva', 'stop']);
+    expect(svc.calls, ['start:La Jam è attiva', 'start:Jam a distanza attiva', 'start:La Jam è attiva', 'stop']);
   });
 }
 

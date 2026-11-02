@@ -141,9 +141,9 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
   Future<void> _startJamService() {
     final l = _l10n;
     return _platform.startService(
-      title: _remoteHolds > 0 ? l.jamRemoteTitle : l.jamPlaying,
+      title: _remoteHolds > 0 ? l.jamRemoteActive : l.jamPlaying,
       text: _remoteHolds > 0 ? l.jamPlaying : l.jamIncomingBody,
-      disable: l.jamEnd,
+      disable: _remoteHolds > 0 ? l.jamRemoteEnd : l.jamEnd,
     );
   }
 

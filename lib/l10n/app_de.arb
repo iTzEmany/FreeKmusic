@@ -3162,5 +3162,33 @@
   "logCorrection": "Korrigiert von {from} zu {to}",
   "logRevert": "Wiederherstellen",
   "recogActionFailed": "Aktion fehlgeschlagen",
-  "logRevertFailed": "Diese Korrektur konnte nicht wiederhergestellt werden"
+  "logRevertFailed": "Diese Korrektur konnte nicht wiederhergestellt werden",
+  "jamInviteNearby": "Nahestehende einladen",
+  "jamInviteHint": "Wer den QR-Code scannt oder den Code eingibt, tritt der Jam bei.",
+  "jamBridgeConnecting": "Verbinde…",
+  "jamBridgeRetrying": "Verbindung unterbrochen, neuer Versuch…",
+  "jamBridgeUnreachable": "Broker nicht erreichbar",
+  "jamCodeExpiresIn": "Läuft in {seconds} s ab",
+  "@jamCodeExpiresIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "jamEnterCode": "Mit Code beitreten",
+  "jamCodeLabel": "Code",
+  "jamScanQr": "QR-Code scannen",
+  "jamJoinAction": "Beitreten",
+  "jamCodeInvalid": "Ungültiger Code",
+  "jamCodeExpired": "Code abgelaufen, bitte einen neuen anfragen",
+  "jamHostNoAnswer": "Der Host hat nicht geantwortet",
+  "jamCustomBroker": "Diese Jam nutzt einen eigenen Broker: QR-Code scannen",
+  "jamLinkReconnecting": "Verbindung verloren, neuer Versuch…",
+  "jamHostSilent": "Host nicht erreichbar, neuer Versuch…",
+  "jamMemberUnreachable": "nicht erreichbar",
+  "jamRemoteActive": "Fern-Jam aktiv",
+  "jamRemoteEnd": "Beenden",
+  "jamDeclinedHost": "Der Host hat die Anfrage abgelehnt",
+  "jamBusyHost": "Der Host hat bereits eine Jam laufen"
 }
