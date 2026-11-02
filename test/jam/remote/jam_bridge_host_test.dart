@@ -14,6 +14,103 @@ import 'fakes.dart';
 
 const entry = BrokerEntry(host: 'a.net', port: 8883);
 
+/// Real crypto that counts decryptions and remembers keys, and can fail Argon2.
+class TestCrypto implements JamCrypto {
+  TestCrypto(this.i);
+  final JamCrypto i;
+  int decrypts = 0;
+  bool failPwhash = false;
+  JamKey? lastDecryptKey, lastMacKey;
+
+  @override
+  Uint8List? aeadDecrypt({
+    required JamKey key,
+    required Uint8List nonceAndCipher,
+    Uint8List? additionalData,
+  }) {
+    decrypts++;
+    lastDecryptKey = key;
+    return i.aeadDecrypt(
+      key: key,
+      nonceAndCipher: nonceAndCipher,
+      additionalData: additionalData,
+    );
+  }
+
+  @override
+  Uint8List mac({required JamKey key, required Uint8List message}) {
+    lastMacKey = key;
+    return i.mac(key: key, message: message);
+  }
+
+  @override
+  Future<JamKey> pwhash({
+    required String password,
+    required Uint8List salt,
+    required int outLen,
+  }) async {
+    if (failPwhash) throw StateError('pwhash down');
+    return i.pwhash(password: password, salt: salt, outLen: outLen);
+  }
+
+  @override
+  Uint8List randomBytes(int length) => i.randomBytes(length);
+  @override
+  JamKeyPair kxKeyPair() => i.kxKeyPair();
+  @override
+  JamSessionKeys? kxClientSessionKeys({
+    required Uint8List clientPublicKey,
+    required JamKey clientSecretKey,
+    required Uint8List serverPublicKey,
+  }) => i.kxClientSessionKeys(
+    clientPublicKey: clientPublicKey,
+    clientSecretKey: clientSecretKey,
+    serverPublicKey: serverPublicKey,
+  );
+  @override
+  JamSessionKeys? kxServerSessionKeys({
+    required Uint8List serverPublicKey,
+    required JamKey serverSecretKey,
+    required Uint8List clientPublicKey,
+  }) => i.kxServerSessionKeys(
+    serverPublicKey: serverPublicKey,
+    serverSecretKey: serverSecretKey,
+    clientPublicKey: clientPublicKey,
+  );
+  @override
+  JamKey hkdfExtract({Uint8List? salt, required Uint8List ikm}) =>
+      i.hkdfExtract(salt: salt, ikm: ikm);
+  @override
+  JamKey hkdfExpand({
+    required JamKey prk,
+    required String context,
+    required int outLen,
+  }) => i.hkdfExpand(prk: prk, context: context, outLen: outLen);
+  @override
+  Uint8List aeadEncrypt({
+    required JamKey key,
+    required Uint8List message,
+    Uint8List? additionalData,
+  }) => i.aeadEncrypt(
+    key: key,
+    message: message,
+    additionalData: additionalData,
+  );
+  @override
+  bool macVerify({
+    required JamKey key,
+    required Uint8List message,
+    required Uint8List tag,
+  }) => i.macVerify(key: key, message: message, tag: tag);
+  @override
+  Uint8List genericHash(Uint8List message, {required int outLen}) =>
+      i.genericHash(message, outLen: outLen);
+  @override
+  Uint8List pad(Uint8List data, int blockSize) => i.pad(data, blockSize);
+  @override
+  Uint8List? unpad(Uint8List data, int blockSize) => i.unpad(data, blockSize);
+}
+
 /// A remote guest driven by hand with the real protocol.
 class Guest {
   Guest(this.id, this.req, this.ch, this.link);
@@ -39,7 +136,7 @@ class Guest {
 }
 
 void main() {
-  late SodiumJamCrypto crypto;
+  late TestCrypto crypto;
   late JamProtocol protocol, guestProtocol;
   late DateTime clock;
   late List<String> drops;
@@ -50,12 +147,13 @@ void main() {
   late JamQr qr;
 
   setUp(() async {
-    crypto = await SodiumJamCrypto.create();
+    final base = await SodiumJamCrypto.create();
+    crypto = TestCrypto(base);
     clock = DateTime.fromMillisecondsSinceEpoch(1000000 * 30000 + 5000);
     drops = [];
     final log = JamDropLog(now: () => clock, sink: drops.add);
     protocol = JamProtocol(crypto, drops: log);
-    guestProtocol = JamProtocol(crypto, drops: log);
+    guestProtocol = JamProtocol(base, drops: log);
     net = FakeNet([entry]);
     host = JamHost(deviceId: 'host', deviceName: 'Host', now: () => clock);
     bridge = JamBridge(FakeMqttLink(net), [entry]);
@@ -133,6 +231,30 @@ void main() {
     expect(gs.sublist(1, 5).every((g) => g.of(JamMsg.no).isNotEmpty), isTrue);
     expect(gs[5].inbox, isEmpty);
     expect(drops.join(), contains('rate=1'));
+  });
+
+  test('with two codes alive, AEAD attempts stay within 10 a second', () async {
+    await bh.startCode();
+    clock = clock.add(const Duration(seconds: 1));
+    await bh.startCode(); // the first one is now the previous code
+    crypto.decrypts = 0;
+    for (var i = 0; i < 30; i++) {
+      await guest('g$i', proof: Uint8List(6));
+    }
+    expect(crypto.decrypts, lessThanOrEqualTo(10));
+    expect(crypto.decrypts, greaterThan(0));
+  });
+
+  test('a code older than 2 minutes opens nothing, even if renewal fails', () async {
+    await bh.startCode();
+    final keys = await guestProtocol.deriveCode(bh.code!.replaceAll('-', ''));
+    crypto.failPwhash = true;
+    clock = clock.add(const Duration(minutes: 5));
+    bh.tick();
+    await pumpEventQueue();
+    final g = await guest('dev-1', proof: keys.kc.bytes);
+    expect(host.requests, isEmpty);
+    expect(g.inbox, isEmpty);
   });
 
   test('malformed junk does not use the decryption budget', () async {
@@ -220,17 +342,42 @@ void main() {
     expect(g.of(JamMsg.time).single.body['t'], clock.millisecondsSinceEpoch);
   });
 
-  test('LEAVE removes the member', () async {
+  test('LEAVE removes the member and throws its keys away', () async {
     final g = await joined('dev-1');
+    g.send(JamMsg.gPing, {});
+    await pumpEventQueue();
+    final key = crypto.lastDecryptKey!;
+    expect(key.isDisposed, isFalse);
     g.send(JamMsg.leave, {});
     await pumpEventQueue();
     expect(host.memberIds, isEmpty);
+    expect(key.isDisposed, isTrue);
+  });
+
+  test('a silent guest is reachable again after a valid message', () async {
+    final g = await joined('dev-1');
+    clock = clock.add(const Duration(seconds: 61));
+    expect(host.unreachableIds(), ['dev-1']);
+    g.send(JamMsg.gPing, {});
+    await pumpEventQueue();
+    expect(host.unreachableIds(), isEmpty);
+  });
+
+  test('a new member gets no second STATE of the same version', () async {
+    final g1 = await joined('dev-1');
+    final g2 = await joined('dev-2');
+    expect(g2.of(JamMsg.state), isEmpty); // the ACCEPT carried it
+    expect(g1.of(JamMsg.state), hasLength(1));
   });
 
   test('a removed member gets BYE and its channel is dead', () async {
     final g = await joined('dev-1');
+    g.send(JamMsg.gPing, {});
+    await pumpEventQueue();
+    final key = crypto.lastDecryptKey!;
     host.removeMember('dev-1');
     await pumpEventQueue();
+    expect(key.isDisposed, isTrue);
     expect(g.of(JamMsg.bye).single.body['why'], 'removed');
     expect(net[entry].log.last.topic, g.ch.recvTopic);
     final before = host.state!.version;
@@ -337,6 +484,7 @@ void main() {
       expect(net[entry].retained[t], isEmpty);
     }
     expect(bh.running, isFalse);
+    expect(crypto.lastMacKey!.isDisposed, isTrue); // the token key of the secrets
     expect(bh.currentQr(), isNull);
     expect(bridge.status, JamBridgeStatus.connecting);
   });

@@ -244,30 +244,39 @@ class JamBridgeHost {
     }
   }
 
+  /// Charges [n] AEAD attempts to the per-second budget; false when it is spent.
+  bool _take(int n) {
+    final sec = _ms ~/ 1000;
+    if (sec != _rateSec) {
+      _rateSec = sec;
+      _rateN = 0;
+    }
+    if (_rateN + n > _maxTriesPerSecond) {
+      protocol.drops.drop('rate'); // dropped before any decryption
+      return false;
+    }
+    _rateN += n;
+    return true;
+  }
+
   void _onRequest(JamHostSecrets s, Uint8List bytes) {
-    // Only messages that would reach the AEAD use the budget; each attempt counts.
+    // Only messages that would reach the AEAD use the budget.
     final wellFormed =
         bytes.length >= 2 + 32 + 24 + 16 &&
         bytes.length <= JamWire.maxRequest &&
         bytes[0] == JamWire.version &&
         bytes[1] == JamWire.tRequest;
-    final codes = [?_code, ?_prev];
-    if (wellFormed) {
-      final sec = _ms ~/ 1000;
-      if (sec != _rateSec) {
-        _rateSec = sec;
-        _rateN = 0;
-      }
-      final cost = 2 + codes.length; // T_w, T_(w-1) and each live KC
-      if (_rateN + cost > _maxTriesPerSecond) {
-        protocol.drops.drop('rate'); // dropped before any decryption
-        return;
-      }
-      _rateN += cost;
-    }
-    var r = protocol.openRequest(bytes, s, hostMs: _ms, kc: _code?.keys.kc);
-    if (r == null && wellFormed && _prev != null) {
-      r = protocol.openRequest(bytes, s, hostMs: _ms, kc: _prev!.keys.kc);
+    final now = _now();
+    // A code opens requests for 2 min, the previous one for 10 s more (R-139).
+    final c = _code;
+    final cur = c != null && now.difference(c.madeAt) < _codeLife ? c : null;
+    final pu = _prevUntil;
+    final prev = pu != null && now.isBefore(pu) ? _prev : null;
+    // T_w and T_(w-1) plus the KC: the attempts openRequest really makes.
+    if (wellFormed && !_take(2 + (cur != null ? 1 : 0))) return;
+    var r = protocol.openRequest(bytes, s, hostMs: _ms, kc: cur?.keys.kc);
+    if (r == null && wellFormed && prev != null && _take(3)) {
+      r = protocol.openRequest(bytes, s, hostMs: _ms, kc: prev.keys.kc);
     }
     if (r == null) return;
     final a = host.admitRequest(id: r.id, name: r.name, remote: true);
