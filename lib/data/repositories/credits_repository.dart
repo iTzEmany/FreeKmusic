@@ -399,10 +399,18 @@ Recognition? _recOf(Map<Object?, Object?>? j) => Recognition.fromJson(j?['rec'])
 /// The recognition stored under `rec`, or null. [trackId] is for the log.
 Recognition? decodeRec(String? raw, [int? trackId]) => _recOf(_decodeMap(raw, trackId));
 
+// A stored number like 1e999 decodes to infinity, which jsonEncode refuses.
+bool _encodable(Object? v) => switch (v) {
+  double() => v.isFinite,
+  Map() => v.values.every(_encodable),
+  List() => v.every(_encodable),
+  _ => true,
+};
+
 /// The only way to write `details`: [raw] (what is stored) with [details] and
 /// [rec] put in, whatever the other one owns kept.
 String mergeDetails(String? raw, {TrackDetails? details, Recognition? rec}) {
-  final j = <Object?, Object?>{...?_decodeMap(raw)};
+  final j = <Object?, Object?>{...?_decodeMap(raw)}..removeWhere((_, v) => !_encodable(v));
   if (details != null) j.addAll(details.toJson()); // all its keys, null or not
   if (rec != null) j['rec'] = rec.toJson();
   return jsonEncode(j);

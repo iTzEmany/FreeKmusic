@@ -118,7 +118,7 @@ class Recognition {
   /// is left out, and anything that is not a map is null. Never throws.
   static Recognition? fromJson(Object? json) {
     if (json is! Map) return null;
-    String? str(String k) => json[k] is String && (json[k] as String).isNotEmpty ? json[k] as String : null;
+    String? str(String k) => json[k] is String && (json[k] as String).trim().isNotEmpty ? (json[k] as String).trim() : null;
     int? integer(String k) {
       final x = json[k];
       return x is num && x.isFinite ? x.toInt() : null;

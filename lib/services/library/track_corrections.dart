@@ -38,7 +38,7 @@ class TrackCorrections {
   Future<bool> apply(Track track, Recognition rec, {required bool byUser}) async {
     final id = rec.identity;
     final t = await TrackRepository(_db).getById(track.id);
-    if (id == null || t == null || t.userEdited) return false;
+    if (id == null || id.title.trim().isEmpty || t == null || t.userEdited) return false;
     final artist = id.artist.isEmpty ? t.artist : id.artist;
     final changed = id.title != t.title || artist != t.artist;
     if (changed) {

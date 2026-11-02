@@ -244,6 +244,11 @@ void main() {
       expect((await r.credits.watchProposals().first).map((e) => e.track.id), [open]);
     });
 
+    test('a recognition with a blank title is not a proposal', () async {
+      await put(await track(), '{"rec":{"v":2,"at":1,"src":"tags","sure":false,"title":"   ","artist":"A","prop":"open"}}');
+      expect(await r.credits.watchProposals().first, isEmpty);
+    });
+
     test('accept all applies them one by one and empties the list', () async {
       await put(await track(), withProp('open'));
       await put(await r.add(path: '/b.mp3', title: 'Other'), withProp('open'));

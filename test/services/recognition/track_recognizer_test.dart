@@ -479,6 +479,13 @@ void main() {
       expect([rec.cover, rec.original!['mbid']], [true, 'o1']);
     });
 
+    test('«Take Cover» is a title, not a cover: no original search', () async {
+      r.mbByIsrc = [const MbRecording(id: 't1', title: 'Take Cover', artistId: 'a', artistName: 'Daughter', length: 200000)];
+      final rec = (await r.recognize(track('Take Cover', 'Daughter', isrc: 'GBAYE1000769'))).rec!;
+      expect(rec.cover, isFalse);
+      expect(r.calls, ['mb.isrc']);
+    });
+
     test('a failing cover lookup is a lost source: no rec is saved', () async {
       r.ids = (isrc: null, mbid: mbid);
       r.mbById = const MbRecordingDetail(

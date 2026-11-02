@@ -14,6 +14,8 @@ void main() {
     ('Skyfall (Piano Version)', 'Adele', 'Skyfall'),
     ('Heathens [Orchestral Version]', 'Twenty One Pilots', 'Heathens'),
     ('Happier (Piano Cover)', 'Marshmello', 'Happier'),
+    ('Believer - Piano Cover', 'Romy Wave', 'Believer'),
+    ('Song | Cover', 'X', 'Song'),
   ];
   const normal = <(String, String?)>[
     ('Cover Me', 'Bruce Springsteen'),
@@ -28,6 +30,13 @@ void main() {
     ('Covered in Rain', 'John Frusciante'),
     ('Song Written by Me', 'Someone'),
     ('Oshi no Ko Opening by CHANMINA', 'CHANMINA'),
+    ('Under Cover of Darkness', 'The Strokes'),
+    ('Take Cover', 'Daughter'),
+    ('Run for Cover', 'Cher'),
+    ('Dive for Cover', 'Someone'),
+    ('Breaking Cover', 'Someone'),
+    ('Sad Arrangement', 'Someone'),
+    ('Girl on the Cover', 'Someone'),
   ];
 
   for (final (title, artist, original) in covers) {
@@ -39,4 +48,10 @@ void main() {
   for (final (title, artist) in normal) {
     test('not a cover: $title', () => expect(coverHint(title, artist).cover, isFalse));
   }
+
+  test('a huge title with unclosed brackets is answered fast', () {
+    final sw = Stopwatch()..start();
+    coverHint('(' * 20000, null);
+    expect(sw.elapsedMilliseconds, lessThan(100));
+  });
 }
