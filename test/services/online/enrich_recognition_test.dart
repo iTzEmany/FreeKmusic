@@ -241,6 +241,23 @@ void main() {
     expect(r.web.count('musicbrainz.org/ws/2/isrc/'), 1);
   });
 
+  test('the mbid of a sure but discarded rec does not drive the credits', () async {
+    const mbid = '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4';
+    r = EnrichRig(
+        recognizer: _Fixed(RecogOutcome(
+            rec: Recognition(
+                at: 1,
+                src: RecogSource.tags,
+                sure: true,
+                prop: 'discarded',
+                identity: const TrackIdentity(title: 'Song', artist: 'Band', mbid: mbid)),
+            asked: true)));
+    final id = await r.add();
+    await r.engine.completeOne(id, {EnrichPart.credits});
+    expect(r.web.count('musicbrainz.org/ws/2/isrc/'), 1);
+    expect(r.web.count('musicbrainz.org/ws/2/recording/$mbid'), 0);
+  });
+
   group('track_enrich.mbid', () {
     const mbid = '6190f4cf-2396-4827-a9cc-c05a0ff3a5b4';
     setUp(() {

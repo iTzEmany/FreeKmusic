@@ -209,8 +209,15 @@ class RecogPassIds implements EnrichIds {
   bool interrupted = false;
 
   /// Settles the last block and says whether the whole pass went through with nothing lost.
-  Future<bool> complete() async {
+  /// [healthy]: the round itself had no failure, silence, limit or cancel; a track still unsaved
+  /// then is stably lost (no source knows it, an unreadable file): it is passed over, not held.
+  Future<bool> complete({required bool healthy}) async {
     await _settle();
+    if (healthy && _hold != null) {
+      AppLog.i('recognition pass: track $_hold not recognised, passed over');
+      _hold = null;
+      await _settle();
+    }
     return _exhausted && _hold == null;
   }
 

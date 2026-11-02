@@ -1,9 +1,10 @@
 import 'package:codecore/data/db/app_database.dart';
-import 'package:codecore/data/repositories/credits_repository.dart' show decodeRec;
+import 'package:codecore/data/repositories/credits_repository.dart' show decodeRec, mergeDetails;
 import 'package:codecore/data/repositories/recog_pass_query.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/services/backup/backup_service.dart' show kDeviceBoundKeys;
 import 'package:codecore/services/online/enrich_completer.dart';
+import 'package:codecore/services/online/enrich_runner.dart' show RecogPassIds;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:codecore/services/online/enrich_parts.dart';
 import 'package:codecore/services/online/ytm_song_parser.dart';
@@ -128,17 +129,18 @@ void main() {
     expect(rec.calls, isEmpty);
   });
 
-  test('tracks lost offline are not passed: the pass is not done and they come back', () async {
-    await full(artist: '7clouds Rock', path: _video);
-    await full(artist: '7clouds Rock', path: '/m/Other [aaaaaaaaaaa].mp3');
-    rec.song = null;
-    rec.ytmError = StateError('offline');
-    await completer().run();
-    expect([done, after], [false, 0]);
-    rec.ytmError = null;
-    rec.song = _song;
-    await completer().run();
-    expect([done, rec.calls.where((c) => c.startsWith('songOf')).length], [true, 4]);
+  test('a track still unsaved is held when the round was unhealthy, passed over when it was healthy', () async {
+    Future<(bool, List<int>)> go({required bool healthy}) async {
+      final marks = <int>[];
+      final ids = RecogPassIds((a, n) async => [for (final i in [1, 2, 3]) if (i > a) i], (_) async => true, save: marks.add);
+      await ids.chunk(_parts, AskMode.due, DateTime.now(), 20);
+      return (await ids.complete(healthy: healthy), marks);
+    }
+
+    final held = await go(healthy: false);
+    expect([held.$1, held.$2], [false, <int>[]]);
+    final over = await go(healthy: true); // passed over, but the ids have not run out yet
+    expect([over.$1, over.$2], [false, <int>[3]]);
   });
 
   test('the bookmark holds only for its version, and neither key travels in a backup', () async {
@@ -160,5 +162,44 @@ void main() {
     await c.run();
     expect([c.passInterrupted, done], [false, true]);
     expect(await r.credits.dueTrackIds(_parts, DateTime.now(), limit: 1), isNotEmpty);
+  });
+
+  Future<void> threeStablyLost() async {
+    for (var n = 0; n < 3; n++) {
+      await full(artist: '7clouds Rock', path: '/m/s$n.mp3');
+    }
+  }
+
+  test('tracks no source recognises are passed over: the second run asks nothing and the pass is done', () async {
+    await threeStablyLost();
+    rec.song = null;
+    await completer().run();
+    final first = rec.calls.length;
+    expect([done, first], [true, 3]);
+    await completer().run();
+    expect(rec.calls, hasLength(first));
+  });
+
+  test('an unreadable file does not hold the pass', () async {
+    await threeStablyLost();
+    rec.song = null;
+    rec.acoustIdOn = true;
+    rec.fingerprintError = StateError('unreadable');
+    await completer().run();
+    expect(done, isTrue);
+  });
+
+  test('the query takes tracks without a rec or with an older one, never one of this version', () async {
+    Future<int> withRec(int v) async {
+      final id = await full(path: '/v$v.mp3');
+      await r.credits.saveEnrich(TrackEnrichCompanion(
+          trackId: Value(id), details: Value(mergeDetails(null, rec: Recognition(at: 1, v: v)))));
+      return id;
+    }
+
+    final none = await full(path: '/none.mp3');
+    final old = await withRec(kRecogVersion - 1);
+    await withRec(kRecogVersion);
+    expect(await recogPassQuery(r.db)(0, 100), [none, old]);
   });
 }

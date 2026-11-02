@@ -125,9 +125,10 @@ class EnrichCompleter {
     );
     final runner = _newRunner(ids, progress: false);
     final r = pass = await runner.run();
-    final whole = await ids.complete();
+    final healthy = !(r.failed || r.endedSilent || r.limited || runner.cancelled);
+    final whole = await ids.complete(healthy: healthy);
     passInterrupted = ids.interrupted;
-    if (whole && !r.failed && !r.limited && !runner.cancelled) {
+    if (whole && healthy) {
       savePassAfter?.call(0); // the next version starts from the first track
       markPassDone?.call();
     }
