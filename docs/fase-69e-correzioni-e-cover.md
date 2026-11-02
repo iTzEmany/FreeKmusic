@@ -146,3 +146,8 @@ Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo
 - R-187 Invio delle impronte ad AcoustID (chiave utente nelle impostazioni, mai nel repo).
 - R-188 Riconoscimento dal microfono (solo Android, da misurare prima).
 - Opus nell'impronta, quando symphonia lo supporterà (D-311).
+- Dalla review di architettura della 69e:
+  - `recog_pass_query.dart` (data) importa `enrich_engine.dart` (services), e la regola del ripasso è scritta tre volte (SQL, `needsRecognition`, gate del motore);
+  - `ytmMatches` confronta solo la durata: o va tolto, o va usato anche nel passo 1b;
+  - l'attributo «cover» di MusicBrainz si legge solo con il MBID dei tag; una ricerca dell'originale fallita fa perdere tutto il `rec` e rifà l'impronta al giro dopo;
+  - debiti `shortcut:`: niente avanzamento del ripasso, una sola pagina da 100 in `workOriginal`, video cancellato uguale a `InnerTubeChanged`, «Walking by X», «Roxy Music» segnato come dubbio, `kKnownChannels` tarato su Test.zip.
