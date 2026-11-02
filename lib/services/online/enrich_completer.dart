@@ -22,6 +22,8 @@ class EnrichCompleter {
     this.loadMark,
     this.saveMark,
     this.recogQuery,
+    this.recogNeeds,
+    this.yieldPass,
     this.loadPassAfter,
     this.savePassAfter,
     this.passDone,
@@ -55,6 +57,12 @@ class EnrichCompleter {
   /// [recogQuery] there is none. [passDone] says it already ran for this
   /// `kRecogVersion`; [markPassDone] is called when it went through every track.
   final Future<List<int>> Function(int after, int limit)? recogQuery;
+
+  /// `needsRecognition` of one track of the pass.
+  final Future<bool> Function(int id)? recogNeeds;
+
+  /// True when something else wants the runner (a new start arrived): the pass stops, its bookmark stays.
+  final bool Function()? yieldPass;
   final int Function()? loadPassAfter;
   final void Function(int id)? savePassAfter;
   final bool Function()? passDone;
@@ -63,6 +71,12 @@ class EnrichCompleter {
 
   /// The re-pass that followed the last [run]; null when none ran.
   EnrichRound? pass;
+
+  /// The last pass stopped for other work and has more to do: run again.
+  bool passInterrupted = false;
+
+  /// The re-pass is wired, not done for this version, and a part is on.
+  bool get passDue => recogQuery != null && !(passDone?.call() ?? false) && parts().isNotEmpty;
 
   EnrichRunner? _runner;
   Future<EnrichRound>? _current;
@@ -96,16 +110,24 @@ class EnrichCompleter {
 
   Future<EnrichRound> _go() async {
     pass = null;
+    passInterrupted = false;
     final first = _newRunner(MarkCursor(repo, load: loadMark, save: saveMark));
     final round = await first.run();
-    final query = recogQuery;
-    if (query == null || round.failed || first.cancelled || (passDone?.call() ?? false) || parts().isEmpty) {
-      return round;
-    }
-    final ids = RecogPassIds(query, load: loadPassAfter, save: savePassAfter);
+    final clean = !(round.failed || round.allRefused || round.limited || round.endedSilent || first.cancelled);
+    if (!clean || !passDue) return round;
+    final ids = RecogPassIds(
+      recogQuery!,
+      recogNeeds ?? (_) async => true,
+      load: loadPassAfter,
+      save: savePassAfter,
+      // Only a new start stops the pass; tracks that stay due after a clean round would loop forever.
+      interrupt: () async => yieldPass?.call() ?? false,
+    );
     final runner = _newRunner(ids, progress: false);
     final r = pass = await runner.run();
-    if (ids.finished && !r.failed && !runner.cancelled) {
+    final whole = await ids.complete();
+    passInterrupted = ids.interrupted;
+    if (whole && !r.failed && !r.limited && !runner.cancelled) {
       savePassAfter?.call(0); // the next version starts from the first track
       markPassDone?.call();
     }

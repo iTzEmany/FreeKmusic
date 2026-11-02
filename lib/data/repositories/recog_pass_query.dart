@@ -1,8 +1,10 @@
 import 'package:drift/drift.dart';
 
 import '../../services/online/enrich_parts.dart';
+import '../../services/online/enrich_engine.dart' show needsRecognition;
 import '../../services/recognition/track_identity.dart' show kRecogVersion;
 import '../db/app_database.dart';
+import 'credits_repository.dart' show decodeRec;
 
 /// Ids for the recognition re-pass (R-176): enriched tracks, not hand-edited,
 /// whose `rec` is missing or older than [kRecogVersion], by id above [after].
@@ -17,4 +19,12 @@ Future<List<int>> Function(int after, int limit) recogPassQuery(AppDatabase db) 
       )
       .get();
   return [for (final r in rows) r.read<int>('id')];
+};
+
+/// `needsRecognition` for one track, read fresh from the database.
+Future<bool> Function(int id) recogPassNeeds(AppDatabase db) => (id) async {
+  final t = await (db.select(db.tracks)..where((t) => t.id.equals(id))).getSingleOrNull();
+  if (t == null) return false;
+  final e = await (db.select(db.trackEnrich)..where((e) => e.trackId.equals(id))).getSingleOrNull();
+  return needsRecognition(t, e, decodeRec(e?.details, id));
 };

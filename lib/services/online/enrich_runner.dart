@@ -183,43 +183,82 @@ class MarkCursor implements EnrichIds {
 }
 
 /// The one-off re-pass of R-176: tracks with a finished enrichment and no
-/// recognition of this version, by id, from a bookmark. [query] is the SQL
-/// (see `recogPassQuery`); the real filter is `needsRecognition` in the gather,
-/// so a track that does not need it costs one read and no calls.
+/// recognition of this version, by id, from a bookmark. [query] gives the
+/// candidates (see `recogPassQuery`); [needs] is `needsRecognition` on one of
+/// them, so a track that needs nothing is skipped here with two reads and no
+/// wait. The bookmark never passes a track that needed recognition and did not
+/// get its rec saved (lost in a failed block, offline, cancelled): those come
+/// back at the next start, and the pass is [complete] only without them.
 class RecogPassIds implements EnrichIds {
-  RecogPassIds(this.query, {int Function()? load, this.save}) : _after = load?.call() ?? 0 {
-    _saved = _after;
+  RecogPassIds(this.query, this.needs, {int Function()? load, this.save, this.interrupt}) {
+    _scan = _saved = load?.call() ?? 0;
   }
 
   final Future<List<int>> Function(int after, int limit) query;
+  final Future<bool> Function(int id) needs;
   final void Function(int id)? save;
-  int _after;
-  late int _saved;
 
-  /// The ids ran out: the whole pass has been through.
-  bool finished = false;
+  /// Asked between chunks: true stops the pass (the bookmark stays) to let other work go first.
+  final Future<bool> Function()? interrupt;
+  late int _scan, _saved;
+  int? _hold; // the first track that needed recognition and was not saved
+  var _pending = <int>[];
+  var _exhausted = false;
 
-  @override
-  Future<List<int>> chunk(Set<EnrichPart> parts, AskMode mode, DateTime now, int limit) async {
-    final ids = await query(_after, limit);
-    if (ids.isEmpty) finished = true;
-    return ids;
+  /// The pass stopped on [interrupt] before the end.
+  bool interrupted = false;
+
+  /// Settles the last block and says whether the whole pass went through with nothing lost.
+  Future<bool> complete() async {
+    await _settle();
+    return _exhausted && _hold == null;
   }
 
-  @override
-  void tried(int id) => _after = id;
-
-  @override
-  void checkpoint() {
-    if (_after != _saved) {
-      _saved = _after;
-      save?.call(_after);
+  Future<void> _settle() async {
+    for (final id in _pending) {
+      if (_hold == null && await needs(id)) _hold = id;
+    }
+    _pending = [];
+    final mark = _hold == null ? _scan : _hold! - 1;
+    if (mark != _saved) {
+      _saved = mark;
+      save?.call(mark);
     }
   }
 
   @override
+  Future<List<int>> chunk(Set<EnrichPart> parts, AskMode mode, DateTime now, int limit) async {
+    await _settle();
+    if (await interrupt?.call() ?? false) {
+      interrupted = true;
+      return const [];
+    }
+    while (true) {
+      final cands = await query(_scan, limit);
+      if (cands.isEmpty) {
+        _exhausted = true;
+        return const [];
+      }
+      _scan = cands.last;
+      final work = [
+        for (final id in cands)
+          if (await needs(id)) id,
+      ];
+      if (work.isNotEmpty) return _pending = work;
+      await _settle(); // a block of tracks that need nothing: the bookmark moves on
+    }
+  }
+
+  @override
+  void tried(int id) {}
+
+  @override
+  void checkpoint() {}
+
+  @override
   bool get perTrack => false;
 
+  // shortcut: the pass shows no progress of its own (the state keeps the first round's numbers); add it when the pass gets a bar.
   @override
   Future<({int done, int total})> progress(Set<EnrichPart> parts, DateTime now) async => (done: 0, total: 0);
 }

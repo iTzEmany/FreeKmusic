@@ -83,9 +83,11 @@ final trackRecognizerProvider = Provider(
 );
 /// The recognition of an online item (`yt:`, stream) by video id (R-186): step 1b
 /// and the cover, nothing written. Kept in memory for the session.
-final onlineRecognitionProvider = FutureProvider.autoDispose.family<Recognition?, String>((ref, videoId) {
-  ref.keepAlive();
-  return ref.watch(trackRecognizerProvider).recognizeOnline(videoId);
+final onlineRecognitionProvider = FutureProvider.autoDispose.family<Recognition?, String>((ref, videoId) async {
+  final link = ref.keepAlive();
+  final rec = await ref.watch(trackRecognizerProvider).recognizeOnline(videoId);
+  if (rec == null) link.close(); // «nothing» and a failed source are not kept: the next look asks again
+  return rec;
 });
 final deezerGwClientProvider = Provider(
   // shortcut: a one-off Registro line needs a LogEntry kind (phase 53); AppLog until then.

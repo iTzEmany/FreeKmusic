@@ -234,35 +234,32 @@ class TrackRecognizer {
   }
 
   /// An online item (`yt:`, stream) has no track row: only step 1b and the cover
-  /// step, by video id alone. Null when YouTube Music has no song for it. The
-  /// duration is not compared (there is no file); nothing is written.
+  /// step, by video id alone. Null when YouTube Music has no song for it or a
+  /// source failed (logged; the caller may ask again). Nothing is written.
   Future<Recognition?> recognizeOnline(String videoId, {CancelToken? cancel}) async {
-    final YtmSong s;
     try {
-      s = await innerTube.songOf(videoId, cancel: cancel);
-    } on InnerTubeChanged catch (e) {
-      AppLog.w('recognition: no song for video $videoId', e);
+      final rec = await _ytmSong(videoId, 0, cancel, () {});
+      if (rec == null) return null;
+      final id = rec.identity!;
+      final c = cleanSearchQuery(id.title, id.artist);
+      return await _coverOf(id.title, id.artist, rec, const [],
+          artistIsChannel(c.artist) || isGenericArtist(c.artist) ? '' : c.artist, cancel, () {});
+    } catch (e, st) {
+      if (e is DioException && e.type == DioExceptionType.cancel) rethrow;
+      AppLog.w('recognition: online item $videoId failed', e, st);
       return null;
     }
-    if (s.artists.isEmpty) return null;
-    final artist = s.artists.join(', ');
-    final c = cleanSearchQuery(s.title, artist);
-    return _coverOf(
-        s.title,
-        artist,
-        _found(RecogSource.ytid, TrackIdentity(title: s.title, artist: artist, ms: s.durationMs, vid: videoId),
-            sure: s.official),
-        const [],
-        artistIsChannel(c.artist) || isGenericArtist(c.artist) ? '' : c.artist,
-        cancel,
-        () {});
   }
 
   /// Step 1b: what YouTube Music says of the video this file came from. Sure
   /// only for a studio or official video (D-312).
   Future<Recognition?> _fromVideoId(Track t, CancelToken? cancel, void Function() got) async {
     final id = await videoIdFor?.call(t) ?? videoIdOf(t.path);
-    if (id == null) return null;
+    return id == null ? null : _ytmSong(id, t.durationMs, cancel, got);
+  }
+
+  /// The song of video [id], as an identity; [durationMs] > 0 must match its length.
+  Future<Recognition?> _ytmSong(String id, int durationMs, CancelToken? cancel, void Function() got) async {
     final YtmSong s;
     try {
       s = await innerTube.songOf(id, cancel: cancel);
@@ -272,8 +269,8 @@ class TrackRecognizer {
       AppLog.w('recognition: no song for video $id', e);
       return null;
     }
-    final gap = s.durationMs == null ? 0 : (s.durationMs! - t.durationMs).abs();
-    if (s.artists.isEmpty || (t.durationMs > 0 && gap > kDurationSlackMs)) return null;
+    final gap = s.durationMs == null ? 0 : (s.durationMs! - durationMs).abs();
+    if (s.artists.isEmpty || (durationMs > 0 && gap > kDurationSlackMs)) return null;
     return _found(
         RecogSource.ytid,
         TrackIdentity(title: s.title, artist: s.artists.join(', '), ms: s.durationMs, vid: id),

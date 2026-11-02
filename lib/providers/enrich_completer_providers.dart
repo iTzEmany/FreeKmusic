@@ -86,6 +86,8 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
           }),
     ),
     recogQuery: recogPassQuery(ref.read(databaseProvider)),
+    recogNeeds: recogPassNeeds(ref.read(databaseProvider)),
+    yieldPass: () => _again,
     loadPassAfter: () => ref.read(settingsStoreProvider).recogPassAfter,
     savePassAfter: (id) => unawaited(
       ref.read(settingsStoreProvider).writeRecogPassAfter(id).catchError((Object e, StackTrace st) {
@@ -168,8 +170,7 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
           );
       if (_halt || !ref.mounted) return; // stopped while counting
       // A complete library still gets the one-off re-pass (R-176).
-      final passDue = ref.read(settingsStoreProvider).recogPassDone < kRecogVersion && autoParts(ref.read(settingsProvider)).isNotEmpty;
-      if (c.complete >= c.total && !passDue) return;
+      if (c.complete >= c.total && !_completer.passDue) return;
       state = EnrichCompleterState(
         running: true,
         complete: c.complete,
@@ -179,6 +180,7 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
       if (round.worked > 0 || round.failed) {
         await _log(round, stopped: _halt, failed: round.failed);
       }
+      if (_completer.passInterrupted && !_halt) _again = true; // normal work first, then the pass resumes
       final pass = _completer.pass;
       if (pass != null && (pass.worked > 0 || pass.failed)) {
         await _log(pass, stopped: _halt, failed: pass.failed, recogPass: true);

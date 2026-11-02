@@ -1,7 +1,10 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/credits_repository.dart' show decodeRec;
 import 'package:codecore/data/repositories/recog_pass_query.dart';
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/services/backup/backup_service.dart' show kDeviceBoundKeys;
 import 'package:codecore/services/online/enrich_completer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:codecore/services/online/enrich_parts.dart';
 import 'package:codecore/services/online/ytm_song_parser.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
@@ -20,6 +23,7 @@ void main() {
   late EnrichRig r;
   var after = 0, done = false;
   final saved = <int>[];
+  var yieldNow = false;
 
   setUp(() {
     rec = Rig()
@@ -29,6 +33,7 @@ void main() {
     after = 0;
     done = false;
     saved.clear();
+    yieldNow = false;
   });
   tearDown(() => r.dispose());
 
@@ -47,6 +52,8 @@ void main() {
         parts: () => _parts,
         waitIdle: () async {},
         recogQuery: recogPassQuery(r.db),
+        recogNeeds: recogPassNeeds(r.db),
+        yieldPass: yieldNow ? () => true : null,
         loadPassAfter: () => after,
         savePassAfter: (id) {
           saved.add(id);
@@ -60,7 +67,7 @@ void main() {
     await full();
     final c = completer();
     await c.run();
-    expect(c.pass!.processed, 1);
+    expect(c.pass!.processed, 0); // skipped before the runner: no gather, no wait
     expect(rec.calls, isEmpty);
     expect(done, isTrue);
   });
@@ -99,5 +106,59 @@ void main() {
     await c.run();
     expect(c.pass, isNull);
     expect(rec.calls, isEmpty);
+  });
+
+  test('50 good tracks and one dubious: only the dubious one is gathered', () async {
+    for (var n = 0; n < 50; n++) {
+      await full(path: '/g$n.mp3');
+    }
+    await full(artist: '7clouds Rock', path: _video);
+    final c = completer();
+    await c.run();
+    expect(c.pass!.processed, 1);
+    expect(rec.calls, ['songOf:dQw4w9WgXcQ']);
+  });
+
+  test('a pass asked to yield stops with its bookmark kept and is not done', () async {
+    await full(artist: '7clouds Rock', path: _video);
+    yieldNow = true;
+    final c = completer();
+    await c.run();
+    expect([c.passInterrupted, c.pass!.processed, done, saved], [true, 0, false, isEmpty]);
+    expect(rec.calls, isEmpty);
+  });
+
+  test('tracks lost offline are not passed: the pass is not done and they come back', () async {
+    await full(artist: '7clouds Rock', path: _video);
+    await full(artist: '7clouds Rock', path: '/m/Other [aaaaaaaaaaa].mp3');
+    rec.song = null;
+    rec.ytmError = StateError('offline');
+    await completer().run();
+    expect([done, after], [false, 0]);
+    rec.ytmError = null;
+    rec.song = _song;
+    await completer().run();
+    expect([done, rec.calls.where((c) => c.startsWith('songOf')).length], [true, 4]);
+  });
+
+  test('the bookmark holds only for its version, and neither key travels in a backup', () async {
+    SharedPreferences.setMockInitialValues({recogPassAfterKey: '${kRecogVersion - 1}:9'});
+    final old = SettingsStore(await SharedPreferences.getInstance());
+    expect(old.recogPassAfter, 0);
+    await old.writeRecogPassAfter(9);
+    expect(old.recogPassAfter, 9);
+    expect(kDeviceBoundKeys, containsAll([recogPassAfterKey, recogPassDoneKey]));
+  });
+
+  test('a track that stays due after the normal round does not stop the pass', () async {
+    await full(artist: '7clouds Rock', path: _video);
+    await r.add(path: '/due.mp3', plain: null); // lyrics stay due: LRCLIB rests
+    r.chain
+      ..resting = true
+      ..limited = true;
+    final c = completer();
+    await c.run();
+    expect([c.passInterrupted, done], [false, true]);
+    expect(await r.credits.dueTrackIds(_parts, DateTime.now(), limit: 1), isNotEmpty);
   });
 }
