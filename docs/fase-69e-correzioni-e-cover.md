@@ -129,7 +129,24 @@
   - un ATV «Seven Nation Army (Live)» per un file senza «Live» → proposta.
 - Il conteggio di Test.zip non peggiora: 0 correzioni automatiche sbagliate.
 
-**Esito:** codice fatto in `_ytmSong`/`_fromVideoId` (test con i fake del recognizer); manca la prova su Test.zip.
+**Esito:** codice in `_ytmSong`/`_fromVideoId` (PR #84).
+
+**Prova su Test.zip (2026-11-02, codice della 69e.5, come in 69e.4).**
+
+| Voce | 69e.4 | 69e.5 |
+|---|---|---|
+| Riconosciuti | 126/147 | **126/147** |
+| Video id | 13 (sicure) | 13 (**9 sicure, 4 no**) |
+| Correzioni automatiche | 77 (video id 12) | **74** (video id 9) |
+| Proposte aperte | 35 | **39** |
+| Correzioni automatiche sbagliate | 0 | **0** |
+| Testi · curiosità | 11 · 38 | 11 · 39 |
+| Tempo | 11,8 s a brano | 11,1 s a brano |
+| `[E]` · avvisi | 0 · 10 | 0 · 9 |
+
+- Le 9 correzioni dal video id prendono il titolo della canzone, per esempio «NEFFEX - Careless 💔 [Copyright Free] No.19» → «Careless» e «Adele - Skyfall (Lyrics)» / 7clouds Rock → «Skyfall» / Adele. Nessun titolo da video («Official», «Lyrics») è entrato in una correzione automatica.
+- 4 video ufficiali senza ATV trovato sono diventati proposte con il titolo pulito: Rammstein «Sonne», Tiny Tim, Jagwar Twin, 椎名もた.
+- Da guardare, ma non toccate dalla 69e.5: le due «The Trapper & The Trader» (Inscryption) diventano «The Trapper» da AcoustID.
 
 ## Esiti di 69e.4
 Prova del 2026-11-02 su Linux (HEAD a5b089c), come in 69d.4: sotto xvfb, profilo e DB separati, motore, rete e impronta Rust veri, percorso `enrichJobProvider.startDue()`. I 147 file sono gli stessi di 69d.4.
