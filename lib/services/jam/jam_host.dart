@@ -165,13 +165,17 @@ class JamHost {
 
   void expire() {
     final now = _now();
+    var changed = false;
     for (final r in requests.values) {
       if (r.status == JamRequestStatus.pending && r.receivedAt.isBefore(now.subtract(r.ttl))) {
         r.status = JamRequestStatus.expired;
+        changed = true;
       }
     }
     // Answerable for a while after the TTL, then gone (silent or not alike).
+    final before = requests.length;
     requests.removeWhere((_, r) => r.receivedAt.isBefore(now.subtract(r.ttl * 2)));
+    if (changed || requests.length != before) _notify();
   }
 
   // ---- host API ------------------------------------------------------------
@@ -229,10 +233,13 @@ class JamHost {
       bool remote = false}) {
     if (_state?.ended ?? false) return null;
     final existing = _members[id];
-    if (existing != null) {
+    if (existing != null && existing.remote == remote) {
       return (sid: _sid!, token: existing.token, fileToken: _fileToken!);
     }
-    if (_members.length + 1 >= maxParticipants || id == deviceId) return null;
+    // A LAN guest back through the bridge (or vice versa) gets a fresh member.
+    if (existing == null && _members.length + 1 >= maxParticipants || id == deviceId) {
+      return null;
+    }
     open();
     final m = _Member(id, name, host, port, newToken(), _now(), remote: remote);
     _members[id] = m;
@@ -384,7 +391,8 @@ class JamHost {
   }
 
   static bool _tokenOk(String? expected, String? given) {
-    if (expected == null || given == null || given.length != expected.length) {
+    // Remote requests have an empty token: never let '' match.
+    if (expected == null || expected.isEmpty || given == null || given.length != expected.length) {
       return false;
     }
     var diff = 0;
@@ -432,7 +440,7 @@ class JamHost {
     String? token,
     bool remote = false,
     bool friend = false,
-    Duration ttl = jamRequestTtl,
+    Duration? ttl,
     String? ip,
   }) {
     const bad = (status: JamAdmitStatus.bad, request: null);
@@ -441,6 +449,7 @@ class JamHost {
     if (port != null && (port < 1 || port > 65535)) return bad;
     if (token != null && (token.length < 8 || token.length > 64)) return bad;
     expire();
+    // The gate runs before full/busy, LAN too (the LAN guest maps 409 and 429 to busy).
     if (gate != null && !gate!.allow(id)) {
       return (status: JamAdmitStatus.tooMany, request: null);
     }
@@ -464,7 +473,7 @@ class JamHost {
       silent: silent,
       remote: remote,
       friend: friend,
-      ttl: ttl,
+      ttl: ttl ?? (remote ? jamRemoteRequestTtl : jamRequestTtl),
     );
     requests[req.id] = req;
     if (!silent) {

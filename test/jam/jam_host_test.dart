@@ -370,7 +370,7 @@ void main() {
     });
 
     test('a remote request ends after 60 s, a LAN one keeps jamRequestTtl', () {
-      final r = host.admitRequest(id: 'r', name: 'R', remote: true, ttl: jamRemoteRequestTtl).request!;
+      final r = host.admitRequest(id: 'r', name: 'R', remote: true).request!;
       now = now.add(const Duration(seconds: 61));
       host.expire();
       expect(r.status, JamRequestStatus.expired);
@@ -378,6 +378,34 @@ void main() {
       now = now.add(const Duration(minutes: 4));
       host.expire();
       expect(l.status, JamRequestStatus.pending);
+    });
+
+    test('expire notifies when a request expires', () async {
+      host.admitRequest(id: 'r', name: 'R', remote: true);
+      var n = 0;
+      final sub = host.changes.listen((_) => n++);
+      host.expire();
+      await Future<void>.delayed(Duration.zero);
+      expect(n, 0);
+      now = now.add(const Duration(seconds: 61));
+      host.expire();
+      await Future<void>.delayed(Duration.zero);
+      expect(n, 1);
+      await sub.cancel();
+    });
+
+    test('a guest rejoining with the other transport gets a new token and flag', () {
+      join('g', remote: false);
+      final t = host.addMember(id: 'g', name: 'g', remote: true)!.token;
+      expect(host.state!.participant('g')!.remote, isTrue);
+      expect(host.addMember(id: 'g', name: 'g', remote: true)!.token, t);
+    });
+
+    test('a remote request id with an empty x-token does not leak tokens', () async {
+      final r = host.admitRequest(id: 'r', name: 'R', remote: true).request!;
+      host.accept(r.id);
+      final res = await call('GET', 'request/${r.id}', headers: {'x-token': ''});
+      expect(res.statusCode, 401);
     });
 
     test('unreachable after 60 s, touch clears it, removed after 10 min', () {

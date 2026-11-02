@@ -624,6 +624,7 @@ class JamController extends Notifier<JamUiState> {
       // A guest that vanished (crash, Wi-Fi off) must not keep the Jam open.
       _alive = Timer.periodic(const Duration(seconds: 10), (_) {
         _host?.dropStale(const Duration(seconds: 75));
+        _host?.expire(); // a 60 s remote request leaves the host sheet
         final js = _host?.state;
         if (js != null) _onState(js);
       });
