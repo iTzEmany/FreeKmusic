@@ -9,7 +9,18 @@ import 'jam_guest_link.dart';
 import 'jam_host.dart';
 import 'jam_models.dart';
 
-enum JamJoinOutcome { accepted, declined, expired, busy, unreachable, cancelled, tooSoon }
+enum JamJoinOutcome {
+  accepted,
+  declined,
+  expired,
+  busy,
+  unreachable,
+  cancelled,
+  tooSoon,
+  codeInvalid,
+  codeExpired,
+  customBroker,
+}
 
 /// Client side of a Jam: asks the host, follows its state by long polling and
 /// sends commands. The guest also serves the files it owns through [local]
@@ -47,12 +58,16 @@ class JamGuest implements JamGuestLink {
   JamState? get state => _state;
   bool get active => _running;
   @override
-  String? get hostBase => _base;
-  @override
-  String? get sessionId => _sid;
+  JamHostFiles? get files => _sid == null || _base == null || _fileToken == null
+      ? null
+      : JamHostFiles(sessionId: _sid!, hostBase: _base!, fileToken: _fileToken!);
   String? get sessionToken => _token;
+
+  // The LAN link has no reconnection states of its own: a failure ends the Jam.
   @override
-  String? get fileToken => _fileToken;
+  JamLinkState get link => JamLinkState.ok;
+  @override
+  Stream<JamLinkState> get links => const Stream.empty();
   @override
   Stream<JamState> get states => _states.stream;
 

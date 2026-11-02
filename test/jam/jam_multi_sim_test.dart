@@ -161,13 +161,13 @@ void main() {
 
     // device c downloads every item from its owner, as a real output would
     final dio = Dio(BaseOptions(responseType: ResponseType.bytes));
-    final sid = c.guest.sessionId;
+    final sid = c.guest.files!.sessionId;
     for (final it in s.items) {
       final owner = s.participant(it.ownerDeviceId)!;
       final port = owner.id == 'host' ? host.port : owner.port;
       final r = await dio.get<List<int>>(
           'http://127.0.0.1:$port/jam/$sid/file/${it.id}',
-          options: Options(headers: {jamFileHeader: c.guest.fileToken}));
+          options: Options(headers: {jamFileHeader: c.guest.files!.fileToken}));
       expect(String.fromCharCodes(r.data!), owner.id, reason: it.title);
     }
     // the identity token must not open somebody else's files
@@ -190,7 +190,7 @@ void main() {
     // b is let in by a, on behalf of the host
     expect(await b.joinThrough(a), JamJoinOutcome.accepted);
     expect(host.jam.memberIds, ['a', 'b']);
-    expect(b.guest.hostBase, 'http://127.0.0.1:${host.port}/jam');
+    expect(b.guest.files!.hostBase, 'http://127.0.0.1:${host.port}/jam');
 
     // a vanishes (process killed): the host keeps b and the session
     await a.stop();

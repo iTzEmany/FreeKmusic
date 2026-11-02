@@ -62,6 +62,7 @@ class JamUiState {
     this.lost = false,
     this.left = false,
     this.syncErrorMs,
+    this.link = JamLinkState.ok,
   });
 
   final JamPhase phase;
@@ -79,6 +80,9 @@ class JamUiState {
   /// Last measured offset from the shared position while synchronised (ms).
   final int? syncErrorMs;
 
+  /// State of the guest's connection to the host (always ok in LAN).
+  final JamLinkState link;
+
   bool get active => phase == JamPhase.active;
   bool get isHost => role == JamRole.host;
 
@@ -92,6 +96,7 @@ class JamUiState {
     bool? lost,
     bool? left,
     int? syncErrorMs,
+    JamLinkState? link,
   }) => JamUiState(
     phase: phase ?? this.phase,
     role: role ?? this.role,
@@ -102,6 +107,7 @@ class JamUiState {
     lost: lost ?? this.lost,
     left: left ?? this.left,
     syncErrorMs: syncErrorMs ?? this.syncErrorMs,
+    link: link ?? this.link,
   );
 }
 
@@ -210,13 +216,13 @@ class JamController extends Notifier<JamUiState> {
   DateTime Function() now = DateTime.now;
 
   @visibleForTesting
-  JamGuest Function(JamHost) guestFactory = (h) => JamGuest(local: h);
+  JamGuestLink Function(JamHost) guestFactory = (h) => JamGuest(local: h);
   JamOutput? _output;
   JamCache? _cache;
   JamClock? _clock;
   JamTransport? _transport;
   CodecoreAudioHandler? _attachedTo;
-  StreamSubscription<void>? _hostSub, _guestSub, _lostSub;
+  StreamSubscription<void>? _hostSub, _guestSub, _lostSub, _linkSub;
   StreamSubscription<JamRequest>? _reqSub;
   Timer? _alive;
   var _syncLogs = 0;
@@ -289,11 +295,8 @@ class JamController extends Notifier<JamUiState> {
   Future<void> request(Peer peer) async {
     if (state.phase == JamPhase.requesting || state.active) return;
     // Third request within a minute: do not send it (the host would mute us anyway).
-    final sentAt = now(), cutoff = sentAt.subtract(const Duration(minutes: 1));
-    final recent = _recentRequests[peer.id] = [
-      for (final t in _recentRequests[peer.id] ?? const <DateTime>[])
-        if (t.isAfter(cutoff)) t,
-    ];
+    final sentAt = now();
+    final recent = _recentFor(peer.id, sentAt);
     if (recent.length >= 2) {
       // The Jam screen reads this outcome when it opens (see JamScreen.initState).
       state = JamUiState(phase: JamPhase.idle, peerName: peer.name, peerId: peer.id, outcome: JamJoinOutcome.tooSoon);
@@ -320,7 +323,8 @@ class JamController extends Notifier<JamUiState> {
       );
       return;
     }
-    final guest = guestFactory(host);
+    // The LAN request is the only caller: join() is not part of the link interface.
+    final guest = guestFactory(host) as JamGuest;
     _guest = guest;
     final outcome = await guest.join(
       host: peer.host,
@@ -338,8 +342,23 @@ class JamController extends Notifier<JamUiState> {
       state = state.copyWith(phase: JamPhase.idle, outcome: outcome);
       return;
     }
+    await _attach(guest);
+  }
+
+  /// Requests sent to [key] in the last minute, older ones dropped.
+  List<DateTime> _recentFor(String key, DateTime at) {
+    final cutoff = at.subtract(const Duration(minutes: 1));
+    return _recentRequests[key] = [
+      for (final t in _recentRequests[key] ?? const <DateTime>[])
+        if (t.isAfter(cutoff)) t,
+    ];
+  }
+
+  /// Follows an accepted guest link, LAN or remote, and starts the Jam on it.
+  Future<void> _attach(JamGuestLink guest) async {
     _lostSub = guest.lost.listen((_) => _finish(lost: true));
     _guestSub = guest.states.listen(_onState);
+    _linkSub = guest.links.listen((l) => state = state.copyWith(link: l));
     await _begin(JamRole.guest, guest.state!);
   }
 
@@ -686,7 +705,7 @@ class JamController extends Notifier<JamUiState> {
   Uri? _remoteUri(JamItem item, {String route = 'file'}) {
     final s = state.jam;
     final sid = state.role == JamRole.guest
-        ? _guest?.sessionId
+        ? _guest?.files?.sessionId
         : _host?.sessionId;
     if (s == null || sid == null) return null;
     final owner = s.participant(item.ownerDeviceId);
@@ -695,7 +714,7 @@ class JamController extends Notifier<JamUiState> {
     // the one the host saw for it.
     String? base;
     if (owner.id == s.hostDeviceId) {
-      base = state.role == JamRole.guest ? _guest?.hostBase : null;
+      base = state.role == JamRole.guest ? _guest?.files?.hostBase : null;
     } else if (owner.host.isNotEmpty) {
       base = 'http://${owner.host}:${owner.port}/jam';
     }
@@ -704,7 +723,7 @@ class JamController extends Notifier<JamUiState> {
 
   Map<String, String> get _headers => {
     jamFileHeader:
-        (state.role == JamRole.guest ? _guest?.fileToken : _host?.fileToken) ??
+        (state.role == JamRole.guest ? _guest?.files?.fileToken : _host?.fileToken) ??
         '',
   };
 
@@ -990,7 +1009,8 @@ class JamController extends Notifier<JamUiState> {
     await _hostSub?.cancel();
     await _guestSub?.cancel();
     await _lostSub?.cancel();
-    _hostSub = _guestSub = _lostSub = null;
+    await _linkSub?.cancel();
+    _hostSub = _guestSub = _lostSub = _linkSub = null;
     _clock?.stop();
     _clock = null;
     // Give the system controls back to the local player.
