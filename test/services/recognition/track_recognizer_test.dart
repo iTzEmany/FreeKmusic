@@ -76,11 +76,59 @@ void main() {
       expect([out.rec!.src, out.rec!.sure], [RecogSource.ytid, false]);
     });
 
+    group('official title from the video id (69e.5)', () {
+      const omv = YtmSong(
+          title: 'Get Lucky (Official Audio) (feat. Pharrell Williams & Nile Rodgers)',
+          artists: ['Daft Punk'], videoType: 'MUSIC_VIDEO_TYPE_OMV', durationMs: 248000);
+      YtResult atv(String title) => YtResult(
+          id: 'ATVATVATV01', title: title, channel: 'Daft Punk', artists: const ['Daft Punk'],
+          duration: const Duration(milliseconds: 248500));
+      final file = track('Get Lucky', 'Daft Punk', path: '/m/Get Lucky [5NV6Rdv1a3I].mp3', durationMs: 248000);
+
+      test('an OMV takes the title of the song found, and stays sure', () async {
+        r.song = omv;
+        r.ytm = [atv('Get Lucky')];
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky', true]);
+      });
+
+      test('an OMV without a song found gets the cleaned title, as a proposal', () async {
+        r.song = omv;
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky (feat. Pharrell Williams & Nile Rodgers)', false]);
+      });
+
+      test('a lyrics upload takes the song title but is never sure', () async {
+        r.song = const YtmSong(
+            title: 'Daft Punk - Get Lucky (Lyrics)', artists: ['Daft Punk'],
+            videoType: 'MUSIC_VIDEO_TYPE_UGC', durationMs: 248000);
+        r.ytm = [atv('Get Lucky')];
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky', false]);
+      });
+
+      test('a studio title naming a version the file does not is a proposal', () async {
+        r.song = const YtmSong(
+            title: 'Seven Nation Army (Live)', artists: ['The White Stripes'],
+            videoType: 'MUSIC_VIDEO_TYPE_ATV', durationMs: 248000);
+        final out = await r.recognize(track('Seven Nation Army', null,
+            path: '/m/Seven Nation Army [5NV6Rdv1a3I].mp3', durationMs: 248000));
+        expect([out.rec!.src, out.rec!.sure], [RecogSource.ytid, false]);
+      });
+
+      test('a search that throws keeps the video, cleaned and not sure', () async {
+        r.song = omv;
+        r.ytmError = StateError('boom');
+        final out = await r.recognize(file);
+        expect([out.rec!.identity!.title, out.rec!.sure], ['Get Lucky (feat. Pharrell Williams & Nile Rodgers)', false]);
+      });
+    });
+
     test('a video id known from outside wins over the file name', () async {
       r.videoIdFor = (_) async => 'AAAAAAAAAAA';
       r.song = const YtmSong(title: 'S', artists: ['A'], videoType: 'MUSIC_VIDEO_TYPE_OMV');
       await r.recognize(track('S', 'A', path: '/m/S [sZrTJesvJeo].mp3'));
-      expect(r.calls, ['songOf:AAAAAAAAAAA']);
+      expect(r.calls, ['songOf:AAAAAAAAAAA', 'ytm']);
     });
 
     test('reliable tags found by the text search: no AcoustID', () async {

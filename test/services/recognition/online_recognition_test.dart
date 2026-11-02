@@ -11,7 +11,7 @@ void main() {
       ..song = const YtmSong(title: 'Believer (Romy Wave Cover)', artists: ['Romy Wave'], videoType: 'MUSIC_VIDEO_TYPE_UGC')
       ..mbSearch = [const MbRecording(id: 'o1', title: 'Believer', artistId: 'a', artistName: 'Imagine Dragons')];
     final rec = (await r.recognizer.recognizeOnline('dQw4w9WgXcQ'))!;
-    expect(r.calls, ['songOf:dQw4w9WgXcQ', 'mb.search']);
+    expect(r.calls, ['songOf:dQw4w9WgXcQ', 'ytm', 'mb.search']);
     expect([rec.src, rec.cover, rec.sure, rec.identity!.vid], [RecogSource.ytid, true, false, 'dQw4w9WgXcQ']);
     expect(rec.original, {'title': 'Believer', 'artist': 'Imagine Dragons', 'mbid': 'o1'});
   });

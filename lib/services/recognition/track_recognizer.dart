@@ -254,13 +254,21 @@ class TrackRecognizer {
   }
 
   /// Step 1b: what YouTube Music says of the video this file came from. Sure
-  /// only for a studio or official video (D-312).
+  /// only for a studio or official video (D-312), and not when the title names a
+  /// version the file does not.
   Future<Recognition?> _fromVideoId(Track t, CancelToken? cancel, void Function() got) async {
     final id = await videoIdFor?.call(t) ?? videoIdOf(t.path);
-    return id == null ? null : _ytmSong(id, t.durationMs, cancel, got);
+    if (id == null) return null;
+    final rec = await _ytmSong(id, t.durationMs, cancel, got);
+    final hay = _Hay(t, t.title, t.artist ?? '');
+    return rec != null && rec.sure && hay._extraVersions(matchKey(rec.identity!.title)) > 0
+        ? rec.copyWith(sure: false)
+        : rec;
   }
 
   /// The song of video [id], as an identity; [durationMs] > 0 must match its length.
+  /// Studio audio (ATV) gives its own title; an official or uploaded video gives the
+  /// video's title, so the song is looked up among YouTube Music songs (69e.5).
   Future<Recognition?> _ytmSong(String id, int durationMs, CancelToken? cancel, void Function() got) async {
     final YtmSong s;
     try {
@@ -273,10 +281,32 @@ class TrackRecognizer {
     }
     final gap = s.durationMs == null ? 0 : (s.durationMs! - durationMs).abs();
     if (s.artists.isEmpty || (durationMs > 0 && gap > kDurationSlackMs)) return null;
-    return _found(
-        RecogSource.ytid,
-        TrackIdentity(title: s.title, artist: s.artists.join(', '), ms: s.durationMs, vid: id),
-        sure: s.official);
+    var title = s.title, artists = s.artists, ms = s.durationMs, sure = s.official;
+    if (s.videoType != 'MUSIC_VIDEO_TYPE_ATV') {
+      final c = cleanSearchQuery(s.title, s.artists.join(', '));
+      if (c.title.isNotEmpty) title = c.title;
+      sure = false;
+      final wantMs = s.durationMs ?? durationMs;
+      try {
+        final results = await innerTube.searchSongs('${c.title} ${s.artists.first}'.trim(), cancel: cancel);
+        got();
+        final mine = {for (final a in s.artists) matchKey(a)};
+        final song = results.where((r) =>
+            r.artists.any((a) => mine.contains(matchKey(a))) &&
+            ytmMatches(r.duration, wantMs, slackMs: 3000, titleOk: wantMs > 0)).firstOrNull;
+        if (song != null) {
+          title = song.title;
+          artists = song.artists;
+          ms = song.duration!.inMilliseconds;
+          sure = s.videoType == 'MUSIC_VIDEO_TYPE_OMV';
+        }
+      } catch (e, st) {
+        if (e is DioException && e.type == DioExceptionType.cancel) rethrow;
+        AppLog.w('recognition: no song search for video $id', e, st);
+      }
+    }
+    return _found(RecogSource.ytid, TrackIdentity(title: title, artist: artists.join(', '), ms: ms, vid: id),
+        sure: sure);
   }
 
   /// Step 2: the text search found it. Not sure: the tags may be as wrong as the match.
