@@ -87,6 +87,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     _discovery?.speakerJamName = v;
   }
 
+  String? _speakerJamRid;
+
+  /// Id of the remote Jam announced next to the name (set by the bridge); null = none.
+  String? get speakerJamRid => _speakerJamRid;
+  set speakerJamRid(String? v) {
+    _speakerJamRid = v;
+    _discovery?.speakerJamRid = v;
+  }
+
   StreamSubscription<List<Peer>>? _peerSub;
   StreamSubscription<void>? _changeSub;
   Timer? _sweep;
@@ -370,6 +379,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         deviceName: service.deviceName,
       );
       discovery.speakerJamName = _speakerJamName;
+      discovery.speakerJamRid = _speakerJamRid;
       await discovery.start(port, tlsPort: node.tlsPort);
       if (!ref.mounted) {
         await discovery.dispose();

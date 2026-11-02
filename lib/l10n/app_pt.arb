@@ -3441,5 +3441,14 @@
   "jamFriendRemoveBody": "Deixam de se reconhecer sem perguntar. Este dispositivo muda a sua chave de anúncio.",
   "jamAutoAcceptFriends": "Aceitar amigos sem perguntar",
   "jamAutoAcceptFriendsHint": "Se o telemóvel de um amigo for roubado, quem o tiver pode entrar na tua Jam estando perto.",
-  "jamFriendBadge": "Amigo"
+  "jamFriendBadge": "Amigo",
+  "jamNearbyJoin": "Entrar numa Jam por perto",
+  "jamBleTitle": "Procurar Jams por perto",
+  "jamBleBody12": "O Android pede a permissão «Dispositivos por perto» para procurar e anunciar Jams por Bluetooth. A app não lê onde estás.",
+  "jamBleBody11": "É preciso a permissão de localização: o Android exige-a para procurar por Bluetooth; a app não lê onde estás.",
+  "jamBleAllow": "Permitir",
+  "jamBleNotNow": "Agora não",
+  "jamBleLocationOff": "Liga a localização do Android: é precisa para procurar Jams por Bluetooth. Entretanto podes usar o código ou o QR.",
+  "jamNearbyScanTitle": "Procurar Jams por perto",
+  "jamNearbyScanHint": "Por Bluetooth, só com a app aberta"
 }

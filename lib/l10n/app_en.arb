@@ -3207,5 +3207,14 @@
   "jamFriendRemoveBody": "You will no longer recognise each other without asking. This device changes its announce key.",
   "jamAutoAcceptFriends": "Accept friends without asking",
   "jamAutoAcceptFriendsHint": "If a friend's phone is stolen, whoever has it can join your Jam when nearby.",
-  "jamFriendBadge": "Friend"
+  "jamFriendBadge": "Friend",
+  "jamNearbyJoin": "Join a Jam nearby",
+  "jamBleTitle": "Find nearby Jams",
+  "jamBleBody12": "Android asks for the “Nearby devices” permission to look for and announce Jams over Bluetooth. The app does not read where you are.",
+  "jamBleBody11": "The location permission is needed: Android requires it to scan over Bluetooth; the app does not read where you are.",
+  "jamBleAllow": "Allow",
+  "jamBleNotNow": "Not now",
+  "jamBleLocationOff": "Turn on Android’s location: it is needed to look for Jams over Bluetooth. Meanwhile you can use the code or the QR.",
+  "jamNearbyScanTitle": "Look for nearby Jams",
+  "jamNearbyScanHint": "Over Bluetooth, only while the app is open"
 }

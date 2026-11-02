@@ -13,6 +13,7 @@ class JamInvite {
     this.brokers = const [],
     this.code,
     this.friendLabel,
+    this.fingerprint,
   });
 
   /// Null for a code: the CODE message tells it.
@@ -20,10 +21,22 @@ class JamInvite {
 
   /// The 4 B friends' label of the announcement or QR (R-143); null for a code.
   final Uint8List? friendLabel;
+
+  /// 8 B `fpH` of a Bluetooth announcement: `hpk` is then read from the lobby.
+  final Uint8List? fingerprint;
   final List<BrokerEntry> brokers;
 
   /// Normalized 8-character code.
   final String? code;
+
+  /// From a Bluetooth announcement; no brokers when it names a custom one (`0xFF`).
+  factory JamInvite.fromAdvert(JamAdvert a) => JamInvite(
+        jamId: a.jamId,
+        token: a.token,
+        fingerprint: a.fingerprint,
+        friendLabel: a.friendLabel,
+        brokers: a.broker < kDefaultJamBrokers.length ? [kDefaultJamBrokers[a.broker]] : const [],
+      );
 
   /// Null for anything that is not a well-formed QR.
   static JamInvite? fromQr(String text, JamProtocol protocol) {

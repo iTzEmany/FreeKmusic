@@ -26,6 +26,7 @@ class Peer {
     required this.platform,
     this.tlsPort,
     this.jamName,
+    this.jamRid,
   });
 
   final String id, name, host, platform;
@@ -38,6 +39,9 @@ class Peer {
 
   /// Name of the speaker Jam this device is hosting, if it announces one.
   final String? jamName;
+
+  /// Id (base64url) of the remote Jam behind that LAN Jam, when the bridge is on (R-137).
+  final String? jamRid;
 }
 
 /// Announces this device and lists the Codecore devices on the same network
@@ -69,6 +73,9 @@ class LanDiscovery {
 
   /// While set, the beacon carries `jam: {name}` (a speaker Jam to join).
   String? speakerJamName;
+
+  /// With [speakerJamName]: the remote Jam id, so Bluetooth and LAN show one row.
+  String? speakerJamRid;
   final _peers = <String, ({Peer peer, DateTime seen})>{};
   final _controller = StreamController<List<Peer>>.broadcast();
 
@@ -168,6 +175,7 @@ class LanDiscovery {
       if (port < 1 || port > 65535) return;
       final old = _peers[id]?.peer;
       final jam = j['jam'];
+      final rid = jam is Map && jam['rid'] is String && (jam['rid'] as String).length <= 16 ? jam['rid'] as String : null;
       final jn = jam is Map && jam['name'] is String && (jam['name'] as String).isNotEmpty
           ? (jam['name'] as String)
           : null;
@@ -182,10 +190,11 @@ class LanDiscovery {
               : null,
           platform: j['p'] is String ? j['p'] as String : 'other',
           jamName: jn != null && jn.length > 60 ? jn.substring(0, 60) : jn,
+          jamRid: jn == null ? null : rid,
         ),
         seen: DateTime.now(),
       );
-      if ((old == null || old.jamName != _peers[id]!.peer.jamName) &&
+      if ((old == null || old.jamName != _peers[id]!.peer.jamName || old.jamRid != _peers[id]!.peer.jamRid) &&
           !_controller.isClosed) {
         _controller.add(current);
       }
@@ -253,7 +262,7 @@ class LanDiscovery {
       'port': _httpPort,
       'tlsPort': ?_tlsPort,
       'p': platformName,
-      if (speakerJamName != null) 'jam': {'name': speakerJamName},
+      if (speakerJamName != null) 'jam': {'name': speakerJamName, 'rid': ?speakerJamRid},
     }));
     for (final t in await _targets()) {
       try {

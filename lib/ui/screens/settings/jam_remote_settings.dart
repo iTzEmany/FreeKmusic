@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/jam_broker_providers.dart';
 import '../../../providers/jam_gate_providers.dart';
+import '../../../providers/jam_nearby_providers.dart';
 import '../../../services/jam/remote/broker_entry.dart';
 import '../../../services/jam/remote/jam_friends.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/show_msg.dart';
+import '../jam/ble_permission.dart';
 import 'settings_pages.dart';
 
 /// «Jam a distanza»: the list of brokers (add, remove, reorder, restore, test), R-122.
@@ -100,6 +102,17 @@ class _JamRemoteSettingsState extends ConsumerState<JamRemoteSettings> {
                 ]),
               ),
             ListTile(leading: const Icon(Icons.add), title: Text(l.jamBrokerAdd), onTap: _add),
+          ]),
+          SettingsGroup(children: [
+            SwitchListTile(
+              title: Text(l.jamNearbyScanTitle),
+              subtitle: Text(l.jamNearbyScanHint),
+              value: ref.watch(jamNearbyScanProvider),
+              // On: the permission sheet again if it is missing (a refusal turned it off).
+              onChanged: (v) => v
+                  ? askBlePermission(context, ref, force: true)
+                  : ref.read(jamNearbyScanProvider.notifier).set(false),
+            ),
           ]),
           SettingsGroup(title: l.jamFriendsTitle, children: [
             SwitchListTile(

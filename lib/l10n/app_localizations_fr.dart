@@ -6031,4 +6031,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get jamFriendBadge => 'Ami';
+
+  @override
+  String get jamNearbyJoin => 'Rejoindre une Jam à proximité';
+
+  @override
+  String get jamBleTitle => 'Chercher des Jams à proximité';
+
+  @override
+  String get jamBleBody12 =>
+      'Android demande l’autorisation « Appareils à proximité » pour chercher et annoncer des Jams en Bluetooth. L’app ne lit pas où vous êtes.';
+
+  @override
+  String get jamBleBody11 =>
+      'L’autorisation de localisation est nécessaire : Android l’exige pour chercher en Bluetooth ; l’app ne lit pas où vous êtes.';
+
+  @override
+  String get jamBleAllow => 'Autoriser';
+
+  @override
+  String get jamBleNotNow => 'Pas maintenant';
+
+  @override
+  String get jamBleLocationOff =>
+      'Activez la localisation d’Android : elle est nécessaire pour chercher des Jams en Bluetooth. En attendant, utilisez le code ou le QR.';
+
+  @override
+  String get jamNearbyScanTitle => 'Chercher des Jams proches';
+
+  @override
+  String get jamNearbyScanHint => 'En Bluetooth, uniquement app ouverte';
 }

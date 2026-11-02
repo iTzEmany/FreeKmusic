@@ -5,6 +5,7 @@ import '../../../core/app_log.dart';
 import '../jam_host.dart';
 import '../jam_models.dart';
 import 'broker_entry.dart';
+import 'jam_beacon.dart';
 import 'jam_bridge.dart';
 import 'jam_crypto.dart' show JamKey;
 import 'jam_friends.dart';
@@ -37,6 +38,7 @@ class JamBridgeHost {
     DateTime Function()? now,
     this.friends,
     this.autoAcceptFriends,
+    this.beacon,
     this.stopGrace = const Duration(milliseconds: 500),
   }) : _now = now ?? DateTime.now;
 
@@ -50,6 +52,9 @@ class JamBridgeHost {
 
   /// «Accetta gli amici senza chiedere», read at every request.
   final bool Function()? autoAcceptFriends;
+
+  /// Bluetooth announcement of this Jam while running; null = none (R-136).
+  final JamBeacon? beacon;
 
   /// [stop] waits this long before disconnecting: the MQTT client may drop
   /// buffered writes on disconnect.
@@ -66,6 +71,7 @@ class JamBridgeHost {
   String? _goneTopic;
   int _codeGen = 0;
   bool _codeBusy = false;
+  int _advWindow = -1;
   int _sentVersion = -1;
   int _rateSec = 0, _rateN = 0;
   late DateTime _lastPing;
@@ -73,6 +79,9 @@ class JamBridgeHost {
   final _subs = <StreamSubscription<Object?>>[];
 
   bool get running => _s != null;
+
+  /// The 6 B id of this switch-on's Jam; null when off.
+  Uint8List? get jamId => _s?.jamId;
 
   /// The code to show (`XXXX-XXXX`) and when it stops working; null when none.
   String? get code => _code == null ? null : JamProtocol.formatCode(_code!.text);
@@ -87,6 +96,25 @@ class JamBridgeHost {
 
   /// The friends' label to announce now (BLE packet and QR), changes every 30 s.
   Uint8List friendLabel() => protocol.friendLabelAt(_announceKey, _ms);
+
+  /// 26 B Bluetooth announcement of the current window; null when off.
+  Uint8List? advert() {
+    final s = _s;
+    if (s == null) return null;
+    final i = kDefaultJamBrokers.indexOf(bridge.broker ?? bridge.brokers.first);
+    return protocol.advertAt(s, _ms, ak: _announceKey, broker: i < 0 ? 0xFF : i);
+  }
+
+  /// Starts the announcement, then renews it with each 30 s window of the QR.
+  void _advertise({required bool first}) {
+    final b = beacon, bytes = advert();
+    if (b == null || bytes == null) return;
+    _advWindow = JamProtocol.windowOf(_ms);
+    (first ? b.startAdvertising(bytes) : b.updateAdvertising(bytes)).catchError((Object e, StackTrace st) {
+      AppLog.w('jam bridge: advertising failed', e, st);
+      return false;
+    });
+  }
 
   /// Members that already got their ACCEPT (the first envelope of a pair).
   Iterable<MapEntry<String, JamChannel>> get _live =>
@@ -105,6 +133,7 @@ class JamBridgeHost {
       ..add(host.changes.listen((_) => _onChanges()));
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
     bridge.start();
+    _advertise(first: true);
     if (bridge.status == JamBridgeStatus.up) _republish();
   }
 
@@ -112,6 +141,7 @@ class JamBridgeHost {
   void tick() {
     if (_s == null) return;
     host.expire();
+    if (JamProtocol.windowOf(_ms) != _advWindow) _advertise(first: false);
     final now = _now();
     if (now.difference(_lastPing) >= _pingEvery) {
       _lastPing = now;
@@ -486,6 +516,8 @@ class JamBridgeHost {
     if (s == null) return;
     _s = null;
     _timer?.cancel();
+    _advWindow = -1;
+    unawaited(beacon?.stopAdvertising());
     for (final x in _subs) {
       unawaited(x.cancel());
     }

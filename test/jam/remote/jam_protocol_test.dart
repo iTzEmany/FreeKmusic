@@ -334,6 +334,30 @@ void main() {
     expect(guest.decodeAdvert(Uint8List(25)), isNull);
   });
 
+  test('advertAt: window token and label change, two Jams of a host share nothing (R-133)', () {
+    final ak = Uint8List.fromList(List.generate(32, (i) => i));
+    final other = host.newHostSecrets();
+    final a = host.advertAt(secrets, t0, ak: ak, broker: 0);
+    expect(a.length, 26);
+    final d = guest.decodeAdvert(a)!;
+    expect(d.jamId, secrets.jamId);
+    expect(d.token, host.token(secrets, t0));
+    expect(d.fingerprint, host.fingerprint(secrets.hpk));
+    expect(guest.matchFriendLabel([ak], d.friendLabel, t0), 0);
+    expect(d.broker, 0);
+    // The next window: another token and label.
+    final n = guest.decodeAdvert(host.advertAt(secrets, t0 + 30000, ak: ak, broker: 0xFF))!;
+    expect(n.token, isNot(d.token));
+    expect(n.friendLabel, isNot(d.friendLabel));
+    expect(n.broker, 0xFF);
+    // A second Jam of the same host, two windows later: no part in common.
+    final o = guest.decodeAdvert(host.advertAt(other, t0 + 60000, ak: ak, broker: 0))!;
+    expect(o.jamId, isNot(d.jamId));
+    expect(o.token, isNot(d.token));
+    expect(o.fingerprint, isNot(d.fingerprint));
+    expect(o.friendLabel, isNot(d.friendLabel));
+  });
+
   test('code is normalized and Crockford-safe', () {
     expect(JamProtocol.normalizeCode(' abcd-23o1 '), 'ABCD2301');
     expect(JamProtocol.normalizeCode('abcd 23il'), 'ABCD2311');

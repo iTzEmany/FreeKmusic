@@ -104,6 +104,7 @@ object JamBeaconBridge {
             "scan" to (a != null && activity?.packageManager?.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) == true),
             "advertise" to (on && a?.isMultipleAdvertisementSupported == true),
             "locationOff" to locationOff,
+            "needsLocation" to (Build.VERSION.SDK_INT <= 30),
         )
     }
 

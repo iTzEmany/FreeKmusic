@@ -540,6 +540,24 @@ class JamProtocol {
     [a.broker],
   ]);
 
+  /// The announcement of [s] for the window of [hostMs]: this window's token
+  /// and `fpH`, the friends' label of [ak] and the broker index (`0xFF` = custom).
+  /// Nothing in it outlives the switch-on, bar the label of [ak] (R-133, R-136).
+  Uint8List advertAt(
+    JamHostSecrets s,
+    int hostMs, {
+    required Uint8List ak,
+    required int broker,
+  }) => encodeAdvert(
+    JamAdvert(
+      jamId: s.jamId,
+      token: token(s, hostMs),
+      fingerprint: fingerprint(s.hpk),
+      friendLabel: friendLabelAt(ak, hostMs),
+      broker: broker,
+    ),
+  );
+
   JamAdvert? decodeAdvert(Uint8List b) {
     if (b.length != 26 || b[0] != JamWire.version) return null;
     return JamAdvert(

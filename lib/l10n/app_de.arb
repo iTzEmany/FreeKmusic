@@ -3207,5 +3207,14 @@
   "jamFriendRemoveBody": "Ihr erkennt euch nicht mehr ohne Nachfrage. Dieses Gerät ändert seinen Ankündigungsschlüssel.",
   "jamAutoAcceptFriends": "Freunde ohne Nachfrage annehmen",
   "jamAutoAcceptFriendsHint": "Wird das Handy eines Freundes gestohlen, kann der Dieb in der Nähe deiner Jam beitreten.",
-  "jamFriendBadge": "Freund"
+  "jamFriendBadge": "Freund",
+  "jamNearbyJoin": "Einer Jam in der Nähe beitreten",
+  "jamBleTitle": "Jams in der Nähe finden",
+  "jamBleBody12": "Android fragt nach der Berechtigung „Geräte in der Nähe“, um Jams per Bluetooth zu suchen und anzukündigen. Die App liest nicht, wo du bist.",
+  "jamBleBody11": "Die Standortberechtigung ist nötig: Android verlangt sie für die Bluetooth-Suche; die App liest nicht, wo du bist.",
+  "jamBleAllow": "Erlauben",
+  "jamBleNotNow": "Nicht jetzt",
+  "jamBleLocationOff": "Schalte den Standort von Android ein: Er wird für die Bluetooth-Suche gebraucht. Bis dahin kannst du den Code oder den QR nutzen.",
+  "jamNearbyScanTitle": "Jams in der Nähe suchen",
+  "jamNearbyScanHint": "Per Bluetooth, nur bei geöffneter App"
 }

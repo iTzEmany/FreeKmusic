@@ -9510,6 +9510,60 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Amico'**
   String get jamFriendBadge;
+
+  /// No description provided for @jamNearbyJoin.
+  ///
+  /// In it, this message translates to:
+  /// **'Unisciti a una Jam qui vicino'**
+  String get jamNearbyJoin;
+
+  /// No description provided for @jamBleTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca le Jam vicine'**
+  String get jamBleTitle;
+
+  /// No description provided for @jamBleBody12.
+  ///
+  /// In it, this message translates to:
+  /// **'Android chiede il permesso «Dispositivi vicini» per cercare e annunciare le Jam via Bluetooth. L\'app non legge dove sei.'**
+  String get jamBleBody12;
+
+  /// No description provided for @jamBleBody11.
+  ///
+  /// In it, this message translates to:
+  /// **'Serve il permesso della posizione: Android la richiede per cercare via Bluetooth; l\'app non legge dove sei.'**
+  String get jamBleBody11;
+
+  /// No description provided for @jamBleAllow.
+  ///
+  /// In it, this message translates to:
+  /// **'Consenti'**
+  String get jamBleAllow;
+
+  /// No description provided for @jamBleNotNow.
+  ///
+  /// In it, this message translates to:
+  /// **'Non ora'**
+  String get jamBleNotNow;
+
+  /// No description provided for @jamBleLocationOff.
+  ///
+  /// In it, this message translates to:
+  /// **'Accendi la posizione di Android: serve per cercare le Jam via Bluetooth. Intanto puoi usare il codice o il QR.'**
+  String get jamBleLocationOff;
+
+  /// No description provided for @jamNearbyScanTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca Jam vicine'**
+  String get jamNearbyScanTitle;
+
+  /// No description provided for @jamNearbyScanHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Via Bluetooth, solo con l\'app aperta'**
+  String get jamNearbyScanHint;
 }
 
 class _AppLocalizationsDelegate

@@ -472,6 +472,16 @@ class SettingsStore {
 
   Future<void> writeJamAutoAcceptFriends(bool v) => _prefs.setBool('jamAutoAcceptFriends', v);
 
+  /// «Cerca Jam vicine» (Bluetooth): on, false after a refused permission (R-138).
+  bool readJamNearbyScan() => _prefs.getBool('jamNearbyScan') ?? true;
+
+  Future<void> writeJamNearbyScan(bool v) => _prefs.setBool('jamNearbyScan', v);
+
+  /// The Bluetooth permission sheet has been shown once.
+  bool readJamBlePermAsked() => _prefs.getBool('jamBlePermAsked') ?? false;
+
+  Future<void> writeJamBlePermAsked(bool v) => _prefs.setBool('jamBlePermAsked', v);
+
   /// The user's own themes, as written by `CustomThemes.encode`.
   String? readCustomThemesRaw() => _prefs.getString('customThemes');
 

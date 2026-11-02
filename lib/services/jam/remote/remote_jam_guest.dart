@@ -53,6 +53,7 @@ class RemoteJamGuest implements JamGuestLink {
   /// A CODE counts as expired only this long after its `exp` (clock skew).
   static const codeSlackMs = 2 * 60 * 1000;
   static const codeWait = Duration(seconds: 4);
+  static const lobbyWait = Duration(seconds: 5);
   static const resultWait = Duration(seconds: 10);
   static const timeWait = Duration(seconds: 3);
   static const pingEvery = Duration(seconds: 30);
@@ -142,6 +143,14 @@ class RemoteJamGuest implements JamGuestLink {
         route = info.brokers.isEmpty ? [on] : info.brokers;
       }
       if (_stopped) return JamJoinOutcome.cancelled;
+      final fp = invite.fingerprint;
+      if (hpk == null && jamId != null && fp != null) {
+        // A Bluetooth announcement: Hpk comes from the lobby, checked against fpH.
+        if (route.isEmpty) return JamJoinOutcome.customBroker;
+        hpk = await _lookupLobby(jamId, fp, route);
+        if (_stopped) return JamJoinOutcome.cancelled;
+        if (hpk == null) return JamJoinOutcome.unreachable;
+      }
       if (jamId == null || hpk == null || proof == null || route.isEmpty) {
         return JamJoinOutcome.codeInvalid;
       }
@@ -183,6 +192,34 @@ class RemoteJamGuest implements JamGuestLink {
     final r = await c.future;
     if (r != null) return r;
     return _stopped ? JamJoinOutcome.cancelled : JamJoinOutcome.expired;
+  }
+
+  /// The retained lobby of [jamId] on each of [route] in turn (5 s each); its
+  /// `Hpk` only if the fingerprint is [fpH].
+  Future<Uint8List?> _lookupLobby(Uint8List jamId, Uint8List fpH, List<BrokerEntry> route) async {
+    final topic = JamProtocol.lobbyTopic(jamId);
+    for (final b in route) {
+      if (_stopped) return null;
+      final link = linkFactory();
+      final got = Completer<Uint8List?>();
+      final sub = link.messages.listen((m) {
+        if (m.topic != topic || got.isCompleted) return;
+        final k = protocol.parseLobby(m.payload, fpH: fpH);
+        if (k != null) got.complete(k);
+      });
+      try {
+        await link.connect(b);
+        link.subscribe(topic);
+        final k = await _within(got, lobbyWait);
+        if (k != null) return k;
+      } on Object catch (e, st) {
+        AppLog.w('remote jam: lobby lookup on $b failed', e, st);
+      } finally {
+        await sub.cancel();
+        link.disconnect();
+      }
+    }
+    return null;
   }
 
   /// The CODE of [keys] on each of [brokers] in turn, 4 s per broker.

@@ -11,6 +11,7 @@ class JamBeaconCapabilities {
     this.scan = false,
     this.advertise = false,
     this.locationOff = false,
+    this.needsLocation = false,
   });
   final bool bluetoothOn;
   final bool scan;
@@ -18,6 +19,9 @@ class JamBeaconCapabilities {
 
   /// Android <= 11 only: the scan needs the location switched on (D-234).
   final bool locationOff;
+
+  /// Android <= 11: the scan permission is the location one (sheet wording).
+  final bool needsLocation;
 }
 
 class JamBeaconPermissions {
@@ -82,6 +86,7 @@ class ChannelJamBeacon implements JamBeacon {
       scan: m['scan'] ?? false,
       advertise: m['advertise'] ?? false,
       locationOff: m['locationOff'] ?? false,
+      needsLocation: m['needsLocation'] ?? false,
     );
   }
 
