@@ -28,6 +28,12 @@
 
 **Fatto quando:** test di §Test in memoria «Protocollo» con `SodiumJamCrypto` vera: vettore dell'intero scambio con casualità fissa, gettone dentro e fuori dai 60 s, intermediario che sostituisce `Hpk` o `Gpk` → rifiutato, busta ripetuta, contatore vecchio, chiave sbagliata e JSON malformato → scartati con un solo log al minuto, QR andata e ritorno, codice normalizzato, stato di 200 item con testi lunghi < 64 KB. Misura dell'Argon2id sul Mi A3 annotata qui sotto (oltre 2 s → parametri di K-JD-08). Review Opus del solo protocollo prima del passo dopo.
 
+**Note 70.1 (fatte).**
+- `JamCrypto` non espone più tipi di `sodium`: `JamKey` (byte, `dispose()` li azzera), `JamKeyPair`, `JamSessionKeys`. Dentro `SodiumJamCrypto` ogni chiave passa in memoria di libsodium solo per la durata della chiamata.
+- `JamProtocol` (con `JamDropLog`, `JamChannel`, `JamHostSecrets`) sta in `jam_protocol.dart`. Scelte dove la specifica tace: `CODE` ≤ 2 048 B; `Gpk` segnato come visto solo dopo AEAD e schema validi; il log degli scarti scrive subito al primo scarto e poi al massimo una riga al minuto, senza timer; stato oltre 60 KB compressi: testi a 64 caratteri, poi via gli item già suonati.
+- Il vettore dell'intero scambio (`kVector` nel test) è fissato dal codice stesso con casualità fissa: serve a vedere cambiamenti involontari, non è un vettore esterno.
+- **Argon2id sul Mi A3: non misurato.** La build di prova (`integration_test`) è arrivata sul telefono ma lo schermo era bloccato e il test non è partito; sbloccare a mano e rilanciare, oppure misurare nella prova 70.6. Se sul Mi A3 supera 2 s si applicano i parametri di K-JD-08 (32 MiB, `opsLimit` 3).
+
 ### 70.2 — `JamBridge` e riserva (R-123, R-125, R-126, D-244, D-246)
 `lib/services/jam/remote/jam_bridge.dart` su `MqttLink`: lista ordinata di `BrokerEntry`, tentativi del flusso 5 (subito lo stesso, poi i successivi in giro, attese 1, 2, 4, 8, 16, 30 s), iscrizioni rifatte, `status`. `FakeBroker` e `FakeMqttLink` in `test/jam/remote/fakes.dart` (più broker, `retain`, registro dei byte).
 
