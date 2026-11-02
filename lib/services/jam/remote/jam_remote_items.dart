@@ -10,17 +10,20 @@ class JamRemoteItems {
 
   final Future<String?> Function(Track track) resolve;
 
-  /// Null when the track is not found online; a network error counts as not found.
+  /// Null when the track is not found online. A network error counts as not found, unless
+  /// [rethrowErrors]: the feeder retries those instead of giving the track up.
   Future<JamItem?> of(
     Track t,
     String ownId, {
     String? partKey,
     bool suggested = false,
+    bool rethrowErrors = false,
   }) async {
     final String? vid;
     try {
       vid = await resolve(t);
     } on Object catch (e, st) {
+      if (rethrowErrors) rethrow;
       AppLog.w('jam: could not look up "${t.title}" online', e, st);
       return null;
     }

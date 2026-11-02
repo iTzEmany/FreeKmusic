@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/data/db/app_database.dart' show Track;
 import 'package:codecore/providers/online_providers.dart';
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
 import 'package:codecore/services/jam/jam_models.dart';
+import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/curiosity_finder.dart';
 import 'package:codecore/services/online/curiosity_service.dart';
 import 'package:codecore/services/online/lrclib_client.dart';
@@ -36,10 +40,12 @@ class _FakeJam extends JamController {
 class _FakeChain implements LyricsChain {
   _FakeChain({this.fail = false});
   final bool fail;
+  int calls = 0;
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
   @override
   Future<LyricsChainResult> find(Track t, {bool wantSynced = true, cancel}) async {
+    calls++;
     if (fail) throw StateError('down');
     return const LyricsChainResult(lyrics: LyricsResult(plain: 'parole remote'));
   }
@@ -303,6 +309,36 @@ void main() {
     addTearDown(c.dispose);
     final meta = await c.read(jamProvider.notifier).fetchMeta(item);
     expect((meta.title, meta.artist, meta.lyricsPlain, meta.curiosities), ('Remota', 'Band', null, null));
+    await h.dispose(tester);
+  });
+
+  testWidgets('remote guest: an own item with no local row falls back to the lookups, done once',
+      (tester) async {
+    // The test hub has no device id: '' is this device.
+    const item = JamItem(
+        id: 6, ownerDeviceId: '', title: 'Mia', ext: 'mp3', artist: 'Io',
+        ref: 'yt:youtube:abcdefghijk', partKey: '99', videoId: 'abcdefghijk');
+    final h = await Harness.create(tester);
+    final chain = _FakeChain();
+    final idx = DownloadIndex(File('${Directory.systemTemp.path}/no-such-downloads.json'));
+    final c = ProviderContainer(overrides: [
+      ...h.overrides,
+      downloadIndexProvider.overrideWith((ref) async => idx),
+      lyricsChainProvider.overrideWithValue(chain),
+      curiosityServiceProvider.overrideWithValue(_FakeCurio()),
+      jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
+          phase: JamPhase.active,
+          role: JamRole.guest,
+          remote: true,
+          jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host')))),
+    ]);
+    addTearDown(c.dispose);
+    final ctrl = c.read(jamProvider.notifier);
+    // The DB lookup is real async work: outside the test's fake clock.
+    final first = (await tester.runAsync(() => ctrl.fetchMeta(item)))!;
+    await tester.runAsync(() => ctrl.fetchMeta(item));
+    expect(first.lyricsPlain, 'parole remote');
+    expect(chain.calls, 1);
     await h.dispose(tester);
   });
 }

@@ -756,6 +756,7 @@ class JamController extends Notifier<JamUiState> {
       // A guest that vanished (crash, Wi-Fi off) must not keep the Jam open.
       _alive = Timer.periodic(const Duration(seconds: 10), (_) {
         _host?.dropStale(const Duration(seconds: 75));
+        _host?.expire(); // a 60 s remote request leaves the host sheet
         final js = _host?.state;
         if (js != null) _onState(js);
       });
@@ -872,9 +873,9 @@ class JamController extends Notifier<JamUiState> {
       final path = (await ref.read(downloadIndexProvider.future)).pathForKey(key);
       return await tracks.streamRow(key) ?? (path == null ? null : await tracks.byPath(path));
     }
-    return id == null
-        ? null
-        : tracks.getById(id);
+    // A remote guest's own library item is `yt:`-keyed: its row id is in the part key.
+    final rowId = id ?? (item.partKey == null ? null : jamPartKeyId(item.partKey!));
+    return rowId == null ? null : tracks.getById(rowId);
   }
 
   Future<TrackMeta?> _localMeta(JamItem item) async {
@@ -911,8 +912,11 @@ class JamController extends Notifier<JamUiState> {
   /// What the info screen shows: from the owner (ours: local), else the item's own fields.
   Future<TrackMeta> fetchMeta(JamItem item) async {
     if (item.ownerDeviceId == _ownId) {
-      return await _localMeta(item) ??
-          TrackMeta(title: item.title, artist: item.artist, album: item.album);
+      final local = await _localMeta(item);
+      if (local != null) return local;
+      return state.remote
+          ? _remoteMeta(item)
+          : TrackMeta(title: item.title, artist: item.artist, album: item.album);
     }
     // A remote guest has no route to the owner: the item's own fields, plus lyrics and
     // curiosities looked up here and written nowhere (R-155).
@@ -920,7 +924,12 @@ class JamController extends Notifier<JamUiState> {
     return jamFetchMeta(item, _remoteUri(item, route: 'meta'), _headers, dio: _http);
   }
 
+  /// Lookups already done for a remote guest, by item id (cleared when the Jam ends).
+  final _remoteMetas = <int, TrackMeta>{};
+
   Future<TrackMeta> _remoteMeta(JamItem item) async {
+    final cached = _remoteMetas[item.id];
+    if (cached != null) return cached;
     final t = Track(
       id: 0,
       path: '',
@@ -956,8 +965,9 @@ class JamController extends Notifier<JamUiState> {
       part(() => ref.read(lyricsChainProvider).find(t)),
       part(() => ref.read(curiosityServiceProvider).find(t, ref.read(settingsProvider).language)),
     ).wait;
-    final song = cur?.pair.song ?? cur?.pair.artist;
-    return TrackMeta(
+    // Only the song's own text: the artist's bio is not a curiosity of the track.
+    final song = cur?.pair.song;
+    final meta = TrackMeta(
       title: item.title,
       artist: item.artist,
       album: item.album,
@@ -966,6 +976,8 @@ class JamController extends Notifier<JamUiState> {
       // Same text the library saves: the text, then its source address.
       curiosities: song == null ? null : '${song.text}\n${song.source}',
     );
+    if (lyr != null || cur != null) _remoteMetas[item.id] = meta; // a failure is tried again
+    return meta;
   }
 
   Future<File?> _selfFetch(JamItem item) {
@@ -1094,6 +1106,7 @@ class JamController extends Notifier<JamUiState> {
   Future<JamAddResult> _addTracks(List<Track> tracks, {bool inherited = false, bool keyed = false}) async {
     var added = 0, full = false;
     final remote = state.remote;
+    final remoteItems = remote ? _remoteItems() : null;
     final downloads = remote
         ? null
         : await ref.read(downloadIndexProvider.future);
@@ -1103,7 +1116,7 @@ class JamController extends Notifier<JamUiState> {
       final hs = _host?.state;
       if (keyed && hs != null && hs.mode == JamMode.together && jamQueueFull(hs, reserve: jamManualSeats)) break;
       final item = remote
-          ? await _remoteItems().of(t, _ownId, partKey: keys?[n])
+          ? await remoteItems!.of(t, _ownId, partKey: keys?[n])
           : jamItemOfTrack(t, _ownId,
               inherited: inherited, partKey: keys?[n], videoId: downloads!.idForPath(t.path));
       if (item == null) continue;
@@ -1130,10 +1143,7 @@ class JamController extends Notifier<JamUiState> {
     if (state.remote) {
       // The host downloads or streams it itself: only the video id travels (R-151).
       // A SoundCloud result has no id the reducer accepts from a remote guest.
-      if (!r.indexKey.startsWith('youtube:')) {
-        _onlineFailed.add(r);
-        return true;
-      }
+      if (!r.indexKey.startsWith('youtube:')) return false;
       unawaited(
         send(
           JamCommand.add(
@@ -1213,6 +1223,7 @@ class JamController extends Notifier<JamUiState> {
 
   Future<void> _teardown({bool release = true}) async {
     _phoneOnly = false;
+    _remoteMetas.clear();
     _hub.speakerJamName = null;
     _alive?.cancel();
     _alive = null;

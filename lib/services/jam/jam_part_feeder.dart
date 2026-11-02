@@ -37,6 +37,7 @@ class JamPartFeeder {
     required this.send,
     required this.itemOf,
     required this.suggest,
+    this.keepUnavailable = false,
   })  : _waiting = [...part],
         _ord = {for (final (i, k) in part.indexed) k: i};
 
@@ -51,6 +52,11 @@ class JamPartFeeder {
   /// A suggested item (`suggested: true`) for a part that ran out, or null.
   final Future<JamItem?> Function(JamState) suggest;
 
+  /// A part track [itemOf] cannot give stays in the part, never sent, for the restore on exit
+  /// (remote guest: not found online). Otherwise it is dropped.
+  final bool keepUnavailable;
+
+  final _skipped = <String>{};
   final List<String> _waiting;
   final Map<String, int> _ord; // position in the original part
   final _played = <String>{};
@@ -70,7 +76,7 @@ class JamPartFeeder {
 
   /// Keys not yet in the Jam, in part order (what the guest finds when it leaves).
   List<String> get unsent =>
-      {..._pending.keys, ..._uncertain.keys, ?_flying, ..._waiting}.toList()..sort((a, b) => _ord[a]!.compareTo(_ord[b]!));
+      {..._pending.keys, ..._uncertain.keys, ?_flying, ..._waiting, ..._skipped}.toList()..sort((a, b) => _ord[a]!.compareTo(_ord[b]!));
 
   /// Library ids of our part left to play, for [js] in «Coda insieme»: our items after the
   /// current one, in order, then what the feeder still holds. Online items stay in the Jam
@@ -83,7 +89,8 @@ class JamPartFeeder {
     };
     return [
       for (final (n, i) in js.items.indexed)
-        if (n > js.currentIndex && i.ownerDeviceId == ownId) ?int.tryParse(i.ref ?? ''),
+        if (n > js.currentIndex && i.ownerDeviceId == ownId)
+          ?(int.tryParse(i.ref ?? '') ?? (i.partKey == null ? null : jamPartKeyId(i.partKey!))),
       for (final k in unsent)
         if (!inJam.contains(k)) ?jamPartKeyId(k),
     ];
@@ -92,6 +99,7 @@ class JamPartFeeder {
   /// The owner removed [key] from the Jam: it leaves the part for good (R-100).
   void forget(String key) {
     _ord.remove(key);
+    _skipped.remove(key);
     _waiting.remove(key);
     _pending.remove(key);
     _uncertain.remove(key);
@@ -211,8 +219,12 @@ class JamPartFeeder {
         rethrow;
       }
       if (item == null) {
-        AppLog.d('jam: part track $key is not available, dropped');
-        _ord.remove(key);
+        AppLog.d('jam: part track $key is not available, ${keepUnavailable ? 'skipped' : 'dropped'}');
+        if (keepUnavailable) {
+          _skipped.add(key);
+        } else {
+          _ord.remove(key);
+        }
         return true;
       }
       void unsure() {

@@ -76,6 +76,7 @@ class JamPart {
       send: send,
       itemOf: _item,
       suggest: _suggestion,
+      keepUnavailable: remote,
     );
   }
 
@@ -108,7 +109,7 @@ class JamPart {
     final id = jamPartKeyId(key);
     final t = id == null ? null : await tracks().getById(id);
     if (t == null || t.missing) return null;
-    if (_remote) return remoteItems().of(t, ownId(), partKey: key);
+    if (_remote) return remoteItems().of(t, ownId(), partKey: key, rethrowErrors: true);
     return jamItemOfTrack(t, ownId(), partKey: key, videoId: (await downloads()).idForPath(t.path));
   }
 
@@ -132,7 +133,7 @@ class JamPart {
       isPlayed: (t) => ids.contains(t.id) || titles.contains(suggestionKey(t.title, t.artist)),
     );
     if (t == null) return null;
-    if (_remote) return remoteItems().of(t, own, suggested: true);
+    if (_remote) return remoteItems().of(t, own, suggested: true, rethrowErrors: true);
     return jamItemOfTrack(
       t,
       own,

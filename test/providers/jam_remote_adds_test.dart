@@ -202,9 +202,7 @@ void main() {
     },
   );
 
-  test('a SoundCloud result is reported as failed and not sent', () async {
-    final failed = <YtResult>[];
-    jam.onlineFailures.listen(failed.add);
+  test('a SoundCloud result is refused and not sent', () async {
     const sc = YtResult(
       id: '1',
       title: 'x',
@@ -212,9 +210,8 @@ void main() {
       duration: Duration.zero,
       source: MediaSource.soundcloud,
     );
-    jam.addOnline(sc);
+    expect(jam.addOnline(sc), false);
     await pumpEventQueue();
-    expect(failed.length, 1);
     expect(guest.sent, isEmpty);
   });
 

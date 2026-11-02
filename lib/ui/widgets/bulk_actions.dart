@@ -140,11 +140,12 @@ List<TrackActionGroup> bulkActions(
         TrackAction(Icons.queue_music_rounded, l.jamAddToJam, () async {
           final remote = ref.read(jamProvider).remote;
           final r = await ref.read(jamProvider.notifier).addTracks(tracks);
-          if (!outer.mounted) return;
-          if (remote && r.added == 0 && !r.full) {
-            showMsg(outer, l.jamNotFoundOnline);
-          } else {
-            showQueued(outer, r, wanted: n, ok: l.jamAdded(r.added));
+          if (outer.mounted) {
+            if (remote && r.added == 0 && !r.full) {
+              showMsg(outer, l.jamNotFoundOnline);
+            } else {
+              showQueued(outer, r, wanted: n, ok: l.jamAdded(r.added));
+            }
           }
           done();
         }),

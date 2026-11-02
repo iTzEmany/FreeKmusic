@@ -103,4 +103,42 @@ void main() {
     expect(i.ref, '1');
     expect(i.selfFetchable, false);
   });
+
+  JamPartFeeder remoteFeeder(List<String> sent, {JamRemoteItems? with_}) {
+    final tracks = {'1': track(1, 'Time'), '2': track(2, 'Unknown'), '3': track(3, 'Time')};
+    return JamPartFeeder(
+      ownId: 'g',
+      part: ['1', '2', '3'],
+      keepUnavailable: true,
+      send: (c) async {
+        sent.add(c.item!.partKey!);
+        return JamResult.ok(const JamState(version: 9, hostDeviceId: 'h', outputDeviceId: 'h'));
+      },
+      itemOf: (k) => (with_ ?? items).of(tracks[k]!, 'g', partKey: k, rethrowErrors: true),
+      suggest: (_) async => null,
+    );
+  }
+
+  test('a track not found stays in the part for the exit, in its place, and is never sent', () async {
+    final sent = <String>[];
+    final f = remoteFeeder(sent);
+    const s = JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together);
+    await f.update(s);
+    expect(sent, ['1', '3']);
+    JamItem yt(String k) => JamItem(
+        id: int.parse(k), ownerDeviceId: 'g', title: k, ext: 'webm', ref: 'yt:youtube:x$k', partKey: k);
+    // 1 is playing, 3 waits in the Jam: what is left is 3 (from its part key) and the skipped 2.
+    final after = s.copyWith(version: 10, items: [yt('1'), yt('3')], currentIndex: 0);
+    await f.update(after);
+    expect(f.remaining(after), [3, 2]);
+  });
+
+  test('a network error on the lookup puts the track back instead of dropping it', () async {
+    final sent = <String>[];
+    final f = remoteFeeder(sent, with_: JamRemoteItems((_) async => throw StateError('offline')));
+    await f.update(const JamState(
+        version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
+    expect(sent, isEmpty);
+    expect(f.unsent, ['1', '2', '3']);
+  });
 }
