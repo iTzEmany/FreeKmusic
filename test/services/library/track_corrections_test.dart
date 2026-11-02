@@ -156,15 +156,21 @@ void main() {
     expect([rec.prop, rec.was], ['auto', {'title': 'Junk', 'artist': 'Channel'}]);
   });
 
-  Future<int> enriched({String? artist}) async {
-    final id = await r.add(title: 'Real Title', artist: artist ?? '', path: path);
-    await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(enrichStatus: Value(1)));
+  Future<int> enriched({String title = 'Junk', String artist = 'Channel', int status = 1}) async {
+    final id = await r.add(title: title, artist: artist, path: path);
+    await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(TracksCompanion(enrichStatus: Value(status)));
     return id;
   }
 
+  Recognition sameTitle() => const Recognition(
+    at: 1,
+    src: RecogSource.tags,
+    sure: true,
+    identity: TrackIdentity(title: 'real title', artist: 'Real Artist'),
+  );
+
   test('D-333: on an enriched track a sure identity with another title is only a proposal', () async {
-    final id = await track();
-    await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(enrichStatus: Value(1)));
+    final id = await enriched();
     await enrich(id);
     final t = await row(id);
     expect([t.title, t.artist, (await recOf(id))!.prop], ['Junk', 'Channel', 'open']);
@@ -172,16 +178,26 @@ void main() {
   });
 
   test('D-333: on an enriched track an empty artist is filled and the title is kept', () async {
-    final id = await enriched();
-    recognizer.rec = Recognition(
-      at: 1,
-      src: RecogSource.tags,
-      sure: true,
-      identity: const TrackIdentity(title: 'real title', artist: 'Real Artist'),
-    );
+    final id = await enriched(title: 'Real Title', artist: '');
+    recognizer.rec = sameTitle();
     await enrich(id);
     final t = await row(id);
-    expect([t.title, t.artist, (await recOf(id))!.prop], ['Real Title', 'Real Artist', 'auto']);
+    final rec = (await recOf(id))!;
+    expect([t.title, t.artist, rec.prop, rec.was], ['Real Title', 'Real Artist', 'auto', {'title': 'Real Title', 'artist': ''}]);
+    expect((await log()).single.kind, 'correction');
+  });
+
+  test('D-333: a generic artist counts as missing', () async {
+    final id = await enriched(title: 'Real Title', artist: 'Unknown Artist');
+    recognizer.rec = sameTitle();
+    await enrich(id);
+    expect((await row(id)).artist, 'Real Artist');
+  });
+
+  test('a track enriched with «nothing» still gets the sure correction', () async {
+    final id = await enriched(status: 2);
+    await enrich(id);
+    expect((await row(id)).title, 'Real Title');
   });
 
   test('a proposal the user accepts marks the track as edited', () async {

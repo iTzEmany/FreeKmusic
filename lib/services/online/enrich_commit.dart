@@ -15,6 +15,7 @@ import 'enrich_parts.dart';
 import 'enrich_writer.dart';
 import 'enrichment_proposal.dart';
 import 'lrclib_client.dart' show LyricsResult;
+import 'query_cleaner.dart' show isGenericArtist;
 
 /// One track's commit in flight: the row and `track_enrich` read once, and
 /// what the parts decided on the way.
@@ -209,8 +210,9 @@ class EnrichCommitter {
   /// with the stored one: a proposal the user discarded (or accepted, or applied) keeps
   /// its state while the identity is the same, `was` is kept, and a hand-edited row (read fresh
   /// here) never gets an open proposal. The row's title and artist stay, except for an automatic
-  /// correction (R-169). On an already enriched track only an empty artist is filled (same title,
-  /// the track's title is kept); any other difference is a proposal, even if sure (D-333).
+  /// correction (R-169). On a track enriched with `found` only an empty or generic artist is filled
+  /// (same title, the track's title is kept); any other difference is a proposal, even if sure (D-333).
+  /// `untried` and `nothing` tracks follow R-169.
   void _commitRec(_Commit c) {
     var rec = c.g.rec;
     if (rec == null) return;
@@ -228,8 +230,9 @@ class EnrichCommitter {
     final fillsArtist = id != null &&
         matchKey(id.title) == matchKey(c.f.title) &&
         id.artist.isNotEmpty &&
-        (c.f.artist ?? '').isEmpty;
-    final auto = rec.sure && (c.f.enrichStatus == 0 || fillsArtist);
+        isGenericArtist(c.f.artist ?? '');
+    final found = c.f.enrichStatus == EnrichStatus.found.code;
+    final auto = rec.sure && (!found || fillsArtist);
     if (fixes && !auto) prop = 'open';
     if (prop == 'open' && c.f.userEdited) prop = null;
     final original = rec.original ?? (same ? old.original : null);
@@ -240,20 +243,10 @@ class EnrichCommitter {
     c.rawDirty = true;
     if (fixes && auto && onSure != null) {
       // Same title by matchKey: the correction fills the artist and keeps the track's title.
-      c.correct = c.f.enrichStatus == 0
-          ? rec
-          : Recognition(
-              v: rec.v,
-              at: rec.at,
-              src: rec.src,
-              score: rec.score,
-              sure: rec.sure,
-              identity: TrackIdentity(title: c.f.title, artist: id.artist, ms: id.ms, isrc: id.isrc, mbid: id.mbid, vid: id.vid),
-              prop: rec.prop,
-              was: rec.was,
-              original: rec.original,
-              cover: rec.cover,
-            );
+      c.correct = found
+          ? rec.copyWith(
+              identity: TrackIdentity(title: c.f.title, artist: id.artist, ms: id.ms, isrc: id.isrc, mbid: id.mbid, vid: id.vid))
+          : rec;
     }
     if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) c.mbid = rec.identity?.mbid;
   }

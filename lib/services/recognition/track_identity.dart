@@ -72,10 +72,11 @@ class Recognition {
   /// The track is a cover, an arrangement or a remix; [original] may still be unknown.
   final bool cover;
 
-  /// A copy with other [sure], [prop], [was], [original] or [cover]; the rest is kept.
+  /// A copy with other [sure], [identity], [prop], [was], [original] or [cover]; the rest is kept.
   /// A nullable field is replaced even by null when it is passed.
   Recognition copyWith({
     bool? sure,
+    TrackIdentity? identity,
     Object? prop = _keep,
     Object? was = _keep,
     Object? original = _keep,
@@ -87,7 +88,7 @@ class Recognition {
         src: src,
         score: score,
         sure: sure ?? this.sure,
-        identity: identity,
+        identity: identity ?? this.identity,
         prop: identical(prop, _keep) ? this.prop : prop as String?,
         was: identical(was, _keep) ? this.was : was as Map<String, String>?,
         original: identical(original, _keep) ? this.original : original as Map<String, String>?,
