@@ -27,9 +27,9 @@ Esiti in `docs/fase-69e-correzioni-e-cover.md`; i rimandati 9–12 sono in «Dop
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 69e.5
+/obiettivo fase 70
 ```
-Prima il passo 69e.5 (titolo ufficiale dal video id, `docs/fase-69e-correzioni-e-cover.md`), poi `/obiettivo fase 70`.
+Il passo 69e.5 (titolo ufficiale dal video id) è chiuso: PR #84, Test.zip con 0 correzioni sbagliate.
 Si comincia dalla sezione «Rilievi dalla fase 69» di `docs/fase-70-ponte-jam-distanza.md`. La misura sul Motorola è fatta (2/11, PR #82): ha fatto nascere D-333, cioè il ripasso dei brani già arricchiti propone e non corregge da solo.
 
 Da sapere:
