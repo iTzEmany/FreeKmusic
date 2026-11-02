@@ -159,6 +159,22 @@ void main() {
     expect(host.state!.items.last.ownerDeviceId, 'guest');
   });
 
+  test('a leaving guest loses its fed part even when online: it takes it back by part key', () async {
+    await startSession();
+    expect((await call('POST', 'request', body: reqBody(id: 'g2'))).statusCode, 202);
+    host.accept(seen.last.id);
+    host.apply(const JamCommand.add(JamItem(id: 0, ownerDeviceId: 'host', title: 'H', ext: 'mp3')),
+        from: 'host');
+    JamItem yt(String t, {String? pk}) => JamItem(
+        id: 0, ownerDeviceId: 'guest', title: t, ext: 'webm', ref: 'yt:youtube:$t', videoId: t, partKey: pk);
+    host.apply(JamCommand.add(yt('fed', pk: '1')), from: 'guest');
+    host.apply(JamCommand.add(yt('manual')), from: 'guest');
+
+    host.removeMember('guest');
+
+    expect(host.state!.items.map((i) => i.title), ['H', 'manual']);
+  });
+
   test('a leaving guest keeps its online item when it is the current one', () async {
     await startSession();
     expect((await call('POST', 'request', body: reqBody(id: 'g2'))).statusCode, 202);

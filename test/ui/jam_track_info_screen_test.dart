@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/jam_providers.dart';
-import 'package:codecore/data/db/app_database.dart' show Track;
+import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
+import 'package:drift/drift.dart' show Value;
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
 import 'package:codecore/services/jam/jam_models.dart';
@@ -14,6 +15,7 @@ import 'package:codecore/services/online/lyrics_chain.dart';
 import 'package:codecore/services/online/wikipedia_client.dart';
 import 'package:codecore/services/online/credits.dart';
 import 'package:codecore/services/share/track_meta.dart';
+import 'package:codecore/ui/screens/jam/jam_cards.dart' show JamInfoCard;
 import 'package:codecore/ui/screens/jam/jam_parts.dart' show jamTriviaText;
 import 'package:codecore/ui/screens/jam/jam_screen.dart';
 import 'package:flutter/material.dart';
@@ -38,8 +40,8 @@ class _FakeJam extends JamController {
 }
 
 class _FakeChain implements LyricsChain {
-  _FakeChain({this.fail = false});
-  final bool fail;
+  _FakeChain({this.fail = false, this.limited = false});
+  final bool fail, limited;
   int calls = 0;
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
@@ -47,7 +49,7 @@ class _FakeChain implements LyricsChain {
   Future<LyricsChainResult> find(Track t, {bool wantSynced = true, cancel}) async {
     calls++;
     if (fail) throw StateError('down');
-    return const LyricsChainResult(lyrics: LyricsResult(plain: 'parole remote'));
+    return LyricsChainResult(lyrics: const LyricsResult(plain: 'parole remote'), limited: limited);
   }
 }
 
@@ -341,4 +343,94 @@ void main() {
     expect(chain.calls, 1);
     await h.dispose(tester);
   });
+
+  testWidgets('remote guest: a refused (limited) lookup is not remembered, searched again',
+      (tester) async {
+    const item = JamItem(id: 7, ownerDeviceId: 'peer', title: 'Remota', ext: 'mp3');
+    final h = await Harness.create(tester);
+    final chain = _FakeChain(limited: true);
+    final c = ProviderContainer(overrides: [
+      ...h.overrides,
+      lyricsChainProvider.overrideWithValue(chain),
+      curiosityServiceProvider.overrideWithValue(_FakeCurio()),
+      jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
+          phase: JamPhase.active,
+          role: JamRole.guest,
+          remote: true,
+          jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host')))),
+    ]);
+    addTearDown(c.dispose);
+    final ctrl = c.read(jamProvider.notifier);
+    await ctrl.fetchMeta(item);
+    await ctrl.fetchMeta(item);
+    expect(chain.calls, 2);
+    await h.dispose(tester);
+  });
+
+  testWidgets('remote guest: an own item is found through its part key, with its local lyrics',
+      (tester) async {
+    const item = JamItem(
+        id: 8, ownerDeviceId: '', title: 'Mia', ext: 'mp3', ref: 'yt:youtube:abcdefghijk',
+        partKey: '1', videoId: 'abcdefghijk');
+    final h = await Harness.create(tester);
+    await h.db.into(h.db.tracks).insert(TracksCompanion.insert(
+        path: '/m/a.mp3', title: 'Mia', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1,
+        addedAt: 1, lyricsPlain: const Value('parole locali')));
+    final chain = _FakeChain();
+    final idx = DownloadIndex(File('${Directory.systemTemp.path}/no-such-downloads.json'));
+    final c = ProviderContainer(overrides: [
+      ...h.overrides,
+      downloadIndexProvider.overrideWith((ref) async => idx),
+      lyricsChainProvider.overrideWithValue(chain),
+      curiosityServiceProvider.overrideWithValue(_FakeCurio()),
+      jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
+          phase: JamPhase.active,
+          role: JamRole.guest,
+          remote: true,
+          jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host')))),
+    ]);
+    addTearDown(c.dispose);
+    final meta = (await tester.runAsync(() => c.read(jamProvider.notifier).fetchMeta(item)))!;
+    expect(meta.lyricsPlain, 'parole locali');
+    expect(chain.calls, 0);
+    await h.dispose(tester);
+  });
+
+  for (final (name, ref, remote, asks) in [
+    ('a LAN library item with a video id', '12', false, 0),
+    ('a remote guest\'s item with a video id', '12', true, 1),
+    ('an online item', 'yt:youtube:abcdefghijk', false, 1),
+  ]) {
+    testWidgets('curiosity card: $name asks online recognition $asks time(s)', (tester) async {
+      final item = JamItem(
+          id: 9, ownerDeviceId: 'peer', title: 'T', ext: 'mp3', ref: ref, videoId: 'abcdefghijk');
+      final h = await Harness.create(tester);
+      final asked = <String>[];
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          ...h.overrides,
+          jamProvider.overrideWith(() => _FakeJam(JamUiState(
+              phase: JamPhase.active,
+              role: JamRole.guest,
+              remote: remote,
+              jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host')))),
+          jamTrackMetaProvider.overrideWith((ref, id) async => const TrackMeta()),
+          onlineRecognitionProvider.overrideWith((ref, v) async {
+            asked.add(v);
+            return null;
+          }),
+        ],
+        child: MaterialApp(
+          locale: const Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: JamInfoCard(item: item)),
+        ),
+      ));
+      await tester.pump();
+      expect(asked.length, asks);
+      await tester.pumpWidget(const SizedBox());
+      await h.dispose(tester);
+    });
+  }
 }

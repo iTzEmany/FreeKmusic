@@ -100,6 +100,11 @@ class _FakeGuest implements RemoteJamGuest {
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
+/// Lets a test flip the remote-guest flag on a real controller.
+class _MarkableJam extends JamController {
+  void markRemote(bool v) => state = state.copyWith(remote: v);
+}
+
 class _ServiceHub extends ShareHubNotifier {
   Completer<void>? slowEnter;
   @override
@@ -149,6 +154,7 @@ void main() {
     links = [];
     guestOutcome = JamJoinOutcome.declined;
     c = ProviderContainer(overrides: [
+      jamProvider.overrideWith(_MarkableJam.new),
       settingsStoreProvider.overrideWithValue(store),
       deviceNameProvider.overrideWithValue('PC'),
       shareHubProvider.overrideWith(_Hub.new),
@@ -171,6 +177,34 @@ void main() {
   Future<void> graceOver() => Future<void>.delayed(const Duration(milliseconds: 60));
 
   bool connected() => links.any((l) => l.connectAttempts.isNotEmpty);
+
+  test('a remote guest never asks an owner for a cover (no HTTP), a LAN device does', () async {
+    final server = await HttpServer.bind('127.0.0.1', 0);
+    addTearDown(() => server.close(force: true));
+    var hits = 0;
+    server.listen((r) {
+      hits++;
+      r.response.add([1, 2, 3]);
+      r.response.close();
+    });
+    _host.open();
+    final jam = c.read(jamProvider.notifier) as _MarkableJam;
+    await jam.debugBegin(JamRole.host, _host.state!);
+    const item = JamItem(id: 3, ownerDeviceId: 'x', title: 'T', ext: 'mp3', ref: '12');
+    jam.debugState(_host.state!.copyWith(
+      items: [item],
+      participants: [
+        const JamParticipant(id: 'me', name: 'PC'),
+        JamParticipant(id: 'x', name: 'X', host: '127.0.0.1', port: server.port),
+      ],
+    ));
+    jam.markRemote(true);
+    expect(await jam.fetchCover(item), isNull);
+    expect(hits, 0);
+    jam.markRemote(false);
+    expect(await jam.fetchCover(item), isNotNull);
+    expect(hits, 1);
+  });
 
   group('bridge', () {
     test('a normal LAN Jam opens no connection', () async {

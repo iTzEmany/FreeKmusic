@@ -108,9 +108,28 @@ class JamPart {
   Future<JamItem?> _item(String key) async {
     final id = jamPartKeyId(key);
     final t = id == null ? null : await tracks().getById(id);
-    if (t == null || t.missing) return null;
-    if (_remote) return remoteItems().of(t, ownId(), partKey: key, rethrowErrors: true);
-    return jamItemOfTrack(t, ownId(), partKey: key, videoId: (await downloads()).idForPath(t.path));
+    return t == null || t.missing ? null : itemOfTrack(t, partKey: key, rethrowErrors: true);
+  }
+
+  /// The Jam item of [t]: a video id when [remote] (default: this Jam's mode), else the
+  /// library item with the video id of its download. Null: not found online / format.
+  Future<JamItem?> itemOfTrack(
+    Track t, {
+    String? partKey,
+    bool suggested = false,
+    bool inherited = false,
+    bool? remote,
+    bool rethrowErrors = false,
+  }) async {
+    if (remote ?? _remote) {
+      return remoteItems().of(t, ownId(),
+          partKey: partKey, suggested: suggested, rethrowErrors: rethrowErrors);
+    }
+    return jamItemOfTrack(t, ownId(),
+        inherited: inherited,
+        partKey: partKey,
+        suggested: suggested,
+        videoId: (await downloads()).idForPath(t.path));
   }
 
   /// A track for a part that ran out: by the genres of our queue from before, none played in this Jam.
@@ -132,13 +151,6 @@ class JamPart {
       ],
       isPlayed: (t) => ids.contains(t.id) || titles.contains(suggestionKey(t.title, t.artist)),
     );
-    if (t == null) return null;
-    if (_remote) return remoteItems().of(t, own, suggested: true, rethrowErrors: true);
-    return jamItemOfTrack(
-      t,
-      own,
-      suggested: true,
-      videoId: (await downloads()).idForPath(t.path),
-    );
+    return t == null ? null : itemOfTrack(t, suggested: true, rethrowErrors: true);
   }
 }

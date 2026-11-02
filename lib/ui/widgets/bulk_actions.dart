@@ -141,7 +141,7 @@ List<TrackActionGroup> bulkActions(
           final remote = ref.read(jamProvider).remote;
           final r = await ref.read(jamProvider.notifier).addTracks(tracks);
           if (outer.mounted) {
-            if (remote && r.added == 0 && !r.full) {
+            if (remote && r.added == 0 && !r.full && ref.read(jamProvider.notifier).lastNotFound > 0) {
               showMsg(outer, l.jamNotFoundOnline);
             } else {
               showQueued(outer, r, wanted: n, ok: l.jamAdded(r.added));

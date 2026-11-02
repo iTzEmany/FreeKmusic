@@ -871,7 +871,8 @@ class JamController extends Notifier<JamUiState> {
     final id = int.tryParse(item.ref ?? '');
     if (key != null) {
       final path = (await ref.read(downloadIndexProvider.future)).pathForKey(key);
-      return await tracks.streamRow(key) ?? (path == null ? null : await tracks.byPath(path));
+      final row = await tracks.streamRow(key) ?? (path == null ? null : await tracks.byPath(path));
+      if (row != null) return row;
     }
     // A remote guest's own library item is `yt:`-keyed: its row id is in the part key.
     final rowId = id ?? (item.partKey == null ? null : jamPartKeyId(item.partKey!));
@@ -976,7 +977,9 @@ class JamController extends Notifier<JamUiState> {
       // Same text the library saves: the text, then its source address.
       curiosities: song == null ? null : '${song.text}\n${song.source}',
     );
-    if (lyr != null || cur != null) _remoteMetas[item.id] = meta; // a failure is tried again
+    final unsure = (lyr?.failed ?? true) || (lyr?.limited ?? true) ||
+        cur == null || cur.outcome.failed || cur.outcome.limited;
+    if (!unsure) _remoteMetas[item.id] = meta; // a failed or refused lookup is tried again
     return meta;
   }
 
@@ -1106,20 +1109,17 @@ class JamController extends Notifier<JamUiState> {
   Future<JamAddResult> _addTracks(List<Track> tracks, {bool inherited = false, bool keyed = false}) async {
     var added = 0, full = false;
     final remote = state.remote;
-    final remoteItems = remote ? _remoteItems() : null;
-    final downloads = remote
-        ? null
-        : await ref.read(downloadIndexProvider.future);
+    lastNotFound = 0;
     final keys = keyed ? jamPartKeys(tracks.map((t) => t.id)) : null;
     for (final (n, t) in tracks.indexed) {
       // The rest of the seed stays in the feeder, the last seats are for hand-made adds (D-264).
       final hs = _host?.state;
       if (keyed && hs != null && hs.mode == JamMode.together && jamQueueFull(hs, reserve: jamManualSeats)) break;
-      final item = remote
-          ? await remoteItems!.of(t, _ownId, partKey: keys?[n])
-          : jamItemOfTrack(t, _ownId,
-              inherited: inherited, partKey: keys?[n], videoId: downloads!.idForPath(t.path));
-      if (item == null) continue;
+      final item = await _part.itemOfTrack(t, partKey: keys?[n], inherited: inherited, remote: remote);
+      if (item == null) {
+        if (remote) lastNotFound++;
+        continue;
+      }
       final err = await send(JamCommand.add(item));
       if (err == null) added++;
       if (err == JamError.full) {
@@ -1129,6 +1129,9 @@ class JamController extends Notifier<JamUiState> {
     }
     return (added: added, full: full);
   }
+
+  /// Tracks of the last [addTracks] a remote guest could not find online (D-240).
+  int lastNotFound = 0;
 
   /// «Coda insieme» is full from the current track back: the reducer refuses every add (D-194).
   bool get queueFull {
@@ -1147,17 +1150,13 @@ class JamController extends Notifier<JamUiState> {
       unawaited(
         send(
           JamCommand.add(
-            JamItem(
-              id: 0,
-              ownerDeviceId: _ownId,
+            jamYtItem(
+              ownId: _ownId,
+              vid: r.id,
               title: r.title,
               artist: displayArtist(r),
               album: r.album,
               durationMs: r.duration?.inMilliseconds ?? 0,
-              ext: 'webm',
-              sizeBytes: 0,
-              ref: 'yt:${r.indexKey}',
-              videoId: r.id,
             ),
           ),
         ).then((err) {

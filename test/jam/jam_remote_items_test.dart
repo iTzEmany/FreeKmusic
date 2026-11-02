@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/jam_part.dart';
 import 'package:codecore/services/jam/jam_models.dart';
@@ -127,10 +129,10 @@ void main() {
     expect(sent, ['1', '3']);
     JamItem yt(String k) => JamItem(
         id: int.parse(k), ownerDeviceId: 'g', title: k, ext: 'webm', ref: 'yt:youtube:x$k', partKey: k);
-    // 1 is playing, 3 waits in the Jam: what is left is 3 (from its part key) and the skipped 2.
+    // 1 is playing, 3 waits in the Jam: what is left is the skipped 2 and 3 (from its part key), in part order.
     final after = s.copyWith(version: 10, items: [yt('1'), yt('3')], currentIndex: 0);
     await f.update(after);
-    expect(f.remaining(after), [3, 2]);
+    expect(f.remaining(after), [2, 3]);
   });
 
   test('a network error on the lookup puts the track back instead of dropping it', () async {
@@ -140,5 +142,76 @@ void main() {
         version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
     expect(sent, isEmpty);
     expect(f.unsent, ['1', '2', '3']);
+  });
+
+  test('an id that does not look like a video id is not found', () async {
+    final bad = JamRemoteItems((_) async => 'a b/../c');
+    expect(await bad.of(track(1, 'Time'), 'g'), isNull);
+  });
+
+  test('forgetting a skipped track takes it out of unsent and remaining', () async {
+    final f = remoteFeeder(<String>[]);
+    const s = JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together);
+    await f.update(s);
+    expect(f.unsent, contains('2'));
+    f.forget('2');
+    expect(f.unsent, isNot(contains('2')));
+    expect(f.remaining(s), isNot(contains(2)));
+  });
+
+  test('a lookup failing three times in a row is skipped, so the part is not blocked', () async {
+    final sent = <String>[];
+    var calls = 0;
+    final flaky = JamRemoteItems((t) async {
+      if (t.title == 'Unknown' && ++calls < 99) throw StateError('offline');
+      return 'dQw4w9WgXcQ';
+    });
+    final f = remoteFeeder(sent, with_: flaky);
+    const s = JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together);
+    for (var i = 0; i < 4; i++) {
+      await f.update(s.copyWith(version: i + 1));
+    }
+    expect(calls, 3);
+    expect(sent, ['1', '3']);
+    expect(f.unsent, contains('2')); // kept for the exit, never sent
+  });
+
+  test('a host refusal in remote mode keeps the track in the part', () async {
+    final f = JamPartFeeder(
+      ownId: 'g',
+      part: ['1'],
+      keepUnavailable: true,
+      send: (_) async => const JamResult.fail(JamError.forbidden),
+      itemOf: (k) => items.of(track(1, 'Time'), 'g', partKey: k),
+      suggest: (_) async => null,
+    );
+    await f.update(const JamState(
+        version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
+    expect(f.unsent, ['1']);
+  });
+
+  test('a feeder stopped during a slow lookup sends nothing', () async {
+    final gate = Completer<void>();
+    final sent = <String>[];
+    late JamPartFeeder f;
+    f = JamPartFeeder(
+      ownId: 'g',
+      part: ['1'],
+      send: (c) async {
+        sent.add('x');
+        return const JamResult.fail(JamError.full);
+      },
+      itemOf: (k) async {
+        await gate.future;
+        return items.of(track(1, 'Time'), 'g', partKey: k);
+      },
+      suggest: (_) async => null,
+    );
+    final run = f.update(const JamState(
+        version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
+    f.dispose();
+    gate.complete();
+    await run;
+    expect(sent, isEmpty);
   });
 }

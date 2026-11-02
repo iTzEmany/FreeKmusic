@@ -302,7 +302,8 @@ class JamHost {
     final now = _now().millisecondsSinceEpoch;
     for (final item in s.items.where((i) => i.ownerDeviceId == id).toList()) {
       final upcoming = s.items.indexOf(item) >= s.currentIndex;
-      if (upcoming && item.selfFetchable) continue;
+      // A fed part (partKey) goes back to its owner on exit: keeping it would double it.
+      if (upcoming && item.selfFetchable && item.partKey == null) continue;
       final r = applyCommand(s, JamCommand.remove(item.id),
           from: deviceId, nowMs: now);
       if (r.isOk) s = r.state!;

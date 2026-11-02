@@ -168,7 +168,16 @@ void main() {
               file: () async =>
                   File('${Directory.systemTemp.path}/seed_adds.json'),
             ),
-            searchSongs: (_) async => const [], // nothing found online
+            searchSongs: (q) async => q.contains('Time')
+                ? const [
+                    YtResult(
+                        id: 'dQw4w9WgXcQ',
+                        title: 'Time',
+                        channel: 'Nobody',
+                        artists: ['Nobody'],
+                        duration: Duration(seconds: 200))
+                  ]
+                : const [],
           ),
         ),
       ],
@@ -222,4 +231,9 @@ void main() {
       expect(guest.sent, isEmpty);
     },
   );
+
+  test('a library track found online reaches the host as a yt: item', () async {
+    expect(await jam.addTracks([_track('Time')]), (added: 1, full: false));
+    expect(guest.state!.items.single.ref, 'yt:youtube:dQw4w9WgXcQ');
+  });
 }
