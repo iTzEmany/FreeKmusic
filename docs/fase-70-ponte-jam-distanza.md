@@ -33,7 +33,7 @@
 - `JamProtocol` (con `JamDropLog`, `JamChannel`, `JamHostSecrets`) sta in `jam_protocol.dart`. Scelte dove la specifica tace: `CODE` ≤ 2 048 B; `Gpk` segnato come visto solo dopo AEAD e schema validi; il log degli scarti scrive subito al primo scarto e poi al massimo una riga al minuto, senza timer; stato oltre 60 KB compressi: testi a 64 caratteri, poi via gli item già suonati.
 - Il vettore dell'intero scambio (`kVector` nel test) è fissato dal codice stesso con casualità fissa: serve a vedere cambiamenti involontari, non è un vettore esterno.
 - Dopo la review del commit 4997edd: `JamKey` dopo `dispose()` lancia `StateError` a ogni uso dei byte (anche `JamChannel.seal/open`, `token`, `openRequest`); `JamKey.adopt` prende possesso del buffer. Chi codifica limita i broker a `JamWire.maxBrokers` = 4 (QR, CODE, ACCEPT via `JamProtocol.brokersJson`); nel QR un host oltre 255 B UTF-8 è saltato, non troncato. `ACCEPT` espone `JamMessage.brokers` già validati. `parseLobby` richiede l'impronta di `Hpk` (`fpH`), `openCode` rifiuta un `exp` passato (`nowMs`), `fitState` dà null se lo stato non entra nemmeno ridotto.
-- **Argon2id sul Mi A3: non misurato.** La build di prova (`integration_test`) è arrivata sul telefono ma lo schermo era bloccato e il test non è partito; sbloccare a mano e rilanciare, oppure misurare nella prova 70.6. Se sul Mi A3 supera 2 s si applicano i parametri di K-JD-08 (32 MiB, `opsLimit` 3).
+- **Argon2id sul Mi A3:** misurato a grandi linee nella prova 70.6 (vedi «Esiti della prova 70.6»: circa 2 s dall'«Entra» alla richiesta sull'host, parametri invariati). Prima: non misurato. La build di prova (`integration_test`) è arrivata sul telefono ma lo schermo era bloccato e il test non è partito; sbloccare a mano e rilanciare, oppure misurare nella prova 70.6. Se sul Mi A3 supera 2 s si applicano i parametri di K-JD-08 (32 MiB, `opsLimit` 3).
 
 ### 70.2 — `JamBridge` e riserva (R-123, R-125, R-126, D-244, D-246)
 `lib/services/jam/remote/jam_bridge.dart` su `MqttLink`: lista ordinata di `BrokerEntry`, tentativi del flusso 5 (subito lo stesso, poi i successivi in giro, attese 1, 2, 4, 8, 16, 30 s), iscrizioni rifatte, `status`. `FakeBroker` e `FakeMqttLink` in `test/jam/remote/fakes.dart` (più broker, `retain`, registro dei byte).
@@ -61,3 +61,13 @@
 `flutter analyze`, comando mirato, build di debug, `/code-review high` su 70.1, 70.3 e 70.4, scheggia in modalità passo su 70.1 (buste e richieste assurde) e 70.4, review di architettura Opus. Prova in autonomia sul broker predefinito: Linux host in `xvfb-run`, Mi A3 ospite col codice (D-91: solo fra i dispositivi di prova); host Mi A3 in pausa a schermo spento 10 min con Linux ospite che rimette play (R-128).
 
 **Fatto quando:** tutto verde; esiti della prova qui sotto; colonna Fase di R-120 … R-134, R-139, R-140, R-142, R-146, R-150, R-156 … R-158 e RNF-14 compilata.
+
+## Esiti della prova 70.6
+Prova in autonomia del 2/11 sul broker predefinito (Linux host in xvfb, Mi A3 ospite col codice): ingresso, comandi, caduta di rete e «Termina» funzionano.
+- Il ponte si collega in circa 5 s e mostra QR e codice (115 s).
+- Dall'«Entra» sul Mi A3 alla richiesta sull'host passano circa 2 s, Argon2id compreso: sotto la soglia di 2 s di K-JD-08, parametri invariati (non misurato a parte: AppLog non scrive i tempi).
+- Play, salto e pausa dal Mi A3 applicati dall'host in 2–3 s.
+- Wi-Fi spento 30 s: «Connessione persa, riprovo…» e ritorno circa 70 s dopo la riaccensione, senza nuovo ingresso; «Termina» riporta l'ospite alla sua coda con «La Jam è terminata».
+- Due difetti trovati e corretti nella stessa PR: in debug il foglio dell'invito modificava lo stato dentro initState (a8068b0); dopo «Accetta» l'ospite remoto perdeva lo STATE arrivato mentre la sua Jam partiva e vedeva la coda vuota fino al cambio successivo (df406d1, da riprovare dal vivo).
+- Non provato: host Mi A3 in pausa a schermo spento per 10 min (R-128).
+- Da capire: in Jam un brano di 4:00 appare di 4:34 su host e ospite.
