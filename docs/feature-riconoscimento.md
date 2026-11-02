@@ -40,7 +40,7 @@ Priorità: **I** indispensabile · **U** utile · **R** rimandabile. Valgono su 
 ### Titolo e artista
 | ID | Requisito | Priorità | Criterio di accettazione (verificabile) | Fase |
 |---|---|---|---|---|
-| R-169 | Con identità sicura, titolo e artista si correggono da soli; con identità non sicura (testo con tag dubbi, YouTube Music sempre: D-304) diventano una **proposta**. I campi modificati a mano non si toccano mai (D-299) | I | Test: identità da ISRC → titolo corretto; identità YTM → proposta, titolo invariato; brano con titolo modificato a mano → né correzione né proposta || 69e |
+| R-169 | Con identità sicura, titolo e artista si correggono da soli; con identità non sicura (testo con tag dubbi, YouTube Music sempre: D-304) diventano una **proposta**. I campi modificati a mano non si toccano mai (D-299). Su un brano già arricchito si riempie solo un artista vuoto (stesso titolo); ogni altra differenza è una proposta, anche se sicura (D-333) | I | Test: identità da ISRC → titolo corretto; identità YTM → proposta, titolo invariato; brano con titolo modificato a mano → né correzione né proposta || 69e |
 | R-170 | Proposte nella scheda del brano (Accetta/Scarta) e in un elenco «Da confermare (N)» nel Registro/Arricchimento con «Accetta tutte» (D-307) | I | Test widget: proposta visibile nella scheda e nell'elenco; «Accetta tutte» applica tutte e svuota l'elenco || 69e |
 | R-171 | Una correzione (automatica o accettata) segue lo stesso percorso della modifica a mano di oggi; il valore vecchio va nel Registro per tornare indietro; una proposta scartata non torna più (D-308) | I | Test: correzione → riga nel Registro con il valore vecchio; scarto → riarricchendo la proposta non ricompare || 69e |
 

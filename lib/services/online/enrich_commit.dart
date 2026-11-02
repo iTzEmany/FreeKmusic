@@ -208,7 +208,9 @@ class EnrichCommitter {
   /// Nothing to write when it was saved already or got no answer. It is merged
   /// with the stored one: a proposal the user discarded (or accepted, or applied) keeps
   /// its state while the identity is the same, `was` is kept, and a hand-edited row (read fresh
-  /// here) never gets an open proposal. The row's title and artist stay.
+  /// here) never gets an open proposal. The row's title and artist stay, except for an automatic
+  /// correction (R-169). On an already enriched track only an empty artist is filled (same title,
+  /// the track's title is kept); any other difference is a proposal, even if sure (D-333).
   void _commitRec(_Commit c) {
     var rec = c.g.rec;
     if (rec == null) return;
@@ -223,7 +225,12 @@ class EnrichCommitter {
             (id.artist.isNotEmpty && matchKey(id.artist) != matchKey(c.f.artist ?? '')));
     final decided = const {'discarded', 'accepted', 'auto'}.contains(prop);
     final fixes = differs && !c.f.userEdited && !decided;
-    if (fixes && !rec.sure) prop = 'open';
+    final fillsArtist = id != null &&
+        matchKey(id.title) == matchKey(c.f.title) &&
+        id.artist.isNotEmpty &&
+        (c.f.artist ?? '').isEmpty;
+    final auto = rec.sure && (c.f.enrichStatus == 0 || fillsArtist);
+    if (fixes && !auto) prop = 'open';
     if (prop == 'open' && c.f.userEdited) prop = null;
     final original = rec.original ?? (same ? old.original : null);
     if (prop != rec.prop || (rec.was == null && old?.was != null) || original != rec.original) {
@@ -231,7 +238,23 @@ class EnrichCommitter {
     }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
-    if (fixes && rec.sure && onSure != null) c.correct = rec;
+    if (fixes && auto && onSure != null) {
+      // Same title by matchKey: the correction fills the artist and keeps the track's title.
+      c.correct = c.f.enrichStatus == 0
+          ? rec
+          : Recognition(
+              v: rec.v,
+              at: rec.at,
+              src: rec.src,
+              score: rec.score,
+              sure: rec.sure,
+              identity: TrackIdentity(title: c.f.title, artist: id.artist, ms: id.ms, isrc: id.isrc, mbid: id.mbid, vid: id.vid),
+              prop: rec.prop,
+              was: rec.was,
+              original: rec.original,
+              cover: rec.cover,
+            );
+    }
     if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) c.mbid = rec.identity?.mbid;
   }
 
