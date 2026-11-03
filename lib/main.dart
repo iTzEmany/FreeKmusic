@@ -227,16 +227,14 @@ Future<void> main() async {
   // preparing the current song in the player is not needed to draw the app.
   unawaited(() async {
     try {
-      final plus = await persistence.restore();
       // A Jam left open keeps the «+» aside: the settings lost it meanwhile (D-342).
-      if (plus != null) {
-        container.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: plus));
-      }
+      await persistence.restore(
+        applyPlus: (on) =>
+            container.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: on)),
+      );
     } on Object catch (e, st) {
       AppLog.w('restore playback failed', e, st);
     }
-    // Only now: a kill during the load above finds the copy again (a failure drops it: no loop).
-    await persistence.dropAside();
     persistence.start();
   }());
   if (kPerfProbe) {

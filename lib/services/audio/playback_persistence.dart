@@ -34,9 +34,10 @@ class PlaybackPersistence {
   bool _held = false;
 
   /// Restores the saved queue paused at the saved position. A copy kept aside
-  /// by a Jam left open (D-341) comes back instead; the caller applies the
-  /// returned Shuffle+ flag (null: no copy) and then calls [dropAside].
-  Future<bool?> restore() async {
+  /// by a Jam left open (D-341) comes back instead: its Shuffle+ flag goes to
+  /// [applyPlus], and the copy is deleted only once all that is done (or failed:
+  /// no loop on a bad copy).
+  Future<void> restore({void Function(bool plus)? applyPlus}) async {
     final s = _store.readPlayback();
     ({SavedPlayback queue, bool plus})? aside;
     try {
@@ -44,19 +45,23 @@ class PlaybackPersistence {
     } on Object catch (e, st) {
       AppLog.w('jam: unreadable queue kept aside', e, st);
     }
-    if (aside == null) await dropAside(); // unreadable: gone for good
-    _volume = s.volume;
-    await _handler.setVolume(s.volume);
-    // A copy with no queue (a host) carries only the shuffle mode.
-    final q = aside != null && aside.queue.queueIds.isNotEmpty ? aside.queue : s;
-    _handler.setShuffleAndRepeat(shuffle: aside?.queue.shuffle ?? s.shuffle, repeat: s.repeat);
-    if (q.queueIds.isEmpty) return aside?.plus;
-    await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs));
-    if (aside != null) {
-      _position = Duration(milliseconds: q.positionMs);
-      await flush(); // the disk follows the queue now back
+    try {
+      _volume = s.volume;
+      await _handler.setVolume(s.volume);
+      // A copy with no queue (a host) carries only the shuffle mode.
+      final q = aside != null && aside.queue.queueIds.isNotEmpty ? aside.queue : s;
+      _handler.setShuffleAndRepeat(shuffle: aside?.queue.shuffle ?? s.shuffle, repeat: s.repeat);
+      if (q.queueIds.isNotEmpty) {
+        await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs));
+        if (aside != null) {
+          _position = Duration(milliseconds: q.positionMs);
+          await flush(); // the disk follows the queue now back
+        }
+      }
+      if (aside != null) applyPlus?.call(aside.plus);
+    } finally {
+      await dropAside();
     }
-    return aside?.plus;
   }
 
   /// Keeps [q] aside for a restart in the middle of a Jam (D-341).

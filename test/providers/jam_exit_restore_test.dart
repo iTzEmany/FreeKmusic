@@ -154,7 +154,8 @@ void main() {
     await handler.playQueue([ids[3]], 0);
     await pumpEventQueue(); // the Jam's own player state drops «+» from the settings
     final h = await reopen();
-    final plus = await PlaybackPersistence(h, store).restore();
+    bool? plus;
+    await PlaybackPersistence(h, store).restore(applyPlus: (on) => plus = on);
     expect(h.queueIds, before);
     expect(h.currentIndex, 1);
     expect(h.shuffleEnabled, true);
@@ -171,7 +172,8 @@ void main() {
     // The part changes meanwhile: our track 1 was played, the Jam moves on.
     jam.debugState(together([other, mine(1)], 1));
     final h = await reopen();
-    final plus = await PlaybackPersistence(h, store).restore();
+    bool? plus;
+    await PlaybackPersistence(h, store).restore(applyPlus: (on) => plus = on);
     expect(h.queueIds, [ids[2], ids[0]]);
     expect(h.currentIndex, 0);
     expect(h.shuffleEnabled, true);
@@ -189,13 +191,50 @@ void main() {
 
     await jam.debugBegin(JamRole.guest, jamState);
     final h = await reopen();
-    final p = PlaybackPersistence(h, store);
-    await p.restore();
-    // Restored and flushed, but kept until the caller has applied the «+» (a kill meanwhile finds it).
-    expect(store.readJamAside(), isNotNull);
-    expect(store.readPlayback().queueIds, before);
-    await p.dropAside();
+    var seenInside = false;
+    await PlaybackPersistence(h, store).restore(applyPlus: (_) {
+      // Queue back and flushed, copy still there: a kill now finds it again.
+      seenInside = store.readJamAside() != null && store.readPlayback().queueIds.isNotEmpty;
+    });
+    expect(seenInside, true);
     expect(store.readJamAside(), isNull);
+  });
+
+  test('a copy is dropped even when applying it fails: no loop on a bad copy', () async {
+    await store.writeJamAside(SavedPlayback(queueIds: ids.take(2).toList()), plus: true);
+    final h = await reopen();
+    await expectLater(
+        PlaybackPersistence(h, store).restore(applyPlus: (_) => throw StateError('boom')),
+        throwsStateError);
+    expect(store.readJamAside(), isNull);
+  });
+
+  test('a host copy (no queue) keeps the saved queue and brings back its mode', () async {
+    await store.writePlayback(SavedPlayback(
+        queueIds: ids.take(3).toList(), index: 1, positionMs: 5000));
+    await store.writeJamAside(const SavedPlayback(shuffle: true), plus: true);
+    final h = await reopen();
+    bool? plus;
+    await PlaybackPersistence(h, store).restore(applyPlus: (on) => plus = on);
+    expect(h.queueIds, ids.take(3));
+    expect(h.currentIndex, 1);
+    expect(h.shuffleEnabled, true);
+    expect(plus, true);
+  });
+
+  test('a position exactly at the end of the track is not saved either', () async {
+    await startIn(ShuffleMode.off);
+    backend.posC.add(const Duration(milliseconds: 190000));
+    backend.stateC.add(BackendState.paused);
+    await pumpEventQueue();
+    expect(handler.playbackState.value.position, const Duration(milliseconds: 190000));
+    await c.read(jamProvider.notifier).debugBegin(JamRole.guest, jamState);
+    expect(store.readPlayback().positionMs, 0);
+  });
+
+  test('a position exactly at the end of the track is not restored', () async {
+    await handler.restore([ids[0]], 0, const Duration(milliseconds: 190000));
+    expect(backend.seeks, isEmpty);
   });
 
   test('a position past the end of the track is not saved either', () async {
