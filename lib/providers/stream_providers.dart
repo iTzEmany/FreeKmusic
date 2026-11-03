@@ -92,8 +92,15 @@ Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository track
 }
 
 /// What the trigger runs for a row; a provider so a test can watch the calls.
-final streamEnrichRowProvider = Provider<Future<void> Function(int rowId)>((ref) =>
-    (id) => enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id));
+/// One run per row at a time: the trigger and Shuffle+'s block share it (D-353).
+final streamEnrichRowProvider = Provider<Future<void> Function(int rowId)>((ref) {
+  final running = <int, Future<void>>{};
+  return (id) => running[id] ??=
+      enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id)
+          .whenComplete(() {
+            running.remove(id); // a block body: returning the Future would make it wait for itself
+          });
+});
 
 /// Tells the trigger which row plays; kept alive by the app widget.
 final streamEnrichTriggerProvider = Provider<StreamEnrichTrigger>((ref) {

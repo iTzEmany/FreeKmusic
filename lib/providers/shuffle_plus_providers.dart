@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+import '../core/app_log.dart';
 import '../core/network_kind.dart';
 import '../core/paths.dart';
 import '../data/settings/settings_store.dart';
@@ -140,9 +141,45 @@ class HandlerShuffleHost implements ShuffleHost {
   Future<void> removeQueueId(int id) => _h.removeQueueId(id);
 }
 
-/// A suggestion is downloaded into the stream cache before it is queued.
+/// A suggestion is queued as soon as its stream address is known (D-352);
+/// the preparer goes on with the file in the background.
 final shufflePlusPrepareProvider = Provider<Future<void> Function(YtResult)>(
-    (ref) => (r) => ref.read(streamPreparerProvider).ready(r.indexKey, r));
+    (ref) => (r) => ref.read(streamPreparerProvider).start(r.indexKey, r));
+
+/// Enriches queued suggestions (D-353): each one as soon as its file has made
+/// the shadow row (nothing binds the row to the entry before the entry loads,
+/// so it is read by key). Entries forgotten meanwhile are skipped.
+final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>)>((ref) {
+  Future<void> one(int id) async {
+    final online = ref.read(onlineEntriesProvider);
+    final preparer = ref.read(streamPreparerProvider);
+    final tracks = ref.read(trackRepositoryProvider);
+    final end = DateTime.now().add(ShufflePlusController.blockEnrichTimeout);
+    for (var e = online?.entryOf(id); e != null; e = online?.entryOf(id)) {
+      final row = await tracks.streamRow(e.result.indexKey);
+      if (row != null) return ref.read(streamEnrichRowProvider)(row.id);
+      final next = Completer<void>();
+      void wake() {
+        if (!next.isCompleted) next.complete();
+      }
+      preparer.phases.addListener(wake);
+      try {
+        // Re-check after listening: the row may have landed meanwhile.
+        if (await tracks.streamRow(e.result.indexKey) == null) {
+          await next.future.timeout(end.difference(DateTime.now()), onTimeout: () {});
+        }
+      } finally {
+        preparer.phases.removeListener(wake);
+      }
+      if (!DateTime.now().isBefore(end)) return;
+    }
+  }
+
+  return (ids) => Future.wait([
+        for (final id in ids)
+          one(id).catchError((Object e, StackTrace st) => AppLog.w('shuffle+ enrich of $id failed', e, st)),
+      ]);
+});
 
 /// The Shuffle+ engine, started the first time it is read (the shell reads it
 /// in 31.12). Null when the player has no online registry (tests).
@@ -169,6 +206,7 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
     loadLibrary: () async => LibraryIndex(await tracks.liteEntries()),
     hasDownload: downloads.contains,
     prepare: ref.read(shufflePlusPrepareProvider),
+    enrichSuggested: ref.read(shufflePlusEnrichProvider),
   );
   ref.listen(shufflePlusConfigProvider, (_, _) => controller.poke());
   ref.listen(jamProvider, (_, _) => controller.poke());
