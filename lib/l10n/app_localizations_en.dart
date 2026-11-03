@@ -5995,4 +5995,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get jamNearbyScanHint => 'Over Bluetooth, only while the app is open';
+
+  @override
+  String get streamCardsSoon => 'The track is on its way…';
 }

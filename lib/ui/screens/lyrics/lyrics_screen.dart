@@ -24,7 +24,8 @@ class LyricsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final track = ref.watch(liveCurrentTrackProvider).value;
+    // A streamed track reads and saves on its shadow row (real id).
+    final track = ref.watch(currentShadowRowProvider) ?? ref.watch(liveCurrentTrackProvider).value;
     if (track == null) {
       return Scaffold(
         backgroundColor: embedded ? Colors.transparent : context.cc.bg,

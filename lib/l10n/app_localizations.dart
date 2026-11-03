@@ -9570,6 +9570,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Via Bluetooth, solo con l\'app aperta'**
   String get jamNearbyScanHint;
+
+  /// Placeholder of the Now playing cards while a streamed track has no data row yet.
+  ///
+  /// In it, this message translates to:
+  /// **'Il brano è in arrivo…'**
+  String get streamCardsSoon;
 }
 
 class _AppLocalizationsDelegate

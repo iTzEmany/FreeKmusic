@@ -3842,5 +3842,7 @@
   "jamBleNotNow": "Non ora",
   "jamBleLocationOff": "Accendi la posizione di Android: serve per cercare le Jam via Bluetooth. Intanto puoi usare il codice o il QR.",
   "jamNearbyScanTitle": "Cerca Jam vicine",
-  "jamNearbyScanHint": "Via Bluetooth, solo con l'app aperta"
+  "jamNearbyScanHint": "Via Bluetooth, solo con l'app aperta",
+  "streamCardsSoon": "Il brano è in arrivo…",
+  "@streamCardsSoon": {"description": "Placeholder of the Now playing cards while a streamed track has no data row yet."}
 }

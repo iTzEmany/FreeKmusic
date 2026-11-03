@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../services/audio/online_entries.dart' show isOnlineId;
 import '../screens/lyrics/lyrics_screen.dart';
 import '../screens/now_playing/now_playing_cards.dart';
 import '../screens/now_playing/queue_sheet.dart';
@@ -35,6 +36,8 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
     final track =
         ref.watch(liveCurrentTrackProvider).value ??
         ref.watch(currentTrackProvider).value;
+    // A streamed track shows the info of its shadow row (real id).
+    final info = track != null && isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
     final title = switch (widget.panel) {
       SidePanel.queue => l.queue,
       SidePanel.lyrics => l.lyrics,
@@ -48,11 +51,19 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
       ),
       SidePanel.lyrics => const LyricsScreen(embedded: true),
       SidePanel.info =>
-        track == null
-            ? const SizedBox.shrink()
+        info == null
+            // A streamed track waits for its row (D-350); nothing for a radio or no track.
+            ? track == null || ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true
+                  ? const SizedBox.shrink()
+                  : Center(
+                      child: Text(
+                        l.streamCardsSoon,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cc.textMuted),
+                      ),
+                    )
             : ListView(
                 padding: const EdgeInsets.all(CcDims.gap12),
-                children: [InfoCard(track: track)],
+                children: [InfoCard(track: info)],
               ),
       SidePanel.none => const SizedBox.shrink(),
     };

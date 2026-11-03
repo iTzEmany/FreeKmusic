@@ -3217,5 +3217,6 @@
   "jamBleNotNow": "Not now",
   "jamBleLocationOff": "Turn on Android’s location: it is needed to look for Jams over Bluetooth. Meanwhile you can use the code or the QR.",
   "jamNearbyScanTitle": "Look for nearby Jams",
-  "jamNearbyScanHint": "Over Bluetooth, only while the app is open"
+  "jamNearbyScanHint": "Over Bluetooth, only while the app is open",
+  "streamCardsSoon": "The track is on its way…"
 }

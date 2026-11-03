@@ -477,6 +477,37 @@ final playerFailuresProvider = StreamProvider<PlaybackFailure>(
   (ref) => ref.watch(playerErrorsProvider),
 );
 
+final _shadowRowStream = StreamProvider<Track?>((ref) async* {
+  final id = ref.watch(currentTrackProvider.select((t) => t.value?.id));
+  final entries = ref.watch(onlineEntriesProvider);
+  final entry = id == null || !isOnlineId(id) ? null : entries?.entryOf(id);
+  if (entries == null || entry == null) {
+    yield null;
+    return;
+  }
+  final repo = ref.watch(trackRepositoryProvider);
+  final rowIds = entry.trackId != null
+      ? Stream.value(entry.trackId!)
+      : entries.bound
+          .where((i) => i == id)
+          .take(1)
+          .map((_) => entries.entryOf(id!)?.trackId)
+          .where((r) => r != null)
+          .cast<int>();
+  yield* rowIds.asyncExpand(repo.watchById);
+});
+
+/// The shadow row (real id) of the streamed track now playing, kept in sync
+/// with the DB; null for a library track, a radio, or before the row exists.
+/// A row left over from the previous track is dropped (the stream keeps its
+/// last value while loading).
+final currentShadowRowProvider = Provider<Track?>((ref) {
+  final id = ref.watch(currentTrackProvider.select((t) => t.value?.id));
+  final row = ref.watch(_shadowRowStream).value;
+  final rowId = id == null ? null : ref.watch(onlineEntriesProvider)?.entryOf(id)?.trackId;
+  return row != null && row.id == rowId ? row : null;
+});
+
 /// Current track kept in sync with DB edits (favourite flag, title, ...).
 final liveCurrentTrackProvider = StreamProvider<Track?>((ref) async* {
   final id = ref.watch(currentTrackProvider.select((t) => t.value?.id));
@@ -484,25 +515,13 @@ final liveCurrentTrackProvider = StreamProvider<Track?>((ref) async* {
     yield null;
     return;
   }
-  final repo = ref.watch(trackRepositoryProvider);
   if (!isOnlineId(id)) {
-    yield* repo.watchById(id);
+    yield* ref.watch(trackRepositoryProvider).watchById(id);
     return;
   }
   // A streamed entry shows its synthetic track until the preparer makes the
   // shadow row; then the row's data (lyrics and trivia appear as enrichment
   // ends) under the entry's own negative id, so the online menus and cover keep working.
-  final entries = ref.watch(onlineEntriesProvider);
-  yield entries?.trackOf(id);
-  final entry = entries?.entryOf(id);
-  if (entries == null || entry == null) return;
-  final rowIds = entry.trackId != null
-      ? Stream.value(entry.trackId!)
-      : entries.bound
-          .where((i) => i == id)
-          .take(1)
-          .map((_) => entries.entryOf(id)?.trackId)
-          .where((r) => r != null)
-          .cast<int>();
-  yield* rowIds.asyncExpand((r) => repo.watchById(r).map((t) => t?.copyWith(id: id)));
+  final row = ref.watch(currentShadowRowProvider);
+  yield row?.copyWith(id: id) ?? ref.read(onlineEntriesProvider)?.trackOf(id);
 });
