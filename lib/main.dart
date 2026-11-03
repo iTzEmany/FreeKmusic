@@ -235,6 +235,8 @@ Future<void> main() async {
     } on Object catch (e, st) {
       AppLog.w('restore playback failed', e, st);
     }
+    // Only now: a kill during the load above finds the copy again (a failure drops it: no loop).
+    await persistence.dropAside();
     persistence.start();
   }());
   if (kPerfProbe) {

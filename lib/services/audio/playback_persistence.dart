@@ -34,8 +34,8 @@ class PlaybackPersistence {
   bool _held = false;
 
   /// Restores the saved queue paused at the saved position. A copy kept aside
-  /// by a Jam left open (D-341) comes back instead, then goes. Returns whether
-  /// Shuffle+ was on in that copy (null: no copy).
+  /// by a Jam left open (D-341) comes back instead; the caller applies the
+  /// returned Shuffle+ flag (null: no copy) and then calls [dropAside].
   Future<bool?> restore() async {
     final s = _store.readPlayback();
     ({SavedPlayback queue, bool plus})? aside;
@@ -44,7 +44,7 @@ class PlaybackPersistence {
     } on Object catch (e, st) {
       AppLog.w('jam: unreadable queue kept aside', e, st);
     }
-    await dropAside();
+    if (aside == null) await dropAside(); // unreadable: gone for good
     _volume = s.volume;
     await _handler.setVolume(s.volume);
     // A copy with no queue (a host) carries only the shuffle mode.

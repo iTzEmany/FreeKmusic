@@ -189,7 +189,12 @@ void main() {
 
     await jam.debugBegin(JamRole.guest, jamState);
     final h = await reopen();
-    await PlaybackPersistence(h, store).restore();
+    final p = PlaybackPersistence(h, store);
+    await p.restore();
+    // Restored and flushed, but kept until the caller has applied the «+» (a kill meanwhile finds it).
+    expect(store.readJamAside(), isNotNull);
+    expect(store.readPlayback().queueIds, before);
+    await p.dropAside();
     expect(store.readJamAside(), isNull);
   });
 
