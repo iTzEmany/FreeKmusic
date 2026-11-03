@@ -56,6 +56,10 @@ class JamPart {
   Map<String, int>? _genres;
   final _random = Random();
 
+  // Played in this Jam: the host trims old entries, so the state alone forgets them.
+  final _playedIds = <int>{};
+  final _playedKeys = <String>{};
+
   /// Our part worked out when the guest presses «Esci», before the host drops our tracks.
   List<int>? exitPart;
 
@@ -70,6 +74,8 @@ class JamPart {
     feeder?.dispose();
     _beforeIds = ids;
     _genres = null;
+    _playedIds.clear();
+    _playedKeys.clear();
     feeder = JamPartFeeder(
       ownId: ownId(),
       part: jamPartKeys(ids),
@@ -94,6 +100,8 @@ class JamPart {
     feeder = null;
     _beforeIds = const [];
     _genres = null;
+    _playedIds.clear();
+    _playedKeys.clear();
     exitPart = null;
     _remote = false;
   }
@@ -137,11 +145,10 @@ class JamPart {
     final q = queries(), own = ownId();
     final genres = _genres ??= await q.genreCounts(_beforeIds);
     final played = s.items.take(s.currentIndex + 1);
-    final ids = {
-      for (final i in played)
-        if (i.ownerDeviceId == own) ?int.tryParse(i.ref ?? ''),
-    };
-    final titles = {for (final i in played) suggestionKey(i.title, i.artist)};
+    for (final i in played) {
+      if (i.ownerDeviceId == own) _playedIds.addAll([?int.tryParse(i.ref ?? '')]);
+      _playedKeys.add(suggestionKey(i.title, i.artist));
+    }
     final t = await pickSuggestion<Track>(
       genreWeights: genres,
       random: _random,
@@ -149,7 +156,7 @@ class JamPart {
         for (final t in await q.randomTracks(genre: g))
           if (jamItemOfTrack(t, own) != null) t,
       ],
-      isPlayed: (t) => ids.contains(t.id) || titles.contains(suggestionKey(t.title, t.artist)),
+      isPlayed: (t) => _playedIds.contains(t.id) || _playedKeys.contains(suggestionKey(t.title, t.artist)),
     );
     return t == null ? null : itemOfTrack(t, suggested: true, rethrowErrors: true);
   }
