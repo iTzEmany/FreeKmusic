@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart';
-import 'package:codecore/providers/player_providers.dart' show playerControllerProvider;
+import 'package:codecore/providers/player_providers.dart' show onlineEntriesProvider, playerControllerProvider;
 import 'package:codecore/providers/youtube_providers.dart'
     show downloadIndexProvider;
 import 'package:codecore/services/online/download_index.dart';
@@ -139,6 +139,48 @@ void main() {
     expect(find.text('Second song'), findsWidgets);
     expect(find.text('Parole del brano'), findsNothing);
     expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('a download merges the shadow row: the cards follow the entry to the new row', (t) async {
+    final (h, dir, _, ref) = await _open(t);
+    await t.tap(find.text('go'));
+    await _wait(t);
+    final file = File('${dir.path}/other.m4a')..writeAsStringSync('x');
+    final newId = (await t.runAsync(() => TrackRepository(h.db).upsertStreamRow('youtube:v9', _r2, file)))!;
+    await t.runAsync(() => (h.db.update(h.db.tracks)..where((r) => r.id.equals(newId))).write(
+      const TracksCompanion(lyricsPlain: Value('Testo della libreria')),
+    ));
+    final entries = ref().read(onlineEntriesProvider)!;
+    entries.bindRow(entries.idsOf(_r).single, newId);
+    await _wait(t);
+
+    expect(find.text('Testo della libreria'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('a shadow row with a positive id, playing as a library track, shows its own cards', (t) async {
+    t.view.physicalSize = const Size(1400, 1000);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, tracks: 1);
+    final id = (await t.runAsync(() async {
+      final row = await h.db.select(h.db.tracks).getSingle();
+      await (h.db.update(h.db.tracks)..where((r) => r.id.equals(row.id))).write(
+        const TracksCompanion(kind: Value(kStreamKind), lyricsPlain: Value('Parole del brano')),
+      );
+      return row.id;
+    }))!;
+    await t.runAsync(() => h.handler.playQueue([id], 0));
+    await h.pump(t, const NowPlayingScreen());
+    await _wait(t);
+
+    expect(find.text('Parole del brano'), findsOneWidget);
+    expect(find.text('Il brano è in arrivo…'), findsNothing);
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);

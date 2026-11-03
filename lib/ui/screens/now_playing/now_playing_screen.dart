@@ -14,6 +14,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/radio/radio_station.dart' show RadioStation;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
+import '../../../services/audio/online_entries.dart' show isOnlineId;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../widgets/artist_links.dart';
 import '../../theme/tokens.dart';
@@ -155,8 +156,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     if (!_cardsReady) return const [SizedBox(height: _cardsPlaceholderHeight)];
     // A streamed track gets the cards of its shadow row (real id); a radio none.
     final radio = online && ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true;
-    final row = online ? ref.watch(currentShadowRowProvider) : track;
-    final wait = online && !radio && row == null;
+    final row = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
+    final wait = !radio && row == null;
     return [
       RiseIn(
         child: Column(

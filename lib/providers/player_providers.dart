@@ -477,24 +477,36 @@ final playerFailuresProvider = StreamProvider<PlaybackFailure>(
   (ref) => ref.watch(playerErrorsProvider),
 );
 
-final _shadowRowStream = StreamProvider<Track?>((ref) async* {
+/// The shadow row id of the playing stream entry: now, and again whenever the
+/// entry is (re)bound (a download merges the row into a library track).
+final _shadowRowId = StreamProvider<int?>((ref) async* {
   final id = ref.watch(currentTrackProvider.select((t) => t.value?.id));
   final entries = ref.watch(onlineEntriesProvider);
-  final entry = id == null || !isOnlineId(id) ? null : entries?.entryOf(id);
-  if (entries == null || entry == null) {
+  if (entries == null || id == null || !isOnlineId(id)) {
     yield null;
     return;
   }
-  final repo = ref.watch(trackRepositoryProvider);
-  final rowIds = entry.trackId != null
-      ? Stream.value(entry.trackId!)
-      : entries.bound
-          .where((i) => i == id)
-          .take(1)
-          .map((_) => entries.entryOf(id!)?.trackId)
-          .where((r) => r != null)
-          .cast<int>();
-  yield* rowIds.asyncExpand(repo.watchById);
+  if (entries.entryOf(id) == null) {
+    yield null;
+    return;
+  }
+  // Listen before the first yield: a bind in between must not be lost.
+  final out = StreamController<int?>()..add(entries.entryOf(id)?.trackId);
+  final sub = entries.bound.where((i) => i == id).listen((_) => out.add(entries.entryOf(id)?.trackId));
+  ref.onDispose(() {
+    sub.cancel();
+    out.close();
+  });
+  yield* out.stream;
+});
+
+final _shadowRowStream = StreamProvider<Track?>((ref) async* {
+  final rowId = ref.watch(_shadowRowId).value;
+  if (rowId == null) {
+    yield null;
+    return;
+  }
+  yield* ref.watch(trackRepositoryProvider).watchById(rowId);
 });
 
 /// The shadow row (real id) of the streamed track now playing, kept in sync

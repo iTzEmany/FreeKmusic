@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
-import 'player_providers.dart' show audioHandlerProvider;
+import 'player_providers.dart' show audioHandlerProvider, onlineEntriesProvider;
 import '../data/db/app_database.dart';
 import '../data/repositories/folder_repository.dart';
 import '../services/import/playlist_import_service.dart' show parseImportTag;
@@ -208,7 +208,14 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       final tracks = ref.read(trackRepositoryProvider);
       final id = await tracks.idForPath(path);
       final gone = id == null ? null : await tracks.mergeStreamRow(r.indexKey, id);
-      if (gone != null) ref.read(audioHandlerProvider).replaceQueueId(gone, id!);
+      if (gone != null) {
+        ref.read(audioHandlerProvider).replaceQueueId(gone, id!);
+        // The entry now playing keeps streaming: point it at the library row.
+        final online = ref.read(onlineEntriesProvider);
+        for (final e in online?.idsOf(r) ?? const <int>[]) {
+          online!.bindRow(e, id);
+        }
+      }
     } on Object catch (e, st) {
       AppLog.w('merge of the stream row failed for ${r.indexKey}', e, st);
     }
