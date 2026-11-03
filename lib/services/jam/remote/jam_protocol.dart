@@ -241,63 +241,15 @@ class JamChannel {
   /// Null when the envelope would pass [JamWire.maxEnvelope]; the counter is
   /// then not consumed.
   Uint8List? seal(int type, Object? body) {
-    _live();
-    return _finishSeal(type, _pack(body));
+    return sealPacked(type, _pack(body));
   }
 
-  /// Runs strictly after the earlier [sealStateAsync] / [sealAsync] calls, so
-  /// counters and the order of publishes follow the order of the calls.
-  Future<T> _serial<T>(Future<T> Function() f) {
-    _queued++;
-    final r = _tail.then((_) => f());
-    _tail = r.then((_) {}, onError: (_) {}).whenComplete(() => _queued--);
-    return r;
+  /// Seals a body already framed by [packState]: only the cheap AEAD runs here.
+  /// Null when the envelope would be too big (the counter is then not consumed).
+  Uint8List? sealPacked(int type, Uint8List packed) {
+    _live();
+    return _finishSeal(type, packed);
   }
-
-  Future<void> _tail = Future.value();
-  int _queued = 0;
-
-  /// True while an async seal is in flight: a sync [seal] now would
-  /// overtake it, so the caller must use [sealAsync] to keep the order.
-  bool get busy => _queued > 0;
-
-  /// [seal] queued behind the async calls in flight. [publish] runs right
-  /// after sealing, in the same queue slot: counter order = publish order.
-  /// False when the envelope would be too big.
-  Future<bool> sealAsync(
-    int type,
-    Object? body,
-    void Function(Uint8List) publish,
-  ) => _serial(() async {
-    _live();
-    return _emit(_finishSeal(type, _pack(body)), publish);
-  });
-
-  bool _emit(Uint8List? b, void Function(Uint8List) publish) {
-    if (b == null) return false;
-    publish(b);
-    return true;
-  }
-
-  /// [seal] of a STATE with [JamProtocol.fitState] applied: the JSON, the
-  /// size fitting and the compression (the slow part, K-JD-09) run in an
-  /// isolate; false when the state does not fit. Throws [StateError] when the
-  /// channel was disposed meanwhile. See [sealAsync] for [publish].
-  Future<bool> sealStateAsync(
-    JamState st,
-    void Function(Uint8List) publish,
-  ) => _serial(() async {
-    _live();
-    // shortcut: a short list is packed inline (the isolate costs more than it saves).
-    final packed = st.items.length < _isolateItems
-        ? _packState(st)
-        : await _packStateInIsolate(st);
-    _live();
-    return _emit(
-      packed == null ? null : _finishSeal(JamMsg.state, packed),
-      publish,
-    );
-  });
 
   Uint8List? _finishSeal(int type, Uint8List plain) {
     final ctr = _sent + 1;
@@ -306,7 +258,10 @@ class JamChannel {
       message: _p.crypto.pad(plain, JamWire.padBlock),
       additionalData: _ad(type, ctr, _sendDir),
     );
-    final out = Uint8List.fromList([..._header(type, ctr), ...sealed]);
+    final head = _header(type, ctr);
+    final out = Uint8List(head.length + sealed.length)
+      ..setAll(0, head)
+      ..setAll(head.length, sealed);
     if (out.length > JamWire.maxEnvelope) return null;
     _sent = ctr;
     return out;
@@ -1061,21 +1016,44 @@ Uint8List _pack(Object? body) {
     ..setAll(1, raw);
 }
 
-// The closures live at top level: inside a method they would capture `this`
-// (keys, sodium) and could not be sent to the isolate.
+/// Items from which a STATE is packed in an isolate (K-JD-09).
 const _isolateItems = 40;
 
-Uint8List? _packState(JamState st) {
-  final j = _fitState(st);
-  return j == null ? null : _pack({'state': j});
+/// The STATE body framed as [JamChannel.sealPacked] wants it (flag byte, then
+/// JSON, zlib when that pays), fitted to the budget; null when it does not
+/// fit. JSON and zlib run once. Pure, so it can run in an isolate.
+Uint8List? packState(JamState s) {
+  final f = _fit(s);
+  if (f == null) return null;
+  final z = f.raw.length > 256 && f.z.length < f.raw.length;
+  final body = z ? f.z : f.raw;
+  return Uint8List(body.length + 1)
+    ..[0] = z ? 1 : 0
+    ..setAll(1, body);
 }
 
-Future<Uint8List?> _packStateInIsolate(JamState st) =>
-    Isolate.run(() => _packState(st));
+/// [packState] off the UI thread for a big list (a short one costs less than
+/// the isolate does). Errors reach the caller as a failed future.
+Future<Uint8List?> packStateOffThread(JamState s) =>
+    s.items.length < _isolateItems
+    ? Future.sync(() => packState(s))
+    : Isolate.run(() => packState(s));
 
-Map<String, Object?>? _fitState(JamState s) {
+typedef _Fitted = ({Map<String, Object?> json, Uint8List raw, Uint8List z});
+
+Map<String, Object?>? _fitState(JamState s) => _fit(s)?.json;
+
+/// [s] as JSON that fits the budget once compressed, with its bytes.
+_Fitted? _fit(JamState s) {
+  _Fitted? fits(Map<String, Object?> j) {
+    final raw = Uint8List.fromList(utf8.encode(jsonEncode({'state': j})));
+    final z = Uint8List.fromList(ZLibCodec().encode(raw));
+    return z.length <= JamWire.stateBudget ? (json: j, raw: raw, z: z) : null;
+  }
+
   final j = s.toJson();
-  if (_fits(j)) return j;
+  final a = fits(j);
+  if (a != null) return a;
   final items = (j['items'] as List).cast<Map<String, Object?>>();
   for (final it in items) {
     for (final k in const ['title', 'artist', 'album']) {
@@ -1083,18 +1061,15 @@ Map<String, Object?>? _fitState(JamState s) {
       if (v is String && v.length > 64) it[k] = v.substring(0, 64);
     }
   }
-  if (_fits(j)) return j;
+  final b = fits(j);
+  if (b != null) return b;
   final cur = j['current'] as int;
   if (cur > 0) {
     items.removeRange(0, cur);
     j['current'] = 0;
   }
-  return _fits(j) ? j : null;
+  return fits(j);
 }
-
-bool _fits(Map<String, Object?> j) =>
-    ZLibCodec().encode(utf8.encode(jsonEncode({'state': j}))).length <=
-    JamWire.stateBudget;
 
 class _TooBig implements Exception {}
 

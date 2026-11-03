@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -146,6 +147,8 @@ void main() {
   late JamBridge bridge;
   late JamBridgeHost bh;
   late JamQr qr;
+  // The STATE pack, replaceable per test (a slow or failing isolate).
+  var packFn = packStateOffThread;
 
   setUp(() async {
     final base = await SodiumJamCrypto.create();
@@ -164,6 +167,7 @@ void main() {
       bridge: bridge,
       now: () => clock,
       stopGrace: Duration.zero,
+      pack: (s) => packFn(s),
     )..start();
     await pumpEventQueue();
     qr = guestProtocol.decodeQr(bh.currentQr()!)!;
@@ -598,5 +602,133 @@ void main() {
     for (final s in ['dev-anna', 'Name dev-anna', 'TitoloSegreto', 'Host']) {
       expect(all.contains(s), isFalse, reason: s);
     }
+  });
+
+  group('STATE pack (K-JD-09)', () {
+    final held = <(JamState, Completer<Uint8List?>)>[];
+    var calls = 0;
+
+    // Joining packs at once; hold() then keeps the next packs until release().
+    void hold() {
+      held.clear();
+      calls = 0;
+      packFn = (st) {
+        calls++;
+        final c = Completer<Uint8List?>();
+        held.add((st, c));
+        return c.future;
+      };
+    }
+
+    void release(int i) => held[i].$2.complete(packState(held[i].$1));
+
+    int versionOf(Guest g) => g.of(JamMsg.state).last.state!.version;
+
+    test('every guest (4 is the maximum): one pack per version, every guest gets it', () async {
+      final gs = [for (var i = 0; i < 4; i++) await joined('dev-$i')];
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      expect(calls, 1);
+      release(0);
+      await pumpEventQueue();
+      for (final g in gs) {
+        expect(versionOf(g), host.state!.version);
+      }
+    });
+
+    test('the RESULT goes out after the STATE of its version', () async {
+      final g = await joined('dev-1');
+      hold();
+      g.send(JamMsg.cmd, {'req': 'r', 'cmd': const JamCommand.volume(0.5).toJson()});
+      await pumpEventQueue();
+      expect(g.of(JamMsg.result), isEmpty, reason: 'waits for the pack');
+      release(0);
+      await pumpEventQueue();
+      final i = g.inbox.lastIndexWhere((m) => m.type == JamMsg.result);
+      expect(i, greaterThan(0));
+      expect(g.inbox[i - 1].type, JamMsg.state);
+      expect(g.inbox[i - 1].state!.version, g.inbox[i].body['v']);
+    });
+
+    test('TIME and PING are not held by a pack, with the time of sending', () async {
+      final g = await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      clock = clock.add(const Duration(seconds: 2));
+      g.send(JamMsg.gTime, {'t0': 7});
+      g.send(JamMsg.sync, {'v': host.state!.version});
+      await pumpEventQueue();
+      expect(held.single.$2.isCompleted, isFalse);
+      expect(g.of(JamMsg.time).single.body['t'], clock.millisecondsSinceEpoch);
+      expect(g.of(JamMsg.ping).single.body['v'], host.state!.version);
+    });
+
+    test('a BYE sent during a pack is published, the state skips that member', () async {
+      final g = await joined('dev-1');
+      final other = await joined('dev-2');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      host.removeMember('dev-1');
+      await pumpEventQueue();
+      expect(g.of(JamMsg.bye).single.body['why'], 'removed');
+      final n = g.of(JamMsg.state).length;
+      for (var i = 0; i < held.length; i++) {
+        release(i);
+      }
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).length, n);
+      expect(versionOf(other), host.state!.version);
+    });
+
+    test('stop() during a pack tears everything down and a new start is intact', () async {
+      final g = await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      await bh.stop();
+      expect(bh.running, isFalse);
+      expect(crypto.lastMacKey!.isDisposed, isTrue);
+      bh.start();
+      await pumpEventQueue();
+      final n = g.of(JamMsg.state).length;
+      release(0);
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).length, n, reason: 'old session: dropped');
+      expect(bh.running, isTrue);
+      expect(bh.currentQr(), isNotNull);
+    });
+
+    test('a failing pack is logged, nothing is thrown, teardown works', () async {
+      final g = await joined('dev-1');
+      packFn = (_) => Future.error(StateError('isolate died'));
+      final n = g.of(JamMsg.state).length;
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).length, n);
+      g.send(JamMsg.cmd, {'req': 'r', 'cmd': const JamCommand.volume(0.5).toJson()});
+      await pumpEventQueue();
+      expect(g.of(JamMsg.result), isNotEmpty, reason: 'the RESULT goes out anyway');
+      await bh.stop();
+      expect(bh.running, isFalse);
+    });
+
+    test('a pack superseded by a newer version is not published', () async {
+      final g = await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      host.apply(const JamCommand.volume(0.6));
+      await pumpEventQueue();
+      expect(calls, 2);
+      final n = g.of(JamMsg.state).length;
+      release(0);
+      release(1);
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).length, n + 1);
+      expect(versionOf(g), host.state!.version);
+    });
   });
 }

@@ -78,15 +78,8 @@ void main() {
     final zMs = bd.elapsedMicroseconds / 20000;
     final rawBytes = rawJson.length;
 
-    // As the bridge does now: pack + fit in an isolate, AEAD on this thread.
-    Future<Uint8List> sealAsync() async {
-      late Uint8List out;
-      await hostCh.sealStateAsync(state, (b) => out = b);
-      return out;
-    }
-
-    // The old in-thread path, kept for the comparison.
-    Uint8List sealSync() => hostCh.seal(JamMsg.state, {'state': host.fitState(state)!})!;
+    // The old in-thread path, for the comparison: fitState + seal on the UI thread.
+    Uint8List sealOld() => hostCh.seal(JamMsg.state, {'state': host.fitState(state)!})!;
 
     // Longest time the UI isolate's event loop was blocked meanwhile.
     var last = DateTime.now(), stall = 0;
@@ -96,12 +89,7 @@ void main() {
       last = now;
     });
 
-    for (var i = 0; i < 5; i++) {
-      guestCh.open(await sealAsync());
-      guestCh.open(sealSync());
-    }
-    final sealUs = <int>[], openUs = <int>[], syncSealUs = <int>[], syncOpenUs = <int>[];
-    var wire = 0;
+    final packUs = <int>[], sealUs = <int>[], openUs = <int>[], oldUs = <int>[];
     final sw = Stopwatch();
     Future<T> timed<T>(List<int> into, Future<T> Function() f) async {
       sw
@@ -113,27 +101,29 @@ void main() {
       return r;
     }
 
+    for (var i = 0; i < 5; i++) {
+      final b = (await packStateOffThread(state))!;
+      guestCh.open(hostCh.sealPacked(JamMsg.state, b)!);
+      guestCh.open(sealOld());
+    }
     stall = 0;
     await Future<void>.delayed(const Duration(seconds: 2));
     final idleStall = stall;
-    final envs = <Uint8List>[];
+    var wire = 0;
     stall = 0;
     for (var i = 0; i < 50; i++) {
-      envs.add(await timed(sealUs, sealAsync));
-    }
-    final sealStall = stall;
-    wire = envs.last.length;
-    stall = 0;
-    for (final env in envs) {
+      // As the bridge: one pack in the isolate, then a cheap AEAD per channel.
+      final packed = (await timed(packUs, () => packStateOffThread(state)))!;
+      final env = await timed(sealUs, () async => hostCh.sealPacked(JamMsg.state, packed)!);
+      wire = env.length;
       final msg = await timed(openUs, () async => guestCh.open(env));
       expect(msg!.state!.items.length, 200);
     }
-    final asyncStall = stall;
+    final busyStall = stall;
     ticker.cancel();
     for (var i = 0; i < 50; i++) {
-      final env = await timed(syncSealUs, () async => sealSync());
-      final msg = await timed(syncOpenUs, () async => guestCh.open(env));
-      expect(msg!.state!.items.length, 200);
+      final env = await timed(oldUs, () async => sealOld());
+      expect(guestCh.open(env)!.state!.items.length, 200);
     }
     String stat(List<int> us) =>
         'mean ${(us.reduce((a, b) => a + b) / us.length / 1000).toStringAsFixed(2)} ms, '
@@ -143,8 +133,10 @@ void main() {
     // ignore: avoid_print
     print('jambench state json $rawBytes B, zlib $zipped B, envelope $wire B (padded, encrypted, compressed)');
     // ignore: avoid_print
-    print('jambench in thread (before): seal ${stat(syncSealUs)}');
+    print('jambench before (all on the UI thread): seal ${stat(oldUs)}');
     // ignore: avoid_print
-    print('jambench isolate (after): seal ${stat(sealUs)} | open (in thread) ${stat(openUs)} | longest event-loop stall: idle ${(idleStall / 1000).toStringAsFixed(2)} ms, sealing ${(sealStall / 1000).toStringAsFixed(2)} ms, opening ${(asyncStall / 1000).toStringAsFixed(2)} ms');
+    print('jambench now: pack in isolate ${stat(packUs)} | seal per channel on the UI thread ${stat(sealUs)} | open ${stat(openUs)}');
+    // ignore: avoid_print
+    print('jambench longest UI event-loop block: idle ${(idleStall / 1000).toStringAsFixed(2)} ms, during the 50 rounds ${(busyStall / 1000).toStringAsFixed(2)} ms');
   });
 }

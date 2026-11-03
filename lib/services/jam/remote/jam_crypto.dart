@@ -244,7 +244,9 @@ class SodiumJamCrypto implements JamCrypto {
         additionalData: additionalData,
       ),
     );
-    return Uint8List.fromList([...nonce, ...ct]);
+    return Uint8List(nonce.length + ct.length)
+      ..setAll(0, nonce)
+      ..setAll(nonce.length, ct);
   }
 
   @override
