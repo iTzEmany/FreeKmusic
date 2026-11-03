@@ -35,6 +35,19 @@ void main() {
     });
   }
 
+  test('a library row is left alone', () async {
+    final id = await rig.add();
+    await enrichStreamRow(rig.svc, rig.repo, id);
+    expect(rig.chain.calls, 0);
+    expect(rig.web.urls, isEmpty);
+  });
+
+  test('a missing row does nothing', () async {
+    await enrichStreamRow(rig.svc, rig.repo, 999);
+    expect(rig.chain.calls, 0);
+    expect(rig.web.urls, isEmpty);
+  });
+
   test('a refused proposal writes nothing', () async {
     final id = await shadow();
     rig.chain.limited = true;

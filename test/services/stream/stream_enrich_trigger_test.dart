@@ -7,7 +7,7 @@ void main() {
   late List<int> calls;
   late Completer<void> gate;
   late StreamEnrichTrigger trigger;
-  Duration s(int n) => Duration(seconds: n);
+  Future<void> settle() => Future<void>.delayed(Duration.zero);
 
   setUp(() {
     calls = [];
@@ -18,62 +18,63 @@ void main() {
     });
   });
 
-  test('does not start before 5 s', () {
-    trigger.tick(-1, 7, s(4));
-    expect(calls, isEmpty);
-  });
-
-  test('starts at 5 s, once per listen', () {
-    trigger.tick(-1, 7, s(0));
-    trigger.tick(-1, 7, s(5));
-    trigger.tick(-1, 7, s(6));
+  test('starts at once when the current track has its row', () {
+    trigger.update(-1, 7);
     expect(calls, [7]);
   });
 
-  test('changing track before 5 s cancels it', () {
-    trigger.tick(-1, 7, s(4));
-    trigger.tick(-2, 8, s(1));
-    trigger.tick(-2, 8, s(4));
+  test('does not start without a row, and starts as soon as it arrives', () {
+    trigger.update(-1, null);
     expect(calls, isEmpty);
-  });
-
-  test('a stale position of the previous track does not fire; 0 s then 5 s does', () {
-    trigger.tick(-1, 7, s(0));
-    trigger.tick(-2, 8, s(30)); // carried over while the file loads
-    expect(calls, isEmpty);
-    trigger.tick(-2, 8, s(0));
-    trigger.tick(-2, 8, s(5));
-    expect(calls, [8]);
-  });
-
-  test('a row that arrives after 5 s starts as soon as it is there', () {
-    trigger.tick(-1, null, s(0));
-    trigger.tick(-1, null, s(8));
-    expect(calls, isEmpty);
-    trigger.tick(-1, 7, s(9));
+    trigger.update(-1, 7);
     expect(calls, [7]);
   });
 
-  test('no duplicate while one is running; a new listen retries', () async {
+  test('once per listen, even after the enrich completes', () async {
+    trigger.update(-1, 7);
+    await settle();
+    trigger.update(-1, 7);
+    await settle();
+    trigger.update(-1, 7);
+    expect(calls, [7]);
+  });
+
+  test('a new listen retries, also the same id after null', () async {
+    trigger.update(-1, 7);
+    await settle();
+    trigger.update(null, null);
+    trigger.update(-1, 7);
+    await settle();
+    trigger.update(-2, 8);
+    trigger.update(-1, 7);
+    expect(calls, [7, 7, 8, 7]);
+  });
+
+  test('no duplicate on the same row while one is running', () async {
     gate = Completer<void>();
-    trigger.tick(-1, 7, s(0));
-    trigger.tick(-1, 7, s(5));
-    trigger.tick(-2, 8, s(0));
-    trigger.tick(-1, 7, s(0));
-    trigger.tick(-1, 7, s(6)); // same row again, first still running
-    expect(calls, [7]);
+    trigger.update(-1, 7);
+    trigger.update(-2, 8);
+    trigger.update(-1, 7); // new listen, first still running
+    expect(calls, [7, 8]);
     gate.complete();
-    await Future<void>.delayed(Duration.zero);
-    trigger.tick(-3, 9, s(0));
-    trigger.tick(-1, 7, s(0));
-    trigger.tick(-1, 7, s(6));
-    expect(calls, [7, 7]);
   });
 
-  test('an error does not escape', () async {
+  test('a synchronous throw is logged and the next listen retries', () async {
+    var n = 0;
+    trigger = StreamEnrichTrigger((row) {
+      n++;
+      throw StateError('down');
+    });
+    trigger.update(-1, 7);
+    await settle();
+    trigger.update(-2, 8);
+    trigger.update(-1, 7);
+    expect(n, 3);
+  });
+
+  test('an async error does not escape', () async {
     trigger = StreamEnrichTrigger((row) async => throw StateError('down'));
-    trigger.tick(-1, 7, s(0));
-    trigger.tick(-1, 7, s(5));
-    await Future<void>.delayed(Duration.zero);
+    trigger.update(-1, 7);
+    await settle();
   });
 }

@@ -17,7 +17,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'online_providers.dart';
-import 'player_providers.dart' show audioHandlerProvider, currentTrackProvider, onlineEntriesProvider, positionProvider;
+import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider;
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'youtube_providers.dart';
 
@@ -64,7 +64,7 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
   return preparer;
 });
 
-/// Enriches a shadow row (tags, lyrics, cover) once it has played 5 s (D-345).
+/// Enriches a shadow row (tags, lyrics, cover) as soon as its row exists (D-351).
 Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository tracks, int rowId) async {
   final row = await tracks.getById(rowId);
   if (row == null || row.kind != kStreamKind || row.enrichStatus != EnrichStatus.untried.code) return;
@@ -91,21 +91,24 @@ Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository track
   await enrichment.saveCredits(row.id, proposal.credits);
 }
 
-/// Feeds the position to the trigger; kept alive by the app widget.
+/// Tells the trigger which row plays; kept alive by the app widget.
 final streamEnrichTriggerProvider = Provider<StreamEnrichTrigger>((ref) {
   final trigger = StreamEnrichTrigger(
       (id) => enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id));
-  ref.listen(positionProvider, (_, pos) {
+  void update() {
     final t = ref.read(currentTrackProvider).value;
     final row = t == null
         ? null
         : isOnlineId(t.id)
-            ? ref.read(onlineEntriesProvider)?.entryOf(t.id)?.trackId
+            ? ref.read(currentShadowRowProvider)?.id
             : t.kind == kStreamKind
                 ? t.id
                 : null;
-    trigger.tick(t?.id, row, pos.value ?? Duration.zero);
-  });
+    trigger.update(t?.id, row);
+  }
+
+  ref.listen(currentTrackProvider, (_, _) => update());
+  ref.listen(currentShadowRowProvider, (_, _) => update());
   return trigger;
 });
 
