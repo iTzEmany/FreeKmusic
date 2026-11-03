@@ -95,7 +95,8 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 72 | `fase-72-bluetooth-e-amici.md` | Annuncio Bluetooth con gettone che ruota, Jam vicine, permessi, amici della Jam |
 | 73 | `fase-73-chiusura-jam-distanza.md` | Costo della cifratura sul Mi A3 e prova a mano con due telefoni, uno su 4G |
 | 74 | `fase-74-coda-jam-e-rifinitura.md` | Rinviati della coda della Jam (Suggerito, Shuffle+, coda di prima su disco), «Scarica» e posizione nella Jam, rifinitura della Jam a distanza |
-| 75 | `fase-75-arricchimento-stream.md` | Testo, curiosità e crediti anche per i brani in streaming, caricati ~5 s dopo l'avvio (refactor «arricchimento-stream») |
+| 75 | `fase-75-arricchimento-stream.md` | Testo, curiosità e crediti anche per i brani in streaming, caricati appena il brano corrente è in cache (D-351, refactor «arricchimento-stream») |
+| 76 | `fase-76-suggeriti-veloci.md` | Suggeriti di Shuffle+ in coda appena c'è l'indirizzo, non dopo il download (D-352) |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 
