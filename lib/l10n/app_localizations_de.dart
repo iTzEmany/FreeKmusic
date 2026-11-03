@@ -6038,4 +6038,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get jamNearbyScanHint => 'Per Bluetooth, nur bei geöffneter App';
+
+  @override
+  String get streamCardsSoon => 'Der Titel kommt gleich…';
 }

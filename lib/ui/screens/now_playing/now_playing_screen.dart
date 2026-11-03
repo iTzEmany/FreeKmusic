@@ -14,6 +14,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/radio/radio_station.dart' show RadioStation;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
+import '../../../services/audio/online_entries.dart' show isOnlineId;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../widgets/artist_links.dart';
 import '../../theme/tokens.dart';
@@ -151,26 +152,41 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     super.dispose();
   }
 
-  List<Widget> _cards(bool online, Track track) => !_cardsReady
-      ? const [SizedBox(height: _cardsPlaceholderHeight)]
-      : [
-          RiseIn(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!online) ...[
-                  LyricsCard(track: track),
-                  const SizedBox(height: 12),
-                  ProposalCard(track: track),
-                  InfoCard(track: track),
-                  const SizedBox(height: 12),
-                  CreditsCard(track: track, key: ValueKey(track.id)),
-                ],
-                const UpNextCard(),
-              ],
-            ),
-          ),
-        ];
+  List<Widget> _cards(bool online, Track track) {
+    if (!_cardsReady) return const [SizedBox(height: _cardsPlaceholderHeight)];
+    // A streamed track gets the cards of its shadow row (real id); a radio none.
+    final radio = online && ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true;
+    final row = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
+    final wait = !radio && row == null;
+    return [
+      RiseIn(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (wait)
+              SizedBox(
+                height: _cardsPlaceholderHeight,
+                child: Center(
+                  child: Text(
+                    context.l10n.streamCardsSoon,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.cc.textMuted),
+                  ),
+                ),
+              ),
+            if (row != null) ...[
+              LyricsCard(track: row),
+              const SizedBox(height: 12),
+              if (!online) ProposalCard(track: row),
+              InfoCard(track: row),
+              const SizedBox(height: 12),
+              CreditsCard(track: row, key: ValueKey(row.id)),
+            ],
+            const UpNextCard(),
+          ],
+        ),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

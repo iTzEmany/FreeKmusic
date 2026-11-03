@@ -7,7 +7,6 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/stream/stream_cache.dart';
 import 'package:codecore/services/stream/stream_preparer.dart';
 import 'package:dio/dio.dart' show CancelToken;
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart' show debugPrint, DebugPrintCallback;
 import 'package:flutter_test/flutter_test.dart';
@@ -123,7 +122,6 @@ void main() {
   late StreamCache cache;
   late _Yt yt;
   var metered = false;
-  StreamEnricher? enrich;
   late StreamPreparer prep;
 
   StreamPreparer make({
@@ -143,7 +141,6 @@ void main() {
         tracks: tracks,
         youtube: yt,
         isMetered: () async => metered,
-        enrich: enrich,
         cooldown: cooldown,
         clock: clock ?? DateTime.now,
       );
@@ -156,7 +153,6 @@ void main() {
     await cache.open();
     yt = _Yt();
     metered = false;
-    enrich = null;
     make();
   });
   tearDown(() async {
@@ -441,33 +437,6 @@ void main() {
     expect(yt.started, ['a']);
   });
 
-  test('ready resolves before a slow enrichment ends; then the row has its text', () async {
-    final gate = Completer<void>();
-    enrich = (r, rowId) async {
-      await gate.future;
-      final id = await rowId;
-      await (db.update(db.tracks)..where((t) => t.id.equals(id)))
-          .write(const TracksCompanion(lyricsPlain: Value('la la')));
-    };
-    make();
-    yt.autoFinish = true;
-    await prep.ready('youtube:a', _r('a'));
-    expect((await tracks.streamRow('youtube:a'))!.lyricsPlain, isNull);
-    gate.complete();
-    for (var n = 0; n < 200; n++) {
-      if ((await tracks.streamRow('youtube:a'))!.lyricsPlain != null) break;
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
-    expect((await tracks.streamRow('youtube:a'))!.lyricsPlain, 'la la');
-  });
-
-  test('an enrichment that throws does not fail ready', () async {
-    enrich = (r, rowId) async => throw StateError('lyrics down');
-    make();
-    yt.autoFinish = true;
-    await prep.ready('youtube:a', _r('a'));
-  });
-
   test('prefetch hit by a 429 pauses, then is retried without failing', () async {
     make(cooldown: const Duration(milliseconds: 50));
     yt.autoFinish = true;
@@ -574,22 +543,6 @@ void main() {
     prep.setQueue([for (final n in ['a', 'b', 'c', 'd']) _i(n)]);
     await _until(() => prep.phases.value['youtube:d'] == StreamPhase.ready);
     expect(yt.started.where((id) => id == 'd').length, 2);
-  });
-
-  test('a rate-limited prefetch completes rowId with an error', () async {
-    final seen = Completer<Object>();
-    enrich = (r, rowId) async {
-      try {
-        await rowId;
-      } on Object catch (e) {
-        seen.complete(e);
-      }
-    };
-    make(cooldown: const Duration(minutes: 1));
-    yt.autoFinish = true;
-    yt.rateLimits['a'] = 1;
-    prep.setQueue([_i('a')]);
-    expect(await seen.future.timeout(const Duration(seconds: 2)), isA<YtException>());
   });
 
   for (final kind in ['429', '403']) {
