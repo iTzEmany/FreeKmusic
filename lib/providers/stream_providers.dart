@@ -67,7 +67,7 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
 /// Enriches a shadow row (tags, lyrics, cover) once it has played 5 s (D-345).
 Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository tracks, int rowId) async {
   final row = await tracks.getById(rowId);
-  if (row == null || row.kind != kStreamKind || row.enrichStatus == EnrichStatus.found.code) return;
+  if (row == null || row.kind != kStreamKind || row.enrichStatus != EnrichStatus.untried.code) return;
   final proposal = await enrichment.propose(syntheticTrack(
     title: row.title,
     artist: row.artist,

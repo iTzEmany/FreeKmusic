@@ -23,15 +23,17 @@ void main() {
     expect(await rig.enrichOf(id), isNotNull);
   });
 
-  test('a row already found does not ask anything', () async {
-    final id = await shadow();
-    await (rig.db.update(rig.db.tracks)..where((t) => t.id.equals(id)))
-        .write(TracksCompanion(enrichStatus: Value(EnrichStatus.found.code)));
-    await enrichStreamRow(rig.svc, rig.repo, id);
-    expect(rig.chain.calls, 0);
-    expect(rig.finder.calls, 0);
-    expect(rig.web.urls, isEmpty);
-  });
+  for (final status in [EnrichStatus.found, EnrichStatus.nothing]) {
+    test('a row already ${status.name} does not ask anything', () async {
+      final id = await shadow();
+      await (rig.db.update(rig.db.tracks)..where((t) => t.id.equals(id)))
+          .write(TracksCompanion(enrichStatus: Value(status.code)));
+      await enrichStreamRow(rig.svc, rig.repo, id);
+      expect(rig.chain.calls, 0);
+      expect(rig.finder.calls, 0);
+      expect(rig.web.urls, isEmpty);
+    });
+  }
 
   test('a refused proposal writes nothing', () async {
     final id = await shadow();

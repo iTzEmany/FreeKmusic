@@ -9,14 +9,20 @@ class StreamEnrichTrigger {
   final Duration after;
   int? _current;
   var _fired = false;
+
+  /// Seen a position before [after] for this listen: a stale position carried
+  /// over from the previous track while the file loads must not fire.
+  var _armed = false;
   final _running = <int>{};
 
   void tick(int? currentId, int? rowId, Duration position) {
     if (currentId != _current) {
       _current = currentId;
       _fired = false; // a new listen is a new attempt
+      _armed = false;
     }
-    if (_fired || rowId == null || position < after || !_running.add(rowId)) return;
+    if (position < after) _armed = true;
+    if (_fired || !_armed || rowId == null || position < after || !_running.add(rowId)) return;
     _fired = true;
     AppLog.i('stream enrich row=$rowId');
     enrich(rowId)

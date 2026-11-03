@@ -24,6 +24,7 @@ void main() {
   });
 
   test('starts at 5 s, once per listen', () {
+    trigger.tick(-1, 7, s(0));
     trigger.tick(-1, 7, s(5));
     trigger.tick(-1, 7, s(6));
     expect(calls, [7]);
@@ -36,7 +37,17 @@ void main() {
     expect(calls, isEmpty);
   });
 
+  test('a stale position of the previous track does not fire; 0 s then 5 s does', () {
+    trigger.tick(-1, 7, s(0));
+    trigger.tick(-2, 8, s(30)); // carried over while the file loads
+    expect(calls, isEmpty);
+    trigger.tick(-2, 8, s(0));
+    trigger.tick(-2, 8, s(5));
+    expect(calls, [8]);
+  });
+
   test('a row that arrives after 5 s starts as soon as it is there', () {
+    trigger.tick(-1, null, s(0));
     trigger.tick(-1, null, s(8));
     expect(calls, isEmpty);
     trigger.tick(-1, 7, s(9));
@@ -45,19 +56,23 @@ void main() {
 
   test('no duplicate while one is running; a new listen retries', () async {
     gate = Completer<void>();
+    trigger.tick(-1, 7, s(0));
     trigger.tick(-1, 7, s(5));
     trigger.tick(-2, 8, s(0));
+    trigger.tick(-1, 7, s(0));
     trigger.tick(-1, 7, s(6)); // same row again, first still running
     expect(calls, [7]);
     gate.complete();
     await Future<void>.delayed(Duration.zero);
     trigger.tick(-3, 9, s(0));
+    trigger.tick(-1, 7, s(0));
     trigger.tick(-1, 7, s(6));
     expect(calls, [7, 7]);
   });
 
   test('an error does not escape', () async {
     trigger = StreamEnrichTrigger((row) async => throw StateError('down'));
+    trigger.tick(-1, 7, s(0));
     trigger.tick(-1, 7, s(5));
     await Future<void>.delayed(Duration.zero);
   });
