@@ -1,0 +1,146 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/data/repositories/track_kinds.dart';
+import 'package:codecore/providers/player_providers.dart' show playerControllerProvider;
+import 'package:codecore/providers/youtube_providers.dart'
+    show downloadIndexProvider;
+import 'package:codecore/services/online/download_index.dart';
+import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/ui/screens/now_playing/credits_card.dart';
+import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart' show InfoCard;
+import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
+import 'package:codecore/ui/screens/now_playing/proposal_card.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../support/app_harness.dart';
+import '../support/fake_stream_preparer.dart';
+
+const _r2 = YtResult(
+  id: 'v2',
+  title: 'Second song',
+  channel: 'Chan',
+  artists: ['Bob'],
+  duration: Duration(minutes: 3),
+);
+
+const _r = YtResult(
+  id: 'v1',
+  title: 'Online song',
+  channel: 'Chan',
+  artists: ['Ann'],
+  duration: Duration(minutes: 3),
+);
+
+Future<void> _wait(WidgetTester t) async {
+  await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+  for (var i = 0; i < 3; i++) {
+    await t.pump(const Duration(milliseconds: 300));
+  }
+}
+
+Future<(Harness, Directory, FakeStreamPreparer, WidgetRef Function())> _open(WidgetTester t) async {
+  t.view.physicalSize = const Size(1400, 1000);
+  t.view.devicePixelRatio = 1;
+  addTearDown(t.view.reset);
+  final h = await Harness.create(t, radio: true);
+  final dir = Directory.systemTemp.createTempSync('np_stream_cards');
+  addTearDown(() => dir.deleteSync(recursive: true));
+  final preparer = FakeStreamPreparer(TrackRepository(h.db), dir);
+  h.handler.preparer = preparer;
+  late WidgetRef ref;
+  await h.pump(
+    t,
+    Consumer(
+      builder: (c, r, _) {
+        ref = r;
+        return Scaffold(
+          body: TextButton(
+            onPressed: () => playOnlineAndOpen(c, r, _r),
+            child: const Text('go'),
+          ),
+        );
+      },
+    ),
+    extraOverrides: [
+      downloadIndexProvider.overrideWith(
+        (ref) async => DownloadIndex(File('${dir.path}/idx.json')),
+      ),
+    ],
+  );
+  return (h, dir, preparer, () => ref);
+}
+
+void main() {
+  testWidgets('a streamed track shows lyrics, trivia and credits of its row, no proposal; before the row a placeholder', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    final gate = preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+
+    // No row yet: a fixed-height placeholder, not the empty lyrics state.
+    expect(find.text('Nessun testo disponibile'), findsNothing);
+    expect(find.text('Cerca testo'), findsNothing);
+    expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+
+    gate.complete();
+    await _wait(t);
+    await t.runAsync(() => (h.db.update(h.db.tracks)..where((r) => r.kind.equals(kStreamKind))).write(
+      const TracksCompanion(
+        lyricsPlain: Value('Parole del brano'),
+        curiosities: Value('Una curiosita sul brano\nhttps://it.wikipedia.org/wiki/Song'),
+      ),
+    ));
+    await _wait(t);
+    // The id the cards got must be the row's: credits saved on it show up.
+    final rowId = t.widget<InfoCard>(find.byType(InfoCard)).track.id;
+    expect(rowId, greaterThan(0));
+    await t.runAsync(() => h.db.into(h.db.trackCredits).insert(
+      TrackCreditsCompanion.insert(
+        trackId: rowId,
+        name: 'Person 0',
+        nameKey: 'person 0',
+        role: 'producer',
+        source: 'deezer',
+      ),
+    ));
+    await _wait(t);
+
+    expect(find.text('Parole del brano'), findsOneWidget);
+    expect(find.textContaining('Una curiosita sul brano'), findsOneWidget);
+    expect(find.text('Person 0'), findsOneWidget);
+    expect(t.widget<InfoCard>(find.byType(InfoCard)).track.id, rowId);
+    expect(t.widget<CreditsCard>(find.byType(CreditsCard)).track.id, rowId);
+    expect(find.byType(ProposalCard), findsNothing);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('moving to a streamed track without a row drops the previous row data', (t) async {
+    final (h, _, preparer, ref) = await _open(t);
+    await t.tap(find.text('go'));
+    await _wait(t);
+    await t.runAsync(() => (h.db.update(h.db.tracks)..where((r) => r.kind.equals(kStreamKind))).write(
+      const TracksCompanion(lyricsPlain: Value('Parole del brano')),
+    ));
+    await _wait(t);
+    expect(find.text('Parole del brano'), findsOneWidget);
+
+    preparer.gates['youtube:v2'] = Completer<void>();
+    unawaited(ref().read(playerControllerProvider).playOnline(_r2)); // waits for the gate
+    await _wait(t);
+
+    expect(find.text('Second song'), findsWidgets);
+    expect(find.text('Parole del brano'), findsNothing);
+    expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+}
