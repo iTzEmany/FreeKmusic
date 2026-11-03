@@ -3451,5 +3451,6 @@
   "jamBleNotNow": "Agora não",
   "jamBleLocationOff": "Liga a localização do Android: é precisa para procurar Jams por Bluetooth. Entretanto podes usar o código ou o QR.",
   "jamNearbyScanTitle": "Procurar Jams por perto",
-  "jamNearbyScanHint": "Por Bluetooth, só com a app aberta"
+  "jamNearbyScanHint": "Por Bluetooth, só com a app aberta",
+  "streamCardsSoon": "A faixa está a caminho…"
 }

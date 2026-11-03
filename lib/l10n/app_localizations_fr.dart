@@ -6066,5 +6066,5 @@ class AppLocalizationsFr extends AppLocalizations {
   String get jamNearbyScanHint => 'En Bluetooth, uniquement app ouverte';
 
   @override
-  String get streamCardsSoon => 'Il brano è in arrivo…';
+  String get streamCardsSoon => 'Le titre arrive…';
 }
