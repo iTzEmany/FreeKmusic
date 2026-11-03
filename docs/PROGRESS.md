@@ -1212,5 +1212,5 @@ mobile_scanner — fase 24 — 2026-10-19
 
 ## Fase 73 — Misure e prova a mano (`fase-73-chiusura-jam-distanza.md`)
 - [x] 73.1 Costo della cifratura (seal dello STATE in un isolate, esiti nella fase)
-- [ ] 73.2 Prova a mano con due telefoni (utente)
-- [ ] 73.3 Chiusura
+- [ ] 73.2 Prova a mano con due telefoni (utente; senza Motorola non provata, D-337: in «Tocca a te» di `handoff.md`)
+- [x] 73.3 Chiusura (handoff aggiornato, pulizia del disco)

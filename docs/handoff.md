@@ -1,29 +1,25 @@
-# Handoff — 2026-11-02 (fase 70 chiusa: ponte della Jam a distanza)
+# Handoff — 2026-11-03 (feature «Jam a distanza» chiusa: fasi 71–73)
 
 ## Stato
-**Fase 70 chiusa** (PR #86): ponte MQTT cifrato, ospiti remoti nell'host, «Invita chi è vicino», «Entra con un codice», servizio in primo piano «Jam a distanza attiva». Esiti della prova dal vivo (Linux host, Mi A3 ospite) in `docs/fase-70-ponte-jam-distanza.md` §«Esiti della prova 70.6».
+**Fasi 71–73 chiuse** (PR #87, #88, #89 e la PR della 73). L'ospite remoto mette in coda come video id e vede copertine, scheda e testo da sé (71). Su Android la Jam si annuncia via Bluetooth e gli amici si riconoscono col nome salvato (72). La cifratura dello STATE gira in un isolate: sul Mi A3 costava 16,4 ms medi (73.1). Esiti nei documenti di fase; scelte D-335…D-339.
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 71
+/obiettivo
 ```
-Si comincia dai «Rilievi dalla fase 70» in `docs/fase-71-coda-remota.md` (feeder dell'ospite remoto, «Aggiungi alla Jam» nascosto, segno «non raggiungibile» da portare in `JamUiState`, ...).
+oppure uno dei «Prossimi obiettivi» qui sotto.
 
 ## Da riprovare o capire
-- Fase 70 provata dal vivo tre volte (stato iniziale dell'ospite, R-128, foglio dell'invito, ruoli invertiti): tutto chiuso, esiti nel documento di fase.
-- Durata degli mp3 corretta alla radice (frame Info di LAME letto come bitrate): libreria corretta una volta all'avvio (`mp3DurationFix1`).
-- Wi-Fi spento 30 s: l'ospite torna dopo circa 70 s; se è troppo, vedere le attese di `JamBridge`.
-
-## Fasi chiuse da sapere
-- **Riconoscimento (69c–69e, PR #77, #79, #84):** impronta Chromaprint in Rust, `TrackRecognizer`, `TrackCorrections`, cover e ripasso; Test.zip: 126/147 riconosciuti, 0 correzioni sbagliate. Documento `docs/feature-riconoscimento.md`, D-299…D-323, D-333; il resto in `docs/fase-69c-*`, `69d-*`, `69e-*`.
-- **Arricchimento unico (69a, 69b):** motore in `lib/services/online/enrich_*.dart` (`docs/02-architettura.md` §«Arricchimento»); circa 1 brano al minuto dal Motorola; rimandati in `docs/fase-69b-arricchimento-unico.md`.
-- **Fase 69 (PR #67):** `JamGuestLink`, `JamGate`, `JamSecretStore`, `jam_crypto` su `sodium`, broker MQTT con «Prova connessione» (D-264…D-273).
-- Trappole: `CreditsEnricher.save` sovrascrive tutto `track_enrich.details`; `userEdited` vale per tutto il brano (D-318). Test.zip (`~/Downloads/Test.zip`) non entra mai nel repo.
+- Il primo «Entra» col codice dal Mi A3 va spesso in timeout verso broker.emqx.io (10–12 s, «Broker irraggiungibile»), poi riesce al secondo tentativo.
+- Aprendo «Dispositivi» con la posizione spenta (Android ≤ 11) il messaggio non è comparso; dall'interruttore sì.
+- Nella vista dell'host la Jam di un ospite Android si chiama «Telefono» (nome generico del dispositivo) e l'ospite uscito ha il nome vuoto.
+- L'app di misura `com.codecore.player.perf` è stata disinstallata dal Mi A3 da `flutter drive` (73.1): `perf_device.py` la reinstalla.
 
 ## Tocca a te
-- **Mosquitto 8886** (D-258): chiude ogni connessione dopo il CONNECT; toglierlo da `kDefaultJamBrokers` o sostituirlo con un altro broker TLS pubblico.
+- **73.2 con due telefoni Android** (R-159; senza Motorola non l'ho fatta, D-337): ingresso via Bluetooth (banner a 2 m, K-JD-06), «Amico» riconosciuto alla seconda Jam e «Accetta gli amici senza chiedere», ospite su 4G, host in pausa 10 min a schermo spento (K-JD-05), ospite in modalità aereo 1 min e 11 min. Esiti in `docs/fase-73-chiusura-jam-distanza.md`.
+- **Mosquitto 8886** (D-258): chiude ogni connessione dopo il CONNECT; toglierlo da `kDefaultJamBrokers` o sostituirlo.
 - Prova a mano del gate (sospensione di 15 minuti che scade; «Fino alla fine della Jam»); 69.4: «Scarica» che sparisce a foglio aperto.
-- Dalle fasi 66–68: fase 67 sul Motorola, scoperta su /16, fase 66 a mano, pulizia del Mi A3 (`com.codecore.player.perf`), ascolto 57.7, APK di release con NewPipe, tag `v1.3.0`.
+- Dalle fasi 66–68: fase 67 sul Motorola, scoperta su /16, fase 66 a mano, ascolto 57.7, APK di release con NewPipe, tag `v1.3.0`.
 
 ## Dispositivi
 - **Motorola edge 40** `ZY22HKD85K`: libreria vera. Solo `install -r`; mai disinstallare né `pm clear`. 120 Hz.
@@ -51,6 +47,6 @@ Si comincia dai «Rilievi dalla fase 70» in `docs/fase-71-coda-remota.md` (feed
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-1. **(Consigliato) Fase 71, coda dell'ospite remoto** (`/obiettivo fase 71`).
-2. (nessuna riprova aperta della fase 70)
+1. **(Consigliato) Coda della Jam e rinviati**: KO R-102 (il «Suggerito» ripropone brani già suonati), bug Shuffle+ con la sorgente cambiata, coda di prima della Jam salvata su disco — tutti con un test che li riproduce prima.
+2. Rifinitura della Jam a distanza dopo la 73.2: nome del dispositivo nella vista dell'host, timeout del primo «Entra», messaggio a posizione spenta.
 3. Unificare le due code delle domande sulla cassa; ricerca «notte», build p99 (D-176).
