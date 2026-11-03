@@ -441,7 +441,16 @@ class EnrichRig {
 
   Future<void> dispose() async {
     await db.close();
-    tmp.deleteSync(recursive: true);
+    // Windows locks open files: an in-flight cover write can outlive the container.
+    for (var i = 0;; i++) {
+      try {
+        tmp.deleteSync(recursive: true);
+        break;
+      } on FileSystemException {
+        if (i >= 9) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+    }
   }
 
   Future<int> add({
