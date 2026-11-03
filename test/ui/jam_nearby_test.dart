@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:codecore/data/settings/jam_secret_store.dart';
@@ -30,6 +31,22 @@ class _Hub extends ShareHubNotifier {
   Future<void> enter() async {}
   @override
   Future<void> leave() async {}
+}
+
+class _SlowBeacon extends FakeJamBeacon {
+  final gate = Completer<void>();
+  int stops = 0;
+  @override
+  Future<bool> startScan() async {
+    await gate.future;
+    return super.startScan();
+  }
+
+  @override
+  Future<void> stopScan() async {
+    stops++;
+    await super.stopScan();
+  }
 }
 
 class _Jam extends JamController {
@@ -202,18 +219,58 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('an entry with no packet for 45 s goes away', (t) async {
+  testWidgets('an entry lives to the end of the window after the one it was heard in', (t) async {
     final h = await open(t, banner);
+    now = DateTime.utc(2026, 1, 1, 0, 0, 29); // last second of window w
     beacon.hear(packet().$1);
     await settle(t);
-    expect(jamNearbyTtl, lessThanOrEqualTo(const Duration(seconds: 60)));
-    now = now.add(const Duration(seconds: 40));
+    now = DateTime.utc(2026, 1, 1, 0, 0, 59); // still w+1
     await t.pump(const Duration(seconds: 10));
     expect(find.textContaining('Unisciti'), findsOneWidget);
-    now = now.add(const Duration(seconds: 10));
+    now = DateTime.utc(2026, 1, 1, 0, 1, 0); // w+2: the host refuses the token
     await t.pump(const Duration(seconds: 10));
     expect(find.textContaining('Unisciti'), findsNothing);
     await h.dispose(t);
+  });
+
+  testWidgets('a tap on an entry whose token ran out since the last prune asks nothing', (t) async {
+    final h = await open(t, banner);
+    beacon.hear(packet().$1);
+    await settle(t);
+    now = now.add(const Duration(seconds: 61)); // the 10 s prune has not fired yet
+    await t.tap(find.text('Unisciti a una Jam qui vicino'));
+    await settle(t);
+    expect(jam.requested, isEmpty);
+    await h.dispose(t);
+  });
+
+  testWidgets('a dismissed Jam that expired and is announced again shows the banner again', (t) async {
+    final h = await open(t, banner);
+    final (bytes, _) = packet();
+    beacon.hear(bytes);
+    await settle(t);
+    await t.tap(find.byTooltip('Nascondi'));
+    await settle(t);
+    now = now.add(const Duration(seconds: 70));
+    await t.pump(const Duration(seconds: 10));
+    final c = ProviderScope.containerOf(t.element(find.byType(JamInviteBanner)));
+    expect(c.read(jamNearbyProvider), isEmpty);
+    beacon.hear(bytes); // the same Jam id again
+    await settle(t);
+    expect(find.textContaining('Unisciti'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('a scan that starts after the container is gone is stopped again', (t) async {
+    final slow = _SlowBeacon();
+    beacon = slow;
+    final h = await open(t, banner);
+    await h.dispose(t);
+    slow.gate.complete();
+    await t.pump();
+    await t.pump();
+    expect(slow.scanning, isFalse);
+    expect(slow.stops, greaterThan(0));
   });
 
   testWidgets('the same Jam id from the LAN leaves only the LAN row', (t) async {

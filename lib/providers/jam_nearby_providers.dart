@@ -28,9 +28,6 @@ final jamBleAvailableProvider = Provider<bool>((_) => isAndroid);
 /// Time source of the nearby list; tests replace it.
 final jamNearbyNowProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
-/// An entry goes after this long without a packet (R-137). Under the 60 s a token
-/// is accepted for (this window and the one before), so a listed Jam still lets you in.
-const jamNearbyTtl = Duration(seconds: 45);
 
 /// «Cerca Jam vicine»: off after a refused permission, back on from the settings (R-138).
 class JamNearbyScanNotifier extends Notifier<bool> {
@@ -75,6 +72,11 @@ class JamNearbyJam {
         friendName: friendName ?? this.friendName,
         dismissed: dismissed ?? this.dismissed,
       );
+
+  /// The host accepts a token for its window and the next one: an entry heard in
+  /// window w is worth asking with until the end of w+1 (R-137).
+  bool validAt(DateTime now) =>
+      now.millisecondsSinceEpoch < (JamProtocol.windowOf(seen.millisecondsSinceEpoch) + 2) * JamWire.windowMs;
 
   /// What to ask with: the newest token seen (R-137).
   JamInvite get invite => JamInvite.fromAdvert(advert);
@@ -168,9 +170,11 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
     await ref.read(jamFriendsProvider).ready;
     if (!ref.mounted) return;
     _sub = _beacon.found.listen(_onFound);
-    if (!await _beacon.startScan()) {
+    final started = await _beacon.startScan();
+    if (!started || !ref.mounted) {
       await _sub?.cancel();
       _sub = null;
+      if (started) await _beacon.stopScan(); // disposed while starting
       return;
     }
     _scanning = true;
@@ -215,11 +219,14 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
     return b.rssi.compareTo(a.rssi);
   }
 
+  /// Drops the entries whose token the host no longer accepts; also run at tap time.
+  void expire() => _expire();
+
   void _expire() {
-    final cutoff = ref.read(jamNearbyNowProvider)().subtract(jamNearbyTtl);
+    final now = ref.read(jamNearbyNowProvider)();
     final live = [
       for (final e in state)
-        if (!e.seen.isBefore(cutoff)) e,
+        if (e.validAt(now)) e,
     ];
     if (live.length == state.length) return;
     // A Jam that stopped announcing is forgotten, so its next one invites again.

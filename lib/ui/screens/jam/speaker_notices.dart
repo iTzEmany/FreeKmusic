@@ -24,6 +24,9 @@ void joinAnnouncedJam(BuildContext context, WidgetRef ref, Peer peer) {
 /// Asks to enter a Jam heard over Bluetooth and opens the Jam screen; like the
 /// QR, with the newest token heard. A custom-broker Jam answers «inquadra il QR».
 void joinNearbyJam(BuildContext context, WidgetRef ref, JamNearbyJam jam) {
+  // The token may have run out since the list was drawn.
+  ref.read(jamNearbyProvider.notifier).expire();
+  if (!ref.read(jamNearbyProvider).any((e) => e.key == jam.key)) return;
   final nav = Navigator.of(context, rootNavigator: true);
   unawaited(ref.read(jamProvider.notifier).requestRemote(jam.invite));
   nav.push(MaterialPageRoute<void>(builder: (_) => const JamScreen()));
