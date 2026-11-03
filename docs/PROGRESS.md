@@ -1229,3 +1229,8 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 75.2 Schede visibili per lo streaming
 - [x] 75.3 Arricchimento all'avvio dell'ascolto (D-351, non più 5 s)
 - [x] 75.4 Controlli di fase (Mi A3; Shuffle+ online e segnaposto a vista da provare a mano)
+
+## Fase 76 — Suggeriti di Shuffle+ in coda appena c'è l'indirizzo (`fase-76-suggeriti-veloci.md`)
+- [ ] 76.1 Rete di sicurezza
+- [ ] 76.2 Indirizzo invece del file
+- [ ] 76.3 Controlli di fase
