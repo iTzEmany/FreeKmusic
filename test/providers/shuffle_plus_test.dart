@@ -221,7 +221,7 @@ void main() {
       loadLibrary: () async => LibraryIndex(const []),
       hasDownload: (_) => false,
       prepare: (r) => prepareHook(r),
-      enrichSuggested: (ids) => enrichHook(ids),
+      enrichSuggested: (ids, _) => enrichHook(ids),
       enrichTimeout: enrichTimeout ?? ShufflePlusController.blockEnrichTimeout,
       now: () => now,
     );
@@ -399,6 +399,24 @@ void main() {
     expect(host.inserts, 3, reason: 'blocked while the block is enriched');
     gate.complete();
     await until(() => host.inserts > 3);
+  });
+
+  test('while a block is being enriched, turning Shuffle+ off takes the suggestions out at once', () async {
+    enrichHook = (ids) {
+      enriched.add(ids);
+      return Completer<void>().future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => enriched.isNotEmpty);
+    expect(host.queueIds.where(isOnlineId), hasLength(3));
+    cfg = const ShufflePlusConfig();
+    controller.poke();
+    await until(() => host.queueIds.where(isOnlineId).isEmpty);
   });
 
   test('an enrichment that never ends holds the next suggestion only for the time limit', () async {

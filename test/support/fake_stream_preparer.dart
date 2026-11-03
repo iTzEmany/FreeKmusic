@@ -53,13 +53,13 @@ class FakeStreamPreparer implements StreamPreparer {
   Completer<void>? restartGate;
 
   @override
-  Future<StreamStart> start(String key, YtResult r) async {
+  Future<StreamStart> start(String key, YtResult r, {bool keep = true}) async {
     final u = urls[key];
     return u != null ? StreamStart.url(u.$1, u.$2) : StreamStart.file(await ready(key, r));
   }
 
   @override
-  Future<StreamStart> restart(String key, YtResult r) async {
+  Future<StreamStart> restart(String key, YtResult r, {bool keep = true}) async {
     restarted.add(key);
     await restartGate?.future;
     final next = restarts[key];

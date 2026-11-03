@@ -298,6 +298,35 @@ void main() {
     const far = 'https://v/a?expire=4102444800'; // year 2100
     String urlOf(StreamStart s) => s.url.toString();
 
+    test('start with keep false: the job is a prefetch again, a pick takes its slot', () async {
+      yt.urls.addAll(['https://v/a?expire=4102444800', 'https://v/b?expire=4102444800']);
+      await prep.start('youtube:a', _r('a'), keep: false);
+      await prep.start('youtube:b', _r('b'), keep: false);
+      final z = prep.ready('youtube:z', _r('z'));
+      await _until(() => yt.started.contains('z'));
+      await _quiet();
+      expect(yt.maxOpen, 2);
+      yt.finish('z');
+      await z;
+    });
+
+    test('start with keep false: the job leaves with the queue window', () async {
+      yt.urls.add('https://v/a?expire=4102444800');
+      await prep.start('youtube:a', _r('a'), keep: false);
+      prep.setQueue([_i('c')]);
+      expect(yt.tokens['a']!.single!.isCancelled, isTrue);
+    });
+
+    test('start with keep false: a job someone else asked for stays requested', () async {
+      yt.urls.add('https://v/a?expire=4102444800');
+      final a = prep.ready('youtube:a', _r('a'));
+      await prep.start('youtube:a', _r('a'), keep: false);
+      prep.setQueue([_i('c')]);
+      expect(yt.tokens['a']!.single!.isCancelled, isFalse);
+      yt.finish('a');
+      await a;
+    });
+
     test('file in cache: the file, yt-dlp not started', () async {
       yt.autoFinish = true;
       await prep.ready('youtube:a', _r('a'));

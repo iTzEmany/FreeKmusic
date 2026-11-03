@@ -170,10 +170,10 @@ class _UrlTrapPreparer extends FakeStreamPreparer {
   _UrlTrapPreparer(super.tracks, super.dir);
 
   @override
-  Future<StreamStart> start(String key, YtResult r) => throw StateError('Jam asked for an address');
+  Future<StreamStart> start(String key, YtResult r, {bool keep = true}) => throw StateError('Jam asked for an address');
 
   @override
-  Future<StreamStart> restart(String key, YtResult r) => throw StateError('Jam asked for an address');
+  Future<StreamStart> restart(String key, YtResult r, {bool keep = true}) => throw StateError('Jam asked for an address');
 }
 
 class _SpyJam extends JamController {

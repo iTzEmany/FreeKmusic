@@ -527,7 +527,7 @@ class _SlowStart extends FakeStreamPreparer {
   final gate = Completer<void>();
 
   @override
-  Future<StreamStart> start(String key, YtResult r) async {
+  Future<StreamStart> start(String key, YtResult r, {bool keep = true}) async {
     await gate.future;
     return super.start(key, r);
   }

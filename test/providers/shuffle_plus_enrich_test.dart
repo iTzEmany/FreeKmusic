@@ -45,7 +45,7 @@ void main() {
   test('a suggestion is enriched once its file has made the row', () async {
     final id = online.register(r, suggested: true);
     var done = false;
-    unawaited(c.read(shufflePlusEnrichProvider)([id]).then((_) => done = true));
+    unawaited(c.read(shufflePlusEnrichProvider)([id], const Duration(seconds: 5)).then((_) => done = true));
     await pumpEventQueue();
     expect(done, isFalse, reason: 'no row yet');
     await rig.add(kind: kStreamKind, path: 'stream:${r.indexKey}');
@@ -60,11 +60,20 @@ void main() {
 
   test('a forgotten entry is skipped', () async {
     final id = online.register(r, suggested: true);
-    final run = c.read(shufflePlusEnrichProvider)([id]);
+    final run = c.read(shufflePlusEnrichProvider)([id], const Duration(seconds: 5));
     await pumpEventQueue();
     online.forget(id);
     preparer.phases.value = {'other': StreamPhase.ready}; // any change wakes the wait
     await run.timeout(const Duration(seconds: 5));
+    expect(rig.chain.calls, 0);
+  });
+
+  test('a download that failed ends the wait', () async {
+    final id = online.register(r, suggested: true);
+    final run = c.read(shufflePlusEnrichProvider)([id], const Duration(seconds: 5));
+    await pumpEventQueue();
+    preparer.phases.value = {r.indexKey: StreamPhase.failed};
+    await run.timeout(const Duration(seconds: 2));
     expect(rig.chain.calls, 0);
   });
 }

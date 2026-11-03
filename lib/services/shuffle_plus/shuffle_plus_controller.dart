@@ -105,9 +105,10 @@ class ShufflePlusController {
   /// reaches its turn with a slow or failing address. Null: no preparation.
   final Future<void> Function(YtResult r)? prepare;
 
-  /// Enriches the queue entries [ids] (text, curiosities, credits); the next
-  /// suggestion waits for it, up to [enrichTimeout]. Null: no enrichment.
-  final Future<void> Function(List<int> ids)? enrichSuggested;
+  /// Enriches the queue entries [ids] (text, curiosities, credits), waiting no
+  /// longer than the given time; no new suggestion until it is done or [enrichTimeout]
+  /// has passed. Null: no enrichment.
+  final Future<void> Function(List<int> ids, Duration within)? enrichSuggested;
   final Duration enrichTimeout;
   final DateTime Function() _now;
   final Random _random;
@@ -125,6 +126,7 @@ class ShufflePlusController {
   final _duration = <int, Duration>{};
   final _mine = <int>{};
   final _block = <int>[]; // suggestions queued since the last enrichment
+  Future<void>? _enriching; // the block being enriched: no new suggestion meanwhile
 
   List<int>? _source;
   List<Track> _sourceTracks = const [];
@@ -291,6 +293,7 @@ class ShufflePlusController {
   Future<void> _removePending() async {
     // The whole queue: with shuffle on, a suggestion sits after its natural
     // predecessor, so it may fall before the current song once shuffle is off.
+    _block.clear();
     for (final id in host.queueIds.toList()) {
       if (id != _curId && _mine.contains(id)) await _drop(id);
     }
@@ -345,7 +348,7 @@ class ShufflePlusController {
   /// True when one more was inserted (the plan may have more slots).
   Future<bool> _suggestOne() async {
     await _followCurrent();
-    if (_plan().isEmpty) return false;
+    if (_enriching != null || _plan().isEmpty) return false;
     final src = _source;
     var candidate = await _take();
     if (candidate == null) {
@@ -394,7 +397,13 @@ class ShufflePlusController {
     _suggestedWithSeeds++;
     host.insertAt(at, id);
     _block.add(id);
-    if (_block.length >= blockSize) await _enrichBlock();
+    if (_block.length >= blockSize) {
+      // Not awaited: the rest of the engine (a skip, Shuffle+ turned off) goes on.
+      _enriching = _enrichBlock().whenComplete(() {
+        _enriching = null;
+        poke();
+      });
+    }
     return true;
   }
 
@@ -407,7 +416,7 @@ class ShufflePlusController {
     if (enrich == null) return;
     AppLog.i('shuffle+ enrich block ids=$ids');
     try {
-      await enrich(ids).timeout(enrichTimeout);
+      await enrich(ids, enrichTimeout).timeout(enrichTimeout);
     } on TimeoutException {
       AppLog.w('shuffle+ enrich block timed out ids=$ids');
     } on Object catch (e, st) {

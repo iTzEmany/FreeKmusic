@@ -14,6 +14,7 @@ import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/shuffle_host.dart';
+import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
 import '../services/shuffle_plus/suggestion_log.dart';
 import 'database_providers.dart';
@@ -144,40 +145,47 @@ class HandlerShuffleHost implements ShuffleHost {
 /// A suggestion is queued as soon as its stream address is known (D-352);
 /// the preparer goes on with the file in the background.
 final shufflePlusPrepareProvider = Provider<Future<void> Function(YtResult)>(
-    (ref) => (r) => ref.read(streamPreparerProvider).start(r.indexKey, r));
+    (ref) => (r) => ref.read(streamPreparerProvider).start(r.indexKey, r, keep: false));
 
 /// Enriches queued suggestions (D-353): each one as soon as its file has made
 /// the shadow row (nothing binds the row to the entry before the entry loads,
-/// so it is read by key). Entries forgotten meanwhile are skipped.
-final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>)>((ref) {
-  Future<void> one(int id) async {
+/// so it is read by key). Entries forgotten meanwhile and downloads that
+/// failed are skipped; nothing waits longer than the given time.
+final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>, Duration)>((ref) {
+  Future<void> one(int id, Duration within) async {
     final online = ref.read(onlineEntriesProvider);
     final preparer = ref.read(streamPreparerProvider);
     final tracks = ref.read(trackRepositoryProvider);
-    final end = DateTime.now().add(ShufflePlusController.blockEnrichTimeout);
+    final end = DateTime.now().add(within);
     for (var e = online?.entryOf(id); e != null; e = online?.entryOf(id)) {
-      final row = await tracks.streamRow(e.result.indexKey);
+      final key = e.result.indexKey;
+      final row = await tracks.streamRow(key);
       if (row != null) return ref.read(streamEnrichRowProvider)(row.id);
+      if (preparer.phases.value[key] == StreamPhase.failed || !DateTime.now().isBefore(end)) return;
       final next = Completer<void>();
       void wake() {
         if (!next.isCompleted) next.complete();
       }
-      preparer.phases.addListener(wake);
+      try {
+        preparer.phases.addListener(wake);
+      } on Object catch (err) {
+        AppLog.w('shuffle+ enrich of $id: the preparer is gone', err); // a rebuilt preparer
+        return;
+      }
       try {
         // Re-check after listening: the row may have landed meanwhile.
-        if (await tracks.streamRow(e.result.indexKey) == null) {
+        if (await tracks.streamRow(key) == null) {
           await next.future.timeout(end.difference(DateTime.now()), onTimeout: () {});
         }
       } finally {
         preparer.phases.removeListener(wake);
       }
-      if (!DateTime.now().isBefore(end)) return;
     }
   }
 
-  return (ids) => Future.wait([
+  return (ids, within) => Future.wait([
         for (final id in ids)
-          one(id).catchError((Object e, StackTrace st) => AppLog.w('shuffle+ enrich of $id failed', e, st)),
+          one(id, within).catchError((Object e, StackTrace st) => AppLog.w('shuffle+ enrich of $id failed', e, st)),
       ]);
 });
 

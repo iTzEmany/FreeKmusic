@@ -45,6 +45,11 @@ class _Job {
   /// A `ready()` caller waits for it: runs first, even out of the queue window.
   var requested = false;
 
+  /// Callers that keep the job requested for good (`ready`, `start`), and callers
+  /// that only wait for the address (`keep: false`). The job goes back to being a
+  /// prefetch once the second kind is all done and the first kind is absent.
+  var keepers = 0, soft = 0;
+
   /// Token of the running attempt; cancelled on timeout, on leaving the queue, on dispose.
   CancelToken? cancel;
   var dropped = false;
@@ -193,7 +198,11 @@ class StreamPreparer {
 
   /// Like [ready], but returns as soon as the stream address is known (R-71):
   /// the first of a live address of the job and the cached file.
-  Future<StreamStart> start(String key, YtResult r) async {
+  ///
+  /// With [keep] false the job goes back to being a prefetch once the address is
+  /// known (it yields to picks and leaves with the queue window), unless someone
+  /// else asked for it meanwhile. For callers that only warm an address up.
+  Future<StreamStart> start(String key, YtResult r, {bool keep = true}) async {
     if (_disposed) throw StateError('disposed');
     cache.pin(key);
     try {
@@ -202,8 +211,13 @@ class StreamPreparer {
       // The address the prefetch got has expired meanwhile: ask for a new one (R-79),
       // unless the download is through and only the file is left to wait for.
       final old = _jobs[key];
-      if (old != null && old.streamUrl != null && old.downloaded == null && !_live(old)) return await restart(key, r);
-      return await _firstOf(_job(key, r));
+      if (old != null && old.streamUrl != null && old.downloaded == null && !_live(old)) return await restart(key, r, keep: keep);
+      final job = _job(key, r, keep: keep);
+      try {
+        return await _firstOf(job);
+      } finally {
+        if (!keep) _release(job);
+      }
     } finally {
       cache.unpin(key);
     }
@@ -211,7 +225,7 @@ class StreamPreparer {
 
   /// A new start for a key whose address expired (R-76): the file when it is
   /// there, else the running attempt is cancelled and run again for a fresh address.
-  Future<StreamStart> restart(String key, YtResult r) async {
+  Future<StreamStart> restart(String key, YtResult r, {bool keep = true}) async {
     if (_disposed) throw StateError('disposed');
     cache.pin(key);
     try {
@@ -222,8 +236,12 @@ class StreamPreparer {
         running.restarting = true;
         running.cancel?.cancel('stream address expired');
       }
-      final job = _job(key, r)..streamUrl = null;
-      return await _firstOf(job);
+      final job = _job(key, r, keep: keep)..streamUrl = null;
+      try {
+        return await _firstOf(job);
+      } finally {
+        if (!keep) _release(job);
+      }
     } finally {
       cache.unpin(key);
     }
@@ -244,15 +262,21 @@ class StreamPreparer {
   }
 
   /// The job of [key] (new if absent or failed), marked as requested.
-  _Job _job(String key, YtResult r) {
+  _Job _job(String key, YtResult r, {bool keep = true}) {
     if (_disposed) throw StateError('disposed');
     var job = _jobs[key];
     if (job == null || job.phase == StreamPhase.failed) {
       job = _jobs[key] = _Job(key, r);
     }
     job.requested = true;
+    keep ? job.keepers++ : job.soft++;
     _pump();
     return job;
+  }
+
+  /// A `keep: false` caller got its answer: back to a prefetch if nobody else wants the job.
+  void _release(_Job job) {
+    if (--job.soft == 0 && job.keepers == 0) job.requested = false;
   }
 
   /// True while the address is still usable: an address about to expire is no
