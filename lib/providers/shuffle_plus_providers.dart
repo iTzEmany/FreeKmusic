@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+import '../core/app_log.dart';
 import '../core/network_kind.dart';
 import '../core/paths.dart';
 import '../data/settings/settings_store.dart';
@@ -13,6 +14,7 @@ import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/shuffle_host.dart';
+import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
 import '../services/shuffle_plus/suggestion_log.dart';
 import 'database_providers.dart';
@@ -140,9 +142,65 @@ class HandlerShuffleHost implements ShuffleHost {
   Future<void> removeQueueId(int id) => _h.removeQueueId(id);
 }
 
-/// A suggestion is downloaded into the stream cache before it is queued.
+/// A suggestion is queued as soon as its stream address is known (D-352);
+/// the preparer goes on with the file in the background.
 final shufflePlusPrepareProvider = Provider<Future<void> Function(YtResult)>(
-    (ref) => (r) => ref.read(streamPreparerProvider).ready(r.indexKey, r));
+    (ref) => (r) => ref.read(streamPreparerProvider).start(r.indexKey, r, keep: false));
+
+/// Enriches queued suggestions (D-353): each one as soon as its file has made
+/// the shadow row (nothing binds the row to the entry before the entry loads,
+/// so it is read by key). Entries forgotten meanwhile and downloads that
+/// failed are skipped; no entry waits longer than the given time. The wait
+/// outlives the block's own time limit, so a slow file is still enriched.
+final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>, Duration)>((ref) {
+  Future<void> one(int id, Duration within) async {
+    final online = ref.read(onlineEntriesProvider);
+    final preparer = ref.read(streamPreparerProvider);
+    final tracks = ref.read(trackRepositoryProvider);
+    final end = DateTime.now().add(within);
+    for (var e = online?.entryOf(id); e != null; e = online?.entryOf(id)) {
+      final key = e.result.indexKey;
+      final row = await tracks.streamRow(key);
+      if (row != null) {
+        AppLog.i('shuffle+ enrich of $id row=${row.id}');
+        return ref.read(streamEnrichRowProvider)(row.id);
+      }
+      if (preparer.phases.value[key] == StreamPhase.failed) {
+        AppLog.w('shuffle+ enrich of $id: the download failed');
+        return;
+      }
+      if (!DateTime.now().isBefore(end)) {
+        AppLog.w('shuffle+ enrich of $id: no file in time');
+        return;
+      }
+      final next = Completer<void>();
+      void wake() {
+        if (!next.isCompleted) next.complete();
+      }
+      try {
+        preparer.phases.addListener(wake);
+      } on Object catch (err) {
+        AppLog.w('shuffle+ enrich of $id: the preparer is gone', err); // a rebuilt preparer
+        return;
+      }
+      try {
+        // Re-check after listening: the row may have landed meanwhile.
+        if (await tracks.streamRow(key) == null) {
+          // A short wake-up too: a forgotten entry changes no phase.
+          final left = end.difference(DateTime.now());
+          await next.future.timeout(left < const Duration(seconds: 1) ? left : const Duration(seconds: 1), onTimeout: () {});
+        }
+      } finally {
+        preparer.phases.removeListener(wake);
+      }
+    }
+  }
+
+  return (ids, within) => Future.wait([
+        for (final id in ids)
+          one(id, within).catchError((Object e, StackTrace st) => AppLog.w('shuffle+ enrich of $id failed', e, st)),
+      ]);
+});
 
 /// The Shuffle+ engine, started the first time it is read (the shell reads it
 /// in 31.12). Null when the player has no online registry (tests).
@@ -169,6 +227,7 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
     loadLibrary: () async => LibraryIndex(await tracks.liteEntries()),
     hasDownload: downloads.contains,
     prepare: ref.read(shufflePlusPrepareProvider),
+    enrichSuggested: ref.read(shufflePlusEnrichProvider),
   );
   ref.listen(shufflePlusConfigProvider, (_, _) => controller.poke());
   ref.listen(jamProvider, (_, _) => controller.poke());

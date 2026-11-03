@@ -60,6 +60,8 @@ class ShufflePlusController {
     required this.loadLibrary,
     required this.hasDownload,
     this.prepare,
+    this.enrichSuggested,
+    this.enrichTimeout = blockEnrichTimeout,
     SuggestionPool? pool,
     DateTime Function()? now,
     Random? random,
@@ -75,6 +77,16 @@ class ShufflePlusController {
   static const maxErrors = 3;
   static const prepareAttempts = 2;
   static const maxAhead = 3;
+
+  /// Suggestions queued before they are enriched together (D-353).
+  static const blockSize = 3;
+
+  /// Longest the next suggestion waits for the enrichment of a block.
+  static const blockEnrichTimeout = Duration(seconds: 60);
+
+  /// Longest an entry waits in the background for its file to be enriched; the
+  /// block does not wait that long ([blockEnrichTimeout]).
+  static const entryEnrichLimit = Duration(minutes: 10);
 
   final ShuffleHost host;
   final OnlineEntries online;
@@ -96,6 +108,13 @@ class ShufflePlusController {
   /// A suggestion enters the queue only after this succeeds, so it never
   /// reaches its turn with a slow or failing address. Null: no preparation.
   final Future<void> Function(YtResult r)? prepare;
+
+  /// Enriches the queue entries [ids] (text, curiosities, credits), each waiting
+  /// no longer than the given time for its file. No new suggestion until it is
+  /// done or [enrichTimeout] has passed; after that it goes on in the background.
+  /// Null: no enrichment.
+  final Future<void> Function(List<int> ids, Duration within)? enrichSuggested;
+  final Duration enrichTimeout;
   final DateTime Function() _now;
   final Random _random;
 
@@ -111,6 +130,9 @@ class ShufflePlusController {
   final _maxPos = <int, Duration>{};
   final _duration = <int, Duration>{};
   final _mine = <int>{};
+  final _block = <int>[]; // suggestions queued since the last enrichment
+  Future<void>? _enriching; // the block being enriched: no new suggestion meanwhile
+  int _enrichGen = 0; // bumped on a reset: an old block no longer holds the engine
 
   List<int>? _source;
   List<Track> _sourceTracks = const [];
@@ -277,6 +299,7 @@ class ShufflePlusController {
   Future<void> _removePending() async {
     // The whole queue: with shuffle on, a suggestion sits after its natural
     // predecessor, so it may fall before the current song once shuffle is off.
+    _resetBlock();
     for (final id in host.queueIds.toList()) {
       if (id != _curId && _mine.contains(id)) await _drop(id);
     }
@@ -312,6 +335,7 @@ class ShufflePlusController {
     pool.clear();
     _seeds = [];
     _suggestedWithSeeds = 0;
+    _resetBlock();
     _sourceTracks = await loadTracks(src);
     _eligible = _sourceTracks.where((t) => !t.missing && t.kind == 0).length >= minSourceSize;
     final cur = _current;
@@ -330,7 +354,7 @@ class ShufflePlusController {
   /// True when one more was inserted (the plan may have more slots).
   Future<bool> _suggestOne() async {
     await _followCurrent();
-    if (_plan().isEmpty) return false;
+    if (_enriching != null || _plan().isEmpty) return false;
     final src = _source;
     var candidate = await _take();
     if (candidate == null) {
@@ -378,7 +402,40 @@ class ShufflePlusController {
       ..removeRange(0, max(0, _lastArtists.length - 2));
     _suggestedWithSeeds++;
     host.insertAt(at, id);
+    _block.add(id);
+    if (_block.length >= blockSize) {
+      // Not awaited: the rest of the engine (a skip, Shuffle+ turned off) goes on.
+      final gen = ++_enrichGen;
+      _enriching = _enrichBlock().whenComplete(() {
+        if (gen != _enrichGen) return; // the engine was reset meanwhile
+        _enriching = null;
+        poke();
+      });
+    }
     return true;
+  }
+
+  void _resetBlock() {
+    _block.clear();
+    _enriching = null;
+    _enrichGen++;
+  }
+
+  /// Enriches the queued block before the next suggestion; a slow or failing
+  /// enrichment never stops Shuffle+.
+  Future<void> _enrichBlock() async {
+    final ids = List.of(_block);
+    _block.clear();
+    final enrich = enrichSuggested;
+    if (enrich == null) return;
+    AppLog.i('shuffle+ enrich block ids=$ids');
+    try {
+      await enrich(ids, entryEnrichLimit).timeout(enrichTimeout);
+    } on TimeoutException {
+      AppLog.w('shuffle+ enrich block timed out ids=$ids (the rest goes on in the background)');
+    } on Object catch (e, st) {
+      AppLog.w('shuffle+ enrich block failed ids=$ids', e, st);
+    }
   }
 
   /// True when the queue's source is no longer [src]: whatever was computed
