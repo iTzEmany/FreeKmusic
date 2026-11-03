@@ -47,6 +47,5 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-1. **(Consigliato) Coda della Jam e rinviati**: KO R-102 (il «Suggerito» ripropone brani già suonati), bug Shuffle+ con la sorgente cambiata, coda di prima della Jam salvata su disco — tutti con un test che li riproduce prima.
-2. Rifinitura della Jam a distanza dopo la 73.2: nome del dispositivo nella vista dell'host, timeout del primo «Entra», messaggio a posizione spenta.
-3. Unificare le due code delle domande sulla cassa; ricerca «notte», build p99 (D-176).
+1. **(Consigliato) Fase 74** (`fase-74-coda-jam-e-rifinitura.md`, scelte D-340…D-343): rinviati della coda della Jam, «Scarica» e posizione nella Jam, rifinitura della Jam a distanza. Avvio: `/obiettivo fase 74`.
+2. Unificare le due code delle domande sulla cassa; ricerca «notte», build p99 (D-176).
