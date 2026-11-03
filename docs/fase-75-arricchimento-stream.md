@@ -1,6 +1,6 @@
 # Fase 75 — Testo, curiosità e crediti dei brani in streaming
 
-**Obiettivo:** i brani in streaming (risultati della ricerca online, suggeriti di Shuffle+, Radio) mostrano testo, curiosità e crediti come i brani della libreria, caricati circa 5 secondi dopo l'avvio per non rallentare lo streaming.
+**Obiettivo:** i brani in streaming (risultati della ricerca online, suggeriti di Shuffle+, Radio) mostrano testo, curiosità e crediti come i brani della libreria, caricati appena l'ascolto del brano è iniziato e il file è in cache, così lo streaming non rallenta (D-351, che sostituisce i 5 s di D-345/D-346).
 
 **Prerequisiti:** fase 74 chiusa. Analisi, scelte, arrivo e rete in `docs/refactor/arricchimento-stream/analisi.md` (rilievi F-01…F-06). Decisioni D-63, D-75, D-77, D-106, D-161, D-344 … D-350. Intoccabili (D-349): schema del database (nessuna migrazione), righe ombra e «Scarica» (D-77, D-106), Jam (D-71), avvio dello streaming all'indirizzo (R-71). Nessun pacchetto nuovo. Aree a rischio: `lib/services/stream/stream_preparer.dart`, `lib/providers/player_providers.dart` (`liveCurrentTrackProvider`).
 
@@ -14,7 +14,7 @@
 Test nuovi, rossi sul `master` di oggi (analisi, «Rete»):
 - widget: brano in streaming (id negativo) la cui riga ombra ha testo e curiosità → nella schermata del brano ci sono le schede testo, curiosità e crediti con i dati della riga, e non c'è la «Proposta di correzione» (D-348);
 - le schede di crediti e curiosità leggono l'id della riga ombra, non l'id negativo della voce (F-02);
-- unità: l'arricchimento non parte all'inizio del download né per un brano solo pre-caricato; parte 5 s dopo che il brano corrente in streaming è partito; un cambio di brano prima dei 5 s lo annulla (D-346); un brano in cache senza dati viene arricchito, uno già arricchito no; uno rifiutato (`limited`) riprova al prossimo ascolto (D-350). Orologio finto, niente attese vere.
+- unità: l'arricchimento non parte all'inizio del download né per un brano solo pre-caricato; parte appena il brano corrente in streaming ha la sua riga ombra, anche in pausa (D-351); un brano in cache senza dati viene arricchito, uno già arricchito no; uno rifiutato (`limited`) riprova al prossimo ascolto (D-350). Orologio finto, niente attese vere.
 
 **Fatto quando:** i test nuovi esistono, falliscono per il motivo atteso sul `master` e i test esistenti del comando mirato sono verdi.
 
@@ -27,18 +27,18 @@ Test nuovi, rossi sul `master` di oggi (analisi, «Rete»):
 
 **Fatto quando:** i test widget di 75.1 sono verdi; un brano della libreria mostra le schede di prima (test esistenti verdi).
 
-### 75.3 — Arricchimento 5 s dopo l'avvio (F-03, F-04)
+### 75.3 — Arricchimento all'avvio dell'ascolto (F-03, F-04)
 - Togliere il lancio di `enrich` dall'inizio di `StreamPreparer._run` (`stream_preparer.dart:422`).
-- Innesco nuovo legato al brano corrente: se è in streaming e la sua riga ombra c'è, dopo 5 s di riproduzione si chiama la stessa funzione `enrich` di oggi (`stream_providers.dart:63`) con la riga già pronta; un cambio di brano prima annulla il timer (D-345, D-346). Se la riga arriva dopo i 5 s, parte appena arriva.
+- Innesco nuovo legato al brano corrente: se è in streaming e la sua riga ombra c'è, si chiama la stessa funzione `enrich` di oggi (`stream_providers.dart:63`) con la riga già pronta; se la riga arriva dopo, parte appena arriva, anche a brano fermo (D-351; in origine 5 s, D-345/D-346).
 - Vale anche per un file già in cache (F-04). Si salta un brano già arricchito (leggere come lo segna oggi il motore: `TrackEnrich`, `dueTrackIds`); `limited` non lo segna, quindi riprova al prossimo ascolto (D-350).
 - Un solo arricchimento per brano alla volta (niente doppioni se lo riascolti mentre il primo è in corso).
 
-**Fatto quando:** i test di unità di 75.1 sono verdi; `stream_preparer_test.dart` aggiornato dove contava sull'arricchimento all'inizio del download; nel log nessuna riga d'arricchimento prima dei 5 s.
+**Fatto quando:** i test di unità di 75.1 sono verdi; `stream_preparer_test.dart` aggiornato dove contava sull'arricchimento all'inizio del download; nel log nessuna riga d'arricchimento prima che il file sia in cache né per i pre-caricati.
 
 ### 75.4 — Controlli di fase
 `flutter analyze` pulito; comando mirato verde; code-review high (aree a rischio); scheggia; review Opus. Prova dal vivo su Linux e sul Mi A3:
-- un brano cercato online e un suggerito di Shuffle+ → testo, curiosità e crediti compaiono dopo ~5–15 s, prima c'è il segnaposto;
-- un brano saltato prima dei 5 s → nessun arricchimento nel log;
+- un brano cercato online e un suggerito di Shuffle+ → testo, curiosità e crediti compaiono appena il file è in cache più il tempo delle fonti, prima c'è il segnaposto; anche col brano messo subito in pausa;
+- un pre-caricato della coda mai ascoltato → nessun arricchimento nel log;
 - lo streaming parte quando partiva prima (riga `stream timing`, `url=` non peggiore a parità di rete);
 - un brano della libreria e la Jam come prima.
 
