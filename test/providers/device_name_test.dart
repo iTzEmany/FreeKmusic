@@ -18,8 +18,13 @@ Future<String> _name({String? custom, String system = '', String model = ''}) as
 }
 
 void main() {
-  test('a chosen name always wins, even a generic one', () async {
-    expect(await _name(custom: 'Telefono', system: 'Pixel', model: 'M2010'), 'Telefono');
+  test('a chosen name wins over the system one', () async {
+    expect(await _name(custom: 'Salotto', system: 'Pixel', model: 'M2010'), 'Salotto');
+  });
+
+  test('a generic saved name (old version) falls back like the system one', () async {
+    expect(await _name(custom: 'Telefono', system: 'Telefono', model: 'Mi A3'), 'Mi A3');
+    expect(await _name(custom: 'Telefone', system: 'Pixel', model: 'M2010'), 'Pixel');
   });
 
   test('a real system name is kept', () async {

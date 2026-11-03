@@ -36,13 +36,15 @@ final systemDeviceNameProvider = Provider<String>(
 final systemDeviceModelProvider = Provider<String>((ref) => '');
 
 /// Names Android gives out of the box: no one chose them, so they say nothing about the phone.
-const _genericDeviceNames = {'telefono', 'phone', 'smartphone', 'handy', 'teléfono', 'téléphone', 'android', 'localhost'};
+const _genericDeviceNames = {'telefono', 'phone', 'smartphone', 'handy', 'teléfono', 'téléphone', 'telefone', 'android', 'localhost'};
 
 final deviceNameProvider = Provider<String>((ref) {
-  final custom = ref.watch(settingsProvider.select((s) => s.deviceName));
-  if (custom != null && custom.trim().isNotEmpty) return custom.trim();
+  bool real(String n) => n.isNotEmpty && !_genericDeviceNames.contains(n.toLowerCase());
+  // A generic saved name (stored by an older version from the system one) counts as none.
+  final custom = ref.watch(settingsProvider.select((s) => s.deviceName))?.trim() ?? '';
+  if (real(custom)) return custom;
   final system = ref.watch(systemDeviceNameProvider).trim();
-  if (system.isNotEmpty && !_genericDeviceNames.contains(system.toLowerCase())) return system;
+  if (real(system)) return system;
   final model = ref.watch(systemDeviceModelProvider).trim();
   return model.isEmpty ? 'Codecore' : model;
 });
