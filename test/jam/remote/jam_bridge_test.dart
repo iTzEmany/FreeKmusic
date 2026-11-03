@@ -37,6 +37,18 @@ void main() {
     });
   });
 
+  test('the very first CONNECT times out: the same broker is tried again at once', () {
+    fakeAsync((t) {
+      setUp_();
+      link.failNext = 1;
+      bridge.start();
+      t.flushMicrotasks();
+      expect(link.connectAttempts, [a, a]);
+      expect(bridge.broker, a);
+      expect(seen, [JamBridgeStatus.up], reason: 'never "unreachable" for one timeout');
+    });
+  });
+
   test('first broker down: the second takes over after 1 s', () {
     fakeAsync((t) {
       setUp_();
@@ -58,7 +70,7 @@ void main() {
         net[b].goDown();
         bridge.start();
         t.flushMicrotasks();
-        var total = 0;
+        var total = 1; // the first CONNECT is tried twice at once
         for (final w in [1, 2, 4, 8, 16, 30, 30]) {
           t.elapse(Duration(seconds: w - 1));
           expect(
@@ -71,7 +83,7 @@ void main() {
           expect(link.connectAttempts.length, total + 1, reason: 'wait $w');
         }
         expect(bridge.status, JamBridgeStatus.unreachable);
-        expect(link.connectAttempts.take(4), [a, b, a, b]);
+        expect(link.connectAttempts.take(4), [a, a, b, a]);
       });
     },
   );
@@ -161,7 +173,7 @@ void main() {
       t.flushMicrotasks();
       bridge.stop();
       t.elapse(const Duration(minutes: 5));
-      expect(link.connectAttempts.length, 1);
+      expect(link.connectAttempts.length, 2, reason: 'the immediate retry, then nothing');
     });
   });
 

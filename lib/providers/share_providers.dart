@@ -32,11 +32,19 @@ final systemDeviceNameProvider = Provider<String>(
   (ref) => Platform.localHostname,
 );
 
+/// Phone model (Android only, empty elsewhere): the name when the OS has only a generic one.
+final systemDeviceModelProvider = Provider<String>((ref) => '');
+
+/// Names Android gives out of the box: no one chose them, so they say nothing about the phone.
+const _genericDeviceNames = {'telefono', 'phone', 'smartphone', 'handy', 'teléfono', 'téléphone', 'android', 'localhost'};
+
 final deviceNameProvider = Provider<String>((ref) {
   final custom = ref.watch(settingsProvider.select((s) => s.deviceName));
   if (custom != null && custom.trim().isNotEmpty) return custom.trim();
   final system = ref.watch(systemDeviceNameProvider).trim();
-  return system.isEmpty || system == 'localhost' ? 'Codecore' : system;
+  if (system.isNotEmpty && !_genericDeviceNames.contains(system.toLowerCase())) return system;
+  final model = ref.watch(systemDeviceModelProvider).trim();
+  return model.isEmpty ? 'Codecore' : model;
 });
 
 /// Local LAN address: the Wi-Fi IP when the OS reports it, otherwise the

@@ -1798,6 +1798,12 @@ abstract class AppLocalizations {
   /// **'te'**
   String get jamYou;
 
+  /// No description provided for @jamGuest.
+  ///
+  /// In it, this message translates to:
+  /// **'Ospite'**
+  String get jamGuest;
+
   /// No description provided for @jamAddToJam.
   ///
   /// In it, this message translates to:

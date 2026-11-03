@@ -49,6 +49,9 @@ class DevicesSheet extends ConsumerStatefulWidget {
 class _DevicesSheetState extends ConsumerState<DevicesSheet> {
   late final ShareHubNotifier _hub;
 
+  /// Android <= 11 with the location off while the nearby search is on (checked at each opening).
+  bool _locationOff = false;
+
   @override
   void initState() {
     super.initState();
@@ -57,8 +60,17 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     unawaited(_hub.enter());
     // First use of the Bluetooth Jams: the explanation, once (R-138).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(askBlePermission(context, ref));
+      if (mounted) unawaited(_askBle());
     });
+  }
+
+  /// A snackbar would sit under this sheet: the location-off line is shown inside it.
+  Future<void> _askBle() async {
+    final beacon = ref.read(jamBeaconProvider);
+    await askBlePermission(context, ref, notifyLocationOff: false);
+    if (!mounted || !ref.read(jamNearbyScanProvider)) return;
+    final off = (await beacon.capabilities()).locationOff;
+    if (mounted && off) setState(() => _locationOff = true);
   }
 
   @override
@@ -151,6 +163,10 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
         children: [
           Text(l.devicesTitle, style: theme.titleMedium),
           const SizedBox(height: 12),
+          if (_locationOff) ...[
+            Text(l.jamBleLocationOff, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
+            const SizedBox(height: 12),
+          ],
           if (jam.active) ...[
             _JamActive(
               jam: jam,

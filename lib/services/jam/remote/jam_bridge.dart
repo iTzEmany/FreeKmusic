@@ -60,7 +60,7 @@ class JamBridge {
       _set(JamBridgeStatus.retrying);
       _connect(_idx); // same broker first
     });
-    _connect(0);
+    _connect(0, retrySame: true);
   }
 
   /// Gives up the broker in use for the next one (the host went quiet there).
@@ -129,7 +129,9 @@ class JamBridge {
     _status.add(s);
   }
 
-  Future<void> _connect(int from) async {
+  /// [retrySame]: a first failure is tried again at once on the same broker, before
+  /// the waits and the next broker (a slow first TLS handshake on a weak link).
+  Future<void> _connect(int from, {bool retrySame = false}) async {
     final gen = ++_gen;
     var i = from;
     var failures = 0;
@@ -157,6 +159,10 @@ class JamBridge {
       } on Object catch (e, st) {
         if (gen != _gen) return;
         AppLog.w('bridge: ${brokers[i]} failed', e, st);
+        if (retrySame) {
+          retrySame = false;
+          continue;
+        }
       }
       failures++;
       if (_st != JamBridgeStatus.retrying && failures >= brokers.length) {

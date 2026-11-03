@@ -43,6 +43,7 @@ void main() {
   late List<JamMessage> inbox;
   var lostCount = 0;
   late List<FakeMqttLink> guestLinks;
+  var failFirstConnects = 0;
 
   setUp(() async {
     net = FakeNet([a, b]);
@@ -56,10 +57,11 @@ void main() {
     inbox = [];
     lostCount = 0;
     guestLinks = [];
+    failFirstConnects = 0;
     guest = RemoteJamGuest(
       protocol: guestP,
       linkFactory: () {
-        final l = FakeMqttLink(net);
+        final l = FakeMqttLink(net)..failNext = guestLinks.isEmpty ? failFirstConnects : 0;
         guestLinks.add(l);
         return l;
       },
@@ -175,6 +177,26 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     expect(ch, isNotNull);
+    hostSend(JamMsg.accept, acceptBody(stateV(1)));
+    expect(await f, JamJoinOutcome.accepted);
+  });
+
+  test('code: the first connect of the lookup times out, the same broker is tried again at once', () async {
+    failFirstConnects = 1;
+    final keys = await hostP.deriveCode('ABCD2345');
+    hostLink.publish(
+      JamProtocol.codeTopic(keys.topicId),
+      hostP.sealCode(
+        keys.kc,
+        JamCodeInfo(jamId: secrets.jamId, hpk: secrets.hpk, expMs: clock.millisecondsSinceEpoch + 120000, brokers: const [a], gone: false),
+      ),
+      retain: true,
+    );
+    final f = join(JamInvite.fromCode('abcd-2345')!);
+    for (var i = 0; i < 50 && hostTakesRequest(kc: keys.kc) == null; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(guestLinks.first.connectAttempts, [a, a]);
     hostSend(JamMsg.accept, acceptBody(stateV(1)));
     expect(await f, JamJoinOutcome.accepted);
   });

@@ -1027,6 +1027,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get jamYou => 'dir';
 
   @override
+  String get jamGuest => 'Gast';
+
+  @override
   String get jamAddToJam => 'Zur Jam hinzufügen';
 
   @override

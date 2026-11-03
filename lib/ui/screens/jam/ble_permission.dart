@@ -48,8 +48,8 @@ class JamBlePermissionSheet extends StatelessWidget {
 /// Makes sure the Bluetooth permission is there, asking once with the sheet
 /// (again when [force], from the «Cerca Jam vicine» switch). A refusal turns
 /// the scan off: only code and QR remain. With the location off (Android <= 11)
-/// it says so. True when the permission is granted.
-Future<bool> askBlePermission(BuildContext context, WidgetRef ref, {bool force = false}) async {
+/// it says so with a snackbar ([notifyLocationOff] false: the caller shows it itself). True when the permission is granted.
+Future<bool> askBlePermission(BuildContext context, WidgetRef ref, {bool force = false, bool notifyLocationOff = true}) async {
   final beacon = ref.read(jamBeaconProvider);
   final store = ref.read(settingsStoreProvider);
   final scan = ref.read(jamNearbyScanProvider.notifier);
@@ -78,7 +78,7 @@ Future<bool> askBlePermission(BuildContext context, WidgetRef ref, {bool force =
   if (!granted) return false;
   nearby.refresh();
   // Only worth saying when the search is wanted.
-  if (container.read(jamNearbyScanProvider) && (await beacon.capabilities()).locationOff && context.mounted) {
+  if (container.read(jamNearbyScanProvider) && notifyLocationOff && (await beacon.capabilities()).locationOff && context.mounted) {
     showMsg(context, context.l10n.jamBleLocationOff);
   }
   return true;

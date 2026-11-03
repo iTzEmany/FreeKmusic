@@ -545,6 +545,7 @@
   },
   "jamJumpHere": "Saltar para aqui",
   "jamYou": "si",
+  "jamGuest": "Convidado",
   "jamAddToJam": "Adicionar à Jam",
   "jamAdded": "Adicionadas à Jam: {count}",
   "@jamAdded": {

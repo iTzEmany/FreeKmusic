@@ -54,11 +54,18 @@ class FakeMqttLink implements MqttLink {
   /// When set before a connect, that connect completes only after it resolves.
   Future<void>? hold;
 
+  /// The next this-many connects fail (a timeout), whatever the broker.
+  int failNext = 0;
+
   @override
   Future<void> connect(BrokerEntry broker) async {
     _b?._links.remove(this);
     _b = null;
     connectAttempts.add(broker);
+    if (failNext > 0) {
+      failNext--;
+      throw StateError('timeout: $broker');
+    }
     final h = hold;
     final b = net.brokers[broker];
     if (b == null || !b.up) throw StateError('unreachable: $broker');

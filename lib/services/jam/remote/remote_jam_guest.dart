@@ -229,6 +229,7 @@ class RemoteJamGuest implements JamGuestLink {
   /// The CODE of [keys] on each of [brokers] in turn, 4 s per broker.
   Future<(JamCodeInfo, BrokerEntry)?> _lookupCode(JamCodeKeys keys) async {
     final topic = JamProtocol.codeTopic(keys.topicId);
+    var first = true; // only the very first connect gets an immediate second chance (slow first TLS)
     for (final b in brokers) {
       if (_stopped) return null;
       final link = linkFactory();
@@ -240,7 +241,15 @@ class RemoteJamGuest implements JamGuestLink {
         if (i != null) got.complete(i);
       });
       try {
-        await link.connect(b);
+        try {
+          await link.connect(b);
+        } on Object catch (e, st) {
+          if (!first) rethrow;
+          AppLog.w('remote jam: first connect to $b failed, trying again', e, st);
+          await link.connect(b);
+        } finally {
+          first = false;
+        }
         link.subscribe(topic);
         final info = await _within(got, codeWait);
         if (info != null) return (info, b);

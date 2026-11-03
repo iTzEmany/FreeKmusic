@@ -154,6 +154,7 @@ class MainActivity : AudioServiceActivity() {
                     }
                     result.success(if (name.isNullOrBlank()) android.os.Build.MODEL else name)
                 }
+                "deviceModel" -> result.success(android.os.Build.MODEL)
                 "clearOffer" -> {
                     ShareNotifications.clearOffer(ctx, call.argument<String>("offerId")!!)
                     result.success(null)
