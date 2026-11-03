@@ -366,6 +366,35 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('la posizione mostrata non torna indietro all\'avvio sincronizzato, il seek sì subito',
+      (tester) async {
+    final base = active(host: false);
+    tester.view.physicalSize = const Size(500, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    JamUiState at(int posMs, int posAt) => JamUiState(
+          phase: base.phase,
+          role: base.role,
+          peerName: base.peerName,
+          peerId: base.peerId,
+          jam: base.jam!.copyWith(playing: true, positionMs: posMs, positionAt: posAt),
+        );
+    final fake = _FakeJam(at(0, 998700))..clockMs = 1000000;
+    await h.pump(tester, const JamScreen(), extraOverrides: [jamProvider.overrideWith(() => fake)]);
+    expect(find.text('0:01'), findsOneWidget);
+    // The start is moved ahead by the lead: the shown position must not fall to 0:00.
+    fake.setState(at(0, 1001500));
+    await tester.pump();
+    expect(find.text('0:01'), findsOneWidget);
+    // A seek moves it at once.
+    fake.setState(at(60000, 1000000));
+    await tester.pump();
+    expect(find.text('1:00'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await h.dispose(tester);
+  });
+
   testWidgets('desktop: la Jam non mostra il volume locale', (tester) async {
     final (_, h) = await openJam(tester, size: const Size(1280, 900));
     expect(find.byIcon(Icons.volume_up_rounded), findsNothing);

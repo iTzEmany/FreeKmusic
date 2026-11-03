@@ -46,12 +46,19 @@ class _JamPlayerViewState extends ConsumerState<JamPlayerView> {
 
   JamState get _jam => widget.state.jam!;
 
+  (int?, int) _fedKey = (null, 0);
+
   bool _seeking = false; // a user seek waits for the host's answer
 
   void _feed({bool refresh = false}) {
     final jam = _jam;
-    final shown = jam.positionAtTime(ref.read(jamProvider.notifier).jamNowMs());
+    var shown = jam.positionAtTime(ref.read(jamProvider.notifier).jamNowMs());
     final was = _smooth.value.inMilliseconds;
+    // Same item and same base position: only the start moved (lead of a synced
+    // start), never backwards; a seek changes the base and stays immediate.
+    final key = (jam.current?.id, jam.positionMs);
+    if (key == _fedKey && shown < was) shown = was;
+    _fedKey = key;
     if (refresh && jam.playing && (was - shown).abs() > 100) {
       AppLog.d('jam ui: shown position moved ${shown - was}ms on refresh');
     }
@@ -99,6 +106,7 @@ class _JamPlayerViewState extends ConsumerState<JamPlayerView> {
           .send(JamCommand.seek(d.inMilliseconds));
     } finally {
       _seeking = false;
+      _fedKey = (null, 0); // the Jam's answer wins over the dragged position
     }
     if (!mounted) return;
     if (err == JamError.noSpeaker) {
