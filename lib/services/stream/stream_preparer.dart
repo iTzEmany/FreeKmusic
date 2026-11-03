@@ -21,11 +21,6 @@ class StreamItem {
   final YtResult result;
 }
 
-/// Looks up tags, lyrics and cover for a streamed track. Starts together with
-/// the download; [rowId] completes with the shadow row id once the file is
-/// cached (or with an error if it never is).
-typedef StreamEnricher = Future<void> Function(YtResult r, Future<int> rowId);
-
 /// Where a streamed track starts from: the cached [file] or the stream [url]
 /// (with the [headers] to open it with). Exactly one of the two is set.
 class StreamStart {
@@ -41,17 +36,14 @@ class StreamStart {
 class _Job {
   _Job(this.key, this.result) {
     done.future.ignore(); // the error reaches ready() callers only
-    rowId.future.ignore();
   }
   final String key;
   final YtResult result;
   final done = Completer<File>();
-  final rowId = Completer<int>();
   var phase = StreamPhase.queued;
 
   /// A `ready()` caller waits for it: runs first, even out of the queue window.
   var requested = false;
-  var enriching = false;
 
   /// Token of the running attempt; cancelled on timeout, on leaving the queue, on dispose.
   CancelToken? cancel;
@@ -87,7 +79,6 @@ class StreamPreparer {
     required this.tracks,
     required this.youtube,
     required this.isMetered,
-    this.enrich,
     this.maxParallel = 2,
     this.meteredAhead = 3,
     this.cooldown = const Duration(minutes: 5),
@@ -118,7 +109,6 @@ class StreamPreparer {
   final TrackRepository tracks;
   final YoutubeService youtube;
   final Future<bool> Function() isMetered;
-  final StreamEnricher? enrich;
   final int maxParallel, meteredAhead;
 
   /// Pause of the prefetch after a 403/429 (like Shuffle+'s source cooldown).
@@ -316,7 +306,6 @@ class StreamPreparer {
   void _fail(_Job j, Object error) {
     j.phase = StreamPhase.failed;
     _setPhase(j.key, StreamPhase.failed);
-    if (!j.rowId.isCompleted) j.rowId.completeError(error);
     if (!j.done.isCompleted) j.done.completeError(error);
   }
 
@@ -419,12 +408,6 @@ class StreamPreparer {
           (e.detail ?? '').toLowerCase().contains('http error 403'));
 
   Future<void> _run(_Job j) async {
-    if (enrich != null && !j.enriching) {
-      j.enriching = true;
-      unawaited(enrich!(j.result, j.rowId.future).catchError((Object e, StackTrace st) {
-        AppLog.w('stream enrichment failed for ${j.key}', e, st);
-      }));
-    }
     File? part;
     Object? error;
     for (var attempt = 1; attempt <= 2 && part == null && !_disposed && !j.dropped; attempt++) {
@@ -457,7 +440,6 @@ class StreamPreparer {
             // Prefetch only: forget it, the queue walk picks it up after the pause.
             final mine = identical(_jobs[j.key], j); // the key may have been re-queued
             if (mine) _jobs.remove(j.key);
-            if (!j.rowId.isCompleted) j.rowId.completeError(e); // enrich must not wait forever
             if (mine && !_disposed) phases.value = {...phases.value}..remove(j.key);
             _logTiming(j, 'failed');
             return _finish();
@@ -468,7 +450,6 @@ class StreamPreparer {
     if (j.dropped) {
       _yielding.remove(j);
       // Left the queue mid-download: nobody waits for it, leave no trace.
-      if (!j.rowId.isCompleted) j.rowId.completeError(StateError('dropped'));
       final leftover = part;
       if (leftover != null) {
         unawaited(leftover.delete().catchError((Object e, StackTrace st) {
@@ -483,7 +464,7 @@ class StreamPreparer {
     if (part != null && !_disposed) {
       try {
         final file = await cache.put(j.key, part, trim: j.requested);
-        j.rowId.complete(await tracks.upsertStreamRow(j.key, j.result, file));
+        await tracks.upsertStreamRow(j.key, j.result, file);
         j.cached = _ms(j);
         _logTiming(j, 'ok');
         if (identical(_jobs[j.key], j)) _jobs.remove(j.key);

@@ -8,6 +8,7 @@ import 'providers/player_providers.dart';
 import 'providers/settings_providers.dart';
 import 'providers/share_hub.dart';
 import 'providers/startup_providers.dart' show enrichCompleterStartProvider, mp3LengthFixStartProvider;
+import 'providers/stream_providers.dart' show streamEnrichTriggerProvider;
 import 'providers/theme_providers.dart';
 import 'providers/update_providers.dart';
 import 'providers/youtube_providers.dart' show promoteErrorsProvider;
@@ -32,6 +33,8 @@ class CodecoreApp extends ConsumerWidget {
     // Alive from the start, so the Registro has the real times of what ends.
     ref.listen(activityLogProvider, (_, _) {});
     ref.watch(equalizerApplierProvider);
+    // Enriches a streamed track after 5 s of listening (D-345).
+    ref.listen(streamEnrichTriggerProvider, (_, _) {});
     ref.watch(outputRouteSyncProvider);
     ref.watch(importNotificationProvider);
     // Checks for new releases of followed artists (starts once settled).

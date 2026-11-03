@@ -3,20 +3,21 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
-import '../data/db/app_database.dart';
 import '../data/repositories/track_repository.dart';
+import '../data/repositories/track_kinds.dart';
+import '../services/audio/online_entries.dart' show isOnlineId;
+import '../services/online/enrich_parts.dart' show EnrichStatus;
 import '../services/online/synthetic_track.dart';
+import '../services/stream/stream_enrich_trigger.dart';
 import '../services/online/enrichment_service.dart';
-import '../services/online/youtube_service.dart' show YtResult;
 import '../services/stream/stream_cache.dart';
-import '../services/stream/stream_key.dart' show displayArtist;
 import '../services/stream/stream_preparer.dart';
 import '../services/stream/stream_promoter.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'online_providers.dart';
-import 'player_providers.dart' show audioHandlerProvider;
+import 'player_providers.dart' show audioHandlerProvider, currentTrackProvider, onlineEntriesProvider, positionProvider;
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'youtube_providers.dart';
 
@@ -53,47 +54,60 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
   void used() => ref.invalidate(streamCacheUsedProvider);
   _applyLimit(cache, ref.read(settingsProvider).streamCacheMb, used);
   ref.listen(settingsProvider.select((s) => s.streamCacheMb), (_, mb) => _applyLimit(cache, mb, used));
-  final enrichment = ref.watch(enrichmentServiceProvider);
-  final tracks = ref.watch(trackRepositoryProvider);
   final preparer = StreamPreparer(
     cache: ref.watch(streamCacheProvider),
-    tracks: tracks,
+    tracks: ref.watch(trackRepositoryProvider),
     youtube: ref.watch(youtubeServiceProvider),
     isMetered: () async => (await ref.read(networkProbeProvider).current()).metered,
-    enrich: (r, rowId) async {
-      final proposal = await enrichment.propose(_syntheticTrack(r));
-      if (proposal.limited) return; // a refusal is not «nothing found»: try again later
-      // Tags go to the database only, never into the cached file.
-      final row = await tracks.getById(await rowId);
-      if (row == null) return;
-      await enrichment.apply(
-        EnrichmentProposal(
-          track: row,
-          meta: proposal.meta,
-          lyrics: proposal.lyrics,
-          curiosity: proposal.curiosity,
-          disc: proposal.disc,
-          isrc: proposal.isrc,
-          source: proposal.source,
-        ),
-        EnrichField.values.toSet(),
-      );
-      // A shadow row had no id when `propose` ran, so its credits are saved here.
-      await enrichment.saveCredits(row.id, proposal.credits);
-    },
   );
   ref.onDispose(preparer.dispose);
   return preparer;
 });
 
-/// What `propose` reads (title, artist, album, length) before the row exists.
-Track _syntheticTrack(YtResult r) => syntheticTrack(
-      title: r.title,
-      artist: displayArtist(r),
-      album: r.album,
-      durationMs: r.duration?.inMilliseconds ?? 0,
-      kind: 2,
-    );
+/// Enriches a shadow row (tags, lyrics, cover) once it has played 5 s (D-345).
+Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository tracks, int rowId) async {
+  final row = await tracks.getById(rowId);
+  if (row == null || row.kind != kStreamKind || row.enrichStatus == EnrichStatus.found.code) return;
+  final proposal = await enrichment.propose(syntheticTrack(
+    title: row.title,
+    artist: row.artist,
+    album: row.album,
+    durationMs: row.durationMs,
+    kind: kStreamKind,
+  ));
+  if (proposal.limited) return; // a refusal is not «nothing found»: next listen retries
+  await enrichment.apply(
+    EnrichmentProposal(
+      track: row,
+      meta: proposal.meta,
+      lyrics: proposal.lyrics,
+      curiosity: proposal.curiosity,
+      disc: proposal.disc,
+      isrc: proposal.isrc,
+      source: proposal.source,
+    ),
+    EnrichField.values.toSet(),
+  );
+  await enrichment.saveCredits(row.id, proposal.credits);
+}
+
+/// Feeds the position to the trigger; kept alive by the app widget.
+final streamEnrichTriggerProvider = Provider<StreamEnrichTrigger>((ref) {
+  final trigger = StreamEnrichTrigger(
+      (id) => enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id));
+  ref.listen(positionProvider, (_, pos) {
+    final t = ref.read(currentTrackProvider).value;
+    final row = t == null
+        ? null
+        : isOnlineId(t.id)
+            ? ref.read(onlineEntriesProvider)?.entryOf(t.id)?.trackId
+            : t.kind == kStreamKind
+                ? t.id
+                : null;
+    trigger.tick(t?.id, row, pos.value ?? Duration.zero);
+  });
+  return trigger;
+});
 
 /// «Scarica» on a cached track moves the file instead of downloading it (46.3).
 final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
