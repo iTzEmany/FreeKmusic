@@ -41,4 +41,11 @@ Il feeder della parte di un ospite remoto e i suoi suggeriti passano da `JamRemo
 - 71.1–71.3 fatti in una PR (ramo `feat/71-coda-remota`), più i rilievi «ordine sparso» della fase 70: ciclo `share_hub` ↔ `jam_remote_providers` rotto (`jam_gate_providers.dart`), la shell tiene vivo `jamBridgeProvider`, attese dei test iniettabili (`JamBridge.waits`, `jamStopGraceProvider`), «non raggiungibile» in `JamUiState`. Il doppio `expire()` resta voluto (D-335).
 - Controlli: `flutter analyze` pulito, comando mirato verde, `/code-review high` (10 rilievi, tutti corretti), scheggia in modalità passo (4 bug riprodotti e corretti, mutanti scoperti coperti), review di architettura Opus (rilievi da fare corretti; tre rimandati in `fase-72-bluetooth-e-amici.md`).
 - Scelte: D-335, D-336. Testo e curiosità dell'ospite remoto cercati sul suo telefono per titolo e artista, senza scrivere nel DB, in cache per la durata della Jam.
-- Prova dal vivo (Linux host, Mi A3 ospite remoto col codice): da fare dopo la fusione, esiti qui sotto.
+- Prova dal vivo del 3/11 su master 9c1217b (Linux host in xvfb, Mi A3 ospite remoto col codice, broker predefinito): tutto ok.
+  - Ingresso: richiesta sull'host in 4–6 s, Jam sul Mi A3 3 s dopo «Accetta» (un primo «Entra» in timeout isolato verso broker.emqx.io, riuscito al secondo).
+  - Dalla libreria: brano scaricato da YouTube in coda in ≤ 9 s e preparato dall'host (4,9 s); brano locale senza video id ma noto in ~10 s; brano introvabile → «Non trovato online, non si può aggiungere» in ~3 s, nulla in coda.
+  - Dalla Ricerca online: in coda sull'host in ~6 s.
+  - «Coda insieme»: i non trovati saltati (~0,5 s l'uno) senza fermare il turno, i trovati entrati a turno.
+  - Ospite: copertine dalle miniature (prima la nota, poi la miniatura); scheda con testo e curiosità dove esistono; nessun errore verso l'host nel log.
+  - «Esci»: il Mi A3 ritrova la sua parte, compresi i brani saltati (riparte dal brano corrente, come D-186); «Termina» chiude la Jam.
+  - Da guardare: la vista dell'host mostra il nome generico «Telefono» per la Jam e un nome vuoto per l'ospite dopo l'uscita.
