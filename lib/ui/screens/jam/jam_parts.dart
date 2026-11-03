@@ -7,9 +7,10 @@ import '../../../providers/import_providers.dart';
 import '../../../providers/jam_providers.dart' show jamProvider, jamTrackCoverProvider;
 import '../../../providers/library_providers.dart' show artistsProvider;
 import '../../../providers/share_hub.dart';
+import '../../../providers/youtube_providers.dart' show downloadIndexProvider, downloadsProvider;
 import '../../../services/jam/jam_models.dart';
 import '../../../services/online/artist_link_resolver.dart';
-import '../../../services/online/youtube_service.dart' show smallVideoThumbnail;
+import '../../../services/online/youtube_service.dart' show MediaSource, YtResult, smallVideoThumbnail;
 import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
@@ -144,6 +145,60 @@ class JamQueueRow extends ConsumerWidget {
   /// «Rimuovi» in the ⋮ sheet; null where the removal is not allowed.
   final VoidCallback? onRemove;
 
+  /// The ⋮ sheet; «Scarica» (as the player's) follows the download index while open (D-181).
+  void _openMenu(BuildContext context, WidgetRef ref, List<ArtistName> artists) {
+    final l = context.l10n;
+    final source = item.selfFetchable
+        ? MediaSource.values.firstWhere((m) => item.ref!.split(':')[1] == m.name)
+        : null;
+    bool inLibrary() =>
+        ref.read(downloadIndexProvider).value?.contains(item.videoId!, source: source!) ?? false;
+    List<List<CcAction<String>>> groups() => [
+          [
+            CcAction(icon: Icons.near_me_outlined, label: l.jamJumpHere, onTap: onJump),
+            if (source != null && !inLibrary())
+              CcAction(
+                icon: Icons.download_rounded,
+                label: l.ytDownload,
+                onTap: () => ref.read(downloadsProvider.notifier).add(YtResult(
+                      id: item.videoId!,
+                      title: item.title,
+                      channel: item.artist ?? '',
+                      artists: [if (item.artist != null) item.artist!],
+                      album: item.album,
+                      duration: item.durationMs > 0 ? Duration(milliseconds: item.durationMs) : null,
+                      source: source,
+                    )),
+              ),
+            if (artists.isNotEmpty)
+              CcAction(
+                icon: Icons.person_outline_rounded,
+                label: l.goToArtist,
+                onTap: () => goToArtists(context, ref, artists),
+              ),
+            if (onRemove != null)
+              CcAction(
+                icon: Icons.delete_outline_rounded,
+                label: l.removeFromList,
+                destructive: true,
+                onTap: onRemove,
+              ),
+          ],
+        ];
+    final changed = ValueNotifier(0);
+    final sub = ref.listenManual(downloadIndexProvider, (_, _) => changed.value++);
+    showCcActionSheet<String>(
+      context: context,
+      title: item.title,
+      groups: groups(),
+      refresh: changed,
+      regroup: groups,
+    ).whenComplete(() {
+      sub.close();
+      changed.dispose();
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
@@ -209,32 +264,7 @@ class JamQueueRow extends ConsumerWidget {
               visualDensity: VisualDensity.standard,
               constraints: const BoxConstraints.tightFor(width: 48, height: 48),
               icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
-              onPressed: () => showCcActionSheet<String>(
-                context: context,
-                title: item.title,
-                groups: [
-                  [
-                    CcAction(
-                      icon: Icons.near_me_outlined,
-                      label: l.jamJumpHere,
-                      onTap: onJump,
-                    ),
-                    if (artists.isNotEmpty)
-                      CcAction(
-                        icon: Icons.person_outline_rounded,
-                        label: l.goToArtist,
-                        onTap: () => goToArtists(context, ref, artists),
-                      ),
-                    if (onRemove != null)
-                      CcAction(
-                        icon: Icons.delete_outline_rounded,
-                        label: l.removeFromList,
-                        destructive: true,
-                        onTap: onRemove,
-                      ),
-                  ],
-                ],
-              ),
+              onPressed: () => _openMenu(context, ref, artists),
             ),
             if (showHandle)
               ReorderableDragStartListener(

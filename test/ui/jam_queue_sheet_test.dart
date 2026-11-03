@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:codecore/providers/jam_providers.dart';
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
+import 'package:codecore/services/online/download_index.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/ui/screens/jam/jam_queue_sheet.dart';
 import 'package:flutter/material.dart';
@@ -81,5 +86,52 @@ void main() {
     final (_, h2) = await _open(tester, _state(host: true));
     expect(find.byIcon(Icons.drag_handle_rounded), findsNWidgets(2));
     await h2.dispose(tester);
+  });
+
+  group('«Scarica» nel ⋮ (D-181)', () {
+    const online = JamItem(id: 1, ownerDeviceId: 'host', title: 'Web', ext: 'm4a',
+        ref: 'yt:youtube:abcdefghijk', videoId: 'abcdefghijk');
+    const local = JamItem(id: 2, ownerDeviceId: 'host', title: 'Locale', ext: 'mp3', ref: '7');
+
+    Future<(DownloadIndex, Harness)> openMenu(WidgetTester tester, JamItem it) async {
+      final idx = DownloadIndex(File('${Directory.systemTemp.path}/no-such-downloads.json'));
+      final h = await Harness.create(tester);
+      await h.pump(
+        tester,
+        Scaffold(body: CustomScrollView(slivers: const [JamQueueSliver()])),
+        extraOverrides: [
+          downloadIndexProvider.overrideWith((ref) async => idx),
+          jamProvider.overrideWith(() => _FakeJam(JamUiState(
+                phase: JamPhase.active,
+                role: JamRole.host,
+                jam: JamState(version: 1, items: [it], hostDeviceId: 'host', outputDeviceId: 'host'),
+              ))),
+        ],
+      );
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      return (idx, h);
+    }
+
+    testWidgets('brano online non in libreria: c\'è; entra in libreria a foglio aperto: sparisce',
+        (tester) async {
+      final (idx, h) = await openMenu(tester, online);
+      expect(find.text('Scarica'), findsOneWidget);
+      final f = File('${Directory.systemTemp.path}/jam-dl-test.m4a')..writeAsStringSync('x');
+      addTearDown(() => f.existsSync() ? f.deleteSync() : null);
+      await tester.runAsync(() => idx.add('abcdefghijk', f.path));
+      ProviderScope.containerOf(tester.element(find.byType(JamQueueSliver)))
+          .invalidate(downloadIndexProvider);
+      await tester.pumpAndSettle();
+      expect(find.text('Scarica'), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('brano di libreria: non c\'è', (tester) async {
+      final (_, h) = await openMenu(tester, local);
+      expect(find.text('Salta qui'), findsOneWidget);
+      expect(find.text('Scarica'), findsNothing);
+      await h.dispose(tester);
+    });
   });
 }
