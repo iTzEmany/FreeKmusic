@@ -110,11 +110,11 @@ List<TrackActionGroup> onlineTrackActions(
     TrackActionGroup(l.groupCollection, [
       // Gone as soon as the entry is in the library, also with the sheet open (R-93).
       if (!entryInLibrary(ref, track.id))
-        TrackAction(Icons.download_rounded, l.ytDownload, () async {
-          if (entryInLibrary(ref, track.id)) return snack(l.ytAlreadyInLibrary);
-          final now = await actions.downloadEntry(track.id);
-          if (now != null) snack(now ? l.addedToLibrary : l.suggestionDownloadStarted);
-        }),
+        TrackAction(Icons.download_rounded, l.ytDownload, () => downloadOnline(
+              outer,
+              inLibrary: entryInLibrary(ref, track.id),
+              start: () => actions.downloadEntry(track.id),
+            )),
       TrackAction(Icons.playlist_add_rounded, l.addToPlaylist, () async {
         final picked = await pickPlaylist(outer, ref);
         if (picked == null) return;
@@ -399,6 +399,21 @@ Future<void> showTrackActions(
   });
 }
 
+/// «Scarica» of an online song: «already in the library», or [start] (null: no
+/// such entry; true: joined the library at once) and the matching message.
+Future<void> downloadOnline(
+  BuildContext context, {
+  required bool inLibrary,
+  required Future<bool?> Function() start,
+}) async {
+  final l = context.l10n;
+  if (inLibrary) return showMsg(context, l.ytAlreadyInLibrary);
+  final now = await start();
+  if (now != null && context.mounted) {
+    showMsg(context, now ? l.addedToLibrary : l.suggestionDownloadStarted);
+  }
+}
+
 /// Shows [groups] as an action sheet; the chosen action runs once it is closed.
 Future<void> showTrackActionGroups(
   BuildContext context,
@@ -577,17 +592,11 @@ List<TrackAction> onlineResultActions(
         showMsg(outer, now ? l.addedToPlaylist(picked.name) : l.suggestionAddWhenDownloaded(picked.name));
       }
     }),
-    TrackAction(Icons.download_rounded, l.ytDownload, () async {
-      if (ref
-              .read(downloadIndexProvider)
-              .value
-              ?.contains(r.id, source: r.source) ??
-          false) {
-        return showMsg(outer, l.ytAlreadyInLibrary);
-      }
-      final now = await ref.read(downloadsProvider.notifier).add(r);
-      if (outer.mounted) showMsg(outer, now ? l.addedToLibrary : l.suggestionDownloadStarted);
-    }),
+    TrackAction(Icons.download_rounded, l.ytDownload, () => downloadOnline(
+          outer,
+          inLibrary: ref.read(downloadIndexProvider).value?.contains(r.id, source: r.source) ?? false,
+          start: () => ref.read(downloadsProvider.notifier).add(r),
+        )),
     TrackAction(
       Icons.person_outline_rounded,
       l.goToArtist,

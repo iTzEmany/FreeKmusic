@@ -9,13 +9,14 @@ import '../../../providers/library_providers.dart' show artistsProvider;
 import '../../../providers/share_hub.dart';
 import '../../../providers/youtube_providers.dart' show downloadIndexProvider, downloadsProvider;
 import '../../../services/jam/jam_models.dart';
+import '../../../services/jam/jam_online_adder.dart' show jamYtResult;
 import '../../../services/online/artist_link_resolver.dart';
-import '../../../services/online/youtube_service.dart' show MediaSource, YtResult, smallVideoThumbnail;
+import '../../../services/online/youtube_service.dart' show smallVideoThumbnail;
 import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/net_thumbnail.dart';
-import '../../widgets/show_msg.dart';
+import '../../widgets/track_actions.dart' show downloadOnline;
 import '../../widgets/track_artists_sheet.dart';
 
 /// A curiosity as the owner sends it, «text\nurl»: the text without the source
@@ -149,34 +150,19 @@ class JamQueueRow extends ConsumerWidget {
   /// The ⋮ sheet; «Scarica» (as the player's) follows the download index while open (D-181).
   void _openMenu(BuildContext context, WidgetRef ref, List<ArtistName> artists) {
     final l = context.l10n;
-    final source = item.selfFetchable
-        ? MediaSource.values.firstWhere((m) => item.ref!.split(':')[1] == m.name)
-        : null;
-    bool inLibrary() =>
-        ref.read(downloadIndexProvider).value?.contains(item.videoId!, source: source!) ?? false;
-    List<List<CcAction<String>>> groups() => [
+    bool inLibrary() => ref.read(downloadIndexProvider).value?.contains(item.videoId!) ?? false;
+    List<List<CcAction<String>>> build() => [
           [
             CcAction(icon: Icons.near_me_outlined, label: l.jamJumpHere, onTap: onJump),
-            if (source != null && !inLibrary())
+            if (item.selfFetchable && !inLibrary())
               CcAction(
                 icon: Icons.download_rounded,
                 label: l.ytDownload,
-                onTap: () async {
-                  // As the player's online «Scarica» (track_actions.dart): same check and messages.
-                  if (inLibrary()) return showMsg(context, l.ytAlreadyInLibrary);
-                  final now = await ref.read(downloadsProvider.notifier).add(YtResult(
-                        id: item.videoId!,
-                        title: item.title,
-                        channel: item.artist ?? '',
-                        artists: [if (item.artist != null) item.artist!],
-                        album: item.album,
-                        duration: item.durationMs > 0 ? Duration(milliseconds: item.durationMs) : null,
-                        source: source,
-                      ));
-                  if (context.mounted) {
-                    showMsg(context, now ? l.addedToLibrary : l.suggestionDownloadStarted);
-                  }
-                },
+                onTap: () => downloadOnline(
+                  context,
+                  inLibrary: inLibrary(),
+                  start: () => ref.read(downloadsProvider.notifier).add(jamYtResult(item)),
+                ),
               ),
             if (artists.isNotEmpty)
               CcAction(
@@ -193,12 +179,15 @@ class JamQueueRow extends ConsumerWidget {
               ),
           ],
         ];
+    var last = build();
+    // The row may be gone while the sheet is open: keep the last groups then.
+    List<List<CcAction<String>>> groups() => context.mounted ? last = build() : last;
     final changed = ValueNotifier(0);
     final sub = ref.listenManual(downloadIndexProvider, (_, _) => changed.value++);
     showCcActionSheet<String>(
       context: context,
       title: item.title,
-      groups: groups(),
+      groups: last,
       refresh: changed,
       regroup: groups,
     ).whenComplete(() {
