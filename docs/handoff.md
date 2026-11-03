@@ -16,7 +16,7 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - L'app di misura `com.codecore.player.perf` è stata disinstallata dal Mi A3 da `flutter drive` (73.1): `perf_device.py` la reinstalla.
 
 ## Tocca a te
-- **73.2 con due telefoni Android** (R-159; senza Motorola non l'ho fatta, D-337): ingresso via Bluetooth (banner a 2 m, K-JD-06), «Amico» riconosciuto alla seconda Jam e «Accetta gli amici senza chiedere», ospite su 4G, host in pausa 10 min a schermo spento (K-JD-05), ospite in modalità aereo 1 min e 11 min. Esiti in `docs/fase-73-chiusura-jam-distanza.md`.
+- **Resto della 73.2** (fatta il 3/11, esiti in `fase-73-chiusura-jam-distanza.md`): ingresso col QR (serve la fotocamera), Sospendi/Blocca da un ospite remoto, riserva fra broker con due voci nella lista.
 - **Mosquitto 8886** (D-258): chiude ogni connessione dopo il CONNECT; toglierlo da `kDefaultJamBrokers` o sostituirlo.
 - Prova a mano del gate (sospensione di 15 minuti che scade; «Fino alla fine della Jam»); 69.4: «Scarica» che sparisce a foglio aperto.
 - Dalle fasi 66–68: fase 67 sul Motorola, scoperta su /16, fase 66 a mano, ascolto 57.7, APK di release con NewPipe, tag `v1.3.0`.
