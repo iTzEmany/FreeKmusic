@@ -151,7 +151,10 @@ void main() {
   var metered = false;
   var searches = 0;
   Future<void> Function(YtResult) prepareHook = (_) async {};
+  Future<void> Function(List<int>) enrichHook = (_) async {};
   final prepared = <String>[];
+  final enriched = <List<int>>[];
+  late ShufflePlusController Function({Duration? enrichTimeout}) make;
   const library = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
   Future<void> settle() async {
@@ -182,6 +185,8 @@ void main() {
     searches = 0;
     prepared.clear();
     prepareHook = (r) async => prepared.add(r.id);
+    enriched.clear();
+    enrichHook = (ids) async => enriched.add(ids);
     cfg = const ShufflePlusConfig(enabled: true);
     host = _Host([...library], [...library]);
     online = OnlineEntries();
@@ -195,7 +200,7 @@ void main() {
       await downloads.add('dl$id', '/m/$id.mp3');
     }
     final client = InnerTubeClient(Dio(BaseOptions(validateStatus: (_) => true))..httpClientAdapter = adapter);
-    controller = ShufflePlusController(
+    make = ({Duration? enrichTimeout}) => ShufflePlusController(
       host: host,
       online: online,
       log: log,
@@ -216,8 +221,11 @@ void main() {
       loadLibrary: () async => LibraryIndex(const []),
       hasDownload: (_) => false,
       prepare: (r) => prepareHook(r),
+      enrichSuggested: (ids) => enrichHook(ids),
+      enrichTimeout: enrichTimeout ?? ShufflePlusController.blockEnrichTimeout,
       now: () => now,
     );
+    controller = make();
     addTearDown(controller.dispose);
   });
 
@@ -334,6 +342,85 @@ void main() {
     await c.read(shufflePlusPrepareProvider)(r);
     expect(fake.asked, [r.indexKey]);
     expect(await TrackRepository(db).streamRow(r.indexKey), isNotNull);
+  });
+
+  test('prepare asks for the address only: it returns while the file is still downloading', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final fake = FakeStreamPreparer(TrackRepository(db), dir);
+    const r = YtResult(id: 'v9', title: 'T', channel: 'C', duration: null);
+    fake.urls[r.indexKey] = (Uri.parse('https://x/a'), const {});
+    fake.gates[r.indexKey] = Completer<void>(); // the file never arrives
+    final c = ProviderContainer(overrides: [streamPreparerProvider.overrideWithValue(fake)]);
+    addTearDown(c.dispose);
+    var done = false;
+    unawaited(c.read(shufflePlusPrepareProvider)(r).then((_) => done = true));
+    await pumpEventQueue();
+    expect(done, isTrue);
+    expect(fake.asked, isEmpty, reason: 'no wait for the whole file');
+  });
+
+  test('with the file never arriving, every free slot still fills from the addresses', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final fake = FakeStreamPreparer(TrackRepository(db), dir);
+    final c = ProviderContainer(overrides: [streamPreparerProvider.overrideWithValue(fake)]);
+    addTearDown(c.dispose);
+    prepareHook = (r) {
+      fake.urls[r.indexKey] = (Uri.parse('https://x/${r.id}'), const {});
+      fake.gates[r.indexKey] = Completer<void>();
+      return c.read(shufflePlusPrepareProvider)(r);
+    };
+    controller.start();
+    await until(() => host.queueIds.where(isOnlineId).length == 3);
+    expect(fake.asked, isEmpty);
+  });
+
+  test('after 3 suggestions their ids go to the enrichment and the next waits for it', () async {
+    final gate = Completer<void>();
+    enrichHook = (ids) async {
+      enriched.add(ids);
+      await gate.future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => enriched.isNotEmpty);
+    final first = host.queueIds.where(isOnlineId).toList();
+    expect(enriched.single, first);
+    expect(first, hasLength(3));
+    for (var i = 0; i < 5; i++) {
+      host.finishAndAdvance(); // a slot frees up
+      await settle();
+    }
+    expect(host.inserts, 3, reason: 'blocked while the block is enriched');
+    gate.complete();
+    await until(() => host.inserts > 3);
+  });
+
+  test('an enrichment that never ends holds the next suggestion only for the time limit', () async {
+    controller = make(enrichTimeout: const Duration(milliseconds: 30));
+    addTearDown(controller.dispose);
+    enrichHook = (ids) {
+      enriched.add(ids);
+      return Completer<void>().future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => enriched.isNotEmpty);
+    for (var i = 0; i < 5; i++) {
+      host.finishAndAdvance();
+      await settle();
+    }
+    await until(() => host.inserts > 3);
+    expect(enriched, hasLength(1));
   });
 
   test('a suggestion enters the queue only after its address is ready', () async {
