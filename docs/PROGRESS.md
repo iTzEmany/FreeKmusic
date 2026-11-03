@@ -1216,10 +1216,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 73.3 Chiusura (handoff aggiornato, pulizia del disco)
 
 ## Fase 74 — Coda della Jam e rifinitura (`fase-74-coda-jam-e-rifinitura.md`)
-- [ ] 74.1 Il «Suggerito» non ripropone i già suonati (KO R-102)
-- [ ] 74.2 Shuffle+ con la sorgente cambiata
-- [ ] 74.3 Shuffle+ e coda di prima intatti all'uscita dalla Jam
-- [ ] 74.4 «Scarica» nel ⋮ della Jam (R-93)
-- [ ] 74.5 La posizione della Jam non salta indietro
-- [ ] 74.6 Rifinitura della Jam a distanza
-- [ ] 74.7 Controlli di fase
+- [x] 74.1 Il «Suggerito» non ripropone i già suonati (KO R-102)
+- [x] 74.2 Shuffle+ con la sorgente cambiata
+- [x] 74.3 Shuffle+ e coda di prima intatti all'uscita dalla Jam
+- [x] 74.4 «Scarica» nel ⋮ della Jam (R-93)
+- [x] 74.5 La posizione della Jam non salta indietro
+- [x] 74.6 Rifinitura della Jam a distanza
+- [x] 74.7 Controlli di fase (analyze, mirato, code-review high, scheggia, review Opus; prova Linux + Mi A3 del 3/11, LAN da rifare a casa; esiti nella fase)

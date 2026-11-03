@@ -188,6 +188,7 @@ File scomparsi: `missing = true` **solo se la cartella radice è raggiungibile**
 | `transition` | string | `normal` | `normal`, `gapless`, `crossfade` (fase 18) |
 | `crossfadeSeconds` | int | 6 | 2–12 |
 | `crossfadePlainInAlbum` | bool | true | tra brani dello stesso album niente dissolvenza |
+| `jamAside` | string (JSON) | assente | coda di prima della Jam (ids, indice, posizione, `shuffle`, `plus`; per l'host solo la modalità): scritta all'ingresso in Jam e quando cambia la parte non suonata, rimessa al posto della coda normale all'avvio dopo una chiusura a Jam in corso, cancellata dopo il ripristino (fase 74, D-341, D-342) |
 
 Le vecchie impostazioni finte (crossfade, gapless, normalizzazione, "bit-perfect WASAPI", autoplay) **non** vengono portate.
 
