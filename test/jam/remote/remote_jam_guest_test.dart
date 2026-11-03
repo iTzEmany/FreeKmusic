@@ -44,6 +44,7 @@ void main() {
   var lostCount = 0;
   late List<FakeMqttLink> guestLinks;
   var failFirstConnects = 0;
+  Future<void>? failAfterGate;
 
   setUp(() async {
     net = FakeNet([a, b]);
@@ -58,10 +59,12 @@ void main() {
     lostCount = 0;
     guestLinks = [];
     failFirstConnects = 0;
+    failAfterGate = null;
     guest = RemoteJamGuest(
       protocol: guestP,
       linkFactory: () {
-        final l = FakeMqttLink(net)..failNext = guestLinks.isEmpty ? failFirstConnects : 0;
+        final l = FakeMqttLink(net)..failNext = guestLinks.isEmpty ? failFirstConnects : 0
+          ..failAfter = failAfterGate;
         guestLinks.add(l);
         return l;
       },
@@ -197,8 +200,26 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     expect(guestLinks.first.connectAttempts, [a, a]);
+    expect(guestLinks.first.connectFactors, [0.5, 0.5]);
     hostSend(JamMsg.accept, acceptBody(stateV(1)));
     expect(await f, JamJoinOutcome.accepted);
+  });
+
+  test('code: a cancel while the first connect fails does not start the second one', () async {
+    failFirstConnects = 1;
+    final gate = Completer<void>();
+    failAfterGate = gate.future;
+    final f = join(JamInvite.fromCode('abcd-2345')!);
+    for (var i = 0; i < 50 && guestLinks.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    for (var i = 0; i < 50 && guestLinks.first.connectAttempts.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    guest.cancelJoin();
+    gate.complete();
+    expect(await f, JamJoinOutcome.cancelled);
+    expect(guestLinks.first.connectAttempts, [a]);
   });
 
   JamInvite advert({List<BrokerEntry> brokers = const [a], Uint8List? fp}) => JamInvite(

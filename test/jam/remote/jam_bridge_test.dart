@@ -44,6 +44,7 @@ void main() {
       bridge.start();
       t.flushMicrotasks();
       expect(link.connectAttempts, [a, a]);
+      expect(link.connectFactors, [0.5, 0.5], reason: 'together they take one attempt\'s time');
       expect(bridge.broker, a);
       expect(seen, [JamBridgeStatus.up], reason: 'never "unreachable" for one timeout');
     });
@@ -84,6 +85,7 @@ void main() {
         }
         expect(bridge.status, JamBridgeStatus.unreachable);
         expect(link.connectAttempts.take(4), [a, a, b, a]);
+        expect(link.connectFactors.take(4), [0.5, 0.5, 1, 1]);
       });
     },
   );

@@ -47,6 +47,7 @@ class FakeMqttLink implements MqttLink {
   final FakeNet net;
   final subscribed = <String>{};
   final connectAttempts = <BrokerEntry>[];
+  final connectFactors = <double>[];
   final _msgs = StreamController<MqttIncoming>.broadcast();
   final _disc = StreamController<void>.broadcast();
   FakeBroker? _b;
@@ -57,13 +58,18 @@ class FakeMqttLink implements MqttLink {
   /// The next this-many connects fail (a timeout), whatever the broker.
   int failNext = 0;
 
+  /// A failing connect throws only after this resolves (a cancel can land in between).
+  Future<void>? failAfter;
+
   @override
-  Future<void> connect(BrokerEntry broker) async {
+  Future<void> connect(BrokerEntry broker, {double timeoutFactor = 1}) async {
+    connectFactors.add(timeoutFactor);
     _b?._links.remove(this);
     _b = null;
     connectAttempts.add(broker);
     if (failNext > 0) {
       failNext--;
+      await failAfter;
       throw StateError('timeout: $broker');
     }
     final h = hold;

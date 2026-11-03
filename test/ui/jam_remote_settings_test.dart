@@ -24,7 +24,7 @@ class FakeMqttLink implements MqttLink {
   bool disconnected = false;
 
   @override
-  Future<void> connect(BrokerEntry broker) async {
+  Future<void> connect(BrokerEntry broker, {double timeoutFactor = 1}) async {
     if (fail) throw StateError('bad certificate');
   }
 

@@ -242,11 +242,11 @@ class RemoteJamGuest implements JamGuestLink {
       });
       try {
         try {
-          await link.connect(b);
+          await link.connect(b, timeoutFactor: first ? 0.5 : 1);
         } on Object catch (e, st) {
-          if (!first) rethrow;
+          if (!first || _stopped) rethrow;
           AppLog.w('remote jam: first connect to $b failed, trying again', e, st);
-          await link.connect(b);
+          await link.connect(b, timeoutFactor: 0.5);
         } finally {
           first = false;
         }
