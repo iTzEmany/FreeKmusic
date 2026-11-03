@@ -5,6 +5,7 @@ import 'package:codecore/data/settings/jam_secret_store.dart';
 import 'package:codecore/services/jam/jam_gate.dart';
 import 'package:codecore/services/jam/jam_host.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
 void main() {
@@ -214,7 +215,7 @@ void main() {
       final s = FileJamSecretStore(dir.path);
       await Future.wait([for (var i = 0; i < 5; i++) s.write('k', 'v$i')]);
       expect(await FileJamSecretStore(dir.path).read('k'), 'v4');
-      expect(dir.listSync().map((e) => e.path.split('/').last), ['jam_secrets.json']);
+      expect(dir.listSync().map((e) => p.basename(e.path)), ['jam_secrets.json']);
     });
   });
 

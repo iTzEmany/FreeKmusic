@@ -561,6 +561,7 @@ void main() {
     await _quiet();
     await _quiet();
     expect(yt.started.length, lessThan(8));
+    await _until(() => yt.started.every((id) => prep.phases.value['youtube:$id'] == StreamPhase.ready));
     for (final id in yt.started) {
       expect(await cache.fileFor('youtube:$id'), isNotNull, reason: id);
     }

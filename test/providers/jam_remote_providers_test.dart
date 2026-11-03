@@ -183,7 +183,8 @@ void main() {
     addTearDown(() => server.close(force: true));
     var hits = 0;
     server.listen((r) {
-      hits++;
+      // The jam also fetches the item's meta on its own; count covers only.
+      if (r.uri.pathSegments.contains('cover')) hits++;
       r.response.add([1, 2, 3]);
       r.response.close();
     });
