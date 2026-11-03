@@ -650,7 +650,10 @@ class JamController extends Notifier<JamUiState> {
     _localHandler = handler;
     _mode = _shuffleMode(handler);
     // The live position: a paused player emits none, so the stream can be 0.
-    final position = handler.playbackState.value.position;
+    var position = handler.playbackState.value.position;
+    // audio_service extrapolates a playing position: past the track's end it is stale.
+    final length = handler.currentTrack?.durationMs ?? 0;
+    if (length > 0 && position.inMilliseconds >= length) position = Duration.zero;
     _saved = (
       ids: List.of(handler.queueIds),
       index: handler.currentIndex < 0 ? 0 : handler.currentIndex,
@@ -927,10 +930,32 @@ class JamController extends Notifier<JamUiState> {
     // Owner gone or not answering: an online track comes from its YouTube id.
     final sj = state.jam;
     if (sj != null && uri == null) {
-      final own = await _selfFetch(item);
-      if (own != null) return JamSource.local(own.path);
+      final own = await _selfSource(item, sj);
+      if (own != null) return own;
     }
     return _cache?.sourceFor(item, remote);
+  }
+
+  /// The item from its YouTube id. A synchronised Jam waits for the whole file; otherwise it
+  /// starts from the stream address as the player does (R-71) while the download goes on.
+  Future<JamSource?> _selfSource(JamItem item, JamState s) async {
+    if (s.synced || !item.selfFetchable) {
+      final f = await _selfFetch(item);
+      return f == null ? null : JamSource.local(f.path);
+    }
+    final p = ref.read(streamPreparerProvider);
+    final key = jamVideoKey(item), r = jamYtResult(item);
+    try {
+      final begin = await p.start(key, r);
+      final file = begin.file;
+      if (file != null) return JamSource.local(file.path);
+      unawaited(p.ready(key, r).then<void>((_) {},
+          onError: (Object e, StackTrace st) => AppLog.w('jam: own download of $key failed', e, st)));
+      return JamSource.remote(begin.url!, begin.headers);
+    } on Object catch (e, st) {
+      AppLog.w('jam: own start of $key failed', e, st);
+      return null;
+    }
   }
 
   /// The row of an item this device owns: library, or the shadow row of a `yt:` track.

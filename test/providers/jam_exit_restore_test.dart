@@ -11,6 +11,7 @@ import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_hub.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart';
+import 'package:codecore/services/audio/audio_backend.dart' show BackendState;
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/audio/playback_persistence.dart';
@@ -190,6 +191,17 @@ void main() {
     final h = await reopen();
     await PlaybackPersistence(h, store).restore();
     expect(store.readJamAside(), isNull);
+  });
+
+  test('a position past the end of the track is not saved either', () async {
+    await startIn(ShuffleMode.off);
+    backend.posC.add(const Duration(minutes: 4, seconds: 7)); // a stale, extrapolated position
+    backend.stateC.add(BackendState.paused);
+    await pumpEventQueue();
+    expect(handler.playbackState.value.position, const Duration(minutes: 4, seconds: 7));
+    await c.read(jamProvider.notifier).debugBegin(JamRole.guest, jamState);
+    expect(store.readPlayback().positionMs, 0);
+    expect(store.readJamAside()!.queue.positionMs, 0);
   });
 
   test('a position past the end of the track is not restored', () async {

@@ -109,19 +109,22 @@ List<JamItem> jamSelfFetchTargets(JamState s, String ownId, {Set<String> failed 
 /// (R-21). Null when it fails. shortcut: YouTube only, a SoundCloud row has no page address to rebuild.
 Future<File?> jamFetchByVideoId(
     JamItem item, Future<File> Function(String key, YtResult r) ready) async {
-  final key = item.ref!.substring('yt:'.length);
+  final key = jamVideoKey(item);
   try {
-    return await ready(
-        key,
-        YtResult(
-            id: item.videoId!,
-            title: item.title,
-            channel: item.artist ?? '',
-            artists: [if (item.artist != null) item.artist!],
-            album: item.album,
-            duration: Duration(milliseconds: item.durationMs)));
+    return await ready(key, jamYtResult(item));
   } on Object catch (e, st) {
     AppLog.w('jam: own download of $key failed', e, st);
     return null;
   }
 }
+
+/// The cache key of a `yt:` item.
+String jamVideoKey(JamItem item) => item.ref!.substring('yt:'.length);
+
+YtResult jamYtResult(JamItem item) => YtResult(
+    id: item.videoId!,
+    title: item.title,
+    channel: item.artist ?? '',
+    artists: [if (item.artist != null) item.artist!],
+    album: item.album,
+    duration: Duration(milliseconds: item.durationMs));
