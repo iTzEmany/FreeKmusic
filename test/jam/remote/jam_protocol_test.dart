@@ -481,6 +481,27 @@ void main() {
       expect(got.state!.items.first.title.length, 64);
     });
 
+    test('packed in an isolate (K-JD-09) opens to the same state', () async {
+      final (h, g) = pair();
+      final st = stateOf(bigItems(), current: 5);
+      final bytes = (await packStateOffThread(st))!;
+      expect(bytes, packState(st), reason: 'same bytes in and out of the isolate');
+      final got = g.open(h.sealPacked(JamMsg.state, bytes)!)!;
+      final plain = g.open(h.seal(JamMsg.state, {'state': host.fitState(st)!})!)!;
+      expect(got.state!.toJson(), plain.state!.toJson());
+      expect(got.state!.items, hasLength(200));
+    });
+
+    test('a state over the budget even cut packs to null', () {
+      final rnd = Random(3);
+      String t() => String.fromCharCodes(List.generate(64, (_) => 33 + rnd.nextInt(90)));
+      final heavy = [
+        for (var i = 0; i < 1200; i++)
+          item(i + 1, t(), artist: t(), album: t()),
+      ];
+      expect(packState(stateOf(heavy)), isNull);
+    });
+
     test('too big even cut: played items go, current is recomputed', () {
       final rnd = Random(9);
       const abc =
