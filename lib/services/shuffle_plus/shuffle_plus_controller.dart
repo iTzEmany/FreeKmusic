@@ -84,6 +84,10 @@ class ShufflePlusController {
   /// Longest the next suggestion waits for the enrichment of a block.
   static const blockEnrichTimeout = Duration(seconds: 60);
 
+  /// Longest an entry waits in the background for its file to be enriched; the
+  /// block does not wait that long ([blockEnrichTimeout]).
+  static const entryEnrichLimit = Duration(minutes: 10);
+
   final ShuffleHost host;
   final OnlineEntries online;
   final SuggestionLog log;
@@ -105,9 +109,10 @@ class ShufflePlusController {
   /// reaches its turn with a slow or failing address. Null: no preparation.
   final Future<void> Function(YtResult r)? prepare;
 
-  /// Enriches the queue entries [ids] (text, curiosities, credits), waiting no
-  /// longer than the given time; no new suggestion until it is done or [enrichTimeout]
-  /// has passed. Null: no enrichment.
+  /// Enriches the queue entries [ids] (text, curiosities, credits), each waiting
+  /// no longer than the given time for its file. No new suggestion until it is
+  /// done or [enrichTimeout] has passed; after that it goes on in the background.
+  /// Null: no enrichment.
   final Future<void> Function(List<int> ids, Duration within)? enrichSuggested;
   final Duration enrichTimeout;
   final DateTime Function() _now;
@@ -425,9 +430,9 @@ class ShufflePlusController {
     if (enrich == null) return;
     AppLog.i('shuffle+ enrich block ids=$ids');
     try {
-      await enrich(ids, enrichTimeout).timeout(enrichTimeout);
+      await enrich(ids, entryEnrichLimit).timeout(enrichTimeout);
     } on TimeoutException {
-      AppLog.w('shuffle+ enrich block timed out ids=$ids');
+      AppLog.w('shuffle+ enrich block timed out ids=$ids (the rest goes on in the background)');
     } on Object catch (e, st) {
       AppLog.w('shuffle+ enrich block failed ids=$ids', e, st);
     }

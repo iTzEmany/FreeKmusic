@@ -75,4 +75,10 @@ void main() {
     await run.timeout(const Duration(seconds: 2));
     expect(rig.chain.calls, 0);
   });
+
+  test('a row that never comes: the wait ends at its own time limit', () async {
+    final id = online.register(r, suggested: true);
+    await c.read(shufflePlusEnrichProvider)([id], const Duration(milliseconds: 100)).timeout(const Duration(seconds: 3));
+    expect(rig.chain.calls, 0);
+  });
 }

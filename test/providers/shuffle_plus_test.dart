@@ -152,6 +152,7 @@ void main() {
   var searches = 0;
   Future<void> Function(YtResult) prepareHook = (_) async {};
   Future<void> Function(List<int>) enrichHook = (_) async {};
+  final withins = <Duration>[];
   final prepared = <String>[];
   final enriched = <List<int>>[];
   late ShufflePlusController Function({Duration? enrichTimeout}) make;
@@ -186,6 +187,7 @@ void main() {
     prepared.clear();
     prepareHook = (r) async => prepared.add(r.id);
     enriched.clear();
+    withins.clear();
     enrichHook = (ids) async => enriched.add(ids);
     cfg = const ShufflePlusConfig(enabled: true);
     host = _Host([...library], [...library]);
@@ -221,7 +223,10 @@ void main() {
       loadLibrary: () async => LibraryIndex(const []),
       hasDownload: (_) => false,
       prepare: (r) => prepareHook(r),
-      enrichSuggested: (ids, _) => enrichHook(ids),
+      enrichSuggested: (ids, within) {
+        withins.add(within);
+        return enrichHook(ids);
+      },
       enrichTimeout: enrichTimeout ?? ShufflePlusController.blockEnrichTimeout,
       now: () => now,
     );
@@ -482,6 +487,8 @@ void main() {
     }
     await until(() => host.inserts > 3);
     expect(enriched, hasLength(1));
+    expect(withins.single, ShufflePlusController.entryEnrichLimit,
+        reason: 'entries keep waiting in the background after the block is released');
   });
 
   test('a suggestion enters the queue only after its address is ready', () async {

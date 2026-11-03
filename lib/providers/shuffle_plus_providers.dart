@@ -150,7 +150,8 @@ final shufflePlusPrepareProvider = Provider<Future<void> Function(YtResult)>(
 /// Enriches queued suggestions (D-353): each one as soon as its file has made
 /// the shadow row (nothing binds the row to the entry before the entry loads,
 /// so it is read by key). Entries forgotten meanwhile and downloads that
-/// failed are skipped; nothing waits longer than the given time.
+/// failed are skipped; no entry waits longer than the given time. The wait
+/// outlives the block's own time limit, so a slow file is still enriched.
 final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>, Duration)>((ref) {
   Future<void> one(int id, Duration within) async {
     final online = ref.read(onlineEntriesProvider);
@@ -160,8 +161,18 @@ final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>, Dura
     for (var e = online?.entryOf(id); e != null; e = online?.entryOf(id)) {
       final key = e.result.indexKey;
       final row = await tracks.streamRow(key);
-      if (row != null) return ref.read(streamEnrichRowProvider)(row.id);
-      if (preparer.phases.value[key] == StreamPhase.failed || !DateTime.now().isBefore(end)) return;
+      if (row != null) {
+        AppLog.i('shuffle+ enrich of $id row=${row.id}');
+        return ref.read(streamEnrichRowProvider)(row.id);
+      }
+      if (preparer.phases.value[key] == StreamPhase.failed) {
+        AppLog.w('shuffle+ enrich of $id: the download failed');
+        return;
+      }
+      if (!DateTime.now().isBefore(end)) {
+        AppLog.w('shuffle+ enrich of $id: no file in time');
+        return;
+      }
       final next = Completer<void>();
       void wake() {
         if (!next.isCompleted) next.complete();
