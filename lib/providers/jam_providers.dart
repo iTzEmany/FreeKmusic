@@ -877,6 +877,7 @@ class JamController extends Notifier<JamUiState> {
     _precache(s);
     _syncPins(s);
     _adder?.seen(s.items);
+    _part.notePlayed(s);
     unawaited(_part.feeder?.update(s));
     // Our part moved on: what the disk keeps for a closed app follows it (D-341).
     if (_saved != null && !listEquals(_part.unplayed(s), _asidePart)) unawaited(_keepAside());

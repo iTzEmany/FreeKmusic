@@ -140,15 +140,20 @@ class JamPart {
         videoId: (await downloads()).idForPath(t.path));
   }
 
+  /// Remembers what [s] has played; called on every state, as the host trims old entries.
+  void notePlayed(JamState s) {
+    final own = ownId();
+    for (final i in s.items.take(s.currentIndex + 1)) {
+      if (i.ownerDeviceId == own) _playedIds.addAll([?int.tryParse(i.ref ?? '')]);
+      _playedKeys.add(suggestionKey(i.title, i.artist));
+    }
+  }
+
   /// A track for a part that ran out: by the genres of our queue from before, none played in this Jam.
   Future<JamItem?> _suggestion(JamState s) async {
     final q = queries(), own = ownId();
     final genres = _genres ??= await q.genreCounts(_beforeIds);
-    final played = s.items.take(s.currentIndex + 1);
-    for (final i in played) {
-      if (i.ownerDeviceId == own) _playedIds.addAll([?int.tryParse(i.ref ?? '')]);
-      _playedKeys.add(suggestionKey(i.title, i.artist));
-    }
+    notePlayed(s);
     final t = await pickSuggestion<Track>(
       genreWeights: genres,
       random: _random,
