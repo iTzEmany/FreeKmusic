@@ -80,12 +80,15 @@ class JamBridgeHost {
   bool _codeBusy = false;
   int _advWindow = -1;
   bool _advOn = false; // believed to be announcing
-  int _sentVersion = -1;
-  // The one pack of the latest state version, shared by every channel, and the
-  // delivery that follows it (a RESULT waits for it to keep STATE first).
-  int _packV = -1;
-  Future<Uint8List?>? _packed;
-  Future<void>? _delivery;
+  // STATE delivery (K-JD-09). One pack at a time, of the latest version, shared
+  // by every channel; the cheap AEAD is then done per channel on this thread.
+  int _delivered = -1; // latest version sealed and published to the channels
+  Object? _packToken; // set while a pack is in flight (identifies it)
+  int _packedV = -1;
+  Uint8List? _packedBytes; // the pack of [_packedV]
+  final _want = <String, JamChannel>{}; // member id -> channel owed the latest STATE
+  final _has = <String, int>{}; // member id -> latest version sent to it
+  final _waiting = <(int, void Function())>[]; // RESULTs waiting for their STATE
   int _rateSec = 0, _rateN = 0;
   late DateTime _lastPing;
   Timer? _timer;
@@ -142,7 +145,7 @@ class JamBridgeHost {
     final s = _s = protocol.newHostSecrets();
     _ownAk = friends == null ? protocol.crypto.randomBytes(32) : null;
     _lastPing = _now();
-    _sentVersion = -1;
+    _resetDelivery();
     bridge.subscribe(JamProtocol.requestTopic(s.jamId));
     _subs
       ..add(bridge.messages.listen(_onMessage))
@@ -386,25 +389,25 @@ class JamBridgeHost {
           'req': m.body['req'],
           if (r.isOk) 'v': r.state!.version else 'err': r.error!.name,
         };
-        final d = _delivery;
-        if (r.isOk && d != null && _packV == r.state!.version) {
-          // The new STATE goes out before the RESULT: wait for its delivery
-          // (it never fails: errors are logged there).
-          final s = _s;
-          unawaited(d.whenComplete(() {
-            if (_s != s || _members[id] != ch) {
+        final v = r.isOk ? r.state!.version : -1;
+        if (v > _delivered) {
+          // The new STATE goes out before the RESULT: wait for its delivery.
+          _waiting.add((v, () {
+            if (_members[id] != ch) {
               AppLog.d('jam bridge: RESULT dropped, member gone');
               return;
             }
             _send(ch, JamMsg.result, result);
           }));
+          _pump(); // the delivery of v may need a pack that nobody asked for
         } else {
           _send(ch, JamMsg.result, result);
         }
       case JamMsg.sync:
         final st = host.state;
         if (st != null && (m.body['v'] as int) < st.version) {
-          _sendState([id], st);
+          _has[id] = -1; // the guest lacks it, whatever we believed
+          _sendState([id]);
         } else {
           _send(ch, JamMsg.ping, {'v': st?.version ?? 0, 't': _ms}); // alive
         }
@@ -421,13 +424,12 @@ class JamBridgeHost {
 
   void _onChanges() {
     if (_s == null) return;
-    final fresh = <String>{};
     for (final id in [..._pending.keys]) {
       final r = host.requests[id];
       if (r != null && r.status == JamRequestStatus.pending) continue;
       final ch = _pending.remove(id)!;
       if (r != null && r.status == JamRequestStatus.accepted) {
-        if (_accept(r.fromId, ch)) fresh.add(r.fromId);
+        _accept(r.fromId, ch);
       } else {
         if (r != null && r.status == JamRequestStatus.declined) {
           _send(ch, JamMsg.no, {'why': 'declined'});
@@ -443,12 +445,11 @@ class JamBridgeHost {
             st?.participant(id)?.remote != true)
           id,
     ];
-    if (st != null && st.version != _sentVersion) {
-      _sentVersion = st.version;
+    if (st != null) {
       _sendState([
         for (final e in _live)
-          if (!fresh.contains(e.key) && !gone.contains(e.key)) e.key,
-      ], st);
+          if (!gone.contains(e.key)) e.key,
+      ]);
     }
     final why = (st?.ended ?? true) ? 'ended' : 'removed';
     for (final id in gone) {
@@ -469,6 +470,7 @@ class JamBridgeHost {
     }
     if (_members.containsKey(id)) _release(id);
     _members[id] = ch;
+    _has[id] = st!.version;
     bridge.subscribe(ch.recvTopic);
     final b = ch.seal(JamMsg.accept, {
       'host': host.deviceId,
@@ -508,6 +510,8 @@ class JamBridgeHost {
   void _release(String id) {
     final ch = _members.remove(id);
     _unsent.remove(id);
+    _has.remove(id);
+    _want.remove(id);
     if (ch == null) return;
     bridge.unsubscribe(ch.recvTopic);
     ch.dispose();
@@ -524,61 +528,125 @@ class JamBridgeHost {
     return bridge.publish(ch.sendTopic, b);
   }
 
-  /// STATE of [st] to the members [ids]. JSON, fit and zlib run once per
-  /// version (off the UI thread when big, K-JD-09); when the pack is ready
-  /// each member costs only an AEAD. A pack superseded by a newer version, or
-  /// finished after [stop], is dropped.
-  void _sendState(Iterable<String> ids, JamState st) {
-    final s = _s;
-    if (s == null || ids.isEmpty) return;
-    if (_packV != st.version || _packed == null) {
-      _packV = st.version;
-      _packed = pack(st).catchError((Object e, StackTrace t) {
-        AppLog.w('jam bridge: state pack failed', e, t);
-        if (_packV == st.version) _packV = -1; // the next change or SYNC packs again
-        return null;
-      });
-    }
-    final v = st.version;
-    late final Future<void> d;
-    d = _packed!.then((bytes) {
-      if (identical(_delivery, d)) _delivery = null;
-      if (_s != s) {
-        AppLog.d('jam bridge: state $v packed after stop, dropped');
-        return;
-      }
-      if (bytes == null) {
-        AppLog.w('jam bridge: state too big or not packed, not sent');
-        return;
-      }
-      if (_packV != v) {
-        AppLog.d('jam bridge: state $v superseded, dropped');
-        return;
-      }
-      for (final id in ids) {
-        final ch = _members[id];
-        if (ch == null || _unsent.containsKey(id)) {
-          AppLog.d('jam bridge: member $id gone, state $v skipped');
-          continue;
-        }
-        _sealState(ch, bytes);
-      }
-    }).catchError((Object e, StackTrace t) {
-      AppLog.w('jam bridge: state delivery failed', e, t);
-    });
-    _delivery = d;
+  void _resetDelivery() {
+    _delivered = -1;
+    _packToken = null; // a pack still in flight is ignored when it ends
+    _packedV = -1;
+    _packedBytes = null;
+    _want.clear();
+    _has.clear();
+    _waiting.clear();
   }
 
-  void _sealState(JamChannel ch, Uint8List bytes) {
+  /// Owes the latest STATE to the members [ids] (their channels now: a member
+  /// that rejoins meanwhile has another one and is skipped).
+  void _sendState(Iterable<String> ids) {
+    for (final id in ids) {
+      final ch = _members[id];
+      if (ch != null) _want[id] = ch;
+    }
+    _pump();
+  }
+
+  /// Delivers what is owed, packing the latest version if needed. At most one
+  /// pack runs; versions that pile up meanwhile cost one more pack, not one
+  /// each.
+  void _pump() {
+    final s = _s, st = host.state;
+    if (s == null || st == null || _packToken != null) return;
+    _want.removeWhere((id, _) => (_has[id] ?? -1) >= st.version);
+    if (_want.isEmpty && !_waiting.any((w) => w.$1 > _delivered)) return;
+    final bytes = _packedBytes;
+    if (_packedV == st.version && bytes != null) {
+      _deliver(st.version, bytes);
+    } else {
+      unawaited(_runPack(s, st));
+    }
+  }
+
+  Future<void> _runPack(JamHostSecrets s, JamState st) async {
+    final token = _packToken = Object();
+    var again = false;
+    try {
+      Uint8List? bytes;
+      var failed = false;
+      try {
+        bytes = await pack(st);
+      } on Object catch (e, t) {
+        AppLog.w('jam bridge: state pack failed', e, t);
+        failed = true;
+      }
+      if (_s != s || !identical(_packToken, token)) {
+        AppLog.d('jam bridge: state ${st.version} packed after stop, dropped');
+        return;
+      }
+      final cur = host.state;
+      if (cur == null) return;
+      if (cur.version != st.version) {
+        AppLog.d('jam bridge: state ${st.version} superseded, packing ${cur.version}');
+        again = true;
+        return;
+      }
+      if (failed) bytes = _packInline(cur); // RESULTs must not wait for ever
+      if (bytes != null) {
+        _packedV = cur.version;
+        _packedBytes = bytes;
+      }
+      _deliver(cur.version, bytes);
+    } on Object catch (e, t) {
+      AppLog.w('jam bridge: state delivery failed', e, t);
+    } finally {
+      if (identical(_packToken, token)) _packToken = null;
+      if (again && _s == s) _pump();
+    }
+  }
+
+  Uint8List? _packInline(JamState st) {
+    try {
+      return packState(st);
+    } on Object catch (e, t) {
+      AppLog.w('jam bridge: inline state pack failed', e, t);
+      return null;
+    }
+  }
+
+  /// Seals and publishes [bytes] (version [v]) to the members owed it, then
+  /// lets the RESULTs that waited for it go out. [bytes] null: too big or not
+  /// packable, nothing is sent but the RESULTs are not held back.
+  void _deliver(int v, Uint8List? bytes) {
+    final want = {..._want};
+    _want.clear();
+    if (bytes == null) {
+      AppLog.w('jam bridge: state $v too big or not packed, not sent');
+    } else {
+      for (final e in want.entries) {
+        final ch = _members[e.key];
+        if (ch != e.value || _unsent.containsKey(e.key)) {
+          AppLog.d('jam bridge: member ${e.key} changed, state $v skipped');
+        } else if (_sealState(ch!, bytes)) {
+          _has[e.key] = v;
+        }
+      }
+    }
+    if (v > _delivered) _delivered = v;
+    final due = _waiting.where((w) => w.$1 <= _delivered).toList();
+    _waiting.removeWhere((w) => w.$1 <= _delivered);
+    for (final w in due) {
+      w.$2();
+    }
+  }
+
+  bool _sealState(JamChannel ch, Uint8List bytes) {
     try {
       final b = ch.sealPacked(JamMsg.state, bytes);
       if (b == null) {
         AppLog.w('jam bridge: state too big, not sent');
-      } else {
-        bridge.publish(ch.sendTopic, b);
+        return false;
       }
+      return bridge.publish(ch.sendTopic, b);
     } on StateError catch (e, t) {
       AppLog.w('jam bridge: state not sent, channel released', e, t);
+      return false;
     }
   }
 
@@ -595,8 +663,10 @@ class JamBridgeHost {
         _unsent.remove(e.key);
       }
     }
-    final st = host.state;
-    if (st != null) _sendState([for (final e in _live) e.key], st);
+    for (final id in _members.keys) {
+      _has[id] = -1; // the broker may have lost what we sent: all again
+    }
+    _sendState([for (final e in _live) e.key]);
   }
 
   // ---- off -----------------------------------------------------------------
@@ -613,18 +683,20 @@ class JamBridgeHost {
       unawaited(x.cancel());
     }
     _subs.clear();
+    // Whatever is in flight, the guests must get the latest STATE (`ended`
+    // above all) before the channels go: packed and sealed here, in line.
     final st = host.state;
-    if (st != null && st.ended && st.version != _sentVersion) {
-      // Synchronous: the channels are released right below.
-      final bytes = packState(st);
+    if (st != null && _delivered < st.version) {
+      final bytes = _packedV == st.version ? _packedBytes : _packInline(st);
       if (bytes == null) {
         AppLog.w('jam bridge: final state too big, not sent');
       } else {
         for (final e in _live) {
-          _sealState(e.value, bytes);
+          if ((_has[e.key] ?? -1) < st.version) _sealState(e.value, bytes);
         }
       }
     }
+    _resetDelivery();
     _retain(JamProtocol.lobbyTopic(s.jamId), Uint8List(0));
     _clearGone();
     _codeGen++;

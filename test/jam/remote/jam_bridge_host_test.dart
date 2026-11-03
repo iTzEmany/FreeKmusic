@@ -158,6 +158,7 @@ void main() {
     final log = JamDropLog(now: () => clock, sink: drops.add);
     protocol = JamProtocol(crypto, drops: log);
     guestProtocol = JamProtocol(base, drops: log);
+    packFn = packStateOffThread;
     net = FakeNet([entry]);
     host = JamHost(deviceId: 'host', deviceName: 'Host', now: () => clock);
     bridge = JamBridge(FakeMqttLink(net), [entry], waits: const [Duration(milliseconds: 5)]);
@@ -622,6 +623,15 @@ void main() {
 
     void release(int i) => held[i].$2.complete(packState(held[i].$1));
 
+    // Completes every held pack, also the ones started by the releases.
+    Future<void> drain() async {
+      for (var i = 0; i < held.length; i++) {
+        if (!held[i].$2.isCompleted) release(i);
+        await pumpEventQueue();
+      }
+    }
+
+
     int versionOf(Guest g) => g.of(JamMsg.state).last.state!.version;
 
     test('every guest (4 is the maximum): one pack per version, every guest gets it', () async {
@@ -675,10 +685,7 @@ void main() {
       await pumpEventQueue();
       expect(g.of(JamMsg.bye).single.body['why'], 'removed');
       final n = g.of(JamMsg.state).length;
-      for (var i = 0; i < held.length; i++) {
-        release(i);
-      }
-      await pumpEventQueue();
+      await drain();
       expect(g.of(JamMsg.state).length, n);
       expect(versionOf(other), host.state!.version);
     });
@@ -701,20 +708,6 @@ void main() {
       expect(bh.currentQr(), isNotNull);
     });
 
-    test('a failing pack is logged, nothing is thrown, teardown works', () async {
-      final g = await joined('dev-1');
-      packFn = (_) => Future.error(StateError('isolate died'));
-      final n = g.of(JamMsg.state).length;
-      host.apply(const JamCommand.volume(0.3));
-      await pumpEventQueue();
-      expect(g.of(JamMsg.state).length, n);
-      g.send(JamMsg.cmd, {'req': 'r', 'cmd': const JamCommand.volume(0.5).toJson()});
-      await pumpEventQueue();
-      expect(g.of(JamMsg.result), isNotEmpty, reason: 'the RESULT goes out anyway');
-      await bh.stop();
-      expect(bh.running, isFalse);
-    });
-
     test('a pack superseded by a newer version is not published', () async {
       final g = await joined('dev-1');
       hold();
@@ -722,10 +715,117 @@ void main() {
       await pumpEventQueue();
       host.apply(const JamCommand.volume(0.6));
       await pumpEventQueue();
-      expect(calls, 2);
+      expect(calls, 1, reason: 'one pack in flight at a time');
       final n = g.of(JamMsg.state).length;
       release(0);
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).length, n, reason: 'old version dropped');
+      expect(calls, 2);
       release(1);
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).length, n + 1);
+      expect(versionOf(g), host.state!.version);
+    });
+
+    test('a burst of 10 versions during a held pack costs at most 2 packs', () async {
+      final g = await joined('dev-1');
+      hold();
+      for (var i = 1; i <= 10; i++) {
+        host.apply(JamCommand.volume(i / 20));
+        await pumpEventQueue();
+      }
+      await drain();
+      expect(calls, lessThanOrEqualTo(2));
+      expect(versionOf(g), host.state!.version);
+    });
+
+    test('the end of the Jam during a held pack still reaches the guest', () async {
+      final g = await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      host.endSession();
+      await bh.stop();
+      expect(g.of(JamMsg.state).last.state!.ended, isTrue);
+      release(0);
+      await pumpEventQueue();
+      expect(g.of(JamMsg.state).where((m) => m.state!.ended), hasLength(1));
+    });
+
+    test('a RESULT whose version was superseded waits for a STATE at least as new', () async {
+      final g = await joined('dev-1');
+      hold();
+      g.send(JamMsg.cmd, {'req': 'r', 'cmd': const JamCommand.volume(0.5).toJson()});
+      await pumpEventQueue();
+      host.apply(const JamCommand.volume(0.7));
+      await pumpEventQueue();
+      release(0);
+      await pumpEventQueue();
+      expect(g.of(JamMsg.result), isEmpty, reason: 'no STATE >= v published yet');
+      await drain();
+      final i = g.inbox.indexWhere((m) => m.type == JamMsg.result);
+      expect(i, greaterThan(0));
+      final v = g.inbox[i].body['v'] as int;
+      expect(g.inbox.take(i).any((m) => m.type == JamMsg.state && m.state!.version >= v), isTrue);
+    });
+
+    test('a failing pack: inline STATE, then the RESULT', () async {
+      final g = await joined('dev-1');
+      packFn = (_) => Future.error(StateError('isolate died'));
+      g.send(JamMsg.cmd, {'req': 'r', 'cmd': const JamCommand.volume(0.5).toJson()});
+      await pumpEventQueue();
+      final i = g.inbox.indexWhere((m) => m.type == JamMsg.result);
+      expect(i, greaterThan(0));
+      expect(g.inbox[i - 1].type, JamMsg.state);
+      expect(g.inbox[i - 1].state!.version, g.inbox[i].body['v']);
+      await bh.stop(); // nothing thrown, teardown works
+      expect(bh.running, isFalse);
+    });
+
+    test('a member that rejoins with a new channel gets no STATE meant for the old one', () async {
+      final old = await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      final fresh = await guest('dev-1');
+      host.accept(host.requests.values.lastWhere((r) => r.fromId == 'dev-1').id);
+      await pumpEventQueue();
+      final nOld = old.of(JamMsg.state).length;
+      final nNew = fresh.of(JamMsg.state).length;
+      await drain();
+      expect(old.of(JamMsg.state).length, nOld);
+      expect(fresh.of(JamMsg.state).length, nNew + 1, reason: 'one current STATE, on its own channel');
+      expect(versionOf(fresh), host.state!.version);
+    });
+
+    test('SYNC while its STATE is pending gives a single delivery', () async {
+      final g = await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      final n = g.of(JamMsg.state).length;
+      g.send(JamMsg.sync, {'v': 0});
+      g.send(JamMsg.sync, {'v': 0});
+      await pumpEventQueue();
+      await drain();
+      expect(g.of(JamMsg.state).length, n + 1);
+    });
+
+    test('stop and start on the same instance leave a clean state', () async {
+      await joined('dev-1');
+      hold();
+      host.apply(const JamCommand.volume(0.3));
+      await pumpEventQueue();
+      await bh.stop();
+      bh.start();
+      await pumpEventQueue();
+      qr = guestProtocol.decodeQr(bh.currentQr()!)!;
+      packFn = packStateOffThread;
+      final g = await joined('dev-2');
+      release(0); // the old session's pack ends now: ignored
+      await pumpEventQueue();
+      final n = g.of(JamMsg.state).length;
+      host.apply(const JamCommand.volume(0.9));
       await pumpEventQueue();
       expect(g.of(JamMsg.state).length, n + 1);
       expect(versionOf(g), host.state!.version);

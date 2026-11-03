@@ -241,7 +241,8 @@ class JamChannel {
   /// Null when the envelope would pass [JamWire.maxEnvelope]; the counter is
   /// then not consumed.
   Uint8List? seal(int type, Object? body) {
-    return sealPacked(type, _pack(body));
+    _live();
+    return _finishSeal(type, _pack(body));
   }
 
   /// Seals a body already framed by [packState]: only the cheap AEAD runs here.
@@ -996,24 +997,26 @@ class JamProtocol {
   /// compressed, titles, artists and albums are cut to 64 characters, and if
   /// that is not enough the already played items go (`current` recomputed).
   /// Null when it still does not fit: the caller must not send that state.
-  Map<String, Object?>? fitState(JamState s) => _fitState(s);
+  Map<String, Object?>? fitState(JamState s) => _fit(s)?.json;
 }
 
 /// Flag byte (1 = zlib) followed by the JSON of [body], compressed when that
 /// pays; top level so that it can run in an isolate.
-Uint8List _pack(Object? body) {
-  var raw = Uint8List.fromList(utf8.encode(jsonEncode(body)));
-  var flag = 0;
+Uint8List _pack(Object? body) =>
+    _frame(Uint8List.fromList(utf8.encode(jsonEncode(body))));
+
+/// The one framing of a body: [raw] as is, or its zlib ([z] when already
+/// known) when it is over 256 B and that is smaller.
+Uint8List _frame(Uint8List raw, [Uint8List? z]) {
   if (raw.length > 256) {
-    final z = Uint8List.fromList(ZLibCodec().encode(raw));
+    z ??= Uint8List.fromList(ZLibCodec().encode(raw));
     if (z.length < raw.length) {
-      raw = z;
-      flag = 1;
+      return Uint8List(z.length + 1)
+        ..[0] = 1
+        ..setAll(1, z);
     }
   }
-  return Uint8List(raw.length + 1)
-    ..[0] = flag
-    ..setAll(1, raw);
+  return Uint8List(raw.length + 1)..setAll(1, raw);
 }
 
 /// Items from which a STATE is packed in an isolate (K-JD-09).
@@ -1024,12 +1027,7 @@ const _isolateItems = 40;
 /// fit. JSON and zlib run once. Pure, so it can run in an isolate.
 Uint8List? packState(JamState s) {
   final f = _fit(s);
-  if (f == null) return null;
-  final z = f.raw.length > 256 && f.z.length < f.raw.length;
-  final body = z ? f.z : f.raw;
-  return Uint8List(body.length + 1)
-    ..[0] = z ? 1 : 0
-    ..setAll(1, body);
+  return f == null ? null : _frame(f.raw, f.z);
 }
 
 /// [packState] off the UI thread for a big list (a short one costs less than
@@ -1039,14 +1037,17 @@ Future<Uint8List?> packStateOffThread(JamState s) =>
     ? Future.sync(() => packState(s))
     : Isolate.run(() => packState(s));
 
-typedef _Fitted = ({Map<String, Object?> json, Uint8List raw, Uint8List z});
-
-Map<String, Object?>? _fitState(JamState s) => _fit(s)?.json;
+/// [z] is null when the JSON is so small that it surely fits (not computed).
+typedef _Fitted = ({Map<String, Object?> json, Uint8List raw, Uint8List? z});
 
 /// [s] as JSON that fits the budget once compressed, with its bytes.
 _Fitted? _fit(JamState s) {
   _Fitted? fits(Map<String, Object?> j) {
     final raw = Uint8List.fromList(utf8.encode(jsonEncode({'state': j})));
+    // Deflate adds a few bytes at worst: well under the budget needs no zlib.
+    if (raw.length <= JamWire.stateBudget - 1024) {
+      return (json: j, raw: raw, z: null);
+    }
     final z = Uint8List.fromList(ZLibCodec().encode(raw));
     return z.length <= JamWire.stateBudget ? (json: j, raw: raw, z: z) : null;
   }
