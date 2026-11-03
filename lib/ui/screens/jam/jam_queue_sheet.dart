@@ -43,20 +43,32 @@ class JamQueueSheet extends StatelessWidget {
 
 /// Title and rows with ⋮ («Salta qui», «Rimuovi») and ≡ (drag to move): the
 /// sheet's body, and the desktop's side panel.
-class JamQueueSliver extends ConsumerWidget {
+class JamQueueSliver extends ConsumerStatefulWidget {
   const JamQueueSliver({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JamQueueSliver> createState() => _JamQueueSliverState();
+}
+
+class _JamQueueSliverState extends ConsumerState<JamQueueSliver> {
+  /// Names seen while open: a guest who left is no longer among the participants.
+  final _seen = <String, String>{};
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final s = ref.watch(jamProvider);
     final jam = s.jam;
     final ctrl = ref.read(jamProvider.notifier);
     final ownId = ref.read(shareHubProvider.notifier).deviceId ?? '';
+    for (final p in jam?.participants ?? const <JamParticipant>[]) {
+      if (p.name.isNotEmpty) _seen[p.id] = p.name;
+    }
     String owner(JamItem i) {
       if (i.ownerDeviceId == ownId) return l.jamYou;
       final n = jam?.nameOf(i.ownerDeviceId) ?? '';
-      return n.isEmpty ? s.peerName : n;
+      if (n.isNotEmpty) return n;
+      return _seen[i.ownerDeviceId] ?? (s.peerName.isEmpty ? l.jamGuest : s.peerName);
     }
 
     final together = jam?.mode == JamMode.together;

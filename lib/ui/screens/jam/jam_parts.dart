@@ -7,13 +7,16 @@ import '../../../providers/import_providers.dart';
 import '../../../providers/jam_providers.dart' show jamProvider, jamTrackCoverProvider;
 import '../../../providers/library_providers.dart' show artistsProvider;
 import '../../../providers/share_hub.dart';
+import '../../../providers/youtube_providers.dart' show downloadIndexProvider, downloadsProvider;
 import '../../../services/jam/jam_models.dart';
+import '../../../services/jam/jam_online_adder.dart' show jamYtResult;
 import '../../../services/online/artist_link_resolver.dart';
 import '../../../services/online/youtube_service.dart' show smallVideoThumbnail;
 import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/net_thumbnail.dart';
+import '../../widgets/track_actions.dart' show downloadOnline;
 import '../../widgets/track_artists_sheet.dart';
 
 /// A curiosity as the owner sends it, «text\nurl»: the text without the source
@@ -144,6 +147,55 @@ class JamQueueRow extends ConsumerWidget {
   /// «Rimuovi» in the ⋮ sheet; null where the removal is not allowed.
   final VoidCallback? onRemove;
 
+  /// The ⋮ sheet; «Scarica» (as the player's) follows the download index while open (D-181).
+  void _openMenu(BuildContext context, WidgetRef ref, List<ArtistName> artists) {
+    final l = context.l10n;
+    bool inLibrary() => ref.read(downloadIndexProvider).value?.contains(item.videoId!) ?? false;
+    List<List<CcAction<String>>> build() => [
+          [
+            CcAction(icon: Icons.near_me_outlined, label: l.jamJumpHere, onTap: onJump),
+            if (item.selfFetchable && !inLibrary())
+              CcAction(
+                icon: Icons.download_rounded,
+                label: l.ytDownload,
+                onTap: () => downloadOnline(
+                  context,
+                  inLibrary: inLibrary(),
+                  start: () => ref.read(downloadsProvider.notifier).add(jamYtResult(item)),
+                ),
+              ),
+            if (artists.isNotEmpty)
+              CcAction(
+                icon: Icons.person_outline_rounded,
+                label: l.goToArtist,
+                onTap: () => goToArtists(context, ref, artists),
+              ),
+            if (onRemove != null)
+              CcAction(
+                icon: Icons.delete_outline_rounded,
+                label: l.removeFromList,
+                destructive: true,
+                onTap: onRemove,
+              ),
+          ],
+        ];
+    var last = build();
+    // The row may be gone while the sheet is open: keep the last groups then.
+    List<List<CcAction<String>>> groups() => context.mounted ? last = build() : last;
+    final changed = ValueNotifier(0);
+    final sub = ref.listenManual(downloadIndexProvider, (_, _) => changed.value++);
+    showCcActionSheet<String>(
+      context: context,
+      title: item.title,
+      groups: last,
+      refresh: changed,
+      regroup: groups,
+    ).whenComplete(() {
+      sub.close();
+      changed.dispose();
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
@@ -209,32 +261,7 @@ class JamQueueRow extends ConsumerWidget {
               visualDensity: VisualDensity.standard,
               constraints: const BoxConstraints.tightFor(width: 48, height: 48),
               icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
-              onPressed: () => showCcActionSheet<String>(
-                context: context,
-                title: item.title,
-                groups: [
-                  [
-                    CcAction(
-                      icon: Icons.near_me_outlined,
-                      label: l.jamJumpHere,
-                      onTap: onJump,
-                    ),
-                    if (artists.isNotEmpty)
-                      CcAction(
-                        icon: Icons.person_outline_rounded,
-                        label: l.goToArtist,
-                        onTap: () => goToArtists(context, ref, artists),
-                      ),
-                    if (onRemove != null)
-                      CcAction(
-                        icon: Icons.delete_outline_rounded,
-                        label: l.removeFromList,
-                        destructive: true,
-                        onTap: onRemove,
-                      ),
-                  ],
-                ],
-              ),
+              onPressed: () => _openMenu(context, ref, artists),
             ),
             if (showHandle)
               ReorderableDragStartListener(

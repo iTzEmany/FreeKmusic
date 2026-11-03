@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -601,6 +602,36 @@ class SettingsStore {
     await _prefs.setBool('shuffle', s.shuffle);
     await _prefs.setString('repeat', s.repeat.name);
   }
+
+  /// The queue and shuffle mode a restart in the middle of a Jam must find (D-341);
+  /// an empty queue means: only the mode. [plus]: Shuffle+ rather than plain shuffle.
+  ({SavedPlayback queue, bool plus})? readJamAside() {
+    final raw = _prefs.getString('jamAside');
+    if (raw == null) return null;
+    final j = jsonDecode(raw) as Map<String, dynamic>;
+    return (
+      queue: SavedPlayback(
+        queueIds: [for (final i in j['ids'] as List) i as int],
+        index: j['index'] as int,
+        positionMs: j['ms'] as int,
+        shuffle: j['shuffle'] as bool,
+      ),
+      plus: j['plus'] as bool,
+    );
+  }
+
+  Future<void> writeJamAside(SavedPlayback q, {required bool plus}) => _prefs.setString(
+    'jamAside',
+    jsonEncode({
+      'ids': q.queueIds,
+      'index': q.index,
+      'ms': q.positionMs,
+      'shuffle': q.shuffle,
+      'plus': plus,
+    }),
+  );
+
+  Future<void> clearJamAside() => _prefs.remove('jamAside');
 
   /// When the last Exportify sync ended (ms since epoch); null if never.
   int? readExportifyLastSyncAt() => _prefs.getInt('exportifyLastSyncAt');

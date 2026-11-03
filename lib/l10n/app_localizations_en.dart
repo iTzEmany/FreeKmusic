@@ -1024,6 +1024,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get jamYou => 'you';
 
   @override
+  String get jamGuest => 'Guest';
+
+  @override
   String get jamAddToJam => 'Add to Jam';
 
   @override

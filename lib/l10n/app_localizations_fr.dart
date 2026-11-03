@@ -1031,6 +1031,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get jamYou => 'vous';
 
   @override
+  String get jamGuest => 'Invité';
+
+  @override
   String get jamAddToJam => 'Ajouter à la Jam';
 
   @override

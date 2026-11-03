@@ -387,6 +387,7 @@
   },
   "jamJumpHere": "Saltar aquí",
   "jamYou": "ti",
+  "jamGuest": "Invitado",
   "jamAddToJam": "Añadir a la Jam",
   "jamAdded": "Añadidas a la Jam: {count}",
   "@jamAdded": {

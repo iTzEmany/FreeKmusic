@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show listEquals, visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -12,6 +12,7 @@ import '../core/paths.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/track_kinds.dart';
 import '../data/repositories/track_repository.dart';
+import '../data/settings/settings_store.dart' show SavedPlayback;
 import '../services/stream/stream_key.dart';
 import '../services/audio/audio_backend.dart';
 import '../services/audio/codecore_audio_handler.dart';
@@ -44,6 +45,7 @@ import 'library_providers.dart' show coverStoreProvider, libraryQueriesProvider;
 import 'online_providers.dart' show creditsRepositoryProvider, curiosityServiceProvider, lyricsChainProvider;
 import 'player_providers.dart';
 import 'settings_providers.dart';
+import 'shuffle_plus_providers.dart' show ShuffleMode;
 import 'share_hub.dart';
 import 'share_providers.dart';
 import 'jam_part.dart';
@@ -639,14 +641,19 @@ class JamController extends Notifier<JamUiState> {
   ({List<int> ids, int index, Duration position})? _saved;
   PlaybackPersistence? _persistence;
   CodecoreAudioHandler? _localHandler;
+  ShuffleMode? _mode;
 
   /// Keeps the local queue, track and position on disk and in memory.
   @visibleForTesting
   Future<void> saveLocalQueue() async {
     final handler = ref.read(audioHandlerProvider);
     _localHandler = handler;
+    _mode = _shuffleMode(handler);
     // The live position: a paused player emits none, so the stream can be 0.
-    final position = handler.playbackState.value.position;
+    var position = handler.playbackState.value.position;
+    // audio_service extrapolates a playing position: past the track's end it is stale.
+    final length = handler.currentTrack?.durationMs ?? 0;
+    if (length > 0 && position.inMilliseconds >= length) position = Duration.zero;
     _saved = (
       ids: List.of(handler.queueIds),
       index: handler.currentIndex < 0 ? 0 : handler.currentIndex,
@@ -654,26 +661,84 @@ class JamController extends Notifier<JamUiState> {
     );
     await (_persistence = ref.read(playbackPersistenceProvider))
         ?.hold(position);
+    await _keepAside();
+  }
+
+  /// A host keeps its queue; only the shuffle mode is put back (the Jam's player state drops «+»).
+  Future<void> _saveMode() async {
+    _localHandler = ref.read(audioHandlerProvider);
+    _mode = _shuffleMode(_localHandler!);
+    _persistence = ref.read(playbackPersistenceProvider);
+    await _keepAside();
+  }
+
+  ShuffleMode _shuffleMode(CodecoreAudioHandler h) => !h.shuffleEnabled
+      ? ShuffleMode.off
+      : ref.read(settingsProvider).shufflePlus
+          ? ShuffleMode.plus
+          : ShuffleMode.shuffle;
+
+  /// What leaving gives back: our part not yet played, from its first track (D-209),
+  /// else the queue as it was; null for a host.
+  ({List<int> ids, int index, Duration position})? get _toGive {
+    final s = _saved;
+    if (s == null) return null;
+    final part = _part.unplayed(state.jam);
+    return part.isEmpty ? s : (ids: part, index: 0, position: Duration.zero);
+  }
+
+  /// The part last written aside: a new write only when it changes.
+  List<int> _asidePart = const [];
+
+  /// The same, on disk, for an app closed in the middle of the Jam (D-341).
+  Future<void> _keepAside() async {
+    final mode = _mode;
+    if (mode == null) return;
+    final give = _toGive;
+    _asidePart = _part.unplayed(state.jam);
+    final q = give == null ? (ids: const <int>[], index: 0) : savedQueue(give.ids, give.index);
+    await _persistence?.keepAside(
+      SavedPlayback(
+        queueIds: q.ids,
+        index: q.index,
+        positionMs: give?.position.inMilliseconds ?? 0,
+        shuffle: mode != ShuffleMode.off,
+      ),
+      plus: mode == ShuffleMode.plus,
+    );
   }
 
   /// Puts the queue back as it was, paused, and lets the disk follow again.
   /// A Jam left in «Coda insieme» gives back our part not yet played, from its first
   /// track (D-209); never an empty queue when there was one before (invariant 6).
+  /// The shuffle mode comes back as it was (D-342).
   Future<void> _restoreLocalQueue() async {
-    final s = _saved;
+    final mode = _mode;
+    _mode = null;
+    _asidePart = const [];
+    if (mode == null) return;
+    final give = _toGive;
     _saved = null;
-    if (s == null) return;
-    var (ids, index, position) = (s.ids, s.index, s.position);
-    final part = _part.unplayed(state.jam);
-    if (part.isNotEmpty) (ids, index, position) = (part, 0, Duration.zero);
-    try {
-      await _localHandler?.restore(ids, index, position);
-    } on Object catch (e, st) {
-      AppLog.w('jam: could not restore the local queue', e, st);
-    }
-    _persistence?.release(position);
-    await _persistence?.flush();
+    final handler = _localHandler;
+    final persistence = _persistence;
     _persistence = null;
+    if (handler != null) {
+      handler.setShuffleAndRepeat(shuffle: mode != ShuffleMode.off, repeat: handler.repeatMode);
+      final plus = mode == ShuffleMode.plus;
+      if (ref.read(settingsProvider).shufflePlus != plus) {
+        ref.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: plus));
+      }
+    }
+    if (give != null) {
+      try {
+        await handler?.restore(give.ids, give.index, give.position);
+      } on Object catch (e, st) {
+        AppLog.w('jam: could not restore the local queue', e, st);
+      }
+      persistence?.release(give.position);
+      await persistence?.flush();
+    }
+    await persistence?.dropAside();
   }
 
   @visibleForTesting
@@ -684,7 +749,7 @@ class JamController extends Notifier<JamUiState> {
 
   /// [seed]: the host's starting queue (library ids), the part its feeder holds.
   Future<void> _begin(JamRole role, JamState s, {List<int> seed = const []}) async {
-    if (role == JamRole.guest) await saveLocalQueue();
+    await (role == JamRole.guest ? saveLocalQueue() : _saveMode());
     // Lost or ended while saving: _finish already tore everything down.
     if (state.phase == JamPhase.ended) return;
     final saved = _saved;
@@ -812,7 +877,10 @@ class JamController extends Notifier<JamUiState> {
     _precache(s);
     _syncPins(s);
     _adder?.seen(s.items);
+    _part.notePlayed(s);
     unawaited(_part.feeder?.update(s));
+    // Our part moved on: what the disk keeps for a closed app follows it (D-341).
+    if (_saved != null && !listEquals(_part.unplayed(s), _asidePart)) unawaited(_keepAside());
   }
 
   void _onItemFailed(int id) {
@@ -863,10 +931,32 @@ class JamController extends Notifier<JamUiState> {
     // Owner gone or not answering: an online track comes from its YouTube id.
     final sj = state.jam;
     if (sj != null && uri == null) {
-      final own = await _selfFetch(item);
-      if (own != null) return JamSource.local(own.path);
+      final own = await _selfSource(item, sj);
+      if (own != null) return own;
     }
     return _cache?.sourceFor(item, remote);
+  }
+
+  /// The item from its YouTube id. A synchronised Jam waits for the whole file; otherwise it
+  /// starts from the stream address as the player does (R-71) while the download goes on.
+  Future<JamSource?> _selfSource(JamItem item, JamState s) async {
+    if (s.synced || !item.selfFetchable) {
+      final f = await _selfFetch(item);
+      return f == null ? null : JamSource.local(f.path);
+    }
+    final p = ref.read(streamPreparerProvider);
+    final key = jamVideoKey(item), r = jamYtResult(item);
+    try {
+      final begin = await p.start(key, r);
+      final file = begin.file;
+      if (file != null) return JamSource.local(file.path);
+      unawaited(p.ready(key, r).then<void>((_) {},
+          onError: (Object e, StackTrace st) => AppLog.w('jam: own download of $key failed', e, st)));
+      return JamSource.remote(begin.url!, begin.headers);
+    } on Object catch (e, st) {
+      AppLog.w('jam: own start of $key failed', e, st);
+      return null;
+    }
   }
 
   /// The row of an item this device owns: library, or the shadow row of a `yt:` track.

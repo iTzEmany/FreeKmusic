@@ -55,6 +55,7 @@ class _Jam extends JamController {
   JamUiState build() => const JamUiState();
   @override
   Future<void> requestRemote(JamInvite? invite) async => requested.add(invite);
+  void set(JamUiState s) => state = s;
 }
 
 Future<void> settle(WidgetTester t) async {
@@ -165,6 +166,18 @@ void main() {
     for (final st in [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]) {
       t.binding.handleAppLifecycleStateChanged(st);
     }
+    await settle(t);
+    expect(beacon.scanning, isTrue);
+    await h.dispose(t);
+  });
+
+  testWidgets('a Jam that ended with the Jam screen closed does not hold the search back', (t) async {
+    final h = await open(t, banner);
+    expect(beacon.scanning, isTrue);
+    jam.set(const JamUiState(phase: JamPhase.active));
+    await settle(t);
+    expect(beacon.scanning, isFalse, reason: 'a Jam going on: no search');
+    jam.set(const JamUiState(phase: JamPhase.ended));
     await settle(t);
     expect(beacon.scanning, isTrue);
     await h.dispose(t);
@@ -324,6 +337,25 @@ void main() {
       await t.tap(find.text('Consenti'));
       await t.pumpAndSettle();
       expect(find.textContaining('Accendi la posizione'), findsOneWidget);
+      await h.dispose(t);
+    });
+
+    testWidgets('Dispositivi with the location off says so inside the sheet, at each opening', (t) async {
+      beacon
+        ..perms = const JamBeaconPermissions(scan: true, advertise: true)
+        ..caps = const JamBeaconCapabilities(bluetoothOn: true, scan: true, advertise: true, needsLocation: true, locationOff: true);
+      final h = await open(
+        t,
+        Builder(builder: (c) => TextButton(onPressed: () => DevicesSheet.show(c), child: const Text('open'))),
+      );
+      final inSheet = find.descendant(of: find.byType(DevicesSheet), matching: find.textContaining('Accendi la posizione'));
+      for (var i = 0; i < 2; i++) {
+        await t.tap(find.text('open'));
+        await t.pumpAndSettle();
+        expect(inSheet, findsOneWidget, reason: 'opening ${i + 1}');
+        await t.tapAt(const Offset(5, 5)); // the barrier closes the sheet
+        await t.pumpAndSettle();
+      }
       await h.dispose(t);
     });
 

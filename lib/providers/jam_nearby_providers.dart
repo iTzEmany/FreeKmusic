@@ -113,7 +113,7 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
       unawaited(_stop(stopNative: false));
     });
     ref.listen(jamNearbyScanProvider, (_, _) => refresh());
-    ref.listen(jamProvider.select((j) => j.phase != JamPhase.idle || j.inviting), (_, _) => refresh());
+    ref.listen(jamProvider.select(_busyWith), (_, _) => refresh());
     ref.onDispose(() {
       life.dispose();
       unawaited(failSub.cancel());
@@ -156,10 +156,13 @@ class JamNearbyNotifier extends Notifier<List<JamNearbyJam>> {
     }
   }
 
+  /// A Jam going on (or being asked for) stops the search; one that ended, seen or not, does not.
+  static bool _busyWith(JamUiState j) => (j.phase != JamPhase.idle && j.phase != JamPhase.ended) || j.inviting;
+
   Future<bool> _wanted() async {
     if (!_foreground || !ref.read(jamNearbyScanProvider)) return false;
     final j = ref.read(jamProvider);
-    if (j.phase != JamPhase.idle || j.inviting) return false;
+    if (_busyWith(j)) return false;
     final caps = await _beacon.capabilities();
     if (!caps.scan || !caps.bluetoothOn || caps.locationOff) return false;
     return (await _beacon.permissions()).scan;

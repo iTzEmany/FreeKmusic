@@ -387,6 +387,7 @@
   },
   "jamJumpHere": "Hier abspielen",
   "jamYou": "dir",
+  "jamGuest": "Gast",
   "jamAddToJam": "Zur Jam hinzufügen",
   "jamAdded": "Zur Jam hinzugefügt: {count}",
   "@jamAdded": {

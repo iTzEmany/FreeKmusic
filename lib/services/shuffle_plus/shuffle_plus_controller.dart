@@ -331,12 +331,14 @@ class ShufflePlusController {
   Future<bool> _suggestOne() async {
     await _followCurrent();
     if (_plan().isEmpty) return false;
+    final src = _source;
     var candidate = await _take();
     if (candidate == null) {
       await _fill();
+      if (_changedSince(src)) return false;
       candidate = await _take();
     }
-    if (candidate == null) return false;
+    if (candidate == null || _changedSince(src)) return false;
     final prep = prepare;
     if (prep != null) {
       // A failed address is not a playback failure: the next candidate.
@@ -354,9 +356,9 @@ class ShufflePlusController {
             return false;
           }
         }
-        if (_disposed) return false;
+        if (_disposed || _changedSince(src)) return false;
       }
-      if (_disposed || !config().enabled || !host.shuffleEnabled || jamActive()) return false;
+      if (_disposed || _changedSince(src) || !config().enabled || !host.shuffleEnabled || jamActive()) return false;
     }
     // The queue may have changed while the radio was asked for.
     final plan = _plan();
@@ -377,6 +379,14 @@ class ShufflePlusController {
     _suggestedWithSeeds++;
     host.insertAt(at, id);
     return true;
+  }
+
+  /// True when the queue's source is no longer [src]: whatever was computed
+  /// for it is stale. Asks for another look, which re-syncs the source.
+  bool _changedSince(List<int>? src) {
+    final changed = !listEquals(host.sourceIds, src);
+    if (changed) poke();
+    return changed;
   }
 
   Future<SuggestionCandidate?> _take() async {
@@ -405,6 +415,7 @@ class ShufflePlusController {
   /// One radio request, at most once a minute, for the next seed that has no
   /// page yet (or the next page of one that ran dry).
   Future<void> _fill() async {
+    final src = _source;
     final now = _now();
     final last = _lastRadio;
     if (last != null && now.difference(last) < minRadioGap) {
@@ -418,6 +429,7 @@ class ShufflePlusController {
       if (stale) {
         _library = await loadLibrary();
         _libraryAt = now;
+        if (_changedSince(src)) return;
       }
       if (_seeds.isEmpty || _suggestedWithSeeds >= seedsLifetime) _newSeeds();
       var searches = 0;
@@ -430,6 +442,7 @@ class ShufflePlusController {
           if (searches >= 3) break;
           searches++;
           seed.videoId = await resolver.resolve(seed.track, searchOnly: seed.searchOnly);
+          if (_changedSince(src)) return;
           if (seed.videoId == null) {
             seed.dead = true;
             continue;
@@ -438,6 +451,7 @@ class ShufflePlusController {
         _lastRadio = _now();
         final page = await radio.page(seed.videoId!,
             continuation: seed.fetched ? pool.continuationOf(seed.key) : null);
+        if (_changedSince(src)) return;
         final hasSong = page.items.any((i) => i.isSeed && i.kind == RadioKind.song);
         if (!seed.fetched && !hasSong && !seed.searchOnly) {
           // The id was a video clip's: look the song up and ask again later.

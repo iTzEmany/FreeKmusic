@@ -184,12 +184,12 @@ Future<void> main() async {
   }
 
   if (kPerfProbe) PerfProbe.mark('widget', sinceMain);
-  var systemName = Platform.localHostname;
+  var systemName = Platform.localHostname, systemModel = '';
   if (Platform.isAndroid) {
     try {
-      systemName = await const MethodChannel('codecore/share')
-              .invokeMethod<String>('deviceName') ??
-          systemName;
+      const ch = MethodChannel('codecore/share');
+      systemName = await ch.invokeMethod<String>('deviceName') ?? systemName;
+      systemModel = await ch.invokeMethod<String>('deviceModel') ?? '';
     } on Object catch (e) {
       AppLog.d('device name lookup failed', e);
     }
@@ -200,6 +200,7 @@ Future<void> main() async {
   final container = ProviderContainer(
     overrides: [
       systemDeviceNameProvider.overrideWithValue(systemName),
+      systemDeviceModelProvider.overrideWithValue(systemModel),
       databaseProvider.overrideWithValue(db),
       settingsStoreProvider.overrideWithValue(settingsStore),
       audioHandlerProvider.overrideWithValue(handler),
@@ -226,7 +227,11 @@ Future<void> main() async {
   // preparing the current song in the player is not needed to draw the app.
   unawaited(() async {
     try {
-      await persistence.restore();
+      // A Jam left open keeps the «+» aside: the settings lost it meanwhile (D-342).
+      await persistence.restore(
+        applyPlus: (on) =>
+            container.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: on)),
+      );
     } on Object catch (e, st) {
       AppLog.w('restore playback failed', e, st);
     }

@@ -1028,6 +1028,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get jamYou => 'si';
 
   @override
+  String get jamGuest => 'Convidado';
+
+  @override
   String get jamAddToJam => 'Adicionar à Jam';
 
   @override

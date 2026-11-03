@@ -15,7 +15,8 @@ typedef MqttIncoming = ({String topic, Uint8List payload});
 /// The small slice of MQTT the remote Jam needs. Faked in tests.
 abstract class MqttLink {
   /// Throws when the broker cannot be reached or refuses (bad certificate included).
-  Future<void> connect(BrokerEntry broker);
+  /// [timeoutFactor] shortens the wait (0.5: two attempts fit in one's time).
+  Future<void> connect(BrokerEntry broker, {double timeoutFactor = 1});
   void subscribe(String topic);
   void unsubscribe(String topic);
   void publish(String topic, Uint8List bytes, {bool retain = false});
@@ -48,7 +49,8 @@ class MqttClientLink implements MqttLink {
   final _disc = StreamController<void>.broadcast();
 
   @override
-  Future<void> connect(BrokerEntry b) async {
+  Future<void> connect(BrokerEntry b, {double timeoutFactor = 1}) async {
+    final timeout = this.timeout * timeoutFactor;
     _updates?.cancel();
     _c?.disconnect();
     final id = randomClientId();
