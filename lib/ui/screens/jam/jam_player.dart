@@ -54,10 +54,10 @@ class _JamPlayerViewState extends ConsumerState<JamPlayerView> {
     final jam = _jam;
     var shown = jam.positionAtTime(ref.read(jamProvider.notifier).jamNowMs());
     final was = _smooth.value.inMilliseconds;
-    // Same item and same base position: only the start moved (lead of a synced
-    // start), never backwards; a seek changes the base and stays immediate.
+    // Same item and base, and a backstep within the start lead (synced start):
+    // never backwards. A bigger step (item restarted) or a seek is immediate.
     final key = (jam.current?.id, jam.positionMs);
-    if (key == _fedKey && shown < was) shown = was;
+    if (key == _fedKey && shown < was && was - shown <= jamStartLeadMs + 500) shown = was;
     _fedKey = key;
     if (refresh && jam.playing && (was - shown).abs() > 100) {
       AppLog.d('jam ui: shown position moved ${shown - was}ms on refresh');

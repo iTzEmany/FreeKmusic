@@ -391,6 +391,13 @@ void main() {
     fake.setState(at(60000, 1000000));
     await tester.pump();
     expect(find.text('1:00'), findsOneWidget);
+    // The same item restarting from 0 (repeat-one, jump here) is not held back.
+    fake.setState(at(0, 850000));
+    await tester.pump();
+    expect(find.text('2:30'), findsOneWidget);
+    fake.setState(at(0, 1000000)); // same item and base, new positionAt
+    await tester.pump();
+    expect(find.text('0:00'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await h.dispose(tester);
   });

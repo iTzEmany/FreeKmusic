@@ -15,6 +15,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/net_thumbnail.dart';
+import '../../widgets/show_msg.dart';
 import '../../widgets/track_artists_sheet.dart';
 
 /// A curiosity as the owner sends it, «text\nurl»: the text without the source
@@ -160,15 +161,22 @@ class JamQueueRow extends ConsumerWidget {
               CcAction(
                 icon: Icons.download_rounded,
                 label: l.ytDownload,
-                onTap: () => ref.read(downloadsProvider.notifier).add(YtResult(
-                      id: item.videoId!,
-                      title: item.title,
-                      channel: item.artist ?? '',
-                      artists: [if (item.artist != null) item.artist!],
-                      album: item.album,
-                      duration: item.durationMs > 0 ? Duration(milliseconds: item.durationMs) : null,
-                      source: source,
-                    )),
+                onTap: () async {
+                  // As the player's online «Scarica» (track_actions.dart): same check and messages.
+                  if (inLibrary()) return showMsg(context, l.ytAlreadyInLibrary);
+                  final now = await ref.read(downloadsProvider.notifier).add(YtResult(
+                        id: item.videoId!,
+                        title: item.title,
+                        channel: item.artist ?? '',
+                        artists: [if (item.artist != null) item.artist!],
+                        album: item.album,
+                        duration: item.durationMs > 0 ? Duration(milliseconds: item.durationMs) : null,
+                        source: source,
+                      ));
+                  if (context.mounted) {
+                    showMsg(context, now ? l.addedToLibrary : l.suggestionDownloadStarted);
+                  }
+                },
               ),
             if (artists.isNotEmpty)
               CcAction(
