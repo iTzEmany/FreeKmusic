@@ -36,6 +36,9 @@ void main() {
     expect(JamInvite.fromAdvert(adv(0)).brokers, [kDefaultJamBrokers.first]);
     expect(JamInvite.fromAdvert(adv(0xFF)).brokers, isEmpty);
     expect(JamInvite.fromAdvert(adv(0)).fingerprint, hasLength(8));
+    // Out of the list (a longer list on another version): custom broker, no RangeError.
+    expect(JamInvite.fromAdvert(adv(kDefaultJamBrokers.length)).brokers, isEmpty);
+    expect(JamInvite.fromAdvert(adv(254)).brokers, isEmpty);
   });
 
   test(

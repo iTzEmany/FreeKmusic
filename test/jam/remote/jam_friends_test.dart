@@ -280,6 +280,44 @@ void main() {
     other.dispose();
   });
 
+  test('a removed friend does not come back with a late FRIEND', () async {
+    await join('guest-1'); // first Jam: the guest is new
+    host.accept(host.requests.values.single.id);
+    await lastJoin;
+    await _pump();
+    expect(hostFriends.byId('guest-1'), isNotNull);
+    host.removeMember('guest-1');
+    await _pump();
+
+    // Second Jam: recognised with proof, then the user removes the friend mid-session.
+    clock = clock.add(const Duration(minutes: 2));
+    await join('guest-1');
+    expect(host.requests.values.last.friend, isTrue);
+    await hostFriends.remove('guest-1');
+    host.accept(host.requests.values.last.id);
+    await lastJoin;
+    await _pump(); // the guest's FRIEND arrives after the removal
+    expect(hostFriends.byId('guest-1'), isNull);
+  });
+
+  test('save and remove wait for the stored list to load', () async {
+    final store = MemoryJamSecretStore();
+    final first = JamFriends(store);
+    await first.save('a', 'A', crypto.randomBytes(32), crypto.randomBytes(32));
+    final again = JamFriends(store); // still loading
+    await again.save('b', 'B', crypto.randomBytes(32), crypto.randomBytes(32));
+    final third = JamFriends(store);
+    await third.ready;
+    expect(third.all.map((f) => f.id), unorderedEquals(['a', 'b']));
+    final loading = JamFriends(store);
+    await loading.remove('a'); // before the load: must not be lost
+    expect(loading.byId('a'), isNull);
+    expect(loading.byId('b'), isNotNull);
+    for (final f in [first, again, third, loading]) {
+      f.dispose();
+    }
+  });
+
   test('the list and AK survive a restart', () async {
     await befriend();
     final again = JamFriends(hostStore);

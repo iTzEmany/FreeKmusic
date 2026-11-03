@@ -49,18 +49,20 @@ class JamFriends extends ChangeNotifier {
   JamFriend? byId(String id) => _friends[id];
 
   /// Saves, or updates, the friend [id] (D-236).
-  Future<void> save(String id, String name, Uint8List ak, Uint8List fkp) {
+  Future<void> save(String id, String name, Uint8List ak, Uint8List fkp) async {
+    await ready; // before the load, the list written would lack the stored entries
     _friends[id] = JamFriend(id, name, Uint8List.fromList(ak), Uint8List.fromList(fkp), _friends[id]?.since ?? _now());
     notifyListeners();
-    return _saveList();
+    await _saveList();
   }
 
   /// Forgets [id] and rotates `AK`.
-  Future<void> remove(String id) {
-    if (_friends.remove(id) == null) return Future.value();
+  Future<void> remove(String id) async {
+    await ready;
+    if (_friends.remove(id) == null) return;
     _ak = _random(32);
     notifyListeners();
-    return Future.wait([_saveList(), _store.write(jamAnnounceKeyKey, b64u(_ak!))]);
+    await Future.wait([_saveList(), _store.write(jamAnnounceKeyKey, b64u(_ak!))]);
   }
 
   /// The friend whose label matches [label] around [nowMs] for the Jam [fpH]; null for a stranger.

@@ -179,7 +179,8 @@ class FakeJamBeacon implements JamBeacon {
   }
 
   @override
-  Future<bool> updateAdvertising(Uint8List bytes) => startAdvertising(bytes);
+  Future<bool> updateAdvertising(Uint8List bytes) async =>
+      advertising != null && await startAdvertising(bytes); // like the native side: needs a start
   @override
   Future<void> stopAdvertising() async => advertising = null;
   @override

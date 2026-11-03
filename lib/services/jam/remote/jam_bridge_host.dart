@@ -468,9 +468,11 @@ class JamBridgeHost {
   void _befriend(String id, JamChannel ch, String akText) {
     final f = friends, ak = unb64u(akText);
     if (f == null || ak == null) return;
-    // A saved entry changes only for a guest that proved it is that friend.
-    if (f.byId(id) != null && _proven[ch] != true) {
-      AppLog.w('jam bridge: FRIEND for a saved id without proof, entry kept');
+    // A saved entry changes only for a guest that proved it is that friend; one
+    // removed since the proof (the user dropped it mid-session) does not come back.
+    final proven = _proven[ch] == true, saved = f.byId(id) != null;
+    if (saved != proven) {
+      AppLog.w('jam bridge: FRIEND not allowed (saved entry without proof, or removed since), nothing saved');
       return;
     }
     final name = host.state?.participant(id)?.name ?? id;

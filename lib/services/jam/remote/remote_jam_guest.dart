@@ -345,8 +345,9 @@ class RemoteJamGuest implements JamGuestLink {
       try {
         await f.ready;
         // A saved entry changes only if this host was recognised as that very friend.
-        if (f.byId(id) != null && recognised != id) {
-          AppLog.w('remote jam: ACCEPT names a saved friend id that was not recognised, entry kept');
+        // (and not one the user removed since: that one is not saved again either).
+        if ((f.byId(id) != null) != (recognised == id)) {
+          AppLog.w('remote jam: ACCEPT not allowed for a saved or removed friend id, nothing saved');
           return;
         }
         await f.save(id, name, ak, fkp);
