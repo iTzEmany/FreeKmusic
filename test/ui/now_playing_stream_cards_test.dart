@@ -4,15 +4,18 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart';
-import 'package:codecore/providers/player_providers.dart' show onlineEntriesProvider, playerControllerProvider;
+import 'package:codecore/providers/player_providers.dart' show liveCurrentTrackProvider, onlineEntriesProvider, playerControllerProvider;
 import 'package:codecore/providers/youtube_providers.dart'
     show downloadIndexProvider;
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/now_playing/credits_card.dart';
-import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart' show InfoCard;
+import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart' show InfoCard, LyricsCard, UpNextCard;
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/proposal_card.dart';
+import 'package:codecore/providers/nav_providers.dart' show SidePanel;
+import 'package:codecore/services/radio/radio_station.dart';
+import 'package:codecore/ui/shell/side_panel.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +23,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_stream_preparer.dart';
+
+const _station = RadioStation(id: 'a', name: 'Radio Alfa', streamUrl: 'http://radio.test/a');
 
 const _r2 = YtResult(
   id: 'v2',
@@ -44,7 +49,7 @@ Future<void> _wait(WidgetTester t) async {
   }
 }
 
-Future<(Harness, Directory, FakeStreamPreparer, WidgetRef Function())> _open(WidgetTester t) async {
+Future<(Harness, Directory, FakeStreamPreparer, WidgetRef Function())> _open(WidgetTester t, {Widget? panel}) async {
   t.view.physicalSize = const Size(1400, 1000);
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
@@ -59,11 +64,12 @@ Future<(Harness, Directory, FakeStreamPreparer, WidgetRef Function())> _open(Wid
     Consumer(
       builder: (c, r, _) {
         ref = r;
+        final go = TextButton(
+          onPressed: () => playOnlineAndOpen(c, r, _r),
+          child: const Text('go'),
+        );
         return Scaffold(
-          body: TextButton(
-            onPressed: () => playOnlineAndOpen(c, r, _r),
-            child: const Text('go'),
-          ),
+          body: panel == null ? go : Column(children: [go, Expanded(child: panel)]),
         );
       },
     ),
@@ -78,7 +84,7 @@ Future<(Harness, Directory, FakeStreamPreparer, WidgetRef Function())> _open(Wid
 
 void main() {
   testWidgets('a streamed track shows lyrics, trivia and credits of its row, no proposal; before the row a placeholder', (t) async {
-    final (h, _, preparer, _) = await _open(t);
+    final (h, _, preparer, ref) = await _open(t);
     final gate = preparer.gates['youtube:v1'] = Completer<void>();
     await t.tap(find.text('go'));
     await _wait(t);
@@ -117,6 +123,10 @@ void main() {
     expect(t.widget<InfoCard>(find.byType(InfoCard)).track.id, rowId);
     expect(t.widget<CreditsCard>(find.byType(CreditsCard)).track.id, rowId);
     expect(find.byType(ProposalCard), findsNothing);
+    // The player's own track keeps the negative id (D-71) with the row's data.
+    final live = ref().read(liveCurrentTrackProvider).value!;
+    expect(live.id, lessThan(0));
+    expect(live.lyricsPlain, 'Parole del brano');
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
@@ -181,6 +191,57 @@ void main() {
 
     expect(find.text('Parole del brano'), findsOneWidget);
     expect(find.text('Il brano è in arrivo…'), findsNothing);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('a radio on air: no «in arrivo» placeholder, no text or credits cards, only the queue', (t) async {
+    t.view.physicalSize = const Size(1400, 1000);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, radio: true);
+    await t.runAsync(() => h.handler.playStations([_station], 0));
+    await h.pump(t, const NowPlayingScreen());
+    await _wait(t);
+
+    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(find.byType(LyricsCard), findsNothing);
+    expect(find.byType(CreditsCard), findsNothing);
+    expect(find.byType(UpNextCard), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('desktop Info panel on a stream: placeholder, then the row card with the real id', (t) async {
+    final (h, _, preparer, _) = await _open(t, panel: const SidePanelView(panel: SidePanel.info));
+    final gate = preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+    expect(find.byType(InfoCard), findsNothing);
+
+    gate.complete();
+    await _wait(t);
+    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(t.widget<InfoCard>(find.byType(InfoCard)).track.id, greaterThan(0));
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('desktop Info panel on a radio is empty', (t) async {
+    t.view.physicalSize = const Size(1400, 1000);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, radio: true);
+    await t.runAsync(() => h.handler.playStations([_station], 0));
+    await h.pump(t, const SidePanelView(panel: SidePanel.info));
+    await _wait(t);
+
+    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(find.byType(InfoCard), findsNothing);
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
