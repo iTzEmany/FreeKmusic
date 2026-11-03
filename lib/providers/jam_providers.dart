@@ -28,6 +28,7 @@ import '../services/jam/jam_output.dart';
 import '../services/jam/jam_part_feeder.dart';
 import '../services/jam/jam_state.dart';
 import '../services/jam/remote/jam_remote_items.dart';
+import '../services/jam/remote/jam_remote_meta.dart';
 import '../services/online/download_index.dart';
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/share/track_meta.dart';
@@ -46,7 +47,7 @@ import 'settings_providers.dart';
 import 'share_hub.dart';
 import 'share_providers.dart';
 import 'jam_part.dart';
-import 'jam_remote_providers.dart' show jamCryptoProvider, remoteJamGuestFactoryProvider;
+import 'jam_broker_providers.dart' show jamCryptoProvider, remoteJamGuestFactoryProvider;
 import 'youtube_providers.dart' show downloadIndexProvider;
 import 'seed_resolver_provider.dart' show seedResolverProvider;
 import 'stream_providers.dart';
@@ -305,8 +306,13 @@ class JamController extends Notifier<JamUiState> {
     ref.listen(shareHubProvider.select((s) => s.active), (_, _) => _speakerChanges.add(null));
     _reqSub = hub.newJamRequests.listen(_incoming.add);
     hub.onJamEnd = end;
-    hub.onJamAction = (req, accept) =>
-        accept ? acceptRequest(req) : decline(req);
+    hub.onJamAction = (req, accept) async {
+      if (accept) {
+        await acceptRequest(req);
+      } else {
+        decline(req);
+      }
+    };
     return const JamUiState();
   }
 
@@ -916,72 +922,20 @@ class JamController extends Notifier<JamUiState> {
       final local = await _localMeta(item);
       if (local != null) return local;
       return state.remote
-          ? _remoteMeta(item)
+          ? _remoteMeta.of(item)
           : TrackMeta(title: item.title, artist: item.artist, album: item.album);
     }
-    // A remote guest has no route to the owner: the item's own fields, plus lyrics and
+    // No route to the owner (a remote guest, or a remote guest's track): lyrics and
     // curiosities looked up here and written nowhere (R-155).
-    if (state.remote) return _remoteMeta(item);
-    return jamFetchMeta(item, _remoteUri(item, route: 'meta'), _headers, dio: _http);
+    final uri = _remoteUri(item, route: 'meta');
+    if (uri == null) return _remoteMeta.of(item);
+    return jamFetchMeta(item, uri, _headers, dio: _http);
   }
 
-  /// Lookups already done for a remote guest, by item id (cleared when the Jam ends).
-  final _remoteMetas = <int, TrackMeta>{};
-
-  Future<TrackMeta> _remoteMeta(JamItem item) async {
-    final cached = _remoteMetas[item.id];
-    if (cached != null) return cached;
-    final t = Track(
-      id: 0,
-      path: '',
-      title: item.title,
-      artist: item.artist,
-      album: item.album,
-      albumKey: '',
-      durationMs: item.durationMs,
-      format: item.ext,
-      sizeBytes: 0,
-      mtimeMs: 0,
-      hasCover: false,
-      isFavorite: false,
-      enrichStatus: 0,
-      userEdited: false,
-      missing: false,
-      ignored: false,
-      kind: 0,
-      addedAt: 0,
-      playCount: 0,
-      coverSource: 0,
-    );
-    Future<T?> part<T>(Future<T> Function() f) async {
-      try {
-        return await f().timeout(const Duration(seconds: 15));
-      } on Object catch (e, st) {
-        AppLog.w('jam: no lookup for ${item.title}', e, st);
-        return null;
-      }
-    }
-
-    final (lyr, cur) = await (
-      part(() => ref.read(lyricsChainProvider).find(t)),
-      part(() => ref.read(curiosityServiceProvider).find(t, ref.read(settingsProvider).language)),
-    ).wait;
-    // Only the song's own text: the artist's bio is not a curiosity of the track.
-    final song = cur?.pair.song;
-    final meta = TrackMeta(
-      title: item.title,
-      artist: item.artist,
-      album: item.album,
-      lyricsPlain: lyr?.lyrics?.plain,
-      lyricsSynced: lyr?.lyrics?.synced,
-      // Same text the library saves: the text, then its source address.
-      curiosities: song == null ? null : '${song.text}\n${song.source}',
-    );
-    final unsure = (lyr?.failed ?? true) || (lyr?.limited ?? true) ||
-        cur == null || cur.outcome.failed || cur.outcome.limited;
-    if (!unsure) _remoteMetas[item.id] = meta; // a failed or refused lookup is tried again
-    return meta;
-  }
+  late final _remoteMeta = JamRemoteMeta(
+    lyrics: (t) => ref.read(lyricsChainProvider).find(t),
+    curiosity: (t) => ref.read(curiosityServiceProvider).find(t, ref.read(settingsProvider).language),
+  );
 
   Future<File?> _selfFetch(JamItem item) {
     if (!item.selfFetchable) return Future.value();
@@ -1222,7 +1176,7 @@ class JamController extends Notifier<JamUiState> {
 
   Future<void> _teardown({bool release = true}) async {
     _phoneOnly = false;
-    _remoteMetas.clear();
+    _remoteMeta.clear();
     _hub.speakerJamName = null;
     _alive?.cancel();
     _alive = null;

@@ -3426,5 +3426,29 @@
   "jamRemoteEnd": "Terminer",
   "jamDeclinedHost": "L’hôte a refusé la demande",
   "jamBusyHost": "L’hôte a déjà une Jam en cours",
-  "jamWaitingHost": "En attente de l’acceptation de l’hôte…"
+  "jamWaitingHost": "En attente de l’acceptation de l’hôte…",
+  "jamFriendsTitle": "Amis de la Jam",
+  "jamFriendsEmpty": "Aucun ami. Après la première entrée acceptée, les deux appareils s’enregistrent mutuellement.",
+  "jamFriendRemove": "Retirer",
+  "jamFriendRemoveTitle": "Retirer {name} ?",
+  "@jamFriendRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "jamFriendRemoveBody": "Vous ne vous reconnaîtrez plus sans demander. Cet appareil change sa clé d’annonce.",
+  "jamAutoAcceptFriends": "Accepter les amis sans demander",
+  "jamAutoAcceptFriendsHint": "Si le téléphone d’un ami est volé, son détenteur peut entrer dans ta Jam à proximité.",
+  "jamFriendBadge": "Ami",
+  "jamNearbyJoin": "Rejoindre une Jam à proximité",
+  "jamBleTitle": "Chercher des Jams à proximité",
+  "jamBleBody12": "Android demande l’autorisation « Appareils à proximité » pour chercher et annoncer des Jams en Bluetooth. L’app ne lit pas où vous êtes.",
+  "jamBleBody11": "L’autorisation de localisation est nécessaire : Android l’exige pour chercher en Bluetooth ; l’app ne lit pas où vous êtes.",
+  "jamBleAllow": "Autoriser",
+  "jamBleNotNow": "Pas maintenant",
+  "jamBleLocationOff": "Activez la localisation d’Android : elle est nécessaire pour chercher des Jams en Bluetooth. En attendant, utilisez le code ou le QR.",
+  "jamNearbyScanTitle": "Chercher des Jams proches",
+  "jamNearbyScanHint": "En Bluetooth, uniquement app ouverte"
 }

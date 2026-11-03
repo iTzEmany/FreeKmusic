@@ -9,6 +9,8 @@ import '../jam_host.dart' show JamRequest;
 import '../jam_models.dart';
 import 'broker_entry.dart';
 import 'jam_bridge.dart';
+import 'jam_crypto.dart' show JamKey;
+import 'jam_friends.dart';
 import 'jam_invite.dart';
 import 'jam_protocol.dart';
 import 'mqtt_link.dart';
@@ -25,12 +27,16 @@ class RemoteJamGuest implements JamGuestLink {
     required this.linkFactory,
     this.brokers = kDefaultJamBrokers,
     DateTime Function()? now,
+    this.friends,
     this.leaveGrace = const Duration(milliseconds: 500),
     this.bridgeWaits = kJamBridgeWaits,
   }) : _now = now ?? DateTime.now;
 
   final JamProtocol protocol;
   final MqttLink Function() linkFactory;
+
+  /// Saved friends: recognise the host from its label, swap `AK` after the ACCEPT.
+  final JamFriends? friends;
 
   /// Brokers tried, in order, for the retained CODE of a typed code.
   final List<BrokerEntry> brokers;
@@ -47,6 +53,7 @@ class RemoteJamGuest implements JamGuestLink {
   /// A CODE counts as expired only this long after its `exp` (clock skew).
   static const codeSlackMs = 2 * 60 * 1000;
   static const codeWait = Duration(seconds: 4);
+  static const lobbyWait = Duration(seconds: 5);
   static const resultWait = Duration(seconds: 10);
   static const timeWait = Duration(seconds: 3);
   static const pingEvery = Duration(seconds: 30);
@@ -61,6 +68,7 @@ class RemoteJamGuest implements JamGuestLink {
   String? _requestTopic;
   bool _requestSent = false;
   Completer<JamJoinOutcome?>? _accept;
+  String? _recognisedId; // the saved friend whose label the announcement carried
   final _wakers = <void Function()>[];
   DateTime? _syncAt;
   Timer? _timer;
@@ -136,8 +144,27 @@ class RemoteJamGuest implements JamGuestLink {
         route = info.brokers.isEmpty ? [on] : info.brokers;
       }
       if (_stopped) return JamJoinOutcome.cancelled;
+      final fp = invite.fingerprint;
+      if (hpk == null && jamId != null && fp != null) {
+        // A Bluetooth announcement: Hpk comes from the lobby, checked against fpH.
+        if (route.isEmpty) return JamJoinOutcome.customBroker;
+        hpk = await _lookupLobby(jamId, fp, route);
+        if (_stopped) return JamJoinOutcome.cancelled;
+        if (hpk == null) return JamJoinOutcome.unreachable;
+      }
       if (jamId == null || hpk == null || proof == null || route.isEmpty) {
         return JamJoinOutcome.codeInvalid;
+      }
+      // The proof of a friend only goes out when the label of the announcement is theirs.
+      JamKey? friendKey;
+      final label = invite.friendLabel, f = friends;
+      if (label != null && f != null) {
+        await f.ready;
+        final fr = f.match(protocol, label, _now().millisecondsSinceEpoch, protocol.fingerprint(hpk));
+        if (fr != null) {
+          friendKey = JamKey(fr.fkp);
+          _recognisedId = fr.id;
+        }
       }
       final req = protocol.buildRequest(
         jamId: jamId,
@@ -145,7 +172,9 @@ class RemoteJamGuest implements JamGuestLink {
         proof: proof,
         id: ownId,
         name: ownName,
+        friendKey: friendKey,
       );
+      friendKey?.dispose();
       if (req == null) return JamJoinOutcome.codeInvalid;
       _channel = req.channel;
       _requestBytes = req.bytes;
@@ -167,6 +196,34 @@ class RemoteJamGuest implements JamGuestLink {
     final r = await c.future;
     if (r != null) return r;
     return _stopped ? JamJoinOutcome.cancelled : JamJoinOutcome.expired;
+  }
+
+  /// The retained lobby of [jamId] on each of [route] in turn (5 s each); its
+  /// `Hpk` only if the fingerprint is [fpH].
+  Future<Uint8List?> _lookupLobby(Uint8List jamId, Uint8List fpH, List<BrokerEntry> route) async {
+    final topic = JamProtocol.lobbyTopic(jamId);
+    for (final b in route) {
+      if (_stopped) return null;
+      final link = linkFactory();
+      final got = Completer<Uint8List?>();
+      final sub = link.messages.listen((m) {
+        if (m.topic != topic || got.isCompleted) return;
+        final k = protocol.parseLobby(m.payload, fpH: fpH);
+        if (k != null) got.complete(k);
+      });
+      try {
+        await link.connect(b);
+        link.subscribe(topic);
+        final k = await _within(got, lobbyWait);
+        if (k != null) return k;
+      } on Object catch (e, st) {
+        AppLog.w('remote jam: lobby lookup on $b failed', e, st);
+      } finally {
+        await sub.cancel();
+        link.disconnect();
+      }
+    }
+    return null;
   }
 
   /// The CODE of [keys] on each of [brokers] in turn, 4 s per broker.
@@ -267,6 +324,7 @@ class RemoteJamGuest implements JamGuestLink {
         _phase = _Phase.running;
         _lastHeard = _lastPing = _lastSync = _now();
         _apply(msg.state!);
+        _befriend(msg.body);
         c.complete(JamJoinOutcome.accepted);
       case JamMsg.no:
         c.complete(
@@ -275,6 +333,29 @@ class RemoteJamGuest implements JamGuestLink {
               : JamJoinOutcome.declined,
         );
     }
+  }
+
+  /// Saves the host as a friend and sends our `AK` (nobody gives it before the accept).
+  void _befriend(Map<String, Object?> accept) {
+    final f = friends, ch = _channel, ak = unb64u(accept['ak']);
+    if (f == null || ch == null || ak == null) return;
+    final id = accept['host'] as String, name = accept['name'] as String;
+    final fkp = Uint8List.fromList(ch.keys.fkp.bytes), recognised = _recognisedId;
+    unawaited(() async {
+      try {
+        await f.ready;
+        // A saved entry changes only if this host was recognised as that very friend.
+        // (and not one the user removed since: that one is not saved again either).
+        if ((f.byId(id) != null) != (recognised == id)) {
+          AppLog.w('remote jam: ACCEPT not allowed for a saved or removed friend id, nothing saved');
+          return;
+        }
+        await f.save(id, name, ak, fkp);
+        _sendMsg(JamMsg.friend, {'ak': b64u(f.announceKey)});
+      } on Object catch (e, st) {
+        AppLog.w('remote jam: could not save the host as a friend', e, st);
+      }
+    }());
   }
 
   void _onRunning(JamMessage msg) {

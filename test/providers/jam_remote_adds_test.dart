@@ -7,6 +7,7 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart'
     show trackRepositoryProvider;
+import 'package:codecore/providers/jam_broker_providers.dart' show remoteJamGuestFactoryProvider;
 import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/jam_remote_providers.dart';
 import 'package:codecore/providers/library_providers.dart'

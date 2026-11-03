@@ -370,6 +370,29 @@ void main() {
       return id;
     }
 
+    test('a friend goes ahead of a stranger, but a second friend does not jump the first', () {
+      JamAdmission adm(String id, {bool friend = false}) =>
+          host.admitRequest(id: id, name: id, remote: true, friend: friend);
+      final stranger = adm('s').request!;
+      final f1 = adm('f1', friend: true);
+      expect(stranger.status, JamRequestStatus.expired);
+      expect(f1.status, JamAdmitStatus.accepted);
+      final f2 = adm('f2', friend: true);
+      expect(f2.status, JamAdmitStatus.busy);
+      expect(f1.request!.status, JamRequestStatus.pending);
+    });
+
+    test('autoAccept without friend goes to the sheet, not to the automatic acceptance', () {
+      final asked = <String>[], auto = <String>[];
+      host.onRequest = (r) => asked.add(r.fromId);
+      host.onAutoAccept = (r) {
+        auto.add(r.fromId);
+      };
+      host.admitRequest(id: 'x', name: 'X', remote: true, autoAccept: true);
+      expect(asked, ['x']);
+      expect(auto, isEmpty);
+    });
+
     test('a remote request needs no port or token; a LAN one does', () {
       expect(host.admitRequest(id: 'r', name: 'R', remote: true).status, JamAdmitStatus.accepted);
       expect(host.admitRequest(id: 'l', name: 'L').status, JamAdmitStatus.bad);

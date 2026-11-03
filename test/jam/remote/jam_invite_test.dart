@@ -25,6 +25,22 @@ void main() {
     expect(JamInvite.fromQr('CCJ1:xx', p), isNull);
   });
 
+  test('an announcement gives the default broker by index, none for 0xFF', () {
+    JamAdvert adv(int broker) => JamAdvert(
+      jamId: Uint8List(6),
+      token: Uint8List(6),
+      fingerprint: Uint8List(8),
+      friendLabel: Uint8List(4),
+      broker: broker,
+    );
+    expect(JamInvite.fromAdvert(adv(0)).brokers, [kDefaultJamBrokers.first]);
+    expect(JamInvite.fromAdvert(adv(0xFF)).brokers, isEmpty);
+    expect(JamInvite.fromAdvert(adv(0)).fingerprint, hasLength(8));
+    // Out of the list (a longer list on another version): custom broker, no RangeError.
+    expect(JamInvite.fromAdvert(adv(kDefaultJamBrokers.length)).brokers, isEmpty);
+    expect(JamInvite.fromAdvert(adv(254)).brokers, isEmpty);
+  });
+
   test(
     'a code is normalized, a malformed one is refused before any network',
     () {

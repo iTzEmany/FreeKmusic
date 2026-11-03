@@ -334,6 +334,43 @@ void main() {
     expect(guest.decodeAdvert(Uint8List(25)), isNull);
   });
 
+  test('matchFriendLabel accepts the windows w-1, w, w+1 of the guest clock and no other', () {
+    final ak = Uint8List.fromList(List.generate(32, (i) => i + 1));
+    final fp = host.fingerprint(secrets.hpk);
+    final label = host.friendLabelAt(ak, t0, fp);
+    for (final d in [-1, 0, 1]) {
+      expect(guest.matchFriendLabel([ak], label, t0 + d * 30000, fp), 0, reason: 'w${d >= 0 ? '+' : ''}$d');
+    }
+    for (final d in [-2, 2]) {
+      expect(guest.matchFriendLabel([ak], label, t0 + d * 30000, fp), isNull, reason: 'w$d');
+    }
+  });
+
+  test('advertAt: window token and label change, two Jams of a host share nothing (R-133)', () {
+    final ak = Uint8List.fromList(List.generate(32, (i) => i));
+    final other = host.newHostSecrets();
+    final a = host.advertAt(secrets, t0, ak: ak, broker: 0);
+    expect(a.length, 26);
+    final d = guest.decodeAdvert(a)!;
+    expect(d.jamId, secrets.jamId);
+    expect(d.token, host.token(secrets, t0));
+    expect(d.fingerprint, host.fingerprint(secrets.hpk));
+    expect(guest.matchFriendLabel([ak], d.friendLabel, t0, d.fingerprint), 0);
+    expect(guest.matchFriendLabel([ak], d.friendLabel, t0, other.hpk.sublist(0, 8)), isNull); // bound to the Jam
+    expect(d.broker, 0);
+    // The next window: another token and label.
+    final n = guest.decodeAdvert(host.advertAt(secrets, t0 + 30000, ak: ak, broker: 0xFF))!;
+    expect(n.token, isNot(d.token));
+    expect(n.friendLabel, isNot(d.friendLabel));
+    expect(n.broker, 0xFF);
+    // A second Jam of the same host, two windows later: no part in common.
+    final o = guest.decodeAdvert(host.advertAt(other, t0 + 60000, ak: ak, broker: 0))!;
+    expect(o.jamId, isNot(d.jamId));
+    expect(o.token, isNot(d.token));
+    expect(o.fingerprint, isNot(d.fingerprint));
+    expect(o.friendLabel, isNot(d.friendLabel));
+  });
+
   test('code is normalized and Crockford-safe', () {
     expect(JamProtocol.normalizeCode(' abcd-23o1 '), 'ABCD2301');
     expect(JamProtocol.normalizeCode('abcd 23il'), 'ABCD2311');

@@ -2,7 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
 import '../services/jam/remote/broker_entry.dart';
+import '../services/jam/remote/jam_crypto.dart';
+import '../services/jam/remote/jam_protocol.dart';
+import '../services/jam/remote/remote_jam_guest.dart';
 import '../services/jam/remote/mqtt_link.dart';
+import 'jam_gate_providers.dart';
 import 'settings_providers.dart';
 
 export '../services/jam/remote/broker_probe.dart' show testBroker;
@@ -48,3 +52,16 @@ final jamBrokersProvider =
 
 /// Makes the MQTT link; tests override it with a fake.
 final mqttLinkFactoryProvider = Provider<MqttLink Function()>((_) => MqttClientLink.new);
+
+/// Libsodium, initialised once on first use.
+final jamCryptoProvider = FutureProvider<JamCrypto>((_) => SodiumJamCrypto.create());
+
+/// Makes the guest side of a remote Jam; tests override it with a fake.
+final remoteJamGuestFactoryProvider = Provider<RemoteJamGuest Function(JamProtocol)>(
+  (ref) => (protocol) => RemoteJamGuest(
+        protocol: protocol,
+        linkFactory: ref.read(mqttLinkFactoryProvider),
+        brokers: ref.read(jamBrokersProvider),
+        friends: ref.read(jamFriendsProvider),
+      ),
+);

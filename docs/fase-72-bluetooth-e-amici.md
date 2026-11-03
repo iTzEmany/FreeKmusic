@@ -32,3 +32,14 @@ Canale `codecore/jam_beacon` in un file suo come gli altri bridge, registrato in
 `flutter analyze`, comando mirato, build di debug, `/code-review high` sul lato nativo, sul manifest e su 72.3, scheggia in modalità passo su 72.2, review Opus. Prova sul Mi A3 (Android 11): permesso della posizione rifiutato e poi riattivato, posizione spenta → messaggio; `capabilities` del Mi A3. Linux non annuncia (R-146): l'ingresso via Bluetooth fra due telefoni si prova nella 73.2.
 
 **Fatto quando:** tutto verde; esiti qui sotto; colonna Fase di R-136 … R-138, R-143 … R-145 e RNF-16 compilata.
+
+## Esiti (2026-11-03)
+- 72.1–72.3 in una PR, più i rilievi dalla fase 71: `JamRemoteMeta` estratto da `JamController`, scheda con testo e curiosità anche per host e ospiti LAN quando il proprietario non è raggiungibile, `syntheticTrack` condiviso, ciclo di import `jam_providers` ↔ `jam_remote_providers` rotto.
+- Controlli: `flutter analyze` pulito, comando mirato verde (989 test), build di debug verde. `/code-review high` (10 rilievi) e review di architettura Opus (4 da fare, più 2 nativi anticipati) tutti corretti. Fra i rilievi: `BLUETOOTH_ADMIN` fino ad Android 11, scansione fantasma, annuncio legato all'Activity, voce di un amico sovrascrivibile con un id dichiarato, etichetta non legata alla Jam (D-338). Scheggia in modalità passo: amico rimosso che rientrava con un `FRIEND` tardivo e voci vicine toccabili oltre il gettone, corretti; mutanti scoperti coperti da test.
+- Scelte: D-338 (voce di un amico aggiornata solo da una sessione verificata, etichetta con `fpH`), D-339 (amico verificato davanti a un estraneo nello slot unico).
+- Prova sul Mi A3 (Android 11) e Linux del 3/11:
+  - `capabilities`: il Mi A3 annuncia (`onAdvertisingSetStarted status=0` nel logcat; su Android 11 `dumpsys bluetooth_manager` non elenca gli annunci).
+  - Permessi: foglio di spiegazione e richiesta di sistema; rifiuto → nessuna scansione e «Cerca Jam vicine» spento; riacceso dall'interruttore → consenso → scansione attiva. Posizione spenta → messaggio dall'interruttore. Da guardare: aprendo solo «Dispositivi» con la posizione spenta il messaggio non è comparso.
+  - Annuncio dell'host: parte con «Invita chi è vicino», il gettone ruota, si ferma alla chiusura del ponte.
+  - Amici (Linux host, Mi A3 ospite col codice): salvataggio reciproco col nome dopo il primo ingresso e rimozione da entrambi i lati ok. Col codice digitato la richiesta arriva senza «Amico», come da spec; il riconoscimento via annuncio Bluetooth e «Accetta gli amici senza chiedere» si provano con due telefoni Android nella 73.2.
+  - Aggiunte alla coda dall'ospite remoto ancora ok.

@@ -1205,10 +1205,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 71.4 Controlli di fase (analyze, mirato, code-review high, scheggia, review Opus; prova dal vivo Linux + Mi A3 del 3/11 tutta ok, esiti in `fase-71-coda-remota.md`)
 
 ## Fase 72 — Bluetooth e amici (`fase-72-bluetooth-e-amici.md`)
-- [ ] 72.1 `JamBeaconBridge.kt` e permessi
-- [ ] 72.2 Annuncio dell'host e Jam vicine
-- [ ] 72.3 Amici della Jam
-- [ ] 72.4 Controlli di fase
+- [x] 72.1 `JamBeaconBridge.kt` e permessi
+- [x] 72.2 Annuncio dell'host e Jam vicine
+- [x] 72.3 Amici della Jam
+- [x] 72.4 Controlli di fase (analyze, mirato, build, code-review high, scheggia, review Opus; prova sul Mi A3 del 3/11, esiti in `fase-72-bluetooth-e-amici.md`; «Amico» via Bluetooth fra due telefoni nella 73.2)
 
 ## Fase 73 — Misure e prova a mano (`fase-73-chiusura-jam-distanza.md`)
 - [x] 73.1 Costo della cifratura (seal dello STATE in un isolate, esiti nella fase)

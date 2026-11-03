@@ -157,8 +157,8 @@ Notazione: `‖` concatenazione; `u64be` intero a 8 byte big endian; `b64u` base
 | `KT` | `EXPAND(PRK_S, "ccj1 token", 32)` |
 | finestra `w` | `floor(oraHostMs / 30000)` come `u64be`; solo l'orologio dell'host conta |
 | gettone `T_w` (6 B) | `MAC(KT, "ccj1-tok" ‖ w)[0:6]`; l'host accetta `T_w` e `T_(w−1)`, cioè ≤ 60 s (R-139) |
-| etichetta amici (4 B) | `MAC(AK, "ccj1-ft" ‖ w)[0:4]`; l'ospite prova `w−1`, `w`, `w+1` del suo orologio per ogni amico salvato |
 | impronta `fpH` (8 B) | `GH(Hpk, outLen: 16)[0:8]` |
+| etichetta amici (4 B) | `MAC(AK, "ccj1-ft" ‖ w ‖ fpH)[0:4]`, legata alla Jam: l'etichetta copiata nell'annuncio di un'altra Jam non si riconosce. L'ospite ha `fpH` dall'annuncio (lobby verificata) o da `Hpk` nel QR e prova `w−1`, `w`, `w+1` del suo orologio per ogni amico salvato |
 | scambio | ospite `(rx, tx) = KX.clientSessionKeys(Gpk, Gsk, Hpk)`, `ikm = tx ‖ rx`; host `(rx, tx) = KX.serverSessionKeys(Hpk, Hsk, Gpk)`, `ikm = rx ‖ tx` (stessi 64 B) |
 | prova di vicinanza `P` | `T_w` (Bluetooth, QR) oppure `KC` (codice) |
 | `PRK` | `EXTRACT(salt: P, ikm)` |
@@ -202,9 +202,9 @@ Ogni messaggio passa questi controlli in ordine; al primo che fallisce è scarta
 L'id di un ospite remoto dentro la Jam è quello della coppia, non uno dichiarato nei comandi.
 
 #### Amici
-- Si salva `{id, name, ak, fkp, since}`: `ak` = `AK` dell'altro, `fkp` = `FKp` della coppia. L'host manda `AK` in `ACCEPT`, l'ospite in `FRIEND` subito dopo: nessuno dà la sua `AK` prima dell'«Accetta». Un amico già salvato si aggiorna (D-236).
-- Riconoscimento: l'ospite calcola l'etichetta di ogni amico salvato e la confronta con l'annuncio o il QR (falso positivo 2⁻³² per amico). L'host segna «Amico» solo se la prova si verifica con la `fkp` dell'id dichiarato: per gli amici l'id è autenticato.
-- Rimozione: chi toglie un amico butta la voce e rigenera la sua `AK`, così l'amico tolto non la riconosce più (R-144). Gli altri amici la riconoscono di nuovo alla prossima Jam insieme, quando l'`AK` nuova arriva da sola.
+- Si salva `{id, name, ak, fkp, since}`: `ak` = `AK` dell'altro, `fkp` = `FKp` della coppia. L'host manda `AK` in `ACCEPT`, l'ospite in `FRIEND` subito dopo: nessuno dà la sua `AK` prima dell'«Accetta». Un amico già salvato si aggiorna (D-236) solo se l'altro è stato riconosciuto: l'host aggiorna la voce di `id` solo se la richiesta di quella sessione aveva la prova valida; l'ospite solo se l'etichetta ha riconosciuto l'amico con quello stesso `id`. Altrimenti la voce resta intatta (e si logga, senza segreti): un `id` dichiarato non sovrascrive un amico. Gli `id` nuovi si salvano come sempre.
+- Riconoscimento: l'ospite calcola l'etichetta di ogni amico salvato e la confronta con l'annuncio o il QR (falso positivo 2⁻³² per amico). L'host segna «Amico» solo se la prova si verifica con la `fkp` dell'id dichiarato: per gli amici l'id è autenticato. La richiesta di un amico non resta dietro a quella di un estraneo: se lo slot unico è occupato da un estraneo, questa scade e l'amico entra (R-144). Se l'accettazione automatica non parte (nessun controller, errore, richiesta ancora in attesa) la richiesta arriva comunque all'utente.
+- Rimozione: chi toglie un amico butta la voce e rigenera la sua `AK`, così l'amico tolto non la riconosce più (R-144). Gli altri amici la riconoscono di nuovo alla prossima Jam insieme, quando l'`AK` nuova arriva da sola. Dopo una rotazione di `AK` il recupero avviene alla prossima Jam a ruoli invertiti (chi ha ruotato ospita o entra, e l'altro lo riconosce o ne salva la voce nuova): conseguenza della regola sopra, per cui un `id` non riconosciuto non aggiorna una voce esistente.
 - Col codice digitato la prova non c'è: la richiesta arriva senza «Amico».
 
 #### Minacce
@@ -217,6 +217,8 @@ L'id di un ospite remoto dentro la Jam è quello della coppia, non uno dichiarat
 | Ospite tolto, bloccato o uscito | Coperta: chiavi della sua coppia buttate, nessuna chiave comune (R-130) |
 | Chiavi rubate dopo la Jam | Coperta: chiavi di sessione e `Hsk` solo in memoria, buttate a fine Jam |
 | Tracciamento via Bluetooth o broker | Coperta: annuncio che cambia ogni 30 s e a ogni Jam, nessun nome, `clientId` casuale |
+| Ogni ospite accettato riceve `AK` e può riconoscere l'host nelle Jam successive finché non è rimosso | Accettato: serve per riconoscersi fra amici; l'etichetta è legata a `fpH` e cambia ogni 30 s, e togliere l'amico rigenera `AK` (R-144) |
+| Id di un amico dichiarato da un estraneo | Coperta: la voce si aggiorna solo con la prova dell'amico (host) o l'etichetta riconosciuta (ospite); senza, nessun «Amico», nessuna auto-accettazione, voce intatta |
 | Richieste a raffica | Coperta: 10 decifrature/s per la lobby, 2/min per id, 5/min per IP in LAN |
 | Telefono rootato o con malware (host o ospite) | Accettata |
 | Antenna potente vicino all'host | Accettata: riceve il gettone come un vicino; decide l'«Accetta» dell'host |

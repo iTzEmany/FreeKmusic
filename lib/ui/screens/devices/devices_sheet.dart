@@ -8,14 +8,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/jam_nearby_providers.dart';
 import '../../../providers/jam_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/share_hub.dart';
 import '../../../providers/speaker_providers.dart';
 import '../../../services/share/discovery.dart';
 import '../../theme/tokens.dart';
+import '../jam/ble_permission.dart';
 import '../jam/jam_remote_sheets.dart';
 import '../jam/jam_screen.dart';
+import '../jam/speaker_notices.dart' show joinNearbyJam, nearbyJamText;
 import '../share/share_screen.dart';
 import '../share/track_picker_screen.dart';
 import 'peer_card.dart';
@@ -52,6 +55,10 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     // Captured now: `ref` must not be used from dispose().
     _hub = ref.read(shareHubProvider.notifier);
     unawaited(_hub.enter());
+    // First use of the Bluetooth Jams: the explanation, once (R-138).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(askBlePermission(context, ref));
+    });
   }
 
   @override
@@ -88,6 +95,12 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     nav.push(MaterialPageRoute<void>(builder: (_) => const JamScreen()));
   }
 
+  void _startNearby(JamNearbyJam n) {
+    final nav = Navigator.of(context, rootNavigator: true);
+    nav.pop();
+    joinNearbyJam(nav.context, ref, n);
+  }
+
   void _openJam() {
     final nav = Navigator.of(context, rootNavigator: true);
     nav.pop();
@@ -119,6 +132,7 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     final hub = ref.watch(shareHubProvider);
     final jam = ref.watch(jamProvider);
     final announced = ref.watch(announcedJamProvider);
+    final nearby = ref.watch(jamNearbyVisibleProvider);
     final visible = ref.watch(settingsProvider.select((s) => s.receiveFromLan));
     final ownId = _hub.deviceId ?? '';
     final others = <String>[
@@ -158,6 +172,15 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
             ),
             const SizedBox(height: 8),
           ],
+          if (!jam.active)
+            for (final n in nearby)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.bluetooth_searching_rounded, color: cc.accent),
+                title: Text(nearbyJamText(context, n)),
+                subtitle: n.friendName == null ? null : Text(l.jamFriendBadge),
+                onTap: () => _startNearby(n),
+              ),
           Text(
             l.nearbyDevices,
             style: theme.labelLarge?.copyWith(color: cc.textMuted),

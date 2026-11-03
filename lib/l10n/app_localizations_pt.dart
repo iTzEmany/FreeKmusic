@@ -5956,4 +5956,63 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get jamWaitingHost => 'À espera de que o anfitrião aceite…';
+
+  @override
+  String get jamFriendsTitle => 'Amigos da Jam';
+
+  @override
+  String get jamFriendsEmpty =>
+      'Ainda sem amigos. Após a primeira entrada aceite, os dois dispositivos guardam-se mutuamente.';
+
+  @override
+  String get jamFriendRemove => 'Remover';
+
+  @override
+  String jamFriendRemoveTitle(String name) {
+    return 'Remover $name?';
+  }
+
+  @override
+  String get jamFriendRemoveBody =>
+      'Deixam de se reconhecer sem perguntar. Este dispositivo muda a sua chave de anúncio.';
+
+  @override
+  String get jamAutoAcceptFriends => 'Aceitar amigos sem perguntar';
+
+  @override
+  String get jamAutoAcceptFriendsHint =>
+      'Se o telemóvel de um amigo for roubado, quem o tiver pode entrar na tua Jam estando perto.';
+
+  @override
+  String get jamFriendBadge => 'Amigo';
+
+  @override
+  String get jamNearbyJoin => 'Entrar numa Jam por perto';
+
+  @override
+  String get jamBleTitle => 'Procurar Jams por perto';
+
+  @override
+  String get jamBleBody12 =>
+      'O Android pede a permissão «Dispositivos por perto» para procurar e anunciar Jams por Bluetooth. A app não lê onde estás.';
+
+  @override
+  String get jamBleBody11 =>
+      'É preciso a permissão de localização: o Android exige-a para procurar por Bluetooth; a app não lê onde estás.';
+
+  @override
+  String get jamBleAllow => 'Permitir';
+
+  @override
+  String get jamBleNotNow => 'Agora não';
+
+  @override
+  String get jamBleLocationOff =>
+      'Liga a localização do Android: é precisa para procurar Jams por Bluetooth. Entretanto podes usar o código ou o QR.';
+
+  @override
+  String get jamNearbyScanTitle => 'Procurar Jams por perto';
+
+  @override
+  String get jamNearbyScanHint => 'Por Bluetooth, só com a app aberta';
 }

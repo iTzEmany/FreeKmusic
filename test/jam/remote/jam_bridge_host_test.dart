@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:codecore/services/jam/jam_host.dart';
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/jam/remote/broker_entry.dart';
+import 'package:codecore/services/jam/remote/jam_beacon.dart';
 import 'package:codecore/services/jam/remote/jam_bridge.dart';
 import 'package:codecore/services/jam/remote/jam_bridge_host.dart';
 import 'package:codecore/services/jam/remote/jam_crypto.dart';
@@ -196,6 +197,60 @@ void main() {
     await pumpEventQueue();
     return g;
   }
+
+  test('beacon: announces at start, renews with each 30 s window, stops with the bridge', () async {
+    final beacon = FakeJamBeacon();
+    final b2 = JamBridge(FakeMqttLink(net), [entry], waits: const [Duration(milliseconds: 5)]);
+    final h2 = JamBridgeHost(
+      protocol: protocol,
+      host: host,
+      bridge: b2,
+      now: () => clock,
+      beacon: beacon,
+      stopGrace: Duration.zero,
+    )..start();
+    await pumpEventQueue();
+    final first = beacon.advertising!;
+    expect(first.length, 26);
+    final adv = guestProtocol.decodeAdvert(first)!;
+    expect(adv.jamId, h2.jamId);
+    expect(adv.broker, 0xFF, reason: 'a.net is not one of the default brokers');
+    h2.tick(); // same window: nothing changes
+    expect(beacon.advertising, same(first));
+    clock = clock.add(const Duration(seconds: 30));
+    h2.tick();
+    await pumpEventQueue();
+    expect(beacon.advertising, isNot(first));
+    expect(guestProtocol.decodeAdvert(beacon.advertising!)!.jamId, adv.jamId);
+    await h2.dispose();
+    expect(beacon.advertising, isNull);
+  });
+
+  test('beacon: the native side loses the announcement, the next window starts it again', () async {
+    final beacon = FakeJamBeacon();
+    final b2 = JamBridge(FakeMqttLink(net), [entry], waits: const [Duration(milliseconds: 5)]);
+    final h2 = JamBridgeHost(
+      protocol: protocol,
+      host: host,
+      bridge: b2,
+      now: () => clock,
+      beacon: beacon,
+      stopGrace: Duration.zero,
+    )..start();
+    await pumpEventQueue();
+    expect(beacon.advertising, isNotNull);
+    beacon.fail(JamBeaconKind.advertise);
+    await pumpEventQueue();
+    expect(beacon.advertising, isNull);
+    h2.tick(); // same window: no hammering
+    await pumpEventQueue();
+    expect(beacon.advertising, isNull);
+    clock = clock.add(const Duration(seconds: 30));
+    h2.tick();
+    await pumpEventQueue();
+    expect(beacon.advertising, isNotNull);
+    await h2.dispose();
+  });
 
   test('start: LOBBY retained and /r subscribed', () {
     final lobby = net[entry].retained[JamProtocol.lobbyTopic(qr.jamId)]!;

@@ -5,24 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_log.dart';
 import '../services/jam/remote/jam_bridge.dart';
 import '../services/jam/remote/jam_bridge_host.dart';
-import '../services/jam/remote/jam_crypto.dart';
 import '../services/jam/remote/jam_protocol.dart';
-import '../services/jam/remote/remote_jam_guest.dart';
 import 'jam_broker_providers.dart';
+import 'jam_gate_providers.dart';
+import 'jam_nearby_providers.dart' show jamBeaconProvider;
 import 'jam_providers.dart';
 import 'share_hub.dart';
-
-/// Libsodium, initialised once on first use.
-final jamCryptoProvider = FutureProvider<JamCrypto>((_) => SodiumJamCrypto.create());
-
-/// Makes the guest side of a remote Jam; tests override it with a fake.
-final remoteJamGuestFactoryProvider = Provider<RemoteJamGuest Function(JamProtocol)>(
-  (ref) => (protocol) => RemoteJamGuest(
-        protocol: protocol,
-        linkFactory: ref.read(mqttLinkFactoryProvider),
-        brokers: ref.read(jamBrokersProvider),
-      ),
-);
 
 /// Pause before the host bridge disconnects after saying goodbye; tests shorten it.
 final jamStopGraceProvider = Provider<Duration>(
@@ -108,14 +96,17 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
     if (!_wanted) return _stop();
     if (_bh != null) return;
     final crypto = await ref.read(jamCryptoProvider.future);
+    final friends = ref.read(jamFriendsProvider);
+    await friends.ready;
     final host = _hub.jamHost;
     if (!ref.mounted || !_wanted || host == null) return;
     final bridge = _bridge = JamBridge(ref.read(mqttLinkFactoryProvider)(), ref.read(jamBrokersProvider));
-    final bh = _bh = JamBridgeHost(protocol: JamProtocol(crypto), host: host, bridge: bridge, stopGrace: ref.read(jamStopGraceProvider));
+    final bh = _bh = JamBridgeHost(protocol: JamProtocol(crypto), host: host, bridge: bridge, friends: friends, autoAcceptFriends: () => ref.read(jamAutoAcceptFriendsProvider), beacon: ref.read(jamBeaconProvider), stopGrace: ref.read(jamStopGraceProvider));
     _statusSub = bridge.statuses.listen((s) => state = JamBridgeState(on: true, status: s));
     _codeSub = bh.codeChanges.listen(_codeChanged.add);
     await _hub.holdJam(remote: true);
     bh.start();
+    _hub.speakerJamRid = b64u(bh.jamId!); // the LAN row and the Bluetooth one are the same Jam
     state = JamBridgeState(on: true, status: bridge.status);
   }
 
@@ -123,6 +114,7 @@ class JamBridgeNotifier extends Notifier<JamBridgeState> {
     final bh = _bh, bridge = _bridge;
     if (bh == null) return;
     _bh = _bridge = null;
+    _hub.speakerJamRid = null;
     unawaited(_statusSub?.cancel());
     unawaited(_codeSub?.cancel());
     if (ref.mounted) state = const JamBridgeState();

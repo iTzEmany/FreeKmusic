@@ -179,6 +179,31 @@ void main() {
     expect(await f, JamJoinOutcome.accepted);
   });
 
+  JamInvite advert({List<BrokerEntry> brokers = const [a], Uint8List? fp}) => JamInvite(
+    jamId: secrets.jamId,
+    token: hostP.token(secrets, hostMs),
+    fingerprint: fp ?? hostP.fingerprint(secrets.hpk),
+    brokers: brokers,
+  );
+
+  test('advert: Hpk comes from the lobby, then the request goes out', () async {
+    hostLink.publish(JamProtocol.lobbyTopic(secrets.jamId), hostP.lobby(secrets.hpk), retain: true);
+    final f = join(advert());
+    await pump();
+    expect(hostTakesRequest(), isNotNull);
+    hostSend(JamMsg.accept, acceptBody(stateV(1)));
+    expect(await f, JamJoinOutcome.accepted);
+  });
+
+  test('advert: a lobby with another fingerprint is not trusted', () async {
+    hostLink.publish(JamProtocol.lobbyTopic(secrets.jamId), hostP.lobby(secrets.hpk), retain: true);
+    expect(await settle(join(advert(fp: Uint8List(8))), step: 6), JamJoinOutcome.unreachable);
+  });
+
+  test('advert with a custom broker (0xFF) asks for the QR', () async {
+    expect(await join(advert(brokers: const [])), JamJoinOutcome.customBroker);
+  });
+
   test('code with no CODE on the broker: invalid after 4 s', () async {
     expect(
       await settle(join(JamInvite.fromCode('ABCD2345')!), step: 5),
