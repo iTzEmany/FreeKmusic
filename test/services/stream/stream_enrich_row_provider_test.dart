@@ -23,4 +23,20 @@ void main() {
     await Future.wait([a, b]);
     expect(rig.chain.calls, 1);
   });
+
+  test('once a run is over, a new call for the row starts a new one', () async {
+    final rig = EnrichRig();
+    addTearDown(rig.dispose);
+    final c = ProviderContainer(overrides: [
+      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      trackRepositoryProvider.overrideWithValue(rig.repo),
+    ]);
+    addTearDown(c.dispose);
+    final row = await rig.add(kind: kStreamKind, path: 'youtube:v1');
+    final enrich = c.read(streamEnrichRowProvider);
+    final first = enrich(row);
+    await first;
+    await pumpEventQueue();
+    expect(identical(enrich(row), first), isFalse);
+  });
 }

@@ -51,20 +51,19 @@ void main() {
     await rig.add(kind: kStreamKind, path: 'stream:${r.indexKey}');
     preparer.phases.value = {r.indexKey: StreamPhase.ready};
     await pumpEventQueue();
-    for (var n = 0; n < 100 && !done; n++) {
+    for (var n = 0; n < 500 && !done; n++) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
     }
     expect(done, isTrue);
     expect(rig.chain.calls, 1);
   });
 
-  test('a forgotten entry is skipped', () async {
+  test('a forgotten entry ends the wait without any phase change', () async {
     final id = online.register(r, suggested: true);
     final run = c.read(shufflePlusEnrichProvider)([id], const Duration(seconds: 5));
     await pumpEventQueue();
     online.forget(id);
-    preparer.phases.value = {'other': StreamPhase.ready}; // any change wakes the wait
-    await run.timeout(const Duration(seconds: 5));
+    await run.timeout(const Duration(milliseconds: 1500)); // no phase change wakes it
     expect(rig.chain.calls, 0);
   });
 

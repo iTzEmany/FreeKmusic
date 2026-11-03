@@ -317,6 +317,14 @@ void main() {
       expect(yt.tokens['a']!.single!.isCancelled, isTrue);
     });
 
+    test('restart with keep false: a prefetch again once it answers, gone with the queue window', () async {
+      yt.urls.add('https://v/a?expire=4102444800');
+      final s = await prep.restart('youtube:a', _r('a'), keep: false);
+      expect(s.url, isNotNull);
+      prep.setQueue([_i('c')]);
+      expect(yt.tokens['a']!.single!.isCancelled, isTrue);
+    });
+
     test('start with keep false: a job someone else asked for stays requested', () async {
       yt.urls.add('https://v/a?expire=4102444800');
       final a = prep.ready('youtube:a', _r('a'));

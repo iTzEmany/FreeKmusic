@@ -175,7 +175,9 @@ final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>, Dura
       try {
         // Re-check after listening: the row may have landed meanwhile.
         if (await tracks.streamRow(key) == null) {
-          await next.future.timeout(end.difference(DateTime.now()), onTimeout: () {});
+          // A short wake-up too: a forgotten entry changes no phase.
+          final left = end.difference(DateTime.now());
+          await next.future.timeout(left < const Duration(seconds: 1) ? left : const Duration(seconds: 1), onTimeout: () {});
         }
       } finally {
         preparer.phases.removeListener(wake);

@@ -127,6 +127,7 @@ class ShufflePlusController {
   final _mine = <int>{};
   final _block = <int>[]; // suggestions queued since the last enrichment
   Future<void>? _enriching; // the block being enriched: no new suggestion meanwhile
+  int _enrichGen = 0; // bumped on a reset: an old block no longer holds the engine
 
   List<int>? _source;
   List<Track> _sourceTracks = const [];
@@ -293,7 +294,7 @@ class ShufflePlusController {
   Future<void> _removePending() async {
     // The whole queue: with shuffle on, a suggestion sits after its natural
     // predecessor, so it may fall before the current song once shuffle is off.
-    _block.clear();
+    _resetBlock();
     for (final id in host.queueIds.toList()) {
       if (id != _curId && _mine.contains(id)) await _drop(id);
     }
@@ -329,7 +330,7 @@ class ShufflePlusController {
     pool.clear();
     _seeds = [];
     _suggestedWithSeeds = 0;
-    _block.clear();
+    _resetBlock();
     _sourceTracks = await loadTracks(src);
     _eligible = _sourceTracks.where((t) => !t.missing && t.kind == 0).length >= minSourceSize;
     final cur = _current;
@@ -399,12 +400,20 @@ class ShufflePlusController {
     _block.add(id);
     if (_block.length >= blockSize) {
       // Not awaited: the rest of the engine (a skip, Shuffle+ turned off) goes on.
+      final gen = ++_enrichGen;
       _enriching = _enrichBlock().whenComplete(() {
+        if (gen != _enrichGen) return; // the engine was reset meanwhile
         _enriching = null;
         poke();
       });
     }
     return true;
+  }
+
+  void _resetBlock() {
+    _block.clear();
+    _enriching = null;
+    _enrichGen++;
   }
 
   /// Enriches the queued block before the next suggestion; a slow or failing

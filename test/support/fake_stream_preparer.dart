@@ -45,6 +45,9 @@ class FakeStreamPreparer implements StreamPreparer {
   /// Keys that start from an address, not the file (what `start` answers).
   final urls = <String, (Uri, Map<String, String>)>{};
 
+  /// The `keep` of every `start` call.
+  final keeps = <bool>[];
+
   /// What `restart` answers per key, in order (an empty list: the file).
   final restarts = <String, List<StreamStart>>{};
   final restarted = <String>[];
@@ -54,6 +57,7 @@ class FakeStreamPreparer implements StreamPreparer {
 
   @override
   Future<StreamStart> start(String key, YtResult r, {bool keep = true}) async {
+    keeps.add(keep);
     final u = urls[key];
     return u != null ? StreamStart.url(u.$1, u.$2) : StreamStart.file(await ready(key, r));
   }

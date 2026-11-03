@@ -358,6 +358,7 @@ void main() {
     await pumpEventQueue();
     expect(done, isTrue);
     expect(fake.asked, isEmpty, reason: 'no wait for the whole file');
+    expect(fake.keeps, [false], reason: 'the job goes back to being a prefetch');
   });
 
   test('with the file never arriving, every free slot still fills from the addresses', () async {
@@ -417,6 +418,48 @@ void main() {
     cfg = const ShufflePlusConfig();
     controller.poke();
     await until(() => host.queueIds.where(isOnlineId).isEmpty);
+  });
+
+  test('off then on during an enrichment: suggestions resume at once, the next block is new', () async {
+    enrichHook = (ids) {
+      enriched.add(ids);
+      return Completer<void>().future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => enriched.isNotEmpty);
+    cfg = const ShufflePlusConfig();
+    controller.poke();
+    await until(() => host.queueIds.where(isOnlineId).isEmpty);
+    cfg = const ShufflePlusConfig(enabled: true);
+    controller.poke();
+    await until(() => enriched.length == 2);
+    expect(enriched[1], hasLength(3));
+    expect(enriched[1].toSet().intersection(enriched[0].toSet()), isEmpty);
+  });
+
+  test('an enrichment that throws does not stop Shuffle+', () async {
+    var calls = 0;
+    enrichHook = (ids) async {
+      calls++;
+      throw StateError('enrichment broke');
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => calls == 1);
+    for (var i = 0; i < 5; i++) {
+      host.finishAndAdvance();
+      await settle();
+    }
+    await until(() => host.inserts > 3);
   });
 
   test('an enrichment that never ends holds the next suggestion only for the time limit', () async {
