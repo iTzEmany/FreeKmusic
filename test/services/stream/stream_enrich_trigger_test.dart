@@ -50,6 +50,12 @@ void main() {
     expect(calls, [7, 7, 8, 7]);
   });
 
+  test('a different row in the same listen is launched', () {
+    trigger.update(-1, 7);
+    trigger.update(-1, 8);
+    expect(calls, [7, 8]);
+  });
+
   test('no duplicate on the same row while one is running', () async {
     gate = Completer<void>();
     trigger.update(-1, 7);

@@ -6,6 +6,7 @@ import 'package:codecore/data/repositories/play_history_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/stream_providers.dart';
 import 'package:audio_service/audio_service.dart' show AudioProcessingState;
 import 'package:codecore/services/audio/audio_backend.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
@@ -416,6 +417,35 @@ void main() {
     final live = container.read(liveCurrentTrackProvider).value;
     expect(live?.id, id);
     expect(live?.lyricsPlain, 'la la');
+  });
+
+  test('enrichment: a new uncached track does not re-enrich the previous row, then enriches its own once', () async {
+    final rows = <int>[];
+    Future<void> later() => Future<void>.delayed(const Duration(milliseconds: 200));
+    final container = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      audioHandlerProvider.overrideWithValue(handler),
+      streamEnrichRowProvider.overrideWithValue((r) async => rows.add(r)),
+    ]);
+    addTearDown(container.dispose);
+    container.listen(currentTrackProvider, (_, _) {});
+    container.listen(streamEnrichTriggerProvider, (_, _) {});
+    await later(); // the providers subscribe to the handler
+    final a = online.register(result('va'));
+    await handler.playQueue([a], 0);
+    await later();
+    final rowA = (await TrackRepository(db).streamRow('youtube:va'))!.id;
+    expect(rows, [rowA]);
+    final b = online.register(result('vb'));
+    final gate = preparer.gates['youtube:vb'] = Completer<void>();
+    final started = handler.playQueue([b], 0);
+    await later();
+    expect(rows, [rowA]);
+    gate.complete();
+    await started;
+    await later();
+    final rowB = (await TrackRepository(db).streamRow('youtube:vb'))!.id;
+    expect(rows, [rowA, rowB]);
   });
 
   test('the old track pauses while the file comes; A ending meanwhile does not skip B', () async {

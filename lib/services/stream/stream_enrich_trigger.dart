@@ -7,16 +7,16 @@ class StreamEnrichTrigger {
 
   final Future<void> Function(int rowId) enrich;
   int? _current;
-  var _fired = false;
+  int? _firedRow; // the row launched in this listen
   final _running = <int>{};
 
   void update(int? currentId, int? rowId) {
     if (currentId != _current) {
       _current = currentId;
-      _fired = false; // a new listen is a new attempt
+      _firedRow = null; // a new listen is a new attempt
     }
-    if (_fired || rowId == null || !_running.add(rowId)) return;
-    _fired = true;
+    if (rowId == null || rowId == _firedRow || !_running.add(rowId)) return;
+    _firedRow = rowId; // a different row in the same listen is launched too
     AppLog.i('stream enrich row=$rowId');
     Future.sync(() => enrich(rowId))
         .catchError((Object e, StackTrace st) => AppLog.w('stream enrich failed row=$rowId', e, st))

@@ -17,7 +17,7 @@ import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'online_providers.dart';
-import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider;
+import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider, onlineEntriesProvider;
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'youtube_providers.dart';
 
@@ -91,16 +91,20 @@ Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository track
   await enrichment.saveCredits(row.id, proposal.credits);
 }
 
+/// What the trigger runs for a row; a provider so a test can watch the calls.
+final streamEnrichRowProvider = Provider<Future<void> Function(int rowId)>((ref) =>
+    (id) => enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id));
+
 /// Tells the trigger which row plays; kept alive by the app widget.
 final streamEnrichTriggerProvider = Provider<StreamEnrichTrigger>((ref) {
-  final trigger = StreamEnrichTrigger(
-      (id) => enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id));
+  final trigger = StreamEnrichTrigger(ref.read(streamEnrichRowProvider));
   void update() {
     final t = ref.read(currentTrackProvider).value;
     final row = t == null
         ? null
         : isOnlineId(t.id)
-            ? ref.read(currentShadowRowProvider)?.id
+            // Not currentShadowRowProvider: read inside a listener it can still hold the previous track's row.
+            ? ref.read(onlineEntriesProvider)?.entryOf(t.id)?.trackId
             : t.kind == kStreamKind
                 ? t.id
                 : null;
@@ -108,7 +112,7 @@ final streamEnrichTriggerProvider = Provider<StreamEnrichTrigger>((ref) {
   }
 
   ref.listen(currentTrackProvider, (_, _) => update());
-  ref.listen(currentShadowRowProvider, (_, _) => update());
+  ref.listen(currentShadowRowProvider, (_, _) => update()); // fires when the row is bound
   return trigger;
 });
 
