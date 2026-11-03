@@ -1212,7 +1212,7 @@ mobile_scanner — fase 24 — 2026-10-19
 
 ## Fase 73 — Misure e prova a mano (`fase-73-chiusura-jam-distanza.md`)
 - [x] 73.1 Costo della cifratura (seal dello STATE in un isolate, esiti nella fase)
-- [ ] 73.2 Prova a mano con due telefoni (utente; senza Motorola non provata, D-337: in «Tocca a te» di `handoff.md`)
+- [x] 73.2 Prova a mano con due telefoni (3/11, Mi A3 host + Motorola ospite su 4G: Bluetooth, aggiunte, amici, pausa 10 min, aereo 1 e 11 min OK; KO Casuale+ e ricerca vicina che non riparte → fase 74; esiti in `fase-73-chiusura-jam-distanza.md`)
 - [x] 73.3 Chiusura (handoff aggiornato, pulizia del disco)
 
 ## Fase 74 — Coda della Jam e rifinitura (`fase-74-coda-jam-e-rifinitura.md`)

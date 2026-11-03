@@ -25,6 +25,8 @@ Due problemi dello stesso punto (`JamController.saveLocalQueue` / `_restoreLocal
 - **Casuale+ torna Casuale** (visto sul Motorola il 30/10): la modalità di casuale (`ShuffleMode` in `shuffle_plus_providers.dart`) va salvata con la coda e rimessa com'era all'uscita (D-342).
 - **Coda di prima della Jam su disco** (D-341): oggi `_saved` e la parte di «Coda insieme» vivono in memoria; il disco resta fermo sulla coda di prima (`PlaybackPersistence.hold`), ma la parte non ancora suonata (D-209) e la modalità di casuale si perdono se l'app viene chiusa durante la Jam. Primo test: cosa ritrova davvero l'utente riaprendo l'app dopo una chiusura a Jam in corso. Poi salvare su disco quanto serve per ritrovare la coda che l'uscita normale avrebbe dato (coda, indice, posizione, modalità di casuale; la parte di «Coda insieme» al posto della coda quando c'è), con le preferenze già usate da `playback_persistence.dart`, e cancellarlo dopo il ripristino.
 
+Confermato nella prova 73.2 (3/11): due uscite su due da ospite in «Coda dell'host» sono tornate a Casuale. Nella stessa prova, dopo l'uscita il Motorola mostrava il brano 36 a «3:10 / 3:10» con una posizione salvata di 4:07: capire se la posizione ripristinata può superare la durata del brano.
+
 **Fatto quando:** test: Casuale+ prima della Jam → Casuale+ dopo «Esci» e dopo «Termina»; chiusura dell'app a Jam in corso e riapertura → la stessa coda (o la parte non suonata) e la stessa modalità che avrebbe dato l'uscita normale; nessun salvataggio rimasto dopo un ripristino riuscito.
 
 ### 74.4 — «Scarica» nel ⋮ della schermata Jam (R-93, D-343)
@@ -42,7 +44,11 @@ A ogni avvio di brano la posizione mostrata nella Jam salta indietro di circa 1,
 - **Timeout del primo «Entra»:** il primo «Entra» col codice dal Mi A3 va spesso in timeout verso broker.emqx.io (10–12 s, «Broker irraggiungibile»), il secondo riesce. Prima capire dal log se è il DNS, il TLS o il CONNECT; correzione attesa: un nuovo tentativo automatico sullo stesso broker prima di passare al successivo o di mostrare l'errore, senza superare il tempo totale di oggi.
 - **Messaggio a posizione spenta:** aprendo «Dispositivi» con la posizione spenta (Android ≤ 11) il messaggio `jamBleLocationOff` non compare; dall'interruttore sì (`lib/ui/screens/jam/ble_permission.dart`). Va mostrato anche all'apertura di «Dispositivi», una volta per apertura, se la ricerca delle Jam vicine è accesa.
 
-**Fatto quando:** test del nome (generico → modello; ospite uscito → nome ricordato o «Ospite»); test di `JamBridge` con un broker finto che fallisce il primo CONNECT e riesce al secondo; test widget del messaggio all'apertura di «Dispositivi»; ARB it/en/de/es per le stringhe nuove.
+- **Ricerca delle Jam vicine che non riparte** (prova 73.2): se la Jam finisce mentre l'ospite non ha aperta la schermata Jam, la fase resta `ended` e `_wanted()` in `lib/providers/jam_nearby_providers.dart` tiene ferma la ricerca, anche spegnendo e riaccendendo «Cerca Jam vicine». Correzione: una Jam finita non blocca la ricerca.
+- **Annuncio del Mi A3 (Android 11) senza posizione precisa** (prova 73.2): l'annuncio è partito solo dopo un `pm grant ACCESS_FINE_LOCATION` a mano. Verificare se il foglio dei permessi (`ble_permission.dart`) lo chiede su Android ≤ 11 e, se manca, chiederlo.
+- **Brano di libreria dell'ospite remoto in ritardo** (prova 73.2): è partito sull'host solo dopo i 15 s di `jam: no lookup for …`. Capire cosa cerca l'host per un item `yt:` e se può saltare l'attesa.
+
+**Fatto quando:** test della ricerca che riparte dopo una Jam finita a schermata chiusa; test del nome (generico → modello; ospite uscito → nome ricordato o «Ospite»); test di `JamBridge` con un broker finto che fallisce il primo CONNECT e riesce al secondo; test widget del messaggio all'apertura di «Dispositivi»; ARB it/en/de/es per le stringhe nuove.
 
 ### 74.7 — Controlli di fase
 `flutter analyze`, comando mirato, `/code-review high` su 74.2 e 74.3 (concorrenza e dati persistiti), scheggia in modalità passo su 74.1–74.3, review di architettura Opus. Prova in autonomia: Linux host e Mi A3 ospite (LAN e col codice); «Coda insieme» oltre 200 voci, Casuale+ prima e dopo la Jam, chiusura forzata dell'app sul Mi A3 a Jam in corso, primo «Entra» col codice, «Dispositivi» con la posizione spenta.
