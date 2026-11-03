@@ -1225,7 +1225,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 74.7 Controlli di fase (analyze, mirato, code-review high, scheggia, review Opus; prova Linux + Mi A3 del 3/11, LAN da rifare a casa; esiti nella fase)
 
 ## Fase 75 — Testo, curiosità e crediti dei brani in streaming (`fase-75-arricchimento-stream.md`)
-- [ ] 75.1 Rete di sicurezza
-- [ ] 75.2 Schede visibili per lo streaming
-- [ ] 75.3 Arricchimento 5 s dopo l'avvio
-- [ ] 75.4 Controlli di fase
+- [x] 75.1 Rete di sicurezza
+- [x] 75.2 Schede visibili per lo streaming
+- [x] 75.3 Arricchimento all'avvio dell'ascolto (D-351, non più 5 s)
+- [x] 75.4 Controlli di fase (Mi A3; Shuffle+ online e segnaposto a vista da provare a mano)

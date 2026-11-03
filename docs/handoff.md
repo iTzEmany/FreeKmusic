@@ -1,13 +1,11 @@
-# Handoff — 2026-11-03 (fase 74 chiusa: coda della Jam e rifinitura)
+# Handoff — 2026-11-03 (fase 75 chiusa: testo, curiosità e crediti dei brani in streaming)
 
 ## Stato
-**Fase 74 chiusa** (PR #93): il «Suggerito» non ripropone i già suonati oltre le 200 voci, Shuffle+ non usa la sorgente di prima, Casuale+ e la coda di prima tornano intatti dopo la Jam anche dopo una chiusura dell'app (copia `jamAside`), «Scarica» nel ⋮ della Jam, posizione della Jam che non salta indietro, rifinitura della Jam a distanza (nome del telefono, primo «Entra», ricerca vicina, posizione spenta, brano `yt:` dell'ospite remoto suonato subito). Esiti in `fase-74-coda-jam-e-rifinitura.md`. Le fasi 71–73 sono chiuse.
-
-Pianificata la **fase 75** (refactor «arricchimento-stream», 3/11): testo, curiosità e crediti anche per i brani in streaming, caricati ~5 s dopo l'avvio. Analisi in `docs/refactor/arricchimento-stream/analisi.md`, niente mockup.
+**Fase 75 chiusa** (PR #95): i brani in streaming (ricerca online, Shuffle+, Radio) mostrano testo, curiosità e crediti della riga ombra, con un segnaposto «in arrivo» finché la riga non c'è; l'arricchimento parte appena il brano corrente ha la riga (file in cache), anche in pausa (D-351, al posto dei 5 s di D-345); i pre-caricati non si arricchiscono. Provato sul Mi A3. Esiti in `fase-75-arricchimento-stream.md`. **Fase 74 chiusa** (PR #93), esiti in `fase-74-coda-jam-e-rifinitura.md`.
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 75
+/obiettivo <uno dei «Prossimi obiettivi»>
 ```
 oppure uno dei «Prossimi obiettivi» qui sotto.
 
@@ -18,6 +16,7 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - L'app di misura `com.codecore.player.perf` è stata disinstallata dal Mi A3 da `flutter drive` (73.1): `perf_device.py` la reinstalla.
 
 ## Tocca a te
+- **Fase 75 a mano**: un suggerito online di Shuffle+ in coda (niente arricchimento finché non suona), il segnaposto «in arrivo» a vista, «Proposta di correzione» su un brano della libreria; l'APK debug della fase 75 è installato sul Mi A3.
 - **Mi A3 dopo la prova 74.7**: è rimasto l'amico «emanuele-Aspire-A515-45» in «Jam a distanza» e lo shuffle su Casuale+ (prima era spento); la prova ha spento e poi rimesso la posizione (`location_mode` 3). Toglili a mano se non ti servono.
 - **Resto della 73.2** (fatta il 3/11, esiti in `fase-73-chiusura-jam-distanza.md`): ingresso col QR (serve la fotocamera), Sospendi/Blocca da un ospite remoto, riserva fra broker con due voci nella lista.
 - **Mosquitto 8886** (D-258): chiude ogni connessione dopo il CONNECT; toglierlo da `kDefaultJamBrokers` o sostituirlo.

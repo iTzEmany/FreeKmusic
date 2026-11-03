@@ -45,3 +45,14 @@ Test nuovi, rossi sul `master` di oggi (analisi, «Rete»):
 Esiti in questo documento, spunte in `PROGRESS.md`, handoff aggiornato, pulizia del disco.
 
 **Fatto quando:** tutti i controlli sopra sono fatti e scritti qui.
+
+## Esiti (2026-11-03, PR #95)
+- **D-351** (scelta dell'utente durante il lavoro): niente attesa di 5 s, l'arricchimento parte appena il brano corrente ha la riga ombra (file in cache), anche in pausa. `StreamEnrichTrigger` + `streamEnrichTriggerProvider`; `StreamPreparer` non arricchisce più.
+- `flutter analyze` pulito; comando mirato (più i test nuovi, `jam_self_start`, `shuffle_plus`, `stream_cache_tile`): 242 test verdi prima della correzione dal vivo, poi 167 sui file toccati.
+- Review Opus delle aree a rischio: 4 rilievi corretti (riga ombra con id positivo; voce che resta sulla riga cancellata dopo «Scarica»; righe già provate dal motore saltate; posizione vecchia, poi superata da D-351). Scheggia di passo: 2 bug bassi del trigger corretti, 6 mutanti coperti da test.
+- **Prova dal vivo sul Mi A3** (APK debug):
+  - 1° giro: **KO**. Dopo un brano in cache, il tap su un brano nuovo arricchiva di nuovo la riga del precedente (letta da un provider derivato non ancora ricalcolato dentro un `ref.listen`) e mai quella nuova. Corretto leggendo la riga dalla voce della coda, con test di regressione in `online_playback_test.dart`.
+  - 2° giro: OK. Primo brano della sessione: `result=ok` e poi `stream enrich row=224` dopo 0,3 s, testo e curiosità dopo ~20 s. Brano A in cache → brano B nuovo: nessun enrich di A, `stream enrich row=225` subito dopo `result=ok` di B. B in pausa subito: arricchito lo stesso.
+  - Avvio dello streaming: `url=4402` ms contro 5,8–40 s nelle righe vecchie dello stesso telefono (una misura, Wi-Fi): non peggiore.
+  - Brano della libreria: schede come prima, nessun `stream enrich`.
+- **Da provare a mano**: un suggerito online di Shuffle+ in coda (nessun enrich finché non suona); il segnaposto «in arrivo» a vista; «Proposta di correzione» su un brano della libreria; Linux non provato dal vivo.
