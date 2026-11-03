@@ -3,9 +3,11 @@
 ## Stato
 **Fase 74 chiusa** (PR #93): il «Suggerito» non ripropone i già suonati oltre le 200 voci, Shuffle+ non usa la sorgente di prima, Casuale+ e la coda di prima tornano intatti dopo la Jam anche dopo una chiusura dell'app (copia `jamAside`), «Scarica» nel ⋮ della Jam, posizione della Jam che non salta indietro, rifinitura della Jam a distanza (nome del telefono, primo «Entra», ricerca vicina, posizione spenta, brano `yt:` dell'ospite remoto suonato subito). Esiti in `fase-74-coda-jam-e-rifinitura.md`. Le fasi 71–73 sono chiuse.
 
+Pianificata la **fase 75** (refactor «arricchimento-stream», 3/11): testo, curiosità e crediti anche per i brani in streaming, caricati ~5 s dopo l'avvio. Analisi in `docs/refactor/arricchimento-stream/analisi.md`, niente mockup.
+
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo
+/obiettivo fase 75
 ```
 oppure uno dei «Prossimi obiettivi» qui sotto.
 
