@@ -444,6 +444,23 @@ void main() {
       expect(got.state!.items.first.title.length, 64);
     });
 
+    test('isolate seal (K-JD-09) gives the same state, in order', () async {
+      final (h, g) = pair();
+      final st = stateOf(bigItems(), current: 5);
+      final sent = <Uint8List>[];
+      expect(await h.sealStateAsync(st, sent.add), isTrue);
+      expect(await h.sealStateAsync(st, sent.add), isTrue);
+      final sync = h.seal(JamMsg.state, {'state': host.fitState(st)!});
+      // Published in call order: opening them in that order must succeed.
+      final m1 = g.open(sent[0]);
+      final m2 = g.open(sent[1]);
+      final m3 = g.open(sync!);
+      expect(m1!.state!.toJson(), m3!.state!.toJson());
+      expect(m2!.state!.toJson(), m3.state!.toJson());
+      expect(m1.state!.items, hasLength(200));
+      expect(g.open(sent[0]), isNull, reason: 'replay is a counter drop');
+    });
+
     test('too big even cut: played items go, current is recomputed', () {
       final rnd = Random(9);
       const abc =

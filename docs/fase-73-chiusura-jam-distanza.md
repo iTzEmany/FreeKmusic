@@ -22,3 +22,12 @@ Motorola host, Mi A3 ospite su 4G (hotspot di un terzo telefono o SIM), broker p
 `docs/handoff.md` aggiornato, colonna Fase di R-159 e RNF-15 compilata, `docs/prossimi-lavori.md` §2 lo segna l'utente (non tracciato), pulizia del disco (`pulizia.sh`).
 
 **Fatto quando:** documenti aggiornati, nessun file temporaneo rimasto.
+
+## Esiti
+
+### 73.1 — Costo della cifratura (2026-11-03)
+- Dispositivo: Mi A3 `0d7ae9df206e`, schermo acceso e sbloccato (a schermo bloccato i tempi raddoppiano). Modalità: **profile** (`flutter drive --profile`, app di misura `.perf`), `integration_test/jam_crypto_bench_test.dart`: 200 item, 5 giri di riscaldamento, 50 giri.
+- Stato reale: 59 692 B di JSON, 26 187 B dopo zlib, busta cifrata e riempita 26 418 B.
+- Prima (tutto sul thread della UI, come faceva il ponte: `fitState` + `seal`): cifratura media 16,4 ms, massimo 28,9 ms; decifratura media 4,6 ms, massimo 7,8 ms (in una corsa precedente 4,3 / 4,8). La cifratura AEAD è trascurabile: il costo è JSON + zlib, ripetuti da `fitState` e da `seal`.
+- Decisione: la cifratura supera 8 ms, la decifratura no. `seal` dello STATE (`JamChannel.sealStateAsync`, usata da `_sendState` del ponte) calcola JSON, taglio e zlib in un isolate (`Isolate.run`) quando gli item sono almeno 40; sotto resta in linea. `JamChannel` serializza i sigilli asincroni, così contatori e ordine di pubblicazione restano uguali, e `_send` si accoda se uno STATE è in corso (lo STATE esce prima del RESULT). La decifratura resta sul thread della UI. ACCEPT, che porta anche lo stato, resta in linea (una volta per ingresso).
+- Dopo: cifratura in tempo reale 20,0 ms in media, 38,6 ms al massimo (l'isolate costa, ma non è sul thread della UI); blocco più lungo del ciclo degli eventi della UI durante i 50 sigilli 17,8 ms, sotto il rumore del telefono a riposo (40 ms nella stessa corsa). Test unitario: stato uguale e ordine rispettato (`jam_protocol_test.dart`).

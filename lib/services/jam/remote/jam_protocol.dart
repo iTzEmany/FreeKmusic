@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show ZLibCodec, ZLibDecoder;
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import '../../../core/app_log.dart';
@@ -241,19 +242,65 @@ class JamChannel {
   /// then not consumed.
   Uint8List? seal(int type, Object? body) {
     _live();
+    return _finishSeal(type, _pack(body));
+  }
+
+  /// Runs strictly after the earlier [sealStateAsync] / [sealAsync] calls, so
+  /// counters and the order of publishes follow the order of the calls.
+  Future<T> _serial<T>(Future<T> Function() f) {
+    _queued++;
+    final r = _tail.then((_) => f());
+    _tail = r.then((_) {}, onError: (_) {}).whenComplete(() => _queued--);
+    return r;
+  }
+
+  Future<void> _tail = Future.value();
+  int _queued = 0;
+
+  /// True while an async seal is in flight: a sync [seal] now would
+  /// overtake it, so the caller must use [sealAsync] to keep the order.
+  bool get busy => _queued > 0;
+
+  /// [seal] queued behind the async calls in flight. [publish] runs right
+  /// after sealing, in the same queue slot: counter order = publish order.
+  /// False when the envelope would be too big.
+  Future<bool> sealAsync(
+    int type,
+    Object? body,
+    void Function(Uint8List) publish,
+  ) => _serial(() async {
+    _live();
+    return _emit(_finishSeal(type, _pack(body)), publish);
+  });
+
+  bool _emit(Uint8List? b, void Function(Uint8List) publish) {
+    if (b == null) return false;
+    publish(b);
+    return true;
+  }
+
+  /// [seal] of a STATE with [JamProtocol.fitState] applied: the JSON, the
+  /// size fitting and the compression (the slow part, K-JD-09) run in an
+  /// isolate; false when the state does not fit. Throws [StateError] when the
+  /// channel was disposed meanwhile. See [sealAsync] for [publish].
+  Future<bool> sealStateAsync(
+    JamState st,
+    void Function(Uint8List) publish,
+  ) => _serial(() async {
+    _live();
+    // shortcut: a short list is packed inline (the isolate costs more than it saves).
+    final packed = st.items.length < _isolateItems
+        ? _packState(st)
+        : await _packStateInIsolate(st);
+    _live();
+    return _emit(
+      packed == null ? null : _finishSeal(JamMsg.state, packed),
+      publish,
+    );
+  });
+
+  Uint8List? _finishSeal(int type, Uint8List plain) {
     final ctr = _sent + 1;
-    var raw = Uint8List.fromList(utf8.encode(jsonEncode(body)));
-    var flag = 0;
-    if (raw.length > 256) {
-      final z = Uint8List.fromList(ZLibCodec().encode(raw));
-      if (z.length < raw.length) {
-        raw = z;
-        flag = 1;
-      }
-    }
-    final plain = Uint8List(raw.length + 1)
-      ..[0] = flag
-      ..setAll(1, raw);
     final sealed = _p.crypto.aeadEncrypt(
       key: _sendKey,
       message: _p.crypto.pad(plain, JamWire.padBlock),
@@ -938,29 +985,60 @@ class JamProtocol {
   /// compressed, titles, artists and albums are cut to 64 characters, and if
   /// that is not enough the already played items go (`current` recomputed).
   /// Null when it still does not fit: the caller must not send that state.
-  Map<String, Object?>? fitState(JamState s) {
-    final j = s.toJson();
-    if (_fits(j)) return j;
-    final items = (j['items'] as List).cast<Map<String, Object?>>();
-    for (final it in items) {
-      for (final k in const ['title', 'artist', 'album']) {
-        final v = it[k];
-        if (v is String && v.length > 64) it[k] = v.substring(0, 64);
-      }
-    }
-    if (_fits(j)) return j;
-    final cur = j['current'] as int;
-    if (cur > 0) {
-      items.removeRange(0, cur);
-      j['current'] = 0;
-    }
-    return _fits(j) ? j : null;
-  }
-
-  bool _fits(Map<String, Object?> j) =>
-      ZLibCodec().encode(utf8.encode(jsonEncode({'state': j}))).length <=
-      JamWire.stateBudget;
+  Map<String, Object?>? fitState(JamState s) => _fitState(s);
 }
+
+/// Flag byte (1 = zlib) followed by the JSON of [body], compressed when that
+/// pays; top level so that it can run in an isolate.
+Uint8List _pack(Object? body) {
+  var raw = Uint8List.fromList(utf8.encode(jsonEncode(body)));
+  var flag = 0;
+  if (raw.length > 256) {
+    final z = Uint8List.fromList(ZLibCodec().encode(raw));
+    if (z.length < raw.length) {
+      raw = z;
+      flag = 1;
+    }
+  }
+  return Uint8List(raw.length + 1)
+    ..[0] = flag
+    ..setAll(1, raw);
+}
+
+// The closures live at top level: inside a method they would capture `this`
+// (keys, sodium) and could not be sent to the isolate.
+const _isolateItems = 40;
+
+Uint8List? _packState(JamState st) {
+  final j = _fitState(st);
+  return j == null ? null : _pack({'state': j});
+}
+
+Future<Uint8List?> _packStateInIsolate(JamState st) =>
+    Isolate.run(() => _packState(st));
+
+Map<String, Object?>? _fitState(JamState s) {
+  final j = s.toJson();
+  if (_fits(j)) return j;
+  final items = (j['items'] as List).cast<Map<String, Object?>>();
+  for (final it in items) {
+    for (final k in const ['title', 'artist', 'album']) {
+      final v = it[k];
+      if (v is String && v.length > 64) it[k] = v.substring(0, 64);
+    }
+  }
+  if (_fits(j)) return j;
+  final cur = j['current'] as int;
+  if (cur > 0) {
+    items.removeRange(0, cur);
+    j['current'] = 0;
+  }
+  return _fits(j) ? j : null;
+}
+
+bool _fits(Map<String, Object?> j) =>
+    ZLibCodec().encode(utf8.encode(jsonEncode({'state': j}))).length <=
+    JamWire.stateBudget;
 
 class _TooBig implements Exception {}
 

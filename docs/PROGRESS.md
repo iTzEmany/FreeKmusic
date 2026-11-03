@@ -1211,6 +1211,6 @@ mobile_scanner — fase 24 — 2026-10-19
 - [ ] 72.4 Controlli di fase
 
 ## Fase 73 — Misure e prova a mano (`fase-73-chiusura-jam-distanza.md`)
-- [ ] 73.1 Costo della cifratura
+- [x] 73.1 Costo della cifratura (seal dello STATE in un isolate, esiti nella fase)
 - [ ] 73.2 Prova a mano con due telefoni (utente)
 - [ ] 73.3 Chiusura

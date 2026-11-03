@@ -400,6 +400,15 @@ class JamBridgeHost {
   // ---- sending -------------------------------------------------------------
 
   bool _send(JamChannel ch, int type, Map<String, Object?> body) {
+    if (ch.busy) {
+      // Behind a STATE still being sealed: keep the order (the RESULT after it).
+      ch
+          .sealAsync(type, body, (b) => bridge.publish(ch.sendTopic, b))
+          .then((ok) {
+            if (!ok) AppLog.w('jam bridge: message $type too big, not sent');
+          }, onError: (Object _) {}); // channel released meanwhile
+      return true;
+    }
     final b = ch.seal(type, body);
     if (b == null) {
       AppLog.w('jam bridge: message $type too big, not sent');
@@ -408,13 +417,18 @@ class JamBridgeHost {
     return bridge.publish(ch.sendTopic, b);
   }
 
-  void _sendState(JamChannel ch, JamState st) {
-    final j = protocol.fitState(st);
-    if (j == null) {
-      AppLog.w('jam bridge: state too big, not sent');
-      return;
+  /// Compression and encryption of the big state run off the UI thread
+  /// (K-JD-09); the publish follows in call order.
+  Future<void> _sendState(JamChannel ch, JamState st) async {
+    try {
+      final ok = await ch.sealStateAsync(
+        st,
+        (b) => bridge.publish(ch.sendTopic, b),
+      );
+      if (!ok) AppLog.w('jam bridge: state too big, not sent');
+    } on StateError {
+      // channel released while sealing: nobody to send to
     }
-    _send(ch, JamMsg.state, {'state': j});
   }
 
   /// After a (re)connection: lobby, code, and the state to everybody.
@@ -451,9 +465,7 @@ class JamBridgeHost {
     _subs.clear();
     final st = host.state;
     if (st != null && st.ended && st.version != _sentVersion) {
-      for (final e in _live) {
-        _sendState(e.value, st);
-      }
+      await Future.wait([for (final e in _live) _sendState(e.value, st)]);
     }
     _retain(JamProtocol.lobbyTopic(s.jamId), Uint8List(0));
     _clearGone();
