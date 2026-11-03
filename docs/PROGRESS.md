@@ -1231,6 +1231,6 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 75.4 Controlli di fase (Mi A3; Shuffle+ online e segnaposto a vista da provare a mano)
 
 ## Fase 76 — Suggeriti di Shuffle+ in coda appena c'è l'indirizzo (`fase-76-suggeriti-veloci.md`)
-- [ ] 76.1 Rete di sicurezza
-- [ ] 76.2 Indirizzo invece del file, poi arricchimento del blocco (D-353)
-- [ ] 76.3 Controlli di fase
+- [x] 76.1 Rete di sicurezza
+- [x] 76.2 Indirizzo invece del file, poi arricchimento del blocco (D-353)
+- [x] 76.3 Controlli di fase (Mi A3; correzione del #1 del blocco da riprovare a mano)

@@ -1,11 +1,11 @@
-# Handoff — 2026-11-03 (fase 75 chiusa: testo, curiosità e crediti dei brani in streaming)
+# Handoff — 2026-11-03 (fase 76 chiusa: suggeriti di Shuffle+ veloci e arricchiti)
 
 ## Stato
-**Fase 75 chiusa** (PR #95): i brani in streaming (ricerca online, Shuffle+, Radio) mostrano testo, curiosità e crediti della riga ombra, con un segnaposto «in arrivo» finché la riga non c'è; l'arricchimento parte appena il brano corrente ha la riga (file in cache), anche in pausa (D-351, al posto dei 5 s di D-345); i pre-caricati non si arricchiscono. Provato sul Mi A3. Esiti in `fase-75-arricchimento-stream.md`. **Fase 74 chiusa** (PR #93), esiti in `fase-74-coda-jam-e-rifinitura.md`.
+**Fase 76 chiusa**: i suggeriti online di Shuffle+ entrano in coda appena c'è l'indirizzo (4–6 s invece di ~40 s sul Mi A3, D-352) e si arricchiscono a blocchi di 3 prima di suonare (D-353). Esiti in `fase-76-suggeriti-veloci.md`. **Fase 75 chiusa** (PR #95): testo, curiosità e crediti dei brani in streaming, arricchiti appena il brano corrente è in cache (D-351).
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 76
+/obiettivo <uno dei «Prossimi obiettivi»>
 ```
 oppure uno dei «Prossimi obiettivi» qui sotto.
 
@@ -16,6 +16,7 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - L'app di misura `com.codecore.player.perf` è stata disinstallata dal Mi A3 da `flutter drive` (73.1): `perf_device.py` la reinstalla.
 
 ## Tocca a te
+- **Fase 76 a mano** (APK debug sul Mi A3 è di `52a9d18`, prima dell'ultima correzione): con Casuale+ controlla nel log `shuffle+ enrich of <id> row=` per tutti e 3 i suggeriti di un blocco e il quarto suggerito dopo il blocco.
 - **Fase 75 a mano**: un suggerito online di Shuffle+ in coda (niente arricchimento finché non suona), il segnaposto «in arrivo» a vista, «Proposta di correzione» su un brano della libreria; l'APK debug della fase 75 è installato sul Mi A3.
 - **Mi A3 dopo la prova 74.7**: è rimasto l'amico «emanuele-Aspire-A515-45» in «Jam a distanza» e lo shuffle su Casuale+ (prima era spento); la prova ha spento e poi rimesso la posizione (`location_mode` 3). Toglili a mano se non ti servono.
 - **Resto della 73.2** (fatta il 3/11, esiti in `fase-73-chiusura-jam-distanza.md`): ingresso col QR (serve la fotocamera), Sospendi/Blocca da un ospite remoto, riserva fra broker con due voci nella lista.
@@ -43,7 +44,7 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-0. **(Consigliato) Fase 76**: i suggeriti online di Shuffle+ entrano in coda appena c'è l'indirizzo, non dopo il download completo, e ogni blocco di ~3 si arricchisce prima di suonare (D-352, D-353, `fase-76-suggeriti-veloci.md`).
+0. Verificare il tasto «Casuale su tutto» della Home (nella prova 76 non ha avviato nulla).
 1. **(Consigliato) Debito della fase 74** (dalla review di architettura): estrarre `JamLocalQueue` da `JamController` (`jam_providers.dart` è a ~1360 righe; `_saved`/`_mode`/copia `jamAside`, valori di dominio a `keepAside`, `_part.unplayed` calcolato una volta per stato); un solo helper «riprova subito sullo stesso broker» per `JamBridge` e `_lookupCode`; un solo limite della posizione oltre la durata; unire `jam_queue_owner_name_test.dart` a `jam_queue_sheet_test.dart`; nome dell'ospite uscito ricordato per tutta la Jam, non solo a foglio aperto.
 2. Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
 3. Ricerca «notte», build p99 (D-176); 53.10 completamento intero sul Motorola.
