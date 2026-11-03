@@ -33,15 +33,47 @@ class PlaybackPersistence {
   Duration _position = Duration.zero;
   bool _held = false;
 
-  /// Restores the saved queue paused at the saved position.
-  Future<void> restore() async {
+  /// Restores the saved queue paused at the saved position. A copy kept aside
+  /// by a Jam left open (D-341) comes back instead, then goes. Returns whether
+  /// Shuffle+ was on in that copy (null: no copy).
+  Future<bool?> restore() async {
     final s = _store.readPlayback();
+    ({SavedPlayback queue, bool plus})? aside;
+    try {
+      aside = _store.readJamAside();
+    } on Object catch (e, st) {
+      AppLog.w('jam: unreadable queue kept aside', e, st);
+    }
+    await dropAside();
     _volume = s.volume;
     await _handler.setVolume(s.volume);
-    _handler.setShuffleAndRepeat(shuffle: s.shuffle, repeat: s.repeat);
-    if (s.queueIds.isEmpty) return;
-    await _handler.restore(
-        s.queueIds, s.index, Duration(milliseconds: s.positionMs));
+    // A copy with no queue (a host) carries only the shuffle mode.
+    final q = aside != null && aside.queue.queueIds.isNotEmpty ? aside.queue : s;
+    _handler.setShuffleAndRepeat(shuffle: aside?.queue.shuffle ?? s.shuffle, repeat: s.repeat);
+    if (q.queueIds.isEmpty) return aside?.plus;
+    await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs));
+    if (aside != null) {
+      _position = Duration(milliseconds: q.positionMs);
+      await flush(); // the disk follows the queue now back
+    }
+    return aside?.plus;
+  }
+
+  /// Keeps [q] aside for a restart in the middle of a Jam (D-341).
+  Future<void> keepAside(SavedPlayback q, {required bool plus}) async {
+    try {
+      await _store.writeJamAside(q, plus: plus);
+    } on Object catch (e, st) {
+      AppLog.w('jam: could not keep the queue aside', e, st);
+    }
+  }
+
+  Future<void> dropAside() async {
+    try {
+      await _store.clearJamAside();
+    } on Object catch (e, st) {
+      AppLog.w('jam: could not drop the queue kept aside', e, st);
+    }
   }
 
   void start() {

@@ -450,7 +450,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         (token: token, key: key, from: from, t0: t0, pos0: startAt ?? Duration.zero, ended: ended);
     // A stream's line is set once its source is known (below).
     _timing = play && radio == null && streamKey == null ? timingOf('track:${track.id}', 'file') : null;
-    final start = (startAt != null && startAt > Duration.zero)
+    // A saved position past the end of the track (a stale one) is not used.
+    final startOk = startAt != null &&
+        startAt > Duration.zero &&
+        !(track.durationMs > 0 && startAt.inMilliseconds >= track.durationMs);
+    final start = startOk
         ? startAt
         : ((isOnline && libTrack == null) || streamKey != null ? null : resumeStartFor(track.resumePositionMs));
     // Before the item goes out: «Caricamento…» only while waiting for the file (no awaits up to the stream branch).
