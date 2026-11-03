@@ -43,7 +43,7 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-0. **(Consigliato) Fase 76**: i suggeriti online di Shuffle+ entrano in coda appena c'è l'indirizzo, non dopo il download completo (D-352, `fase-76-suggeriti-veloci.md`).
+0. **(Consigliato) Fase 76**: i suggeriti online di Shuffle+ entrano in coda appena c'è l'indirizzo, non dopo il download completo, e ogni blocco di ~3 si arricchisce prima di suonare (D-352, D-353, `fase-76-suggeriti-veloci.md`).
 1. **(Consigliato) Debito della fase 74** (dalla review di architettura): estrarre `JamLocalQueue` da `JamController` (`jam_providers.dart` è a ~1360 righe; `_saved`/`_mode`/copia `jamAside`, valori di dominio a `keepAside`, `_part.unplayed` calcolato una volta per stato); un solo helper «riprova subito sullo stesso broker» per `JamBridge` e `_lookupCode`; un solo limite della posizione oltre la durata; unire `jam_queue_owner_name_test.dart` a `jam_queue_sheet_test.dart`; nome dell'ospite uscito ricordato per tutta la Jam, non solo a foglio aperto.
 2. Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
 3. Ricerca «notte», build p99 (D-176); 53.10 completamento intero sul Motorola.

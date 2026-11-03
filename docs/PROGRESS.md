@@ -1232,5 +1232,5 @@ mobile_scanner — fase 24 — 2026-10-19
 
 ## Fase 76 — Suggeriti di Shuffle+ in coda appena c'è l'indirizzo (`fase-76-suggeriti-veloci.md`)
 - [ ] 76.1 Rete di sicurezza
-- [ ] 76.2 Indirizzo invece del file
+- [ ] 76.2 Indirizzo invece del file, poi arricchimento del blocco (D-353)
 - [ ] 76.3 Controlli di fase
