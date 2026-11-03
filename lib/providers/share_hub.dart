@@ -87,6 +87,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     _discovery?.speakerJamName = v;
   }
 
+  String? _speakerJamRid;
+
+  /// Id of the remote Jam announced next to the name (set by the bridge); null = none.
+  String? get speakerJamRid => _speakerJamRid;
+  set speakerJamRid(String? v) {
+    _speakerJamRid = v;
+    _discovery?.speakerJamRid = v;
+  }
+
   StreamSubscription<List<Peer>>? _peerSub;
   StreamSubscription<void>? _changeSub;
   Timer? _sweep;
@@ -166,7 +175,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
   void Function()? onJamEnd;
 
   /// Set by the Jam controller: the user answered a request from a notification.
-  void Function(JamRequest request, bool accept)? onJamAction;
+  FutureOr<void> Function(JamRequest request, bool accept)? onJamAction;
 
   ShareNotifier get _platform => ref.read(shareNotifierProvider);
 
@@ -342,7 +351,9 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         deviceId: service.deviceId,
         deviceName: service.deviceName,
         gate: gate,
-      )..onRequest = _surfaceJamRequest;
+      )
+        ..onRequest = _surfaceJamRequest
+        ..onAutoAccept = (r) => onJamAction?.call(r, true);
       // HTTPS needs the device identity; without it (it could not be made) the
       // hub runs plain HTTP as before (R59).
       DeviceIdentity? identity;
@@ -368,6 +379,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         deviceName: service.deviceName,
       );
       discovery.speakerJamName = _speakerJamName;
+      discovery.speakerJamRid = _speakerJamRid;
       await discovery.start(port, tlsPort: node.tlsPort);
       if (!ref.mounted) {
         await discovery.dispose();

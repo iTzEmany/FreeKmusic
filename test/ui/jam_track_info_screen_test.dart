@@ -367,6 +367,29 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('LAN host: a remote guest\'s track (no route to the owner) gets the local lookups',
+      (tester) async {
+    const item = JamItem(id: 9, ownerDeviceId: 'peer', title: 'Remota', ext: 'mp3', artist: 'Band');
+    final h = await Harness.create(tester);
+    final chain = _FakeChain();
+    final c = ProviderContainer(overrides: [
+      ...h.overrides,
+      lyricsChainProvider.overrideWithValue(chain),
+      curiosityServiceProvider.overrideWithValue(_FakeCurio()),
+      jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
+          phase: JamPhase.active,
+          role: JamRole.host,
+          jam: JamState(version: 1, items: [item], hostDeviceId: 'host', outputDeviceId: 'host',
+              participants: [JamParticipant(id: 'peer', name: 'Remoto')])))),
+    ]);
+    addTearDown(c.dispose);
+    final meta = await c.read(jamProvider.notifier).fetchMeta(item);
+    expect(meta.lyricsPlain, 'parole remote');
+    expect(meta.curiosities, startsWith('storia remota'));
+    expect(chain.calls, 1);
+    await h.dispose(tester);
+  });
+
   testWidgets('remote guest: an own item is found through its part key, with its local lyrics',
       (tester) async {
     const item = JamItem(

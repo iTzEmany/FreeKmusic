@@ -5976,4 +5976,63 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get jamWaitingHost => 'Warten, bis der Host annimmt…';
+
+  @override
+  String get jamFriendsTitle => 'Jam-Freunde';
+
+  @override
+  String get jamFriendsEmpty =>
+      'Noch keine Freunde. Nach dem ersten angenommenen Beitritt speichern sich beide Geräte gegenseitig.';
+
+  @override
+  String get jamFriendRemove => 'Entfernen';
+
+  @override
+  String jamFriendRemoveTitle(String name) {
+    return '$name entfernen?';
+  }
+
+  @override
+  String get jamFriendRemoveBody =>
+      'Ihr erkennt euch nicht mehr ohne Nachfrage. Dieses Gerät ändert seinen Ankündigungsschlüssel.';
+
+  @override
+  String get jamAutoAcceptFriends => 'Freunde ohne Nachfrage annehmen';
+
+  @override
+  String get jamAutoAcceptFriendsHint =>
+      'Wird das Handy eines Freundes gestohlen, kann der Dieb in der Nähe deiner Jam beitreten.';
+
+  @override
+  String get jamFriendBadge => 'Freund';
+
+  @override
+  String get jamNearbyJoin => 'Einer Jam in der Nähe beitreten';
+
+  @override
+  String get jamBleTitle => 'Jams in der Nähe finden';
+
+  @override
+  String get jamBleBody12 =>
+      'Android fragt nach der Berechtigung „Geräte in der Nähe“, um Jams per Bluetooth zu suchen und anzukündigen. Die App liest nicht, wo du bist.';
+
+  @override
+  String get jamBleBody11 =>
+      'Die Standortberechtigung ist nötig: Android verlangt sie für die Bluetooth-Suche; die App liest nicht, wo du bist.';
+
+  @override
+  String get jamBleAllow => 'Erlauben';
+
+  @override
+  String get jamBleNotNow => 'Nicht jetzt';
+
+  @override
+  String get jamBleLocationOff =>
+      'Schalte den Standort von Android ein: Er wird für die Bluetooth-Suche gebraucht. Bis dahin kannst du den Code oder den QR nutzen.';
+
+  @override
+  String get jamNearbyScanTitle => 'Jams in der Nähe suchen';
+
+  @override
+  String get jamNearbyScanHint => 'Per Bluetooth, nur bei geöffneter App';
 }

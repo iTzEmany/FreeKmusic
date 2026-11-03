@@ -33,8 +33,12 @@ void main() {
     expect(b.current.single.jamName, isNull);
     a.speakerJamName = 'Cassa';
     await until(() => b.current.single.jamName == 'Cassa');
+    expect(b.current.single.jamRid, isNull);
+    a.speakerJamRid = 'AbCdEfGh';
+    await until(() => b.current.single.jamRid == 'AbCdEfGh');
     a.speakerJamName = null;
     await until(() => b.current.single.jamName == null);
+    expect(b.current.single.jamRid, isNull);
   });
 
   test('malformed jam field is ignored, unknown fields too', () async {

@@ -8,6 +8,8 @@ import '../../core/app_log.dart';
 
 const jamBlockedKey = 'jamBlocked';
 const jamSuspendedKey = 'jamSuspended';
+const jamFriendsKey = 'jamFriends';
+const jamAnnounceKeyKey = 'jamAnnounceKey';
 
 /// Minimal key-value store for the Jam secrets. Backed by the async
 /// shared_preferences API (a separate file from the one the backup exports,

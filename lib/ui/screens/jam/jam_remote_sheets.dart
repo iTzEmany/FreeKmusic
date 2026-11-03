@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/jam_broker_providers.dart' show jamCryptoProvider;
 import '../../../providers/jam_providers.dart';
 import '../../../providers/jam_remote_providers.dart';
 import '../../../services/jam/remote/jam_bridge.dart' show JamBridgeStatus;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/jam_nearby_providers.dart';
 import '../../../providers/jam_providers.dart';
 import '../../../providers/speaker_providers.dart';
 import '../../../services/jam/jam_guest_link.dart' show JamLinkState;
@@ -18,6 +19,24 @@ void joinAnnouncedJam(BuildContext context, WidgetRef ref, Peer peer) {
   final nav = Navigator.of(context, rootNavigator: true);
   unawaited(ref.read(jamProvider.notifier).request(peer));
   nav.push(MaterialPageRoute<void>(builder: (_) => const JamScreen()));
+}
+
+/// Asks to enter a Jam heard over Bluetooth and opens the Jam screen; like the
+/// QR, with the newest token heard. A custom-broker Jam answers «inquadra il QR».
+void joinNearbyJam(BuildContext context, WidgetRef ref, JamNearbyJam jam) {
+  // The token may have run out since the list was drawn.
+  ref.read(jamNearbyProvider.notifier).expire();
+  if (!ref.read(jamNearbyProvider).any((e) => e.key == jam.key)) return;
+  final nav = Navigator.of(context, rootNavigator: true);
+  unawaited(ref.read(jamProvider.notifier).requestRemote(jam.invite));
+  nav.push(MaterialPageRoute<void>(builder: (_) => const JamScreen()));
+}
+
+/// «Unisciti alla Jam di X» for a friend, «…una Jam qui vicino» for a stranger.
+String nearbyJamText(BuildContext context, JamNearbyJam jam) {
+  final l = context.l10n;
+  final name = jam.friendName;
+  return name == null ? l.jamNearbyJoin : l.jamInviteBanner(name);
 }
 
 /// Sends a Jam command; a refusal for the missing speaker says so.
@@ -38,10 +57,12 @@ class JamInviteBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final peer = ref.watch(announcedJamProvider);
-    if (peer == null) return const SizedBox.shrink();
+    // The LAN Jam comes first; else the one heard over Bluetooth.
+    final near = peer == null ? ref.watch(jamNearbyBannerProvider) : null;
+    if (peer == null && near == null) return const SizedBox.shrink();
     final l = context.l10n;
     final cc = context.cc;
-    final text = l.jamInviteBanner(peer.jamName!);
+    final text = peer != null ? l.jamInviteBanner(peer.jamName!) : nearbyJamText(context, near!);
     return Padding(
       padding: const EdgeInsets.fromLTRB(CcDims.margin, 4, CcDims.margin, 0),
       child: Material(
@@ -56,7 +77,7 @@ class JamInviteBanner extends ConsumerWidget {
                 label: text,
                 excludeSemantics: true,
                 child: InkWell(
-                  onTap: () => joinAnnouncedJam(context, ref, peer),
+                  onTap: () => peer != null ? joinAnnouncedJam(context, ref, peer) : joinNearbyJam(context, ref, near!),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: CcDims.gap12,
@@ -82,8 +103,9 @@ class JamInviteBanner extends ConsumerWidget {
             IconButton(
               tooltip: l.jamInviteDismiss,
               icon: const Icon(Icons.close_rounded),
-              onPressed: () =>
-                  ref.read(jamInviteDismissedProvider.notifier).hide(peer),
+              onPressed: () => peer != null
+                  ? ref.read(jamInviteDismissedProvider.notifier).hide(peer)
+                  : ref.read(jamNearbyProvider.notifier).dismiss(near!.key),
             ),
           ],
         ),
