@@ -20,6 +20,13 @@ import 'online_selection_scope.dart';
 import '../../../services/jam/jam_models.dart' show jamFullResult;
 import '../../widgets/show_msg.dart';
 
+const kOnlineRowHeight = 72.0;
+
+/// The row grows with the text scale so its three text lines never overflow;
+/// lists that fix the row extent must use this too.
+double onlineRowExtentOf(BuildContext context) =>
+    kOnlineRowHeight * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 2.0);
+
 /// Starts a download for each of [picked] (in this order) that is not already
 /// in the library or on its way, and says how many started and how many not.
 void startOnlineDownloads(
@@ -210,7 +217,7 @@ class OnlineSongRow extends StatelessWidget {
           onTap: onTap,
           onLongPress: onLongPress,
           child: SizedBox(
-            height: 72,
+            height: onlineRowExtentOf(context),
             child: Row(
               children: [
                 if (selecting)

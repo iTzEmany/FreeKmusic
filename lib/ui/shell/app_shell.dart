@@ -93,11 +93,20 @@ class AppShell extends ConsumerWidget {
           youtube: kEnableYoutube,
           tab: ref.read(navIndexProvider),
         )) {
+          final wasLibrary = ref.read(navIndexProvider) == NavTab.library.index;
+          final nav = ref.read(tabNavigatorKeysProvider)[NavTab.library.index];
+          // An album or a list may sit above the Library: the lens is on its root.
+          nav.currentState?.popUntil((r) => r.isFirst);
           ref.read(navIndexProvider.notifier).set(NavTab.library.index);
-          // After the frame: the tab may only mount now and must hear the request.
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => ref.read(librarySearchRequestProvider.notifier).request(),
-          );
+          void request() =>
+              ref.read(librarySearchRequestProvider.notifier).request();
+          if (wasLibrary) {
+            request();
+          } else {
+            // The tab may only mount after the frame and must hear the request.
+            WidgetsBinding.instance.addPostFrameCallback((_) => request());
+            WidgetsBinding.instance.scheduleFrame();
+          }
           return;
         }
         // Narrow windows have no page field: the dock's one opens (and focuses).

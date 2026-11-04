@@ -68,6 +68,25 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('tapping a result queues every match, not only the rows shown', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 8);
+    await h.pump(tester, const ResultsHost());
+    await _settle(tester);
+    typeSearch(tester, 'Song');
+    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsNWidgets(5));
+    await tester.tap(find.byType(TrackRow).first);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(h.handler.queueIds, hasLength(8));
+    await h.dispose(tester);
+  });
+
   testWidgets('search without matches says so', (tester) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;

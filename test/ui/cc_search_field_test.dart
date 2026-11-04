@@ -13,6 +13,7 @@ Future<(TextEditingController, FocusNode)> _pump(
   WidgetTester t, {
   VoidCallback? onClear,
   ValueChanged<String>? onQuery,
+  ValueChanged<String>? onChanged,
 }) async {
   _activity = UserActivity();
   final c = TextEditingController();
@@ -33,6 +34,7 @@ Future<(TextEditingController, FocusNode)> _pump(
             hint: 'Cerca',
             onClear: onClear,
             onQuery: onQuery,
+            onChanged: onChanged,
           ),
         ),
       ),
@@ -180,4 +182,13 @@ void main() {
       expect(got, ['abc', '']);
     },
   );
+
+  testWidgets('Enter does not report onChanged again', (t) async {
+    final changed = <String>[];
+    await _pump(t, onQuery: (_) {}, onChanged: changed.add);
+    await t.enterText(find.byType(TextField), 'abc');
+    await t.testTextInput.receiveAction(TextInputAction.search);
+    await t.pump();
+    expect(changed, ['abc']);
+  });
 }

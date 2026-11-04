@@ -82,6 +82,10 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
 
   void _changed(String text, {bool now = false}) {
     widget.onChanged?.call(text);
+    _schedule(text, now: now);
+  }
+
+  void _schedule(String text, {bool now = false}) {
     final onQuery = widget.onQuery;
     if (onQuery == null) return;
     if (text != _last) {
@@ -105,7 +109,7 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
 
   void _submitted(String text) {
     widget.onSubmitted?.call(text);
-    if (widget.onQuery != null) _changed(text, now: true);
+    if (widget.onQuery != null) _schedule(text, now: true);
   }
 
   @override

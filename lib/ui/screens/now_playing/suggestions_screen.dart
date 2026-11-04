@@ -86,7 +86,7 @@ class SuggestionsScreen extends ConsumerWidget {
             ? EmptyState(icon: Icons.cloud_outlined, message: l.suggestionsRecentEmpty)
             : ListView.builder(
                 itemCount: list.length,
-                itemExtent: 72,
+                itemExtent: onlineRowExtentOf(context),
                 itemBuilder: (_, i) => _SuggestionRow(record: list[i]),
               ),
       ),

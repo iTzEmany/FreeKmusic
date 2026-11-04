@@ -95,8 +95,9 @@ class LibraryResults extends ConsumerWidget {
                   track: res.tracks[i],
                   compact: compact,
                   selection: selection,
+                  // The queue is every match, not just the rows shown.
                   onTap: () => ctrl.playFromList(
-                    res.tracks,
+                    ref.read(searchTracksProvider(text)).value ?? res.tracks,
                     i,
                     context: const PlayContext(PlayContextKind.search),
                   ),
