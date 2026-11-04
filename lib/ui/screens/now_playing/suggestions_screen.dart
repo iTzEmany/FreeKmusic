@@ -9,6 +9,7 @@ import '../../../providers/youtube_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../services/shuffle_plus/suggestion_log.dart';
 import '../../widgets/confirm.dart';
+import '../../widgets/async_body.dart' show RowsLoading;
 import '../../widgets/empty_state.dart';
 import '../online/online_song_row.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -77,7 +78,7 @@ class SuggestionsScreen extends ConsumerWidget {
         ],
       ),
       body: records.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => RowsLoading(rowHeight: onlineRowExtentOf(context)),
         error: (e, st) {
           AppLog.w('suggestions load failed', e, st);
           return EmptyState(icon: Icons.error_outline, message: l.suggestionsRecentEmpty);

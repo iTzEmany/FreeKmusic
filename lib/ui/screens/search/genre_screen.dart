@@ -69,13 +69,18 @@ class GenreScreen extends ConsumerWidget {
     final mix = ref.watch(genreMixProvider(genre)).value ?? GenreMixState.none;
     final rows = _mixRows(tracks.length, mix);
     final onlineExtent = onlineRowExtentOf(context);
+    final firstSkeleton = rows.indexWhere((r) => r.track == null && r.suggested == null);
     // What is shown without the placeholders, and where each row stands in it.
     final items = <MixItem>[];
     final itemAt = <int>[];
     for (final r in rows) {
       itemAt.add(items.length);
       if (r.track != null || r.suggested != null) {
-        items.add((track: r.track == null ? null : tracks[r.track!], online: r.suggested));
+        items.add((
+          track: r.track == null ? null : tracks[r.track!],
+          online: r.suggested,
+          seedTitle: r.suggested == null ? null : mix.seedTitles[r.suggested!.id],
+        ));
       }
     }
     final extent = trackRowExtentOf(
@@ -110,7 +115,8 @@ class GenreScreen extends ConsumerWidget {
         ),
         // The list as shown: the suggested songs that have arrived, in place.
         onPlay: () => ctrl.playMixed(items, context: ctx),
-        shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        // The ids of the list ▶ plays: the songs shown (a suggested one has no id yet).
+        shuffleIds: [for (final i in items) ?i.track?.id],
         slivers: [
           if (mix.off != null)
             SliverToBoxAdapter(
@@ -144,9 +150,14 @@ class GenreScreen extends ConsumerWidget {
                 );
               }
               final r = row.suggested;
-              return r == null
-                  ? Skeleton.list(rows: 1, rowHeight: onlineExtent)
-                  : _SuggestedRow(result: r);
+              if (r != null) return _SuggestedRow(result: r);
+              // One semantic node for all the placeholder rows.
+              final skeleton = Skeleton.list(
+                rows: 1,
+                rowHeight: onlineExtent,
+                label: l.shufflePlusChoosing(mix.incoming),
+              );
+              return i == firstSkeleton ? skeleton : ExcludeSemantics(child: skeleton);
             },
           ),
         ],

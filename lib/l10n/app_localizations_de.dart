@@ -6032,13 +6032,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get jamNearbyScanHint => 'Per Bluetooth, nur bei geöffneter App';
 
   @override
-  String get streamCardsSoon => 'Der Titel kommt gleich…';
+  String get streamCardsUnavailable => 'Nicht verfügbar';
+
+  @override
+  String get streamCardsUnavailableBody =>
+      'Text, Wissenswertes und Credits zu diesem Titel sind nicht angekommen. Das kann am Netz oder an der Quelle liegen.';
 
   @override
   String get closeKeyboard => 'Tastatur schließen';
 
   @override
   String get loadingContent => 'Wird geladen…';
+
+  @override
+  String shufflePlusChoosing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Shuffle+ wählt $count Titel aus…',
+      one: 'Shuffle+ wählt 1 Titel aus…',
+    );
+    return '$_temp0';
+  }
 
   @override
   String statsBarValue(String when, String time) {
@@ -6071,4 +6086,36 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get genreMixOffRateLimited => 'Vorschläge pausiert: zu viele Anfragen';
+
+  @override
+  String get playerEmptyTitle => 'Nichts in Wiedergabe';
+
+  @override
+  String get playerEmptyHint => 'Wähle, womit es weitergeht.';
+
+  @override
+  String get playerEmptyNoQueue => 'Wähle einen Titel zum Starten';
+
+  @override
+  String playerLastQueue(String name) {
+    return 'Letzte Warteschlange: $name';
+  }
+
+  @override
+  String get playerResumeLastQueue => 'Letzte Warteschlange fortsetzen';
+
+  @override
+  String playerResumeLastQueueSub(String name, String tracks) {
+    return '$name, $tracks';
+  }
+
+  @override
+  String get playerShufflePlusLibrary => 'Shuffle+ der Bibliothek';
+
+  @override
+  String get playerShufflePlusLibrarySub =>
+      'Deine Bibliothek zufällig, mit Vorschlägen';
+
+  @override
+  String get playerRecentlyAdded => 'Zuletzt hinzugefügt';
 }

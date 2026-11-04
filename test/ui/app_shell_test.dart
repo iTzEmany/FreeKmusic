@@ -120,13 +120,14 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('no track: dock holds only the tabs', (t) async {
+  testWidgets('no track: the dock keeps its mini player, empty (D-364)', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
     await h.pump(t, const AppShell());
     await _settle(t);
     expect(find.byType(ShellDock), findsOneWidget);
-    expect(find.byType(MiniPlayer), findsNothing);
+    expect(find.byType(MiniPlayer), findsOneWidget);
+    expect(find.text('Niente in riproduzione'), findsOneWidget);
     expect(_bar('Home'), findsOneWidget);
     await h.dispose(t);
   });

@@ -85,6 +85,18 @@ class TrackOps {
     }
   }
 
+  /// «Shuffle+ della libreria» of the empty player: the whole library from a
+  /// random song, with Shuffle+ where it is allowed; errors are logged.
+  Future<void> playLibraryPlus() async {
+    try {
+      await _ref
+          .read(playerControllerProvider)
+          .playShufflePlus(await libraryIds(), context: const PlayContext(PlayContextKind.library));
+    } on Object catch (e, st) {
+      AppLog.e('shuffle+ of the library failed', e, st);
+    }
+  }
+
   Future<List<Track>> favorites({SortOption sort = SortOption.title}) => _repo.watchTracks(favoritesOnly: true, sort: sort).first;
   Future<List<Track>> ofAlbums(Iterable<String> keys) => _repo.tracksOfAlbums(keys);
   Future<Track?> byPath(String path) => _repo.byPath(path);

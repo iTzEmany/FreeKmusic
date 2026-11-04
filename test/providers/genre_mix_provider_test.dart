@@ -6,7 +6,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/jam_providers.dart';
-import 'package:codecore/services/shuffle_plus/shuffle_plus_controller.dart';
+import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:flutter/services.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/seed_resolver_provider.dart';
@@ -50,15 +50,6 @@ class _ActiveJam extends JamController {
   JamUiState build() => const JamUiState(phase: JamPhase.active, role: JamRole.host);
 }
 
-/// A Shuffle+ engine that is paused by a 429.
-class _Paused implements ShufflePlusController {
-  @override
-  bool get rateLimited => true;
-
-  @override
-  dynamic noSuchMethod(Invocation i) => null;
-}
-
 NetworkProbe _meteredProbe() {
   const channel = MethodChannel('codecore/net-genre-mix');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -80,7 +71,7 @@ void main() {
     bool jam = false,
     String? tool = '2026.01.01',
     NetworkProbe? probe,
-    ShufflePlusController? engine,
+    RadioGate? gate,
     Iterable<String> libraryIds = const [],
   }) async {
     SharedPreferences.setMockInitialValues({});
@@ -116,7 +107,8 @@ void main() {
         file: () async => File(p.join(dir.path, 'suggestions.json')),
         writeDelay: const Duration(days: 1),
       )),
-      shufflePlusProvider.overrideWith((ref) async => engine),
+      shufflePlusProvider.overrideWith((ref) async => null),
+      if (gate != null) radioGateProvider.overrideWithValue(gate),
       if (jam) jamProvider.overrideWith(_ActiveJam.new),
     ]);
     addTearDown(container.dispose);
@@ -153,7 +145,7 @@ void main() {
     ('a Jam', GenreMixOff.jam, () => open(jam: true)),
     ('no yt-dlp', GenreMixOff.noTool, () => open(tool: null)),
     ('a metered network with «Solo su Wi-Fi»', GenreMixOff.metered, () => open(probe: _meteredProbe())),
-    ('Shuffle+ paused by a rate limit', GenreMixOff.rateLimited, () => open(engine: _Paused())),
+    ('the radio gate tripped by a 429', GenreMixOff.rateLimited, () => open(gate: RadioGate()..trip())),
   ]) {
     test('$name: library only, the reason, no request', () async {
       await open_();
@@ -163,6 +155,14 @@ void main() {
       expect(radio.calls, 0);
     });
   }
+
+  test('the radio asked a moment ago (by Shuffle+): the mix still asks its first page, and marks the gate', () async {
+    final gate = RadioGate()..asked();
+    await open(gate: gate);
+    final v = await settled();
+    expect(v?.suggested, isNotEmpty);
+    expect(radio.calls, 1, reason: 'one page, the gap holds the next');
+  });
 
   test('songs already in the library are not suggested', () async {
     final owned = [for (var i = 1; i <= 6; i++) for (var j = 0; j < 5; j++) 'dl$i-r$j'];

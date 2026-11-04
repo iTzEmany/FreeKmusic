@@ -21,6 +21,8 @@ import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
 import '../services/shuffle_plus/plus_allowed.dart';
+import '../services/shuffle_plus/suggestion_log.dart' show SuggestionLog;
+import 'shuffle_plus_providers.dart' show suggestionLogProvider;
 
 /// Overridden in `main` once the handler has been created (and, on Android,
 /// registered with `AudioService.init`).
@@ -65,8 +67,14 @@ final playContextProvider = NotifierProvider<PlayContextNotifier, PlayContext?>(
   PlayContextNotifier.new,
 );
 
-/// One entry of a mixed list: a library [track] or an [online] song.
-typedef MixItem = ({Track? track, YtResult? online});
+/// One entry of a mixed list: a library [track] or an [online] song. A
+/// [seedTitle] marks the online song as a Shuffle+ suggestion made from that
+/// song (it shows «Suggerito» in the queue).
+typedef MixItem = ({Track? track, YtResult? online, String? seedTitle});
+
+/// The queue that played last, when nothing plays (D-364): how many songs and
+/// the one it would start with.
+typedef LastQueue = ({int count, Track first});
 
 class PlayerController {
   PlayerController(
@@ -81,6 +89,7 @@ class PlayerController {
     this.jamQueueFullNow,
     this.addOnlineToJam,
     this.plusBlock,
+    this.onSuggested,
     Random? random,
   }) : _random = random ?? Random();
 
@@ -108,6 +117,9 @@ class PlayerController {
   /// without ids, for the current queue (null: it is in).
   final Future<ShufflePlusBlock?> Function(List<int>? ids)? plusBlock;
 
+  /// A suggested song entered the queue (it goes to the suggestions log).
+  final void Function(YtResult r, String seedTitle)? onSuggested;
+
   bool get inJam => jamActive?.call() ?? false;
 
   final CodecoreAudioHandler _handler;
@@ -115,23 +127,41 @@ class PlayerController {
   final PlaybackPersistence? _persistence;
   bool _askedNotifications = false;
 
+  /// The context of the last list started: [resumeLastQueue] keeps it.
+  PlayContext? _context;
+
+  /// The one way a list starts: context, notification permission, then the
+  /// queue from [at]. [plus] / [shuffle] set Shuffle+ / plain shuffle once the
+  /// queue is set (null: leave it), without waiting for the first track: a
+  /// stream takes minutes to load, and the new queue must not be shuffled twice.
+  Future<void> _start(
+    List<int> ids,
+    int at,
+    PlayContext? context, {
+    bool? plus,
+    bool? shuffle,
+  }) async {
+    _context = context;
+    onContext?.call(context);
+    _handler.setPlayContext(context?.kind.index, context?.name);
+    _requestNotificationPermissionOnce();
+    final load = _handler.playQueue(ids, at);
+    if (plus != null) setShufflePlus?.call(plus);
+    if (shuffle != null) await setShuffle(shuffle);
+    await load;
+  }
+
   /// Only the ids travel to the player; it resolves tracks via the repository.
+  /// In a Jam a tap queues the track in the shared queue, like a swipe (D-89).
   Future<void> playFromList(
     List<Track> snapshot,
     int index, {
     PlayContext? context,
-  }) async {
-    if (snapshot.isEmpty) return;
-    // D-89: in a Jam a tap queues the track in the shared queue, like a swipe.
-    if (inJam) {
-      await addToJam?.call([snapshot[index].id]);
-      return;
-    }
-    onContext?.call(context);
-    _handler.setPlayContext(context?.kind.index, context?.name);
-    _requestNotificationPermissionOnce();
-    await _handler.playQueue([for (final t in snapshot) t.id], index);
-  }
+  }) => playMixed(
+    [for (final t in snapshot) (track: t, online: null, seedTitle: null)],
+    index: index,
+    context: context,
+  );
 
   /// The list's Play button: from a random track when shuffle is on (the
   /// queue keeps it first and shuffles the rest), else from the first.
@@ -148,9 +178,15 @@ class PlayerController {
   /// from item [index], else like [playAll] (a random item when shuffle is on,
   /// else the first). Shuffle+ goes off when the list has online songs, as in
   /// [playOnlineList] (R-18): the list brings its own suggestions. The
-  /// online ones enter the queue as every streamed song does. In a Jam, as
-  /// [playFromList]: the picked item joins the shared queue (D-89).
-  Future<void> playMixed(List<MixItem> items, {int? index, PlayContext? context}) async {
+  /// online ones enter the queue as every streamed song does; those with a
+  /// seed title as Shuffle+ suggestions. [shuffle]: sets plain shuffle on or
+  /// off. In a Jam only the picked item joins the shared queue (D-89).
+  Future<void> playMixed(
+    List<MixItem> items, {
+    int? index,
+    PlayContext? context,
+    bool? shuffle,
+  }) async {
     if (items.isEmpty) return;
     final at = (index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0)).clamp(0, items.length - 1);
     if (inJam) {
@@ -160,21 +196,57 @@ class PlayerController {
       return;
     }
     final ids = <int>[];
+    final suggested = <(YtResult, String)>[];
     try {
       for (final i in items) {
-        ids.add(i.track?.id ?? (await _idOf(i.online!))!);
+        final id = i.track?.id ?? (await _idOf(i.online!, seedTitle: i.seedTitle))!;
+        ids.add(id);
+        final seed = i.seedTitle;
+        if (i.track == null && seed != null && isOnlineId(id)) suggested.add((i.online!, seed));
       }
     } on Object catch (e, st) {
       AppLog.w('mixed list not played', e, st);
       return;
     }
-    onContext?.call(context);
-    _handler.setPlayContext(context?.kind.index, context?.name);
-    _requestNotificationPermissionOnce();
-    final load = _handler.playQueue(ids, at);
-    // After playQueue has set the queue (see [playOnlineList]).
-    if (items.any((i) => i.online != null)) setShufflePlus?.call(false);
-    await load;
+    await _start(
+      ids,
+      at,
+      context,
+      plus: items.any((i) => i.online != null) ? false : null,
+      shuffle: shuffle,
+    );
+    // Logged once the list plays: a failed lookup must not spend the 30-day memory.
+    for (final (r, seed) in suggested) {
+      onSuggested?.call(r, seed);
+    }
+  }
+
+  /// «Shuffle+ della libreria»: [ids] from a random one, shuffle on and
+  /// Shuffle+ with it where the list allows it (D-137).
+  Future<void> playShufflePlus(List<int> ids, {PlayContext? context}) async {
+    if (ids.isEmpty || inJam) return;
+    final block = await plusBlock?.call(ids);
+    await _start(ids, _random.nextInt(ids.length), context, plus: block == null, shuffle: true);
+  }
+
+  /// Plays the queue that ended again, from its first song, with its context;
+  /// false when there is none (D-364). A failure is logged and still answers
+  /// true: something was there to play, so the caller must not start another.
+  Future<bool> resumeLastQueue() async {
+    final ids = List.of(_handler.queueIds);
+    if (ids.isEmpty) return false;
+    if (inJam) return true; // the Jam queue is shared (D-89)
+    try {
+      final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
+      if (stations.every((s) => s != null)) {
+        await playStations([for (final s in stations) s!], 0);
+      } else {
+        await _start(ids, 0, _context);
+      }
+    } on Object catch (e, st) {
+      AppLog.w('last queue not resumed', e, st);
+    }
+    return true;
   }
 
   /// Plays a list of radio stations from [index]; next and previous move
@@ -185,7 +257,7 @@ class PlayerController {
     PlayContext? context,
   }) async {
     if (stations.isEmpty) return;
-    final ctx = context ?? const PlayContext(PlayContextKind.radio);
+    final ctx = _context = context ?? const PlayContext(PlayContextKind.radio);
     onContext?.call(ctx);
     _handler.setPlayContext(null, null);
     _requestNotificationPermissionOnce();
@@ -225,16 +297,16 @@ class PlayerController {
 
   /// The queue id of [r]: its library track when downloaded (D-81), else a
   /// new online entry; null without an online registry.
-  Future<int?> _idOf(YtResult r) async =>
-      await libraryIdOf?.call(r) ?? _handler.online?.register(r);
+  /// With a [seedTitle] the entry is a Shuffle+ suggestion (badge, «mai più»).
+  Future<int?> _idOf(YtResult r, {String? seedTitle}) async {
+    final lib = await libraryIdOf?.call(r);
+    if (lib != null) return lib;
+    return _handler.online?.register(r, seedTitle: seedTitle, suggested: seedTitle != null);
+  }
 
   /// Plays [id] alone, with the search context (empty queue, or radio: no stations to insert among).
-  Future<void> _playAlone(int id) {
-    onContext?.call(const PlayContext(PlayContextKind.search));
-    _handler.setPlayContext(PlayContextKind.search.index, null);
-    _requestNotificationPermissionOnce();
-    return _handler.playQueue([id], 0);
-  }
+  Future<void> _playAlone(int id) =>
+      _start([id], 0, const PlayContext(PlayContextKind.search));
 
   Future<int?> _idOrLog(YtResult r) async {
     final int? id;
@@ -286,25 +358,12 @@ class PlayerController {
   Future<void> playOnlineList(List<YtResult> list, {bool shuffle = false}) async {
     if (list.isEmpty) return;
     if (inJam) return list.forEach(_onlineToJam);
-    final ids = <int>[];
-    try {
-      for (final r in list) {
-        ids.add((await _idOf(r))!);
-      }
-    } on Object catch (e, st) {
-      AppLog.w('online list not played', e, st);
-      return;
-    }
-    onContext?.call(const PlayContext(PlayContextKind.search));
-    _handler.setPlayContext(PlayContextKind.search.index, null);
-    _requestNotificationPermissionOnce();
-    final load = _handler.playQueue(ids, shuffle ? _random.nextInt(ids.length) : 0);
-    // After playQueue has set the queue (it does so before its first await) and
-    // not after the load: it would shuffle the upcoming of a shuffle already on,
-    // and the first track takes minutes to load.
-    setShufflePlus?.call(false);
-    await setShuffle(shuffle);
-    await load;
+    await playMixed(
+      [for (final r in list) (track: null, online: r, seedTitle: null)],
+      index: shuffle ? _random.nextInt(list.length) : 0,
+      context: const PlayContext(PlayContextKind.search),
+      shuffle: shuffle,
+    );
   }
 
   Future<void> setVolume(double v) {
@@ -383,13 +442,26 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
     return plusAllowed(
       queueIds: ids ?? h.queueIds,
       jam: ref.read(jamProvider).active,
-      radio: ref.read(playContextProvider)?.kind == PlayContextKind.radio,
+      // A list of its own is not the radio queue, whatever the context says.
+      radio: ids == null && ref.read(playContextProvider)?.kind == PlayContextKind.radio,
       localCount: local.where((t) => !t.missing && t.kind == 0).length,
     );
   } on Object catch (e, st) {
     AppLog.w('shuffle+ allowed check failed', e, st);
     return null;
   }
+}
+
+/// A song queued as a suggestion goes in the log once: a replay of the list
+/// must not crowd out the 30-day memory.
+void logSuggestion(SuggestionLog log, YtResult r, String seedTitle) {
+  if (log.recentlySuggested(r.id)) return;
+  log.add(
+    videoId: r.id,
+    title: r.title,
+    artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
+    seedTitle: seedTitle,
+  );
 }
 
 final playerControllerProvider = Provider<PlayerController>(
@@ -406,6 +478,7 @@ final playerControllerProvider = Provider<PlayerController>(
     jamQueueFullNow: () => ref.read(jamProvider.notifier).queueFull,
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
+    onSuggested: (r, seed) => logSuggestion(ref.read(suggestionLogProvider), r, seed),
     libraryIdOf: (r) async {
       final path = (await ref.read(downloadIndexProvider.future))
           .pathFor(r.id, source: r.source);
@@ -413,6 +486,17 @@ final playerControllerProvider = Provider<PlayerController>(
     },
   ),
 );
+
+/// The queue that ended and stays in the player, for the empty states (D-364):
+/// null when there is none. Read again whenever the current track changes.
+final lastQueueProvider = FutureProvider.autoDispose<LastQueue?>((ref) async {
+  ref.watch(currentTrackProvider);
+  final h = ref.watch(audioHandlerProvider);
+  final ids = h.queueIds;
+  if (ids.isEmpty) return null;
+  final first = await queueTracks([ids.first], ref.watch(trackRepositoryProvider), h.online);
+  return first.isEmpty ? null : (count: ids.length, first: first.first);
+});
 
 final currentTrackProvider = StreamProvider<Track?>((ref) async* {
   final h = ref.watch(audioHandlerProvider);

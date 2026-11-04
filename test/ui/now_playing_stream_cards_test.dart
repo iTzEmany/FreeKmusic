@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/artist_info_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/providers/player_providers.dart' show liveCurrentTrackProvider, onlineEntriesProvider, playerControllerProvider;
@@ -10,12 +11,14 @@ import 'package:codecore/providers/youtube_providers.dart'
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/now_playing/credits_card.dart';
-import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart' show InfoCard, LyricsCard, UpNextCard;
+import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart' show InfoCard, LyricsCard, NpCard, StreamCardsWait, UpNextCard;
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/proposal_card.dart';
 import 'package:codecore/providers/nav_providers.dart' show SidePanel;
 import 'package:codecore/services/radio/radio_station.dart';
+import 'package:codecore/services/stream/stream_preparer.dart' show StreamPhase;
 import 'package:codecore/ui/shell/side_panel.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +46,11 @@ const _r = YtResult(
 );
 
 Future<void> _wait(WidgetTester t) async {
-  await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+  // Real async work (DB, files) settles in a few event-queue turns; no wall-clock sleep.
+  for (var i = 0; i < 20; i++) {
+    await t.runAsync(() => pumpEventQueue());
+    await t.pump();
+  }
   for (var i = 0; i < 3; i++) {
     await t.pump(const Duration(milliseconds: 300));
   }
@@ -92,7 +99,7 @@ void main() {
     // No row yet: a fixed-height placeholder, not the empty lyrics state.
     expect(find.text('Nessun testo disponibile'), findsNothing);
     expect(find.text('Cerca testo'), findsNothing);
-    expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+    expect(find.byType(StreamCardsWait), findsOneWidget);
 
     gate.complete();
     await _wait(t);
@@ -148,7 +155,7 @@ void main() {
 
     expect(find.text('Second song'), findsWidgets);
     expect(find.text('Parole del brano'), findsNothing);
-    expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+    expect(find.byType(StreamCardsWait), findsOneWidget);
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
@@ -190,7 +197,108 @@ void main() {
     await _wait(t);
 
     expect(find.text('Parole del brano'), findsOneWidget);
-    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(find.byType(StreamCardsWait), findsNothing);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('the skeleton cards have the height of the real ones, so nothing jumps', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    final gate = preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    final fake = [for (final c in t.widgetList(find.byType(NpCard))) t.getSize(find.byWidget(c)).height];
+    expect(fake.length, greaterThanOrEqualTo(3)); // Testo, Info, Crediti (UpNext is not one)
+
+    gate.complete();
+    await _wait(t);
+    final long = List.filled(12, 'una frase abbastanza lunga da riempire la riga').join(' ');
+    await t.runAsync(() => (h.db.update(h.db.tracks)..where((r) => r.kind.equals(kStreamKind))).write(
+      TracksCompanion(lyricsPlain: Value(List.filled(8, 'riga').join('\n')), curiosities: Value('$long\nhttps://it.wikipedia.org/wiki/Song')),
+    ));
+    final rowId = t.widget<InfoCard>(find.byType(InfoCard)).track.id;
+    await t.runAsync(() => ArtistInfoRepository(h.db).save('Ann',
+        body: long, source: Uri.parse('https://it.wikipedia.org/wiki/Ann'), lang: 'it'));
+    for (var i = 0; i < 3; i++) {
+      await t.runAsync(() => h.db.into(h.db.trackCredits).insert(
+        TrackCreditsCompanion.insert(trackId: rowId, name: 'Person $i', nameKey: 'person $i', role: 'producer', source: 'deezer'),
+      ));
+    }
+    await _wait(t);
+    final lyrics = t.getSize(find.byType(LyricsCard)).height;
+    final info = t.getSize(find.byType(InfoCard)).height;
+    expect(fake[0], lyrics);
+    expect(fake[1], info);
+    expect(fake[2] + 12, t.getSize(find.byType(CreditsCard)).height);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('after 20 s without a row: «Non disponibile»; Riprova brings the skeleton back and waits again', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    await t.pump(const Duration(seconds: 19));
+    expect(find.text('Non disponibile'), findsNothing);
+    await t.pump(const Duration(seconds: 2));
+    expect(find.text('Non disponibile'), findsOneWidget);
+    expect(find.text('Riprova'), findsOneWidget);
+
+    await t.tap(find.text('Riprova'));
+    await t.pump();
+    expect(find.text('Non disponibile'), findsNothing);
+    expect(find.byType(Skeleton), findsWidgets);
+    await t.pump(const Duration(seconds: 21));
+    expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('after 20 s a slow but working download keeps the skeleton; a failed one shows «Non disponibile»', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    preparer.phases.value = {'youtube:v1': StreamPhase.downloading};
+    await t.pump(const Duration(seconds: 21));
+    expect(find.text('Non disponibile'), findsNothing);
+    expect(find.byType(Skeleton), findsWidgets);
+
+    preparer.phases.value = {'youtube:v1': StreamPhase.failed};
+    await t.pump();
+    expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('a download still «downloading» after 60 s counts as stuck: «Non disponibile»', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    preparer.phases.value = {'youtube:v1': StreamPhase.downloading};
+    await t.pump(const Duration(seconds: 59));
+    expect(find.text('Non disponibile'), findsNothing);
+    await t.pump(const Duration(seconds: 2));
+    expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('side panel Info on a low window: the waiting skeleton scrolls, no overflow', (t) async {
+    final (h, _, preparer, _) = await _open(t, panel: const SidePanelView(panel: SidePanel.info));
+    t.view.physicalSize = const Size(1400, 500);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    expect(find.byType(StreamCardsWait), findsOneWidget);
+    expect(t.takeException(), isNull);
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
@@ -205,7 +313,7 @@ void main() {
     await h.pump(t, const NowPlayingScreen());
     await _wait(t);
 
-    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(find.byType(StreamCardsWait), findsNothing);
     expect(find.byType(LyricsCard), findsNothing);
     expect(find.byType(CreditsCard), findsNothing);
     expect(find.byType(UpNextCard), findsOneWidget);
@@ -219,12 +327,12 @@ void main() {
     final gate = preparer.gates['youtube:v1'] = Completer<void>();
     await t.tap(find.text('go'));
     await _wait(t);
-    expect(find.text('Il brano è in arrivo…'), findsOneWidget);
+    expect(find.byType(StreamCardsWait), findsOneWidget);
     expect(find.byType(InfoCard), findsNothing);
 
     gate.complete();
     await _wait(t);
-    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(find.byType(StreamCardsWait), findsNothing);
     expect(t.widget<InfoCard>(find.byType(InfoCard)).track.id, greaterThan(0));
 
     await t.pumpWidget(const SizedBox());
@@ -240,7 +348,7 @@ void main() {
     await h.pump(t, const SidePanelView(panel: SidePanel.info));
     await _wait(t);
 
-    expect(find.text('Il brano è in arrivo…'), findsNothing);
+    expect(find.byType(StreamCardsWait), findsNothing);
     expect(find.byType(InfoCard), findsNothing);
 
     await t.pumpWidget(const SizedBox());

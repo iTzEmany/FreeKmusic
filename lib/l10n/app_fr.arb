@@ -3449,9 +3449,11 @@
   "jamBleLocationOff": "Activez la localisation d’Android : elle est nécessaire pour chercher des Jams en Bluetooth. En attendant, utilisez le code ou le QR.",
   "jamNearbyScanTitle": "Chercher des Jams proches",
   "jamNearbyScanHint": "En Bluetooth, uniquement app ouverte",
-  "streamCardsSoon": "Le titre arrive…",
+  "streamCardsUnavailable": "Indisponible",
+  "streamCardsUnavailableBody": "Les paroles, les anecdotes et les crédits de ce titre ne sont pas arrivés. Cela peut venir du réseau ou de la source.",
   "closeKeyboard": "Fermer le clavier",
   "loadingContent": "Chargement…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ choisit 1 titre…} other{Shuffle+ choisit {count} titres…}}",
   "homeRadioLive": "En direct",
   "statsBarValue": "{when}, {time}",
   "closeSearch": "Fermer la recherche",
@@ -3461,5 +3463,14 @@
   "genreMixOffMetered": "Suggestions désactivées : réseau limité",
   "genreMixOffOffline": "Suggestions désactivées : pas de réseau",
   "genreMixOffNoTool": "Suggestions désactivées : outil en ligne absent",
-  "genreMixOffRateLimited": "Suggestions en pause : trop de requêtes"
+  "genreMixOffRateLimited": "Suggestions en pause : trop de requêtes",
+  "playerEmptyTitle": "Rien en lecture",
+  "playerEmptyHint": "Choisis par où reprendre.",
+  "playerEmptyNoQueue": "Choisis un titre pour commencer",
+  "playerLastQueue": "Dernière file d’attente : {name}",
+  "playerResumeLastQueue": "Reprendre la dernière file d’attente",
+  "playerResumeLastQueueSub": "{name}, {tracks}",
+  "playerShufflePlusLibrary": "Shuffle+ de la bibliothèque",
+  "playerShufflePlusLibrarySub": "Ta bibliothèque en aléatoire, avec des suggestions",
+  "playerRecentlyAdded": "Ajoutés depuis peu"
 }

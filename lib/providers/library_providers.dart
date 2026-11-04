@@ -318,6 +318,11 @@ final topTracksProvider = StreamProvider<List<Track>>(
   (ref) => ref.watch(libraryQueriesProvider).watchTopTracks(),
 );
 
+/// The music added last, for the empty player (D-379).
+final recentlyAddedTracksProvider = StreamProvider.autoDispose<List<Track>>(
+  (ref) => ref.watch(trackRepositoryProvider).watchRecentlyAdded(),
+);
+
 final resumableTracksProvider = StreamProvider.autoDispose<List<Track>>(
   (ref) => ref.watch(trackRepositoryProvider).watchResumable(),
 );

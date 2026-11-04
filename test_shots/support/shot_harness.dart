@@ -139,14 +139,15 @@ class Shot {
 Future<void> withShot(
   WidgetTester tester,
   ShotSize size,
-  Future<void> Function(Shot s) body,
-) async {
+  Future<void> Function(Shot s) body, {
+  bool radio = false,
+}) async {
   debugDisableShadows = false;
   await loadFonts();
   tester.view.physicalSize = size.size * size.dpr;
   tester.view.devicePixelRatio = size.dpr;
   addTearDown(tester.view.reset);
-  final h = await Harness.create(tester);
+  final h = await Harness.create(tester, radio: radio);
   final dir = (await tester.runAsync(() => Directory.systemTemp.createTemp('shots')))!;
   h.coversDir = dir;
   final seed = (await tester.runAsync(() => seedLibrary(h.db, dir)))!;

@@ -10,6 +10,7 @@ import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/radio/radio_station.dart';
+import 'package:codecore/services/shuffle_plus/plus_allowed.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -116,9 +117,9 @@ void main() {
         (await db.select(db.tracks).get()).firstWhere((t) => t.id == id),
     ];
     final mix = <MixItem>[
-      (track: tracks[0], online: null),
-      (track: tracks[1], online: null),
-      (track: null, online: _r('s0')),
+      (track: tracks[0], online: null, seedTitle: null),
+      (track: tracks[1], online: null, seedTitle: null),
+      (track: null, online: _r('s0'), seedTitle: null),
     ];
     await player.playMixed(mix);
     expect(plus, isFalse, reason: 'the list brings its own suggestions (R-18)');
@@ -135,12 +136,116 @@ void main() {
     expect(plus, isTrue, reason: 'library only: Shuffle+ stays');
   });
 
+  test('playMixed: a song with a seed title enters the queue as a suggestion and is logged', () async {
+    final logged = <String>[];
+    player = PlayerController(handler, null,
+        libraryIdOf: (_) async => null, onSuggested: (r, seed) => logged.add('${r.id}<$seed'));
+    final tracks = await db.select(db.tracks).get();
+    await player.playMixed([
+      (track: tracks[0], online: null, seedTitle: null),
+      (track: null, online: _r('s0'), seedTitle: 'Song a'),
+      (track: null, online: _r('s1'), seedTitle: null),
+    ]);
+    final entries = [for (final i in handler.queueIds.where(isOnlineId)) online.entryOf(i)!];
+    expect([for (final e in entries) (e.result.id, e.suggested, e.seedTitle)],
+        [('s0', true, 'Song a'), ('s1', false, null)]);
+    expect(logged, ['s0<Song a']);
+  });
+
+  test('playFromList starts the queue at the index, keeps Shuffle+ and tells the context', () async {
+    PlayContext? ctx;
+    player = PlayerController(handler, null,
+        shufflePlus: () => plus, setShufflePlus: (on) => plus = on, onContext: (c) => ctx = c);
+    final tracks = await db.select(db.tracks).get();
+    await player.playFromList(tracks, 1, context: const PlayContext(PlayContextKind.favorites));
+    expect(handler.queueIds, [for (final t in tracks) t.id]);
+    expect(handler.currentIndex, 1);
+    expect(plus, isTrue, reason: 'library only: Shuffle+ stays');
+    expect(ctx?.kind, PlayContextKind.favorites);
+  });
+
+  test('playShufflePlus turns shuffle on and Shuffle+ with it where allowed; resumeLastQueue replays the queue', () async {
+    plus = false;
+    ShufflePlusBlock? block;
+    player = PlayerController(handler, null,
+        shufflePlus: () => plus,
+        setShufflePlus: (on) => plus = on,
+        plusBlock: (_) async => block,
+        random: _FixedRandom(1));
+    expect(await player.resumeLastQueue(), isTrue, reason: 'setUp left a queue');
+    await player.playShufflePlus(ids);
+    expect(handler.shuffleEnabled, isTrue);
+    expect(plus, isTrue);
+    expect(handler.queueIds[handler.currentIndex], ids[1], reason: 'the random pick plays first');
+    block = ShufflePlusBlock.shortList;
+    await player.playShufflePlus(ids);
+    expect(plus, isFalse);
+    expect(handler.shuffleEnabled, isTrue, reason: 'plain shuffle stays');
+    final empty = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db), onError: (_) {});
+    addTearDown(empty.dispose);
+    expect(await PlayerController(empty, null).resumeLastQueue(), isFalse);
+  });
+
+  test('resumeLastQueue on radio stations plays them as stations again, in the radio context', () async {
+    PlayContext? ctx;
+    player = PlayerController(handler, null, onContext: (c) => ctx = c);
+    await handler.playStations([
+      const RadioStation(id: 's1', name: 'S1', streamUrl: 'http://x'),
+      const RadioStation(id: 's2', name: 'S2', streamUrl: 'http://y'),
+    ], 1);
+    expect(await player.resumeLastQueue(), isTrue);
+    expect(handler.isRadio, isTrue);
+    expect(handler.currentIndex, 0);
+    expect(ctx?.kind, PlayContextKind.radio);
+  });
+
+  test('playMixed: a lookup failing half way leaves the queue and the suggestion log alone', () async {
+    final logged = <String>[];
+    var calls = 0;
+    player = PlayerController(handler, null,
+        libraryIdOf: (_) async => ++calls == 2 ? throw StateError('index unreadable') : null,
+        onSuggested: (r, seed) => logged.add(r.id));
+    await player.playMixed([
+      (track: null, online: _r('s0'), seedTitle: 'Song a'),
+      (track: null, online: _r('s1'), seedTitle: 'Song a'),
+    ]);
+    expect(logged, isEmpty);
+    expect(handler.queueIds, ids);
+  });
+
+  test('resumeLastQueue that fails is logged and still answers true', () async {
+    player = PlayerController(handler, null, onContext: (_) => throw StateError('boom'));
+    expect(await player.resumeLastQueue(), isTrue);
+  });
+
+  test('resumeLastQueue keeps the context of the list, and of the stations played last', () async {
+    final seen = <PlayContextKind?>[];
+    player = PlayerController(handler, null, onContext: (c) => seen.add(c?.kind));
+    final tracks = await db.select(db.tracks).get();
+    await player.playFromList(tracks, 0, context: const PlayContext(PlayContextKind.favorites));
+    seen.clear();
+    await player.resumeLastQueue();
+    expect(seen, [PlayContextKind.favorites]);
+
+    // A queue of stations and a song is not a radio queue: it replays as a list,
+    // with the context of the stations started last.
+    await player.playStations(
+        [const RadioStation(id: 's', name: 'S', streamUrl: 'http://x')], 0,
+        context: const PlayContext(PlayContextKind.search));
+    final station = handler.queueIds.single;
+    await handler.playQueue([station, ids[0]], 0);
+    seen.clear();
+    await player.resumeLastQueue();
+    expect(seen, [PlayContextKind.search]);
+    expect(handler.queueIds, [station, ids[0]]);
+  });
+
   test('playMixed from an index starts there', () async {
     final tracks = await db.select(db.tracks).get();
     await player.playMixed([
-      (track: tracks[0], online: null),
-      (track: null, online: _r('s0')),
-      (track: tracks[1], online: null),
+      (track: tracks[0], online: null, seedTitle: null),
+      (track: null, online: _r('s0'), seedTitle: null),
+      (track: tracks[1], online: null, seedTitle: null),
     ], index: 2);
     expect(handler.queueIds[handler.currentIndex], tracks[1].id);
   });
@@ -152,9 +257,9 @@ void main() {
     final tracks = await db.select(db.tracks).get();
     await player.setShuffle(true);
     await player.playMixed([
-      (track: tracks[0], online: null),
-      (track: null, online: _r('s0')),
-      (track: tracks[1], online: null),
+      (track: tracks[0], online: null, seedTitle: null),
+      (track: null, online: _r('s0'), seedTitle: null),
+      (track: tracks[1], online: null, seedTitle: null),
     ], context: const PlayContext(PlayContextKind.library));
     expect(handler.queueIds[handler.currentIndex], tracks[1].id);
     expect(ctx?.kind, PlayContextKind.library);

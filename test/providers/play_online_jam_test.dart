@@ -114,9 +114,9 @@ void main() {
   test('playMixed in a Jam queues only the picked item: a track as a track, a song as online', () async {
     final rows = await db.select(db.tracks).get();
     final mix = <MixItem>[
-      (track: rows[0], online: null),
-      (track: null, online: _r('s0')),
-      (track: rows[1], online: null),
+      (track: rows[0], online: null, seedTitle: null),
+      (track: null, online: _r('s0'), seedTitle: null),
+      (track: rows[1], online: null, seedTitle: null),
     ];
     await player.playMixed(mix, index: 1);
     expect(toJam, isEmpty);
@@ -141,6 +141,15 @@ void main() {
     await player.playMixed(mix);
     expect(onlineToJam, ['s0', 's0']);
     expect(handler.queueIds, ids, reason: 'the local queue is untouched');
+  });
+
+  test('in a Jam Shuffle+ of a list and resuming the last queue leave the local queue alone', () async {
+    await handler.playQueue(ids, 1);
+    await player.playShufflePlus(ids);
+    expect(await player.resumeLastQueue(), isTrue);
+    expect(handler.currentIndex, 1, reason: 'not restarted from its first song');
+    expect(handler.queueIds, ids);
+    expect(handler.shuffleEnabled, isFalse);
   });
 
   test('without a Jam the same calls stay local', () async {

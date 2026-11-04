@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../l10n/l10n_ext.dart';
-import '../../providers/jam_providers.dart';
 import '../../providers/nav_providers.dart';
-import '../../providers/player_providers.dart';
 import '../../providers/ui_providers.dart';
 import '../widgets/cc_search_field.dart';
 import '../theme/tokens.dart';
@@ -51,12 +49,6 @@ class ShellDock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
-    final track =
-        ref.watch(liveCurrentTrackProvider).value ??
-        ref.watch(currentTrackProvider).value;
-    final hasPlayer =
-        showPlayer &&
-        (track != null || ref.watch(jamProvider.select((j) => j.active)));
     final field =
         ref.watch(searchBarProvider) && selected == NavTab.search.index;
     // 1 dp rule between two layers of the dock.
@@ -80,7 +72,8 @@ class ShellDock extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (field) ...rule,
-            if (hasPlayer) ...[const MiniPlayer(), ...rule],
+            // The mini player stays with nothing playing (D-364): the dock does not jump.
+            if (showPlayer) ...[const MiniPlayer(), ...rule],
             _Tabs(
               items: items,
               tabs: [

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart';
+import '../../../l10n/app_localizations.dart' show AppLocalizations;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/curiosity_provider.dart';
 import '../../../providers/database_providers.dart';
@@ -16,6 +18,8 @@ import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lyrics_translator.dart';
 import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
+import '../../../services/stream/stream_preparer.dart' show StreamPhase;
+import '../../widgets/skeleton.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../lyrics/lyrics_translate_flow.dart';
 import 'proposal_card.dart' show CoverLine;
@@ -526,6 +530,156 @@ class UpNextCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Height of one line of [style] at the user's text scale.
+double _lineOf(BuildContext context, TextStyle? style) {
+  final p = TextPainter(
+    text: TextSpan(text: 'A', style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final h = p.height;
+  p.dispose();
+  return h;
+}
+
+/// A streamed track's cards before its data row exists: skeletons with the
+/// shape and height of the real ones (no jump on arrival); after 20 s a single
+/// «Non disponibile» card with Riprova (F-52). [infoOnly] is the side panel's.
+class StreamCardsWait extends ConsumerStatefulWidget {
+  const StreamCardsWait({super.key, required this.trackId, this.infoOnly = false});
+
+  static const wait = Duration(seconds: 20);
+  /// The preparer exposes no download progress: past this, a queued/downloading job counts as stuck.
+  static const cap = Duration(seconds: 60);
+  /// The queue id of the streamed track (negative).
+  final int trackId;
+  final bool infoOnly;
+
+  @override
+  ConsumerState<StreamCardsWait> createState() => _StreamCardsWaitState();
+}
+
+class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
+  Timer? _timer;
+  Timer? _capTimer;
+  bool _late = false;
+  bool _capped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _arm();
+  }
+
+  void _arm() {
+    _timer?.cancel();
+    _capTimer?.cancel();
+    _timer = Timer(StreamCardsWait.wait, () => setState(() => _late = true));
+    _capTimer = Timer(StreamCardsWait.cap, () => setState(() => _capped = true));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _capTimer?.cancel();
+    super.dispose();
+  }
+
+  void _retry() {
+    setState(() => _late = _capped = false);
+    _arm();
+    unawaited(
+      ref.read(audioHandlerProvider).retryShadow().catchError((Object e, StackTrace st) {
+        AppLog.w('stream cards retry failed', e, st);
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    // A slow but working download keeps the skeleton: the row is made when the file is whole.
+    final phases = ref.read(audioHandlerProvider).preparer?.phases;
+    if (!_late) return _skeleton(context);
+    if (phases == null) return _unavailable(l, t);
+    final key = ref.read(onlineEntriesProvider)?.entryOf(widget.trackId)?.result.indexKey;
+    return ValueListenableBuilder(
+      valueListenable: phases,
+      builder: (context, map, _) {
+        final phase = map[key];
+        return _capped || phase == null || phase == StreamPhase.failed ? _unavailable(l, t) : _skeleton(context);
+      },
+    );
+  }
+
+  Widget _unavailable(AppLocalizations l, TextTheme t) => NpCard(
+    title: l.streamCardsUnavailable,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.streamCardsUnavailableBody, style: t.bodyMedium?.copyWith(color: context.cc.textMuted)),
+        TextButton.icon(onPressed: _retry, icon: const Icon(Icons.refresh), label: Text(l.retry)),
+      ],
+    ),
+  );
+
+  Widget _skeleton(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    final body = _lineOf(context, t.bodyLarge);
+    // Same blocks as InfoCard: heading, 5 lines, the «show more» and source rows.
+    final block = [
+      Skeleton.card(lines: 1, lineHeight: _lineOf(context, t.labelLarge)),
+      const SizedBox(height: 4),
+      Skeleton.card(lines: 5, lineHeight: body),
+      const SizedBox(height: 96),
+    ];
+    final info = NpCard(
+      title: l.fieldCuriosity,
+      child: Column(
+        children: [
+          ...block,
+          const SizedBox(height: 16),
+          ...block,
+          const SizedBox(height: 52),
+        ],
+      ),
+    );
+    return Semantics(
+      label: l.loadingContent,
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: widget.infoOnly
+            ? info
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  NpCard(
+                    title: l.lyrics,
+                    child: Skeleton.card(lines: 5, lineHeight: _lyricsRowHeight(context)),
+                  ),
+                  const SizedBox(height: 12),
+                  info,
+                  const SizedBox(height: 12),
+                  NpCard(
+                    title: l.creditsTitle,
+                    child: Column(
+                      children: [
+                        // The group heading of the real rows.
+                        SizedBox(height: 16 + _lineOf(context, t.labelLarge)),
+                        const Skeleton.card(lines: 3, roles: true),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
       ),
     );
   }

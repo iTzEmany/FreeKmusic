@@ -20,6 +20,7 @@ import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
+import '../services/shuffle_plus/radio_gate.dart';
 import '../services/shuffle_plus/seed_resolver.dart' show SeedResolver;
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
@@ -93,6 +94,10 @@ final ytmRadioServiceProvider = Provider<YtmRadioService>((ref) => YtmRadioServi
       ref.watch(innerTubeClientProvider),
       ref.watch(ytDlpServiceProvider),
     ));
+
+/// One request gap and one 429 pause for every radio user: Shuffle+ and the
+/// genre mix.
+final radioGateProvider = Provider<RadioGate>((ref) => RadioGate());
 
 /// The handler seen by the engine.
 class HandlerShuffleHost implements ShuffleHost {
@@ -227,6 +232,7 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
     log: ref.watch(suggestionLogProvider),
     resolver: await ref.watch(seedResolverProvider.future),
     radio: ref.watch(ytmRadioServiceProvider),
+    gate: ref.watch(radioGateProvider),
     config: () => ref.read(shufflePlusConfigProvider),
     jamActive: () => ref.read(jamProvider).active,
     isMetered: () => ref.read(shufflePlusMeteredProvider)(),
@@ -296,19 +302,21 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
   final jam = ref.read(jamProvider).active;
   final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
   final engine = ref.read(shufflePlusProvider.future);
+  final gate = ref.read(radioGateProvider);
   return _genreMix(
     tracks: tracks,
     resolver: resolver,
     downloads: downloads,
     radioPage: radio.page,
     log: log,
+    gate: gate,
     offReason: () async {
       if (jam) return GenreMixOff.jam;
       if ((await tool).version == null) return GenreMixOff.noTool;
       final net = await probe.current();
       if (!net.online) return GenreMixOff.offline;
       if (net.metered && unmeteredOnly) return GenreMixOff.metered;
-      return (await engine)?.rateLimited ?? false ? GenreMixOff.rateLimited : null;
+      return gate.rateLimited ? GenreMixOff.rateLimited : null;
     },
     library: () async => (await engine)?.libraryIndex ?? await compute(_buildIndex, await repo.liteEntries()),
     cancelled: () => !ref.mounted,
@@ -321,6 +329,7 @@ Stream<GenreMixState> _genreMix({
   required Future<DownloadIndex> downloads,
   required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
   required SuggestionLog log,
+  required RadioGate gate,
   required Future<GenreMixOff?> Function() offReason,
   required Future<LibraryIndex> Function() library,
   required bool Function() cancelled,
@@ -333,6 +342,7 @@ Stream<GenreMixState> _genreMix({
     resolver: await resolver,
     radioPage: radioPage,
     log: log,
+    gate: gate,
     cancelled: cancelled,
     offReason: offReason,
     loadInLibrary: () async {

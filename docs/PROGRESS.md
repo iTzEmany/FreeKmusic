@@ -1260,10 +1260,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 80.4 Controlli di fase
 
 ## Fase 81 — Player vuoto, schede in streaming e coda di Shuffle+ (`fase-81-player-e-streaming.md`)
-- [ ] 81.1 Niente in riproduzione
-- [ ] 81.2 Skeleton delle schede in streaming
-- [ ] 81.3 Suggeriti in arrivo nella coda
-- [ ] 81.4 Controlli di fase
+- [x] 81.1 Niente in riproduzione
+- [x] 81.2 Skeleton delle schede in streaming
+- [x] 81.3 Suggeriti in arrivo nella coda
+- [x] 81.4 Controlli di fase
 
 ## Fase 82 — Registro attività, Da confermare e Da revisionare (`fase-82-registro-e-revisione.md`)
 - [ ] 82.1 «Accetta tutte» in un colpo

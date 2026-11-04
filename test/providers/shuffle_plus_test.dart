@@ -11,6 +11,7 @@ import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_service.dart';
+import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
 import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_host.dart';
@@ -157,7 +158,7 @@ void main() {
   final withins = <Duration>[];
   final prepared = <String>[];
   final enriched = <List<int>>[];
-  late ShufflePlusController Function({Duration? enrichTimeout}) make;
+  late ShufflePlusController Function({Duration? enrichTimeout, RadioGate? gate}) make;
   const library = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
   Future<void> settle() async {
@@ -204,7 +205,7 @@ void main() {
       await downloads.add('dl$id', '/m/$id.mp3');
     }
     final client = InnerTubeClient(Dio(BaseOptions(validateStatus: (_) => true))..httpClientAdapter = adapter);
-    make = ({Duration? enrichTimeout}) => ShufflePlusController(
+    make = ({Duration? enrichTimeout, RadioGate? gate}) => ShufflePlusController(
       host: host,
       online: online,
       log: log,
@@ -230,6 +231,7 @@ void main() {
         return enrichHook(ids);
       },
       enrichTimeout: enrichTimeout ?? ShufflePlusController.blockEnrichTimeout,
+      gate: gate,
       now: () => now,
     );
     controller = make();
@@ -769,6 +771,33 @@ void main() {
     controller.poke();
     await settle();
     expect(adapter.sent.length, first);
+  });
+
+  test('a radio request made elsewhere (the genre mix) holds Shuffle+ back for the gap', () async {
+    final gate = RadioGate(now: () => now)..asked();
+    controller.dispose();
+    controller = make(gate: gate);
+    addTearDown(controller.dispose);
+    controller.start();
+    await settle();
+    expect(adapter.sent, isEmpty);
+
+    now = now.add(const Duration(minutes: 2));
+    controller.poke();
+    await settle();
+    expect(adapter.sent, hasLength(1));
+  });
+
+  test('a 429 trips the shared gate', () async {
+    adapter.status = 429;
+    final gate = RadioGate(now: () => now);
+    controller.dispose();
+    controller = make(gate: gate);
+    addTearDown(controller.dispose);
+    controller.start();
+    await settle();
+    expect(gate.rateLimited, isTrue);
+    expect(controller.rateLimited, isTrue);
   });
 
   test('three playback failures in a row stop Shuffle+ for the session', () async {

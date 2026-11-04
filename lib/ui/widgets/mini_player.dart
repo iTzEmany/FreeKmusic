@@ -13,6 +13,7 @@ import '../screens/now_playing/now_playing_screen.dart';
 import '../shell/bottom_bar.dart' show DockLayers;
 import '../theme/app_theme.dart' show ccIconDensity;
 import '../theme/tokens.dart';
+import 'empty_player.dart';
 import 'favorite_actions.dart';
 import 'grow_route.dart';
 import 'motion.dart';
@@ -127,7 +128,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
         ref.watch(liveCurrentTrackProvider).value ??
         ref.watch(currentTrackProvider).value;
     final inJam = jam.active;
-    if (!inJam && track == null) return const SizedBox.shrink();
+    final empty = !inJam && track == null;
 
     final l = context.l10n;
     final ctrl = ref.read(playerControllerProvider);
@@ -142,6 +143,10 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
       title = jamItem?.title ?? l.jamNothingPlaying;
       subtitle = l.jamPeople(jam.jam?.participants.length ?? 1);
       playing = jam.jam?.playing ?? false;
+    } else if (empty) {
+      title = l.playerEmptyTitle;
+      subtitle = emptyPlayerSubtitle(context, ref.watch(lastQueueProvider).value);
+      playing = false;
     } else {
       final texts = radio == null ? null : radioTexts(l, radio, onAir);
       final t = track!;
@@ -155,6 +160,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
 
     final card = _MiniCard(
       inJam: inJam,
+      empty: empty,
       track: track,
       radio: radio,
       title: title,
@@ -165,9 +171,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
     return RiseIn(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: inJam ? null : (_) => _settle.stop(),
-        onHorizontalDragUpdate: inJam ? null : (d) => _dx.value += d.delta.dx,
-        onHorizontalDragEnd: inJam ? null : (d) => _onDragEnd(d, width, ctrl),
+        onHorizontalDragStart: inJam || empty ? null : (_) => _settle.stop(),
+        onHorizontalDragUpdate: inJam || empty ? null : (d) => _dx.value += d.delta.dx,
+        onHorizontalDragEnd: inJam || empty ? null : (d) => _onDragEnd(d, width, ctrl),
         onVerticalDragEnd: (d) {
           if ((d.primaryVelocity ?? 0) < -300) {
             inJam ? _openJam() : _openNowPlaying();
@@ -181,7 +187,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
             type: MaterialType.transparency,
             child: Semantics(
               button: true,
-              label: l.nowPlaying,
+              // The empty card is announced once when it appears (F-48).
+              liveRegion: empty,
+              label: empty ? '$title. $subtitle' : l.nowPlaying,
               child: InkWell(
                 onTap: inJam ? _openJam : _openNowPlaying,
                 child: card,
@@ -199,6 +207,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
 class _MiniCard extends ConsumerWidget {
   const _MiniCard({
     required this.inJam,
+    required this.empty,
     required this.track,
     required this.radio,
     required this.title,
@@ -207,6 +216,9 @@ class _MiniCard extends ConsumerWidget {
   });
 
   final bool inJam;
+
+  /// Nothing plays and there is no Jam (D-364): a quiet card whose ▶ starts something.
+  final bool empty;
   final Track? track;
   final RadioStation? radio;
   final String title;
@@ -240,6 +252,14 @@ class _MiniCard extends ConsumerWidget {
                   child: Icon(Icons.queue_music_rounded, color: cc.accent),
                 ),
               )
+            else if (empty)
+              DecoratedBox(
+                decoration: BoxDecoration(color: cc.surface3, shape: BoxShape.circle),
+                child: SizedBox.square(
+                  dimension: 52,
+                  child: Icon(Icons.music_note_rounded, color: cc.textMuted),
+                ),
+              )
             else
               RingProgress(
                 size: 52,
@@ -264,6 +284,7 @@ class _MiniCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: empty ? cc.textMuted : null,
                     ),
                   ),
                   Row(
@@ -286,11 +307,12 @@ class _MiniCard extends ConsumerWidget {
                 ],
               ),
             ),
-            _MiniButton(
-              icon: Icons.devices_rounded,
-              tooltip: l.devicesTitle,
-              onPressed: () => DevicesSheet.show(context),
-            ),
+            if (!empty)
+              _MiniButton(
+                icon: Icons.devices_rounded,
+                tooltip: l.devicesTitle,
+                onPressed: () => DevicesSheet.show(context),
+              ),
             if (radio != null)
               RadioStarButton(station: radio, color: cc.textMuted)
             else if (!inJam && track != null)
@@ -312,10 +334,14 @@ class _MiniCard extends ConsumerWidget {
                     )
                   : null,
               icon: playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: cc.text,
+              color: empty ? cc.accent : cc.text,
               size: 28,
-              tooltip: playing ? l.pause : l.play,
-              onPressed: inJam
+              tooltip: empty
+                  ? (ref.watch(lastQueueProvider).value == null ? l.playerShufflePlusLibrary : l.playerResumeLastQueue)
+                  : playing ? l.pause : l.play,
+              onPressed: empty
+                  ? () => playWhenEmpty(ref)
+                  : inJam
                   ? () => ref
                         .read(jamProvider.notifier)
                         .send(

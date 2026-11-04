@@ -3215,9 +3215,11 @@
   "jamBleLocationOff": "Schalte den Standort von Android ein: Er wird für die Bluetooth-Suche gebraucht. Bis dahin kannst du den Code oder den QR nutzen.",
   "jamNearbyScanTitle": "Jams in der Nähe suchen",
   "jamNearbyScanHint": "Per Bluetooth, nur bei geöffneter App",
-  "streamCardsSoon": "Der Titel kommt gleich…",
+  "streamCardsUnavailable": "Nicht verfügbar",
+  "streamCardsUnavailableBody": "Text, Wissenswertes und Credits zu diesem Titel sind nicht angekommen. Das kann am Netz oder an der Quelle liegen.",
   "closeKeyboard": "Tastatur schließen",
   "loadingContent": "Wird geladen…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ wählt 1 Titel aus…} other{Shuffle+ wählt {count} Titel aus…}}",
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "Live",
   "closeSearch": "Suche schließen",
@@ -3227,5 +3229,14 @@
   "genreMixOffMetered": "Vorschläge aus: getaktetes Netz",
   "genreMixOffOffline": "Vorschläge aus: kein Netz",
   "genreMixOffNoTool": "Vorschläge aus: Online-Werkzeug fehlt",
-  "genreMixOffRateLimited": "Vorschläge pausiert: zu viele Anfragen"
+  "genreMixOffRateLimited": "Vorschläge pausiert: zu viele Anfragen",
+  "playerEmptyTitle": "Nichts in Wiedergabe",
+  "playerEmptyHint": "Wähle, womit es weitergeht.",
+  "playerEmptyNoQueue": "Wähle einen Titel zum Starten",
+  "playerLastQueue": "Letzte Warteschlange: {name}",
+  "playerResumeLastQueue": "Letzte Warteschlange fortsetzen",
+  "playerResumeLastQueueSub": "{name}, {tracks}",
+  "playerShufflePlusLibrary": "Shuffle+ der Bibliothek",
+  "playerShufflePlusLibrarySub": "Deine Bibliothek zufällig, mit Vorschlägen",
+  "playerRecentlyAdded": "Zuletzt hinzugefügt"
 }
