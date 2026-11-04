@@ -6,7 +6,16 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:codecore/data/repositories/play_history_repository.dart';
+import 'package:codecore/data/repositories/radio_repository.dart';
 import 'package:codecore/providers/jam_providers.dart';
+import 'package:codecore/providers/radio_providers.dart';
+import 'package:codecore/services/radio/radio_browser_client.dart';
+import 'package:codecore/services/radio/radio_catalog.dart';
+import 'package:codecore/services/radio/radio_station.dart';
+import 'package:codecore/ui/screens/radio/radio_screen.dart';
+import 'package:codecore/ui/screens/stats/stats_charts.dart';
+import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/import_providers.dart' show searchCacheCountProvider;
 import 'package:codecore/providers/youtube_providers.dart';
@@ -171,6 +180,46 @@ void main() {
               await tester.tap(find.text('Avanti'));
               await s.settle();
               await s.expectGolden('${tag}_onboarding.png');
+            }));
+
+        testWidgets('radio', (tester) => withGoldenShot(tester, size, (s) async {
+              const near = [
+                RadioStation(id: 'n1', name: 'Radio Vicina Uno', streamUrl: 'http://r.test/1', state: 'Lombardia', codec: 'MP3', bitrate: 128),
+                RadioStation(id: 'n2', name: 'Radio Vicina Due', streamUrl: 'http://r.test/2', state: 'Lombardia', codec: 'AAC', bitrate: 96),
+              ];
+              await s.h.store.writeSettings(
+                  s.h.store.readSettings().copyWith(radioCountry: 'IT', radioRegion: 'lombardia'));
+              await tester.runAsync(() async {
+                final repo = RadioRepository(s.h.db);
+                for (final (i, n) in ['Radio Alfa', 'Radio Beta', 'Radio Gamma'].indexed) {
+                  await repo.save(RadioStation(id: 's$i', name: n, streamUrl: 'http://r.test/s$i', codec: 'MP3', bitrate: 128));
+                }
+              });
+              await s.show(const RadioScreen(), textScale: scale, extra: [
+                radioRefreshProvider.overrideWithValue(() async => false),
+                radioCountriesProvider.overrideWith((ref) async =>
+                    [const RadioCountry(name: 'Italy', code: 'IT', stationCount: 1797)]),
+                nearYouProvider.overrideWith((ref) async => RadioList(near, stale: false, fetchedAt: DateTime(2026, 10, 1))),
+                radioCountryStationsProvider.overrideWith((ref) async => RadioList(near)),
+              ]);
+              await s.expectGolden('${tag}_radio.png');
+            }));
+
+        testWidgets('stats', (tester) => withGoldenShot(tester, size, (s) async {
+              await tester.runAsync(() async {
+                final repo = PlayHistoryRepository(s.h.db);
+                final ids = s.seed.trackIds;
+                for (var d = 1; d <= 15; d++) {
+                  await repo.start(ids[d % ids.length], DateTime(2026, 10, d, 21).millisecondsSinceEpoch,
+                      msPlayed: (10 + (d * 37) % 90) * 60000);
+                }
+              });
+              await s.show(StatsScreen(now: DateTime(2026, 10, 16, 9)), textScale: scale);
+              // Touch the bar of day 9.
+              final box = tester.getRect(find.byType(StatsBars));
+              await tester.tapAt(Offset(box.left + box.width / 31 * 8.5, box.center.dy));
+              await s.settle();
+              await s.expectGolden('${tag}_stats.png');
             }));
 
         testWidgets('jam', (tester) => withGoldenShot(tester, size, (s) async {

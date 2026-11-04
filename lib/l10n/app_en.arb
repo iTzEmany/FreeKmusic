@@ -3220,5 +3220,7 @@
   "jamNearbyScanHint": "Over Bluetooth, only while the app is open",
   "streamCardsSoon": "The track is on its way…",
   "closeKeyboard": "Close keyboard",
-  "loadingContent": "Loading…"
+  "loadingContent": "Loading…",
+  "statsBarValue": "{when}, {time}",
+  "homeRadioLive": "Live"
 }

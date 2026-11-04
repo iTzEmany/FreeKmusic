@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/ui/screens/radio/radio_labels.dart';
@@ -52,8 +54,12 @@ void main() {
       expect(find.byKey(ValueKey('genre-$tag')), findsOneWidget, reason: tag);
     }
     expect(
-      tester.widget<ChoiceChip>(find.byKey(const ValueKey('genre-jazz'))).selected,
-      isTrue,
+      tester.getSemantics(find.byKey(const ValueKey('genre-jazz'))).flagsCollection.isSelected,
+      Tristate.isTrue,
+    );
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('genre-pop'))).flagsCollection.isSelected,
+      Tristate.isFalse,
     );
     await tester.tap(find.byKey(ValueKey('genre-${kRadioGenreTags.first}')));
     expect(picked, kRadioGenreTags.first);

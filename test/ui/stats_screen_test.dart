@@ -1,9 +1,14 @@
+import 'dart:ui' show Tristate;
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/play_history_repository.dart';
+import 'package:codecore/data/repositories/stats_queries.dart';
+import 'package:codecore/providers/history_providers.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_charts.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -112,6 +117,126 @@ void main() {
         .start(tracks[2].id, _ms(2026, 10, 12), msPlayed: 10 * 60000));
     await _settle(tester);
     expect(find.text('1 h 13 min'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Anno then Mese comes back to the last month seen', (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await _settle(tester);
+    await tester.tap(find.text('Anno'));
+    await _settle(tester);
+    await tester.tap(find.text('Mese'));
+    await _settle(tester);
+    expect(find.text('settembre 2026'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('with no month seen, a past year opens on the same month number', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    h = await Harness.create(tester, tracks: 1);
+    await h.pump(tester, StatsScreen(now: DateTime(2026, 11, 4)));
+    await _settle(tester);
+    await tester.tap(find.text('Anno'));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await _settle(tester);
+    await tester.tap(find.text('Mese'));
+    await _settle(tester);
+    expect(find.text('novembre 2025'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a remembered month in the future falls back to the current month', (tester) async {
+    await open(tester);
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Periodo precedente'));
+      await tester.pump();
+    }
+    await _settle(tester);
+    expect(find.text('dicembre 2025'), findsOneWidget);
+    await tester.tap(find.text('Anno'));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Periodo successivo'));
+    await _settle(tester);
+    expect(find.text('2026'), findsOneWidget);
+    await tester.tap(find.text('Mese'));
+    await _settle(tester);
+    expect(find.text('ottobre 2026'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('first load shows the bars skeleton', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    h = await Harness.create(tester, tracks: 1);
+    await h.pump(tester, StatsScreen(now: now), extraOverrides: [
+      periodStatsProvider.overrideWith((ref, k) => const Stream<PeriodStats>.empty()),
+    ]);
+    expect(find.byType(Skeleton), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('touching a bar selects it for TalkBack, and a future day cannot be selected',
+      (tester) async {
+    final sem = tester.ensureSemantics();
+    await open(tester);
+    final box = tester.getRect(find.byType(StatsBars));
+    final slot = box.width / 31;
+    bool picked(String day) => find.semantics
+        .byLabel(RegExp('^$day\\sott'))
+        .evaluate()
+        .any((n) => n.getSemanticsData().flagsCollection.isSelected == Tristate.isTrue);
+    // A future day (20 Oct) does nothing: no bar is selected.
+    await tester.tapAt(Offset(box.left + slot * 19.5, box.center.dy));
+    await tester.pump();
+    expect(picked('20'), isFalse);
+    expect(picked('2'), isFalse);
+    // 1.6 slots in: floor gives day 2, round would give day 3.
+    await tester.tapAt(Offset(box.left + slot * 1.6, box.center.dy));
+    await tester.pump();
+    expect(find.semantics.byLabel(RegExp(r'^2\sott,\s21\smin$')), findsOneWidget);
+    expect(picked('2'), isTrue);
+    expect(picked('3'), isFalse);
+    expect(picked('1'), isFalse);
+    // Drag over a future day (25 October): the selection stays on the last valid bar.
+    await tester.dragFrom(
+      Offset(box.left + slot * 1.5, box.center.dy),
+      Offset(slot * 23, 0),
+    );
+    await tester.pump();
+    expect(find.semantics.byLabel(RegExp(r'^16\sott')), findsOneWidget);
+    sem.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('changing period keeps the old stats dimmed, no spinner', (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('1 h 3 min'), findsOneWidget, reason: 'the previous month, dimmed');
+    await _settle(tester);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a data period, an empty one, then a loading one: the dimmed body is the data one',
+      (tester) async {
+    await open(tester);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byTooltip('Periodo precedente'));
+      await _settle(tester);
+    }
+    expect(find.text('agosto 2026'), findsOneWidget);
+    expect(find.text('Nessun ascolto in questo periodo.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await tester.pump();
+    expect(find.text('10 min'), findsOneWidget, reason: 'September, not an empty state');
+    expect(find.text('Nessun ascolto in questo periodo.'), findsNothing);
+    await _settle(tester);
     await h.dispose(tester);
   });
 

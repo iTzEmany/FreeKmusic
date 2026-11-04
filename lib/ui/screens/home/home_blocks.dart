@@ -113,7 +113,7 @@ class ShuffleHero extends ConsumerWidget {
   }
 }
 
-/// Favourites, Playlist and Radio, each with how many it holds.
+/// Favourites, Playlist and Radio: three boxes, each with one spoken label.
 class ShortcutsRow extends ConsumerWidget {
   const ShortcutsRow({super.key});
 
@@ -121,50 +121,47 @@ class ShortcutsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     int count<T>(AsyncValue<List<T>> v) => v.value?.length ?? 0;
-    final cc = context.cc;
-    Widget tile(String label, int n, Widget page, {bool first = false}) =>
+    Widget tile(IconData icon, String label, String sub, Widget page) =>
         Expanded(
           child: _Shortcut(
+            icon: icon,
             label: label,
-            count: n,
-            border: first ? null : BorderSide(color: cc.separator),
+            sub: sub,
             onTap: () => ShellNav.open<void>(context, page),
           ),
         );
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         CcDims.margin,
         CcDims.gap8,
         CcDims.margin,
         0,
       ),
-      decoration: BoxDecoration(
-        border: Border.symmetric(horizontal: BorderSide(color: cc.separator)),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            tile(
-              l.navFavorites,
-              count(ref.watch(tracksProvider(true))),
-              const FavoritesScreen(),
-              first: true,
+      child: Row(
+        spacing: CcDims.gap8,
+        children: [
+          tile(
+            Icons.favorite_border,
+            l.navFavorites,
+            l.tracksCount(count(ref.watch(tracksProvider(true)))),
+            const FavoritesScreen(),
+          ),
+          tile(
+            Icons.queue_music,
+            l.navPlaylists,
+            l.playlistsCount(count(ref.watch(playlistsProvider))),
+            Scaffold(
+              appBar: CcAppBar(title: l.navPlaylists),
+              body: const PlaylistsScreen(),
             ),
-            tile(
-              l.navPlaylists,
-              count(ref.watch(playlistsProvider)),
-              Scaffold(
-                appBar: CcAppBar(title: l.navPlaylists),
-                body: const PlaylistsScreen(),
-              ),
-            ),
-            tile(
-              l.radioTitle,
-              count(ref.watch(savedRadiosProvider)),
-              const RadioScreen(),
-            ),
-          ],
-        ),
+          ),
+          tile(Icons.radio, l.radioTitle, switch (count(
+            ref.watch(savedRadiosProvider),
+          )) {
+            0 => l.homeRadioLive,
+            final n => l.radioLibrarySubtitle(n),
+          }, const RadioScreen()),
+        ],
       ),
     );
   }
@@ -172,44 +169,54 @@ class ShortcutsRow extends ConsumerWidget {
 
 class _Shortcut extends StatelessWidget {
   const _Shortcut({
+    required this.icon,
     required this.label,
-    required this.count,
+    required this.sub,
     required this.onTap,
-    this.border,
   });
 
-  final String label;
-  final int count;
-  final BorderSide? border;
+  final IconData icon;
+  final String label, sub;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
+    final cc = context.cc;
     return Semantics(
       button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(
-            vertical: CcDims.gap12,
-            horizontal: CcDims.gap4,
-          ),
-          decoration: BoxDecoration(
-            border: border == null ? null : Border(left: border!),
-          ),
-          // Count and label side by side; the label wraps at large text.
-          child: Text.rich(
-            TextSpan(
+      label: '$label, $sub',
+      excludeSemantics: true,
+      child: Material(
+        color: cc.surface1,
+        borderRadius: BorderRadius.circular(CcDims.rCard),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 88),
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.all(CcDims.gap12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                TextSpan(text: '$count', style: theme.bodyLarge),
-                TextSpan(text: '  $label'),
+                Icon(icon, color: cc.accentSoft),
+                const SizedBox(height: CcDims.gap4),
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.bodyLarge,
+                ),
+                Text(
+                  sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.bodyMedium,
+                ),
               ],
             ),
-            textAlign: TextAlign.center,
-            style: theme.bodyMedium,
           ),
         ),
       ),

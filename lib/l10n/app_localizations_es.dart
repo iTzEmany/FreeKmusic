@@ -6035,4 +6035,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get loadingContent => 'Cargando…';
+
+  @override
+  String statsBarValue(String when, String time) {
+    return '$when, $time';
+  }
+
+  @override
+  String get homeRadioLive => 'En directo';
 }

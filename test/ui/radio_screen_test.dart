@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:codecore/core/network_kind.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/data/repositories/radio_repository.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import 'package:codecore/providers/radio_providers.dart';
@@ -54,9 +57,11 @@ void main() {
     Future<List<RadioStation>> Function(String)? genre,
     bool metered = false,
     double height = 900,
+    double width = 420,
+    double textScale = 1,
     bool failReorder = false,
   }) async {
-    tester.view.physicalSize = Size(420, height);
+    tester.view.physicalSize = Size(width, height);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     h = await Harness.create(tester, radio: true);
@@ -68,7 +73,7 @@ void main() {
         await repo.save(s);
       }
     });
-    await h.pump(tester, const RadioScreen(), extraOverrides: [
+    await h.pump(tester, const RadioScreen(), textScale: textScale, extraOverrides: [
       if (failReorder) radioRepositoryProvider.overrideWithValue(_FailingReorder(h.db)),
       radioRefreshProvider.overrideWithValue(() async => false),
       networkProbeProvider.overrideWithValue(_probe(metered)),
@@ -102,8 +107,8 @@ void main() {
     await open(tester, height: 3000); // the wrapped genres push later sections down
     expect(find.text('Le mie radio'), findsNothing);
     double y(String t) => tester.getTopLeft(find.text(t)).dy;
-    expect(y('Vicino a te'), lessThan(y('Generi')));
-    expect(y('Generi'), lessThan(y('Le più ascoltate')));
+    expect(y('Generi'), lessThan(y('Vicino a te')));
+    expect(y('Vicino a te'), lessThan(y('Le più ascoltate')));
     expect(find.text('Lombardia'), findsOneWidget);
     expect(find.text('Radio Vicina Uno'), findsOneWidget);
     expect(find.text('Lombardia, MP3, 128 kbps'), findsWidgets);
@@ -235,10 +240,107 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('genres: 4 uniform columns at 360 dp', (tester) async {
+    await open(tester, width: 360, height: 3000);
+    final x = {
+      for (final t in ['pop', 'rock', 'classic rock', 'jazz'])
+        tester.getTopLeft(find.byKey(ValueKey('genre-$t'))).dx,
+    };
+    expect(x.length, 4);
+    expect(tester.getSize(find.byKey(const ValueKey('genre-pop'))).height, greaterThanOrEqualTo(56));
+    await h.dispose(tester);
+  });
+
+  testWidgets('a list that is loading shows a skeleton, not a spinner', (tester) async {
+    final never = Completer<List<RadioStation>>();
+    await open(tester, genre: (_) => never.future);
+    await tester.ensureVisible(find.byKey(const ValueKey('genre-jazz')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('genre-jazz')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(Skeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('genres at 1.5x text: three columns', (tester) async {
+    await open(tester, width: 360, height: 3000, textScale: 1.5);
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-classic rock'))).dy,
+        tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy);
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-jazz'))).dy,
+        greaterThan(tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy));
+    await h.dispose(tester);
+  });
+
+  testWidgets('clearing the search brings the sections back at once', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Risultati'), findsOneWidget);
+    tester.widget<TextField>(find.byType(TextField)).controller!.clear();
+    await tester.pump();
+    expect(find.text('Risultati'), findsNothing);
+    expect(find.text('Generi'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('genres at 1.3x text: three columns (threshold)', (tester) async {
+    await open(tester, width: 360, height: 3000, textScale: 1.3);
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-classic rock'))).dy,
+        tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy);
+    await h.dispose(tester);
+  });
+
+  testWidgets('only spaces clear the search at once', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Risultati'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), '  ');
+    await tester.pump();
+    expect(find.text('Risultati'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the query is trimmed', (tester) async {
+    final seen = <String>[];
+    await open(tester, search: (q) async {
+      seen.add(q);
+      return [near.first];
+    });
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), ' rtl ');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(seen, ['rtl']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('leaving the screen during the debounce does not throw', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
+  testWidgets('genres at 2.0x text: two columns, no overflow', (tester) async {
+    await open(tester, width: 360, height: 3000, textScale: 2.0);
+    expect(tester.takeException(), isNull);
+    expect(tester.getTopLeft(find.byKey(const ValueKey('genre-rock'))).dx,
+        greaterThan(tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dx));
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-classic rock'))).dy,
+        greaterThan(tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy));
+    await h.dispose(tester);
+  });
+
   testWidgets('a genre chip lists that genre and can be closed', (tester) async {
     await open(tester);
     expect(
-      find.ancestor(of: find.byKey(const ValueKey('genre-jazz')), matching: find.byType(Wrap)),
+      find.ancestor(of: find.byKey(const ValueKey('genre-jazz')), matching: find.byType(GridView)),
       findsOneWidget,
     );
     expect(find.textContaining('▾'), findsNothing);

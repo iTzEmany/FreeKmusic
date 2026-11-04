@@ -16,6 +16,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/show_msg.dart';
+import '../../widgets/skeleton.dart';
 import 'radio_actions.dart';
 import 'radio_labels.dart';
 import 'radio_region_sheet.dart';
@@ -42,7 +43,7 @@ class StationsSliver extends ConsumerWidget {
         ? stations.sublist(0, kRadioListCap)
         : stations;
     return SliverFixedExtentList(
-      itemExtent: kRadioRowHeight,
+      itemExtent: radioRowHeight(context),
       delegate: SliverChildBuilderDelegate(
         childCount: list.length,
         (context, i) => RadioStationRow(
@@ -88,18 +89,8 @@ class _Loading extends StatelessWidget {
   const _Loading();
 
   @override
-  Widget build(BuildContext context) => const SliverToBoxAdapter(
-    child: Padding(
-      padding: EdgeInsets.all(CcDims.gap24),
-      child: Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      const SliverToBoxAdapter(child: Skeleton.list(rows: 3));
 }
 
 /// Loading, error with «Riprova», empty and data of a list of stations.
@@ -138,7 +129,7 @@ class MineSection extends ConsumerWidget {
         SliverToBoxAdapter(child: SectionHeader(l.radioMine)),
         SliverReorderableList(
           itemCount: saved.length,
-          itemExtent: kRadioRowHeight,
+          itemExtent: radioRowHeight(context),
           onReorderItem: (from, to) async {
             final ids = [for (final r in saved) r.stationId];
             ids.insert(to, ids.removeAt(from));
@@ -236,7 +227,8 @@ List<Widget> _withStale(
   return [_Message(context.l10n.radioOfflineList(date)), ...body];
 }
 
-/// The 24 genres as chips; [selected] is highlighted.
+/// The 24 genres in a uniform grid (4, 3 or 2 columns by text scale);
+/// [selected] is highlighted.
 class GenresSection extends StatelessWidget {
   const GenresSection({
     super.key,
@@ -250,6 +242,12 @@ class GenresSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final cc = context.cc;
+    final scaler = MediaQuery.textScalerOf(context);
+    final scale = scaler.scale(12) / 12;
+    final columns = scale < 1.3 ? 4 : (scale < 1.8 ? 3 : 2);
+    // Two lines of 12 sp text plus padding, never under 56 dp.
+    final cell = (scaler.scale(12) * 2 * 1.4 + 16).clamp(56.0, 200.0);
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,16 +255,46 @@ class GenresSection extends StatelessWidget {
           SectionHeader(l.radioGenres),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              crossAxisCount: columns,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              mainAxisExtent: cell,
               children: [
                 for (final tag in kRadioGenreTags)
-                  ChoiceChip(
-                    key: ValueKey('genre-$tag'),
-                    label: Text(radioGenreLabel(l, tag)),
+                  Semantics(
+                    button: true,
                     selected: tag == selected,
-                    onSelected: (_) => onSelect(tag),
+                    label: radioGenreLabel(l, tag),
+                    onTap: () => onSelect(tag),
+                    excludeSemantics: true,
+                    child: Material(
+                      key: ValueKey('genre-$tag'),
+                      color: tag == selected ? cc.accent : cc.surface1,
+                      borderRadius: BorderRadius.circular(CcDims.rCard),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => onSelect(tag),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Center(
+                            child: Text(
+                              radioGenreLabel(l, tag),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: tag == selected ? cc.onAccent : cc.text,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),

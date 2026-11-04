@@ -3454,5 +3454,7 @@
   "jamNearbyScanHint": "En Bluetooth, uniquement app ouverte",
   "streamCardsSoon": "Le titre arrive…",
   "closeKeyboard": "Fermer le clavier",
-  "loadingContent": "Chargement…"
+  "loadingContent": "Chargement…",
+  "homeRadioLive": "En direct",
+  "statsBarValue": "{when}, {time}"
 }

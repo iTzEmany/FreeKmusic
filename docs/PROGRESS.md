@@ -1242,10 +1242,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 77.4 Controlli di fase
 
 ## Fase 78 — Home, Radio e Statistiche (`fase-78-home-radio-statistiche.md`)
-- [ ] 78.1 Home
-- [ ] 78.2 Radio
-- [ ] 78.3 Statistiche
-- [ ] 78.4 Controlli di fase
+- [x] 78.1 Home
+- [x] 78.2 Radio
+- [x] 78.3 Statistiche
+- [x] 78.4 Controlli di fase
 
 ## Fase 79 — Libreria e Tutti i brani (`fase-79-libreria-e-tutti-i-brani.md`)
 - [ ] 79.1 Cambio scheda senza lag

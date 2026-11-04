@@ -6073,4 +6073,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get loadingContent => 'Chargement…';
+
+  @override
+  String statsBarValue(String when, String time) {
+    return '$when, $time';
+  }
+
+  @override
+  String get homeRadioLive => 'En direct';
 }

@@ -10,6 +10,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/segmented_blocks.dart';
 import 'stats_charts.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -38,16 +39,31 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   late DateTime _now;
   late StatsPeriod _period;
 
+  /// The last month looked at, so Anno then Mese comes back to it (D-363).
+  late int _lastMonth;
+
+  /// The last loaded stats, shown dimmed while the next period loads.
+  PeriodStats? _shown;
+
   @override
   void initState() {
     super.initState();
     _now = widget.now ?? DateTime.now();
     _period = StatsPeriod.containing(_now, year: false);
+    _lastMonth = _now.month;
   }
 
-  void _setYear(bool year) => setState(
-    () => _period = StatsPeriod.containing(_period.start, year: year),
-  );
+  void _go(StatsPeriod p) => setState(() {
+    _period = p;
+    if (!p.isYear) _lastMonth = p.start.month;
+  });
+
+  void _setYear(bool year) {
+    if (year) return _go(StatsPeriod.year(_period.start.year));
+    var m = StatsPeriod.month(_period.start.year, _lastMonth);
+    if (!m.start.isBefore(_now)) m = StatsPeriod.containing(_now, year: false);
+    _go(m);
+  }
 
   bool get _canGoNext => _period.next.start.isBefore(_now);
 
@@ -67,6 +83,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         m: _period.start.month,
       )),
     );
+    final cur = stats.value;
+    if (cur != null && !cur.isEmpty) _shown = cur;
+    // While the next period loads, the last one stays, dimmed and inert.
+    final stale = cur == null && stats.isLoading ? _shown : null;
     return Scaffold(
       appBar: CcAppBar(title: l.statsTitle),
       body: Center(
@@ -104,7 +124,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   IconButton(
                     tooltip: l.statsPrevious,
                     icon: const Icon(Icons.chevron_left_rounded),
-                    onPressed: () => setState(() => _period = _period.previous),
+                    onPressed: () => _go(_period.previous),
                   ),
                   Flexible(
                     child: Text(
@@ -118,22 +138,42 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     tooltip: l.statsNext,
                     icon: const Icon(Icons.chevron_right_rounded),
                     onPressed: _canGoNext
-                        ? () => setState(() => _period = _period.next)
+                        ? () => _go(_period.next)
                         : null,
                   ),
                 ],
               ),
               Expanded(
-                child: AsyncBody(
-                  value: stats,
-                  onRetry: () => ref.invalidate(periodStatsProvider),
-                  isEmpty: (s) => s.isEmpty,
-                  empty: EmptyState(
-                    icon: Icons.bar_chart_rounded,
-                    message: l.statsEmpty,
-                  ),
-                  data: (s) => _Body(stats: s, locale: locale, cc: cc),
-                ),
+                child: stale != null || (cur != null && !cur.isEmpty)
+                    ? Opacity(
+                        opacity: stale != null ? 0.5 : 1,
+                        child: IgnorePointer(
+                          ignoring: stale != null,
+                          child: ExcludeSemantics(
+                            excluding: stale != null,
+                            child: _Body(
+                              stats: stale ?? cur!,
+                              locale: locale,
+                              cc: cc,
+                              now: _now,
+                            ),
+                          ),
+                        ),
+                      )
+                    : AsyncBody(
+                        value: stats,
+                        onRetry: () => ref.invalidate(periodStatsProvider),
+                        isEmpty: (s) => s.isEmpty,
+                        empty: EmptyState(
+                          icon: Icons.bar_chart_rounded,
+                          message: l.statsEmpty,
+                        ),
+                        loading: const Padding(
+                          padding: EdgeInsets.all(CcDims.margin),
+                          child: Skeleton.bars(),
+                        ),
+                        data: (s) => const SizedBox.shrink(),
+                      ),
               ),
             ],
           ),
@@ -144,11 +184,17 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.stats, required this.locale, required this.cc});
+  const _Body({
+    required this.stats,
+    required this.locale,
+    required this.cc,
+    required this.now,
+  });
 
   final PeriodStats stats;
   final String locale;
   final CcColors cc;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
@@ -156,16 +202,25 @@ class _Body extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final p = stats.period;
     final starts = p.bucketStarts;
-    String? label(int i) {
-      if (p.isYear) {
-        return DateFormat.MMMM(locale)
-            .format(starts[i])
-            .substring(0, 1)
-            .toUpperCase();
-      }
-      final day = starts[i].day;
-      return day == 1 || day % 5 == 0 ? '$day' : null;
-    }
+    final axis = [
+      for (final d in starts)
+        p.isYear
+            ? DateFormat.MMMM(locale).format(d).substring(0, 1).toUpperCase()
+            : '${d.day}',
+    ];
+    // «12 mar, 2 h 14 min» / «Marzo, 41 h»; a bar after today is not selectable.
+    final values = [
+      for (var i = 0; i < starts.length; i++)
+        if (!starts[i].isBefore(now))
+          null
+        else
+          l.statsBarValue(
+            p.isYear
+                ? toBeginningOfSentenceCase(DateFormat.MMMM(locale).format(starts[i]))
+                : DateFormat.MMMd(locale).format(starts[i]),
+            formatListened(l, stats.msPerBucket[i]),
+          ),
+    ];
 
     final fav = stats.favouriteHour;
     return ListView(
@@ -197,8 +252,13 @@ class _Body extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
           child: StatsBars(
+            key: ValueKey((p.isYear, p.start)),
             values: stats.msPerBucket,
-            labelOf: label,
+            axisOf: axis,
+            steps: p.isYear ? const [1, 2, 3, 4, 6] : const [1, 5, 10],
+            // Months: Jan, Mar…; days: 1, 5, 10… (the first always).
+            showAxis: (i, n) => p.isYear ? i % n == 0 : n == 1 || i == 0 || (i + 1) % n == 0,
+            valueOf: values,
             semanticsLabel:
                 '${formatListened(l, stats.playedMs)}, ${l.statsPlays(stats.plays)}',
           ),
@@ -271,8 +331,9 @@ class _Ranking extends StatelessWidget {
       children: [
         SectionHeader(title),
         for (var i = 0; i < items.length; i++)
-          SizedBox(
-            height: 56,
+          // minHeight, so two lines at a large text size do not overflow.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
             child: Row(
               children: [
                 SizedBox(

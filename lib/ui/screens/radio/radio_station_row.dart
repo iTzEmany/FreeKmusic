@@ -11,6 +11,10 @@ import 'radio_labels.dart';
 
 const kRadioRowHeight = 64.0;
 
+/// The row grows with the text scale so two lines of text never overflow it.
+double radioRowHeight(BuildContext context) =>
+    kRadioRowHeight * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 2.0);
+
 /// One station: favicon, name, «region · codec bitrate», the star. Tap plays,
 /// long press (or the menu) opens the details.
 class RadioStationRow extends ConsumerWidget {
@@ -43,7 +47,7 @@ class RadioStationRow extends ConsumerWidget {
       radioQualityLine(station),
     ].where((e) => e.isNotEmpty).join(', ');
     return SizedBox(
-      height: kRadioRowHeight,
+      height: radioRowHeight(context),
       child: InkWell(
         onTap: onTap,
         onLongPress: onMore,
