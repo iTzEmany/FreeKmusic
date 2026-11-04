@@ -157,6 +157,11 @@ void main() {
               await s.expectGolden('${tag}_settings.png');
             }));
 
+        testWidgets('all_tracks', (tester) => withGoldenShot(tester, size, (s) async {
+              await s.show(const AllTracksScreen(), textScale: scale);
+              await s.expectGolden('${tag}_all_tracks.png');
+            }));
+
         testWidgets('selection', (tester) => withGoldenShot(tester, size, (s) async {
               await s.show(const AllTracksScreen(), textScale: scale);
               await tester.longPress(find.byType(TrackRow).at(1));
