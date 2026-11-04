@@ -10,6 +10,8 @@ import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart';
+import '../../widgets/confirm.dart' show showUndoSnack;
 import '../../widgets/empty_state.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
@@ -61,7 +63,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final result = await ref.read(reviewActionsProvider).retry(ids);
     if (!mounted) return;
     ref.read(selectionProvider(_key).notifier).clear();
-    showMsg(context, 
+    showMsg(
+      context,
       result == ReviewRetryResult.busy
           ? l.enrichBusy
           : l.reviewRetryStarted(ids.length),
@@ -70,11 +73,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Future<void> _dismiss(Set<int> ids) async {
     final l = context.l10n;
-    await ref.read(reviewActionsProvider).dismiss(ids);
+    // Read now: the snackbar outlives this screen, whose `ref` will be dead.
+    final actions = ref.read(reviewActionsProvider);
+    await actions.dismiss(ids);
     if (!mounted) return;
     ref.read(selectionProvider(_key).notifier).clear();
-    showMsg(context, l.reviewDismissed(ids.length));
+    showUndoSnack(
+      context,
+      l.reviewDismissed(ids.length),
+      () => actions.undismiss(ids),
+    );
   }
+
+  /// «Riprova» when nothing was found, else «Cerca» (the preview).
+  void _primary(Track t, Set<ReviewReason> reasons) =>
+      reasons.contains(ReviewReason.nothingFound)
+      ? _retry({t.id})
+      : showEnrichPreview(context, t);
 
   void _rowMenu(Track track) {
     final l = context.l10n;
@@ -135,7 +150,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       if (lines.isNotEmpty) showMsg(context, lines.join('\n'));
     });
     final job = ref.watch(secondOpinionJobProvider);
-    final all = ref.watch(reviewTracksProvider).value ?? const <Track>[];
+    final async = ref.watch(reviewTracksProvider);
+    final all = async.value ?? const <Track>[];
     final reasons = {for (final t in all) t.id: reviewReasons(t)};
     final tracks = [
       for (final t in all)
@@ -161,16 +177,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   onClose: notifier.clear,
                   onSelectAll: () => notifier.selectAll(selection.visibleIds),
                   actions: [
-                    IconButton(
+                    TextButton.icon(
                       key: const ValueKey('review-retry'),
-                      tooltip: l.reviewRetry,
                       icon: const Icon(Icons.refresh_rounded),
+                      label: Text(l.reviewRetry),
                       onPressed: () => _retry(picked.ids),
                     ),
-                    IconButton(
+                    TextButton.icon(
                       key: const ValueKey('review-dismiss'),
-                      tooltip: l.reviewDismiss,
-                      icon: const Icon(Icons.check_circle_outline_rounded),
+                      icon: const Icon(Icons.visibility_off_outlined),
+                      label: Text(l.reviewDismiss),
                       onPressed: () => _dismiss(picked.ids),
                     ),
                   ],
@@ -196,29 +212,64 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             child: Column(
               children: [
                 if (job.running) _SecondOpinionBar(job: job),
-                _FilterChips(
-                  filter: _filter,
-                  label: _label,
-                  onSelected: (r) {
-                    notifier.clear();
-                    setState(() => _filter = r);
-                  },
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      CcDims.margin,
+                      0,
+                      CcDims.margin,
+                      CcDims.gap8,
+                    ),
+                    child: Text(
+                      l.reviewHint,
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: context.cc.textMuted),
+                    ),
+                  ),
                 ),
                 Expanded(
-                  child: tracks.isEmpty
-                      ? EmptyState(
-                          icon: Icons.fact_check_outlined,
-                          message: l.reviewEmpty,
-                        )
-                      : _ReviewList(
-                          tracks: tracks,
-                          reasons: reasons,
+                  child: AsyncBody<List<Track>>(
+                    value: async,
+                    rowHeight: extent,
+                    onRetry: () => ref.invalidate(reviewTracksProvider),
+                    data: (_) => Column(
+                      children: [
+                        _FilterChips(
+                          filter: _filter,
                           label: _label,
-                          compact: compact,
-                          extent: extent,
-                          selection: selection,
-                          onRowMenu: _rowMenu,
+                          counts: {
+                            null: all.length,
+                            for (final r in ReviewReason.values)
+                              r: reasons.values
+                                  .where((s) => s.contains(r))
+                                  .length,
+                          },
+                          onSelected: (r) {
+                            notifier.clear();
+                            setState(() => _filter = r);
+                          },
                         ),
+                        Expanded(
+                          child: tracks.isEmpty
+                              ? EmptyState(
+                                  icon: Icons.fact_check_outlined,
+                                  message: l.reviewEmpty,
+                                )
+                              : _ReviewList(
+                                  tracks: tracks,
+                                  reasons: reasons,
+                                  label: _label,
+                                  compact: compact,
+                                  extent: extent,
+                                  selection: selection,
+                                  onRowMenu: _rowMenu,
+                                  onPrimary: _primary,
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -237,35 +288,65 @@ class _SecondOpinionBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final cc = context.cc;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         CcDims.margin,
-        0,
-        CcDims.margin,
         CcDims.gap4,
+        CcDims.margin,
+        CcDims.gap8,
       ),
-      child: Row(
+      child: Material(
         key: const ValueKey('review-second-opinion'),
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: () => ShellNav.open<void>(
-                context,
-                const SecondOpinionLogScreen(),
-              ),
-              child: Text(
-                l.reviewSecondOpinionProgress(job.done, job.total),
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: context.cc.textMuted),
+        color: cc.surface2,
+        borderRadius: BorderRadius.circular(CcDims.rCard),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => ShellNav.open<void>(
+                        context,
+                        const SecondOpinionLogScreen(),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CcDims.margin,
+                          vertical: CcDims.gap12,
+                        ),
+                        child: Text(
+                          l.reviewSecondOpinionProgress(job.done, job.total),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    key: const ValueKey('review-second-opinion-stop'),
+                    onPressed: ref
+                        .read(secondOpinionJobProvider.notifier)
+                        .cancel,
+                    child: Text(l.reviewSecondOpinionStop),
+                  ),
+                ],
               ),
             ),
-          ),
-          TextButton(
-            key: const ValueKey('review-second-opinion-stop'),
-            onPressed: ref.read(secondOpinionJobProvider.notifier).cancel,
-            child: Text(l.reviewSecondOpinionStop),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: LinearProgressIndicator(
+                value: job.total > 0 ? job.done / job.total : null,
+                minHeight: 3,
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -275,31 +356,35 @@ class _FilterChips extends StatelessWidget {
   const _FilterChips({
     required this.filter,
     required this.label,
+    required this.counts,
     required this.onSelected,
   });
 
   final ReviewReason? filter;
   final String Function(ReviewReason?) label;
+  final Map<ReviewReason?, int> counts;
   final ValueChanged<ReviewReason?> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        CcDims.margin,
-        CcDims.gap4,
-        CcDims.margin,
-        CcDims.gap8,
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+    return SizedBox(
+      // The chip grows with the text size; the row must follow it.
+      height: MediaQuery.textScalerOf(context).scale(48),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
         children: [
           for (final r in <ReviewReason?>[null, ...ReviewReason.values])
-            ChoiceChip(
-              label: Text(label(r)),
-              selected: filter == r,
-              onSelected: (_) => onSelected(r),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: CcDims.gap8),
+              child: Center(
+                child: ChoiceChip(
+                  key: ValueKey('review-filter-${r?.name ?? 'all'}'),
+                  label: Text('${label(r)} ${counts[r]}'),
+                  selected: filter == r,
+                  onSelected: (_) => onSelected(r),
+                ),
+              ),
             ),
         ],
       ),
@@ -316,6 +401,7 @@ class _ReviewList extends StatelessWidget {
     required this.extent,
     required this.selection,
     required this.onRowMenu,
+    required this.onPrimary,
   });
 
   /// Left inset of the reasons line: under the title, past the cover.
@@ -328,62 +414,99 @@ class _ReviewList extends StatelessWidget {
   final double extent;
   final RowSelection selection;
   final void Function(Track) onRowMenu;
+  final void Function(Track, Set<ReviewReason>) onPrimary;
+
+  static IconData _icon(ReviewReason r) => switch (r) {
+    ReviewReason.nothingFound => Icons.search_off_rounded,
+    ReviewReason.noLyrics => Icons.lyrics_outlined,
+    ReviewReason.noCover => Icons.image_outlined,
+    ReviewReason.missingData => Icons.label_outline_rounded,
+  };
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(CcDims.margin),
-          child: Text(
-            context.l10n.reviewHint,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: context.cc.textMuted),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: tracks.length,
-            itemBuilder: (_, i) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: extent,
-                  child: LiveTrackRow(
-                    track: tracks[i],
-                    compact: compact,
-                    selection: selection,
-                    onTap: () => onRowMenu(tracks[i]),
-                    onMore: () => onRowMenu(tracks[i]),
-                  ),
-                ),
-                // The reasons get their own (up to two) lines
-                // so a phone does not cut them with «…».
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    _reasonsInset,
-                    0,
-                    CcDims.margin,
-                    6,
-                  ),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      [for (final r in reasons[tracks[i].id]!) label(r)]
-                          .join(', '),
-                      key: ValueKey('review-reasons-${tracks[i].id}'),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: context.cc.textMuted),
+    final l = context.l10n;
+    final cc = context.cc;
+    return ListView.builder(
+      itemCount: tracks.length,
+      itemBuilder: (_, i) {
+        final t = tracks[i];
+        final rs = reasons[t.id]!;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: extent,
+              child: LiveTrackRow(
+                track: t,
+                compact: compact,
+                selection: selection,
+                onTap: () => onRowMenu(t),
+                onMore: () => onRowMenu(t),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                _reasonsInset,
+                0,
+                CcDims.gap8,
+                CcDims.gap8,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      key: ValueKey('review-reasons-${t.id}'),
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final r in rs)
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: cc.surface2,
+                              borderRadius: BorderRadius.circular(CcDims.rCard),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(_icon(r), size: 14, color: cc.accent),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      label(r),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  TextButton(
+                    key: ValueKey('review-primary-${t.id}'),
+                    onPressed: () => onPrimary(t, rs),
+                    child: Text(
+                      rs.contains(ReviewReason.nothingFound)
+                          ? l.reviewRetry
+                          : l.reviewSearch,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

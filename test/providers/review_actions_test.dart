@@ -88,4 +88,11 @@ void main() {
     final again = container(_FakeJob(false));
     expect(again.read(reviewDismissedProvider), {id});
   });
+
+  test('undismiss brings the track back', () async {
+    final c = container(_FakeJob(false));
+    await c.read(reviewActionsProvider).dismiss({id});
+    await c.read(reviewActionsProvider).undismiss({id});
+    expect(store.readReviewDismissed(), isEmpty);
+  });
 }
