@@ -222,8 +222,6 @@ void main() {
               await s.expectGolden('${tag}_search.png');
             }));
 
-        // At 150 % the suggested row (OnlineSongRow, fixed 72 dp) overflows by 16 px.
-        if (scale == 1.0) {
           testWidgets('genre', (tester) => withGoldenShot(tester, size, (s) async {
                 await s.show(const GenreScreen(genre: 'Pop'), textScale: scale, extra: [
                   genreMixProvider.overrideWith((ref, genre) => Stream.value(GenreMixState(
@@ -235,7 +233,6 @@ void main() {
                 ]);
                 await s.expectGolden('${tag}_genre.png');
               }));
-        }
 
         testWidgets('stats', (tester) => withGoldenShot(tester, size, (s) async {
               await tester.runAsync(() async {
