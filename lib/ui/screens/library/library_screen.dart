@@ -127,7 +127,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
       );
     } else if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
-      body = const Skeleton.list();
+      // Fixed rows may not fit a short pane: clip instead of overflowing.
+      body = const SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Skeleton.list(),
+      );
     } else if (trackCount == 0 && folders != null && folders.isEmpty) {
       body = EmptyState(
         icon: Icons.library_music,
