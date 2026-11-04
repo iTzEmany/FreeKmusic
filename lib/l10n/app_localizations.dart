@@ -9577,6 +9577,12 @@ abstract class AppLocalizations {
   /// **'Caricamento…'**
   String get loadingContent;
 
+  /// Screen-reader label of the placeholder rows of the queue: Shuffle+ suggestions still on their way.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{Shuffle+ sta scegliendo 1 brano…} other{Shuffle+ sta scegliendo {count} brani…}}'**
+  String shufflePlusChoosing(int count);
+
   /// Label of a stats bar (touch and screen reader): day or month, then the time listened.
   ///
   /// In it, this message translates to:

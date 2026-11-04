@@ -3855,6 +3855,8 @@
   "@closeKeyboard": {"description": "Tooltip of the ✕ of an empty, focused search field: it hides the keyboard."},
   "loadingContent": "Caricamento…",
   "@loadingContent": {"description": "Single screen-reader label of a skeleton placeholder while content loads."},
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ sta scegliendo 1 brano…} other{Shuffle+ sta scegliendo {count} brani…}}",
+  "@shufflePlusChoosing": {"description": "Screen-reader label of the placeholder rows of the queue: Shuffle+ suggestions still on their way.", "placeholders": {"count": {"type": "int"}}},
   "statsBarValue": "{when}, {time}",
   "@statsBarValue": {"description": "Label of a stats bar (touch and screen reader): day or month, then the time listened.", "placeholders": {"when": {"type": "String"}, "time": {"type": "String"}}},
   "homeRadioLive": "In diretta",

@@ -3219,6 +3219,7 @@
   "streamCardsUnavailableBody": "La letra, las curiosidades y los créditos de esta canción no llegaron. Puede deberse a la red o a la fuente.",
   "closeKeyboard": "Cerrar teclado",
   "loadingContent": "Cargando…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ está eligiendo 1 canción…} other{Shuffle+ está eligiendo {count} canciones…}}",
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "En directo",
   "closeSearch": "Cerrar la búsqueda",

@@ -3453,6 +3453,7 @@
   "streamCardsUnavailableBody": "Les paroles, les anecdotes et les crédits de ce titre ne sont pas arrivés. Cela peut venir du réseau ou de la source.",
   "closeKeyboard": "Fermer le clavier",
   "loadingContent": "Chargement…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ choisit 1 titre…} other{Shuffle+ choisit {count} titres…}}",
   "homeRadioLive": "En direct",
   "statsBarValue": "{when}, {time}",
   "closeSearch": "Fermer la recherche",

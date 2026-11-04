@@ -6002,6 +6002,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadingContent => 'Loading…';
 
   @override
+  String shufflePlusChoosing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Shuffle+ is picking $count tracks…',
+      one: 'Shuffle+ is picking 1 track…',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String statsBarValue(String when, String time) {
     return '$when, $time';
   }

@@ -130,6 +130,7 @@ void main() {
         72,
         reason: 'as tall as a real row',
       );
+      expect(find.bySemanticsLabel('Shuffle+ sta scegliendo 2 brani…'), findsOneWidget, reason: 'one node for all');
       c.add(GenreMixState(suggested: [_song('a'), _song('b')]));
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byType(Skeleton), findsNothing);
@@ -177,7 +178,10 @@ void main() {
       addTearDown(() => dir.deleteSync(recursive: true));
       final h = await mixPage(
         tester,
-        Stream.value(GenreMixState(suggested: [_song('a'), _song('b')])),
+        Stream.value(GenreMixState(
+          suggested: [_song('a'), _song('b')],
+          seedTitles: const {'a': 'Song 0', 'b': 'Song 3'},
+        )),
         extra: [
           downloadIndexProvider.overrideWith(
             (ref) async => DownloadIndex(File(p.join(dir.path, 'd.json'))),
@@ -201,6 +205,13 @@ void main() {
         ],
         ['a', 'b'],
       );
+      // In the queue they carry the «Suggerito» badge, with the song they came from.
+      final entries = [
+        for (final id in h.handler.queueIds)
+          if (isOnlineId(id)) h.handler.online!.entryOf(id)!,
+      ];
+      expect([for (final e in entries) e.suggested], [true, true]);
+      expect([for (final e in entries) e.seedTitle], ['Song 0', 'Song 3']);
       await h.dispose(tester);
     },
   );

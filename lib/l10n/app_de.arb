@@ -3219,6 +3219,7 @@
   "streamCardsUnavailableBody": "Text, Wissenswertes und Credits zu diesem Titel sind nicht angekommen. Das kann am Netz oder an der Quelle liegen.",
   "closeKeyboard": "Tastatur schließen",
   "loadingContent": "Wird geladen…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ wählt 1 Titel aus…} other{Shuffle+ wählt {count} Titel aus…}}",
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "Live",
   "closeSearch": "Suche schließen",

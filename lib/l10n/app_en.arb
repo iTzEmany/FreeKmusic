@@ -3219,6 +3219,7 @@
   "streamCardsUnavailableBody": "Lyrics, trivia and credits for this track did not arrive. It may be the network or the source.",
   "closeKeyboard": "Close keyboard",
   "loadingContent": "Loading…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ is picking 1 track…} other{Shuffle+ is picking {count} tracks…}}",
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "Live",
   "closeSearch": "Close search",

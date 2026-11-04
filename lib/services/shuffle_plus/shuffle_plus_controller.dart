@@ -13,6 +13,7 @@ import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
 import '../online/ytm_radio_service.dart';
 import 'insertion_plan.dart';
+import 'radio_gate.dart';
 import 'seed_resolver.dart';
 import 'shuffle_host.dart';
 import 'suggestion_log.dart';
@@ -81,14 +82,14 @@ class ShufflePlusController {
     this.enrichSuggested,
     this.enrichTimeout = blockEnrichTimeout,
     SuggestionPool? pool,
+    RadioGate? gate,
     DateTime Function()? now,
     Random? random,
   })  : pool = pool ?? SuggestionPool(),
+        gate = gate ?? RadioGate(now: now),
         _now = now ?? DateTime.now,
         _random = random ?? Random();
 
-  static const minRadioGap = Duration(minutes: 1);
-  static const rateLimitPause = Duration(minutes: 15);
   static const retryAfterError = Duration(minutes: 2);
   static const seedsLifetime = 8;
   static const minSourceSize = 5;
@@ -112,6 +113,9 @@ class ShufflePlusController {
   final SuggestionPool pool;
   final SeedResolver resolver;
   final YtmRadioService radio;
+
+  /// The radio's request gap and 429 pause, shared with the genre mix.
+  final RadioGate gate;
   final ShufflePlusConfig Function() config;
   final bool Function() jamActive;
 
@@ -166,7 +170,7 @@ class ShufflePlusController {
   LibraryIndex? _library;
   DateTime? _libraryAt;
 
-  DateTime? _lastRadio, _retryAt, _pausedUntil;
+  DateTime? _retryAt;
   bool _rateNoticeShown = false;
   int _errors = 0;
   bool _sessionOff = false;
@@ -175,7 +179,7 @@ class ShufflePlusController {
   bool get stoppedForSession => _sessionOff;
 
   /// True while the 15-minute pause after a rate limit lasts.
-  bool get rateLimited => _pausedUntil?.isAfter(_now()) ?? false;
+  bool get rateLimited => gate.rateLimited;
 
   /// The library as last read (null before the first radio request): shared
   /// with the genre page, which asks the same question.
@@ -348,7 +352,7 @@ class ShufflePlusController {
     if (cfg.unmeteredOnly && await isMetered()) return _Gate.off;
     if (!host.isPlaying || _current == null) return _Gate.idle;
     final now = _now();
-    final wait = [_pausedUntil, _retryAt].nonNulls.where(now.isBefore);
+    final wait = [gate.pausedUntil, _retryAt].nonNulls.where(now.isBefore);
     if (wait.isNotEmpty) {
       _wakeAt(wait.reduce((a, b) => a.isAfter(b) ? a : b));
       return _Gate.idle;
@@ -524,10 +528,10 @@ class ShufflePlusController {
   Future<void> _fill() async {
     final src = _source;
     final now = _now();
-    final last = _lastRadio;
-    if (last != null && now.difference(last) < minRadioGap) {
-      _retryAt = last.add(minRadioGap);
-      _wakeAt(_retryAt!);
+    final next = gate.nextAsk;
+    if (next != null) {
+      _retryAt = next;
+      _wakeAt(next);
       return;
     }
     try {
@@ -555,7 +559,7 @@ class ShufflePlusController {
             continue;
           }
         }
-        _lastRadio = _now();
+        gate.asked();
         final page = await radio.page(seed.videoId!,
             continuation: seed.fetched ? pool.continuationOf(seed.key) : null);
         if (_changedSince(src)) return;
@@ -564,7 +568,7 @@ class ShufflePlusController {
           // The id was a video clip's: look the song up and ask again later.
           seed.searchOnly = true;
           seed.videoId = null;
-          _retryAt = _lastRadio!.add(minRadioGap);
+          _retryAt = gate.lastRadio!.add(RadioGate.minGap);
           _wakeAt(_retryAt!);
           return;
         }
@@ -578,8 +582,8 @@ class ShufflePlusController {
       _wakeAt(_retryAt!);
     } on YtException catch (e) {
       if (e.kind == YtErrorKind.rateLimited) {
-        _pausedUntil = _now().add(rateLimitPause);
-        _wakeAt(_pausedUntil!);
+        gate.trip();
+        _wakeAt(gate.pausedUntil!);
         if (!_rateNoticeShown) {
           _rateNoticeShown = true;
           _notices.add(ShufflePlusNotice.rateLimited);

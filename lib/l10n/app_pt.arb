@@ -3453,6 +3453,7 @@
   "streamCardsUnavailableBody": "A letra, as curiosidades e os créditos desta faixa não chegaram. Pode ser da rede ou da fonte.",
   "closeKeyboard": "Fechar teclado",
   "loadingContent": "Carregando…",
+  "shufflePlusChoosing": "{count, plural, one{Shuffle+ está escolhendo 1 faixa…} other{Shuffle+ está escolhendo {count} faixas…}}",
   "homeRadioLive": "Ao vivo",
   "statsBarValue": "{when}, {time}",
   "closeSearch": "Fechar a pesquisa",

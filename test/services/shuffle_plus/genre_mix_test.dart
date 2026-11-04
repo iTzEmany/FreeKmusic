@@ -5,6 +5,7 @@ import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_parser.dart';
 import 'package:codecore/services/shuffle_plus/genre_mix.dart';
+import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
 import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
@@ -64,6 +65,9 @@ void main() {
   var allInLibrary = false;
   RadioPage Function(String id, String? continuation)? pages;
   var inLibrary = <String>{};
+  // A clock that jumps 2 minutes at every reading: the gap never holds a test back.
+  var tick = DateTime(2026, 11, 4);
+  late RadioGate gate;
 
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('genre_mix');
@@ -94,6 +98,7 @@ void main() {
     allInLibrary = false;
     pages = null;
     inLibrary = {};
+    gate = RadioGate(now: () => tick = tick.add(const Duration(minutes: 2)));
   });
 
   Future<List<GenreMixState>> run(int tracks) => genreMix(
@@ -108,6 +113,7 @@ void main() {
       return pages?.call(id, continuation) ?? page(id);
     },
     log: log,
+    gate: gate,
     loadInLibrary: () async =>
         (r) => allInLibrary || inLibrary.contains(r.id),
     cancelled: () => cancelled,
@@ -180,6 +186,55 @@ void main() {
     expect(states.last.off, GenreMixOff.rateLimited);
     expect(states.last.incoming, 0);
     expect(asked, hasLength(1), reason: 'no request after the 429');
+  });
+
+  test('a suggestion keeps the title of the song it came from', () async {
+    final states = await run(6);
+    final last = states.last;
+    expect(last.seedTitles.keys.toSet(), last.suggested.map((r) => r.id).toSet());
+    expect(last.seedTitles.values.every((t) => RegExp(r'^Song [1-6]$').hasMatch(t)), isTrue);
+  });
+
+  test('a 429 trips the shared gate', () async {
+    rateLimited = true;
+    final now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now);
+    await run(6);
+    expect(gate.rateLimited, isTrue);
+    expect(gate.pausedUntil, now.add(RadioGate.pause));
+  });
+
+  test('the first page does not wait for the gap (Shuffle+ asked 10 s ago); later pages do', () async {
+    var now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now)..asked();
+    now = now.add(const Duration(seconds: 10));
+    pages = (id, c) => RadioPage([
+      RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
+      RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song),
+    ]);
+    final states = await run(6);
+    expect(asked, hasLength(1));
+    expect(states.last.suggested, hasLength(1));
+  });
+
+  test('the 429 pause holds the first page too: no request', () async {
+    final now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now)..trip();
+    final states = await run(6);
+    expect(asked, isEmpty);
+    expect(states.last.suggested, isEmpty);
+    expect(states.last.incoming, 0);
+  });
+
+  test('with the real gap one radio page is asked, not a burst', () async {
+    final now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now);
+    pages = (id, c) => RadioPage([
+      RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
+      RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song),
+    ]);
+    await run(6);
+    expect(asked, hasLength(1));
   });
 
   test('cancelled (page left): no request at all', () async {
