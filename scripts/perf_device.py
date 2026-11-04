@@ -161,7 +161,8 @@ def wait_for(dev, event, timeout_s):
 
 
 # Every scenario name, in order; the second tuple needs playback. scenario()/gestures() assert against it.
-SCENARIOS = ('Pallino schede', 'Tutti i brani', 'Album', 'Ricerca «notte»', 'Apri album', 'In riproduzione',
+SCENARIOS = ('Pallino schede', 'Tutti i brani', 'Album', 'Libreria Tutto→Playlist→Album→Artisti',
+             'Ricerca «notte»', 'Apri album', 'In riproduzione',
              'Lettore dal dock', 'Swipe mini player', 'Fogli', 'Apertura player', 'Anello')
 PLAYBACK_SCENARIOS = set(SCENARIOS[SCENARIOS.index('In riproduzione'):])
 
@@ -313,6 +314,10 @@ def main():
     scenario('Tutti i brani', lambda: (dev.tap(r'^Libreria'), dev.tap(r'^Tutti i brani')), dev.flings)
     scenario('Album', lambda: (dev.sh('input keyevent KEYCODE_BACK'), time.sleep(1), dev.tap(r'^Album$')),
              dev.flings)
+    # Needs «Tutti i brani» and «Album» before it in --only: Album leaves the Library on its tab bar.
+    scenario('Libreria Tutto→Playlist→Album→Artisti', lambda: None,
+             lambda: [(dev.tap(rf'^{b}$'), time.sleep(0.6)) for _ in range(3)
+                      for b in ('Tutto', 'Playlist', 'Album', 'Artisti')])
     scenario('Ricerca «notte»',
              lambda: (dev.sh('input keyevent KEYCODE_BACK'), time.sleep(1), dev.tap(r'^Cerca'),
                       dev.tap(r'', cls='EditText')),
