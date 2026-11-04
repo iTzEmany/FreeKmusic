@@ -115,6 +115,67 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('Anno then Mese comes back to the last month seen', (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await _settle(tester);
+    await tester.tap(find.text('Anno'));
+    await _settle(tester);
+    await tester.tap(find.text('Mese'));
+    await _settle(tester);
+    expect(find.text('settembre 2026'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('with no month seen, a past year opens on the same month number', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    h = await Harness.create(tester, tracks: 1);
+    await h.pump(tester, StatsScreen(now: DateTime(2026, 11, 4)));
+    await _settle(tester);
+    await tester.tap(find.text('Anno'));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await _settle(tester);
+    await tester.tap(find.text('Mese'));
+    await _settle(tester);
+    expect(find.text('novembre 2025'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('touching a bar selects it for TalkBack, and a future day cannot be selected',
+      (tester) async {
+    final sem = tester.ensureSemantics();
+    await open(tester);
+    final box = tester.getRect(find.byType(StatsBars));
+    final slot = box.width / 31;
+    // 2 October: the bar of day 2.
+    await tester.tapAt(Offset(box.left + slot * 1.5, box.center.dy));
+    await tester.pump();
+    expect(find.semantics.byLabel(RegExp(r'^2\sott\s·\s21\smin$')), findsOneWidget);
+    expect(find.semantics.byLabel(RegExp(r'^20\sott')), findsNothing, reason: 'future day');
+    // Drag over a future day (25 October): the selection stays on the last valid bar.
+    await tester.dragFrom(
+      Offset(box.left + slot * 1.5, box.center.dy),
+      Offset(slot * 23, 0),
+    );
+    await tester.pump();
+    expect(find.semantics.byLabel(RegExp(r'^16\sott')), findsOneWidget);
+    sem.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('changing period keeps the old stats dimmed, no spinner', (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('1 h 3 min'), findsOneWidget, reason: 'the previous month, dimmed');
+    await _settle(tester);
+    await h.dispose(tester);
+  });
+
   group('Home «Il tuo mese»', () {
     Future<void> openHome(WidgetTester tester, int listens) async {
       tester.view.physicalSize = const Size(400, 900);

@@ -53,4 +53,17 @@ void main() {
     );
     expect(o.opacity, 0.8);
   });
+
+  testWidgets('bars fill a bounded height, gridCell lays out its cells', (tester) async {
+    for (final sk in [const Skeleton.bars(count: 12), const Skeleton.gridCell(count: 4)]) {
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: buildThemeFromColors(buildPalette(AppThemeId.notte, CcAccent.viola), false),
+        home: Scaffold(body: SingleChildScrollView(child: SizedBox(height: 200, child: sk))),
+      ));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(Skeleton), findsOneWidget);
+    }
+  });
 }

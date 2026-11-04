@@ -6047,4 +6047,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get loadingContent => 'Wird geladen…';
+
+  @override
+  String statsBarValue(String when, String time) {
+    return '$when · $time';
+  }
 }

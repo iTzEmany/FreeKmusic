@@ -6027,4 +6027,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get loadingContent => 'Carregando…';
+
+  @override
+  String statsBarValue(String when, String time) {
+    return '$when · $time';
+  }
 }

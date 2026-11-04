@@ -6020,4 +6020,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get loadingContent => 'Caricamento…';
+
+  @override
+  String statsBarValue(String when, String time) {
+    return '$when · $time';
+  }
 }

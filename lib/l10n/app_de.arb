@@ -3220,5 +3220,6 @@
   "jamNearbyScanHint": "Per Bluetooth, nur bei geöffneter App",
   "streamCardsSoon": "Der Titel kommt gleich…",
   "closeKeyboard": "Tastatur schließen",
-  "loadingContent": "Wird geladen…"
+  "loadingContent": "Wird geladen…",
+  "statsBarValue": "{when} · {time}"
 }

@@ -9588,6 +9588,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Caricamento…'**
   String get loadingContent;
+
+  /// Label of a stats bar (touch and screen reader): day or month, then the time listened.
+  ///
+  /// In it, this message translates to:
+  /// **'{when} · {time}'**
+  String statsBarValue(String when, String time);
 }
 
 class _AppLocalizationsDelegate
