@@ -13,6 +13,7 @@ import 'add_station_dialog.dart';
 import 'radio_region_sheet.dart';
 import 'radio_sections.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/cc_search_field.dart';
 
 /// Library → Radio: a search box, «Le mie radio», «Vicino a te» (country and
 /// region chosen by hand), the genres and the most listened of the country.
@@ -25,6 +26,7 @@ class RadioScreen extends ConsumerStatefulWidget {
 
 class _RadioScreenState extends ConsumerState<RadioScreen> {
   final _controller = TextEditingController();
+  final _focus = FocusNode();
   Timer? _debounce;
   String _query = '';
   String? _genre;
@@ -32,6 +34,7 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // The saved stations are read again once a day, without waiting for it.
@@ -47,12 +50,17 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  void _onChanged(String v) {
-    setState(() {}); // the clear button
+  void _onChanged() {
+    final v = _controller.text;
     _debounce?.cancel();
+    if (v.trim().isEmpty) {
+      if (_query.isNotEmpty) setState(() => _query = ''); // cleared: no wait
+      return;
+    }
     _debounce = Timer(CcTiming.radioDebounce, () {
       if (mounted) setState(() => _query = v.trim());
     });
@@ -94,11 +102,11 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
     } else {
       body = [
         const MineSection(),
-        const NearYouSection(),
         GenresSection(
           selected: null,
           onSelect: (t) => setState(() => _genre = t),
         ),
+        const NearYouSection(),
         const TopSection(),
       ];
     }
@@ -130,25 +138,11 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextField(
+                      CcSearchField(
                         key: const ValueKey('radio-search'),
                         controller: _controller,
-                        onChanged: _onChanged,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: l.radioSearchHint,
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: _controller.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  tooltip: l.close,
-                                  icon: const Icon(Icons.close_rounded),
-                                  onPressed: () {
-                                    _controller.clear();
-                                    setState(() => _query = '');
-                                  },
-                                ),
-                        ),
+                        focusNode: _focus,
+                        hint: l.radioSearchHint,
                       ),
                       if (searching || _genre != null)
                         Padding(
