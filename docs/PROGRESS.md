@@ -1236,10 +1236,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 76.3 Controlli di fase (Mi A3; correzione del #1 del blocco da riprovare a mano)
 
 ## Fase 77 — Rete di sicurezza e componenti comuni (`fase-77-rete-e-componenti.md`)
-- [ ] 77.1 Rete di sicurezza e misura di partenza
-- [ ] 77.2 Componente `Skeleton`
-- [ ] 77.3 `CcSearchField` e focus di Cerca
-- [ ] 77.4 Controlli di fase
+- [x] 77.1 Rete di sicurezza e misura di partenza
+- [x] 77.2 Componente `Skeleton`
+- [x] 77.3 `CcSearchField` e focus di Cerca
+- [x] 77.4 Controlli di fase
 
 ## Fase 78 — Home, Radio e Statistiche (`fase-78-home-radio-statistiche.md`)
 - [ ] 78.1 Home

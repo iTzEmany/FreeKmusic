@@ -62,3 +62,8 @@
 
 - Il p90 di build dello scenario nuovo (6,6 ms) è già sotto la soglia d'arrivo di 16 ms: sul telefono il ricalcolo di F-60 non si vede nei percentili. Il numero di frame (3913) conta anche i frame di quiete fra un tocco e l'altro (60 Hz), non è confrontabile con gli altri scenari.
 - Primo tentativo fallito (il demone Gradle è sparito durante `assembleProfile`, forse per la caduta della sessione); riuscito dopo `./gradlew --stop`.
+
+### 77.4 — Prova sul Mi A3 (2026-11-04, APK debug del ramo, via adb)
+- Cerca aperta dal dock (anche tornando da Home): nessuna tastiera, campo senza focus, ✕ attenuata e disabilitata («Cancella ricerca»).
+- Tocco sulla barra: tastiera aperta, ✕ «Chiudi tastiera». Testo scritto → ✕ «Cancella ricerca»: svuota e la tastiera resta. ✕ a campo vuoto con tastiera: la chiude.
+- La ✕ attenuata non fa niente di suo, ma il tocco cade sul campo che la contiene e apre la tastiera, come un tocco sul resto della barra: lasciato così.
