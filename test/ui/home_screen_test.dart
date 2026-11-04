@@ -96,6 +96,21 @@ void main() {
     },
   );
 
+  testWidgets('each shortcut is one box with one spoken label', (tester) async {
+    final handle = tester.ensureSemantics();
+    final h = await openHome(tester);
+    for (final label in [
+      'Preferiti, 0 brani',
+      'Playlist, 0 playlist',
+      'Radio, Stazioni in diretta',
+    ]) {
+      expect(find.bySemanticsLabel(label), findsOneWidget);
+    }
+    expect(find.bySemanticsLabel('Preferiti'), findsNothing);
+    await h.dispose(tester);
+    handle.dispose();
+  });
+
   testWidgets('Play starts the library in order with shuffle off', (
     tester,
   ) async {
@@ -230,6 +245,16 @@ void main() {
   }
 
   double y(WidgetTester t, Finder f) => t.getTopLeft(f.first).dy;
+
+  testWidgets('the blocks have no dividers and merge each row', (tester) async {
+    final handle = tester.ensureSemantics();
+    final h = await openRanked(tester);
+    expect(find.byType(HomeBlock), findsNWidgets(3));
+    expect(find.byType(Divider), findsNothing);
+    expect(find.bySemanticsLabel(RegExp(r'^Song 3\n')), findsOneWidget);
+    await h.dispose(tester);
+    handle.dispose();
+  });
 
   testWidgets('«I più ascoltati» lists the top 3 by plays, most played first', (
     tester,

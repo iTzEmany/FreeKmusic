@@ -107,12 +107,11 @@ class ResumeList extends ConsumerWidget {
     return Column(
       children: [
         SectionHeader(l.homeResume),
-        Column(
+        HomeBlock(
           children: [
-            for (final (i, r) in rows.indexed)
+            for (final r in rows)
               switch (r) {
                 ReleasesResume() => HomeRow(
-                  last: i == rows.length - 1,
                   key: const ValueKey('resume-releases'),
                   cover: const HomeIconCover(Icons.new_releases_outlined),
                   title: l.newReleasesTitle,
@@ -121,11 +120,9 @@ class ResumeList extends ConsumerWidget {
                 ),
                 QueueResume() => _QueueRow(
                   r,
-                  last: i == rows.length - 1,
                   subtitle: _queueSubtitle(context, r),
                 ),
                 TrackResume() => HomeRow(
-                  last: i == rows.length - 1,
                   key: ValueKey('resume-track-${r.track.id}'),
                   cover: CoverImage(
                     coverKey: r.track.coverKey,
@@ -141,7 +138,6 @@ class ResumeList extends ConsumerWidget {
                   onTap: () => ctrl.playFromList([r.track], 0),
                 ),
                 EntryResume() => HomeRow(
-                  last: i == rows.length - 1,
                   key: ValueKey(
                     'resume-entry-${r.entry.kind.name}-${r.entry.id}',
                   ),
@@ -204,11 +200,10 @@ class ResumeList extends ConsumerWidget {
 
 /// Watches play/pause itself so the list above does not rebuild on it.
 class _QueueRow extends ConsumerWidget {
-  const _QueueRow(this.row, {required this.subtitle, required this.last});
+  const _QueueRow(this.row, {required this.subtitle});
 
   final QueueResume row;
   final String subtitle;
-  final bool last;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -223,7 +218,6 @@ class _QueueRow extends ConsumerWidget {
       title: row.track.title,
       subtitle: subtitle,
       now: true,
-      last: last,
       // shortcut: a playing row does nothing, open Now Playing if it feels dead.
       onTap: playing
           ? null

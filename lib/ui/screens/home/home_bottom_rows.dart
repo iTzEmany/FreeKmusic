@@ -44,33 +44,43 @@ class HomeBottomRows extends ConsumerWidget {
       if (kEnableYoutube) const TopArtistsCard(),
     ];
     final topRows = [
-      if (top.isNotEmpty) SectionHeader(l.homeTopTracks),
-      for (var i = 0; i < math.min(3, top.length); i++)
-        HomeRow(
-          last: i == math.min(3, top.length) - 1,
-          cover: CoverImage(coverKey: top[i].coverKey, size: kHomeCover),
-          title: top[i].title,
-          subtitle: top[i].artist ?? l.unknownArtist,
-          onTap: () => ctrl.playFromList(
-            top,
-            i,
-            context: const PlayContext(PlayContextKind.library),
-          ),
+      if (top.isNotEmpty) ...[
+        SectionHeader(l.homeTopTracks),
+        HomeBlock(
+          children: [
+            for (var i = 0; i < math.min(3, top.length); i++)
+            HomeRow(
+              cover: CoverImage(coverKey: top[i].coverKey, size: kHomeCover),
+              title: top[i].title,
+              subtitle: top[i].artist ?? l.unknownArtist,
+              onTap: () => ctrl.playFromList(
+                top,
+                i,
+                context: const PlayContext(PlayContextKind.library),
+              ),
+            ),
+          ],
         ),
+      ],
     ];
     final redo = [
-      if (rediscover.isNotEmpty) SectionHeader(l.homeRediscover),
-      for (final (i, a) in rediscover.indexed)
-        HomeRow(
-          last: i == rediscover.length - 1,
-          cover: CoverImage(coverKey: a.coverKey, size: kHomeCover),
-          title: a.title ?? l.unknownAlbum,
-          subtitle: a.variousArtists
-              ? l.variousArtists
-              : (a.artist ?? l.unknownArtist),
-          onTap: () =>
-              ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
+      if (rediscover.isNotEmpty) ...[
+        SectionHeader(l.homeRediscover),
+        HomeBlock(
+          children: [
+            for (final a in rediscover)
+            HomeRow(
+              cover: CoverImage(coverKey: a.coverKey, size: kHomeCover),
+              title: a.title ?? l.unknownAlbum,
+              subtitle: a.variousArtists
+                  ? l.variousArtists
+                  : (a.artist ?? l.unknownArtist),
+              onTap: () =>
+                  ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
+            ),
+          ],
         ),
+      ],
     ];
     if (!wide) return Column(children: [...month, ...topRows, ...redo]);
     return Row(
@@ -111,19 +121,26 @@ class _MonthBlock extends ConsumerWidget {
             actionLabel: l.showAll,
             onAction: open,
           ),
-          HomeRow(
-            cover: const HomeIconCover(Icons.bar_chart_rounded),
-            title: formatListened(l, month.playedMs),
-            onTap: open,
+          HomeBlock(
+            children: [
+              HomeRow(
+                cover: const HomeIconCover(Icons.bar_chart_rounded),
+                title: formatListened(l, month.playedMs),
+                onTap: open,
+              ),
+              for (final a in month.topArtists.take(2))
+                HomeRow(
+                  cover: ArtistAvatar(
+                    name: a.name,
+                    size: kHomeCover,
+                    coverKey: a.coverKey,
+                  ),
+                  title: a.name ?? l.unknownArtist,
+                  subtitle: l.statsPlays(a.plays),
+                  onTap: open,
+                ),
+            ],
           ),
-          for (final (i, a) in month.topArtists.take(2).indexed)
-            HomeRow(
-              last: i == month.topArtists.take(2).length - 1,
-              cover: ArtistAvatar(name: a.name, size: kHomeCover, coverKey: a.coverKey),
-              title: a.name ?? l.unknownArtist,
-              subtitle: l.statsPlays(a.plays),
-              onTap: open,
-            ),
         ],
       ),
     );

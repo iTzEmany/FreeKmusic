@@ -69,18 +69,21 @@ class _CoverFanState extends State<CoverFan>
     final l = context.l10n;
     final ts = MediaQuery.textScalerOf(context);
     final titleStyle = Theme.of(context).textTheme.titleSmall!.copyWith(
-      fontSize: 13,
       height: 1.3,
       color: context.cc.text,
     );
     final artistStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-      fontSize: 12,
       height: 1.3,
       color: context.cc.textMuted,
     );
     // Square + gap + 2 title lines + 1 artist line, following the text scale.
     final openHeight =
-        _top + _size + 6 + ts.scale(13 * 1.3) * 2 + ts.scale(12 * 1.3) + 8;
+        _top +
+        _size +
+        6 +
+        ts.scale(titleStyle.fontSize! * 1.3) * 2 +
+        ts.scale(artistStyle.fontSize! * 1.3) +
+        8;
     // Full width: the open row scrolls edge to edge, its margins are list padding.
     return LayoutBuilder(
         builder: (context, box) {
