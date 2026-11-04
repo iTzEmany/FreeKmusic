@@ -34,4 +34,10 @@
 - `CcSearchField` prima dell'adozione in Libreria e Tutti i brani: `focusNode` opzionale (nodo interno), `onChanged` (oggi `all_tracks_screen.dart:230` lo usa) e `autofocus` (79.2 vuole la tastiera subito).
 - `Skeleton` a righe: `rowHeight` opzionale (oggi 64/72 fissi) per avere righe alte come `trackRowExtentOf` (dipende da `compact` e dalla scala del testo).
 
+## Dalla review della fase 78
+- `favoriteCountProvider` (su `watchCount(favoritesOnly: true)`, come `trackCountProvider` in `library_providers.dart:95`) al posto di `tracksProvider(true)` per contare i Preferiti in `home_blocks.dart:146`, `library_screen.dart:301`, `desktop_sidebar.dart:123`: oggi il numero segue la ricerca rimasta nella schermata Preferiti e carica tutta la lista per contarla (79.1).
+- Ordinamenti nel `build` della Home oltre a `resume_rows.dart:96`: `home_bottom_rows.dart:38-41` (Riscopri) e `home_blocks.dart:234-237` (Aggiunti da poco, ordina tutta la libreria); provider derivati e test sul conteggio dei ricalcoli (79.1).
+- «Mostra tutti» della Home scrive in `trackQueryProvider(false)` (`home_blocks.dart:244-248`): con la query propria di Tutti i brani (F-17) si rompe in silenzio; parametro `initialSort` in `AllTracksScreen` (79.3).
+- «Riproduci tutta la libreria» vive in `ShuffleHero` (`home_blocks.dart:89-113`, legge `trackOpsProvider.all()` due volte): un'azione unica (es. `playLibrary()`/`libraryIds()` nelle azioni dei brani, con `AppLog`) usata da Home e dalle icone ▶/Shuffle di Tutti i brani, poi dalla 81.1 (79.3).
+
 ## Esiti

@@ -27,4 +27,8 @@
 
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
+## Dalla review della fase 78
+- Griglia dei generi: la regola 4/3/2 colonne di `GenresSection` (`radio_sections.dart:230-298`) va estratta in un widget comune (es. `lib/ui/widgets/genre_grid.dart`, uno sliver con `mainAxisExtent`, perché i generi della libreria sono in numero libero e `shrinkWrap` li costruirebbe tutti) e usata da Radio e Cerca (3 colonne, 6 su desktop); poi via `_GenrePill` (`search_screen.dart:348-395`). `ValueKey('genre-$tag')` resta (80.1).
+- Riquadro `surface1` + `rCard` + `InkWell` + `Semantics` fatto a mano in `_Shortcut`, `HomeBlock`, celle dei generi: un componente `CcTile` (child, onTap, semanticsLabel, color, minHeight) nato con la griglia della 80.1 e riusato da 81.1 e 82.x; senza riscrivere le altre schede.
+
 ## Esiti

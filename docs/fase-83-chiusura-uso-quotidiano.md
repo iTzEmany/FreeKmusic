@@ -12,7 +12,7 @@
 - `flutter test test/theme/contrast_test.dart test/ui/a11y_guidelines_test.dart test/goldens` verdi; overflow a 2,0× su tutte le schermate del perimetro.
 
 ### 83.2 — Prova a mano e chiusura
-- Giro completo sul Mi A3 seguendo `refactor/ui-uso-quotidiano/mockup/indice.html` schermata per schermata, con TalkBack su Home, Cerca e Registro.
+- Giro completo sul Mi A3 seguendo `refactor/ui-uso-quotidiano/mockup/indice.html` schermata per schermata; etichette di Home, Cerca e Registro controllate con `uiautomator dump` (D-381: niente prova a orecchio con TalkBack).
 - Handoff aggiornato, `docs/refactor/ui-uso-quotidiano/analisi.md` con lo stato finale dei rilievi, pulizia del disco.
 
 **Fatto quando:** misure scritte qui e dentro le soglie, prova a mano fatta.
