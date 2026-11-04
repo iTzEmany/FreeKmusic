@@ -13,7 +13,12 @@ import 'package:codecore/providers/radio_providers.dart';
 import 'package:codecore/services/radio/radio_browser_client.dart';
 import 'package:codecore/services/radio/radio_catalog.dart';
 import 'package:codecore/services/radio/radio_station.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show genreMixProvider;
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/services/shuffle_plus/genre_mix.dart' show GenreMixState;
 import 'package:codecore/ui/screens/radio/radio_screen.dart';
+import 'package:codecore/ui/screens/search/genre_screen.dart';
+import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_charts.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/providers/nav_providers.dart';
@@ -209,6 +214,28 @@ void main() {
               ]);
               await s.expectGolden('${tag}_radio.png');
             }));
+
+        testWidgets('search', (tester) => withGoldenShot(tester, size, (s) async {
+              await s.h.store.writeSettings(s.h.store.readSettings().copyWith(
+                  recentSearches: ['Franco Battiato', 'Daft Punk', 'Radiohead Kid A']));
+              await s.show(const SearchScreen(), textScale: scale);
+              await s.expectGolden('${tag}_search.png');
+            }));
+
+        // At 150 % the suggested row (OnlineSongRow, fixed 72 dp) overflows by 16 px.
+        if (scale == 1.0) {
+          testWidgets('genre', (tester) => withGoldenShot(tester, size, (s) async {
+                await s.show(const GenreScreen(genre: 'Pop'), textScale: scale, extra: [
+                  genreMixProvider.overrideWith((ref, genre) => Stream.value(GenreMixState(
+                      suggested: [
+                        for (final (i, t) in ['Come Away With Me', 'Il cielo in una stanza'].indexed)
+                          YtResult(id: 'g$i', title: t, channel: 'Chan', duration: const Duration(minutes: 3), artists: const ['Norah Jones']),
+                      ],
+                      incoming: 1))),
+                ]);
+                await s.expectGolden('${tag}_genre.png');
+              }));
+        }
 
         testWidgets('stats', (tester) => withGoldenShot(tester, size, (s) async {
               await tester.runAsync(() async {
