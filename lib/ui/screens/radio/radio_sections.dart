@@ -267,8 +267,8 @@ class GenresSection extends StatelessWidget {
                 for (final tag in kRadioGenreTags)
                   Material(
                     key: ValueKey('genre-$tag'),
-                    color: tag == selected ? cc.accent : cc.surface2,
-                    borderRadius: BorderRadius.circular(8),
+                    color: tag == selected ? cc.accent : cc.surface1,
+                    borderRadius: BorderRadius.circular(CcDims.rCard),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
                       onTap: () => onSelect(tag),

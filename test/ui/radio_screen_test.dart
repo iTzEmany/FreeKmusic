@@ -263,6 +263,29 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('genres at 1.5x text: three columns', (tester) async {
+    await open(tester, width: 360, height: 3000, textScale: 1.5);
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-classic rock'))).dy,
+        tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy);
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-jazz'))).dy,
+        greaterThan(tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy));
+    await h.dispose(tester);
+  });
+
+  testWidgets('clearing the search brings the sections back at once', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Risultati'), findsOneWidget);
+    tester.widget<TextField>(find.byType(TextField)).controller!.clear();
+    await tester.pump();
+    expect(find.text('Risultati'), findsNothing);
+    expect(find.text('Generi'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('genres at 2.0x text: two columns, no overflow', (tester) async {
     await open(tester, width: 360, height: 3000, textScale: 2.0);
     expect(tester.takeException(), isNull);
