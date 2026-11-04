@@ -1234,3 +1234,44 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 76.1 Rete di sicurezza
 - [x] 76.2 Indirizzo invece del file, poi arricchimento del blocco (D-353)
 - [x] 76.3 Controlli di fase (Mi A3; correzione del #1 del blocco da riprovare a mano)
+
+## Fase 77 — Rete di sicurezza e componenti comuni (`fase-77-rete-e-componenti.md`)
+- [ ] 77.1 Rete di sicurezza e misura di partenza
+- [ ] 77.2 Componente `Skeleton`
+- [ ] 77.3 `CcSearchField` e focus di Cerca
+- [ ] 77.4 Controlli di fase
+
+## Fase 78 — Home, Radio e Statistiche (`fase-78-home-radio-statistiche.md`)
+- [ ] 78.1 Home
+- [ ] 78.2 Radio
+- [ ] 78.3 Statistiche
+- [ ] 78.4 Controlli di fase
+
+## Fase 79 — Libreria e Tutti i brani (`fase-79-libreria-e-tutti-i-brani.md`)
+- [ ] 79.1 Cambio scheda senza lag
+- [ ] 79.2 Ricerca nella Libreria
+- [ ] 79.3 Tutti i brani
+- [ ] 79.4 Controlli di fase
+
+## Fase 80 — Cerca solo online e generi misti (`fase-80-cerca-online-e-generi.md`)
+- [ ] 80.1 Cerca solo online
+- [ ] 80.2 Stato «in preparazione» di Shuffle+
+- [ ] 80.3 Pagina del genere mista
+- [ ] 80.4 Controlli di fase
+
+## Fase 81 — Player vuoto, schede in streaming e coda di Shuffle+ (`fase-81-player-e-streaming.md`)
+- [ ] 81.1 Niente in riproduzione
+- [ ] 81.2 Skeleton delle schede in streaming
+- [ ] 81.3 Suggeriti in arrivo nella coda
+- [ ] 81.4 Controlli di fase
+
+## Fase 82 — Registro attività, Da confermare e Da revisionare (`fase-82-registro-e-revisione.md`)
+- [ ] 82.1 «Accetta tutte» in un colpo
+- [ ] 82.2 Da confermare
+- [ ] 82.3 Registro attività
+- [ ] 82.4 Da revisionare
+- [ ] 82.5 Controlli di fase
+
+## Fase 83 — Chiusura del refactor «ui-uso-quotidiano» (`fase-83-chiusura-uso-quotidiano.md`)
+- [ ] 83.1 Misure finali
+- [ ] 83.2 Prova a mano e chiusura

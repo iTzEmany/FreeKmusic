@@ -1,13 +1,19 @@
-# Handoff — 2026-11-03 (fase 76 chiusa: suggeriti di Shuffle+ veloci e arricchiti)
+# Handoff — 2026-11-04 (piano del refactor «ui-uso-quotidiano» pronto: fasi 77–83)
 
 ## Stato
 **Fase 76 chiusa**: i suggeriti online di Shuffle+ entrano in coda appena c'è l'indirizzo (4–6 s invece di ~40 s sul Mi A3, D-352) e si arricchiscono a blocchi di 3 prima di suonare (D-353). Esiti in `fase-76-suggeriti-veloci.md`. **Fase 75 chiusa** (PR #95): testo, curiosità e crediti dei brani in streaming, arricchiti appena il brano corrente è in cache (D-351).
 
+**Refactor «ui-uso-quotidiano» pianificato** (4/11): fasi 77–83 dalle richieste dell'utente sull'uso di tutti i giorni (Home, Cerca solo online, Libreria senza lag e con ricerca, Radio, Statistiche, skeleton, player vuoto, Registro, «Accetta tutte»).
+
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo <uno dei «Prossimi obiettivi»>
+/obiettivo fase 77
 ```
-oppure uno dei «Prossimi obiettivi» qui sotto.
+
+## Da sapere (refactor ui-uso-quotidiano)
+- Analisi, scelte, arrivo, rete e metriche: `docs/refactor/ui-uso-quotidiano/analisi.md`; decisioni D-354…D-373.
+- Mockup approvati (specifica visiva, le note numerate di ogni file contano): `docs/refactor/ui-uso-quotidiano/mockup/indice.html` e gli 11 file accanto (`home`, `cerca`, `libreria-ricerca`, `radio`, `statistiche`, `tutti-i-brani`, `player-vuoto`, `streaming-skeleton`, `registro`, `da-confermare`, `da-revisionare`). `img/phone_library.png` è in realtà la Home.
+- Cambi di comportamento voluti: D-355, D-356, D-358, D-361, D-364, D-370. Intoccabili: D-367 (niente pacchetti nuovi, niente shimmer).
 
 ## Da riprovare o capire
 - Jam in LAN della fase 74 non provata dal vivo (la rete UniBA isola i client): rifarla a casa.
@@ -44,7 +50,7 @@ oppure uno dei «Prossimi obiettivi» qui sotto.
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-0. Verificare il tasto «Casuale su tutto» della Home (nella prova 76 non ha avviato nulla).
+0. **Fasi 77–83** (refactor «ui-uso-quotidiano», `/obiettivo fase 77`); la 78.1 verifica anche il «Casuale su tutto» della Home che nella prova 76 non ha avviato nulla.
 1. **(Consigliato) Debito della fase 74** (dalla review di architettura): estrarre `JamLocalQueue` da `JamController` (`jam_providers.dart` è a ~1360 righe; `_saved`/`_mode`/copia `jamAside`, valori di dominio a `keepAside`, `_part.unplayed` calcolato una volta per stato); un solo helper «riprova subito sullo stesso broker» per `JamBridge` e `_lookupCode`; un solo limite della posizione oltre la durata; unire `jam_queue_owner_name_test.dart` a `jam_queue_sheet_test.dart`; nome dell'ospite uscito ricordato per tutta la Jam, non solo a foglio aperto.
 2. Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
 3. Ricerca «notte», build p99 (D-176); 53.10 completamento intero sul Motorola.

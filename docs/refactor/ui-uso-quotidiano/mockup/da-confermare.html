@@ -1,0 +1,204 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Da confermare</title>
+<link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css"><style>
+html{background:#F4F2F8}
+body{min-width:0;padding:32px 40px 80px}
+.wrap{max-width:1680px}
+.phone{height:800px}
+.row{gap:32px}
+.note{max-width:360px}
+.ann ul{list-style:none}
+.tag-f{font-weight:700;color:#5B2BB5}
+.dev button:focus-visible{outline:2px solid var(--accent-soft);outline-offset:-2px}
+.dock.solo{padding:8px}
+.dev .btnp,.dev .go{background:var(--accent);color:var(--on-accent)}
+.dev .txtbtn{color:var(--accent-soft)}
+code{background:#E7E1F2;color:#3A1B7A;font:12px ui-monospace,Menlo,Consolas,monospace;padding:2px 6px;border-radius:4px}
+/* page controls */
+.ctl{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;padding:16px;background:#fff;border:1px solid #D6D0E2;border-radius:16px}
+.ctl button{height:44px;padding:0 20px;border-radius:22px;border:0;background:#5B2BB5;color:#fff;font:600 14px Figtree,sans-serif;cursor:pointer}
+.ctl button.s{background:#E7E1F2;color:#3A1B7A}
+.ctl button:focus-visible{outline:3px solid #A06BFF;outline-offset:2px}
+.ctl p{font-size:13px;color:#5B5170;max-width:520px}
+.timer{font:600 13px Figtree,sans-serif;color:#3A1B7A;margin-top:8px;min-height:20px}
+/* snackbar / sheet bits */
+.sbx{position:absolute;left:12px;right:12px;bottom:84px;z-index:7;background:var(--accent-soft);color:var(--on-accent);border-radius:var(--r-card);display:flex;align-items:center;min-height:56px;padding:6px 4px 6px 16px;font:var(--body-l);transition:opacity var(--t-enter),transform var(--t-enter)}
+.sbx span{flex:1;font-size:14px;line-height:1.3}.sbx button{min-height:var(--target);padding:0 12px;font:var(--body-l);font-weight:800;color:#3A1B7A}
+.stk{position:sticky;top:0;z-index:3;background:var(--bg)}
+.sub{font:var(--body);color:var(--muted);padding:0 16px 12px;max-width:34ch}
+.acc{margin:0 16px 8px;width:calc(100% - 32px);height:var(--target);border-radius:var(--r-dock);display:flex;align-items:center;justify-content:center;gap:8px;font:var(--body-l);font-weight:700}
+/* new cards */
+.lst{display:flex;flex-direction:column;gap:8px;padding:8px 16px 16px;transition:transform var(--t-sheet) var(--ease-in),opacity var(--t-sheet) var(--ease-in)}
+.lst.bye{transform:translateY(-24px);opacity:0}
+.cd{background:var(--s1);border-radius:var(--r-card);padding:12px;display:grid;grid-template-columns:56px 1fr;gap:12px;overflow:hidden;transition:opacity var(--t-enter),transform var(--t-enter)}
+.cd.out{opacity:0;transform:translateX(24px)}
+.cd .cv{width:56px;height:56px;border-radius:var(--r-list)}
+.cd .tx{min-width:0}
+.cd s{display:block;font:var(--small);color:var(--muted);opacity:.85;text-decoration-thickness:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.nw{display:flex;align-items:center;gap:8px;margin-bottom:4px;min-width:0}
+.nw .n{font:var(--body-l);background:#2E2150;color:var(--text);border-radius:4px;padding:1px 6px;margin-left:-6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.nw .n.big{font-weight:700}
+.nw .same{font:var(--body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nw .same.big{font:var(--body-l);color:var(--text)}
+.src{flex:none;font:var(--small);color:var(--muted);background:var(--s2);border-radius:var(--r-card);padding:3px 10px;margin-left:auto}
+.src svg{width:14px;height:14px}
+.cd .ac{grid-column:1/3;display:flex;gap:8px;margin-top:2px}
+.cd .ac button{flex:1;height:var(--target);border-radius:var(--r-dock);font:var(--body-l);font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.cd .ac .no{background:var(--s2);color:var(--text)}
+.cd .ac .ok{background:var(--accent-soft);color:var(--on-accent)}
+.cd .ac svg{width:20px;height:20px}
+.emp{display:flex;flex-direction:column;align-items:center;text-align:center;padding:72px 32px;gap:8px}
+.emp .big{width:72px;height:72px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--accent-soft);margin-bottom:8px}
+.emp .big svg{width:32px;height:32px}.emp b{font:700 18px/1.3 Figtree,sans-serif}.emp p{font:var(--body);font-size:14px;color:var(--muted);max-width:28ch}
+.emp .bg{margin-top:12px;font:var(--small);color:var(--muted);font-variant-numeric:tabular-nums}
+.emp .bar{width:200px;height:4px;border-radius:2px;background:var(--s3);margin-top:6px;position:relative;overflow:hidden}.emp .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);transition:width 200ms linear}
+/* today */
+.lt{min-height:72px;padding:8px 16px}
+.lt .t{font:400 16px/1.3 Figtree,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lt .bt{display:flex;gap:8px;margin-top:2px}.lt .bt span{font:600 14px/1 Figtree,sans-serif;color:var(--accent-soft);padding:8px 12px 8px 0}
+.lt::after{display:none}
+.spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--s3);border-top-color:var(--accent-soft);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spin{animation:none}.lst,.cd,.sbx,.emp .bar i{transition:none}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="rule" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2.2 2.2L15.5 11"/></symbol>
+<symbol id="db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></symbol>
+</defs></svg>
+<div class="pg-h"><h1>Da confermare</h1><p>Prima e dopo (D-361, F-39, F-40, F-42, F-71). Stile approvato di ui-fluida, dati di esempio.</p></div>
+<div class="nav"><a href="registro.html">Registro</a><a href="da-confermare.html">Da confermare</a><a href="da-revisionare.html">Da revisionare</a><a href="../../ui-fluida/mockup/home.html">Mockup approvato (ui-fluida)</a></div>
+
+<div class="wrap">
+<div class="ctl">
+  <button id="bAll">Accetta tutte (nuovo)</button>
+  <button id="bOld" class="s">Riproduci com’è oggi</button>
+  <button id="bReset" class="s">Ricomincia da 24</button>
+  <p>«Accetta tutte» a sinistra svuota in un colpo. A destra, com’è oggi: una proposta alla volta (una transazione e una scrittura su file per brano), simulata con un intervallo di 250 ms.</p>
+</div>
+<div class="row">
+  <div class="col"><h2 class="cap">Dopo (D-361)</h2>
+    <div class="dev phone" id="nw"></div>
+    <div class="timer" id="tNw"></div>
+  </div>
+  <div class="col"><h2 class="cap">Prima (oggi)</h2>
+    <div class="dev phone" id="od"></div>
+    <div class="timer" id="tOd"></div>
+  </div>
+  <div class="ann"><h2 class="cap">Cosa cambia</h2><ol>
+    <li><b>Scheda con copertina e fonte <span class="tag-f">F-39</span></b><span>Prima: una riga «Da A - X a B - Y» e due link nel sottotitolo. Ora: copertina, vecchio barrato e attenuato, nuovo evidenziato (titolo e artista), fonte come etichetta piccola. Se un campo non cambia, resta una riga grigia.</span></li>
+    <li><b>Azioni da 48 <span class="tag-f">F-39</span></b><span>«Scarta» tonale e «Accetta» pieno, ognuno largo metà scheda, alti 48. Prima erano due <code>TextButton</code> stretti.</span></li>
+    <li><b>«Accetta tutte (24)» in alto <span class="tag-f">F-40, F-71</span></b><span>Un pulsante pieno sotto il titolo, non una scritta nell’AppBar. Non sparisce mentre lavora: la lista si svuota con una sola animazione (uscita in 250 ms), poi lo stato «Tutto confermato».</span></li>
+    <li><b>Dice che cosa ha fatto <span class="tag-f">F-42</span></b><span>Snackbar «24 correzioni accettate · i file si aggiornano in sottofondo» con «Annulla». Oggi il numero restituito da <code>acceptAll</code> viene ignorato.</span></li>
+    <li><b>Annulla fino alla fine dei file <span class="tag-f">D-361</span></b><span>Il DB si aggiorna in un colpo; la scrittura dei tag nei file segue. Lo stato vuoto mostra «Aggiornati 9 di 24 file» finché non finisce; gli errori andrebbero nel registro.</span></li>
+    <li><b>Il tempo si vede</b><span>Sotto ogni telefono il tempo misurato dalla simulazione: oggi 24 × 250 ms, dopo una sola uscita. Il valore reale dipende dai file, ma lo scarto è questo.</span></li>
+  </ol></div>
+</div>
+</div>
+
+<script>
+const P=[
+['Bohemian rhapsody (official video)','queen','Bohemian Rhapsody','Queen','AcoustID'],
+['certe notti - ligabue','Sconosciuto','Certe notti','Ligabue','MusicBrainz'],
+['Hey Jude (Remastered 2015)','The Beatles','Hey Jude','The Beatles','MusicBrainz'],
+['Nel blu dipinto di blu','Modugno','Volare','Domenico Modugno','MusicBrainz'],
+['Track 03','Unknown Artist','Una vita in vacanza','Lo Stato Sociale','AcoustID'],
+['Starboy ft. Daft Punk [HD]','the weeknd','Starboy','The Weeknd','YouTube Music'],
+['Blue monday 88','NEW ORDER','Blue Monday','New Order','MusicBrainz'],
+['Africa - Toto (Official HD Video)','Toto','Africa','Toto','YouTube Music'],
+['Mi fido di te','jovanotti','Mi fido di te','Jovanotti','MusicBrainz'],
+['Another Brick In The Wall Pt. 2','Pink Floyd','Another Brick in the Wall, Pt. 2','Pink Floyd','MusicBrainz'],
+['Gioia','Pinguini Tattici Nucleari','Ricordi','Pinguini Tattici Nucleari','AcoustID'],
+['audio_0142','Sconosciuto','Come saprai','Giorgia','AcoustID'],
+['Shape of You (Lyrics)','Ed Sheeran','Shape of You','Ed Sheeran','YouTube Music'],
+['Smells Like Teen Spirit [Remastered]','nirvana','Smells Like Teen Spirit','Nirvana','MusicBrainz'],
+['La cura','Battiato','La cura','Franco Battiato','MusicBrainz'],
+['Redbone - Childish Gambino','Childish Gambino','Redbone','Childish Gambino','YouTube Music'],
+['Billie Jean (Single Version)','Michael Jackson','Billie Jean','Michael Jackson','MusicBrainz'],
+['Albachiara','vasco rossi','Albachiara','Vasco Rossi','AcoustID'],
+['Lose Yourself [Explicit]','Eminem','Lose Yourself','Eminem','YouTube Music'],
+['Generale','De Gregori','Generale','Francesco De Gregori','MusicBrainz'],
+['Take on me (Official Music Video)','a-ha','Take On Me','a-ha','YouTube Music'],
+['Il pescatore','De André','Il pescatore','Fabrizio De André','MusicBrainz'],
+['Nothing Else Matters (Remastered)','Metallica','Nothing Else Matters','Metallica','MusicBrainz'],
+['L’Estate sta finendo','Righeira','L’estate sta finendo','Righeira','MusicBrainz']
+].map((p,i)=>({id:i,o:[p[0],p[1]],n:[p[2],p[3]],src:p[4]}));
+console.assert(P.length===24);
+const I=n=>`<svg class="i"><use href="#${n}"/></svg>`;
+const dur=()=>matchMedia('(prefers-reduced-motion: reduce)').matches?0:260;
+const $=id=>document.getElementById(id);
+const tabs=`<div class="dock solo"><div class="tabs"><span class="tab"><span class="ic">${I('home')}</span>Home</span><span class="tab"><span class="ic">${I('search')}</span>Cerca</span><span class="tab on"><span class="ic">${I('lib')}</span>Libreria</span><span class="tab"><span class="ic">${I('set')}</span>Impostazioni</span></div></div>`;
+const sb=`<div class="sb"><span>14:40</span><span class="r">5G</span></div>`;
+
+/* ---------- NEW ---------- */
+const N={list:P.slice(),state:'list',snack:null,prev:null,files:0,t0:0,iv:null,st:null};
+function nv(o,n,big){return o===n?`<span class="same${big?' big':''}">${n}</span>`:`<span class="n${big?' big':''}">${n}</span>`}
+function card(p){return `<article class="cd" data-id="${p.id}"><span class="cv c${p.id%7+1}"></span><div class="tx"><s>${p.o[0]} · ${p.o[1]}</s><div class="nw">${nv(p.o[0],p.n[0],1)}</div><div class="nw">${nv(p.o[1],p.n[1])}<span class="src">${p.src}</span></div></div><div class="ac"><button class="no" data-a="no" data-id="${p.id}">Scarta</button><button class="ok" data-a="ok" data-id="${p.id}">${I('check')}Accetta</button></div></article>`}
+function paintN(){
+  const el=$('nw'), sc=el.querySelector('.scr'), top=sc?sc.scrollTop:0, n=N.list.length;
+  let body='';
+  if(N.state==='empty'){
+    const f=N.files, tot=N.prev?N.prev.length:24;
+    body=`<div class="emp" role="status"><span class="big">${I('check')}</span><b>Tutto confermato</b><p>Non c’è più niente da controllare.</p><div class="bg">${f<tot?`Aggiorno i file: ${f} di ${tot}`:'File aggiornati'}</div><div class="bar"><i style="width:${tot?f/tot*100:100}%"></i></div></div>`;
+  }else body=`<div class="lst${N.state==='bye'?' bye':''}">${N.list.map(card).join('')}</div>`;
+  el.innerHTML=`${sb}<div class="scr"><div class="stk"><div class="hd"><button class="btn" aria-label="Indietro">${I('back')}</button><h1>Da confermare</h1></div>${n?`<p class="sub">${n===1?'1 correzione suggerita':n+' correzioni suggerite'}. Controllale una per una o accettale tutte.</p><button class="btnp acc" data-a="all"${N.state==='bye'?' disabled':''}>${I('check')}Accetta tutte (${n})</button>`:''}</div>${body}</div>${tabs}${N.snack?`<div class="sbx" role="status"><span>${N.snack}</span><button data-a="undo">Annulla</button></div>`:''}`;
+  const s2=el.querySelector('.scr'); if(s2)s2.scrollTop=top;
+}
+function acceptAll(){
+  if(!N.list.length||N.state!=='list')return;
+  N.t0=performance.now(); N.prev=N.list.slice(); N.state='bye'; paintN();
+  clearTimeout(N.st);
+  N.st=setTimeout(()=>{
+    N.state='empty'; N.list=[]; N.files=0;
+    N.snack=`${N.prev.length} correzioni accettate · i file si aggiornano in sottofondo`;
+    $('tNw').textContent=`Fatto in ${((performance.now()-N.t0)/1000).toFixed(2).replace('.',',')} s (lista vuota in un colpo)`;
+    paintN();
+    clearInterval(N.iv); N.iv=setInterval(()=>{N.files=Math.min(N.prev.length,N.files+1);paintN();if(N.files>=N.prev.length)clearInterval(N.iv)},350);
+    clearTimeout(N.sn); N.sn=setTimeout(()=>{N.snack=null;paintN()},7000);
+  },dur());
+}
+function undoAll(){
+  clearInterval(N.iv);clearTimeout(N.sn);
+  if(N.prev){N.list=N.prev;N.prev=null}
+  N.state='list';N.snack=null;$('tNw').textContent='Annullato: le correzioni sono tornate in lista';paintN();
+}
+function resetN(){clearInterval(N.iv);clearTimeout(N.sn);clearTimeout(N.st);N.list=P.slice();N.state='list';N.snack=null;N.prev=null;$('tNw').textContent='';paintN()}
+$('nw').addEventListener('click',e=>{
+  const t=e.target.closest('[data-a]'); if(!t)return; const a=t.dataset.a;
+  if(a==='all')acceptAll();
+  else if(a==='undo')undoAll();
+  else if(a==='ok'||a==='no'){
+    const c=t.closest('.cd'), id=+t.dataset.id; c.classList.add('out');
+    setTimeout(()=>{N.list=N.list.filter(p=>p.id!==id);if(!N.list.length){N.prev=null;N.state='empty';N.files=24;N.snack=null}paintN()},dur());
+  }
+});
+
+/* ---------- OLD ---------- */
+const O={list:P.slice(),running:false,iv:null,t0:0};
+function paintO(){
+  const el=$('od'), sc=el.querySelector('.scr'), top=sc?sc.scrollTop:0, n=O.list.length;
+  const rows=O.list.map(p=>`<div class="li lt" data-id="${p.id}"><div class="tx"><div class="t">Da ${p.o[0]} - ${p.o[1]} a ${p.n[0]} - ${p.n[1]}</div><div class="bt"><span>Accetta</span><span>Scarta</span></div></div></div>`).join('');
+  const act=n?(O.running?`<span class="spin" role="progressbar" aria-label="In corso"></span>`:`<button class="txtbtn" data-a="all">Accetta tutte</button>`):'';
+  el.innerHTML=`${sb}<div class="scr"><div class="hd"><button class="btn" aria-label="Indietro">${I('back')}</button><h1 style="font-size:18px">Da confermare (${n})</h1><span style="padding-right:12px">${act}</span></div>${n?rows:`<div class="emp"><span class="big">${I('check')}</span><p>Nessuna proposta da confermare.</p></div>`}</div>${tabs}`;
+  const s2=el.querySelector('.scr'); if(s2)s2.scrollTop=top;
+}
+function runOld(){
+  if(O.running||!O.list.length)return;
+  O.running=true;O.t0=performance.now();paintO();
+  O.iv=setInterval(()=>{
+    O.list.shift();paintO();
+    $('tOd').textContent=`In corso: ${((performance.now()-O.t0)/1000).toFixed(1).replace('.',',')} s, ancora ${O.list.length}`;
+    if(!O.list.length){clearInterval(O.iv);O.running=false;$('tOd').textContent=`Finito in ${((performance.now()-O.t0)/1000).toFixed(1).replace('.',',')} s, una alla volta, senza dire quante`;paintO()}
+  },250);
+}
+function resetO(){clearInterval(O.iv);O.running=false;O.list=P.slice();$('tOd').textContent='';paintO()}
+$('od').addEventListener('click',e=>{if(e.target.closest('[data-a=all]'))runOld()});
+$('bAll').onclick=acceptAll;$('bOld').onclick=()=>{resetO();runOld()};$('bReset').onclick=()=>{resetN();resetO()};
+paintN();paintO();
+const q=new URLSearchParams(location.search).get('s');
+if(q==='all')acceptAll(); if(q==='old'){runOld();}
+</script></body></html>

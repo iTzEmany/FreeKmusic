@@ -97,6 +97,13 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 74 | `fase-74-coda-jam-e-rifinitura.md` | Rinviati della coda della Jam (Suggerito, Shuffle+, coda di prima su disco), «Scarica» e posizione nella Jam, rifinitura della Jam a distanza |
 | 75 | `fase-75-arricchimento-stream.md` | Testo, curiosità e crediti anche per i brani in streaming, caricati appena il brano corrente è in cache (D-351, refactor «arricchimento-stream») |
 | 76 | `fase-76-suggeriti-veloci.md` | Suggeriti di Shuffle+ in coda appena c'è l'indirizzo, non dopo il download (D-352) |
+| 77 | `fase-77-rete-e-componenti.md` | Refactor «ui-uso-quotidiano»: rete di sicurezza, misura di partenza, `Skeleton`, `CcSearchField`, niente tastiera automatica in Cerca |
+| 78 | `fase-78-home-radio-statistiche.md` | Home a riquadri, Radio (le tue → generi da 4 → vicino a te), Statistiche con mese ricordato e barre toccabili |
+| 79 | `fase-79-libreria-e-tutti-i-brani.md` | Libreria senza lag e con la ricerca interna, Tutti i brani con barra che si nasconde |
+| 80 | `fase-80-cerca-online-e-generi.md` | Cerca solo online, generi misti libreria + suggeriti (D-355, D-356), stato «in preparazione» di Shuffle+ |
+| 81 | `fase-81-player-e-streaming.md` | Player a coda finita, skeleton delle schede in streaming e dei suggeriti in coda |
+| 82 | `fase-82-registro-e-revisione.md` | «Accetta tutte» in un colpo (D-361), Registro per giorno con filtri, Da confermare e Da revisionare |
+| 83 | `fase-83-chiusura-uso-quotidiano.md` | Misure finali e prova a mano del refactor |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 

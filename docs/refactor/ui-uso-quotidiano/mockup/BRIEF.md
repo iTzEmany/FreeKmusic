@@ -1,0 +1,8 @@
+# Brief comune dei mockup (ui-uso-quotidiano)
+- Cartella: docs/refactor/ui-uso-quotidiano/mockup/. Ogni file .html è autonomo: `<link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css">` + `<style>` proprio. Niente CDN, niente rete, niente immagini scaricate: copertine = blocchi colorati `.cv .c1…c7` come in `../../ui-jam-ricerca/mockup/ricerca.html` (usalo come modello di struttura, icone SVG `<symbol>`, dock, righe).
+- Stile: quello approvato di ui-fluida (token, Unbounded per i titoli di schermata, Figtree per il resto, accento viola #A06BFF, tema notte). Niente gradienti, niente ombre, niente emoji come icone. Testo minimo 12px. Bersagli ≥ 48px. Animazioni con le durate dei token e ferme con prefers-reduced-motion.
+- Pagina: titolo, una riga di spiegazione, link di navigazione agli altri mockup; per ogni schermata «prima» (immagine da img/ se c'è, altrimenti un riquadro che descrive in 3 righe com'è oggi) e «dopo» (telefono 360×780 `.phone`; desktop 1280 `.desk` solo dove indicato), più note numerate (`.ann`) che citano i rilievi F-NN e le decisioni D-NNN.
+- Interattività: dove il brief lo chiede, JS inline breve (niente librerie), con pulsanti nel mockup che mostrano gli stati (es. «mostra skeleton» / «mostra dati»).
+- Contenuti realistici in italiano: brani e artisti plausibili (mix italiano e internazionale), numeri credibili (libreria di 2000 brani).
+- Riferimenti: docs/refactor/ui-uso-quotidiano/analisi.md (rilievi e «Scelte»), docs/decisioni.md D-354…D-368.
+- File di altri non si toccano; base.css si può solo leggere (se serve una regola comune, mettila nel tuo file).
