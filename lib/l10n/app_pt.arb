@@ -3455,5 +3455,6 @@
   "streamCardsSoon": "A faixa está a caminho…",
   "closeKeyboard": "Fechar teclado",
   "loadingContent": "Carregando…",
-  "homeRadioLive": "Ao vivo"
+  "homeRadioLive": "Ao vivo",
+  "statsBarValue": "{when}, {time}"
 }

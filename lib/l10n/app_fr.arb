@@ -3455,5 +3455,6 @@
   "streamCardsSoon": "Le titre arrive…",
   "closeKeyboard": "Fermer le clavier",
   "loadingContent": "Chargement…",
-  "homeRadioLive": "En direct"
+  "homeRadioLive": "En direct",
+  "statsBarValue": "{when}, {time}"
 }

@@ -1,9 +1,12 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/play_history_repository.dart';
+import 'package:codecore/data/repositories/stats_queries.dart';
+import 'package:codecore/providers/history_providers.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_charts.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -144,6 +147,37 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('a remembered month in the future falls back to the current month', (tester) async {
+    await open(tester);
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Periodo precedente'));
+      await tester.pump();
+    }
+    await _settle(tester);
+    expect(find.text('dicembre 2025'), findsOneWidget);
+    await tester.tap(find.text('Anno'));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Periodo successivo'));
+    await _settle(tester);
+    expect(find.text('2026'), findsOneWidget);
+    await tester.tap(find.text('Mese'));
+    await _settle(tester);
+    expect(find.text('ottobre 2026'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('first load shows the bars skeleton', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    h = await Harness.create(tester, tracks: 1);
+    await h.pump(tester, StatsScreen(now: now), extraOverrides: [
+      periodStatsProvider.overrideWith((ref, k) => const Stream<PeriodStats>.empty()),
+    ]);
+    expect(find.byType(Skeleton), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('touching a bar selects it for TalkBack, and a future day cannot be selected',
       (tester) async {
     final sem = tester.ensureSemantics();
@@ -153,7 +187,7 @@ void main() {
     // 2 October: the bar of day 2.
     await tester.tapAt(Offset(box.left + slot * 1.5, box.center.dy));
     await tester.pump();
-    expect(find.semantics.byLabel(RegExp(r'^2\sott\s·\s21\smin$')), findsOneWidget);
+    expect(find.semantics.byLabel(RegExp(r'^2\sott,\s21\smin$')), findsOneWidget);
     expect(find.semantics.byLabel(RegExp(r'^20\sott')), findsNothing, reason: 'future day');
     // Drag over a future day (25 October): the selection stays on the last valid bar.
     await tester.dragFrom(

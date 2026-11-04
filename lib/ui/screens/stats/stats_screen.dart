@@ -83,7 +83,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         m: _period.start.month,
       )),
     );
-    _shown = stats.value ?? _shown;
+    final cur = stats.value;
+    if (cur != null && !cur.isEmpty) _shown = cur;
+    // While the next period loads, the last one stays, dimmed and inert.
+    final stale = cur == null && stats.isLoading ? _shown : null;
     return Scaffold(
       appBar: CcAppBar(title: l.statsTitle),
       body: Center(
@@ -141,25 +144,36 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 ],
               ),
               Expanded(
-                child: AsyncBody(
-                  value: stats,
-                  onRetry: () => ref.invalidate(periodStatsProvider),
-                  isEmpty: (s) => s.isEmpty,
-                  empty: EmptyState(
-                    icon: Icons.bar_chart_rounded,
-                    message: l.statsEmpty,
-                  ),
-                  loading: _shown == null
-                      ? const Padding(
+                child: stale != null || (cur != null && !cur.isEmpty)
+                    ? Opacity(
+                        opacity: stale != null ? 0.5 : 1,
+                        child: IgnorePointer(
+                          ignoring: stale != null,
+                          child: ExcludeSemantics(
+                            excluding: stale != null,
+                            child: _Body(
+                              stats: stale ?? cur!,
+                              locale: locale,
+                              cc: cc,
+                              now: _now,
+                            ),
+                          ),
+                        ),
+                      )
+                    : AsyncBody(
+                        value: stats,
+                        onRetry: () => ref.invalidate(periodStatsProvider),
+                        isEmpty: (s) => s.isEmpty,
+                        empty: EmptyState(
+                          icon: Icons.bar_chart_rounded,
+                          message: l.statsEmpty,
+                        ),
+                        loading: const Padding(
                           padding: EdgeInsets.all(CcDims.margin),
                           child: Skeleton.bars(),
-                        )
-                      : Opacity(
-                          opacity: 0.5,
-                          child: _Body(stats: _shown!, locale: locale, cc: cc, now: _now),
                         ),
-                  data: (s) => _Body(stats: s, locale: locale, cc: cc, now: _now),
-                ),
+                        data: (s) => const SizedBox.shrink(),
+                      ),
               ),
             ],
           ),
@@ -188,25 +202,25 @@ class _Body extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final p = stats.period;
     final starts = p.bucketStarts;
-    String? label(int i) {
-      if (p.isYear) {
-        return DateFormat.MMMM(locale)
-            .format(starts[i])
-            .substring(0, 1)
-            .toUpperCase();
-      }
-      final day = starts[i].day;
-      return day == 1 || day % 5 == 0 ? '$day' : null;
-    }
-
-    // «12 mar · 2 h 14 min» / «Marzo · 41 h»; a bar after today is not shown.
-    String? value(int i) {
-      if (!starts[i].isBefore(now)) return null;
-      final when = p.isYear
-          ? toBeginningOfSentenceCase(DateFormat.MMMM(locale).format(starts[i]))
-          : DateFormat.MMMd(locale).format(starts[i]);
-      return l.statsBarValue(when, formatListened(l, stats.msPerBucket[i]));
-    }
+    final axis = [
+      for (final d in starts)
+        p.isYear
+            ? DateFormat.MMMM(locale).format(d).substring(0, 1).toUpperCase()
+            : '${d.day}',
+    ];
+    // «12 mar, 2 h 14 min» / «Marzo, 41 h»; a bar after today is not selectable.
+    final values = [
+      for (var i = 0; i < starts.length; i++)
+        if (!starts[i].isBefore(now))
+          null
+        else
+          l.statsBarValue(
+            p.isYear
+                ? toBeginningOfSentenceCase(DateFormat.MMMM(locale).format(starts[i]))
+                : DateFormat.MMMd(locale).format(starts[i]),
+            formatListened(l, stats.msPerBucket[i]),
+          ),
+    ];
 
     final fav = stats.favouriteHour;
     return ListView(
@@ -240,8 +254,11 @@ class _Body extends StatelessWidget {
           child: StatsBars(
             key: ValueKey((p.isYear, p.start)),
             values: stats.msPerBucket,
-            labelOf: label,
-            valueOf: value,
+            axisOf: axis,
+            steps: p.isYear ? const [1, 2, 3, 4, 6] : const [1, 5, 10],
+            // Months: Jan, Mar…; days: 1, 5, 10… (the first always).
+            showAxis: (i, n) => p.isYear ? i % n == 0 : n == 1 || i == 0 || (i + 1) % n == 0,
+            valueOf: values,
             semanticsLabel:
                 '${formatListened(l, stats.playedMs)}, ${l.statsPlays(stats.plays)}',
           ),
@@ -314,8 +331,9 @@ class _Ranking extends StatelessWidget {
       children: [
         SectionHeader(title),
         for (var i = 0; i < items.length; i++)
-          SizedBox(
-            height: 56,
+          // minHeight, so two lines at a large text size do not overflow.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
             child: Row(
               children: [
                 SizedBox(

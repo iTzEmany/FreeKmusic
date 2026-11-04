@@ -9592,7 +9592,7 @@ abstract class AppLocalizations {
   /// Label of a stats bar (touch and screen reader): day or month, then the time listened.
   ///
   /// In it, this message translates to:
-  /// **'{when} · {time}'**
+  /// **'{when}, {time}'**
   String statsBarValue(String when, String time);
 
   /// No description provided for @homeRadioLive.

@@ -6007,7 +6007,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String statsBarValue(String when, String time) {
-    return '$when · $time';
+    return '$when, $time';
   }
 
   @override
