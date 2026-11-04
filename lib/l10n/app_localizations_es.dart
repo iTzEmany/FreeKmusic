@@ -56,7 +56,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get searchHint => 'Buscar';
 
   @override
-  String get clearSearch => 'Borrar';
+  String get clearSearch => 'Borrar búsqueda';
 
   @override
   String get sortBy => 'Ordenar por';
@@ -6029,4 +6029,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get streamCardsSoon => 'La canción está en camino…';
+
+  @override
+  String get closeKeyboard => 'Cerrar teclado';
+
+  @override
+  String get loadingContent => 'Cargando…';
 }

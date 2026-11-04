@@ -8,6 +8,7 @@ import '../../widgets/collection_header.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/skeleton.dart';
 
 /// A picture of [url] at [size] dp, asked of Google at the right step.
 String? thumbAt(BuildContext context, String? url, double size) => url == null
@@ -89,53 +90,18 @@ class OfflineNotice extends StatelessWidget {
   }
 }
 
-/// Grey bars where the songs will be, while the page loads.
+/// Placeholder rows where the songs will be, while the page loads.
 class PageSkeleton extends StatelessWidget {
   const PageSkeleton({super.key, this.rows = 5});
 
   final int rows;
 
   @override
-  Widget build(BuildContext context) {
-    final cc = context.cc;
-    return Padding(
-      key: const ValueKey('page-skeleton'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: CcDims.margin,
-        vertical: CcDims.gap12,
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < rows; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: CcDims.gap8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: cc.surface1,
-                      borderRadius: BorderRadius.circular(CcDims.rList),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: cc.surface1,
-                        borderRadius: BorderRadius.circular(CcDims.rList),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+    key: const ValueKey('page-skeleton'),
+    padding: const EdgeInsets.symmetric(vertical: CcDims.gap12),
+    child: Skeleton.list(rows: rows),
+  );
 }
 
 /// A shelf of albums, singles or EPs: the first few as rows.

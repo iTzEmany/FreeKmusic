@@ -31,3 +31,39 @@
 **Fatto quando:** misura di partenza scritta qui, test di caratterizzazione verdi, nessuno spinner in `AsyncBody`, ✕ a tre stati provata sul telefono.
 
 ## Esiti
+
+### 77.1 — Misura di partenza, Linux (2026-11-04, commit 16b34d4 = origin/master)
+`integration_test/perf_test.dart` (3000 brani, build debug, schermo virtuale xvfb 1280x800, rendering software): solo confronto relativo. Celle: p50 / p90 / max in ms; frame totali.
+
+| Scenario | Run | Frame | Build p50/p90/max | Raster p50/p90/max |
+|---|---|---|---|---|
+| Tutti i brani | 1 | 240 | 1,4 / 5,7 / 9,3 | 18,1 / 30,4 / 37,9 |
+| Tutti i brani | 2 | 241 | 1,6 / 12,1 / 17,8 | 30,2 / 55,2 / 61,7 |
+| Album | 1 | 260 | 0,9 / 8,4 / 20,1 | 10,2 / 26,0 / 28,2 |
+| Album | 2 | 251 | 1,1 / 14,3 / 24,2 | 9,6 / 30,1 / 51,1 |
+| **Libreria Tutto→Playlist→Album→Artisti** | 1 | 117 | 1,0 / 10,1 / 53,3 | 13,7 / 17,4 / 28,0 |
+| **Libreria Tutto→Playlist→Album→Artisti** | 2 | 107 | 1,4 / 23,6 / 102,7 | 15,3 / 32,5 / 38,5 |
+| Ricerca | 1 | 253 | 1,0 / 5,8 / 19,4 | 14,5 / 25,3 / 28,3 |
+| Ricerca | 2 | 239 | 1,1 / 6,9 / 78,6 | 16,8 / 34,6 / 37,5 |
+
+- La seconda run è più lenta ovunque (rumore del rendering software): un confronto serve solo con più run alternate. Il picco di build dello scenario nuovo (53 / 103 ms) è il ricalcolo di `buildLibraryEntries` a ogni cambio scheda (F-60).
+- Scenario nuovo: 3 giri Tutto→Playlist→Album→Artisti sulla Libreria, in `perf_test.dart` e in `perf_device.py` (`--only` vuole prima «Tutti i brani» e «Album»).
+- Rotture note: `perf_test.dart` girava, ma al secondo giro il tap su «Tutti i brani» falliva (`Bad state: No element`, libreria ancora in caricamento): ora aspetta il collegamento con `waitFor`. `perf_device.py:226` non si è rotto nelle prove (la build fallisce prima, vedi sotto).
+- Nota: con `HOME` finto la build Linux si ferma (`rustup is not installed`); usato `HOME` vero con `XDG_DATA_HOME`/`XDG_CONFIG_HOME` nello scratchpad.
+
+### 77.1 — Misura di partenza, Mi A3 (2026-11-04, commit 16b34d4)
+`perf_device.py 0d7ae9df206e --label 77-partenza --only "Tutti i brani,Album,Libreria Tutto→Playlist→Album→Artisti"`, build profile dell'app `com.codecore.player.perf`, 3000 brani (scansione 18,9 s, PSS 216 MB). Un solo giro.
+
+| Scenario | Frame | build p50/p90/p99 ms | raster p50/p90/p99 ms | > 16,7 ms |
+|---|---|---|---|---|
+| Tutti i brani | 462 | 1,8 / 6,0 / 10,8 | 6,4 / 10,0 / 21,6 | 4,3 % |
+| Album | 1180 | 2,3 / 5,8 / 8,1 | 6,3 / 16,4 / 21,4 | 8,6 % |
+| **Libreria Tutto→Playlist→Album→Artisti** | 3913 | 2,9 / 6,6 / 11,8 | 5,6 / 7,9 / 16,8 | 1,5 % |
+
+- Il p90 di build dello scenario nuovo (6,6 ms) è già sotto la soglia d'arrivo di 16 ms: sul telefono il ricalcolo di F-60 non si vede nei percentili. Il numero di frame (3913) conta anche i frame di quiete fra un tocco e l'altro (60 Hz), non è confrontabile con gli altri scenari.
+- Primo tentativo fallito (il demone Gradle è sparito durante `assembleProfile`, forse per la caduta della sessione); riuscito dopo `./gradlew --stop`.
+
+### 77.4 — Prova sul Mi A3 (2026-11-04, APK debug del ramo, via adb)
+- Cerca aperta dal dock (anche tornando da Home): nessuna tastiera, campo senza focus, ✕ attenuata e disabilitata («Cancella ricerca»).
+- Tocco sulla barra: tastiera aperta, ✕ «Chiudi tastiera». Testo scritto → ✕ «Cancella ricerca»: svuota e la tastiera resta. ✕ a campo vuoto con tastiera: la chiude.
+- La ✕ attenuata non fa niente di suo, ma il tocco cade sul campo che la contiene e apre la tastiera, come un tocco sul resto della barra: lasciato così.

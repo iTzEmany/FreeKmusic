@@ -655,30 +655,32 @@ void main() {
     await _settle(t);
     await t.enterText(_dockField(), 'Song');
     await _settle(t);
-    await t.tap(find.byTooltip('Cancella'));
+    await t.tap(find.byTooltip('Cancella ricerca'));
     await _settle(t);
     final c = _container(t);
     expect(c.read(navIndexProvider), NavTab.search.index);
     expect(c.read(searchControllerProvider).text, isEmpty);
     expect(c.read(searchBarProvider), isTrue);
-    expect(c.read(searchFocusProvider).hasFocus, isFalse);
+    expect(c.read(searchFocusProvider).hasFocus, isTrue); // keyboard stays
     expect(_dockField(), findsOneWidget);
     await h.dispose(t);
   });
 
-  testWidgets('✕ shows only while there is text', (t) async {
+  testWidgets('✕ is always there, inert while empty and unfocused', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
     await h.pump(t, const AppShell());
     await t.tap(_bar('Cerca'));
     await _settle(t);
-    expect(find.byTooltip('Cancella'), findsNothing);
+    final x = find.byTooltip('Cancella ricerca');
+    final btn = find.ancestor(of: x, matching: find.byType(IconButton));
+    expect(t.widget<IconButton>(btn).onPressed, isNull);
     await t.enterText(_dockField(), 'Song');
     await t.pump();
-    expect(find.byTooltip('Cancella'), findsOneWidget);
-    await t.tap(find.byTooltip('Cancella'));
+    await t.tap(x);
     await t.pump();
-    expect(find.byTooltip('Cancella'), findsNothing);
+    expect(find.byTooltip('Chiudi tastiera'), findsOneWidget);
+    expect(_container(t).read(searchControllerProvider).text, isEmpty);
     await h.dispose(t);
   });
 

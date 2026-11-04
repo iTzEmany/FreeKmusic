@@ -15,7 +15,7 @@
   "albums": "Album",
   "artists": "Artisti",
   "searchHint": "Cerca",
-  "clearSearch": "Cancella",
+  "clearSearch": "Cancella ricerca",
   "sortBy": "Ordina per",
   "addMusicFolder": "Aggiungi la tua cartella musicale",
   "addFolder": "Aggiungi cartella",
@@ -3844,5 +3844,9 @@
   "jamNearbyScanTitle": "Cerca Jam vicine",
   "jamNearbyScanHint": "Via Bluetooth, solo con l'app aperta",
   "streamCardsSoon": "Il brano è in arrivo…",
-  "@streamCardsSoon": {"description": "Placeholder of the Now playing cards while a streamed track has no data row yet."}
+  "@streamCardsSoon": {"description": "Placeholder of the Now playing cards while a streamed track has no data row yet."},
+  "closeKeyboard": "Chiudi tastiera",
+  "@closeKeyboard": {"description": "Tooltip of the ✕ of an empty, focused search field: it hides the keyboard."},
+  "loadingContent": "Caricamento…",
+  "@loadingContent": {"description": "Single screen-reader label of a skeleton placeholder while content loads."}
 }

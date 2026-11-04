@@ -144,4 +144,17 @@ void main() {
     expect(accentFromName(''), CcAccent.viola);
     expect(accentFromName('rosa'), CcAccent.rosa);
   });
+
+  // Skeleton blocks are decorative (TalkBack gets «Caricamento…»), and the
+  // approved surfaces top out near 1.2:1, so 3:1 is out of reach without new
+  // tokens. Guard instead that they stay clearly more visible than the old
+  // surface1-on-bg placeholder and than a plain card.
+  for (final id in AppThemeId.values) {
+    test('${id.name}: skeleton blocks stand out from bg and from a card', () {
+      final c = buildPalette(id, CcAccent.viola);
+      expect(contrast(c.surface2, c.bg), greaterThanOrEqualTo(1.15));
+      expect(contrast(c.surface2, c.bg), greaterThan(contrast(c.surface1, c.bg)));
+      expect(contrast(c.surface3, c.surface1), greaterThanOrEqualTo(1.25));
+    });
+  }
 }

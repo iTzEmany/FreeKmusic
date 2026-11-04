@@ -1,5 +1,6 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
+import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
@@ -198,6 +199,77 @@ void main() {
     for (final x in ['A', 'B', '#', 'Z']) {
       expect(header(x), findsOneWidget, reason: x);
     }
+    await h.dispose(t);
+  });
+
+  testWidgets('every tab and sort keeps its order, also after Tutto→Playlist→Tutto', (t) async {
+    final h = await open(t, tracks: 0);
+    final rows = [
+      ('Mina', 'Zeta', 5000),
+      ('Zed', 'Alfa', null),
+      ('Bea', 'Beta', null),
+    ];
+    for (final (i, (artist, album, played)) in rows.indexed) {
+      await h.db.into(h.db.tracks).insert(TracksCompanion.insert(
+            path: '/m/o$i.mp3',
+            title: 'T$i',
+            albumKey: '$artist|$album',
+            format: 'mp3',
+            sizeBytes: 1,
+            mtimeMs: 1,
+            addedAt: i,
+            artist: Value(artist),
+            album: Value(album),
+            lastPlayedAt: Value(played),
+          ));
+    }
+    final playlists = PlaylistRepository(h.db);
+    await playlists.create('Playlist B');
+    await playlists.create('Playlist A');
+    await _settle(t);
+
+    List<String> order(List<String> names) {
+      final seen = [
+        for (final n in names)
+          if (find.text(n).evaluate().isNotEmpty) n,
+      ]..sort((a, b) => t.getTopLeft(find.text(a)).dy.compareTo(t.getTopLeft(find.text(b)).dy));
+      return seen;
+    }
+
+    const everything = ['Mina', 'Zeta', 'Alfa', 'Bea', 'Beta', 'Playlist A', 'Playlist B', 'Zed'];
+    // Recent: the played ones first (the artist and the album, same moment, A–Z), then the rest A–Z.
+    const recentAll = ['Mina', 'Zeta', 'Alfa', 'Bea', 'Beta', 'Playlist A', 'Playlist B', 'Zed'];
+    expect(order(everything), recentAll);
+
+    Future<void> tab(String label) async {
+      await t.tap(find.text(label).first);
+      await _settle(t);
+    }
+
+    await tab('Playlist');
+    expect(order(everything), ['Playlist A', 'Playlist B']);
+    await tab('Album');
+    expect(order(everything), ['Zeta', 'Alfa', 'Beta']);
+    await tab('Artisti');
+    expect(order(everything), ['Mina', 'Bea', 'Zed']);
+    await tab('Tutto');
+    expect(order(everything), recentAll);
+
+    await t.tap(find.text('Recenti'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('A–Z').last);
+    await t.pumpAndSettle();
+    await _settle(t);
+    const alphaAll = ['Alfa', 'Bea', 'Beta', 'Mina', 'Playlist A', 'Playlist B', 'Zed', 'Zeta'];
+    expect(order(everything), alphaAll);
+    await tab('Playlist');
+    expect(order(everything), ['Playlist A', 'Playlist B']);
+    await tab('Album');
+    expect(order(everything), ['Alfa', 'Beta', 'Zeta']);
+    await tab('Artisti');
+    expect(order(everything), ['Bea', 'Mina', 'Zed']);
+    await tab('Tutto');
+    expect(order(everything), alphaAll);
     await h.dispose(t);
   });
 

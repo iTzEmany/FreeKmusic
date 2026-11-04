@@ -1,5 +1,6 @@
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/widgets/async_body.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,9 +22,23 @@ Widget _app(AsyncValue<List<int>> v, {VoidCallback? onRetry, String? errorMessag
 );
 
 void main() {
-  testWidgets('loading shows a spinner', (tester) async {
+  testWidgets('loading shows the row skeleton, not a spinner', (tester) async {
     await tester.pumpWidget(_app(const AsyncLoading()));
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('loading skeleton copes with unbounded and bounded height', (tester) async {
+    Widget body() => AsyncBody<List<int>>(value: const AsyncLoading(), data: (_) => const SizedBox());
+    Widget host(Widget child) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child),
+    );
+    await tester.pumpWidget(host(ListView(children: [body()])));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(host(SizedBox(height: 100, child: body())));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('data and empty', (tester) async {

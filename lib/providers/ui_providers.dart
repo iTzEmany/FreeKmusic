@@ -53,27 +53,16 @@ class SearchBarNotifier extends Notifier<bool> {
     return false;
   }
 
-  /// Whether the field takes the focus (and the keyboard) when it appears.
-  bool focusOnShow = true;
-
-  /// Shows the field above the dock, on the Search tab.
+  /// Shows the field above the dock, on the Search tab. No focus, no
+  /// keyboard: the focus comes with a tap (Ctrl+F asks for it itself).
   void open() {
     ref.read(navIndexProvider.notifier).set(NavTab.search.index);
-    focusOnShow = true;
-    // Already shown with the keyboard hidden by hand: Cerca brings it back.
-    // Android Back hides the keyboard but leaves the focus, so drop it first.
-    if (state) {
-      final focus = ref.read(searchFocusProvider);
-      if (focus.hasFocus) focus.unfocus();
-      WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
-    }
     state = true;
   }
 
   /// Back to the root of Search from a page: the field returns, no keyboard.
   void reopen() {
     if (ref.read(navIndexProvider) != NavTab.search.index) return;
-    focusOnShow = false;
     state = true;
   }
 
@@ -81,12 +70,6 @@ class SearchBarNotifier extends Notifier<bool> {
   void close() {
     ref.read(searchFocusProvider).unfocus();
     state = false;
-  }
-
-  /// ✕: forgets the text and hides the keyboard; the field and the tab stay.
-  void dismiss() {
-    ref.read(searchControllerProvider).clear();
-    ref.read(searchFocusProvider).unfocus();
   }
 }
 

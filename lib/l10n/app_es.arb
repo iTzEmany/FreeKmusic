@@ -15,7 +15,7 @@
   "albums": "Álbumes",
   "artists": "Artistas",
   "searchHint": "Buscar",
-  "clearSearch": "Borrar",
+  "clearSearch": "Borrar búsqueda",
   "sortBy": "Ordenar por",
   "addMusicFolder": "Añade tu carpeta de música",
   "addFolder": "Añadir carpeta",
@@ -3218,5 +3218,7 @@
   "jamBleLocationOff": "Activa la ubicación de Android: hace falta para buscar Jams por Bluetooth. Mientras tanto puedes usar el código o el QR.",
   "jamNearbyScanTitle": "Buscar Jams cercanas",
   "jamNearbyScanHint": "Por Bluetooth, solo con la app abierta",
-  "streamCardsSoon": "La canción está en camino…"
+  "streamCardsSoon": "La canción está en camino…",
+  "closeKeyboard": "Cerrar teclado",
+  "loadingContent": "Cargando…"
 }
