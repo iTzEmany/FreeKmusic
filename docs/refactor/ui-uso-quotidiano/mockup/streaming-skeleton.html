@@ -1,0 +1,202 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Streaming e skeleton</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css"><style>
+body{min-width:0;padding:32px 40px 80px}.wrap{max-width:1700px}.phone{height:800px}.row{gap:32px}
+.cap{max-width:360px}.note{max-width:360px}
+.prima-card{width:360px;min-height:200px;border:1px solid #CFC8DC;border-radius:24px;padding:24px;background:#fff;color:#1B1626}
+.prima-card p{font-size:14px;margin-bottom:12px}.prima-card b{color:#5B2BB5}
+.deskwrap{width:960px;height:600px;position:relative;border-radius:18px;overflow:hidden}
+.deskwrap .desk{transform:scale(.75);transform-origin:0 0;position:absolute;left:0;top:0}
+.ann ul{list-style:none}
+.ann li{padding-bottom:12px}
+.demo{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;max-width:360px}
+.dbtn{min-height:48px;padding:0 16px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:700 14px/1 Figtree,sans-serif;cursor:pointer}
+.dbtn.on{background:#5B2BB5;color:#fff}
+.dbg{margin-top:12px;max-width:360px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #CFC8DC;font-size:13px;color:#1B1626}
+.dbg b{color:#5B2BB5}
+.sx{display:block;background:var(--s2);border-radius:var(--r-list);animation:skp 1.4s ease-in-out infinite;flex:none}
+.sx.s3{background:var(--s3)}
+.sx.c{border-radius:var(--r-grid)}.sx.r{border-radius:50%}
+@keyframes skp{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.sx{animation:none;opacity:.8}}
+.rm .sx{animation:none;opacity:.8}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.fld{display:flex;align-items:center;height:48px;border-radius:var(--r-dock);background:var(--s3);padding-left:12px;gap:8px;color:var(--text)}
+.fld:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.fld input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--text);font:600 15px/1.35 Figtree,sans-serif}
+.fld input::placeholder{color:var(--muted);font-weight:400}
+.fld .btn{color:var(--muted)}
+.seg{display:flex;gap:4px;margin:0 16px;padding:4px 0}
+.seg a,.seg button{flex:1;height:var(--target);display:flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--muted)}
+.seg .on{background:var(--accent);color:var(--on-accent)}
+.chips{display:flex;gap:8px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.chips button{flex:none;height:var(--target);padding:0 6px;display:flex;align-items:center}
+.chips button span{display:flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--text);white-space:nowrap}
+.chips button.on span{background:var(--accent-soft);color:var(--on-accent)}
+.li{height:64px}
+.li .btn{margin-right:-12px}
+
+.pt{display:flex;align-items:center;justify-content:space-between;padding:0 4px;min-height:56px}
+.pt span{font:var(--small);color:var(--muted)}
+.cov{margin:0 auto;display:block;width:200px;height:200px;border-radius:var(--r-card)}
+.ttl{padding:12px 16px 0}.ttl .t{font:var(--title);letter-spacing:-.01em}.ttl .s{font:var(--body);font-size:14px;color:var(--muted);margin-top:2px}
+.pr{display:flex;align-items:center;gap:12px;padding:12px 16px 0;font:var(--small);color:var(--muted)}
+.ct{display:flex;justify-content:center;align-items:center;gap:16px;min-height:64px}
+.ct .play{width:56px;height:56px}
+.npc{background:var(--s1);border-radius:var(--r-card);padding:16px;margin:12px 16px 0}
+.npc h3{font:600 16px/1.3 Figtree,sans-serif;margin-bottom:12px}
+.npc h4{font:var(--body-l);color:var(--muted);margin:0 0 8px}
+.npc p.l{font:400 15px/22px Figtree,sans-serif;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;height:110px}
+.npc .blk+.blk{margin-top:16px}
+.ln{height:14px;margin:0 0 8px}
+.npc .cr{display:flex;justify-content:space-between;gap:12px;height:28px;align-items:center;font:400 15px/1.2 Figtree,sans-serif}
+.npc .cr span{color:var(--muted);font:var(--small)}
+.npc .cr.s{display:flex}
+.na{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.na .m{font:var(--body);color:var(--muted)}
+.tabs-st{display:flex}
+/* sheet */
+.scrim{position:absolute;inset:28px 0 0 0;background:rgba(0,0,0,.55);z-index:3}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:96px;background:var(--s1);border-radius:var(--r-sheet) var(--r-sheet) 0 0;z-index:4;display:flex;flex-direction:column;overflow:hidden}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--s3);margin:8px auto 0}
+.sheet .sh{display:flex;align-items:center;padding:4px 4px 0 16px;min-height:56px}
+.sheet .sh h2{font:var(--title);flex:1}
+.sheet .body{flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:16px}
+.sheet .li{padding:0 16px}.sheet .li::after{display:none}
+.lab{font:var(--small);color:var(--muted);padding:12px 16px 4px;min-height:36px;display:flex;align-items:center;gap:8px}
+.sec2{font:700 14px/1.3 Figtree,sans-serif;padding:12px 16px 4px;color:var(--muted)}
+@keyframes ent{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.li.new{animation:ent var(--t-enter) var(--ease-out)}
+/* specimen board */
+.board{background:var(--bg);border-radius:16px;padding:32px;width:1020px;display:grid;grid-template-columns:repeat(3,1fr);gap:32px 40px;color:var(--text);border:1px solid #CFC8DC}
+.sp h3{font:var(--body-l);margin-bottom:4px}.sp .d{font:var(--small);color:var(--muted);margin-bottom:12px}
+.sp .box{background:var(--bg)}
+.sp .li{height:64px;padding:0}.sp .li::after{display:none}
+.gc{width:140px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:130px}
+.bars .sx{flex:1;border-radius:3px 3px 0 0}
+.rules{max-width:1020px;margin-top:24px}
+.rules li{font-size:14px;padding:0 0 10px 40px}
+pre.api{background:#1B1626;color:#E8E1F5;border-radius:12px;padding:16px;font:13px/1.5 ui-monospace,Consolas,monospace;max-width:1020px;margin:16px 0;overflow:auto}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+<symbol id="dev" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7H3zM1 18h14M18.5 10h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="mh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="dn" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></symbol>
+<symbol id="prev" viewBox="0 0 24 24"><path d="M6 5v14M19 5.5v13L9 12z"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M18 5v14M5 5.5v13L15 12z"/></symbol>
+<symbol id="rep" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13l-3-3M20 13v2a3 3 0 0 1-3 3H4l3 3"/></symbol>
+<symbol id="lyr" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 14v6M17 14l3 1"/></symbol>
+<symbol id="que" viewBox="0 0 24 24"><path d="M4 6h12M4 11h12M4 16h7M18 14v6M18 14l3 1"/></symbol>
+<symbol id="vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+<symbol id="ytm" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></symbol>
+<symbol id="sync" viewBox="0 0 24 24"><path d="M20 8a8 8 0 0 0-14-2L4 8M4 4v4h4M4 16a8 8 0 0 0 14 2l2-2M20 20v-4h-4"/></symbol>
+<symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></symbol>
+<symbol id="bars" viewBox="0 0 24 24"><path d="M6 20v-7M12 20V5M18 20v-10"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+<symbol id="note" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+<symbol id="new" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h5"/></symbol></defs></svg>
+<div class="pg-h"><h1>Streaming e skeleton</h1><p>Dopo: F-49..F-55, F-66; D-357. Stile di ui-fluida, dati di esempio.</p></div>
+<div class="nav"><a href="statistiche.html">Statistiche</a><a href="tutti-i-brani.html">Tutti i brani</a><a href="player-vuoto.html">Player vuoto</a><a href="streaming-skeleton.html">Streaming e skeleton</a></div>
+<div class="wrap">
+<div class="row">
+<div class="col prima"><h2 class="cap">Prima (oggi) · schede in streaming</h2><div class="prima-card"><p>Sotto il player di un brano in streaming compare «Il brano è in arrivo…» in <b>480 dp vuoti</b>; quando arrivano testo, curiosità e crediti la pagina salta (now_playing_screen.dart:171-182).</p><p>Se la riga ombra non arriva, l'attesa è infinita (F-52).</p></div></div>
+<div class="col"><h2 class="cap">Dopo (a) · schede con skeleton della stessa forma</h2>
+<div class="dev phone" id="pa"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr" style="padding-bottom:24px"><div class="pt"><button class="btn" aria-label="Riduci il player"><svg class="i"><use href="#dn"/></svg></button><span>In riproduzione · Streaming</span><button class="btn" aria-label="Altro"><svg class="i"><use href="#mv"/></svg></button></div>
+<span class="cv c4 cov"></span><div class="ttl"><div class="t">Blinding Lights</div><div class="s">The Weeknd · After Hours</div></div>
+<div class="pr"><span>1:12</span><span class="seek"><i style="width:34%"></i><b style="left:34%"></b></span><span>3:20</span></div>
+<div class="ct"><button class="btn"><svg class="i f"><use href="#prev"/></svg></button><button class="play" aria-label="Pausa"><svg class="i f"><use href="#pause"/></svg></button><button class="btn"><svg class="i f"><use href="#next"/></svg></button></div>
+<div id="cards"></div></div></div>
+<div class="demo"><button class="dbtn on" data-st="sk">Skeleton</button><button class="dbtn" data-st="ok">Schede piene</button><button class="dbtn" data-st="na">Non disponibile</button><button class="dbtn" id="rm1">Simula «riduci movimento»</button></div>
+<div class="dbg" id="dbg1"></div></div>
+<div class="ann"><h2 class="cap">Note (a)</h2><ol>
+<li><b>Stessa forma delle schede vere (F-49, F-50)</b><span>NpCard in surface1, raggio 12, padding 16, titolo e gap 12 (reali, non skeleton), gap 12 fra schede. Testo: 5 righe; Info: due blocchi («Curiosità sul brano», «Curiosità sull'artista») da 5 righe; Crediti: 3 righe nome a sinistra e ruolo a destra. Le righe hanno passo 22 dp come il testo vero (corpo 15), quindi le schede piene occupano lo stesso spazio: la pagina non salta. Il dbg sotto misura le altezze.</span></li>
+<li><b>Pulsazione, nessuno spinner (F-51)</b><span>I blocchi pulsano in opacità (0,55 → 1, 1,4 s). Con «riduci movimento» restano fermi all'80%: prova il bottone.</span></li>
+<li><b>Non disponibile + Riprova (F-52)</b><span>Dopo un'attesa troppo lunga (proposta: 20 s senza la riga ombra) le tre schede lasciano il posto a una sola scheda «Non disponibile» con ✓ Riprova da 48 dp. Riprova rimette lo skeleton. Su TalkBack lo stato è annunciato una volta.</span></li>
+<li><b>Fondo di pagina</b><span>Lo skeleton non copre il player: copertina, titolo e comandi restano usabili durante l'attesa.</span></li></ol></div></div>
+<div class="row">
+<div class="col prima"><h2 class="cap">Prima (oggi) · coda Shuffle+</h2><div class="prima-card"><p>I suggeriti di Shuffle+ entrano nella coda con <b>insertAt</b> e poi cambiano titolo e copertina quando finisce l'arricchimento (shuffle_plus_controller.dart:395, queue_sheet.dart:105-112). Nessun provider espone lo stato «in preparazione» (F-53).</p></div></div>
+<div class="col"><h2 class="cap">Dopo (b) · coda di Shuffle+</h2>
+<div class="dev phone" id="pb"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr" style="padding-bottom:0"><div class="pt"><button class="btn"><svg class="i"><use href="#dn"/></svg></button></div><span class="cv c1 cov" style="margin-top:8px"></span></div>
+<div class="scrim"></div><div class="sheet"><div class="grab"></div><div class="sh"><h2>Coda</h2><button class="btn" aria-label="Mescola"><svg class="i"><use href="#shuf"/></svg></button></div><div class="body" id="qb"></div></div></div>
+<div class="demo"><button class="dbtn" id="fill">Riempi una alla volta</button><button class="dbtn" id="rs">Ricomincia</button></div></div>
+<div class="ann"><h2 class="cap">Note (b)</h2><ol>
+<li><b>Brani veri, poi tre skeleton «in preparazione» (F-53, F-55)</b><span>In coda restano i brani già pronti; il blocco successivo di 3 suggeriti appare come 3 righe skeleton da 64 dp, uguali alle righe vere (copertina 48, due righe), sotto una piccola etichetta.</span></li>
+<li><b>Etichetta «Shuffle+ sta scegliendo 3 brani…»</b><span>Testo da 12 dp attenuato, area live: annunciata una volta. Il numero scende a 2, 1 mentre le righe si riempiono; a blocco finito l'etichetta sparisce.</span></li>
+<li><b>Riempimento una alla volta</b><span>Ogni suggerito entra già con titolo e copertina definitivi (dopo l'arricchimento, F-55), sostituendo la sua riga skeleton con un fade e 8 dp di risalita da 180 ms; niente cambi di titolo a posteriori. Prova il bottone.</span></li>
+<li><b>Stato osservabile</b><span>Il controller espone pending / enriching (provider nuovo): la coda mostra tante righe skeleton quanti sono i brani mancanti al blocco.</span></li></ol></div></div>
+<div class="row"><div class="col"><h2 class="cap" style="max-width:none">(c) · Tavola dei componenti Skeleton, specifica del widget condiviso <code>Skeleton</code> (F-51, F-66)</h2>
+<div class="board" id="board">
+<div class="sp"><h3>Riga lista</h3><div class="d">64 dp · copertina 48 (raggio 4) · titolo 14, sotto 12 · usata di serie da AsyncBody</div><div class="box"><div class="li"><span class="sx" style="width:48px;height:48px"></span><div style="flex:1"><span class="sx" style="width:60%;height:14px;margin-bottom:8px"></span><span class="sx" style="width:35%;height:12px"></span></div></div><div class="li"><span class="sx" style="width:48px;height:48px"></span><div style="flex:1"><span class="sx" style="width:48%;height:14px;margin-bottom:8px"></span><span class="sx" style="width:30%;height:12px"></span></div></div></div></div>
+<div class="sp"><h3>Riga con copertina grande</h3><div class="d">72 dp · copertina 56 (raggio 4) · suggeriti, storico, album</div><div class="box"><div class="li" style="height:72px"><span class="sx" style="width:56px;height:56px"></span><div style="flex:1"><span class="sx" style="width:62%;height:14px;margin-bottom:8px"></span><span class="sx" style="width:38%;height:12px"></span></div></div><div class="li" style="height:72px"><span class="sx" style="width:56px;height:56px"></span><div style="flex:1"><span class="sx" style="width:52%;height:14px;margin-bottom:8px"></span><span class="sx" style="width:32%;height:12px"></span></div></div></div></div>
+<div class="sp"><h3>Cella di griglia</h3><div class="d">quadrata · raggio 8 · titolo 14 e artista 12 sotto · radio, album</div><div style="display:flex;gap:16px"><div class="gc"><span class="sx c" style="width:100%;aspect-ratio:1"></span><span class="sx" style="width:80%;height:14px;margin:8px 0"></span><span class="sx" style="width:50%;height:12px"></span></div><div class="gc"><span class="sx c" style="width:100%;aspect-ratio:1"></span><span class="sx" style="width:65%;height:14px;margin:8px 0"></span><span class="sx" style="width:45%;height:12px"></span></div></div></div>
+<div class="sp"><h3>Scheda</h3><div class="d">NpCard: s1 · raggio 12 · padding 16 · titolo reale + gap 12 · righe da 14 con passo 22</div><div class="npc" style="margin:0"><h3>Testo</h3><span class="sx s3 ln" style="width:100%"></span><span class="sx s3 ln" style="width:92%"></span><span class="sx s3 ln" style="width:96%"></span><span class="sx s3 ln" style="width:88%"></span><span class="sx s3 ln" style="width:55%"></span></div></div>
+<div class="sp"><h3>Barre del grafico</h3><div class="d">stessa altezza del grafico · barre con raggio 3 in alto · Statistiche, mese e anno</div><div class="bars"><span class="sx" style="height:45%"></span><span class="sx" style="height:70%"></span><span class="sx" style="height:35%"></span><span class="sx" style="height:85%"></span><span class="sx" style="height:55%"></span><span class="sx" style="height:40%"></span><span class="sx" style="height:75%"></span><span class="sx" style="height:50%"></span><span class="sx" style="height:90%"></span><span class="sx" style="height:30%"></span><span class="sx" style="height:65%"></span><span class="sx" style="height:80%"></span></div></div>
+<div class="sp"><h3>Colori e movimento</h3><div class="d">blocchi s2 su bg o s1 · s3 dentro una scheda s2 · nessun gradiente, nessun shimmer</div><div style="display:flex;gap:12px;align-items:center;margin-bottom:16px"><span class="sx" style="width:56px;height:56px;background:var(--s2)"></span><span class="sx" style="width:56px;height:56px;background:var(--s3)"></span><span class="sx r" style="width:56px;height:56px;background:var(--s2)"></span></div><button class="dbtn" id="rm2">Simula «riduci movimento»</button></div>
+</div>
+<div class="ann rules" style="max-width:1020px"><ol>
+<li><b>Pulsazione d'opacità, ferma con «riduci movimento»</b><span>0,55 → 1 in 1,4 s con ease in-out; con disableAnimationsOf (motion.dart:28) niente animazione, opacità fissa 80%. Mai un gradiente che scorre.</span></li>
+<li><b>Un solo «Caricamento…» per TalkBack</b><span>Il widget avvolge i blocchi in ExcludeSemantics e annuncia un solo Semantics(label: «Caricamento…», liveRegion); non una voce per riga.</span></li>
+<li><b>Stessa forma del contenuto vero</b><span>Altezze, raggi e margini identici a quelli delle righe, celle e schede reali: quando arrivano i dati non si sposta niente. Le varianti sono nello stesso widget, con un numero di righe predefinito che riempie lo schermo.</span></li>
+<li><b>Dove va</b><span>AsyncBody lo usa di serie al posto dello spinner (8 usi); lo sostituisce PageSkeleton (artist_page_sections.dart:93-139), che oggi è statico e quasi invisibile.</span></li></ol>
+<pre class="api"><code>Skeleton.list(rows: 8)        // riga 64 dp, copertina 48
+Skeleton.bigRow(rows: 5)      // riga 72 dp, copertina 56
+Skeleton.gridCell(count: 6)   // quadrata, raggio 8
+Skeleton.card(lines: 5)       // corpo di una NpCard
+Skeleton.bars(count: 31)      // grafico, altezza data</code></pre></div></div></div>
+</div>
+<script>
+const cards=document.getElementById('cards'),dbg1=document.getElementById('dbg1');
+const ln=(w)=>'<span class="sx s3 ln" style="width:'+w+'%"></span>';
+const lines=ws=>'<div style="height:110px">'+ws.map(ln).join('')+'</div>';
+const sk=()=>'<span class="sr" role="status">Caricamento…</span>'+
+'<div class="npc" id="c1"><h3>Testo</h3>'+lines([100,92,96,88,55])+'</div>'+
+'<div class="npc" id="c2"><h3>Info</h3><div class="blk"><h4>Curiosità sul brano</h4>'+lines([100,94,97,90,60])+'</div><div class="blk"><h4>Curiosità sull\'artista</h4>'+lines([96,100,91,95,48])+'</div></div>'+
+'<div class="npc" id="c3"><h3>Crediti</h3>'+[0,1,2].map(i=>'<div class="cr"><span class="sx s3" style="width:'+(44-i*6)+'%;height:14px"></span><span class="sx s3" style="width:22%;height:12px;background:var(--s3)"></span></div>').join('')+'</div>';
+const ok=()=>'<div class="npc" id="c1"><h3>Testo</h3><p class="l">Prima riga del testo di esempio che arriva insieme alle altre schede, seconda riga con un po\' più di parole per andare a capo, terza riga, quarta riga, quinta riga e oltre: il testo lungo si ferma alla quinta riga con «Mostra tutto» nella scheda vera, quindi la scheda non cambia altezza.</p></div>'+
+'<div class="npc" id="c2"><h3>Info</h3><div class="blk"><h4>Curiosità sul brano</h4><p class="l">«Blinding Lights» è uscito il 29 novembre 2019 come singolo dell\'album After Hours. Il brano è costruito su sintetizzatori in stile anni Ottanta e su una linea di basso martellante, ed è rimasto per mesi ai vertici delle classifiche di vari paesi.</p></div><div class="blk"><h4>Curiosità sull\'artista</h4><p class="l">The Weeknd è il nome d\'arte di Abel Tesfaye, cantautore canadese nato a Toronto. Ha iniziato pubblicando anonimamente brani online e ha poi costruito una carriera tra R&amp;B alternativo e pop da stadio, con lo spettacolo dell\'intervallo del Super Bowl nel 2021.</p></div></div>'+
+'<div class="npc" id="c3"><h3>Crediti</h3><div class="cr">Abel Tesfaye<span>Autore</span></div><div class="cr">Max Martin<span>Autore, produttore</span></div><div class="cr">Oscar Holter<span>Autore, produttore</span></div></div>';
+const na=()=>'<div class="npc" id="c1"><h3>Non disponibile</h3><div class="na"><span class="m">Testo, curiosità e crediti di questo brano non sono arrivati. Può dipendere dalla rete o dalla fonte.</span><button class="btng" id="retry" style="color:var(--accent-soft);padding:0"><svg class="i"><use href="#sync"/></svg>Riprova</button></div></div>';
+let st='sk';
+function setSt(s){st=s;cards.innerHTML=s=='sk'?sk():s=='ok'?ok():na();cards.setAttribute('aria-live','polite');
+ document.querySelectorAll('[data-st]').forEach(b=>b.classList.toggle('on',b.dataset.st==s));
+ const h=i=>{const e=document.getElementById('c'+i);return e?e.offsetHeight:'–'};
+ dbg1.innerHTML=s=='na'?'Stato: <b>Non disponibile</b> dopo l\'attesa massima (es. 20 s)':'Altezze schede (dp): Testo <b>'+h(1)+'</b> · Info <b>'+h(2)+'</b> · Crediti <b>'+h(3)+'</b><br>Stato: <b>'+(s=='sk'?'skeleton':'dati')+'</b>';
+ const r=document.getElementById('retry');if(r)r.onclick=()=>setSt('sk')}
+document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>setSt(b.dataset.st));
+document.getElementById('rm1').onclick=e=>{const on=document.getElementById('pa').classList.toggle('rm');e.target.classList.toggle('on',on)};
+document.getElementById('rm2').onclick=e=>{const on=document.getElementById('board').classList.toggle('rm');e.target.classList.toggle('on',on)};
+setSt('sk');
+/* (b) */
+const rowH=(t,a,c,n)=>'<div class="li'+(n?' new':'')+'"><span class="cv c'+c+'" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">'+t+'</div><div class="s">'+a+'</div></div><button class="btn m" aria-label="Altre azioni"><svg class="i"><use href="#mv"/></svg></button></div>';
+const skr=()=>'<div class="li"><span class="sx" style="width:48px;height:48px"></span><div style="flex:1"><span class="sx" style="width:58%;height:14px;margin-bottom:8px"></span><span class="sx" style="width:34%;height:12px"></span></div></div>';
+const NOWQ=[['Blinding Lights','The Weeknd',4],['Midnight City','M83',2],['Dreams','Fleetwood Mac',5],['Piazza Grande','Lucio Dalla',3],['Heroes','David Bowie',7]];
+const NEW=[['Nuvole bianche','Ludovico Einaudi',6],['Redbone','Childish Gambino',1],['La cura','Franco Battiato',3]];
+let got=0,timer=0;
+function pq(){
+ const left=3-got;
+ document.getElementById('qb').innerHTML='<div class="sec2">In riproduzione</div>'+rowH(...NOWQ[0].concat([0])).replace('class="t"','class="t" style="color:var(--accent-soft)"')+'<div class="sec2">Prossimi</div>'+NOWQ.slice(1).map(r=>rowH(...r)).join('')+NEW.slice(0,got).map((r,i)=>rowH(r[0],r[1],r[2],i==got-1)).join('')+
+ (left?'<div class="lab" role="status" aria-live="polite">Shuffle+ sta scegliendo '+left+(left==1?' brano…':' brani…')+'</div><span class="sr">In preparazione</span>'+Array(left).fill(0).map(skr).join(''):'');
+}
+function fill(){if(got>=3)return;clearInterval(timer);timer=setInterval(()=>{got++;pq();if(got>=3)clearInterval(timer)},750)}
+document.getElementById('fill').onclick=()=>{if(got>=3)got=0;pq();fill()};
+document.getElementById('rs').onclick=()=>{clearInterval(timer);got=0;pq()};
+pq();
+</script></body></html>

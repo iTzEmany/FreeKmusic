@@ -1,0 +1,117 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Libreria e ricerca</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css"><style>
+#lp .scr{overflow:hidden;padding-bottom:0}
+.lh{position:relative;display:flex;align-items:center;padding:4px 4px 4px 16px;min-height:56px}
+.lh h1{font:var(--title);flex:1;letter-spacing:-.01em;white-space:nowrap}
+.lh h1,.lh .lic{transition:opacity var(--t-enter) var(--ease-out),transform var(--t-enter) var(--ease-out),visibility 0s linear var(--t-enter)}
+.lh .lens{position:relative;z-index:2;transition:transform var(--t-sheet) var(--ease-out)}
+.so .lh h1{opacity:0;transform:translateX(-16px);visibility:hidden}
+.so .lh .lic{opacity:0;transform:translateX(16px);visibility:hidden}
+.so .lh .lens{transform:translateX(var(--dx,0px))}
+.sbar{position:absolute;left:4px;right:12px;top:6px;height:52px;display:flex;align-items:center;background:var(--s2);border-radius:26px;padding-left:48px;opacity:0;visibility:hidden;clip-path:inset(0 calc(100% - 52px) 0 0 round 26px);transition:clip-path var(--t-sheet) var(--ease-out),opacity var(--t-enter) var(--ease-out),visibility 0s linear var(--t-sheet)}
+.so .sbar{opacity:1;visibility:visible;clip-path:inset(0 0 0 0 round 26px);transition-delay:0s}
+.sbar input{flex:1;min-width:0;height:52px;background:none;border:0;outline:0;color:var(--text);font:var(--body-l);caret-color:var(--accent)}
+.sbar input::placeholder{color:var(--muted);font-weight:500}
+.sbar .btn{color:var(--text)}
+.lcon{transition:opacity var(--t-enter) var(--ease-in),transform var(--t-enter) var(--ease-in),visibility 0s linear var(--t-enter)}
+.so .lcon{opacity:0;transform:translateY(24px);visibility:hidden}
+.lt{display:flex;gap:8px;padding:4px 16px 8px}.lt button{min-height:48px;padding:0 16px;border-radius:24px;font:var(--body-l)!important;color:var(--muted)!important}.lt button.on{background:var(--s2)!important;color:var(--text)!important}
+#lp[data-m=sk] #ldata,#lp[data-m=dt] #lskel{display:none}
+.res{position:absolute;left:0;right:0;top:64px;bottom:0;overflow-y:auto;padding-bottom:276px;opacity:0;visibility:hidden;transform:translateY(12px);scrollbar-width:none;transition:opacity var(--t-enter) var(--ease-out),transform var(--t-enter) var(--ease-out),visibility 0s linear var(--t-enter)}
+.so .res{opacity:1;visibility:visible;transform:none;transition-delay:calc(var(--t-sheet)*.5),calc(var(--t-sheet)*.5),0s}
+.hint{padding:24px 16px;color:var(--muted);font:var(--body-l);font-weight:500}.hint small{display:block;font:var(--small);margin-top:8px}
+#lp .dock,#lp .kb{transition:transform var(--t-sheet) var(--ease-out),opacity var(--t-enter) var(--ease-out)}
+#lp .kb{transform:translateY(100%);visibility:hidden}#lp.so .kb{transform:none;visibility:visible}.sbar input::-webkit-search-cancel-button{display:none}.sbar input{-webkit-appearance:none;appearance:none}.dev .sbar input:focus-visible{outline:0}
+.so .dock{transform:translateY(130%);opacity:0;pointer-events:none}
+
+.pcard{width:360px;padding:16px;background:#fff;border:1px solid #D6D0E2;border-radius:12px;font-size:14px;color:#1B1626}.pcard p+p{margin-top:8px}
+.tg{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}
+.tg button{min-height:48px;padding:0 18px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:600 14px Figtree,sans-serif;cursor:pointer}
+.tg button[aria-pressed=true]{background:#5B2BB5;color:#fff}
+.tg button:focus-visible,.dev button:focus-visible,.dev a:focus-visible,.dev input:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.sq{display:block;width:52px;height:52px;border-radius:var(--r-list);flex:none}
+.fld{display:flex;align-items:center;gap:8px;height:52px;background:var(--s2);border-radius:26px;padding:0 4px 0 16px;color:var(--muted)}
+.fld .tx{flex:1;font:var(--body-l);color:var(--text);white-space:nowrap;overflow:hidden}
+.fld .phd{color:var(--muted);font-weight:500}
+.fld .btn.x{color:var(--text)}.fld .btn.x.dim{color:var(--faint)}
+.car{display:inline-block;width:2px;height:18px;background:var(--accent);vertical-align:middle;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}@media (prefers-reduced-motion:reduce){.car{animation:none}}
+.kb{position:absolute;left:0;right:0;bottom:0;height:268px;background:var(--s1);z-index:6;padding:6px 4px;display:flex;flex-direction:column;gap:8px}
+.kb .sg{display:flex;justify-content:space-around;align-items:center;height:36px;font:500 14px/1 Figtree,sans-serif;color:var(--text)}
+.kb .sg i{width:1px;height:18px;background:var(--s3)}
+.kb .kr{display:flex;gap:4px;justify-content:center}
+.kb b{flex:1;max-width:33px;height:44px;border-radius:6px;background:var(--s3);font:500 18px/44px Figtree,sans-serif;text-align:center;color:var(--text)}
+.kb b.m{max-width:64px;font-size:13px}.kb b.sp{max-width:none;flex:4;font-size:13px;color:var(--muted)}.kb b.go{max-width:80px;flex:2;background:var(--accent);color:var(--on-accent);font-size:14px;font-weight:700}
+.rc{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 4px 0 16px}.rc .tx{flex:1;font:var(--body-l)}.rc .i:first-child{color:var(--muted)}
+.gg{display:grid;gap:8px;padding:8px 16px 0}
+.gc{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:64px;padding:8px 6px;background:var(--s1);border-radius:var(--r-card);overflow-wrap:anywhere}
+.gc b{font:600 14px/1.2 Figtree,sans-serif;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gc span{font:var(--small);color:var(--muted);margin-top:2px}
+.sug{display:inline-flex;align-items:center;gap:4px;font:var(--small);color:var(--accent-soft);background:var(--s2);border-radius:var(--r-card);padding:1px 8px 1px 6px;margin-right:6px;vertical-align:1px}
+.sug .i{width:12px;height:12px}
+.li .s{display:flex;align-items:center}.li .s>span.t2{overflow:hidden;text-overflow:ellipsis}
+.deskwrap{width:1280px}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+<symbol id="dev" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7H3zM1 18h14M18.5 10h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17"/></symbol>
+<symbol id="que" viewBox="0 0 24 24"><path d="M4 6h12M4 11h12M4 16h7M18 14v6M18 14l3 1"/></symbol>
+<symbol id="radio" viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11" rx="2"/><path d="M7 9l10-5M7.5 14.5h5M16.5 14.5h.01"/></symbol>
+<symbol id="prev" viewBox="0 0 24 24"><path d="M6 5v14M19 5.5v13L9 12z"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M18 5v14M5 5.5v13L15 12z"/></symbol>
+<symbol id="rep" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13l-3-3M20 13v2a3 3 0 0 1-3 3H4l3 3"/></symbol>
+<symbol id="vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+</defs></svg><div class="pg-h"><h1>Libreria e ricerca interna</h1><p>La lente diventa la barra di ricerca (U10, F-08, F-09, F-27). Interattivo: tocca la lente, scrivi, svuota la ✕.</p></div><div class="nav"><a href="home.html">Home</a><a href="cerca.html">Cerca</a><a href="radio.html">Radio</a><a href="libreria-ricerca.html">Libreria e ricerca</a><a href="../../ui-fluida/mockup/home.html">Mockup approvato (ui-fluida)</a></div><div class="wrap"><div class="row"><div class="col prima"><h2 class="cap">Prima (oggi)</h2><div class="pcard"><p><b>Header: titolo «Libreria» + 4 icone</b> (Attività, lente, +, ⋮), 192 dp di icone.</p><p>La lente non cerca qui: è una scorciatoia verso Cerca (library_screen.dart:216). A testo 200% il titolo sparisce (F-26).</p><p>Il primo caricamento mostra uno spinner nudo (F-63). Cambiando scheda l’app si blocca (F-60).</p></div><p class="note">Nota: il file img/phone_library.png è in realtà la Home, non la Libreria; qui la Libreria di oggi è descritta a parole.</p></div>
+<div class="ann"><h2 class="cap">Cosa cambia</h2><ol><li><b>F-08 · U10: la lente diventa barra</b><span>Tocco sulla lente: titolo e icone escono (fade + scivolamento, --t-enter), il contenuto sotto (schede e lista) svanisce verso il basso, la lente scivola tutta a sinistra (--t-sheet) e la barra si apre attorno a lei. Con riduci movimento le durate sono 0 (i token si azzerano) e tutto cambia di colpo.</span></li><li><b>F-09 · F-27: ✕ a doppia funzione</b><span>Con testo svuota («Cancella»); a vuoto chiude la ricerca («Chiudi la ricerca») con l’animazione inversa. Anche «indietro» e Esc chiudono. È lo stesso CcSearchField di Cerca e di Tutti i brani, stessa forma. Le altre 3 icone non restano accanto alla barra.</span></li><li><b>Risultati raggruppati</b><span>Brani, Album, Artisti, Playlist, con al massimo 4 brani per gruppo. Nessun risultato: lo stato lo dice e rimanda a Cerca per l’online (D-355). Prova «dalla», «kid», «mina», «zzz».</span></li><li><b>F-63 · F-65: skeleton</b><span>Il primo caricamento mostra righe skeleton (pulsazione lenta, ferma con riduci movimento) al posto dello spinner; tabs e header sono già al loro posto, quindi il passaggio ai dati non fa saltare niente. Il pulsante alterna skeleton e dati.</span></li><li><b>Scelta mia: la tastiera</b><span>Aprendo la barra la tastiera sale subito (qui sì: l’utente ha toccato la lente), e il dock scende; chiudendo ritorna. Da confermare.</span></li></ol></div></div>
+<div class="row"><div class="col"><h2 class="cap">Dopo · interattivo</h2><div class="tg" role="group" aria-label="Prove"><button id="bo">Tocca la lente</button><button id="bd">Digita «dalla»</button><button id="bk">Digita «kid»</button><button id="bb">Indietro</button></div><div class="tg" role="group" aria-label="Caricamento"><button id="bs" aria-pressed="false">Mostra skeleton</button><button id="bt" aria-pressed="true">Mostra dati</button></div>
+<div class="dev phone" id="lp" data-m="dt" role="group" aria-label="Libreria"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr"><div class="lh" id="lh"><h1>Libreria</h1><button class="btn m lic" aria-label="Attività"><svg class="i " style="" aria-hidden="true"><use href="#act"/></svg></button><button class="btn lens" id="lens" aria-label="Cerca nella libreria"><svg class="i " style="" aria-hidden="true"><use href="#search"/></svg></button><button class="btn lic" aria-label="Nuova playlist"><svg class="i " style="" aria-hidden="true"><use href="#plus"/></svg></button><button class="btn lic" aria-label="Altre azioni"><svg class="i " style="" aria-hidden="true"><use href="#mv"/></svg></button><div class="sbar" id="sbar" inert><input id="q" type="search" placeholder="Cerca nella libreria" aria-label="Cerca nella libreria" autocomplete="off"><button class="btn" id="qx" aria-label="Chiudi la ricerca"><svg class="i " style="" aria-hidden="true"><use href="#close"/></svg></button></div></div>
+<div class="lcon" id="lcon"><div class="lt" role="tablist"><button class="on" role="tab">Tutto</button><button role="tab">Playlist</button><button role="tab">Album</button><button role="tab">Artisti</button></div><div id="ldata"><div class="li"><span class="sq cv c1"></span><div class="tx"><div class="t">Dalla</div><div class="s">Album · Lucio Dalla · 12 brani</div></div></div><div class="li"><span class="sq cv c2"></span><div class="tx"><div class="t">In macchina</div><div class="s">Playlist · 12 brani</div></div></div><div class="li"><span class="sq cv c4"></span><div class="tx"><div class="t">Kid A</div><div class="s">Album · Radiohead · 10 brani</div></div></div><div class="li"><span class="sq cv c3"></span><div class="tx"><div class="t">Daft Punk</div><div class="s">Artista · 31 brani</div></div></div><div class="li"><span class="sq cv c5"></span><div class="tx"><div class="t">Caruso</div><div class="s">Brano · Lucio Dalla</div></div></div><div class="li"><span class="sq cv c7"></span><div class="tx"><div class="t">Hounds of Love</div><div class="s">Album · Kate Bush · 12 brani</div></div></div><div class="li"><span class="sq cv c6"></span><div class="tx"><div class="t">Notte</div><div class="s">Playlist · 5 brani</div></div></div><div class="li"><span class="sq cv c2"></span><div class="tx"><div class="t">La voce del padrone</div><div class="s">Album · Franco Battiato · 9 brani</div></div></div><div class="li"><span class="sq cv c1"></span><div class="tx"><div class="t">Radiohead</div><div class="s">Artista · 58 brani</div></div></div></div><div id="lskel" aria-busy="true"><span class="vh" role="status">Caricamento della libreria</span><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:62%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:38%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:48%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:44%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:70%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:30%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:55%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:40%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:66%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:34%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:62%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:38%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:48%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:44%"></div></div></div><div class="li"><span class="sk" style="width:52px;height:52px"></span><div class="tx"><div class="sk" style="height:14px;width:70%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:30%"></div></div></div></div></div>
+<div class="res" id="res" aria-live="polite"></div></div><nav class="dock" aria-label="Lettore e schede"><div class="mini"><span class="rw" style="width:52px;height:52px"><svg class="rg" viewBox="0 0 52 52"><circle class="tr" cx="26" cy="26" r="24.5" stroke-width="3"/><circle class="ar" cx="26" cy="26" r="24.5" stroke-width="3" pathLength="100" stroke-dasharray="38 100"/></svg><span class="cv c1" style="inset:6px;border-radius:50%"></span></span><div class="tx"><div class="t">Cara</div><div class="s">Lucio Dalla</div></div><button class="btn m" aria-label="Dispositivi"><svg class="i " style="" aria-hidden="true"><use href="#dev"/></svg></button><button class="btn" style="color:var(--accent)" aria-label="Rimuovi dai preferiti"><svg class="i f" style="" aria-hidden="true"><use href="#heart"/></svg></button><button class="btn" aria-label="Pausa"><svg class="i f" style="" aria-hidden="true"><use href="#pause"/></svg></button></div><hr><div class="tabs"><a class="tab" aria-label="Home"><span class="ic"><svg class="i " style="" aria-hidden="true"><use href="#home"/></svg></span>Home</a><a class="tab" aria-label="Cerca"><span class="ic"><svg class="i " style="" aria-hidden="true"><use href="#search"/></svg></span>Cerca</a><a class="tab on" aria-label="Libreria"><span class="ic"><svg class="i " style="" aria-hidden="true"><use href="#lib"/></svg></span>Libreria</a><a class="tab" aria-label="Memoria"><span class="ic"><svg class="i " style="" aria-hidden="true"><use href="#mem"/></svg></span>Memoria</a></div></nav><div class="kb" role="img" aria-label="Tastiera"><div class="sg"><span>dalla</span><i></i><span>Dalla</span><i></i><span>dallas</span></div><div class="kr"><b>q</b><b>w</b><b>e</b><b>r</b><b>t</b><b>y</b><b>u</b><b>i</b><b>o</b><b>p</b></div><div class="kr"><b>a</b><b>s</b><b>d</b><b>f</b><b>g</b><b>h</b><b>j</b><b>k</b><b>l</b></div><div class="kr"><b>z</b><b>x</b><b>c</b><b>v</b><b>b</b><b>n</b><b>m</b></div><div class="kr"><b class="m">?123</b><b class="sp">Italiano</b><b class="go">Cerca</b></div></div></div><p class="note">Usa i pulsanti, oppure scrivi nella barra con la tastiera del PC (Esc chiude).</p></div></div></div><script>
+var $=function(i){return document.getElementById(i)},lp=$('lp'),lh=$('lh'),lens=$('lens'),q=$('q'),qx=$('qx'),res=$('res'),sbar=$('sbar');
+var T=[['Caruso','Lucio Dalla','Dalla',1],['Cara','Lucio Dalla','Dalla',3],['Futura','Lucio Dalla','Canzoni',4],['Anna e Marco','Lucio Dalla','Lucio Dalla',2],['Piazza Grande','Lucio Dalla','Dalla',6],['Kid A','Radiohead','Kid A',4],['Idioteque','Radiohead','Kid A',7],['Everything In Its Right Place','Radiohead','Kid A',3],['Get Lucky','Daft Punk','Random Access Memories',5],['Running Up That Hill','Kate Bush','Hounds of Love',2],['La cura','Franco Battiato','La voce del padrone',4],['Centro di gravita permanente','Franco Battiato','La voce del padrone',1],['Il cielo in una stanza','Mina','Mina Studio Uno',5]];
+var A=[['Dalla','Lucio Dalla',12,1],['Canzoni','Lucio Dalla',10,4],['Kid A','Radiohead',10,4],['Random Access Memories','Daft Punk',13,5],['Hounds of Love','Kate Bush',12,2],['La voce del padrone','Franco Battiato',9,1]];
+var R=[['Lucio Dalla','42 brani',1],['Radiohead','58 brani',4],['Daft Punk','31 brani',5],['Kate Bush','24 brani',2],['Franco Battiato','67 brani',3],['Mina','88 brani',7]];
+var P=[['Dalla in viaggio','18 brani',1],['In macchina','12 brani',6],['Notte','5 brani',4],['Preferiti','148 brani',2]];
+function n(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function e(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function row(c,t,s,r){return '<div class="li"><span class="sq cv c'+c+'"'+(r?' style="border-radius:50%"':'')+'></span><div class="tx"><div class="t">'+e(t)+'</div><div class="s">'+e(s)+'</div></div></div>'}
+function grp(h,rows){return rows.length?'<div class="sec"><h2>'+h+'</h2></div>'+rows.join(''):''}
+function render(){var v=n(q.value.trim()),h;
+ if(!v){h='<div class="hint">Cerca brani, album, artisti e playlist della tua libreria.<small>Per cercare su YouTube usa la scheda Cerca.</small></div>'}
+ else{
+  var tr=T.filter(function(x){return n(x[0]+' '+x[1]+' '+x[2]).indexOf(v)>=0}).slice(0,4).map(function(x){return row(x[3],x[0],x[1]+' · '+x[2])});
+  var al=A.filter(function(x){return n(x[0]+' '+x[1]).indexOf(v)>=0}).map(function(x){return row(x[3],x[0],'Album · '+x[1])});
+  var ar=R.filter(function(x){return n(x[0]).indexOf(v)>=0}).map(function(x){return row(x[2],x[0],'Artista · '+x[1],1)});
+  var pl=P.filter(function(x){return n(x[0]).indexOf(v)>=0}).map(function(x){return row(x[2],x[0],'Playlist · '+x[1])});
+  h=grp('Brani',tr)+grp('Album',al)+grp('Artisti',ar)+grp('Playlist',pl);
+  if(!h)h='<div class="hint">Nessun risultato in libreria per «'+e(q.value.trim())+'».<small>Per cercare online usa la scheda Cerca.</small></div>'}
+ res.innerHTML=h;qx.setAttribute('aria-label',q.value?'Cancella':'Chiudi la ricerca')}
+function open(){if(lp.classList.contains('so')){q.focus({preventScroll:true});return}
+ var lr=lens.getBoundingClientRect(),hr=lh.getBoundingClientRect();lh.style.setProperty('--dx',(hr.left+4-lr.left)+'px');
+ lp.classList.add('so');sbar.inert=false;lens.setAttribute('aria-label','Cerca');
+ [].forEach.call(lh.querySelectorAll('.lic'),function(x){x.inert=true});$('lcon').inert=true;render();q.focus({preventScroll:true})}
+function close(){q.value='';lp.classList.remove('so');sbar.inert=true;q.blur();lens.setAttribute('aria-label','Cerca nella libreria');
+ [].forEach.call(lh.querySelectorAll('.lic'),function(x){x.inert=false});$('lcon').inert=false;render()}
+function type(s){open();q.value=s;render()}
+lens.onclick=open;q.oninput=render;
+qx.onclick=function(){if(q.value){q.value='';render();q.focus({preventScroll:true})}else close()};
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&lp.classList.contains('so'))close()});
+$('bo').onclick=open;$('bb').onclick=close;$('bd').onclick=function(){type('dalla')};$('bk').onclick=function(){type('kid')};
+function m(k){lp.dataset.m=k;$('bs').setAttribute('aria-pressed',k==='sk');$('bt').setAttribute('aria-pressed',k==='dt');$('lskel').setAttribute('aria-busy',k==='sk')}
+$('bs').onclick=function(){m('sk')};$('bt').onclick=function(){m('dt')};
+[].forEach.call(document.querySelectorAll('.lt button'),function(b){b.onclick=function(){[].forEach.call(b.parentNode.children,function(x){x.classList.remove('on')});b.classList.add('on')}});
+</script></body></html>

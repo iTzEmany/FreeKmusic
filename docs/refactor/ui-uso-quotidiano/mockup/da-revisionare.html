@@ -1,0 +1,269 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Da revisionare</title>
+<link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css"><style>
+html{background:#F4F2F8}
+body{min-width:0;padding:32px 40px 80px}
+.wrap{max-width:1680px}
+.phone{height:800px}
+.row{gap:32px}
+.note{max-width:360px}
+.tag-f{font-weight:700;color:#5B2BB5}
+code{background:#E7E1F2;color:#3A1B7A;font:12px ui-monospace,Menlo,Consolas,monospace;padding:2px 6px;border-radius:4px}
+.dev button:focus-visible,.dev [tabindex]:focus-visible{outline:2px solid var(--accent-soft);outline-offset:-2px}
+.dock.solo{padding:8px}
+.dev .btnp,.dev .go{background:var(--accent);color:var(--on-accent)}
+.dev .txtbtn{color:var(--accent-soft)}.dev .txtbtn.m{color:var(--muted)}
+.ctl{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 24px;padding:16px;background:#fff;border:1px solid #D6D0E2;border-radius:16px}
+.ctl button{height:44px;padding:0 20px;border-radius:22px;border:0;background:#5B2BB5;color:#fff;font:600 14px Figtree,sans-serif;cursor:pointer}
+.ctl button.s{background:#E7E1F2;color:#3A1B7A}
+.ctl button:focus-visible{outline:3px solid #A06BFF;outline-offset:2px}
+.ctl p{font-size:13px;color:#5B5170;max-width:560px}
+.sbx{position:absolute;left:12px;right:12px;bottom:84px;z-index:7;background:var(--accent-soft);color:var(--on-accent);border-radius:var(--r-card);display:flex;align-items:center;min-height:56px;padding:6px 4px 6px 16px;font:var(--body-l)}
+.sbx span{flex:1;font-size:14px;line-height:1.3}.sbx button{min-height:var(--target);padding:0 12px;font:var(--body-l);font-weight:800;color:#3A1B7A}
+.menu{position:absolute;z-index:8;background:var(--s3);border-radius:var(--r-card);padding:4px 0;min-width:216px}
+.menu button{display:flex;align-items:center;gap:12px;width:100%;min-height:var(--target);padding:0 16px;font:var(--body-l);text-align:left}
+.menu svg{width:20px;height:20px;color:var(--muted)}
+.mk{position:absolute;inset:0;z-index:6}
+/* new screen */
+.hdn{position:sticky;top:0;z-index:4;background:var(--bg)}
+.sub{font:var(--body);color:var(--muted);padding:0 16px 8px;max-width:36ch}
+.sob{position:sticky;top:56px;z-index:3;background:var(--bg);padding:4px 16px 8px}
+.sob .c{position:relative;display:flex;align-items:center;gap:4px;min-height:48px;padding:0 0 0 16px;border-radius:var(--r-card);background:var(--s2);overflow:hidden}
+.sob .c svg.i{width:20px;height:20px;color:var(--accent-soft)}
+.sob .tx{flex:1;font:var(--body-l);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sob .tx b{font-variant-numeric:tabular-nums}.sob .tx span{color:var(--muted);font-weight:500}
+.sob .pr{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);transition:width 300ms linear}
+.sob button{min-height:var(--target);padding:0 12px;font:var(--body-l);color:var(--accent-soft)}
+.fl{position:sticky;z-index:3;background:var(--bg);display:flex;gap:8px;overflow-x:auto;padding:0 16px;scrollbar-width:none}.fl::-webkit-scrollbar{display:none}
+.fc{flex:none;height:48px;display:flex;align-items:center}
+.fc span{display:flex;gap:6px;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--text)}
+.fc span b{font:var(--small);font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.fc.on span{background:var(--accent-soft);color:var(--on-accent)}.fc.on span b{color:var(--on-accent)}
+.lst{display:flex;flex-direction:column;gap:2px;padding:8px 16px 16px}
+.rw2{position:relative;display:grid;grid-template-columns:48px 1fr auto auto;column-gap:12px;align-items:center;padding:12px 4px 10px 12px;background:var(--s1);border-radius:4px}
+.lst .rw2:first-child{border-top-left-radius:12px;border-top-right-radius:12px}.lst .rw2:last-child{border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+.rw2.sel{background:var(--s2)}
+.cvb{position:relative;width:48px;height:48px;border-radius:var(--r-list);display:block}
+.cvb .cv,.cvb .ph{width:48px;height:48px;border-radius:var(--r-list)}
+.cvb .ph svg{width:22px;height:22px;color:var(--muted)}
+.cvb .tk{position:absolute;inset:0;border-radius:var(--r-list);background:var(--accent);color:var(--on-accent);display:none;place-items:center}
+.rw2.sel .cvb .tk{display:grid}
+.rw2 .tx{min-width:0}.rw2 .t{font:var(--body-l);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw2 .s{font:var(--small);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pa{min-height:var(--target);padding:0 10px;font:var(--body-l);font-weight:700;color:var(--accent-soft)!important;display:flex;align-items:center;gap:6px}
+.pa .sp{width:16px;height:16px;border-radius:50%;border:2px solid var(--s3);border-top-color:var(--accent-soft);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.rs{grid-column:1/5;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;padding-right:8px;padding-bottom:2px}
+.rc{display:inline-flex;align-items:center;gap:6px;font:var(--small);color:var(--text);background:var(--s2);border-radius:var(--r-card);padding:4px 10px}
+.rw2.sel .rc{background:var(--s3)}
+.rc svg{width:14px;height:14px;color:var(--accent-soft)}
+.rc.nf{background:#2E2150}.rw2.sel .rc.nf{background:#3B2A66}
+.ig{min-height:var(--target);padding:0 12px;font:var(--body-l);color:var(--muted)}
+.bulk{position:absolute;left:12px;right:12px;bottom:16px;z-index:5;background:var(--s3);border-radius:var(--r-dock);display:flex;align-items:center;padding:8px;gap:4px}
+.bulk .n{font:var(--body-l);padding:0 12px;flex:1;font-variant-numeric:tabular-nums}
+.bulk button{height:var(--target);padding:0 16px;border-radius:var(--r-dock);display:flex;align-items:center;gap:8px;font:var(--body-l);font-weight:700}
+.bulk button svg{width:20px;height:20px}
+.bulk .p{background:var(--accent);color:var(--on-accent)}
+.selbar{display:flex;align-items:center;min-height:56px;padding:4px 4px 4px 4px}
+.selbar .n{flex:1;font:var(--title);font-size:17px}
+.emp{display:flex;flex-direction:column;align-items:center;text-align:center;padding:64px 32px;gap:8px}
+.emp .big{width:72px;height:72px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--accent-soft);margin-bottom:8px}
+.emp .big svg{width:32px;height:32px}.emp b{font:700 18px/1.3 Figtree,sans-serif}.emp p{font:var(--body);font-size:14px;color:var(--muted);max-width:28ch}
+/* skeleton */
+.skr{display:grid;grid-template-columns:48px 1fr 56px;gap:12px;align-items:center;padding:12px;background:var(--s1);border-radius:4px}
+.skr .rs2{grid-column:2/4;display:flex;gap:6px}
+/* before */
+.pb{font:400 14px/1.4 Figtree,sans-serif;color:var(--muted);padding:8px 16px}
+.so{display:flex;align-items:center;padding:0 16px 8px;gap:8px}.so .a{flex:1;font:400 14px Figtree,sans-serif;color:var(--muted)}
+.so .b{font:600 14px Figtree,sans-serif;color:var(--accent-soft);padding:0 8px}
+.wr{display:flex;flex-wrap:wrap;gap:8px;padding:8px 16px}
+.cc{height:32px;border-radius:8px;border:1px solid var(--s3);display:flex;align-items:center;padding:0 12px;font:500 14px Figtree,sans-serif;color:var(--text)}
+.cc.on{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--on-accent)}
+.old .rowo{display:flex;align-items:center;gap:12px;padding:0 4px 0 16px;height:56px}
+.old .rowo .cv{width:40px;height:40px;border-radius:var(--r-list)}
+.old .rowo .tx{flex:1;min-width:0}.old .rowo .t{font:400 16px/1.25 Figtree,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.old .rowo .s{font:400 14px/1.25 Figtree,sans-serif;color:var(--muted)}
+.old .rsn{padding:0 16px 8px 68px;font:400 12px/1.3 Figtree,sans-serif;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){.sob .pr{transition:none}.pa .sp{animation:none}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
+<symbol id="wand" viewBox="0 0 24 24"><path d="M11 4l1.8 4.7L17.5 10.5l-4.7 1.8L11 17l-1.8-4.7L4.5 10.5l4.7-1.8zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></symbol>
+<symbol id="lyr" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 14v6M17 14l3 1"/></symbol>
+<symbol id="cov" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M4 17l5-4 4 3 3-2 4 3"/></symbol>
+<symbol id="nores" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8.5 11h5"/></symbol>
+<symbol id="tag" viewBox="0 0 24 24"><path d="M4 12V5h7l9 9-7 7zM8 8.5v.1"/></symbol>
+<symbol id="note" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-2.5-2.5M19 16a2.5 2.5 0 1 1-2.5-2.5"/></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 8a8 8 0 0 0-14-2L4 8M4 4v4h4M4 16a8 8 0 0 0 14 2l2-2M20 20v-4h-4"/></symbol>
+<symbol id="eyeoff" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6zM4 4l16 16"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M9 6L4 11l5 5M4 11h10a5 5 0 0 1 0 10h-3"/></symbol>
+</defs></svg>
+<div class="pg-h"><h1>Da revisionare</h1><p>Prima e dopo (F-43…F-46). Stile approvato di ui-fluida, dati di esempio. Tocca la copertina per selezionare.</p></div>
+<div class="nav"><a href="registro.html">Registro</a><a href="da-confermare.html">Da confermare</a><a href="da-revisionare.html">Da revisionare</a><a href="../../ui-fluida/mockup/home.html">Mockup approvato (ui-fluida)</a></div>
+
+<div class="wrap">
+<div class="ctl">
+  <button id="bSk">Mostra skeleton</button>
+  <button id="bSo" class="s">Avvia secondo parere</button>
+  <button id="bReset" class="s">Ricomincia</button>
+  <p>Il secondo parere avanza da solo (12 di 40) e a 40 chiude con uno snackbar; «Ferma» lo interrompe. Il pulsante «Mostra skeleton» alterna caricamento e dati.</p>
+</div>
+<div class="row">
+  <div class="col"><h2 class="cap">Prima (oggi)</h2>
+    <div class="dev phone old" id="od">
+      <div class="sb"><span>14:40</span><span class="r">5G</span></div>
+      <div class="scr">
+        <div class="hd"><span class="btn"><svg class="i"><use href="#back"/></svg></span><h1>Da revisionare</h1><button class="txtbtn" style="font-size:14px">Registro attività</button></div>
+        <div class="so"><span class="a">Controllo con YouTube Music, 12 di 40</span><span class="b">Ferma</span></div>
+        <div class="wr"><span class="cc on">Tutti</span><span class="cc">Nessun risultato</span><span class="cc">Senza testo</span><span class="cc">Senza copertina</span><span class="cc">Dati mancanti</span></div>
+        <div class="pb">Brani che l’arricchimento automatico non ha trovato o ha lasciato incompleti.</div>
+        <div class="rowo"><span class="cv c1"></span><div class="tx"><div class="t">Gioia</div><div class="s">Pinguini Tattici Nucleari</div></div><svg class="i" style="color:var(--muted)"><use href="#mv"/></svg></div>
+        <div class="rsn">Senza testo, Senza copertina</div>
+        <div class="rowo"><span class="cv c2"></span><div class="tx"><div class="t">Traccia 07</div><div class="s">Artista sconosciuto</div></div><svg class="i" style="color:var(--muted)"><use href="#mv"/></svg></div>
+        <div class="rsn">Nessun risultato, Senza testo, Dati mancanti</div>
+        <div class="rowo"><span class="cv c3"></span><div class="tx"><div class="t">Africa</div><div class="s">Toto</div></div><svg class="i" style="color:var(--muted)"><use href="#mv"/></svg></div>
+        <div class="rsn">Senza testo</div>
+        <div class="rowo"><span class="cv c4"></span><div class="tx"><div class="t">Il pescatore</div><div class="s">Fabrizio De André</div></div><svg class="i" style="color:var(--muted)"><use href="#mv"/></svg></div>
+        <div class="rsn">Senza copertina, Dati mancanti</div>
+        <div class="rowo"><span class="cv c5"></span><div class="tx"><div class="t">Albachiara</div><div class="s">Vasco Rossi</div></div><svg class="i" style="color:var(--muted)"><use href="#mv"/></svg></div>
+        <div class="rsn">Dati mancanti</div>
+        <div class="rowo"><span class="cv c6"></span><div class="tx"><div class="t">Redbone</div><div class="s">Childish Gambino</div></div><svg class="i" style="color:var(--muted)"><use href="#mv"/></svg></div>
+        <div class="rsn">Senza testo</div>
+      </div>
+      <div class="dock solo"><div class="tabs"><span class="tab"><span class="ic"><svg class="i"><use href="#home"/></svg></span>Home</span><span class="tab"><span class="ic"><svg class="i"><use href="#search"/></svg></span>Cerca</span><span class="tab on"><span class="ic"><svg class="i"><use href="#lib"/></svg></span>Libreria</span><span class="tab"><span class="ic"><svg class="i"><use href="#set"/></svg></span>Impostazioni</span></div></div>
+    </div>
+    <div class="note">Ricostruita da <code>review_screen.dart</code>: spiegazione fissa sopra i chip, cinque <code>ChoiceChip</code> in <code>Wrap</code> senza conteggi, motivi in 12 px grigio sotto la riga, tocco e ⋮ aprono lo stesso foglio. La barra «secondo parere» è un <code>InkWell</code> di testo con «Ferma».</div>
+  </div>
+  <div class="col"><h2 class="cap">Dopo</h2>
+    <div class="dev phone" id="ph"></div>
+    <div class="note">Provalo: filtri, «Cerca» / «Riprova», ⋮, «Ignora» + Annulla, copertina per selezionare, «Ferma», skeleton.</div>
+  </div>
+  <div class="ann"><h2 class="cap">Cosa cambia</h2><ol>
+    <li><b>Spiegazione sotto il titolo <span class="tag-f">F-43</span></b><span>Una frase breve («Brani a cui manca qualcosa. Cerca di nuovo o lascia così.») che scorre via; prima occupava una riga fissa sopra la lista.</span></li>
+    <li><b>Filtri in una riga con conteggi <span class="tag-f">F-44</span></b><span>Tutti, Nessun risultato, Senza testo, Senza copertina, Dati mancanti: scorrono, il tocco è 48. I numeri sono calcolati dalle righe sotto. «Titolo dubbio» dell’esempio del brief non è un motivo reale: ho usato i quattro di <code>ReviewReason</code>.</span></li>
+    <li><b>Motivi come chip leggibili <span class="tag-f">F-43</span></b><span>Con icona e testo a 12 px pieno, non grigio. Sono la riga che dice perché il brano è qui, quindi diventa la più visibile.</span></li>
+    <li><b>Azione primaria visibile <span class="tag-f">F-45</span></b><span>«Riprova» se non ha trovato niente, «Cerca» negli altri casi (anteprima). Nel ⋮ restano Modifica, Riprova la ricerca e Ignora.</span></li>
+    <li><b>«Ignora» con parola, non icona <span class="tag-f">F-45</span></b><span>Prima era un segno di spunta («Va bene così») ambiguo. Ora «Ignora» ha il testo, e dopo c’è «Annulla».</span></li>
+    <li><b>Secondo parere: barra da 48 <span class="tag-f">F-46</span></b><span>«Secondo parere in corso · 12 di 40», filo di avanzamento e «Ferma» da 48. Resta incollata sotto il titolo mentre scorri.</span></li>
+    <li><b>Selezione multipla</b><span>Tocco sulla copertina (o pressione lunga): la testata diventa «3 selezionati» con ✕ e «Tutti»; in basso la barra con «Cerca di nuovo» e «Ignora».</span></li>
+    <li><b>Copertina mancante si vede <span class="tag-f">F-43</span></b><span>Chi non ha copertina mostra la nota su grigio, invece di un colore a caso.</span></li>
+    <li><b>Skeleton <span class="tag-f">F-51, F-66</span></b><span>Titolo, filtri e righe con la forma finale, pulsazione lenta, ferma con «riduci movimento».</span></li>
+  </ol></div>
+</div>
+</div>
+
+<script>
+const POOL='Gioia|Pinguini Tattici Nucleari;Africa|Toto;Il pescatore|Fabrizio De André;Albachiara|Vasco Rossi;Redbone|Childish Gambino;Certe notti|Ligabue;Hey Jude|The Beatles;Volare|Domenico Modugno;Blue Monday|New Order;Starboy|The Weeknd;Mi fido di te|Jovanotti;Smells Like Teen Spirit|Nirvana;Take On Me|a-ha;Come saprai|Giorgia;Billie Jean|Michael Jackson;Generale|Francesco De Gregori;Lose Yourself|Eminem;La cura|Franco Battiato;Nothing Else Matters|Metallica;Una vita in vacanza|Lo Stato Sociale;Heroes|David Bowie;Waterloo Sunset|The Kinks;Shape of You|Ed Sheeran;Sere nere|Tiziano Ferro;Karma Police|Radiohead;Fotografia|Max Pezzali;Rolling in the Deep|Adele;Bella stronza|Marco Masini;Seven Nation Army|The White Stripes;Gli anni|883;Creep|Radiohead;Cenere|Lazza;Dancing Queen|ABBA;Ciao ciao|La Rappresentante di Lista;Yellow|Coldplay;Maledetta primavera|Loretta Goggi;Mr. Brightside|The Killers;Pazza musica|Lucio Corsi;Ho visto un re|Enzo Jannacci;Wonderwall|Oasis;Emozioni|Lucio Battisti'.split(';').map(s=>s.split('|'));
+const GEN=['Traccia','Audio','Registrazione','Memo'];
+const R=['nothing','lyrics','cover','missing'];
+const LBL={nothing:'Nessun risultato',lyrics:'Senza testo',cover:'Senza copertina',missing:'Dati mancanti'};
+const ICO={nothing:'nores',lyrics:'lyr',cover:'cov',missing:'tag'};
+const N=86;
+function mk(){
+  const rows=[];
+  for(let i=0;i<N;i++){
+    const [t,a]=i<POOL.length?POOL[i]:[`${GEN[i%4]} ${String(i-POOL.length+1).padStart(2,'0')}`,'Artista sconosciuto'];
+    const r=[];
+    if((i*31+3)%N<17)r.push('nothing');
+    if((i*37+5)%N<41)r.push('lyrics');
+    if((i*29+11)%N<23)r.push('cover');
+    if((i*53+7)%N<34)r.push('missing');
+    if(!r.length)r.push('lyrics');
+    rows.push({id:i,t,a,r:r.sort((x,y)=>R.indexOf(x)-R.indexOf(y))});
+  }
+  return rows;
+}
+const I=(n,c)=>`<svg class="i${c?' '+c:''}"><use href="#${n}"/></svg>`;
+const $=id=>document.getElementById(id);
+const el=$('ph');
+const S={f:'all',rows:mk(),sel:new Set(),menu:null,sk:false,so:{on:true,done:12,total:40},snack:null,busy:new Set(),removed:null};
+let soT,snT;
+const FL=[['all','Tutti'],['nothing','Nessun risultato'],['lyrics','Senza testo'],['cover','Senza copertina'],['missing','Dati mancanti']];
+const cnt=k=>k==='all'?S.rows.length:S.rows.filter(r=>r.r.includes(k)).length;
+function row(r){
+  const sel=S.sel.has(r.id), nf=r.r.includes('nothing'), busy=S.busy.has(r.id);
+  const cover=r.r.includes('cover')?`<span class="ph">${I('note')}</span>`:`<span class="cv c${r.id%7+1}"></span>`;
+  return `<div class="rw2${sel?' sel':''}" data-id="${r.id}"><button class="cvb" data-a="pick" data-id="${r.id}" aria-label="Seleziona ${r.t}" aria-pressed="${sel}">${cover}<span class="tk">${I('check')}</span></button><div class="tx"><div class="t">${r.t}</div><div class="s">${r.a}</div></div><button class="pa" data-a="${nf?'retry':'search'}" data-id="${r.id}"${busy?' disabled':''}>${busy?'<span class="sp"></span>Cerco…':(nf?'Riprova':'Cerca')}</button><button class="btn m" data-a="menu" data-id="${r.id}" aria-label="Altro su ${r.t}">${I('mv')}</button><div class="rs">${r.r.map(k=>`<span class="rc${k==='nothing'?' nf':''}">${I(ICO[k])}${LBL[k]}</span>`).join('')}</div></div>`;
+}
+function skel(){
+  const w=[[70,48],[60,40],[78,56],[52,44],[66,50],[74,42],[58,52],[68,46]];
+  return `<div class="hdn"><div class="hd"><span class="sk" style="width:120px;height:24px;margin-left:0"></span></div></div><div class="sub"><span class="sk" style="display:block;width:260px;height:14px"></span></div><div class="fl" style="top:56px">${[84,120,110,120,100].map(x=>`<span class="fc"><span class="sk" style="width:${x}px;height:36px;border-radius:12px"></span></span>`).join('')}</div><div class="lst" role="status" aria-label="Caricamento in corso">${w.map(([a,b])=>`<div class="skr"><span class="sk c" style="width:48px;height:48px"></span><div><span class="sk" style="display:block;height:14px;width:${a}%;margin-bottom:6px"></span><span class="sk" style="display:block;height:12px;width:${b}%"></span></div><span class="sk" style="height:16px;width:48px"></span><div class="rs2"><span class="sk" style="height:24px;width:92px;border-radius:12px"></span><span class="sk" style="height:24px;width:110px;border-radius:12px"></span></div></div>`).join('')}</div>`;
+}
+function paint(){
+  const old=el.querySelector('.scr'), top=old?old.scrollTop:0;
+  const l=S.rows.filter(r=>S.f==='all'||r.r.includes(S.f));
+  const picking=S.sel.size>0;
+  let body;
+  if(S.sk)body=skel();
+  else{
+    const head=picking
+      ?`<div class="hdn"><div class="selbar"><button class="btn" data-a="clr" aria-label="Annulla selezione">${I('close')}</button><div class="n">${S.sel.size} selezionat${S.sel.size===1?'o':'i'}</div><button class="txtbtn" data-a="allsel">Tutti</button></div></div>`
+      :`<div class="hdn"><div class="hd"><button class="btn" aria-label="Indietro">${I('back')}</button><h1>Da revisionare</h1><button class="btn m" aria-label="Registro attività">${I('act')}</button></div></div>`;
+    const sub=`<p class="sub">Brani a cui manca qualcosa. Cerca di nuovo o lascia così.</p>`;
+    const so=S.so.on?`<div class="sob"><div class="c"><div class="tx"><span>Secondo parere in corso ·</span> <b>${S.so.done} di ${S.so.total}</b></div><button data-a="stop">Ferma</button><i class="pr" style="width:${S.so.done/S.so.total*100}%"></i></div></div>`:'';
+    const fl=`<div class="fl" role="tablist" style="top:${S.so.on?104:56}px">${FL.map(([k,t])=>`<button class="fc${S.f===k?' on':''}" role="tab" aria-selected="${S.f===k}" data-a="f" data-k="${k}"><span>${t} <b>${cnt(k)}</b></span></button>`).join('')}</div>`;
+    const lst=l.length?`<div class="lst">${l.map(row).join('')}</div>`:`<div class="emp" role="status"><span class="big">${I('check')}</span><b>Niente da revisionare</b><p>Ai brani cercati non manca nulla.</p></div>`;
+    body=head+sub+so+fl+lst;
+  }
+  const bottom=picking&&!S.sk
+    ?`<div class="bulk"><span class="n">${S.sel.size}</span><button data-a="bretry">${I('refresh')}Cerca di nuovo</button><button class="p" data-a="bign">${I('eyeoff')}Ignora</button></div>`
+    :`<div class="dock solo"><div class="tabs"><span class="tab"><span class="ic">${I('home')}</span>Home</span><span class="tab"><span class="ic">${I('search')}</span>Cerca</span><span class="tab on"><span class="ic">${I('lib')}</span>Libreria</span><span class="tab"><span class="ic">${I('set')}</span>Impostazioni</span></div></div>`;
+  let menu='';
+  if(S.menu!=null){
+    const r=S.rows.find(x=>x.id===S.menu), nf=r&&r.r.includes('nothing'), b=el.querySelector(`[data-a=menu][data-id="${S.menu}"]`);
+    if(r&&b){const a=b.getBoundingClientRect(), p=el.getBoundingClientRect(); const y=Math.min(a.bottom-p.top-8,p.height-210);
+      menu=`<div class="mk" data-a="mkclose"></div><div class="menu" style="top:${y}px;right:12px"><button data-a="edit">${I('pen')}Modifica informazioni</button>${nf?'':`<button data-a="retry" data-id="${r.id}">${I('refresh')}Riprova la ricerca</button>`}<button data-a="ign" data-id="${r.id}">${I('eyeoff')}Ignora</button></div>`;}
+  }
+  el.innerHTML=`<div class="sb"><span>14:40</span><span class="r">5G</span></div><div class="scr">${body}</div>${bottom}${menu}${S.snack?`<div class="sbx" role="status" style="${picking?'bottom:84px':''}"><span>${S.snack[0]}</span>${S.snack[1]?`<button data-a="undo">Annulla</button>`:''}</div>`:''}`;
+  const s2=el.querySelector('.scr'); if(s2)s2.scrollTop=top;
+}
+function snack(m,u){S.snack=[m,u];clearTimeout(snT);snT=setTimeout(()=>{S.snack=null;paint()},5000)}
+const plural=(n,a,b)=>n===1?a:b.replace('{n}',n);
+function dismiss(ids){
+  S.removed=S.rows.filter(r=>ids.includes(r.id));
+  S.rows=S.rows.filter(r=>!ids.includes(r.id));ids.forEach(i=>S.sel.delete(i));
+  snack(plural(ids.length,'1 brano tolto dall’elenco','{n} brani tolti dall’elenco'),true);
+}
+function search(ids){
+  ids.forEach(i=>S.busy.add(i));S.sel.clear();
+  snack(plural(ids.length,'Ricerca avviata per 1 brano','Ricerca avviata per {n} brani'));paint();
+  setTimeout(()=>{ids.forEach(i=>S.busy.delete(i));S.rows=S.rows.filter(r=>!ids.includes(r.id)||r.id%3===0);paint()},1600);
+}
+function startSo(){clearInterval(soT);S.so={on:true,done:12,total:40};soT=setInterval(()=>{if(S.sk)return;S.so.done++;if(S.so.done>=S.so.total){clearInterval(soT);S.so.on=false;snack('Aggiornati 9 brani con YouTube Music')}paint()},600)}
+function stopSo(){clearInterval(soT);S.so.on=false;snack('Secondo parere fermato')}
+el.addEventListener('click',e=>{
+  const t=e.target.closest('[data-a]'); if(!t)return; const a=t.dataset.a, id=+t.dataset.id;
+  if(a==='f'){S.f=t.dataset.k;S.sel.clear()}
+  else if(a==='pick'){S.sel.has(id)?S.sel.delete(id):S.sel.add(id)}
+  else if(a==='clr')S.sel.clear();
+  else if(a==='allsel'){S.rows.filter(r=>S.f==='all'||r.r.includes(S.f)).forEach(r=>S.sel.add(r.id))}
+  else if(a==='menu')S.menu=id;
+  else if(a==='mkclose')S.menu=null;
+  else if(a==='edit'){S.menu=null;snack('Qui si apre «Modifica informazioni»')}
+  else if(a==='ign'){S.menu=null;dismiss([id])}
+  else if(a==='retry'){S.menu=null;search([id]);return}
+  else if(a==='search'){snack('Qui si apre «Anteprima informazioni»')}
+  else if(a==='bretry'){search([...S.sel]);return}
+  else if(a==='bign')dismiss([...S.sel]);
+  else if(a==='stop')stopSo();
+  else if(a==='undo'){if(S.removed){S.rows=[...S.rows,...S.removed].sort((x,y)=>x.id-y.id);S.removed=null}S.snack=null}
+  paint();
+});
+$('bSk').onclick=()=>{S.sk=!S.sk;$('bSk').textContent=S.sk?'Mostra dati':'Mostra skeleton';paint()};
+$('bSo').onclick=()=>{startSo();paint()};
+$('bReset').onclick=()=>{S.rows=mk();S.sel.clear();S.f='all';S.sk=false;S.snack=null;S.menu=null;$('bSk').textContent='Mostra skeleton';startSo();paint()};
+paint();startSo();
+const q=new URLSearchParams(location.search).get('s');
+if(q==='sk'){$('bSk').click()}
+if(q==='sel'){S.sel.add(1);S.sel.add(2);S.sel.add(5);paint()}
+if(q==='menu'){S.menu=1;paint()}
+if(q==='lyrics'){S.f='lyrics';paint()}
+// quick consistency check: counts shown come from the rows
+console.assert(S.rows.length===N);
+</script></body></html>

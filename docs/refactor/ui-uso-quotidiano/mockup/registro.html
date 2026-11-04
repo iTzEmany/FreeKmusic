@@ -1,0 +1,333 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Registro attività</title>
+<link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css"><style>
+html{background:#F4F2F8}
+body{min-width:0;padding:32px 40px 80px}
+.wrap{max-width:1680px}
+.phone{height:800px}
+.row{gap:32px}
+.col .cap{max-width:360px}
+.note{max-width:360px}
+.ann ul{list-style:none}.ann li{padding:0 0 12px 0;font-size:14px}.ann li::before{display:none}
+.tag-f{font-weight:700;color:#5B2BB5}
+.prima-card{width:360px;border:1px solid #CFC8DC;border-radius:24px;padding:20px;background:#fff;color:#1B1626;margin-top:16px}
+.prima-card p{font-size:14px;margin-bottom:8px}
+/* ---- shared bits of the mockup ---- */
+.dev button:focus-visible,.dev [tabindex]:focus-visible{outline:2px solid var(--accent-soft);outline-offset:-2px}
+.dev .i{width:24px;height:24px}
+.dock.solo{padding:8px}
+.sbx{position:absolute;left:12px;right:12px;bottom:84px;z-index:7;background:var(--accent-soft);color:var(--on-accent);border-radius:var(--r-card);display:flex;align-items:center;min-height:56px;padding:0 4px 0 16px;font:var(--body-l)}
+.sbx span{flex:1}.sbx button{min-height:var(--target);padding:0 12px;font:var(--body-l);font-weight:800;color:#3A1B7A}
+.ov{position:absolute;inset:0;z-index:6;background:rgba(7,5,12,.72);display:flex;align-items:flex-end}
+.ov.mid{align-items:center;justify-content:center;padding:24px}
+.sheet{width:100%;background:var(--s2);border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:8px 20px 28px}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--s3);margin:0 auto 12px}
+.sheet h3,.dlg h3{font:700 18px/1.3 Figtree,sans-serif;margin-bottom:8px}
+.sheet p,.dlg p{font:var(--body);font-size:14px;color:var(--muted);margin-bottom:12px}
+.sheet ol{margin:0 0 12px 20px;font-size:14px;line-height:1.5}.sheet ol li{padding:4px 0}
+.dlg{background:var(--s2);border-radius:var(--r-sheet);padding:24px 24px 8px;width:100%}
+.dlg .ac{display:flex;justify-content:flex-end;gap:4px;margin:0 -12px}
+code{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);color:var(--accent-soft);padding:2px 6px;border-radius:4px}
+.menu{position:absolute;right:12px;top:80px;z-index:8;background:var(--s3);border-radius:var(--r-card);padding:4px 0;min-width:220px}
+.menu button{display:flex;align-items:center;gap:12px;width:100%;min-height:var(--target);padding:0 16px;font:var(--body-l);text-align:left}
+.stk{position:sticky;top:0;z-index:3;background:var(--bg)}
+.fl{display:flex;gap:8px;overflow-x:auto;padding:0 16px;scrollbar-width:none}.fl::-webkit-scrollbar{display:none}
+.fc{flex:none;height:48px;display:flex;align-items:center}
+.fc span{display:flex;gap:6px;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--text);transition:background var(--t-press)}
+.fc span b{font:var(--small);font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.fc span svg{width:16px;height:16px;color:var(--error)}
+.fc.on span{background:var(--accent-soft);color:var(--on-accent)}.fc.on span b,.fc.on span svg{color:var(--on-accent)}
+/* "to confirm" card */
+.tc{margin:8px 16px 0;background:var(--s2);border-radius:var(--r-card);padding:12px}
+.tc .h{display:flex;align-items:center;gap:12px}
+.tc .h .tx{flex:1;min-width:0}.tc .h .t{font:var(--body-l)}.tc .h .s{font:var(--small);color:var(--muted)}
+.tc .ic{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
+.go{height:var(--target);padding:0 20px;border-radius:var(--r-dock);background:var(--accent);color:var(--on-accent)!important;font:var(--body-l);font-weight:700}
+.pv{display:flex;gap:10px;align-items:center;margin-top:10px;min-height:44px}
+.pv .cv{width:36px;height:36px;border-radius:var(--r-list);flex:none}
+.pv .o{font:var(--small);color:var(--muted);text-decoration:line-through;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv .n{font:var(--body-l);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv .tx{min-width:0;flex:1}
+.tc .more{font:var(--small);color:var(--muted);margin-top:6px}
+/* days and entries */
+.gh{position:sticky;top:104px;z-index:2;background:var(--bg);display:flex;align-items:baseline;justify-content:space-between;padding:20px 20px 8px}
+.gh h2{font:700 15px/1.3 Figtree,sans-serif}.gh span{font:var(--small);color:var(--muted)}
+.grp{margin:0 16px;display:flex;flex-direction:column;gap:2px}
+.en{display:grid;grid-template-columns:40px 1fr auto;column-gap:12px;padding:12px;background:var(--s1);border-radius:4px;text-align:left;width:100%;position:relative;border-left:3px solid transparent;padding-left:9px}
+.grp .en:first-child{border-top-left-radius:12px;border-top-right-radius:12px}.grp .en:last-child{border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+.en.sel{background:var(--s2);border-left-color:var(--accent)}
+.en .ic{width:40px;height:40px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--accent-soft)}
+.en.sel .ic{background:var(--s3)}
+.en.err .ic{background:#3A1520;color:var(--error)}
+.en .t{font:var(--body-l)}.en .s{font:var(--body);color:var(--muted);margin-top:2px}
+.en .tm{font:var(--small);color:var(--muted);font-variant-numeric:tabular-nums;padding-top:2px;text-align:right}
+.en .bd{min-width:0}.en .ex{grid-column:2/4}
+.cps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cp{font:var(--small);background:var(--s2);color:var(--muted);border-radius:var(--r-card);padding:4px 10px;display:inline-flex;gap:4px;align-items:center}
+.cp b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.en.sel .cp{background:var(--s3)}
+.cp.err{background:#3A1520;color:var(--error);font-weight:700}.cp.err svg{width:14px;height:14px}
+.cp.stp{background:var(--s3);color:var(--text);font-weight:700}.cp.stp svg{width:14px;height:14px}
+.en .row2{display:flex;gap:4px;align-items:center;margin:4px 0 -4px -12px;flex-wrap:wrap}
+.ab{min-height:var(--target);padding:0 12px;font:var(--body-l);font-weight:700;color:var(--accent-soft)!important;display:inline-flex;align-items:center;gap:6px}
+.ab svg{width:18px;height:18px}
+.ft{display:grid;gap:2px;margin-top:8px}
+.ft div{display:grid;grid-template-columns:20px 1fr;gap:8px;font:var(--body)}
+.ft .o{color:var(--muted);text-decoration:line-through}
+.ft .n{background:#2E2150;color:var(--text);border-radius:4px;padding:1px 6px;margin-left:-6px;font-weight:600}
+.ft svg{width:16px;height:16px;color:var(--muted);align-self:center}
+.sub{margin-top:8px;display:grid;gap:0}
+.sub div{display:flex;justify-content:space-between;gap:8px;min-height:36px;align-items:center;font:var(--body);border-top:1px solid var(--s2)}
+.sub div span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
+.chv{transition:transform var(--t-enter)}.open .chv{transform:rotate(180deg)}
+.end{font:var(--small);color:var(--muted);text-align:center;padding:24px 16px}
+.emp{display:flex;flex-direction:column;align-items:center;text-align:center;padding:48px 32px;gap:8px}
+.emp .big{width:64px;height:64px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--accent-soft);margin-bottom:8px}
+.emp .big svg{width:28px;height:28px}.emp b{font:700 16px/1.3 Figtree,sans-serif}.emp p{font:var(--body);font-size:14px;color:var(--muted);max-width:26ch}
+/* "before" screen */
+.lt{display:flex;align-items:center;gap:16px;height:64px;padding:0 16px}
+.lt .tx{flex:1;min-width:0}.lt .t{font:400 16px/1.3 Figtree,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt .s{font:400 14px/1.3 Figtree,sans-serif;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt .s.e{color:var(--error)}.lt .i{color:var(--accent-soft)}.lt .i.e{color:var(--error)}
+.lt .tb{font:600 14px/1 Figtree,sans-serif;color:var(--accent-soft);flex:none;padding:0 4px}
+/* desktop */
+.desk.reg{grid-template-rows:1fr}
+.split{position:absolute;inset:0;display:grid;grid-template-columns:minmax(440px,560px) 1fr}
+.split .lc{overflow-y:auto;position:relative;scrollbar-width:none;padding-bottom:32px}.split .lc::-webkit-scrollbar{display:none}
+.split .dp{overflow-y:auto;padding:24px 32px;background:var(--s1);border-left:var(--sep);scrollbar-width:none}
+.dp .tp{display:flex;gap:16px;align-items:center;margin-bottom:12px}
+.dp .ic{width:56px;height:56px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--accent-soft);flex:none}.dp .ic svg{width:28px;height:28px}
+.dp.err .ic{background:#3A1520;color:var(--error)}
+.dp h2{font:700 24px/1.2 Figtree,sans-serif}.dp .wh{font:var(--body);color:var(--muted);margin-top:2px}
+.dp .lead{font:400 15px/1.5 Figtree,sans-serif;margin:12px 0 20px;max-width:56ch}
+.dp .nums{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.dp .nums div{background:var(--s2);border-radius:var(--r-card);padding:12px 20px;min-width:112px}
+.dp .nums b{display:block;font:700 28px/1.1 Figtree,sans-serif;font-variant-numeric:tabular-nums}.dp .nums span{font:var(--body);color:var(--muted)}
+.dp h4{font:700 13px/1.3 Figtree,sans-serif;color:var(--muted);margin:20px 0 8px}
+.dp .kv{display:grid;grid-template-columns:140px 1fr;gap:8px 16px;font:var(--body);font-size:14px}.dp .kv dt{color:var(--muted)}
+.dp ol{margin-left:20px;font-size:14px;line-height:1.6}
+.dp .btns{display:flex;gap:8px;margin-top:24px}
+.dp .tech{margin-top:12px;font-size:13px;color:var(--muted)}
+.dp .nosel{color:var(--muted);padding:80px 0;text-align:center}
+.btns .ghost{height:var(--target);padding:0 20px;border-radius:var(--r-dock);background:var(--s2);font:var(--body-l)}
+.dtop{display:flex;align-items:center;padding:12px 32px 4px;min-height:72px;gap:8px}
+.dtop h1{font:var(--title);flex:1;letter-spacing:-.01em}
+.dev .nv{cursor:pointer}
+.lc .gh{top:168px}
+.lc .fl{flex-wrap:wrap;gap:0 8px}
+.note code{background:#E7E1F2;color:#3A1B7A;font-size:12px}
+.dev .btnp,.dev .go{background:var(--accent);color:var(--on-accent)}
+.dev .txtbtn{color:var(--accent-soft)}.dev .txtbtn.m{color:var(--muted)}
+@media (prefers-reduced-motion: reduce){.chv{transition:none}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="dn" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+<symbol id="wand" viewBox="0 0 24 24"><path d="M11 4l1.8 4.7L17.5 10.5l-4.7 1.8L11 17l-1.8-4.7L4.5 10.5l4.7-1.8zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4.5M12 17.4v.1"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="rule" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2.2 2.2L15.5 11"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M9 6L4 11l5 5M4 11h10a5 5 0 0 1 0 10h-3"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></symbol>
+<symbol id="arrow" viewBox="0 0 24 24"><path d="M12 5v13M6 13l6 6 6-6"/></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z"/></symbol>
+<symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 7.9v.1"/></symbol>
+<symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+</defs></svg>
+<div class="pg-h"><h1>Registro attività</h1><p>Prima e dopo (D-365, F-30…F-38, F-56, F-58). Stile approvato di ui-fluida, dati di esempio. Quasi tutto è cliccabile.</p></div>
+<div class="nav"><a href="registro.html">Registro</a><a href="da-confermare.html">Da confermare</a><a href="da-revisionare.html">Da revisionare</a><a href="../../ui-fluida/mockup/home.html">Mockup approvato (ui-fluida)</a></div>
+
+<div class="wrap">
+<div class="row">
+  <div class="col"><h2 class="cap">Prima (oggi)</h2>
+    <div class="dev phone" id="prima">
+      <div class="sb"><span>14:40</span><span class="r">5G</span></div>
+      <div class="scr">
+        <div class="hd"><span class="btn"><svg class="i"><use href="#back"/></svg></span><h1>Registro attività</h1><button class="txtbtn">Pulisci</button></div>
+        <div class="lt" style="height:56px"><svg class="i"><use href="#rule"/></svg><div class="tx"><div class="t">Da confermare (24)</div></div><svg class="i" style="color:var(--muted)"><use href="#chev"/></svg></div>
+        <div class="lt"><svg class="i"><use href="#wand"/></svg><div class="tx"><div class="t">Arricchimento: 12 brani completati, 3 senza risultato</div><div class="s">14:32, Completata, Riconosciuti: AcoustID 3, testo 5</div></div></div>
+        <div class="lt"><svg class="i"><use href="#dl"/></svg><div class="tx"><div class="t">Download, Volare</div><div class="s">13:05, Completata</div></div></div>
+        <div class="lt"><svg class="i"><use href="#dl"/></svg><div class="tx"><div class="t">Download, Blue Monday</div><div class="s">13:04, Completata</div></div></div>
+        <div class="lt"><svg class="i"><use href="#dl"/></svg><div class="tx"><div class="t">Download, Certe notti</div><div class="s">13:03, Completata</div></div></div>
+        <div class="lt"><svg class="i"><use href="#pen"/></svg><div class="tx"><div class="t">Corretto da Nel blu dipinto di blu - Modugno a Volare - Domenico Modugno</div><div class="s">12:10</div></div><span class="tb">Ripristina</span></div>
+        <div class="lt"><svg class="i"><use href="#rule"/></svg><div class="tx"><div class="t">Importazione «Spotify»</div><div class="s">11:20, Abbinamenti pronti: controllali e scarica</div></div></div>
+        <div class="lt"><svg class="i e"><use href="#alert"/></svg><div class="tx"><div class="t">Importazione «Spotify»</div><div class="s e">09:40, yt-dlp non trovato: installalo (pip install -U yt-dlp) e riprova</div></div></div>
+        <div class="lt"><svg class="i"><use href="#send"/></svg><div class="tx"><div class="t">Invio a Pixel di Marco, 12 brani</div><div class="s">22:15, Completata</div></div></div>
+        <div class="lt"><svg class="i"><use href="#doc"/></svg><div class="tx"><div class="t">Scansione: 340 di 340</div><div class="s">20:30, Completata</div></div></div>
+        <div class="lt"><svg class="i e"><use href="#alert"/></svg><div class="tx"><div class="t">Arricchimento interrotto da un errore: 8 aggiornati, 2 non trovati</div><div class="s e">16:44, Non riuscita</div></div></div>
+      </div>
+      <div class="dock solo"><div class="tabs"><span class="tab"><span class="ic"><svg class="i"><use href="#home"/></svg></span>Home</span><span class="tab"><span class="ic"><svg class="i"><use href="#search"/></svg></span>Cerca</span><span class="tab on"><span class="ic"><svg class="i"><use href="#lib"/></svg></span>Libreria</span><span class="tab"><span class="ic"><svg class="i"><use href="#set"/></svg></span>Impostazioni</span></div></div>
+    </div>
+    <div class="note">Ricostruita da <code>activity_log_screen.dart</code>: <code>ListTile</code> piatti da 64 dp, una riga di titolo e una di sottotitolo, entrambe con ellissi.</div>
+  </div>
+
+  <div class="col"><h2 class="cap">Dopo (D-365)</h2>
+    <div class="dev phone" id="ph"></div>
+    <div class="note">Provalo: filtri, “Rivedi”, il gruppo dei download, “Ripristina”, “Come risolvere”, il menu in alto a destra.</div>
+  </div>
+
+  <div class="ann"><h2 class="cap">Cosa cambia</h2><ol>
+    <li><b>Giorni come intestazioni <span class="tag-f">F-30</span></b><span>Oggi, Ieri, «lun 2 nov»: ora si capisce che cosa è successo quando. Ogni giorno è un blocco a sé (cambio di tono, niente linee), non una fila unica.</span></li>
+    <li><b>Voci scritte per una persona <span class="tag-f">F-31, F-58</span></b><span>Titolo breve, una riga di dettaglio, numeri come chip («12 brani», «3 non trovati»). Sparisce «Riconosciuti: AcoustID 3, testo 5» dal sottotitolo: sta nel dettaglio.</span></li>
+    <li><b>Filtri con conteggi <span class="tag-f">F-33</span></b><span>Riga scorrevole Tutto / Download / Libreria / Arricchimento / Correzioni / Errori. Gli errori hanno la loro vista.</span></li>
+    <li><b>Un’icona per categoria <span class="tag-f">F-32</span></b><span>4 icone, non 5 per 12 tipi; l’errore non cambia icona ma tinta e <em>aggiunge</em> l’etichetta.</span></li>
+    <li><b>Errori leggibili <span class="tag-f">F-32, F-34, F-56</span></b><span>Etichetta «Non riuscito» con icona e testo (non solo rosso). Messaggio per l’utente + azione «Come risolvere» o «Riprova». Il comando tecnico resta nel dettaglio.</span></li>
+    <li><b>Download in una voce <span class="tag-f">F-30</span></b><span>«5 brani scaricati», si apre per vedere i titoli. Al posto di cinque righe uguali.</span></li>
+    <li><b>Correzioni da → a <span class="tag-f">F-36</span></b><span>Vecchio barrato, nuovo evidenziato, su due righe. «Ripristina» ha un bersaglio da 48.</span></li>
+    <li><b>Riquadro «Da confermare» <span class="tag-f">F-38</span></b><span>Non sembra più una voce: è una scheda in testa con 2 anteprime e «Rivedi». Sta solo in Tutto e Correzioni.</span></li>
+    <li><b>«Pulisci registro» nel ⋮ con conferma <span class="tag-f">F-35</span></b><span>Dice anche che porta via i download finiti, e dà «Annulla» nella snackbar. Altezze libere: nessun taglio a testo 200 % <span class="tag-f">F-37</span>.</span></li>
+  </ol></div>
+</div>
+
+<div class="row">
+  <div class="col"><h2 class="cap">Desktop 1280 (proposta: lista + dettaglio)</h2>
+    <div class="dev desk reg" id="dk"></div>
+    <div class="note" style="max-width:1280px">Su desktop la lista a sinistra resta uguale; a destra un pannello mostra la voce selezionata: i numeri grandi, le fonti, i passi per risolvere e il comando tecnico (che sul telefono non serve). Così il telefono resta pulito e il desktop usa lo spazio. Il lettore in basso non è disegnato.</div>
+  </div>
+</div>
+</div>
+
+<script>
+const DAYS=['Oggi','Ieri','lun 2 nov'], DAYLONG=['Oggi','Ieri','lun 2 nov'];
+const CAT={dl:['Download','dl'],lib:['Libreria','lib'],enr:['Arricchimento','wand'],cor:['Correzioni','pen']};
+const E=[
+{id:'e1',day:0,t:'14:32',cat:'enr',title:'Testi e copertine aggiunti',d:'Completamento in sottofondo.',n:[[12,'brani'],[3,'non trovati']],src:'AcoustID 3 · testo 5',lead:'L’app ha cercato testi e copertine mancanti. Per 12 brani ha trovato qualcosa; per 3 nessuna fonte aveva una risposta.',open:'Apri il giro'},
+{id:'e2',day:0,t:'13:05',cat:'dl',title:'5 brani scaricati',d:'Da YouTube Music.',group:[['Volare','Domenico Modugno','13:05'],['Blue Monday','New Order','13:04'],['Certe notti','Ligabue','13:03'],['Una vita in vacanza','Lo Stato Sociale','13:01'],['Starboy','The Weeknd','13:00']],lead:'Cinque download finiti uno dopo l’altro.'},
+{id:'e3',day:0,t:'12:48',cat:'dl',st:'err',title:'Download non riuscito',d:'«Heroes» · David Bowie. Riprovo tra 30 secondi (tentativo 1 di 3).',act:'Riprova ora',lead:'Il download si è interrotto. L’app riprova da sola fino a 3 volte.'},
+{id:'e4',day:0,t:'12:10',cat:'cor',title:'Titolo e artista corretti',cor:[['Nel blu dipinto di blu','Modugno'],['Volare','Domenico Modugno']],lead:'Correzione accettata da te. I tag del file sono già aggiornati.',act:'Ripristina'},
+{id:'e5',day:0,t:'11:20',cat:'lib',title:'Playlist «Estate 2026» importata',d:'Abbinamenti pronti: controllali, poi scarico.',n:[[48,'abbinati'],[6,'da controllare']],act:'Controlla',lead:'Ho trovato i brani della playlist di Spotify su YouTube Music. Quelli dubbi vanno guardati prima.'},
+{id:'e6',day:0,t:'09:40',cat:'lib',st:'err',title:'Importazione non riuscita',d:'Manca il componente per scaricare da YouTube.',act:'Come risolvere',lead:'Il componente che l’app usa per scaricare da YouTube non c’è o è vecchio.',how:['Apri Impostazioni, poi Download.','Tocca «Aggiorna componente di download».','Torna qui e riprova l’importazione.'],tech:'yt-dlp non trovato. Da terminale: pip install -U yt-dlp'},
+{id:'e7',day:1,t:'22:15',cat:'lib',title:'Brani inviati a Pixel di Marco',d:'Invio completato.',n:[[12,'brani']]},
+{id:'e8',day:1,t:'20:30',cat:'lib',title:'Libreria aggiornata',d:'Controllate tutte le cartelle.',n:[[340,'brani']]},
+{id:'e9',day:1,t:'18:02',cat:'enr',title:'Secondo parere da YouTube Music',d:'Controllati tutti i brani incerti.',n:[[40,'brani']],open:'Apri il giro'},
+{id:'e10',day:1,t:'16:44',cat:'enr',st:'err',title:'Arricchimento interrotto',d:'Si è fermato per un errore; il lavoro fatto è salvo.',n:[[8,'aggiornati'],[2,'non trovati']],act:'Riprova',lead:'Un errore ha fermato la ricerca di testi e copertine. I brani già aggiornati restano così.'},
+{id:'e11',day:1,t:'15:10',cat:'lib',title:'Doppioni cercati',d:'Confrontati tutti i brani.',n:[[120,'brani'],[4,'doppi']]},
+{id:'e12',day:1,t:'10:00',cat:'lib',title:'Nuove uscite controllate',d:'Cercate le novità degli artisti che segui.',n:[[3,'novità']]},
+{id:'e13',day:2,t:'21:00',cat:'lib',title:'Podcast aggiornati',d:'Scaricati gli episodi nuovi.',n:[[7,'programmi'],[3,'episodi nuovi']]},
+{id:'e14',day:2,t:'19:30',cat:'lib',title:'Radio salvate controllate',d:'Una radio non risponde.',n:[[9,'radio'],[1,'non risponde']]},
+{id:'e15',day:2,t:'17:45',cat:'enr',st:'stop',title:'Completamento fermato',d:'Nessuna fonte risponde in questo momento.'},
+{id:'e16',day:2,t:'14:20',cat:'lib',st:'err',title:'Importazione non riuscita',d:'Rete non disponibile. Controlla la connessione.',act:'Riprova',lead:'Senza rete non posso cercare i brani.',how:['Controlla di essere online.','Tocca «Riprova».']},
+{id:'e17',day:2,t:'14:05',cat:'lib',st:'err',title:'Importazione rallentata da YouTube',d:'YouTube ha chiesto di rallentare.',act:'Riprova',lead:'YouTube ha chiesto di fare meno richieste.',how:['Aspetta qualche minuto.','Tocca «Riprova».']},
+{id:'e18',day:2,t:'13:40',cat:'lib',st:'err',title:'Importazione in pausa',d:'Troppi errori di fila: l’ho messa in pausa.',act:'Come risolvere',lead:'Per non sovraccaricare YouTube, l’importazione si è fermata dopo troppi errori di fila.',how:['Controlla la connessione.','Aggiorna il componente di download in Impostazioni.','Riprendi l’importazione dalla playlist.']},
+{id:'e19',day:2,t:'12:30',cat:'lib',st:'stop',title:'Scansione fermata',d:'Hai interrotto la scansione a metà.',n:[[210,'di 340 brani']]},
+{id:'e20',day:2,t:'11:02',cat:'cor',title:'Artista corretto',cor:[['Waterloo Sunset - The Kinks','The Kinks'],['Waterloo Sunset','The Kinks']],lead:'Correzione accettata da te.',act:'Ripristina'}
+];
+const PEND=[['Bohemian rhapsody (official video)','Bohemian Rhapsody'],['certe notti - ligabue','Certe notti'],['Hey Jude (Remastered 2015)','Hey Jude']];
+const I=(n,c)=>`<svg class="i${c?' '+c:''}"><use href="#${n}"/></svg>`;
+const chip=([n,l])=>`<span class="cp"><b>${n}</b> ${l}</span>`;
+const stLabel={err:'Non riuscito',stop:'Fermato'};
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function Reg(root,o){
+  const S={f:'all',open:{},sel:o.desk?'e1':null,cleared:false,menu:false,dlg:false,sheet:null,snack:null,rev:{}};
+  let timer;
+  const list=()=>S.cleared?[]:E;
+  const match=e=>S.f==='all'||(S.f==='err'?e.st==='err':e.cat===S.f);
+  const cnt={all:()=>list().length,dl:()=>list().filter(e=>e.cat==='dl').length,lib:()=>list().filter(e=>e.cat==='lib').length,enr:()=>list().filter(e=>e.cat==='enr').length,cor:()=>list().filter(e=>e.cat==='cor').length,err:()=>list().filter(e=>e.st==='err').length};
+  const FL=[['all','Tutto'],['dl','Download'],['lib','Libreria'],['enr','Arricchimento'],['cor','Correzioni'],['err','Errori']];
+  function entry(e){
+    const rev=S.rev[e.id], st=e.st||'', cls=['en',st==='err'?'err':'',S.sel===e.id?'sel':'',S.open[e.id]?'open':''].join(' ');
+    const ic=e.cat==='dl'&&e.group?'dl':CAT[e.cat][1];
+    let chips='';
+    if(st==='err')chips+=`<span class="cp err">${I('alert')}Non riuscito</span>`;
+    if(st==='stop')chips+=`<span class="cp stp">${I('pause')}Fermato</span>`;
+    if(e.n)chips+=e.n.map(chip).join('');
+    let body=`<div class="t">${rev?'Correzione ripristinata':e.title}</div>`;
+    if(e.cor&&!rev)body+=`<div class="ft"><div class="o"><span></span><span>${e.cor[0][0]} · ${e.cor[0][1]}</span></div><div><span>${I('arrow')}</span><span class="n">${e.cor[1][0]} · ${e.cor[1][1]}</span></div></div>`;
+    else if(rev)body+=`<div class="s">Il brano è tornato com’era: ${e.cor[0][0]} · ${e.cor[0][1]}.</div>`;
+    else body+=`<div class="s">${e.d}</div>`;
+    if(chips)body+=`<div class="cps">${chips}</div>`;
+    let ex='';
+    if(e.group&&S.open[e.id])ex=`<div class="ex"><div class="sub">${e.group.map(g=>`<div><span>${g[0]} <span style="color:var(--muted)">· ${g[1]}</span></span><span>${g[2]}</span></div>`).join('')}</div></div>`;
+    let ac='';
+    if(e.act&&!rev)ac=`<div class="ex row2"><button class="ab" data-a="act" data-id="${e.id}">${e.act==='Come risolvere'?I('info'):''}${e.act==='Ripristina'?I('undo'):''}${e.act}</button></div>`;
+    if(e.group)ac=`<div class="ex row2"><button class="ab" data-a="grp" data-id="${e.id}">${S.open[e.id]?'Nascondi i brani':'Mostra i 5 brani'} <svg class="i chv"><use href="#dn"/></svg></button></div>`;
+    return `<div class="${cls}" role="button" tabindex="0" data-a="sel" data-id="${e.id}"><span class="ic">${I(ic)}</span><div class="bd">${body}</div><span class="tm">${e.t}</span>${ex}${ac}</div>`;
+  }
+  function pending(){
+    return `<div class="tc"><div class="h"><span class="ic">${I('rule')}</span><div class="tx"><div class="t">Da confermare · 24</div><div class="s">Correzioni suggerite ai tuoi brani</div></div><button class="go" data-a="rev">Rivedi</button></div>${PEND.slice(0,2).map((p,i)=>`<div class="pv"><span class="cv c${i+1}"></span><div class="tx"><div class="o">${p[0]}</div><div class="n">${p[1]}</div></div></div>`).join('')}<div class="more">e altre 22</div></div>`;
+  }
+  function paint(){
+    const sc=root.querySelector('.scr,.lc'), top=sc?sc.scrollTop:0;
+    const l=list().filter(match);
+    let h='';
+    for(const d of [0,1,2]){const g=l.filter(e=>e.day===d);if(g.length)h+=`<section><div class="gh"><h2>${DAYS[d]}</h2><span>${g.length===1?'1 voce':g.length+' voci'}</span></div><div class="grp">${g.map(entry).join('')}</div></section>`;}
+    if(!l.length)h=S.cleared?`<div class="emp"><span class="big">${I('act')}</span><b>Il registro è vuoto</b><p>Qui trovi ciò che l’app fa in sottofondo: download, importazioni, ricerche di testi.</p></div>`:`<div class="emp"><span class="big">${I('check')}</span><b>Nessuna voce</b><p>Con questo filtro non c’è niente da mostrare.</p></div>`;
+    else h+=`<div class="end">Il registro tiene gli ultimi 30 giorni.</div>`;
+    const fl=`<div class="fl" role="tablist">${FL.map(([k,t])=>`<button class="fc${S.f===k?' on':''}" role="tab" aria-selected="${S.f===k}" data-a="f" data-k="${k}"><span>${k==='err'?I('alert'):''}${t} <b>${cnt[k]()}</b></span></button>`).join('')}</div>`;
+    const showPend=(S.f==='all'||S.f==='cor');
+    const head=o.desk?`<div class="stk"><div class="dtop"><h1>Registro attività</h1><button class="btn" data-a="menu" aria-label="Altro">${I('mv')}</button></div>${fl}</div>`:`<div class="stk"><div class="hd"><button class="btn" aria-label="Indietro">${I('back')}</button><h1>Registro</h1><button class="btn" data-a="menu" aria-label="Altro">${I('mv')}</button></div>${fl}</div>`;
+    const main=head+(showPend?pending():'')+h;
+    if(o.desk){
+      root.innerHTML=`<aside class="side"><div class="nv"><span class="ic">${I('home')}</span>Home</div><div class="nv"><span class="ic">${I('search')}</span>Cerca</div><div class="nv on"><span class="ic">${I('lib')}</span>Libreria</div><div class="nv"><span class="ic">${I('mem')}</span>Memoria</div><div class="nv"><span class="ic">${I('set')}</span>Impostazioni</div></aside><main class="main"><div class="split"><div class="lc">${main}</div><div class="dp ${(E.find(e=>e.id===S.sel)||{}).st==='err'?'err':''}">${detail()}</div></div>${overlays()}</main>`;
+      root.querySelector('.lc').scrollTop=top;
+    }else{
+      root.innerHTML=`<div class="sb"><span>14:40</span><span class="r">5G</span></div><div class="scr">${main}</div><div class="dock solo"><div class="tabs"><span class="tab"><span class="ic">${I('home')}</span>Home</span><span class="tab"><span class="ic">${I('search')}</span>Cerca</span><span class="tab on"><span class="ic">${I('lib')}</span>Libreria</span><span class="tab"><span class="ic">${I('set')}</span>Impostazioni</span></div></div>${overlays()}`;
+      root.querySelector('.scr').scrollTop=top;
+    }
+  }
+  function overlays(){
+    let h='';
+    if(S.menu)h+=`<div class="ov" data-a="close" style="background:none"></div><div class="menu" style="${o.desk?'top:64px;right:16px':''}"><button data-a="clean">${I('trash')}Pulisci registro…</button></div>`;
+    if(S.dlg)h+=`<div class="ov mid"><div class="dlg" role="alertdialog"><h3>Pulire il registro?</h3><p>Sparisce tutto l’elenco, anche i download finiti. Le correzioni già fatte restano nei brani, ma non potrai più ripristinarle da qui.</p><div class="ac"><button class="txtbtn m" data-a="close">Annulla</button><button class="txtbtn" data-a="clean2">Pulisci</button></div></div></div>`;
+    if(S.sheet){const e=E.find(x=>x.id===S.sheet);h+=`<div class="ov" data-a="close"><div class="sheet" data-a="stay"><div class="grab"></div><h3>${e.title}</h3><p>${e.lead}</p><ol>${e.how.map(s=>`<li>${s}</li>`).join('')}</ol>${e.tech?`<p>Dettaglio tecnico: <code>${e.tech.split(': ').pop()}</code></p>`:''}<button class="btnp" data-a="close" style="width:100%;justify-content:center">Ho capito</button></div></div>`;}
+    if(S.snack)h+=`<div class="sbx" role="status"><span>${S.snack[0]}</span>${S.snack[1]?`<button data-a="${S.snack[1]}">${S.snack[2]}</button>`:''}</div>`;
+    return h;
+  }
+  function detail(){
+    const e=E.find(x=>x.id===S.sel);
+    if(!e||S.cleared)return `<div class="nosel">Scegli una voce a sinistra per vedere i dettagli.</div>`;
+    const rev=S.rev[e.id], when=`${DAYLONG[e.day]}, ${e.t}`;
+    let h=`<div class="tp"><span class="ic">${I(e.cat==='dl'&&e.group?'dl':CAT[e.cat][1])}</span><div><h2>${rev?'Correzione ripristinata':e.title}</h2><div class="wh">${when}</div></div></div>`;
+    if(e.st)h+=`<span class="cp ${e.st==='err'?'err':'stp'}" style="display:inline-flex">${I(e.st==='err'?'alert':'pause')}${stLabel[e.st]}</span>`;
+    h+=`<p class="lead">${e.lead||e.d||''}</p>`;
+    if(e.n)h+=`<div class="nums">${e.n.map(([n,l])=>`<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>`;
+    if(e.cor)h+=`<h4>Cosa è cambiato</h4><div class="ft" style="font-size:15px"><div class="o"><span></span><span>${e.cor[0][0]} · ${e.cor[0][1]}</span></div><div><span>${I('arrow')}</span><span class="n">${e.cor[1][0]} · ${e.cor[1][1]}</span></div></div>`;
+    if(e.group)h+=`<h4>Brani scaricati</h4><div class="sub">${e.group.map(g=>`<div><span>${g[0]} <span style="color:var(--muted)">· ${g[1]}</span></span><span>${g[2]}</span></div>`).join('')}</div>`;
+    if(e.how)h+=`<h4>Come risolvere</h4><ol>${e.how.map(s=>`<li>${s}</li>`).join('')}</ol>`;
+    h+=`<h4>Dettagli</h4><dl class="kv"><dt>Quando</dt><dd>${when}</dd><dt>Categoria</dt><dd>${CAT[e.cat][0]}</dd><dt>Esito</dt><dd>${e.st==='err'?'Non riuscito':e.st==='stop'?'Fermato':'Completato'}</dd>${e.src?`<dt>Riconosciuti con</dt><dd>${e.src}</dd>`:''}</dl>`;
+    if(e.tech)h+=`<p class="tech">Per chi vuole il dettaglio tecnico: <code>${e.tech}</code></p>`;
+    if((e.act||e.open)&&!rev)h+=`<div class="btns"><button class="btnp" data-a="act" data-id="${e.id}">${e.act||e.open}</button></div>`;
+    return h;
+  }
+  function snack(m,a,b){S.snack=[m,a,b];clearTimeout(timer);timer=setTimeout(()=>{S.snack=null;paint()},6000);}
+  root.addEventListener('click',ev=>{
+    const t=ev.target.closest('[data-a]'); if(!t)return;
+    const a=t.dataset.a, id=t.dataset.id;
+    if(a==='stay')return;
+    if(a==='f'){S.f=t.dataset.k;if(o.desk){const v=list().filter(match)[0];S.sel=v?v.id:null}}
+    else if(a==='sel'){if(o.desk)S.sel=id}
+    else if(a==='grp'){S.open[id]=!S.open[id];ev.stopPropagation()}
+    else if(a==='act'){const e=E.find(x=>x.id===id);
+      if(e.act==='Ripristina'){S.rev[id]=true;snack('Correzione ripristinata')}
+      else if(e.act==='Come risolvere'){S.sheet=id}
+      else if(e.act==='Controlla'||e.open){snack('Qui si apre la schermata del giro')}
+      else if(e.act)snack('Riprovo…');else snack('Qui si apre la schermata del giro');
+      if(o.desk)S.sel=id}
+    else if(a==='rev')snack('Qui si apre «Da confermare»');
+    else if(a==='menu')S.menu=!S.menu;
+    else if(a==='clean'){S.menu=false;S.dlg=true}
+    else if(a==='clean2'){S.dlg=false;S.cleared=true;S.f='all';S.sel=null;snack('Registro pulito','undo','Annulla')}
+    else if(a==='undo'){S.cleared=false;S.snack=null;if(o.desk)S.sel='e1'}
+    else if(a==='close'){if(ev.target!==t&&t.classList.contains('ov')&&ev.target.closest('.sheet,.dlg'))return;S.menu=false;S.dlg=false;S.sheet=null}
+    paint();
+  });
+  root.addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches('.en')){ev.preventDefault();ev.target.click()}});
+  S.test=(k)=>{if(k==='clean'){S.cleared=true;S.snack=['Registro pulito','undo','Annulla']}if(k==='how'){S.sheet='e6'}if(k==='err')S.f='err';if(k==='open'){S.open.e2=true}if(k==='dlg')S.dlg=true;paint()};
+  paint(); return S;
+}
+const ph=Reg(document.getElementById('ph'),{desk:false});
+const dk=Reg(document.getElementById('dk'),{desk:true});
+// ?s=how|err|clean|open|dlg for screenshots
+const q=new URLSearchParams(location.search).get('s'); if(q){ph.test(q); if(q==='err')dk.test(q);}
+</script></body></html>

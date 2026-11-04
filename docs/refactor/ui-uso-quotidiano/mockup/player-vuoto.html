@@ -1,0 +1,143 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Player vuoto</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="base.css"><style>
+body{min-width:0;padding:32px 40px 80px}.wrap{max-width:1700px}.phone{height:800px}.row{gap:32px}
+.cap{max-width:360px}.note{max-width:360px}
+.prima-card{width:360px;min-height:200px;border:1px solid #CFC8DC;border-radius:24px;padding:24px;background:#fff;color:#1B1626}
+.prima-card p{font-size:14px;margin-bottom:12px}.prima-card b{color:#5B2BB5}
+.deskwrap{width:960px;height:600px;position:relative;border-radius:18px;overflow:hidden}
+.deskwrap .desk{transform:scale(.75);transform-origin:0 0;position:absolute;left:0;top:0}
+.ann ul{list-style:none}
+.ann li{padding-bottom:12px}
+.demo{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;max-width:360px}
+.dbtn{min-height:48px;padding:0 16px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:700 14px/1 Figtree,sans-serif;cursor:pointer}
+.dbtn.on{background:#5B2BB5;color:#fff}
+.dbg{margin-top:12px;max-width:360px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #CFC8DC;font-size:13px;color:#1B1626}
+.dbg b{color:#5B2BB5}
+.sx{display:block;background:var(--s2);border-radius:var(--r-list);animation:skp 1.4s ease-in-out infinite;flex:none}
+.sx.s3{background:var(--s3)}
+.sx.c{border-radius:var(--r-grid)}.sx.r{border-radius:50%}
+@keyframes skp{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.sx{animation:none;opacity:.8}}
+.rm .sx{animation:none;opacity:.8}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.fld{display:flex;align-items:center;height:48px;border-radius:var(--r-dock);background:var(--s3);padding-left:12px;gap:8px;color:var(--text)}
+.fld:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.fld input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--text);font:600 15px/1.35 Figtree,sans-serif}
+.fld input::placeholder{color:var(--muted);font-weight:400}
+.fld .btn{color:var(--muted)}
+.seg{display:flex;gap:4px;margin:0 16px;padding:4px 0}
+.seg a,.seg button{flex:1;height:var(--target);display:flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--muted)}
+.seg .on{background:var(--accent);color:var(--on-accent)}
+.chips{display:flex;gap:8px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.chips button{flex:none;height:var(--target);padding:0 6px;display:flex;align-items:center}
+.chips button span{display:flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--text);white-space:nowrap}
+.chips button.on span{background:var(--accent-soft);color:var(--on-accent)}
+.li{height:64px}
+.li .btn{margin-right:-12px}
+
+.mini .ph{width:52px;height:52px;border-radius:var(--r-list);flex:none;background:var(--s3);color:var(--muted)}
+.mini .btn.go,.btn.go{background:var(--accent);color:var(--on-accent)}
+.mini .t.e{color:var(--muted)}
+.tile{display:flex;align-items:center;gap:16px;min-height:80px;margin:0 16px 12px;padding:16px;border-radius:var(--r-card);background:var(--s2);text-align:left;width:calc(100% - 32px)}
+.tile.p{background:var(--accent);color:var(--on-accent)}
+.tile .tx{flex:1;min-width:0}
+.tile .t{font:var(--body-l);font-size:16px}.tile .s{font:var(--small);color:var(--muted)}
+.tile.p .s{color:var(--on-accent);opacity:.8}
+.tile .mc{display:flex}.tile .mc .cv{width:40px;height:40px;border-radius:var(--r-list);border:3px solid var(--s2);margin-left:-14px;box-sizing:content-box;width:34px;height:34px}
+.tile .mc .cv:first-child{margin-left:0}
+.big{font:var(--title);letter-spacing:-.01em;padding:8px 16px 4px}
+.lead{font:var(--body);font-size:14px;color:var(--muted);padding:0 16px 20px}
+.pt{display:flex;align-items:center;padding:4px 4px;min-height:56px}
+.bar .skr{display:flex;align-items:center;gap:12px;width:100%;font:var(--small);color:var(--muted);margin-top:-4px;justify-content:center}
+.bar .skr .seek{max-width:420px}
+.bar .dis{opacity:.38}
+.desk .hd{padding-left:0}
+.gridc{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;padding-top:8px}
+.gridc .cv{aspect-ratio:1;border-radius:var(--r-grid);width:100%}
+.gridc .t{font:var(--body-l);margin-top:8px}.gridc .s{font:var(--small);color:var(--muted)}
+.empty-d .t{color:var(--muted)}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+<symbol id="dev" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7H3zM1 18h14M18.5 10h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="mh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="dn" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></symbol>
+<symbol id="prev" viewBox="0 0 24 24"><path d="M6 5v14M19 5.5v13L9 12z"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M18 5v14M5 5.5v13L15 12z"/></symbol>
+<symbol id="rep" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13l-3-3M20 13v2a3 3 0 0 1-3 3H4l3 3"/></symbol>
+<symbol id="lyr" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 14v6M17 14l3 1"/></symbol>
+<symbol id="que" viewBox="0 0 24 24"><path d="M4 6h12M4 11h12M4 16h7M18 14v6M18 14l3 1"/></symbol>
+<symbol id="vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+<symbol id="ytm" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></symbol>
+<symbol id="sync" viewBox="0 0 24 24"><path d="M20 8a8 8 0 0 0-14-2L4 8M4 4v4h4M4 16a8 8 0 0 0 14 2l2-2M20 20v-4h-4"/></symbol>
+<symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></symbol>
+<symbol id="bars" viewBox="0 0 24 24"><path d="M6 20v-7M12 20V5M18 20v-10"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+<symbol id="note" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+<symbol id="new" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h5"/></symbol></defs></svg>
+<div class="pg-h"><h1>Player vuoto</h1><p>Coda finita dopo uno skip: D-364, F-47, F-48. Stile di ui-fluida, dati di esempio.</p></div>
+<div class="nav"><a href="statistiche.html">Statistiche</a><a href="tutti-i-brani.html">Tutti i brani</a><a href="player-vuoto.html">Player vuoto</a><a href="streaming-skeleton.html">Streaming e skeleton</a></div>
+<div class="wrap">
+<div class="row">
+<div class="col prima"><h2 class="cap">Prima (oggi) · mini player</h2><div class="prima-card"><p><b>Il mini player sparisce</b> quando la coda finisce (SizedBox.shrink, mini_player.dart:130): il dock perde 64 dp e le schede saltano in basso.</p><p>Nessun modo di riprendere da lì: bisogna cercare un brano a mano.</p></div></div>
+<div class="col"><h2 class="cap">Dopo (a) · il mini player resta</h2>
+<div class="dev phone" id="pa"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr"><div class="hd"><h1>Libreria</h1><button class="btn" aria-label="Cerca"><svg class="i"><use href="#search"/></svg></button></div><div class="li"><span class="cv c1" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">Discovery</div><div class="s">Daft Punk</div></div></div><div class="li"><span class="cv c3" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">Caruso</div><div class="s">Lucio Dalla</div></div></div><div class="li"><span class="cv c4" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">Nevermind</div><div class="s">Nirvana</div></div></div><div class="li"><span class="cv c2" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">Rumours</div><div class="s">Fleetwood Mac</div></div></div><div class="li"><span class="cv c6" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">After Hours</div><div class="s">The Weeknd</div></div></div><div class="li last"><span class="cv c5" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">Amarcord</div><div class="s">Nino Rota</div></div></div></div><div id="dk"></div></div>
+<div class="demo"><button class="dbtn" id="rs">Ricomincia</button></div></div>
+<div class="ann"><h2 class="cap">Note (a)</h2><ol>
+<li><b>Il dock non salta (D-364, F-47)</b><span>Il mini player resta della stessa altezza (64 dp) e le schede restano dove sono: coda finita e coda in corso hanno lo stesso dock.</span></li>
+<li><b>Stato vuoto leggibile</b><span>Segnaposto s3 al posto della copertina, «Niente in riproduzione» in testo attenuato e sotto «Ultima coda: Discovery · Daft Punk» (se non c'è un'ultima coda: «Scegli un brano per iniziare» e il ▶ non c'è).</span></li>
+<li><b>▶ «Riprendi l'ultima coda»</b><span>Bottone 48 dp in accento con etichetta accessibile e tooltip; tocca ▶ nel mockup per vedere la ripresa (il mini player torna normale, senza salti). In Flutter, toccando il corpo si apre il player vuoto (b).</span></li>
+<li><b>Annuncio per TalkBack (F-48)</b><span>Lo stato vuoto è un'area live: passando a «Niente in riproduzione» viene annunciato una volta, con il sottotitolo.</span></li></ol></div>
+</div>
+<div class="row">
+<div class="col prima"><h2 class="cap">Prima (oggi) · player aperto</h2><div class="prima-card"><p>Il player aperto con la coda finita mostra solo una freccia e <b>«Nessun brano in riproduzione»</b> centrato (now_playing_screen.dart:286-299), senza copertina né azioni.</p><p>È un vicolo cieco: per ripartire si chiude e si cerca.</p></div></div>
+<div class="col"><h2 class="cap">Dopo (b) · player aperto vuoto</h2>
+<div class="dev phone"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr" style="padding-bottom:24px"><div class="pt"><button class="btn" aria-label="Riduci il player"><svg class="i"><use href="#dn"/></svg></button></div>
+<div role="status" aria-live="polite"><h1 class="big">Niente in riproduzione</h1><p class="lead">Scegli da dove ripartire.</p></div>
+<button class="tile p"><span class="ic"><svg class="i f"><use href="#play"/></svg></span><div class="tx"><div class="t">Riprendi l'ultima coda</div><div class="s">Discovery · Daft Punk, 14 brani</div></div></button>
+<button class="tile"><span class="ic"><svg class="i"><use href="#shuf"/></svg></span><div class="tx"><div class="t">Shuffle+ della libreria</div><div class="s">Brani scelti per te, a blocchi di 3</div></div></button>
+<button class="tile"><span class="ic"><svg class="i"><use href="#clock"/></svg></span><div class="tx"><div class="t">Ultimi aggiunti</div><div class="s">Dal 28 ott · 24 brani</div></div><span class="mc"><span class="cv c2"></span><span class="cv c5"></span><span class="cv c7"></span></span></button></div></div></div>
+<div class="ann"><h2 class="cap">Note (b)</h2><ol>
+<li><b>Niente copertina vuota (F-47)</b><span>Al posto della copertina, titolo di schermata (Unbounded 20) e una riga di aiuto; la freccia per ridurre resta in alto a sinistra.</span></li>
+<li><b>Tre proposte in riquadri</b><span>Riquadri s2 con raggio 12, alti 80 dp e larghi quanto lo schermo meno i margini, senza linee. La prima, «Riprendi l'ultima coda», è in accento perché è l'azione più probabile; «Shuffle+ della libreria» avvia lo shuffle intelligente; «Ultimi aggiunti» mostra tre mini copertine e il numero di brani.</span></li>
+<li><b>Annuncio live (F-48)</b><span>Titolo e riga di aiuto in un'unica area live (Semantics liveRegion): TalkBack legge «Niente in riproduzione. Scegli da dove ripartire.» quando si arriva qui da uno skip.</span></li>
+<li><b>Se non c'è un'ultima coda</b><span>Il primo riquadro non compare e restano gli altri due; con libreria vuota resta solo «Scegli un brano per iniziare».</span></li></ol></div>
+</div>
+<div class="row">
+<div class="col prima"><h2 class="cap">Prima (oggi) · barra desktop</h2><div class="prima-card"><p>Con la coda finita la barra del desktop mostra la zona informazioni vuota (desktop_player_bar.dart:60,197): né titolo né copertina, controlli senza effetto.</p></div></div>
+<div class="col"><h2 class="cap" style="max-width:none">Dopo (c) · barra desktop 1280 vuota (scala 75%)</h2>
+<div class="deskwrap"><div class="dev desk"><aside class="side"><div class="nv"><span class="ic"><svg class="i"><use href="#home"/></svg></span>Home</div><div class="nv"><span class="ic"><svg class="i"><use href="#search"/></svg></span>Cerca</div><hr><div class="nv on"><span class="ic"><svg class="i"><use href="#lib"/></svg></span>La tua libreria</div><div class="pl"><span class="cv c1" style="width:44px;height:44px;border-radius:4px"></span><div class="tx"><div class="t">In macchina</div><div class="s">Playlist di 12 brani</div></div></div><div class="pl"><span class="cv c4" style="width:44px;height:44px;border-radius:4px"></span><div class="tx"><div class="t">Notte</div><div class="s">Playlist di 5 brani</div></div></div><div style="flex:1"></div><hr><div class="nv"><span class="ic"><svg class="i"><use href="#mem"/></svg></span>Memoria</div></aside><main class="main"><div class="in"><div class="hd"><h1>La tua libreria</h1></div><div class="gridc"><div><span class="cv c1"></span><div class="t">Discovery</div><div class="s">Daft Punk</div></div><div><span class="cv c3"></span><div class="t">Dalla</div><div class="s">Lucio Dalla</div></div><div><span class="cv c4"></span><div class="t">Nevermind</div><div class="s">Nirvana</div></div><div><span class="cv c2"></span><div class="t">Rumours</div><div class="s">Fleetwood Mac</div></div><div><span class="cv c6"></span><div class="t">After Hours</div><div class="s">The Weeknd</div></div></div></div></main>
+<div class="bar"><div class="l"><span class="ph" style="width:56px;height:56px;border-radius:var(--r-list);flex:none;color:var(--muted)"><svg class="i"><use href="#note"/></svg></span><div class="tx"><div class="t" style="font:var(--body-l);color:var(--muted)">Niente in riproduzione</div><div class="s" style="font:var(--small);color:var(--muted)">Ultima coda: Discovery · Daft Punk</div></div></div>
+<div class="c"><div class="ctl"><button class="btn m dis" aria-label="Precedente" disabled><svg class="i f"><use href="#prev"/></svg></button><button class="play" aria-label="Riprendi l'ultima coda" title="Riprendi l'ultima coda"><svg class="i f"><use href="#play"/></svg></button><button class="btn m dis" aria-label="Successivo" disabled><svg class="i f"><use href="#next"/></svg></button></div><div class="skr"><span>–:––</span><span class="seek" style="width:420px"></span><span>–:––</span></div></div>
+<div class="r"><button class="btn m" aria-label="Volume"><svg class="i"><use href="#vol"/></svg></button><span class="seek vol"><i style="width:60%"></i></span></div></div></div></div></div>
+<div class="ann"><h2 class="cap">Note (c)</h2><ol>
+<li><b>La barra resta, con il suo stato vuoto</b><span>Segnaposto s3 al posto della copertina, «Niente in riproduzione» attenuato, ultima coda nel sottotitolo. Precedente e successivo spenti (38%) e non focalizzabili; il tempo mostra «–:––».</span></li>
+<li><b>▶ riprende l'ultima coda</b><span>Il bottone centrale resta in accento e riprende l'ultima coda (stessa azione del mini player). Il volume resta attivo.</span></li>
+<li><b>Nessun salto di layout</b><span>Altezza della barra identica (88 dp): cambia solo il contenuto.</span></li></ol></div>
+</div>
+</div>
+<script>
+const dk=document.getElementById('dk');
+const empty='<div class="mini"><span class="ph"><svg class="i"><use href="#note"/></svg></span><div class="tx"><div class="t e">Niente in riproduzione</div><div class="s">Ultima coda: Discovery · Daft Punk</div></div><button class="btn go" id="rp" aria-label="Riprendi l\'ultima coda" title="Riprendi l\'ultima coda"><svg class="i f"><use href="#play"/></svg></button></div>';
+const play='<div class="mini"><span class="rw" style="width:52px;height:52px"><svg class="rg" viewBox="0 0 52 52"><circle class="tr" cx="26" cy="26" r="24.5" stroke-width="3"/><circle class="ar" cx="26" cy="26" r="24.5" stroke-width="3" pathLength="100" stroke-dasharray="38 100"/></svg><span class="cv c1" style="inset:6px;border-radius:50%"></span></span><div class="tx"><div class="t">One More Time</div><div class="s">Daft Punk</div></div><button class="btn m" aria-label="Dispositivi"><svg class="i"><use href="#dev"/></svg></button><button class="btn" aria-label="Pausa"><svg class="i f"><use href="#pause"/></svg></button></div>';
+function paint(on){dk.innerHTML='<nav class="dock" aria-label="Lettore e schede" '+(on?'':'aria-live="polite"')+'>'+(on?play:empty)+'<hr><div class="tabs"><a class="tab" aria-label="Home"><span class="ic"><svg class="i"><use href="#home"/></svg></span>Home</a><a class="tab" aria-label="Cerca"><span class="ic"><svg class="i"><use href="#search"/></svg></span>Cerca</a><a class="tab on" aria-label="Libreria"><span class="ic"><svg class="i"><use href="#lib"/></svg></span>Libreria</a><a class="tab" aria-label="Memoria"><span class="ic"><svg class="i"><use href="#mem"/></svg></span>Memoria</a></div></nav>';const b=document.getElementById('rp');if(b)b.onclick=()=>paint(true)}
+paint(false);document.getElementById('rs').onclick=()=>paint(false);
+dk.addEventListener('click',e=>{if(e.target.closest('[aria-label=Pausa]'))paint(false)});
+</script></body></html>
