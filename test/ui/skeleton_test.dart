@@ -1,4 +1,3 @@
-import 'dart:ui' show SemanticsFlag;
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
@@ -23,7 +22,7 @@ void main() {
     await tester.pumpWidget(_app());
     expect(find.bySemanticsLabel('Caricamento…'), findsOneWidget);
     final node = tester.getSemantics(find.byType(Skeleton));
-    expect(node.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
+    expect(node.getSemanticsData().flagsCollection.isLiveRegion, isTrue);
     var count = 0;
     node.visitChildren((_) {
       count++;
