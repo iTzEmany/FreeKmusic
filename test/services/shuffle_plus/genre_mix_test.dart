@@ -65,6 +65,7 @@ void main() {
   var allInLibrary = false;
   RadioPage Function(String id, String? continuation)? pages;
   var inLibrary = <String>{};
+  List<YtResult> Function(String query)? search;
   // A clock that jumps 2 minutes at every reading: the gap never holds a test back.
   var tick = DateTime(2026, 11, 4);
   late RadioGate gate;
@@ -82,7 +83,7 @@ void main() {
       index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),
       searchSongs: (q) async {
         searches++;
-        return const [];
+        return search?.call(q) ?? const [];
       },
     );
     log = SuggestionLog(
@@ -98,11 +99,12 @@ void main() {
     allInLibrary = false;
     pages = null;
     inLibrary = {};
+    search = null;
     gate = RadioGate(now: () => tick = tick.add(const Duration(minutes: 2)));
   });
 
-  Future<List<GenreMixState>> run(int tracks) => genreMix(
-    tracks: [for (var i = 1; i <= tracks; i++) track(i)],
+  Future<List<GenreMixState>> run(int tracks, {int from = 1}) => genreMix(
+    tracks: [for (var i = from; i < from + tracks; i++) track(i)],
     offReason: () async => off,
     resolver: resolver,
     radioPage: (id, {continuation}) async {
@@ -215,6 +217,38 @@ void main() {
     final states = await run(6);
     expect(asked, hasLength(1));
     expect(states.last.suggested, hasLength(1));
+  });
+
+  test('a seed whose id is a video clip: the first page asks again with the song found by search', () async {
+    // The download gives the seed id (dlN, a clip); the search finds the song (fixN).
+    search = (q) {
+      final n = RegExp(r'Song (\d+)').firstMatch(q)!.group(1)!;
+      return [
+        YtResult(
+          id: 'fix$n',
+          title: 'Song $n',
+          channel: 'Band $n',
+          duration: const Duration(seconds: 200),
+          artists: ['Band $n'],
+          album: 'Album',
+        ),
+      ];
+    };
+    pages = (id, c) => id.startsWith('fix')
+        ? page(id)
+        : RadioPage([RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song)]); // no seed song: a clip
+    final now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now);
+    await run(6);
+    expect(asked.map((id) => id.startsWith('fix')), [false, true], reason: 'the clip, then the song, in one go');
+  });
+
+  test('a closed gate: no search for a seed whose page could not be asked', () async {
+    final now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now)..trip();
+    await run(6, from: 100);
+    expect(searches, 0);
+    expect(asked, isEmpty);
   });
 
   test('the 429 pause holds the first page too: no request', () async {

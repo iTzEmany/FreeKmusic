@@ -129,10 +129,12 @@ Future<({int used, bool asked})> _fetch(
   required bool first,
 }) async {
   var used = 0;
+  bool closed() => first ? gate.rateLimited : !gate.canAsk;
   for (final s in seeds) {
     if (s.dead) continue;
     final more = pool.pending(s.key) == 0 && pool.continuationOf(s.key) != null;
     if (s.fetched && !more) continue;
+    if (closed()) return (used: used, asked: false); // no search for a request that cannot follow
     if (s.videoId == null) {
       used++; // a search, unless the download or the index knows the id
       s.videoId = await resolver.resolve(s.track);
@@ -141,11 +143,10 @@ Future<({int used, bool asked})> _fetch(
       s.dead = true;
       continue;
     }
-    if (first ? gate.rateLimited : !gate.canAsk) return (used: used, asked: false);
     gate.asked();
     var page = await radioPage(s.videoId!, continuation: s.fetched ? pool.continuationOf(s.key) : null);
     used++;
-    if (!s.fetched && used < budget && gate.canAsk && !page.items.any((i) => i.isSeed && i.kind == RadioKind.song)) {
+    if (!s.fetched && used < budget && (first || gate.canAsk) && !page.items.any((i) => i.isSeed && i.kind == RadioKind.song)) {
       // The id was a video clip's: look the song up and ask again.
       s.videoId = await resolver.resolve(s.track, searchOnly: true);
       if (s.videoId == null) {
