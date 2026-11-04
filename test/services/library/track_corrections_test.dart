@@ -15,7 +15,7 @@ import 'package:codecore/services/tags/tag_backups.dart';
 import 'package:codecore/services/tags/tag_reader.dart';
 import 'package:codecore/services/tags/tag_writer.dart';
 import 'package:dio/dio.dart' show CancelToken;
-import 'package:drift/drift.dart' show QueryExecutor, QueryInterceptor, Value;
+import 'package:drift/drift.dart' show QueryExecutor, QueryInterceptor, TransactionExecutor, Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -57,10 +57,30 @@ class _Fixed implements TrackRecognizer {
   dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
 }
 
+/// Lets a test act while the corrections read the ids of a file (before their transaction).
+class _HookEditor extends TrackEditor {
+  _HookEditor(super.db, super.tags, {super.files, super.fileWritesEnabled});
+
+  Future<void> Function(Track)? onFileIds;
+
+  @override
+  Future<({String? isrc, String? mbid})?> fileIds(Track t) async {
+    await onFileIds?.call(t);
+    return super.fileIds(t);
+  }
+}
+
 /// Fails the status write of a commit while [on].
 class _FailStatus extends QueryInterceptor {
   bool on = false;
   bool failLog = false;
+  int transactions = 0; // top-level ones only (a nested one has a transaction as parent)
+
+  @override
+  TransactionExecutor beginTransaction(QueryExecutor parent) {
+    if (parent is! TransactionExecutor) transactions++;
+    return super.beginTransaction(parent);
+  }
 
   @override
   Future<int> runInsert(QueryExecutor e, String sql, List<Object?> args) {
@@ -89,6 +109,8 @@ void main() {
   late _FakeWriter writer;
   late _Fixed recognizer;
   late TrackCorrections corrections;
+  late _HookEditor editor;
+  TagWriteReason? blocked;
   late bool fileWrites;
   String? playing;
   late String path;
@@ -101,29 +123,32 @@ void main() {
     writer = _FakeWriter();
     recognizer = _Fixed(_rec());
     fileWrites = false;
+    blocked = null;
     failStatus = _FailStatus();
     r = EnrichRig(
       interceptor: failStatus,
       recognizer: recognizer,
       onSure: (t, rec) => corrections.apply(t, rec, byUser: false).then((_) {}),
     );
+    editor = _HookEditor(
+      r.db,
+      _Reader(),
+      files: TrackFileSync(
+        r.db,
+        () async => SafeTagWriter(
+          writer: writer,
+          reader: _Reader(),
+          workDir: Directory(p.join(root.path, 'work')),
+          backups: TagBackupStore(Directory(p.join(root.path, 'bk'))),
+        ),
+      ),
+      fileWritesEnabled: () => fileWrites,
+    );
     corrections = TrackCorrections(
       r.db,
-      TrackEditor(
-        r.db,
-        _Reader(),
-        files: TrackFileSync(
-          r.db,
-          () async => SafeTagWriter(
-            writer: writer,
-            reader: _Reader(),
-            workDir: Directory(p.join(root.path, 'work')),
-            backups: TagBackupStore(Directory(p.join(root.path, 'bk'))),
-          ),
-        ),
-        fileWritesEnabled: () => fileWrites,
-      ),
+      editor,
       r.credits,
+      fileBlock: (_) async => blocked,
       playingPath: () => playing,
     );
     playing = null;
@@ -346,12 +371,109 @@ void main() {
       expect(await r.credits.watchProposals().first, isEmpty);
     });
 
-    test('accept all applies them one by one and empties the list', () async {
+    Future<int> second({String file = 'b.mp3'}) async {
+      final path = p.join(root.path, file);
+      if (file == 'b.mp3') File(path).writeAsStringSync('AUDIO\nJunk');
+      final id = await r.add(path: path, title: 'Other');
+      await put(id, withProp('open'));
+      return id;
+    }
+
+    test('accept all is one transaction and one change of the list, and returns how many', () async {
       await put(await track(), withProp('open'));
-      await put(await r.add(path: '/b.mp3', title: 'Other'), withProp('open'));
-      expect(await corrections.acceptAll(), 2);
-      expect(await r.credits.watchProposals().first, isEmpty);
+      await second();
+      final emissions = <int>[];
+      final sub = r.credits.watchProposals().listen((l) => emissions.add(l.length));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      emissions.clear();
+      failStatus.transactions = 0;
+      final done = await corrections.acceptAll();
+      await done.files;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await sub.cancel();
+      expect(done.count, 2);
+      expect(failStatus.transactions, 1);
+      expect(emissions, [0]);
       expect((await r.db.select(r.db.tracks).get()).map((t) => t.title), everyElement('Real Title'));
+      expect((await log()).map((e) => e.kind), everyElement('correction'));
+    });
+
+    test('accept all counts only what changed, and takes the decision for the rest', () async {
+      final same = await r.add(path: '/s.mp3', title: 'Real Title', artist: 'Real Artist');
+      await put(same, withProp('open'));
+      await put(await track(), withProp('open'));
+      expect((await corrections.acceptAll()).count, 1);
+      expect((await recOf(same))!.prop, 'accepted');
+    });
+
+    test('accept all: a file that cannot be written goes in the Registro, the DB rows stay', () async {
+      fileWrites = true;
+      await put(await track(), withProp('open'));
+      final bad = await second(file: 'missing.mp3');
+      final done = await corrections.acceptAll();
+      expect(done.count, 2);
+      await done.files;
+      expect(writer.writes, hasLength(1));
+      expect((await row(bad)).title, 'Real Title');
+      expect((await recOf(bad))!.prop, 'accepted');
+      final failed = (await log()).where((e) => e.failed != 0).single;
+      expect([failed.kind, failed.name, (jsonDecode(failed.detail!) as Map)['trackId']], ['correction', 'Real Title', bad]);
+      expect((await log()).where((e) => e.failed == 0), hasLength(2));
+    });
+
+    test('accept all: a file blocked for writing is told in the Registro, the DB rows stay', () async {
+      fileWrites = true;
+      blocked = TagWriteReason.readOnly;
+      final id = await track();
+      await put(id, withProp('open'));
+      final done = await corrections.acceptAll();
+      await done.files;
+      expect(writer.writes, isEmpty);
+      expect((await row(id)).title, 'Real Title');
+      final failed = (await log()).where((e) => e.failed != 0).single;
+      expect((jsonDecode(failed.detail!) as Map)['file'], 'readOnly');
+    });
+
+    test('accept all leaves out a proposal refused after the list was read', () async {
+      fileWrites = true;
+      final kept = await track();
+      await put(kept, withProp('open'));
+      final refused = await second();
+      editor.onFileIds = (t) async {
+        if (t.id == refused) await corrections.discard(refused);
+      };
+      expect((await corrections.acceptAll()).count, 1);
+      expect([(await row(kept)).title, (await row(refused)).title], ['Real Title', 'Other']);
+      expect((await recOf(refused))!.prop, 'discarded');
+    });
+
+    test('reverting with reopen puts the values back and the proposals in the list again', () async {
+      final id = await track();
+      await put(id, withProp('open'));
+      final other = await second();
+      final done = await corrections.acceptAll();
+      expect(await r.credits.watchProposals().first, isEmpty);
+      for (final e in done.log) {
+        expect(await corrections.revert(e, reopen: true), isTrue);
+      }
+      expect((await r.credits.watchProposals().first).map((e) => e.track.id).toSet(), {id, other});
+      expect([(await row(id)).title, (await row(id)).userEdited], ['Junk', false]);
+    });
+
+    test('reverting what accept all logged puts every title back, files included', () async {
+      fileWrites = true;
+      final id = await track();
+      await put(id, withProp('open'));
+      final other = await second();
+      final done = await corrections.acceptAll();
+      await done.files;
+      expect(File(path).readAsStringSync(), contains('Real Title'));
+      for (final e in done.log) {
+        expect(await corrections.revert(e), isTrue);
+      }
+      expect([(await row(id)).title, (await row(other)).title], ['Junk', 'Other']);
+      expect(File(path).readAsStringSync(), contains('Junk'));
+      expect((await recOf(id))!.prop, 'discarded');
     });
   });
 }

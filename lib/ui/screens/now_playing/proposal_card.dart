@@ -10,12 +10,22 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/recognition_providers.dart';
+import '../../../services/recognition/track_identity.dart' show RecogSource;
 import '../../widgets/show_msg.dart';
 import 'now_playing_cards.dart';
 
 /// «Title – Artist», or just the title when the artist is unknown.
 String identLabel(AppLocalizations l, String title, String? artist) =>
     (artist ?? '').isEmpty ? title : l.recogIdent(title, artist!);
+
+/// Where a recognition came from, as a short label.
+String recogSourceLabel(AppLocalizations l, RecogSource s) => switch (s) {
+  RecogSource.tags => l.recogSrcTags,
+  RecogSource.ytid => l.recogSrcVideo,
+  RecogSource.text => l.recogSrcText,
+  RecogSource.acoustid => 'AcoustID',
+  RecogSource.ytm => 'YouTube Music',
+};
 
 /// «Proposta: Titolo – Artista» with Accetta / Scarta; nothing when the track
 /// has no open proposal or the user has edited it.
