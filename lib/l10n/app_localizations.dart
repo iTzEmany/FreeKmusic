@@ -199,7 +199,7 @@ abstract class AppLocalizations {
   /// No description provided for @clearSearch.
   ///
   /// In it, this message translates to:
-  /// **'Cancella'**
+  /// **'Cancella ricerca'**
   String get clearSearch;
 
   /// No description provided for @sortBy.
@@ -9576,6 +9576,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Il brano è in arrivo…'**
   String get streamCardsSoon;
+
+  /// Tooltip of the ✕ of an empty, focused search field: it hides the keyboard.
+  ///
+  /// In it, this message translates to:
+  /// **'Chiudi tastiera'**
+  String get closeKeyboard;
+
+  /// Single screen-reader label of a skeleton placeholder while content loads.
+  ///
+  /// In it, this message translates to:
+  /// **'Caricamento…'**
+  String get loadingContent;
 }
 
 class _AppLocalizationsDelegate

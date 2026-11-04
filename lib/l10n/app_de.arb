@@ -15,7 +15,7 @@
   "albums": "Alben",
   "artists": "Künstler",
   "searchHint": "Suchen",
-  "clearSearch": "Löschen",
+  "clearSearch": "Suche löschen",
   "sortBy": "Sortieren nach",
   "addMusicFolder": "Füge deinen Musikordner hinzu",
   "addFolder": "Ordner hinzufügen",
@@ -3218,5 +3218,7 @@
   "jamBleLocationOff": "Schalte den Standort von Android ein: Er wird für die Bluetooth-Suche gebraucht. Bis dahin kannst du den Code oder den QR nutzen.",
   "jamNearbyScanTitle": "Jams in der Nähe suchen",
   "jamNearbyScanHint": "Per Bluetooth, nur bei geöffneter App",
-  "streamCardsSoon": "Der Titel kommt gleich…"
+  "streamCardsSoon": "Der Titel kommt gleich…",
+  "closeKeyboard": "Tastatur schließen",
+  "loadingContent": "Wird geladen…"
 }
