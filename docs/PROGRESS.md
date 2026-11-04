@@ -1254,10 +1254,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 79.4 Controlli di fase
 
 ## Fase 80 — Cerca solo online e generi misti (`fase-80-cerca-online-e-generi.md`)
-- [ ] 80.1 Cerca solo online
-- [ ] 80.2 Stato «in preparazione» di Shuffle+
-- [ ] 80.3 Pagina del genere mista
-- [ ] 80.4 Controlli di fase
+- [x] 80.1 Cerca solo online
+- [x] 80.2 Stato «in preparazione» di Shuffle+
+- [x] 80.3 Pagina del genere mista
+- [x] 80.4 Controlli di fase
 
 ## Fase 81 — Player vuoto, schede in streaming e coda di Shuffle+ (`fase-81-player-e-streaming.md`)
 - [ ] 81.1 Niente in riproduzione
