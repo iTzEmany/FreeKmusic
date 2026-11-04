@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'error_state.dart';
+import 'skeleton.dart';
 
 /// Loading / empty / error / data for an [AsyncValue]. Error: «Riprova» when
 /// [onRetry] is given; the exception goes to `AppLog` (via `LoadError`, once).
@@ -25,7 +26,7 @@ class AsyncBody<T> extends StatelessWidget {
   final Widget? empty;
   final VoidCallback? onRetry;
 
-  /// Replaces the centred spinner (e.g. a thin linear bar).
+  /// Replaces the default row skeleton (e.g. a thin linear bar).
   final Widget? loading;
 
   /// Replaces the default `loadFailed` text.
@@ -33,7 +34,7 @@ class AsyncBody<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => value.when(
-    loading: () => loading ?? const Center(child: CircularProgressIndicator()),
+    loading: () => loading ?? const _RowsLoading(),
     error: (e, st) => LoadError(e, st, onRetry: onRetry, message: errorMessage),
     data: (d) =>
         empty != null && (isEmpty?.call(d) ?? false) ? empty! : data(d),
@@ -48,20 +49,21 @@ class SliverAsyncBody<T> extends StatelessWidget {
     super.key,
     required this.value,
     required this.data,
-    required this.loading,
+    this.loading,
     this.onRetry,
     this.errorHeight = 240,
   });
 
   final AsyncValue<T> value;
   final Widget Function(T data) data;
-  final Widget loading;
+  final Widget? loading;
   final VoidCallback? onRetry;
   final double errorHeight;
 
   @override
   Widget build(BuildContext context) => value.when(
-    loading: () => loading,
+    loading: () =>
+        loading ?? const SliverToBoxAdapter(child: Skeleton.list()),
     error: (e, st) => SliverToBoxAdapter(
       child: SizedBox(
         height: errorHeight,
@@ -69,5 +71,24 @@ class SliverAsyncBody<T> extends StatelessWidget {
       ),
     ),
     data: data,
+  );
+}
+
+/// Row skeleton: clipped at the bottom when the height is bounded, natural
+/// height (8 rows) when unbounded (e.g. inside a sheet).
+class _RowsLoading extends StatelessWidget {
+  const _RowsLoading();
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) => box.hasBoundedHeight
+        ? const ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              maxHeight: double.infinity,
+              child: Skeleton.list(),
+            ),
+          )
+        : const Skeleton.list(),
   );
 }
