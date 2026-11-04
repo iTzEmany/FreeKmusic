@@ -46,7 +46,11 @@ const _r = YtResult(
 );
 
 Future<void> _wait(WidgetTester t) async {
-  await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+  // Real async work (DB, files) settles in a few event-queue turns; no wall-clock sleep.
+  for (var i = 0; i < 20; i++) {
+    await t.runAsync(() => pumpEventQueue());
+    await t.pump();
+  }
   for (var i = 0; i < 3; i++) {
     await t.pump(const Duration(milliseconds: 300));
   }
@@ -266,6 +270,21 @@ void main() {
 
     preparer.phases.value = {'youtube:v1': StreamPhase.failed};
     await t.pump();
+    expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('a download still «downloading» after 60 s counts as stuck: «Non disponibile»', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    preparer.phases.value = {'youtube:v1': StreamPhase.downloading};
+    await t.pump(const Duration(seconds: 59));
+    expect(find.text('Non disponibile'), findsNothing);
+    await t.pump(const Duration(seconds: 2));
     expect(find.text('Non disponibile'), findsOneWidget);
 
     await t.pumpWidget(const SizedBox());

@@ -554,6 +554,8 @@ class StreamCardsWait extends ConsumerStatefulWidget {
   const StreamCardsWait({super.key, required this.trackId, this.infoOnly = false});
 
   static const wait = Duration(seconds: 20);
+  /// The preparer exposes no download progress: past this, a queued/downloading job counts as stuck.
+  static const cap = Duration(seconds: 60);
   /// The queue id of the streamed track (negative).
   final int trackId;
   final bool infoOnly;
@@ -564,7 +566,9 @@ class StreamCardsWait extends ConsumerStatefulWidget {
 
 class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
   Timer? _timer;
+  Timer? _capTimer;
   bool _late = false;
+  bool _capped = false;
 
   @override
   void initState() {
@@ -574,17 +578,20 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
 
   void _arm() {
     _timer?.cancel();
+    _capTimer?.cancel();
     _timer = Timer(StreamCardsWait.wait, () => setState(() => _late = true));
+    _capTimer = Timer(StreamCardsWait.cap, () => setState(() => _capped = true));
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _capTimer?.cancel();
     super.dispose();
   }
 
   void _retry() {
-    setState(() => _late = false);
+    setState(() => _late = _capped = false);
     _arm();
     unawaited(
       ref.read(audioHandlerProvider).retryShadow().catchError((Object e, StackTrace st) {
@@ -606,7 +613,7 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
       valueListenable: phases,
       builder: (context, map, _) {
         final phase = map[key];
-        return phase == null || phase == StreamPhase.failed ? _unavailable(l, t) : _skeleton(context);
+        return _capped || phase == null || phase == StreamPhase.failed ? _unavailable(l, t) : _skeleton(context);
       },
     );
   }

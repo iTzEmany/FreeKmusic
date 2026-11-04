@@ -51,12 +51,24 @@ void main() {
     preparer.failing.add('youtube:v1');
     gate.complete(); // the background download fails
     await pumpEventQueue();
+    final queues = preparer.queues.length;
     await handler.retryShadow();
     expect(online.entryOf(id)!.trackId, isNull);
+    expect(preparer.queues.length, greaterThan(queues)); // resynced before asking
 
     preparer.failing.clear();
     await handler.retryShadow();
     expect(online.entryOf(id)!.trackId, isNotNull);
+  });
+
+  test('a failed retry does not look for the row', () async {
+    // The row exists, but the preparer fails: the retry must stop before binding it.
+    final f = File('${dir.path}/row.m4a')..writeAsStringSync('x');
+    await TrackRepository(db).upsertStreamRow('youtube:v1', online.entryOf(id)!.result, f);
+    preparer.gates.remove('youtube:v1');
+    preparer.failing.add('youtube:v1');
+    await handler.retryShadow();
+    expect(online.entryOf(id)!.trackId, isNull);
   });
 
   test('a skip while the retry waits: the row is not bound to the new track', () async {
