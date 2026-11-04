@@ -4,6 +4,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
+import 'package:codecore/ui/screens/library/library_search.dart' show LibraryResults;
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
@@ -13,6 +14,7 @@ import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:codecore/providers/selection_providers.dart';
@@ -142,6 +144,67 @@ void main() {
     await t.binding.handlePopRoute();
     await _settle(t);
     expect(offset(), before);
+    await h.dispose(t);
+  });
+
+  Future<void> openSearch(WidgetTester t) async {
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+  }
+
+  Future<void> type(WidgetTester t, String text, {bool wait = true}) async {
+    await t.enterText(find.byType(TextField), text);
+    if (!wait) return;
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+  }
+
+  testWidgets('search trims the text; only spaces show nothing', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, '  Song  ');
+    expect(find.text('Song 0'), findsOneWidget);
+    await type(t, '     ');
+    expect(find.text('Brani'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('typing again inside the debounce searches only the last text', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, 'Song 0', wait: false);
+    await t.pump(const Duration(milliseconds: 100));
+    await type(t, 'Song 1');
+    Finder row(String s) =>
+        find.descendant(of: find.byType(LibraryResults), matching: find.text(s));
+    expect(row('Song 1'), findsOneWidget);
+    expect(row('Song 0'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('closing before the debounce leaves no old text or results', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, 'Song', wait: false);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    await openSearch(t);
+    expect(t.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+    expect(find.text('Brani'), findsNothing);
+    expect(find.text('Song 0'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('Esc closes the search and it reopens empty', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, 'Song');
+    await t.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsNothing);
+    await openSearch(t);
+    expect(t.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
     await h.dispose(t);
   });
 
