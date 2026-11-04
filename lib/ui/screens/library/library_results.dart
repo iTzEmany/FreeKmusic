@@ -1,14 +1,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/library_search.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/credits_providers.dart';
-import '../../../providers/database_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/player_providers.dart';
@@ -16,35 +13,19 @@ import '../../../providers/settings_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/cc_app_bar.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
-import '../search/search_screen.dart' show SearchTracksScreen;
-import '../search/search_section_screen.dart';
+import 'search_section_screen.dart';
 
 /// Library results grouped by kind (Tracks, Albums, Artists, Playlists); moved
 /// from Search (D-355).
-/// Local results for [query]; [read] is `ref.watch` (build) or `ref.read` (submit).
-LibrarySearchResults localResults(
-  T Function<T>(ProviderListenable<T>) read,
-  SearchQuery query,
-) => searchLibrary(
-  text: query.text,
-  credited: read(searchCreditedProvider(query)).value ?? const <Track>[],
-  quickFilter: query.quick,
-  tracks: read(searchTracksProvider(query)).value ?? const <Track>[],
-  artists: read(artistsProvider).value ?? const [],
-  albums: read(albumsProvider).value ?? const [],
-  playlists: read(playlistsProvider).value ?? const [],
-  trackLimit: 5,
-  sectionLimit: 3,
-);
-
 class LibraryResults extends ConsumerWidget {
-  const LibraryResults({super.key, required this.query, required this.onOnline});
+  const LibraryResults({super.key, required this.text, required this.onOnline});
 
-  final SearchQuery query;
+  final String text;
   final VoidCallback onOnline;
 
   /// Header, up to three rows, and «Tutti» when more matched; nothing when none.
@@ -62,7 +43,7 @@ class LibraryResults extends ConsumerWidget {
         actionLabel: total > shown ? l.showAll : null,
         onAction: () => ShellNav.open<void>(
           context,
-          SearchSectionScreen(query: query, kind: kind),
+          SearchSectionScreen(text: text, kind: kind),
         ),
       ),
       ...searchSectionRows(context, kind, res),
@@ -74,10 +55,7 @@ class LibraryResults extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    final text = query.text;
-    final tracks =
-        ref.watch(searchTracksProvider(query)).value ?? const <Track>[];
-    final res = localResults(ref.watch, query);
+    final res = ref.watch(libraryResultsProvider(text));
     final ctrl = ref.read(playerControllerProvider);
     final compact = ref.watch(settingsProvider.select((s) => s.compactMode));
     final extent = trackRowExtentOf(context, compact);
@@ -106,7 +84,7 @@ class LibraryResults extends ConsumerWidget {
                   : null,
               onAction: () => ShellNav.open<void>(
                 context,
-                SearchTracksScreen(query: query),
+                SearchTracksScreen(text: text),
               ),
             ),
             for (var i = 0; i < res.tracks.length; i++)
@@ -117,8 +95,9 @@ class LibraryResults extends ConsumerWidget {
                   track: res.tracks[i],
                   compact: compact,
                   selection: selection,
+                  // The queue is every match, not just the rows shown.
                   onTap: () => ctrl.playFromList(
-                    tracks,
+                    ref.read(searchTracksProvider(text)).value ?? res.tracks,
                     i,
                     context: const PlayContext(PlayContextKind.search),
                   ),
@@ -177,6 +156,52 @@ class LibraryResults extends ConsumerWidget {
           ),
           Expanded(child: results),
         ],
+      ),
+    );
+  }
+}
+
+/// «Mostra tutti»: every track matching the text.
+class SearchTracksScreen extends ConsumerWidget {
+  const SearchTracksScreen({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final tracks =
+        ref.watch(searchTracksProvider(text)).value ?? const <Track>[];
+    final ctrl = ref.read(playerControllerProvider);
+    final compact = ref.watch(settingsProvider.select((s) => s.compactMode));
+    final key = SelectionKey.searchAll.key;
+    final selection = RowSelection(
+      listKey: key,
+      visibleIds: [for (final t in tracks) t.id],
+    );
+    return SelectionScope(
+      listKey: key,
+      visibleIds: selection.visibleIds,
+      child: Scaffold(
+        appBar: SelectableAppBar(
+          listKey: key,
+          tracks: tracks,
+          normal: CcAppBar(title: l.tracks),
+        ),
+        body: ListView.builder(
+          itemExtent: trackRowExtentOf(context, compact),
+          itemCount: tracks.length,
+          itemBuilder: (_, i) => LiveTrackRow(
+            track: tracks[i],
+            compact: compact,
+            selection: selection,
+            onTap: () => ctrl.playFromList(
+              tracks,
+              i,
+              context: const PlayContext(PlayContextKind.search),
+            ),
+          ),
+        ),
       ),
     );
   }

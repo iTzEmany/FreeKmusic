@@ -110,6 +110,56 @@ void main() {
     expect(plus, isFalse);
   });
 
+  test('playMixed queues library and online songs in the given order; shuffle keeps the same items', () async {
+    final tracks = [
+      for (final id in ids)
+        (await db.select(db.tracks).get()).firstWhere((t) => t.id == id),
+    ];
+    final mix = <MixItem>[
+      (track: tracks[0], online: null),
+      (track: tracks[1], online: null),
+      (track: null, online: _r('s0')),
+    ];
+    await player.playMixed(mix);
+    expect(plus, isFalse, reason: 'the list brings its own suggestions (R-18)');
+    expect(handler.queueIds.take(2), ids);
+    expect(online.entryOf(handler.queueIds[2])?.result.id, 's0');
+    expect(handler.queueIds, hasLength(3));
+    await player.setShuffle(true);
+    await player.playMixed(mix);
+    expect(handler.queueIds.toSet(), hasLength(3));
+    expect(handler.queueIds.where((i) => isOnlineId(i)), hasLength(1));
+    expect(handler.queueIds.where(ids.contains), hasLength(2));
+    plus = true;
+    await player.playMixed([mix[0], mix[1]]);
+    expect(plus, isTrue, reason: 'library only: Shuffle+ stays');
+  });
+
+  test('playMixed from an index starts there', () async {
+    final tracks = await db.select(db.tracks).get();
+    await player.playMixed([
+      (track: tracks[0], online: null),
+      (track: null, online: _r('s0')),
+      (track: tracks[1], online: null),
+    ], index: 2);
+    expect(handler.queueIds[handler.currentIndex], tracks[1].id);
+  });
+
+  test('playMixed with shuffle on starts at a random item, not the first, and tells the context', () async {
+    PlayContext? ctx;
+    player = PlayerController(handler, null,
+        random: _FixedRandom(2), onContext: (c) => ctx = c, libraryIdOf: (_) async => null);
+    final tracks = await db.select(db.tracks).get();
+    await player.setShuffle(true);
+    await player.playMixed([
+      (track: tracks[0], online: null),
+      (track: null, online: _r('s0')),
+      (track: tracks[1], online: null),
+    ], context: const PlayContext(PlayContextKind.library));
+    expect(handler.queueIds[handler.currentIndex], tracks[1].id);
+    expect(ctx?.kind, PlayContextKind.library);
+  });
+
   test('playOnlineList with shuffle starts at a random track, not always the first', () async {
     player = PlayerController(handler, null, random: _FixedRandom(3), libraryIdOf: (_) async => null);
     await player.playOnlineList([for (var i = 0; i < 5; i++) _r('v$i')], shuffle: true);

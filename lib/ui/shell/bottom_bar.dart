@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/jam_providers.dart';
 import '../../providers/nav_providers.dart';
@@ -36,12 +37,16 @@ class ShellDock extends ConsumerWidget {
     required this.selected,
     required this.onSelect,
     this.showPlayer = true,
+    this.showSearch = kEnableYoutube,
   });
 
   final List<BottomBarItem> items;
   final int selected;
   final ValueChanged<int> onSelect;
   final bool showPlayer;
+
+  /// Search is online only: without YouTube there is no such tab (D-358).
+  final bool showSearch;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,7 +81,15 @@ class ShellDock extends ConsumerWidget {
           children: [
             if (field) ...rule,
             if (hasPlayer) ...[const MiniPlayer(), ...rule],
-            _Tabs(items: items, selected: selected, onSelect: onSelect),
+            _Tabs(
+              items: items,
+              tabs: [
+                for (var i = 0; i < items.length; i++)
+                  if (showSearch || i != NavTab.search.index) i,
+              ],
+              selected: selected,
+              onSelect: onSelect,
+            ),
           ],
         ),
       ),
@@ -167,7 +180,6 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final online = ref.watch(searchOnlineProvider);
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: CcDims.bottomBarHeight),
       // heightFactor: the bottom bar slot is as tall as the screen.
@@ -176,7 +188,7 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
         child: CcSearchField(
           controller: ref.watch(searchControllerProvider),
           focusNode: ref.watch(searchFocusProvider),
-          hint: online ? l.ytHint : l.searchHint,
+          hint: l.ytHint,
           bare: true,
           onSubmitted: (_) => ref.read(searchSubmitProvider.notifier).submit(),
         ),
@@ -188,11 +200,15 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
 class _Tabs extends StatelessWidget {
   const _Tabs({
     required this.items,
+    required this.tabs,
     required this.selected,
     required this.onSelect,
   });
 
   final List<BottomBarItem> items;
+
+  /// The indexes of [items] shown, in order.
+  final List<int> tabs;
   final int selected;
   final ValueChanged<int> onSelect;
 
@@ -204,7 +220,7 @@ class _Tabs extends StatelessWidget {
         children: [
           Row(
             children: [
-              for (var i = 0; i < items.length; i++)
+              for (final i in tabs)
                 Expanded(
                   child: Semantics(
                     button: true,
@@ -252,8 +268,8 @@ class _Tabs extends StatelessWidget {
             ],
           ),
           _TabDot(
-            index: selected,
-            tabWidth: box.maxWidth / items.length,
+            index: tabs.indexOf(selected).clamp(0, tabs.length - 1),
+            tabWidth: box.maxWidth / tabs.length,
             color: cc.accent,
           ),
         ],

@@ -20,4 +20,7 @@
 ## Dalla review della fase 77
 - Campi di ricerca fatti a mano rimasti fuori dal perimetro (F-09 ne citava tre): `add_tracks_screen.dart:89`, `share/track_picker_screen.dart:66`, `import_manual_search_sheet.dart:101`, `playlist_source_sheet.dart:150`. Migrare a `CcSearchField` o dichiararli debito.
 
+## Dalla review della fase 79
+- Tutti i brani scrive `trackQueryProvider(false)` da `initState` e `dispose` (`all_tracks_screen.dart:142-172`): «Mostra tutti» della Home e «Tutti i brani» della Libreria vivono in due Navigator e possono essere aperte insieme, e una azzera o cancella il testo dell'altra. Il testo diventa stato locale e `tracksProvider` prende una `TrackQuery` (family autoDispose); l'ordinamento ricordato resta nel notifier. Stessa cosa per `favorites_screen.dart:123`. Oppure dichiararlo debito.
+
 ## Esiti

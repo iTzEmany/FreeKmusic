@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n_ext.dart';
+import '../../providers/user_activity_provider.dart';
 import '../theme/tokens.dart';
 
 /// Search field with a ✕ that is always there: with text it clears, empty and
 /// focused it hides the keyboard, empty and unfocused it is dimmed and inert.
-class CcSearchField extends StatefulWidget {
+class CcSearchField extends ConsumerStatefulWidget {
   const CcSearchField({
     super.key,
     required this.controller,
@@ -13,6 +17,7 @@ class CcSearchField extends StatefulWidget {
     required this.hint,
     this.onSubmitted,
     this.onChanged,
+    this.onQuery,
     this.onClear,
     this.onCloseEmpty,
     this.bare = false,
@@ -26,6 +31,9 @@ class CcSearchField extends StatefulWidget {
   final String hint;
   final ValueChanged<String>? onSubmitted;
   final ValueChanged<String>? onChanged;
+
+  /// Debounced, trimmed and de-duplicated text; at once on Enter and on ✕.
+  final ValueChanged<String>? onQuery;
   final bool autofocus;
 
   /// What the ✕ does with text in the field (default: clear the controller).
@@ -38,11 +46,14 @@ class CcSearchField extends StatefulWidget {
   final bool bare;
 
   @override
-  State<CcSearchField> createState() => _CcSearchFieldState();
+  ConsumerState<CcSearchField> createState() => _CcSearchFieldState();
 }
 
-class _CcSearchFieldState extends State<CcSearchField> {
+class _CcSearchFieldState extends ConsumerState<CcSearchField> {
   FocusNode? _own;
+  Timer? _debounce;
+  String _last = '';
+  String _query = '';
 
   FocusNode get _node => widget.focusNode ?? (_own ??= FocusNode());
 
@@ -58,6 +69,7 @@ class _CcSearchFieldState extends State<CcSearchField> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _own?.dispose();
     super.dispose();
   }
@@ -65,7 +77,39 @@ class _CcSearchFieldState extends State<CcSearchField> {
   // clear() does not fire onChanged: do it so the results follow.
   void _clear() {
     widget.controller.clear();
-    widget.onChanged?.call('');
+    _changed('', now: true);
+  }
+
+  void _changed(String text, {bool now = false}) {
+    widget.onChanged?.call(text);
+    _schedule(text, now: now);
+  }
+
+  void _schedule(String text, {bool now = false}) {
+    final onQuery = widget.onQuery;
+    if (onQuery == null) return;
+    if (text != _last) {
+      _last = text;
+      ref.read(userActivityProvider).touch();
+    }
+    _debounce?.cancel();
+    final v = text.trim();
+    if (v == _query) return;
+    void run() {
+      _query = v;
+      onQuery(v);
+    }
+
+    if (now) {
+      run();
+    } else {
+      _debounce = Timer(CcTiming.debounce, run);
+    }
+  }
+
+  void _submitted(String text) {
+    widget.onSubmitted?.call(text);
+    if (widget.onQuery != null) _schedule(text, now: true);
   }
 
   @override
@@ -88,8 +132,8 @@ class _CcSearchFieldState extends State<CcSearchField> {
           focusNode: focusNode,
           textInputAction: TextInputAction.search,
           autofocus: widget.autofocus,
-          onSubmitted: widget.onSubmitted,
-          onChanged: widget.onChanged,
+          onSubmitted: _submitted,
+          onChanged: _changed,
           decoration: InputDecoration(
             hintText: widget.hint,
             prefixIcon: const Icon(Icons.search_rounded),

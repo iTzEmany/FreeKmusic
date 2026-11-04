@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier, listEquals, setEquals;
 
 import '../../core/app_log.dart';
 import '../../core/import_row.dart';
@@ -31,6 +31,24 @@ class ShufflePlusConfig {
 
 /// Told to the user once.
 enum ShufflePlusNotice { rateLimited, tooManyErrors }
+
+/// What Shuffle+ is still preparing: [incoming] suggestions not queued yet and
+/// the queue ids of the block being enriched.
+class ShufflePlusPending {
+  const ShufflePlusPending({this.incoming = 0, this.enriching = const {}});
+
+  static const none = ShufflePlusPending();
+
+  final int incoming;
+  final Set<int> enriching;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ShufflePlusPending && other.incoming == incoming && setEquals(other.enriching, enriching);
+
+  @override
+  int get hashCode => Object.hash(incoming, Object.hashAllUnordered(enriching));
+}
 
 class _Seed {
   _Seed(this.track);
@@ -133,6 +151,11 @@ class ShufflePlusController {
   final _block = <int>[]; // suggestions queued since the last enrichment
   Future<void>? _enriching; // the block being enriched: no new suggestion meanwhile
   int _enrichGen = 0; // bumped on a reset: an old block no longer holds the engine
+  Set<int> _enrichingIds = const {}; // the ids of the block being enriched
+  final _pending = ValueNotifier(ShufflePlusPending.none);
+
+  /// Suggestions on their way and the block being enriched; empty when off.
+  ValueListenable<ShufflePlusPending> get pending => _pending;
 
   List<int>? _source;
   List<Track> _sourceTracks = const [];
@@ -151,6 +174,13 @@ class ShufflePlusController {
   /// Whether the three-failures stop is in force.
   bool get stoppedForSession => _sessionOff;
 
+  /// True while the 15-minute pause after a rate limit lasts.
+  bool get rateLimited => _pausedUntil?.isAfter(_now()) ?? false;
+
+  /// The library as last read (null before the first radio request): shared
+  /// with the genre page, which asks the same question.
+  LibraryIndex? get libraryIndex => _library;
+
   void start() {
     _subs
       ..add(host.changes.listen((_) => poke()))
@@ -162,6 +192,7 @@ class ShufflePlusController {
 
   void dispose() {
     _disposed = true;
+    _pending.value = ShufflePlusPending.none;
     _timer?.cancel();
     for (final s in _subs) {
       unawaited(s.cancel());
@@ -189,6 +220,7 @@ class ShufflePlusController {
       } while (_again && !_disposed);
     } on Object catch (e, st) {
       AppLog.w('shuffle+ step failed', e, st);
+      _publish(); // nothing is on its way after a failure
       _retryAt = _now().add(retryAfterError);
       _wakeAt(_retryAt!);
     } finally {
@@ -236,8 +268,9 @@ class ShufflePlusController {
     switch (await _gate()) {
       case _Gate.off:
         await _removePending();
+        _publish();
       case _Gate.idle:
-        break;
+        _publish();
       case _Gate.go:
         await _suggest();
     }
@@ -345,6 +378,17 @@ class ShufflePlusController {
   /// Fills every free slot of the plan, one suggestion after the other.
   Future<void> _suggest() async {
     while (!_disposed && await _suggestOne()) {}
+    // Still coming only while the enrichment of a block holds the next one.
+    _publish(coming: _enriching != null);
+  }
+
+  /// [coming]: the free slots of the plan are suggestions on their way.
+  void _publish({bool coming = false}) {
+    if (_disposed) return;
+    _pending.value = ShufflePlusPending(
+      incoming: coming ? _plan().length : 0,
+      enriching: Set.of(_enrichingIds),
+    );
   }
 
   List<int> _plan() => plusPlan(host.queueIds, host.currentIndex,
@@ -354,6 +398,7 @@ class ShufflePlusController {
   /// True when one more was inserted (the plan may have more slots).
   Future<bool> _suggestOne() async {
     await _followCurrent();
+    _publish(coming: true);
     if (_enriching != null || _plan().isEmpty) return false;
     final src = _source;
     var candidate = await _take();
@@ -406,18 +451,23 @@ class ShufflePlusController {
     if (_block.length >= blockSize) {
       // Not awaited: the rest of the engine (a skip, Shuffle+ turned off) goes on.
       final gen = ++_enrichGen;
+      _enrichingIds = Set.of(_block);
       _enriching = _enrichBlock().whenComplete(() {
         if (gen != _enrichGen) return; // the engine was reset meanwhile
         _enriching = null;
+        _enrichingIds = const {};
+        _publish(coming: _pending.value.incoming > 0);
         poke();
       });
     }
+    _publish(coming: true);
     return true;
   }
 
   void _resetBlock() {
     _block.clear();
     _enriching = null;
+    _enrichingIds = const {};
     _enrichGen++;
   }
 

@@ -1407,7 +1407,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ytInfoTooltip => 'Informations sur l’utilisation';
 
   @override
-  String get removeRecentSearch => 'Retirer des recherches récentes';
+  String removeRecentSearch(String query) {
+    return 'Retirer « $query » des recherches récentes';
+  }
 
   @override
   String get groupGoTo => 'Aller à';
@@ -4719,12 +4721,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get memorySuggestions => 'Suggestions d’Aléatoire+';
 
   @override
-  String get searchModeLibrary => 'Dans la bibliothèque';
-
-  @override
-  String get searchModeOnline => 'En ligne';
-
-  @override
   String searchOnline(String query) {
     return 'Rechercher « $query » en ligne';
   }
@@ -5275,10 +5271,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get iconFollowSubtitle =>
       'L’icône suit le thème et la couleur quand tu quittes l’app';
-
-  @override
-  String get searchEmptyPrompt =>
-      'Saisis un titre, un artiste ou un album pour chercher dans ta bibliothèque';
 
   @override
   String get exportifySyncTitle => 'Synchroniser depuis Spotify';
@@ -6087,4 +6079,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Rechercher dans la bibliothèque';
+
+  @override
+  String get genreMixTag => 'Suggéré';
+
+  @override
+  String get genreMixOffJam => 'Suggestions désactivées : Jam en cours';
+
+  @override
+  String get genreMixOffMetered => 'Suggestions désactivées : réseau limité';
+
+  @override
+  String get genreMixOffOffline => 'Suggestions désactivées : pas de réseau';
+
+  @override
+  String get genreMixOffNoTool =>
+      'Suggestions désactivées : outil en ligne absent';
+
+  @override
+  String get genreMixOffRateLimited =>
+      'Suggestions en pause : trop de requêtes';
 }

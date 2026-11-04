@@ -425,6 +425,52 @@ void main() {
     await h.dispose(tester);
   });
 
+  test('without YouTube Ctrl+F always targets the Library', () {
+    expect(ctrlFTargetsLibrary(youtube: false, tab: NavTab.home.index), isTrue);
+    expect(ctrlFTargetsLibrary(youtube: true, tab: NavTab.home.index), isFalse);
+    expect(ctrlFTargetsLibrary(youtube: true, tab: NavTab.library.index), isTrue);
+  });
+
+  testWidgets('Ctrl+F on the Library opens its own focused search', (t) async {
+    t.view.physicalSize = const Size(1200, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t);
+    await h.pump(t, const AppShell());
+    _container(t).read(navIndexProvider.notifier).set(NavTab.library.index);
+    await _settle(t);
+    await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await t.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(t);
+    expect(_container(t).read(navIndexProvider), NavTab.library.index);
+    expect(find.byKey(const ValueKey('library-search-bar')), findsOneWidget);
+    expect(_container(t).read(searchFocusProvider).hasFocus, isFalse);
+    await h.dispose(t);
+  });
+
+  testWidgets('Ctrl+F with a page open on the Library opens the lens on its root', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(1200, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, tracks: 4);
+    await h.pump(t, const AppShell());
+    await t.tap(find.text('La tua libreria'));
+    await _settle(t);
+    await t.tap(find.text('Tutti i brani'));
+    await _settle(t);
+    expect(find.byType(AllTracksScreen), findsOneWidget);
+    await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await t.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(t);
+    expect(find.byType(AllTracksScreen), findsNothing);
+    expect(find.byKey(const ValueKey('library-search-bar')), findsOneWidget);
+    await h.dispose(t);
+  });
+
   testWidgets('Alt+Left goes back from a page opened in the tab', (t) async {
     t.view.physicalSize = const Size(1400, 900);
     t.view.devicePixelRatio = 1;

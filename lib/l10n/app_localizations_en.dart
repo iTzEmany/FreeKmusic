@@ -1396,7 +1396,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ytInfoTooltip => 'About usage';
 
   @override
-  String get removeRecentSearch => 'Remove from recent searches';
+  String removeRecentSearch(String query) {
+    return 'Remove “$query” from recent searches';
+  }
 
   @override
   String get groupGoTo => 'Go to';
@@ -4662,12 +4664,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memorySuggestions => 'Shuffle+ suggestions';
 
   @override
-  String get searchModeLibrary => 'In library';
-
-  @override
-  String get searchModeOnline => 'Online';
-
-  @override
   String searchOnline(String query) {
     return 'Search “$query” online';
   }
@@ -5212,10 +5208,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get iconFollowSubtitle =>
       'The icon follows the theme and colour when you leave the app';
-
-  @override
-  String get searchEmptyPrompt =>
-      'Type a title, artist or album to search your library';
 
   @override
   String get exportifySyncTitle => 'Sync from Spotify';
@@ -6018,4 +6010,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Search your library';
+
+  @override
+  String get genreMixTag => 'Suggested';
+
+  @override
+  String get genreMixOffJam => 'Suggestions off: Jam in progress';
+
+  @override
+  String get genreMixOffMetered => 'Suggestions off: metered network';
+
+  @override
+  String get genreMixOffOffline => 'Suggestions off: no network';
+
+  @override
+  String get genreMixOffNoTool => 'Suggestions off: online tool missing';
+
+  @override
+  String get genreMixOffRateLimited => 'Suggestions paused: too many requests';
 }

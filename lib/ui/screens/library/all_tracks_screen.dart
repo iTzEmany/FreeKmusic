@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +16,6 @@ import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
-import '../../widgets/skeleton.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
@@ -129,7 +126,6 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   static final _selectionKey = SelectionKey.all.key;
   final _controller = TextEditingController();
   final _scroll = ScrollController();
-  Timer? _debounce;
   late final TrackQueryNotifier _query;
   // 1 = header, search and chips shown, 0 = hidden (the animation's goal).
   double _barTarget = 1;
@@ -153,7 +149,6 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _bar.dispose();
     _controller.dispose();
     _scroll.dispose();
@@ -169,14 +164,6 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
       }
     });
     super.dispose();
-  }
-
-  void _onChanged(String text) {
-    _debounce?.cancel();
-    _debounce = Timer(
-      CcTiming.debounce,
-      () => _query.update((q) => q.copyWith(text: text)),
-    );
   }
 
   bool _onScroll(Notification n) {
@@ -292,7 +279,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
                     ),
                     child: CcSearchField(
                       controller: _controller,
-                      onChanged: _onChanged,
+                      onQuery: (v) => _query.update((q) => q.copyWith(text: v)),
                       hint: l.searchHint,
                     ),
                   ),
@@ -333,15 +320,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
                 onNotification: _onScroll,
                 child: AsyncBody(
                   value: tracks,
-                  loading: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.topCenter,
-                      maxHeight: double.infinity,
-                      child: Skeleton.list(
-                        rowHeight: trackRowExtentOf(context, compact),
-                      ),
-                    ),
-                  ),
+                  rowHeight: trackRowExtentOf(context, compact),
                   onRetry: () => ref.invalidate(tracksProvider(false)),
                   isEmpty: (list) => list.isEmpty,
                   empty: EmptyState(

@@ -825,7 +825,14 @@
   "gotIt": "Ho capito",
   "searchEmptyLibrary": "Nessun risultato in libreria",
   "ytInfoTooltip": "Informazioni sull’uso",
-  "removeRecentSearch": "Rimuovi dalle ricerche recenti",
+  "removeRecentSearch": "Rimuovi «{query}» dalle ricerche recenti",
+  "@removeRecentSearch": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "groupGoTo": "Vai a",
   "goToAlbum": "Vai all’album",
   "goToArtist": "Vai all’artista",
@@ -3004,8 +3011,6 @@
   "suggestionOutcomeDownloaded": "Scaricato",
   "suggestionOutcomeDisliked": "Non mi piace",
   "memorySuggestions": "Suggeriti di Casuale+",
-  "searchModeLibrary": "In libreria",
-  "searchModeOnline": "Online",
   "searchOnline": "Cerca «{query}» online",
   "@searchOnline": {
     "placeholders": {
@@ -3360,7 +3365,6 @@
   "iconDontAsk": "Non chiederlo più",
   "iconFollowTitle": "Icona a tema",
   "iconFollowSubtitle": "L'icona segue tema e colore quando esci dall'app",
-  "searchEmptyPrompt": "Scrivi un titolo, un artista o un album per cercare nella libreria",
   "exportifySyncTitle": "Sincronizza da Spotify",
   "exportifySyncChanges": "+{added} nuovi, −{removed} rimossi",
   "@exportifySyncChanges": {
@@ -3855,5 +3859,17 @@
   "closeSearch": "Chiudi la ricerca",
   "librarySearchHint": "Cerca nella libreria",
   "@closeSearch": {"description": "Tooltip of the ✕ of an empty search field in the Library: it closes the search."},
-  "@librarySearchHint": {"description": "Hint of the Library search field."}
+  "@librarySearchHint": {"description": "Hint of the Library search field."},
+  "genreMixTag": "Suggerito",
+  "genreMixOffJam": "Suggeriti spenti: Jam in corso",
+  "genreMixOffMetered": "Suggeriti spenti: rete a consumo",
+  "genreMixOffOffline": "Suggeriti spenti: nessuna rete",
+  "genreMixOffNoTool": "Suggeriti spenti: strumento online assente",
+  "@genreMixTag": {"description": "Label of a suggested online song in a genre page, next to the online icon."},
+  "@genreMixOffJam": {"description": "Short notice of a genre page without suggestions: a Jam is on."},
+  "@genreMixOffMetered": {"description": "Short notice of a genre page without suggestions: metered network."},
+  "@genreMixOffOffline": {"description": "Short notice of a genre page without suggestions: no network."},
+  "@genreMixOffNoTool": {"description": "Short notice of a genre page without suggestions: the online tool (yt-dlp) is missing."},
+  "genreMixOffRateLimited": "Suggeriti in pausa: troppe richieste",
+  "@genreMixOffRateLimited": {"description": "Short notice of a genre page without suggestions: the online service asked to slow down."}
 }

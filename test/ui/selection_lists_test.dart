@@ -15,7 +15,6 @@ import 'package:codecore/ui/screens/library/album_detail_screen.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/screens/library/favorites_screen.dart';
 import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
-import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:dio/dio.dart' show CancelToken;
@@ -26,6 +25,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 import '../support/app_harness.dart';
+import '../support/results_host.dart';
 import '../support/search_input.dart';
 import '../support/fake_ytm.dart';
 
@@ -253,7 +253,7 @@ void main() {
   ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 3);
-    await h.pump(tester, const SearchScreen());
+    await h.pump(tester, const ResultsHost());
     typeSearch(tester, 'Song');
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 400)),

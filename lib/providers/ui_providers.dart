@@ -18,18 +18,6 @@ final searchControllerProvider = Provider<TextEditingController>((ref) {
   return c;
 });
 
-/// «Online» chip of Search (false: «In libreria»).
-class SearchOnlineNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void set(bool online) => state = online;
-}
-
-final searchOnlineProvider = NotifierProvider<SearchOnlineNotifier, bool>(
-  SearchOnlineNotifier.new,
-);
-
 /// Counts the submits (Enter) of the dock's field; `SearchScreen` runs them.
 class SearchSubmitNotifier extends Notifier<int> {
   @override
@@ -41,6 +29,19 @@ class SearchSubmitNotifier extends Notifier<int> {
 final searchSubmitProvider = NotifierProvider<SearchSubmitNotifier, int>(
   SearchSubmitNotifier.new,
 );
+
+/// Counts the Ctrl+F requests for the Library's own search; `LibraryScreen` opens it.
+class LibrarySearchRequestNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void request() => state++;
+}
+
+final librarySearchRequestProvider =
+    NotifierProvider<LibrarySearchRequestNotifier, int>(
+      LibrarySearchRequestNotifier.new,
+    );
 
 /// True while the phone's dock carries the Search field (on the Search tab).
 class SearchBarNotifier extends Notifier<bool> {

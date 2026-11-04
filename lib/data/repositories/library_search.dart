@@ -78,9 +78,7 @@ List<T> _ranked<T>(List<(T, String)> items, String needle) {
 ///
 /// When the text uses operators (`artista:x anno:1990..`), [tracks] are the
 /// matches of the rules and the other sections only look at its plain words;
-/// with no plain word they stay empty. With [quickFilter] («Preferiti»,
-/// «Recenti») artists and albums are only those of [tracks] and playlists are
-/// left out.
+/// with no plain word they stay empty.
 LibrarySearchResults searchLibrary({
   required String text,
   required List<Track> tracks,
@@ -88,14 +86,13 @@ LibrarySearchResults searchLibrary({
   required List<AlbumSummary> albums,
   required List<PlaylistSummary> playlists,
   List<Track> credited = const [],
-  bool quickFilter = false,
   int trackLimit = 4,
   int sectionLimit = 12,
 }) {
   final withRules = hasOperators(text);
   final needle = normalize((withRules ? freeTextOf(text) : text).trim());
   if (needle.isEmpty) {
-    if (!withRules && !quickFilter) return const LibrarySearchResults();
+    if (!withRules) return const LibrarySearchResults();
     return LibrarySearchResults(
       tracks: tracks.take(trackLimit).toList(),
       trackTotal: tracks.length,
@@ -106,30 +103,22 @@ LibrarySearchResults searchLibrary({
   final artistNames = _normalArtists(artists);
   final albumNames = _normalAlbums(albums);
   final playlistNames = _normalPlaylists(playlists);
-  final artistKeys = quickFilter
-      ? {for (final t in tracks) (t.artist ?? '').trim().toLowerCase()}
-      : null;
-  final albumKeys = quickFilter ? {for (final t in tracks) t.albumKey} : null;
   final matchedArtists = _ranked([
     for (var i = 0; i < artists.length; i++)
       if (artists[i].key.isNotEmpty &&
           artists[i].name != null &&
-          (artistKeys == null || artistKeys.contains(artists[i].key)) &&
           _hasAll(artistNames[i], words))
         (artists[i], artistNames[i]),
   ], needle);
   final matchedAlbums = _ranked([
     for (var i = 0; i < albums.length; i++)
-      if ((albumKeys == null || albumKeys.contains(albums[i].albumKey)) &&
-          _hasAll('${albumNames[i].$1} ${albumNames[i].$2}', words))
+      if (_hasAll('${albumNames[i].$1} ${albumNames[i].$2}', words))
         (albums[i], albumNames[i].$1),
   ], needle);
-  final matchedPlaylists = quickFilter
-      ? const <PlaylistSummary>[]
-      : [
-          for (var i = 0; i < playlists.length; i++)
-            if (_hasAll(playlistNames[i], words)) playlists[i],
-        ];
+  final matchedPlaylists = [
+    for (var i = 0; i < playlists.length; i++)
+      if (_hasAll(playlistNames[i], words)) playlists[i],
+  ];
   return LibrarySearchResults(
     tracks: tracks.take(trackLimit).toList(),
     trackTotal: tracks.length,

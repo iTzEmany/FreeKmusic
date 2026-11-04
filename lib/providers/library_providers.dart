@@ -9,6 +9,7 @@ import '../data/db/app_database.dart';
 import '../data/repositories/home_sections.dart';
 import '../data/repositories/library_entries.dart';
 import '../data/repositories/library_queries.dart';
+import '../data/repositories/library_search.dart';
 import '../data/repositories/smart_search.dart';
 import '../data/repositories/track_repository.dart';
 import '../services/covers/cover_store.dart';
@@ -24,6 +25,7 @@ import '../services/library/rules/rule_parser.dart';
 import '../services/library/track_editor.dart';
 import '../services/library/track_file_sync.dart';
 import '../core/paths.dart';
+import 'credits_providers.dart' show searchCreditedProvider;
 import 'database_providers.dart';
 import 'smart_playlist_providers.dart';
 import 'settings_providers.dart';
@@ -242,26 +244,6 @@ final genreTracksProvider = StreamProvider.family<List<Track>, String>(
   (ref, genre) => ref.watch(libraryQueriesProvider).watchGenreTracks(genre),
 );
 
-/// What the Library search asks for: the text and the two quick filters.
-class SearchQuery {
-  const SearchQuery(this.text, {this.favorites = false, this.recent = false});
-
-  final String text;
-  final bool favorites, recent;
-
-  bool get quick => favorites || recent;
-
-  @override
-  bool operator ==(Object other) =>
-      other is SearchQuery &&
-      other.text == text &&
-      other.favorites == favorites &&
-      other.recent == recent;
-
-  @override
-  int get hashCode => Object.hash(text, favorites, recent);
-}
-
 /// Every visible track with its tags, normalised once per change of the
 /// library (not at every key typed).
 final _indexTracksProvider = StreamProvider<List<Track>>(
@@ -301,20 +283,9 @@ final _ruleTracksProvider = StreamProvider.autoDispose
 /// year and tags together, best match first. Typed operators
 /// (`artista:x anno:1990..1999 -live`) still run as rules in SQL, silently.
 final searchTracksProvider = Provider.autoDispose
-    .family<AsyncValue<List<Track>>, SearchQuery>((ref, q) {
+    .family<AsyncValue<List<Track>>, String>((ref, text) {
       final now = DateTime.now().millisecondsSinceEpoch;
-      if (hasOperators(q.text)) {
-        return ref
-            .watch(_ruleTracksProvider(q.text))
-            .whenData(
-              (l) => applyQuickFilters(
-                l,
-                favorites: q.favorites,
-                recent: q.recent,
-                nowMs: now,
-              ),
-            );
-      }
+      if (hasOperators(text)) return ref.watch(_ruleTracksProvider(text));
       // `.value`, not `whenData`: while the index is rebuilt after a change of
       // the library the rows of the old one stay, instead of going empty.
       final index = ref.watch(searchIndexProvider);
@@ -324,16 +295,24 @@ final searchTracksProvider = Provider.autoDispose
       }
       final i = index.value;
       if (i == null) return const AsyncLoading();
-      return AsyncData(
-        smartSearch(
-          i,
-          q.text,
-          favorites: q.favorites,
-          recent: q.recent,
-          nowMs: now,
-        ),
-      );
+      return AsyncData(smartSearch(i, text, nowMs: now));
     });
+
+/// What the Library search shows for [text]: a few tracks and a few of each
+/// other kind, computed once per change of the data and not at every build.
+final libraryResultsProvider = Provider.autoDispose
+    .family<LibrarySearchResults, String>(
+      (ref, text) => searchLibrary(
+        text: text,
+        credited: ref.watch(searchCreditedProvider(text)).value ?? const [],
+        tracks: ref.watch(searchTracksProvider(text)).value ?? const [],
+        artists: ref.watch(artistsProvider).value ?? const [],
+        albums: ref.watch(albumsProvider).value ?? const [],
+        playlists: ref.watch(playlistsProvider).value ?? const [],
+        trackLimit: 5,
+        sectionLimit: 3,
+      ),
+    );
 
 final topTracksProvider = StreamProvider<List<Track>>(
   (ref) => ref.watch(libraryQueriesProvider).watchTopTracks(),

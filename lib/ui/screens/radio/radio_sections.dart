@@ -14,6 +14,7 @@ import '../../../services/radio/radio_station.dart';
 import '../../../services/radio/regions.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/error_state.dart';
+import '../../widgets/genre_grid.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/skeleton.dart';
@@ -227,8 +228,7 @@ List<Widget> _withStale(
   return [_Message(context.l10n.radioOfflineList(date)), ...body];
 }
 
-/// The 24 genres in a uniform grid (4, 3 or 2 columns by text scale);
-/// [selected] is highlighted.
+/// The 24 genres in a uniform grid; [selected] is highlighted.
 class GenresSection extends StatelessWidget {
   const GenresSection({
     super.key,
@@ -242,65 +242,18 @@ class GenresSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final cc = context.cc;
-    final scaler = MediaQuery.textScalerOf(context);
-    final scale = scaler.scale(12) / 12;
-    final columns = scale < 1.3 ? 4 : (scale < 1.8 ? 3 : 2);
-    // Two lines of 12 sp text plus padding, never under 56 dp.
-    final cell = (scaler.scale(12) * 2 * 1.4 + 16).clamp(56.0, 200.0);
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(l.radioGenres),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              crossAxisCount: columns,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              mainAxisExtent: cell,
-              children: [
-                for (final tag in kRadioGenreTags)
-                  Semantics(
-                    button: true,
-                    selected: tag == selected,
-                    label: radioGenreLabel(l, tag),
-                    onTap: () => onSelect(tag),
-                    excludeSemantics: true,
-                    child: Material(
-                      key: ValueKey('genre-$tag'),
-                      color: tag == selected ? cc.accent : cc.surface1,
-                      borderRadius: BorderRadius.circular(CcDims.rCard),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => onSelect(tag),
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Center(
-                            child: Text(
-                              radioGenreLabel(l, tag),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: tag == selected ? cc.onAccent : cc.text,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(child: SectionHeader(l.radioGenres)),
+        GenreGrid(
+          selected: selected,
+          onSelect: onSelect,
+          items: [
+            for (final tag in kRadioGenreTags)
+              GenreItem(tag, radioGenreLabel(l, tag)),
+          ],
+        ),
+      ],
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
@@ -110,6 +111,38 @@ void main() {
     expect(handler.queueIds, ids);
   });
 
+  test('playMixed in a Jam queues only the picked item: a track as a track, a song as online', () async {
+    final rows = await db.select(db.tracks).get();
+    final mix = <MixItem>[
+      (track: rows[0], online: null),
+      (track: null, online: _r('s0')),
+      (track: rows[1], online: null),
+    ];
+    await player.playMixed(mix, index: 1);
+    expect(toJam, isEmpty);
+    expect(onlineToJam, ['s0']);
+    await player.playMixed(mix, index: 2);
+    expect(toJam, [[ids[1]]]);
+    await player.playMixed(mix, index: 99);
+    expect(toJam, [[ids[1]], [ids[1]]], reason: 'out of range: the last item');
+    // Shuffle on and no index: the random item, as the Play button of a list.
+    await player.setShuffle(true);
+    player = PlayerController(handler, null,
+        jamActive: () => true,
+        addToJam: (i) async {
+          toJam.add(i);
+          return (added: i.length, full: false);
+        },
+        addOnlineToJam: (r) {
+          onlineToJam.add(r.id);
+          return true;
+        },
+        random: _FixedRandom(1));
+    await player.playMixed(mix);
+    expect(onlineToJam, ['s0', 's0']);
+    expect(handler.queueIds, ids, reason: 'the local queue is untouched');
+  });
+
   test('without a Jam the same calls stay local', () async {
     jam = false;
     player.addToQueue(ids[0]);
@@ -190,4 +223,13 @@ class _SpyJam extends JamController {
     files.addAll(tracks.map((t) => t.id));
     return (added: tracks.length, full: false);
   }
+}
+
+class _FixedRandom implements Random {
+  _FixedRandom(this.value);
+  final int value;
+  @override
+  int nextInt(int max) => value;
+  @override
+  dynamic noSuchMethod(Invocation i) => throw UnimplementedError();
 }

@@ -596,7 +596,7 @@
   "gotIt": "Verstanden",
   "searchEmptyLibrary": "Keine Ergebnisse in der Bibliothek",
   "ytInfoTooltip": "Hinweis zur Nutzung",
-  "removeRecentSearch": "Aus letzten Suchen entfernen",
+  "removeRecentSearch": "„{query}“ aus letzten Suchen entfernen",
   "groupGoTo": "Gehe zu",
   "goToAlbum": "Zum Album",
   "goToArtist": "Zum Künstler",
@@ -2565,8 +2565,6 @@
   "suggestionOutcomeDownloaded": "Heruntergeladen",
   "suggestionOutcomeDisliked": "Gefällt mir nicht",
   "memorySuggestions": "Shuffle+-Vorschläge",
-  "searchModeLibrary": "In der Bibliothek",
-  "searchModeOnline": "Online",
   "searchOnline": "„{query}“ online suchen",
   "onlineBestResults": "Beste Ergebnisse",
   "onlineOthersChip": "Weitere Ergebnisse ({count})",
@@ -2845,7 +2843,6 @@
   "iconDontAsk": "Nicht mehr fragen",
   "iconFollowTitle": "Symbol passend zum Thema",
   "iconFollowSubtitle": "Das Symbol folgt Thema und Farbe, wenn du die App verlässt",
-  "searchEmptyPrompt": "Gib einen Titel, Künstler oder ein Album ein, um deine Bibliothek zu durchsuchen",
   "exportifySyncTitle": "Mit Spotify synchronisieren",
   "exportifySyncChanges": "+{added} neu, −{removed} entfernt",
   "exportifySyncNew": "Neue Playlist",
@@ -3224,5 +3221,11 @@
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "Live",
   "closeSearch": "Suche schließen",
-  "librarySearchHint": "Bibliothek durchsuchen"
+  "librarySearchHint": "Bibliothek durchsuchen",
+  "genreMixTag": "Vorgeschlagen",
+  "genreMixOffJam": "Vorschläge aus: Jam läuft",
+  "genreMixOffMetered": "Vorschläge aus: getaktetes Netz",
+  "genreMixOffOffline": "Vorschläge aus: kein Netz",
+  "genreMixOffNoTool": "Vorschläge aus: Online-Werkzeug fehlt",
+  "genreMixOffRateLimited": "Vorschläge pausiert: zu viele Anfragen"
 }

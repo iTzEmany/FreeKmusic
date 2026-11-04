@@ -16,12 +16,12 @@ final trackCreditsProvider = StreamProvider.autoDispose
           ref.watch(creditsRepositoryProvider).watchPortableOf(trackId),
     );
 
-/// Tracks found only through a credit; not for operators or quick filters.
+/// Tracks found only through a credit; not for operators.
 final searchCreditedProvider = FutureProvider.autoDispose
-    .family<List<Track>, SearchQuery>((ref, q) async {
-      final text = q.text.trim();
-      if (text.isEmpty || q.quick || hasOperators(text)) return const [];
-      final found = ref.watch(searchTracksProvider(q)).value ?? const <Track>[];
+    .family<List<Track>, String>((ref, query) async {
+      final text = query.trim();
+      if (text.isEmpty || hasOperators(text)) return const [];
+      final found = ref.watch(searchTracksProvider(query)).value ?? const <Track>[];
       final r = await ref
           .watch(creditsRepositoryProvider)
           .creditedTracks(

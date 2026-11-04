@@ -754,7 +754,7 @@
   "gotIt": "Compris",
   "searchEmptyLibrary": "Aucun résultat dans la bibliothèque",
   "ytInfoTooltip": "Informations sur l’utilisation",
-  "removeRecentSearch": "Retirer des recherches récentes",
+  "removeRecentSearch": "Retirer « {query} » des recherches récentes",
   "groupGoTo": "Aller à",
   "goToAlbum": "Aller à l’album",
   "goToArtist": "Aller à l’artiste",
@@ -2799,8 +2799,6 @@
   "suggestionOutcomeDownloaded": "Téléchargé",
   "suggestionOutcomeDisliked": "Je n’aime pas",
   "memorySuggestions": "Suggestions d’Aléatoire+",
-  "searchModeLibrary": "Dans la bibliothèque",
-  "searchModeOnline": "En ligne",
   "searchOnline": "Rechercher « {query} » en ligne",
   "onlineBestResults": "Meilleurs résultats",
   "onlineOthersChip": "Autres résultats ({count})",
@@ -3079,7 +3077,6 @@
   "iconDontAsk": "Ne plus demander",
   "iconFollowTitle": "Icône assortie au thème",
   "iconFollowSubtitle": "L’icône suit le thème et la couleur quand tu quittes l’app",
-  "searchEmptyPrompt": "Saisis un titre, un artiste ou un album pour chercher dans ta bibliothèque",
   "exportifySyncTitle": "Synchroniser depuis Spotify",
   "exportifySyncChanges": "+{added} nouveaux, −{removed} retirés",
   "exportifySyncNew": "Nouvelle playlist",
@@ -3458,5 +3455,11 @@
   "homeRadioLive": "En direct",
   "statsBarValue": "{when}, {time}",
   "closeSearch": "Fermer la recherche",
-  "librarySearchHint": "Rechercher dans la bibliothèque"
+  "librarySearchHint": "Rechercher dans la bibliothèque",
+  "genreMixTag": "Suggéré",
+  "genreMixOffJam": "Suggestions désactivées : Jam en cours",
+  "genreMixOffMetered": "Suggestions désactivées : réseau limité",
+  "genreMixOffOffline": "Suggestions désactivées : pas de réseau",
+  "genreMixOffNoTool": "Suggestions désactivées : outil en ligne absent",
+  "genreMixOffRateLimited": "Suggestions en pause : trop de requêtes"
 }

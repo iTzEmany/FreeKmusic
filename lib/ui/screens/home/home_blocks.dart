@@ -11,6 +11,7 @@ import '../../../providers/memory_providers.dart';
 import '../../../providers/radio_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/cc_tile.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/shuffle_button.dart';
 import '../library/all_tracks_screen.dart';
@@ -163,41 +164,32 @@ class _Shortcut extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
     final cc = context.cc;
-    return Semantics(
-      button: true,
-      label: '$label, $sub',
-      excludeSemantics: true,
-      child: Material(
-        color: cc.surface1,
-        borderRadius: BorderRadius.circular(CcDims.rCard),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 88),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.all(CcDims.gap12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: cc.accentSoft),
-                const SizedBox(height: CcDims.gap4),
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.bodyLarge,
-                ),
-                Text(
-                  sub,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.bodyMedium,
-                ),
-              ],
+    return CcTile(
+      semanticsLabel: '$label, $sub',
+      minHeight: 88,
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.all(CcDims.gap12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: cc.accentSoft),
+            const SizedBox(height: CcDims.gap4),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.bodyLarge,
             ),
-          ),
+            Text(
+              sub,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.bodyMedium,
+            ),
+          ],
         ),
       ),
     );
