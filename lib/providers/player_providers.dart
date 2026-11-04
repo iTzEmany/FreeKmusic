@@ -152,7 +152,7 @@ class PlayerController {
   /// [playFromList]: the picked item joins the shared queue (D-89).
   Future<void> playMixed(List<MixItem> items, {int? index, PlayContext? context}) async {
     if (items.isEmpty) return;
-    final at = index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0);
+    final at = (index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0)).clamp(0, items.length - 1);
     if (inJam) {
       final t = items[at].track, r = items[at].online;
       if (t != null) await addToJam?.call([t.id]);

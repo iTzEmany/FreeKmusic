@@ -486,6 +486,32 @@ void main() {
     expect(seen, hasLength(n), reason: 'no emission when nothing changed');
   });
 
+  test('pending: while a block is enriched, incoming follows the free slots; it goes on after', () async {
+    final gate = Completer<void>();
+    enrichHook = (ids) async {
+      enriched.add(ids);
+      await gate.future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => enriched.isNotEmpty);
+    expect(controller.pending.value.incoming, 0, reason: 'no free slot yet');
+    for (var i = 0; i < 5; i++) {
+      host.finishAndAdvance();
+      await settle();
+    }
+    final free = controller.pending.value.incoming;
+    expect(free, greaterThan(0), reason: 'slots freed, held by the enrichment');
+    expect(controller.pending.value.enriching, isNotEmpty);
+    gate.complete();
+    await until(() => host.inserts > 3);
+    await until(() => controller.pending.value.incoming < free);
+  });
+
   test('pending: an error in the engine leaves nothing incoming', () async {
     final prepare = Completer<void>();
     prepareHook = (r) async {
@@ -719,13 +745,16 @@ void main() {
     await settle();
     expect(adapter.sent, hasLength(1));
     expect(notices, [ShufflePlusNotice.rateLimited]);
+    expect(controller.rateLimited, isTrue);
 
     now = now.add(const Duration(minutes: 14));
     controller.poke();
     await settle();
     expect(adapter.sent, hasLength(1), reason: 'still paused');
+    expect(controller.rateLimited, isTrue);
 
     now = now.add(const Duration(minutes: 2));
+    expect(controller.rateLimited, isFalse);
     controller.poke();
     await settle();
     expect(adapter.sent, hasLength(2));

@@ -5,6 +5,9 @@ import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/jam_providers.dart';
+import 'package:codecore/services/shuffle_plus/shuffle_plus_controller.dart';
+import 'package:flutter/services.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/seed_resolver_provider.dart';
 import 'package:codecore/providers/settings_providers.dart';
@@ -29,10 +32,12 @@ RadioPage mixPage(String id) => page(id);
 
 class _Radio implements YtmRadioService {
   int calls = 0;
+  Completer<void>? gate;
 
   @override
   Future<RadioPage> page(String videoId, {String? continuation}) async {
     calls++;
+    await gate?.future;
     return mixPage(videoId);
   }
 
@@ -40,20 +45,61 @@ class _Radio implements YtmRadioService {
   dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
 }
 
+class _ActiveJam extends JamController {
+  @override
+  JamUiState build() => const JamUiState(phase: JamPhase.active, role: JamRole.host);
+}
+
+/// A Shuffle+ engine that is paused by a 429.
+class _Paused implements ShufflePlusController {
+  @override
+  bool get rateLimited => true;
+
+  @override
+  dynamic noSuchMethod(Invocation i) => null;
+}
+
+NetworkProbe _meteredProbe() {
+  const channel = MethodChannel('codecore/net-genre-mix');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async => {'metered': true, 'online': true});
+  addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, null));
+  return NetworkProbe(channel: channel, android: true);
+}
+
 void main() {
-  test('a download (downloadIndexProvider invalidated) does not restart the mix', () async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late _Radio radio;
+  late ProviderContainer container;
+  late DownloadIndex downloads;
+
+  /// [libraryIds]: radio rows that are already in the library (downloaded).
+  Future<void> open({
+    bool jam = false,
+    String? tool = '2026.01.01',
+    NetworkProbe? probe,
+    ShufflePlusController? engine,
+    Iterable<String> libraryIds = const [],
+  }) async {
     SharedPreferences.setMockInitialValues({});
     final store = await SettingsStore.open();
     final dir = Directory.systemTemp.createTempSync('genre_mix_provider');
     addTearDown(() => dir.deleteSync(recursive: true));
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    final downloads = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
+    downloads = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
     for (var i = 1; i <= 6; i++) {
       await downloads.add('dl$i', '/m/$i.mp3');
     }
-    final radio = _Radio();
-    final container = ProviderContainer(overrides: [
+    for (final id in libraryIds) {
+      final path = p.join(dir.path, '$id.mp3');
+      File(path).writeAsStringSync('x'); // the index only knows files that exist
+      await downloads.add(id, path);
+    }
+    radio = _Radio();
+    container = ProviderContainer(overrides: [
       settingsStoreProvider.overrideWithValue(store),
       databaseProvider.overrideWithValue(db),
       genreTracksProvider.overrideWith((ref, genre) => Stream.value([for (var i = 1; i <= 6; i++) track(i)])),
@@ -63,28 +109,35 @@ void main() {
             index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),
             searchSongs: (q) async => const [],
           )),
-      ytDlpStatusProvider.overrideWith((ref) async => const YtDlpStatus('2026.01.01')),
-      networkProbeProvider.overrideWithValue(NetworkProbe(android: false)),
+      ytDlpStatusProvider.overrideWith((ref) async => YtDlpStatus(tool)),
+      networkProbeProvider.overrideWithValue(probe ?? NetworkProbe(android: false)),
       ytmRadioServiceProvider.overrideWithValue(radio),
       suggestionLogProvider.overrideWithValue(SuggestionLog(
         file: () async => File(p.join(dir.path, 'suggestions.json')),
         writeDelay: const Duration(days: 1),
       )),
-      shufflePlusProvider.overrideWith((ref) async => null),
+      shufflePlusProvider.overrideWith((ref) async => engine),
+      if (jam) jamProvider.overrideWith(_ActiveJam.new),
     ]);
     addTearDown(container.dispose);
     final sub = container.listen(genreMixProvider('Rock'), (_, _) {});
     addTearDown(sub.close);
-    Future<GenreMixState?> settled() async {
-      final end = DateTime.now().add(const Duration(seconds: 20));
-      while (DateTime.now().isBefore(end)) {
-        final v = container.read(genreMixProvider('Rock')).value;
-        if (v != null && v.incoming == 0 && v.suggested.isNotEmpty) return v;
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-      return null;
-    }
+  }
 
+  Future<GenreMixState?> until(bool Function(GenreMixState v) done) async {
+    final end = DateTime.now().add(const Duration(seconds: 20));
+    while (DateTime.now().isBefore(end)) {
+      final v = container.read(genreMixProvider('Rock')).value;
+      if (v != null && done(v)) return v;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    return null;
+  }
+
+  Future<GenreMixState?> settled() => until((v) => v.incoming == 0 && v.suggested.isNotEmpty);
+
+  test('a download (downloadIndexProvider invalidated) does not restart the mix', () async {
+    await open();
     final first = await settled();
     expect(first, isNotNull);
     expect(first!.suggested, hasLength(3));
@@ -93,5 +146,41 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     expect(radio.calls, calls, reason: 'no new requests');
     expect(container.read(genreMixProvider('Rock')).value?.suggested, first.suggested);
+  });
+
+  // «Solo su Wi-Fi» is on by default.
+  for (final (name, reason, open_) in <(String, GenreMixOff, Future<void> Function())>[
+    ('a Jam', GenreMixOff.jam, () => open(jam: true)),
+    ('no yt-dlp', GenreMixOff.noTool, () => open(tool: null)),
+    ('a metered network with «Solo su Wi-Fi»', GenreMixOff.metered, () => open(probe: _meteredProbe())),
+    ('Shuffle+ paused by a rate limit', GenreMixOff.rateLimited, () => open(engine: _Paused())),
+  ]) {
+    test('$name: library only, the reason, no request', () async {
+      await open_();
+      final v = await until((v) => v.off != null);
+      expect(v?.off, reason);
+      expect(v?.suggested, isEmpty);
+      expect(radio.calls, 0);
+    });
+  }
+
+  test('songs already in the library are not suggested', () async {
+    final owned = [for (var i = 1; i <= 6; i++) for (var j = 0; j < 5; j++) 'dl$i-r$j'];
+    await open(libraryIds: owned);
+    final v = await settled();
+    expect(v!.suggested, hasLength(3));
+    expect(v.suggested.where((r) => owned.contains(r.id)), isEmpty);
+  });
+
+  test('the container closed in the middle of the mix: no more requests', () async {
+    await open();
+    radio.gate = Completer<void>();
+    while (radio.calls == 0) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    container.dispose();
+    radio.gate!.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(radio.calls, 1);
   });
 }

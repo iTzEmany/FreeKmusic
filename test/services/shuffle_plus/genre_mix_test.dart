@@ -55,12 +55,14 @@ void main() {
   late SeedResolver resolver;
   late SuggestionLog log;
   late List<String> asked;
+  late List<String?> continuations;
   var searches = 0;
   GenreMixOff? off;
   var radioFails = false;
   var rateLimited = false;
   var cancelled = false;
-  var emptyPages = false;
+  var allInLibrary = false;
+  RadioPage Function(String id, String? continuation)? pages;
   var inLibrary = <String>{};
 
   setUp(() async {
@@ -84,11 +86,13 @@ void main() {
       writeDelay: const Duration(days: 1),
     );
     asked = [];
+    continuations = [];
     off = null;
     radioFails = false;
     rateLimited = false;
     cancelled = false;
-    emptyPages = false;
+    allInLibrary = false;
+    pages = null;
     inLibrary = {};
   });
 
@@ -98,13 +102,14 @@ void main() {
     resolver: resolver,
     radioPage: (id, {continuation}) async {
       asked.add(id);
+      continuations.add(continuation);
       if (rateLimited) throw const YtException(YtErrorKind.rateLimited);
       if (radioFails) throw const YtException(YtErrorKind.network);
-      return emptyPages ? const RadioPage.empty() : page(id);
+      return pages?.call(id, continuation) ?? page(id);
     },
     log: log,
     loadInLibrary: () async =>
-        (r) => inLibrary.contains(r.id),
+        (r) => allInLibrary || inLibrary.contains(r.id),
     cancelled: () => cancelled,
   ).toList();
 
@@ -126,8 +131,8 @@ void main() {
 
   test('at most genreMixMax suggestions however long the genre', () async {
     final states = await run(40);
-    expect(states.first.incoming, genreMixMax);
-    expect(states.last.suggested, hasLength(genreMixMax));
+    expect(states.first.incoming, 9);
+    expect(states.last.suggested, hasLength(9));
   });
 
   test('songs already in the library are not suggested', () async {
@@ -184,9 +189,28 @@ void main() {
     expect(states.last.incoming, 0);
   });
 
-  test('requests (radio pages and searches) stay within a few', () async {
-    emptyPages = true;
-    await run(40);
-    expect(asked.length + searches, lessThanOrEqualTo(4));
+  test('a radio of songs already in the library or repeated: stops at the request budget', () async {
+    allInLibrary = true;
+    pages = (id, c) => RadioPage([
+      RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
+      RadioItem(song('$id-${c ?? 'first'}', 'Artist'), RadioKind.song),
+    ], continuation: 'next');
+    final states = await run(40);
+    // The budget counts a seed's id lookup too (4 units): 3 pages here, ids known.
+    expect(asked.length + searches, 3);
+    expect(states.last.suggested, isEmpty);
+    expect(states.last.incoming, 0);
+  });
+
+  test('a radio page of 2 songs with a continuation: the second page is followed', () async {
+    pages = (id, c) => RadioPage([
+      RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
+      for (var i = 0; i < 2; i++) RadioItem(song('$id-${c ?? 'p1'}-$i', 'Artist $id ${c ?? 'p1'} $i'), RadioKind.song),
+    ], continuation: c == null ? 'next' : null);
+    final states = await run(6);
+    expect(continuations, contains('next'));
+    expect(asked.first, asked[1], reason: 'the same radio, next page');
+    expect(states.last.suggested, hasLength(3));
+    expect(states.last.suggested.any((r) => r.id.contains('-next-')), isTrue);
   });
 }

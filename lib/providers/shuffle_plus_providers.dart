@@ -279,8 +279,10 @@ LibraryIndex _buildIndex(List<LibraryEntryLite> entries) => LibraryIndex(entries
 final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String>((ref, genre) {
   if (!kEnableYoutube) return const Stream.empty();
   final link = ref.keepAlive();
-  final timer = Timer(const Duration(minutes: 5), link.close);
-  ref.onDispose(timer.cancel);
+  Timer? timer;
+  ref.onCancel(() => timer = Timer(const Duration(minutes: 5), link.close));
+  ref.onResume(() => timer?.cancel());
+  ref.onDispose(() => timer?.cancel());
   // Listened (not restarting): an unlistened stream provider stays paused.
   ref.listen(genreTracksProvider(genre), (_, _) {});
   final tracks = ref.read(genreTracksProvider(genre).future);
@@ -293,9 +295,7 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
   final log = ref.read(suggestionLogProvider);
   final jam = ref.read(jamProvider).active;
   final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
-  final engine = ref.read(shufflePlusProvider).value;
-  final paused = engine?.rateLimited ?? false;
-  final shared = engine?.libraryIndex;
+  final engine = ref.read(shufflePlusProvider.future);
   return _genreMix(
     tracks: tracks,
     resolver: resolver,
@@ -308,9 +308,9 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
       final net = await probe.current();
       if (!net.online) return GenreMixOff.offline;
       if (net.metered && unmeteredOnly) return GenreMixOff.metered;
-      return paused ? GenreMixOff.rateLimited : null;
+      return (await engine)?.rateLimited ?? false ? GenreMixOff.rateLimited : null;
     },
-    library: () async => shared ?? await compute(_buildIndex, await repo.liteEntries()),
+    library: () async => (await engine)?.libraryIndex ?? await compute(_buildIndex, await repo.liteEntries()),
     cancelled: () => !ref.mounted,
   );
 });

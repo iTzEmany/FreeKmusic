@@ -145,6 +145,21 @@ void main() {
     expect(handler.queueIds[handler.currentIndex], tracks[1].id);
   });
 
+  test('playMixed with shuffle on starts at a random item, not the first, and tells the context', () async {
+    PlayContext? ctx;
+    player = PlayerController(handler, null,
+        random: _FixedRandom(2), onContext: (c) => ctx = c, libraryIdOf: (_) async => null);
+    final tracks = await db.select(db.tracks).get();
+    await player.setShuffle(true);
+    await player.playMixed([
+      (track: tracks[0], online: null),
+      (track: null, online: _r('s0')),
+      (track: tracks[1], online: null),
+    ], context: const PlayContext(PlayContextKind.library));
+    expect(handler.queueIds[handler.currentIndex], tracks[1].id);
+    expect(ctx?.kind, PlayContextKind.library);
+  });
+
   test('playOnlineList with shuffle starts at a random track, not always the first', () async {
     player = PlayerController(handler, null, random: _FixedRandom(3), libraryIdOf: (_) async => null);
     await player.playOnlineList([for (var i = 0; i < 5; i++) _r('v$i')], shuffle: true);
