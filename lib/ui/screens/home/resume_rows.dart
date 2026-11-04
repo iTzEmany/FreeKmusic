@@ -4,10 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/library_entries.dart';
-import '../../../data/repositories/library_queries.dart';
-import '../../../data/repositories/playlist_repository.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/releases_providers.dart';
@@ -83,9 +80,6 @@ class ResumeList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final albums = ref.watch(albumsProvider).value ?? const <AlbumSummary>[];
-    final playlists =
-        ref.watch(playlistsProvider).value ?? const <PlaylistSummary>[];
     final newReleases =
         kEnableYoutube && (ref.watch(newReleasesCountProvider).value ?? 0) > 0;
     final rows = buildResumeRows(
@@ -93,12 +87,7 @@ class ResumeList extends ConsumerWidget {
       queue: ref.watch(queueProvider).value ?? const [],
       source: ref.watch(playContextProvider),
       resumable: ref.watch(resumableTracksProvider).value ?? const [],
-      entries: buildLibraryEntries(
-        playlists: playlists,
-        albums: albums,
-        artists: const [],
-        sort: LibrarySort.recent,
-      ),
+      entries: ref.watch(recentEntriesProvider),
       hasNewReleases: newReleases,
     );
     if (rows.isEmpty) return const SizedBox.shrink();

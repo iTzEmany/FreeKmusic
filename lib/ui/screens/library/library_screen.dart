@@ -15,7 +15,6 @@ import '../../../providers/nav_providers.dart';
 import '../../../providers/podcast_providers.dart';
 import '../../../providers/review_providers.dart';
 import '../../../providers/settings_providers.dart';
-import '../../../providers/smart_playlist_providers.dart';
 import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
@@ -26,6 +25,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/progress_frame.dart';
+import '../../widgets/skeleton.dart';
 import '../../../providers/player_providers.dart' show currentTrackProvider;
 import '../../widgets/smart_cover.dart';
 import '../devices/devices_sheet.dart';
@@ -96,13 +96,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       orElse: () => LibrarySort.recent,
     );
     final playlists = ref.watch(playlistsProvider);
-    final smart = ref.watch(smartPlaylistsProvider).value ?? const [];
     final albums = ref.watch(albumsProvider);
     final artists = ref.watch(artistsProvider);
+    final built = ref.watch(libraryEntriesProvider((_kind, sort)));
     final folders = ref.watch(foldersProvider).value;
-    final trackCount = ref.watch(
-      tracksProvider(false).select((t) => t.value?.length ?? 0),
-    );
+    final trackCount = ref.watch(trackCountProvider).value ?? 0;
     final denied = ref.watch(permissionDeniedProvider);
 
     Widget body;
@@ -129,7 +127,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
       );
     } else if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
-      body = const Center(child: CircularProgressIndicator());
+      body = const Skeleton.list();
     } else if (trackCount == 0 && folders != null && folders.isEmpty) {
       body = EmptyState(
         icon: Icons.library_music,
@@ -140,14 +138,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         onSecondary: () => addDefaultFolderAndScan(ref),
       );
     } else {
-      final entries = buildLibraryEntries(
-        playlists: playlists.value!,
-        albums: albums.value!,
-        artists: artists.value!,
-        smart: smart,
-        kind: _kind,
-        sort: sort,
-      );
+      final entries = built.value!;
       count = switch (_kind) {
         null => l.libraryItemsCount(entries.length),
         LibraryKind.playlist => l.playlistsCount(entries.length),
@@ -158,6 +149,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       body = settings.libraryGrid
           ? _LibraryGrid(header: shortcuts, entries: entries, onOpen: _open)
           : _LibraryList(
+              key: ValueKey(_kind),
               header: shortcuts,
               entries: entries,
               onOpen: _open,
@@ -297,9 +289,7 @@ class _LibraryShortcuts extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final favCount = ref.watch(
-      tracksProvider(true).select((t) => t.value?.length ?? 0),
-    );
+    final favCount = ref.watch(favoriteCountProvider).value ?? 0;
     final tagCount = ref.watch(
       tagsProvider.select((t) => t.value?.length ?? 0),
     );
@@ -318,9 +308,7 @@ class _LibraryShortcuts extends ConsumerWidget {
     final reviewCount = ref.watch(
       reviewCountProvider.select((c) => c.value ?? 0),
     );
-    final trackCount = ref.watch(
-      tracksProvider(false).select((t) => t.value?.length ?? 0),
-    );
+    final trackCount = ref.watch(trackCountProvider).value ?? 0;
     void open(Widget w) => ShellNav.open<void>(context, w);
     return LibraryShortcuts(
       items: [
@@ -448,6 +436,7 @@ class _EntryCover extends ConsumerWidget {
 
 class _LibraryList extends StatelessWidget {
   const _LibraryList({
+    super.key,
     required this.header,
     required this.entries,
     required this.onOpen,

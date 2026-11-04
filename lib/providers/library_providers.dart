@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 
 import '../core/app_log.dart';
 import '../data/db/app_database.dart';
+import '../data/repositories/home_sections.dart';
+import '../data/repositories/library_entries.dart';
 import '../data/repositories/library_queries.dart';
 import '../data/repositories/smart_search.dart';
 import '../data/repositories/track_repository.dart';
@@ -23,6 +25,7 @@ import '../services/library/track_editor.dart';
 import '../services/library/track_file_sync.dart';
 import '../core/paths.dart';
 import 'database_providers.dart';
+import 'smart_playlist_providers.dart';
 import 'settings_providers.dart';
 
 final tagReaderProvider = Provider<TagReader>(
@@ -94,6 +97,62 @@ final tracksProvider = StreamProvider.family<List<Track>, bool>((ref, fav) {
 /// All music tracks, whatever the Library search says.
 final trackCountProvider = StreamProvider<int>(
   (ref) => ref.watch(trackRepositoryProvider).watchCount(),
+);
+
+/// Favourites, whatever the Favourites search says.
+final favoriteCountProvider = StreamProvider<int>(
+  (ref) => ref.watch(trackRepositoryProvider).watchCount(favoritesOnly: true),
+);
+
+/// Library rows for a (tab, order): sorted once and kept, so switching tabs
+/// back and forth does not sort again.
+final libraryEntriesProvider = Provider.family<
+  AsyncValue<List<LibraryEntry>>,
+  (LibraryKind?, LibrarySort)
+>((ref, key) {
+  final playlists = ref.watch(playlistsProvider);
+  final albums = ref.watch(albumsProvider);
+  final artists = ref.watch(artistsProvider);
+  final smart = ref.watch(smartPlaylistsProvider).value ?? const [];
+  if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
+    return const AsyncLoading();
+  }
+  return AsyncData(
+    buildLibraryEntries(
+      playlists: playlists.value!,
+      albums: albums.value!,
+      artists: artists.value!,
+      smart: smart,
+      kind: key.$1,
+      sort: key.$2,
+    ),
+  );
+});
+
+/// Home: playlists and albums by last play, for «Riprendi».
+final recentEntriesProvider = Provider<List<LibraryEntry>>((ref) {
+  return buildLibraryEntries(
+    playlists: ref.watch(playlistsProvider).value ?? const [],
+    albums: ref.watch(albumsProvider).value ?? const [],
+    artists: const [],
+    sort: LibrarySort.recent,
+  );
+});
+
+/// Home: «Riscopri» albums, derived once per change of the albums.
+final rediscoverAlbumsProvider = Provider<List<AlbumSummary>>(
+  (ref) => rediscoverAlbums(
+    ref.watch(albumsProvider).value ?? const [],
+    DateTime.now(),
+  ).take(3).toList(),
+);
+
+/// Home: «Aggiunti da poco» albums, derived once per change of the albums.
+final recentlyAddedAlbumsProvider = Provider<List<AlbumSummary>>(
+  (ref) => recentlyAddedAlbums(
+    ref.watch(albumsProvider).value ?? const [],
+    limit: 20,
+  ),
 );
 
 final foldersProvider = StreamProvider<List<Folder>>(

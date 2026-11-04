@@ -3,14 +3,11 @@ import '../../../providers/track_ops.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/app_log.dart';
-import '../../../data/repositories/home_sections.dart';
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/memory_providers.dart';
-import '../../../providers/player_providers.dart';
 import '../../../providers/radio_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
@@ -75,7 +72,7 @@ class ShuffleHero extends ConsumerWidget {
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: () => _play(ref),
+                      onTap: ref.read(trackOpsProvider).playLibrary,
                       child: SizedBox.square(
                         dimension: 48,
                         child: Icon(Icons.play_arrow, color: cc.onAccent),
@@ -86,30 +83,13 @@ class ShuffleHero extends ConsumerWidget {
               ),
               ShuffleModeButton(
                 // What Play plays: the whole library, not the queue of before (D-137).
-                listIds: () async => [
-                  for (final t in await ref.read(trackOpsProvider).all()) t.id,
-                ],
+                listIds: ref.read(trackOpsProvider).libraryIds,
               ),
             ],
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _play(WidgetRef ref) async {
-    final ctrl = ref.read(playerControllerProvider);
-    try {
-      // The whole library, not what the «Tutti i brani» search shows.
-      final tracks = await ref.read(trackOpsProvider).all();
-      if (tracks.isEmpty) return;
-      await ctrl.playAll(
-        tracks,
-        context: const PlayContext(PlayContextKind.library),
-      );
-    } on Object catch (e, st) {
-      AppLog.e('play everything failed', e, st);
-    }
   }
 }
 
@@ -143,7 +123,7 @@ class ShortcutsRow extends ConsumerWidget {
           tile(
             Icons.favorite_border,
             l.navFavorites,
-            l.tracksCount(count(ref.watch(tracksProvider(true)))),
+            l.tracksCount(ref.watch(favoriteCountProvider).value ?? 0),
             const FavoritesScreen(),
           ),
           tile(
@@ -231,10 +211,7 @@ class AddedLately extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final albums = recentlyAddedAlbums(
-      ref.watch(albumsProvider).value ?? const [],
-      limit: 20,
-    );
+    final albums = ref.watch(recentlyAddedAlbumsProvider);
     if (albums.isEmpty) return const SizedBox.shrink();
     return Column(
       children: [

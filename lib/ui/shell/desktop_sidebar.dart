@@ -119,9 +119,7 @@ class _SidebarPlaylists extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final lists = ref.watch(playlistsProvider).value ?? const [];
-    final favoriteCount = ref.watch(
-      tracksProvider(true).select((t) => t.value?.length ?? 0),
-    );
+    final favoriteCount = ref.watch(favoriteCountProvider).value ?? 0;
     void say(String text) => showMsg(context, text);
 
     Future<void> dropOnPlaylist(int id, String name, List<int> ids) async {

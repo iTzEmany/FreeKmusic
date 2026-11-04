@@ -53,7 +53,7 @@ class LibraryEntry {
 
 /// Accent-folded; digits and symbols («#») come before the letters, so each
 /// initial is one contiguous block.
-String _sortKey(LibraryEntry e) {
+String sortKeyOf(LibraryEntry e) {
   final t = normalize(e.title ?? '');
   return (RegExp(r'^[a-z]').hasMatch(t) ? 'b' : 'a') + t;
 }
@@ -118,7 +118,12 @@ List<LibraryEntry> buildLibraryEntries({
           artistSummary: a,
         ),
   ];
-  int alpha(LibraryEntry a, LibraryEntry b) => _sortKey(a).compareTo(_sortKey(b));
+  // Keys computed once per entry, not once per comparison.
+  final keys = Map<LibraryEntry, String>.identity();
+  for (final e in all) {
+    keys[e] = sortKeyOf(e);
+  }
+  int alpha(LibraryEntry a, LibraryEntry b) => keys[a]!.compareTo(keys[b]!);
   switch (sort) {
     case LibrarySort.alpha:
       all.sort(alpha);
