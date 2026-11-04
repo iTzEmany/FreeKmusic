@@ -36,3 +36,10 @@
 - Statistiche: `Skeleton.bars` e `Skeleton.gridCell` non hanno ancora chiamanti né test; chi li introduce aggiunge un test di rendering per variante (`bars` vuole altezza limitata).
 
 ## Esiti
+
+### 78.4 — Controlli (2026-11-04)
+- `flutter analyze` pulito; comando mirato verde; golden nuovi `radio` e `stats` (barra toccata) su phone_100, phone_150, desktop_100, desktop_150; `home`, `home_fan_open`, `mini_dock` rigenerati. Le 4 immagini desktop album/selection cambiavano solo per la striscia della scrollbar (instabile): lasciate come su master.
+- Review medium per task (Sonnet), rilievi applicati: titoli dei riquadri interi a 2,0×, «In diretta» nel riquadro Radio senza stazioni (prima «Stazioni in …» tagliato al 100%), celle dei generi `surface1`/`rCard` come il mockup, asse delle Statistiche «ogni N» calcolato da larghezza e scala, etichetta del valore nella fascia in alto su `surface2`, corpo attenuato con `IgnorePointer` e `ExcludeSemantics`, tocco su `onTapUp`, `TextPainter` liberati. Non applicati: debounce che riparte anche per il solo cursore (innocuo); parole spezzate a 1,79× con 3 colonne (limite della regola 4/3/2).
+- Scheggia di passo: nessun bug; test rinforzati (selezione per barra, `_shown` dopo un periodo vuoto, ricerca radio con spazi e trim, soglia 1,3×).
+- Sul telefono l'anno mostra tutte e 12 le iniziali (ci stanno in larghezza): la nota «una ogni 2» del mockup scatta solo se non ci stanno.
+- **Mi A3** (APK debug 3c62a99): Home con un'etichetta per riquadro nel dump di `uiautomator` («Preferiti, 2 brani», «Radio, In diretta»), blocchi senza divisori; ▶ di «Casuale su tutto» avvia la riproduzione (il «non avvia nulla» della prova 76 non si ripete: il percorso ▶ → `playAll` → `playQueue` è corretto, probabile tocco sul titolo o Jam attiva); Shuffle cambia solo la modalità. Radio: griglia da 4, ✕ «Cancella ricerca», skeleton al posto degli spinner, «Vicino a te» arriva dopo ~10 s. Statistiche: tocco «3 nov, 36 min», trascinamento, giorni futuri non selezionabili, Anno→Mese torna a settembre. Nessuna eccezione nel log.
