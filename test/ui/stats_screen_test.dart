@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/play_history_repository.dart';
 import 'package:codecore/data/repositories/stats_queries.dart';
@@ -184,11 +186,22 @@ void main() {
     await open(tester);
     final box = tester.getRect(find.byType(StatsBars));
     final slot = box.width / 31;
-    // 2 October: the bar of day 2.
-    await tester.tapAt(Offset(box.left + slot * 1.5, box.center.dy));
+    bool picked(String day) => find.semantics
+        .byLabel(RegExp('^$day\\sott'))
+        .evaluate()
+        .any((n) => n.getSemanticsData().flagsCollection.isSelected == Tristate.isTrue);
+    // A future day (20 Oct) does nothing: no bar is selected.
+    await tester.tapAt(Offset(box.left + slot * 19.5, box.center.dy));
+    await tester.pump();
+    expect(picked('20'), isFalse);
+    expect(picked('2'), isFalse);
+    // 1.6 slots in: floor gives day 2, round would give day 3.
+    await tester.tapAt(Offset(box.left + slot * 1.6, box.center.dy));
     await tester.pump();
     expect(find.semantics.byLabel(RegExp(r'^2\sott,\s21\smin$')), findsOneWidget);
-    expect(find.semantics.byLabel(RegExp(r'^20\sott')), findsNothing, reason: 'future day');
+    expect(picked('2'), isTrue);
+    expect(picked('3'), isFalse);
+    expect(picked('1'), isFalse);
     // Drag over a future day (25 October): the selection stays on the last valid bar.
     await tester.dragFrom(
       Offset(box.left + slot * 1.5, box.center.dy),
@@ -206,6 +219,23 @@ void main() {
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('1 h 3 min'), findsOneWidget, reason: 'the previous month, dimmed');
+    await _settle(tester);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a data period, an empty one, then a loading one: the dimmed body is the data one',
+      (tester) async {
+    await open(tester);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byTooltip('Periodo precedente'));
+      await _settle(tester);
+    }
+    expect(find.text('agosto 2026'), findsOneWidget);
+    expect(find.text('Nessun ascolto in questo periodo.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Periodo precedente'));
+    await tester.pump();
+    expect(find.text('10 min'), findsOneWidget, reason: 'September, not an empty state');
+    expect(find.text('Nessun ascolto in questo periodo.'), findsNothing);
     await _settle(tester);
     await h.dispose(tester);
   });

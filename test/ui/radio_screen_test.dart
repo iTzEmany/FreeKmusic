@@ -286,6 +286,46 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('genres at 1.3x text: three columns (threshold)', (tester) async {
+    await open(tester, width: 360, height: 3000, textScale: 1.3);
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('genre-classic rock'))).dy,
+        tester.getTopLeft(find.byKey(const ValueKey('genre-pop'))).dy);
+    await h.dispose(tester);
+  });
+
+  testWidgets('only spaces clear the search at once', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Risultati'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), '  ');
+    await tester.pump();
+    expect(find.text('Risultati'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the query is trimmed', (tester) async {
+    final seen = <String>[];
+    await open(tester, search: (q) async {
+      seen.add(q);
+      return [near.first];
+    });
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), ' rtl ');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(seen, ['rtl']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('leaving the screen during the debounce does not throw', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('genres at 2.0x text: two columns, no overflow', (tester) async {
     await open(tester, width: 360, height: 3000, textScale: 2.0);
     expect(tester.takeException(), isNull);
