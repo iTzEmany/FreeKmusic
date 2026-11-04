@@ -51,6 +51,19 @@ RadioPage page(String seed) => RadioPage([
     RadioItem(song('$seed-r$i', 'Artist $seed $i'), RadioKind.song),
 ]);
 
+/// A gate that counts the radio requests announced to it.
+class _CountingGate extends RadioGate {
+  _CountingGate(DateTime Function() now) : super(now: now);
+
+  int count = 0;
+
+  @override
+  void asked() {
+    count++;
+    super.asked();
+  }
+}
+
 void main() {
   late Directory dir;
   late SeedResolver resolver;
@@ -238,9 +251,44 @@ void main() {
         ? page(id)
         : RadioPage([RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song)]); // no seed song: a clip
     final now = DateTime(2026, 11, 4);
-    gate = RadioGate(now: () => now);
+    final counting = _CountingGate(() => now);
+    gate = counting;
     await run(6);
     expect(asked.map((id) => id.startsWith('fix')), [false, true], reason: 'the clip, then the song, in one go');
+    expect(counting.count, 2, reason: 'the second request is announced too');
+    expect(counting.lastRadio, now);
+  });
+
+  test('a clip as the second seed of a mix: the gap holds, no second request for it', () async {
+    var now = DateTime(2026, 11, 4);
+    gate = RadioGate(now: () => now);
+    search = (q) {
+      final n = RegExp(r'Song (\d+)').firstMatch(q)!.group(1)!; // found if a retry were made
+      return [
+        YtResult(
+          id: 'fix$n',
+          title: 'Song $n',
+          channel: 'Band $n',
+          duration: const Duration(seconds: 200),
+          artists: ['Band $n'],
+          album: 'Album',
+        ),
+      ];
+    };
+    var calls = 0;
+    pages = (id, c) {
+      if (calls++ == 0) {
+        now = now.add(const Duration(minutes: 2)); // the gap has passed for the second seed
+        return RadioPage([
+          RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
+          RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song),
+        ]);
+      }
+      return RadioPage([RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song)]); // a clip
+    };
+    await run(6);
+    expect(asked, hasLength(2), reason: 'two seeds, one request each');
+    expect(asked.any((id) => id.startsWith('fix')), isFalse);
   });
 
   test('a closed gate: no search for a seed whose page could not be asked', () async {
