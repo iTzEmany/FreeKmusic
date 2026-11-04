@@ -75,7 +75,7 @@ class GenreScreen extends ConsumerWidget {
     for (final r in rows) {
       itemAt.add(items.length);
       if (r.track != null || r.suggested != null) {
-        items.add((track: r.track == null ? null : tracks[r.track!], online: r.suggested));
+        items.add((track: r.track == null ? null : tracks[r.track!], online: r.suggested, seedTitle: null));
       }
     }
     final extent = trackRowExtentOf(
@@ -110,7 +110,8 @@ class GenreScreen extends ConsumerWidget {
         ),
         // The list as shown: the suggested songs that have arrived, in place.
         onPlay: () => ctrl.playMixed(items, context: ctx),
-        shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        // The ids of the list ▶ plays: the songs shown (a suggested one has no id yet).
+        shuffleIds: [for (final i in items) ?i.track?.id],
         slivers: [
           if (mix.off != null)
             SliverToBoxAdapter(

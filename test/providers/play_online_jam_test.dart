@@ -114,9 +114,9 @@ void main() {
   test('playMixed in a Jam queues only the picked item: a track as a track, a song as online', () async {
     final rows = await db.select(db.tracks).get();
     final mix = <MixItem>[
-      (track: rows[0], online: null),
-      (track: null, online: _r('s0')),
-      (track: rows[1], online: null),
+      (track: rows[0], online: null, seedTitle: null),
+      (track: null, online: _r('s0'), seedTitle: null),
+      (track: rows[1], online: null, seedTitle: null),
     ];
     await player.playMixed(mix, index: 1);
     expect(toJam, isEmpty);

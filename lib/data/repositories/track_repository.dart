@@ -631,6 +631,15 @@ class TrackRepository {
             ]))
           .watch();
 
+  /// The music added last, newest first (the empty player offers them).
+  Stream<List<Track>> watchRecentlyAdded({int limit = 24}) => lightSelect(
+    _db,
+    _db.select(_db.tracks)
+      ..where((t) => t.missing.equals(false) & t.ignored.equals(false) & t.kind.equals(0))
+      ..orderBy([(t) => OrderingTerm.desc(t.addedAt), (t) => OrderingTerm.desc(t.id)])
+      ..limit(limit),
+  ).watch();
+
   /// Tracks left in the middle, newest first (the Home «Riprendi» rows).
   Stream<List<Track>> watchResumable({int limit = 3}) =>
       (_db.select(_db.tracks)

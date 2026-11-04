@@ -15,6 +15,7 @@ import '../screens/jam/speaker_notices.dart';
 import '../screens/now_playing/now_playing_screen.dart';
 import '../theme/tokens.dart';
 import '../widgets/artist_links.dart';
+import '../widgets/empty_player.dart';
 import '../widgets/quality_tag.dart';
 import '../widgets/speed_button.dart';
 import '../widgets/favorite_actions.dart';
@@ -58,7 +59,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               child: inJam
                   ? _JamInfo(state: jam)
                   : (track == null
-                        ? const SizedBox.shrink()
+                        ? const _EmptyInfo()
                         : _TrackInfo(track: track)),
             ),
             Expanded(
@@ -73,6 +74,52 @@ class DesktopPlayerBar extends ConsumerWidget {
             const Expanded(flex: 3, child: _Right()),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Nothing plays (D-364): the bar keeps its place, with the last queue named.
+class _EmptyInfo extends ConsumerWidget {
+  const _EmptyInfo();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cc = context.cc;
+    final l = context.l10n;
+    final theme = Theme.of(context).textTheme;
+    final subtitle = emptyPlayerSubtitle(context, ref.watch(lastQueueProvider).value);
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      label: '${l.playerEmptyTitle}. $subtitle',
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(color: cc.surface3, shape: BoxShape.circle),
+            child: SizedBox.square(
+              dimension: 56,
+              child: Icon(Icons.music_note_rounded, color: cc.textMuted),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.playerEmptyTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.bodyLarge?.copyWith(color: cc.textMuted),
+                ),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.bodyMedium),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -287,7 +334,12 @@ class _Center extends ConsumerWidget {
               PlayCircleButton(
                 size: 36,
                 playing: playing,
-                onPressed: hasTrack ? ctrl.togglePlayPause : null,
+                tooltip: hasTrack
+                    ? null
+                    : (ref.watch(lastQueueProvider).value == null
+                          ? l.playerShufflePlusLibrary
+                          : l.playerResumeLastQueue),
+                onPressed: hasTrack ? ctrl.togglePlayPause : () => playWhenEmpty(ref),
               ),
               IconButton(
                 tooltip: l.nextTrack,
