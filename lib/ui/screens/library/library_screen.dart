@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import '../../widgets/cc_sheet.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 
 import '../playlists/export_dialog.dart';
 
@@ -11,28 +14,31 @@ import '../../../data/repositories/library_entries.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
-import '../../../providers/nav_providers.dart';
 import '../../../providers/podcast_providers.dart';
 import '../../../providers/review_providers.dart';
+import '../../../data/repositories/smart_search.dart' show SearchIndex;
+import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
-import '../../../providers/smart_playlist_providers.dart';
 import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/artist_avatar.dart';
+import '../../widgets/cc_search_field.dart';
 import '../../widgets/cover_image.dart';
+import 'library_search.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/progress_frame.dart';
+import '../../widgets/skeleton.dart';
 import '../../../providers/player_providers.dart' show currentTrackProvider;
 import '../../widgets/smart_cover.dart';
 import '../devices/devices_sheet.dart';
 import '../playlists/playlist_detail_screen.dart';
 import '../podcast/podcasts_screen.dart';
 import '../radio/radio_screen.dart';
-import '../../../providers/radio_providers.dart' show savedRadiosProvider;
+import '../../../providers/radio_providers.dart' show savedRadiosProvider, searchPrefillProvider;
 import 'album_detail_screen.dart';
 import 'all_tracks_screen.dart';
 import 'artist_screen.dart';
@@ -68,6 +74,50 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryKind? _kind;
+  bool _searching = false;
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _warm?.close();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  Timer? _debounce;
+  String _text = '';
+  ProviderSubscription<AsyncValue<SearchIndex>>? _warm;
+
+  void _setSearching(bool v) {
+    _debounce?.cancel();
+    _text = '';
+    if (!v) _searchController.clear();
+    // Index built on opening, before the first key (as Cerca does).
+    _warm?.close();
+    _warm = v ? ref.listenManual(searchIndexProvider, (_, _) {}) : null;
+    setState(() => _searching = v);
+  }
+
+  void _onSearchChanged(String s) {
+    _debounce?.cancel();
+    final v = s.trim();
+    if (v == _text) return;
+    _debounce = Timer(CcTiming.debounce, () {
+      if (mounted) setState(() => _text = v);
+    });
+  }
+
+  /// Back and Esc first leave a selection made in the results.
+  void _back() {
+    if (ref.read(selectionProvider(SelectionKey.search.key)).active) {
+      ref.read(selectionProvider(SelectionKey.search.key).notifier).clear();
+    } else {
+      _setSearching(false);
+    }
+  }
 
   void _setSettings({LibrarySort? sort, bool? grid}) => ref
       .read(settingsProvider.notifier)
@@ -96,13 +146,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       orElse: () => LibrarySort.recent,
     );
     final playlists = ref.watch(playlistsProvider);
-    final smart = ref.watch(smartPlaylistsProvider).value ?? const [];
     final albums = ref.watch(albumsProvider);
     final artists = ref.watch(artistsProvider);
+    final built = ref.watch(libraryEntriesProvider((_kind, sort)));
     final folders = ref.watch(foldersProvider).value;
-    final trackCount = ref.watch(
-      tracksProvider(false).select((t) => t.value?.length ?? 0),
-    );
+    final trackCount = ref.watch(trackCountProvider).value ?? 0;
     final denied = ref.watch(permissionDeniedProvider);
 
     Widget body;
@@ -129,7 +177,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
       );
     } else if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
-      body = const Center(child: CircularProgressIndicator());
+      // Fixed rows may not fit a short pane: clip instead of overflowing.
+      body = const SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Skeleton.list(),
+      );
     } else if (trackCount == 0 && folders != null && folders.isEmpty) {
       body = EmptyState(
         icon: Icons.library_music,
@@ -140,14 +192,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         onSecondary: () => addDefaultFolderAndScan(ref),
       );
     } else {
-      final entries = buildLibraryEntries(
-        playlists: playlists.value!,
-        albums: albums.value!,
-        artists: artists.value!,
-        smart: smart,
-        kind: _kind,
-        sort: sort,
-      );
+      final entries = built.value!;
       count = switch (_kind) {
         null => l.libraryItemsCount(entries.length),
         LibraryKind.playlist => l.playlistsCount(entries.length),
@@ -156,8 +201,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       };
       final shortcuts = _kind != null ? null : const _LibraryShortcuts();
       body = settings.libraryGrid
-          ? _LibraryGrid(header: shortcuts, entries: entries, onOpen: _open)
+          ? _LibraryGrid(
+              key: PageStorageKey<LibraryKind?>(_kind),
+              header: shortcuts,
+              entries: entries,
+              onOpen: _open,
+            )
           : _LibraryList(
+              key: PageStorageKey<LibraryKind?>(_kind),
               header: shortcuts,
               entries: entries,
               onOpen: _open,
@@ -165,32 +216,106 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Column(
-        children: [
-          const _LibraryHeader(),
-          const ScanStatus(),
-          _KindTabs(
-            selected: _kind,
-            onChanged: (k) => setState(() => _kind = k),
+    final text = _text;
+    Widget slide(Widget c, Animation<double> a) => FadeTransition(
+      opacity: a,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(-0.08, 0), end: Offset.zero).animate(a),
+        child: c,
+      ),
+    );
+    return PopScope(
+      canPop: !_searching,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
+      child: CallbackShortcuts(
+        bindings: {
+          if (_searching)
+            const SingleActivator(LogicalKeyboardKey.escape): _back,
+        },
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
+            children: [
+              AnimatedSwitcher(
+                duration: ccDuration(context, CcMotion.sheet),
+                transitionBuilder: slide,
+                child: _searching
+                    ? Padding(
+                        key: const ValueKey('library-search-bar'),
+                        padding: const EdgeInsets.fromLTRB(
+                          CcDims.margin,
+                          CcDims.gap12,
+                          CcDims.margin,
+                          CcDims.gap8,
+                        ),
+                        child: CcSearchField(
+                          controller: _searchController,
+                          focusNode: _searchFocus,
+                          hint: l.librarySearchHint,
+                          autofocus: true,
+                          onChanged: _onSearchChanged,
+                          onCloseEmpty: () => _setSearching(false),
+                        ),
+                      )
+                    : _LibraryHeader(
+                        key: const ValueKey('library-header'),
+                        onSearch: () => _setSearching(true),
+                      ),
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: ccDuration(context, CcMotion.enter),
+                  child: _searching
+                      ? KeyedSubtree(
+                          key: const ValueKey('library-results'),
+                          child: text.isEmpty
+                              ? const SizedBox.shrink()
+                              : LibraryResults(
+                                  query: SearchQuery(text),
+                                  onOnline: () {
+                                    ref
+                                        .read(searchPrefillProvider.notifier)
+                                        .set(text);
+                                    _setSearching(false);
+                                    ShellNav.showSearch(context, ref);
+                                  },
+                                ),
+                        )
+                      : Column(
+                          key: const ValueKey('library-content'),
+                          children: [
+                            const ScanStatus(),
+                            _KindTabs(
+                              selected: _kind,
+                              onChanged: (k) => setState(() => _kind = k),
+                            ),
+                            LibraryToolbar(
+                              countLabel: count,
+                              sort: sort,
+                              grid: settings.libraryGrid,
+                              onSort: (s) => _setSettings(sort: s),
+                              onToggleGrid: () =>
+                                  _setSettings(grid: !settings.libraryGrid),
+                            ),
+                            Expanded(child: body),
+                          ],
+                        ),
+                ),
+              ),
+            ],
           ),
-          LibraryToolbar(
-            countLabel: count,
-            sort: sort,
-            grid: settings.libraryGrid,
-            onSort: (s) => _setSettings(sort: s),
-            onToggleGrid: () => _setSettings(grid: !settings.libraryGrid),
-          ),
-          Expanded(child: body),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _LibraryHeader extends ConsumerWidget {
-  const _LibraryHeader();
+  const _LibraryHeader({super.key, required this.onSearch});
+
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -217,8 +342,7 @@ class _LibraryHeader extends ConsumerWidget {
           IconButton(
             tooltip: l.navSearch,
             icon: const Icon(Icons.search_rounded),
-            onPressed: () =>
-                ref.read(navIndexProvider.notifier).set(NavTab.search.index),
+            onPressed: onSearch,
           ),
           NewPlaylistMenu(
             onSmart: () =>
@@ -297,9 +421,7 @@ class _LibraryShortcuts extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final favCount = ref.watch(
-      tracksProvider(true).select((t) => t.value?.length ?? 0),
-    );
+    final favCount = ref.watch(favoriteCountProvider).value ?? 0;
     final tagCount = ref.watch(
       tagsProvider.select((t) => t.value?.length ?? 0),
     );
@@ -318,9 +440,7 @@ class _LibraryShortcuts extends ConsumerWidget {
     final reviewCount = ref.watch(
       reviewCountProvider.select((c) => c.value ?? 0),
     );
-    final trackCount = ref.watch(
-      tracksProvider(false).select((t) => t.value?.length ?? 0),
-    );
+    final trackCount = ref.watch(trackCountProvider).value ?? 0;
     void open(Widget w) => ShellNav.open<void>(context, w);
     return LibraryShortcuts(
       items: [
@@ -448,6 +568,7 @@ class _EntryCover extends ConsumerWidget {
 
 class _LibraryList extends StatelessWidget {
   const _LibraryList({
+    super.key,
     required this.header,
     required this.entries,
     required this.onOpen,
@@ -549,6 +670,7 @@ class _LibraryList extends StatelessWidget {
 
 class _LibraryGrid extends StatelessWidget {
   const _LibraryGrid({
+    super.key,
     required this.header,
     required this.entries,
     required this.onOpen,

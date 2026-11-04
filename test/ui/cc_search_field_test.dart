@@ -12,14 +12,21 @@ Future<(TextEditingController, FocusNode)> _pump(
   final f = FocusNode();
   addTearDown(c.dispose);
   addTearDown(f.dispose);
-  await t.pumpWidget(MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    locale: const Locale('it'),
-    home: Scaffold(
-      body: CcSearchField(controller: c, focusNode: f, hint: 'Cerca', onClear: onClear),
+  await t.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('it'),
+      home: Scaffold(
+        body: CcSearchField(
+          controller: c,
+          focusNode: f,
+          hint: 'Cerca',
+          onClear: onClear,
+        ),
+      ),
     ),
-  ));
+  );
   return (c, f);
 }
 
@@ -35,8 +42,9 @@ void main() {
     expect(f.hasFocus, isTrue);
   });
 
-  testWidgets('the ✕ calls onClear, and a mouse click keeps the focus',
-      (t) async {
+  testWidgets('the ✕ calls onClear, and a mouse click keeps the focus', (
+    t,
+  ) async {
     var cleared = 0;
     final (c, f) = await _pump(t, onClear: () => cleared++);
     f.requestFocus();
@@ -74,5 +82,56 @@ void main() {
     final btn = find.ancestor(of: x, matching: find.byType(IconButton));
     expect(t.widget<IconButton>(btn).onPressed, isNull);
     expect(t.getSize(btn).height, greaterThanOrEqualTo(48));
+  });
+
+  testWidgets('without a focusNode it owns one; onChanged and autofocus work', (
+    t,
+  ) async {
+    final c = TextEditingController();
+    addTearDown(c.dispose);
+    String? changed;
+    await t.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('it'),
+        home: Scaffold(
+          body: CcSearchField(
+            controller: c,
+            hint: 'Cerca',
+            autofocus: true,
+            onChanged: (v) => changed = v,
+          ),
+        ),
+      ),
+    );
+    await t.pump();
+    expect(find.byTooltip('Chiudi tastiera'), findsOneWidget); // focused
+    await t.enterText(find.byType(TextField), 'abc');
+    expect(changed, 'abc');
+  });
+
+  testWidgets('the default ✕ also reports an empty onChanged', (t) async {
+    final c = TextEditingController(text: 'abc');
+    addTearDown(c.dispose);
+    String? changed;
+    await t.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('it'),
+        home: Scaffold(
+          body: CcSearchField(
+            controller: c,
+            hint: 'Cerca',
+            onChanged: (v) => changed = v,
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.byTooltip('Cancella ricerca'));
+    await t.pump();
+    expect(c.text, isEmpty);
+    expect(changed, '');
   });
 }

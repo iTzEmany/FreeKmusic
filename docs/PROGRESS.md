@@ -1248,10 +1248,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 78.4 Controlli di fase
 
 ## Fase 79 — Libreria e Tutti i brani (`fase-79-libreria-e-tutti-i-brani.md`)
-- [ ] 79.1 Cambio scheda senza lag
-- [ ] 79.2 Ricerca nella Libreria
-- [ ] 79.3 Tutti i brani
-- [ ] 79.4 Controlli di fase
+- [x] 79.1 Cambio scheda senza lag
+- [x] 79.2 Ricerca nella Libreria
+- [x] 79.3 Tutti i brani
+- [x] 79.4 Controlli di fase
 
 ## Fase 80 — Cerca solo online e generi misti (`fase-80-cerca-online-e-generi.md`)
 - [ ] 80.1 Cerca solo online

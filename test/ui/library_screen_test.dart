@@ -1,26 +1,41 @@
+import 'dart:async';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
+import 'package:codecore/ui/screens/library/library_search.dart' show LibraryResults;
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
+import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
+import 'package:codecore/ui/widgets/cc_search_field.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:codecore/providers/selection_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../support/app_harness.dart';
+import '../support/search_input.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    () => Future<void>.delayed(const Duration(milliseconds: 100)),
+  );
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
-  Future<Harness> open(WidgetTester tester, {double width = 400, int tracks = 4}) async {
+  Future<Harness> open(
+    WidgetTester tester, {
+    double width = 400,
+    int tracks = 4,
+  }) async {
     tester.view.physicalSize = Size(width, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -55,6 +70,157 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('first load shows skeleton rows, not a spinner', (t) async {
+    final h = await open(t);
+    await t.pumpWidget(const SizedBox());
+    await h.pump(
+      t,
+      const LibraryScreen(),
+      extraOverrides: [
+        playlistsProvider.overrideWith(
+          (_) => Completer<List<PlaylistSummary>>().future.asStream(),
+        ),
+      ],
+    );
+    expect(find.byType(Skeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('the lens opens a focused search with grouped results; Back closes it', (t) async {
+    final h = await open(t, width: 900);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsOneWidget);
+    expect(t.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
+    expect(find.text('Libreria'), findsNothing);
+    await t.enterText(find.byType(TextField), 'Song');
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+    expect(find.text('Brani'), findsOneWidget);
+    expect(find.text('Song 0'), findsOneWidget);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsNothing);
+    expect(find.text('Libreria'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('Back first clears a selection in the results, then closes', (t) async {
+    final h = await open(t, width: 900);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    await t.enterText(find.byType(TextField), 'Song');
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+    final c = ProviderScope.containerOf(t.element(find.byType(LibraryScreen)));
+    final key = SelectionKey.search.key;
+    c.listen(selectionProvider(key), (_, _) {});
+    c.read(selectionProvider(key).notifier).toggle(1);
+    await t.pump();
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(c.read(selectionProvider(key)).active, isFalse);
+    expect(find.byType(CcSearchField), findsOneWidget);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('opening and closing the search keeps the scroll', (t) async {
+    final h = await open(t, width: 900);
+    t.view.physicalSize = const Size(900, 300);
+    await _settle(t);
+    double offset() => t.state<ScrollableState>(find.byType(Scrollable).first).position.pixels;
+    await t.drag(find.byType(Scrollable).first, const Offset(0, -150));
+    await _settle(t);
+    final before = offset();
+    expect(before, greaterThan(0));
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(offset(), before);
+    await h.dispose(t);
+  });
+
+  Future<void> openSearch(WidgetTester t) async {
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+  }
+
+  Future<void> type(WidgetTester t, String text, {bool wait = true}) async {
+    await t.enterText(find.byType(TextField), text);
+    if (!wait) return;
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+  }
+
+  testWidgets('search trims the text; only spaces show nothing', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, '  Song  ');
+    expect(find.text('Song 0'), findsOneWidget);
+    await type(t, '     ');
+    expect(find.text('Brani'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('typing again inside the debounce searches only the last text', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, 'Song 0', wait: false);
+    await t.pump(const Duration(milliseconds: 100));
+    await type(t, 'Song 1');
+    Finder row(String s) =>
+        find.descendant(of: find.byType(LibraryResults), matching: find.text(s));
+    expect(row('Song 1'), findsOneWidget);
+    expect(row('Song 0'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('closing before the debounce leaves no old text or results', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, 'Song', wait: false);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    await openSearch(t);
+    expect(t.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+    expect(find.text('Brani'), findsNothing);
+    expect(find.text('Song 0'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('Esc closes the search and it reopens empty', (t) async {
+    final h = await open(t, width: 900);
+    await openSearch(t);
+    await type(t, 'Song');
+    await t.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsNothing);
+    await openSearch(t);
+    expect(t.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+    await h.dispose(t);
+  });
+
+  testWidgets('with reduced motion the search opens at once', (t) async {
+    t.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(t.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final h = await open(t, width: 900);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await t.pump();
+    await t.pump();
+    expect(find.byType(CcSearchField), findsOneWidget);
+    expect(find.text('Libreria'), findsNothing);
+    await h.dispose(t);
+  });
+
   testWidgets('sort menu switches to A–Z', (t) async {
     final h = await open(t);
     await t.tap(find.text('Recenti'));
@@ -77,23 +243,26 @@ void main() {
     await h.dispose(t);
   });
 
-  Rect block(WidgetTester t, String label) => t.getRect(find.ancestor(
-      of: find.text(label), matching: find.byType(InkWell)).first);
+  Rect block(WidgetTester t, String label) => t.getRect(
+    find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first,
+  );
 
-  testWidgets('phone: shortcuts are 2 columns, the odd last one is full width',
-      (t) async {
-    final h = await open(t, width: 360);
-    final fav = block(t, 'Preferiti');
-    final all = block(t, 'Tutti i brani');
-    final last = block(t, 'Statistiche');
-    expect(all.top, fav.top);
-    expect(all.left, greaterThan(fav.right));
-    expect(find.byIcon(Icons.favorite_rounded), findsNothing);
-    // 7 blocks here: the seventh spans both columns.
-    expect(last.left, fav.left);
-    expect(last.right, all.right);
-    await h.dispose(t);
-  });
+  testWidgets(
+    'phone: shortcuts are 2 columns, the odd last one is full width',
+    (t) async {
+      final h = await open(t, width: 360);
+      final fav = block(t, 'Preferiti');
+      final all = block(t, 'Tutti i brani');
+      final last = block(t, 'Statistiche');
+      expect(all.top, fav.top);
+      expect(all.left, greaterThan(fav.right));
+      expect(find.byIcon(Icons.favorite_rounded), findsNothing);
+      // 7 blocks here: the seventh spans both columns.
+      expect(last.left, fav.left);
+      expect(last.right, all.right);
+      await h.dispose(t);
+    },
+  );
 
   testWidgets('desktop: all shortcuts on one row', (t) async {
     final h = await open(t, width: 1600);
@@ -104,8 +273,9 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('desktop, German: shortcuts stay on one row without overflow',
-      (t) async {
+  testWidgets('desktop, German: shortcuts stay on one row without overflow', (
+    t,
+  ) async {
     t.view.physicalSize = const Size(1280, 1400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -113,10 +283,13 @@ void main() {
     await h.pump(t, const LibraryScreen(), locale: const Locale('de'));
     await _settle(t);
     final tops = {
-      for (final e in find
-          .descendant(
-              of: find.byType(LibraryShortcuts), matching: find.byType(InkWell))
-          .evaluate())
+      for (final e
+          in find
+              .descendant(
+                of: find.byType(LibraryShortcuts),
+                matching: find.byType(InkWell),
+              )
+              .evaluate())
         t.getRect(find.byWidget(e.widget)).top,
     };
     expect(tops.length, 1);
@@ -124,8 +297,9 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('shortcuts with icons keep the old grid on a wide screen',
-      (t) async {
+  testWidgets('shortcuts with icons keep the old grid on a wide screen', (
+    t,
+  ) async {
     t.view.physicalSize = const Size(1200, 800);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -133,16 +307,20 @@ void main() {
     await h.pump(
       t,
       Scaffold(
-        body: LibraryShortcuts(items: [
-          for (var i = 0; i < 5; i++)
-            LibraryShortcut(label: 'S$i', icon: Icons.star, onTap: () {}),
-        ]),
+        body: LibraryShortcuts(
+          items: [
+            for (var i = 0; i < 5; i++)
+              LibraryShortcut(label: 'S$i', icon: Icons.star, onTap: () {}),
+          ],
+        ),
       ),
     );
     // 4 per row, the fifth wraps to a second row.
     expect(t.getRect(find.text('S3')).top, t.getRect(find.text('S0')).top);
-    expect(t.getRect(find.text('S4')).top,
-        greaterThan(t.getRect(find.text('S0')).top));
+    expect(
+      t.getRect(find.text('S4')).top,
+      greaterThan(t.getRect(find.text('S0')).top),
+    );
     await h.dispose(t);
   });
 
@@ -152,15 +330,17 @@ void main() {
       find.descendant(
         of: find.byType(SegmentedBlocks<LibraryKind?>),
         matching: find.byWidgetPredicate(
-            (w) => w is ListView && w.scrollDirection == Axis.horizontal),
+          (w) => w is ListView && w.scrollDirection == Axis.horizontal,
+        ),
       ),
       findsNothing,
     );
     await h.dispose(t);
   });
 
-  testWidgets('with zero podcasts, radios and tags the three shortcuts show',
-      (t) async {
+  testWidgets('with zero podcasts, radios and tags the three shortcuts show', (
+    t,
+  ) async {
     final h = await open(t);
     expect(find.text('Preferiti'), findsOneWidget);
     expect(find.text('Tutti i brani'), findsOneWidget);
@@ -174,17 +354,21 @@ void main() {
     final h = await open(t, tracks: 0);
     var i = 0;
     for (final album in ['Abba', 'Ägypten', '1999', 'Beta']) {
-      await h.db.into(h.db.tracks).insert(TracksCompanion.insert(
-            path: '/m/x${i++}.mp3',
-            title: 'T$i',
-            albumKey: 'a|$album',
-            format: 'mp3',
-            sizeBytes: 1,
-            mtimeMs: 1,
-            addedAt: i,
-            artist: const Value('Zed'),
-            album: Value(album),
-          ));
+      await h.db
+          .into(h.db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/m/x${i++}.mp3',
+              title: 'T$i',
+              albumKey: 'a|$album',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: i,
+              artist: const Value('Zed'),
+              album: Value(album),
+            ),
+          );
     }
     await _settle(t);
     expect(find.text('A'), findsNothing);
@@ -194,87 +378,132 @@ void main() {
     await t.pumpAndSettle();
     await _settle(t);
     // Headers only: covers may also show an initial.
-    Finder header(String x) => find.byWidgetPredicate((w) =>
-        w is Text && w.data == x && w.style?.color == CcColors.notte.accentSoft);
+    Finder header(String x) => find.byWidgetPredicate(
+      (w) =>
+          w is Text &&
+          w.data == x &&
+          w.style?.color == CcColors.notte.accentSoft,
+    );
     for (final x in ['A', 'B', '#', 'Z']) {
       expect(header(x), findsOneWidget, reason: x);
     }
     await h.dispose(t);
   });
 
-  testWidgets('every tab and sort keeps its order, also after Tutto→Playlist→Tutto', (t) async {
-    final h = await open(t, tracks: 0);
-    final rows = [
-      ('Mina', 'Zeta', 5000),
-      ('Zed', 'Alfa', null),
-      ('Bea', 'Beta', null),
-    ];
-    for (final (i, (artist, album, played)) in rows.indexed) {
-      await h.db.into(h.db.tracks).insert(TracksCompanion.insert(
-            path: '/m/o$i.mp3',
-            title: 'T$i',
-            albumKey: '$artist|$album',
-            format: 'mp3',
-            sizeBytes: 1,
-            mtimeMs: 1,
-            addedAt: i,
-            artist: Value(artist),
-            album: Value(album),
-            lastPlayedAt: Value(played),
-          ));
-    }
-    final playlists = PlaylistRepository(h.db);
-    await playlists.create('Playlist B');
-    await playlists.create('Playlist A');
-    await _settle(t);
-
-    List<String> order(List<String> names) {
-      final seen = [
-        for (final n in names)
-          if (find.text(n).evaluate().isNotEmpty) n,
-      ]..sort((a, b) => t.getTopLeft(find.text(a)).dy.compareTo(t.getTopLeft(find.text(b)).dy));
-      return seen;
-    }
-
-    const everything = ['Mina', 'Zeta', 'Alfa', 'Bea', 'Beta', 'Playlist A', 'Playlist B', 'Zed'];
-    // Recent: the played ones first (the artist and the album, same moment, A–Z), then the rest A–Z.
-    const recentAll = ['Mina', 'Zeta', 'Alfa', 'Bea', 'Beta', 'Playlist A', 'Playlist B', 'Zed'];
-    expect(order(everything), recentAll);
-
-    Future<void> tab(String label) async {
-      await t.tap(find.text(label).first);
+  testWidgets(
+    'every tab and sort keeps its order, also after Tutto→Playlist→Tutto',
+    (t) async {
+      final h = await open(t, tracks: 0);
+      final rows = [
+        ('Mina', 'Zeta', 5000),
+        ('Zed', 'Alfa', null),
+        ('Bea', 'Beta', null),
+      ];
+      for (final (i, (artist, album, played)) in rows.indexed) {
+        await h.db
+            .into(h.db.tracks)
+            .insert(
+              TracksCompanion.insert(
+                path: '/m/o$i.mp3',
+                title: 'T$i',
+                albumKey: '$artist|$album',
+                format: 'mp3',
+                sizeBytes: 1,
+                mtimeMs: 1,
+                addedAt: i,
+                artist: Value(artist),
+                album: Value(album),
+                lastPlayedAt: Value(played),
+              ),
+            );
+      }
+      final playlists = PlaylistRepository(h.db);
+      await playlists.create('Playlist B');
+      await playlists.create('Playlist A');
       await _settle(t);
-    }
 
-    await tab('Playlist');
-    expect(order(everything), ['Playlist A', 'Playlist B']);
-    await tab('Album');
-    expect(order(everything), ['Zeta', 'Alfa', 'Beta']);
-    await tab('Artisti');
-    expect(order(everything), ['Mina', 'Bea', 'Zed']);
-    await tab('Tutto');
-    expect(order(everything), recentAll);
+      List<String> order(List<String> names) {
+        final seen =
+            [
+              for (final n in names)
+                if (find.text(n).evaluate().isNotEmpty) n,
+            ]..sort(
+              (a, b) => t
+                  .getTopLeft(find.text(a))
+                  .dy
+                  .compareTo(t.getTopLeft(find.text(b)).dy),
+            );
+        return seen;
+      }
 
-    await t.tap(find.text('Recenti'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('A–Z').last);
-    await t.pumpAndSettle();
-    await _settle(t);
-    const alphaAll = ['Alfa', 'Bea', 'Beta', 'Mina', 'Playlist A', 'Playlist B', 'Zed', 'Zeta'];
-    expect(order(everything), alphaAll);
-    await tab('Playlist');
-    expect(order(everything), ['Playlist A', 'Playlist B']);
-    await tab('Album');
-    expect(order(everything), ['Alfa', 'Beta', 'Zeta']);
-    await tab('Artisti');
-    expect(order(everything), ['Bea', 'Mina', 'Zed']);
-    await tab('Tutto');
-    expect(order(everything), alphaAll);
-    await h.dispose(t);
-  });
+      const everything = [
+        'Mina',
+        'Zeta',
+        'Alfa',
+        'Bea',
+        'Beta',
+        'Playlist A',
+        'Playlist B',
+        'Zed',
+      ];
+      // Recent: the played ones first (the artist and the album, same moment, A–Z), then the rest A–Z.
+      const recentAll = [
+        'Mina',
+        'Zeta',
+        'Alfa',
+        'Bea',
+        'Beta',
+        'Playlist A',
+        'Playlist B',
+        'Zed',
+      ];
+      expect(order(everything), recentAll);
 
-  testWidgets('desktop: content reaches the same right edge as the header',
-      (t) async {
+      Future<void> tab(String label) async {
+        await t.tap(find.text(label).first);
+        await _settle(t);
+      }
+
+      await tab('Playlist');
+      expect(order(everything), ['Playlist A', 'Playlist B']);
+      await tab('Album');
+      expect(order(everything), ['Zeta', 'Alfa', 'Beta']);
+      await tab('Artisti');
+      expect(order(everything), ['Mina', 'Bea', 'Zed']);
+      await tab('Tutto');
+      expect(order(everything), recentAll);
+
+      await t.tap(find.text('Recenti'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('A–Z').last);
+      await t.pumpAndSettle();
+      await _settle(t);
+      const alphaAll = [
+        'Alfa',
+        'Bea',
+        'Beta',
+        'Mina',
+        'Playlist A',
+        'Playlist B',
+        'Zed',
+        'Zeta',
+      ];
+      expect(order(everything), alphaAll);
+      await tab('Playlist');
+      expect(order(everything), ['Playlist A', 'Playlist B']);
+      await tab('Album');
+      expect(order(everything), ['Alfa', 'Beta', 'Zeta']);
+      await tab('Artisti');
+      expect(order(everything), ['Bea', 'Mina', 'Zed']);
+      await tab('Tutto');
+      expect(order(everything), alphaAll);
+      await h.dispose(t);
+    },
+  );
+
+  testWidgets('desktop: content reaches the same right edge as the header', (
+    t,
+  ) async {
     final h = await open(t, width: 1600);
     final r = t.getRect(find.byType(SegmentedBlocks<LibraryKind?>));
     final menu = t.getRect(find.byTooltip('Altre azioni'));

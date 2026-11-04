@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/import_row.dart' show LibraryEntryLite;
 import '../data/db/app_database.dart';
 import '../data/repositories/track_repository.dart';
+import '../core/app_log.dart';
 import 'database_providers.dart';
+import 'player_providers.dart';
 
 /// What the UI does to library tracks: writes that used to be spread over
 /// widgets via the repositories. Streams stay in their own providers.
@@ -67,6 +69,22 @@ class TrackOps {
   // One-shot reads the screens used to do through the repository.
   Future<List<Track>> byIds(List<int> ids) => _repo.getByIds(ids);
   Future<List<Track>> all() => _repo.watchTracks().first;
+  /// Ids of the whole library (what «Riproduci tutta la libreria» plays), D-137.
+  Future<List<int>> libraryIds() async => [for (final t in await all()) t.id];
+
+  /// Plays the whole library, not what a search shows; errors are logged.
+  Future<void> playLibrary() async {
+    try {
+      final tracks = await all();
+      if (tracks.isEmpty) return;
+      await _ref
+          .read(playerControllerProvider)
+          .playAll(tracks, context: const PlayContext(PlayContextKind.library));
+    } on Object catch (e, st) {
+      AppLog.e('play everything failed', e, st);
+    }
+  }
+
   Future<List<Track>> favorites({SortOption sort = SortOption.title}) => _repo.watchTracks(favoritesOnly: true, sort: sort).first;
   Future<List<Track>> ofAlbums(Iterable<String> keys) => _repo.tracksOfAlbums(keys);
   Future<Track?> byPath(String path) => _repo.byPath(path);

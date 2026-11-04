@@ -3222,5 +3222,7 @@
   "closeKeyboard": "Tastatur schließen",
   "loadingContent": "Wird geladen…",
   "statsBarValue": "{when}, {time}",
-  "homeRadioLive": "Live"
+  "homeRadioLive": "Live",
+  "closeSearch": "Suche schließen",
+  "librarySearchHint": "Bibliothek durchsuchen"
 }

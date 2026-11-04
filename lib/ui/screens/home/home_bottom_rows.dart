@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart';
-import '../../../data/repositories/home_sections.dart';
-import '../../../data/repositories/library_queries.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/history_providers.dart';
 import '../../../providers/library_providers.dart';
@@ -32,13 +30,9 @@ class HomeBottomRows extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final albums = ref.watch(albumsProvider).value ?? const <AlbumSummary>[];
     final top = ref.watch(topTracksProvider).value ?? const <Track>[];
     final ctrl = ref.read(playerControllerProvider);
-    final rediscover = rediscoverAlbums(
-      albums,
-      DateTime.now(),
-    ).take(3).toList();
+    final rediscover = ref.watch(rediscoverAlbumsProvider);
     final month = [
       const _MonthBlock(),
       if (kEnableYoutube) const TopArtistsCard(),

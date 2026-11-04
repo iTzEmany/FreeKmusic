@@ -9600,6 +9600,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'In diretta'**
   String get homeRadioLive;
+
+  /// Tooltip of the ✕ of an empty search field in the Library: it closes the search.
+  ///
+  /// In it, this message translates to:
+  /// **'Chiudi la ricerca'**
+  String get closeSearch;
+
+  /// Hint of the Library search field.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca nella libreria'**
+  String get librarySearchHint;
 }
 
 class _AppLocalizationsDelegate

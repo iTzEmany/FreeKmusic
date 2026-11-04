@@ -45,6 +45,15 @@ void main() {
     expect(titles(e), ['Alfa', 'In macchina', 'Mina', 'Notte', 'Zeta']);
   });
 
+  test('alphabetical: digits and symbols first, accents fold', () {
+    final e = buildLibraryEntries(
+        playlists: [list(1, 'Zeta'), list(2, '#1'), list(3, '😀'), list(4, 'Àlfa')],
+        albums: [],
+        artists: [],
+        sort: LibrarySort.alpha);
+    expect(titles(e), ['#1', '😀', 'Àlfa', 'Zeta']);
+  });
+
   test('recent: played first by latest play, then the rest alphabetically',
       () {
     final e = buildLibraryEntries(

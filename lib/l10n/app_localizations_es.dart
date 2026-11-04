@@ -6043,4 +6043,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeRadioLive => 'En directo';
+
+  @override
+  String get closeSearch => 'Cerrar la búsqueda';
+
+  @override
+  String get librarySearchHint => 'Buscar en la biblioteca';
 }

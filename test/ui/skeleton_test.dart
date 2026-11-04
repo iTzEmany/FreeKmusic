@@ -8,16 +8,43 @@ Widget _app({bool reduce = false}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   locale: const Locale('it'),
-  theme: buildThemeFromColors(buildPalette(AppThemeId.notte, CcAccent.viola), false),
+  theme: buildThemeFromColors(
+    buildPalette(AppThemeId.notte, CcAccent.viola),
+    false,
+  ),
   builder: (c, child) => MediaQuery(
     data: MediaQuery.of(c).copyWith(disableAnimations: reduce),
     child: child!,
   ),
-  home: const Scaffold(body: SingleChildScrollView(child: Skeleton.list(rows: 4))),
+  home: const Scaffold(
+    body: SingleChildScrollView(child: Skeleton.list(rows: 4)),
+  ),
 );
 
 void main() {
-  testWidgets('one «Caricamento…» node, blocks excluded from semantics', (tester) async {
+  testWidgets('rowHeight sets the height of the rows', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('it'),
+        theme: buildThemeFromColors(
+          buildPalette(AppThemeId.notte, CcAccent.viola),
+          false,
+        ),
+        home: const Scaffold(
+          body: SingleChildScrollView(
+            child: Skeleton.list(rows: 3, rowHeight: 80),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(Skeleton)).height, 240);
+  });
+
+  testWidgets('one «Caricamento…» node, blocks excluded from semantics', (
+    tester,
+  ) async {
     final h = tester.ensureSemantics();
     await tester.pumpWidget(_app());
     expect(find.bySemanticsLabel('Caricamento…'), findsOneWidget);
@@ -34,12 +61,17 @@ void main() {
 
   double opacity(WidgetTester t) => t
       .widget<FadeTransition>(
-        find.descendant(of: find.byType(Skeleton), matching: find.byType(FadeTransition)),
+        find.descendant(
+          of: find.byType(Skeleton),
+          matching: find.byType(FadeTransition),
+        ),
       )
       .opacity
       .value;
 
-  testWidgets('pulses, then stands still at 0.8 when motion is reduced', (tester) async {
+  testWidgets('pulses, then stands still at 0.8 when motion is reduced', (
+    tester,
+  ) async {
     await tester.pumpWidget(_app());
     expect(opacity(tester), closeTo(0.55, 0.01));
     await tester.pump(const Duration(milliseconds: 1400));
@@ -49,19 +81,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.binding.hasScheduledFrame, isFalse);
     final o = tester.widget<Opacity>(
-      find.descendant(of: find.byType(Skeleton), matching: find.byType(Opacity)),
+      find.descendant(
+        of: find.byType(Skeleton),
+        matching: find.byType(Opacity),
+      ),
     );
     expect(o.opacity, 0.8);
   });
 
-  testWidgets('bars fill a bounded height, gridCell lays out its cells', (tester) async {
-    for (final sk in [const Skeleton.bars(count: 12), const Skeleton.gridCell(count: 4)]) {
-      await tester.pumpWidget(MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: buildThemeFromColors(buildPalette(AppThemeId.notte, CcAccent.viola), false),
-        home: Scaffold(body: SingleChildScrollView(child: SizedBox(height: 200, child: sk))),
-      ));
+  testWidgets('bars fill a bounded height, gridCell lays out its cells', (
+    tester,
+  ) async {
+    for (final sk in [
+      const Skeleton.bars(count: 12),
+      const Skeleton.gridCell(count: 4),
+    ]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: buildThemeFromColors(
+            buildPalette(AppThemeId.notte, CcAccent.viola),
+            false,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: SizedBox(height: 200, child: sk),
+            ),
+          ),
+        ),
+      );
       expect(tester.takeException(), isNull);
       expect(find.byType(Skeleton), findsOneWidget);
     }

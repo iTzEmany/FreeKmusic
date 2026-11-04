@@ -7,33 +7,47 @@ import '../theme/tokens.dart';
 /// (0.55 to 1 in 1.4 s; fixed at 0.8 with reduced motion). One controller per
 /// skeleton, one «Caricamento…» node for TalkBack. No shimmer (D-367).
 class Skeleton extends StatefulWidget {
-  /// 64 dp rows, cover 48.
-  const Skeleton.list({super.key, int rows = 8, this.onCard = false})
-    : _kind = _Kind.list,
-      _n = rows;
+  /// 64 dp rows (or [rowHeight]), cover 48.
+  const Skeleton.list({
+    super.key,
+    int rows = 8,
+    this.onCard = false,
+    this.rowHeight,
+  }) : _kind = _Kind.list,
+       _n = rows;
 
-  /// 72 dp rows, cover 56.
-  const Skeleton.bigRow({super.key, int rows = 5, this.onCard = false})
-    : _kind = _Kind.bigRow,
-      _n = rows;
+  /// 72 dp rows (or [rowHeight]), cover 56.
+  const Skeleton.bigRow({
+    super.key,
+    int rows = 5,
+    this.onCard = false,
+    this.rowHeight,
+  }) : _kind = _Kind.bigRow,
+       _n = rows;
 
   /// Square cells (radius 8) with title and artist below, two per row.
   const Skeleton.gridCell({super.key, int count = 6, this.onCard = false})
     : _kind = _Kind.grid,
+      rowHeight = null,
       _n = count;
 
   /// Text lines (22 dp pitch) for the body of a card.
   const Skeleton.card({super.key, int lines = 5, this.onCard = true})
     : _kind = _Kind.card,
+      rowHeight = null,
       _n = lines;
 
   /// Chart bars; fills the height it is given.
   const Skeleton.bars({super.key, int count = 31, this.onCard = false})
     : _kind = _Kind.bars,
+      rowHeight = null,
       _n = count;
 
   final _Kind _kind;
   final int _n;
+
+  /// Row variants only: the height of the real rows (e.g. `trackRowExtentOf`).
+  final double? rowHeight;
 
   /// Inside a card: blocks in surface3 (mockup), since surface2 would melt
   /// into the card's own surface1/surface2.
@@ -90,9 +104,9 @@ class _SkeletonState extends State<Skeleton>
     final n = widget._n;
     switch (widget._kind) {
       case _Kind.list:
-        return _rows(color, n, 64, 48);
+        return _rows(color, n, widget.rowHeight ?? 64, 48);
       case _Kind.bigRow:
-        return _rows(color, n, 72, 56);
+        return _rows(color, n, widget.rowHeight ?? 72, 56);
       case _Kind.card:
         return Column(
           children: [

@@ -36,9 +36,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
-    final trackCount = ref.watch(
-      tracksProvider(false).select((t) => t.value?.length ?? 0),
-    );
+    final trackCount = ref.watch(trackCountProvider).value ?? 0;
     final folders = ref.watch(foldersProvider).value;
 
     final header = Padding(
