@@ -38,6 +38,16 @@ void main() {
   });
   tearDown(() => db.close());
 
+  test('watchCount leaves out missing and hidden tracks, also for favourites', () async {
+    final repo = TrackRepository(db);
+    final ids = [for (final p in ['/1', '/2', '/3']) (await repo.byPath(p))!.id];
+    await repo.setFavoriteMany(ids, true);
+    await repo.markMissing({'/1'}, true);
+    await repo.setIgnored({ids[1]}, true);
+    expect(await repo.watchCount().first, 3);
+    expect(await repo.watchCount(favoritesOnly: true).first, 1);
+  });
+
   test('same album name, different artists -> two albums', () async {
     final albums = await q.watchAlbums().first;
     expect(albums.where((a) => a.title == 'Greatest Hits').length, 2);

@@ -784,9 +784,12 @@ class TrackRepository {
     return (_db.selectOnly(_db.tracks)
           ..addColumns([c])
           ..where(
-            favoritesOnly
-                ? _db.tracks.kind.equals(0) & _db.tracks.isFavorite.equals(true)
-                : _db.tracks.kind.equals(0),
+            _db.tracks.kind.equals(0) &
+                _db.tracks.missing.equals(false) &
+                _db.tracks.ignored.equals(false) &
+                (favoritesOnly
+                    ? _db.tracks.isFavorite.equals(true)
+                    : const Constant(true)),
           ))
         .watchSingle()
         .map((r) => r.read(c) ?? 0);

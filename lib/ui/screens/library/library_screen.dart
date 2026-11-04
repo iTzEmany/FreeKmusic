@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../widgets/cc_sheet.dart';
 
 import 'package:flutter/material.dart';
@@ -14,6 +16,8 @@ import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/podcast_providers.dart';
 import '../../../providers/review_providers.dart';
+import '../../../data/repositories/smart_search.dart' show SearchIndex;
+import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
@@ -76,14 +80,43 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _warm?.close();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
   }
 
+  Timer? _debounce;
+  String _text = '';
+  ProviderSubscription<AsyncValue<SearchIndex>>? _warm;
+
   void _setSearching(bool v) {
+    _debounce?.cancel();
+    _text = '';
     if (!v) _searchController.clear();
+    // Index built on opening, before the first key (as Cerca does).
+    _warm?.close();
+    _warm = v ? ref.listenManual(searchIndexProvider, (_, _) {}) : null;
     setState(() => _searching = v);
+  }
+
+  void _onSearchChanged(String s) {
+    _debounce?.cancel();
+    final v = s.trim();
+    if (v == _text) return;
+    _debounce = Timer(CcTiming.debounce, () {
+      if (mounted) setState(() => _text = v);
+    });
+  }
+
+  /// Back and Esc first leave a selection made in the results.
+  void _back() {
+    if (ref.read(selectionProvider(SelectionKey.search.key)).active) {
+      ref.read(selectionProvider(SelectionKey.search.key).notifier).clear();
+    } else {
+      _setSearching(false);
+    }
   }
 
   void _setSettings({LibrarySort? sort, bool? grid}) => ref
@@ -168,9 +201,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       };
       final shortcuts = _kind != null ? null : const _LibraryShortcuts();
       body = settings.libraryGrid
-          ? _LibraryGrid(header: shortcuts, entries: entries, onOpen: _open)
+          ? _LibraryGrid(
+              key: PageStorageKey<LibraryKind?>(_kind),
+              header: shortcuts,
+              entries: entries,
+              onOpen: _open,
+            )
           : _LibraryList(
-              key: ValueKey(_kind),
+              key: PageStorageKey<LibraryKind?>(_kind),
               header: shortcuts,
               entries: entries,
               onOpen: _open,
@@ -178,7 +216,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             );
     }
 
-    final text = _searchController.text.trim();
+    final text = _text;
     Widget slide(Widget c, Animation<double> a) => FadeTransition(
       opacity: a,
       child: SlideTransition(
@@ -189,13 +227,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return PopScope(
       canPop: !_searching,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _setSearching(false);
+        if (!didPop) _back();
       },
       child: CallbackShortcuts(
         bindings: {
           if (_searching)
-            const SingleActivator(LogicalKeyboardKey.escape): () =>
-                _setSearching(false),
+            const SingleActivator(LogicalKeyboardKey.escape): _back,
         },
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -218,7 +255,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           focusNode: _searchFocus,
                           hint: l.librarySearchHint,
                           autofocus: true,
-                          onChanged: (_) => setState(() {}),
+                          onChanged: _onSearchChanged,
                           onCloseEmpty: () => _setSearching(false),
                         ),
                       )
@@ -633,6 +670,7 @@ class _LibraryList extends StatelessWidget {
 
 class _LibraryGrid extends StatelessWidget {
   const _LibraryGrid({
+    super.key,
     required this.header,
     required this.entries,
     required this.onOpen,

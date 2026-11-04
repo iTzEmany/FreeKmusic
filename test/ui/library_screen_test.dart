@@ -15,6 +15,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:codecore/providers/selection_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../support/app_harness.dart';
 import '../support/search_input.dart';
 
@@ -91,7 +93,7 @@ void main() {
     expect(t.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
     expect(find.text('Libreria'), findsNothing);
     await t.enterText(find.byType(TextField), 'Song');
-    await t.pump();
+    await t.pump(const Duration(milliseconds: 300));
     await indexReady(t);
     await _settle(t);
     expect(find.text('Brani'), findsOneWidget);
@@ -100,6 +102,46 @@ void main() {
     await _settle(t);
     expect(find.byType(CcSearchField), findsNothing);
     expect(find.text('Libreria'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('Back first clears a selection in the results, then closes', (t) async {
+    final h = await open(t, width: 900);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    await t.enterText(find.byType(TextField), 'Song');
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+    final c = ProviderScope.containerOf(t.element(find.byType(LibraryScreen)));
+    final key = SelectionKey.search.key;
+    c.listen(selectionProvider(key), (_, _) {});
+    c.read(selectionProvider(key).notifier).toggle(1);
+    await t.pump();
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(c.read(selectionProvider(key)).active, isFalse);
+    expect(find.byType(CcSearchField), findsOneWidget);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('opening and closing the search keeps the scroll', (t) async {
+    final h = await open(t, width: 900);
+    t.view.physicalSize = const Size(900, 300);
+    await _settle(t);
+    double offset() => t.state<ScrollableState>(find.byType(Scrollable).first).position.pixels;
+    await t.drag(find.byType(Scrollable).first, const Offset(0, -150));
+    await _settle(t);
+    final before = offset();
+    expect(before, greaterThan(0));
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(offset(), before);
     await h.dispose(t);
   });
 
