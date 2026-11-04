@@ -186,6 +186,19 @@ void main() {
     expect(await PlayerController(empty, null).resumeLastQueue(), isFalse);
   });
 
+  test('resumeLastQueue on radio stations plays them as stations again, in the radio context', () async {
+    PlayContext? ctx;
+    player = PlayerController(handler, null, onContext: (c) => ctx = c);
+    await handler.playStations([
+      const RadioStation(id: 's1', name: 'S1', streamUrl: 'http://x'),
+      const RadioStation(id: 's2', name: 'S2', streamUrl: 'http://y'),
+    ], 1);
+    expect(await player.resumeLastQueue(), isTrue);
+    expect(handler.isRadio, isTrue);
+    expect(handler.currentIndex, 0);
+    expect(ctx?.kind, PlayContextKind.radio);
+  });
+
   test('playMixed from an index starts there', () async {
     final tracks = await db.select(db.tracks).get();
     await player.playMixed([

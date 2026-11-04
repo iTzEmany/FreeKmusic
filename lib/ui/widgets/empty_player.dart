@@ -16,7 +16,9 @@ String songName(Track t) => t.artist == null ? t.title : '${t.title}, ${t.artist
 /// What ▶ does when nothing plays (D-364): the last queue again, else
 /// Shuffle+ of the library.
 Future<void> playWhenEmpty(WidgetRef ref) async {
-  if (!await ref.read(playerControllerProvider).resumeLastQueue()) {
+  // Decided on what the label says (lastQueueProvider), not on the raw queue.
+  final last = await ref.read(lastQueueProvider.future);
+  if (last == null || !await ref.read(playerControllerProvider).resumeLastQueue()) {
     await ref.read(trackOpsProvider).playLibraryPlus();
   }
 }

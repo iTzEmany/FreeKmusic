@@ -64,6 +64,23 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('mini player: a queue whose song is gone is no last queue, ▶ does what its label says', (t) async {
+    final h = await Harness.create(t, tracks: 3);
+    await t.runAsync(() async {
+      final rows = await h.db.select(h.db.tracks).get();
+      await h.handler.playQueue([rows.first.id], 0);
+      await h.handler.skipToNext();
+      await (h.db.delete(h.db.tracks)..where((r) => r.id.equals(rows.first.id))).go();
+    });
+    await h.pump(t, const Scaffold(body: Align(alignment: Alignment.bottomCenter, child: MiniPlayer())));
+    await _settle(t);
+    expect(find.text('Scegli un brano per iniziare'), findsOneWidget);
+    await _tapTooltip(t, 'Shuffle+ della libreria');
+    expect(h.handler.queueIds, hasLength(2));
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
   testWidgets('open player: three tiles; a live title; each tile starts something', (t) async {
     final sem = t.ensureSemantics();
     final h = await Harness.create(t, tracks: 3);

@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/play_queue.dart';
@@ -134,5 +137,25 @@ void main() {
     expect(plus, isTrue);
     await ctl.cycleShuffle();
     expect(handler.shuffleEnabled, isFalse);
+  });
+
+  test('the radio context blocks the radio queue, not a list of its own', () async {
+    final c = ProviderContainer(overrides: [
+      audioHandlerProvider.overrideWithValue(handler),
+      trackRepositoryProvider.overrideWithValue(TrackRepository(db)),
+    ]);
+    addTearDown(c.dispose);
+    c.read(playContextProvider.notifier).set(const PlayContext(PlayContextKind.radio));
+    final ref = c.read(_refProvider);
+    expect(await plusAllowedNow(ref), ShufflePlusBlock.radio);
+    expect(await plusAllowedNow(ref, ids: const []), isNull);
+  });
+
+  test('a replayed suggestion is logged once', () async {
+    final log = SuggestionLog(file: () async => File('${Directory.systemTemp.path}/sl_unused.json'));
+    final r = YtResult(id: 'v', title: 'T', channel: 'C', duration: null);
+    logSuggestion(log, r, 'Seed');
+    logSuggestion(log, r, 'Seed');
+    expect(log.length, 1);
   });
 }

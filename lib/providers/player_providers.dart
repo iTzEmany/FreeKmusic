@@ -21,6 +21,7 @@ import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
 import '../services/shuffle_plus/plus_allowed.dart';
+import '../services/shuffle_plus/suggestion_log.dart' show SuggestionLog;
 import 'shuffle_plus_providers.dart' show suggestionLogProvider;
 
 /// Overridden in `main` once the handler has been created (and, on Android,
@@ -215,7 +216,7 @@ class PlayerController {
   /// «Shuffle+ della libreria»: [ids] from a random one, shuffle on and
   /// Shuffle+ with it where the list allows it (D-137).
   Future<void> playShufflePlus(List<int> ids, {PlayContext? context}) async {
-    if (ids.isEmpty) return;
+    if (ids.isEmpty || inJam) return;
     final block = await plusBlock?.call(ids);
     await _start(ids, _random.nextInt(ids.length), context, plus: block == null, shuffle: true);
   }
@@ -225,7 +226,13 @@ class PlayerController {
   Future<bool> resumeLastQueue() async {
     final ids = List.of(_handler.queueIds);
     if (ids.isEmpty) return false;
-    await _start(ids, 0, _context);
+    if (inJam) return true; // the Jam queue is shared (D-89)
+    final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
+    if (stations.every((s) => s != null)) {
+      await playStations([for (final s in stations) s!], 0);
+    } else {
+      await _start(ids, 0, _context);
+    }
     return true;
   }
 
@@ -237,7 +244,7 @@ class PlayerController {
     PlayContext? context,
   }) async {
     if (stations.isEmpty) return;
-    final ctx = context ?? const PlayContext(PlayContextKind.radio);
+    final ctx = _context = context ?? const PlayContext(PlayContextKind.radio);
     onContext?.call(ctx);
     _handler.setPlayContext(null, null);
     _requestNotificationPermissionOnce();
@@ -424,13 +431,26 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
     return plusAllowed(
       queueIds: ids ?? h.queueIds,
       jam: ref.read(jamProvider).active,
-      radio: ref.read(playContextProvider)?.kind == PlayContextKind.radio,
+      // A list of its own is not the radio queue, whatever the context says.
+      radio: ids == null && ref.read(playContextProvider)?.kind == PlayContextKind.radio,
       localCount: local.where((t) => !t.missing && t.kind == 0).length,
     );
   } on Object catch (e, st) {
     AppLog.w('shuffle+ allowed check failed', e, st);
     return null;
   }
+}
+
+/// A song queued as a suggestion goes in the log once: a replay of the list
+/// must not crowd out the 30-day memory.
+void logSuggestion(SuggestionLog log, YtResult r, String seedTitle) {
+  if (log.recentlySuggested(r.id)) return;
+  log.add(
+    videoId: r.id,
+    title: r.title,
+    artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
+    seedTitle: seedTitle,
+  );
 }
 
 final playerControllerProvider = Provider<PlayerController>(
@@ -447,12 +467,7 @@ final playerControllerProvider = Provider<PlayerController>(
     jamQueueFullNow: () => ref.read(jamProvider.notifier).queueFull,
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
-    onSuggested: (r, seed) => ref.read(suggestionLogProvider).add(
-      videoId: r.id,
-      title: r.title,
-      artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
-      seedTitle: seed,
-    ),
+    onSuggested: (r, seed) => logSuggestion(ref.read(suggestionLogProvider), r, seed),
     libraryIdOf: (r) async {
       final path = (await ref.read(downloadIndexProvider.future))
           .pathFor(r.id, source: r.source);

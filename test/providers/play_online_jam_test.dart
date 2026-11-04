@@ -143,6 +143,13 @@ void main() {
     expect(handler.queueIds, ids, reason: 'the local queue is untouched');
   });
 
+  test('in a Jam Shuffle+ of a list and resuming the last queue leave the local queue alone', () async {
+    await player.playShufflePlus(ids);
+    expect(await player.resumeLastQueue(), isTrue);
+    expect(handler.queueIds, ids);
+    expect(handler.shuffleEnabled, isFalse);
+  });
+
   test('without a Jam the same calls stay local', () async {
     jam = false;
     player.addToQueue(ids[0]);
