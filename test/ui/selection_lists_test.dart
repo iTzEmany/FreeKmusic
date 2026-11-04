@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
-import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
+import 'package:codecore/data/repositories/track_repository.dart'
+    show SortOption;
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/providers/selection_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
@@ -16,9 +17,7 @@ import 'package:codecore/ui/screens/library/favorites_screen.dart';
 import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
-import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
-import 'package:codecore/ui/widgets/shuffle_button.dart';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -37,13 +36,16 @@ void _phone(WidgetTester tester) {
 }
 
 Future<void> _settle(WidgetTester tester) async {
-  await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 120)));
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 120)),
+  );
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 300));
 }
 
 Selection _sel(WidgetTester tester, Type page, String key) =>
-    ProviderScope.containerOf(tester.element(find.byType(page))).read(selectionProvider(key));
+    ProviderScope.containerOf(tester.element(find.byType(page)))
+        .read(selectionProvider(key));
 
 class _FakeDownloads extends DownloadsNotifier {
   final added = <String>[];
@@ -59,21 +61,32 @@ class _FakeDownloads extends DownloadsNotifier {
 class _FakeYoutube implements YoutubeService {
   @override
   Future<List<YtResult>> search(String query) async => [
-        for (var i = 0; i < 4; i++)
-          YtResult(id: 'v$i', title: 'Clip $i', channel: 'Chan', duration: const Duration(minutes: 3)),
-      ];
+    for (var i = 0; i < 4; i++)
+      YtResult(
+        id: 'v$i',
+        title: 'Clip $i',
+        channel: 'Chan',
+        duration: const Duration(minutes: 3),
+      ),
+  ];
   @override
-  Future<List<YtResult>> searchSongs(String query, {int limit = 5}) async => const [];
+  Future<List<YtResult>> searchSongs(String query, {int limit = 5}) async =>
+      const [];
   @override
-  Future<PlaylistListing> listPlaylist(String url, {int limit = 500}) async => const PlaylistListing.empty();
+  Future<PlaylistListing> listPlaylist(String url, {int limit = 500}) async =>
+      const PlaylistListing.empty();
   @override
-  Future<List<YtResult>> searchAlbums(String query, {int limit = 3}) async => const [];
+  Future<List<YtResult>> searchAlbums(String query, {int limit = 3}) async =>
+      const [];
   @override
   Future<List<YtResult>> albumTracks(String albumLink) async => const [];
   @override
-  Stream<DownloadProgress> download(YtResult r, Directory outDir,
-          {CancelToken? cancel, DownloadOptions options = const DownloadOptions()}) =>
-      const Stream.empty();
+  Stream<DownloadProgress> download(
+    YtResult r,
+    Directory outDir, {
+    CancelToken? cancel,
+    DownloadOptions options = const DownloadOptions(),
+  }) => const Stream.empty();
   @override
   Future<String?> toolVersion() async => null;
   @override
@@ -81,42 +94,56 @@ class _FakeYoutube implements YoutubeService {
 }
 
 void main() {
-  testWidgets('«Tutti i brani»: collection header with title, meta and pills', (tester) async {
+  testWidgets('«Tutti i brani»: collection header with title, meta and icons', (
+    tester,
+  ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 4);
     await h.pump(tester, const AllTracksScreen());
     await _settle(tester);
     final title = find.text('Tutti i brani');
     expect(title, findsOneWidget);
-    expect(find.descendant(of: find.byType(AppBar), matching: title), findsNothing);
-    expect(tester.widget<Text>(title).style, Theme.of(tester.element(title)).textTheme.headlineSmall);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: title),
+      findsNothing,
+    );
+    expect(
+      tester.widget<Text>(title).style,
+      Theme.of(tester.element(title)).textTheme.headlineSmall,
+    );
     final meta = find.text('4 brani, 13 minuti');
     expect(meta, findsOneWidget);
     expect(tester.getTopLeft(meta).dx, tester.getTopLeft(title).dx);
-    final wrap = find.ancestor(of: find.byType(PlayPill), matching: find.byType(Wrap));
-    expect(find.descendant(of: wrap.first, matching: find.byType(ShufflePill)), findsOneWidget);
-    expect(tester.getTopLeft(wrap.first).dy, greaterThan(tester.getBottomLeft(meta).dy));
+    expect(find.byTooltip('Riproduci'), findsOneWidget);
+    expect(find.byTooltip('Casuale: spenta'), findsOneWidget);
+    expect(
+      tester.getTopRight(find.byTooltip('Riproduci')).dx,
+      greaterThan(tester.getTopRight(title).dx),
+    );
     await h.dispose(tester);
   });
 
-  testWidgets('«Tutti i brani»: long press picks, the bar replaces the title, Back leaves', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 4);
-    await h.pump(tester, const AllTracksScreen());
-    await _settle(tester);
-    await tester.longPress(find.text('Song 1'));
-    await _settle(tester);
-    expect(find.text('1 selezionato'), findsOneWidget);
-    await tester.tap(find.text('Song 3'));
-    await _settle(tester);
-    expect(find.text('2 selezionati'), findsOneWidget);
+  testWidgets(
+    '«Tutti i brani»: long press picks, the bar replaces the title, Back leaves',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 4);
+      await h.pump(tester, const AllTracksScreen());
+      await _settle(tester);
+      await tester.longPress(find.text('Song 1'));
+      await _settle(tester);
+      expect(find.text('1 selezionato'), findsOneWidget);
+      await tester.tap(find.text('Song 3'));
+      await _settle(tester);
+      expect(find.text('2 selezionati'), findsOneWidget);
 
-    await tester.binding.handlePopRoute();
-    await _settle(tester);
-    expect(find.text('1 selezionato'), findsNothing);
-    expect(_sel(tester, AllTracksScreen, 'all').active, isFalse);
-    await h.dispose(tester);
-  });
+      await tester.binding.handlePopRoute();
+      await _settle(tester);
+      expect(find.text('1 selezionato'), findsNothing);
+      expect(_sel(tester, AllTracksScreen, 'all').active, isFalse);
+      await h.dispose(tester);
+    },
+  );
 
   testWidgets('all tracks sort is a block row', (tester) async {
     _phone(tester);
@@ -133,22 +160,27 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('searching text that hides a picked track drops it from the selection', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 4);
-    await h.pump(tester, const AllTracksScreen());
-    await _settle(tester);
-    await tester.longPress(find.text('Song 1'));
-    await tester.tap(find.text('Song 2'));
-    await _settle(tester);
-    expect(_sel(tester, AllTracksScreen, 'all').count, 2);
-    await tester.enterText(find.byType(TextField), 'Song 2');
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 400)));
-    await _settle(tester);
-    await _settle(tester);
-    expect(_sel(tester, AllTracksScreen, 'all').count, 1);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'searching text that hides a picked track drops it from the selection',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 4);
+      await h.pump(tester, const AllTracksScreen());
+      await _settle(tester);
+      await tester.longPress(find.text('Song 1'));
+      await tester.tap(find.text('Song 2'));
+      await _settle(tester);
+      expect(_sel(tester, AllTracksScreen, 'all').count, 2);
+      await tester.enterText(find.byType(TextField), 'Song 2');
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 400)),
+      );
+      await _settle(tester);
+      await _settle(tester);
+      expect(_sel(tester, AllTracksScreen, 'all').count, 1);
+      await h.dispose(tester);
+    },
+  );
 
   testWidgets('favourites: the same long press and bar', (tester) async {
     _phone(tester);
@@ -156,8 +188,9 @@ void main() {
     final all = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
     await tester.runAsync(() async {
       for (final t in all) {
-        await (h.db.update(h.db.tracks)..where((r) => r.id.equals(t.id)))
-            .write(TracksCompanion(isFavorite: const Value(true)));
+        await (h.db.update(h.db.tracks)..where((r) => r.id.equals(t.id))).write(
+          TracksCompanion(isFavorite: const Value(true)),
+        );
       }
     });
     await h.pump(tester, const FavoritesScreen());
@@ -165,23 +198,34 @@ void main() {
     await tester.longPress(find.text('Song 0'));
     await _settle(tester);
     expect(find.text('1 selezionato'), findsOneWidget);
-    expect(find.byTooltip('Togli dai preferiti'), findsOneWidget, reason: 'all favourites: the action removes');
+    expect(
+      find.byTooltip('Togli dai preferiti'),
+      findsOneWidget,
+      reason: 'all favourites: the action removes',
+    );
     await h.dispose(tester);
   });
 
-  testWidgets('album: a long press on a row of the disc list starts a selection', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 4);
-    final albums = (await tester.runAsync(() => LibraryQueries(h.db).watchAlbums().first))!;
-    await h.pump(tester, AlbumDetailScreen(album: albums.first));
-    await _settle(tester);
-    await tester.longPress(find.textContaining('Song').first);
-    await _settle(tester);
-    expect(find.text('1 selezionato'), findsOneWidget);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'album: a long press on a row of the disc list starts a selection',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 4);
+      final albums = (await tester.runAsync(
+        () => LibraryQueries(h.db).watchAlbums().first,
+      ))!;
+      await h.pump(tester, AlbumDetailScreen(album: albums.first));
+      await _settle(tester);
+      await tester.longPress(find.textContaining('Song').first);
+      await _settle(tester);
+      expect(find.text('1 selezionato'), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
 
-  testWidgets('a playlist: picking offers «Rimuovi dalla playlist»', (tester) async {
+  testWidgets('a playlist: picking offers «Rimuovi dalla playlist»', (
+    tester,
+  ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 3);
     final all = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
@@ -204,12 +248,16 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('search results: the tracks section can be picked', (tester) async {
+  testWidgets('search results: the tracks section can be picked', (
+    tester,
+  ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 3);
     await h.pump(tester, const SearchScreen());
     typeSearch(tester, 'Song');
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 400)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 400)),
+    );
     await _settle(tester);
     await _settle(tester);
     await tester.longPress(find.text('Song 1').last);
@@ -218,40 +266,55 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('YouTube results: pick several and download, skipping the ones already on their way', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester);
-    final downloads = _FakeDownloads();
-    final dir = Directory.systemTemp.createTempSync('ytsel');
-    addTearDown(() => dir.deleteSync(recursive: true));
-    final index = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
-    final known = File(p.join(dir.path, 'known.mp3'))..writeAsStringSync('x');
-    await tester.runAsync(() => index.add('v2', known.path)); // «Clip 2» is in the library already
-    await h.pump(
-      tester,
-      Scaffold(body: OnlineResults(query: 'x', submitted: 1)),
-      extraOverrides: [
-        youtubeServiceProvider.overrideWithValue(_FakeYoutube()),
-        ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
-        downloadsProvider.overrideWith(() => downloads),
-        downloadIndexProvider.overrideWith((ref) async => index),
-      ],
-    );
-    await _settle(tester);
-    expect(find.text('Clip 0'), findsOneWidget);
+  testWidgets(
+    'YouTube results: pick several and download, skipping the ones already on their way',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester);
+      final downloads = _FakeDownloads();
+      final dir = Directory.systemTemp.createTempSync('ytsel');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final index = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
+      final known = File(p.join(dir.path, 'known.mp3'))..writeAsStringSync('x');
+      await tester.runAsync(
+        () => index.add('v2', known.path),
+      ); // «Clip 2» is in the library already
+      await h.pump(
+        tester,
+        Scaffold(body: OnlineResults(query: 'x', submitted: 1)),
+        extraOverrides: [
+          youtubeServiceProvider.overrideWithValue(_FakeYoutube()),
+          ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+          downloadsProvider.overrideWith(() => downloads),
+          downloadIndexProvider.overrideWith((ref) async => index),
+        ],
+      );
+      await _settle(tester);
+      expect(find.text('Clip 0'), findsOneWidget);
 
-    await tester.longPress(find.text('Clip 0'));
-    await _settle(tester);
-    expect(find.text('1 selezionato'), findsOneWidget);
-    await tester.tap(find.text('Clip 2'));
-    await tester.tap(find.text('Clip 3'));
-    await _settle(tester);
-    expect(find.text('3 selezionati'), findsOneWidget);
-    await tester.tap(find.byTooltip('Scarica').first);
-    await _settle(tester);
-    expect(downloads.added, ['v0', 'v3'], reason: 'v2 is already in the library');
-    expect(find.text('2 download avviati, 1 già in libreria o in corso'), findsOneWidget);
-    expect(find.text('3 selezionati'), findsNothing, reason: 'the selection ended');
-    await h.dispose(tester);
-  });
+      await tester.longPress(find.text('Clip 0'));
+      await _settle(tester);
+      expect(find.text('1 selezionato'), findsOneWidget);
+      await tester.tap(find.text('Clip 2'));
+      await tester.tap(find.text('Clip 3'));
+      await _settle(tester);
+      expect(find.text('3 selezionati'), findsOneWidget);
+      await tester.tap(find.byTooltip('Scarica').first);
+      await _settle(tester);
+      expect(downloads.added, [
+        'v0',
+        'v3',
+      ], reason: 'v2 is already in the library');
+      expect(
+        find.text('2 download avviati, 1 già in libreria o in corso'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('3 selezionati'),
+        findsNothing,
+        reason: 'the selection ended',
+      );
+      await h.dispose(tester);
+    },
+  );
 }

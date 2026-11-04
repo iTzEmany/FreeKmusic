@@ -14,9 +14,9 @@ import '../../theme/tokens.dart';
 import '../../../data/db/app_database.dart';
 import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/play_buttons.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
@@ -25,6 +25,7 @@ import 'scan_status.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/async_body.dart';
+import '../../widgets/cc_search_field.dart';
 
 String _sortLabel(BuildContext context, SortOption o) {
   final l = context.l10n;
@@ -58,67 +59,81 @@ class _AllTracksHeader extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final cc = context.cc;
     return Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CcDims.margin,
-                CcDims.gap8,
-                CcDims.margin,
-                CcDims.gap12,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap8,
+        CcDims.margin,
+        CcDims.gap12,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.allTracks,
+                  style: wide ? theme.displaySmall : theme.headlineSmall,
+                ),
+                // No «0 brani» while loading or on error.
+                if (loaded) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    l.allTracks,
-                    style: wide ? theme.displaySmall : theme.headlineSmall,
-                  ),
-                  // No «0 brani» while loading or on error.
-                  if (loaded) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      l.tracksAndDuration(
-                        l.tracksCount(shown.length),
-                        durationWords(
-                          l,
-                          shown.fold<int>(0, (sum, t) => sum + t.durationMs),
-                        ),
+                    l.tracksAndDuration(
+                      l.tracksCount(shown.length),
+                      durationWords(
+                        l,
+                        shown.fold<int>(0, (sum, t) => sum + t.durationMs),
                       ),
-                      style: theme.bodyMedium?.copyWith(color: cc.textMuted),
                     ),
-                  ],
-                  if (shown.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        PlayPill(
-                          onPressed: onPlay,
-                        ),
-                        ShufflePill(ids: [for (final t in shown) t.id]),
-                      ],
-                    ),
-                  ],
+                    style: theme.bodyMedium?.copyWith(color: cc.textMuted),
+                  ),
                 ],
-              ),
-            );
+              ],
+            ),
+          ),
+          if (shown.isNotEmpty) ...[
+            IconButton(
+              tooltip: l.play,
+              onPressed: onPlay,
+              icon: Icon(Icons.play_arrow_rounded, color: cc.accent),
+            ),
+            ShuffleModeButton(
+              size: 24,
+              dot: false,
+              listIds: () async => [for (final t in shown) t.id],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
-/// Every track as a collection: header, Play and Shuffle, search, sort chips.
+/// Every track as a collection: header with Play and Shuffle, search, sort
+/// chips (header and bar hide on scroll down, come back on scroll up).
 class AllTracksScreen extends ConsumerStatefulWidget {
-  const AllTracksScreen({super.key});
+  const AllTracksScreen({super.key, this.initialSort});
+
+  /// Sort applied on open (null: keep the current one).
+  final SortOption? initialSort;
 
   @override
   ConsumerState<AllTracksScreen> createState() => _AllTracksScreenState();
 }
 
-class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
+class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
+    with SingleTickerProviderStateMixin {
   static final _selectionKey = SelectionKey.all.key;
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   Timer? _debounce;
   late final TrackQueryNotifier _query;
+  // 1 = header, search and chips shown, 0 = hidden.
+  late final AnimationController _bar = AnimationController(
+    vsync: this,
+    value: 1,
+  );
 
   @override
   void initState() {
@@ -126,12 +141,19 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
     // Captured now: `ref` must not be used from dispose().
     _query = ref.read(trackQueryProvider(false).notifier);
     // Starts clean: the Search tab shares this query.
-    Future<void>.microtask(() => _query.update((q) => q.copyWith(text: '')));
+    Future<void>.microtask(
+      () => _query.update(
+        (q) => q.copyWith(text: '', sort: widget.initialSort ?? q.sort),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    // Leaves clean for the Search tab, which shares this query.
+    _query.update((q) => q.copyWith(text: ''));
+    _bar.dispose();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
@@ -143,6 +165,24 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
       CcTiming.debounce,
       () => _query.update((q) => q.copyWith(text: text)),
     );
+  }
+
+  bool _onScroll(ScrollNotification n) {
+    if (n.depth != 0) return false;
+    // Back at the top the header is always shown; otherwise follow the finger.
+    final double? target = n.metrics.extentBefore <= 0
+        ? 1
+        : n is ScrollUpdateNotification
+        ? ((n.scrollDelta ?? 0) > 0 ? 0 : 1)
+        : null;
+    if (target != null && target != _bar.value) {
+      _bar.animateTo(
+        target,
+        duration: ccDuration(context, CcMotion.enter),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    return false;
   }
 
   Widget _list(
@@ -213,64 +253,87 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
         body: Column(
           children: [
             const ScanStatus(),
-            // Outside the list: AlphaScroller offsets are index * itemExtent.
-            _AllTracksHeader(
-              loaded: tracks.hasValue,
-              shown: shown,
-              wide: wide,
-              onPlay: () => ctrl.playAll(shown, context: ctx),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CcDims.margin,
-                CcDims.gap4,
-                CcDims.margin,
-                CcDims.gap8,
-              ),
-              child: TextField(
-                controller: _controller,
-                onChanged: _onChanged,
-                decoration: InputDecoration(
-                  hintText: l.searchHint,
-                  prefixIcon: const Icon(Icons.search_rounded),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CcDims.margin,
-                0,
-                CcDims.margin,
-                CcDims.gap8,
-              ),
-              child: SegmentedBlocks<SortOption>(
-                items: [
-                  for (final (o, icon) in const [
-                    (SortOption.defaultOrder, Icons.format_list_numbered_rounded),
-                    (SortOption.title, Icons.sort_by_alpha_rounded),
-                    (SortOption.artist, Icons.person_rounded),
-                    (SortOption.addedAt, Icons.schedule_rounded),
-                  ])
-                    BlockItem(
-                      value: o,
-                      icon: icon,
-                      label: _sortLabel(context, o),
+            // Not a sliver: AlphaScroller offsets are index * itemExtent.
+            SizeTransition(
+              sizeFactor: _bar,
+              alignment: Alignment.topCenter,
+              child: Column(
+                children: [
+                  _AllTracksHeader(
+                    loaded: tracks.hasValue,
+                    shown: shown,
+                    wide: wide,
+                    onPlay: () => ctrl.playAll(shown, context: ctx),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      CcDims.margin,
+                      CcDims.gap4,
+                      CcDims.margin,
+                      CcDims.gap8,
                     ),
+                    child: CcSearchField(
+                      controller: _controller,
+                      onChanged: _onChanged,
+                      hint: l.searchHint,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      CcDims.margin,
+                      0,
+                      CcDims.margin,
+                      CcDims.gap8,
+                    ),
+                    child: SegmentedBlocks<SortOption>(
+                      items: [
+                        for (final (o, icon) in const [
+                          (
+                            SortOption.defaultOrder,
+                            Icons.format_list_numbered_rounded,
+                          ),
+                          (SortOption.title, Icons.sort_by_alpha_rounded),
+                          (SortOption.artist, Icons.person_rounded),
+                          (SortOption.addedAt, Icons.schedule_rounded),
+                        ])
+                          BlockItem(
+                            value: o,
+                            icon: icon,
+                            label: _sortLabel(context, o),
+                          ),
+                      ],
+                      selected: query.sort,
+                      onChanged: (o) =>
+                          _query.update((q) => q.copyWith(sort: o)),
+                    ),
+                  ),
                 ],
-                selected: query.sort,
-                onChanged: (o) => _query.update((q) => q.copyWith(sort: o)),
               ),
             ),
             Expanded(
-              child: AsyncBody(
-                value: tracks,
-                onRetry: () => ref.invalidate(tracksProvider(false)),
-                isEmpty: (list) => list.isEmpty,
-                empty: EmptyState(
-                  icon: query.text.isEmpty ? Icons.music_off : Icons.search_off,
-                  message: query.text.isEmpty ? l.noTracks : l.noResults,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: AsyncBody(
+                  value: tracks,
+                  loading: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.topCenter,
+                      maxHeight: double.infinity,
+                      child: Skeleton.list(
+                        rowHeight: trackRowExtentOf(context, compact),
+                      ),
+                    ),
+                  ),
+                  onRetry: () => ref.invalidate(tracksProvider(false)),
+                  isEmpty: (list) => list.isEmpty,
+                  empty: EmptyState(
+                    icon: query.text.isEmpty
+                        ? Icons.music_off
+                        : Icons.search_off,
+                    message: query.text.isEmpty ? l.noTracks : l.noResults,
+                  ),
+                  data: (list) => _list(list, query.sort, compact, ctrl, ctx),
                 ),
-                data: (list) => _list(list, query.sort, compact, ctrl, ctx),
               ),
             ),
           ],
