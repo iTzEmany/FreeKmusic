@@ -199,6 +199,47 @@ void main() {
     expect(ctx?.kind, PlayContextKind.radio);
   });
 
+  test('playMixed: a lookup failing half way leaves the queue and the suggestion log alone', () async {
+    final logged = <String>[];
+    var calls = 0;
+    player = PlayerController(handler, null,
+        libraryIdOf: (_) async => ++calls == 2 ? throw StateError('index unreadable') : null,
+        onSuggested: (r, seed) => logged.add(r.id));
+    await player.playMixed([
+      (track: null, online: _r('s0'), seedTitle: 'Song a'),
+      (track: null, online: _r('s1'), seedTitle: 'Song a'),
+    ]);
+    expect(logged, isEmpty);
+    expect(handler.queueIds, ids);
+  });
+
+  test('resumeLastQueue that fails is logged and still answers true', () async {
+    player = PlayerController(handler, null, onContext: (_) => throw StateError('boom'));
+    expect(await player.resumeLastQueue(), isTrue);
+  });
+
+  test('resumeLastQueue keeps the context of the list, and of the stations played last', () async {
+    final seen = <PlayContextKind?>[];
+    player = PlayerController(handler, null, onContext: (c) => seen.add(c?.kind));
+    final tracks = await db.select(db.tracks).get();
+    await player.playFromList(tracks, 0, context: const PlayContext(PlayContextKind.favorites));
+    seen.clear();
+    await player.resumeLastQueue();
+    expect(seen, [PlayContextKind.favorites]);
+
+    // A queue of stations and a song is not a radio queue: it replays as a list,
+    // with the context of the stations started last.
+    await player.playStations(
+        [const RadioStation(id: 's', name: 'S', streamUrl: 'http://x')], 0,
+        context: const PlayContext(PlayContextKind.search));
+    final station = handler.queueIds.single;
+    await handler.playQueue([station, ids[0]], 0);
+    seen.clear();
+    await player.resumeLastQueue();
+    expect(seen, [PlayContextKind.search]);
+    expect(handler.queueIds, [station, ids[0]]);
+  });
+
   test('playMixed from an index starts there', () async {
     final tracks = await db.select(db.tracks).get();
     await player.playMixed([

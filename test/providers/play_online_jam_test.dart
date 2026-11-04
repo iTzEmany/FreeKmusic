@@ -144,8 +144,10 @@ void main() {
   });
 
   test('in a Jam Shuffle+ of a list and resuming the last queue leave the local queue alone', () async {
+    await handler.playQueue(ids, 1);
     await player.playShufflePlus(ids);
     expect(await player.resumeLastQueue(), isTrue);
+    expect(handler.currentIndex, 1, reason: 'not restarted from its first song');
     expect(handler.queueIds, ids);
     expect(handler.shuffleEnabled, isFalse);
   });

@@ -196,9 +196,13 @@ class PlayerController {
       return;
     }
     final ids = <int>[];
+    final suggested = <(YtResult, String)>[];
     try {
       for (final i in items) {
-        ids.add(i.track?.id ?? (await _idOf(i.online!, seedTitle: i.seedTitle))!);
+        final id = i.track?.id ?? (await _idOf(i.online!, seedTitle: i.seedTitle))!;
+        ids.add(id);
+        final seed = i.seedTitle;
+        if (i.track == null && seed != null && isOnlineId(id)) suggested.add((i.online!, seed));
       }
     } on Object catch (e, st) {
       AppLog.w('mixed list not played', e, st);
@@ -211,6 +215,10 @@ class PlayerController {
       plus: items.any((i) => i.online != null) ? false : null,
       shuffle: shuffle,
     );
+    // Logged once the list plays: a failed lookup must not spend the 30-day memory.
+    for (final (r, seed) in suggested) {
+      onSuggested?.call(r, seed);
+    }
   }
 
   /// «Shuffle+ della libreria»: [ids] from a random one, shuffle on and
@@ -222,16 +230,21 @@ class PlayerController {
   }
 
   /// Plays the queue that ended again, from its first song, with its context;
-  /// false when there is none (D-364).
+  /// false when there is none (D-364). A failure is logged and still answers
+  /// true: something was there to play, so the caller must not start another.
   Future<bool> resumeLastQueue() async {
     final ids = List.of(_handler.queueIds);
     if (ids.isEmpty) return false;
     if (inJam) return true; // the Jam queue is shared (D-89)
-    final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
-    if (stations.every((s) => s != null)) {
-      await playStations([for (final s in stations) s!], 0);
-    } else {
-      await _start(ids, 0, _context);
+    try {
+      final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
+      if (stations.every((s) => s != null)) {
+        await playStations([for (final s in stations) s!], 0);
+      } else {
+        await _start(ids, 0, _context);
+      }
+    } on Object catch (e, st) {
+      AppLog.w('last queue not resumed', e, st);
     }
     return true;
   }
@@ -288,9 +301,7 @@ class PlayerController {
   Future<int?> _idOf(YtResult r, {String? seedTitle}) async {
     final lib = await libraryIdOf?.call(r);
     if (lib != null) return lib;
-    final id = _handler.online?.register(r, seedTitle: seedTitle, suggested: seedTitle != null);
-    if (id != null && seedTitle != null) onSuggested?.call(r, seedTitle);
-    return id;
+    return _handler.online?.register(r, seedTitle: seedTitle, suggested: seedTitle != null);
   }
 
   /// Plays [id] alone, with the search context (empty queue, or radio: no stations to insert among).
