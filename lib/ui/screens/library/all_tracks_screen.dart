@@ -163,8 +163,9 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
     Future<void>.microtask(() {
       try {
         query.update((q) => q.copyWith(text: ''));
-      } on Exception catch (e, st) {
-        AppLog.d('query not cleared (scope gone?)', e, st);
+      } on Exception {
+        // Expected when the whole scope closes with the screen (app exit).
+        AppLog.d('query not cleared: the scope is gone');
       }
     });
     super.dispose();
