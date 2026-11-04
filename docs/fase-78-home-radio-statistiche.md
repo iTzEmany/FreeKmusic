@@ -30,4 +30,9 @@
 
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
+## Dalla review della fase 77
+- Radio: il campo di ricerca (`radio_screen.dart:133`, ✕ propria con tooltip `l.close`) passa a `CcSearchField` nella stessa PR della schermata.
+- Radio: `_Loading` di `radio_sections.dart` (~:87/:114/:208) è ancora uno spinner (F-68, nessuna fase lo copriva): diventa `Skeleton`.
+- Statistiche: `Skeleton.bars` e `Skeleton.gridCell` non hanno ancora chiamanti né test; chi li introduce aggiunge un test di rendering per variante (`bars` vuole altezza limitata).
+
 ## Esiti

@@ -1,17 +1,19 @@
-# Handoff — 2026-11-04 (piano del refactor «ui-uso-quotidiano» pronto: fasi 77–83)
+# Handoff — 2026-11-04 (fase 77 chiusa: rete di sicurezza, Skeleton, CcSearchField)
 
 ## Stato
+**Fase 77 chiusa** (PR #101): test di caratterizzazione di Home, Libreria, Tutti i brani, generi e recenti; scenario perf «Libreria Tutto→Playlist→Album→Artisti» con misura di partenza (Mi A3: build p90 6,6 ms, già sotto la soglia di 16 ms; Linux in «Esiti»); `Skeleton` al posto dello spinner di `AsyncBody`; `CcSearchField` con ✕ a tre stati nel dock e in Cerca desktop; Cerca dal dock senza tastiera (provato sul Mi A3). I limiti delle API dei due componenti emersi dalla review sono nelle sezioni «Dalla review della fase 77» dei doc 78, 79, 81, 83.
+
 **Fase 76 chiusa**: i suggeriti online di Shuffle+ entrano in coda appena c'è l'indirizzo (4–6 s invece di ~40 s sul Mi A3, D-352) e si arricchiscono a blocchi di 3 prima di suonare (D-353). Esiti in `fase-76-suggeriti-veloci.md`. **Fase 75 chiusa** (PR #95): testo, curiosità e crediti dei brani in streaming, arricchiti appena il brano corrente è in cache (D-351).
 
 **Refactor «ui-uso-quotidiano» pianificato** (4/11): fasi 77–83 dalle richieste dell'utente sull'uso di tutti i giorni (Home, Cerca solo online, Libreria senza lag e con ricerca, Radio, Statistiche, skeleton, player vuoto, Registro, «Accetta tutte»).
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo fase 77
+/obiettivo fase 78
 ```
 
 ## Da sapere (refactor ui-uso-quotidiano)
-- Analisi, scelte, arrivo, rete e metriche: `docs/refactor/ui-uso-quotidiano/analisi.md`; decisioni D-354…D-373.
+- Analisi, scelte, arrivo, rete e metriche: `docs/refactor/ui-uso-quotidiano/analisi.md`; decisioni D-354…D-375.
 - Mockup approvati (specifica visiva, le note numerate di ogni file contano): `docs/refactor/ui-uso-quotidiano/mockup/indice.html` e gli 11 file accanto (`home`, `cerca`, `libreria-ricerca`, `radio`, `statistiche`, `tutti-i-brani`, `player-vuoto`, `streaming-skeleton`, `registro`, `da-confermare`, `da-revisionare`). `img/phone_library.png` è in realtà la Home.
 - Cambi di comportamento voluti: D-355, D-356, D-358, D-361, D-364, D-370. Intoccabili: D-367 (niente pacchetti nuovi, niente shimmer).
 
@@ -22,7 +24,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - L'app di misura `com.codecore.player.perf` è stata disinstallata dal Mi A3 da `flutter drive` (73.1): `perf_device.py` la reinstalla.
 
 ## Tocca a te
-- **Fase 76 a mano** (APK debug sul Mi A3 è di `52a9d18`, prima dell'ultima correzione): con Casuale+ controlla nel log `shuffle+ enrich of <id> row=` per tutti e 3 i suggeriti di un blocco e il quarto suggerito dopo il blocco.
+- **Fase 76 a mano** (APK debug sul Mi A3 ora è quello della fase 77, con l'ultima correzione della 76): con Casuale+ controlla nel log `shuffle+ enrich of <id> row=` per tutti e 3 i suggeriti di un blocco e il quarto suggerito dopo il blocco.
 - **Fase 75 a mano**: un suggerito online di Shuffle+ in coda (niente arricchimento finché non suona), il segnaposto «in arrivo» a vista, «Proposta di correzione» su un brano della libreria; l'APK debug della fase 75 è installato sul Mi A3.
 - **Mi A3 dopo la prova 74.7**: è rimasto l'amico «emanuele-Aspire-A515-45» in «Jam a distanza» e lo shuffle su Casuale+ (prima era spento); la prova ha spento e poi rimesso la posizione (`location_mode` 3). Toglili a mano se non ti servono.
 - **Resto della 73.2** (fatta il 3/11, esiti in `fase-73-chiusura-jam-distanza.md`): ingresso col QR (serve la fotocamera), Sospendi/Blocca da un ospite remoto, riserva fra broker con due voci nella lista.

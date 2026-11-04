@@ -152,7 +152,7 @@ Stile: quello di `ui-fluida` (D-368), nessun token nuovo salvo lo skeleton. I mo
 | `mockup/da-revisionare.html` | Da revisionare | F-43…F-46 | — |
 
 ### Componenti nuovi (in `lib/ui/widgets/`)
-- **`Skeleton`** (F-51, F-66): varianti lista, riga grande, cella di griglia, scheda, barre; blocchi `surface2` (su `surface1` dentro le schede), pulsazione d'opacità 0,55→1 in 1,4 s, ferma con `disableAnimationsOf`; un solo nodo semantico «Caricamento…». `AsyncBody`/`SliverAsyncBody` lo usano di serie al posto dello spinner. `PageSkeleton` diventa un suo uso.
+- **`Skeleton`** (F-51, F-66): varianti lista, riga grande, cella di griglia, scheda, barre; blocchi `surface2` (`surface3` dentro le schede `surface1`), pulsazione d'opacità 0,55→1 in 1,4 s, ferma con `disableAnimationsOf`; un solo nodo semantico «Caricamento…». `AsyncBody`/`SliverAsyncBody` lo usano di serie al posto dello spinner. `PageSkeleton` diventa un suo uso.
 - **`CcSearchField`** (F-04, F-09, F-16): campo arrotondato con lente e ✕ sempre visibile (testo → svuota; vuoto con focus → chiude la tastiera; vuoto senza focus → attenuata e inerte). Usato da Cerca (dock e desktop), Libreria e Tutti i brani.
 - **Stato «in preparazione» di Shuffle+** (F-53): provider osservabile con il numero di suggeriti in arrivo e il blocco in arricchimento; serve alla coda e alla pagina del genere.
 

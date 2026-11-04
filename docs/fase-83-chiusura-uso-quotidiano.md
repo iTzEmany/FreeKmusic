@@ -17,4 +17,7 @@
 
 **Fatto quando:** misure scritte qui e dentro le soglie, prova a mano fatta.
 
+## Dalla review della fase 77
+- Campi di ricerca fatti a mano rimasti fuori dal perimetro (F-09 ne citava tre): `add_tracks_screen.dart:89`, `share/track_picker_screen.dart:66`, `import_manual_search_sheet.dart:101`, `playlist_source_sheet.dart:150`. Migrare a `CcSearchField` o dichiararli debito.
+
 ## Esiti

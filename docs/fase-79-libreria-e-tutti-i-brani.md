@@ -30,4 +30,8 @@
 
 **Fatto quando:** i controlli sopra sono fatti, la misura è scritta qui e rispetta la soglia.
 
+## Dalla review della fase 77
+- `CcSearchField` prima dell'adozione in Libreria e Tutti i brani: `focusNode` opzionale (nodo interno), `onChanged` (oggi `all_tracks_screen.dart:230` lo usa) e `autofocus` (79.2 vuole la tastiera subito).
+- `Skeleton` a righe: `rowHeight` opzionale (oggi 64/72 fissi) per avere righe alte come `trackRowExtentOf` (dipende da `compact` e dalla scala del testo).
+
 ## Esiti
