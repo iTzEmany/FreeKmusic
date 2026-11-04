@@ -68,14 +68,10 @@ class _CoverFanState extends State<CoverFan>
     final n = albums.length;
     final l = context.l10n;
     final ts = MediaQuery.textScalerOf(context);
-    final titleStyle = Theme.of(context).textTheme.titleSmall!.copyWith(
-      height: 1.3,
-      color: context.cc.text,
-    );
-    final artistStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-      height: 1.3,
-      color: context.cc.textMuted,
-    );
+    final titleStyle = Theme.of(context).textTheme.titleSmall!
+        .copyWith(height: 1.3, color: context.cc.text);
+    final artistStyle = Theme.of(context).textTheme.bodySmall!
+        .copyWith(height: 1.3, color: context.cc.textMuted);
     // Square + gap + 2 title lines + 1 artist line, following the text scale.
     final openHeight =
         _top +
@@ -86,20 +82,18 @@ class _CoverFanState extends State<CoverFan>
         8;
     // Full width: the open row scrolls edge to edge, its margins are list padding.
     return LayoutBuilder(
-        builder: (context, box) {
-          final w = box.maxWidth;
-          final size = math.min((w - 2 * CcDims.margin) * 0.26, _size);
-          // Built once per layout: the animation only moves the Transforms.
-          final covers = [
-            for (var i = 0; i < n; i++) _cover(albums[i], i, size),
-          ];
-          // Back closes an open fan first; the shell's Back then stays on Home.
-          return PopScope(
-            canPop: !_open,
-            onPopInvokedWithResult: (didPop, _) {
-              if (!didPop) _setOpen(false);
-            },
-            child: TapRegion(
+      builder: (context, box) {
+        final w = box.maxWidth;
+        final size = math.min((w - 2 * CcDims.margin) * 0.26, _size);
+        // Built once per layout: the animation only moves the Transforms.
+        final covers = [for (var i = 0; i < n; i++) _cover(albums[i], i, size)];
+        // Back closes an open fan first; the shell's Back then stays on Home.
+        return PopScope(
+          canPop: !_open,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _setOpen(false);
+          },
+          child: TapRegion(
             // A real tap only: a drag (page scroll) that starts outside keeps it open.
             onTapOutside: (e) => _downOutside = e.position,
             onTapUpOutside: (e) {
@@ -147,26 +141,34 @@ class _CoverFanState extends State<CoverFan>
                         builder: (context, _) {
                           final t = CcMotion.curveIn.transform(_c.value);
                           if (_open && _c.isCompleted) {
-                            return _row(all, openHeight, titleStyle, artistStyle);
+                            return _row(
+                              all,
+                              openHeight,
+                              titleStyle,
+                              artistStyle,
+                            );
                           }
                           return DecoratedBox(
                             position: DecorationPosition.foreground,
                             decoration: BoxDecoration(
                               border: _focused && !_open
-                                  ? Border.all(color: context.cc.accent, width: 2)
+                                  ? Border.all(
+                                      color: context.cc.accent,
+                                      width: 2,
+                                    )
                                   : null,
                               borderRadius: BorderRadius.circular(CcDims.rGrid),
                             ),
                             child: SizedBox(
-                            height: _lerp(size + 16, openHeight, t),
-                            width: w,
-                            child: Stack(
-                              alignment: Alignment.topCenter,
-                              children: [
-                                for (var i = 0; i < n; i++)
-                                  _place(covers[i], i, size, w, t),
-                              ],
-                            ),
+                              height: _lerp(size + 16, openHeight, t),
+                              width: w,
+                              child: Stack(
+                                alignment: Alignment.topCenter,
+                                children: [
+                                  for (var i = 0; i < n; i++)
+                                    _place(covers[i], i, size, w, t),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -177,9 +179,9 @@ class _CoverFanState extends State<CoverFan>
               ),
             ),
           ),
-          );
-        },
-      );
+        );
+      },
+    );
   }
 
   /// Open: every album in a scrolling row of fixed squares.
@@ -194,7 +196,12 @@ class _CoverFanState extends State<CoverFan>
       height: height,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, _top, CcDims.margin, 0),
+        padding: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          _top,
+          CcDims.margin,
+          0,
+        ),
         itemCount: albums.length,
         separatorBuilder: (_, _) => const SizedBox(width: _gap),
         itemBuilder: (context, i) {
@@ -245,7 +252,11 @@ class _CoverFanState extends State<CoverFan>
   /// list takes over without a jump.
   Widget _place(Widget cover, int i, double size, double w, double t) {
     final mid = i - (widget.albums.take(_maxCovers).length - 1) / 2;
-    final dx = _lerp(mid * size * 0.67, CcDims.margin + i * (_size + _gap) + _size / 2 - w / 2, t);
+    final dx = _lerp(
+      mid * size * 0.67,
+      CcDims.margin + i * (_size + _gap) + _size / 2 - w / 2,
+      t,
+    );
     // The Transform wraps the padding: only it hit-tests moved children.
     return Transform.translate(
       offset: Offset(dx, 0),

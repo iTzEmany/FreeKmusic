@@ -49,16 +49,16 @@ class HomeBottomRows extends ConsumerWidget {
         HomeBlock(
           children: [
             for (var i = 0; i < math.min(3, top.length); i++)
-            HomeRow(
-              cover: CoverImage(coverKey: top[i].coverKey, size: kHomeCover),
-              title: top[i].title,
-              subtitle: top[i].artist ?? l.unknownArtist,
-              onTap: () => ctrl.playFromList(
-                top,
-                i,
-                context: const PlayContext(PlayContextKind.library),
+              HomeRow(
+                cover: CoverImage(coverKey: top[i].coverKey, size: kHomeCover),
+                title: top[i].title,
+                subtitle: top[i].artist ?? l.unknownArtist,
+                onTap: () => ctrl.playFromList(
+                  top,
+                  i,
+                  context: const PlayContext(PlayContextKind.library),
+                ),
               ),
-            ),
           ],
         ),
       ],
@@ -69,15 +69,15 @@ class HomeBottomRows extends ConsumerWidget {
         HomeBlock(
           children: [
             for (final a in rediscover)
-            HomeRow(
-              cover: CoverImage(coverKey: a.coverKey, size: kHomeCover),
-              title: a.title ?? l.unknownAlbum,
-              subtitle: a.variousArtists
-                  ? l.variousArtists
-                  : (a.artist ?? l.unknownArtist),
-              onTap: () =>
-                  ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
-            ),
+              HomeRow(
+                cover: CoverImage(coverKey: a.coverKey, size: kHomeCover),
+                title: a.title ?? l.unknownAlbum,
+                subtitle: a.variousArtists
+                    ? l.variousArtists
+                    : (a.artist ?? l.unknownArtist),
+                onTap: () =>
+                    ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
+              ),
           ],
         ),
       ],

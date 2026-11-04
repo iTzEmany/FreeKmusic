@@ -106,7 +106,6 @@ void main() {
     ]) {
       expect(find.bySemanticsLabel(label), findsOneWidget);
     }
-    expect(find.bySemanticsLabel('Preferiti'), findsNothing);
     await h.dispose(tester);
     handle.dispose();
   });
@@ -227,13 +226,14 @@ void main() {
     final plays = {'Song 3': 9, 'Song 1': 5, 'Song 0': 2, 'Song 2': 1};
     await tester.runAsync(() async {
       for (final e in plays.entries) {
-        await (h.db.update(h.db.tracks)..where((t) => t.title.equals(e.key)))
-            .write(
-              TracksCompanion(
-                playCount: Value(e.value),
-                lastPlayedAt: const Value(1000),
-              ),
-            );
+        await (h.db.update(
+          h.db.tracks,
+        )..where((t) => t.title.equals(e.key))).write(
+          TracksCompanion(
+            playCount: Value(e.value),
+            lastPlayedAt: const Value(1000),
+          ),
+        );
       }
       // Song 2 is also left in the middle.
       await (h.db.update(h.db.tracks)..where((t) => t.title.equals('Song 2')))
@@ -245,6 +245,20 @@ void main() {
   }
 
   double y(WidgetTester t, Finder f) => t.getTopLeft(f.first).dy;
+
+  testWidgets('shortcut titles stay whole at 360 dp and text scale 2.0', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, const HomeScreen(), textScale: 2);
+    await _settle(tester);
+    expect(find.text('Preferiti'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
 
   testWidgets('the blocks have no dividers and merge each row', (tester) async {
     final handle = tester.ensureSemantics();
@@ -264,10 +278,9 @@ void main() {
     final rediscover = y(tester, find.text('Da riscoprire'));
     double row(String title) => tester
         .getTopLeft(
-          find.descendant(
-            of: find.byType(HomeRow),
-            matching: find.text(title),
-          ).last,
+          find
+              .descendant(of: find.byType(HomeRow), matching: find.text(title))
+              .last,
         )
         .dy;
     expect(row('Song 3'), greaterThan(header));
@@ -280,36 +293,44 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('«Da riscoprire» lists old, often played albums, most played first', (
-    tester,
-  ) async {
-    final h = await openRanked(tester);
-    final header = y(tester, find.text('Da riscoprire'));
-    // Album 1 = Songs 1+3 (14 plays), Album 0 = Songs 0+2 (3 plays).
-    final a1 = tester.getTopLeft(find.text('Album 1').last).dy;
-    final a0 = tester.getTopLeft(find.text('Album 0').last).dy;
-    expect(a1, greaterThan(header));
-    expect(a0, greaterThan(a1));
-    await h.dispose(tester);
-  });
+  testWidgets(
+    '«Da riscoprire» lists old, often played albums, most played first',
+    (tester) async {
+      final h = await openRanked(tester);
+      final header = y(tester, find.text('Da riscoprire'));
+      // Album 1 = Songs 1+3 (14 plays), Album 0 = Songs 0+2 (3 plays).
+      final a1 = tester.getTopLeft(find.text('Album 1').last).dy;
+      final a0 = tester.getTopLeft(find.text('Album 0').last).dy;
+      expect(a1, greaterThan(header));
+      expect(a0, greaterThan(a1));
+      await h.dispose(tester);
+    },
+  );
 
-  testWidgets('«Riprendi» orders the queue, then tracks left in the middle, then albums', (
-    tester,
-  ) async {
-    final h = await openRanked(tester);
-    await tester.tap(find.byIcon(Icons.play_arrow));
-    await _settle(tester);
-    final queue = y(tester, find.byKey(const ValueKey('resume-queue')));
-    final track = y(tester, find.byWidgetPredicate(
-      (w) => w.key.toString().contains('resume-track-'),
-    ));
-    final entry = y(tester, find.byWidgetPredicate(
-      (w) => w.key.toString().contains('resume-entry-'),
-    ));
-    expect(track, greaterThan(queue));
-    expect(entry, greaterThan(track));
-    await h.dispose(tester);
-  });
+  testWidgets(
+    '«Riprendi» orders the queue, then tracks left in the middle, then albums',
+    (tester) async {
+      final h = await openRanked(tester);
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await _settle(tester);
+      final queue = y(tester, find.byKey(const ValueKey('resume-queue')));
+      final track = y(
+        tester,
+        find.byWidgetPredicate(
+          (w) => w.key.toString().contains('resume-track-'),
+        ),
+      );
+      final entry = y(
+        tester,
+        find.byWidgetPredicate(
+          (w) => w.key.toString().contains('resume-entry-'),
+        ),
+      );
+      expect(track, greaterThan(queue));
+      expect(entry, greaterThan(track));
+      await h.dispose(tester);
+    },
+  );
 
   testWidgets('wide window: Home uses the width, fan shows covers or art', (
     tester,

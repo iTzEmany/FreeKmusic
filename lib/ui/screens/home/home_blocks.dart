@@ -205,11 +205,16 @@ class _Shortcut extends StatelessWidget {
                 const SizedBox(height: CcDims.gap4),
                 Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.bodyLarge,
                 ),
-                Text(sub, style: theme.bodyMedium),
+                Text(
+                  sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.bodyMedium,
+                ),
               ],
             ),
           ),
