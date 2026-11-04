@@ -447,6 +447,72 @@ void main() {
     expect(enriched[1].toSet().intersection(enriched[0].toSet()), isEmpty);
   });
 
+  test('pending: 3 coming at the start, fewer as they enter, then the block being enriched, then none', () async {
+    final prepare = Completer<void>();
+    final enrich = Completer<void>();
+    prepareHook = (r) async {
+      prepared.add(r.id);
+      await prepare.future;
+    };
+    enrichHook = (ids) async {
+      enriched.add(ids);
+      await enrich.future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    final seen = <ShufflePlusPending>[];
+    controller.pending.addListener(() => seen.add(controller.pending.value));
+    controller.start();
+    await until(() => prepared.isNotEmpty);
+    expect(controller.pending.value, const ShufflePlusPending(incoming: 3));
+    prepare.complete();
+    await until(() => enriched.isNotEmpty);
+    expect(seen.map((v) => v.incoming).toSet(), containsAll([3, 2, 1, 0]));
+    expect([for (final v in seen) v.incoming], orderedEquals([...seen.map((v) => v.incoming)]..sort((a, b) => b.compareTo(a))),
+        reason: 'it only goes down');
+    final block = host.queueIds.where(isOnlineId).toSet();
+    expect(controller.pending.value, ShufflePlusPending(enriching: block));
+    enrich.complete();
+    await until(() => controller.pending.value.enriching.isEmpty);
+    expect(controller.pending.value, ShufflePlusPending.none);
+    final n = seen.length;
+    controller.poke();
+    await settle();
+    expect(seen, hasLength(n), reason: 'no emission when nothing changed');
+  });
+
+  test('pending: back to none with Shuffle+ off, in a Jam, and when the controller stops', () async {
+    enrichHook = (ids) {
+      enriched.add(ids);
+      return Completer<void>().future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => enriched.isNotEmpty);
+    expect(controller.pending.value.enriching, hasLength(3));
+    cfg = const ShufflePlusConfig();
+    controller.poke();
+    await until(() => controller.pending.value == ShufflePlusPending.none);
+    cfg = const ShufflePlusConfig(enabled: true);
+    controller.poke();
+    await until(() => controller.pending.value.enriching.isNotEmpty);
+    jam = true;
+    controller.poke();
+    await until(() => controller.pending.value == ShufflePlusPending.none);
+    jam = false;
+    controller.poke();
+    await until(() => controller.pending.value.enriching.isNotEmpty);
+    controller.dispose();
+    expect(controller.pending.value, ShufflePlusPending.none);
+  });
+
   test('an enrichment that throws does not stop Shuffle+', () async {
     var calls = 0;
     enrichHook = (ids) async {

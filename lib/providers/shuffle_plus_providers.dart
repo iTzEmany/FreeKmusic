@@ -238,6 +238,26 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
   return controller;
 });
 
+/// Suggestions still on their way and the block being enriched (F-53), for
+/// the screens that show a placeholder row meanwhile.
+final shufflePlusPendingProvider = NotifierProvider<ShufflePlusPendingNotifier, ShufflePlusPending>(
+    ShufflePlusPendingNotifier.new);
+
+class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
+  @override
+  ShufflePlusPending build() {
+    final c = ref.watch(shufflePlusProvider).value;
+    if (c == null) return ShufflePlusPending.none;
+    void sync() {
+      if (ref.mounted) state = c.pending.value;
+    }
+
+    c.pending.addListener(sync);
+    ref.onDispose(() => c.pending.removeListener(sync));
+    return c.pending.value;
+  }
+}
+
 /// Told to the user once (rate limit, too many errors): the shell shows them.
 final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((ref) async* {
   final c = await ref.watch(shufflePlusProvider.future);
