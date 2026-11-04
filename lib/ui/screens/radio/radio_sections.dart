@@ -265,24 +265,31 @@ class GenresSection extends StatelessWidget {
               mainAxisExtent: cell,
               children: [
                 for (final tag in kRadioGenreTags)
-                  Material(
-                    key: ValueKey('genre-$tag'),
-                    color: tag == selected ? cc.accent : cc.surface1,
-                    borderRadius: BorderRadius.circular(CcDims.rCard),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => onSelect(tag),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Center(
-                          child: Text(
-                            radioGenreLabel(l, tag),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: tag == selected ? cc.onAccent : cc.text,
+                  Semantics(
+                    button: true,
+                    selected: tag == selected,
+                    label: radioGenreLabel(l, tag),
+                    onTap: () => onSelect(tag),
+                    excludeSemantics: true,
+                    child: Material(
+                      key: ValueKey('genre-$tag'),
+                      color: tag == selected ? cc.accent : cc.surface1,
+                      borderRadius: BorderRadius.circular(CcDims.rCard),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => onSelect(tag),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Center(
+                            child: Text(
+                              radioGenreLabel(l, tag),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: tag == selected ? cc.onAccent : cc.text,
+                              ),
                             ),
                           ),
                         ),
