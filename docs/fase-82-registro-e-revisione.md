@@ -30,4 +30,7 @@
 
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
+## Dalla review della fase 80
+- Riquadro «Da confermare · N», schede delle proposte e righe del Registro su `CcTile` (`lib/ui/widgets/cc_tile.dart`); caricamento di Da revisionare con `AsyncBody(rowHeight:)`/`RowsLoading` invece di uno skeleton fatto a mano.
+
 ## Esiti
