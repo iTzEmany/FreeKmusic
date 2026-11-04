@@ -191,4 +191,33 @@ void main() {
     await t.pump();
     expect(changed, ['abc']);
   });
+
+  testWidgets('unmounting mid-debounce never calls onQuery', (t) async {
+    final got = <String>[];
+    await _pump(t, onQuery: got.add);
+    await t.enterText(find.byType(TextField), 'abc');
+    await t.pumpWidget(const SizedBox());
+    await t.pump(CcTiming.debounce * 2);
+    expect(got, isEmpty);
+  });
+
+  testWidgets('going back to the last queried text does not repeat onQuery', (
+    t,
+  ) async {
+    final got = <String>[];
+    await _pump(t, onQuery: got.add);
+    await t.enterText(find.byType(TextField), 'ab');
+    await t.pump(CcTiming.debounce);
+    // Inside the debounce: ab -> abc -> ab.
+    await t.enterText(find.byType(TextField), 'abc');
+    await t.enterText(find.byType(TextField), 'ab');
+    await t.pump(CcTiming.debounce);
+    expect(got, ['ab']);
+    // Outside the debounce: abc fires, then ab fires once more, never twice in a row.
+    await t.enterText(find.byType(TextField), 'abc');
+    await t.pump(CcTiming.debounce);
+    await t.enterText(find.byType(TextField), 'ab');
+    await t.pump(CcTiming.debounce);
+    expect(got, ['ab', 'abc', 'ab']);
+  });
 }
