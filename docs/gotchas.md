@@ -56,3 +56,7 @@
 
 - **Riverpod, provider derivato letto dentro `ref.listen`** (fase 75, 3/11): nella callback di `ref.listen(currentTrackProvider, …)` un `ref.read` di un provider che dipende da uno StreamProvider (`currentShadowRowProvider`) può restituire ancora il valore del brano precedente. Nel listener leggi la fonte diretta (`onlineEntriesProvider.entryOf(id)?.trackId`) e usa il provider derivato solo come segnale.
 - **ARB: sei lingue, non quattro** (fase 75, 3/11): oltre a it/en/de/es ci sono `app_fr.arb` e `app_pt.arb`; `test/l10n/arb_test.dart` vuole ogni chiave in tutte. Aggiungi con `scripts/arb_add.py` e lancia quel test fra i mirati di ogni task con testi nuovi.
+- **Build Linux con `HOME` finto: `rustup is not installed`** (fase 77, 4/11): `metadata_god` compila Rust e cerca rustup nella home. Per le prove sotto `xvfb-run` tieni `HOME` vero e sposta solo `XDG_DATA_HOME`/`XDG_CONFIG_HOME` nello scratchpad.
+- **`perf_device.py`: «Gradle build daemon disappeared unexpectedly»** (fase 77, 4/11): dopo un processo interrotto il demone resta in uno stato rotto; `cd android && ./gradlew --stop` e si rilancia.
+- **`perf_test.dart` al secondo giro: `Bad state: No element` su «Tutti i brani»** (fase 77): la libreria da 3000 brani può essere ancora in caricamento; ora c'è un `waitFor` prima del tap.
+- **`SemanticsData.hasFlag` è deprecato** (Flutter 3.47): `flutter analyze` dà un info che fa fallire il check; usa `getSemanticsData().flagsCollection.<flag>`.

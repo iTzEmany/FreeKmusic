@@ -15,7 +15,7 @@
 - `integration_test/perf_test.dart`: scenario nuovo «Libreria Tutto→Playlist→Album→Artisti». Sistemare prima le rotture note (`perf_test.dart:67`, `scripts/perf_device.py:226`) se ci sono ancora. Misura di partenza su Linux e sul Mi A3 (`python3 scripts/perf_device.py 0d7ae9df206e --label 77-partenza --only "<scenario>"`), scritta qui in «Esiti».
 
 ### 77.2 — Componente `Skeleton` (F-51, F-66, F-68, F-69)
-- `lib/ui/widgets/skeleton.dart`: varianti lista, riga grande, cella di griglia, scheda, barre (specifica: `refactor/ui-uso-quotidiano/mockup/streaming-skeleton.html` parte c). Blocchi `surface2` (`surface1` dentro le schede), pulsazione d'opacità 0,55→1 in 1,4 s, ferma (0,8) con `disableAnimationsOf`; `ExcludeSemantics` sui blocchi e un solo nodo «Caricamento…» (liveRegion). Stringa nuova negli ARB it/en/de/es.
+- `lib/ui/widgets/skeleton.dart`: varianti lista, riga grande, cella di griglia, scheda, barre (specifica: `refactor/ui-uso-quotidiano/mockup/streaming-skeleton.html` parte c). Blocchi `surface2` (`surface3` dentro le schede, come il mockup: `surface1` su una scheda `surface1` sparirebbe), pulsazione d'opacità 0,55→1 in 1,4 s, ferma (0,8) con `disableAnimationsOf`; `ExcludeSemantics` sui blocchi e un solo nodo «Caricamento…» (liveRegion). Stringa nuova negli ARB it/en/de/es.
 - `AsyncBody`/`SliverAsyncBody`: skeleton di righe di serie al posto di `CircularProgressIndicator` (`async_body.dart:36`); `PageSkeleton` (`artist_page_sections.dart:93`) diventa un uso di `Skeleton`. Riscrivere «loading shows a spinner».
 - Test: un solo «Caricamento…» per TalkBack; animazione ferma con riduci movimento; contrasto in `contrast_test`.
 

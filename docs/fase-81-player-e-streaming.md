@@ -28,4 +28,8 @@
 
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
+## Dalla review della fase 77
+- `Skeleton.card`: blocco titolo opzionale e variante senza copertina (righe nome-ruolo dei Crediti), così le schede hanno l'altezza delle vere (81.2).
+- `Skeleton`: `label` opzionale (es. «Shuffle+ sta scegliendo N brani…», 81.3) e margine orizzontale configurabile (oggi `CcDims.margin` fisso).
+
 ## Esiti
