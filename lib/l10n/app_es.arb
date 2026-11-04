@@ -3221,5 +3221,6 @@
   "streamCardsSoon": "La canción está en camino…",
   "closeKeyboard": "Cerrar teclado",
   "loadingContent": "Cargando…",
-  "statsBarValue": "{when} · {time}"
+  "statsBarValue": "{when} · {time}",
+  "homeRadioLive": "En directo"
 }

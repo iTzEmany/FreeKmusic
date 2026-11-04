@@ -102,7 +102,7 @@ void main() {
     for (final label in [
       'Preferiti, 0 brani',
       'Playlist, 0 playlist',
-      'Radio, Stazioni in diretta',
+      'Radio, In diretta',
     ]) {
       expect(find.bySemanticsLabel(label), findsOneWidget);
     }

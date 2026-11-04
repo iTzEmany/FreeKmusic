@@ -6052,4 +6052,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String statsBarValue(String when, String time) {
     return '$when · $time';
   }
+
+  @override
+  String get homeRadioLive => 'Live';
 }

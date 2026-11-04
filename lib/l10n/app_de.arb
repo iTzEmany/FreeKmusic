@@ -3221,5 +3221,6 @@
   "streamCardsSoon": "Der Titel kommt gleich…",
   "closeKeyboard": "Tastatur schließen",
   "loadingContent": "Wird geladen…",
-  "statsBarValue": "{when} · {time}"
+  "statsBarValue": "{when} · {time}",
+  "homeRadioLive": "Live"
 }

@@ -9594,6 +9594,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{when} · {time}'**
   String statsBarValue(String when, String time);
+
+  /// No description provided for @homeRadioLive.
+  ///
+  /// In it, this message translates to:
+  /// **'In diretta'**
+  String get homeRadioLive;
 }
 
 class _AppLocalizationsDelegate

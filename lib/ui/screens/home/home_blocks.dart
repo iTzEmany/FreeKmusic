@@ -155,12 +155,12 @@ class ShortcutsRow extends ConsumerWidget {
               body: const PlaylistsScreen(),
             ),
           ),
-          tile(
-            Icons.radio,
-            l.radioTitle,
-            l.radioLibrarySubtitle(count(ref.watch(savedRadiosProvider))),
-            const RadioScreen(),
-          ),
+          tile(Icons.radio, l.radioTitle, switch (count(
+            ref.watch(savedRadiosProvider),
+          )) {
+            0 => l.homeRadioLive,
+            final n => l.radioLibrarySubtitle(n),
+          }, const RadioScreen()),
         ],
       ),
     );

@@ -3221,5 +3221,6 @@
   "streamCardsSoon": "The track is on its way…",
   "closeKeyboard": "Close keyboard",
   "loadingContent": "Loading…",
-  "statsBarValue": "{when} · {time}"
+  "statsBarValue": "{when} · {time}",
+  "homeRadioLive": "Live"
 }
