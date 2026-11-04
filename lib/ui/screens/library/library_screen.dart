@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import '../../widgets/cc_sheet.dart';
 
 import 'package:flutter/material.dart';
@@ -15,6 +13,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/podcast_providers.dart';
+import '../../../providers/ui_providers.dart' show librarySearchRequestProvider;
 import '../../../providers/review_providers.dart';
 import '../../../data/repositories/smart_search.dart' show SearchIndex;
 import '../../../providers/selection_providers.dart';
@@ -26,7 +25,7 @@ import '../../widgets/activity_button.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../widgets/cover_image.dart';
-import 'library_search.dart';
+import 'library_results.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/playlist_cover.dart';
@@ -80,34 +79,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _warm?.close();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
   }
 
-  Timer? _debounce;
   String _text = '';
   ProviderSubscription<AsyncValue<SearchIndex>>? _warm;
 
   void _setSearching(bool v) {
-    _debounce?.cancel();
     _text = '';
     if (!v) _searchController.clear();
     // Index built on opening, before the first key (as Cerca does).
     _warm?.close();
     _warm = v ? ref.listenManual(searchIndexProvider, (_, _) {}) : null;
     setState(() => _searching = v);
-  }
-
-  void _onSearchChanged(String s) {
-    _debounce?.cancel();
-    final v = s.trim();
-    if (v == _text) return;
-    _debounce = Timer(CcTiming.debounce, () {
-      if (mounted) setState(() => _text = v);
-    });
   }
 
   /// Back and Esc first leave a selection made in the results.
@@ -216,6 +203,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             );
     }
 
+    ref.listen(librarySearchRequestProvider, (_, _) {
+      if (!_searching) _setSearching(true);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _searchFocus.requestFocus(),
+      );
+    });
     final text = _text;
     Widget slide(Widget c, Animation<double> a) => FadeTransition(
       opacity: a,
@@ -255,7 +248,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           focusNode: _searchFocus,
                           hint: l.librarySearchHint,
                           autofocus: true,
-                          onChanged: _onSearchChanged,
+                          onQuery: (v) => setState(() => _text = v),
                           onCloseEmpty: () => _setSearching(false),
                         ),
                       )
@@ -273,7 +266,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           child: text.isEmpty
                               ? const SizedBox.shrink()
                               : LibraryResults(
-                                  query: SearchQuery(text),
+                                  text: text,
                                   onOnline: () {
                                     ref
                                         .read(searchPrefillProvider.notifier)

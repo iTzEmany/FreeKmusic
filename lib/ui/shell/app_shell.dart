@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants.dart' show kEnableYoutube;
 import '../../core/platform.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
@@ -46,6 +47,12 @@ import 'side_panel.dart';
 import '../widgets/motion.dart';
 import '../widgets/show_msg.dart';
 
+/// Ctrl+F searches the Library when there is no online Search or it is the
+/// current tab; elsewhere it opens Search.
+@visibleForTesting
+bool ctrlFTargetsLibrary({required bool youtube, required int tab}) =>
+    !youtube || tab == NavTab.library.index;
+
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
@@ -82,6 +89,17 @@ class AppShell extends ConsumerWidget {
       const SingleActivator(LogicalKeyboardKey.mediaTrackPrevious):
           ctrl.previous,
       const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {
+        if (ctrlFTargetsLibrary(
+          youtube: kEnableYoutube,
+          tab: ref.read(navIndexProvider),
+        )) {
+          ref.read(navIndexProvider.notifier).set(NavTab.library.index);
+          // After the frame: the tab may only mount now and must hear the request.
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => ref.read(librarySearchRequestProvider.notifier).request(),
+          );
+          return;
+        }
         // Narrow windows have no page field: the dock's one opens (and focuses).
         ref.read(searchBarProvider.notifier).open();
         WidgetsBinding.instance.addPostFrameCallback(

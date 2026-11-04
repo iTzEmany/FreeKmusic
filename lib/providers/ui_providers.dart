@@ -42,6 +42,19 @@ final searchSubmitProvider = NotifierProvider<SearchSubmitNotifier, int>(
   SearchSubmitNotifier.new,
 );
 
+/// Counts the Ctrl+F requests for the Library's own search; `LibraryScreen` opens it.
+class LibrarySearchRequestNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void request() => state++;
+}
+
+final librarySearchRequestProvider =
+    NotifierProvider<LibrarySearchRequestNotifier, int>(
+      LibrarySearchRequestNotifier.new,
+    );
+
 /// True while the phone's dock carries the Search field (on the Search tab).
 class SearchBarNotifier extends Notifier<bool> {
   @override

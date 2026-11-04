@@ -1,28 +1,39 @@
 import 'package:codecore/l10n/app_localizations.dart';
+import 'package:codecore/providers/user_activity_provider.dart';
+import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/cc_search_field.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+var _activity = UserActivity();
+
 Future<(TextEditingController, FocusNode)> _pump(
   WidgetTester t, {
   VoidCallback? onClear,
+  ValueChanged<String>? onQuery,
 }) async {
+  _activity = UserActivity();
   final c = TextEditingController();
   final f = FocusNode();
   addTearDown(c.dispose);
   addTearDown(f.dispose);
   await t.pumpWidget(
-    MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('it'),
-      home: Scaffold(
-        body: CcSearchField(
-          controller: c,
-          focusNode: f,
-          hint: 'Cerca',
-          onClear: onClear,
+    ProviderScope(
+      overrides: [userActivityProvider.overrideWithValue(_activity)],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('it'),
+        home: Scaffold(
+          body: CcSearchField(
+            controller: c,
+            focusNode: f,
+            hint: 'Cerca',
+            onClear: onClear,
+            onQuery: onQuery,
+          ),
         ),
       ),
     ),
@@ -134,4 +145,39 @@ void main() {
     expect(c.text, isEmpty);
     expect(changed, '');
   });
+
+  testWidgets('onQuery waits for the debounce, trims and skips repeats', (
+    t,
+  ) async {
+    final got = <String>[];
+    await _pump(t, onQuery: got.add);
+    await t.enterText(find.byType(TextField), 'ab');
+    await t.enterText(find.byType(TextField), ' abc ');
+    await t.pump(CcTiming.debounce - const Duration(milliseconds: 1));
+    expect(got, isEmpty);
+    await t.pump(const Duration(milliseconds: 1));
+    expect(got, ['abc']);
+    await t.enterText(find.byType(TextField), 'abc  ');
+    await t.pump(CcTiming.debounce);
+    expect(got, ['abc']);
+  });
+
+  testWidgets(
+    'onQuery runs at once on Enter and on the ✕, and typing touches the activity',
+    (t) async {
+      final got = <String>[];
+      await _pump(t, onQuery: got.add);
+      expect(_activity.lastActivityAt, isNull);
+      await t.enterText(find.byType(TextField), 'abc');
+      expect(_activity.lastActivityAt, isNotNull);
+      await t.testTextInput.receiveAction(TextInputAction.search);
+      expect(got, ['abc']);
+      await t.pump();
+    await t.tap(find.byIcon(Icons.close_rounded));
+      await t.pump();
+      expect(got, ['abc', '']);
+      await t.pump(CcTiming.debounce);
+      expect(got, ['abc', '']);
+    },
+  );
 }

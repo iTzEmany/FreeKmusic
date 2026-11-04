@@ -4,7 +4,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
-import 'package:codecore/ui/screens/library/library_search.dart' show LibraryResults;
+import 'package:codecore/ui/screens/library/library_results.dart' show LibraryResults;
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
