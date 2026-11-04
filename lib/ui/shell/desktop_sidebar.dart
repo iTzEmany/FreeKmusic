@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/database_providers.dart';
 import '../../providers/library_providers.dart';
@@ -70,12 +71,13 @@ class DesktopSidebar extends ConsumerWidget {
               index == NavTab.home.index,
               () => select(NavTab.home),
             ),
-            item(
-              Icons.search_rounded,
-              l.navSearch,
-              index == NavTab.search.index,
-              () => select(NavTab.search),
-            ),
+            if (kEnableYoutube)
+              item(
+                Icons.search_rounded,
+                l.navSearch,
+                index == NavTab.search.index,
+                () => select(NavTab.search),
+              ),
             const Divider(height: 16),
             item(
               index == NavTab.library.index

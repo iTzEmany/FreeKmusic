@@ -2407,8 +2407,8 @@ abstract class AppLocalizations {
   /// No description provided for @removeRecentSearch.
   ///
   /// In it, this message translates to:
-  /// **'Rimuovi dalle ricerche recenti'**
-  String get removeRecentSearch;
+  /// **'Rimuovi «{query}» dalle ricerche recenti'**
+  String removeRecentSearch(String query);
 
   /// No description provided for @groupGoTo.
   ///
@@ -7263,18 +7263,6 @@ abstract class AppLocalizations {
   /// **'Suggeriti di Casuale+'**
   String get memorySuggestions;
 
-  /// No description provided for @searchModeLibrary.
-  ///
-  /// In it, this message translates to:
-  /// **'In libreria'**
-  String get searchModeLibrary;
-
-  /// No description provided for @searchModeOnline.
-  ///
-  /// In it, this message translates to:
-  /// **'Online'**
-  String get searchModeOnline;
-
   /// No description provided for @searchOnline.
   ///
   /// In it, this message translates to:
@@ -8186,12 +8174,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'L\'icona segue tema e colore quando esci dall\'app'**
   String get iconFollowSubtitle;
-
-  /// No description provided for @searchEmptyPrompt.
-  ///
-  /// In it, this message translates to:
-  /// **'Scrivi un titolo, un artista o un album per cercare nella libreria'**
-  String get searchEmptyPrompt;
 
   /// No description provided for @exportifySyncTitle.
   ///

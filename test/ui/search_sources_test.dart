@@ -1,22 +1,17 @@
-import 'dart:io';
-
-import 'package:codecore/providers/ui_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/query_match.dart' show MediaKind;
-import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
-import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_ytm.dart';
+import '../support/fake_youtube.dart';
 import '../support/search_input.dart';
 
 Future<void> _settle(WidgetTester tester) async {
@@ -27,63 +22,16 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
-/// Answers each kind of search differently and remembers what was asked.
-class _Sources implements YoutubeService {
-  final calls = <String>[];
-
-  @override
-  Future<List<YtResult>> search(String query) async {
-    calls.add('youtube:$query');
-    return [
-      const YtResult(
-        id: 'y1',
-        title: 'From YouTube',
-        channel: 'Chan',
-        duration: Duration(minutes: 3),
-      ),
-    ];
-  }
-
-  @override
-  Future<List<YtResult>> searchSongs(String query, {int limit = 5}) async {
-    calls.add('music:$query:$limit');
-    return [
-      ytmSong('m1', 'From YouTube Music', artist: 'Daft Punk', seconds: 180),
-    ];
-  }
-
-  @override
-  Future<PlaylistListing> listPlaylist(String url, {int limit = 500}) async =>
-      const PlaylistListing.empty();
-
-  @override
-  Future<List<YtResult>> searchAlbums(String query, {int limit = 3}) async =>
-      const [];
-  @override
-  Future<List<YtResult>> albumTracks(String albumLink) async => const [];
-  @override
-  Stream<DownloadProgress> download(
-    YtResult r,
-    Directory outDir, {
-    CancelToken? cancel,
-    DownloadOptions options = const DownloadOptions(),
-  }) => const Stream.empty();
-  @override
-  Future<String?> toolVersion() async => null;
-  @override
-  void close() {}
-}
-
 void main() {
   late Harness h;
-  late _Sources svc;
+  late FakeYoutube svc;
 
   Future<void> open(WidgetTester tester, {int tracks = 2}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     h = await Harness.create(tester, tracks: tracks);
-    svc = _Sources();
+    svc = FakeYoutube();
     await h.pump(
       tester,
       const SearchScreen(),
@@ -96,37 +44,25 @@ void main() {
   }
 
   Future<void> searchOnline(WidgetTester tester, String text) async {
-    await tester.tap(find.text('Online'));
-    await _settle(tester);
     typeSearch(tester, text);
     submitSearch(tester);
     await _settle(tester);
   }
 
   testWidgets(
-    'two modes only: In libreria and Online; no SoundCloud, no source to pick first',
+    'Search is online only: no mode selector, no SoundCloud, nothing asked before the submit',
     (tester) async {
       await open(tester);
-      expect(
-        tester
-            .widget<SegmentedBlocks<bool>>(find.byType(SegmentedBlocks<bool>))
-            .selected,
-        isFalse,
-      );
-      expect(find.text('Online'), findsOneWidget);
-      await tester.tap(find.text('Online'));
-      await _settle(tester);
+      expect(find.byType(SegmentedBlocks<bool>), findsNothing);
       expect(find.text('SoundCloud'), findsNothing);
       expect(
         find.text('YouTube Music'),
         findsNothing,
         reason: 'the filters come with the results',
       );
-      expect(
-        svc.calls,
-        isEmpty,
-        reason: 'nothing is asked until the user submits',
-      );
+      typeSearch(tester, 'daft punk');
+      await _settle(tester);
+      expect(svc.calls, isEmpty);
       await h.dispose(tester);
     },
   );
@@ -157,7 +93,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     h = await Harness.create(tester, tracks: 2);
-    svc = _Sources();
+    svc = FakeYoutube();
     await h.pump(
       tester,
       const AppShell(),
@@ -171,10 +107,6 @@ void main() {
       find.descendant(of: find.byType(ShellDock), matching: find.text('Cerca')),
     );
     await _settle(tester);
-    ProviderScope.containerOf(tester.element(find.byType(AppShell)))
-        .read(searchOnlineProvider.notifier)
-        .set(true);
-    await tester.pump();
     final field = find.descendant(
       of: find.byType(ShellDock),
       matching: find.byType(TextField),
@@ -229,31 +161,6 @@ void main() {
   );
 
   testWidgets(
-    '«Cerca online» under the library results moves to Online and searches the text',
-    (tester) async {
-      await open(tester);
-      typeSearch(tester, 'Song 1');
-      await tester.pump(const Duration(milliseconds: 400));
-      await _settle(tester);
-      await tester.dragUntilVisible(
-        find.text('Cerca «Song 1» online'),
-        find.byType(ListView).last,
-        const Offset(0, -300),
-      );
-      await tester.tap(find.text('Cerca «Song 1» online'));
-      await _settle(tester);
-      expect(svc.calls, contains('music:Song 1:10'));
-      expect(
-        tester
-            .widget<SegmentedBlocks<bool>>(find.byType(SegmentedBlocks<bool>))
-            .selected,
-        isTrue,
-      );
-      await h.dispose(tester);
-    },
-  );
-
-  testWidgets(
     'closing the legal notice dialog leaves the search screen in place',
     (tester) async {
       // Like the Cerca tab: the screen lives in a nested Navigator, the dialog in the root one.
@@ -272,7 +179,7 @@ void main() {
           ),
         ),
         extraOverrides: [
-          youtubeServiceProvider.overrideWithValue(_Sources()),
+          youtubeServiceProvider.overrideWithValue(FakeYoutube()),
           ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
         ],
       );

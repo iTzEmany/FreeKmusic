@@ -340,7 +340,7 @@ void main() {
   testWidgets('a genre chip lists that genre and can be closed', (tester) async {
     await open(tester);
     expect(
-      find.ancestor(of: find.byKey(const ValueKey('genre-jazz')), matching: find.byType(GridView)),
+      find.ancestor(of: find.byKey(const ValueKey('genre-jazz')), matching: find.byType(SliverGrid)),
       findsOneWidget,
     );
     expect(find.textContaining('▾'), findsNothing);

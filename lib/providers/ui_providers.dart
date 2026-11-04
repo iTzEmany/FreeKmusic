@@ -18,18 +18,6 @@ final searchControllerProvider = Provider<TextEditingController>((ref) {
   return c;
 });
 
-/// «Online» chip of Search (false: «In libreria»).
-class SearchOnlineNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void set(bool online) => state = online;
-}
-
-final searchOnlineProvider = NotifierProvider<SearchOnlineNotifier, bool>(
-  SearchOnlineNotifier.new,
-);
-
 /// Counts the submits (Enter) of the dock's field; `SearchScreen` runs them.
 class SearchSubmitNotifier extends Notifier<int> {
   @override

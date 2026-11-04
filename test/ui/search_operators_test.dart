@@ -1,9 +1,9 @@
-import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
+import '../support/results_host.dart';
 import '../support/search_input.dart';
 
 /// One turn of the real event loop (not real time) lets drift finish what a
@@ -34,7 +34,7 @@ void main() {
         await h.db.customUpdate('UPDATE tracks SET year = ${years[i]} WHERE id = ${rows[i].id}');
       }
     });
-    await h.pump(tester, const SearchScreen());
+    await h.pump(tester, const ResultsHost());
     await _settle(tester);
   }
 
@@ -58,50 +58,6 @@ void main() {
     await type(tester, 'song -"song 2"');
     expect(_row('Song 2'), findsNothing);
     expect(_row('Song 1'), findsOneWidget);
-    await h.dispose(tester);
-  });
-
-  testWidgets('nothing in the box suggests operators; two quick filters sit under it',
-      (tester) async {
-    await open(tester);
-    for (final op in ['artista:', 'anno:', 'genere:', 'tag:']) {
-      expect(find.text(op), findsNothing);
-    }
-    expect(find.byTooltip('Aiuto sulla ricerca'), findsNothing);
-    expect(find.widgetWithText(FilterChip, 'Preferiti'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'Recenti'), findsOneWidget);
-    expect(tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'Preferiti')).selected, isFalse);
-    expect(tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'Recenti')).selected, isFalse);
-    await h.dispose(tester);
-  });
-
-  testWidgets('«Preferiti» alone lists the favourites; with a text it limits the matches',
-      (tester) async {
-    await open(tester);
-    await tester.runAsync(() => h.db.customUpdate('UPDATE tracks SET is_favorite = 1 WHERE title = \'Song 1\''));
-    await tester.tap(find.widgetWithText(FilterChip, 'Preferiti'));
-    await _settle(tester);
-    expect(_row('Song 1'), findsOneWidget);
-    expect(_row('Song 2'), findsNothing);
-    await type(tester, 'song');
-    expect(_row('Song 1'), findsOneWidget);
-    expect(_row('Song 2'), findsNothing);
-    await tester.tap(find.widgetWithText(FilterChip, 'Preferiti'));
-    await _settle(tester);
-    expect(_row('Song 2'), findsOneWidget);
-    await h.dispose(tester);
-  });
-
-  testWidgets('«Recenti» lists what was played or added lately', (tester) async {
-    await open(tester);
-    final now = DateTime.now().millisecondsSinceEpoch;
-    await tester.runAsync(() => h.db.customUpdate('UPDATE tracks SET added_at = 1'));
-    await tester.runAsync(
-        () => h.db.customUpdate('UPDATE tracks SET last_played_at = $now WHERE title = \'Song 2\''));
-    await tester.tap(find.widgetWithText(FilterChip, 'Recenti'));
-    await _settle(tester);
-    expect(_row('Song 2'), findsOneWidget);
-    expect(_row('Song 0'), findsNothing);
     await h.dispose(tester);
   });
 

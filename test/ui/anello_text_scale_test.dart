@@ -15,7 +15,6 @@ import 'package:codecore/ui/screens/online/artist_page_screen.dart';
 import 'package:codecore/ui/screens/podcast/podcast_detail_screen.dart';
 import 'package:codecore/ui/screens/podcast/podcasts_screen.dart';
 import 'package:codecore/ui/screens/releases/new_releases_screen.dart';
-import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/ui/screens/tags/tags_screen.dart';
@@ -27,6 +26,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/app_harness.dart';
 import '../support/fake_ytm.dart';
 import '../support/memory_fakes.dart';
+import '../support/results_host.dart';
 import '../support/search_input.dart';
 
 /// Every screen of the redesign at 150 % text, 360x780, in the three themes:
@@ -154,7 +154,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final h = await Harness.create(tester, tracks: 4);
-      await h.pump(tester, const SearchScreen(), textScale: 1.5, colors: t.value);
+      await h.pump(tester, const ResultsHost(), textScale: 1.5, colors: t.value);
       typeSearch(tester, 'Song');
       for (var i = 0; i < 5; i++) {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 80)));

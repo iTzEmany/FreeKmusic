@@ -1401,7 +1401,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ytInfoTooltip => 'Información de uso';
 
   @override
-  String get removeRecentSearch => 'Quitar de búsquedas recientes';
+  String removeRecentSearch(String query) {
+    return 'Quitar «$query» de búsquedas recientes';
+  }
 
   @override
   String get groupGoTo => 'Ir a';
@@ -4684,12 +4686,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memorySuggestions => 'Sugeridos de Aleatorio+';
 
   @override
-  String get searchModeLibrary => 'En la biblioteca';
-
-  @override
-  String get searchModeOnline => 'En línea';
-
-  @override
   String searchOnline(String query) {
     return 'Buscar «$query» en línea';
   }
@@ -5237,10 +5233,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get iconFollowSubtitle =>
       'El icono sigue el tema y el color cuando sales de la app';
-
-  @override
-  String get searchEmptyPrompt =>
-      'Escribe un título, artista o álbum para buscar en tu biblioteca';
 
   @override
   String get exportifySyncTitle => 'Sincronizar desde Spotify';

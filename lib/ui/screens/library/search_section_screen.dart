@@ -13,8 +13,8 @@ import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/playlist_cover.dart';
-import '../library/album_detail_screen.dart';
-import '../library/artist_screen.dart';
+import 'album_detail_screen.dart';
+import 'artist_screen.dart';
 import '../online/artist_picker_sheet.dart';
 import '../playlists/playlist_detail_screen.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -184,23 +184,22 @@ class _YtmArtistButton extends ConsumerWidget {
 }
 
 /// «Tutti» of artists, albums or playlists: the whole list of one kind for
-/// the same text and quick filter as the preview.
+/// the same text as the preview.
 class SearchSectionScreen extends ConsumerWidget {
   const SearchSectionScreen({
     super.key,
-    required this.query,
+    required this.text,
     required this.kind,
   });
 
-  final SearchQuery query;
+  final String text;
   final SearchSectionKind kind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final res = searchLibrary(
-      text: query.text,
-      quickFilter: query.quick,
-      tracks: ref.watch(searchTracksProvider(query)).value ?? const <Track>[],
+      text: text,
+      tracks: ref.watch(searchTracksProvider(text)).value ?? const <Track>[],
       artists: ref.watch(artistsProvider).value ?? const [],
       albums: ref.watch(albumsProvider).value ?? const [],
       playlists: ref.watch(playlistsProvider).value ?? const [],

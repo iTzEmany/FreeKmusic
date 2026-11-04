@@ -825,7 +825,14 @@
   "gotIt": "Ho capito",
   "searchEmptyLibrary": "Nessun risultato in libreria",
   "ytInfoTooltip": "Informazioni sull’uso",
-  "removeRecentSearch": "Rimuovi dalle ricerche recenti",
+  "removeRecentSearch": "Rimuovi «{query}» dalle ricerche recenti",
+  "@removeRecentSearch": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "groupGoTo": "Vai a",
   "goToAlbum": "Vai all’album",
   "goToArtist": "Vai all’artista",
@@ -3004,8 +3011,6 @@
   "suggestionOutcomeDownloaded": "Scaricato",
   "suggestionOutcomeDisliked": "Non mi piace",
   "memorySuggestions": "Suggeriti di Casuale+",
-  "searchModeLibrary": "In libreria",
-  "searchModeOnline": "Online",
   "searchOnline": "Cerca «{query}» online",
   "@searchOnline": {
     "placeholders": {
@@ -3360,7 +3365,6 @@
   "iconDontAsk": "Non chiederlo più",
   "iconFollowTitle": "Icona a tema",
   "iconFollowSubtitle": "L'icona segue tema e colore quando esci dall'app",
-  "searchEmptyPrompt": "Scrivi un titolo, un artista o un album per cercare nella libreria",
   "exportifySyncTitle": "Sincronizza da Spotify",
   "exportifySyncChanges": "+{added} nuovi, −{removed} rimossi",
   "@exportifySyncChanges": {

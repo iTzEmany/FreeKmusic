@@ -99,20 +99,6 @@ int _recency(Track t) {
 /// True when [t] was played or added in the last [recentDays] days.
 bool isRecent(Track t, int nowMs) => _recency(t) >= nowMs - recentDays * _dayMs;
 
-/// Keeps what [favorites] / [recent] ask for.
-List<Track> applyQuickFilters(
-  List<Track> tracks, {
-  required bool favorites,
-  required bool recent,
-  required int nowMs,
-}) {
-  if (!favorites && !recent) return tracks;
-  return [
-    for (final t in tracks)
-      if ((!favorites || t.isFavorite) && (!recent || isRecent(t, nowMs))) t,
-  ];
-}
-
 /// The tracks of [index] matching the free [text]: every word has to match the
 /// title, artist, album, genre, year or a tag (accents and case ignored, in
 /// any order), best match first. An empty text lists everything the quick

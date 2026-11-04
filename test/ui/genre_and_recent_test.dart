@@ -2,6 +2,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/ui/screens/radio/radio_labels.dart';
 import 'package:codecore/ui/screens/radio/radio_sections.dart';
 import 'package:codecore/ui/screens/search/genre_screen.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
+import '../support/fake_youtube.dart';
 import '../support/search_input.dart';
 
 Future<void> _settle(WidgetTester tester) async {
@@ -32,6 +34,8 @@ void _desktop(WidgetTester tester) {
 List<String> _recents(WidgetTester tester) => ProviderScope.containerOf(
   tester.element(find.byType(SearchScreen)),
 ).read(settingsProvider).recentSearches;
+
+final _fakeOnline = [youtubeServiceProvider.overrideWithValue(FakeYoutube())];
 
 void main() {
   testWidgets('Radio: every genre chip keeps its key genre-<tag> and reports its tag', (
@@ -95,7 +99,7 @@ void main() {
   ) async {
     _desktop(tester);
     final h = await Harness.create(tester, tracks: 4);
-    await h.pump(tester, const SearchScreen());
+    await h.pump(tester, const SearchScreen(), extraOverrides: _fakeOnline);
     await _settle(tester);
     for (final q in ['Song 1', 'Song 2', 'song 1']) {
       typeSearch(tester, q);
@@ -111,13 +115,13 @@ void main() {
   ) async {
     _desktop(tester);
     final h = await Harness.create(tester, tracks: 4);
-    await h.pump(tester, const SearchScreen());
+    await h.pump(tester, const SearchScreen(), extraOverrides: _fakeOnline);
     await _settle(tester);
     ProviderScope.containerOf(tester.element(find.byType(SearchScreen)))
         .read(settingsProvider.notifier)
         .update((s) => s.copyWith(recentSearches: ['Song 3', 'Song 1']));
     await _settle(tester);
-    await tester.tap(find.byTooltip('Rimuovi dalle ricerche recenti').first);
+    await tester.tap(find.byTooltip('Rimuovi «Song 3» dalle ricerche recenti'));
     await _settle(tester);
     expect(_recents(tester), ['Song 1']);
     expect(find.text('Song 3'), findsNothing);
