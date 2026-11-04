@@ -110,4 +110,28 @@ void main() {
     await t.enterText(find.byType(TextField), 'abc');
     expect(changed, 'abc');
   });
+
+  testWidgets('the default ✕ also reports an empty onChanged', (t) async {
+    final c = TextEditingController(text: 'abc');
+    addTearDown(c.dispose);
+    String? changed;
+    await t.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('it'),
+        home: Scaffold(
+          body: CcSearchField(
+            controller: c,
+            hint: 'Cerca',
+            onChanged: (v) => changed = v,
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.byTooltip('Cancella ricerca'));
+    await t.pump();
+    expect(c.text, isEmpty);
+    expect(changed, '');
+  });
 }

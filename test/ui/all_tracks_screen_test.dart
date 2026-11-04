@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
@@ -121,20 +123,43 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('initialSort is applied and the query is cleared on exit', (
+  testWidgets('the bar comes back when the list fits again', (tester) async {
+    final h = await _open(tester, tracks: 9);
+    await wheel(tester, 400);
+    await _settle(tester);
+    await _settle(tester); // hide, then the show it triggers
+    // Hidden, the list fits and cannot scroll: the bar must not stay away.
+    expect(barHeight(tester), greaterThan(100));
+    await h.dispose(tester);
+  });
+
+  testWidgets('initialSort is applied; leaving by pop clears the query', (
     tester,
   ) async {
-    final h = await _open(tester, sort: SortOption.title);
-    final c = ProviderScope.containerOf(
-      tester.element(find.byType(AllTracksScreen)),
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, const Scaffold(body: SizedBox()));
+    final nav = Navigator.of(tester.element(find.byType(Scaffold)));
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    unawaited(
+      nav.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const AllTracksScreen(initialSort: SortOption.title),
+        ),
+      ),
     );
+    await _settle(tester);
     expect(c.read(trackQueryProvider(false)).sort, SortOption.title);
     await tester.enterText(find.byType(TextField), 'Song 2');
     await tester.pump(const Duration(milliseconds: 400));
     expect(c.read(trackQueryProvider(false)).text, 'Song 2');
-    var last = 'x';
-    c.listen(trackQueryProvider(false), (_, q) => last = q.text);
-    await h.dispose(tester); // unmounts the screen
-    expect(last, isEmpty);
+    nav.pop();
+    await _settle(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+    expect(c.read(trackQueryProvider(false)).text, isEmpty);
+    await h.dispose(tester);
   });
 }

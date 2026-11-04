@@ -62,6 +62,12 @@ class _CcSearchFieldState extends State<CcSearchField> {
     super.dispose();
   }
 
+  // clear() does not fire onChanged: do it so the results follow.
+  void _clear() {
+    widget.controller.clear();
+    widget.onChanged?.call('');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -75,7 +81,7 @@ class _CcSearchFieldState extends State<CcSearchField> {
         final hasText = controller.text.isNotEmpty;
         final focused = focusNode.hasFocus;
         final VoidCallback? action = hasText
-            ? (widget.onClear ?? controller.clear)
+            ? (widget.onClear ?? _clear)
             : widget.onCloseEmpty ?? (focused ? focusNode.unfocus : null);
         return TextField(
           controller: controller,

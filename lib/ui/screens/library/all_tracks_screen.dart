@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_providers.dart';
@@ -129,7 +131,8 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   final _scroll = ScrollController();
   Timer? _debounce;
   late final TrackQueryNotifier _query;
-  // 1 = header, search and chips shown, 0 = hidden.
+  // 1 = header, search and chips shown, 0 = hidden (the animation's goal).
+  double _barTarget = 1;
   late final AnimationController _bar = AnimationController(
     vsync: this,
     value: 1,
@@ -140,7 +143,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
     super.initState();
     // Captured now: `ref` must not be used from dispose().
     _query = ref.read(trackQueryProvider(false).notifier);
-    // Starts clean: the Search tab shares this query.
+    // Starts with an empty text (and the requested sort).
     Future<void>.microtask(
       () => _query.update(
         (q) => q.copyWith(text: '', sort: widget.initialSort ?? q.sort),
@@ -151,11 +154,19 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   @override
   void dispose() {
     _debounce?.cancel();
-    // Leaves clean for the Search tab, which shares this query.
-    _query.update((q) => q.copyWith(text: ''));
     _bar.dispose();
     _controller.dispose();
     _scroll.dispose();
+    // Leaves the shared query clean; deferred, a provider cannot be written
+    // while the tree is unmounting (and the scope may be gone already).
+    final query = _query;
+    Future<void>.microtask(() {
+      try {
+        query.update((q) => q.copyWith(text: ''));
+      } on Exception catch (e, st) {
+        AppLog.d('query not cleared (scope gone?)', e, st);
+      }
+    });
     super.dispose();
   }
 
@@ -167,15 +178,21 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
     );
   }
 
-  bool _onScroll(ScrollNotification n) {
-    if (n.depth != 0) return false;
-    // Back at the top the header is always shown; otherwise follow the finger.
-    final double? target = n.metrics.extentBefore <= 0
-        ? 1
-        : n is ScrollUpdateNotification
-        ? ((n.scrollDelta ?? 0) > 0 ? 0 : 1)
-        : null;
-    if (target != null && target != _bar.value) {
+  bool _onScroll(Notification n) {
+    // Direction of the user's finger or wheel (jumpTo, e.g. the A-Z strip,
+    // never emits it); a list that fits, or the top, always shows the bar.
+    final bool? show = switch (n) {
+      UserScrollNotification(depth: 0, :final direction)
+          when direction != ScrollDirection.idle =>
+        direction == ScrollDirection.forward,
+      ScrollMetricsNotification(depth: 0, :final metrics)
+          when metrics.extentBefore <= 0 || metrics.maxScrollExtent <= 0 =>
+        true,
+      _ => null,
+    };
+    final target = show == null ? null : (show ? 1.0 : 0.0);
+    if (target != null && target != _barTarget) {
+      _barTarget = target;
       _bar.animateTo(
         target,
         duration: ccDuration(context, CcMotion.enter),
@@ -311,7 +328,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
               ),
             ),
             Expanded(
-              child: NotificationListener<ScrollNotification>(
+              child: NotificationListener<Notification>(
                 onNotification: _onScroll,
                 child: AsyncBody(
                   value: tracks,
