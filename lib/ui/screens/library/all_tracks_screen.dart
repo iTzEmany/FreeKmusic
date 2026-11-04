@@ -16,7 +16,6 @@ import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
-import '../../widgets/skeleton.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
@@ -321,15 +320,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
                 onNotification: _onScroll,
                 child: AsyncBody(
                   value: tracks,
-                  loading: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.topCenter,
-                      maxHeight: double.infinity,
-                      child: Skeleton.list(
-                        rowHeight: trackRowExtentOf(context, compact),
-                      ),
-                    ),
-                  ),
+                  rowHeight: trackRowExtentOf(context, compact),
                   onRetry: () => ref.invalidate(tracksProvider(false)),
                   isEmpty: (list) => list.isEmpty,
                   empty: EmptyState(

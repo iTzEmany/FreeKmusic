@@ -6010,4 +6010,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Search your library';
+
+  @override
+  String get genreMixTag => 'Suggested';
+
+  @override
+  String get genreMixOffJam => 'Suggestions off: Jam in progress';
+
+  @override
+  String get genreMixOffMetered => 'Suggestions off: metered network';
+
+  @override
+  String get genreMixOffOffline => 'Suggestions off: no network';
+
+  @override
+  String get genreMixOffNoTool => 'Suggestions off: online tool missing';
 }

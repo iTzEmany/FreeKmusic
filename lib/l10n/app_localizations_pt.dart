@@ -6033,4 +6033,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Pesquisar na biblioteca';
+
+  @override
+  String get genreMixTag => 'Sugerida';
+
+  @override
+  String get genreMixOffJam => 'Sugestões desativadas: Jam em curso';
+
+  @override
+  String get genreMixOffMetered =>
+      'Sugestões desativadas: rede com consumo limitado';
+
+  @override
+  String get genreMixOffOffline => 'Sugestões desativadas: sem rede';
+
+  @override
+  String get genreMixOffNoTool =>
+      'Sugestões desativadas: ferramenta online ausente';
 }

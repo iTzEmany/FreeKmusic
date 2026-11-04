@@ -6026,4 +6026,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Cerca nella libreria';
+
+  @override
+  String get genreMixTag => 'Suggerito';
+
+  @override
+  String get genreMixOffJam => 'Suggeriti spenti: Jam in corso';
+
+  @override
+  String get genreMixOffMetered => 'Suggeriti spenti: rete a consumo';
+
+  @override
+  String get genreMixOffOffline => 'Suggeriti spenti: nessuna rete';
+
+  @override
+  String get genreMixOffNoTool => 'Suggeriti spenti: strumento online assente';
 }

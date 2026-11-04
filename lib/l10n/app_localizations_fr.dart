@@ -6079,4 +6079,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Rechercher dans la bibliothèque';
+
+  @override
+  String get genreMixTag => 'Suggéré';
+
+  @override
+  String get genreMixOffJam => 'Suggestions désactivées : Jam en cours';
+
+  @override
+  String get genreMixOffMetered => 'Suggestions désactivées : réseau limité';
+
+  @override
+  String get genreMixOffOffline => 'Suggestions désactivées : pas de réseau';
+
+  @override
+  String get genreMixOffNoTool =>
+      'Suggestions désactivées : outil en ligne absent';
 }

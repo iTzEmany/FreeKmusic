@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../core/app_log.dart';
+import '../core/constants.dart';
+import '../core/import_row.dart';
 import '../core/network_kind.dart';
 import '../core/paths.dart';
 import '../data/settings/settings_store.dart';
@@ -13,11 +15,13 @@ import '../services/import/track_matcher.dart';
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
+import '../services/shuffle_plus/genre_mix.dart';
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
 import '../services/shuffle_plus/suggestion_log.dart';
 import 'database_providers.dart';
+import 'library_providers.dart' show genreTracksProvider;
 import 'jam_providers.dart';
 import 'seed_resolver_provider.dart';
 import 'player_providers.dart';
@@ -257,6 +261,44 @@ class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
     return c.pending.value;
   }
 }
+
+/// The online songs of a genre page (D-356): the library songs of the genre
+/// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,
+/// no yt-dlp) but whether Shuffle+ is on or not. Taken once per open page.
+final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String>((ref, genre) async* {
+  if (!kEnableYoutube) return;
+  final tracks = await ref.read(genreTracksProvider(genre).future);
+  if (tracks.length < genreMixEvery) return;
+  final resolver = await ref.watch(seedResolverProvider.future);
+  final downloads = await ref.watch(downloadIndexProvider.future);
+  final repo = ref.read(trackRepositoryProvider);
+  final radio = ref.read(ytmRadioServiceProvider);
+  yield* genreMix(
+    tracks: tracks,
+    resolver: resolver,
+    radioPage: radio.page,
+    log: ref.read(suggestionLogProvider),
+    loadInLibrary: () async {
+      final library = LibraryIndex(await repo.liteEntries());
+      return (r) =>
+          downloads.contains(r.id) ||
+          library.find(ImportRow(
+                index: 0,
+                title: r.title,
+                artists: r.artists.isEmpty ? [r.channel] : r.artists,
+                durationMs: r.duration?.inMilliseconds,
+              )) !=
+              null;
+    },
+    offReason: () async {
+      if (ref.read(jamProvider).active) return GenreMixOff.jam;
+      if ((await ref.read(ytDlpStatusProvider.future)).version == null) return GenreMixOff.noTool;
+      final net = await ref.read(networkProbeProvider).current();
+      if (!net.online) return GenreMixOff.offline;
+      return net.metered && ref.read(shufflePlusConfigProvider).unmeteredOnly ? GenreMixOff.metered : null;
+    },
+  );
+});
 
 /// Told to the user once (rate limit, too many errors): the shell shows them.
 final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((ref) async* {

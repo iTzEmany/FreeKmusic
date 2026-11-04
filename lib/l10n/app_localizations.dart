@@ -9594,6 +9594,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Cerca nella libreria'**
   String get librarySearchHint;
+
+  /// Label of a suggested online song in a genre page, next to the online icon.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggerito'**
+  String get genreMixTag;
+
+  /// Short notice of a genre page without suggestions: a Jam is on.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggeriti spenti: Jam in corso'**
+  String get genreMixOffJam;
+
+  /// Short notice of a genre page without suggestions: metered network.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggeriti spenti: rete a consumo'**
+  String get genreMixOffMetered;
+
+  /// Short notice of a genre page without suggestions: no network.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggeriti spenti: nessuna rete'**
+  String get genreMixOffOffline;
+
+  /// Short notice of a genre page without suggestions: the online tool (yt-dlp) is missing.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggeriti spenti: strumento online assente'**
+  String get genreMixOffNoTool;
 }
 
 class _AppLocalizationsDelegate

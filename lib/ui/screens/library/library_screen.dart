@@ -30,7 +30,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/progress_frame.dart';
-import '../../widgets/skeleton.dart';
+import '../../widgets/async_body.dart' show RowsLoading;
 import '../../../providers/player_providers.dart' show currentTrackProvider;
 import '../../widgets/smart_cover.dart';
 import '../devices/devices_sheet.dart';
@@ -164,11 +164,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
       );
     } else if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
-      // Fixed rows may not fit a short pane: clip instead of overflowing.
-      body = const SingleChildScrollView(
-        physics: NeverScrollableScrollPhysics(),
-        child: Skeleton.list(),
-      );
+      // Fixed rows may not fit a short pane: clipped instead of overflowing.
+      body = const RowsLoading();
     } else if (trackCount == 0 && folders != null && folders.isEmpty) {
       body = EmptyState(
         icon: Icons.library_music,

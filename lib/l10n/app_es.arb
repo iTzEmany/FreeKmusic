@@ -3221,5 +3221,10 @@
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "En directo",
   "closeSearch": "Cerrar la búsqueda",
-  "librarySearchHint": "Buscar en la biblioteca"
+  "librarySearchHint": "Buscar en la biblioteca",
+  "genreMixTag": "Sugerida",
+  "genreMixOffJam": "Sugerencias desactivadas: Jam en curso",
+  "genreMixOffMetered": "Sugerencias desactivadas: red de pago por uso",
+  "genreMixOffOffline": "Sugerencias desactivadas: sin red",
+  "genreMixOffNoTool": "Sugerencias desactivadas: falta la herramienta en línea"
 }

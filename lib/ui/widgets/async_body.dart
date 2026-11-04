@@ -16,6 +16,7 @@ class AsyncBody<T> extends StatelessWidget {
     this.onRetry,
     this.loading,
     this.errorMessage,
+    this.rowHeight,
   });
 
   final AsyncValue<T> value;
@@ -32,9 +33,12 @@ class AsyncBody<T> extends StatelessWidget {
   /// Replaces the default `loadFailed` text.
   final String? errorMessage;
 
+  /// Height of the real rows, for the default row skeleton.
+  final double? rowHeight;
+
   @override
   Widget build(BuildContext context) => value.when(
-    loading: () => loading ?? const _RowsLoading(),
+    loading: () => loading ?? RowsLoading(rowHeight: rowHeight),
     error: (e, st) => LoadError(e, st, onRetry: onRetry, message: errorMessage),
     data: (d) =>
         empty != null && (isEmpty?.call(d) ?? false) ? empty! : data(d),
@@ -75,20 +79,23 @@ class SliverAsyncBody<T> extends StatelessWidget {
 }
 
 /// Row skeleton: clipped at the bottom when the height is bounded, natural
-/// height (8 rows) when unbounded (e.g. inside a sheet).
-class _RowsLoading extends StatelessWidget {
-  const _RowsLoading();
+/// height (8 rows) when unbounded (e.g. inside a sheet). [rowHeight]: the
+/// height of the real rows.
+class RowsLoading extends StatelessWidget {
+  const RowsLoading({super.key, this.rowHeight});
+
+  final double? rowHeight;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) => box.hasBoundedHeight
-        ? const ClipRect(
+        ? ClipRect(
             child: OverflowBox(
               alignment: Alignment.topCenter,
               maxHeight: double.infinity,
-              child: Skeleton.list(),
+              child: Skeleton.list(rowHeight: rowHeight),
             ),
           )
-        : const Skeleton.list(),
+        : Skeleton.list(rowHeight: rowHeight),
   );
 }

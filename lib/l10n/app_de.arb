@@ -3221,5 +3221,10 @@
   "statsBarValue": "{when}, {time}",
   "homeRadioLive": "Live",
   "closeSearch": "Suche schließen",
-  "librarySearchHint": "Bibliothek durchsuchen"
+  "librarySearchHint": "Bibliothek durchsuchen",
+  "genreMixTag": "Vorgeschlagen",
+  "genreMixOffJam": "Vorschläge aus: Jam läuft",
+  "genreMixOffMetered": "Vorschläge aus: getaktetes Netz",
+  "genreMixOffOffline": "Vorschläge aus: kein Netz",
+  "genreMixOffNoTool": "Vorschläge aus: Online-Werkzeug fehlt"
 }

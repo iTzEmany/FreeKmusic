@@ -6053,4 +6053,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get librarySearchHint => 'Bibliothek durchsuchen';
+
+  @override
+  String get genreMixTag => 'Vorgeschlagen';
+
+  @override
+  String get genreMixOffJam => 'Vorschläge aus: Jam läuft';
+
+  @override
+  String get genreMixOffMetered => 'Vorschläge aus: getaktetes Netz';
+
+  @override
+  String get genreMixOffOffline => 'Vorschläge aus: kein Netz';
+
+  @override
+  String get genreMixOffNoTool => 'Vorschläge aus: Online-Werkzeug fehlt';
 }

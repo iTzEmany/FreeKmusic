@@ -3455,5 +3455,10 @@
   "homeRadioLive": "Ao vivo",
   "statsBarValue": "{when}, {time}",
   "closeSearch": "Fechar a pesquisa",
-  "librarySearchHint": "Pesquisar na biblioteca"
+  "librarySearchHint": "Pesquisar na biblioteca",
+  "genreMixTag": "Sugerida",
+  "genreMixOffJam": "Sugestões desativadas: Jam em curso",
+  "genreMixOffMetered": "Sugestões desativadas: rede com consumo limitado",
+  "genreMixOffOffline": "Sugestões desativadas: sem rede",
+  "genreMixOffNoTool": "Sugestões desativadas: ferramenta online ausente"
 }

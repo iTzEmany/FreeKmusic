@@ -3859,5 +3859,15 @@
   "closeSearch": "Chiudi la ricerca",
   "librarySearchHint": "Cerca nella libreria",
   "@closeSearch": {"description": "Tooltip of the ✕ of an empty search field in the Library: it closes the search."},
-  "@librarySearchHint": {"description": "Hint of the Library search field."}
+  "@librarySearchHint": {"description": "Hint of the Library search field."},
+  "genreMixTag": "Suggerito",
+  "genreMixOffJam": "Suggeriti spenti: Jam in corso",
+  "genreMixOffMetered": "Suggeriti spenti: rete a consumo",
+  "genreMixOffOffline": "Suggeriti spenti: nessuna rete",
+  "genreMixOffNoTool": "Suggeriti spenti: strumento online assente",
+  "@genreMixTag": {"description": "Label of a suggested online song in a genre page, next to the online icon."},
+  "@genreMixOffJam": {"description": "Short notice of a genre page without suggestions: a Jam is on."},
+  "@genreMixOffMetered": {"description": "Short notice of a genre page without suggestions: metered network."},
+  "@genreMixOffOffline": {"description": "Short notice of a genre page without suggestions: no network."},
+  "@genreMixOffNoTool": {"description": "Short notice of a genre page without suggestions: the online tool (yt-dlp) is missing."}
 }
