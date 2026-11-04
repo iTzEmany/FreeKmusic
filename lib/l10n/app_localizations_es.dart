@@ -6058,4 +6058,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get genreMixOffNoTool =>
       'Sugerencias desactivadas: falta la herramienta en línea';
+
+  @override
+  String get genreMixOffRateLimited =>
+      'Sugerencias en pausa: demasiadas solicitudes';
 }

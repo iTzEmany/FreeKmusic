@@ -3460,5 +3460,6 @@
   "genreMixOffJam": "Suggestions désactivées : Jam en cours",
   "genreMixOffMetered": "Suggestions désactivées : réseau limité",
   "genreMixOffOffline": "Suggestions désactivées : pas de réseau",
-  "genreMixOffNoTool": "Suggestions désactivées : outil en ligne absent"
+  "genreMixOffNoTool": "Suggestions désactivées : outil en ligne absent",
+  "genreMixOffRateLimited": "Suggestions en pause : trop de requêtes"
 }

@@ -6095,4 +6095,8 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get genreMixOffNoTool =>
       'Suggestions désactivées : outil en ligne absent';
+
+  @override
+  String get genreMixOffRateLimited =>
+      'Suggestions en pause : trop de requêtes';
 }

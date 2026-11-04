@@ -6025,4 +6025,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get genreMixOffNoTool => 'Suggestions off: online tool missing';
+
+  @override
+  String get genreMixOffRateLimited => 'Suggestions paused: too many requests';
 }

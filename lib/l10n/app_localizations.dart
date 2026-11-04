@@ -9624,6 +9624,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Suggeriti spenti: strumento online assente'**
   String get genreMixOffNoTool;
+
+  /// Short notice of a genre page without suggestions: the online service asked to slow down.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggeriti in pausa: troppe richieste'**
+  String get genreMixOffRateLimited;
 }
 
 class _AppLocalizationsDelegate

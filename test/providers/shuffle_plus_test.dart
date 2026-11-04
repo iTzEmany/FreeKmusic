@@ -68,6 +68,7 @@ class _Host implements ShuffleHost {
   @override
   bool isPlaying = true;
   int inserts = 0;
+  bool insertFails = false;
 
   final _changes = StreamController<void>.broadcast(sync: true);
   final _pos = StreamController<Duration>.broadcast(sync: true);
@@ -85,6 +86,7 @@ class _Host implements ShuffleHost {
 
   @override
   void insertAt(int index, int id) {
+    if (insertFails) throw StateError('queue unavailable');
     inserts++;
     real != null ? real!.insertAt(index, id) : _ids.insert(index, id);
     _changes.add(null);
@@ -482,6 +484,25 @@ void main() {
     controller.poke();
     await settle();
     expect(seen, hasLength(n), reason: 'no emission when nothing changed');
+  });
+
+  test('pending: an error in the engine leaves nothing incoming', () async {
+    final prepare = Completer<void>();
+    prepareHook = (r) async {
+      prepared.add(r.id);
+      await prepare.future;
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => prepared.isNotEmpty);
+    expect(controller.pending.value.incoming, 3);
+    host.insertFails = true;
+    prepare.complete();
+    await until(() => controller.pending.value == ShufflePlusPending.none);
   });
 
   test('pending: back to none with Shuffle+ off, in a Jam, and when the controller stops', () async {

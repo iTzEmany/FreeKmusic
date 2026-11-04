@@ -6041,4 +6041,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get genreMixOffNoTool => 'Suggeriti spenti: strumento online assente';
+
+  @override
+  String get genreMixOffRateLimited => 'Suggeriti in pausa: troppe richieste';
 }

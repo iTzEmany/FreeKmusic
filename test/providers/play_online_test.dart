@@ -121,6 +121,7 @@ void main() {
       (track: null, online: _r('s0')),
     ];
     await player.playMixed(mix);
+    expect(plus, isFalse, reason: 'the list brings its own suggestions (R-18)');
     expect(handler.queueIds.take(2), ids);
     expect(online.entryOf(handler.queueIds[2])?.result.id, 's0');
     expect(handler.queueIds, hasLength(3));
@@ -129,6 +130,19 @@ void main() {
     expect(handler.queueIds.toSet(), hasLength(3));
     expect(handler.queueIds.where((i) => isOnlineId(i)), hasLength(1));
     expect(handler.queueIds.where(ids.contains), hasLength(2));
+    plus = true;
+    await player.playMixed([mix[0], mix[1]]);
+    expect(plus, isTrue, reason: 'library only: Shuffle+ stays');
+  });
+
+  test('playMixed from an index starts there', () async {
+    final tracks = await db.select(db.tracks).get();
+    await player.playMixed([
+      (track: tracks[0], online: null),
+      (track: null, online: _r('s0')),
+      (track: tracks[1], online: null),
+    ], index: 2);
+    expect(handler.queueIds[handler.currentIndex], tracks[1].id);
   });
 
   test('playOnlineList with shuffle starts at a random track, not always the first', () async {

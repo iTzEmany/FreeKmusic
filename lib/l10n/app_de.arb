@@ -3226,5 +3226,6 @@
   "genreMixOffJam": "Vorschläge aus: Jam läuft",
   "genreMixOffMetered": "Vorschläge aus: getaktetes Netz",
   "genreMixOffOffline": "Vorschläge aus: kein Netz",
-  "genreMixOffNoTool": "Vorschläge aus: Online-Werkzeug fehlt"
+  "genreMixOffNoTool": "Vorschläge aus: Online-Werkzeug fehlt",
+  "genreMixOffRateLimited": "Vorschläge pausiert: zu viele Anfragen"
 }

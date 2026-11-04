@@ -3869,5 +3869,7 @@
   "@genreMixOffJam": {"description": "Short notice of a genre page without suggestions: a Jam is on."},
   "@genreMixOffMetered": {"description": "Short notice of a genre page without suggestions: metered network."},
   "@genreMixOffOffline": {"description": "Short notice of a genre page without suggestions: no network."},
-  "@genreMixOffNoTool": {"description": "Short notice of a genre page without suggestions: the online tool (yt-dlp) is missing."}
+  "@genreMixOffNoTool": {"description": "Short notice of a genre page without suggestions: the online tool (yt-dlp) is missing."},
+  "genreMixOffRateLimited": "Suggeriti in pausa: troppe richieste",
+  "@genreMixOffRateLimited": {"description": "Short notice of a genre page without suggestions: the online service asked to slow down."}
 }

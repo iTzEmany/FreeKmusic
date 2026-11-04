@@ -6050,4 +6050,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get genreMixOffNoTool =>
       'Sugestões desativadas: ferramenta online ausente';
+
+  @override
+  String get genreMixOffRateLimited => 'Sugestões em pausa: demasiados pedidos';
 }

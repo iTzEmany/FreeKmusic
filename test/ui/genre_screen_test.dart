@@ -204,4 +204,61 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets('mix: a tap on a library row plays the shown list from that row', (
+    tester,
+  ) async {
+    final dir = Directory.systemTemp.createTempSync('genre_tap');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final h = await mixPage(
+      tester,
+      Stream.value(GenreMixState(suggested: [_song('a'), _song('b')])),
+      extra: [
+        downloadIndexProvider.overrideWith(
+          (ref) async => DownloadIndex(File(p.join(dir.path, 'd.json'))),
+        ),
+      ],
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    // The fourth row shown: the library song after the first suggestion.
+    final rows = [
+      for (final t in ['Song 0', 'Song 1', 'Song 2', 'Song 3', 'Online a'])
+        (t, tester.getTopLeft(find.text(t)).dy),
+    ]..sort((a, b) => a.$2.compareTo(b.$2));
+    await tester.tap(find.text(rows[3].$1));
+    for (var i = 0; i < 100 && h.handler.queueIds.isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump();
+    }
+    expect([for (final id in h.handler.queueIds) isOnlineId(id)], [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+    ]);
+    expect(h.handler.currentIndex, 3);
+    await h.dispose(tester);
+  });
+
+  testWidgets('mix: no overflow at 150 % text, skeleton and suggested rows', (
+    tester,
+  ) async {
+    final c = StreamController<GenreMixState>();
+    addTearDown(c.close);
+    final h = await mixPage(tester, c.stream);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    c.add(const GenreMixState(incoming: 1, suggested: []));
+    await tester.pump(const Duration(milliseconds: 50));
+    c.add(GenreMixState(suggested: [_song('a')], incoming: 1));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Suggerito'), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
 }

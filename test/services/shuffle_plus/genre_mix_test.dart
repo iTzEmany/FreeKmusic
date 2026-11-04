@@ -58,6 +58,9 @@ void main() {
   var searches = 0;
   GenreMixOff? off;
   var radioFails = false;
+  var rateLimited = false;
+  var cancelled = false;
+  var emptyPages = false;
   var inLibrary = <String>{};
 
   setUp(() async {
@@ -83,6 +86,9 @@ void main() {
     asked = [];
     off = null;
     radioFails = false;
+    rateLimited = false;
+    cancelled = false;
+    emptyPages = false;
     inLibrary = {};
   });
 
@@ -92,12 +98,14 @@ void main() {
     resolver: resolver,
     radioPage: (id, {continuation}) async {
       asked.add(id);
+      if (rateLimited) throw const YtException(YtErrorKind.rateLimited);
       if (radioFails) throw const YtException(YtErrorKind.network);
-      return page(id);
+      return emptyPages ? const RadioPage.empty() : page(id);
     },
     log: log,
     loadInLibrary: () async =>
         (r) => inLibrary.contains(r.id),
+    cancelled: () => cancelled,
   ).toList();
 
   test('one slot for every 2 library songs: 3 incoming first, then each one as it is found', () async {
@@ -159,5 +167,26 @@ void main() {
 
   test('fewer than 2 library songs: no slot at all', () async {
     expect(await run(1), isEmpty);
+  });
+
+  test('a rate limit keeps what was found and says why', () async {
+    rateLimited = true;
+    final states = await run(6);
+    expect(states.last.off, GenreMixOff.rateLimited);
+    expect(states.last.incoming, 0);
+    expect(asked, hasLength(1), reason: 'no request after the 429');
+  });
+
+  test('cancelled (page left): no request at all', () async {
+    cancelled = true;
+    final states = await run(6);
+    expect(asked, isEmpty);
+    expect(states.last.incoming, 0);
+  });
+
+  test('requests (radio pages and searches) stay within a few', () async {
+    emptyPages = true;
+    await run(40);
+    expect(asked.length + searches, lessThanOrEqualTo(4));
   });
 }

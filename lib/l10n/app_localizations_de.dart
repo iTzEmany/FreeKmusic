@@ -6068,4 +6068,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get genreMixOffNoTool => 'Vorschläge aus: Online-Werkzeug fehlt';
+
+  @override
+  String get genreMixOffRateLimited => 'Vorschläge pausiert: zu viele Anfragen';
 }

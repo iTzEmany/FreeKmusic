@@ -174,6 +174,13 @@ class ShufflePlusController {
   /// Whether the three-failures stop is in force.
   bool get stoppedForSession => _sessionOff;
 
+  /// True while the 15-minute pause after a rate limit lasts.
+  bool get rateLimited => _pausedUntil?.isAfter(_now()) ?? false;
+
+  /// The library as last read (null before the first radio request): shared
+  /// with the genre page, which asks the same question.
+  LibraryIndex? get libraryIndex => _library;
+
   void start() {
     _subs
       ..add(host.changes.listen((_) => poke()))
@@ -213,6 +220,7 @@ class ShufflePlusController {
       } while (_again && !_disposed);
     } on Object catch (e, st) {
       AppLog.w('shuffle+ step failed', e, st);
+      _publish(); // nothing is on its way after a failure
       _retryAt = _now().add(retryAfterError);
       _wakeAt(_retryAt!);
     } finally {

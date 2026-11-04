@@ -145,12 +145,14 @@ class PlayerController {
       );
 
   /// Play of a list that mixes library tracks and online songs (a genre page):
-  /// like [playAll], from a random item when shuffle is on, else the first. The
+  /// from item [index], else like [playAll] (a random item when shuffle is on,
+  /// else the first). Shuffle+ goes off when the list has online songs, as in
+  /// [playOnlineList] (R-18): the list brings its own suggestions. The
   /// online ones enter the queue as every streamed song does. In a Jam, as
   /// [playFromList]: the picked item joins the shared queue (D-89).
-  Future<void> playMixed(List<MixItem> items, {PlayContext? context}) async {
+  Future<void> playMixed(List<MixItem> items, {int? index, PlayContext? context}) async {
     if (items.isEmpty) return;
-    final at = _handler.shuffleEnabled ? _random.nextInt(items.length) : 0;
+    final at = index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0);
     if (inJam) {
       final t = items[at].track, r = items[at].online;
       if (t != null) await addToJam?.call([t.id]);
@@ -169,7 +171,10 @@ class PlayerController {
     onContext?.call(context);
     _handler.setPlayContext(context?.kind.index, context?.name);
     _requestNotificationPermissionOnce();
-    await _handler.playQueue(ids, at);
+    final load = _handler.playQueue(ids, at);
+    // After playQueue has set the queue (see [playOnlineList]).
+    if (items.any((i) => i.online != null)) setShufflePlus?.call(false);
+    await load;
   }
 
   /// Plays a list of radio stations from [index]; next and previous move

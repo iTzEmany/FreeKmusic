@@ -52,10 +52,8 @@ String _offText(AppLocalizations l, GenreMixOff off) => switch (off) {
   GenreMixOff.metered => l.genreMixOffMetered,
   GenreMixOff.offline => l.genreMixOffOffline,
   GenreMixOff.noTool => l.genreMixOffNoTool,
+  GenreMixOff.rateLimited => l.genreMixOffRateLimited,
 };
-
-/// Height of an online row (fixed in [OnlineSongRow]).
-const _suggestedExtent = 72.0;
 
 /// Tracks of one genre, with an online suggestion every second one (D-356).
 class GenreScreen extends ConsumerWidget {
@@ -70,6 +68,16 @@ class GenreScreen extends ConsumerWidget {
         ref.watch(genreTracksProvider(genre)).value ?? const <Track>[];
     final mix = ref.watch(genreMixProvider(genre)).value ?? GenreMixState.none;
     final rows = _mixRows(tracks.length, mix);
+    final onlineExtent = onlineRowExtentOf(context);
+    // What is shown without the placeholders, and where each row stands in it.
+    final items = <MixItem>[];
+    final itemAt = <int>[];
+    for (final r in rows) {
+      itemAt.add(items.length);
+      if (r.track != null || r.suggested != null) {
+        items.add((track: r.track == null ? null : tracks[r.track!], online: r.suggested));
+      }
+    }
     final extent = trackRowExtentOf(
       context,
       ref.watch(settingsProvider).compactMode,
@@ -101,14 +109,7 @@ class GenreScreen extends ConsumerWidget {
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
         // The list as shown: the suggested songs that have arrived, in place.
-        onPlay: () => ctrl.playMixed([
-          for (final r in rows)
-            if (r.track != null || r.suggested != null)
-              (
-                track: r.track == null ? null : tracks[r.track!],
-                online: r.suggested,
-              ),
-        ], context: ctx),
+        onPlay: () => ctrl.playMixed(items, context: ctx),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         slivers: [
           if (mix.off != null)
@@ -130,7 +131,7 @@ class GenreScreen extends ConsumerWidget {
           SliverVariedExtentList.builder(
             itemCount: rows.length,
             itemExtentBuilder: (i, _) =>
-                rows[i].track == null ? _suggestedExtent : extent,
+                rows[i].track == null ? onlineExtent : extent,
             itemBuilder: (_, i) {
               final row = rows[i];
               final t = row.track;
@@ -139,12 +140,12 @@ class GenreScreen extends ConsumerWidget {
                   track: tracks[t],
                   compact: compact,
                   selection: selection,
-                  onTap: () => ctrl.playFromList(tracks, t, context: ctx),
+                  onTap: () => ctrl.playMixed(items, index: itemAt[i], context: ctx),
                 );
               }
               final r = row.suggested;
               return r == null
-                  ? const Skeleton.list(rows: 1, rowHeight: _suggestedExtent)
+                  ? Skeleton.list(rows: 1, rowHeight: onlineExtent)
                   : _SuggestedRow(result: r);
             },
           ),

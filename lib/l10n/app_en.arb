@@ -3226,5 +3226,6 @@
   "genreMixOffJam": "Suggestions off: Jam in progress",
   "genreMixOffMetered": "Suggestions off: metered network",
   "genreMixOffOffline": "Suggestions off: no network",
-  "genreMixOffNoTool": "Suggestions off: online tool missing"
+  "genreMixOffNoTool": "Suggestions off: online tool missing",
+  "genreMixOffRateLimited": "Suggestions paused: too many requests"
 }

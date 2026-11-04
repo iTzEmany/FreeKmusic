@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -9,13 +10,17 @@ import '../core/constants.dart';
 import '../core/import_row.dart';
 import '../core/network_kind.dart';
 import '../core/paths.dart';
+import '../data/db/app_database.dart' show Track;
 import '../data/settings/settings_store.dart';
 import '../services/audio/codecore_audio_handler.dart';
 import '../services/import/track_matcher.dart';
+import '../services/online/download_index.dart';
+import '../services/online/ytm_radio_parser.dart' show RadioPage;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
+import '../services/shuffle_plus/seed_resolver.dart' show SeedResolver;
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
@@ -262,27 +267,79 @@ class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
   }
 }
 
+/// The library index off the UI isolate.
+LibraryIndex _buildIndex(List<LibraryEntryLite> entries) => LibraryIndex(entries);
+
 /// The online songs of a genre page (D-356): the library songs of the genre
 /// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,
-/// no yt-dlp) but whether Shuffle+ is on or not. Taken once per open page.
-final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String>((ref, genre) async* {
-  if (!kEnableYoutube) return;
-  final tracks = await ref.read(genreTracksProvider(genre).future);
-  if (tracks.length < genreMixEvery) return;
-  final resolver = await ref.watch(seedResolverProvider.future);
-  final downloads = await ref.watch(downloadIndexProvider.future);
+/// no yt-dlp, rate limit) but whether Shuffle+ is on or not. Worked out once
+/// per opening: every dependency is read once, before the first await, so a
+/// download or a promotion does not restart it. It stays for 5 minutes after
+/// the page is left, so opening the genre again does not repeat the requests.
+final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String>((ref, genre) {
+  if (!kEnableYoutube) return const Stream.empty();
+  final link = ref.keepAlive();
+  final timer = Timer(const Duration(minutes: 5), link.close);
+  ref.onDispose(timer.cancel);
+  // Listened (not restarting): an unlistened stream provider stays paused.
+  ref.listen(genreTracksProvider(genre), (_, _) {});
+  final tracks = ref.read(genreTracksProvider(genre).future);
+  final resolver = ref.read(seedResolverProvider.future);
+  final downloads = ref.read(downloadIndexProvider.future);
+  final tool = ref.read(ytDlpStatusProvider.future);
+  final probe = ref.read(networkProbeProvider);
   final repo = ref.read(trackRepositoryProvider);
   final radio = ref.read(ytmRadioServiceProvider);
-  yield* genreMix(
+  final log = ref.read(suggestionLogProvider);
+  final jam = ref.read(jamProvider).active;
+  final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
+  final engine = ref.read(shufflePlusProvider).value;
+  final paused = engine?.rateLimited ?? false;
+  final shared = engine?.libraryIndex;
+  return _genreMix(
     tracks: tracks,
     resolver: resolver,
+    downloads: downloads,
     radioPage: radio.page,
-    log: ref.read(suggestionLogProvider),
+    log: log,
+    offReason: () async {
+      if (jam) return GenreMixOff.jam;
+      if ((await tool).version == null) return GenreMixOff.noTool;
+      final net = await probe.current();
+      if (!net.online) return GenreMixOff.offline;
+      if (net.metered && unmeteredOnly) return GenreMixOff.metered;
+      return paused ? GenreMixOff.rateLimited : null;
+    },
+    library: () async => shared ?? await compute(_buildIndex, await repo.liteEntries()),
+    cancelled: () => !ref.mounted,
+  );
+});
+
+Stream<GenreMixState> _genreMix({
+  required Future<List<Track>> tracks,
+  required Future<SeedResolver> resolver,
+  required Future<DownloadIndex> downloads,
+  required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
+  required SuggestionLog log,
+  required Future<GenreMixOff?> Function() offReason,
+  required Future<LibraryIndex> Function() library,
+  required bool Function() cancelled,
+}) async* {
+  final list = await tracks;
+  if (list.length < genreMixEvery) return;
+  final index = await downloads;
+  yield* genreMix(
+    tracks: list,
+    resolver: await resolver,
+    radioPage: radioPage,
+    log: log,
+    cancelled: cancelled,
+    offReason: offReason,
     loadInLibrary: () async {
-      final library = LibraryIndex(await repo.liteEntries());
+      final lib = await library();
       return (r) =>
-          downloads.contains(r.id) ||
-          library.find(ImportRow(
+          index.contains(r.id) ||
+          lib.find(ImportRow(
                 index: 0,
                 title: r.title,
                 artists: r.artists.isEmpty ? [r.channel] : r.artists,
@@ -290,15 +347,8 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
               )) !=
               null;
     },
-    offReason: () async {
-      if (ref.read(jamProvider).active) return GenreMixOff.jam;
-      if ((await ref.read(ytDlpStatusProvider.future)).version == null) return GenreMixOff.noTool;
-      final net = await ref.read(networkProbeProvider).current();
-      if (!net.online) return GenreMixOff.offline;
-      return net.metered && ref.read(shufflePlusConfigProvider).unmeteredOnly ? GenreMixOff.metered : null;
-    },
   );
-});
+}
 
 /// Told to the user once (rate limit, too many errors): the shell shows them.
 final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((ref) async* {
