@@ -1,6 +1,7 @@
 import '../../widgets/cc_sheet.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 
 import '../playlists/export_dialog.dart';
 
@@ -11,7 +12,6 @@ import '../../../data/repositories/library_entries.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
-import '../../../providers/nav_providers.dart';
 import '../../../providers/podcast_providers.dart';
 import '../../../providers/review_providers.dart';
 import '../../../providers/settings_providers.dart';
@@ -20,7 +20,9 @@ import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/artist_avatar.dart';
+import '../../widgets/cc_search_field.dart';
 import '../../widgets/cover_image.dart';
+import 'library_search.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/playlist_cover.dart';
@@ -32,7 +34,7 @@ import '../devices/devices_sheet.dart';
 import '../playlists/playlist_detail_screen.dart';
 import '../podcast/podcasts_screen.dart';
 import '../radio/radio_screen.dart';
-import '../../../providers/radio_providers.dart' show savedRadiosProvider;
+import '../../../providers/radio_providers.dart' show savedRadiosProvider, searchPrefillProvider;
 import 'album_detail_screen.dart';
 import 'all_tracks_screen.dart';
 import 'artist_screen.dart';
@@ -68,6 +70,21 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryKind? _kind;
+  bool _searching = false;
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  void _setSearching(bool v) {
+    if (!v) _searchController.clear();
+    setState(() => _searching = v);
+  }
 
   void _setSettings({LibrarySort? sort, bool? grid}) => ref
       .read(settingsProvider.notifier)
@@ -161,32 +178,107 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Column(
-        children: [
-          const _LibraryHeader(),
-          const ScanStatus(),
-          _KindTabs(
-            selected: _kind,
-            onChanged: (k) => setState(() => _kind = k),
+    final text = _searchController.text.trim();
+    Widget slide(Widget c, Animation<double> a) => FadeTransition(
+      opacity: a,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(-0.08, 0), end: Offset.zero).animate(a),
+        child: c,
+      ),
+    );
+    return PopScope(
+      canPop: !_searching,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _setSearching(false);
+      },
+      child: CallbackShortcuts(
+        bindings: {
+          if (_searching)
+            const SingleActivator(LogicalKeyboardKey.escape): () =>
+                _setSearching(false),
+        },
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
+            children: [
+              AnimatedSwitcher(
+                duration: ccDuration(context, CcMotion.sheet),
+                transitionBuilder: slide,
+                child: _searching
+                    ? Padding(
+                        key: const ValueKey('library-search-bar'),
+                        padding: const EdgeInsets.fromLTRB(
+                          CcDims.margin,
+                          CcDims.gap12,
+                          CcDims.margin,
+                          CcDims.gap8,
+                        ),
+                        child: CcSearchField(
+                          controller: _searchController,
+                          focusNode: _searchFocus,
+                          hint: l.librarySearchHint,
+                          autofocus: true,
+                          onChanged: (_) => setState(() {}),
+                          onCloseEmpty: () => _setSearching(false),
+                        ),
+                      )
+                    : _LibraryHeader(
+                        key: const ValueKey('library-header'),
+                        onSearch: () => _setSearching(true),
+                      ),
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: ccDuration(context, CcMotion.enter),
+                  child: _searching
+                      ? KeyedSubtree(
+                          key: const ValueKey('library-results'),
+                          child: text.isEmpty
+                              ? const SizedBox.shrink()
+                              : LibraryResults(
+                                  query: SearchQuery(text),
+                                  onOnline: () {
+                                    ref
+                                        .read(searchPrefillProvider.notifier)
+                                        .set(text);
+                                    _setSearching(false);
+                                    ShellNav.showSearch(context, ref);
+                                  },
+                                ),
+                        )
+                      : Column(
+                          key: const ValueKey('library-content'),
+                          children: [
+                            const ScanStatus(),
+                            _KindTabs(
+                              selected: _kind,
+                              onChanged: (k) => setState(() => _kind = k),
+                            ),
+                            LibraryToolbar(
+                              countLabel: count,
+                              sort: sort,
+                              grid: settings.libraryGrid,
+                              onSort: (s) => _setSettings(sort: s),
+                              onToggleGrid: () =>
+                                  _setSettings(grid: !settings.libraryGrid),
+                            ),
+                            Expanded(child: body),
+                          ],
+                        ),
+                ),
+              ),
+            ],
           ),
-          LibraryToolbar(
-            countLabel: count,
-            sort: sort,
-            grid: settings.libraryGrid,
-            onSort: (s) => _setSettings(sort: s),
-            onToggleGrid: () => _setSettings(grid: !settings.libraryGrid),
-          ),
-          Expanded(child: body),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _LibraryHeader extends ConsumerWidget {
-  const _LibraryHeader();
+  const _LibraryHeader({super.key, required this.onSearch});
+
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -213,8 +305,7 @@ class _LibraryHeader extends ConsumerWidget {
           IconButton(
             tooltip: l.navSearch,
             icon: const Icon(Icons.search_rounded),
-            onPressed: () =>
-                ref.read(navIndexProvider.notifier).set(NavTab.search.index),
+            onPressed: onSearch,
           ),
           NewPlaylistMenu(
             onSmart: () =>

@@ -14,6 +14,7 @@ class CcSearchField extends StatefulWidget {
     this.onSubmitted,
     this.onChanged,
     this.onClear,
+    this.onCloseEmpty,
     this.bare = false,
     this.autofocus = false,
   });
@@ -29,6 +30,9 @@ class CcSearchField extends StatefulWidget {
 
   /// What the ✕ does with text in the field (default: clear the controller).
   final VoidCallback? onClear;
+
+  /// Empty field: the ✕ runs this (closes the search) instead of hiding the keyboard.
+  final VoidCallback? onCloseEmpty;
 
   /// No fill and no border (the dock draws its own surface).
   final bool bare;
@@ -72,9 +76,7 @@ class _CcSearchFieldState extends State<CcSearchField> {
         final focused = focusNode.hasFocus;
         final VoidCallback? action = hasText
             ? (widget.onClear ?? controller.clear)
-            : focused
-            ? focusNode.unfocus
-            : null;
+            : widget.onCloseEmpty ?? (focused ? focusNode.unfocus : null);
         return TextField(
           controller: controller,
           focusNode: focusNode,
@@ -86,7 +88,11 @@ class _CcSearchFieldState extends State<CcSearchField> {
             hintText: widget.hint,
             prefixIcon: const Icon(Icons.search_rounded),
             suffixIcon: IconButton(
-              tooltip: !hasText && focused ? l.closeKeyboard : l.clearSearch,
+              tooltip: !hasText && widget.onCloseEmpty != null
+                  ? l.closeSearch
+                  : !hasText && focused
+                  ? l.closeKeyboard
+                  : l.clearSearch,
               icon: const Icon(Icons.close_rounded),
               disabledColor: cc.textFaint,
               onPressed: action,

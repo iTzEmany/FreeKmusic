@@ -7,6 +7,7 @@ import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
+import 'package:codecore/ui/widgets/cc_search_field.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
@@ -15,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
+import '../support/search_input.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
@@ -78,6 +80,39 @@ void main() {
     );
     expect(find.byType(Skeleton), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('the lens opens a focused search with grouped results; Back closes it', (t) async {
+    final h = await open(t, width: 900);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsOneWidget);
+    expect(t.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
+    expect(find.text('Libreria'), findsNothing);
+    await t.enterText(find.byType(TextField), 'Song');
+    await t.pump();
+    await indexReady(t);
+    await _settle(t);
+    expect(find.text('Brani'), findsOneWidget);
+    expect(find.text('Song 0'), findsOneWidget);
+    await t.binding.handlePopRoute();
+    await _settle(t);
+    expect(find.byType(CcSearchField), findsNothing);
+    expect(find.text('Libreria'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('with reduced motion the search opens at once', (t) async {
+    t.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(t.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final h = await open(t, width: 900);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await t.pump();
+    await t.pump();
+    expect(find.byType(CcSearchField), findsOneWidget);
+    expect(find.text('Libreria'), findsNothing);
     await h.dispose(t);
   });
 

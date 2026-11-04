@@ -6035,4 +6035,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get homeRadioLive => 'Ao vivo';
+
+  @override
+  String get closeSearch => 'Fechar a pesquisa';
+
+  @override
+  String get librarySearchHint => 'Pesquisar na biblioteca';
 }

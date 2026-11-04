@@ -3851,5 +3851,9 @@
   "@loadingContent": {"description": "Single screen-reader label of a skeleton placeholder while content loads."},
   "statsBarValue": "{when}, {time}",
   "@statsBarValue": {"description": "Label of a stats bar (touch and screen reader): day or month, then the time listened.", "placeholders": {"when": {"type": "String"}, "time": {"type": "String"}}},
-  "homeRadioLive": "In diretta"
+  "homeRadioLive": "In diretta",
+  "closeSearch": "Chiudi la ricerca",
+  "librarySearchHint": "Cerca nella libreria",
+  "@closeSearch": {"description": "Tooltip of the ✕ of an empty search field in the Library: it closes the search."},
+  "@librarySearchHint": {"description": "Hint of the Library search field."}
 }

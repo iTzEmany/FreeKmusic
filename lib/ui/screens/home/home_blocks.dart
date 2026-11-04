@@ -219,10 +219,10 @@ class AddedLately extends ConsumerWidget {
           l.homeAddedLately,
           actionLabel: l.showAll,
           onAction: () {
-            ref
-                .read(trackQueryProvider(false).notifier)
-                .update((q) => q.copyWith(sort: SortOption.addedAt, text: ''));
-            ShellNav.open<void>(context, const AllTracksScreen());
+            ShellNav.open<void>(
+              context,
+              const AllTracksScreen(initialSort: SortOption.addedAt),
+            );
           },
         ),
         CoverFan(albums: albums),

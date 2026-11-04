@@ -6012,4 +6012,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeRadioLive => 'Live';
+
+  @override
+  String get closeSearch => 'Close search';
+
+  @override
+  String get librarySearchHint => 'Search your library';
 }

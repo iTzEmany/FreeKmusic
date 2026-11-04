@@ -3456,5 +3456,7 @@
   "closeKeyboard": "Fermer le clavier",
   "loadingContent": "Chargement…",
   "homeRadioLive": "En direct",
-  "statsBarValue": "{when}, {time}"
+  "statsBarValue": "{when}, {time}",
+  "closeSearch": "Fermer la recherche",
+  "librarySearchHint": "Rechercher dans la bibliothèque"
 }

@@ -6028,4 +6028,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get homeRadioLive => 'In diretta';
+
+  @override
+  String get closeSearch => 'Chiudi la ricerca';
+
+  @override
+  String get librarySearchHint => 'Cerca nella libreria';
 }

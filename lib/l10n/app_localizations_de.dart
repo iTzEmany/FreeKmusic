@@ -6055,4 +6055,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get homeRadioLive => 'Live';
+
+  @override
+  String get closeSearch => 'Suche schließen';
+
+  @override
+  String get librarySearchHint => 'Bibliothek durchsuchen';
 }
