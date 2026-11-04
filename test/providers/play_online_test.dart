@@ -110,6 +110,27 @@ void main() {
     expect(plus, isFalse);
   });
 
+  test('playMixed queues library and online songs in the given order; shuffle keeps the same items', () async {
+    final tracks = [
+      for (final id in ids)
+        (await db.select(db.tracks).get()).firstWhere((t) => t.id == id),
+    ];
+    final mix = <MixItem>[
+      (track: tracks[0], online: null),
+      (track: tracks[1], online: null),
+      (track: null, online: _r('s0')),
+    ];
+    await player.playMixed(mix);
+    expect(handler.queueIds.take(2), ids);
+    expect(online.entryOf(handler.queueIds[2])?.result.id, 's0');
+    expect(handler.queueIds, hasLength(3));
+    await player.setShuffle(true);
+    await player.playMixed(mix);
+    expect(handler.queueIds.toSet(), hasLength(3));
+    expect(handler.queueIds.where((i) => isOnlineId(i)), hasLength(1));
+    expect(handler.queueIds.where(ids.contains), hasLength(2));
+  });
+
   test('playOnlineList with shuffle starts at a random track, not always the first', () async {
     player = PlayerController(handler, null, random: _FixedRandom(3), libraryIdOf: (_) async => null);
     await player.playOnlineList([for (var i = 0; i < 5; i++) _r('v$i')], shuffle: true);

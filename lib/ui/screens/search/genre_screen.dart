@@ -37,7 +37,10 @@ List<_MixRow> _mixRows(int tracks, GenreMixState mix) {
   for (var i = 0; i < tracks; i++) {
     rows.add((track: i, suggested: null));
     if ((i + 1) % genreMixEvery == 0 && k < slots) {
-      rows.add((track: null, suggested: k < mix.suggested.length ? mix.suggested[k] : null));
+      rows.add((
+        track: null,
+        suggested: k < mix.suggested.length ? mix.suggested[k] : null,
+      ));
       k++;
     }
   }
@@ -67,7 +70,10 @@ class GenreScreen extends ConsumerWidget {
         ref.watch(genreTracksProvider(genre)).value ?? const <Track>[];
     final mix = ref.watch(genreMixProvider(genre)).value ?? GenreMixState.none;
     final rows = _mixRows(tracks.length, mix);
-    final extent = trackRowExtentOf(context, ref.watch(settingsProvider).compactMode);
+    final extent = trackRowExtentOf(
+      context,
+      ref.watch(settingsProvider).compactMode,
+    );
     final ctrl = ref.read(playerControllerProvider);
     final compact = ref.watch(settingsProvider).compactMode;
     final ctx = PlayContext(PlayContextKind.playlist, genre);
@@ -79,10 +85,7 @@ class GenreScreen extends ConsumerWidget {
     if (tracks.isEmpty) {
       return Scaffold(
         appBar: CcAppBar(title: genre),
-        body: EmptyState(
-          icon: Icons.music_note_rounded,
-          message: l.noResults,
-        ),
+        body: EmptyState(icon: Icons.music_note_rounded, message: l.noResults),
       );
     }
     return SelectionScope(
@@ -97,7 +100,15 @@ class GenreScreen extends ConsumerWidget {
           tracks: tracks.length,
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
-        onPlay: () => ctrl.playAll(tracks, context: ctx),
+        // The list as shown: the suggested songs that have arrived, in place.
+        onPlay: () => ctrl.playMixed([
+          for (final r in rows)
+            if (r.track != null || r.suggested != null)
+              (
+                track: r.track == null ? null : tracks[r.track!],
+                online: r.suggested,
+              ),
+        ], context: ctx),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         slivers: [
           if (mix.off != null)
@@ -111,9 +122,8 @@ class GenreScreen extends ConsumerWidget {
                 ),
                 child: Text(
                   _offText(l, mix.off!),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.cc.textMuted,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: context.cc.textMuted),
                 ),
               ),
             ),
@@ -155,9 +165,15 @@ class _SuggestedRow extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final inLibrary =
-        ref.watch(downloadIndexProvider).value?.contains(result.id, source: result.source) ?? false;
+        ref
+            .watch(downloadIndexProvider)
+            .value
+            ?.contains(result.id, source: result.source) ??
+        false;
     final item = ref.watch(
-      downloadsProvider.select((d) => d.where((x) => x.result.id == result.id).lastOrNull),
+      downloadsProvider.select(
+        (d) => d.where((x) => x.result.id == result.id).lastOrNull,
+      ),
     );
     return OnlineSongRow(
       result: result,
@@ -174,7 +190,8 @@ class _SuggestedRow extends ConsumerWidget {
               l.genreMixTag,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cc.accentSoft),
+              style: Theme.of(context).textTheme.labelSmall
+                  ?.copyWith(color: cc.accentSoft),
             ),
           ),
         ],

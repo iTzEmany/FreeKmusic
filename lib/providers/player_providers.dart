@@ -65,6 +65,9 @@ final playContextProvider = NotifierProvider<PlayContextNotifier, PlayContext?>(
   PlayContextNotifier.new,
 );
 
+/// One entry of a mixed list: a library [track] or an [online] song.
+typedef MixItem = ({Track? track, YtResult? online});
+
 class PlayerController {
   PlayerController(
     this._handler,
@@ -140,6 +143,34 @@ class PlayerController {
             : 0,
         context: context,
       );
+
+  /// Play of a list that mixes library tracks and online songs (a genre page):
+  /// like [playAll], from a random item when shuffle is on, else the first. The
+  /// online ones enter the queue as every streamed song does. In a Jam, as
+  /// [playFromList]: the picked item joins the shared queue (D-89).
+  Future<void> playMixed(List<MixItem> items, {PlayContext? context}) async {
+    if (items.isEmpty) return;
+    final at = _handler.shuffleEnabled ? _random.nextInt(items.length) : 0;
+    if (inJam) {
+      final t = items[at].track, r = items[at].online;
+      if (t != null) await addToJam?.call([t.id]);
+      if (r != null) _onlineToJam(r);
+      return;
+    }
+    final ids = <int>[];
+    try {
+      for (final i in items) {
+        ids.add(i.track?.id ?? (await _idOf(i.online!))!);
+      }
+    } on Object catch (e, st) {
+      AppLog.w('mixed list not played', e, st);
+      return;
+    }
+    onContext?.call(context);
+    _handler.setPlayContext(context?.kind.index, context?.name);
+    _requestNotificationPermissionOnce();
+    await _handler.playQueue(ids, at);
+  }
 
   /// Plays a list of radio stations from [index]; next and previous move
   /// between them. Radio leaves no history and no statistics.

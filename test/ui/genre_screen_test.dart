@@ -1,6 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:codecore/providers/shuffle_plus_providers.dart';
+import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/services/online/download_index.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:path/path.dart' as p;
+import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/shuffle_plus/genre_mix.dart';
 import 'package:codecore/ui/screens/search/genre_screen.dart';
@@ -86,12 +92,13 @@ void main() {
   /// A genre page of 4 library songs whose mix is [mix].
   Future<Harness> mixPage(
     WidgetTester tester,
-    Stream<GenreMixState> mix,
-  ) async {
+    Stream<GenreMixState> mix, {
+    List<Override> extra = const [],
+  }) async {
     tester.view.physicalSize = const Size(400, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final h = await Harness.create(tester, tracks: 4);
+    final h = await Harness.create(tester, tracks: 4, radio: true);
     await tester.runAsync(
       () => h.db
           .update(h.db.tracks)
@@ -100,7 +107,7 @@ void main() {
     await h.pump(
       tester,
       const GenreScreen(genre: 'Rock'),
-      extraOverrides: [genreMixProvider.overrideWith((ref, genre) => mix)],
+      extraOverrides: [genreMixProvider.overrideWith((ref, genre) => mix), ...extra],
     );
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 150)),
@@ -162,4 +169,39 @@ void main() {
     expect(find.text('Song 3'), findsOneWidget);
     await h.dispose(tester);
   });
+
+  testWidgets(
+    'mix: Play queues library, library, suggested in the order shown',
+    (tester) async {
+      final dir = Directory.systemTemp.createTempSync('genre_play');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final h = await mixPage(
+        tester,
+        Stream.value(GenreMixState(suggested: [_song('a'), _song('b')])),
+        extra: [
+          downloadIndexProvider.overrideWith(
+            (ref) async => DownloadIndex(File(p.join(dir.path, 'd.json'))),
+          ),
+        ],
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('Riproduci'));
+      for (var i = 0; i < 100 && h.handler.queueIds.isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
+      final kinds = [for (final id in h.handler.queueIds) isOnlineId(id)];
+      expect(kinds, [false, false, true, false, false, true]);
+      expect(
+        [
+          for (final id in h.handler.queueIds)
+            if (isOnlineId(id)) h.handler.online!.entryOf(id)!.result.id,
+        ],
+        ['a', 'b'],
+      );
+      await h.dispose(tester);
+    },
+  );
 }
