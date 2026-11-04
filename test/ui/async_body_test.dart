@@ -28,6 +28,19 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
+  testWidgets('loading skeleton copes with unbounded and bounded height', (tester) async {
+    Widget body() => AsyncBody<List<int>>(value: const AsyncLoading(), data: (_) => const SizedBox());
+    Widget host(Widget child) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child),
+    );
+    await tester.pumpWidget(host(ListView(children: [body()])));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(host(SizedBox(height: 100, child: body())));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('data and empty', (tester) async {
     await tester.pumpWidget(_app(const AsyncData([1, 2])));
     expect(find.text('dati 2'), findsOneWidget);

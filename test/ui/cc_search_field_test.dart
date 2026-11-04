@@ -1,9 +1,13 @@
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/widgets/cc_search_field.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<(TextEditingController, FocusNode)> _pump(WidgetTester t) async {
+Future<(TextEditingController, FocusNode)> _pump(
+  WidgetTester t, {
+  VoidCallback? onClear,
+}) async {
   final c = TextEditingController();
   final f = FocusNode();
   addTearDown(c.dispose);
@@ -13,7 +17,7 @@ Future<(TextEditingController, FocusNode)> _pump(WidgetTester t) async {
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('it'),
     home: Scaffold(
-      body: CcSearchField(controller: c, focusNode: f, hint: 'Cerca'),
+      body: CcSearchField(controller: c, focusNode: f, hint: 'Cerca', onClear: onClear),
     ),
   ));
   return (c, f);
@@ -29,6 +33,23 @@ void main() {
     await t.pump();
     expect(c.text, isEmpty);
     expect(f.hasFocus, isTrue);
+  });
+
+  testWidgets('the ✕ calls onClear, and a mouse click keeps the focus',
+      (t) async {
+    var cleared = 0;
+    final (c, f) = await _pump(t, onClear: () => cleared++);
+    f.requestFocus();
+    await t.enterText(find.byType(TextField), 'abc');
+    await t.pump();
+    await t.tap(
+      find.byTooltip('Cancella ricerca'),
+      kind: PointerDeviceKind.mouse,
+    );
+    await t.pump();
+    expect(cleared, 1);
+    expect(f.hasFocus, isTrue);
+    expect(c.text, 'abc'); // onClear replaces the default clear
   });
 
   testWidgets('empty and focused the ✕ hides the keyboard', (t) async {

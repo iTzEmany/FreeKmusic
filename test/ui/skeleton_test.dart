@@ -1,3 +1,4 @@
+import 'dart:ui' show SemanticsFlag;
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
@@ -21,7 +22,14 @@ void main() {
     final h = tester.ensureSemantics();
     await tester.pumpWidget(_app());
     expect(find.bySemanticsLabel('Caricamento…'), findsOneWidget);
-    expect(find.byType(ExcludeSemantics), findsWidgets);
+    final node = tester.getSemantics(find.byType(Skeleton));
+    expect(node.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
+    var count = 0;
+    node.visitChildren((_) {
+      count++;
+      return true;
+    });
+    expect(count, 0);
     h.dispose();
   });
 
@@ -34,9 +42,9 @@ void main() {
 
   testWidgets('pulses, then stands still at 0.8 when motion is reduced', (tester) async {
     await tester.pumpWidget(_app());
-    final a = opacity(tester);
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(opacity(tester), isNot(a));
+    expect(opacity(tester), closeTo(0.55, 0.01));
+    await tester.pump(const Duration(milliseconds: 1400));
+    expect(opacity(tester), closeTo(1.0, 0.01));
 
     await tester.pumpWidget(_app(reduce: true));
     await tester.pumpAndSettle();
