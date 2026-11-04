@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart';
+import '../../../l10n/app_localizations.dart' show AppLocalizations;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/curiosity_provider.dart';
 import '../../../providers/database_providers.dart';
@@ -17,6 +18,7 @@ import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lyrics_translator.dart';
 import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
+import '../../../services/stream/stream_preparer.dart' show StreamPhase;
 import '../../widgets/skeleton.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../lyrics/lyrics_translate_flow.dart';
@@ -549,9 +551,11 @@ double _lineOf(BuildContext context, TextStyle? style) {
 /// shape and height of the real ones (no jump on arrival); after 20 s a single
 /// «Non disponibile» card with Riprova (F-52). [infoOnly] is the side panel's.
 class StreamCardsWait extends ConsumerStatefulWidget {
-  const StreamCardsWait({super.key, this.infoOnly = false});
+  const StreamCardsWait({super.key, required this.trackId, this.infoOnly = false});
 
   static const wait = Duration(seconds: 20);
+  /// The queue id of the streamed track (negative).
+  final int trackId;
   final bool infoOnly;
 
   @override
@@ -593,25 +597,34 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final t = Theme.of(context).textTheme;
-    if (_late) {
-      return NpCard(
-        title: l.streamCardsUnavailable,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l.streamCardsUnavailableBody,
-              style: t.bodyMedium?.copyWith(color: context.cc.textMuted),
-            ),
-            TextButton.icon(
-              onPressed: _retry,
-              icon: const Icon(Icons.refresh),
-              label: Text(l.retry),
-            ),
-          ],
-        ),
-      );
-    }
+    // A slow but working download keeps the skeleton: the row is made when the file is whole.
+    final phases = ref.read(audioHandlerProvider).preparer?.phases;
+    if (!_late) return _skeleton(context);
+    if (phases == null) return _unavailable(l, t);
+    final key = ref.read(onlineEntriesProvider)?.entryOf(widget.trackId)?.result.indexKey;
+    return ValueListenableBuilder(
+      valueListenable: phases,
+      builder: (context, map, _) {
+        final phase = map[key];
+        return phase == null || phase == StreamPhase.failed ? _unavailable(l, t) : _skeleton(context);
+      },
+    );
+  }
+
+  Widget _unavailable(AppLocalizations l, TextTheme t) => NpCard(
+    title: l.streamCardsUnavailable,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.streamCardsUnavailableBody, style: t.bodyMedium?.copyWith(color: context.cc.textMuted)),
+        TextButton.icon(onPressed: _retry, icon: const Icon(Icons.refresh), label: Text(l.retry)),
+      ],
+    ),
+  );
+
+  Widget _skeleton(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
     final body = _lineOf(context, t.bodyLarge);
     // Same blocks as InfoCard: heading, 5 lines, the «show more» and source rows.
     final block = [

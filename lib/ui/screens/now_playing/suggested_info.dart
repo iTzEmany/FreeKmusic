@@ -45,7 +45,8 @@ class SuggestedInfo extends ConsumerWidget {
               ),
             ],
           ),
-        Row(
+        Wrap(
+          alignment: WrapAlignment.center,
           children: [
             TextButton.icon(
               onPressed: () async {

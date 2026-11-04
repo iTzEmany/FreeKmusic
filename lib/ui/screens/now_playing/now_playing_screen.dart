@@ -164,7 +164,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (wait) StreamCardsWait(key: ValueKey(track.id)),
+            if (wait) StreamCardsWait(key: ValueKey(track.id), trackId: track.id),
             if (row != null) ...[
               LyricsCard(track: row),
               const SizedBox(height: 12),

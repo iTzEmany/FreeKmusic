@@ -16,6 +16,7 @@ import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/proposal_card.dart';
 import 'package:codecore/providers/nav_providers.dart' show SidePanel;
 import 'package:codecore/services/radio/radio_station.dart';
+import 'package:codecore/services/stream/stream_preparer.dart' show StreamPhase;
 import 'package:codecore/ui/shell/side_panel.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:drift/drift.dart' show Value;
@@ -248,6 +249,37 @@ void main() {
     expect(find.byType(Skeleton), findsWidgets);
     await t.pump(const Duration(seconds: 21));
     expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('after 20 s a slow but working download keeps the skeleton; a failed one shows «Non disponibile»', (t) async {
+    final (h, _, preparer, _) = await _open(t);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    preparer.phases.value = {'youtube:v1': StreamPhase.downloading};
+    await t.pump(const Duration(seconds: 21));
+    expect(find.text('Non disponibile'), findsNothing);
+    expect(find.byType(Skeleton), findsWidgets);
+
+    preparer.phases.value = {'youtube:v1': StreamPhase.failed};
+    await t.pump();
+    expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('side panel Info on a low window: the waiting skeleton scrolls, no overflow', (t) async {
+    final (h, _, preparer, _) = await _open(t, panel: const SidePanelView(panel: SidePanel.info));
+    t.view.physicalSize = const Size(1400, 500);
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    expect(find.byType(StreamCardsWait), findsOneWidget);
+    expect(t.takeException(), isNull);
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
