@@ -5989,7 +5989,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get jamNearbyScanHint => 'Over Bluetooth, only while the app is open';
 
   @override
-  String get streamCardsSoon => 'The track is on its way…';
+  String get streamCardsUnavailable => 'Not available';
+
+  @override
+  String get streamCardsUnavailableBody =>
+      'Lyrics, trivia and credits for this track did not arrive. It may be the network or the source.';
 
   @override
   String get closeKeyboard => 'Close keyboard';
@@ -6028,4 +6032,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get genreMixOffRateLimited => 'Suggestions paused: too many requests';
+
+  @override
+  String get playerEmptyTitle => 'Nothing playing';
+
+  @override
+  String get playerEmptyHint => 'Choose where to pick up.';
+
+  @override
+  String get playerEmptyNoQueue => 'Pick a song to start';
+
+  @override
+  String playerLastQueue(String name) {
+    return 'Last queue: $name';
+  }
+
+  @override
+  String get playerResumeLastQueue => 'Resume the last queue';
+
+  @override
+  String playerResumeLastQueueSub(String name, String tracks) {
+    return '$name, $tracks';
+  }
+
+  @override
+  String get playerShufflePlusLibrary => 'Shuffle+ of the library';
+
+  @override
+  String get playerShufflePlusLibrarySub =>
+      'Your library shuffled, with suggested songs';
+
+  @override
+  String get playerRecentlyAdded => 'Recently added';
 }

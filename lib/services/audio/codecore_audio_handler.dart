@@ -147,6 +147,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// meanwhile must not be prefetched (K-02).
   Future<void> resyncPreparer() => _syncPreparer();
 
+  /// Looks again for the shadow row of the streamed track now playing (the
+  /// player's «Riprova»): asks the preparer again, then binds the row if it exists.
+  Future<void> retryShadow() async {
+    final id = _queue.currentId;
+    final entry = id == null ? null : online?.entryOf(id);
+    if (entry == null || entry.trackId != null) return;
+    await resyncPreparer();
+    await _bindShadow(entry.result.indexKey, entry.id, _loadToken);
+  }
+
   /// The queue entry now playing (an online entry keeps its own id even when
   /// its library file plays).
   int? get currentQueueId => _queue.currentId;

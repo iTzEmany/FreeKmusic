@@ -17,6 +17,7 @@ import '../../../providers/player_providers.dart';
 import '../../../services/audio/online_entries.dart' show isOnlineId;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../widgets/artist_links.dart';
+import '../../widgets/empty_player.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/track_art.dart';
 import 'suggested_info.dart';
@@ -163,16 +164,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (wait)
-              SizedBox(
-                height: _cardsPlaceholderHeight,
-                child: Center(
-                  child: Text(
-                    context.l10n.streamCardsSoon,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.cc.textMuted),
-                  ),
-                ),
-              ),
+            if (wait) StreamCardsWait(key: ValueKey(track.id)),
             if (row != null) ...[
               LyricsCard(track: row),
               const SizedBox(height: 12),
@@ -295,7 +287,7 @@ class _Empty extends StatelessWidget {
           onPressed: onClose,
         ),
       ),
-      Expanded(child: Center(child: Text(context.l10n.nothingPlaying))),
+      const Expanded(child: EmptyPlayerBody()),
     ],
   );
 }

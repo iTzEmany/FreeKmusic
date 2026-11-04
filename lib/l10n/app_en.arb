@@ -3215,7 +3215,8 @@
   "jamBleLocationOff": "Turn on Android’s location: it is needed to look for Jams over Bluetooth. Meanwhile you can use the code or the QR.",
   "jamNearbyScanTitle": "Look for nearby Jams",
   "jamNearbyScanHint": "Over Bluetooth, only while the app is open",
-  "streamCardsSoon": "The track is on its way…",
+  "streamCardsUnavailable": "Not available",
+  "streamCardsUnavailableBody": "Lyrics, trivia and credits for this track did not arrive. It may be the network or the source.",
   "closeKeyboard": "Close keyboard",
   "loadingContent": "Loading…",
   "statsBarValue": "{when}, {time}",
@@ -3227,5 +3228,14 @@
   "genreMixOffMetered": "Suggestions off: metered network",
   "genreMixOffOffline": "Suggestions off: no network",
   "genreMixOffNoTool": "Suggestions off: online tool missing",
-  "genreMixOffRateLimited": "Suggestions paused: too many requests"
+  "genreMixOffRateLimited": "Suggestions paused: too many requests",
+  "playerEmptyTitle": "Nothing playing",
+  "playerEmptyHint": "Choose where to pick up.",
+  "playerEmptyNoQueue": "Pick a song to start",
+  "playerLastQueue": "Last queue: {name}",
+  "playerResumeLastQueue": "Resume the last queue",
+  "playerResumeLastQueueSub": "{name}, {tracks}",
+  "playerShufflePlusLibrary": "Shuffle+ of the library",
+  "playerShufflePlusLibrarySub": "Your library shuffled, with suggested songs",
+  "playerRecentlyAdded": "Recently added"
 }

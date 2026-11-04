@@ -9553,11 +9553,17 @@ abstract class AppLocalizations {
   /// **'Via Bluetooth, solo con l\'app aperta'**
   String get jamNearbyScanHint;
 
-  /// Placeholder of the Now playing cards while a streamed track has no data row yet.
+  /// Title of the single card shown when a streamed track's lyrics, trivia and credits did not arrive in time.
   ///
   /// In it, this message translates to:
-  /// **'Il brano è in arrivo…'**
-  String get streamCardsSoon;
+  /// **'Non disponibile'**
+  String get streamCardsUnavailable;
+
+  /// Body of that card, above the Retry button.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo, curiosità e crediti di questo brano non sono arrivati. Può dipendere dalla rete o dalla fonte.'**
+  String get streamCardsUnavailableBody;
 
   /// Tooltip of the ✕ of an empty, focused search field: it hides the keyboard.
   ///
@@ -9630,6 +9636,60 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Suggeriti in pausa: troppe richieste'**
   String get genreMixOffRateLimited;
+
+  /// No description provided for @playerEmptyTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Niente in riproduzione'**
+  String get playerEmptyTitle;
+
+  /// No description provided for @playerEmptyHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Scegli da dove ripartire.'**
+  String get playerEmptyHint;
+
+  /// No description provided for @playerEmptyNoQueue.
+  ///
+  /// In it, this message translates to:
+  /// **'Scegli un brano per iniziare'**
+  String get playerEmptyNoQueue;
+
+  /// No description provided for @playerLastQueue.
+  ///
+  /// In it, this message translates to:
+  /// **'Ultima coda: {name}'**
+  String playerLastQueue(String name);
+
+  /// No description provided for @playerResumeLastQueue.
+  ///
+  /// In it, this message translates to:
+  /// **'Riprendi l\'ultima coda'**
+  String get playerResumeLastQueue;
+
+  /// No description provided for @playerResumeLastQueueSub.
+  ///
+  /// In it, this message translates to:
+  /// **'{name}, {tracks}'**
+  String playerResumeLastQueueSub(String name, String tracks);
+
+  /// No description provided for @playerShufflePlusLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Shuffle+ della libreria'**
+  String get playerShufflePlusLibrary;
+
+  /// No description provided for @playerShufflePlusLibrarySub.
+  ///
+  /// In it, this message translates to:
+  /// **'Libreria in casuale con brani suggeriti'**
+  String get playerShufflePlusLibrarySub;
+
+  /// No description provided for @playerRecentlyAdded.
+  ///
+  /// In it, this message translates to:
+  /// **'Ultimi aggiunti'**
+  String get playerRecentlyAdded;
 }
 
 class _AppLocalizationsDelegate

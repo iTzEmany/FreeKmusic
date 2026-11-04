@@ -5,7 +5,7 @@ import '../theme/tokens.dart';
 
 /// Placeholder blocks with the shape of the real content, pulsing in opacity
 /// (0.55 to 1 in 1.4 s; fixed at 0.8 with reduced motion). One controller per
-/// skeleton, one «Caricamento…» node for TalkBack. No shimmer (D-367).
+/// skeleton, one node for TalkBack («Caricamento…» or [label]). No shimmer (D-367).
 class Skeleton extends StatefulWidget {
   /// 64 dp rows (or [rowHeight]), cover 48.
   const Skeleton.list({
@@ -13,7 +13,12 @@ class Skeleton extends StatefulWidget {
     int rows = 8,
     this.onCard = false,
     this.rowHeight,
+    this.label,
+    this.margin = CcDims.margin,
   }) : _kind = _Kind.list,
+       lineHeight = 22,
+       title = false,
+       roles = false,
        _n = rows;
 
   /// 72 dp rows (or [rowHeight]), cover 56.
@@ -22,25 +27,56 @@ class Skeleton extends StatefulWidget {
     int rows = 5,
     this.onCard = false,
     this.rowHeight,
+    this.label,
+    this.margin = CcDims.margin,
   }) : _kind = _Kind.bigRow,
+       lineHeight = 22,
+       title = false,
+       roles = false,
        _n = rows;
 
   /// Square cells (radius 8) with title and artist below, two per row.
-  const Skeleton.gridCell({super.key, int count = 6, this.onCard = false})
-    : _kind = _Kind.grid,
+  const Skeleton.gridCell({
+    super.key,
+    int count = 6,
+    this.onCard = false,
+    this.label,
+    this.margin = CcDims.margin,
+  }) : _kind = _Kind.grid,
       rowHeight = null,
+      lineHeight = 22,
+      title = false,
+      roles = false,
       _n = count;
 
-  /// Text lines (22 dp pitch) for the body of a card.
-  const Skeleton.card({super.key, int lines = 5, this.onCard = true})
-    : _kind = _Kind.card,
-      rowHeight = null,
-      _n = lines;
+  /// Text lines ([lineHeight] pitch, 22 dp) for the body of a card; [title]
+  /// adds a title block above them; [roles] draws name-and-role rows (48 dp,
+  /// no cover) like the Crediti ones.
+  const Skeleton.card({
+    super.key,
+    int lines = 5,
+    this.onCard = true,
+    this.lineHeight = 22,
+    this.title = false,
+    this.roles = false,
+    this.label,
+  }) : _kind = _Kind.card,
+       rowHeight = null,
+       margin = CcDims.margin,
+       _n = lines;
 
   /// Chart bars; fills the height it is given.
-  const Skeleton.bars({super.key, int count = 31, this.onCard = false})
-    : _kind = _Kind.bars,
+  const Skeleton.bars({
+    super.key,
+    int count = 31,
+    this.onCard = false,
+    this.label,
+  }) : _kind = _Kind.bars,
       rowHeight = null,
+      lineHeight = 22,
+      title = false,
+      roles = false,
+      margin = CcDims.margin,
       _n = count;
 
   final _Kind _kind;
@@ -52,6 +88,16 @@ class Skeleton extends StatefulWidget {
   /// Inside a card: blocks in surface3 (mockup), since surface2 would melt
   /// into the card's own surface1/surface2.
   final bool onCard;
+
+  /// What TalkBack says; null = «Caricamento…».
+  final String? label;
+
+  /// Horizontal margin of the row and grid variants.
+  final double margin;
+
+  /// Card variant: pitch of the text lines, block title, name-and-role rows.
+  final double lineHeight;
+  final bool title, roles;
 
   @override
   State<Skeleton> createState() => _SkeletonState();
@@ -92,7 +138,7 @@ class _SkeletonState extends State<Skeleton>
     final body = ExcludeSemantics(child: _body(color));
     final still = MediaQuery.disableAnimationsOf(context);
     return Semantics(
-      label: context.l10n.loadingContent,
+      label: widget.label ?? context.l10n.loadingContent,
       liveRegion: true,
       child: still
           ? Opacity(opacity: 0.8, child: body)
@@ -110,15 +156,45 @@ class _SkeletonState extends State<Skeleton>
       case _Kind.card:
         return Column(
           children: [
-            for (var i = 0; i < n; i++)
-              Container(
-                height: 22,
+            if (widget.title) ...[
+              Align(
                 alignment: Alignment.centerLeft,
                 child: FractionallySizedBox(
-                  widthFactor: i == n - 1 ? 0.55 : (i.isEven ? 1 : 0.92),
-                  child: _block(color, height: 14),
+                  widthFactor: 0.4,
+                  child: _block(color, height: 20),
                 ),
               ),
+              const SizedBox(height: 12),
+            ],
+            for (var i = 0; i < n; i++)
+              if (widget.roles)
+                SizedBox(
+                  height: 48,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FractionallySizedBox(
+                        widthFactor: i.isEven ? 0.5 : 0.4,
+                        child: _block(color, height: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      FractionallySizedBox(
+                        widthFactor: 0.3,
+                        child: _block(color, height: 12),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  height: widget.lineHeight,
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: i == n - 1 ? 0.55 : (i.isEven ? 1 : 0.92),
+                    child: _block(color, height: 14),
+                  ),
+                ),
           ],
         );
       case _Kind.bars:
@@ -146,7 +222,7 @@ class _SkeletonState extends State<Skeleton>
         );
       case _Kind.grid:
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+          padding: EdgeInsets.symmetric(horizontal: widget.margin),
           child: Wrap(
             runSpacing: CcDims.gap16,
             children: [
@@ -189,7 +265,7 @@ class _SkeletonState extends State<Skeleton>
     children: [
       for (var i = 0; i < n; i++)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+          padding: EdgeInsets.symmetric(horizontal: widget.margin),
           child: SizedBox(
             height: h,
             child: Row(

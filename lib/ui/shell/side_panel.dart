@@ -55,12 +55,7 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
             // A streamed track waits for its row (D-350); nothing for a radio or no track.
             ? track == null || ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true
                   ? const SizedBox.shrink()
-                  : Center(
-                      child: Text(
-                        l.streamCardsSoon,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cc.textMuted),
-                      ),
-                    )
+                  : StreamCardsWait(key: ValueKey(track.id), infoOnly: true)
             : ListView(
                 padding: const EdgeInsets.all(CcDims.gap12),
                 children: [InfoCard(track: info)],

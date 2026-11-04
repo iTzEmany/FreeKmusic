@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lyrics_translator.dart';
 import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/skeleton.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../lyrics/lyrics_translate_flow.dart';
 import 'proposal_card.dart' show CoverLine;
@@ -526,6 +528,138 @@ class UpNextCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Height of one line of [style] at the user's text scale.
+double _lineOf(BuildContext context, TextStyle? style) {
+  final p = TextPainter(
+    text: TextSpan(text: 'A', style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final h = p.height;
+  p.dispose();
+  return h;
+}
+
+/// A streamed track's cards before its data row exists: skeletons with the
+/// shape and height of the real ones (no jump on arrival); after 20 s a single
+/// «Non disponibile» card with Riprova (F-52). [infoOnly] is the side panel's.
+class StreamCardsWait extends ConsumerStatefulWidget {
+  const StreamCardsWait({super.key, this.infoOnly = false});
+
+  static const wait = Duration(seconds: 20);
+  final bool infoOnly;
+
+  @override
+  ConsumerState<StreamCardsWait> createState() => _StreamCardsWaitState();
+}
+
+class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
+  Timer? _timer;
+  bool _late = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _arm();
+  }
+
+  void _arm() {
+    _timer?.cancel();
+    _timer = Timer(StreamCardsWait.wait, () => setState(() => _late = true));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _retry() {
+    setState(() => _late = false);
+    _arm();
+    unawaited(
+      ref.read(audioHandlerProvider).retryShadow().catchError((Object e, StackTrace st) {
+        AppLog.w('stream cards retry failed', e, st);
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    if (_late) {
+      return NpCard(
+        title: l.streamCardsUnavailable,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l.streamCardsUnavailableBody,
+              style: t.bodyMedium?.copyWith(color: context.cc.textMuted),
+            ),
+            TextButton.icon(
+              onPressed: _retry,
+              icon: const Icon(Icons.refresh),
+              label: Text(l.retry),
+            ),
+          ],
+        ),
+      );
+    }
+    final body = _lineOf(context, t.bodyLarge);
+    // Same blocks as InfoCard: heading, 5 lines, the «show more» and source rows.
+    final block = [
+      Skeleton.card(lines: 1, lineHeight: _lineOf(context, t.labelLarge)),
+      const SizedBox(height: 4),
+      Skeleton.card(lines: 5, lineHeight: body),
+      const SizedBox(height: 96),
+    ];
+    final info = NpCard(
+      title: l.fieldCuriosity,
+      child: Column(
+        children: [
+          ...block,
+          const SizedBox(height: 16),
+          ...block,
+          const SizedBox(height: 52),
+        ],
+      ),
+    );
+    return Semantics(
+      label: l.loadingContent,
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: widget.infoOnly
+            ? info
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  NpCard(
+                    title: l.lyrics,
+                    child: Skeleton.card(lines: 5, lineHeight: _lyricsRowHeight(context)),
+                  ),
+                  const SizedBox(height: 12),
+                  info,
+                  const SizedBox(height: 12),
+                  NpCard(
+                    title: l.creditsTitle,
+                    child: Column(
+                      children: [
+                        // The group heading of the real rows.
+                        SizedBox(height: 16 + _lineOf(context, t.labelLarge)),
+                        const Skeleton.card(lines: 3, roles: true),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
       ),
     );
   }
