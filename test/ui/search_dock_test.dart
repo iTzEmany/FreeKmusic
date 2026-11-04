@@ -96,7 +96,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('leaving Cerca hides the field; Cerca brings it back focused',
+  testWidgets('leaving Cerca hides the field; Cerca brings it back without focus',
       (t) async {
     final h = await _shell(t);
     final c = _container(t);
@@ -111,7 +111,7 @@ void main() {
     await t.tap(_tab('Cerca'));
     await _settle(t);
     expect(_field(), findsOneWidget);
-    expect(c.read(searchFocusProvider).hasFocus, isTrue);
+    expect(c.read(searchFocusProvider).hasFocus, isFalse);
     await h.dispose(t);
   });
 
@@ -129,23 +129,20 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('Cerca with the field open brings the keyboard back', (t) async {
+  testWidgets('opening Cerca gives no focus; a tap on the field does',
+      (t) async {
     final h = await _shell(t);
     final c = _container(t);
     await t.tap(_tab('Cerca'));
     await _settle(t);
-    // Focus lost (✕, Back...): Cerca asks for it again.
-    c.read(searchFocusProvider).unfocus();
-    await t.pump();
+    expect(c.read(searchFocusProvider).hasFocus, isFalse);
+    expect(t.testTextInput.isVisible, isFalse);
     await t.tap(_tab('Cerca'));
+    await _settle(t);
+    expect(c.read(searchFocusProvider).hasFocus, isFalse);
+    await t.tap(_field());
     await _settle(t);
     expect(c.read(searchFocusProvider).hasFocus, isTrue);
-    // Android Back hides the keyboard but keeps the focus: Cerca shows it.
-    t.testTextInput.hide();
-    await t.pump();
-    await t.tap(_tab('Cerca'));
-    await _settle(t);
-    expect(t.testTextInput.isVisible, isTrue);
     await h.dispose(t);
   });
 

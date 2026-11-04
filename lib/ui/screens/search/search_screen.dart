@@ -32,6 +32,7 @@ import '../youtube/online_results.dart';
 import 'genre_screen.dart';
 import 'search_section_screen.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/cc_search_field.dart';
 
 /// Search: one pill, [In libreria] and [Online] chips. Online only runs when
 /// the user submits.
@@ -216,25 +217,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           if (showField)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-              child: TextField(
+              child: CcSearchField(
                 controller: _controller,
                 focusNode: ref.watch(searchFocusProvider),
+                hint: online ? l.ytHint : l.searchHint,
                 onSubmitted: _submit,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: online ? l.ytHint : l.searchHint,
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _controller.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: l.clearSearch,
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () {
-                            _controller.clear();
-                            setState(() => _text = '');
-                          },
-                        ),
-                ),
+                onClear: () {
+                  _controller.clear();
+                  setState(() => _text = '');
+                },
               ),
             ),
           if (!online)

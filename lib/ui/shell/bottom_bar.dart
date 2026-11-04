@@ -8,6 +8,7 @@ import '../../providers/jam_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/ui_providers.dart';
+import '../widgets/cc_search_field.dart';
 import '../theme/tokens.dart';
 import '../widgets/mini_player.dart';
 
@@ -164,51 +165,20 @@ class _SearchField extends ConsumerStatefulWidget {
 
 class _SearchFieldState extends ConsumerState<_SearchField> {
   @override
-  void initState() {
-    super.initState();
-    if (!ref.read(searchBarProvider.notifier).focusOnShow) return;
-    // autofocus loses to a focus the tapped tab may have left in the scope.
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => mounted ? ref.read(searchFocusProvider).requestFocus() : null,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final online = ref.watch(searchOnlineProvider);
-    final controller = ref.watch(searchControllerProvider);
-    final focus = ref.watch(searchFocusProvider);
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: CcDims.bottomBarHeight),
       // heightFactor: the bottom bar slot is as tall as the screen.
       child: Center(
         heightFactor: 1,
-        child: ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (_, v, _) => TextField(
-            controller: controller,
-            focusNode: focus,
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) =>
-                ref.read(searchSubmitProvider.notifier).submit(),
-            decoration: InputDecoration(
-              hintText: online ? l.ytHint : l.searchHint,
-              prefixIcon: const Icon(Icons.search_rounded),
-              // ✕ only while there is text to clear.
-              suffixIcon: v.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: l.clearSearch,
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: ref.read(searchBarProvider.notifier).dismiss,
-                    ),
-              filled: false,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-          ),
+        child: CcSearchField(
+          controller: ref.watch(searchControllerProvider),
+          focusNode: ref.watch(searchFocusProvider),
+          hint: online ? l.ytHint : l.searchHint,
+          bare: true,
+          onSubmitted: (_) => ref.read(searchSubmitProvider.notifier).submit(),
         ),
       ),
     );
