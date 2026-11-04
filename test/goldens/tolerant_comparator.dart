@@ -34,9 +34,10 @@ class TolerantComparator extends LocalFileComparator {
 Future<void> withGoldenShot(
   WidgetTester tester,
   ShotSize size,
-  Future<void> Function(Shot s) body,
-) {
+  Future<void> Function(Shot s) body, {
+  bool radio = false,
+}) {
   debugIsDesktopOverride = size == ShotSize.desktop;
   addTearDown(() => debugIsDesktopOverride = null);
-  return withShot(tester, size, body);
+  return withShot(tester, size, body, radio: radio);
 }
