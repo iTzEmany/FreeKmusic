@@ -7,11 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
-import '../../../providers/jam_providers.dart' show jamProvider;
-import '../../../providers/shuffle_plus_providers.dart'
-    show ShuffleMode, shuffleModeProvider, shufflePlusPendingProvider;
-import '../../../services/shuffle_plus/shuffle_plus_controller.dart'
-    show ShufflePlusPending;
+import '../../../providers/shuffle_plus_providers.dart' show shufflePlusPendingProvider;
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/confirm.dart';
@@ -175,13 +171,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       }),
     );
     ref.watch(currentTrackProvider.select((t) => t.value?.id));
-    // No placeholder rows unless Shuffle+ is on and no Jam runs, whatever the engine last said.
-    final plus =
-        ref.watch(shuffleModeProvider) == ShuffleMode.plus &&
-        !ref.watch(jamProvider.select((j) => j.active));
-    final pending = plus
-        ? ref.watch(shufflePlusPendingProvider)
-        : ShufflePlusPending.none;
+    final pending = ref.watch(shufflePlusPendingProvider);
     final ctrl = ref.read(playerControllerProvider);
     if (queue.isEmpty) {
       return EmptyState(icon: Icons.queue_music_rounded, message: l.emptyQueue);

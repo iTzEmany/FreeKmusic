@@ -21,8 +21,7 @@ import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
 import '../services/shuffle_plus/plus_allowed.dart';
-import '../services/shuffle_plus/suggestion_log.dart' show SuggestionLog;
-import 'shuffle_plus_providers.dart' show suggestionLogProvider;
+import 'suggestion_log_provider.dart';
 
 /// Overridden in `main` once the handler has been created (and, on Android,
 /// registered with `AudioService.init`).
@@ -462,18 +461,6 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
   }
 }
 
-/// A song queued as a suggestion goes in the log once: a replay of the list
-/// must not crowd out the 30-day memory.
-void logSuggestion(SuggestionLog log, YtResult r, String seedTitle) {
-  if (log.recentlySuggested(r.id)) return;
-  log.add(
-    videoId: r.id,
-    title: r.title,
-    artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
-    seedTitle: seedTitle,
-  );
-}
-
 /// Whether the cards of the streamed [id] still wait for their row ([waited]: already waited).
 final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, ({int id, Duration waited})>(
   (ref, k) => ref.watch(audioHandlerProvider).shadowWaitOf(k.id, waited: k.waited),
@@ -493,7 +480,7 @@ final playerControllerProvider = Provider<PlayerController>(
     jamQueueFullNow: () => ref.read(jamProvider.notifier).queueFull,
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
-    onSuggested: (r, seed) => logSuggestion(ref.read(suggestionLogProvider), r, seed),
+    onSuggested: (r, seed) => ref.read(suggestionLogProvider).addSuggestion(r, seed),
     libraryIdOf: (r) async {
       final path = (await ref.read(downloadIndexProvider.future))
           .pathFor(r.id, source: r.source);

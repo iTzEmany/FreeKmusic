@@ -50,6 +50,10 @@ class _Host implements ShuffleHost {
 /// Radio answers wait on [gate] (once); every request is recorded.
 class _Adapter implements HttpClientAdapter {
   Completer<void>? gate;
+
+  /// Runs on the next request (once), before it answers; [clipJson] answers it.
+  void Function()? onFetch;
+  String? clipJson;
   final bodies = <String>[];
   final String json = File('test/fixtures/innertube/ytm_radio.json').readAsStringSync();
 
@@ -58,8 +62,12 @@ class _Adapter implements HttpClientAdapter {
     bodies.add(o.data.toString());
     final g = gate;
     gate = null;
+    onFetch?.call();
+    onFetch = null;
     if (g != null) await g.future;
-    return ResponseBody.fromString(json, 200, headers: {
+    final answer = clipJson ?? json;
+    clipJson = null;
+    return ResponseBody.fromString(answer, 200, headers: {
       Headers.contentTypeHeader: [Headers.jsonContentType],
     });
   }
@@ -190,6 +198,14 @@ void main() {
     await until(() => adapter.bodies.length == 2);
     expect(seed(0), hasLength(lessThan(3)), reason: 'first request: old seed');
     expect(seed(1), hasLength(3), reason: 'second request: seed of the new list');
+  });
+
+  test('a slow radio request that outlasts the gap: the next seed is asked at once, no failed step', () async {
+    adapter
+      ..clipJson = File('test/fixtures/innertube/ytm_radio_video_seed.json').readAsStringSync()
+      ..onFetch = () => now = now.add(const Duration(minutes: 2));
+    controller.start();
+    await until(() => adapter.bodies.length == 2);
   });
 
   test('a source change nobody announces is noticed by the interrupted work', () async {

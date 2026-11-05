@@ -1,4 +1,3 @@
-import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_plus_controller.dart' show ShufflePlusPending;
@@ -21,21 +20,16 @@ class _Pending extends ShufflePlusPendingNotifier {
   void set(ShufflePlusPending p) => state = p;
 }
 
-class _ActiveJam extends JamController {
-  @override
-  JamUiState build() => const JamUiState(phase: JamPhase.active, role: JamRole.host);
-}
-
 void main() {
   late _Pending pending;
   late Harness h;
 
-  Future<void> open(WidgetTester tester, {bool plus = true, bool jam = false, ShufflePlusPending initial = ShufflePlusPending.none}) async {
+  Future<void> open(WidgetTester tester) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     h = await Harness.create(tester, tracks: 4, radio: true);
-    pending = _Pending(initial);
+    pending = _Pending(ShufflePlusPending.none);
     final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
     final online = h.handler.online!.register(
       const YtResult(id: 'v1', title: 'Streamed', channel: 'Chan', duration: null, artists: ['Ann']),
@@ -48,8 +42,6 @@ void main() {
       Scaffold(body: QueueSheet(scrollController: ScrollController())),
       extraOverrides: [
         shufflePlusPendingProvider.overrideWith(() => pending),
-        shuffleModeProvider.overrideWithValue(plus ? ShuffleMode.plus : ShuffleMode.shuffle),
-        if (jam) jamProvider.overrideWith(_ActiveJam.new),
       ],
     );
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
@@ -94,12 +86,4 @@ void main() {
     expect(opacity(), 1);
     await h.dispose(tester);
   });
-
-  for (final (name, plus, jam) in [('Shuffle+ off', false, false), ('a Jam', true, true)]) {
-    testWidgets('$name: no skeleton row even if the engine still reports incoming ones', (tester) async {
-      await open(tester, plus: plus, jam: jam, initial: const ShufflePlusPending(incoming: 3));
-      expect(find.byType(Skeleton), findsNothing);
-      await h.dispose(tester);
-    });
-  }
 }

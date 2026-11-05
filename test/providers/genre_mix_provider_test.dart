@@ -169,7 +169,7 @@ void main() {
     await open(libraryIds: owned);
     final v = await settled();
     expect(v!.suggested, hasLength(3));
-    expect(v.suggested.where((r) => owned.contains(r.id)), isEmpty);
+    expect(v.suggested.where((s) => owned.contains(s.result.id)), isEmpty);
   });
 
   test('the container closed in the middle of the mix: no more requests', () async {

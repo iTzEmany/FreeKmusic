@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier, listEquals, setEquals;
 
 import '../../core/app_log.dart';
-import '../../core/import_row.dart';
 import '../../data/db/app_database.dart';
 import '../audio/codecore_audio_handler.dart' show PlaybackFailure, PlaybackFailureReason;
 import '../audio/online_entries.dart';
@@ -49,16 +48,6 @@ class ShufflePlusPending {
 
   @override
   int get hashCode => Object.hash(incoming, Object.hashAllUnordered(enriching));
-}
-
-class _Seed {
-  _Seed(this.track);
-
-  final Track track;
-  String? videoId;
-  bool fetched = false;
-  bool searchOnly = false;
-  bool dead = false;
 }
 
 /// Puts a song you do not have in the queue every N songs of a shuffled
@@ -164,11 +153,10 @@ class ShufflePlusController {
   List<int>? _source;
   List<Track> _sourceTracks = const [];
   bool _eligible = false;
-  List<_Seed> _seeds = [];
+  List<RadioSeed> _seeds = [];
   int _suggestedWithSeeds = 0;
   final List<String> _lastArtists = [];
   LibraryIndex? _library;
-  DateTime? _libraryAt;
 
   DateTime? _retryAt;
   bool _rateNoticeShown = false;
@@ -180,10 +168,6 @@ class ShufflePlusController {
 
   /// True while the 15-minute pause after a rate limit lasts.
   bool get rateLimited => gate.rateLimited;
-
-  /// The library as last read (null before the first radio request): shared
-  /// with the genre page, which asks the same question.
-  LibraryIndex? get libraryIndex => _library;
 
   void start() {
     _subs
@@ -440,12 +424,7 @@ class ShufflePlusController {
     final r = candidate.result;
     final id = online.register(r, seedTitle: candidate.seedTitle, suggested: true);
     _mine.add(id);
-    log.add(
-      videoId: r.id,
-      title: r.title,
-      artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
-      seedTitle: candidate.seedTitle,
-    );
+    log.addSuggestion(r, candidate.seedTitle);
     _lastArtists
       ..add(suggestionArtistKey(r))
       ..removeRange(0, max(0, _lastArtists.length - 2));
@@ -506,17 +485,8 @@ class ShufflePlusController {
       for (final id in host.queueIds)
         if (isOnlineId(id)) ?online[id]?.result.id,
     };
-    final library = _library;
     return pool.take(
-      inLibrary: (r) =>
-          hasDownload(r.id) ||
-          (library?.find(ImportRow(
-                    index: 0,
-                    title: r.title,
-                    artists: r.artists.isEmpty ? [r.channel] : r.artists,
-                    durationMs: r.duration?.inMilliseconds,
-                  )) !=
-              null),
+      inLibrary: inLibraryTest(hasDownload: hasDownload, library: _library),
       inQueue: queued.contains,
       log: log,
       lastArtists: _lastArtists,
@@ -527,7 +497,6 @@ class ShufflePlusController {
   /// page yet (or the next page of one that ran dry).
   Future<void> _fill() async {
     final src = _source;
-    final now = _now();
     final next = gate.nextAsk;
     if (next != null) {
       _retryAt = next;
@@ -535,20 +504,14 @@ class ShufflePlusController {
       return;
     }
     try {
-      final stale = _library == null ||
-          now.difference(_libraryAt!) > const Duration(minutes: 5);
-      if (stale) {
-        _library = await loadLibrary();
-        _libraryAt = now;
-        if (_changedSince(src)) return;
-      }
+      // Cached by whoever provides it (`libraryIndexProvider`).
+      _library = await loadLibrary();
+      if (_changedSince(src)) return;
       if (_seeds.isEmpty || _suggestedWithSeeds >= seedsLifetime) _newSeeds();
       var searches = 0;
       for (final seed in _seeds) {
         if (seed.dead) continue;
-        final needsPage = !seed.fetched ||
-            (pool.pending(seed.key) == 0 && pool.continuationOf(seed.key) != null);
-        if (!needsPage) continue;
+        if (!seed.needsPage(pool)) continue;
         if (seed.videoId == null) {
           if (searches >= 3) break;
           searches++;
@@ -568,7 +531,7 @@ class ShufflePlusController {
           // The id was a video clip's: look the song up and ask again later.
           seed.searchOnly = true;
           seed.videoId = null;
-          _retryAt = gate.lastRadio!.add(RadioGate.minGap);
+          _retryAt = gate.nextAsk ?? _now(); // null: a slow request outlasted the gap
           _wakeAt(_retryAt!);
           return;
         }
@@ -600,14 +563,9 @@ class ShufflePlusController {
     pool.clear();
     _suggestedWithSeeds = 0;
     _seeds = [
-      for (final t in chooseSeeds(_sourceTracks, random: _random)) _Seed(t),
+      for (final t in chooseSeeds(_sourceTracks, random: _random)) RadioSeed(t),
     ];
   }
 }
 
 enum _Gate { go, idle, off }
-
-extension on _Seed {
-  /// Key of the seed in the pool.
-  String get key => '${track.id}';
-}

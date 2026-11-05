@@ -1,4 +1,6 @@
-import '../import/track_matcher.dart' show matchKey;
+import '../../core/import_row.dart';
+import '../../data/db/app_database.dart' show Track;
+import '../import/track_matcher.dart' show LibraryIndex, matchKey;
 import '../online/query_cleaner.dart' show extractPrimaryArtist;
 import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
@@ -17,6 +19,42 @@ class SuggestionCandidate {
 String suggestionArtistKey(YtResult r) {
   final name = r.artists.isEmpty ? r.channel : r.artists.first;
   return matchKey(extractPrimaryArtist(name));
+}
+
+/// Whether a suggestion is a song the user already has: downloaded, or found
+/// in the library by title, artist and duration. Shared by Shuffle+ and the
+/// genre mix. [library] may be null before the first read.
+bool Function(YtResult r) inLibraryTest({
+  required bool Function(String videoId) hasDownload,
+  required LibraryIndex? library,
+}) =>
+    (r) =>
+        hasDownload(r.id) ||
+        (library?.find(ImportRow(
+                  index: 0,
+                  title: r.title,
+                  artists: r.artists.isEmpty ? [r.channel] : r.artists,
+                  durationMs: r.duration?.inMilliseconds,
+                )) !=
+            null);
+
+/// A library song whose radio feeds a [SuggestionPool].
+class RadioSeed {
+  RadioSeed(this.track);
+
+  final Track track;
+  String? videoId;
+  bool fetched = false;
+  bool searchOnly = false;
+  bool dead = false;
+
+  /// Key of the seed in the pool.
+  String get key => '${track.id}';
+
+  /// Whether [pool] has no page of this seed, or has used up the last one
+  /// and the radio has more.
+  bool needsPage(SuggestionPool pool) =>
+      !fetched || (pool.pending(key) == 0 && pool.continuationOf(key) != null);
 }
 
 /// Radio pages of the seeds, served one row per seed in turn so the
