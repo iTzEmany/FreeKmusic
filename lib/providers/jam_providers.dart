@@ -636,7 +636,13 @@ class JamController extends Notifier<JamUiState> {
   void decline(JamRequest req) => _host?.decline(req.id);
 
   /// The guest's own queue (or a host's shuffle mode) from before the Jam.
-  late final _local = JamLocalQueue(ref, () => _part.unplayed(state.jam));
+  /// Participant id -> name for the whole Jam: a guest who left is no longer
+  /// among the participants, but their tracks stay in the queue.
+  final _seenNames = <String, String>{};
+
+  String? seenName(String id) => _seenNames[id];
+
+  late final _local = JamLocalQueue(() => ref, () => _part.unplayed(state.jam));
 
   @visibleForTesting
   Future<void> debugFinish({bool lost = false}) => _finish(lost: lost);
@@ -646,6 +652,7 @@ class JamController extends Notifier<JamUiState> {
 
   /// [seed]: the host's starting queue (library ids), the part its feeder holds.
   Future<void> _begin(JamRole role, JamState s, {List<int> seed = const []}) async {
+    _seenNames.clear();
     await (role == JamRole.guest ? _local.save() : _local.saveMode());
     // Lost or ended while saving: _finish already tore everything down.
     if (state.phase == JamPhase.ended) return;
@@ -764,6 +771,9 @@ class JamController extends Notifier<JamUiState> {
     if (state.phase != JamPhase.active) return;
     // Leaving: the part to give back is already worked out; a late state without our tracks is ignored.
     if (_part.exitPart != null) return;
+    for (final p in s.participants) {
+      if (p.name.isNotEmpty) _seenNames[p.id] = p.name;
+    }
     state = state.copyWith(jam: s, unreachable: _unreachableIds());
     _transport?.update(s);
     if (s.ended) {
@@ -777,7 +787,7 @@ class JamController extends Notifier<JamUiState> {
     _part.notePlayed(s);
     unawaited(_part.feeder?.update(s));
     // Our part moved on: what the disk keeps for a closed app follows it (D-341).
-    _local.refreshAside(_part.unplayed(s));
+    if (_local.saved != null) _local.refreshAside(_part.unplayed(s));
   }
 
   void _onItemFailed(int id) {

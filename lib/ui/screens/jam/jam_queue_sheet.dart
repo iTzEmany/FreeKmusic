@@ -51,9 +51,6 @@ class JamQueueSliver extends ConsumerStatefulWidget {
 }
 
 class _JamQueueSliverState extends ConsumerState<JamQueueSliver> {
-  /// Names seen while open: a guest who left is no longer among the participants.
-  final _seen = <String, String>{};
-
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -61,14 +58,11 @@ class _JamQueueSliverState extends ConsumerState<JamQueueSliver> {
     final jam = s.jam;
     final ctrl = ref.read(jamProvider.notifier);
     final ownId = ref.read(shareHubProvider.notifier).deviceId ?? '';
-    for (final p in jam?.participants ?? const <JamParticipant>[]) {
-      if (p.name.isNotEmpty) _seen[p.id] = p.name;
-    }
     String owner(JamItem i) {
       if (i.ownerDeviceId == ownId) return l.jamYou;
       final n = jam?.nameOf(i.ownerDeviceId) ?? '';
       if (n.isNotEmpty) return n;
-      return _seen[i.ownerDeviceId] ?? (s.peerName.isEmpty ? l.jamGuest : s.peerName);
+      return ctrl.seenName(i.ownerDeviceId) ?? (s.peerName.isEmpty ? l.jamGuest : s.peerName);
     }
 
     final together = jam?.mode == JamMode.together;

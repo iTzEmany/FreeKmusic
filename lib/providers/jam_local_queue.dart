@@ -17,7 +17,8 @@ import 'shuffle_plus_providers.dart' show ShuffleMode;
 class JamLocalQueue {
   JamLocalQueue(this._ref, this._unplayed);
 
-  final Ref _ref;
+  /// A getter, not the Ref: a rebuilt provider gets a new Ref and the first goes unmounted.
+  final Ref Function() _ref;
 
   /// Our part of «Coda insieme» not yet played (the Jam's `_part.unplayed`).
   final List<int> Function() _unplayed;
@@ -33,7 +34,7 @@ class JamLocalQueue {
 
   /// Keeps the local queue, track and position on disk and in memory.
   Future<void> save() async {
-    final handler = _ref.read(audioHandlerProvider);
+    final handler = _ref().read(audioHandlerProvider);
     _localHandler = handler;
     _mode = _shuffleMode(handler);
     // The live position: a paused player emits none, so the stream can be 0.
@@ -45,16 +46,16 @@ class JamLocalQueue {
       index: handler.currentIndex < 0 ? 0 : handler.currentIndex,
       position: position,
     );
-    await (_persistence = _ref.read(playbackPersistenceProvider))
+    await (_persistence = _ref().read(playbackPersistenceProvider))
         ?.hold(position);
     await _keepAside();
   }
 
   /// A host keeps its queue; only the shuffle mode is put back (the Jam's player state drops «+»).
   Future<void> saveMode() async {
-    _localHandler = _ref.read(audioHandlerProvider);
+    _localHandler = _ref().read(audioHandlerProvider);
     _mode = _shuffleMode(_localHandler!);
-    _persistence = _ref.read(playbackPersistenceProvider);
+    _persistence = _ref().read(playbackPersistenceProvider);
     await _keepAside();
   }
 
@@ -65,7 +66,7 @@ class JamLocalQueue {
 
   ShuffleMode _shuffleMode(CodecoreAudioHandler h) => !h.shuffleEnabled
       ? ShuffleMode.off
-      : _ref.read(settingsProvider).shufflePlus
+      : _ref().read(settingsProvider).shufflePlus
           ? ShuffleMode.plus
           : ShuffleMode.shuffle;
 
@@ -113,8 +114,8 @@ class JamLocalQueue {
     if (handler != null) {
       handler.setShuffleAndRepeat(shuffle: mode != ShuffleMode.off, repeat: handler.repeatMode);
       final plus = mode == ShuffleMode.plus;
-      if (_ref.read(settingsProvider).shufflePlus != plus) {
-        _ref.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: plus));
+      if (_ref().read(settingsProvider).shufflePlus != plus) {
+        _ref().read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: plus));
       }
     }
     if (give != null) {
