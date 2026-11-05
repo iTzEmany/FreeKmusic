@@ -581,7 +581,7 @@
   "homeResumeQueue": "Titel {n} von {m}",
   "homeResumeQueueFrom": "{source}: Titel {n} von {m}",
   "homeMinutesLeft": "{count, plural, one{Noch 1 Minute} other{Noch {count} Minuten}}",
-  "homeFanOpen": "Cover anzeigen",
+  "homeFanOpen": "Kürzlich hinzugefügte Titel anzeigen",
   "showAll": "Alle",
   "recentSearches": "Letzte Suchen",
   "genresTitle": "Genres",

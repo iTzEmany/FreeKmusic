@@ -49,7 +49,6 @@ const _known = <(String, String), Map<String, int>>{
     'Velocità di riproduzione': 1,
   },
   // Row nodes without a label: the preview cover (custom action) and the swipe area.
-  ('all tracks', 'labeledTapTarget'): {'unnamed': 6},
 };
 
 void main() {

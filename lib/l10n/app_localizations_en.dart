@@ -1370,7 +1370,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeFanOpen => 'Show the covers';
+  String get homeFanOpen => 'Show recently added songs';
 
   @override
   String get showAll => 'All';

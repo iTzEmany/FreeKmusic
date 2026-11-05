@@ -581,7 +581,7 @@
   "homeResumeQueue": "Track {n} of {m}",
   "homeResumeQueueFrom": "{source}: track {n} of {m}",
   "homeMinutesLeft": "{count, plural, one{1 minute left} other{{count} minutes left}}",
-  "homeFanOpen": "Show the covers",
+  "homeFanOpen": "Show recently added songs",
   "showAll": "All",
   "recentSearches": "Recent searches",
   "genresTitle": "Genres",

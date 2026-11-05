@@ -131,30 +131,34 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
         final VoidCallback? action = hasText
             ? (widget.onClear ?? _clear)
             : widget.onCloseEmpty ?? (focused ? focusNode.unfocus : null);
-        return TextField(
-          controller: controller,
-          focusNode: focusNode,
-          textInputAction: TextInputAction.search,
-          autofocus: widget.autofocus,
-          onSubmitted: _submitted,
-          onChanged: _changed,
-          decoration: InputDecoration(
-            hintText: widget.hint,
-            prefixIcon: const Icon(Icons.search_rounded),
-            suffixIcon: IconButton(
-              tooltip: !hasText && widget.onCloseEmpty != null
-                  ? l.closeSearch
-                  : !hasText && focused
-                  ? l.closeKeyboard
-                  : l.clearSearch,
-              icon: const Icon(Icons.close_rounded),
-              disabledColor: cc.textFaint,
-              onPressed: action,
+        // The hint is also the field's name for TalkBack.
+        return Semantics(
+          label: widget.hint,
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textInputAction: TextInputAction.search,
+            autofocus: widget.autofocus,
+            onSubmitted: _submitted,
+            onChanged: _changed,
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: IconButton(
+                tooltip: !hasText && widget.onCloseEmpty != null
+                    ? l.closeSearch
+                    : !hasText && focused
+                    ? l.closeKeyboard
+                    : l.clearSearch,
+                icon: const Icon(Icons.close_rounded),
+                disabledColor: cc.textFaint,
+                onPressed: action,
+              ),
+              filled: bare ? false : null,
+              border: bare ? InputBorder.none : null,
+              enabledBorder: bare ? InputBorder.none : null,
+              focusedBorder: bare ? InputBorder.none : null,
             ),
-            filled: bare ? false : null,
-            border: bare ? InputBorder.none : null,
-            enabledBorder: bare ? InputBorder.none : null,
-            focusedBorder: bare ? InputBorder.none : null,
           ),
         );
       },

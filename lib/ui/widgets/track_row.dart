@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../services/audio/online_entries.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -290,14 +291,15 @@ class _TrackRowState extends State<TrackRow> {
         );
       case TrackRowVariant.queue:
         final i = widget.reorderIndex;
-        return Padding(
-          padding: const EdgeInsets.only(left: CcDims.gap8),
-          child: i == null
-              ? Icon(Icons.drag_handle_rounded, color: cc.textMuted)
-              : ReorderableDragStartListener(
-                  index: i,
-                  child: Icon(Icons.drag_handle_rounded, color: cc.textMuted),
-                ),
+        final handle = Icon(Icons.drag_handle_rounded, color: cc.textMuted);
+        // Hidden from TalkBack: the list already offers move actions on the row.
+        return ExcludeSemantics(
+          child: Padding(
+            padding: const EdgeInsets.only(left: CcDims.gap8),
+            child: i == null
+                ? handle
+                : ReorderableDragStartListener(index: i, child: handle),
+          ),
         );
       case _:
     }
@@ -321,8 +323,7 @@ class _TrackRowState extends State<TrackRow> {
             padding: const EdgeInsets.symmetric(horizontal: CcDims.gap4),
             child: Icon(Icons.favorite_rounded, size: 16, color: cc.accent),
           ),
-        if (widget.onMore != null)
-          _moreButton(context, visible: showActions),
+        if (widget.onMore != null) _moreButton(context, visible: showActions),
       ],
     );
     // Same width whether or not the actions show, so the columns line up.
@@ -355,24 +356,26 @@ class _TrackRowState extends State<TrackRow> {
       color: widget.isCurrent ? cc.accent : cc.text,
     );
 
-    final titleBlock = Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          t.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: titleStyle,
-        ),
-        if (subtitle.isNotEmpty)
+    final titleBlock = ExcludeSemantics(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            subtitle,
+            t.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium,
+            style: titleStyle,
           ),
-      ],
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium,
+            ),
+        ],
+      ),
     );
 
     final Widget row;
@@ -391,9 +394,7 @@ class _TrackRowState extends State<TrackRow> {
                     size: 40,
                   )
                 : widget.isCurrent
-                ? Center(
-                    child: const NowPlayingDot(),
-                  )
+                ? Center(child: const NowPlayingDot())
                 : Center(
                     child: Text(
                       num == null ? '' : '$num',
@@ -459,47 +460,57 @@ class _TrackRowState extends State<TrackRow> {
         skipTraversal: true,
         onFocusChange: (f) => setState(() => _focused = f),
         child: Semantics(
-        selected: widget.selectionMode ? widget.selected : null,
-        value: widget.selected
-            ? (widget.selectedPosition == null
-                  ? context.l10n.selectedRow
-                  : context.l10n.selectedRowAt(widget.selectedPosition!))
-            : null,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onSecondaryTapDown: widget.onSecondaryTap == null
-              ? null
-              : (d) => widget.onSecondaryTap!(d.globalPosition),
-          child: Material(
-            color: tint,
-            child: InkWell(
-              onTap: widget.onTap,
-              onLongPress: widget.onLongPress,
-              child: Stack(
-                fit: StackFit.passthrough,
-                children: [
-                  // «Quaderno» row: 1 dp hairline in surface2 from the text on.
-                  Positioned(
-                    left: CcDims.margin +
-                        (wide || widget.variant == TrackRowVariant.album
-                            ? 0
-                            : cover + 12),
-                    right: CcDims.margin,
-                    bottom: 0,
-                    height: 1,
-                    child: ColoredBox(color: cc.separator),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: CcDims.margin),
-                    child: row,
-                  ),
-                ],
+          // One node named by title and artist (no empty twin: the cover's long press used to split it).
+          button: true,
+          label: subtitle.isEmpty ? t.title : '${t.title}, $subtitle',
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          selected: widget.selectionMode ? widget.selected : null,
+          value: widget.selected
+              ? (widget.selectedPosition == null
+                    ? context.l10n.selectedRow
+                    : context.l10n.selectedRowAt(widget.selectedPosition!))
+              : null,
+          child: GestureDetector(
+            // Right click only: its empty semantics tap would be TalkBack's.
+            excludeFromSemantics: true,
+            behavior: HitTestBehavior.opaque,
+            onSecondaryTapDown: widget.onSecondaryTap == null
+                ? null
+                : (d) => widget.onSecondaryTap!(d.globalPosition),
+            child: Material(
+              color: tint,
+              child: InkWell(
+                excludeFromSemantics: true,
+                onTap: widget.onTap,
+                onLongPress: widget.onLongPress,
+                child: Stack(
+                  fit: StackFit.passthrough,
+                  children: [
+                    // «Quaderno» row: 1 dp hairline in surface2 from the text on.
+                    Positioned(
+                      left:
+                          CcDims.margin +
+                          (wide || widget.variant == TrackRowVariant.album
+                              ? 0
+                              : cover + 12),
+                      right: CcDims.margin,
+                      bottom: 0,
+                      height: 1,
+                      child: ColoredBox(color: cc.separator),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: CcDims.margin,
+                      ),
+                      child: row,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -547,7 +558,11 @@ class LiveTrackRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isOnlineId(track.id)) {
-      return OnlineQueueRow(track: track, onTap: onTap, reorderIndex: reorderIndex);
+      return OnlineQueueRow(
+        track: track,
+        onTap: onTap,
+        reorderIndex: reorderIndex,
+      );
     }
     final isCurrent = ref.watch(
       currentTrackProvider.select((t) => t.value?.id == track.id),
@@ -615,9 +630,7 @@ class LiveTrackRow extends ConsumerWidget {
       if (sel == null || !isDesktop) return child;
       List<int> ids() {
         final s = ref.read(selectionProvider(sel.listKey));
-        return s.active && s.contains(track.id)
-            ? s.orderedIds
-            : [track.id];
+        return s.active && s.contains(track.id) ? s.orderedIds : [track.id];
       }
 
       return Draggable<TrackDragData>(
@@ -636,7 +649,9 @@ class LiveTrackRow extends ConsumerWidget {
     return SwipeToQueue(
       swipeKey: 'swipe-queue-${track.id}',
       onQueue: () async {
-        final added = await ref.read(playerControllerProvider).addToQueue(track.id);
+        final added = await ref
+            .read(playerControllerProvider)
+            .addToQueue(track.id);
         if (context.mounted) showQueued(context, added);
       },
       child: draggable(row),

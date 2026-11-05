@@ -96,26 +96,29 @@ void main() {
 }
 
 void coverHeroTests() {
-  testWidgets('coverHero: closing the player keeps the cover round mid-flight', (tester) async {
-    Widget cover(double s) => coverHero('c', SizedBox(width: s, height: s, key: Key('c$s')));
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (c) => TextButton(
-          onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(
-            builder: (_) => Scaffold(body: Align(alignment: Alignment.topLeft, child: cover(200))),
-          )),
-          child: cover(48),
+  for (final pop in [false, true]) {
+    testWidgets('coverHero: ${pop ? 'closing' : 'opening'} flies as a circle, not an ellipse', (tester) async {
+      Widget cover(double w, double h) => coverHero('c', SizedBox(width: w, height: h));
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(
+              builder: (_) => Scaffold(body: Align(alignment: Alignment.topLeft, child: cover(300, 100))),
+            )),
+            child: cover(48, 48),
+          ),
         ),
-      ),
-    ));
-    await tester.tap(find.byType(TextButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byType(ClipOval), findsNothing); // opening: no forced clip
-    await tester.pumpAndSettle();
-    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byType(ClipOval), findsOneWidget);
-  });
+      ));
+      await tester.tap(find.byType(TextButton));
+      if (pop) {
+        await tester.pumpAndSettle();
+        Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final size = tester.getSize(find.byType(ClipOval));
+      expect(size.width, size.height);
+      await tester.pumpAndSettle();
+    });
+  }
 }

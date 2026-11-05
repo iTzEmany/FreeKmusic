@@ -2359,7 +2359,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeFanOpen.
   ///
   /// In it, this message translates to:
-  /// **'Mostra le copertine'**
+  /// **'Mostra i brani aggiunti da poco'**
   String get homeFanOpen;
 
   /// No description provided for @showAll.

@@ -210,7 +210,13 @@ class _ActivityRow extends ConsumerWidget {
                   if (a.running) ...[
                     if (!a.waiting) ...[
                       const SizedBox(height: 6),
-                      LinearProgressIndicator(value: a.progress),
+                      LinearProgressIndicator(
+                        value: a.progress,
+                        // A bare "16" is read otherwise.
+                        semanticsValue: a.progress == null
+                            ? null
+                            : '${(a.progress! * 100).round()} %',
+                      ),
                     ],
                   ] else
                     Text(
