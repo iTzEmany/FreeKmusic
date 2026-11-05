@@ -206,6 +206,10 @@ void main() {
       ..onFetch = () => now = now.add(const Duration(minutes: 2));
     controller.start();
     await until(() => adapter.bodies.length == 2);
+    expect(controller.stoppedForSession, isFalse);
+    await pause();
+    expect(adapter.bodies, hasLength(2), reason: 'the gap (from the new clock) holds a third one');
+    expect(seed(1), isNot(seed(0)), reason: 'the next seed, not the same one again');
   });
 
   test('a source change nobody announces is noticed by the interrupted work', () async {

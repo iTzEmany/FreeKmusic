@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:codecore/core/import_row.dart';
+import 'package:codecore/services/import/track_matcher.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_parser.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
@@ -152,5 +154,24 @@ void main() {
     pool.clear();
     expect(pool.isEmpty, isTrue);
     expect(pool.continuationOf('s'), isNull);
+  });
+
+  group('inLibraryTest', () {
+    final library = LibraryIndex(const [
+      LibraryEntryLite(id: 1, title: 'Song', artist: 'Channel', durationMs: 200000),
+    ]);
+    bool owned(YtResult r) => inLibraryTest(hasDownload: (_) => false, library: library)(r);
+    YtResult result({List<String> artists = const [], int seconds = 200}) => YtResult(
+          id: 'x', title: 'Song', channel: 'Channel', duration: Duration(seconds: seconds), artists: artists);
+
+    test('without credited artists the channel is the artist', () {
+      expect(owned(result()), isTrue);
+      expect(owned(result(artists: ['Other'])), isFalse);
+    });
+
+    test('a duration more than 5 seconds apart is another recording', () {
+      expect(owned(result(seconds: 204)), isTrue);
+      expect(owned(result(seconds: 210)), isFalse);
+    });
   });
 }

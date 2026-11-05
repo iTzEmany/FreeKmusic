@@ -271,9 +271,16 @@ LibraryIndex _buildIndex(List<LibraryEntryLite> entries) => LibraryIndex(entries
 final libraryIndexProvider = FutureProvider<LibraryIndex>((ref) async {
   ref.watch(trackCountProvider.select((c) => c.value)); // import, scan, download, delete
   final repo = ref.watch(trackRepositoryProvider);
-  final timer = Timer(const Duration(minutes: 5), ref.invalidateSelf);
-  ref.onDispose(timer.cancel);
-  return compute(_buildIndex, await repo.liteEntries());
+  var timer = Timer(const Duration(minutes: 5), ref.invalidateSelf);
+  ref.onDispose(() => timer.cancel());
+  try {
+    return await compute(_buildIndex, await repo.liteEntries());
+  } on Object {
+    // A failure is not kept for 5 minutes: the next ask retries soon.
+    timer.cancel();
+    timer = Timer(const Duration(seconds: 5), ref.invalidateSelf);
+    rethrow;
+  }
 });
 
 /// The online songs of a genre page (D-356): the library songs of the genre
