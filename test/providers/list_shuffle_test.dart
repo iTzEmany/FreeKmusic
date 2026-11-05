@@ -145,7 +145,7 @@ void main() {
       trackRepositoryProvider.overrideWithValue(TrackRepository(db)),
     ]);
     addTearDown(c.dispose);
-    c.read(playContextProvider.notifier).set(const PlayContext(PlayContextKind.radio));
+    handler.setPlayContext(PlayContextKind.radio.index, null);
     final ref = c.read(_refProvider);
     expect(await plusAllowedNow(ref), ShufflePlusBlock.radio);
     expect(await plusAllowedNow(ref, ids: const []), isNull);

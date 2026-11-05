@@ -18,7 +18,6 @@ import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lyrics_translator.dart';
 import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
-import '../../../services/audio/codecore_audio_handler.dart' show ShadowWait;
 import '../../widgets/skeleton.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../lyrics/lyrics_translate_flow.dart';
@@ -586,8 +585,8 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
   void _retry() {
     setState(() => _late = false);
     _arm();
-    // Every widget on this track waits again from now (the cap is per subscription).
-    ref.invalidate(shadowWaitProvider((id: widget.trackId, waited: StreamCardsWait.wait)));
+    // A sibling widget on this track may still watch the wait: it starts over too.
+    ref.invalidate(shadowWaitProvider(widget.trackId));
     unawaited(
       ref.read(playerControllerProvider).retryShadow().catchError((Object e, StackTrace st) {
         AppLog.w('stream cards retry failed', e, st);
@@ -601,7 +600,7 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
     final t = Theme.of(context).textTheme;
     if (!_late) return _skeleton(context);
     // A slow but working download keeps the skeleton: the row is made when the file is whole.
-    final wait = ref.watch(shadowWaitProvider((id: widget.trackId, waited: StreamCardsWait.wait))).value;
+    final wait = ref.watch(shadowWaitProvider(widget.trackId)).value;
     return wait == ShadowWait.unavailable ? _unavailable(l, t) : _skeleton(context);
   }
 

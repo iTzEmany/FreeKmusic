@@ -182,7 +182,7 @@ void main() {
     );
     c.read(shufflePlusConfigProvider);
     if (context != null) {
-      c.read(playContextProvider.notifier).set(PlayContext(context));
+      h.handler.setPlayContext(context.index, null);
     }
     await tester.runAsync(() => h.handler.playQueue(queue, 0));
     return c;

@@ -153,15 +153,14 @@ void main() {
   });
 
   test('playFromList starts the queue at the index, keeps Shuffle+ and tells the context', () async {
-    PlayContext? ctx;
     player = PlayerController(handler, null,
-        shufflePlus: () => plus, setShufflePlus: (on) => plus = on, onContext: (c) => ctx = c);
+        shufflePlus: () => plus, setShufflePlus: (on) => plus = on);
     final tracks = await db.select(db.tracks).get();
     await player.playFromList(tracks, 1, context: const PlayContext(PlayContextKind.favorites));
     expect(handler.queueIds, [for (final t in tracks) t.id]);
     expect(handler.currentIndex, 1);
     expect(plus, isTrue, reason: 'library only: Shuffle+ stays');
-    expect(ctx?.kind, PlayContextKind.favorites);
+    expect(playContextOf(handler)?.kind, PlayContextKind.favorites);
   });
 
   test('playShufflePlus turns shuffle on and Shuffle+ with it where allowed; resumeLastQueue replays the queue', () async {
@@ -187,8 +186,7 @@ void main() {
   });
 
   test('resumeLastQueue on radio stations plays them as stations again, in the radio context', () async {
-    PlayContext? ctx;
-    player = PlayerController(handler, null, onContext: (c) => ctx = c);
+    player = PlayerController(handler, null);
     await handler.playStations([
       const RadioStation(id: 's1', name: 'S1', streamUrl: 'http://x'),
       const RadioStation(id: 's2', name: 'S2', streamUrl: 'http://y'),
@@ -196,16 +194,15 @@ void main() {
     expect(await player.resumeLastQueue(), isTrue);
     expect(handler.isRadio, isTrue);
     expect(handler.currentIndex, 0);
-    expect(ctx?.kind, PlayContextKind.radio);
+    expect(playContextOf(handler)?.kind, PlayContextKind.radio);
   });
 
   test('resumeLastQueue on stations keeps the name of the context', () async {
-    PlayContext? ctx;
-    player = PlayerController(handler, null, onContext: (c) => ctx = c);
+    player = PlayerController(handler, null);
     await handler.playStations([const RadioStation(id: 's1', name: 'S1', streamUrl: 'http://x')], 0);
     handler.setPlayContext(PlayContextKind.radio.index, 'Jazz');
     await player.resumeLastQueue();
-    expect(ctx?.name, 'Jazz');
+    expect(playContextOf(handler)?.name, 'Jazz');
   });
 
   test('playMixed: a lookup failing half way leaves the queue and the suggestion log alone', () async {
@@ -222,19 +219,12 @@ void main() {
     expect(handler.queueIds, ids);
   });
 
-  test('resumeLastQueue that fails is logged and still answers true', () async {
-    player = PlayerController(handler, null, onContext: (_) => throw StateError('boom'));
-    expect(await player.resumeLastQueue(), isTrue);
-  });
-
   test('resumeLastQueue keeps the context of the list, and of the stations played last', () async {
-    final seen = <PlayContextKind?>[];
-    player = PlayerController(handler, null, onContext: (c) => seen.add(c?.kind));
+    player = PlayerController(handler, null);
     final tracks = await db.select(db.tracks).get();
     await player.playFromList(tracks, 0, context: const PlayContext(PlayContextKind.favorites));
-    seen.clear();
     await player.resumeLastQueue();
-    expect(seen, [PlayContextKind.favorites]);
+    expect(playContextOf(handler)?.kind, PlayContextKind.favorites);
 
     // A queue of stations and a song is not a radio queue: it replays as a list,
     // with the context of the stations started last.
@@ -243,9 +233,8 @@ void main() {
         context: const PlayContext(PlayContextKind.search));
     final station = handler.queueIds.single;
     await handler.playQueue([station, ids[0]], 0);
-    seen.clear();
     await player.resumeLastQueue();
-    expect(seen, [PlayContextKind.search]);
+    expect(playContextOf(handler)?.kind, PlayContextKind.search);
     expect(handler.queueIds, [station, ids[0]]);
   });
 
@@ -253,10 +242,9 @@ void main() {
     final tracks = await db.select(db.tracks).get();
     await PlayerController(handler, null)
         .playFromList(tracks, 0, context: const PlayContext(PlayContextKind.playlist, 'Mix'));
-    final seen = <PlayContext?>[];
-    await PlayerController(handler, null, onContext: seen.add).resumeLastQueue();
-    expect(seen.single?.kind, PlayContextKind.playlist);
-    expect(seen.single?.name, 'Mix');
+    await PlayerController(handler, null).resumeLastQueue();
+    expect(playContextOf(handler)?.kind, PlayContextKind.playlist);
+    expect(playContextOf(handler)?.name, 'Mix');
   });
 
   test('playMixed from an index starts there', () async {
@@ -270,9 +258,8 @@ void main() {
   });
 
   test('playMixed with shuffle on starts at a random item, not the first, and tells the context', () async {
-    PlayContext? ctx;
     player = PlayerController(handler, null,
-        random: _FixedRandom(2), onContext: (c) => ctx = c, libraryIdOf: (_) async => null);
+        random: _FixedRandom(2), libraryIdOf: (_) async => null);
     final tracks = await db.select(db.tracks).get();
     await player.setShuffle(true);
     await player.playMixed([
@@ -281,7 +268,7 @@ void main() {
       (track: tracks[1], online: null, seedTitle: null),
     ], context: const PlayContext(PlayContextKind.library));
     expect(handler.queueIds[handler.currentIndex], tracks[1].id);
-    expect(ctx?.kind, PlayContextKind.library);
+    expect(playContextOf(handler)?.kind, PlayContextKind.library);
   });
 
   test('playOnlineList with shuffle starts at a random track, not always the first', () async {

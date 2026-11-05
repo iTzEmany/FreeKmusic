@@ -2,7 +2,7 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/core/import_row.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/database_providers.dart';
-import 'package:codecore/providers/shuffle_plus_providers.dart';
+import 'package:codecore/providers/library_providers.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

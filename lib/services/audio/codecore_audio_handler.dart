@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
@@ -24,9 +25,6 @@ import 'media_browse_tree.dart';
 import 'play_queue.dart';
 import 'remote_transport.dart';
 import 'resume_point.dart';
-
-/// What the cards of a streamed track wait for: its row, or nothing now.
-enum ShadowWait { waiting, unavailable }
 
 enum PlaybackFailureReason {
   fileMissing,
@@ -170,41 +168,6 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     await _bindShadow(key, entry.id, token);
   }
 
-  /// Past this the preparer's word is not enough: a job still queued or
-  /// downloading counts as stuck (it exposes no download progress).
-  static const shadowWaitCap = Duration(seconds: 60);
-
-  /// Whether the cards of the streamed [queueId] still wait for their row: emits
-  /// now and on each phase change; unavailable once the job failed, is unknown,
-  /// or [shadowWaitCap] passed ([waited]: how long the caller already waited).
-  Stream<ShadowWait> shadowWaitOf(int queueId, {Duration waited = Duration.zero}) {
-    final phases = preparer?.phases;
-    final key = online?.entryOf(queueId)?.result.indexKey;
-    late final StreamController<ShadowWait> c;
-    Timer? cap;
-    var capped = false;
-    void emit() {
-      final phase = phases?.value[key];
-      c.add(capped || phase == null || phase == StreamPhase.failed ? ShadowWait.unavailable : ShadowWait.waiting);
-    }
-
-    c = StreamController(
-      onListen: () {
-        phases?.addListener(emit);
-        cap = Timer(shadowWaitCap - waited, () {
-          capped = true;
-          emit();
-        });
-        emit();
-      },
-      onCancel: () {
-        phases?.removeListener(emit);
-        cap?.cancel();
-      },
-    );
-    return c.stream;
-  }
-
   /// The queue entry now playing (an online entry keeps its own id even when
   /// its library file plays).
   int? get currentQueueId => _queue.currentId;
@@ -253,8 +216,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   /// The listening history (`plays`) is written only while this is on.
   bool recordHistory = true;
-  int? _contextKind;
-  String? _contextName;
+  final _context = ValueNotifier<({int kind, String? name})?>(null);
 
   // The listen being timed: the row (once it counted as played), the time
   // really spent playing the current track and the last position seen.
@@ -1185,17 +1147,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Where the listen being recorded came from (`PlayContextKind.index`).
-  void setPlayContext(int? kind, String? name) {
-    _contextKind = kind;
-    _contextName = name;
-  }
+  void setPlayContext(int? kind, String? name) =>
+      _context.value = kind == null ? null : (kind: kind, name: name);
 
   /// The context of the list started last (null: none); the one source, so a
   /// new controller still resumes the queue with its name (D-364).
-  ({int kind, String? name})? get playContext {
-    final k = _contextKind;
-    return k == null ? null : (kind: k, name: _contextName);
-  }
+  ({int kind, String? name})? get playContext => _context.value;
+
+  /// [playContext] as a listenable, for the providers that follow it.
+  ValueListenable<({int kind, String? name})?> get playContextListenable => _context;
 
   /// The track just counted as played: opens its row in the history.
   void _beginListen(Track track, int listenId) {
@@ -1207,8 +1167,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         .start(
           listenId,
           DateTime.now().millisecondsSinceEpoch,
-          context: _contextKind,
-          contextName: _contextName,
+          context: _context.value?.kind,
+          contextName: _context.value?.name,
           msPlayed: _playedMs,
         )
         .then<int?>((id) => id)

@@ -11,6 +11,7 @@ import '../data/db/app_database.dart';
 import '../services/audio/codecore_audio_handler.dart';
 import '../services/audio/online_entries.dart';
 import '../services/audio/play_queue.dart';
+import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/radio/radio_station.dart';
 import '../services/audio/playback_persistence.dart';
 import '../services/online/youtube_service.dart';
@@ -63,17 +64,15 @@ PlayContext? playContextOf(CodecoreAudioHandler h) {
       : PlayContext(PlayContextKind.values[c.kind], c.name);
 }
 
-class PlayContextNotifier extends Notifier<PlayContext?> {
-  @override
-  PlayContext? build() => null;
-
-  void set(PlayContext? c) => state = c;
-}
-
-/// Seeded at startup from the handler's restored context (saved with the queue in settings).
-final playContextProvider = NotifierProvider<PlayContextNotifier, PlayContext?>(
-  PlayContextNotifier.new,
-);
+/// The handler's context, followed live (restore, a list started, Android Auto clearing it).
+final playContextProvider = Provider<PlayContext?>((ref) {
+  final h = ref.watch(audioHandlerProvider);
+  final l = h.playContextListenable;
+  void changed() => ref.invalidateSelf();
+  l.addListener(changed);
+  ref.onDispose(() => l.removeListener(changed));
+  return playContextOf(h);
+});
 
 /// One entry of a mixed list: a library [track] or an [online] song. A
 /// [seedTitle] marks the online song as a Shuffle+ suggestion made from that
@@ -88,7 +87,6 @@ class PlayerController {
   PlayerController(
     this._handler,
     this._persistence, {
-    this.onContext,
     this.shufflePlus,
     this.setShufflePlus,
     this.libraryIdOf,
@@ -131,7 +129,6 @@ class PlayerController {
   bool get inJam => jamActive?.call() ?? false;
 
   final CodecoreAudioHandler _handler;
-  final void Function(PlayContext?)? onContext;
   final PlaybackPersistence? _persistence;
   bool _askedNotifications = false;
 
@@ -149,7 +146,6 @@ class PlayerController {
     bool? plus,
     bool? shuffle,
   }) async {
-    onContext?.call(context);
     _handler.setPlayContext(context?.kind.index, context?.name);
     _requestNotificationPermissionOnce();
     final load = _handler.playQueue(ids, at);
@@ -265,7 +261,6 @@ class PlayerController {
   }) async {
     if (stations.isEmpty) return;
     final ctx = context ?? const PlayContext(PlayContextKind.radio);
-    onContext?.call(ctx);
     _handler.setPlayContext(ctx.kind.index, ctx.name);
     _requestNotificationPermissionOnce();
     await _handler.playStations(stations, index);
@@ -462,16 +457,46 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
   }
 }
 
-/// Whether the cards of the streamed [id] still wait for their row ([waited]: already waited).
-final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, ({int id, Duration waited})>(
-  (ref, k) => ref.watch(audioHandlerProvider).shadowWaitOf(k.id, waited: k.waited),
-);
+/// What the cards of a streamed track wait for: its row, or nothing now.
+enum ShadowWait { waiting, unavailable }
+
+/// Past this the preparer's word is not enough: a job still queued or
+/// downloading counts as stuck (it exposes no download progress). 60 s in all,
+/// the first 20 s waited by `StreamCardsWait` before it first watches this.
+const shadowWaitCap = Duration(seconds: 40);
+
+/// Whether the cards of the streamed queue [id] still wait for their row: emits
+/// now and on each phase change; unavailable once the job failed, is unknown,
+/// or [shadowWaitCap] passed since first watched (autoDispose: it restarts then).
+final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, int>((ref, id) {
+  final h = ref.watch(audioHandlerProvider);
+  final phases = h.preparer?.phases;
+  final key = h.online?.entryOf(id)?.result.indexKey;
+  final c = StreamController<ShadowWait>();
+  var capped = false;
+  void emit() {
+    final phase = phases?.value[key];
+    c.add(capped || phase == null || phase == StreamPhase.failed ? ShadowWait.unavailable : ShadowWait.waiting);
+  }
+
+  phases?.addListener(emit);
+  final cap = Timer(shadowWaitCap, () {
+    capped = true;
+    emit();
+  });
+  ref.onDispose(() {
+    phases?.removeListener(emit);
+    cap.cancel();
+    c.close();
+  });
+  emit();
+  return c.stream;
+});
 
 final playerControllerProvider = Provider<PlayerController>(
   (ref) => PlayerController(
     ref.watch(audioHandlerProvider),
     ref.watch(playbackPersistenceProvider),
-    onContext: (c) => ref.read(playContextProvider.notifier).set(c),
     shufflePlus: () => ref.read(settingsProvider).shufflePlus,
     setShufflePlus: (on) => ref
         .read(settingsProvider.notifier)

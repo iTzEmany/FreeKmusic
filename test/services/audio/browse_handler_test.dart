@@ -5,6 +5,8 @@ import 'package:codecore/data/repositories/radio_repository.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/radio/radio_station.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/player_providers.dart' show PlayContextKind, audioHandlerProvider, playContextProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/media_browse_tree.dart';
 import 'package:codecore/services/audio/play_queue.dart';
@@ -59,6 +61,18 @@ void main() {
     expect(handler.playContext, isNull, reason: 'the car menu is not the app\'s last list');
   });
 
+  test('the context provider sees at once the context an Android Auto id clears', () async {
+    handler.browse = MediaBrowseTree(DbBrowseSource(
+        TrackRepository(db), LibraryQueries(db), PlaylistRepository(db)));
+    final c = ProviderContainer(overrides: [audioHandlerProvider.overrideWithValue(handler)]);
+    addTearDown(c.dispose);
+    handler.setPlayContext(PlayContextKind.playlist.index, 'Mix');
+    expect(c.read(playContextProvider)?.name, 'Mix');
+    final items = await handler.getChildren('album:alb');
+    await handler.playFromMediaId(items[1].id);
+    expect(c.read(playContextProvider), isNull);
+  });
+
   test('an id that resolves to nothing leaves the play context alone', () async {
     handler.browse = MediaBrowseTree(DbBrowseSource(
         TrackRepository(db), LibraryQueries(db), PlaylistRepository(db)));
@@ -85,5 +99,23 @@ void main() {
     expect(h.queueIds, hasLength(3));
     expect(h.currentIndex, 1);
     expect(h.currentTrack!.title, 'R manual:m');
+  });
+
+  test('a saved station of the car menu clears the play context and the provider follows', () async {
+    final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db),
+        onError: (_) {}, online: OnlineEntries());
+    addTearDown(h.dispose);
+    final radios = RadioRepository(db);
+    await radios.save(const RadioStation(id: 'a', name: 'R a', streamUrl: 'http://r.test/a'));
+    h.browse = MediaBrowseTree(DbBrowseSource(
+        TrackRepository(db), LibraryQueries(db), PlaylistRepository(db), radios));
+    final c = ProviderContainer(overrides: [audioHandlerProvider.overrideWithValue(h)]);
+    addTearDown(c.dispose);
+    h.setPlayContext(PlayContextKind.playlist.index, 'Mix');
+    expect(c.read(playContextProvider)?.name, 'Mix');
+
+    await h.playFromMediaId((await h.getChildren('radio')).single.id);
+    expect(h.isRadio, isTrue);
+    expect(c.read(playContextProvider), isNull);
   });
 }

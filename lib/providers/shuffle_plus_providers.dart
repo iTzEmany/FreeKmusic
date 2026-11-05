@@ -1,11 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
 import '../core/constants.dart';
-import '../core/import_row.dart' show LibraryEntryLite;
 import '../core/network_kind.dart';
 import '../data/settings/settings_store.dart';
 import '../services/audio/codecore_audio_handler.dart';
@@ -19,7 +17,7 @@ import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
 import 'database_providers.dart';
-import 'library_providers.dart' show genreTracksProvider, trackCountProvider;
+import 'library_providers.dart' show genreTracksProvider, libraryIndexProvider;
 import 'jam_providers.dart';
 import 'seed_resolver_provider.dart';
 import 'suggestion_log_provider.dart';
@@ -247,8 +245,12 @@ final shufflePlusPendingProvider = NotifierProvider<ShufflePlusPendingNotifier, 
 class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
   @override
   ShufflePlusPending build() {
-    // No placeholder rows unless Shuffle+ is on and no Jam runs, whatever the engine last said.
-    if (ref.watch(shuffleModeProvider) != ShuffleMode.plus || ref.watch(jamProvider.select((j) => j.active))) {
+    // Same rule as the engine (`plusOn`), applied at once; the engine clears `pending` for its other stops.
+    final mode = ref.watch(shuffleModeProvider);
+    if (!plusOn(
+        enabled: mode == ShuffleMode.plus,
+        shuffle: mode != ShuffleMode.off,
+        jam: ref.watch(jamProvider.select((j) => j.active)))) {
       return ShufflePlusPending.none;
     }
     final c = ref.watch(shufflePlusProvider).value;
@@ -262,26 +264,6 @@ class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
     return c.pending.value;
   }
 }
-
-LibraryIndex _buildIndex(List<LibraryEntryLite> entries) => LibraryIndex(entries);
-
-/// The library index, built off the UI isolate and kept for 5 minutes (or
-/// until songs are added or removed): Shuffle+ and the genre pages ask the
-/// same question.
-final libraryIndexProvider = FutureProvider<LibraryIndex>((ref) async {
-  ref.watch(trackCountProvider.select((c) => c.value)); // import, scan, download, delete
-  final repo = ref.watch(trackRepositoryProvider);
-  var timer = Timer(const Duration(minutes: 5), ref.invalidateSelf);
-  ref.onDispose(() => timer.cancel());
-  try {
-    return await compute(_buildIndex, await repo.liteEntries());
-  } on Object {
-    // A failure is not kept for 5 minutes: the next ask retries soon.
-    timer.cancel();
-    timer = Timer(const Duration(seconds: 5), ref.invalidateSelf);
-    rethrow;
-  }
-});
 
 /// The online songs of a genre page (D-356): the library songs of the genre
 /// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,

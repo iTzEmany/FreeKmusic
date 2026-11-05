@@ -50,6 +50,11 @@ class ShufflePlusPending {
   int get hashCode => Object.hash(incoming, Object.hashAllUnordered(enriching));
 }
 
+/// The one rule for «Shuffle+ is on»: chosen, shuffle running and no Jam. The
+/// engine adds its own stops (session, source, tool, network) on top; the
+/// placeholder-row provider uses this for UI immediacy only.
+bool plusOn({required bool enabled, required bool shuffle, required bool jam}) => enabled && shuffle && !jam;
+
 /// Puts a song you do not have in the queue every N songs of a shuffled
 /// list. It works from [ShuffleHost] events; every piece of the outside
 /// world is passed in so it runs on fakes.
@@ -328,7 +333,7 @@ class ShufflePlusController {
 
   Future<_Gate> _gate() async {
     final cfg = config();
-    if (!cfg.enabled || !host.shuffleEnabled || jamActive() || _sessionOff) {
+    if (!plusOn(enabled: cfg.enabled, shuffle: host.shuffleEnabled, jam: jamActive()) || _sessionOff) {
       return _Gate.off;
     }
     await _syncSource();

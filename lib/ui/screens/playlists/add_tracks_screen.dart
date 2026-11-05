@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
+import '../../../providers/library_providers.dart';
 import '../../../providers/playlist_ops.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/track_ops.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -29,7 +31,7 @@ class _AddTracksScreenState extends ConsumerState<AddTracksScreen> {
   static final _key = SelectionKey.addTracks.key;
   final _controller = TextEditingController();
   String _query = '';
-  List<Track>? _lastFound;
+  AsyncValue<List<Track>>? _prev;
 
   @override
   void dispose() {
@@ -86,29 +88,38 @@ class _AddTracksScreenState extends ConsumerState<AddTracksScreen> {
               Expanded(
                 child: Builder(
                   builder: (context) {
-                    _lastFound = ref.watch(trackSearchProvider(_query)).value ?? _lastFound;
-                    final tracks = [
-                      for (final t in _lastFound ?? const <Track>[])
-                        if (!inPlaylist.contains(t.id)) t,
-                    ];
-                    if (_lastFound != null && tracks.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.library_music,
-                        message: _query.isEmpty
-                            ? l.allSongsInPlaylist
-                            : l.noResults,
-                      );
-                    }
-                    return ListView.builder(
-                      itemExtent: trackRowExtentOf(context, false),
-                      itemCount: tracks.length,
-                      itemBuilder: (_, i) {
-                        final t = tracks[i];
-                        return TrackRow(
-                          track: t,
-                          variant: TrackRowVariant.pick,
-                          picked: picked.contains(t.id),
-                          onTap: () => ref.read(selectionProvider(_key).notifier).toggle(t.id),
+                    final fresh = ref.watch(trackSearchProvider(_query));
+                    final found = keepWhileLoading(fresh, _prev);
+                    _prev = found.hasError ? null : found;
+                    return AsyncBody(
+                      value: found,
+                      rowHeight: trackRowExtentOf(context, false),
+                      onRetry: () => ref.invalidate(trackSearchProvider(_query)),
+                      data: (all) {
+                        final tracks = [
+                          for (final t in all)
+                            if (!inPlaylist.contains(t.id)) t,
+                        ];
+                        if (tracks.isEmpty) {
+                          return EmptyState(
+                            icon: Icons.library_music,
+                            message: _query.isEmpty
+                                ? l.allSongsInPlaylist
+                                : l.noResults,
+                          );
+                        }
+                        return ListView.builder(
+                          itemExtent: trackRowExtentOf(context, false),
+                          itemCount: tracks.length,
+                          itemBuilder: (_, i) {
+                            final t = tracks[i];
+                            return TrackRow(
+                              track: t,
+                              variant: TrackRowVariant.pick,
+                              picked: picked.contains(t.id),
+                              onTap: () => ref.read(selectionProvider(_key).notifier).toggle(t.id),
+                            );
+                          },
                         );
                       },
                     );

@@ -275,7 +275,7 @@ void main() {
     // The retry of one widget (its own timer is armed again) resets the cap of every subscriber.
     final ctx = t.element(wait.first);
     final container = ProviderScope.containerOf(ctx);
-    container.invalidate(shadowWaitProvider((id: t.widget<StreamCardsWait>(wait.first).trackId, waited: StreamCardsWait.wait)));
+    container.invalidate(shadowWaitProvider(t.widget<StreamCardsWait>(wait.first).trackId));
     await t.pump();
     await t.pump(const Duration(seconds: 30)); // 81 s since the start, 30 s since the retry
     expect(find.text('Non disponibile'), findsNothing);
