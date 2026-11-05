@@ -113,3 +113,16 @@ Un APK è solo per Android: per il Mac serve la `.app`. Il Mac non è tra le pia
 - Da fare: una piccola PR che aggiunge al job il caricamento della `.app` (zip di `build/macos/Build/Products/Debug/*.app` con `actions/upload-artifact`), poi `gh workflow run ci.yml --ref master` e scaricare l'artefatto dalla run.
 - La build è di debug e non firmata: al primo avvio macOS la blocca, si apre con tasto destro → Apri (o `xattr -dr com.apple.quarantine <app>`).
 - Prompt: «Leggi docs/prossimi-lavori.md §3 e fammi la build per macOS».
+
+## 4. Animazioni e superfici flottanti (4 nov, richiesta dell'utente)
+Stile voluto: niente tagli netti né slide laterali; ogni schermata nuova entra a schermo intero con una dissolvenza (ease-in) e i contenuti compaiono appena caricati (skeleton); lo slide resta solo per il player. Solo trasformazioni e opacità (costo a riposo zero), durate dai token, zero con riduci movimento.
+
+| # | Cosa | Oggi | Come | Costo |
+|---|---|---|---|---|
+| 1 | Ricerca in Libreria che si apre come nel mockup `libreria-ricerca.html` | sembra un cambio di schermata (`AnimatedSwitcher`) | la lente resta lo stesso widget e scivola (`AnimatedAlign`), il campo si allarga attorno a lei, titolo e icone escono con opacità e spostamento, la lista sotto sfuma come strato unico | ~1 h, **già nella fase 83** |
+| 2 | Transizione fra schermate (Impostazioni e sottoimpostazioni, e tutte le altre) | slide da sinistra, fluido all'inizio e poi scatta | un `PageTransitionsTheme` unico con dissolvenza ease-in per tutte le route, tranne il player che tiene il suo slide dal basso | ~30 min, un punto solo |
+| 3 | Dock (navbar) flottante | lo sfondo della pagina si taglia di netto dove tocca il dock | `extendBody` nella shell: il contenuto scorre sotto il dock ed è visibile dove il dock non copre; le liste ricevono in fondo un margine pari all'altezza del dock (una costante nella shell, non a mano per schermata) | ~1–2 h, tocca tutte le liste lunghe |
+| 4 | Intestazione della Libreria flottante | intestazione piena sopra la lista | gli elementi scorrono sotto l'intestazione e restano visibili fuori dalle parti fisse (titolo, schede); va d'accordo con la striscia A–Z | ~1–2 h |
+| 5 | Chiusura del player | la copertina passa da tonda a quadrata e poi torna tonda nel mini player | la copertina «in volo» resta tonda per tutta l'animazione (`flightShuttleBuilder` dell'`Hero` con lo stesso ritaglio tondo, o il raggio che interpola da tondo a tondo) | ~30–45 min |
+
+Consiglio: 2 e 5 costano poco e si possono aggiungere alla fase 83 insieme alla 1; 3 e 4 sono un passo a sé (toccano la shell e tutte le liste), da misurare sul Mi A3 dopo (scenario «Libreria Tutto→Playlist→Album→Artisti» e scroll di Tutti i brani).
