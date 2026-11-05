@@ -123,6 +123,7 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
 - Codice: `lib/services/jam/` (`jam_models`, `jam_state` = riduttore puro, `jam_host` = rotte `/jam` montate da `OfferNode`,
   `jam_guest` = client, `jam_output` = applica lo stato a un `AudioBackend`, `jam_cache`), orchestrazione in
   `lib/providers/jam_providers.dart` (`JamController`), UI in `lib/ui/screens/jam/`.
+  `JamLocalQueue` (`lib/providers/jam_local_queue.dart`, fase 84) mette da parte e restituisce la coda dell'ospite e la modalità di shuffle (R-90, D-209, D-341, D-342).
 - La Jam usa un proprio `AudioBackend`: la coda locale (`PlayQueue`) non viene toccata; la riproduzione locale va in pausa all'avvio.
 - Permessi coda: tutti aggiungono e riordinano; l'ospite rimuove solo i propri brani (mai quello in riproduzione) e non
   cambia brano; l'host fa tutto.
@@ -130,6 +131,7 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
 - Fase 69 («Jam a distanza», `docs/feature-jam-distanza.md`):
   - `JamGate` filtra le richieste di tutti, in LAN e sul ponte: 2 al minuto per id, Sospendi, Blocca. Lo legge `JamHost.admitRequest`.
   - `JamGuestLink` è ciò che `JamController` usa dell'ospite: lo implementano `JamGuest` (LAN) e, dalla fase 70, l'ospite remoto.
+  - `connectWithQuickRetry` (`mqtt_link.dart`, fase 84): il primo CONNECT a mezza attesa e un secondo tentativo subito sullo stesso broker, per `JamBridge` e la ricerca del codice di `RemoteJamGuest`. Broker predefiniti: emqx, poi HiveMQ (D-383).
   - Secondo archivio persistente: `JamSecretStore` (`lib/data/settings/jam_secret_store.dart`), con il gate e, dalla fase 70, le chiavi degli amici. Su Android sta in DataStore (`SharedPreferencesAsync`), su desktop in `<appSupportDir>/jam_secrets.json`. È escluso dal backup di sistema e da quello dell'app (D-269, R-135).
   - I provider stanno in `jam_remote_providers.dart` (gate, archivio, `jamBridgeProvider`, che accende il ponte guardando `jamProvider`) e `jam_broker_providers.dart` (lista dei broker).
   - Fase 70: `JamGuestLink` ha `files: JamHostFiles?` (null per l'ospite remoto) e `link`/`links`. Il servizio in primo piano tiene due conteggi in `ShareHubNotifier` (`holdJam`/`releaseJam`, di cui uno per il ponte) e il testo cambia con essi. I fogli sono in `lib/ui/screens/jam/jam_remote_sheets.dart`.
