@@ -915,7 +915,6 @@
   },
   "activityNone": "Nessuna attività",
   "activityCompleted": "Completate",
-  "activityClear": "Pulisci",
   "importPhaseSearching": "In ricerca…",
   "importPhaseDownloading": "Download {percent} %",
   "@importPhaseDownloading": {
@@ -2710,9 +2709,9 @@
   "reviewFilterNoCover": "Senza copertina",
   "reviewFilterMissingData": "Dati mancanti",
   "reviewEmpty": "Niente da revisionare: ai brani cercati non manca nulla",
-  "reviewHint": "Brani che l'arricchimento automatico non ha trovato o ha lasciato incompleti.",
+  "reviewHint": "Brani a cui manca qualcosa. Cerca di nuovo o lascia così.",
   "reviewRetry": "Riprova",
-  "reviewDismiss": "Va bene così",
+  "reviewDismiss": "Ignora",
   "reviewRetryStarted": "Ricerca avviata per {count, plural, one{1 brano} other{{count} brani}}",
   "@reviewRetryStarted": {
     "placeholders": {
@@ -3545,8 +3544,6 @@
       }
     }
   },
-  "activityStopped": "Fermata",
-  "activityScanEnded": "Scansione",
   "enrichRoundTitle": "Giro di arricchimento",
   "enrichRoundUpdated": "Aggiornati",
   "enrichRoundNone": "Senza risultato",
@@ -3556,17 +3553,6 @@
   "enrichPartSynced": "Testo sincronizzato",
   "enrichPartCurio": "Curiosità",
   "enrichPartCredits": "Crediti",
-  "logEnrichRound": "Arricchimento: {done, plural, one{1 brano completato} other{{done} brani completati}}, {none} senza risultato",
-  "@logEnrichRound": {
-    "placeholders": {
-      "done": {
-        "type": "int"
-      },
-      "none": {
-        "type": "int"
-      }
-    }
-  },
   "coverChange": "Cambia copertina",
   "coverRestoreOriginal": "Ripristina copertina originale",
   "coverSourceDevice": "Dal dispositivo",
@@ -3686,8 +3672,6 @@
       }
     }
   },
-  "logEnrichStopped": "Completamento fermato: nessuna fonte risponde",
-  "logEnrichFailed": "Completamento non riuscito: un errore l'ha fermato",
   "enrichLibraryDue": "{count} brani da completare, circa {minutes} minuti",
   "@enrichLibraryDue": {
     "placeholders": {
@@ -3768,20 +3752,9 @@
     }
   },
   "recogAcceptAll": "Accetta tutte",
-  "recogNoProposals": "Nessuna proposta da confermare",
+  "recogNoProposals": "Tutto confermato",
   "recogFromTo": "Da {from} a {to}",
   "@recogFromTo": {
-    "placeholders": {
-      "from": {
-        "type": "String"
-      },
-      "to": {
-        "type": "String"
-      }
-    }
-  },
-  "logCorrection": "Corretto da {from} a {to}",
-  "@logCorrection": {
     "placeholders": {
       "from": {
         "type": "String"
@@ -3886,5 +3859,129 @@
   "@playerResumeLastQueueSub": {"placeholders": {"name": {"type": "String"}, "tracks": {"type": "String"}}},
   "playerShufflePlusLibrary": "Shuffle+ della libreria",
   "playerShufflePlusLibrarySub": "Libreria in casuale con brani suggeriti",
-  "playerRecentlyAdded": "Ultimi aggiunti"
+  "playerRecentlyAdded": "Ultimi aggiunti",
+  "reviewSearch": "Cerca",
+  "recogTitle": "Da confermare",
+  "recogSuggested": "{count, plural, one{1 correzione suggerita} other{{count} correzioni suggerite. Controllale una per una o accettale tutte.}}",
+  "@recogSuggested": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recogAcceptAllCount": "Accetta tutte ({count})",
+  "@recogAcceptAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recogAcceptedAll": "{count, plural, one{1 correzione accettata} other{{count} correzioni accettate}}. I file si aggiornano in sottofondo.",
+  "@recogAcceptedAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recogNoProposalsHint": "Non c'è più niente da controllare.",
+  "logToday": "Oggi",
+  "logYesterday": "Ieri",
+  "logDayCount": "{count, plural, one{1 voce} other{{count} voci}}",
+  "@logDayCount": {"placeholders": {"count": {"type": "int"}}},
+  "logRetention": "Il registro tiene gli ultimi 30 giorni.",
+  "logNoMatch": "Nessuna voce con questo filtro.",
+  "logPickEntry": "Scegli una voce per vedere i dettagli.",
+  "logFilterAll": "Tutto",
+  "logFilterDownload": "Download",
+  "logFilterLibrary": "Libreria",
+  "logFilterEnrich": "Arricchimento",
+  "logFilterCorrections": "Correzioni",
+  "logFilterErrors": "Errori",
+  "logFailedLabel": "Non riuscito",
+  "logStoppedLabel": "Fermato",
+  "logClearMenu": "Pulisci registro",
+  "logClearTitle": "Pulire il registro?",
+  "logClearConfirm": "Pulisci",
+  "logPendingSub": "Correzioni suggerite ai tuoi brani",
+  "logPendingReview": "Rivedi",
+  "logPendingMore": "e altre {count}",
+  "@logPendingMore": {"placeholders": {"count": {"type": "int"}}},
+  "logHowTitle": "Come risolvere",
+  "logTechTitle": "Dettaglio tecnico",
+  "logOpenSongs": "Vedi i brani",
+  "logHowSettings": "Apri {settings}, poi «{page}».",
+  "@logHowSettings": {"placeholders": {"settings": {"type": "String"}, "page": {"type": "String"}}},
+  "logHowUpdate": "Tocca «{button}» accanto a yt-dlp.",
+  "@logHowUpdate": {"placeholders": {"button": {"type": "String"}}},
+  "logHowWait": "Aspetta qualche minuto.",
+  "logHowOnline": "Controlla di essere online.",
+  "logDlDone": "Brano scaricato",
+  "logDlFailed": "Download non riuscito",
+  "logDlGroup": "{count, plural, one{1 brano scaricato} other{{count} brani scaricati}}",
+  "@logDlGroup": {"placeholders": {"count": {"type": "int"}}},
+  "logDlGroupShow": "Mostra i brani",
+  "logDlGroupHide": "Nascondi i brani",
+  "logTransferDone": "Brani inviati",
+  "logTransferFailed": "Invio non riuscito",
+  "logScanDone": "Libreria aggiornata",
+  "logScanDoneSub": "Controllate tutte le cartelle.",
+  "logScanStopped": "Scansione fermata",
+  "logScanFailed": "Scansione non riuscita",
+  "logStoppedSub": "Si è fermato prima della fine.",
+  "logFailedSub": "Si è fermato per un errore.",
+  "logEnrichDone": "Arricchimento finito",
+  "logEnrichInterrupted": "Arricchimento interrotto",
+  "logEnrichInterruptedSub": "Si è fermato per un errore; il lavoro fatto è salvo.",
+  "logBgDone": "Testi e copertine aggiunti",
+  "logBgDoneSub": "Completamento in sottofondo.",
+  "logBgStopped": "Completamento fermato",
+  "logBgStoppedSub": "Nessuna fonte risponde in questo momento.",
+  "logBgFailed": "Completamento non riuscito",
+  "logBgFailedSub": "Un errore lo ha fermato.",
+  "logSecondOpinion": "Secondo parere da YouTube Music",
+  "logSecondOpinionSub": "Controllati i brani incerti.",
+  "logSecondOpinionFailed": "Secondo parere interrotto",
+  "logCleanup": "Doppioni cercati",
+  "logCleanupSub": "Confrontati i brani della libreria.",
+  "logReleases": "Nuove uscite controllate",
+  "logReleasesSub": "Cercate le novità degli artisti che segui.",
+  "logPodcasts": "Podcast aggiornati",
+  "logRadio": "Radio controllate",
+  "logTaskFailed": "Attività non riuscita",
+  "logImportDone": "Playlist «{name}» importata",
+  "@logImportDone": {"placeholders": {"name": {"type": "String"}}},
+  "logImportReady": "Playlist «{name}» pronta",
+  "@logImportReady": {"placeholders": {"name": {"type": "String"}}},
+  "logImportFailed": "Importazione non riuscita",
+  "logImportRate": "Importazione rallentata da YouTube",
+  "logImportPaused": "Importazione in pausa",
+  "logWhyToolMissing": "Manca il componente per scaricare da YouTube.",
+  "logWhyToolOld": "Il componente per scaricare da YouTube è troppo vecchio.",
+  "logWhyNetwork": "Rete non disponibile.",
+  "logWhyRate": "YouTube ha chiesto di rallentare.",
+  "logWhyFailing": "Troppi errori di fila: l’ho messa in pausa.",
+  "logCorrectionTitle": "Titolo e artista corretti",
+  "logChipSongs": "{count, plural, one{1 brano} other{{count} brani}}",
+  "@logChipSongs": {"placeholders": {"count": {"type": "int"}}},
+  "logChipSongsOf": "{done} di {total} brani",
+  "@logChipSongsOf": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "logChipUpdated": "{count} aggiornati",
+  "@logChipUpdated": {"placeholders": {"count": {"type": "int"}}},
+  "logChipNotFound": "{count} non trovati",
+  "@logChipNotFound": {"placeholders": {"count": {"type": "int"}}},
+  "logChipNoResult": "{count} senza risultato",
+  "@logChipNoResult": {"placeholders": {"count": {"type": "int"}}},
+  "logFileTitle": "Correzione salvata, file non aggiornato",
+  "logHowFileMissing": "Controlla che il brano sia ancora nella sua cartella.",
+  "logHowFileReadOnly": "Togli la sola lettura al file o alla sua cartella, poi correggi di nuovo il brano.",
+  "logHowFileRetry": "Controlla che ci sia spazio sul disco e che il file non sia in uso, poi correggi di nuovo il brano.",
+  "logClearBody": "Cancello tutte le voci e tolgo dalla lista i download finiti. Dopo non potrai più ripristinare le correzioni. I brani restano dove sono.",
+  "logHowResume": "Tocca «{button}» sull’importazione in pausa, nell’elenco delle attività.",
+  "@logHowResume": {"placeholders": {"button": {"type": "String"}}},
+  "logEnrichStopped": "Arricchimento fermato",
+  "logCorrectionSem": "Da {from} a {to}",
+  "@logCorrectionSem": {"placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}}
 }

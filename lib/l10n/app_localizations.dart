@@ -2578,12 +2578,6 @@ abstract class AppLocalizations {
   /// **'Completate'**
   String get activityCompleted;
 
-  /// No description provided for @activityClear.
-  ///
-  /// In it, this message translates to:
-  /// **'Pulisci'**
-  String get activityClear;
-
   /// No description provided for @importPhaseSearching.
   ///
   /// In it, this message translates to:
@@ -6540,7 +6534,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewHint.
   ///
   /// In it, this message translates to:
-  /// **'Brani che l\'arricchimento automatico non ha trovato o ha lasciato incompleti.'**
+  /// **'Brani a cui manca qualcosa. Cerca di nuovo o lascia così.'**
   String get reviewHint;
 
   /// No description provided for @reviewRetry.
@@ -6552,7 +6546,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewDismiss.
   ///
   /// In it, this message translates to:
-  /// **'Va bene così'**
+  /// **'Ignora'**
   String get reviewDismiss;
 
   /// No description provided for @reviewRetryStarted.
@@ -8749,18 +8743,6 @@ abstract class AppLocalizations {
   /// **'Completamento dell\'arricchimento: {done} di {total}'**
   String activityEnrichBackground(int done, int total);
 
-  /// No description provided for @activityStopped.
-  ///
-  /// In it, this message translates to:
-  /// **'Fermata'**
-  String get activityStopped;
-
-  /// No description provided for @activityScanEnded.
-  ///
-  /// In it, this message translates to:
-  /// **'Scansione'**
-  String get activityScanEnded;
-
   /// No description provided for @enrichRoundTitle.
   ///
   /// In it, this message translates to:
@@ -8814,12 +8796,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Crediti'**
   String get enrichPartCredits;
-
-  /// No description provided for @logEnrichRound.
-  ///
-  /// In it, this message translates to:
-  /// **'Arricchimento: {done, plural, one{1 brano completato} other{{done} brani completati}}, {none} senza risultato'**
-  String logEnrichRound(int done, int none);
 
   /// No description provided for @coverChange.
   ///
@@ -9163,18 +9139,6 @@ abstract class AppLocalizations {
   /// **'Arricchimento interrotto da un errore: {updated} aggiornati, {notFound} non trovati'**
   String enrichInterrupted(int updated, int notFound);
 
-  /// No description provided for @logEnrichStopped.
-  ///
-  /// In it, this message translates to:
-  /// **'Completamento fermato: nessuna fonte risponde'**
-  String get logEnrichStopped;
-
-  /// No description provided for @logEnrichFailed.
-  ///
-  /// In it, this message translates to:
-  /// **'Completamento non riuscito: un errore l\'ha fermato'**
-  String get logEnrichFailed;
-
   /// No description provided for @enrichLibraryDue.
   ///
   /// In it, this message translates to:
@@ -9286,7 +9250,7 @@ abstract class AppLocalizations {
   /// No description provided for @recogNoProposals.
   ///
   /// In it, this message translates to:
-  /// **'Nessuna proposta da confermare'**
+  /// **'Tutto confermato'**
   String get recogNoProposals;
 
   /// No description provided for @recogFromTo.
@@ -9294,12 +9258,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Da {from} a {to}'**
   String recogFromTo(String from, String to);
-
-  /// No description provided for @logCorrection.
-  ///
-  /// In it, this message translates to:
-  /// **'Corretto da {from} a {to}'**
-  String logCorrection(String from, String to);
 
   /// No description provided for @logRevert.
   ///
@@ -9696,6 +9654,540 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Ultimi aggiunti'**
   String get playerRecentlyAdded;
+
+  /// No description provided for @reviewSearch.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca'**
+  String get reviewSearch;
+
+  /// No description provided for @recogTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Da confermare'**
+  String get recogTitle;
+
+  /// No description provided for @recogSuggested.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 correzione suggerita} other{{count} correzioni suggerite. Controllale una per una o accettale tutte.}}'**
+  String recogSuggested(int count);
+
+  /// No description provided for @recogAcceptAllCount.
+  ///
+  /// In it, this message translates to:
+  /// **'Accetta tutte ({count})'**
+  String recogAcceptAllCount(int count);
+
+  /// No description provided for @recogAcceptedAll.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 correzione accettata} other{{count} correzioni accettate}}. I file si aggiornano in sottofondo.'**
+  String recogAcceptedAll(int count);
+
+  /// No description provided for @recogNoProposalsHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Non c\'è più niente da controllare.'**
+  String get recogNoProposalsHint;
+
+  /// No description provided for @logToday.
+  ///
+  /// In it, this message translates to:
+  /// **'Oggi'**
+  String get logToday;
+
+  /// No description provided for @logYesterday.
+  ///
+  /// In it, this message translates to:
+  /// **'Ieri'**
+  String get logYesterday;
+
+  /// No description provided for @logDayCount.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 voce} other{{count} voci}}'**
+  String logDayCount(int count);
+
+  /// No description provided for @logRetention.
+  ///
+  /// In it, this message translates to:
+  /// **'Il registro tiene gli ultimi 30 giorni.'**
+  String get logRetention;
+
+  /// No description provided for @logNoMatch.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna voce con questo filtro.'**
+  String get logNoMatch;
+
+  /// No description provided for @logPickEntry.
+  ///
+  /// In it, this message translates to:
+  /// **'Scegli una voce per vedere i dettagli.'**
+  String get logPickEntry;
+
+  /// No description provided for @logFilterAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutto'**
+  String get logFilterAll;
+
+  /// No description provided for @logFilterDownload.
+  ///
+  /// In it, this message translates to:
+  /// **'Download'**
+  String get logFilterDownload;
+
+  /// No description provided for @logFilterLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Libreria'**
+  String get logFilterLibrary;
+
+  /// No description provided for @logFilterEnrich.
+  ///
+  /// In it, this message translates to:
+  /// **'Arricchimento'**
+  String get logFilterEnrich;
+
+  /// No description provided for @logFilterCorrections.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzioni'**
+  String get logFilterCorrections;
+
+  /// No description provided for @logFilterErrors.
+  ///
+  /// In it, this message translates to:
+  /// **'Errori'**
+  String get logFilterErrors;
+
+  /// No description provided for @logFailedLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Non riuscito'**
+  String get logFailedLabel;
+
+  /// No description provided for @logStoppedLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Fermato'**
+  String get logStoppedLabel;
+
+  /// No description provided for @logClearMenu.
+  ///
+  /// In it, this message translates to:
+  /// **'Pulisci registro'**
+  String get logClearMenu;
+
+  /// No description provided for @logClearTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Pulire il registro?'**
+  String get logClearTitle;
+
+  /// No description provided for @logClearConfirm.
+  ///
+  /// In it, this message translates to:
+  /// **'Pulisci'**
+  String get logClearConfirm;
+
+  /// No description provided for @logPendingSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzioni suggerite ai tuoi brani'**
+  String get logPendingSub;
+
+  /// No description provided for @logPendingReview.
+  ///
+  /// In it, this message translates to:
+  /// **'Rivedi'**
+  String get logPendingReview;
+
+  /// No description provided for @logPendingMore.
+  ///
+  /// In it, this message translates to:
+  /// **'e altre {count}'**
+  String logPendingMore(int count);
+
+  /// No description provided for @logHowTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Come risolvere'**
+  String get logHowTitle;
+
+  /// No description provided for @logTechTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Dettaglio tecnico'**
+  String get logTechTitle;
+
+  /// No description provided for @logOpenSongs.
+  ///
+  /// In it, this message translates to:
+  /// **'Vedi i brani'**
+  String get logOpenSongs;
+
+  /// No description provided for @logHowSettings.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri {settings}, poi «{page}».'**
+  String logHowSettings(String settings, String page);
+
+  /// No description provided for @logHowUpdate.
+  ///
+  /// In it, this message translates to:
+  /// **'Tocca «{button}» accanto a yt-dlp.'**
+  String logHowUpdate(String button);
+
+  /// No description provided for @logHowWait.
+  ///
+  /// In it, this message translates to:
+  /// **'Aspetta qualche minuto.'**
+  String get logHowWait;
+
+  /// No description provided for @logHowOnline.
+  ///
+  /// In it, this message translates to:
+  /// **'Controlla di essere online.'**
+  String get logHowOnline;
+
+  /// No description provided for @logDlDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano scaricato'**
+  String get logDlDone;
+
+  /// No description provided for @logDlFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Download non riuscito'**
+  String get logDlFailed;
+
+  /// No description provided for @logDlGroup.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano scaricato} other{{count} brani scaricati}}'**
+  String logDlGroup(int count);
+
+  /// No description provided for @logDlGroupShow.
+  ///
+  /// In it, this message translates to:
+  /// **'Mostra i brani'**
+  String get logDlGroupShow;
+
+  /// No description provided for @logDlGroupHide.
+  ///
+  /// In it, this message translates to:
+  /// **'Nascondi i brani'**
+  String get logDlGroupHide;
+
+  /// No description provided for @logTransferDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Brani inviati'**
+  String get logTransferDone;
+
+  /// No description provided for @logTransferFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio non riuscito'**
+  String get logTransferFailed;
+
+  /// No description provided for @logScanDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Libreria aggiornata'**
+  String get logScanDone;
+
+  /// No description provided for @logScanDoneSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Controllate tutte le cartelle.'**
+  String get logScanDoneSub;
+
+  /// No description provided for @logScanStopped.
+  ///
+  /// In it, this message translates to:
+  /// **'Scansione fermata'**
+  String get logScanStopped;
+
+  /// No description provided for @logScanFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Scansione non riuscita'**
+  String get logScanFailed;
+
+  /// No description provided for @logStoppedSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Si è fermato prima della fine.'**
+  String get logStoppedSub;
+
+  /// No description provided for @logFailedSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Si è fermato per un errore.'**
+  String get logFailedSub;
+
+  /// No description provided for @logEnrichDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Arricchimento finito'**
+  String get logEnrichDone;
+
+  /// No description provided for @logEnrichInterrupted.
+  ///
+  /// In it, this message translates to:
+  /// **'Arricchimento interrotto'**
+  String get logEnrichInterrupted;
+
+  /// No description provided for @logEnrichInterruptedSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Si è fermato per un errore; il lavoro fatto è salvo.'**
+  String get logEnrichInterruptedSub;
+
+  /// No description provided for @logBgDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Testi e copertine aggiunti'**
+  String get logBgDone;
+
+  /// No description provided for @logBgDoneSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Completamento in sottofondo.'**
+  String get logBgDoneSub;
+
+  /// No description provided for @logBgStopped.
+  ///
+  /// In it, this message translates to:
+  /// **'Completamento fermato'**
+  String get logBgStopped;
+
+  /// No description provided for @logBgStoppedSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna fonte risponde in questo momento.'**
+  String get logBgStoppedSub;
+
+  /// No description provided for @logBgFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Completamento non riuscito'**
+  String get logBgFailed;
+
+  /// No description provided for @logBgFailedSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Un errore lo ha fermato.'**
+  String get logBgFailedSub;
+
+  /// No description provided for @logSecondOpinion.
+  ///
+  /// In it, this message translates to:
+  /// **'Secondo parere da YouTube Music'**
+  String get logSecondOpinion;
+
+  /// No description provided for @logSecondOpinionSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Controllati i brani incerti.'**
+  String get logSecondOpinionSub;
+
+  /// No description provided for @logSecondOpinionFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Secondo parere interrotto'**
+  String get logSecondOpinionFailed;
+
+  /// No description provided for @logCleanup.
+  ///
+  /// In it, this message translates to:
+  /// **'Doppioni cercati'**
+  String get logCleanup;
+
+  /// No description provided for @logCleanupSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Confrontati i brani della libreria.'**
+  String get logCleanupSub;
+
+  /// No description provided for @logReleases.
+  ///
+  /// In it, this message translates to:
+  /// **'Nuove uscite controllate'**
+  String get logReleases;
+
+  /// No description provided for @logReleasesSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Cercate le novità degli artisti che segui.'**
+  String get logReleasesSub;
+
+  /// No description provided for @logPodcasts.
+  ///
+  /// In it, this message translates to:
+  /// **'Podcast aggiornati'**
+  String get logPodcasts;
+
+  /// No description provided for @logRadio.
+  ///
+  /// In it, this message translates to:
+  /// **'Radio controllate'**
+  String get logRadio;
+
+  /// No description provided for @logTaskFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Attività non riuscita'**
+  String get logTaskFailed;
+
+  /// No description provided for @logImportDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Playlist «{name}» importata'**
+  String logImportDone(String name);
+
+  /// No description provided for @logImportReady.
+  ///
+  /// In it, this message translates to:
+  /// **'Playlist «{name}» pronta'**
+  String logImportReady(String name);
+
+  /// No description provided for @logImportFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Importazione non riuscita'**
+  String get logImportFailed;
+
+  /// No description provided for @logImportRate.
+  ///
+  /// In it, this message translates to:
+  /// **'Importazione rallentata da YouTube'**
+  String get logImportRate;
+
+  /// No description provided for @logImportPaused.
+  ///
+  /// In it, this message translates to:
+  /// **'Importazione in pausa'**
+  String get logImportPaused;
+
+  /// No description provided for @logWhyToolMissing.
+  ///
+  /// In it, this message translates to:
+  /// **'Manca il componente per scaricare da YouTube.'**
+  String get logWhyToolMissing;
+
+  /// No description provided for @logWhyToolOld.
+  ///
+  /// In it, this message translates to:
+  /// **'Il componente per scaricare da YouTube è troppo vecchio.'**
+  String get logWhyToolOld;
+
+  /// No description provided for @logWhyNetwork.
+  ///
+  /// In it, this message translates to:
+  /// **'Rete non disponibile.'**
+  String get logWhyNetwork;
+
+  /// No description provided for @logWhyRate.
+  ///
+  /// In it, this message translates to:
+  /// **'YouTube ha chiesto di rallentare.'**
+  String get logWhyRate;
+
+  /// No description provided for @logWhyFailing.
+  ///
+  /// In it, this message translates to:
+  /// **'Troppi errori di fila: l’ho messa in pausa.'**
+  String get logWhyFailing;
+
+  /// No description provided for @logCorrectionTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Titolo e artista corretti'**
+  String get logCorrectionTitle;
+
+  /// No description provided for @logChipSongs.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano} other{{count} brani}}'**
+  String logChipSongs(int count);
+
+  /// No description provided for @logChipSongsOf.
+  ///
+  /// In it, this message translates to:
+  /// **'{done} di {total} brani'**
+  String logChipSongsOf(int done, int total);
+
+  /// No description provided for @logChipUpdated.
+  ///
+  /// In it, this message translates to:
+  /// **'{count} aggiornati'**
+  String logChipUpdated(int count);
+
+  /// No description provided for @logChipNotFound.
+  ///
+  /// In it, this message translates to:
+  /// **'{count} non trovati'**
+  String logChipNotFound(int count);
+
+  /// No description provided for @logChipNoResult.
+  ///
+  /// In it, this message translates to:
+  /// **'{count} senza risultato'**
+  String logChipNoResult(int count);
+
+  /// No description provided for @logFileTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzione salvata, file non aggiornato'**
+  String get logFileTitle;
+
+  /// No description provided for @logHowFileMissing.
+  ///
+  /// In it, this message translates to:
+  /// **'Controlla che il brano sia ancora nella sua cartella.'**
+  String get logHowFileMissing;
+
+  /// No description provided for @logHowFileReadOnly.
+  ///
+  /// In it, this message translates to:
+  /// **'Togli la sola lettura al file o alla sua cartella, poi correggi di nuovo il brano.'**
+  String get logHowFileReadOnly;
+
+  /// No description provided for @logHowFileRetry.
+  ///
+  /// In it, this message translates to:
+  /// **'Controlla che ci sia spazio sul disco e che il file non sia in uso, poi correggi di nuovo il brano.'**
+  String get logHowFileRetry;
+
+  /// No description provided for @logClearBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Cancello tutte le voci e tolgo dalla lista i download finiti. Dopo non potrai più ripristinare le correzioni. I brani restano dove sono.'**
+  String get logClearBody;
+
+  /// No description provided for @logHowResume.
+  ///
+  /// In it, this message translates to:
+  /// **'Tocca «{button}» sull’importazione in pausa, nell’elenco delle attività.'**
+  String logHowResume(String button);
+
+  /// No description provided for @logEnrichStopped.
+  ///
+  /// In it, this message translates to:
+  /// **'Arricchimento fermato'**
+  String get logEnrichStopped;
+
+  /// No description provided for @logCorrectionSem.
+  ///
+  /// In it, this message translates to:
+  /// **'Da {from} a {to}'**
+  String logCorrectionSem(String from, String to);
 }
 
 class _AppLocalizationsDelegate

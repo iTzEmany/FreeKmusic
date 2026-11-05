@@ -1509,9 +1509,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityCompleted => 'Completed';
 
   @override
-  String get activityClear => 'Clear';
-
-  @override
   String get importPhaseSearching => 'Searching…';
 
   @override
@@ -4202,13 +4199,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewHint =>
-      'Tracks that automatic enrichment did not find, or left incomplete.';
+      'Tracks missing something. Search again or leave them as they are.';
 
   @override
   String get reviewRetry => 'Retry';
 
   @override
-  String get reviewDismiss => 'Fine as it is';
+  String get reviewDismiss => 'Ignore';
 
   @override
   String reviewRetryStarted(int count) {
@@ -5525,12 +5522,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityStopped => 'Stopped';
-
-  @override
-  String get activityScanEnded => 'Scan';
-
-  @override
   String get enrichRoundTitle => 'Enrichment round';
 
   @override
@@ -5556,17 +5547,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enrichPartCredits => 'Credits';
-
-  @override
-  String logEnrichRound(int done, int none) {
-    String _temp0 = intl.Intl.pluralLogic(
-      done,
-      locale: localeName,
-      other: '$done songs completed',
-      one: '1 song completed',
-    );
-    return 'Enrichment: $_temp0, $none with no result';
-  }
 
   @override
   String get coverChange => 'Change cover';
@@ -5763,12 +5743,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get logEnrichStopped => 'Completion stopped: no source is answering';
-
-  @override
-  String get logEnrichFailed => 'Completion failed: an error stopped it';
-
-  @override
   String enrichLibraryDue(int count, int minutes) {
     return '$count tracks to complete, about $minutes minutes';
   }
@@ -5839,16 +5813,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recogAcceptAll => 'Accept all';
 
   @override
-  String get recogNoProposals => 'No suggestions to confirm';
+  String get recogNoProposals => 'All confirmed';
 
   @override
   String recogFromTo(String from, String to) {
     return 'From $from to $to';
-  }
-
-  @override
-  String logCorrection(String from, String to) {
-    return 'Corrected from $from to $to';
   }
 
   @override
@@ -6075,4 +6044,342 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playerRecentlyAdded => 'Recently added';
+
+  @override
+  String get reviewSearch => 'Search';
+
+  @override
+  String get recogTitle => 'To confirm';
+
+  @override
+  String recogSuggested(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count suggested fixes. Review them one by one or accept them all.',
+      one: '1 suggested fix',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recogAcceptAllCount(int count) {
+    return 'Accept all ($count)';
+  }
+
+  @override
+  String recogAcceptedAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fixes accepted',
+      one: '1 fix accepted',
+    );
+    return '$_temp0. Files update in the background.';
+  }
+
+  @override
+  String get recogNoProposalsHint => 'There is nothing left to check.';
+
+  @override
+  String get logToday => 'Today';
+
+  @override
+  String get logYesterday => 'Yesterday';
+
+  @override
+  String logDayCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '1 entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get logRetention => 'The log keeps the last 30 days.';
+
+  @override
+  String get logNoMatch => 'No entries with this filter.';
+
+  @override
+  String get logPickEntry => 'Pick an entry to see its details.';
+
+  @override
+  String get logFilterAll => 'All';
+
+  @override
+  String get logFilterDownload => 'Downloads';
+
+  @override
+  String get logFilterLibrary => 'Library';
+
+  @override
+  String get logFilterEnrich => 'Enrichment';
+
+  @override
+  String get logFilterCorrections => 'Corrections';
+
+  @override
+  String get logFilterErrors => 'Errors';
+
+  @override
+  String get logFailedLabel => 'Failed';
+
+  @override
+  String get logStoppedLabel => 'Stopped';
+
+  @override
+  String get logClearMenu => 'Clear log';
+
+  @override
+  String get logClearTitle => 'Clear the log?';
+
+  @override
+  String get logClearConfirm => 'Clear';
+
+  @override
+  String get logPendingSub => 'Corrections suggested for your songs';
+
+  @override
+  String get logPendingReview => 'Review';
+
+  @override
+  String logPendingMore(int count) {
+    return 'and $count more';
+  }
+
+  @override
+  String get logHowTitle => 'How to fix it';
+
+  @override
+  String get logTechTitle => 'Technical detail';
+
+  @override
+  String get logOpenSongs => 'See the songs';
+
+  @override
+  String logHowSettings(String settings, String page) {
+    return 'Open $settings, then “$page”.';
+  }
+
+  @override
+  String logHowUpdate(String button) {
+    return 'Tap “$button” next to yt-dlp.';
+  }
+
+  @override
+  String get logHowWait => 'Wait a few minutes.';
+
+  @override
+  String get logHowOnline => 'Check that you are online.';
+
+  @override
+  String get logDlDone => 'Song downloaded';
+
+  @override
+  String get logDlFailed => 'Download failed';
+
+  @override
+  String logDlGroup(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs downloaded',
+      one: '1 song downloaded',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get logDlGroupShow => 'Show the songs';
+
+  @override
+  String get logDlGroupHide => 'Hide the songs';
+
+  @override
+  String get logTransferDone => 'Songs sent';
+
+  @override
+  String get logTransferFailed => 'Sending failed';
+
+  @override
+  String get logScanDone => 'Library updated';
+
+  @override
+  String get logScanDoneSub => 'All folders checked.';
+
+  @override
+  String get logScanStopped => 'Scan stopped';
+
+  @override
+  String get logScanFailed => 'Scan failed';
+
+  @override
+  String get logStoppedSub => 'It stopped before the end.';
+
+  @override
+  String get logFailedSub => 'It stopped because of an error.';
+
+  @override
+  String get logEnrichDone => 'Enrichment finished';
+
+  @override
+  String get logEnrichInterrupted => 'Enrichment interrupted';
+
+  @override
+  String get logEnrichInterruptedSub =>
+      'It stopped because of an error; the work done is saved.';
+
+  @override
+  String get logBgDone => 'Lyrics and covers added';
+
+  @override
+  String get logBgDoneSub => 'Background completion.';
+
+  @override
+  String get logBgStopped => 'Completion stopped';
+
+  @override
+  String get logBgStoppedSub => 'No source is answering right now.';
+
+  @override
+  String get logBgFailed => 'Completion failed';
+
+  @override
+  String get logBgFailedSub => 'An error stopped it.';
+
+  @override
+  String get logSecondOpinion => 'Second opinion from YouTube Music';
+
+  @override
+  String get logSecondOpinionSub => 'The uncertain songs were checked.';
+
+  @override
+  String get logSecondOpinionFailed => 'Second opinion interrupted';
+
+  @override
+  String get logCleanup => 'Duplicates searched';
+
+  @override
+  String get logCleanupSub => 'The library songs were compared.';
+
+  @override
+  String get logReleases => 'New releases checked';
+
+  @override
+  String get logReleasesSub => 'Looked for news from the artists you follow.';
+
+  @override
+  String get logPodcasts => 'Podcasts updated';
+
+  @override
+  String get logRadio => 'Stations checked';
+
+  @override
+  String get logTaskFailed => 'Task failed';
+
+  @override
+  String logImportDone(String name) {
+    return 'Playlist “$name” imported';
+  }
+
+  @override
+  String logImportReady(String name) {
+    return 'Playlist “$name” ready';
+  }
+
+  @override
+  String get logImportFailed => 'Import failed';
+
+  @override
+  String get logImportRate => 'Import slowed down by YouTube';
+
+  @override
+  String get logImportPaused => 'Import paused';
+
+  @override
+  String get logWhyToolMissing =>
+      'The component that downloads from YouTube is missing.';
+
+  @override
+  String get logWhyToolOld =>
+      'The component that downloads from YouTube is too old.';
+
+  @override
+  String get logWhyNetwork => 'Network not available.';
+
+  @override
+  String get logWhyRate => 'YouTube asked to slow down.';
+
+  @override
+  String get logWhyFailing => 'Too many errors in a row: I paused it.';
+
+  @override
+  String get logCorrectionTitle => 'Title and artist corrected';
+
+  @override
+  String logChipSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs',
+      one: '1 song',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logChipSongsOf(int done, int total) {
+    return '$done of $total songs';
+  }
+
+  @override
+  String logChipUpdated(int count) {
+    return '$count updated';
+  }
+
+  @override
+  String logChipNotFound(int count) {
+    return '$count not found';
+  }
+
+  @override
+  String logChipNoResult(int count) {
+    return '$count without result';
+  }
+
+  @override
+  String get logFileTitle => 'Correction saved, file not updated';
+
+  @override
+  String get logHowFileMissing => 'Check that the song is still in its folder.';
+
+  @override
+  String get logHowFileReadOnly =>
+      'Remove read-only from the file or its folder, then correct the song again.';
+
+  @override
+  String get logHowFileRetry =>
+      'Check that there is free disk space and the file is not in use, then correct the song again.';
+
+  @override
+  String get logClearBody =>
+      'This deletes every entry and removes finished downloads from the list. You will no longer be able to restore corrections. Your songs stay where they are.';
+
+  @override
+  String logHowResume(String button) {
+    return 'Tap “$button” on the paused import, in the activity list.';
+  }
+
+  @override
+  String get logEnrichStopped => 'Enrichment stopped';
+
+  @override
+  String logCorrectionSem(String from, String to) {
+    return 'From $from to $to';
+  }
 }

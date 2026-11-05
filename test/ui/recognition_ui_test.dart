@@ -4,6 +4,7 @@ import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/services/library/track_corrections.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
+import 'package:codecore/ui/screens/activity/proposals_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart';
 import 'package:codecore/ui/screens/now_playing/proposal_card.dart';
 import 'package:drift/drift.dart' show Value;
@@ -19,6 +20,7 @@ class _Fix extends Fake implements TrackCorrections {
   final AppDatabase db;
   final calls = <String>[];
   var reverted = 0;
+  final revertedAll = <int>[];
   var revertOk = true;
 
   @override
@@ -31,18 +33,22 @@ class _Fix extends Fake implements TrackCorrections {
   Future<void> discard(int trackId) async => calls.add('discard $trackId');
 
   @override
-  Future<int> acceptAll() async {
+  Future<AcceptedAll> acceptAll() async {
     final repo = CreditsRepository(db);
     final open = await repo.watchProposals().first;
     for (final p in open) {
       await _put(db, p.track.id, p.rec.copyWith(prop: 'accepted'));
     }
-    return open.length;
+    return AcceptedAll([
+      for (final p in open)
+        ActivityLogRow(id: p.track.id, at: 1, kind: 'correction', name: 'x', done: 0, total: 0, failed: 0),
+    ], Future.value());
   }
 
   @override
-  Future<bool> revert(ActivityLogRow row) async {
+  Future<bool> revert(ActivityLogRow row, {bool reopen = false}) async {
     reverted = row.id;
+    revertedAll.add(row.id);
     return revertOk;
   }
 }
@@ -54,8 +60,9 @@ Future<void> _put(AppDatabase db, int id, Recognition rec) => db
 Future<void> _edited(AppDatabase db, int id) =>
     (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(userEdited: Value(true)));
 
-Recognition _rec({String prop = 'open', bool cover = false, Map<String, String>? original}) => Recognition(
+Recognition _rec({String prop = 'open', bool cover = false, Map<String, String>? original, RecogSource? src}) => Recognition(
   at: 1,
+  src: src,
   sure: true,
   identity: const TrackIdentity(title: 'Nuovo', artist: 'Band'),
   prop: prop,
@@ -126,23 +133,65 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('«Da confermare (N)» opens the list and «Accetta tutte» empties it', (tester) async {
-    final (h, _, _) = await open(tester, _rec(), (_) => const SizedBox());
-    await tester.pumpWidget(const SizedBox());
+  /// «Da confermare» with [n] open proposals.
+  Future<(Harness, _Fix)> proposals(WidgetTester tester, {int n = 2, double textScale = 1}) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: n);
+    final ts = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    for (final t in ts) {
+      await tester.runAsync(() => _put(h.db, t.id, _rec(src: RecogSource.acoustid)));
+    }
+    final fix = _Fix(h.db);
     await h.pump(
       tester,
-      const ActivityLogScreen(),
-      extraOverrides: [trackCorrectionsProvider.overrideWithValue(_Fix(h.db))],
+      const ProposalsScreen(),
+      extraOverrides: [trackCorrectionsProvider.overrideWithValue(fix)],
+      textScale: textScale,
     );
     await _settle(tester);
-    expect(find.text('Da confermare (1)'), findsOneWidget);
-    await tester.tap(find.text('Da confermare (1)'));
+    return (h, fix);
+  }
+
+  testWidgets('a proposal card shows old and new values, the source, and 48 dp buttons', (tester) async {
+    final (h, _) = await proposals(tester, n: 1);
+    expect(find.text('Song 0 – Artist'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('Song 0 – Artist')).style?.decoration, TextDecoration.lineThrough);
+    expect(find.text('Nuovo'), findsOneWidget);
+    expect(find.text('Band'), findsOneWidget);
+    expect(find.text('AcoustID'), findsOneWidget);
+    expect(find.text('Accetta tutte (1)'), findsOneWidget);
+    for (final label in ['Accetta', 'Scarta', 'Accetta tutte (1)']) {
+      expect(tester.getSize(find.widgetWithText(FilledButton, label)).height, greaterThanOrEqualTo(48));
+    }
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Accetta tutte» empties the list at once and says how many, with Annulla', (tester) async {
+    final (h, _) = await proposals(tester);
+    await tester.tap(find.text('Accetta tutte (2)'));
     await _settle(tester);
-    expect(find.textContaining('a Nuovo – Band'), findsOneWidget);
-    await tester.tap(find.text('Accetta tutte'));
+    expect(find.byKey(const ValueKey('proposal-1')), findsNothing);
+    expect(find.text('Tutto confermato'), findsOneWidget);
+    expect(find.text('2 correzioni accettate. I file si aggiornano in sottofondo.'), findsOneWidget);
+    expect(find.text('Annulla'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Annulla after «Accetta tutte» puts back every correction', (tester) async {
+    final (h, fix) = await proposals(tester);
+    await tester.tap(find.text('Accetta tutte (2)'));
     await _settle(tester);
-    expect(find.textContaining('a Nuovo – Band'), findsNothing);
-    expect(find.text('Nessuna proposta da confermare'), findsOneWidget);
+    await tester.tap(find.text('Annulla'));
+    await _settle(tester);
+    expect(fix.revertedAll.toSet(), {1, 2});
+    await h.dispose(tester);
+  });
+
+  testWidgets('the cards and the buttons do not overflow at text scale 2,0', (tester) async {
+    final (h, _) = await proposals(tester, textScale: 2);
+    expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 
@@ -165,7 +214,8 @@ void main() {
     );
     await h.pump(tester, const ActivityLogScreen(), extraOverrides: [trackCorrectionsProvider.overrideWithValue(fix)]);
     await _settle(tester);
-    expect(find.text('Corretto da Vecchio – Chan a Nuovo – Band'), findsOneWidget);
+    expect(find.text('Vecchio – Chan'), findsOneWidget);
+    expect(find.text('Nuovo – Band'), findsOneWidget);
     await tester.tap(find.text('Ripristina'));
     await _settle(tester);
     expect(fix.reverted, isNonZero);
