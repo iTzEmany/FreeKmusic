@@ -13,11 +13,12 @@
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo
+/obiettivo fase 87
 ```
 
 ## Da sapere
-- Decisioni: fino a D-383 (la 85 non ne aggiunge). Le prove a due telefoni le fa l'agente via adb; il Motorola fa solo l'host in «Coda dell'host» e va tenuto sveglio (`KEYCODE_WAKEUP`, si sospende dopo 30 min).
+- Refactor «superfici-e-ricerca» pianificato (D-384…D-418): fasi 87–97; analisi in `docs/refactor/superfici-e-ricerca/analisi.md`, mockup approvati in `docs/refactor/superfici-e-ricerca/mockup/` (`indice.html`). Prossima: `/obiettivo fase 87`.
+- Decisioni: fino a D-418. Le prove a due telefoni le fa l'agente via adb; il Motorola fa solo l'host in «Coda dell'host» e va tenuto sveglio (`KEYCODE_WAKEUP`, si sospende dopo 30 min).
 - In LAN non c'è un «Entra» da ospite: si preme «Jam» sulla riga dell'altro telefono e **chi accetta diventa host**.
 - «Sospendi» e «Blocca» esistono solo nel dialogo della richiesta in arrivo, non per un ospite già dentro.
 - Il launcher del Mi A3 oggi è `com.codecore.player/.IconArancioDark` (non più `IconAmbraDark`).
@@ -53,5 +54,6 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-1. **(Consigliato)** Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
-2. Ricerca «notte», build p99 (D-176); picco di ~54 ms alla prima visita di ogni scheda della Libreria (F-60).
+1. **(Consigliato)** Fase 87 e seguenti: il refactor «superfici-e-ricerca» (fasi 87–97, piano già scritto).
+2. Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
+3. Ricerca «notte», build p99 (D-176); picco di ~54 ms alla prima visita di ogni scheda della Libreria (F-60).
