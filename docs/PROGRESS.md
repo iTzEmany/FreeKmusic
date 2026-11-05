@@ -1294,10 +1294,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 86.2 Test unitari di `JamMedia` dai mutanti sopravvissuti (fa949c38)
 
 ## Fase 87 — Rete di sicurezza e misure di partenza (`fase-87-rete-superfici.md`)
-- [ ] 87.1 Caratterizzazione: corpus delle regole, backup vecchi, ordine manuale, caso Bayou
-- [ ] 87.2 Caratterizzazione: schede della shell, risultati fusi, ordinamento della Libreria, salto A–Z
-- [ ] 87.3 Golden delle superfici toccate
-- [ ] 87.4 Scenari di velocità nuovi e misura di partenza sui due telefoni
+- [x] 87.1 Caratterizzazione: corpus delle regole, backup vecchi, ordine manuale, caso Bayou
+- [x] 87.2 Caratterizzazione: schede della shell, risultati fusi, ordinamento della Libreria, salto A–Z
+- [x] 87.3 Golden delle superfici toccate
+- [x] 87.4 Scenari di velocità nuovi e misura di partenza sui due telefoni
 - [ ] 87.5 Controlli di fase
 
 ## Fase 88 — Ritocchi rapidi (`fase-88-ritocchi-rapidi.md`)
@@ -1306,6 +1306,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [ ] 88.3 Play tondo in Tutti i brani
 - [ ] 88.4 Nomi di «Ordina per»
 - [ ] 88.5 Cerca: info accanto al titolo, filtri solo testo
+- [ ] 88.5b Ripristino: rifiutare il database in attesa con schema più nuovo (debito della 87)
 - [ ] 88.6 Controlli di fase
 
 ## Fase 89 — Dock flottante e sezioni che ripartono (`fase-89-dock-e-sezioni.md`)

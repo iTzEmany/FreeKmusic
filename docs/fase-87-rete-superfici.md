@@ -33,3 +33,33 @@
 **Fatto quando:** gli 8 test sono verdi su `master` senza modificare `lib/`, i golden sono committati, la base di fluidità di entrambi i telefoni è scritta qui.
 
 ## Esiti
+
+### Base di fluidità — Mi A3 (`0d7ae9df206e`, 5/11, `--label base --playback`, build profile, codice di `origin/master` e2b6a8c1)
+- Scansione: 3000 brani in 14.5 s
+- Avvio a freddo (`am start -W`, TotalTime): mediana 2697 ms su 5 (2899, 2830, 2697, 2611, 2695)
+- Da `main` al primo frame: mediana 685 ms
+- Memoria (PSS totale): 245 MB
+
+| Scenario | Frame | build p50/p90/p99 ms | raster p50/p90/p99 ms | > 16,7 ms | > budget |
+|---|---|---|---|---|---|
+| Pallino schede | 1636 | 3.0/7.4/11.0 | 6.0/15.3/19.3 | 5.9 % | 5.9 % (16.7 ms) |
+| Tutti i brani | 503 | 1.9/6.6/12.1 | 6.2/9.0/17.6 | 2.0 % | 2.0 % (16.7 ms) |
+| Album | 1165 | 3.4/6.9/13.2 | 6.2/10.4/19.0 | 4.2 % | 4.2 % (16.7 ms) |
+| Libreria Tutto→Playlist→Album→Artisti | 4428 | 3.8/8.5/12.9 | 6.1/11.7/20.7 | 4.9 % | 4.9 % (16.7 ms) |
+| Ricerca «notte» | 907 | 1.4/5.4/8.1 | 3.8/5.7/10.8 | 0.2 % | 0.2 % (16.7 ms) |
+| Scroll Libreria | 1293 | 3.8/7.8/10.0 | 6.3/11.3/20.2 | 4.7 % | 4.7 % (16.7 ms) |
+| Lente Libreria | 2831 | 2.9/6.6/10.4 | 4.7/7.2/18.3 | 1.9 % | 1.9 % (16.7 ms) |
+| Scroll Tutti i brani | 511 | 1.6/4.3/8.7 | 6.1/8.9/17.4 | 2.3 % | 2.3 % (16.7 ms) |
+| Cambio scheda | 3316 | 3.4/8.1/13.9 | 5.8/13.1/21.2 | 5.5 % | 5.5 % (16.7 ms) |
+| Apri album | 378 | 2.5/7.5/17.3 | 5.9/10.0/21.3 | 2.1 % | 2.1 % (16.7 ms) |
+| In riproduzione | 419 | 3.3/8.1/17.2 | 6.1/7.9/12.0 | 1.7 % | 1.7 % (16.7 ms) |
+| Lettore dal dock | 1020 | 2.4/7.7/15.8 | 5.9/8.1/13.4 | 1.1 % | 1.1 % (16.7 ms) |
+| Swipe mini player | 439 | 1.5/6.2/15.0 | 5.9/8.0/13.4 | 1.6 % | 1.6 % (16.7 ms) |
+| Fogli | 1426 | 4.2/12.4/24.7 | 5.5/7.9/13.1 | 4.1 % | 4.1 % (16.7 ms) |
+| Apertura player | 437 | 2.7/7.9/19.3 | 5.9/9.2/15.2 | 2.3 % | 2.3 % (16.7 ms) |
+| Anello | 268 | 5.7/13.0/16.4 | 5.1/6.4/10.2 | 0.7 % | 0.7 % (16.7 ms) |
+
+- Motorola edge 40: base rinviata (D-419), da misurare con lo stesso comando prima della fase 97.
+- `perf_device.py` era rotto su master in tre punti, corretti qui: le schede del dock oggi si chiamano solo «Libreria» (senza «\n…»), il foglio Dispositivi su un'installazione nuova mostra prima la scheda del permesso Bluetooth, il menu del player si chiama «Altre azioni».
+- Scenari nuovi: Scroll Libreria, Lente Libreria, Scroll Tutti i brani, Cambio scheda. Sul Mi A3 «Pallino schede» (5,9 %) e «Cambio scheda» (5,5 %) sono vicini alla soglia del 6 %: un frame vale poco meno di 0,1 punti a questi conteggi, ma «Pallino schede» è bimodale (gotchas).
+- Trovato con 87.1: un database in attesa con schema più nuovo non viene rifiutato dal ripristino (solo dal manifest) → 88.5b.

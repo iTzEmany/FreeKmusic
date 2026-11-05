@@ -30,6 +30,9 @@
 - `SourceFilterChips` (`online_results_sections.dart:23-61`, `segmented_blocks.dart:48`): solo testo, chip compatti, bersaglio ≥ 48 dp. Niente etichette fonte sui risultati (fase 92).
 - Test: info apre la stessa spiegazione; filtri filtrano come prima; a11y e TalkBack.
 
+### 88.5b — Debito dalla fase 87: database più nuovo nel ripristino
+`RestoreService._checkStagedDatabase` apre il file con `AppDatabase`: drift esegue `onUpgrade` anche al ribasso e riscrive `user_version` a 15 prima del controllo, quindi un database in attesa con schema più nuovo **non** viene rifiutato (lo rifiuta solo il manifest, `inspectBackup`). Leggere `PRAGMA user_version` con sqlite3 prima di aprirlo con drift; ribaltare il test «GAP today» di `test/services/backup/legacy_backup_test.dart`. Area a rischio (backup e ripristino): `/code-review high`.
+
 ### 88.6 — Controlli di fase
 `flutter analyze`; comando mirato; golden Home, Tutti i brani, Cerca rigenerati con `scripts/shots.sh`; review del diff, `code-review high` su 88.1; scheggia (input assurdi sui titoli: vuoti, solo suffissi, unicode); prova sul Motorola (ZY22HKD85K) e sul Mi A3 (0d7ae9df206e) via adb: Home, Tutti i brani, Cerca, un suggerito già posseduto non riproposto. Misure `perf_device.py` di Home e Tutti i brani confrontate con la base della 87 (soglie in `analisi.md` «Rete», D-398).
 
