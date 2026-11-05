@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../core/app_log.dart';
+import '../core/import_row.dart' show LibraryEntryLite;
+import '../services/import/track_matcher.dart' show LibraryIndex;
 import '../data/db/app_database.dart';
 import '../data/repositories/home_sections.dart';
 import '../data/repositories/library_entries.dart';
@@ -394,3 +398,24 @@ final permissionDeniedProvider =
 /// error or data shows at once.
 AsyncValue<T> keepWhileLoading<T>(AsyncValue<T> fresh, AsyncValue<T>? prev) =>
     fresh.isLoading && !fresh.hasValue && prev != null && prev.hasValue ? prev : fresh;
+
+LibraryIndex _buildLibraryIndex(List<LibraryEntryLite> entries) => LibraryIndex(entries);
+
+/// The library index, built off the UI isolate and shared by Shuffle+ (its
+/// seeds and matching) and the genre mix. Rebuilt when the track count changes
+/// (import, scan, download, delete), after 5 minutes, and 5 seconds after a
+/// failure (so a failure is not kept).
+final libraryIndexProvider = FutureProvider<LibraryIndex>((ref) async {
+  ref.watch(trackCountProvider.select((c) => c.value)); // import, scan, download, delete
+  final repo = ref.watch(trackRepositoryProvider);
+  var timer = Timer(const Duration(minutes: 5), ref.invalidateSelf);
+  ref.onDispose(() => timer.cancel());
+  try {
+    return await compute(_buildLibraryIndex, await repo.liteEntries());
+  } on Object {
+    // A failure is not kept for 5 minutes: the next ask retries soon.
+    timer.cancel();
+    timer = Timer(const Duration(seconds: 5), ref.invalidateSelf);
+    rethrow;
+  }
+});

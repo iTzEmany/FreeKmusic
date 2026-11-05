@@ -813,6 +813,7 @@ void main() {
     expect(notices, [ShufflePlusNotice.tooManyErrors]);
     expect(controller.stoppedForSession, isTrue);
     expect(host.queueIds, library, reason: 'the waiting suggestion is gone');
+    expect(controller.pending.value, ShufflePlusPending.none, reason: 'no placeholder rows once the engine is off');
   });
 }
 
