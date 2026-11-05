@@ -132,7 +132,7 @@ class TrackCorrections {
       });
       final e = edit;
       if (e == null) return false;
-      await _toFile(t!, e);
+      await _writeFile(t!, e); // the DB is back; a file left as it was is told in the Registro
       return true;
     } on Object catch (e, st) {
       AppLog.w('correction ${row.id} not readable', e, st);
@@ -142,7 +142,8 @@ class TrackCorrections {
 
   /// Accepts every open proposal in ONE transaction (one change of the list, D-361);
   /// the tags go into the files afterwards, one by one, in [AcceptedAll.files].
-  Future<AcceptedAll> acceptAll() async {
+  /// The Registro rows are read back [logChunk] ids at a time (SQLite caps the variables of a query).
+  Future<AcceptedAll> acceptAll({int logChunk = 500}) async {
     final jobs = <_Job>[];
     for (final p in await _credits.watchProposals().first) {
       final job = await _prepare(p.track, p.rec, byUser: true);
@@ -153,36 +154,44 @@ class TrackCorrections {
         if (await _applyDb(j, byUser: true) case final d?) (job: j, done: d),
     ]);
     final ids = [for (final d in done) d.done.logId];
-    final log = await (_db.select(_db.activityLogRows)..where((r) => r.id.isIn(ids))).get();
+    final log = <ActivityLogRow>[];
+    for (var i = 0; i < ids.length; i += logChunk) {
+      final chunk = ids.sublist(i, i + logChunk > ids.length ? ids.length : i + logChunk);
+      log.addAll(await (_db.select(_db.activityLogRows)..where((r) => r.id.isIn(chunk))).get());
+    }
     final toFile = [for (final d in done) if (d.job.toFile) d.done];
     return AcceptedAll(log, _writeFiles([for (final d in toFile) (track: d.track, edit: d.edit)]));
   }
 
-  /// The file part of [acceptAll]. Never throws: a file that stays untouched goes
-  /// in the Registro as a failed `correction` row (no `old`/`new`), the DB stands.
+  /// The file part of [acceptAll].
   Future<void> _writeFiles(List<({Track track, TrackEdit edit})> jobs) async {
     for (final j in jobs) {
+      await _writeFile(j.track, j.edit);
+    }
+  }
+
+  /// Writes [edit] into the file of [t]. Never throws: a file that stays untouched goes
+  /// in the Registro as a failed `correction` row (no `old`/`new`), the DB stands.
+  Future<void> _writeFile(Track t, TrackEdit edit, {bool backup = true}) async {
+    try {
+      final why = (await _toFile(t, edit, backup: backup)).mainReason;
+      if (why != null) await _fileFailed(t, edit, why.name);
+    } on Object catch (e, st) {
+      AppLog.w('tags of ${t.path} not written', e, st);
       try {
-        final out = await _toFile(j.track, j.edit);
-        final why = out.mainReason;
-        if (why != null) await _fileFailed(j, why.name);
-      } on Object catch (e, st) {
-        AppLog.w('tags of ${j.track.path} not written', e, st);
-        try {
-          await _fileFailed(j, TagWriteReason.ioError.name);
-        } on Object catch (e2, st2) {
-          AppLog.w('file error of ${j.track.path} not logged', e2, st2);
-        }
+        await _fileFailed(t, edit, TagWriteReason.ioError.name);
+      } on Object catch (e2, st2) {
+        AppLog.w('file error of ${t.path} not logged', e2, st2);
       }
     }
   }
 
-  Future<void> _fileFailed(({Track track, TrackEdit edit}) j, String why) => ActivityLogRepository(_db).add(
+  Future<void> _fileFailed(Track t, TrackEdit edit, String why) => ActivityLogRepository(_db).add(
     at: _now(),
     kind: 'correction',
-    name: j.edit.title,
+    name: edit.title,
     failed: true,
-    detail: jsonEncode({'trackId': j.track.id, 'file': why}),
+    detail: jsonEncode({'trackId': t.id, 'file': why}),
   );
 
   /// Whether the file of [t] is to be rewritten: a hand decision always, an automatic one not on the playing file.

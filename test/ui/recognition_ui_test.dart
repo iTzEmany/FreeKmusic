@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
+import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/services/library/track_corrections.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
@@ -14,6 +17,16 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/app_harness.dart';
 
 /// Records the calls; `acceptAll` marks every open proposal as accepted, as the real one does.
+class _CountLog extends ActivityLogNotifier {
+  static var reloads = 0;
+
+  @override
+  Future<void> reload() {
+    reloads++;
+    return super.reload();
+  }
+}
+
 class _Fix extends Fake implements TrackCorrections {
   _Fix(this.db);
 
@@ -22,6 +35,14 @@ class _Fix extends Fake implements TrackCorrections {
   var reverted = 0;
   final revertedAll = <int>[];
   var revertOk = true;
+  final reopens = <bool>[];
+  var lastLog = <ActivityLogRow>[];
+
+  /// Holds back the file part of `acceptAll` until completed.
+  Completer<void>? filesGate;
+
+  /// The next `acceptAll` accepts nothing.
+  var emptyNext = false;
 
   @override
   Future<bool> apply(Track track, Recognition rec, {required bool byUser}) async {
@@ -33,22 +54,25 @@ class _Fix extends Fake implements TrackCorrections {
   Future<void> discard(int trackId) async => calls.add('discard $trackId');
 
   @override
-  Future<AcceptedAll> acceptAll() async {
+  Future<AcceptedAll> acceptAll({int logChunk = 500}) async {
+    if (emptyNext) return AcceptedAll(const [], Future.value());
     final repo = CreditsRepository(db);
     final open = await repo.watchProposals().first;
     for (final p in open) {
       await _put(db, p.track.id, p.rec.copyWith(prop: 'accepted'));
     }
-    return AcceptedAll([
+    lastLog = [
       for (final p in open)
         ActivityLogRow(id: p.track.id, at: 1, kind: 'correction', name: 'x', done: 0, total: 0, failed: 0),
-    ], Future.value());
+    ];
+    return AcceptedAll(lastLog, filesGate?.future ?? Future.value());
   }
 
   @override
   Future<bool> revert(ActivityLogRow row, {bool reopen = false}) async {
     reverted = row.id;
     revertedAll.add(row.id);
+    reopens.add(reopen);
     return revertOk;
   }
 }
@@ -134,7 +158,7 @@ void main() {
   });
 
   /// «Da confermare» with [n] open proposals.
-  Future<(Harness, _Fix)> proposals(WidgetTester tester, {int n = 2, double textScale = 1}) async {
+  Future<(Harness, _Fix)> proposals(WidgetTester tester, {int n = 2, double textScale = 1, bool countLog = false}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -147,7 +171,10 @@ void main() {
     await h.pump(
       tester,
       const ProposalsScreen(),
-      extraOverrides: [trackCorrectionsProvider.overrideWithValue(fix)],
+      extraOverrides: [
+        trackCorrectionsProvider.overrideWithValue(fix),
+        if (countLog) activityLogProvider.overrideWith(_CountLog.new),
+      ],
       textScale: textScale,
     );
     await _settle(tester);
@@ -186,6 +213,50 @@ void main() {
     await tester.tap(find.text('Annulla'));
     await _settle(tester);
     expect(fix.revertedAll.toSet(), {1, 2});
+    await h.dispose(tester);
+  });
+
+  testWidgets('Annulla waits for the files, undoes in reverse order with reopen, and reloads the Registro', (tester) async {
+    final (h, fix) = await proposals(tester, countLog: true);
+    fix.filesGate = Completer<void>();
+    await tester.tap(find.text('Accetta tutte (2)'));
+    await _settle(tester);
+    final before = _CountLog.reloads;
+    await tester.tap(find.text('Annulla'));
+    await _settle(tester);
+    expect(fix.revertedAll, isEmpty); // the files are still being written
+    fix.filesGate!.complete();
+    await _settle(tester);
+    expect(fix.lastLog, hasLength(2));
+    expect(fix.revertedAll, fix.lastLog.map((r) => r.id).toList().reversed.toList());
+    expect(fix.reopens, [true, true]);
+    expect(_CountLog.reloads, greaterThan(before));
+    expect(find.text('Impossibile ripristinare questa correzione'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Annulla says so when a correction cannot be put back', (tester) async {
+    final (h, fix) = await proposals(tester);
+    await tester.tap(find.text('Accetta tutte (2)'));
+    await _settle(tester);
+    fix.revertOk = false;
+    await tester.tap(find.text('Annulla'));
+    await _settle(tester);
+    expect(find.text('Impossibile ripristinare questa correzione'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a new «Accetta tutte» closes the Annulla of the previous one', (tester) async {
+    final (h, fix) = await proposals(tester, n: 1);
+    await tester.tap(find.text('Accetta tutte (1)'));
+    await _settle(tester);
+    expect(find.text('Annulla'), findsOneWidget);
+    await tester.runAsync(() => _put(h.db, 1, _rec()));
+    await _settle(tester);
+    fix.emptyNext = true;
+    await tester.tap(find.text('Accetta tutte (1)'));
+    await _settle(tester);
+    expect(find.text('Annulla'), findsNothing);
     await h.dispose(tester);
   });
 

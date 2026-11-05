@@ -98,6 +98,8 @@ class ProposalsScreen extends ConsumerWidget {
                               failed: l.recogActionFailed,
                               build: _filled(),
                               action: () async {
+                                // The «Annulla» of a previous round must not undo this one.
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                                 final done = await fixes
                                     .acceptAll(); // D-331: no dialog
                                 if (done.count > 0 && context.mounted) {

@@ -111,6 +111,7 @@ void main() {
   late TrackCorrections corrections;
   late _HookEditor editor;
   TagWriteReason? blocked;
+  Object? blockError;
   late bool fileWrites;
   String? playing;
   late String path;
@@ -124,6 +125,7 @@ void main() {
     recognizer = _Fixed(_rec());
     fileWrites = false;
     blocked = null;
+    blockError = null;
     failStatus = _FailStatus();
     r = EnrichRig(
       interceptor: failStatus,
@@ -148,7 +150,10 @@ void main() {
       r.db,
       editor,
       r.credits,
-      fileBlock: (_) async => blocked,
+      fileBlock: (_) async {
+        if (blockError != null) throw blockError!;
+        return blocked;
+      },
       playingPath: () => playing,
     );
     playing = null;
@@ -442,7 +447,9 @@ void main() {
       editor.onFileIds = (t) async {
         if (t.id == refused) await corrections.discard(refused);
       };
-      expect((await corrections.acceptAll()).count, 1);
+      final done = await corrections.acceptAll();
+      await done.files;
+      expect(done.count, 1);
       expect([(await row(kept)).title, (await row(refused)).title], ['Real Title', 'Other']);
       expect((await recOf(refused))!.prop, 'discarded');
     });
@@ -458,6 +465,112 @@ void main() {
       }
       expect((await r.credits.watchProposals().first).map((e) => e.track.id).toSet(), {id, other});
       expect([(await row(id)).title, (await row(id)).userEdited], ['Junk', false]);
+    });
+
+    Future<int> third({String file = 'c.mp3'}) async {
+      final path = p.join(root.path, file);
+      File(path).writeAsStringSync('AUDIO\nJunk');
+      final id = await r.add(path: path, title: 'Third');
+      await put(id, withProp('open'));
+      return id;
+    }
+
+    Future<List<ActivityLogRow>> accepted() async {
+      fileWrites = true;
+      await put(await track(), withProp('open'));
+      final done = await corrections.acceptAll();
+      await done.files;
+      return done.log;
+    }
+
+    test('revert with the file blocked: the DB is back and the Registro tells the file was not updated', () async {
+      final rows = await accepted();
+      blocked = TagWriteReason.readOnly;
+      expect(await corrections.revert(rows.single), isTrue);
+      expect((await row(rows.map((e) => (jsonDecode(e.detail!) as Map)['trackId'] as int).single)).title, 'Junk');
+      final failed = (await log()).where((e) => e.failed != 0).single;
+      expect([failed.name, (jsonDecode(failed.detail!) as Map)['file']], ['Junk', 'readOnly']);
+    });
+
+    test('revert whose file check throws: the DB is back and the Registro tells it', () async {
+      final rows = await accepted();
+      blockError = StateError('no storage');
+      expect(await corrections.revert(rows.single), isTrue);
+      final failed = (await log()).where((e) => e.failed != 0).single;
+      expect((jsonDecode(failed.detail!) as Map)['file'], 'ioError');
+    });
+
+    test('accept all reads its Registro rows back in chunks', () async {
+      await put(await track(), withProp('open'));
+      await second();
+      await third();
+      final done = await corrections.acceptAll(logChunk: 1);
+      expect(done.log.map((e) => e.id).toSet(), hasLength(3));
+    });
+
+    test('accept all leaves alone a track edited by hand, or whose proposal was renewed, after the list was read', () async {
+      fileWrites = true;
+      final kept = await track();
+      await put(kept, withProp('open'));
+      final edited = await second();
+      final renewed = await third();
+      final renewedArtist = await third(file: 'd.mp3');
+      editor.onFileIds = (t) async {
+        if (t.id == edited) {
+          await (r.db.update(r.db.tracks)..where((x) => x.id.equals(edited))).write(const TracksCompanion(userEdited: Value(true)));
+        }
+        if (t.id == renewed || t.id == renewedArtist) {
+          final byTitle = t.id == renewed; // one differs by title only, the other by artist only
+          final title = byTitle ? 'Newer' : 'Real Title';
+          await put(
+            t.id,
+            mergeDetails(null, rec: Recognition(at: 2, identity: TrackIdentity(title: title, artist: byTitle ? 'Real Artist' : 'Other'), prop: 'open')),
+          );
+        }
+      };
+      final done = await corrections.acceptAll();
+      expect(done.count, 1);
+      expect([(await row(kept)).title, (await row(edited)).title, (await row(renewed)).title, (await row(renewedArtist)).title],
+          ['Real Title', 'Other', 'Third', 'Third']);
+      expect((await recOf(renewed))!.prop, 'open');
+    });
+
+    test('a blank artist in the identity keeps the track artist, in the DB and in the Registro', () async {
+      final id = await track();
+      await put(
+        id,
+        mergeDetails(null, rec: const Recognition(at: 1, identity: TrackIdentity(title: 'Real Title', artist: ''), prop: 'open')),
+      );
+      final done = await corrections.acceptAll();
+      expect([(await row(id)).title, (await row(id)).artist], ['Real Title', 'Channel']);
+      expect(((jsonDecode(done.log.single.detail!) as Map)['new'] as Map)['artist'], 'Channel');
+    });
+
+    test('revert does nothing when only the artist was edited after the correction', () async {
+      final id = await track();
+      await put(id, withProp('open'));
+      final done = await corrections.acceptAll();
+      await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(artist: Value('Hand')));
+      expect(await corrections.revert(done.log.single), isFalse);
+      expect([(await row(id)).title, (await row(id)).artist], ['Real Title', 'Hand']);
+    });
+
+    test('accept all, apply by the user and revert keep a backup of the file', () async {
+      final bk = Directory(p.join(root.path, 'bk'));
+      int backups() => bk.existsSync() ? bk.listSync(recursive: true).whereType<File>().length : 0;
+      void clear() {
+        if (bk.existsSync()) bk.deleteSync(recursive: true);
+      }
+
+      final rows = await accepted();
+      expect(backups(), greaterThan(0));
+      clear();
+      expect(await corrections.revert(rows.single), isTrue);
+      expect(backups(), greaterThan(0));
+      clear();
+      final other = await second();
+      await corrections.apply(await row(other), (await recOf(other))!, byUser: true);
+      expect(backups(), greaterThan(0));
     });
 
     test('reverting what accept all logged puts every title back, files included', () async {
