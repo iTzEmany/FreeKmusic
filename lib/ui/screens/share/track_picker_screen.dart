@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/library_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/track_ops.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_search_field.dart';
@@ -25,7 +27,7 @@ class _State extends ConsumerState<TrackPickerScreen> {
   static final _key = SelectionKey.picker.key;
   final _controller = TextEditingController();
   String _query = '';
-  List<Track>? _lastFound;
+  AsyncValue<List<Track>>? _prev;
 
   @override
   void initState() {
@@ -70,29 +72,35 @@ class _State extends ConsumerState<TrackPickerScreen> {
           Expanded(
             child: Builder(
               builder: (context) {
-                _lastFound = ref.watch(trackSearchProvider(_query)).value ?? _lastFound;
-                final tracks = _lastFound ?? const <Track>[];
-                return ListView.builder(
-                  itemExtent: trackRowExtentOf(context, false),
-                  itemCount: tracks.length,
-                  itemBuilder: (_, i) {
-                    final t = tracks[i];
-                    return CheckboxListTile(
-                      value: picked.contains(t.id),
-                      onChanged: (_) => ref.read(selectionProvider(_key).notifier).toggle(t.id),
-                      secondary: CoverImage(coverKey: t.coverKey, size: 44),
-                      title: Text(
-                        t.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        t.artist ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  },
+                final fresh = ref.watch(trackSearchProvider(_query));
+                final found = keepWhileLoading(fresh, _prev);
+                _prev = found.hasError ? null : found;
+                return AsyncBody(
+                  value: found,
+                  rowHeight: trackRowExtentOf(context, false),
+                  onRetry: () => ref.invalidate(trackSearchProvider(_query)),
+                  data: (tracks) => ListView.builder(
+                    itemExtent: trackRowExtentOf(context, false),
+                    itemCount: tracks.length,
+                    itemBuilder: (_, i) {
+                      final t = tracks[i];
+                      return CheckboxListTile(
+                        value: picked.contains(t.id),
+                        onChanged: (_) => ref.read(selectionProvider(_key).notifier).toggle(t.id),
+                        secondary: CoverImage(coverKey: t.coverKey, size: 44),
+                        title: Text(
+                          t.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          t.artist ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             ),
