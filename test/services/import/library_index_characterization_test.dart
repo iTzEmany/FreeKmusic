@@ -15,7 +15,14 @@ void main() {
     expect(lib.find(row(231000)), isNull);
   });
 
-  test('the same song within 5 s is found, and so is one with no known length', () {
+  test('the 5 s edge is inclusive: 5000 ms apart is found, 5001 and 6000 are not', () {
+    expect(lib.find(row(315222 + 5000))?.id, 1);
+    expect(lib.find(row(315222 - 5000))?.id, 1);
+    expect(lib.find(row(315222 + 5001)), isNull);
+    expect(lib.find(row(315222 + 6000)), isNull);
+  });
+
+  test('a match within 5 s is found, and so is one with no known length', () {
     expect(lib.find(row(315222 + 4000))?.id, 1);
     expect(lib.find(const ImportRow(index: 0, title: 'Born On The Bayou', artists: ['Creedence Clearwater Revival']))?.id, 1);
   });

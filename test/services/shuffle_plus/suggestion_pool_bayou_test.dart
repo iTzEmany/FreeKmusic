@@ -44,6 +44,11 @@ void main() {
     expect((await suggest(231000))?.result.id, 'bayou');
   });
 
+  test('the 5 s edge: 5000 ms apart is excluded, 5001 ms is offered', () async {
+    expect(await suggest(315222 + 5000), isNull);
+    expect((await suggest(315222 + 5001))?.result.id, 'bayou');
+  });
+
   test('control: the same suggestion within 5 s of the library length is excluded', () async {
     expect(await suggest(315222 + 4000), isNull);
   });

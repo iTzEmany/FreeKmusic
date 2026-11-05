@@ -70,6 +70,7 @@ const _corpus = <String, Set<int>>{
 const _legacy = <String, (Set<int>, String)>{
   'artist:Queen': ({1, 2, 3, 4}, 'artista:Queen'),
   'ARTISTA:queen': ({1, 2, 3, 4}, 'artista:queen'),
+  'genre:jazz': ({12, 13}, 'genere:jazz'),
   'year>2000': ({3, 4, 5, 15}, 'anno>2000'),
   'plays>=20': ({1, 2, 7, 17}, 'ascolti>=20'),
   'format:FLAC': ({2, 5, 7, 12, 13}, 'formato:FLAC'),
