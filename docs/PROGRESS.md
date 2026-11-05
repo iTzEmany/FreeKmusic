@@ -1280,6 +1280,6 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 84.1 HiveMQ in fondo ai broker predefiniti (716f48dc, D-383)
 - [x] 84.2 APK e bundle Linux; Motorola aggiornato con `install -r` (dati intatti)
 - [x] 84.3 Prove sul Mi A3: Casuale+ col log, suggerito online in coda
-- [ ] 84.4 Prove della Jam: in LAN, riserva fra broker, Sospendi/Blocca, gate di 15 minuti, «Proposta di correzione»
+- [x] 84.4 Prove della Jam: in LAN, riserva fra broker, Sospendi/Blocca, gate di 15 minuti, «Proposta di correzione» (esiti nella fase)
 - [x] 84.5 Debito della fase 74 (de82f8bf, c3ed32ab, 77f93eb7, eca9ba76)
-- [ ] 84.6 Controlli di fase
+- [x] 84.6 Correzioni dalle prove e controlli di fase (967b0a65)
