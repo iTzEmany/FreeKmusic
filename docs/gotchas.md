@@ -60,3 +60,6 @@
 - **`perf_device.py`: «Gradle build daemon disappeared unexpectedly»** (fase 77, 4/11): dopo un processo interrotto il demone resta in uno stato rotto; `cd android && ./gradlew --stop` e si rilancia.
 - **`perf_test.dart` al secondo giro: `Bad state: No element` su «Tutti i brani»** (fase 77): la libreria da 3000 brani può essere ancora in caricamento; ora c'è un `waitFor` prima del tap.
 - **`SemanticsData.hasFlag` è deprecato** (Flutter 3.47): `flutter analyze` dà un info che fa fallire il check; usa `getSemanticsData().flagsCollection.<flag>`.
+- **`Semantics(excludeSemantics: true)` toglie anche il tocco del figlio** (fase 83, 5/11): il nodo ha il nome ma TalkBack col doppio tocco non fa niente (`uiautomator dump` lo mostra `clickable="false"`). Dai al `Semantics` lo stesso `onTap` (e `onLongPress`) del figlio. Anche un `GestureDetector` col solo `onSecondaryTapDown` aggiunge un tocco semantico vuoto: `excludeFromSemantics: true`. Nei test: `tester.semantics.tap(find.semantics.byLabel(...))` e controlla l'effetto.
+- **Mai `dart format` su una cartella intera** (fase 83, 5/11): il progetto non è tutto formattato e la CI non lo chiede; un `dart format lib` di un agente ha toccato 481 file. Solo sui file del proprio diff, e dopo controlla `flutter analyze` (spezza gli `if` di una riga e scatta `curly_braces_in_flow_control_structures`).
+

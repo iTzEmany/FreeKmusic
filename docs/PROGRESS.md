@@ -1273,5 +1273,5 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 82.5 Controlli di fase
 
 ## Fase 83 — Chiusura del refactor «ui-uso-quotidiano» (`fase-83-chiusura-uso-quotidiano.md`)
-- [ ] 83.1 Misure finali
-- [ ] 83.2 Prova a mano e chiusura
+- [x] 83.1 Misure finali (73c30668)
+- [x] 83.2 Prova a mano e chiusura (16eef652, d7a6c9a8)

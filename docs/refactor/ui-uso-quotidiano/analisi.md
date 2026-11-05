@@ -23,6 +23,19 @@ Perimetro (richiesta dell'utente del 2026-11-03, elenco alla rinfusa dall'uso qu
 | U16 | «Da revisionare» ridisegnato | F-43…F-46 |
 | U17 | «Accetta tutte» in un colpo | F-40, F-41, F-42, F-71 |
 
+## Stato finale (fase 83, 2026-11-05)
+Refactor chiuso: fasi 77–83 (PR #101, #103–#107 e la PR della 83). I rilievi F-01…F-74 sono stati assegnati per gruppo alle fasi qui sotto (l'elenco esatto per fase è nel doc di fase, con gli esiti e le prove sul Mi A3):
+- Home, Cerca, Libreria, Radio, Statistiche, Tutti i brani: fasi 78, 79, 80.
+- Registro, Da confermare, Da revisionare, «Accetta tutte» in una transazione: fase 82.
+- Player vuoto, schede in streaming, coda di Shuffle+: fase 81.
+- Prestazioni, skeleton, campi di ricerca, rilievi delle review: fasi 77, 79, 83.
+Fuori dagli obiettivi o lasciati, col motivo:
+- **F-60, −50 % sul cambio scheda della Libreria su Linux: non raggiunto.** p90 3,0 → 2,7 ms (il p90 era già basso); il picco di ~54 ms alla prima visita di ogni scheda è uguale prima e dopo. Sul Mi A3 p90 build 8,2 ms, sotto la soglia di 16 (`fase-83-chiusura-uso-quotidiano.md`, «Esiti»).
+- Spinner rimasti: solo avanzamenti, pulsanti occupati e attese con testo (elenco nella 83.1); i caricamenti di pagina usano `Skeleton`, mostrato solo oltre 150 ms (D-382).
+- Cerca tiene il suo ritardo di battitura invece di quello di `CcSearchField` (debito dichiarato nella 83).
+- Il Registro si apre solo dal foglio attività (che compare solo mentre qualcosa gira), com'era prima del refactor: scelta di prodotto rimasta all'utente.
+- TalkBack: nessuna prova a orecchio (D-381); etichette e tocchi controllati con `uiautomator dump` e `test/ui/talkback_labels_test.dart`.
+
 ## Misure di partenza
 - Scatti: `scripts/shots.sh` → `test_shots/goldens/` (phone/desktop: library, stats, all_tracks_selection, now_playing, shell_playing…). Mancano scatti di Cerca, Radio, Registro attività, Da revisionare, Da confermare e del player vuoto.
 - Velocità: `integration_test/perf_test.dart` (tour con 3000 brani, `lib/core/frame_stats.dart`; `flutter test integration_test/perf_test.dart -d linux` solo per confronto relativo) e `python3 scripts/perf_device.py 0d7ae9df206e --label X --playback` sul telefono (profile). Soglie in `docs/refactor/ui-fluida/misure.md`. **Il tour non passa per le schede della Libreria**: va aggiunto lo scenario Tutto→Playlist→Album→Artisti prima di toccare F-60. Rotture note dei due script: `perf_device.py:226`, `perf_test.dart:67` (fase 38).
