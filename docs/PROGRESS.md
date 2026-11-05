@@ -1283,3 +1283,8 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 84.4 Prove della Jam: in LAN, riserva fra broker, Sospendi/Blocca, gate di 15 minuti, «Proposta di correzione» (esiti nella fase)
 - [x] 84.5 Debito della fase 74 (de82f8bf, c3ed32ab, 77f93eb7, eca9ba76)
 - [x] 84.6 Correzioni dalle prove e controlli di fase (967b0a65)
+
+## Fase 85 — Debito della review di architettura della 83 (`fase-85-debito-review-83.md`)
+- [x] 85.1 Contesto che segue l'handler (`playContextListenable`) e tetto delle schede in streaming in `shadowWaitProvider` (1d6b4388)
+- [x] 85.2 Ricerca fallita visibile nei selettori (`keepWhileLoading` + `AsyncBody`) e test a tappeto dei pulsanti (52230d15)
+- [x] 85.3 `libraryIndexProvider` in `library_providers.dart` e regola «Shuffle+ acceso» unica (`plusOn`) (954d1010)
