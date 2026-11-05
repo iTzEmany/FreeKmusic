@@ -21,6 +21,7 @@ import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
+import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/artist_avatar.dart';
@@ -812,7 +813,9 @@ class _LibraryList extends StatelessWidget {
         if (header != null) SliverToBoxAdapter(child: header),
         SliverVariedExtentList.builder(
           itemCount: rows.length,
-          itemExtentBuilder: (i, _) => rows[i] is String ? 40 * textScale : 64,
+          itemExtentBuilder: (i, _) => rows[i] is String
+              ? 40 * textScale
+              : trackRowExtentOf(context, false),
           itemBuilder: (_, i) {
             final r = rows[i];
             if (r is LibraryEntry) return entryRow(r);
