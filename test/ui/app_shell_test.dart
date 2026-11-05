@@ -179,7 +179,7 @@ void main() {
     expect(
       t.getSemantics(tab.first),
       isSemantics(
-          label: 'Libreria\nLibreria', isSelected: true, isButton: true),
+          label: 'Libreria', isSelected: true, isButton: true),
     );
     final corner = t.getTopRight(
         find.descendant(of: tab, matching: find.byType(Icon)));

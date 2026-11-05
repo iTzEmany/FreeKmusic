@@ -97,7 +97,7 @@ class Device:
         x = w // 2
         for direction in ('up', 'down'):
             for _ in range(n):
-                y1, y2 = (int(h * 0.75), int(h * 0.3)) if direction == 'up' else (int(h * 0.3), int(h * 0.75))
+                y1, y2 = (int(h * 0.7), int(h * 0.3)) if direction == 'up' else (int(h * 0.3), int(h * 0.7))
                 self.sh(f'input swipe {x} {y1} {x} {y2} 120')
                 time.sleep(0.4)
 
@@ -105,7 +105,7 @@ class Device:
         """Back to the top of the list on screen (it keeps its scroll between tabs)."""
         w, h = map(int, re.search(r'(\d+)x(\d+)', self.sh('wm size')).groups())
         for _ in range(2):
-            self.sh(f'input swipe {w // 2} {int(h * 0.3)} {w // 2} {int(h * 0.75)} 120')
+            self.sh(f'input swipe {w // 2} {int(h * 0.3)} {w // 2} {int(h * 0.7)} 120')
             time.sleep(0.4)
 
     def events(self):
@@ -312,10 +312,20 @@ def main():
     scenario('Pallino schede', lambda: None,
              lambda: [(tab(t), time.sleep(0.5)) for t in ('Libreria', 'Memoria', 'Home', 'Libreria', 'Home')])
     scenario('Tutti i brani', lambda: (dev.tap(r'^Libreria'), dev.tap(r'^Tutti i brani')), dev.flings)
-    scenario('Album', lambda: (dev.sh('input keyevent KEYCODE_BACK'), time.sleep(1), dev.tap(r'^Album$')),
-             dev.flings)
+    def open_album_tab():
+        # One BACK leaves «Tutti i brani»; if «Album» is not there yet, go through the Libreria dock tab
+        # (more BACKs would walk out of the Library into whatever screen sits below).
+        dev.sh('input keyevent KEYCODE_BACK')
+        time.sleep(1.5)
+        try:
+            return dev.tap(r'^Album$')
+        except RuntimeError:
+            tab('Libreria')
+            time.sleep(1)
+            return dev.tap(r'^Album$')
+    scenario('Album', open_album_tab, dev.flings)
     # Needs «Tutti i brani» and «Album» before it in --only: Album leaves the Library on its tab bar.
-    scenario('Libreria Tutto→Playlist→Album→Artisti', lambda: None,
+    scenario('Libreria Tutto→Playlist→Album→Artisti', dev.top,
              lambda: [(dev.tap(rf'^{b}$'), time.sleep(0.6)) for _ in range(3)
                       for b in ('Tutto', 'Playlist', 'Album', 'Artisti')])
     scenario('Ricerca «notte»',

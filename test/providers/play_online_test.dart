@@ -199,6 +199,15 @@ void main() {
     expect(ctx?.kind, PlayContextKind.radio);
   });
 
+  test('resumeLastQueue on stations keeps the name of the context', () async {
+    PlayContext? ctx;
+    player = PlayerController(handler, null, onContext: (c) => ctx = c);
+    await handler.playStations([const RadioStation(id: 's1', name: 'S1', streamUrl: 'http://x')], 0);
+    handler.setPlayContext(PlayContextKind.radio.index, 'Jazz');
+    await player.resumeLastQueue();
+    expect(ctx?.name, 'Jazz');
+  });
+
   test('playMixed: a lookup failing half way leaves the queue and the suggestion log alone', () async {
     final logged = <String>[];
     var calls = 0;
@@ -238,6 +247,16 @@ void main() {
     await player.resumeLastQueue();
     expect(seen, [PlayContextKind.search]);
     expect(handler.queueIds, [station, ids[0]]);
+  });
+
+  test('a new controller on the same handler resumes the queue with the list name', () async {
+    final tracks = await db.select(db.tracks).get();
+    await PlayerController(handler, null)
+        .playFromList(tracks, 0, context: const PlayContext(PlayContextKind.playlist, 'Mix'));
+    final seen = <PlayContext?>[];
+    await PlayerController(handler, null, onContext: seen.add).resumeLastQueue();
+    expect(seen.single?.kind, PlayContextKind.playlist);
+    expect(seen.single?.name, 'Mix');
   });
 
   test('playMixed from an index starts there', () async {

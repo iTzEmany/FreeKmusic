@@ -22,10 +22,23 @@ Widget _app(AsyncValue<List<int>> v, {VoidCallback? onRetry, String? errorMessag
 );
 
 void main() {
-  testWidgets('loading shows the row skeleton, not a spinner', (tester) async {
+  testWidgets('loading shows the row skeleton after 150 ms, not a spinner', (tester) async {
     await tester.pumpWidget(_app(const AsyncLoading()));
+    expect(find.byType(Skeleton), findsNothing);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(Skeleton), findsNothing);
+    await tester.pump(const Duration(milliseconds: 60));
     expect(find.byType(Skeleton), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('data within 100 ms: the skeleton never shows', (tester) async {
+    await tester.pumpWidget(_app(const AsyncLoading()));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpWidget(_app(const AsyncData([1])));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(Skeleton), findsNothing);
+    expect(find.text('dati 1'), findsOneWidget);
   });
 
   testWidgets('loading skeleton copes with unbounded and bounded height', (tester) async {
@@ -36,8 +49,10 @@ void main() {
       home: Scaffold(body: child),
     );
     await tester.pumpWidget(host(ListView(children: [body()])));
+    await tester.pump(const Duration(milliseconds: 200));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(host(SizedBox(height: 100, child: body())));
+    await tester.pump(const Duration(milliseconds: 200));
     expect(tester.takeException(), isNull);
   });
 

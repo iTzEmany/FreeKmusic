@@ -18,7 +18,7 @@ import '../../widgets/cc_tile.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../library/second_opinion_log_screen.dart';
-import '../now_playing/proposal_card.dart' show identLabel;
+import '../now_playing/proposal_card.dart' show identLabel, recogSourceLabel;
 import 'activity_log_entry.dart';
 import 'enrich_round_screen.dart';
 import 'proposals_screen.dart';
@@ -31,13 +31,7 @@ String? recogSourcesLine(AppLocalizations l, Map<String, Object?>? detail) {
   final shown = [
     for (final s in RecogSource.values)
       if (raw[s.name] case final int n when n > 0)
-        '${switch (s) {
-          RecogSource.tags => l.recogSrcTags,
-          RecogSource.ytid => l.recogSrcVideo,
-          RecogSource.text => l.recogSrcText,
-          RecogSource.acoustid => 'AcoustID',
-          RecogSource.ytm => 'YouTube Music',
-        }} $n',
+        '${recogSourceLabel(l, s)} $n',
   ];
   return shown.isEmpty ? null : l.logRecogSources(shown.join(', '));
 }
@@ -56,21 +50,18 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
   LogFilter _filter = LogFilter.all;
   /// Days whose downloads are shown one by one (the day is a key that outlives a new download).
   final _open = <DateTime>{};
-  int? _selectedKey;
+  int? _selectedId;
 
-  /// A line keeps its time to the millisecond (the database's) across reloads.
-  static int _key(LogEntry e) => e.at.millisecondsSinceEpoch;
-
-  /// Wide: the line picked if it is still shown, else the first one shown.
-  LogEntry? _selected(List<LogDay> days) {
-    final shown = [for (final d in days) for (final r in d.rows) r.entry];
-    return shown.firstWhereOrNull((e) => _key(e) == _selectedKey) ?? shown.firstOrNull;
+  /// Wide: the row picked if it is still shown, else the first one shown.
+  LogRow? _selected(List<LogDay> days) {
+    final shown = [for (final d in days) ...d.rows];
+    return shown.firstWhereOrNull((r) => r.entry.id == _selectedId) ?? shown.firstOrNull;
   }
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(ref.read(activityLogProvider.notifier).reload);
+    Future.microtask(ref.read(activityLogProvider.notifier).prune);
   }
 
   /// Where a line leads on its own, if it does.
@@ -82,19 +73,21 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
 
   void _tap(LogRow row, DateTime day, bool wide) {
     final e = row.entry;
+    if (wide) setState(() => _selectedId = e.id);
     if (row.group.isNotEmpty) {
       setState(() => _open.contains(day) ? _open.remove(day) : _open.add(day));
-    } else if (wide) {
-      setState(() => _selectedKey = _key(e));
-    } else if (_opener(e) case final open?) {
-      open();
-    } else {
-      showCcSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => SafeArea(child: LogDetail(e, sources: recogSourcesLine(context.l10n, e.detail))),
-      );
+    } else if (!wide) {
+      final open = _opener(e);
+      if (open != null) {
+        open();
+      } else {
+        showCcSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          showDragHandle: true,
+          builder: (_) => SafeArea(child: LogDetail(e, sources: recogSourcesLine(context.l10n, e.detail))),
+        );
+      }
     }
   }
 
@@ -117,12 +110,12 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     final log = ref.watch(activityLogProvider);
     final days = groupLog(log.entries, _filter);
-    // A filter may show nothing of the first page: read on until it does.
-    if (days.isEmpty && log.entries.isNotEmpty && log.hasMore) {
+    // A filter may show nothing of the first page: read on until it does (not when it has no line at all).
+    if (days.isEmpty && log.entries.isNotEmpty && log.hasMore && (log.counts[_filter] ?? 0) > 0) {
       Future.microtask(ref.read(activityLogProvider.notifier).loadMore);
     }
-    final list = _list(context, log, days, wide, wide ? _selected(days) : null);
     final sel = wide ? _selected(days) : null;
+    final list = _list(context, log, days, wide, sel);
     return Scaffold(
       appBar: CcAppBar(
         title: l.activityLog,
@@ -154,9 +147,10 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                       child: sel == null
                           ? EmptyState(icon: Icons.receipt_long_rounded, message: l.logPickEntry)
                           : LogDetail(
-                              sel,
-                              sources: recogSourcesLine(l, sel.detail),
-                              onOpen: _opener(sel),
+                              sel.entry,
+                              group: sel.group,
+                              sources: recogSourcesLine(l, sel.entry.detail),
+                              onOpen: _opener(sel.entry),
                             ),
                     ),
                   ],
@@ -167,7 +161,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     );
   }
 
-  Widget _list(BuildContext context, ActivityLogState log, List<LogDay> days, bool wide, LogEntry? sel) {
+  Widget _list(BuildContext context, ActivityLogState log, List<LogDay> days, bool wide, LogRow? sel) {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toLanguageTag();
@@ -211,7 +205,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                     return LogEntryCard(
                       row: row,
                       expanded: _open.contains(day.day),
-                      selected: wide && row.group.isEmpty ? identical(sel, row.entry) : null,
+                      selected: wide ? identical(sel, row) : null,
                       onTap: () => _tap(row, day.day, wide),
                     );
                   },

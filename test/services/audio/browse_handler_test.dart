@@ -51,10 +51,21 @@ void main() {
     expect((await handler.getMediaItem(items[1].id))!.title, 'T1');
     expect((await handler.search('T2')).single.title, 'T2');
 
+    handler.setPlayContext(2, 'Last list of the app');
     await handler.playFromMediaId(items[1].id);
     expect(handler.queueIds, hasLength(3));
     expect(handler.currentIndex, 1);
     expect(handler.currentTrack!.title, 'T1');
+    expect(handler.playContext, isNull, reason: 'the car menu is not the app\'s last list');
+  });
+
+  test('an id that resolves to nothing leaves the play context alone', () async {
+    handler.browse = MediaBrowseTree(DbBrowseSource(
+        TrackRepository(db), LibraryQueries(db), PlaylistRepository(db)));
+    handler.setPlayContext(2, 'Last list of the app');
+    await handler.playFromMediaId('radio:nope');
+    await handler.playFromMediaId('garbage');
+    expect(handler.playContext, (kind: 2, name: 'Last list of the app'));
   });
 
   test('choosing a saved station in the browser plays the saved list from it', () async {

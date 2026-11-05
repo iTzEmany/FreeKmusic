@@ -1374,7 +1374,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get homeFanOpen => 'Cover anzeigen';
+  String get homeFanOpen => 'Kürzlich hinzugefügte Titel anzeigen';
 
   @override
   String get showAll => 'Alle';

@@ -170,6 +170,7 @@ File scomparsi: `missing = true` **solo se la cartella radice è raggiungibile**
 | `autoLyrics` | bool | **false** | testi LRCLIB automatici |
 | `showUndoSnackbar` | bool | true | annulla rimozione preferito |
 | `lastQueueIds` | list<string> | `[]` | ultima coda |
+| `lastContextKind`, `lastContextName` | int, string | — | contesto dell'ultima coda (`PlayContextKind.index`: l'enum si allunga solo in fondo) |
 | `lastIndex`, `lastPositionMs` | int | 0 | ripresa |
 | `volume` | double | 1.0 | |
 | `shuffle` | bool | false | |
@@ -203,7 +204,7 @@ Le vecchie impostazioni finte (crossfade, gapless, normalizzazione, "bit-perfect
 ## Crediti e dettagli (schema v15, fase 50-51)
 - `track_credits` (`track_id` → `tracks` con cascade, `name`, `name_key` = `creditNameKey(name)`, `role`, `source`; chiave `(track_id, name_key, role)`, indice `track_credits_name_key`).
 - `track_enrich` (`track_id` chiave; `details` JSON, `deezer_id`, `mbid`; `meta_none_at`, `lyrics_none_at`, `synced_none_at`, `curio_none_at`, `credits_none_at` = quando la ricerca non ha trovato niente, ritentata dopo 30 giorni; `lyrics_by_user`).
-- `activity_log` (`id`, `at`, `kind`, `name`, `done`, `total`, `failed`, `detail`; indice su `at`): il «Registro» dei lavori in background.
+- `activity_log` (`id`, `at`, `kind`, `name`, `done`, `total`, `failed`, `detail`; indice su `at`): il «Registro» dei lavori in background. `detail` è JSON e dipende dal tipo: `import` ha `event` (`ImportEventKind`); `correction` ha `trackId`, `old`/`new` (`title`, `artist`; `old` anche `isrc`, `mbid`) e `src`, oppure, se il file non è stato aggiornato (`failed` = 1), solo `trackId` e `file` (un `TagWriteReason`); `enrichBackground` ha gli id dei brani, `sources` e `noAnswer` (`failed` = 1 ma mostrata come fermata); gli altri lavori `stopped` o `updated`/`notFound`. Il tempo `at` viene da `nowMs()` (in test `nowMsOverride`).
 - `tracks.cover_source` (intero, di serie 0).
 
 ## Blocco `meta` dei brani condivisi (fase 37)

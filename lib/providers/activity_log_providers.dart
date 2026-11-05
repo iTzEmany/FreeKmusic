@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' show max;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,6 +23,7 @@ import 'youtube_providers.dart';
 class LogEntry {
   const LogEntry({
     required this.at,
+    this.id,
     this.item,
     this.importName,
     this.event,
@@ -30,6 +32,9 @@ class LogEntry {
   });
 
   final DateTime at;
+
+  /// The id of the stored row; null for a line not stored yet.
+  final int? id;
 
   /// A download, an episode, a transfer or a background job that ended.
   final ActivityItem? item;
@@ -46,7 +51,20 @@ class LogEntry {
   final ActivityLogRow? correction;
 
   /// A job that left `running` before its work was done (see [ActivityLogNotifier]).
-  bool get stopped => detail?['stopped'] == true || detail?['noAnswer'] == true;
+  bool get stopped => detail?['stopped'] == true || noAnswer;
+
+  /// A completion that stopped for lack of answers.
+  bool get noAnswer => detail?['noAnswer'] == true;
+
+  /// Why the file of a correction was not written (a [TagWriteReason] name).
+  String? get file => detail?['file'] is String ? detail!['file'] as String : null;
+
+  /// The title and artist a correction replaced, and the ones it put.
+  ({String title, String? artist})? get oldIdent => _ident(detail?['old']);
+  ({String title, String? artist})? get newIdent => _ident(detail?['new']);
+
+  static ({String title, String? artist})? _ident(Object? m) =>
+      m is Map ? (title: '${m['title'] ?? ''}', artist: m['artist'] as String?) : null;
 
   /// The filter (D-365) this line belongs to, apart from «Errori».
   LogFilter get category => categoryOfKind(correction != null ? _correctionKind : item?.kind.name ?? _importKind);
@@ -61,10 +79,9 @@ class LogEntry {
 
   /// A correction that can be put back (the failed file write of «Accetta
   /// tutte» is a correction row without old/new).
-  bool get revertible => correction != null && detail?['old'] != null;
+  bool get revertible => correction != null && oldIdent != null;
 
-  /// A completion stopped for lack of answers is saved as failed but shown as stopped.
-  bool get failed => detail?['noAnswer'] != true && _storedFailed;
+  bool get failed => isLogError(stored: _storedFailed, noAnswer: noAnswer);
 
   /// What the `failed` column holds: the counts in the DB tell «stopped» apart by the detail.
   bool get _storedFailed =>
@@ -78,7 +95,8 @@ class LogEntry {
   static const _correctionKind = 'correction';
 
   LogEntry.fromRow(ActivityLogRow r)
-    : at = DateTime.fromMillisecondsSinceEpoch(r.at),
+    : id = r.id,
+      at = DateTime.fromMillisecondsSinceEpoch(r.at),
       detail = _decode(r.detail),
       correction = r.kind == _correctionKind ? r : null,
       importName = r.kind == _importKind ? r.name : null,
@@ -130,6 +148,10 @@ class LogEntry {
     );
   }
 }
+
+/// The «Errori» rule, for a line and for the counts over the database: a line
+/// that failed, unless it is a completion saved as failed but shown as stopped.
+bool isLogError({required bool stored, required bool noAnswer}) => stored && !noAnswer;
 
 /// The chips above the Registro. «Errori» is any line that failed.
 enum LogFilter { all, download, library, enrich, correction, errors }
@@ -224,7 +246,11 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
   Future<void> _tail = Future.value();
   bool _paging = false;
 
+  bool _refreshQueued = false;
+
   ActivityLogRepository get _repo => ref.read(activityLogRepositoryProvider);
+
+  static DateTime _now() => DateTime.fromMillisecondsSinceEpoch(nowMs());
 
   @override
   ActivityLogState build() {
@@ -237,7 +263,7 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
       if (prev == null || !prev.running || s.running) return;
       add(
         LogEntry(
-          at: DateTime.now(),
+          at: _now(),
           item: ActivityItem(
             kind: ActivityKind.secondOpinion,
             key: 'secondOpinion-${DateTime.now().microsecondsSinceEpoch}',
@@ -250,29 +276,53 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
         ),
       );
     });
-    unawaited(reload());
+    // Corrections are written straight to the database: the table tells when to read again.
+    final sub = _repo.changes().listen((_) => unawaited(_refresh()));
+    ref.onDispose(sub.cancel);
+    unawaited(prune());
     return const ActivityLogState([], 0);
   }
 
-  /// Reads the first page again (corrections are written straight to the database).
-  Future<void> reload() => _run(() async {
-    await _repo.prune(nowMs());
-    final rows = await _repo.page(limit: pageSize);
+  /// Drops what is older than 30 days (at start and when the Registro opens); the loaded pages are read again if rows went.
+  Future<void> prune() => _run(() async {
+    final gone = await _repo.prune(nowMs());
+    if (gone > 0 || state.entries.isEmpty) await _reloadPages();
+  });
+
+  /// Reads the pages loaded so far again (at least the first).
+  Future<void> _reloadPages() async {
+    final rows = await _repo.page(limit: max(pageSize, state.entries.length));
     final total = await _repo.count();
     final counts = await _counts(total);
-    if (ref.mounted) {
-      state = ActivityLogState([
-        for (final r in rows) LogEntry.fromRow(r),
-      ], total, counts);
-    }
-  });
+    if (ref.mounted) state = ActivityLogState([for (final r in rows) LogEntry.fromRow(r)], total, counts);
+  }
+
+  /// Reads only the rows written since the newest one loaded and puts them in place; the
+  /// counts are read once for the lot. A call while one is waiting joins it.
+  Future<void> _refresh() {
+    if (_refreshQueued) return _tail;
+    _refreshQueued = true;
+    return _run(() async {
+      _refreshQueued = false;
+      final known = state.entries;
+      if (known.isEmpty) return _reloadPages(); // not the whole table: only a page
+      final fresh = await _repo.newerThan(known.map((e) => e.id!).fold(0, max));
+      if (fresh.isEmpty) return;
+      final total = await _repo.count();
+      final counts = await _counts(total);
+      if (!ref.mounted) return;
+      final all = [...known, for (final r in fresh) LogEntry.fromRow(r)]
+        ..sort((a, b) => b.at != a.at ? b.at.compareTo(a.at) : b.id!.compareTo(a.id!));
+      state = ActivityLogState(all, total, counts);
+    });
+  }
 
   /// What each filter shows, over every row (not only the loaded pages).
   Future<Map<LogFilter, int>> _counts(int total) async {
     final c = {for (final f in LogFilter.values) f: 0, LogFilter.all: total};
     for (final r in await _repo.countsByKind()) {
       c.update(LogEntry.categoryOfKind(r.kind), (v) => v + r.n);
-      if (r.failed && !r.noAnswer) c.update(LogFilter.errors, (v) => v + r.n);
+      if (isLogError(stored: r.failed, noAnswer: r.noAnswer)) c.update(LogFilter.errors, (v) => v + r.n);
     }
     return c;
   }
@@ -288,7 +338,7 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
       });
 
   void _record(ActivityState? prev, ActivityState s) {
-    final now = DateTime.now();
+    final now = _now();
     for (final c in s.completed) {
       if (_logged.add(c.key)) add(LogEntry(at: now, item: c));
     }
@@ -335,30 +385,30 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
     if (!ref.mounted) return;
     add(
       LogEntry(
-        at: DateTime.now(),
+        at: _now(),
         importName: imp == null ? null : importLabel(imp.sourceName),
         event: e.kind,
       ),
     );
   }
 
-  /// Writes [e] to the database (off the UI thread) and shows it at the top.
-  Future<void> add(LogEntry e) => _run(() async {
-    await e._save(_repo);
-    final counts = await _counts(state.total + 1);
-    if (ref.mounted) {
-      state = ActivityLogState([e, ...state.entries], state.total + 1, counts);
-    }
-  });
+  /// Writes [e] to the database (off the UI thread); it then shows where its time puts it.
+  Future<void> add(LogEntry e) async {
+    await _run(() async {
+      await e._save(_repo);
+    });
+    await _refresh();
+  }
 
   /// The next page, when the list reaches its end.
   Future<void> loadMore() async {
     if (_paging || !state.hasMore) return;
     _paging = true;
     await _run(() async {
+      final last = state.entries.last; // the rows after the last one seen: a row added meanwhile shifts nothing
       final rows = await _repo.page(
         limit: pageSize,
-        offset: state.entries.length,
+        before: (at: last.at.millisecondsSinceEpoch, id: last.id!),
       );
       if (ref.mounted) {
         state = ActivityLogState([

@@ -161,11 +161,11 @@ void main() {
     await tester.ensureVisible(find.byKey(const ValueKey('fan-cover-0')));
     await tester.pump();
     tester.semantics.performAction(
-      find.semantics.byLabel(RegExp('Mostra le copertine')),
+      find.semantics.byLabel(RegExp('Mostra i brani aggiunti da poco')),
       SemanticsAction.tap,
     );
     await _settle(tester);
-    expect(find.bySemanticsLabel(RegExp('Mostra le copertine')), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Mostra i brani aggiunti da poco')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('fan-cover-0')));
     await _settle(tester);
     expect(find.byType(AlbumDetailScreen), findsOneWidget);

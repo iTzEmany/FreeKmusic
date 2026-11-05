@@ -739,7 +739,7 @@
   "homeResumeQueue": "Titre {n} sur {m}",
   "homeResumeQueueFrom": "{source} : titre {n} sur {m}",
   "homeMinutesLeft": "{count, plural, one{Il reste 1 minute} other{Il reste {count} minutes}}",
-  "homeFanOpen": "Afficher les pochettes",
+  "homeFanOpen": "Afficher les titres ajoutés récemment",
   "showAll": "Tout",
   "recentSearches": "Recherches récentes",
   "genresTitle": "Genres",

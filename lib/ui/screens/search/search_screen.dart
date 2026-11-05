@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_providers.dart';
-import '../../../providers/radio_providers.dart' show searchPrefillProvider;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/ui_providers.dart';
-import '../../../providers/user_activity_provider.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_search_field.dart';
@@ -31,7 +29,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   // Shared with the dock's field, which is where a phone types.
   late final _controller = ref.read(searchControllerProvider);
   Timer? _debounce;
-  late String _lastText = _controller.text;
   late String _text = _controller.text.trim();
   int _submitted = 0;
 
@@ -66,10 +63,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   // Also fires on cursor moves, hence the comparison.
   void _onTextChanged() {
-    if (_controller.text != _lastText) {
-      _lastText = _controller.text;
-      ref.read(userActivityProvider).touch();
-    }
     _debounce?.cancel();
     final v = _controller.text.trim();
     if (v == _text) return;

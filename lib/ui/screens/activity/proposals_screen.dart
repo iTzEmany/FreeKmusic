@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart' show Track;
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/activity_log_providers.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/recognition_providers.dart';
 import '../../../services/library/track_corrections.dart';
@@ -17,8 +16,8 @@ import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/track_art.dart';
-import '../now_playing/proposal_card.dart'
-    show ActionButton, identLabel, recogSourceLabel;
+import '../../widgets/action_button.dart';
+import '../now_playing/proposal_card.dart' show identLabel, recogSourceLabel;
 
 typedef _Build = Widget Function({
   required VoidCallback? onPressed,
@@ -38,19 +37,9 @@ class ProposalsScreen extends ConsumerWidget {
   const ProposalsScreen({super.key});
 
   /// «Annulla» after «Accetta tutte»: puts every correction back (like «Ripristina») and the proposals among the open ones.
-  Future<void> _undo(
-    BuildContext context,
-    TrackCorrections fixes,
-    AcceptedAll done,
-    ActivityLogNotifier log,
-  ) async {
-    await done.files; // the tags of the new values are in the files before the old ones
-    var failed = false;
-    for (final row in done.log.reversed) {
-      if (!await fixes.revert(row, reopen: true)) failed = true;
-    }
-    unawaited(log.reload());
-    if (failed && context.mounted) {
+  Future<void> _undo(BuildContext context, TrackCorrections fixes, AcceptedAll done) async {
+    final back = await fixes.revertAll(done);
+    if (back.count < done.count && context.mounted) {
       showMsg(context, context.l10n.logRevertFailed);
     }
   }
@@ -60,7 +49,6 @@ class ProposalsScreen extends ConsumerWidget {
     final l = context.l10n;
     final list = ref.watch(proposalsProvider).value ?? const [];
     final fixes = ref.read(trackCorrectionsProvider);
-    final log = ref.read(activityLogProvider.notifier);
     return Scaffold(
       appBar: CcAppBar(title: l.recogTitle),
       body: list.isEmpty
@@ -106,11 +94,7 @@ class ProposalsScreen extends ConsumerWidget {
                                   showUndoSnack(
                                     context,
                                     l.recogAcceptedAll(done.count),
-                                    () {
-                                      unawaited(
-                                        _undo(context, fixes, done, log),
-                                      );
-                                    },
+                                    () => unawaited(_undo(context, fixes, done)),
                                   );
                                 }
                                 return true;
@@ -195,7 +179,7 @@ class _ProposalTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           );
 
-    final artist = id.artist.isEmpty ? (track.artist ?? '') : id.artist;
+    final artist = id.artistOver(track.artist) ?? '';
     return CcTile(
       child: Padding(
         padding: const EdgeInsets.all(CcDims.gap12),

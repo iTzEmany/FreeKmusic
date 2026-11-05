@@ -25,28 +25,6 @@ import '../../widgets/track_row_selection.dart';
 import '../library/album_detail_screen.dart' show collectionMeta;
 import '../../widgets/cc_app_bar.dart';
 
-/// A row of the mix: a library track (its index), a suggested song, or the
-/// placeholder of one still on its way (both null).
-typedef _MixRow = ({int? track, YtResult? suggested});
-
-/// The library tracks with one online slot after every [genreMixEvery].
-List<_MixRow> _mixRows(int tracks, GenreMixState mix) {
-  final slots = mix.suggested.length + mix.incoming;
-  final rows = <_MixRow>[];
-  var k = 0;
-  for (var i = 0; i < tracks; i++) {
-    rows.add((track: i, suggested: null));
-    if ((i + 1) % genreMixEvery == 0 && k < slots) {
-      rows.add((
-        track: null,
-        suggested: k < mix.suggested.length ? mix.suggested[k] : null,
-      ));
-      k++;
-    }
-  }
-  return rows;
-}
-
 String _offText(AppLocalizations l, GenreMixOff off) => switch (off) {
   GenreMixOff.jam => l.genreMixOffJam,
   GenreMixOff.metered => l.genreMixOffMetered,
@@ -67,20 +45,16 @@ class GenreScreen extends ConsumerWidget {
     final tracks =
         ref.watch(genreTracksProvider(genre)).value ?? const <Track>[];
     final mix = ref.watch(genreMixProvider(genre)).value ?? GenreMixState.none;
-    final rows = _mixRows(tracks.length, mix);
+    final rows = interleave(tracks, mix);
     final onlineExtent = onlineRowExtentOf(context);
-    final firstSkeleton = rows.indexWhere((r) => r.track == null && r.suggested == null);
+    final firstSkeleton = rows.indexWhere((r) => r.track == null && r.suggestion == null);
     // What is shown without the placeholders, and where each row stands in it.
     final items = <MixItem>[];
     final itemAt = <int>[];
     for (final r in rows) {
       itemAt.add(items.length);
-      if (r.track != null || r.suggested != null) {
-        items.add((
-          track: r.track == null ? null : tracks[r.track!],
-          online: r.suggested,
-          seedTitle: r.suggested == null ? null : mix.seedTitles[r.suggested!.id],
-        ));
+      if (r.track != null || r.suggestion != null) {
+        items.add((track: r.track, online: r.suggestion?.result, seedTitle: r.suggestion?.seedTitle));
       }
     }
     final extent = trackRowExtentOf(
@@ -143,14 +117,14 @@ class GenreScreen extends ConsumerWidget {
               final t = row.track;
               if (t != null) {
                 return LiveTrackRow(
-                  track: tracks[t],
+                  track: t,
                   compact: compact,
                   selection: selection,
                   onTap: () => ctrl.playMixed(items, index: itemAt[i], context: ctx),
                 );
               }
-              final r = row.suggested;
-              if (r != null) return _SuggestedRow(result: r);
+              final r = row.suggestion;
+              if (r != null) return _SuggestedRow(result: r.result);
               // One semantic node for all the placeholder rows.
               final skeleton = Skeleton.list(
                 rows: 1,

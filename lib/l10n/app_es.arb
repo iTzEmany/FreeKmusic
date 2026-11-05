@@ -581,7 +581,7 @@
   "homeResumeQueue": "Canción {n} de {m}",
   "homeResumeQueueFrom": "{source}: canción {n} de {m}",
   "homeMinutesLeft": "{count, plural, one{Falta 1 minuto} other{Faltan {count} minutos}}",
-  "homeFanOpen": "Mostrar las portadas",
+  "homeFanOpen": "Mostrar las canciones añadidas recientemente",
   "showAll": "Todos",
   "recentSearches": "Búsquedas recientes",
   "genresTitle": "Géneros",

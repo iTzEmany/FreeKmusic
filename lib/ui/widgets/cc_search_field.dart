@@ -18,6 +18,7 @@ class CcSearchField extends ConsumerStatefulWidget {
     this.onSubmitted,
     this.onChanged,
     this.onQuery,
+    this.debounce = CcTiming.debounce,
     this.onClear,
     this.onCloseEmpty,
     this.bare = false,
@@ -34,6 +35,9 @@ class CcSearchField extends ConsumerStatefulWidget {
 
   /// Debounced, trimmed and de-duplicated text; at once on Enter and on ✕.
   final ValueChanged<String>? onQuery;
+
+  /// Wait before [onQuery] while typing.
+  final Duration debounce;
   final bool autofocus;
 
   /// What the ✕ does with text in the field (default: clear the controller).
@@ -82,16 +86,16 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
 
   void _changed(String text, {bool now = false}) {
     widget.onChanged?.call(text);
+    if (text != _last) {
+      _last = text;
+      ref.read(userActivityProvider).touch();
+    }
     _schedule(text, now: now);
   }
 
   void _schedule(String text, {bool now = false}) {
     final onQuery = widget.onQuery;
     if (onQuery == null) return;
-    if (text != _last) {
-      _last = text;
-      ref.read(userActivityProvider).touch();
-    }
     _debounce?.cancel();
     final v = text.trim();
     if (v == _query) return;
@@ -100,10 +104,10 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
       onQuery(v);
     }
 
-    if (now) {
+    if (now || v.isEmpty) {
       run();
     } else {
-      _debounce = Timer(CcTiming.debounce, run);
+      _debounce = Timer(widget.debounce, run);
     }
   }
 
@@ -127,30 +131,34 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
         final VoidCallback? action = hasText
             ? (widget.onClear ?? _clear)
             : widget.onCloseEmpty ?? (focused ? focusNode.unfocus : null);
-        return TextField(
-          controller: controller,
-          focusNode: focusNode,
-          textInputAction: TextInputAction.search,
-          autofocus: widget.autofocus,
-          onSubmitted: _submitted,
-          onChanged: _changed,
-          decoration: InputDecoration(
-            hintText: widget.hint,
-            prefixIcon: const Icon(Icons.search_rounded),
-            suffixIcon: IconButton(
-              tooltip: !hasText && widget.onCloseEmpty != null
-                  ? l.closeSearch
-                  : !hasText && focused
-                  ? l.closeKeyboard
-                  : l.clearSearch,
-              icon: const Icon(Icons.close_rounded),
-              disabledColor: cc.textFaint,
-              onPressed: action,
+        // The hint is also the field's name for TalkBack.
+        return Semantics(
+          label: widget.hint,
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textInputAction: TextInputAction.search,
+            autofocus: widget.autofocus,
+            onSubmitted: _submitted,
+            onChanged: _changed,
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: IconButton(
+                tooltip: !hasText && widget.onCloseEmpty != null
+                    ? l.closeSearch
+                    : !hasText && focused
+                    ? l.closeKeyboard
+                    : l.clearSearch,
+                icon: const Icon(Icons.close_rounded),
+                disabledColor: cc.textFaint,
+                onPressed: action,
+              ),
+              filled: bare ? false : null,
+              border: bare ? InputBorder.none : null,
+              enabledBorder: bare ? InputBorder.none : null,
+              focusedBorder: bare ? InputBorder.none : null,
             ),
-            filled: bare ? false : null,
-            border: bare ? InputBorder.none : null,
-            enabledBorder: bare ? InputBorder.none : null,
-            focusedBorder: bare ? InputBorder.none : null,
           ),
         );
       },

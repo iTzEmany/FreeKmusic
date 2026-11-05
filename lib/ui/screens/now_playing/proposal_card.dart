@@ -1,17 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/activity_log_providers.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/recognition_providers.dart';
 import '../../../services/recognition/track_identity.dart' show RecogSource;
-import '../../widgets/show_msg.dart';
+import '../../widgets/action_button.dart';
 import 'now_playing_cards.dart';
 
 /// «Title – Artist», or just the title when the artist is unknown.
@@ -105,51 +101,4 @@ class CoverLine extends ConsumerWidget {
       child: Text(text, style: Theme.of(context).textTheme.titleSmall),
     );
   }
-}
-
-/// A button that runs [action] one at a time (disabled meanwhile). It says so
-/// when [action] throws or returns false (with [failed]), and then reloads the
-/// Registro, which the correction services write to behind its back.
-class ActionButton extends ConsumerStatefulWidget {
-  const ActionButton({
-    super.key,
-    required this.label,
-    required this.semantics,
-    required this.action,
-    required this.failed,
-    this.build = TextButton.new,
-  });
-
-  final String label, semantics, failed;
-  final Future<bool> Function() action;
-  final Widget Function({required VoidCallback? onPressed, required Widget child}) build;
-
-  @override
-  ConsumerState<ActionButton> createState() => _ActionButtonState();
-}
-
-class _ActionButtonState extends ConsumerState<ActionButton> {
-  bool _busy = false;
-
-  Future<void> _run() async {
-    setState(() => _busy = true);
-    final log = ref.read(activityLogProvider.notifier); // the button may be gone when it ends
-    var ok = false;
-    try {
-      ok = await widget.action();
-    } on Object catch (e, st) {
-      AppLog.w('${widget.semantics} failed', e, st);
-    }
-    unawaited(log.reload());
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (!ok) showMsg(context, widget.failed);
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.build(
-    onPressed: _busy ? null : _run,
-    // The label names the song; the visible text would be read twice.
-    child: Semantics(label: widget.semantics, child: ExcludeSemantics(child: Text(widget.label))),
-  );
 }

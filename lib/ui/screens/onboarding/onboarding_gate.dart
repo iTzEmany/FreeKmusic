@@ -33,7 +33,7 @@ class _OnboardingGateState extends ConsumerState<OnboardingGate> {
       );
     }
     final folders = ref.watch(foldersProvider);
-    final tracks = ref.watch(tracksProvider(false));
+    final tracks = ref.watch(tracksProvider(const TrackQuery()));
     // Wait for both answers: no flash of the app before the guide.
     if (!folders.hasValue || !tracks.hasValue) {
       return ColoredBox(color: context.cc.bg);

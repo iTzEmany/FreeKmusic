@@ -739,7 +739,7 @@
   "homeResumeQueue": "Faixa {n} de {m}",
   "homeResumeQueueFrom": "{source}: faixa {n} de {m}",
   "homeMinutesLeft": "{count, plural, one{Falta 1 minuto} other{Faltam {count} minutos}}",
-  "homeFanOpen": "Mostrar as capas",
+  "homeFanOpen": "Mostrar as músicas adicionadas recentemente",
   "showAll": "Todos",
   "recentSearches": "Pesquisas recentes",
   "genresTitle": "Géneros",

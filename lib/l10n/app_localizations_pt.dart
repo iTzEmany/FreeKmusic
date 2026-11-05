@@ -1375,7 +1375,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get homeFanOpen => 'Mostrar as capas';
+  String get homeFanOpen => 'Mostrar as músicas adicionadas recentemente';
 
   @override
   String get showAll => 'Todos';

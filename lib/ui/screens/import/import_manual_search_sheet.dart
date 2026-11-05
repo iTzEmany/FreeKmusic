@@ -9,6 +9,7 @@ import '../../../providers/import_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/cc_search_field.dart';
 import '../../widgets/format_utils.dart';
 import '../youtube/online_results.dart' show ytErrorText;
 
@@ -98,18 +99,10 @@ class _State extends ConsumerState<ImportManualSearchSheet> {
                   CcDims.margin,
                   CcDims.gap8,
                 ),
-                child: TextField(
+                child: CcSearchField(
                   controller: _q,
-                  textInputAction: TextInputAction.search,
+                  hint: l.csvImportManual,
                   onSubmitted: (_) => _search(),
-                  decoration: InputDecoration(
-                    labelText: l.csvImportManual,
-                    suffixIcon: IconButton(
-                      tooltip: l.csvImportSearch,
-                      icon: const Icon(Icons.search_rounded),
-                      onPressed: _busy ? null : _search,
-                    ),
-                  ),
                 ),
               ),
               if (_busy) const LinearProgressIndicator(),

@@ -14,10 +14,8 @@ class Skeleton extends StatefulWidget {
     this.onCard = false,
     this.rowHeight,
     this.label,
-    this.margin = CcDims.margin,
   }) : _kind = _Kind.list,
        lineHeight = 22,
-       title = false,
        roles = false,
        _n = rows;
 
@@ -27,11 +25,9 @@ class Skeleton extends StatefulWidget {
     int rows = 5,
     this.onCard = false,
     this.rowHeight,
-    this.label,
-    this.margin = CcDims.margin,
   }) : _kind = _Kind.bigRow,
+       label = null,
        lineHeight = 22,
-       title = false,
        roles = false,
        _n = rows;
 
@@ -40,29 +36,24 @@ class Skeleton extends StatefulWidget {
     super.key,
     int count = 6,
     this.onCard = false,
-    this.label,
-    this.margin = CcDims.margin,
   }) : _kind = _Kind.grid,
+      label = null,
       rowHeight = null,
       lineHeight = 22,
-      title = false,
       roles = false,
       _n = count;
 
-  /// Text lines ([lineHeight] pitch, 22 dp) for the body of a card; [title]
-  /// adds a title block above them; [roles] draws name-and-role rows (48 dp,
-  /// no cover) like the Crediti ones.
+  /// Text lines ([lineHeight] pitch, 22 dp) for the body of a card; [roles]
+  /// draws name-and-role rows (48 dp, no cover) like the Crediti ones.
   const Skeleton.card({
     super.key,
     int lines = 5,
     this.onCard = true,
     this.lineHeight = 22,
-    this.title = false,
     this.roles = false,
-    this.label,
   }) : _kind = _Kind.card,
+       label = null,
        rowHeight = null,
-       margin = CcDims.margin,
        _n = lines;
 
   /// Chart bars; fills the height it is given.
@@ -70,13 +61,11 @@ class Skeleton extends StatefulWidget {
     super.key,
     int count = 31,
     this.onCard = false,
-    this.label,
   }) : _kind = _Kind.bars,
+      label = null,
       rowHeight = null,
       lineHeight = 22,
-      title = false,
       roles = false,
-      margin = CcDims.margin,
       _n = count;
 
   final _Kind _kind;
@@ -92,12 +81,9 @@ class Skeleton extends StatefulWidget {
   /// What TalkBack says; null = «Caricamento…».
   final String? label;
 
-  /// Horizontal margin of the row and grid variants.
-  final double margin;
-
-  /// Card variant: pitch of the text lines, block title, name-and-role rows.
+  /// Card variant: pitch of the text lines, name-and-role rows.
   final double lineHeight;
-  final bool title, roles;
+  final bool roles;
 
   @override
   State<Skeleton> createState() => _SkeletonState();
@@ -156,16 +142,6 @@ class _SkeletonState extends State<Skeleton>
       case _Kind.card:
         return Column(
           children: [
-            if (widget.title) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: 0.4,
-                  child: _block(color, height: 20),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
             for (var i = 0; i < n; i++)
               if (widget.roles)
                 SizedBox(
@@ -222,7 +198,7 @@ class _SkeletonState extends State<Skeleton>
         );
       case _Kind.grid:
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: widget.margin),
+          padding: EdgeInsets.symmetric(horizontal: CcDims.margin),
           child: Wrap(
             runSpacing: CcDims.gap16,
             children: [
@@ -265,7 +241,7 @@ class _SkeletonState extends State<Skeleton>
     children: [
       for (var i = 0; i < n; i++)
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: widget.margin),
+          padding: EdgeInsets.symmetric(horizontal: CcDims.margin),
           child: SizedBox(
             height: h,
             child: Row(

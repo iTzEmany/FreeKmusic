@@ -1381,7 +1381,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get homeFanOpen => 'Afficher les pochettes';
+  String get homeFanOpen => 'Afficher les titres ajoutés récemment';
 
   @override
   String get showAll => 'Tout';

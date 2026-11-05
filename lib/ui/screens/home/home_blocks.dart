@@ -62,8 +62,10 @@ class ShuffleHero extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Semantics(
+                container: true, // its own node, not merged into the title
                 button: true,
                 label: l.play,
+                onTap: ref.read(trackOpsProvider).playLibrary,
                 excludeSemantics: true,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),

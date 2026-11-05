@@ -1,3 +1,4 @@
+import 'package:codecore/providers/database_providers.dart' show playlistsProvider;
 import 'package:codecore/providers/import_providers.dart';
 import 'package:codecore/services/import/exportify_zip.dart';
 import 'package:codecore/services/import/import_diff.dart' show ImportDiff;
@@ -5,6 +6,7 @@ import 'package:codecore/services/import/import_options.dart';
 import 'package:codecore/services/import/imported_playlist.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
 import 'package:codecore/ui/screens/import/exportify_sync_screen.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,6 +55,27 @@ class _FakeService implements PlaylistImportService {
 }
 
 void main() {
+  testWidgets('while the playlists load it shows a skeleton, not a spinner', (
+    tester,
+  ) async {
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      ExportifySyncScreen(
+        zip: ExportifyZipResult([
+          (fileName: 'rock.csv', playlist: _csv('rock')),
+        ], 0),
+      ),
+      extraOverrides: [
+        playlistsProvider.overrideWith((ref) => const Stream.empty()),
+      ],
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(Skeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets('ticks by the rules and syncs only the ticked ones', (
     tester,
   ) async {

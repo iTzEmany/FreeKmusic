@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../core/app_log.dart';
+import '../online/youtube_service.dart' show YtResult;
 
 /// How a suggestion ended.
 enum SuggestionOutcome { queued, skipped, heard, downloaded, disliked }
@@ -125,6 +126,18 @@ class SuggestionLog {
       _records.removeAt(i < 0 ? 0 : i);
     }
     _scheduleWrite();
+  }
+
+  /// [r] was queued (or shown) as a suggestion similar to [seedTitle]. Once
+  /// per 30 days: a replay of the list must not crowd out the memory.
+  void addSuggestion(YtResult r, String seedTitle) {
+    if (recentlySuggested(r.id)) return;
+    add(
+      videoId: r.id,
+      title: r.title,
+      artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
+      seedTitle: seedTitle,
+    );
   }
 
   /// The latest record of [videoId], if any.

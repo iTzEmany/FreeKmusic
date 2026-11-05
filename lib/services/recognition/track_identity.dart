@@ -27,6 +27,9 @@ class TrackIdentity {
   final int? ms;
   final String? isrc, mbid, vid;
 
+  /// The artist a track gets: an empty one here keeps the [current] one.
+  String? artistOver(String? current) => artist.isEmpty ? current : artist;
+
   /// [t] as this identity says it is: what meta, lyrics and curiosities are searched with.
   Track applyTo(Track t) => t.copyWith(
         title: title,

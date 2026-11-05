@@ -79,4 +79,14 @@ void main() {
     await retry;
     expect(online.entryOf(id)!.trackId, isNull);
   });
+
+  test('shadowWaitOf stops listening to the phases once the subscription is cancelled', () async {
+    int listening() => preparer.phases.listeners;
+    final before = listening();
+    final sub = handler.shadowWaitOf(id).listen((_) {});
+    await pumpEventQueue();
+    expect(listening(), before + 1);
+    await sub.cancel();
+    expect(listening(), before);
+  });
 }

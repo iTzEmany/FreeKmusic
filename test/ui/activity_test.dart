@@ -45,6 +45,19 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('TalkBack: the chip reads «N attività in corso», the sheet reads a percentage', (tester) async {
+    final handle = tester.ensureSemantics();
+    final h = await pump(tester, busy);
+    expect(find.bySemanticsLabel('3 attività in corso'), findsOneWidget);
+    expect(find.bySemanticsLabel('3'), findsNothing);
+    await tester.tap(find.byType(ActivityButton));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.semantics.byValue('36 %'), findsOneWidget);
+    handle.dispose();
+    await h.dispose(tester);
+  });
+
   testWidgets('shows the count and opens the sheet with every activity',
       (tester) async {
     final h = await pump(tester, busy);

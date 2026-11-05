@@ -77,3 +77,14 @@ class SearchBarNotifier extends Notifier<bool> {
 final searchBarProvider = NotifierProvider<SearchBarNotifier, bool>(
   SearchBarNotifier.new,
 );
+
+/// A text for the Search tab to run in «Online» (from «Cerca questo brano»).
+class SearchPrefillNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? text) => state = text;
+}
+
+final searchPrefillProvider =
+    NotifierProvider<SearchPrefillNotifier, String?>(SearchPrefillNotifier.new);

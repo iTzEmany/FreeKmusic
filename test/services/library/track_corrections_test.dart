@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -35,12 +36,18 @@ class _Reader implements TagReader {
 class _FakeWriter implements TagWriter {
   final writes = <TagChanges>[];
 
+  /// Holds back the next write (only that one) until completed.
+  Completer<void>? gate;
+
   @override
   bool supports(String format) => format == 'mp3';
 
   @override
   Future<void> write(String path, TagChanges c) async {
     writes.add(c);
+    final g = gate;
+    gate = null;
+    await g?.future;
     File(path).writeAsStringSync('AUDIO\n${c.title}\n${c.artist}');
   }
 }
@@ -292,6 +299,32 @@ void main() {
     expect((await recOf(id))!.prop, 'discarded');
   });
 
+  test('a correction by the user whose file stays as it was is told in the Registro, the DB row stands', () async {
+    fileWrites = true;
+    blocked = TagWriteReason.readOnly;
+    final id = await track();
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect((await row(id)).title, 'Real Title');
+    final failed = (await log()).where((e) => e.failed != 0).single;
+    expect([failed.kind, (jsonDecode(failed.detail!) as Map)['file']], ['correction', 'readOnly']);
+  });
+
+  test('an automatic correction whose file stays as it was leaves no line in the Registro, only the correction', () async {
+    fileWrites = true;
+    blockError = StateError('no storage');
+    final id = await track();
+    await enrich(id);
+    expect((await row(id)).title, 'Real Title');
+    expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('with the file writes off a blocked file is not asked about and nothing is told', () async {
+    blocked = TagWriteReason.readOnly;
+    final id = await track();
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect((await log()).map((e) => e.failed), [0]);
+  });
+
   test('a commit that fails applies no correction, and leaves none for the next commit', () async {
     final a = await track();
     final b = await r.add(title: 'Other', artist: 'Channel', path: '/b.mp3');
@@ -467,6 +500,66 @@ void main() {
       expect([(await row(id)).title, (await row(id)).userEdited], ['Junk', false]);
     });
 
+    test('revertAll puts every title back and every proposal open in ONE transaction, the files after', () async {
+      fileWrites = true;
+      final id = await track();
+      await put(id, withProp('open'));
+      final other = await second();
+      final done = await corrections.acceptAll();
+      await done.files;
+      final emissions = <int>[];
+      final sub = r.credits.watchProposals().listen((l) => emissions.add(l.length));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      emissions.clear();
+      failStatus.transactions = 0;
+      final back = await corrections.revertAll(done);
+      await back.files;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await sub.cancel();
+      expect(back.count, 2);
+      expect(failStatus.transactions, 1);
+      expect(emissions, isNotEmpty);
+      expect(emissions, everyElement(2), reason: 'the list goes from none to both, never through one');
+      expect([(await row(id)).title, (await row(other)).title, (await row(id)).userEdited], ['Junk', 'Other', false]);
+      expect(File(path).readAsStringSync(), contains('Junk'));
+    });
+
+    test('revertAll writes the old tags only after the new ones are in the file', () async {
+      fileWrites = true;
+      await put(await track(), withProp('open'));
+      final gate = Completer<void>();
+      writer.gate = gate;
+      final done = await corrections.acceptAll(); // its file write waits at the gate
+      final back = await corrections.revertAll(done);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(writer.writes, hasLength(1), reason: 'the old tags wait for the new ones');
+      gate.complete();
+      await back.files;
+      expect(writer.writes.map((c) => c.title), ['Real Title', 'Junk']);
+      expect(File(path).readAsStringSync(), contains('Junk'));
+    });
+
+    test('revertAll does not write the file of a correction that accepting did not write', () async {
+      await put(await track(), withProp('open'));
+      final done = await corrections.acceptAll(); // file writes off
+      fileWrites = true;
+      final back = await corrections.revertAll(done);
+      await back.files;
+      expect(back.count, 1);
+      expect(writer.writes, isEmpty);
+    });
+
+    test('revertAll leaves a track edited since and counts only what went back', () async {
+      await put(await track(), withProp('open'));
+      final other = await second();
+      final done = await corrections.acceptAll();
+      await (r.db.update(r.db.tracks)..where((t) => t.id.equals(other))).write(const TracksCompanion(title: Value('Mine')));
+      final back = await corrections.revertAll(done);
+      await back.files;
+      expect(back.count, 1);
+      expect((await row(other)).title, 'Mine');
+    });
+
     Future<int> third({String file = 'c.mp3'}) async {
       final path = p.join(root.path, file);
       File(path).writeAsStringSync('AUDIO\nJunk');
@@ -533,6 +626,37 @@ void main() {
       expect([(await row(kept)).title, (await row(edited)).title, (await row(renewed)).title, (await row(renewedArtist)).title],
           ['Real Title', 'Other', 'Third', 'Third']);
       expect((await recOf(renewed))!.prop, 'open');
+    });
+
+    test('revert and revertAll with the file writes off since: a blocked file is not asked about and nothing is told', () async {
+      final id = await track();
+      await put(id, withProp('open'));
+      final done = await corrections.acceptAll();
+      await done.files;
+      fileWrites = false;
+      blocked = TagWriteReason.readOnly;
+      expect(await corrections.revert(done.log.single, reopen: true), isTrue);
+      expect((await log()).where((e) => e.failed != 0), isEmpty);
+      await put(id, withProp('open'));
+      final again = await corrections.acceptAll();
+      fileWrites = true;
+      blocked = null;
+      await again.files;
+      fileWrites = false;
+      blocked = TagWriteReason.readOnly;
+      final back = await corrections.revertAll(again);
+      await back.files;
+      expect(back.count, 1);
+      expect((await log()).where((e) => e.failed != 0), isEmpty);
+    });
+
+    test('a recognition that changes only the artist still reads the file ids to put back', () async {
+      fileWrites = true;
+      final id = await r.add(title: 'Real Title', artist: 'Channel', path: path);
+      await put(id, withProp('open'));
+      final done = await corrections.acceptAll();
+      final old = (jsonDecode(done.log.single.detail!) as Map)['old'] as Map;
+      expect([old['title'], old['artist'], old['isrc'], old['mbid']], ['Real Title', 'Channel', '', '']);
     });
 
     test('a blank artist in the identity keeps the track artist, in the DB and in the Registro', () async {

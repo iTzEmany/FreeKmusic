@@ -17,7 +17,9 @@ class CoverIndexNotifier extends Notifier<Map<String, CoverFiles>> {
     final store = ref.watch(coverStoreProvider);
     final sub = CoverStore.changes.listen((c) {
       final original = c.files.original;
-      if (original == null || !p.equals(p.dirname(original), store.dir.path)) return;
+      if (original == null || !p.equals(p.dirname(original), store.dir.path)) {
+        return;
+      }
       state = {...state, c.key: c.files};
     });
     ref.onDispose(sub.cancel);
@@ -26,7 +28,9 @@ class CoverIndexNotifier extends Notifier<Map<String, CoverFiles>> {
 }
 
 final coverIndexProvider =
-    NotifierProvider<CoverIndexNotifier, Map<String, CoverFiles>>(CoverIndexNotifier.new);
+    NotifierProvider<CoverIndexNotifier, Map<String, CoverFiles>>(
+      CoverIndexNotifier.new,
+    );
 
 /// The original cover of [key] (Now Playing, big sizes).
 final coverFileProvider = Provider.family<File?, String>((ref, key) {
@@ -36,7 +40,9 @@ final coverFileProvider = Provider.family<File?, String>((ref, key) {
 
 /// The thumbnail of [key], or the original while there is none.
 final coverThumbProvider = Provider.family<File?, String>((ref, key) {
-  final path = ref.watch(coverIndexProvider.select((m) => m[key]?.thumb ?? m[key]?.original));
+  final path = ref.watch(
+    coverIndexProvider.select((m) => m[key]?.thumb ?? m[key]?.original),
+  );
   return path == null ? null : File(path);
 });
 
@@ -80,7 +86,11 @@ class CoverImage extends ConsumerWidget {
     final px = (size * MediaQuery.devicePixelRatioOf(context)).round();
     final file = key == null
         ? null
-        : ref.watch(px <= coverThumbSide ? coverThumbProvider(key) : coverFileProvider(key));
+        : ref.watch(
+            px <= coverThumbSide
+                ? coverThumbProvider(key)
+                : coverFileProvider(key),
+          );
     Widget image = ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: SizedBox(
@@ -89,22 +99,47 @@ class CoverImage extends ConsumerWidget {
         child: file == null
             ? placeholder
             : coverImageStub?.call(key!) ??
-                Image.file(
-                  file,
-                  cacheWidth: px,
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true,
-                  errorBuilder: (_, _, _) => placeholder,
-                ),
+                  Image.file(
+                    file,
+                    cacheWidth: px,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, _, _) => placeholder,
+                  ),
       ),
     );
-    if (heroTag != null) image = Hero(tag: heroTag!, child: image);
+    if (heroTag != null) image = coverHero(heroTag!, image);
     return coverSemantics(image, semanticLabel);
   }
 }
 
+/// The cover's [Hero]. Both ends (mini player, bar, Now Playing) are round, so
+/// the flying cover is a circle of the flight rect's shorter side, centred,
+/// never an ellipse (D-382).
+Widget coverHero(Object tag, Widget child) => Hero(
+  tag: tag,
+  flightShuttleBuilder: (_, _, direction, from, to) {
+    final c =
+        ((direction == HeroFlightDirection.push ? to : from).widget as Hero)
+            .child;
+    return LayoutBuilder(
+      builder: (_, box) => Center(
+        child: SizedBox.square(
+          dimension: box.biggest.shortestSide,
+          child: ClipOval(
+            child: FittedBox(fit: BoxFit.cover, child: c),
+          ),
+        ),
+      ),
+    );
+  },
+  child: child,
+);
+
 /// Covers are hidden from the screen reader unless they have a label (D-16).
 Widget coverSemantics(Widget art, String? label) {
   final hidden = ExcludeSemantics(child: art);
-  return label == null ? hidden : Semantics(image: true, label: label, child: hidden);
+  return label == null
+      ? hidden
+      : Semantics(image: true, label: label, child: hidden);
 }

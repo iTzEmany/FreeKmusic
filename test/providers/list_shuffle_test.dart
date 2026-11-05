@@ -154,8 +154,8 @@ void main() {
   test('a replayed suggestion is logged once', () async {
     final log = SuggestionLog(file: () async => File('${Directory.systemTemp.path}/sl_unused.json'));
     final r = YtResult(id: 'v', title: 'T', channel: 'C', duration: null);
-    logSuggestion(log, r, 'Seed');
-    logSuggestion(log, r, 'Seed');
+    log.addSuggestion(r, 'Seed');
+    log.addSuggestion(r, 'Seed');
     expect(log.length, 1);
   });
 }

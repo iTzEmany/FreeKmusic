@@ -210,14 +210,14 @@ Widget _routes({bool reduce = false}) => MaterialApp(
     );
 
 void pageTransitionTests() {
-  testWidgets('page transition has no opacity layer and takes the page duration', (tester) async {
+  testWidgets('a normal route fades in at full size, with no slide', (tester) async {
     await tester.pumpWidget(_routes());
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.descendant(of: find.byType(MaterialApp), matching: find.byType(FadeTransition)), findsNothing);
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byType(SlideTransition), findsWidgets);
+    final next = find.ancestor(of: find.text('next'), matching: find.byType(FadeTransition));
+    expect(tester.widget<FadeTransition>(next.first).opacity.value, inExclusiveRange(0, 1));
+    expect(find.descendant(of: find.byType(MaterialApp), matching: find.byType(SlideTransition)), findsNothing);
     await tester.pumpAndSettle();
     expect(find.text('next'), findsOneWidget);
   });
@@ -227,7 +227,7 @@ void pageTransitionTests() {
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1));
-    expect(find.descendant(of: find.byType(MaterialApp), matching: find.byType(SlideTransition)), findsNothing);
+    expect(find.ancestor(of: find.text('next'), matching: find.byType(FadeTransition)), findsNothing);
     expect(find.text('next'), findsOneWidget);
   });
 }

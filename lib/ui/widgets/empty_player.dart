@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/db/app_database.dart' show Track;
+import '../../l10n/app_localizations.dart' show AppLocalizations;
 import '../../l10n/l10n_ext.dart';
 import '../../providers/library_providers.dart' show recentlyAddedTracksProvider;
 import '../../providers/player_providers.dart';
@@ -13,20 +14,33 @@ import 'track_art.dart';
 /// «Title, artist» of a song, for the line under «Niente in riproduzione».
 String songName(Track t) => t.artist == null ? t.title : '${t.title}, ${t.artist}';
 
-/// What ▶ does when nothing plays (D-364): the last queue again, else
-/// Shuffle+ of the library.
-Future<void> playWhenEmpty(WidgetRef ref) async {
-  // Decided on what the label says (lastQueueProvider), not on the raw queue.
-  final last = await ref.read(lastQueueProvider.future);
-  if (last == null || !await ref.read(playerControllerProvider).resumeLastQueue()) {
-    await ref.read(trackOpsProvider).playLibraryPlus();
-  }
-}
-
 /// The line under «Niente in riproduzione»: the last queue, else a hint.
 String emptyPlayerSubtitle(BuildContext context, LastQueue? last) => last == null
     ? context.l10n.playerEmptyNoQueue
     : context.l10n.playerLastQueue(songName(last.first));
+
+/// The tooltip of ▶ when nothing plays: what it starts (see `TrackOps.playWhenEmpty`).
+String emptyPlayerAction(AppLocalizations l, LastQueue? last) =>
+    last == null ? l.playerShufflePlusLibrary : l.playerResumeLastQueue;
+
+/// The quiet disc of the mini player and the desktop bar with nothing playing.
+class EmptyPlayerDisc extends StatelessWidget {
+  const EmptyPlayerDisc({super.key, required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = context.cc;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: cc.surface3, shape: BoxShape.circle),
+      child: SizedBox.square(
+        dimension: size,
+        child: Icon(Icons.music_note_rounded, color: cc.textMuted),
+      ),
+    );
+  }
+}
 
 /// The body of the open player with nothing in it: a live title and three
 /// ways to start (D-364).

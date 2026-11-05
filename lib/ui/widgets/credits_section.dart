@@ -144,6 +144,7 @@ class _NameRow extends ConsumerWidget {
       container: true,
       excludeSemantics: true,
       label: '${l.creditsOpenArtist(row.name)}, $roles',
+      onTap: () => openArtistLink(context, ref, ArtistName(row.name)),
       child: InkWell(
         onTap: () => openArtistLink(context, ref, ArtistName(row.name)),
         child: ConstrainedBox(

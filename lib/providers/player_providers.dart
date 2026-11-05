@@ -21,8 +21,7 @@ import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
 import '../services/shuffle_plus/plus_allowed.dart';
-import '../services/shuffle_plus/suggestion_log.dart' show SuggestionLog;
-import 'shuffle_plus_providers.dart' show suggestionLogProvider;
+import 'suggestion_log_provider.dart';
 
 /// Overridden in `main` once the handler has been created (and, on Android,
 /// registered with `AudioService.init`).
@@ -44,6 +43,7 @@ final playerErrorsProvider = Provider<Stream<PlaybackFailure>>(
 );
 
 /// Where the current queue came from, shown as «In riproduzione da».
+// .index is stored (prefs lastContextKind, DB plays.context): only append values, never reorder.
 enum PlayContextKind { album, artist, playlist, favorites, library, search, podcast, radio }
 
 class PlayContext {
@@ -55,6 +55,14 @@ class PlayContext {
   final String? name;
 }
 
+/// The context the handler holds (saved with the queue); null for none or an unknown kind.
+PlayContext? playContextOf(CodecoreAudioHandler h) {
+  final c = h.playContext;
+  return c == null || c.kind < 0 || c.kind >= PlayContextKind.values.length
+      ? null
+      : PlayContext(PlayContextKind.values[c.kind], c.name);
+}
+
 class PlayContextNotifier extends Notifier<PlayContext?> {
   @override
   PlayContext? build() => null;
@@ -62,7 +70,7 @@ class PlayContextNotifier extends Notifier<PlayContext?> {
   void set(PlayContext? c) => state = c;
 }
 
-/// In memory only: not persisted across launches.
+/// Seeded at startup from the handler's restored context (saved with the queue in settings).
 final playContextProvider = NotifierProvider<PlayContextNotifier, PlayContext?>(
   PlayContextNotifier.new,
 );
@@ -127,8 +135,8 @@ class PlayerController {
   final PlaybackPersistence? _persistence;
   bool _askedNotifications = false;
 
-  /// The context of the last list started: [resumeLastQueue] keeps it.
-  PlayContext? _context;
+  /// The context of the list started last, read from the handler.
+  PlayContext? get _context => playContextOf(_handler);
 
   /// The one way a list starts: context, notification permission, then the
   /// queue from [at]. [plus] / [shuffle] set Shuffle+ / plain shuffle once the
@@ -141,7 +149,6 @@ class PlayerController {
     bool? plus,
     bool? shuffle,
   }) async {
-    _context = context;
     onContext?.call(context);
     _handler.setPlayContext(context?.kind.index, context?.name);
     _requestNotificationPermissionOnce();
@@ -239,7 +246,7 @@ class PlayerController {
     try {
       final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
       if (stations.every((s) => s != null)) {
-        await playStations([for (final s in stations) s!], 0);
+        await playStations([for (final s in stations) s!], 0, context: _context);
       } else {
         await _start(ids, 0, _context);
       }
@@ -257,12 +264,15 @@ class PlayerController {
     PlayContext? context,
   }) async {
     if (stations.isEmpty) return;
-    final ctx = _context = context ?? const PlayContext(PlayContextKind.radio);
+    final ctx = context ?? const PlayContext(PlayContextKind.radio);
     onContext?.call(ctx);
-    _handler.setPlayContext(null, null);
+    _handler.setPlayContext(ctx.kind.index, ctx.name);
     _requestNotificationPermissionOnce();
     await _handler.playStations(stations, index);
   }
+
+  /// The player's «Riprova» on a streamed track still without its row.
+  Future<void> retryShadow() => _handler.retryShadow();
 
   Future<void> togglePlayPause() => _handler.togglePlayPause();
   Future<void> pause() => _handler.pause();
@@ -452,17 +462,10 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
   }
 }
 
-/// A song queued as a suggestion goes in the log once: a replay of the list
-/// must not crowd out the 30-day memory.
-void logSuggestion(SuggestionLog log, YtResult r, String seedTitle) {
-  if (log.recentlySuggested(r.id)) return;
-  log.add(
-    videoId: r.id,
-    title: r.title,
-    artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
-    seedTitle: seedTitle,
-  );
-}
+/// Whether the cards of the streamed [id] still wait for their row ([waited]: already waited).
+final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, ({int id, Duration waited})>(
+  (ref, k) => ref.watch(audioHandlerProvider).shadowWaitOf(k.id, waited: k.waited),
+);
 
 final playerControllerProvider = Provider<PlayerController>(
   (ref) => PlayerController(
@@ -478,7 +481,7 @@ final playerControllerProvider = Provider<PlayerController>(
     jamQueueFullNow: () => ref.read(jamProvider.notifier).queueFull,
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
-    onSuggested: (r, seed) => logSuggestion(ref.read(suggestionLogProvider), r, seed),
+    onSuggested: (r, seed) => ref.read(suggestionLogProvider).addSuggestion(r, seed),
     libraryIdOf: (r) async {
       final path = (await ref.read(downloadIndexProvider.future))
           .pathFor(r.id, source: r.source);

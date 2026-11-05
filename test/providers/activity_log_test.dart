@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/activity_log_repository.dart';
 import 'package:codecore/data/repositories/import_repository.dart';
 import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/activity_providers.dart';
@@ -14,10 +15,22 @@ import 'package:codecore/services/scanner/library_scanner.dart' show ScanProgres
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
 import 'package:codecore/core/import_row.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show ApplyInterceptor, QueryExecutor, QueryInterceptor, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Counts the Registro rows the page queries return (not the counts).
+class _Reads extends QueryInterceptor {
+  int rows = 0;
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(QueryExecutor e, String sql, List<Object?> args) async {
+    final r = await super.runSelect(e, sql, args);
+    if (sql.contains('activity_log') && !sql.contains('GROUP BY') && !sql.contains('COUNT')) rows += r.length;
+    return r;
+  }
+}
 
 class _Activity extends Notifier<ActivityState> {
   @override
@@ -448,6 +461,110 @@ void main() {
     c.listen(activityLogProvider, (_, _) {});
     await pumpEventQueue();
     expect(c.read(activityLogProvider).counts[LogFilter.errors], 0);
+  });
+
+  test('a row written straight to the database shows up by itself, with its id', () async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    expect(c.read(activityLogProvider).entries, isEmpty);
+    final id = await ActivityLogRepository(db).add(at: 1000, kind: 'correction', name: 'x', detail: '{"old":{"title":"a"},"new":{"title":"b"}}');
+    await pumpEventQueue();
+    final s = c.read(activityLogProvider);
+    expect([s.entries.single.id, s.total, s.counts[LogFilter.correction]], [id, 1, 1]);
+    expect(s.entries.single.oldIdent?.title, 'a');
+  });
+
+  test('with many pages loaded a new row costs one small read, not the loaded pages again', () async {
+    final reads = _Reads();
+    final big = AppDatabase(NativeDatabase.memory().interceptWith(reads));
+    addTearDown(big.close);
+    final repo = ActivityLogRepository(big);
+    final base = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < 120; i++) {
+      await repo.add(at: base + i, kind: 'scan', name: 'n$i');
+    }
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(big),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final log = c.read(activityLogProvider.notifier);
+    await log.loadMore();
+    await log.loadMore();
+    expect(c.read(activityLogProvider).entries, hasLength(120));
+    reads.rows = 0;
+    final id = await repo.add(at: base + 500, kind: 'scan', name: 'new');
+    await pumpEventQueue();
+    final s = c.read(activityLogProvider);
+    expect(reads.rows, 1);
+    expect([s.entries.first.id, s.entries.length, s.total, s.counts[LogFilter.all]], [id, 121, 121, 121]);
+  });
+
+  test('prune drops the old rows at start and again when asked, and the lines follow', () async {
+    final repo = ActivityLogRepository(db);
+    await repo.add(at: 1, kind: 'scan', name: 'old');
+    await repo.add(at: DateTime.now().millisecondsSinceEpoch, kind: 'scan', name: 'new');
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    expect(c.read(activityLogProvider).entries.map((e) => e.item!.name), ['new']);
+    await repo.add(at: 2, kind: 'scan', name: 'old too');
+    await pumpEventQueue();
+    await c.read(activityLogProvider.notifier).prune();
+    expect(c.read(activityLogProvider).entries.map((e) => e.item!.name), ['new']);
+    expect(c.read(activityLogProvider).total, 1);
+  });
+
+  test('prune with several pages loaded reads them all again, not only the first', () async {
+    final repo = ActivityLogRepository(db);
+    final base = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < 120; i++) {
+      await repo.add(at: base + i, kind: 'scan', name: 'n$i');
+    }
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final log = c.read(activityLogProvider.notifier);
+    await log.loadMore();
+    await repo.add(at: 1, kind: 'scan', name: 'old');
+    await pumpEventQueue();
+    await log.prune();
+    final s = c.read(activityLogProvider);
+    expect(s.total, 120);
+    expect(s.entries.length, greaterThan(ActivityLogNotifier.pageSize));
+  });
+
+  test('rows with the same time that arrive later are put newest id first', () async {
+    final repo = ActivityLogRepository(db);
+    final at = DateTime.now().millisecondsSinceEpoch;
+    final first = await repo.add(at: at, kind: 'scan', name: 'a');
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final second = await repo.add(at: at, kind: 'scan', name: 'b');
+    await pumpEventQueue();
+    final third = await repo.add(at: at, kind: 'scan', name: 'c');
+    await pumpEventQueue();
+    expect(c.read(activityLogProvider).entries.map((e) => e.id), [third, second, first]);
   });
 
   test('a second opinion line belongs to Arricchimento', () {

@@ -14,6 +14,7 @@ Future<(TextEditingController, FocusNode)> _pump(
   VoidCallback? onClear,
   ValueChanged<String>? onQuery,
   ValueChanged<String>? onChanged,
+  Duration debounce = CcTiming.debounce,
 }) async {
   _activity = UserActivity();
   final c = TextEditingController();
@@ -34,6 +35,7 @@ Future<(TextEditingController, FocusNode)> _pump(
             hint: 'Cerca',
             onClear: onClear,
             onQuery: onQuery,
+            debounce: debounce,
             onChanged: onChanged,
           ),
         ),
@@ -104,16 +106,18 @@ void main() {
     addTearDown(c.dispose);
     String? changed;
     await t.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('it'),
-        home: Scaffold(
-          body: CcSearchField(
-            controller: c,
-            hint: 'Cerca',
-            autofocus: true,
-            onChanged: (v) => changed = v,
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('it'),
+          home: Scaffold(
+            body: CcSearchField(
+              controller: c,
+              hint: 'Cerca',
+              autofocus: true,
+              onChanged: (v) => changed = v,
+            ),
           ),
         ),
       ),
@@ -146,6 +150,20 @@ void main() {
     await t.pump();
     expect(c.text, isEmpty);
     expect(changed, '');
+  });
+
+  testWidgets('a longer debounce is honoured; emptying the field is at once', (
+    t,
+  ) async {
+    final got = <String>[];
+    await _pump(t, onQuery: got.add, debounce: CcTiming.radioDebounce);
+    await t.enterText(find.byType(TextField), 'abc');
+    await t.pump(CcTiming.debounce);
+    expect(got, isEmpty);
+    await t.pump(CcTiming.radioDebounce - CcTiming.debounce);
+    expect(got, ['abc']);
+    await t.enterText(find.byType(TextField), '');
+    expect(got, ['abc', '']);
   });
 
   testWidgets('onQuery waits for the debounce, trims and skips repeats', (
@@ -182,6 +200,12 @@ void main() {
       expect(got, ['abc', '']);
     },
   );
+
+  testWidgets('typing touches the activity even without onQuery', (t) async {
+    await _pump(t);
+    await t.enterText(find.byType(TextField), 'abc');
+    expect(_activity.lastActivityAt, isNotNull);
+  });
 
   testWidgets('Enter does not report onChanged again', (t) async {
     final changed = <String>[];

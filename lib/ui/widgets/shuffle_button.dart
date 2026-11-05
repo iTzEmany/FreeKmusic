@@ -30,14 +30,21 @@ Future<void> _cycleWithNotice(
       .cycleShuffle(ids: await ids?.call());
   if (block == null || _explained || !context.mounted) return;
   _explained = true;
-  messenger.showSnackBar(SnackBar(content: Text(shufflePlusBlockText(l, block))));
+  messenger.showSnackBar(
+    SnackBar(content: Text(shufflePlusBlockText(l, block))),
+  );
 }
 
 /// The three-state shuffle button of the players: off, shuffle, Shuffle+
 /// (shuffle with a «+»). Tap goes to the next state, long press opens the
 /// Shuffle+ settings.
 class ShuffleModeButton extends ConsumerWidget {
-  const ShuffleModeButton({super.key, this.size = 28, this.dot = true, this.listIds});
+  const ShuffleModeButton({
+    super.key,
+    this.size = 28,
+    this.dot = true,
+    this.listIds,
+  });
 
   final double size;
 
@@ -63,15 +70,19 @@ class ShuffleModeButton extends ConsumerWidget {
       ShuffleMode.plus => l.shuffleModePlus,
     };
     return GestureDetector(
+      excludeFromSemantics:
+          true, // the long press is on the labelled icon below
       onLongPress: () => showShufflePlusSheet(context),
       child: Tooltip(
         triggerMode: TooltipTriggerMode.manual,
+        excludeFromSemantics: true, // the icon below already speaks the state
         message: message,
         child: IconButton(
           onPressed: () => _cycleWithNotice(context, ref, listIds),
           // The tooltip is hover-only, so the button needs its own label.
           icon: Semantics(
             label: message,
+            onLongPress: () => showShufflePlusSheet(context),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -126,7 +137,13 @@ class ShufflePill extends ConsumerWidget {
     final cc = context.cc;
     final mode = ref.watch(shuffleModeProvider);
     final color = mode == ShuffleMode.off ? cc.text : cc.accent;
+    void cycle() => _cycleWithNotice(context, ref, () async => ids);
+    // One node: the state is the name (the button's own «Casuale» would be a second).
     return Semantics(
+      button: true,
+      excludeSemantics: true,
+      onTap: cycle,
+      onLongPress: () => showShufflePlusSheet(context),
       toggled: mode != ShuffleMode.off,
       label: switch (mode) {
         ShuffleMode.off => context.l10n.shuffleModeOff,
@@ -137,7 +154,7 @@ class ShufflePill extends ConsumerWidget {
         child: GestureDetector(
           onLongPress: () => showShufflePlusSheet(context),
           child: OutlinedButton.icon(
-            onPressed: () => _cycleWithNotice(context, ref, () async => ids),
+            onPressed: cycle,
             style: OutlinedButton.styleFrom(foregroundColor: color),
             icon: Stack(
               clipBehavior: Clip.none,

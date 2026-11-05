@@ -34,6 +34,8 @@ class PreviewCover extends ConsumerWidget {
             active ? notifier.stop() : notifier.start(track),
       },
       child: GestureDetector(
+        // Its long press would clash with the row's and split it in two nodes.
+        excludeFromSemantics: true,
         behavior: HitTestBehavior.opaque,
         onLongPressStart: (_) => notifier.start(track),
         onLongPressEnd: (_) => notifier.stop(),

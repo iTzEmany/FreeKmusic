@@ -37,6 +37,7 @@ List<String> _labels(WidgetTester tester) {
 }
 
 void main() {
+  coverHeroTests();
   testWidgets('a cover is hidden from the screen reader unless it has a label', (tester) async {
     final h = await Harness.create(tester, tracks: 1);
     final sem = tester.ensureSemantics();
@@ -92,4 +93,32 @@ void main() {
     sem.dispose();
     await h.dispose(tester);
   });
+}
+
+void coverHeroTests() {
+  for (final pop in [false, true]) {
+    testWidgets('coverHero: ${pop ? 'closing' : 'opening'} flies as a circle, not an ellipse', (tester) async {
+      Widget cover(double w, double h) => coverHero('c', SizedBox(width: w, height: h));
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(
+              builder: (_) => Scaffold(body: Align(alignment: Alignment.topLeft, child: cover(300, 100))),
+            )),
+            child: cover(48, 48),
+          ),
+        ),
+      ));
+      await tester.tap(find.byType(TextButton));
+      if (pop) {
+        await tester.pumpAndSettle();
+        Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final size = tester.getSize(find.byType(ClipOval));
+      expect(size.width, size.height);
+      await tester.pumpAndSettle();
+    });
+  }
 }

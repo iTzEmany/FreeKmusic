@@ -33,6 +33,20 @@ class LibraryToolbar extends StatelessWidget {
       LibrarySort.alpha => l.sortAToZ,
       LibrarySort.added => l.sortAddedRecently,
     };
+    Future<void> pickSort() async {
+      final s = await showCcActionSheet<LibrarySort>(
+        context: context,
+        title: l.sortBy,
+        groups: [
+          [
+            for (final o in LibrarySort.values)
+              CcAction(icon: Icons.sort_rounded, label: name(o), value: o, selected: o == sort),
+          ],
+        ],
+      );
+      if (s != null) onSort(s);
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.gap4, 0),
       child: Row(
@@ -52,26 +66,10 @@ class LibraryToolbar extends StatelessWidget {
               child: Semantics(
                 button: true,
                 label: '${l.sortBy}: ${name(sort)}',
+                onTap: pickSort,
                 excludeSemantics: true,
                 child: InkWell(
-                onTap: () async {
-                  final s = await showCcActionSheet<LibrarySort>(
-                    context: context,
-                    title: l.sortBy,
-                    groups: [
-                      [
-                        for (final o in LibrarySort.values)
-                          CcAction(
-                            icon: Icons.sort_rounded,
-                            label: name(o),
-                            value: o,
-                            selected: o == sort,
-                          ),
-                      ],
-                    ],
-                  );
-                  if (s != null) onSort(s);
-                },
+                onTap: pickSort,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: CcDims.gap8,

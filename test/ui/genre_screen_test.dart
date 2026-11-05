@@ -131,7 +131,7 @@ void main() {
         reason: 'as tall as a real row',
       );
       expect(find.bySemanticsLabel('Shuffle+ sta scegliendo 2 brani…'), findsOneWidget, reason: 'one node for all');
-      c.add(GenreMixState(suggested: [_song('a'), _song('b')]));
+      c.add(GenreMixState(suggested: [(result: _song('a'), seedTitle: 's'), (result: _song('b'), seedTitle: 's')]));
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byType(Skeleton), findsNothing);
       expect(find.text('Suggerito'), findsNWidgets(2));
@@ -179,8 +179,7 @@ void main() {
       final h = await mixPage(
         tester,
         Stream.value(GenreMixState(
-          suggested: [_song('a'), _song('b')],
-          seedTitles: const {'a': 'Song 0', 'b': 'Song 3'},
+          suggested: [(result: _song('a'), seedTitle: 'Song 0'), (result: _song('b'), seedTitle: 'Song 3')],
         )),
         extra: [
           downloadIndexProvider.overrideWith(
@@ -223,7 +222,7 @@ void main() {
     addTearDown(() => dir.deleteSync(recursive: true));
     final h = await mixPage(
       tester,
-      Stream.value(GenreMixState(suggested: [_song('a'), _song('b')])),
+      Stream.value(GenreMixState(suggested: [(result: _song('a'), seedTitle: 's'), (result: _song('b'), seedTitle: 's')])),
       extra: [
         downloadIndexProvider.overrideWith(
           (ref) async => DownloadIndex(File(p.join(dir.path, 'd.json'))),
@@ -265,7 +264,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     c.add(const GenreMixState(incoming: 1, suggested: []));
     await tester.pump(const Duration(milliseconds: 50));
-    c.add(GenreMixState(suggested: [_song('a')], incoming: 1));
+    c.add(GenreMixState(suggested: [(result: _song('a'), seedTitle: 's')], incoming: 1));
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Suggerito'), findsOneWidget);
     expect(find.byType(Skeleton), findsOneWidget);

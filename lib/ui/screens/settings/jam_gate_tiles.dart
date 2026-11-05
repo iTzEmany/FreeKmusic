@@ -16,7 +16,9 @@ List<SettingsGroup> jamGateGroups(BuildContext context, JamGate gate) {
         title: Text(e.name),
         subtitle: sub == null ? null : Text(sub),
         trailing: Semantics(
+          button: true,
           label: '${l.jamUnblock} ${e.name}',
+          onTap: () => undo(e.id),
           excludeSemantics: true,
           child: TextButton(onPressed: () => undo(e.id), child: Text(l.jamUnblock)),
         ),

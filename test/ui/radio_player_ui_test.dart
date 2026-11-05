@@ -1,4 +1,4 @@
-import 'package:codecore/providers/radio_providers.dart';
+import 'package:codecore/providers/ui_providers.dart' show searchPrefillProvider;
 import 'package:codecore/services/radio/radio_station.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_controls.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';

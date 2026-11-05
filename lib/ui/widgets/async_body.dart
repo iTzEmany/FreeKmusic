@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../theme/tokens.dart';
 import 'error_state.dart';
 import 'skeleton.dart';
 
@@ -78,24 +81,49 @@ class SliverAsyncBody<T> extends StatelessWidget {
   );
 }
 
-/// Row skeleton: clipped at the bottom when the height is bounded, natural
-/// height (8 rows) when unbounded (e.g. inside a sheet). [rowHeight]: the
-/// height of the real rows.
-class RowsLoading extends StatelessWidget {
+/// Row skeleton, shown only if the data takes longer than
+/// [CcMotion.skeletonDelay] (a fast screen never flashes it). Clipped at the
+/// bottom when the height is bounded, natural height (8 rows) when unbounded
+/// (e.g. inside a sheet). [rowHeight]: the height of the real rows.
+class RowsLoading extends StatefulWidget {
   const RowsLoading({super.key, this.rowHeight});
 
   final double? rowHeight;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, box) => box.hasBoundedHeight
-        ? ClipRect(
-            child: OverflowBox(
-              alignment: Alignment.topCenter,
-              maxHeight: double.infinity,
-              child: Skeleton.list(rowHeight: rowHeight),
-            ),
-          )
-        : Skeleton.list(rowHeight: rowHeight),
-  );
+  State<RowsLoading> createState() => _RowsLoadingState();
+}
+
+class _RowsLoadingState extends State<RowsLoading> {
+  late final Timer _timer;
+  bool _late = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(CcMotion.skeletonDelay, () => setState(() => _late = true));
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_late) return const SizedBox.shrink();
+    final rows = Skeleton.list(rowHeight: widget.rowHeight);
+    return LayoutBuilder(
+      builder: (context, box) => box.hasBoundedHeight
+          ? ClipRect(
+              child: OverflowBox(
+                alignment: Alignment.topCenter,
+                maxHeight: double.infinity,
+                child: rows,
+              ),
+            )
+          : rows,
+    );
+  }
 }

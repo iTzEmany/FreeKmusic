@@ -227,7 +227,10 @@ void main() {
                   genreMixProvider.overrideWith((ref, genre) => Stream.value(GenreMixState(
                       suggested: [
                         for (final (i, t) in ['Come Away With Me', 'Il cielo in una stanza'].indexed)
-                          YtResult(id: 'g$i', title: t, channel: 'Chan', duration: const Duration(minutes: 3), artists: const ['Norah Jones']),
+                          (
+                            result: YtResult(id: 'g$i', title: t, channel: 'Chan', duration: const Duration(minutes: 3), artists: const ['Norah Jones']),
+                            seedTitle: 'Song $i',
+                          ),
                       ],
                       incoming: 1))),
                 ]);

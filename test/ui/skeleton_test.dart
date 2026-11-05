@@ -116,7 +116,7 @@ void main() {
     }
   });
 
-  testWidgets('card: lineHeight, title block, roles rows and label', (tester) async {
+  testWidgets('card: lineHeight, roles rows and list label', (tester) async {
     final h = tester.ensureSemantics();
     Future<void> pump(Widget w) => tester.pumpWidget(
       MaterialApp(
@@ -129,15 +129,11 @@ void main() {
     );
     await pump(const Skeleton.card(lines: 3, lineHeight: 30));
     expect(tester.getSize(find.byType(Skeleton)).height, 90);
-    await pump(const Skeleton.card(lines: 3, title: true));
-    expect(tester.getSize(find.byType(Skeleton)).height, 20 + 12 + 66);
-    await pump(const Skeleton.card(lines: 3, roles: true, label: 'Sto scegliendo 3 brani…'));
+    await pump(const Skeleton.card(lines: 3, roles: true));
     expect(tester.getSize(find.byType(Skeleton)).height, 144);
+    await pump(const Skeleton.list(rows: 1, label: 'Sto scegliendo 3 brani…'));
     expect(find.bySemanticsLabel('Sto scegliendo 3 brani…'), findsOneWidget);
     expect(find.bySemanticsLabel('Caricamento…'), findsNothing);
-    await pump(const Skeleton.list(rows: 1, margin: 0));
-    final block = find.descendant(of: find.byType(Skeleton), matching: find.byType(Container)).first;
-    expect(tester.getTopLeft(block).dx, 0);
     h.dispose();
   });
 }

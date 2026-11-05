@@ -133,7 +133,34 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('initialSort is applied; leaving by pop clears the query', (
+  testWidgets('initialSort is applied and typing filters this screen', (
+    tester,
+  ) async {
+    final h = await _open(tester, sort: SortOption.title);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    expect(c.read(trackQueryProvider(false)).sort, SortOption.title);
+    await tester.enterText(find.byType(TextField), 'Song 2');
+    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsOneWidget);
+    // The text is the screen's own: nothing shared to clean up.
+    expect(c.read(trackQueryProvider(false)).text, isEmpty);
+    await h.dispose(tester);
+  });
+
+  testWidgets('changing the sort reorders the rows', (tester) async {
+    final h = await _open(tester);
+    double y(String t) => tester.getTopLeft(find.text(t)).dy;
+    expect(y('Song 0'), lessThan(y('Song 1'))); // default: by album
+    expect(y('Song 2'), lessThan(y('Song 1')));
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    c.read(trackQueryProvider(false).notifier).update((q) => q.copyWith(sort: SortOption.addedAt));
+    await _settle(tester);
+    expect(y('Song 3'), lessThan(y('Song 2'))); // newest first
+    expect(y('Song 1'), lessThan(y('Song 0')));
+    await h.dispose(tester);
+  });
+  testWidgets('two screens open together do not share the search text', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(400, 900);
@@ -142,24 +169,22 @@ void main() {
     final h = await Harness.create(tester, tracks: 4);
     await h.pump(tester, const Scaffold(body: SizedBox()));
     final nav = Navigator.of(tester.element(find.byType(Scaffold)));
-    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
-    unawaited(
-      nav.push(
-        MaterialPageRoute<void>(
-          builder: (_) => const AllTracksScreen(initialSort: SortOption.title),
+    for (var i = 0; i < 2; i++) {
+      unawaited(
+        nav.push(
+          MaterialPageRoute<void>(builder: (_) => const AllTracksScreen()),
         ),
-      ),
-    );
-    await _settle(tester);
-    expect(c.read(trackQueryProvider(false)).sort, SortOption.title);
-    await tester.enterText(find.byType(TextField), 'Song 2');
+      );
+      await _settle(tester);
+    }
+    await tester.enterText(find.byType(TextField, skipOffstage: false).last, 'Song 2');
     await tester.pump(const Duration(milliseconds: 400));
-    expect(c.read(trackQueryProvider(false)).text, 'Song 2');
-    nav.pop();
     await _settle(tester);
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.takeException(), isNull);
-    expect(c.read(trackQueryProvider(false)).text, isEmpty);
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField, skipOffstage: false))
+        .toList();
+    expect(fields, hasLength(2));
+    expect(fields.where((f) => f.controller!.text.isEmpty), hasLength(1));
     await h.dispose(tester);
   });
 }

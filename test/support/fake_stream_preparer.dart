@@ -1,10 +1,27 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, VoidCallback;
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/stream/stream_preparer.dart';
+
+/// A phases notifier that counts its listeners (hasListeners is protected).
+class CountingNotifier extends ValueNotifier<Map<String, StreamPhase>> {
+  CountingNotifier() : super({});
+  int listeners = 0;
+  @override
+  void addListener(VoidCallback l) {
+    listeners++;
+    super.addListener(l);
+  }
+
+  @override
+  void removeListener(VoidCallback l) {
+    listeners--;
+    super.removeListener(l);
+  }
+}
 
 /// A [StreamPreparer] with no network: `ready` writes a tiny file, makes the
 /// shadow row like the real one and can be held back or made to fail per key.
@@ -20,7 +37,7 @@ class FakeStreamPreparer implements StreamPreparer {
   Object failure = StateError('download failed'); // what a failing key throws
   final gates = <String, Completer<void>>{};
   @override
-  final phases = ValueNotifier<Map<String, StreamPhase>>({});
+  final CountingNotifier phases = CountingNotifier();
 
   /// Files already in the cache, by key.
   final cached = <String, File>{};

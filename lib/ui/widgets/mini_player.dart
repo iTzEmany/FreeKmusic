@@ -5,6 +5,7 @@ import '../../data/db/app_database.dart' show Track;
 import '../../l10n/l10n_ext.dart';
 import '../../providers/jam_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../providers/track_ops.dart' show trackOpsProvider;
 import '../../services/jam/jam_models.dart';
 import '../../services/radio/radio_station.dart' show RadioStation;
 import '../screens/devices/devices_sheet.dart';
@@ -253,13 +254,7 @@ class _MiniCard extends ConsumerWidget {
                 ),
               )
             else if (empty)
-              DecoratedBox(
-                decoration: BoxDecoration(color: cc.surface3, shape: BoxShape.circle),
-                child: SizedBox.square(
-                  dimension: 52,
-                  child: Icon(Icons.music_note_rounded, color: cc.textMuted),
-                ),
-              )
+              const EmptyPlayerDisc(size: 52)
             else
               RingProgress(
                 size: 52,
@@ -337,10 +332,10 @@ class _MiniCard extends ConsumerWidget {
               color: empty ? cc.accent : cc.text,
               size: 28,
               tooltip: empty
-                  ? (ref.watch(lastQueueProvider).value == null ? l.playerShufflePlusLibrary : l.playerResumeLastQueue)
+                  ? emptyPlayerAction(l, ref.watch(lastQueueProvider).value)
                   : playing ? l.pause : l.play,
               onPressed: empty
-                  ? () => playWhenEmpty(ref)
+                  ? ref.read(trackOpsProvider).playWhenEmpty
                   : inJam
                   ? () => ref
                         .read(jamProvider.notifier)

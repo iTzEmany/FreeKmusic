@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/ui/widgets/cover_picker_sheet.dart';
+import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -18,14 +19,16 @@ final _png = base64Decode(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC');
 
 class _Web implements WebClient {
-  _Web({this.deezerDown = false});
+  _Web({this.deezerDown = false, this.gate});
 
   final bool deezerDown;
+  final Future<void>? gate;
   final calls = <String>[];
 
   @override
   Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
     calls.add(url);
+    await gate;
     if (url.contains('deezer')) {
       return deezerDown
           ? null
@@ -126,6 +129,18 @@ Future<Harness> _open(
 }
 
 void main() {
+  testWidgets('while the proposals load the section shows a skeleton, not a spinner', (tester) async {
+    final gate = Completer<void>();
+    final h = await _open(tester, _Web(gate: gate.future));
+    await tester.tap(find.text('open'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(Skeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    gate.complete();
+    await _settle(tester);
+    await h.dispose(tester);
+  });
+
   testWidgets('online proposals are searched only on opening, once per source, with «L × A» each', (tester) async {
     final web = _Web();
     final h = await _open(tester, web);

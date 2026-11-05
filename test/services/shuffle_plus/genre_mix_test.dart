@@ -140,7 +140,7 @@ void main() {
     expect(states.first.suggested, isEmpty);
     expect([for (final s in states) s.suggested.length], [0, 1, 2, 3, 3]);
     expect([for (final s in states) s.incoming], [3, 2, 1, 0, 0]);
-    expect(states.last.suggested.map((r) => r.id).toSet(), hasLength(3));
+    expect(states.last.suggested.map((s) => s.result.id).toSet(), hasLength(3));
   });
 
   test('seeds are songs of the genre, found without a search', () async {
@@ -163,7 +163,7 @@ void main() {
     };
     final states = await run(6);
     expect(
-      states.last.suggested.where((r) => inLibrary.contains(r.id)),
+      states.last.suggested.where((s) => inLibrary.contains(s.result.id)),
       isEmpty,
     );
   });
@@ -206,8 +206,7 @@ void main() {
   test('a suggestion keeps the title of the song it came from', () async {
     final states = await run(6);
     final last = states.last;
-    expect(last.seedTitles.keys.toSet(), last.suggested.map((r) => r.id).toSet());
-    expect(last.seedTitles.values.every((t) => RegExp(r'^Song [1-6]$').hasMatch(t)), isTrue);
+    expect(last.suggested.every((s) => RegExp(r'^Song [1-6]$').hasMatch(s.seedTitle)), isTrue);
   });
 
   test('a 429 trips the shared gate', () async {
@@ -348,6 +347,26 @@ void main() {
     expect(continuations, contains('next'));
     expect(asked.first, asked[1], reason: 'the same radio, next page');
     expect(states.last.suggested, hasLength(3));
-    expect(states.last.suggested.any((r) => r.id.contains('-next-')), isTrue);
+    expect(states.last.suggested.any((s) => s.result.id.contains('-next-')), isTrue);
+  });
+
+  group('interleave', () {
+    MixSuggestion sug(String id) => (result: song(id, 'A'), seedTitle: 's$id');
+
+    test('one slot after every 2 songs: suggestions first, then placeholders', () {
+      final rows = interleave([1, 2, 3, 4, 5], GenreMixState(suggested: [sug('a')], incoming: 1));
+      expect([for (final r in rows) r.track], [1, 2, null, 3, 4, null, 5]);
+      expect(rows[2].suggestion?.result.id, 'a');
+      expect(rows[5].suggestion, isNull); // the placeholder
+    });
+
+    test('no more slots than suggested plus incoming', () {
+      final rows = interleave([1, 2, 3, 4], GenreMixState(suggested: [sug('a')]));
+      expect([for (final r in rows) r.track], [1, 2, null, 3, 4]);
+    });
+
+    test('nothing to mix: the tracks as they are', () {
+      expect([for (final r in interleave([1, 2, 3], GenreMixState.none)) r.track], [1, 2, 3]);
+    });
   });
 }

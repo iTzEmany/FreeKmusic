@@ -97,6 +97,19 @@ class TrackOps {
     }
   }
 
+  /// What ▶ does when nothing plays (D-364): the last queue again, else Shuffle+ of the library.
+  Future<void> playWhenEmpty() async {
+    try {
+      // Decided on what the label says (lastQueueProvider), not on the raw queue.
+      final last = await _ref.read(lastQueueProvider.future);
+      if (last == null || !await _ref.read(playerControllerProvider).resumeLastQueue()) {
+        await playLibraryPlus();
+      }
+    } on Object catch (e, st) {
+      AppLog.w('play when empty failed', e, st);
+    }
+  }
+
   Future<List<Track>> favorites({SortOption sort = SortOption.title}) => _repo.watchTracks(favoritesOnly: true, sort: sort).first;
   Future<List<Track>> ofAlbums(Iterable<String> keys) => _repo.tracksOfAlbums(keys);
   Future<Track?> byPath(String path) => _repo.byPath(path);

@@ -7,11 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
-import '../../../providers/jam_providers.dart' show jamProvider;
 import '../../../providers/shuffle_plus_providers.dart'
-    show ShuffleMode, shuffleModeProvider, shufflePlusPendingProvider;
-import '../../../services/shuffle_plus/shuffle_plus_controller.dart'
-    show ShufflePlusPending;
+    show shufflePlusPendingProvider;
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/confirm.dart';
@@ -145,7 +142,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       child: Material(
         color: cc.surface1.withValues(alpha: 0),
         child: SizedBox(
-          height: 64,
+          height: trackRowExtentOf(context, false),
           // A suggestion still being enriched: its title and cover may change.
           child: Opacity(
             opacity: enriching.contains(t.id) ? 0.6 : 1,
@@ -175,13 +172,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       }),
     );
     ref.watch(currentTrackProvider.select((t) => t.value?.id));
-    // No placeholder rows unless Shuffle+ is on and no Jam runs, whatever the engine last said.
-    final plus =
-        ref.watch(shuffleModeProvider) == ShuffleMode.plus &&
-        !ref.watch(jamProvider.select((j) => j.active));
-    final pending = plus
-        ? ref.watch(shufflePlusPendingProvider)
-        : ShufflePlusPending.none;
+    final pending = ref.watch(shufflePlusPendingProvider);
     final ctrl = ref.read(playerControllerProvider);
     if (queue.isEmpty) {
       return EmptyState(icon: Icons.queue_music_rounded, message: l.emptyQueue);
@@ -226,7 +217,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                 if (current != null) ...[
                   SectionHeader(l.queueNowPlaying),
                   SizedBox(
-                    height: 64,
+                    height: trackRowExtentOf(context, false),
                     child: LiveTrackRow(
                       track: current,
                       onTap: ctrl.togglePlayPause,
@@ -240,7 +231,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
             footer: pending.incoming > 0
                 ? Skeleton.list(
                     rows: pending.incoming,
-                    rowHeight: 64,
+                    rowHeight: trackRowExtentOf(context, false),
                     label: l.shufflePlusChoosing(pending.incoming),
                   )
                 : null,
@@ -309,31 +300,34 @@ class _QueueTitleRow extends StatelessWidget {
         CcDims.gap8,
         0,
       ),
-      child: LayoutBuilder(builder: (context, box) => Row(
-        children: [
-          Expanded(
-            child: showTitle
-                ? Text(l.queue, style: Theme.of(context).textTheme.titleMedium)
-                : const SizedBox.shrink(),
-          ),
-          if (hasUpcoming)
-            TextButton(onPressed: onClear, child: Text(l.queueClear)),
-          // Intrinsic width; the cap only guards against overflow.
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: box.maxWidth * 0.5,
+      child: LayoutBuilder(
+        builder: (context, box) => Row(
+          children: [
+            Expanded(
+              child: showTitle
+                  ? Text(
+                      l.queue,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    )
+                  : const SizedBox.shrink(),
             ),
-            child: TextButton(
-              onPressed: () => openSuggestions(context),
-              child: Text(
-                l.suggestionsRecentTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            if (hasUpcoming)
+              TextButton(onPressed: onClear, child: Text(l.queueClear)),
+            // Intrinsic width; the cap only guards against overflow.
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: box.maxWidth * 0.5),
+              child: TextButton(
+                onPressed: () => openSuggestions(context),
+                child: Text(
+                  l.suggestionsRecentTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
-          ),
-        ],
-      )),
+          ],
+        ),
+      ),
     );
   }
 }

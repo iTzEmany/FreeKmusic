@@ -1,35 +1,28 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 
 import '../core/app_log.dart';
 import '../core/constants.dart';
-import '../core/import_row.dart';
+import '../core/import_row.dart' show LibraryEntryLite;
 import '../core/network_kind.dart';
-import '../core/paths.dart';
-import '../data/db/app_database.dart' show Track;
 import '../data/settings/settings_store.dart';
 import '../services/audio/codecore_audio_handler.dart';
 import '../services/import/track_matcher.dart';
-import '../services/online/download_index.dart';
-import '../services/online/ytm_radio_parser.dart' show RadioPage;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
 import '../services/shuffle_plus/radio_gate.dart';
-import '../services/shuffle_plus/seed_resolver.dart' show SeedResolver;
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
-import '../services/shuffle_plus/suggestion_log.dart';
 import 'database_providers.dart';
-import 'library_providers.dart' show genreTracksProvider;
+import 'library_providers.dart' show genreTracksProvider, trackCountProvider;
 import 'jam_providers.dart';
 import 'seed_resolver_provider.dart';
+import 'suggestion_log_provider.dart';
 import 'player_providers.dart';
 import 'settings_providers.dart';
 import 'stream_providers.dart';
@@ -37,6 +30,7 @@ import 'youtube_providers.dart';
 
 export '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 export 'seed_resolver_provider.dart' show seedIndexProvider;
+export 'suggestion_log_provider.dart' show suggestionLogProvider;
 
 /// The user's Shuffle+ choices, read from the settings. [set] is for tests.
 class ShufflePlusConfigNotifier extends Notifier<ShufflePlusConfig> {
@@ -80,14 +74,6 @@ final shufflePlusMeteredProvider = Provider<Future<bool> Function()>((ref) {
     final k = await probe.current();
     return k.metered || !k.online;
   };
-});
-
-/// `suggestions.json`: what was suggested and how it ended.
-final suggestionLogProvider = Provider<SuggestionLog>((ref) {
-  final log = SuggestionLog(
-      file: () async => File(p.join(await appSupportDir(), 'suggestions.json')));
-  ref.onDispose(() => unawaited(log.flush()));
-  return log;
 });
 
 final ytmRadioServiceProvider = Provider<YtmRadioService>((ref) => YtmRadioService(
@@ -239,7 +225,7 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
     toolAvailable: () async =>
         (await ref.read(ytDlpStatusProvider.future)).version != null,
     loadTracks: tracks.getByIdsLight,
-    loadLibrary: () async => LibraryIndex(await tracks.liteEntries()),
+    loadLibrary: () => ref.read(libraryIndexProvider.future),
     hasDownload: downloads.contains,
     prepare: ref.read(shufflePlusPrepareProvider),
     enrichSuggested: ref.read(shufflePlusEnrichProvider),
@@ -261,6 +247,10 @@ final shufflePlusPendingProvider = NotifierProvider<ShufflePlusPendingNotifier, 
 class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
   @override
   ShufflePlusPending build() {
+    // No placeholder rows unless Shuffle+ is on and no Jam runs, whatever the engine last said.
+    if (ref.watch(shuffleModeProvider) != ShuffleMode.plus || ref.watch(jamProvider.select((j) => j.active))) {
+      return ShufflePlusPending.none;
+    }
     final c = ref.watch(shufflePlusProvider).value;
     if (c == null) return ShufflePlusPending.none;
     void sync() {
@@ -273,13 +263,31 @@ class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
   }
 }
 
-/// The library index off the UI isolate.
 LibraryIndex _buildIndex(List<LibraryEntryLite> entries) => LibraryIndex(entries);
+
+/// The library index, built off the UI isolate and kept for 5 minutes (or
+/// until songs are added or removed): Shuffle+ and the genre pages ask the
+/// same question.
+final libraryIndexProvider = FutureProvider<LibraryIndex>((ref) async {
+  ref.watch(trackCountProvider.select((c) => c.value)); // import, scan, download, delete
+  final repo = ref.watch(trackRepositoryProvider);
+  var timer = Timer(const Duration(minutes: 5), ref.invalidateSelf);
+  ref.onDispose(() => timer.cancel());
+  try {
+    return await compute(_buildIndex, await repo.liteEntries());
+  } on Object {
+    // A failure is not kept for 5 minutes: the next ask retries soon.
+    timer.cancel();
+    timer = Timer(const Duration(seconds: 5), ref.invalidateSelf);
+    rethrow;
+  }
+});
 
 /// The online songs of a genre page (D-356): the library songs of the genre
 /// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,
 /// no yt-dlp, rate limit) but whether Shuffle+ is on or not. Worked out once
-/// per opening: every dependency is read once, before the first await, so a
+/// per opening: every dependency is read once, before the first await (the
+/// library index, read when the radio is about to be asked, apart), so a
 /// download or a promotion does not restart it. It stays for 5 minutes after
 /// the page is left, so opening the genre again does not repeat the requests.
 final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String>((ref, genre) {
@@ -296,14 +304,12 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
   final downloads = ref.read(downloadIndexProvider.future);
   final tool = ref.read(ytDlpStatusProvider.future);
   final probe = ref.read(networkProbeProvider);
-  final repo = ref.read(trackRepositoryProvider);
   final radio = ref.read(ytmRadioServiceProvider);
   final log = ref.read(suggestionLogProvider);
   final jam = ref.read(jamProvider).active;
   final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
-  final engine = ref.read(shufflePlusProvider.future);
   final gate = ref.read(radioGateProvider);
-  return _genreMix(
+  return genreMixOf(
     tracks: tracks,
     resolver: resolver,
     downloads: downloads,
@@ -318,47 +324,11 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
       if (net.metered && unmeteredOnly) return GenreMixOff.metered;
       return gate.rateLimited ? GenreMixOff.rateLimited : null;
     },
-    library: () async => (await engine)?.libraryIndex ?? await compute(_buildIndex, await repo.liteEntries()),
+    // Read after awaits: a disposed ref cannot read, and the mix is cancelled anyway.
+    library: () async => ref.mounted ? ref.read(libraryIndexProvider.future) : LibraryIndex(const []),
     cancelled: () => !ref.mounted,
   );
 });
-
-Stream<GenreMixState> _genreMix({
-  required Future<List<Track>> tracks,
-  required Future<SeedResolver> resolver,
-  required Future<DownloadIndex> downloads,
-  required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
-  required SuggestionLog log,
-  required RadioGate gate,
-  required Future<GenreMixOff?> Function() offReason,
-  required Future<LibraryIndex> Function() library,
-  required bool Function() cancelled,
-}) async* {
-  final list = await tracks;
-  if (list.length < genreMixEvery) return;
-  final index = await downloads;
-  yield* genreMix(
-    tracks: list,
-    resolver: await resolver,
-    radioPage: radioPage,
-    log: log,
-    gate: gate,
-    cancelled: cancelled,
-    offReason: offReason,
-    loadInLibrary: () async {
-      final lib = await library();
-      return (r) =>
-          index.contains(r.id) ||
-          lib.find(ImportRow(
-                index: 0,
-                title: r.title,
-                artists: r.artists.isEmpty ? [r.channel] : r.artists,
-                durationMs: r.duration?.inMilliseconds,
-              )) !=
-              null;
-    },
-  );
-}
 
 /// Told to the user once (rate limit, too many errors): the shell shows them.
 final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((ref) async* {

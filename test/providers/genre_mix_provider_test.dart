@@ -13,6 +13,8 @@ import 'package:codecore/providers/seed_resolver_provider.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/core/import_row.dart';
+import 'package:codecore/services/import/track_matcher.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/ytm_radio_parser.dart';
 import 'package:codecore/services/online/ytm_radio_service.dart';
@@ -73,6 +75,7 @@ void main() {
     NetworkProbe? probe,
     RadioGate? gate,
     Iterable<String> libraryIds = const [],
+    LibraryIndex? index,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final store = await SettingsStore.open();
@@ -108,6 +111,7 @@ void main() {
         writeDelay: const Duration(days: 1),
       )),
       shufflePlusProvider.overrideWith((ref) async => null),
+      if (index != null) libraryIndexProvider.overrideWith((ref) async => index),
       if (gate != null) radioGateProvider.overrideWithValue(gate),
       if (jam) jamProvider.overrideWith(_ActiveJam.new),
     ]);
@@ -169,7 +173,22 @@ void main() {
     await open(libraryIds: owned);
     final v = await settled();
     expect(v!.suggested, hasLength(3));
-    expect(v.suggested.where((r) => owned.contains(r.id)), isEmpty);
+    expect(v.suggested.where((s) => owned.contains(s.result.id)), isEmpty);
+  });
+
+  test('songs in the library index but not downloaded are not suggested', () async {
+    // «Title dl1-r0» by "Artist dl1 0" ... for every seed and row, as the radio serves them.
+    final index = LibraryIndex([
+      for (var i = 1; i <= 6; i++)
+        for (var j = 0; j < 10; j++)
+          if (j < 5)
+            LibraryEntryLite(id: i * 100 + j, title: 'Title dl$i-r$j', artist: 'Artist dl$i $j', durationMs: 200000),
+    ]);
+    await open(index: index);
+    final v = await settled();
+    expect(v!.suggested, hasLength(3));
+    final owned = RegExp(r'-r[0-4]$');
+    expect(v.suggested.where((s) => owned.hasMatch(s.result.id)), isEmpty);
   });
 
   test('the container closed in the middle of the mix: no more requests', () async {
