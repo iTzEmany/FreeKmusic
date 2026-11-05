@@ -42,6 +42,7 @@
 - Player vuoto: `_EmptyInfo` di `desktop_player_bar.dart:83` riusa la scheda del mini player; un helper `emptyPlayerAction(l, last)` accanto a `emptyPlayerSubtitle` (tooltip ▶ copiato in `desktop_player_bar.dart:337` e `mini_player.dart:339`); `playWhenEmpty` in `TrackOps`.
 - `GenreMixState`: lista di `(YtResult, seedTitle)` invece della mappa `seedTitles` parallela (col refactor di `interleave`); `shuffle_plus_controller.dart:571` usa `gate.nextAsk`.
 - `Skeleton`: i parametri senza chiamanti (`margin`, `card(title:)`, `label` su card/gridCell/bars) si tolgono se la fase 82 non li usa.
+- Registro su desktop: il dettaglio di un gruppo di download mostra tutti i brani del gruppo (oggi solo il primo).
 - `docs/02-architettura.md:398`: tetto di 60 s, `lastQueueProvider`/`resumeLastQueue`/`playShufflePlus` (D-364), `playStations` fuori da `_start`.
 
 ## Esiti
