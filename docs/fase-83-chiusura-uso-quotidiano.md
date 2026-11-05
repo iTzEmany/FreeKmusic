@@ -45,4 +45,16 @@
 - Registro su desktop: il dettaglio di un gruppo di download mostra tutti i brani del gruppo (oggi solo il primo).
 - `docs/02-architettura.md:398`: tetto di 60 s, `lastQueueProvider`/`resumeLastQueue`/`playShufflePlus` (D-364), `playStations` fuori da `_start`.
 
+## Dalla review della fase 82
+- `apply` (accetta singola e correzioni automatiche, anche `onSure` in `online_providers.dart:235`) ignora l'esito del file: passi da `_writeFile(..., backup: byUser)` come «Accetta tutte» e `revert`, così un file non scritto lascia la riga «File non aggiornato».
+- L'Annulla di «Accetta tutte» vive nella UI (`proposals_screen.dart:40-55`) con N transazioni: `TrackCorrections.revertAll(AcceptedAll)` in una transazione, file dopo.
+- Il Registro si aggiorna solo con `reload()` a mano (`proposal_card.dart:143`, `_undo`): il notifier ascolta `tableUpdates` di `activity_log` e i `reload()` si tolgono; `loadMore` non pagina per offset (salta righe inserite nel frattempo). `ActionButton` va in `lib/ui/widgets/` senza ricaricare il Registro.
+- Selezione desktop del Registro per `at` in ms (`activity_log_screen.dart:62`): le N righe di «Accetta tutte» possono avere lo stesso ms → per `LogEntry.id`.
+- Regola «Errori» scritta in SQL e in Dart (`LogEntry.failed`, `_counts`, `LIKE '%"noAnswer":true%'` legato al formato di `jsonEncode`): un solo helper; getter tipizzati su `LogEntry` per `file`, `noAnswer`, `old`/`new` (oggi letti crudi in `activity_log_entry.dart`).
+- `recogSourcesLine` (`activity_log_screen.dart:28-41`) riusa `recogSourceLabel`; la regola «artista vuoto = resta quello di prima» in un posto solo (`proposals_screen.dart:198` e `_applyDb`).
+- Un solo orologio: il `now` di `TrackCorrections` e gli `at: DateTime.now()` del notifier passano a `nowMs`.
+- Repository: `TrackRepository.setUserEdited` (oggi `revert` scrive `tracks.userEdited` diretto) e `ActivityLogRepository.byIds` coi blocchi dentro.
+- Filtro con conteggio 0: niente lettura di tutte le pagine (`activity_log_screen.dart:121`).
+- Documenti: `02-architettura.md` (:190 «in memoria, ultimi 500»; :360 revert e `revertible`; `acceptAll` in una transazione, `reopen` D-372, righe `correction` fallite senza old/new; :371 filtri e `countsByKind`; :377 Annulla/`undismiss`; :59 percorsi), `03-modello-dati.md:206` (`detail` per tipo di riga), `nowMsOverride`.
+
 ## Esiti
