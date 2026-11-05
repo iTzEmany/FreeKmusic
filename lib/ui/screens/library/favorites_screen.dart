@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_providers.dart';
@@ -23,8 +24,16 @@ import 'all_tracks_screen.dart';
 import '../../widgets/motion.dart';
 
 /// The favourites as a collection page (pinned in the Library).
-class FavoritesScreen extends ConsumerWidget {
+class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
+
+  @override
+  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
+  // A new sort is a new provider: keep the old list until it loads.
+  AsyncValue<List<Track>>? _prev;
 
   String _sortLabel(BuildContext context, SortOption o) {
     final l = context.l10n;
@@ -40,10 +49,11 @@ class FavoritesScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = context.l10n;
-    final tracks = ref.watch(tracksProvider(true));
     final query = ref.watch(trackQueryProvider(true));
+    final tracks = keepWhileLoading(ref.watch(tracksProvider(query)), _prev);
+    _prev = tracks;
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final list = tracks.value ?? const [];
@@ -128,7 +138,7 @@ SliverToBoxAdapter(
         slivers: [
           SliverAsyncBody(
             value: tracks,
-            onRetry: () => ref.invalidate(tracksProvider(true)),
+            onRetry: () => ref.invalidate(tracksProvider(query)),
             loading: rows,
             data: (_) => list.isEmpty ? emptyState : rows,
           ),

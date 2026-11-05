@@ -130,17 +130,6 @@ final radioRefreshProvider = Provider<Future<bool> Function()>((ref) => () => re
       onRequest: () => ref.read(radioCheckingProvider.notifier).set(true),
     ));
 
-/// A text for the Search tab to run in «Online» (from «Cerca questo brano»).
-class SearchPrefillNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  void set(String? text) => state = text;
-}
-
-final searchPrefillProvider =
-    NotifierProvider<SearchPrefillNotifier, String?>(SearchPrefillNotifier.new);
-
 /// How a typed `.pls` / `.m3u` address is downloaded (faked in tests).
 final playlistFetchProvider =
     Provider<Future<String> Function(Uri)>((ref) => (url) => fetchPlaylistText(url));

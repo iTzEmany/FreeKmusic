@@ -279,7 +279,7 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('radio-search')), 'rtl');
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Risultati'), findsOneWidget);
-    tester.widget<TextField>(find.byType(TextField)).controller!.clear();
+    await tester.enterText(find.byKey(const ValueKey('radio-search')), '');
     await tester.pump();
     expect(find.text('Risultati'), findsNothing);
     expect(find.text('Generi'), findsOneWidget);

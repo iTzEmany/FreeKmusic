@@ -67,4 +67,13 @@ void main() {
     c.read(trackQueryProvider(true).notifier).update((q) => q.copyWith(text: 'zzz'));
     expect(await c.read(favoriteCountProvider.future), 2);
   });
+
+  test('keepWhileLoading keeps the old value only while the new one loads', () {
+    const old = AsyncData<int>(1);
+    expect(keepWhileLoading<int>(const AsyncLoading(), old), old);
+    expect(keepWhileLoading<int>(const AsyncData(2), old), const AsyncData(2));
+    final err = AsyncError<int>('x', StackTrace.empty);
+    expect(keepWhileLoading<int>(err, old), err);
+    expect(keepWhileLoading<int>(const AsyncLoading(), null).isLoading, isTrue);
+  });
 }

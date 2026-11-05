@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +8,7 @@ import '../../../providers/track_ops.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/cc_search_field.dart';
 
 /// Multi-select over the whole library; pops with the chosen ids.
 class TrackPickerScreen extends ConsumerStatefulWidget {
@@ -24,7 +23,6 @@ class TrackPickerScreen extends ConsumerStatefulWidget {
 class _State extends ConsumerState<TrackPickerScreen> {
   static final _key = SelectionKey.picker.key;
   final _controller = TextEditingController();
-  Timer? _debounce;
   String _query = '';
   List<Track>? _lastFound;
 
@@ -40,7 +38,6 @@ class _State extends ConsumerState<TrackPickerScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -63,20 +60,10 @@ class _State extends ConsumerState<TrackPickerScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(CcDims.gap12),
-            child: TextField(
+            child: CcSearchField(
               controller: _controller,
-              onChanged: (t) {
-                _debounce?.cancel();
-                _debounce = Timer(CcTiming.debounce, () {
-                  if (mounted) setState(() => _query = t);
-                });
-              },
-              decoration: InputDecoration(
-                hintText: l.searchHint,
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
+              hint: l.searchHint,
+              onQuery: (v) => setState(() => _query = v),
             ),
           ),
           Expanded(

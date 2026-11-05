@@ -69,6 +69,16 @@ class TrackQuery {
         sort: sort ?? this.sort,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
       );
+
+  @override
+  bool operator ==(Object other) =>
+      other is TrackQuery &&
+      other.text == text &&
+      other.sort == sort &&
+      other.favoritesOnly == favoritesOnly;
+
+  @override
+  int get hashCode => Object.hash(text, sort, favoritesOnly);
 }
 
 class TrackQueryNotifier extends Notifier<TrackQuery> {
@@ -83,14 +93,13 @@ class TrackQueryNotifier extends Notifier<TrackQuery> {
 }
 
 /// Argument: favoritesOnly. Each list (all tracks / favourites) keeps its own
-/// search text and sort order.
+/// sort order; the search text lives in the screen that types it.
 final trackQueryProvider =
     NotifierProvider.family<TrackQueryNotifier, TrackQuery, bool>(
       TrackQueryNotifier.new,
     );
 
-final tracksProvider = StreamProvider.family<List<Track>, bool>((ref, fav) {
-  final q = ref.watch(trackQueryProvider(fav));
+final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) {
   return ref
       .watch(trackRepositoryProvider)
       .watchTracks(query: q.text, sort: q.sort, favoritesOnly: q.favoritesOnly);
@@ -380,3 +389,8 @@ final permissionDeniedProvider =
     NotifierProvider<PermissionDeniedNotifier, bool>(
       PermissionDeniedNotifier.new,
     );
+
+/// While a new query loads (and has no value yet) keep showing [prev]; an
+/// error or data shows at once.
+AsyncValue<T> keepWhileLoading<T>(AsyncValue<T> fresh, AsyncValue<T>? prev) =>
+    fresh.isLoading && !fresh.hasValue && prev != null ? prev : fresh;

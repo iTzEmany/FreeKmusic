@@ -7,6 +7,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/radio_ops.dart';
 import '../../../providers/radio_providers.dart';
+import '../../../providers/ui_providers.dart' show searchPrefillProvider;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import '../../../services/radio/radio_station.dart';

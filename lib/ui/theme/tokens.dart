@@ -136,6 +136,7 @@ abstract final class CcMotion {
   static const enter = Duration(milliseconds: 180);
   static const sheet = Duration(milliseconds: 250);
   static const page = Duration(milliseconds: 320);
+  static const skeletonDelay = Duration(milliseconds: 150); // skeletons appear only after this
   static const curveIn = Curves.easeOutCubic;
   static const curveOut = Curves.easeInCubic;
 

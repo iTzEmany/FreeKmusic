@@ -27,14 +27,12 @@ class RadioScreen extends ConsumerStatefulWidget {
 class _RadioScreenState extends ConsumerState<RadioScreen> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
-  Timer? _debounce;
   String _query = '';
   String? _genre;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_onChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // The saved stations are read again once a day, without waiting for it.
@@ -48,22 +46,9 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller.dispose();
     _focus.dispose();
     super.dispose();
-  }
-
-  void _onChanged() {
-    final v = _controller.text;
-    _debounce?.cancel();
-    if (v.trim().isEmpty) {
-      if (_query.isNotEmpty) setState(() => _query = ''); // cleared: no wait
-      return;
-    }
-    _debounce = Timer(CcTiming.radioDebounce, () {
-      if (mounted) setState(() => _query = v.trim());
-    });
   }
 
   @override
@@ -143,6 +128,8 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
                         controller: _controller,
                         focusNode: _focus,
                         hint: l.radioSearchHint,
+                        debounce: CcTiming.radioDebounce,
+                        onQuery: (v) => setState(() => _query = v),
                       ),
                       if (searching || _genre != null)
                         Padding(

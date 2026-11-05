@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/app_log.dart';
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_providers.dart';
@@ -127,6 +126,10 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   late final TrackQueryNotifier _query;
+  // Local: another AllTracksScreen open at the same time keeps its own text.
+  String _text = '';
+  // A new query is a new provider: keep the old list on screen until it loads.
+  AsyncValue<List<Track>>? _prev;
   // 1 = header, search and chips shown, 0 = hidden (the animation's goal).
   double _barTarget = 1;
   late final AnimationController _bar = AnimationController(
@@ -139,12 +142,10 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
     super.initState();
     // Captured now: `ref` must not be used from dispose().
     _query = ref.read(trackQueryProvider(false).notifier);
-    // Starts with an empty text (and the requested sort).
-    Future<void>.microtask(
-      () => _query.update(
-        (q) => q.copyWith(text: '', sort: widget.initialSort ?? q.sort),
-      ),
-    );
+    final sort = widget.initialSort;
+    if (sort != null) {
+      Future<void>.microtask(() => _query.update((q) => q.copyWith(sort: sort)));
+    }
   }
 
   @override
@@ -152,17 +153,6 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
     _bar.dispose();
     _controller.dispose();
     _scroll.dispose();
-    // Leaves the shared query clean; deferred, a provider cannot be written
-    // while the tree is unmounting (and the scope may be gone already).
-    final query = _query;
-    Future<void>.microtask(() {
-      try {
-        query.update((q) => q.copyWith(text: ''));
-      } on Exception {
-        // Expected when the whole scope closes with the screen (app exit).
-        AppLog.d('query not cleared: the scope is gone');
-      }
-    });
     super.dispose();
   }
 
@@ -235,8 +225,10 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final tracks = ref.watch(tracksProvider(false));
-    final query = ref.watch(trackQueryProvider(false));
+    final query = ref.watch(trackQueryProvider(false)).copyWith(text: _text);
+    final fresh = ref.watch(tracksProvider(query));
+    final tracks = keepWhileLoading(fresh, _prev);
+    _prev = tracks;
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final ctx = PlayContext(
@@ -279,7 +271,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
                     ),
                     child: CcSearchField(
                       controller: _controller,
-                      onQuery: (v) => _query.update((q) => q.copyWith(text: v)),
+                      onQuery: (v) => setState(() => _text = v),
                       hint: l.searchHint,
                     ),
                   ),
@@ -321,7 +313,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
                 child: AsyncBody(
                   value: tracks,
                   rowHeight: trackRowExtentOf(context, compact),
-                  onRetry: () => ref.invalidate(tracksProvider(false)),
+                  onRetry: () => ref.invalidate(tracksProvider(query)),
                   isEmpty: (list) => list.isEmpty,
                   empty: EmptyState(
                     icon: query.text.isEmpty

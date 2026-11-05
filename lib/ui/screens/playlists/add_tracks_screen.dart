@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +11,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/cc_search_field.dart';
 
 /// Pick saved tracks to put into a playlist: rows with a ＋ / ✓ circle and a
 /// fixed «Aggiungi N brani» bar at the bottom.
@@ -28,22 +27,13 @@ class AddTracksScreen extends ConsumerStatefulWidget {
 class _AddTracksScreenState extends ConsumerState<AddTracksScreen> {
   static final _key = SelectionKey.addTracks.key;
   final _controller = TextEditingController();
-  Timer? _debounce;
   String _query = '';
   List<Track>? _lastFound;
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
-  }
-
-  void _onChanged(String text) {
-    _debounce?.cancel();
-    _debounce = Timer(CcTiming.debounce, () {
-      if (mounted) setState(() => _query = text);
-    });
   }
 
   Future<void> _add() async {
@@ -86,13 +76,10 @@ class _AddTracksScreenState extends ConsumerState<AddTracksScreen> {
                   CcDims.margin,
                   CcDims.gap8,
                 ),
-                child: TextField(
+                child: CcSearchField(
                   controller: _controller,
-                  onChanged: _onChanged,
-                  decoration: InputDecoration(
-                    hintText: l.searchHint,
-                    prefixIcon: const Icon(Icons.search_rounded),
-                  ),
+                  hint: l.searchHint,
+                  onQuery: (v) => setState(() => _query = v),
                 ),
               ),
               Expanded(
