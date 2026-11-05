@@ -1,0 +1,96 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Tema e sfocatura</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css"><style>
+body{min-width:0;padding:32px 40px 80px}.wrap{max-width:1700px}.row{gap:32px}.cap,.note{max-width:360px}
+.prima-card{width:360px;border:1px solid #CFC8DC;border-radius:24px;padding:20px 24px;background:#fff;color:#1B1626}
+.prima-card p{font-size:14px;margin-bottom:8px}.prima-card p:last-child{margin-bottom:0}.prima-card b{color:#5B2BB5}.prima-card a{color:#5B2BB5}
+.demo{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;max-width:360px}
+.dbtn{min-height:48px;padding:0 16px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:700 14px/1 Figtree,sans-serif;cursor:pointer}
+.dbtn[aria-pressed=true],.dbtn.on{background:#5B2BB5;color:#fff}
+.dbtn:focus-visible,.dev button:focus-visible,.dev a:focus-visible,.dev input:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.dbg{margin-top:12px;max-width:360px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #CFC8DC;font-size:13px;color:#1B1626}.dbg b{color:#5B2BB5}
+.dev button,.dev a{cursor:pointer}
+[hidden]{display:none!important}
+.scr{padding-bottom:176px}
+.dock.blur{background:rgba(29,22,48,.68);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.dock.blur hr{border-top-color:rgba(255,255,255,.12)}
+.sq{display:block;width:52px;height:52px;border-radius:var(--r-list);flex:none}
+.sx{display:block}
+.fld{display:flex;align-items:center;height:48px;border-radius:var(--r-dock);background:var(--s3);padding-left:12px;gap:8px;color:var(--text)}
+.fld:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.fld input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--text);font:600 15px/1.35 Figtree,sans-serif}
+.fld input::placeholder{color:var(--muted);font-weight:400}.fld .btn{color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.chips button{flex:none;height:var(--target);padding:0 6px;display:flex;align-items:center}
+.chips button span{display:flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--text);white-space:nowrap}
+.chips button.on span{background:var(--accent-soft);color:var(--on-accent)}
+.pc{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+.shm{color:var(--muted);position:relative}.shm[aria-pressed=true]{color:var(--accent)}.shm[aria-pressed=true]::after{content:"";position:absolute;bottom:8px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.st{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 16px}.st .tx{flex:1;min-width:0}.st .t{font:var(--body-l)}.st .s{font:var(--small);color:var(--muted);margin-top:2px}
+.sw{width:56px;height:48px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 4px;position:relative}
+.sw i{display:block;width:48px;height:28px;border-radius:14px;background:var(--s3);position:relative;transition:background var(--t-enter)}
+.sw i::after{content:"";position:absolute;left:4px;top:4px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform var(--t-enter) var(--ease-out),background var(--t-enter)}
+.sw.on i{background:var(--accent)}.sw.on i::after{transform:translateX(20px);background:var(--on-accent)}
+.pvs{display:flex;gap:12px;padding:8px 16px 0}.pvw{flex:1;min-width:0;border-radius:var(--r-card);padding:2px}
+.pvw.sel{outline:2px solid var(--accent);outline-offset:2px}
+.pvb{height:96px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-radius:var(--r-card) var(--r-card) 0 0;overflow:hidden}.pvb i{display:block}
+.prevdock{margin:-26px 6px 0;position:relative;height:40px;border-radius:20px;background:var(--s2);display:flex;align-items:center;gap:8px;padding:0 12px 0 8px}
+.prevdock .pt{flex:1;height:6px;border-radius:3px;background:var(--s3)}
+.prevdock.blur{background:rgba(29,22,48,.68);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.pl2{font:var(--small);color:var(--muted);text-align:center;padding:8px 0}.hint{padding:12px 16px;font:var(--small);color:var(--muted)}.hint b{color:var(--accent-soft)}
+.prevdock{border-radius:20px}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+<symbol id="dev" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7H3zM1 18h14M18.5 10h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="mh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="dn" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></symbol>
+<symbol id="prev" viewBox="0 0 24 24"><path d="M6 5v14M19 5.5v13L9 12z"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M18 5v14M5 5.5v13L15 12z"/></symbol>
+<symbol id="rep" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13l-3-3M20 13v2a3 3 0 0 1-3 3H4l3 3"/></symbol>
+<symbol id="lyr" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 14v6M17 14l3 1"/></symbol>
+<symbol id="que" viewBox="0 0 24 24"><path d="M4 6h12M4 11h12M4 16h7M18 14v6M18 14l3 1"/></symbol>
+<symbol id="vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+<symbol id="ytm" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></symbol>
+<symbol id="sync" viewBox="0 0 24 24"><path d="M20 8a8 8 0 0 0-14-2L4 8M4 4v4h4M4 16a8 8 0 0 0 14 2l2-2M20 20v-4h-4"/></symbol>
+<symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></symbol>
+<symbol id="bars" viewBox="0 0 24 24"><path d="M6 20v-7M12 20V5M18 20v-10"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+<symbol id="note" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+<symbol id="new" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h5"/></symbol><symbol id="chk" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="drag" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol><symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol><symbol id="pal" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-.9 1.5-2-.6-1.3.2-2.5 1.6-2.5H17a3.5 3.5 0 0 0 3.5-3.5C20.5 7 16.8 3.5 12 3.5z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="8" r="1"/><circle cx="16" cy="11" r="1"/></symbol></defs></svg><div class="pg-h"><h1>Tema e sfocatura</h1><p>Superfici e ricerca: interruttore «Dock e intestazioni sfocati» nel Tema, con anteprima.</p></div><div class="nav"><a href="indice.html">Indice</a><a href="home.html">Home</a><a href="tutti-i-brani.html">Tutti i brani</a><a href="playlist.html">Playlist</a><a href="tema-sfocatura.html">Tema e sfocatura</a></div><div class="wrap"><div class="row"><div class="col"><h2 class="cap">Prima (oggi)</h2><div class="prima-card"><p>Il Tema ha solo la scelta del tema e dell'accento. Dock e intestazioni sono sempre opachi.</p><p>Con il dock flottante (F-75) il contenuto passa sotto di lui: l'utente può preferire un dock semitrasparente (D-406).</p></div></div>
+<div class="col"><h2 class="cap">Dopo, prova l'interruttore</h2><div class="dev phone" id="ph"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr" style="padding-bottom:24px"><div class="hd"><button class="btn" aria-label="Indietro"><svg class="i"><use href="#back"/></svg></button><h1>Tema</h1></div>
+<div class="sec"><h2>Aspetto</h2></div>
+<div class="st"><div class="tx"><div class="t">Tema</div><div class="s">Notte</div></div><svg class="i" style="color:var(--muted)"><use href="#dn"/></svg></div>
+<div class="st"><div class="tx"><div class="t">Colore d'accento</div><div class="s">Viola</div></div><span class="cv" style="width:24px;height:24px;border-radius:50%;background:var(--accent)"></span></div>
+<div class="sec"><h2>Superfici</h2></div>
+<div class="st"><div class="tx"><div class="t" id="lbl">Dock e intestazioni sfocati</div><div class="s" id="sub">Dock e intestazioni diventano semitrasparenti e sfocano ciò che scorre sotto. Può ridurre la fluidità sui telefoni meno potenti.</div></div><button class="sw" role="switch" aria-checked="false" aria-label="Dock e intestazioni sfocati"><i></i></button></div>
+<div class="sec"><h2>Anteprima</h2></div><div class="pvs"><div class="pvw"><div class="pvb"><i class="cv c1"></i><i class="cv c2"></i><i class="cv c3"></i><i class="cv c4"></i><i class="cv c5"></i><i class="cv c6"></i></div><div class="prevdock "><span class="cv c1" style="width:24px;height:24px;border-radius:50%"></span><span class="pt"></span><svg class="i" style="width:16px;height:16px"><use href="#pause"/></svg></div><div class="pl2">Opaco</div></div><div class="pvw"><div class="pvb"><i class="cv c1"></i><i class="cv c2"></i><i class="cv c3"></i><i class="cv c4"></i><i class="cv c5"></i><i class="cv c6"></i></div><div class="prevdock blur"><span class="cv c1" style="width:24px;height:24px;border-radius:50%"></span><span class="pt"></span><svg class="i" style="width:16px;height:16px"><use href="#pause"/></svg></div><div class="pl2">Sfocato</div></div></div><p class="hint" id="hint">Attivo: <b>opaco</b> (di serie)</p></div></div>
+<div class="demo"><button class="dbtn" id="reset">Riporta ai valori di serie</button></div></div>
+<div class="ann"><h2 class="cap">Note</h2><ol>
+<li><b>Interruttore nel Tema (D-406)</b><span>Una riga con titolo, sottotesto e Switch (area di tocco 48 dp, tutta la riga). Spento di serie. Il sottotesto avvisa del possibile calo di fluidità sui telefoni meno potenti (D-398: il Mi A3 ha una tolleranza più leggera). Riguarda dock e intestazioni insieme, non due impostazioni.</span></li>
+<li><b>Anteprima piccola</b><span>Due mini dock sopra gli stessi blocchi colorati: a sinistra opaco, a destra sfocato. Quello in uso ha il bordo in accento e la scritta sotto cambia. Il raggio resta quello del dock.</span></li>
+<li><b>Contrasto</b><span>Il dock sfocato resta al 68% di opacità di s2: le etichette restano leggibili sopra qualunque copertina. Nessun gradiente, nessuna ombra.</span></li>
+<li><b>Dove vale</b><span>Dock (tutte le schermate) e intestazioni che galleggiano, come la barra di ricerca e filtri della Libreria (isola, D-391). Nelle altre pagine di questa cartella il pulsante «Sfocatura dock» mostra lo stesso effetto.</span></li></ol></div></div></div><script>
+const sw=document.querySelector('.sw'),pvw=document.querySelectorAll('.pvw'),hint=document.getElementById('hint');
+function set(on){sw.classList.toggle('on',on);sw.setAttribute('aria-checked',on);pvw[0].classList.toggle('sel',!on);pvw[1].classList.toggle('sel',on);hint.innerHTML='Attivo: <b>'+(on?'sfocato':'opaco (di serie)')+'</b>'}
+sw.onclick=()=>set(sw.getAttribute('aria-checked')!=='true');
+document.querySelector('.st:has(.sw)').addEventListener('click',e=>{if(!e.target.closest('.sw'))sw.click()});
+document.getElementById('reset').onclick=()=>set(false);set(false);
+</script></body></html>

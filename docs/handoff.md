@@ -1,6 +1,8 @@
-# Handoff — 2026-11-05 (fase 85: debito della review della 83; prima la 84)
+# Handoff — 2026-11-05 (fase 86: JamMedia; prima la 85 e la 84)
 
 ## Stato
+**Fase 86 chiusa** (una PR, `docs/fase-86-jam-media.md`): `JamMedia` (`lib/providers/jam_media.dart`) fuori da `JamController`, `jam_providers.dart` da 1271 a 1073 righe, 7 test unitari nuovi in `jam_media_test.dart`.
+
 **Fase 85 chiusa** (una PR, `docs/fase-85-debito-review-83.md`): `playContextProvider` segue l'handler (anche Android Auto); tetto delle schede in streaming in `shadowWaitProvider`; ricerca fallita visibile nei selettori; test a tappeto dei pulsanti; `libraryIndexProvider` in `library_providers.dart`; regola «Shuffle+ acceso» unica (`plusOn`).
 
 **Fase 84 chiusa** (una PR). Dettagli ed esiti delle prove: `docs/fase-84-broker-e-debito-jam.md`.
@@ -11,11 +13,12 @@
 
 Prompt di avvio (nuova chat nella cartella del progetto):
 ```
-/obiettivo
+/obiettivo fase 87
 ```
 
 ## Da sapere
-- Decisioni: fino a D-383 (la 85 non ne aggiunge). Le prove a due telefoni le fa l'agente via adb; il Motorola fa solo l'host in «Coda dell'host» e va tenuto sveglio (`KEYCODE_WAKEUP`, si sospende dopo 30 min).
+- Refactor «superfici-e-ricerca» pianificato (D-384…D-418): fasi 87–97; analisi in `docs/refactor/superfici-e-ricerca/analisi.md`, mockup approvati in `docs/refactor/superfici-e-ricerca/mockup/` (`indice.html`). Prossima: `/obiettivo fase 87`.
+- Decisioni: fino a D-418. Le prove a due telefoni le fa l'agente via adb; il Motorola fa solo l'host in «Coda dell'host» e va tenuto sveglio (`KEYCODE_WAKEUP`, si sospende dopo 30 min).
 - In LAN non c'è un «Entra» da ospite: si preme «Jam» sulla riga dell'altro telefono e **chi accetta diventa host**.
 - «Sospendi» e «Blocca» esistono solo nel dialogo della richiesta in arrivo, non per un ospite già dentro.
 - Il launcher del Mi A3 oggi è `com.codecore.player/.IconArancioDark` (non più `IconAmbraDark`).
@@ -51,6 +54,6 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-1. **(Consigliato)** `JamMedia` fuori da `jam_providers.dart` (~190 righe di risoluzione dei file: `_remoteUri`, `_resolve`, `_localMeta`, `fetchCover`, `_precache`…), con un getter per dipendenza come `JamPart`.
-2. Unificare le due code delle domande sulla cassa.
+1. **(Consigliato)** Fase 87 e seguenti: il refactor «superfici-e-ricerca» (fasi 87–97, piano già scritto).
+2. Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
 3. Ricerca «notte», build p99 (D-176); picco di ~54 ms alla prima visita di ogni scheda della Libreria (F-60).

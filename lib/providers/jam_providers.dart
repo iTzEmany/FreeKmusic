@@ -27,7 +27,6 @@ import '../services/jam/jam_output.dart';
 import '../services/jam/jam_part_feeder.dart';
 import '../services/jam/jam_state.dart';
 import '../services/jam/remote/jam_remote_items.dart';
-import '../services/jam/remote/jam_remote_meta.dart';
 import '../services/online/download_index.dart';
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/share/track_meta.dart';
@@ -40,12 +39,12 @@ import '../services/jam/speaker_jam.dart';
 import '../services/share/discovery.dart';
 import 'database_providers.dart';
 import 'jam_local_queue.dart';
-import 'library_providers.dart' show coverStoreProvider, libraryQueriesProvider;
-import 'online_providers.dart' show creditsRepositoryProvider, curiosityServiceProvider, lyricsChainProvider;
+import 'library_providers.dart' show libraryQueriesProvider;
 import 'player_providers.dart';
 import 'settings_providers.dart';
 import 'share_hub.dart';
 import 'share_providers.dart';
+import 'jam_media.dart';
 import 'jam_part.dart';
 import 'jam_broker_providers.dart' show jamCryptoProvider, remoteJamGuestFactoryProvider;
 import 'youtube_providers.dart' show downloadIndexProvider;
@@ -243,7 +242,6 @@ class JamController extends Notifier<JamUiState> {
   @visibleForTesting
   JamGuest Function(JamHost) guestFactory = (h) => JamGuest(local: h);
   JamOutput? _output;
-  JamCache? _cache;
   JamClock? _clock;
   JamTransport? _transport;
   CodecoreAudioHandler? _attachedTo;
@@ -273,15 +271,6 @@ class JamController extends Notifier<JamUiState> {
 
   @visibleForTesting
   void debugState(JamState s) => _onState(s);
-
-  /// Cache keys pinned for the queue (counted pins: the player's own pins add up).
-  final _pinned = <String>{};
-
-  /// Keys whose own download failed: not retried on every state change.
-  final _selfFailed = <String>{};
-
-  Dio? _dio;
-  Dio get _http => _dio ??= Dio(BaseOptions(connectTimeout: const Duration(seconds: 5)));
 
   final _incoming = StreamController<JamRequest>.broadcast();
   final _onlineFailed = StreamController<YtResult>.broadcast();
@@ -690,14 +679,14 @@ class JamController extends Notifier<JamUiState> {
     final cache = JamCache(dir);
     await cache.clear();
     if (state.phase == JamPhase.ended) return;
-    _cache = cache;
+    _media.cache = cache;
     _failures = 0;
     final clock = _clock = _makeClock(role);
     _output =
         JamOutput(
             deviceId: _ownId,
             backend: ref.read(jamBackendFactoryProvider)(),
-            resolve: _resolve,
+            resolve: _media.resolve,
             clock: clock,
             latencyMs: ref.read(settingsProvider).jamLatencyMs,
           )
@@ -715,9 +704,9 @@ class JamController extends Notifier<JamUiState> {
             send(JamCommand.trackEnded(id));
           }
           ..onItemFailed = _onItemFailed;
-    _host?.resolveFile = _localFile;
-    _host?.resolveMeta = _localMeta;
-    _host?.resolveCover = _localCover;
+    _host?.resolveFile = _media.localFile;
+    _host?.resolveMeta = _media.localMeta;
+    _host?.resolveCover = _media.localCover;
     // The notification and the lock screen now speak for the Jam.
     final handler = ref.read(audioHandlerProvider);
     _attachedTo = handler;
@@ -781,8 +770,8 @@ class JamController extends Notifier<JamUiState> {
       return;
     }
     unawaited(_output?.apply(s));
-    _precache(s);
-    _syncPins(s);
+    _media.precache(s);
+    _media.syncPins(s);
     _adder?.seen(s.items);
     _part.notePlayed(s);
     unawaited(_part.feeder?.update(s));
@@ -799,192 +788,11 @@ class JamController extends Notifier<JamUiState> {
     send(JamCommand.trackEnded(id)); // skip to the next one
   }
 
-  Uri? _remoteUri(JamItem item, {String route = 'file'}) {
-    final s = state.jam;
-    final sid = state.role == JamRole.guest
-        ? _guest?.files?.sessionId
-        : _host?.sessionId;
-    if (s == null || sid == null) return null;
-    final owner = s.participant(item.ownerDeviceId);
-    if (owner == null) return null;
-    // The host is reached at the address a guest used to join; a guest at
-    // the one the host saw for it.
-    String? base;
-    if (owner.id == s.hostDeviceId) {
-      base = state.role == JamRole.guest ? _guest?.files?.hostBase : null;
-    } else if (owner.host.isNotEmpty) {
-      base = 'http://${owner.host}:${owner.port}/jam';
-    }
-    return base == null ? null : Uri.parse('$base/$sid/$route/${item.id}');
-  }
+  late final _media = JamMedia(() => ref, () => _ownId, () => state, () => _host, () => _guest?.files);
 
-  Map<String, String> get _headers => {
-    jamFileHeader:
-        (state.role == JamRole.guest ? _guest?.files?.fileToken : _host?.fileToken) ??
-        '',
-  };
+  Future<Uint8List?> fetchCover(JamItem item) => _media.fetchCover(item);
 
-  Future<JamSource?> _resolve(JamItem item) async {
-    if (item.ownerDeviceId == _ownId) {
-      final path = await _localFile(item);
-      return path == null ? null : JamSource.local(path);
-    }
-    final uri = _remoteUri(item);
-    final remote = uri == null ? null : JamSource.remote(uri, _headers);
-    // Synchronised outputs play from the local copy: no network jitter.
-    if (uri != null && (state.jam?.synced ?? false) && _cache != null) {
-      await _cache!.fetch(item, uri, _headers);
-    }
-    // Owner gone or not answering: an online track comes from its YouTube id.
-    final sj = state.jam;
-    if (sj != null && uri == null) {
-      final own = await _selfSource(item, sj);
-      if (own != null) return own;
-    }
-    return _cache?.sourceFor(item, remote);
-  }
-
-  /// The item from its YouTube id. A synchronised Jam waits for the whole file; otherwise it
-  /// starts from the stream address as the player does (R-71) while the download goes on.
-  Future<JamSource?> _selfSource(JamItem item, JamState s) async {
-    if (s.synced || !item.selfFetchable) {
-      final f = await _selfFetch(item);
-      return f == null ? null : JamSource.local(f.path);
-    }
-    final p = ref.read(streamPreparerProvider);
-    final key = jamVideoKey(item), r = jamYtResult(item);
-    try {
-      final begin = await p.start(key, r);
-      final file = begin.file;
-      if (file != null) return JamSource.local(file.path);
-      unawaited(p.ready(key, r).then<void>((_) {},
-          onError: (Object e, StackTrace st) => AppLog.w('jam: own download of $key failed', e, st)));
-      return JamSource.remote(begin.url!, begin.headers);
-    } on Object catch (e, st) {
-      AppLog.w('jam: own start of $key failed', e, st);
-      return null;
-    }
-  }
-
-  /// The row of an item this device owns: library, or the shadow row of a `yt:` track.
-  /// Full rows: lyrics and curiosities are there.
-  Future<Track?> _localRow(JamItem item) async {
-    final tracks = ref.read(trackRepositoryProvider);
-    final key = jamCacheKey(item);
-    final id = int.tryParse(item.ref ?? '');
-    if (key != null) {
-      final path = (await ref.read(downloadIndexProvider.future)).pathForKey(key);
-      final row = await tracks.streamRow(key) ?? (path == null ? null : await tracks.byPath(path));
-      if (row != null) return row;
-    }
-    // A remote guest's own library item is `yt:`-keyed: its row id is in the part key.
-    final rowId = id ?? (item.partKey == null ? null : jamPartKeyId(item.partKey!));
-    return rowId == null ? null : tracks.getById(rowId);
-  }
-
-  Future<TrackMeta?> _localMeta(JamItem item) async {
-    final row = await _localRow(item);
-    if (row == null) return null;
-    final c = await ref.read(creditsRepositoryProvider).portableOf(row.id);
-    return TrackMeta.fromTrack(row, credits: c.credits, details: c.details);
-  }
-
-  Future<String?> _localCover(JamItem item) async {
-    final key = (await _localRow(item))?.coverKey;
-    return key == null ? null : ref.read(coverStoreProvider).fileFor(key)?.path;
-  }
-
-  /// The owner's cover image, or null (ours: the screen has it locally; any failure: no cover).
-  Future<Uint8List?> fetchCover(JamItem item) async {
-    // A remote guest has no route to the owner: covers come from the video id (R-154).
-    final uri = item.ownerDeviceId == _ownId || state.remote ? null : _remoteUri(item, route: 'cover');
-    if (uri == null) return null;
-    try {
-      final r = await _http.getUri<List<int>>(uri,
-          options: Options(
-              headers: _headers,
-              responseType: ResponseType.bytes,
-              receiveTimeout: const Duration(seconds: 8)));
-      final d = r.data;
-      return d == null ? null : Uint8List.fromList(d);
-    } on DioException catch (e) {
-      AppLog.w('jam: no cover for ${item.title}', e);
-      return null;
-    }
-  }
-
-  /// What the info screen shows: from the owner (ours: local), else the item's own fields.
-  Future<TrackMeta> fetchMeta(JamItem item) async {
-    if (item.ownerDeviceId == _ownId) {
-      final local = await _localMeta(item);
-      if (local != null) return local;
-      return state.remote
-          ? _remoteMeta.of(item)
-          : TrackMeta(title: item.title, artist: item.artist, album: item.album);
-    }
-    // No route to the owner (a remote guest, or a remote guest's track): lyrics and
-    // curiosities looked up here and written nowhere (R-155).
-    final uri = _remoteUri(item, route: 'meta');
-    if (uri == null) return _remoteMeta.of(item);
-    return jamFetchMeta(item, uri, _headers, dio: _http);
-  }
-
-  late final _remoteMeta = JamRemoteMeta(
-    lyrics: (t) => ref.read(lyricsChainProvider).find(t),
-    curiosity: (t) => ref.read(curiosityServiceProvider).find(t, ref.read(settingsProvider).language),
-  );
-
-  Future<File?> _selfFetch(JamItem item) {
-    if (!item.selfFetchable) return Future.value();
-    return jamFetchByVideoId(item, (k, r) => ref.read(streamPreparerProvider).ready(k, r));
-  }
-
-  Future<String?> _localFile(JamItem item) async => jamLocalFile(
-      item, ref.read(streamCacheProvider), ref.read(trackRepositoryProvider),
-      index: await ref.read(downloadIndexProvider.future));
-
-  /// Our own online items still to play (current and upcoming) stay in the cache (D-81).
-  void _syncPins(JamState? s) {
-    final want = jamPinKeys(s, _ownId);
-    if (want.isEmpty && _pinned.isEmpty) return; // no cache needed in a library-only Jam
-    final cache = ref.read(streamCacheProvider);
-    for (final k in _pinned.difference(want)) {
-      cache.unpin(k);
-    }
-    for (final k in want.difference(_pinned)) {
-      cache.pin(k);
-    }
-    _pinned
-      ..clear()
-      ..addAll(want);
-  }
-
-  /// Next remote item goes to the cache; everything else is dropped.
-  void _precache(JamState s) {
-    final cache = _cache;
-    if (cache == null) return;
-    final keep = <int>{};
-    final cur = s.current;
-    final nextIdx = s.currentIndex + 1;
-    final next = nextIdx >= 0 && nextIdx < s.items.length
-        ? s.items[nextIdx]
-        : null;
-    for (final i in [cur, next]) {
-      if (i == null) continue;
-      keep.add(i.id);
-    }
-    unawaited(cache.prune(keep));
-    for (final i in jamSelfFetchTargets(s, _ownId, failed: _selfFailed)) {
-      unawaited(_selfFetch(i).then((f) {
-        if (f == null) _selfFailed.add(jamCacheKey(i)!);
-      }));
-    }
-    for (final i in [cur, next]) {
-      if (i == null || i.ownerDeviceId == _ownId) continue;
-      final uri = _remoteUri(i);
-      if (uri != null) unawaited(cache.fetch(i, uri, _headers));
-    }
-  }
+  Future<TrackMeta> fetchMeta(JamItem item) => _media.fetchMeta(item);
 
   // ---- commands ------------------------------------------------------------
 
@@ -1173,7 +981,6 @@ class JamController extends Notifier<JamUiState> {
 
   Future<void> _teardown({bool release = true}) async {
     _phoneOnly = false;
-    _remoteMeta.clear();
     _hub.speakerJamName = null;
     _alive?.cancel();
     _alive = null;
@@ -1195,14 +1002,9 @@ class JamController extends Notifier<JamUiState> {
     _transport = null;
     await _output?.dispose();
     _output = null;
-    await _cache?.clear();
-    _cache = null;
     _adder?.dispose();
     _adder = null;
-    _syncPins(null);
-    _selfFailed.clear();
-    _dio?.close();
-    _dio = null;
+    await _media.dispose();
     _host?.resolveFile = null;
     _host?.resolveMeta = null;
     _host?.resolveCover = null;

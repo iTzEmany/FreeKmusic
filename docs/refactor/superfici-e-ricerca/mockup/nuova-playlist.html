@@ -1,0 +1,100 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1400"><title>Mockup Nuova playlist</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css"><style>
+.scr{overflow:hidden;padding:0}
+.bk .hd{padding-top:8px}
+.sq{display:block;width:52px;height:52px;border-radius:var(--r-list);flex:none}
+.scrim{position:absolute;inset:0;background:rgba(7,5,12,.62);z-index:8;opacity:0;visibility:hidden;transition:opacity var(--t-sheet) var(--ease-out),visibility 0s linear var(--t-player)}
+.sheet{position:absolute;left:0;right:0;top:28px;bottom:0;z-index:9;background:var(--s1);border-radius:var(--r-sheet) var(--r-sheet) 0 0;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);visibility:hidden;transition:transform var(--t-player) var(--ease-out),visibility 0s linear var(--t-player)}
+.open .scrim{opacity:1;visibility:visible;transition-delay:0s}.open .sheet{transform:none;visibility:visible;transition-delay:0s}
+.sh-h{display:flex;align-items:center;gap:4px;min-height:56px;padding:4px 16px 0 4px}
+.sh-h h1{font:600 16px/1.2 Unbounded,sans-serif;letter-spacing:-.01em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fixed{flex:none;padding:0 16px 8px}
+.trk{display:flex;align-items:center;gap:12px;padding:4px 0 12px}
+.trk .tx{min-width:0}.trk .k{font:var(--small);color:var(--muted)}.trk .t{font:var(--body-l)}.trk .s{font:var(--small);color:var(--muted)}
+.nm{display:flex;align-items:center;gap:8px}
+.nm input{flex:1;min-width:0;height:52px;background:var(--s2);border:0;border-radius:26px;padding:0 18px;color:var(--text);font:var(--body-l);caret-color:var(--accent);outline:0}
+.nm input::placeholder{color:var(--muted);font-weight:500}
+.nm input:focus-visible{outline:2px solid var(--accent-soft)}
+.crea{height:var(--target);padding:0 22px;border-radius:var(--r-dock);background:var(--accent);color:var(--on-accent)!important;font:var(--body-l)!important;transition:opacity var(--t-enter)}
+.crea[aria-disabled=true]{opacity:.35}
+.sc{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;text-align:left;border-radius:var(--r-card)}
+.sc .ib{width:40px;height:40px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--accent-soft);flex:none}.sc .ib .i{width:20px;height:20px}
+.sc .tx{flex:1;min-width:0}.sc .t{font:var(--body-l)}.sc .s{font:var(--small);color:var(--muted)}.sc>.i{color:var(--muted)}
+.pls{flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:24px}.pls::-webkit-scrollbar{display:none}
+.pls .row2{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:6px 16px;text-align:left}
+.pls .row2:active{background:var(--s2)}
+.pls .tx{flex:1;min-width:0}.pls .t{font:var(--body-l);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pls .s{font:var(--small);color:var(--muted)}
+.tag{font:var(--small);color:var(--accent-soft);background:var(--s2);border-radius:var(--r-card);padding:2px 8px}
+.pres{display:inline-flex;align-items:center;gap:4px;font:var(--small);color:var(--muted)}.pres .i{width:16px;height:16px}
+.pres.ok{color:var(--accent-soft)}
+.row2.new{animation:ne var(--t-sheet) var(--ease-out)}@keyframes ne{from{opacity:0;transform:translateY(-12px)}}
+.snack{position:absolute;left:12px;right:12px;bottom:20px;z-index:12;background:var(--s3);color:var(--text);border-radius:var(--r-card);padding:14px 16px;font:var(--body-l);opacity:0;visibility:hidden;transform:translateY(16px);transition:opacity var(--t-enter) var(--ease-out),transform var(--t-enter) var(--ease-out),visibility 0s linear var(--t-enter)}
+.snack.on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.pcard{width:360px;padding:16px;background:#fff;border:1px solid #D6D0E2;border-radius:12px;font-size:14px;color:#1B1626}.pcard p+p{margin-top:8px}
+.tg{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap;width:360px}
+.tg button{min-height:48px;padding:0 18px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:600 14px Figtree,sans-serif;cursor:pointer}
+.tg button:focus-visible,.dev button:focus-visible,.dev a:focus-visible,.dev input:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.cols{display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="bolt" viewBox="0 0 24 24"><path d="M4 7h10M4 12h7M4 17h4M17 9l2.5 2.5L17 14M20.5 5.5l-4 4"/><circle cx="18" cy="17" r="3"/></symbol>
+<symbol id="csv" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20zM14 3.5V8h4M9 13h6M9 16.5h6"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+</defs></svg><div class="pg-h"><h1>Nuova playlist e Aggiungi alla playlist</h1><p>Un solo foglio a schermo intero che sale dal basso (D-405, F-83). Interattivo: apri, scrivi un nome, tocca le playlist.</p></div><div class="nav"><a href="indice.html">Indice</a><a href="libreria.html">Libreria</a><a href="nuova-playlist.html">Nuova playlist</a><a href="playlist-intelligente.html">Playlist intelligente</a></div><div class="wrap"><div class="row"><div class="col prima"><h2 class="cap">Prima (oggi)</h2><div class="pcard"><p><b>Tre passi</b>: «+» apre un foglio di scelte, «Nuova playlist» apre un dialog, il nome si scrive in un terzo dialog (new_playlist_menu.dart:21-57, create_flows.dart:11-16).</p><p>«Aggiungi alla playlist» è un altro foglio (playlist_dialogs.dart:75-115) che per creare ne richiama il flusso a tre passi.</p><p>Le playlist esistenti non si vedono mentre si sceglie «Nuova».</p></div></div>
+<div class="ann"><h2 class="cap">Cosa cambia</h2><ol>
+<li><b>F-83 · D-405: un foglio, un passo</b><span>Sale dal basso a schermo intero (--t-player, ease-out; lo sfondo si scurisce). In alto il campo del nome con «Crea», attivo solo con un nome scritto; il campo ha già il fuoco. La tastiera non è disegnata: spingerebbe su l'elenco, che scorre.</span></li>
+<li><b>Scorciatoie</b><span>«Playlist intelligente» (apre l'<a href="playlist-intelligente.html" style="color:#5B2BB5">editor a filtri</a>) e «Importa CSV». Righe da 64 dp, non pulsanti di scena.</span></li>
+<li><b>«Le tue playlist»</b><span>Sotto, sempre visibili: il tocco apre la playlist (qui: avviso e chiusura). Le intelligenti hanno l'etichetta. Dopo «Crea» la nuova compare in cima e il foglio si chiude aprendola.</span></li>
+<li><b>Seconda variante: Aggiungi alla playlist</b><span>Stesso foglio. In cima il brano da aggiungere, il campo si chiama «Nuova playlist» (crea e aggiunge). Il tocco su una playlist aggiunge il brano e chiude con avviso; se c'è già mostra «Già presente» e non fa nulla. Le intelligenti non compaiono (non si riempiono a mano).</span></li>
+<li><b>Scelta mia</b><span>Dopo «Crea» in «Nuova playlist» il foglio si chiude e apre la playlist vuota (come dice la decisione per il tocco), invece di restare aperto. Da confermare.</span></li>
+</ol></div></div>
+<div class="row"><div class="cols">
+<div class="col"><h2 class="cap">Dopo · Nuova playlist</h2><div class="tg"><button data-p="A" data-a="open">Apri il foglio</button><button data-p="A" data-a="type">Scrivi un nome</button><button data-p="A" data-a="reset">Ricomincia</button></div><div class="dev phone" id="pA" role="group" aria-label="Nuova playlist"></div></div>
+<div class="col"><h2 class="cap">Dopo · Aggiungi alla playlist</h2><div class="tg"><button data-p="B" data-a="open">Apri il foglio</button><button data-p="B" data-a="type">Scrivi un nome</button><button data-p="B" data-a="reset">Ricomincia</button></div><div class="dev phone" id="pB" role="group" aria-label="Aggiungi alla playlist"></div></div>
+</div></div></div>
+<script>
+var PL0=[['Preferiti',148,2,0],['In macchina',12,6,0],['Notte',5,4,1],['Dalla in viaggio',18,1,0],['Corsa',24,3,0],['Studio',31,7,0],['Cena con amici',16,5,1],['Anni 70',40,2,0],['Mai ascoltati',312,4,'s'],['Rock anni 70',128,1,'s']];
+function e(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function ic(id,c){return '<svg class="i'+(c?' '+c:'')+'" aria-hidden="true"><use href="#'+id+'"/></svg>'}
+function backScreen(m){var rows=m==='A'?[['Dalla','Album · Lucio Dalla · 12 brani',1],['In macchina','Playlist · 12 brani',2],['Kid A','Album · Radiohead · 10 brani',4],['Daft Punk','Artista · 31 brani',3],['Notte','Playlist · 5 brani',6],['Hounds of Love','Album · Kate Bush · 12 brani',7]]:[['Caruso','Lucio Dalla',5],['Cara','Lucio Dalla',1],['Futura','Lucio Dalla',4],['Anna e Marco','Lucio Dalla',2],['Piazza Grande','Lucio Dalla',6],['Kid A','Radiohead',4]];
+ return '<div class="bk"><div class="hd"><h1>'+(m==='A'?'Libreria':'Tutti i brani')+'</h1></div>'+rows.map(function(r){return '<div class="li"><span class="sq cv c'+r[2]+'"></span><div class="tx"><div class="t">'+r[0]+'</div><div class="s">'+r[1]+'</div></div></div>'}).join('')+'</div>'}
+var DOCK='<nav class="dock" aria-hidden="true"><div class="tabs"><a class="tab"><span class="ic">'+ic('home')+'</span>Home</a><a class="tab"><span class="ic">'+ic('search')+'</span>Cerca</a><a class="tab on"><span class="ic">'+ic('lib')+'</span>Libreria</a><a class="tab"><span class="ic">'+ic('mem')+'</span>Memoria</a></div></nav>';
+function Sheet(el,m){
+ var S={el:el,m:m,pl:PL0.map(function(p){return p.slice()}),name:'',tm:0};
+ el.innerHTML='<div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="scr">'+backScreen(m)+'</div>'+DOCK+'<div class="scrim"></div>'+
+ '<div class="sheet" role="dialog" aria-label="'+(m==='A'?'Nuova playlist':'Aggiungi alla playlist')+'" inert><div class="sh-h"><button class="btn" data-x aria-label="Chiudi">'+ic('close')+'</button><h1>'+(m==='A'?'Nuova playlist':'Aggiungi alla playlist')+'</h1></div><div class="fixed">'+
+ (m==='B'?'<div class="trk"><span class="sq cv c4"></span><div class="tx"><div class="k">Brano da aggiungere</div><div class="t">Futura</div><div class="s">Lucio Dalla · Canzoni · 3:52</div></div></div>':'')+
+ '<form class="nm"><input type="text" aria-label="'+(m==='A'?'Nome della playlist':'Nuova playlist')+'" placeholder="'+(m==='A'?'Nome della playlist':'Nuova playlist')+'" autocomplete="off"><button class="crea" type="submit" aria-disabled="true">Crea</button></form>'+
+ (m==='A'?'<div style="padding-top:8px"><button class="sc" data-go="playlist-intelligente.html"><span class="ib">'+ic('bolt')+'</span><span class="tx"><span class="t">Playlist intelligente</span><br><span class="s">Con filtri: si aggiorna da sola</span></span>'+ic('chev')+'</button><button class="sc" data-csv><span class="ib">'+ic('csv')+'</span><span class="tx"><span class="t">Importa CSV</span><br><span class="s">Da un file con titolo e artista</span></span>'+ic('chev')+'</button></div>':'')+
+ '</div><div class="sec" style="padding-top:8px"><h2>Le tue playlist</h2></div><div class="pls"></div></div><div class="snack" role="status"></div>';
+ var q=function(s){return el.querySelector(s)},inp=q('input'),crea=q('.crea'),snack=q('.snack');
+ S.say=function(t){snack.textContent=t;snack.classList.add('on');clearTimeout(S.tm);S.tm=setTimeout(function(){snack.classList.remove('on')},2600)};
+ S.draw=function(fresh){q('.pls').innerHTML=S.pl.filter(function(p){return m==='A'||p[3]!=='s'}).map(function(p,i){
+  var r=p[3]==='s'?'<span class="tag">Intelligente</span>':m==='B'&&p[3]===1?'<span class="pres">'+ic('check')+'Già presente</span>':m==='B'&&p[3]==='ok'?'<span class="pres ok">'+ic('check')+'Aggiunto</span>':'';
+  return '<button class="row2'+(fresh&&i===0?' new':'')+'" data-i="'+S.pl.indexOf(p)+'"><span class="sq cv c'+p[2]+'"></span><span class="tx"><span class="t">'+e(p[0])+'</span><br><span class="s">'+p[1]+(p[1]===1?' brano':' brani')+'</span></span>'+r+'</button>'}).join('');
+  [].forEach.call(el.querySelectorAll('.row2'),function(b){b.onclick=function(){var p=S.pl[+b.dataset.i];
+   if(m==='A'){S.close();S.say('Aperta «'+p[0]+'»')}
+   else if(p[3]===1||p[3]==='ok')S.say('Il brano è già in «'+p[0]+'»');
+   else{p[3]='ok';p[1]++;S.draw();S.say('Aggiunto a «'+p[0]+'»');setTimeout(S.close,700)}}})};
+ S.open=function(){el.classList.add('open');q('.sheet').inert=false;if(m==='A')inp.focus({preventScroll:true});else q('[data-x]').focus()};
+ S.close=function(){el.classList.remove('open');q('.sheet').inert=true};
+ S.set=function(v){inp.value=v;crea.setAttribute('aria-disabled',!v.trim())};
+ S.reset=function(){S.close();S.pl=PL0.map(function(p){return p.slice()});S.set('');S.draw();snack.classList.remove('on')};
+ inp.oninput=function(){S.set(inp.value)};
+ q('form').onsubmit=function(ev){ev.preventDefault();var v=inp.value.trim();if(!v){inp.focus();return}
+  S.pl.unshift([v,m==='A'?0:1,(S.pl.length%7)+1,m==='A'?0:'ok']);S.set('');S.draw(true);
+  if(m==='A'){S.say('Creata «'+v+'»: la apro');setTimeout(S.close,700)}else{S.say('Creata «'+v+'» con il brano');setTimeout(S.close,700)}};
+ q('[data-x]').onclick=S.close;
+ q('[data-csv]')&&(q('[data-csv]').onclick=function(){S.say('Scegli un file CSV (selettore di sistema)')});
+ q('[data-go]')&&(q('[data-go]').onclick=function(){location.href='playlist-intelligente.html'});
+ el.addEventListener('keydown',function(ev){if(ev.key==='Escape')S.close()});
+ S.draw();return S}
+var P={A:Sheet(document.getElementById('pA'),'A'),B:Sheet(document.getElementById('pB'),'B')};
+[].forEach.call(document.querySelectorAll('.tg button'),function(b){b.onclick=function(){var s=P[b.dataset.p],a=b.dataset.a;
+ if(a==='open')s.open();else if(a==='reset')s.reset();else{s.open();s.set(s.m==='A'?'Corsa del mattino':'Weekend');}}});
+</script></body></html>

@@ -1,0 +1,202 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1400"><title>Mockup Playlist intelligente</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css"><style>
+#ph .scr{top:84px;padding:4px 16px 190px;overflow-y:auto}
+#ph .top{position:absolute;left:0;right:0;top:28px;height:56px;display:flex;align-items:center;gap:4px;padding:0 16px 0 4px;background:var(--bg);z-index:3}
+#ph .top h1{font:600 16px/1.2 Unbounded,sans-serif;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{font:var(--small);color:var(--muted);margin:8px 0 4px 4px}
+.inp{width:100%;height:52px;background:var(--s2);border:0;border-radius:26px;padding:0 18px;color:var(--text);font:var(--body-l);caret-color:var(--accent);outline:0}
+.inp::placeholder{color:var(--muted);font-weight:500}
+.segm{display:flex;background:var(--s2);border-radius:var(--r-dock);padding:4px}
+.segm button{flex:1;min-height:48px;border-radius:24px;font:var(--body-l)!important;color:var(--muted)!important}.segm button[aria-checked=true]{background:var(--s3)!important;color:var(--text)!important}
+.expl{font:var(--small);color:var(--muted);margin:6px 4px 12px}
+.cardf{background:var(--s1);border-radius:var(--r-card);padding:4px 8px 8px 16px;margin-bottom:12px}
+.fh{display:flex;align-items:center;gap:8px;min-height:48px}
+.fh h3{font:700 15px/1.3 Figtree,sans-serif;flex:1}
+.fcnt{font:var(--small);color:var(--muted);white-space:nowrap}
+.hb{min-height:48px;display:inline-flex;align-items:center;padding:0 2px;color:var(--muted)!important}
+.hb>span{height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border-radius:18px;font:var(--body-l);background:var(--s2)}
+.hb[aria-checked=true]{color:var(--text)!important}.hb[aria-checked=true]>span{background:var(--s3)}
+.hb.exc[aria-checked=true]{color:var(--error)!important}
+.hb.add{color:var(--accent-soft)!important}.hb .i{width:16px;height:16px}
+.sgm{display:flex;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;margin-top:-2px}
+.chips .hb>span{background:var(--s2);color:var(--text)}.chips .hb.add>span{color:var(--accent-soft)}
+.num{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:var(--body-l);color:var(--muted);min-height:48px}
+.num input{width:88px;height:48px;border-radius:12px;background:var(--s2);border:0;color:var(--text);font:var(--body-l);padding:0 8px;text-align:center;outline:0;-moz-appearance:textfield}
+.num input::-webkit-outer-spin-button,.num input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.note2{font:var(--small);color:var(--muted);padding:2px 8px 6px 0}.note2.w{color:var(--accent-soft)}
+.empty{font:var(--body-l);color:var(--muted);padding:12px 4px 16px;font-weight:500}.empty small{display:block;font:var(--small);margin-top:4px}
+.addf{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;border-radius:26px;background:var(--s2);color:var(--accent-soft)!important;font:var(--body-l)!important}
+.adv{margin-top:16px}
+.advh{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;padding:0 4px;font:var(--body-l)!important}
+.advh .i{transition:transform var(--t-enter) var(--ease-out);color:var(--muted)}.advh[aria-expanded=true] .i{transform:rotate(180deg)}
+.advb{display:none;padding:0 0 8px}.advh[aria-expanded=true]+.advb{display:block}
+.advb code{display:block;background:var(--s1);border-radius:var(--r-card);padding:12px;font:500 13px/1.5 ui-monospace,Consolas,monospace;color:var(--accent-soft);white-space:pre-wrap;word-break:break-word;min-height:48px}
+.advb p{font:var(--small);color:var(--muted);margin-top:8px}
+.bot{position:absolute;left:0;right:0;bottom:0;z-index:4;background:var(--s2);border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:12px 12px 12px 16px}
+.b1{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.b1 .ct{flex:1;font:700 15px/1.3 Figtree,sans-serif;min-width:0}.b1 .ct small{display:block;font:var(--small);color:var(--muted);font-weight:500}
+.save{height:var(--target);padding:0 28px;border-radius:var(--r-dock);background:var(--accent);color:var(--on-accent)!important;font:var(--body-l)!important;transition:opacity var(--t-enter)}.save[aria-disabled=true]{opacity:.35}
+.b2{display:flex;gap:8px}.b2 button{flex:1;min-width:0;height:48px;border-radius:24px;background:var(--s3);padding:0 14px;font:var(--small)!important;text-align:left;color:var(--muted)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.b2 b{color:var(--text);font-weight:600;font-size:13px}
+/* fogli */
+.scrim{position:absolute;inset:0;background:rgba(7,5,12,.62);z-index:8;opacity:0;visibility:hidden;transition:opacity var(--t-enter) var(--ease-out),visibility 0s linear var(--t-sheet)}
+.sht{position:absolute;left:0;right:0;bottom:0;max-height:82%;z-index:9;background:var(--s1);border-radius:var(--r-sheet) var(--r-sheet) 0 0;display:flex;flex-direction:column;transform:translateY(100%);visibility:hidden;transition:transform var(--t-sheet) var(--ease-out),visibility 0s linear var(--t-sheet)}
+.sh-open .scrim{opacity:1;visibility:visible;transition-delay:0s}.sh-open .sht{transform:none;visibility:visible;transition-delay:0s}
+.sht .grab{width:36px;height:4px;border-radius:2px;background:var(--s3);margin:8px auto 0;flex:none}
+.sht .st{display:flex;align-items:center;min-height:56px;padding:0 4px 0 16px;flex:none}.sht .st h2{font:700 16px/1.3 Figtree,sans-serif;flex:1}
+.shs{padding:0 16px 8px;flex:none}
+.shb{flex:1;overflow-y:auto;scrollbar-width:none;min-height:0;padding-bottom:12px}.shb::-webkit-scrollbar{display:none}
+.shf{flex:none;padding:8px 16px 16px}
+.gh{font:700 13px/1.3 Figtree,sans-serif;color:var(--muted);padding:16px 16px 4px}
+.fr,.vr{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:4px 16px;text-align:left;font:var(--body-l)!important}
+.fr .tx{flex:1;min-width:0}.fr .s{display:block;font:var(--small);color:var(--muted);font-weight:500}
+.vr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vr .n{font:var(--small);color:var(--muted);font-variant-numeric:tabular-nums}
+.cb{width:24px;height:24px;border-radius:6px;background:var(--s3);display:grid;place-items:center;flex:none;color:var(--on-accent)}.cb .i{width:18px;height:18px;visibility:hidden}
+.vr[aria-checked=true] .cb{background:var(--accent)}.vr[aria-checked=true] .cb .i{visibility:visible}
+.opt{display:flex;align-items:center;width:100%;min-height:52px;padding:0 16px;font:var(--body-l)!important;text-align:left;gap:12px}.opt .i{color:var(--accent);visibility:hidden;margin-left:auto}.opt[aria-checked=true] .i{visibility:visible}.opt[aria-checked=true]{color:var(--accent-soft)!important}
+.fine{width:100%;height:var(--target);border-radius:var(--r-dock);background:var(--accent);color:var(--on-accent)!important;font:var(--body-l)!important}
+.snack{position:absolute;left:12px;right:12px;bottom:148px;z-index:12;background:var(--s3);border-radius:var(--r-card);padding:14px 16px;font:var(--body-l);opacity:0;visibility:hidden;transform:translateY(16px);transition:opacity var(--t-enter) var(--ease-out),transform var(--t-enter) var(--ease-out),visibility 0s linear var(--t-enter)}.snack.on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.pcard{width:360px;padding:16px;background:#fff;border:1px solid #D6D0E2;border-radius:12px;font-size:14px;color:#1B1626}.pcard p+p{margin-top:8px}
+.tg{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap;max-width:420px}
+.tg button{min-height:48px;padding:0 18px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:600 14px Figtree,sans-serif;cursor:pointer}
+.tg button:focus-visible,.dev button:focus-visible,.dev a:focus-visible,.dev input:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+</defs></svg><div class="pg-h"><h1>Playlist intelligente: editor a filtri</h1><p>Filtri come schede, valori scelti da un elenco, conteggio dal vivo (D-393, D-394). Interattivo: aggiungi un filtro Artista con due scelte.</p></div><div class="nav"><a href="indice.html">Indice</a><a href="libreria.html">Libreria</a><a href="nuova-playlist.html">Nuova playlist</a><a href="playlist-intelligente.html">Playlist intelligente</a></div><div class="wrap"><div class="row"><div class="col prima"><h2 class="cap">Prima (oggi)</h2><div class="pcard"><p><b>Un campo di testo libero</b> con quattro modelli e due menu per ordine e limite (smart_playlist_editor.dart:37-52, 186-195, 217, 231): bisogna scrivere <i>artista:A OR artista:B</i> a mano (F-91).</p><p>Dieci campi, un valore per regola e confronto «contiene»: «Queen» trova anche «Queens of the Stone Age» (F-92). Ultimo ascolto, bitrate, testo e artista dell'album non si possono usare (F-93).</p><p>Gli errori di sintassi si scoprono solo salvando.</p></div></div>
+<div class="ann"><h2 class="cap">Cosa cambia</h2><ol>
+<li><b>F-91 · D-393: stessa stringa, altra faccia</b><span>L'editor scrive la stessa stringa canonica di oggi; le playlist esistenti si aprono qui con i filtri già compilati (pulsante «Riprendi esistente»), senza migrazione. La stringa resta visibile e in sola lettura in «Avanzate».</span></li>
+<li><b>D-394: logica</b><span>In cima «Tutte le condizioni» (i filtri sono in AND, spazio) o «Almeno una» (OR). Niente gruppi annidati. Ogni filtro ha «Includi / Escludi» (diventa <i>-genere:live</i>).</span></li>
+<li><b>F-92: valori multipli esatti</b><span>Per i campi a elenco si scelgono più valori (uno qualsiasi basta) da un elenco con ricerca, caselle e conteggio dei brani; è il confronto esatto del nuovo nodo «uno tra». Prova «Queen»: compare «Queens of the Stone Age» come voce a parte.</span></li>
+<li><b>F-93 · D-390: campi e dati nuovi</b><span>«Aggiungi filtro» apre il foglio con i campi in gruppi: Musica, Ascolto, File, Tag. Compaiono ultimo ascolto, bitrate, testo, artista dell'album, nazionalità, BPM, etichetta. Nazionalità, BPM ed etichetta valgono solo per i brani arricchiti, e il foglio lo dice.</span></li>
+<li><b>Numeri e date</b><span>Numeri «da … a …» (uno dei due può restare vuoto); date «Negli ultimi N giorni» / «Da più di N giorni» (la stringa canonica conta in giorni: <i>aggiunto&lt;30g</i>).</span></li>
+<li><b>Conteggio dal vivo, in fondo, fisso</b><span>«128 brani · 8 h 40 min» si ricalcola a ogni cambio (qui su una libreria d'esempio di 1.476 brani, numeri reali). Sotto, Ordina per e Limite (che decide quali brani entrano) e «Salva», attivo con un nome e almeno un filtro completo. Ogni scheda mostra anche quanti brani passano da sola.</span></li>
+<li><b>Scelte mie (da confermare)</b><span>Un filtro senza valori non conta e lo dice. «Prima di» è reso in giorni (non in date) per restare nella stringa di oggi. I nomi nuovi nella stringa (<i>ultimoascolto, artistaalbum, nazionalita, etichetta, bpm, bitrate, con-testo</i>) sono una proposta. «Mai ascoltati» entra fra i campi di Ascolto perché esiste già.</span></li>
+</ol></div></div>
+<div class="row"><div class="col"><h2 class="cap">Dopo · interattivo</h2>
+<div class="tg" role="group" aria-label="Prove"><button id="bn">Nuova (vuota)</button><button id="be">Riprendi esistente</button><button id="b2">Aggiungi Artista: CCR + Fleetwood Mac</button><button id="bq">Elenco Artista: cerca «queen»</button><button id="bf">Apri «Aggiungi filtro»</button><button id="ba">Mostra Avanzate</button></div>
+<div class="dev phone" id="ph" role="group" aria-label="Editor playlist intelligente"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div>
+<div class="top"><button class="btn" aria-label="Indietro"><svg class="i" aria-hidden="true"><use href="#back"/></svg></button><h1 id="ttl">Playlist intelligente</h1></div>
+<div class="scr" id="scr"></div>
+<div class="bot"><div class="b1"><div class="ct" id="ct" aria-live="polite"></div><button class="save" id="save" aria-disabled="true">Salva</button></div><div class="b2"><button id="bso" aria-haspopup="dialog"></button><button id="blm" aria-haspopup="dialog"></button></div></div>
+<div class="scrim" id="scrim"></div><div class="sht" id="sht" role="dialog" aria-modal="true" inert><div class="grab"></div><div class="st"><h2 id="shT"></h2><button class="btn" id="shX" aria-label="Chiudi"><svg class="i" aria-hidden="true"><use href="#close"/></svg></button></div><div class="shs" id="shS"></div><div class="shb" id="shB"></div><div class="shf" id="shF"></div></div>
+<div class="snack" id="snack" role="status"></div></div><p class="note">Esc chiude il foglio. I conteggi sono calcolati davvero su una libreria d'esempio generata nella pagina.</p></div></div></div>
+<script>
+/* ---- libreria d'esempio (deterministica) ---- */
+var AR=[['Creedence Clearwater Revival',26,['rock','blues'],1968,1972,'Stati Uniti','Fantasy','Rock',['Bayou Country','Green River','Cosmo\'s Factory']],['Fleetwood Mac',41,['rock','pop'],1968,1987,'Regno Unito','Reprise','Rock',['Rumours','Tusk','Tango in the Night']],['Lucio Battisti',48,['pop','cantautori'],1969,1994,'Italia','Numero Uno','Italiana',['Il mio canto libero','Anima latina']],['Lucio Dalla',42,['cantautori','pop'],1971,1990,'Italia','RCA','Italiana',['Dalla','Come è profondo il mare']],['Fabrizio De André',60,['cantautori','folk'],1967,1996,'Italia','Ricordi','Italiana',['Crêuza de mä','Storia di un impiegato']],['Mina',88,['pop','jazz'],1960,1995,'Italia','PDU','Italiana',['Mina Studio Uno','Salomè']],['Franco Battiato',67,['pop','sperimentale'],1979,2015,'Italia','EMI','Italiana',['La voce del padrone','L\'era del cinghiale bianco']],['Paolo Conte',58,['cantautori','jazz'],1974,2008,'Italia','RCA','Italiana',['Paolo Conte','Razmataz']],['Pino Daniele',70,['pop','blues'],1977,2012,'Italia','EMI','Italiana',['Nero a metà','Bella \'mbriana']],['Vasco Rossi',85,['rock','pop'],1978,2019,'Italia','EMI','Italiana',['Vado al massimo','Siamo solo noi']],['Calcutta',22,['indie','pop'],2015,2022,'Italia','Bomba Dischi','Indie',['Mainstream','Evergreen']],['Marco Castello',14,['pop','funk'],2021,2023,null,null,'Indie',['Contenta tu']],['Luca Carocci',12,['indie'],2019,2023,null,null,'Indie',['Singoli']],['Daniela Pes',6,['folk','elettronica'],2023,2023,null,null,'Indie',['Spira']],['Arctic Monkeys',38,['indie','rock'],2006,2022,'Regno Unito','Domino','Rock',['AM','Favourite Worst Nightmare']],['Radiohead',58,['alternative','elettronica'],1993,2016,'Regno Unito','Parlophone','Rock',['Kid A','OK Computer','In Rainbows']],['Queen',52,['rock'],1973,1991,'Regno Unito','EMI','Rock',['A Night at the Opera','News of the World']],['Queens of the Stone Age',19,['rock','alternative'],1998,2017,'Stati Uniti','Interscope','Rock',['Songs for the Deaf','Villains']],['Pink Floyd',36,['rock','psichedelico'],1967,1994,'Regno Unito','Harvest','Rock',['The Dark Side of the Moon','Wish You Were Here']],['Led Zeppelin',22,['rock','blues'],1969,1979,'Regno Unito','Atlantic','Rock',['Led Zeppelin IV','Physical Graffiti']],['The Beatles',96,['rock','pop'],1963,1970,'Regno Unito','Apple','Rock',['Abbey Road','Revolver']],['David Bowie',74,['rock','pop'],1969,2016,'Regno Unito','RCA','Rock',['Heroes','Blackstar']],['Bob Dylan',90,['folk','rock'],1962,2020,'Stati Uniti','Columbia','Rock',['Highway 61 Revisited','Blood on the Tracks']],['The Rolling Stones',78,['rock','blues'],1964,2016,'Regno Unito','Decca','Rock',['Exile on Main St.','Let It Bleed']],['Eric Clapton',52,['blues','rock'],1970,2016,'Regno Unito','Polydor','Rock',['Slowhand']],['Nina Simone',55,['jazz','soul'],1958,1993,'Stati Uniti','Philips','Jazz',['I Put a Spell on You']],['Miles Davis',48,['jazz'],1957,1985,'Stati Uniti','Columbia','Jazz',['Kind of Blue','Bitches Brew']],['Daft Punk',31,['elettronica'],1997,2013,'Francia','Columbia','Elettronica',['Random Access Memories','Discovery']],['Kate Bush',24,['pop','art rock'],1978,2011,'Regno Unito','EMI','Rock',['Hounds of Love','The Dreaming']],['Ludovico Einaudi',64,['classica','elettronica'],1988,2019,'Italia','Ponderosa','Classica',['Una mattina','Elements']]];
+var TAGS=['Estate','Palestra','Viaggio','Relax','Serata'];
+var seed=42;function rnd(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+function pick(a){return a[Math.floor(rnd()*a.length)]}
+var TR=[];AR.forEach(function(a){for(var i=0;i<a[1];i++){
+ var g=[a[2][rnd()<.7?0:Math.min(1,a[2].length-1)]];if(rnd()<.3&&a[2].length>1&&g[0]!==a[2][1])g.push(a[2][1]);if(rnd()<.06)g.push('live');
+ var r=rnd(),f=r<.55?'MP3':r<.8?'FLAC':r<.95?'M4A':r<.98?'OGG':'OPUS',br={MP3:pick([128,192,256,320,320]),FLAC:pick([870,960,1010]),M4A:256,OGG:192,OPUS:128}[f];
+ var pl=Math.floor(Math.pow(rnd(),3)*70),tg=[];TAGS.forEach(function(t){if(rnd()<.1)tg.push(t)});
+ TR.push({artist:a[0],aa:rnd()<.05?'Artisti vari':a[0],album:pick(a[8]),genres:g,country:a[5],year:a[3]+Math.floor(rnd()*(a[4]-a[3]+1)),label:rnd()<.6?a[6]:null,bpm:rnd()<.6?70+Math.floor(rnd()*100):null,
+  plays:pl,last:pl?1+Math.floor(rnd()*400):null,add:5+Math.floor(rnd()*900),fav:rnd()<.12,lyrics:rnd()<.35,fmt:f,br:br,dur:150+Math.floor(rnd()*(a[2][0]==='jazz'?330:190)),folder:a[7],tags:tg})}});
+/* ---- campi ---- */
+function mv(k,l,g,hint,get,note){return {k:k,l:l,g:g,t:'m',h:hint,get:get,note:note}}
+var F={artist:mv('artista','Artista','Musica','Uno o più artisti',function(t){return[t.artist]}),album:mv('album','Album','Musica','Uno o più album',function(t){return[t.album]}),albumartist:mv('artistaalbum','Artista dell\'album','Musica','Utile per le raccolte',function(t){return[t.aa]}),genre:mv('genere','Genere','Musica','Tutti i generi del brano',function(t){return t.genres}),
+ country:mv('nazionalita','Nazionalità dell\'artista','Musica','Quando l\'arricchimento ha trovato il paese',function(t){return t.country?[t.country]:[]},'Disponibile quando l\'arricchimento ha trovato il paese: i brani degli altri artisti non compaiono.'),
+ year:{k:'anno',l:'Anno',g:'Musica',t:'n',h:'Da … a …',get:function(t){return t.year},u:''},label:mv('etichetta','Etichetta','Musica','Solo brani arricchiti',function(t){return t.label?[t.label]:[]},'Solo per i brani arricchiti: gli altri non hanno l\'etichetta.'),bpm:{k:'bpm',l:'BPM',g:'Musica',t:'n',h:'Solo brani arricchiti',get:function(t){return t.bpm},u:''},
+ plays:{k:'ascolti',l:'Ascolti',g:'Ascolto',t:'n',h:'Quante volte è stato ascoltato',get:function(t){return t.plays},u:''},lastplayed:{k:'ultimoascolto',l:'Ultimo ascolto',g:'Ascolto',t:'d',h:'Negli ultimi N giorni',get:function(t){return t.last}},added:{k:'aggiunto',l:'Aggiunto',g:'Ascolto',t:'d',h:'Negli ultimi N giorni',get:function(t){return t.add}},
+ fav:{k:'preferiti',l:'Preferiti',g:'Ascolto',t:'f',h:'Includi o escludi',get:function(t){return t.fav},d:['Solo i brani preferiti','Solo i brani che non sono preferiti']},never:{k:'mai-ascoltati',l:'Mai ascoltati',g:'Ascolto',t:'f',h:'Includi o escludi',get:function(t){return t.plays===0},d:['Solo i brani mai ascoltati','Solo i brani già ascoltati']},
+ format:mv('formato','Formato','File','MP3, FLAC…',function(t){return[t.fmt]}),bitrate:{k:'bitrate',l:'Bitrate',g:'File',t:'n',h:'In kbps',get:function(t){return t.br},u:'kbps'},duration:{k:'durata',l:'Durata',g:'File',t:'n',h:'In minuti',get:function(t){return t.dur/60},u:'min',cu:'m'},folder:mv('cartella','Cartella','File','Una o più cartelle',function(t){return[t.folder]}),lyrics:{k:'con-testo',l:'Con testo',g:'File',t:'f',h:'Includi o escludi',get:function(t){return t.lyrics},d:['Solo i brani con il testo','Solo i brani senza testo']},
+ tag:mv('tag','Tag','Tag','Uno o più tag',function(t){return t.tags})};
+var GROUPS=['Musica','Ascolto','File','Tag'];
+var VC={};function counts(id){if(VC[id])return VC[id];var m={};TR.forEach(function(t){F[id].get(t).forEach(function(v){m[v]=(m[v]||0)+1})});return VC[id]=Object.keys(m).map(function(v){return[v,m[v]]}).sort(function(a,b){return b[1]-a[1]||(a[0]<b[0]?-1:1)})}
+/* ---- stato ---- */
+var SO=[['rec','Ascoltati di recente','d'],['add','Aggiunti di recente','d'],['tit','Titolo A–Z','a'],['art','Artista','a'],['yr','Anno','a'],['pl','Più ascoltati','d'],['dur','Durata','d']],LM=[[0,'Nessun limite'],[25,'25 brani'],[50,'50 brani'],[100,'100 brani'],[200,'200 brani'],[500,'500 brani']];
+var S,uid=0;
+function blank(){S={edit:false,name:'',mode:'all',fs:[],sort:'rec',dir:'d',limit:0,adv:false}}
+function nf(field){var d=F[field];return {id:++uid,f:field,neg:false,vals:[],a:null,b:null,dm:'last',nn:null}}
+function sample(){blank();S.edit=true;S.name='Classici rock 68–79';S.sort='pl';S.dir='d';
+ var a=nf('artist');a.vals=['Creedence Clearwater Revival','Fleetwood Mac'];var g=nf('genre');g.vals=['rock'];var l=nf('genre');l.vals=['live'];l.neg=true;var y=nf('year');y.a=1968;y.b=1979;S.fs=[a,g,l,y]}
+/* ---- valutazione ---- */
+function done(f){var d=F[f.f];return d.t==='m'?f.vals.length>0:d.t==='n'?(f.a!=null||f.b!=null):d.t==='d'?f.nn!=null:true}
+function ok(t,f){var d=F[f.f],g=d.get(t),r;
+ if(d.t==='m')r=f.vals.some(function(v){return g.indexOf(v)>=0});
+ else if(d.t==='n')r=g!=null&&(f.a==null||g>=f.a)&&(f.b==null||g<=f.b);
+ else if(d.t==='d')r=g!=null&&(f.dm==='last'?g<=f.nn:g>f.nn);
+ else r=!!g;
+ return f.neg?!r:r}
+function srt(t){switch(S.sort){case'rec':return t.last==null?1e9:t.last;case'add':return t.add;case'art':return t.artist;case'yr':return t.year;case'pl':return -t.plays;case'dur':return -t.dur;default:return t.album}}
+function result(){var fs=S.fs.filter(done);if(!fs.length)return[];
+ var m=TR.filter(function(t){return S.mode==='all'?fs.every(function(f){return ok(t,f)}):fs.some(function(f){return ok(t,f)})});
+ if(S.limit){var k=S.dir==='a'?1:-1;m=m.slice().sort(function(a,b){var x=srt(a),y=srt(b);var base=(x<y?-1:x>y?1:0);return (S.sort==='rec'||S.sort==='add'||S.sort==='art'||S.sort==='yr'||S.sort==='tit'?base*k:base*(S.dir==='d'?1:-1))}).slice(0,S.limit)}
+ return m}
+function q(v){return /^[^\s":<>,]+$/.test(v)&&v[0]!=='-'&&v!=='OR'?v:'"'+v.replace(/"/g,'')+'"'}
+function nm(d,v){return String(Math.round(v*10)/10)+(d.cu||'')}
+function canon(f){var d=F[f.f],s,p=f.neg?'-':'';
+ if(d.t==='m')s=d.k+':'+f.vals.map(q).join(',');
+ else if(d.t==='n')s=d.k+':'+(f.a==null?'':nm(d,f.a))+'..'+(f.b==null?'':nm(d,f.b));
+ else if(d.t==='d')s=d.k+(f.dm==='last'?'<':'>')+f.nn+'g';
+ else s=d.k;
+ return p+s}
+function canonAll(){return S.fs.filter(done).map(canon).join(S.mode==='all'?' ':' OR ')}
+function dur(sec){var m=Math.round(sec/60),h=Math.floor(m/60);return h?h+' h '+m%60+' min':m+' min'}
+function e(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+function ic(id){return '<svg class="i" aria-hidden="true"><use href="#'+id+'"/></svg>'}
+var $=function(i){return document.getElementById(i)},ph=$('ph'),scr=$('scr');
+/* ---- disegno ---- */
+function card(f){var d=F[f.f],b='';
+ if(d.t==='m'){b='<div class="chips">'+f.vals.map(function(v,i){return '<button class="hb" data-a="crm" data-id="'+f.id+'" data-v="'+i+'" aria-label="Togli '+e(v)+'"><span>'+e(v)+ic('close')+'</span></button>'}).join('')+'<button class="hb add" data-a="vals" data-id="'+f.id+'"><span>'+ic('plus')+(f.vals.length?'Aggiungi':'Scegli '+d.l.toLowerCase().replace('nazionalità dell\'artista','paesi'))+'</span></button></div>';
+  if(d.note)b+='<div class="note2">'+d.note+'</div>';if(!f.vals.length)b+='<div class="note2 w">Scegli almeno un valore: finché è vuoto il filtro non conta.</div>'}
+ else if(d.t==='n')b='<div class="num"><span>da</span><input type="number" inputmode="decimal" data-id="'+f.id+'" data-k="a" aria-label="'+d.l+' da" value="'+(f.a==null?'':f.a)+'"><span>a</span><input type="number" inputmode="decimal" data-id="'+f.id+'" data-k="b" aria-label="'+d.l+' a" value="'+(f.b==null?'':f.b)+'">'+(d.u?'<span>'+d.u+'</span>':'')+'</div>'+(d.k==='bpm'?'<div class="note2">Solo per i brani arricchiti.</div>':'')+(f.a==null&&f.b==null?'<div class="note2 w">Scrivi almeno uno dei due numeri.</div>':'');
+ else if(d.t==='d')b='<div class="sgm" role="radiogroup" aria-label="Quando"><button class="hb" role="radio" aria-checked="'+(f.dm==='last')+'" data-a="dm" data-id="'+f.id+'" data-v="last"><span>Negli ultimi</span></button><button class="hb" role="radio" aria-checked="'+(f.dm==='old')+'" data-a="dm" data-id="'+f.id+'" data-v="old"><span>Da più di</span></button></div><div class="num"><input type="number" inputmode="numeric" data-id="'+f.id+'" data-k="nn" aria-label="Giorni" value="'+(f.nn==null?'':f.nn)+'"><span>giorni'+(f.dm==='old'?' fa':'')+'</span></div>'+(f.nn==null?'<div class="note2 w">Scrivi quanti giorni.</div>':'');
+ else b='<div class="note2" style="padding:8px 0">'+d.d[f.neg?1:0]+'</div>';
+ return '<section class="cardf" data-card="'+f.id+'" aria-label="Filtro '+d.l+'"><div class="fh"><h3>'+d.l+'</h3><span class="fcnt" data-c="'+f.id+'"></span><button class="btn m" data-a="rm" data-id="'+f.id+'" aria-label="Rimuovi il filtro '+d.l+'">'+ic('close')+'</button></div>'+
+ '<div class="sgm" role="radiogroup" aria-label="Includi o escludi"><button class="hb" role="radio" aria-checked="'+!f.neg+'" data-a="neg" data-id="'+f.id+'" data-v="0"><span>Includi</span></button><button class="hb exc" role="radio" aria-checked="'+f.neg+'" data-a="neg" data-id="'+f.id+'" data-v="1"><span>Escludi</span></button></div>'+b+'</section>'}
+function draw(){
+ scr.innerHTML='<div class="lbl">Nome</div><input class="inp" id="nm" type="text" placeholder="Nome della playlist" aria-label="Nome della playlist" autocomplete="off" value="'+e(S.name)+'">'+
+ '<div class="lbl" style="margin-top:16px">Un brano entra se rispetta</div><div class="segm" role="radiogroup" aria-label="Logica dei filtri"><button role="radio" aria-checked="'+(S.mode==='all')+'" data-a="mode" data-v="all">Tutte le condizioni</button><button role="radio" aria-checked="'+(S.mode==='any')+'" data-a="mode" data-v="any">Almeno una</button></div>'+
+ '<div class="expl">'+(S.mode==='all'?'Il brano deve passare ogni filtro.':'Basta che passi uno dei filtri.')+'</div>'+
+ (S.fs.length?S.fs.map(card).join(''):'<div class="empty">Nessun filtro.<small>Senza filtri la playlist resta vuota.</small></div>')+
+ '<button class="addf" data-a="addf">'+ic('plus')+'Aggiungi filtro</button>'+
+ '<div class="adv"><button class="advh" data-a="adv" aria-expanded="'+S.adv+'">Avanzate'+ic('down')+'</button><div class="advb"><code id="cn"></code><p>Questo è il testo che viene salvato: segue i filtri e non si modifica qui. Le playlist create col testo libero si aprono con i filtri già compilati.</p></div></div>';
+ $('nm').oninput=function(){S.name=this.value;upd()};
+ $('ttl').textContent=S.edit?'Modifica playlist':'Playlist intelligente';
+ upd()}
+function upd(){var m=result(),sec=m.reduce(function(a,t){return a+t.dur},0),n=m.length,o=SO.filter(function(s){return s[0]===S.sort})[0],lm=LM.filter(function(x){return x[0]===S.limit})[0][1];
+ $('ct').innerHTML=n+(n===1?' brano':' brani')+' · '+dur(sec)+(S.fs.some(done)?'':'<small>Aggiungi un filtro</small>');
+ $('bso').innerHTML='Ordina per <b>'+o[1]+' '+(S.dir==='d'?'↓':'↑')+'</b>';$('blm').innerHTML='Limite <b>'+lm+'</b>';
+ var c=canonAll(),cn=$('cn');if(cn)cn.textContent=c||'(nessun filtro completo)';
+ [].forEach.call(scr.querySelectorAll('[data-c]'),function(el){var f=S.fs.filter(function(x){return x.id==el.dataset.c})[0];el.textContent=done(f)?TR.filter(function(t){return ok(t,f)}).length+' brani':''});
+ $('save').setAttribute('aria-disabled',!(S.name.trim()&&S.fs.some(done)))}
+function fo(id){return S.fs.filter(function(f){return f.id==id})[0]}
+scr.addEventListener('click',function(ev){var b=ev.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,f=b.dataset.id&&fo(b.dataset.id);
+ if(a==='mode'){S.mode=b.dataset.v;draw()}else if(a==='neg'){f.neg=b.dataset.v==='1';draw()}else if(a==='rm'){S.fs.splice(S.fs.indexOf(f),1);draw()}
+ else if(a==='crm'){f.vals.splice(+b.dataset.v,1);draw()}else if(a==='dm'){f.dm=b.dataset.v;draw()}else if(a==='vals')openVals(f,b);else if(a==='addf')openFields(b);else if(a==='adv'){S.adv=!S.adv;b.setAttribute('aria-expanded',S.adv)}});
+scr.addEventListener('input',function(ev){var t=ev.target;if(!t.dataset.k)return;var f=fo(t.dataset.id),v=t.value===''?null:parseFloat(t.value);f[t.dataset.k]=isNaN(v)?null:v;upd();var c=t.closest('.cardf');if(c)[].forEach.call(c.querySelectorAll('.note2.w'),function(x){x.hidden=done(f)})});
+/* ---- fogli ---- */
+var last=null;
+function sh(title,sBody,bBody,fBody,from){$('shT').textContent=title;$('shS').innerHTML=sBody||'';$('shB').innerHTML=bBody;$('shF').innerHTML=fBody||'';$('shS').style.display=sBody?'':'none';$('shF').style.display=fBody?'':'none';ph.classList.add('sh-open');$('sht').inert=false;last=from;$('shX').focus()}
+function closeSh(){ph.classList.remove('sh-open');$('sht').inert=true;if(last&&last.isConnected)last.focus();else if(last&&last.dataset)0}
+$('shX').onclick=closeSh;$('scrim').onclick=closeSh;document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&ph.classList.contains('sh-open'))closeSh()});
+function openFields(from){var h='';GROUPS.forEach(function(g){h+='<div class="gh">'+g+'</div>'+Object.keys(F).filter(function(k){return F[k].g===g}).map(function(k){return '<button class="fr" data-k="'+k+'"><span class="tx">'+F[k].l+'<span class="s">'+F[k].h+'</span></span></button>'}).join('')});
+ sh('Aggiungi filtro','',h,'',from);[].forEach.call($('shB').querySelectorAll('.fr'),function(b){b.onclick=function(){var f=nf(b.dataset.k);S.fs.push(f);closeSh();draw();if(F[f.f].t==='m')openVals(f,null)}})}
+function openVals(f,from){var d=F[f.f],all=counts(f.f);
+ var nocountry=d.k==='nazionalita'?TR.filter(function(t){return!t.country}).length:0;
+ function list(){var v=$('vq')?$('vq').value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''):'';
+  var l=all.filter(function(x){return!v||x[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(v)>=0}).slice(0,80);
+  $('shB').innerHTML=(d.note&&!v?'<div class="note2" style="padding:0 16px 8px">'+d.note+(nocountry?' Ora '+nocountry+' brani non hanno il paese.':'')+'</div>':'')+(l.length?l.map(function(x){return '<button class="vr" role="checkbox" aria-checked="'+(f.vals.indexOf(x[0])>=0)+'" data-v="'+e(x[0])+'"><span class="cb">'+ic('check')+'</span><span class="nm">'+e(x[0])+'</span><span class="n">'+x[1]+'</span></button>'}).join(''):'<div class="empty" style="padding:16px">Nessun valore per «'+e($('vq').value)+'».</div>');
+  [].forEach.call($('shB').querySelectorAll('.vr'),function(b){b.onclick=function(){var v=b.dataset.v,i=f.vals.indexOf(v);if(i>=0)f.vals.splice(i,1);else f.vals.push(v);b.setAttribute('aria-checked',i<0);foot();draw()}})}
+ function foot(){$('shF').innerHTML='<button class="fine" id="fine">Fatto'+(f.vals.length?' · '+f.vals.length+(f.vals.length===1?' scelto':' scelti'):'')+'</button>';$('fine').onclick=closeSh}
+ sh(d.l,'<input class="inp" id="vq" type="search" placeholder="Cerca in '+d.l.toLowerCase()+'" aria-label="Cerca" autocomplete="off" style="height:48px">','','x',from);
+ foot();list();$('vq').oninput=list}
+function openSort(from){function r(){sh('Ordina per','<div class="segm" role="radiogroup" aria-label="Verso"><button role="radio" data-d="a" aria-checked="'+(S.dir==='a')+'">Crescente</button><button role="radio" data-d="d" aria-checked="'+(S.dir==='d')+'">Decrescente</button></div>',SO.map(function(s){return '<button class="opt" role="radio" data-s="'+s[0]+'" aria-checked="'+(S.sort===s[0])+'">'+s[1]+ic('check')+'</button>'}).join(''),'',from);
+  [].forEach.call($('shS').querySelectorAll('[data-d]'),function(b){b.onclick=function(){S.dir=b.dataset.d;closeSh();upd()}});
+  [].forEach.call($('shB').querySelectorAll('.opt'),function(b){b.onclick=function(){var s=SO.filter(function(x){return x[0]===b.dataset.s})[0];S.sort=s[0];S.dir=s[2];closeSh();upd()}})}r()}
+function openLimit(from){sh('Limite','',LM.map(function(l){return '<button class="opt" role="radio" data-l="'+l[0]+'" aria-checked="'+(S.limit===l[0])+'">'+l[1]+ic('check')+'</button>'}).join('')+'<div class="note2" style="padding:8px 16px">Con un limite entrano i primi brani nell\'ordine scelto.</div>','','',from);
+ [].forEach.call($('shB').querySelectorAll('.opt'),function(b){b.onclick=function(){S.limit=+b.dataset.l;closeSh();upd()}})}
+$('bso').onclick=function(){openSort(this)};$('blm').onclick=function(){openLimit(this)};
+function say(t){var s=$('snack');s.textContent=t;s.classList.add('on');clearTimeout(say.t);say.t=setTimeout(function(){s.classList.remove('on')},2600)}
+$('save').onclick=function(){if(this.getAttribute('aria-disabled')==='true')say(S.name.trim()?'Aggiungi almeno un filtro completo':'Dai un nome alla playlist');else{var r=result();say('Salvata «'+S.name.trim()+'»: '+r.length+' brani')}};
+/* ---- pulsanti della pagina ---- */
+$('bn').onclick=function(){blank();draw();scr.scrollTop=0};$('be').onclick=function(){sample();draw();scr.scrollTop=0};
+$('b2').onclick=function(){if(S.fs.length===0&&!S.name)S.name='Rock americano e inglese';var f=nf('artist');f.vals=['Creedence Clearwater Revival','Fleetwood Mac'];S.fs.push(f);draw();var c=scr.querySelector('[data-card="'+f.id+'"]');c&&c.scrollIntoView({block:'center'})};
+$('bq').onclick=function(){var f=nf('artist');S.fs.push(f);draw();openVals(f,null);$('vq').value='queen';$('vq').dispatchEvent(new Event('input'))};
+$('bf').onclick=function(){openFields(this)};$('ba').onclick=function(){S.adv=true;draw();scr.scrollTop=scr.scrollHeight};
+blank();draw();
+</script></body></html>

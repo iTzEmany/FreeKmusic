@@ -1,0 +1,125 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Mockup Tutti i brani</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css"><style>
+body{min-width:0;padding:32px 40px 80px}.wrap{max-width:1700px}.row{gap:32px}.cap,.note{max-width:360px}
+.prima-card{width:360px;border:1px solid #CFC8DC;border-radius:24px;padding:20px 24px;background:#fff;color:#1B1626}
+.prima-card p{font-size:14px;margin-bottom:8px}.prima-card p:last-child{margin-bottom:0}.prima-card b{color:#5B2BB5}.prima-card a{color:#5B2BB5}
+.demo{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;max-width:360px}
+.dbtn{min-height:48px;padding:0 16px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:700 14px/1 Figtree,sans-serif;cursor:pointer}
+.dbtn[aria-pressed=true],.dbtn.on{background:#5B2BB5;color:#fff}
+.dbtn:focus-visible,.dev button:focus-visible,.dev a:focus-visible,.dev input:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.dbg{margin-top:12px;max-width:360px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #CFC8DC;font-size:13px;color:#1B1626}.dbg b{color:#5B2BB5}
+.dev button,.dev a{cursor:pointer}
+[hidden]{display:none!important}
+.scr{padding-bottom:176px}
+.dock.blur{background:rgba(29,22,48,.68);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.dock.blur hr{border-top-color:rgba(255,255,255,.12)}
+.sq{display:block;width:52px;height:52px;border-radius:var(--r-list);flex:none}
+.sx{display:block}
+.fld{display:flex;align-items:center;height:48px;border-radius:var(--r-dock);background:var(--s3);padding-left:12px;gap:8px;color:var(--text)}
+.fld:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.fld input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--text);font:600 15px/1.35 Figtree,sans-serif}
+.fld input::placeholder{color:var(--muted);font-weight:400}.fld .btn{color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.chips button{flex:none;height:var(--target);padding:0 6px;display:flex;align-items:center}
+.chips button span{display:flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-card);background:var(--s2);font:var(--body-l);color:var(--text);white-space:nowrap}
+.chips button.on span{background:var(--accent-soft);color:var(--on-accent)}
+.dev .pc{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+.shm{color:var(--muted);position:relative}.shm[aria-pressed=true]{color:var(--accent)}.shm[aria-pressed=true]::after{content:"";position:absolute;bottom:8px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.fx{position:absolute;left:0;right:0;top:28px;height:64px;z-index:4;background:var(--bg);display:flex;align-items:center;gap:8px;padding:0 12px 0 16px}
+.fx .tt{flex:1;min-width:0}.fx h1{font:var(--title);letter-spacing:-.01em;white-space:nowrap}.fx .c{font:var(--body);color:var(--muted)}
+.panel{position:absolute;left:0;right:0;top:92px;z-index:3;background:var(--bg);padding:4px 16px 0;will-change:transform}
+.panel.t{transition:transform var(--t-enter) var(--ease-out)}
+.panel .chips{margin:0 -16px;padding:0 16px}.panel .chips button:first-child{margin-left:-6px}
+.lst{position:absolute;left:0;right:0;top:92px;bottom:0;overflow-y:auto;scrollbar-width:none}.lst::-webkit-scrollbar{display:none}
+#list{padding-top:108px;padding-bottom:176px}
+.li{height:64px}.li .tx{padding-right:20px}.li::after{right:28px}.li .btn{margin-right:8px}
+.empty2{padding:32px 16px;font:var(--body-l);color:var(--muted)}
+.alpha{position:absolute;right:0;top:200px;bottom:176px;width:28px;z-index:3;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:4px 0;touch-action:none;font:var(--small);color:var(--muted)}
+.alpha span{display:block;line-height:1;pointer-events:none}.alpha span.on{color:var(--accent-soft);font-weight:700}
+.bub{position:absolute;right:36px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:none;place-items:center;font:600 20px/1 Unbounded,sans-serif;z-index:6;pointer-events:none}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+<symbol id="dev" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7H3zM1 18h14M18.5 10h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="mh" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="dn" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+<symbol id="grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></symbol>
+<symbol id="prev" viewBox="0 0 24 24"><path d="M6 5v14M19 5.5v13L9 12z"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M18 5v14M5 5.5v13L15 12z"/></symbol>
+<symbol id="rep" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h13l-3-3M20 13v2a3 3 0 0 1-3 3H4l3 3"/></symbol>
+<symbol id="lyr" viewBox="0 0 24 24"><path d="M4 5h16M4 10h10M4 15h7M17 14v6M17 14l3 1"/></symbol>
+<symbol id="que" viewBox="0 0 24 24"><path d="M4 6h12M4 11h12M4 16h7M18 14v6M18 14l3 1"/></symbol>
+<symbol id="vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.5 4.5 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+<symbol id="ytm" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></symbol>
+<symbol id="sync" viewBox="0 0 24 24"><path d="M20 8a8 8 0 0 0-14-2L4 8M4 4v4h4M4 16a8 8 0 0 0 14 2l2-2M20 20v-4h-4"/></symbol>
+<symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></symbol>
+<symbol id="bars" viewBox="0 0 24 24"><path d="M6 20v-7M12 20V5M18 20v-10"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+<symbol id="note" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+<symbol id="new" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h5"/></symbol><symbol id="chk" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="drag" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol><symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol><symbol id="pal" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-.9 1.5-2-.6-1.3.2-2.5 1.6-2.5H17a3.5 3.5 0 0 0 3.5-3.5C20.5 7 16.8 3.5 12 3.5z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="8" r="1"/><circle cx="16" cy="11" r="1"/></symbol></defs></svg><div class="pg-h"><h1>Tutti i brani</h1><p>Superfici e ricerca: riga fissa con play tondo, barra di ricerca che segue il dito, dock flottante.</p></div><div class="nav"><a href="indice.html">Indice</a><a href="home.html">Home</a><a href="tutti-i-brani.html">Tutti i brani</a><a href="playlist.html">Playlist</a><a href="tema-sfocatura.html">Tema e sfocatura</a></div><div class="wrap"><div class="row"><div class="col"><h2 class="cap">Prima (oggi)</h2><div class="prima-card"><p>Il play è un <b>IconButton</b> semplice, senza riquadro tondo (F-99).</p><p>Ricerca e chip stanno in un blocco che con la <b>direzione</b> dello scroll sparisce tutto insieme con <b>SizeTransition di 180 ms</b>, e non segue il dito (F-78). Provalo con il selettore «Com'è oggi».</p><p><a href="../../ui-uso-quotidiano/mockup/tutti-i-brani.html">Mockup di ui-uso-quotidiano (il prima, fase 77-83)</a></p></div></div>
+<div class="col"><h2 class="cap">Dopo, scorri la lista</h2><div class="dev phone" id="ph" style="height:800px"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24"><path d="M12 20l-3-3a4.2 4.2 0 0 1 6 0zM5.5 12.5a9.2 9.2 0 0 1 13 0l-2 2a6.4 6.4 0 0 0-9 0zM2 9a14 14 0 0 1 20 0l-2 2a11 11 0 0 0-16 0z"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div>
+<div class="fx" id="fx"><div class="tt"><h1>Tutti i brani</h1><div class="c" id="cnt">2 034 brani · 128 h</div></div><button class="btn shm" aria-label="Riproduzione casuale" aria-pressed="false" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg class="i"><use href="#shuf"/></svg></button><button class="pc" aria-label="Riproduci tutto"><svg class="i f"><use href="#play"/></svg></button></div>
+<div class="panel" id="panel"><div class="fld"><svg class="i" style="color:var(--muted)"><use href="#search"/></svg><input id="q" placeholder="Cerca nei tuoi brani" autocomplete="off" aria-label="Cerca nei tuoi brani"><button class="btn" id="x" aria-label="Chiudi tastiera"><svg class="i"><use href="#close"/></svg></button></div>
+<div class="chips" id="chips"><button data-s="def"><span>Predefinito</span></button><button data-s="t" class="on"><span>Titolo</span></button><button data-s="a"><span>Artista</span></button><button data-s="r"><span>Aggiunti di recente</span></button></div></div>
+<div class="lst" id="scr"><div id="list"></div></div>
+<div class="alpha" id="alpha" aria-label="Indice alfabetico"></div><div class="bub" id="bub"></div><nav class="dock" aria-label="Lettore e schede"><div class="mini"><span class="rw" style="width:52px;height:52px"><svg class="rg" viewBox="0 0 52 52"><circle class="tr" cx="26" cy="26" r="24.5" stroke-width="3"/><circle class="ar" cx="26" cy="26" r="24.5" stroke-width="3" pathLength="100" stroke-dasharray="38 100"/></svg><span class="cv c1" style="inset:6px;border-radius:50%"></span></span><div class="tx"><div class="t">Proud Mary</div><div class="s">Creedence Clearwater Revival</div></div><button class="btn m" aria-label="Dispositivi"><svg class="i"><use href="#dev"/></svg></button><button class="btn" aria-label="Pausa"><svg class="i f"><use href="#pause"/></svg></button></div><hr><div class="tabs"><a class="tab" data-t="home" aria-label="Home" role="button" tabindex="0"><span class="ic"><svg class="i"><use href="#home"/></svg></span>Home</a><a class="tab" data-t="cerca" aria-label="Cerca" role="button" tabindex="0"><span class="ic"><svg class="i"><use href="#search"/></svg></span>Cerca</a><a class="tab on" data-t="lib" aria-label="Libreria" role="button" tabindex="0"><span class="ic"><svg class="i"><use href="#lib"/></svg></span>Libreria</a><a class="tab" data-t="mem" aria-label="Memoria" role="button" tabindex="0"><span class="ic"><svg class="i"><use href="#mem"/></svg></span>Memoria</a></div></nav></div>
+<div class="demo"><button class="dbtn on" id="mD" aria-pressed="true">Dopo: segue il dito</button><button class="dbtn" id="mO" aria-pressed="false">Com'è oggi: 180 ms</button><button class="dbtn" data-blur aria-pressed="false">Sfocatura dock: variante semitrasparente</button></div><div class="dbg" id="dbg"></div></div>
+<div class="ann"><h2 class="cap">Note</h2><ol>
+<li><b>Riga fissa (F-99)</b><span>Titolo, «2 034 brani · 128 h», shuffle e play tondo (PlayCircleButton, 48 dp, accento) restano sempre in cima. Lo stesso widget della Home, senza la copia a mano.</span></li>
+<li><b>Ricerca e chip seguono il dito (F-78, D-407)</b><span>Si spostano di esattamente quanto scorri (translateY, fra 0 e la loro altezza) e riappaiono risalendo della stessa quantità, anche a metà lista. Nessuna animazione a tempo. In Flutter: SliverAppBar(floating: true, snap: false) in un CustomScrollView con SliverFixedExtentList.</span></li>
+<li><b>Striscia A–Z</b><span>Resta a destra. Il salto sottrae l'altezza visibile della barra: la riga di arrivo si ferma subito sotto di lei, mai nascosta (offset = indice × 64 + altezza barra visibile).</span></li>
+<li><b>Dock flottante (F-75, F-76, D-406)</b><span>La lista passa sotto il dock; l'ultima riga ha in fondo un margine pari al dock. Il pulsante «Sfocatura dock» mostra la variante semitrasparente.</span></li>
+<li><b>Il selettore «Com'è oggi»</b><span>Ricostruisce il comportamento attuale: appena scorri in giù (oltre 12 dp) la barra sparisce tutta con 180 ms; appena sali (oltre 6 dp) ricompare tutta, sempre a tempo. Nel pannello sotto si legge lo spostamento in pixel: oggi salta fra 0 e 108, ora segue lo scroll.</span></li></ol></div></div></div><script>
+function setBlur(on){document.querySelectorAll('.dock,.prevdock').forEach(d=>d.classList.toggle('blur',on));document.querySelectorAll('[data-blur]').forEach(b=>b.setAttribute('aria-pressed',on))}
+document.querySelectorAll('[data-blur]').forEach(b=>b.addEventListener('click',()=>setBlur(b.getAttribute('aria-pressed')!=='true')));
+const A=[["Acqua azzurra, acqua chiara","Lucio Battisti"],["All of Me","John Legend"],["Another One Bites the Dust","Queen"],["Bella ciao","Modena City Ramblers"],["Blinding Lights","The Weeknd"],["Caruso","Lucio Dalla"],["Cara","Lucio Dalla"],["Comfortably Numb","Pink Floyd"],["Creep","Radiohead"],["Digital Love","Daft Punk"],["Dreams","Fleetwood Mac"],["Fix You","Coldplay"],["Get Lucky","Daft Punk"],["Give Life Back to Music","Daft Punk"],["Gimme Shelter","The Rolling Stones"],["Harder, Better, Faster, Stronger","Daft Punk"],["Heroes","David Bowie"],["Hotel California","Eagles"],["Instant Crush","Daft Punk"],["Il cielo in una stanza","Mina"],["La donna cannone","Francesco De Gregori"],["La cura","Franco Battiato"],["Losing My Religion","R.E.M."],["Lose Yourself to Dance","Daft Punk"],["Meri Luis","Lucio Dalla"],["Midnight City","M83"],["Nuvole bianche","Ludovico Einaudi"],["Nel blu dipinto di blu","Domenico Modugno"],["One More Time","Daft Punk"],["Otherside","Red Hot Chili Peppers"],["Paranoid Android","Radiohead"],["Pensa","Fabrizio Moro"],["Piazza Grande","Lucio Dalla"],["Quando","Pino Daniele"],["Redbone","Childish Gambino"],["Rolling in the Deep","Adele"],["Senza una donna","Zucchero"],["Smells Like Teen Spirit","Nirvana"],["Space Oddity","David Bowie"],["Sultans of Swing","Dire Straits"],["Tu non mi basti mai","Lucio Dalla"],["Under Pressure","Queen"],["Un giorno credi","Edoardo Bennato"],["Vecchio frack","Domenico Modugno"],["Viva la Vida","Coldplay"],["Voglio una vita spericolata","Vasco Rossi"],["Wish You Were Here","Pink Floyd"],["Wonderwall","Oasis"],["Yellow","Coldplay"],["Yesterday","The Beatles"],["Zombie","The Cranberries"],["Ancora","Eduardo De Crescenzo"],["Bohemian Rhapsody","Queen"],["Chandelier","Sia"],["Dancing Queen","ABBA"],["Everlong","Foo Fighters"],["Fragile","Sting"],["Generale","Francesco De Gregori"],["Halo","Beyoncé"]];
+const T=A.map((r,i)=>({t:r[0],a:r[1],i,c:i%7+1}));
+const L=document.getElementById('list'),scr=document.getElementById('scr'),panel=document.getElementById('panel'),q=document.getElementById('q'),x=document.getElementById('x'),al=document.getElementById('alpha'),bub=document.getElementById('bub'),dbg=document.getElementById('dbg');
+const H=108;let sort='t',rows=[],off=0,last=0,acc=0,mode='D';
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const keyOf=r=>norm(sort=='a'?r.a:r.t).replace(/[^a-z0-9]/g,'').charAt(0).toUpperCase();
+const row=r=>'<div class="li"><span class="cv c'+r.c+'" style="width:48px;height:48px;border-radius:4px;flex:none"></span><div class="tx"><div class="t">'+r.t+'</div><div class="s">'+r.a+'</div></div><button class="btn m" aria-label="Altre azioni"><svg class="i"><use href="#mv"/></svg></button></div>';
+function build(){const f=norm(q.value.trim());rows=T.filter(r=>!f||norm(r.t).includes(f)||norm(r.a).includes(f));
+ if(sort=='t')rows.sort((a,b)=>norm(a.t).localeCompare(norm(b.t)));if(sort=='a')rows.sort((a,b)=>norm(a.a).localeCompare(norm(b.a))||norm(a.t).localeCompare(norm(b.t)));if(sort=='r')rows.sort((a,b)=>(b.i*7%61)-(a.i*7%61));
+ L.innerHTML=rows.length?rows.map(row).join(''):'<div class="empty2">Nessun brano per «'+q.value+'»</div>';
+ document.getElementById('cnt').textContent=f?rows.length+' brani trovati':'2 034 brani · 128 h';
+ al.innerHTML='ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').map(l=>'<span data-l="'+l+'">'+l+'</span>').join('');al.style.display=(sort=='def'||sort=='r')?'none':'flex';}
+function place(){panel.style.transform='translateY('+(-off)+'px)'}
+function onScroll(){const y=scr.scrollTop,dy=y-last;last=y;
+ if(mode=='D'){off=Math.max(0,Math.min(H,off+dy))}
+ else{acc=(Math.sign(dy)==Math.sign(acc)?acc:0)+dy;if(y<=0){off=0;acc=0}else if(acc>12)off=H;else if(acc<-6)off=0}
+ place();
+ const cur=rows[Math.max(0,Math.min(rows.length-1,Math.round(y/64)))];if(cur){const k=keyOf(cur);al.querySelectorAll('span').forEach(s=>s.classList.toggle('on',s.dataset.l==k))}
+ dbg.innerHTML='Modo: <b>'+(mode=='D'?'segue il dito (1:1)':'oggi, 180 ms a tempo')+'</b><br>Scroll '+Math.round(y)+' px · barra spostata <b>'+Math.round(off)+'</b> di '+H+' px ('+(off==0?'visibile':off>=H?'nascosta':'a metà')+')'}
+scr.addEventListener('scroll',onScroll,{passive:true});
+function jump(l){let idx=rows.findIndex(r=>{const k=keyOf(r);return /[A-Z]/.test(l)?(/[A-Z]/.test(k)&&k>=l):!/[A-Z]/.test(k)});if(idx<0)idx=rows.length-1;
+ const y=idx*64+(H-off);scr.scrollTop=y;last=scr.scrollTop;bub.textContent=l;bub.style.display='grid';onScroll()}
+function at(e){const r=al.getBoundingClientRect(),f=Math.min(.999,Math.max(0,(e.clientY-r.top)/r.height));return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'[Math.floor(f*27)]}
+let drag=false;const ph=document.getElementById('ph');
+const mv=e=>{bub.style.top=(e.clientY-ph.getBoundingClientRect().top-24)+'px';jump(at(e))};
+al.addEventListener('pointerdown',e=>{drag=true;al.setPointerCapture(e.pointerId);mv(e)});al.addEventListener('pointermove',e=>{if(drag)mv(e)});
+const end=()=>{drag=false;bub.style.display='none'};al.addEventListener('pointerup',end);al.addEventListener('pointercancel',end);
+q.addEventListener('input',()=>{build();scr.scrollTop=0;off=0;place();onScroll()});
+x.addEventListener('click',()=>{if(q.value){q.value='';build();onScroll()}});
+document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sort=b.dataset.s;document.querySelectorAll('#chips button').forEach(c=>c.classList.toggle('on',c==b));build();scr.scrollTop=0;onScroll()});
+function setMode(m){mode=m;off=0;acc=0;panel.classList.toggle('t',m=='O');place();['D','O'].forEach(k=>{const b=document.getElementById('m'+k);b.classList.toggle('on',k==m);b.setAttribute('aria-pressed',k==m)});onScroll()}
+document.getElementById('mD').onclick=()=>setMode('D');document.getElementById('mO').onclick=()=>setMode('O');
+build();last=0;onScroll();
+</script></body></html>

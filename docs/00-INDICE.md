@@ -104,6 +104,20 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 81 | `fase-81-player-e-streaming.md` | Player a coda finita, skeleton delle schede in streaming e dei suggeriti in coda |
 | 82 | `fase-82-registro-e-revisione.md` | «Accetta tutte» in un colpo (D-361), Registro per giorno con filtri, Da confermare e Da revisionare |
 | 83 | `fase-83-chiusura-uso-quotidiano.md` | Misure finali e prova a mano del refactor |
+| 84 | `fase-84-broker-e-debito-jam.md` | HiveMQ di riserva, prove a mano rimaste e debito della fase 74 |
+| 85 | `fase-85-debito-review-83.md` | Debito della review di architettura della 83 |
+| 86 | `fase-86-jam-media.md` | `JamMedia` fuori da `jam_providers.dart` |
+| 87 | `fase-87-rete-superfici.md` | Refactor «superfici-e-ricerca»: rete di sicurezza e misure di partenza |
+| 88 | `fase-88-ritocchi-rapidi.md` | Suggeriti senza doppioni, Home, play tondo, Ordina per, Cerca |
+| 89 | `fase-89-dock-e-sezioni.md` | Dock flottante, sfocatura nel Tema, sezioni che ripartono |
+| 90 | `fase-90-intestazioni-che-scorrono.md` | Tutti i brani e isola della Libreria che seguono lo scroll |
+| 91 | `fase-91-ordinamenti-e-playlist.md` | Ordinamenti e foglio Nuova playlist / Aggiungi alla playlist |
+| 92 | `fase-92-cerca-libreria-e-artisti.md` | Cerca: Nella tua libreria, righe di artisti e album |
+| 93 | `fase-93-dati-per-i-filtri.md` | Più generi, nazionalità dell'artista, BPM ed etichetta |
+| 94 | `fase-94-playlist-intelligenti.md` | Playlist intelligenti a filtri multipli |
+| 95 | `fase-95-artisti-uniti.md` | Artisti con due profili YouTube Music |
+| 96 | `fase-96-podcast-scopri.md` | Podcast: Scopri (Apple) e programmi di YouTube Music |
+| 97 | `fase-97-chiusura-superfici.md` | Chiusura del refactor «superfici-e-ricerca» |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 
