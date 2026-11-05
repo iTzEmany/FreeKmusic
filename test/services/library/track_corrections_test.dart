@@ -628,6 +628,37 @@ void main() {
       expect((await recOf(renewed))!.prop, 'open');
     });
 
+    test('revert and revertAll with the file writes off since: a blocked file is not asked about and nothing is told', () async {
+      final id = await track();
+      await put(id, withProp('open'));
+      final done = await corrections.acceptAll();
+      await done.files;
+      fileWrites = false;
+      blocked = TagWriteReason.readOnly;
+      expect(await corrections.revert(done.log.single, reopen: true), isTrue);
+      expect((await log()).where((e) => e.failed != 0), isEmpty);
+      await put(id, withProp('open'));
+      final again = await corrections.acceptAll();
+      fileWrites = true;
+      blocked = null;
+      await again.files;
+      fileWrites = false;
+      blocked = TagWriteReason.readOnly;
+      final back = await corrections.revertAll(again);
+      await back.files;
+      expect(back.count, 1);
+      expect((await log()).where((e) => e.failed != 0), isEmpty);
+    });
+
+    test('a recognition that changes only the artist still reads the file ids to put back', () async {
+      fileWrites = true;
+      final id = await r.add(title: 'Real Title', artist: 'Channel', path: path);
+      await put(id, withProp('open'));
+      final done = await corrections.acceptAll();
+      final old = (jsonDecode(done.log.single.detail!) as Map)['old'] as Map;
+      expect([old['title'], old['artist'], old['isrc'], old['mbid']], ['Real Title', 'Channel', '', '']);
+    });
+
     test('a blank artist in the identity keeps the track artist, in the DB and in the Registro', () async {
       final id = await track();
       await put(

@@ -526,6 +526,47 @@ void main() {
     expect(c.read(activityLogProvider).total, 1);
   });
 
+  test('prune with several pages loaded reads them all again, not only the first', () async {
+    final repo = ActivityLogRepository(db);
+    final base = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < 120; i++) {
+      await repo.add(at: base + i, kind: 'scan', name: 'n$i');
+    }
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final log = c.read(activityLogProvider.notifier);
+    await log.loadMore();
+    await repo.add(at: 1, kind: 'scan', name: 'old');
+    await pumpEventQueue();
+    await log.prune();
+    final s = c.read(activityLogProvider);
+    expect(s.total, 120);
+    expect(s.entries.length, greaterThan(ActivityLogNotifier.pageSize));
+  });
+
+  test('rows with the same time that arrive later are put newest id first', () async {
+    final repo = ActivityLogRepository(db);
+    final at = DateTime.now().millisecondsSinceEpoch;
+    final first = await repo.add(at: at, kind: 'scan', name: 'a');
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final second = await repo.add(at: at, kind: 'scan', name: 'b');
+    await pumpEventQueue();
+    final third = await repo.add(at: at, kind: 'scan', name: 'c');
+    await pumpEventQueue();
+    expect(c.read(activityLogProvider).entries.map((e) => e.id), [third, second, first]);
+  });
+
   test('a second opinion line belongs to Arricchimento', () {
     expect(LogEntry.categoryOfKind('secondOpinion'), LogFilter.enrich);
   });
