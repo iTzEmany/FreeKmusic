@@ -5,6 +5,7 @@ import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/track_ops.dart';
+import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -72,7 +73,7 @@ class _State extends ConsumerState<TrackPickerScreen> {
                 _lastFound = ref.watch(trackSearchProvider(_query)).value ?? _lastFound;
                 final tracks = _lastFound ?? const <Track>[];
                 return ListView.builder(
-                  itemExtent: 64,
+                  itemExtent: trackRowExtentOf(context, false),
                   itemCount: tracks.length,
                   itemBuilder: (_, i) {
                     final t = tracks[i];

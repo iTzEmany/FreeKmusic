@@ -43,6 +43,7 @@ final playerErrorsProvider = Provider<Stream<PlaybackFailure>>(
 );
 
 /// Where the current queue came from, shown as «In riproduzione da».
+// .index is stored (prefs lastContextKind, DB plays.context): only append values, never reorder.
 enum PlayContextKind { album, artist, playlist, favorites, library, search, podcast, radio }
 
 class PlayContext {
@@ -69,7 +70,7 @@ class PlayContextNotifier extends Notifier<PlayContext?> {
   void set(PlayContext? c) => state = c;
 }
 
-/// In memory only: not persisted across launches.
+/// Seeded at startup from the handler's restored context (saved with the queue in settings).
 final playContextProvider = NotifierProvider<PlayContextNotifier, PlayContext?>(
   PlayContextNotifier.new,
 );

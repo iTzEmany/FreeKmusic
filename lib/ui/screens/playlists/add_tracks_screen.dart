@@ -7,6 +7,7 @@ import '../../../providers/database_providers.dart';
 import '../../../providers/playlist_ops.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/track_ops.dart';
+import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/track_row.dart';
@@ -99,7 +100,7 @@ class _AddTracksScreenState extends ConsumerState<AddTracksScreen> {
                       );
                     }
                     return ListView.builder(
-                      itemExtent: 64,
+                      itemExtent: trackRowExtentOf(context, false),
                       itemCount: tracks.length,
                       itemBuilder: (_, i) {
                         final t = tracks[i];

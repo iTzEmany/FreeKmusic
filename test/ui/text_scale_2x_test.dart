@@ -2,7 +2,9 @@ import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/queue_sheet.dart';
+import 'package:codecore/ui/screens/playlists/add_tracks_screen.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
+import 'package:codecore/ui/screens/share/track_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,6 +19,8 @@ void main() {
     'search': (const SearchScreen(), true),
     'queue': (Scaffold(body: QueueSheet(scrollController: ScrollController())), true),
     'empty player': (const NowPlayingScreen(), false),
+    'add tracks': (const AddTracksScreen(playlistId: 1), false),
+    'track picker': (const TrackPickerScreen(), false),
   };
   for (final e in screens.entries) {
     testWidgets('${e.key} has no overflow at 200% text', (tester) async {
