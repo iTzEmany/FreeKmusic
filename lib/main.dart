@@ -232,7 +232,6 @@ Future<void> main() async {
         applyPlus: (on) =>
             container.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: on)),
       );
-      container.read(playContextProvider.notifier).set(playContextOf(handler));
     } on Object catch (e, st) {
       AppLog.w('restore playback failed', e, st);
     }

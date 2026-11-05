@@ -86,11 +86,7 @@ void main() {
     final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
     await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
     await h.pump(tester, const NowPlayingScreen());
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(NowPlayingScreen)));
-    container
-        .read(playContextProvider.notifier)
-        .set(const PlayContext(PlayContextKind.album, 'Album 0'));
+    h.handler.setPlayContext(PlayContextKind.album.index, 'Album 0');
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('In riproduzione da'), findsOneWidget);
     expect(find.text('Album 0'), findsOneWidget);

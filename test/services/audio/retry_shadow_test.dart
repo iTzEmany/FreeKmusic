@@ -3,7 +3,12 @@ import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/player_providers.dart' show ShadowWait, audioHandlerProvider, shadowWaitCap, shadowWaitProvider;
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
+import 'package:codecore/services/stream/stream_preparer.dart' show StreamPhase;
+// ignore: depend_on_referenced_packages
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -80,13 +85,59 @@ void main() {
     expect(online.entryOf(id)!.trackId, isNull);
   });
 
-  test('shadowWaitOf stops listening to the phases once the subscription is cancelled', () async {
-    int listening() => preparer.phases.listeners;
-    final before = listening();
-    final sub = handler.shadowWaitOf(id).listen((_) {});
-    await pumpEventQueue();
-    expect(listening(), before + 1);
-    await sub.cancel();
-    expect(listening(), before);
+  group('shadowWaitProvider', () {
+    late ProviderContainer c;
+    late List<ShadowWait> seen;
+    late ProviderSubscription<AsyncValue<ShadowWait>> sub;
+    const key = 'youtube:v1';
+
+    setUp(() {
+      c = ProviderContainer(overrides: [audioHandlerProvider.overrideWithValue(handler)]);
+      addTearDown(c.dispose);
+    });
+    void listen() {
+      seen = [];
+      sub = c.listen(shadowWaitProvider(id), (_, n) {
+        if (n.hasValue) seen.add(n.value!);
+      }, fireImmediately: true);
+    }
+
+    test('a phase absent or failed is unavailable, one in progress is waiting', () async {
+      preparer.phases.value = {};
+      listen();
+      await pumpEventQueue();
+      expect(seen.last, ShadowWait.unavailable);
+      preparer.phases.value = {key: StreamPhase.downloading};
+      await pumpEventQueue();
+      expect(seen.last, ShadowWait.waiting);
+      preparer.phases.value = {key: StreamPhase.failed};
+      await pumpEventQueue();
+      expect(seen.last, ShadowWait.unavailable);
+      sub.close();
+    });
+
+    test('a phase still in progress past the cap is unavailable', () {
+      fakeAsync((fa) {
+        preparer.phases.value = {key: StreamPhase.downloading};
+        listen();
+        fa.flushMicrotasks();
+        expect(seen.last, ShadowWait.waiting);
+        fa.elapse(shadowWaitCap - const Duration(seconds: 1));
+        expect(seen.last, ShadowWait.waiting);
+        fa.elapse(const Duration(seconds: 1));
+        expect(seen.last, ShadowWait.unavailable);
+        sub.close();
+      });
+    });
+
+    test('it stops listening to the phases once nobody watches', () async {
+      final before = preparer.phases.listeners;
+      listen();
+      await pumpEventQueue();
+      expect(preparer.phases.listeners, before + 1);
+      sub.close();
+      await pumpEventQueue();
+      expect(preparer.phases.listeners, before);
+    });
   });
 }

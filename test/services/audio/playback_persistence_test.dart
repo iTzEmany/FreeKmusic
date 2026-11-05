@@ -63,10 +63,9 @@ void main() {
     final second = open(); // the restart
     addTearDown(second.dispose);
     await PlaybackPersistence(second, store).restore();
-    final seen = <PlayContext?>[];
-    await PlayerController(second, null, onContext: seen.add).resumeLastQueue();
-    expect(seen.single?.kind, PlayContextKind.playlist);
-    expect(seen.single?.name, 'Mix');
+    await PlayerController(second, null).resumeLastQueue();
+    expect(playContextOf(second)?.kind, PlayContextKind.playlist);
+    expect(playContextOf(second)?.name, 'Mix');
 
     // What an older version saved has no context.
     SharedPreferences.setMockInitialValues({'lastQueueIds': ['${ids[0]}']});
