@@ -34,6 +34,7 @@ void main() {
       broker: broker,
     );
     expect(JamInvite.fromAdvert(adv(0)).brokers, [kDefaultJamBrokers.first]);
+    expect(JamInvite.fromAdvert(adv(1)).brokers.single.host, 'broker.hivemq.com');
     expect(JamInvite.fromAdvert(adv(0xFF)).brokers, isEmpty);
     expect(JamInvite.fromAdvert(adv(0)).fingerprint, hasLength(8));
     // Out of the list (a longer list on another version): custom broker, no RangeError.

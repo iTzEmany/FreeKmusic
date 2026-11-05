@@ -15,9 +15,26 @@ class _FakeJam extends JamController {
   _FakeJam(this.initial);
   final JamUiState initial;
   final sent = <JamCommand>[];
+  final _seen = <String, String>{};
+  void set(JamUiState s) {
+    _remember(s);
+    state = s;
+  }
+
+  void _remember(JamUiState s) {
+    for (final p in s.jam?.participants ?? const <JamParticipant>[]) {
+      if (p.name.isNotEmpty) _seen[p.id] = p.name;
+    }
+  }
 
   @override
-  JamUiState build() => initial;
+  String? seenName(String id) => _seen[id];
+
+  @override
+  JamUiState build() {
+    _remember(initial);
+    return initial;
+  }
 
   @override
   Future<JamError?> send(JamCommand cmd) async {
@@ -58,7 +75,65 @@ Future<(_FakeJam, Harness)> _open(WidgetTester tester, JamUiState s) async {
   return (fake, h);
 }
 
+JamUiState _people(List<JamParticipant> people) => JamUiState(
+      phase: JamPhase.active,
+      role: JamRole.host,
+      jam: JamState(
+        version: 3,
+        items: const [
+          JamItem(id: 2, ownerDeviceId: 'peer', title: 'Seconda', ext: 'mp3', durationMs: 1000),
+        ],
+        participants: people,
+        currentIndex: 0,
+        hostDeviceId: 'host',
+        outputDeviceId: 'host',
+      ),
+    );
+
+const _host = JamParticipant(id: 'host', name: 'PC');
+const _peer = JamParticipant(id: 'peer', name: 'Mi A3');
+
 void main() {
+  testWidgets('chi è uscito resta col nome visto prima', (tester) async {
+    final (fake, h) = await _open(tester, _people([_host, _peer]));
+    expect(find.textContaining('Mi A3'), findsOneWidget);
+    fake.set(_people([_host]));
+    await tester.pump();
+    expect(find.textContaining('Mi A3'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('chi è uscito e non si è mai visto: «Ospite»', (tester) async {
+    final (_, h) = await _open(tester, _people([_host]));
+    expect(find.textContaining('Ospite'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('il nome resta anche chiudendo e riaprendo il foglio', (tester) async {
+    final h = await Harness.create(tester);
+    final fake = _FakeJam(_people([_host, _peer]));
+    final open = ValueNotifier(true);
+    await h.pump(
+      tester,
+      ValueListenableBuilder<bool>(
+        valueListenable: open,
+        builder: (_, o, _) => Scaffold(
+          body: o ? CustomScrollView(slivers: const [JamQueueSliver()]) : const SizedBox(),
+        ),
+      ),
+      extraOverrides: [jamProvider.overrideWith(() => fake)],
+    );
+    expect(find.textContaining('Mi A3'), findsOneWidget);
+    open.value = false;
+    await tester.pump();
+    fake.set(_people([_host]));
+    await tester.pump();
+    open.value = true;
+    await tester.pump();
+    expect(find.textContaining('Mi A3'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('host: la riga della modalità cambia la coda', (tester) async {
     final (fake, h) = await _open(tester, _state(host: true));
     expect(find.text("Coda dell'host"), findsOneWidget);

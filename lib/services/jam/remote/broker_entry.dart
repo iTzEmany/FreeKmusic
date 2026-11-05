@@ -46,7 +46,11 @@ class BrokerEntry {
 
 /// Append only: the BLE announcement (phase 72) carries an index into this list.
 /// Mosquitto 8886 was dropped before that index was used (D-328).
-const kDefaultJamBrokers = [BrokerEntry(host: 'broker.emqx.io', port: 8883)];
+/// HiveMQ appended 2026-11-05, TLS cert verified for broker.hivemq.com (D-383).
+const kDefaultJamBrokers = [
+  BrokerEntry(host: 'broker.emqx.io', port: 8883),
+  BrokerEntry(host: 'broker.hivemq.com', port: 8883),
+];
 
 String encodeBrokers(List<BrokerEntry> l) =>
     jsonEncode([for (final b in l) b.toJson()]);

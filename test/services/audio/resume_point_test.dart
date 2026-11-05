@@ -74,4 +74,15 @@ void main() {
       expect(resumeStartFor(0), isNull);
     });
   });
+
+  group('isPastEnd', () {
+    test('only a position at or after the end is stale; an unknown length never', () {
+      const p = Duration(seconds: 10);
+      expect(isPastEnd(p, 10001), isFalse);
+      expect(isPastEnd(p, 10000), isTrue);
+      expect(isPastEnd(p, 9999), isTrue);
+      expect(isPastEnd(p, 0), isFalse);
+      expect(isPastEnd(p, -1), isFalse);
+    });
+  });
 }

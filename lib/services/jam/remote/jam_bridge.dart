@@ -135,10 +135,15 @@ class JamBridge {
     final gen = ++_gen;
     var i = from;
     var failures = 0;
-    var half = retrySame; // the two first attempts together take one attempt's time
     while (gen == _gen) {
       try {
-        await _link.connect(brokers[i], timeoutFactor: half ? 0.5 : 1);
+        await connectWithQuickRetry(
+          _link,
+          brokers[i],
+          quick: retrySame, // the two first attempts together take one attempt's time
+          stopped: () => gen != _gen,
+          onRetry: (e, st) => AppLog.w('bridge: ${brokers[i]} failed', e, st),
+        );
         if (gen != _gen) {
           // Else a newer attempt owns the link.
           if (!_running) {
@@ -160,11 +165,7 @@ class JamBridge {
       } on Object catch (e, st) {
         if (gen != _gen) return;
         AppLog.w('bridge: ${brokers[i]} failed', e, st);
-        if (retrySame) {
-          retrySame = false;
-          continue;
-        }
-        half = false;
+        retrySame = false;
       }
       failures++;
       if (_st != JamBridgeStatus.retrying && failures >= brokers.length) {

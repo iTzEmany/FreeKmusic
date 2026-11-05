@@ -46,3 +46,8 @@ Duration? resumeStartFor(int? savedMs) {
   final start = Duration(milliseconds: savedMs) - kResumeRewind;
   return start < Duration.zero ? Duration.zero : start;
 }
+
+/// [position] is at or past the end of a track of [durationMs]: a stale one (an
+/// unknown length, <= 0, is never past).
+bool isPastEnd(Duration position, int durationMs) =>
+    durationMs > 0 && position.inMilliseconds >= durationMs;

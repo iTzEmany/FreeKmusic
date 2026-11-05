@@ -50,6 +50,23 @@ void main() {
     });
   });
 
+  test('the very first CONNECT fails after stop: no second attempt from the stale one', () {
+    fakeAsync((t) {
+      setUp_();
+      final gate = Completer<void>();
+      link
+        ..failNext = 1
+        ..failAfter = gate.future;
+      bridge.start();
+      t.flushMicrotasks();
+      bridge.stop(); // a newer generation while the first connect is pending
+      gate.complete();
+      t.elapse(const Duration(minutes: 1));
+      expect(link.connectAttempts, [a], reason: 'the stale attempt must not retry');
+      expect(link.connected, isFalse);
+    });
+  });
+
   test('first broker down: the second takes over after 1 s', () {
     fakeAsync((t) {
       setUp_();

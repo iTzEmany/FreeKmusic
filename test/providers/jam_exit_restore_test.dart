@@ -5,6 +5,7 @@ import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart' show trackRepositoryProvider;
+import 'package:codecore/providers/jam_local_queue.dart';
 import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/library_providers.dart' show libraryQueriesProvider;
 import 'package:codecore/providers/player_providers.dart';
@@ -32,6 +33,20 @@ class _Jam extends JamController {
   }
 }
 
+/// Counts the writes of the copy kept aside (D-341).
+class _CountingPersistence extends PlaybackPersistence {
+  _CountingPersistence(super.handler, super.store);
+  int keeps = 0;
+
+  @override
+  Future<void> keepAside(SavedPlayback q, {required bool plus}) {
+    keeps++;
+    return super.keepAside(q, plus: plus);
+  }
+}
+
+final _refProvider = Provider<Ref>((ref) => ref);
+
 class _Hub extends ShareHubNotifier {
   @override
   ShareHubState build() => const ShareHubState();
@@ -46,6 +61,7 @@ void main() {
   late ProviderContainer c;
   late List<int> ids;
   late List<int> before;
+  late _CountingPersistence persistence;
 
   CodecoreAudioHandler newHandler() => CodecoreAudioHandler(
       backend, PlayQueue(), TrackRepository(db), onError: (_) {});
@@ -73,6 +89,7 @@ void main() {
               durationMs: const Value(190000),
             )),
     ];
+    persistence = _CountingPersistence(handler, store);
     c = ProviderContainer(overrides: [
       settingsStoreProvider.overrideWithValue(store),
       shareHubProvider.overrideWith(_Hub.new),
@@ -80,7 +97,7 @@ void main() {
       libraryQueriesProvider.overrideWithValue(LibraryQueries(db)),
       trackRepositoryProvider.overrideWithValue(TrackRepository(db)),
       audioHandlerProvider.overrideWithValue(handler),
-      playbackPersistenceProvider.overrideWithValue(PlaybackPersistence(handler, store)),
+      playbackPersistenceProvider.overrideWithValue(persistence),
       jamCacheDirProvider.overrideWith((ref) => Directory.systemTemp.createTemp('jam_exit')),
       jamBackendFactoryProvider.overrideWithValue(FakeBackend.new),
     ]);
@@ -252,5 +269,63 @@ void main() {
     await handler.restore([ids[0]], 0, const Duration(minutes: 4, seconds: 7));
     expect(backend.seeks.where((d) => d > const Duration(milliseconds: 190000)), isEmpty);
     expect(handler.playbackState.value.position, Duration.zero);
+  });
+
+  test('after a guest Jam, a host Jam gives back the host\'s own queue, not the guest\'s old one', () async {
+    await startIn(ShuffleMode.off);
+    final jam = c.read(jamProvider.notifier);
+    await jam.debugBegin(JamRole.guest, jamState);
+    await jam.end();
+    await pumpEventQueue();
+    expect(handler.queueIds, before);
+    jam.reset();
+    await handler.playQueue([ids[3]], 0); // what the user plays between the two Jams
+    await pumpEventQueue();
+    await jam.debugBegin(JamRole.host, jamState);
+    await pumpEventQueue();
+    await jam.debugFinish();
+    await pumpEventQueue();
+    expect(handler.queueIds, [ids[3]]);
+  });
+
+  test('restoring twice puts the queue back only once', () async {
+    await startIn(ShuffleMode.shuffle);
+    final local = JamLocalQueue(() => c.read(_refProvider), () => const []);
+    await local.save();
+    await local.restore();
+    handler.setShuffleAndRepeat(shuffle: false, repeat: PlayRepeat.off); // the user changes it
+    await local.restore();
+    expect(handler.shuffleEnabled, false, reason: 'the second restore must do nothing');
+  });
+
+  test('the same part of ours seen twice is written aside once (D-341)', () async {
+    await startIn(ShuffleMode.off);
+    final jam = c.read(jamProvider.notifier);
+    await jam.debugBegin(JamRole.guest, together([other, mine(1)], 0));
+    await pumpEventQueue();
+    jam.debugState(together([other, mine(1)], 1)); // our part moved: one write
+    await pumpEventQueue();
+    final after = persistence.keeps;
+    jam.debugState(JamState(
+        version: 3,
+        hostDeviceId: 'h',
+        outputDeviceId: 'h',
+        mode: JamMode.together,
+        items: [other, mine(1)],
+        currentIndex: 1)); // same part, new version: no write
+    await pumpEventQueue();
+    expect(persistence.keeps, after);
+  });
+
+  test('a late state after «Esci» does not overwrite the Jam', () async {
+    await startIn(ShuffleMode.off);
+    final jam = c.read(jamProvider.notifier);
+    await jam.debugBegin(JamRole.guest, together([other, mine(1)], 0));
+    jam.debugState(together([other, mine(1)], 0));
+    final shown = c.read(jamProvider).jam;
+    final ending = jam.end(); // the exit part is worked out before its first await
+    jam.debugState(together([other], 0)); // late, without our tracks
+    expect(identical(c.read(jamProvider).jam, shown), isTrue);
+    await ending;
   });
 }

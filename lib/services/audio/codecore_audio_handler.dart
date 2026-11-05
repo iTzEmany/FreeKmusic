@@ -517,7 +517,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // A saved position past the end of the track (a stale one) is not used.
     final startOk = startAt != null &&
         startAt > Duration.zero &&
-        !(track.durationMs > 0 && startAt.inMilliseconds >= track.durationMs);
+        !isPastEnd(startAt, track.durationMs);
     final start = startOk
         ? startAt
         : ((isOnline && libTrack == null) || streamKey != null ? null : resumeStartFor(track.resumePositionMs));

@@ -457,6 +457,7 @@ class JamHost {
     expire();
     // The gate runs before full/busy, LAN too (the LAN guest maps 409 and 429 to busy).
     if (gate != null && !gate!.allow(id)) {
+      AppLog.i('jam: request dropped (rate) from ${id.substring(0, id.length < 8 ? id.length : 8)}');
       return (status: JamAdmitStatus.tooMany, request: null);
     }
     // Muted senders go through the same checks as everybody else.
@@ -476,6 +477,7 @@ class JamHost {
       return (status: JamAdmitStatus.busy, request: null);
     }
     final silent = gate?.isMuted(id) ?? false;
+    if (silent) AppLog.i('jam: request dropped (muted) from ${id.substring(0, id.length < 8 ? id.length : 8)}');
     final req = JamRequest(
       id: newToken(),
       fromId: id,
