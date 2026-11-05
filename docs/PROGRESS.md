@@ -1298,7 +1298,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 87.2 Caratterizzazione: schede della shell, risultati fusi, ordinamento della Libreria, salto A–Z
 - [x] 87.3 Golden delle superfici toccate
 - [x] 87.4 Scenari di velocità nuovi e misura di partenza sui due telefoni
-- [ ] 87.5 Controlli di fase
+- [x] 87.5 Controlli di fase
 
 ## Fase 88 — Ritocchi rapidi (`fase-88-ritocchi-rapidi.md`)
 - [ ] 88.1 Suggeriti senza brani già in libreria (D-389)
