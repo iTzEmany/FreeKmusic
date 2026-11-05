@@ -48,6 +48,25 @@ class ActivityLogRepository {
     return (await q.getSingle()).read(n) ?? 0;
   }
 
+  /// How many rows there are per kind, outcome and «nobody answered» (the
+  /// detail of a stopped completion), for the counts of the Registro filters.
+  Future<List<({String kind, bool failed, bool noAnswer, int n})>> countsByKind() async {
+    final rows = await _db.customSelect(
+      'SELECT kind, failed, COALESCE(detail LIKE \'%"noAnswer":true%\', 0) AS na, COUNT(*) AS n '
+      'FROM ${_db.activityLogRows.actualTableName} GROUP BY kind, failed, na',
+      readsFrom: {_db.activityLogRows},
+    ).get();
+    return [
+      for (final r in rows)
+        (
+          kind: r.read<String>('kind'),
+          failed: r.read<int>('failed') != 0,
+          noAnswer: r.read<int>('na') != 0,
+          n: r.read<int>('n'),
+        ),
+    ];
+  }
+
   /// Drops the rows older than [keep] (run at start).
   Future<int> prune(int nowMs) => (_db.delete(
     _db.activityLogRows,

@@ -22,6 +22,11 @@ class ReviewDismissedNotifier extends Notifier<Set<int>> {
     state = {...state, ...ids};
     await ref.read(settingsStoreProvider).writeReviewDismissed(state);
   }
+
+  Future<void> remove(Set<int> ids) async {
+    state = state.difference(ids);
+    await ref.read(settingsStoreProvider).writeReviewDismissed(state);
+  }
 }
 
 final reviewDismissedProvider =
@@ -78,6 +83,9 @@ class ReviewActions {
 
   Future<void> dismiss(Set<int> ids) =>
       _ref.read(reviewDismissedProvider.notifier).add(ids);
+
+  Future<void> undismiss(Set<int> ids) =>
+      _ref.read(reviewDismissedProvider.notifier).remove(ids);
 }
 
 final reviewActionsProvider = Provider<ReviewActions>(ReviewActions.new);

@@ -33,4 +33,14 @@
 ## Dalla review della fase 80
 - Riquadro «Da confermare · N», schede delle proposte e righe del Registro su `CcTile` (`lib/ui/widgets/cc_tile.dart`); caricamento di Da revisionare con `AsyncBody(rowHeight:)`/`RowsLoading` invece di uno skeleton fatto a mano.
 
+## Dalla review della fase 81
+- `Skeleton` ha parametri ancora senza chiamanti (`margin`, `Skeleton.card(title:)`, `label` su card/gridCell/bars): usarli qui dove servono (Registro, Da revisionare), altrimenti la 83 li toglie.
+
 ## Esiti
+- 2026-11-05 — `flutter analyze` pulito; comando mirato + `test/l10n`, test di architettura e separatori, tutti i golden: 268 test verdi. APK debug costruito.
+- Golden nuovi (`test/goldens/activity_golden_test.dart`, ora fissa con `nowMsOverride` di `lib/core/clock.dart`): `activity_log`, `proposals`, `review` a phone e desktop, 100 e 150 %, più `phone_100_light_*`. Corretti dai golden: spazio prima di «Rivedi», larghezza massima di Da confermare su desktop, vuoto nella scheda dei download chiusa.
+- Code review Opus di 82.1-82.2 (area a rischio): file bloccati che non arrivavano al Registro; proposta scartata (o rinnovata) durante «Accetta tutte» applicata lo stesso → ricontrollo dentro la transazione; Annulla che scartava tutto → D-372 precisata (Annulla rimette le proposte in Da confermare, Ripristina del Registro le scarta).
+- Code review Opus di 82.3: chip «senza risultato» del giro in sottofondo, voce `noAnswer` come «Fermato», «File non aggiornato» col nome del brano e passi secondo il motivo, etichetta TalkBack della correzione, conteggi dei filtri dal DB (`countsByKind`), avviso in Pulisci, selezione desktop per voce. Review di 82.4: Annulla di Ignora fuori schermata, pulsanti della selezione con testo.
+- Scheggia (effort high): 61 mutanti, 17 sopravvissuti, ora coperti da test. Bug corretti: Ripristina con file non scritto ora lascia la riga d'errore nel Registro; righe di registro rilette a blocchi di 500 (limite di variabili SQLite); vecchio Annulla chiuso a ogni «Accetta tutte»; riga d'importazione col dettaglio illeggibile contata come nel DB.
+- Mi A3: «Accetta tutte (27)» → lista vuota subito, snackbar «27 correzioni accettate. I file si aggiornano in sottofondo.», 27 correzioni nel Registro con da → a e Ripristina (file non toccati: «Scrivi le modifiche nei file» spento, come voluto). Con l'impostazione accesa per la prova, Ripristina ha riscritto il file con i tag di prima (poi impostazione rimessa com'era). Registro: giorni, filtri con conteggi che cambiano la lista, Pulisci chiede conferma. Da revisionare: spiegazione, filtri con conteggi, chip, Ignora + Annulla rimette la riga; «Tutti» coincide col riquadro della Libreria. Nessuna eccezione nel log.
+- Lasciato alla fase 83: il pannello di dettaglio desktop di un gruppo di download mostra solo il primo brano; `Skeleton.margin`/`label` ancora senza chiamanti (il Registro è sincrono).

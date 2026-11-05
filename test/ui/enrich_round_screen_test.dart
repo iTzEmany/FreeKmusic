@@ -87,11 +87,9 @@ void main() {
       extraOverrides: [activityProvider.overrideWithValue(const ActivityState([], []))],
     );
     await tester.pump(const Duration(milliseconds: 300));
-    expect(
-      find.text('Arricchimento: 2 brani completati, 1 senza risultato'),
-      findsOneWidget,
-    );
-    await tester.tap(find.textContaining('Arricchimento:'));
+    expect(find.text('Testi e copertine aggiunti'), findsOneWidget);
+    expect(find.text('1 senza risultato'), findsOneWidget);
+    await tester.tap(find.text('Testi e copertine aggiunti'));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Aggiornati'), findsOneWidget);

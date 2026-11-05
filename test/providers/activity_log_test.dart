@@ -14,6 +14,7 @@ import 'package:codecore/services/scanner/library_scanner.dart' show ScanProgres
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
 import 'package:codecore/core/import_row.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -391,6 +392,98 @@ void main() {
     expect(s.entries.first.item!.name, 'new');
   });
 
+  test('the filter counts come from the whole Registro, not from the loaded page', () async {
+    Future<void> row(String kind, {int failed = 0, String? detail}) => db
+        .into(db.activityLogRows)
+        .insert(ActivityLogRowsCompanion.insert(
+          at: DateTime.now().millisecondsSinceEpoch,
+          kind: kind,
+          name: 'n',
+          failed: Value(failed),
+          detail: Value(detail),
+        ));
+    for (var i = 0; i < 70; i++) {
+      await row('download');
+    }
+    await row('download', failed: 1);
+    await row('scan', failed: 1);
+    await row('enrichBackground', failed: 1, detail: '{"noAnswer":true}');
+    await row('correction');
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final s = c.read(activityLogProvider);
+    expect(s.entries, hasLength(ActivityLogNotifier.pageSize));
+    expect(s.counts, {
+      LogFilter.all: 74,
+      LogFilter.download: 71,
+      LogFilter.library: 1,
+      LogFilter.enrich: 1,
+      LogFilter.correction: 1,
+      LogFilter.errors: 2,
+    }, reason: 'a completion that nobody answered is stopped, not an error');
+  });
+
+  ActivityLogRow importRow({required int failed, String? detail}) =>
+      ActivityLogRow(id: 1, at: 0, kind: 'import', name: 'Spotify', done: 0, total: 0, failed: failed, detail: detail);
+
+  test('an import row whose detail cannot be read follows its failed column, as the counts do', () {
+    expect(LogEntry.fromRow(importRow(failed: 1, detail: '{broken')).failed, isTrue);
+    expect(LogEntry.fromRow(importRow(failed: 0, detail: '{broken')).failed, isFalse);
+  });
+
+  test('a planned import is not an error, in the line or in the counts', () async {
+    await db.into(db.activityLogRows).insert(ActivityLogRowsCompanion.insert(
+      at: 1, kind: 'import', name: 'Spotify', detail: const Value('{"event":"planned"}')));
+    expect(LogEntry.fromRow(importRow(failed: 0, detail: '{"event":"planned"}')).failed, isFalse);
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    expect(c.read(activityLogProvider).counts[LogFilter.errors], 0);
+  });
+
+  test('a second opinion line belongs to Arricchimento', () {
+    expect(LogEntry.categoryOfKind('secondOpinion'), LogFilter.enrich);
+  });
+
+  test('the counts stay those of the whole Registro after add and after loadMore', () async {
+    for (var i = 1; i <= 120; i++) {
+      await db.into(db.activityLogRows).insert(ActivityLogRowsCompanion.insert(
+        at: DateTime.now().millisecondsSinceEpoch + i, kind: 'scan', name: 'n$i', failed: Value(i == 1 ? 1 : 0)));
+    }
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final log = c.read(activityLogProvider.notifier);
+    await log.add(LogEntry(
+      at: DateTime.now().add(const Duration(days: 1)),
+      item: const ActivityItem(kind: ActivityKind.download, key: 'd', name: 'x', running: false, failed: true),
+    ));
+    var counts = c.read(activityLogProvider).counts;
+    expect(counts[LogFilter.all], 121);
+    expect(counts[LogFilter.download], 1);
+    expect(counts[LogFilter.library], 120);
+    expect(counts[LogFilter.errors], 2);
+    await log.loadMore();
+    expect(c.read(activityLogProvider).entries.length, greaterThan(ActivityLogNotifier.pageSize));
+    counts = c.read(activityLogProvider).counts;
+    expect(counts[LogFilter.all], 121);
+    expect(counts[LogFilter.library], 120);
+    expect(counts[LogFilter.errors], 2);
+  });
+
   group('no doubles', () {
     late ProviderContainer c;
     setUp(() {
@@ -445,5 +538,56 @@ void main() {
         ActivityLogRowsCompanion.insert(at: DateTime.now().millisecondsSinceEpoch, kind: 'scan', name: 'hidden'));
     await c.read(activityLogProvider.notifier).loadMore();
     expect(c.read(activityLogProvider).entries, hasLength(3));
+  });
+
+  group('groupLog', () {
+    LogEntry dl(DateTime at, {bool failed = false}) => LogEntry(
+      at: at,
+      item: ActivityItem(kind: ActivityKind.download, key: 'k$at', name: 'S', running: false, failed: failed),
+    );
+    final today = DateTime(2026, 11, 5, 12);
+
+    test('by local day, newest first; two finished downloads of a day make one row', () {
+      final days = groupLog([
+        dl(today),
+        dl(today.subtract(const Duration(hours: 1)), failed: true),
+        dl(today.subtract(const Duration(hours: 2))),
+        dl(today.subtract(const Duration(days: 1))),
+      ], LogFilter.all);
+      expect(days.map((d) => d.day), [DateTime(2026, 11, 5), DateTime(2026, 11, 4)]);
+      expect(days[0].rows.map((r) => r.group.length), [2, 0], reason: 'the failed one stays alone');
+      expect(days[1].rows.single.group, isEmpty, reason: 'one download is no group');
+    });
+
+    test('counts and filters: Errori is every failed line, a correction is its own category', () {
+      final fix = LogEntry(
+        at: today,
+        correction: ActivityLogRow(id: 1, at: 0, kind: 'correction', name: 'n', done: 0, total: 0, failed: 0),
+      );
+      final fileFail = LogEntry(
+        at: today,
+        correction: ActivityLogRow(
+          id: 2, at: 0, kind: 'correction', name: 'n', done: 0, total: 0, failed: 1, detail: '{"trackId":1,"file":"x"}'),
+        detail: const {'trackId': 1, 'file': 'x'},
+      );
+      final all = [dl(today), dl(today, failed: true), fix, fileFail];
+      expect(logCounts(all), {
+        LogFilter.all: 4,
+        LogFilter.download: 2,
+        LogFilter.library: 0,
+        LogFilter.enrich: 0,
+        LogFilter.correction: 2,
+        LogFilter.errors: 2,
+      });
+      final noAnswer = LogEntry(
+        at: today,
+        detail: const {'noAnswer': true},
+        item: const ActivityItem(kind: ActivityKind.enrichBackground, key: 'b', name: null, running: false, failed: true),
+      );
+      expect(noAnswer.failed, isFalse);
+      expect(noAnswer.stopped, isTrue);
+      expect(fileFail.revertible, isFalse, reason: 'no old/new to put back');
+      expect(groupLog(all, LogFilter.errors).single.rows, hasLength(2));
+    });
   });
 }

@@ -1266,11 +1266,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 81.4 Controlli di fase
 
 ## Fase 82 — Registro attività, Da confermare e Da revisionare (`fase-82-registro-e-revisione.md`)
-- [ ] 82.1 «Accetta tutte» in un colpo
-- [ ] 82.2 Da confermare
-- [ ] 82.3 Registro attività
-- [ ] 82.4 Da revisionare
-- [ ] 82.5 Controlli di fase
+- [x] 82.1 «Accetta tutte» in un colpo
+- [x] 82.2 Da confermare
+- [x] 82.3 Registro attività
+- [x] 82.4 Da revisionare
+- [x] 82.5 Controlli di fase
 
 ## Fase 83 — Chiusura del refactor «ui-uso-quotidiano» (`fase-83-chiusura-uso-quotidiano.md`)
 - [ ] 83.1 Misure finali
