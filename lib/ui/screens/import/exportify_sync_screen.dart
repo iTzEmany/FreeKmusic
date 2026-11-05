@@ -14,6 +14,7 @@ import '../../../services/import/imported_playlist.dart';
 import '../../../services/import/import_chain.dart';
 import '../../../services/import/import_diff.dart' show ImportDiff;
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart' show RowsLoading;
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_state.dart';
@@ -260,7 +261,7 @@ class _ExportifySyncScreenState extends ConsumerState<ExportifySyncScreen> {
         body: _loadFailed
             ? ErrorState(message: l.exportifySyncLoadFailed, onRetry: _load)
             : entries == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const RowsLoading()
             : entries.isEmpty
             ? EmptyState(
                 icon: Icons.sync_rounded,

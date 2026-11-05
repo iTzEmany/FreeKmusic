@@ -15,6 +15,7 @@ import 'cc_sheet.dart';
 import 'cover_image.dart';
 import 'section_header.dart';
 import 'show_msg.dart';
+import 'skeleton.dart';
 
 typedef CoverSave = Future<bool> Function(CoverOps ops, List<int> bytes, String? mime);
 
@@ -138,10 +139,7 @@ class _CoverPickerSheetState extends ConsumerState<_CoverPickerSheet> {
             if (q != null && (proposals == null || proposals.isNotEmpty)) ...[
               SectionHeader(l.coverSourceOnline),
               if (proposals == null)
-                Padding(
-                  padding: const EdgeInsets.all(CcDims.gap16),
-                  child: CircularProgressIndicator(semanticsLabel: l.coverSourceOnline),
-                )
+                Skeleton.list(rows: 2, label: l.coverSourceOnline)
               else
                 SizedBox(
                   height: _thumb + 28,
