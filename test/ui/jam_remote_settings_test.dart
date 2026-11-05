@@ -58,7 +58,9 @@ void main() {
     await h.pump(t, const JamRemoteSettings(), extraOverrides: [
       mqttLinkFactoryProvider.overrideWithValue(() => link ?? FakeMqttLink(fail: failLink)),
     ]);
-    ProviderScope.containerOf(t.element(find.byType(JamRemoteSettings))).read(jamBrokersProvider.notifier).add(_mosquitto); // a second broker to move and remove
+    final n = ProviderScope.containerOf(t.element(find.byType(JamRemoteSettings))).read(jamBrokersProvider.notifier);
+    n.remove(kDefaultJamBrokers[1]); // keep the two-broker baseline of these tests
+    n.add(_mosquitto); // a second broker to move and remove
     await t.pumpAndSettle();
     return h;
   }
@@ -172,6 +174,7 @@ void main() {
     final c = ProviderContainer(overrides: [settingsStoreProvider.overrideWithValue(store)]);
     addTearDown(c.dispose);
     final n = c.read(jamBrokersProvider.notifier);
+    n.remove(kDefaultJamBrokers[1]);
     n.add(_mosquitto);
     n.add(const BrokerEntry(host: 'c.net', port: 1));
     n.move(0, 2); // the UI passes index + 1 for "down by one"

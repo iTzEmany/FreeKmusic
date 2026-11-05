@@ -42,7 +42,7 @@ void main() {
     );
     expect(decodeBrokers(null), kDefaultJamBrokers);
     expect(decodeBrokers('not json'), kDefaultJamBrokers);
-    expect(kDefaultJamBrokers.map((b) => '$b'), ['broker.emqx.io:8883']);
+    expect(kDefaultJamBrokers.map((b) => '$b'), ['broker.emqx.io:8883', 'broker.hivemq.com:8883']);
     expect(kDefaultJamBrokers.every((b) => b.tls), isTrue);
   });
 
