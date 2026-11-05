@@ -17,9 +17,13 @@ import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/track_art.dart';
-import '../now_playing/proposal_card.dart' show ActionButton, identLabel, recogSourceLabel;
+import '../now_playing/proposal_card.dart'
+    show ActionButton, identLabel, recogSourceLabel;
 
-typedef _Build = Widget Function({required VoidCallback? onPressed, required Widget child});
+typedef _Build = Widget Function({
+  required VoidCallback? onPressed,
+  required Widget child,
+});
 
 // 48 dp high, as every target of the app.
 _Build _filled({bool tonal = false}) => ({required onPressed, required child}) {
@@ -34,14 +38,21 @@ class ProposalsScreen extends ConsumerWidget {
   const ProposalsScreen({super.key});
 
   /// «Annulla» after «Accetta tutte»: puts every correction back (like «Ripristina») and the proposals among the open ones.
-  Future<void> _undo(BuildContext context, TrackCorrections fixes, AcceptedAll done, ActivityLogNotifier log) async {
+  Future<void> _undo(
+    BuildContext context,
+    TrackCorrections fixes,
+    AcceptedAll done,
+    ActivityLogNotifier log,
+  ) async {
     await done.files; // the tags of the new values are in the files before the old ones
     var failed = false;
     for (final row in done.log.reversed) {
       if (!await fixes.revert(row, reopen: true)) failed = true;
     }
     unawaited(log.reload());
-    if (failed && context.mounted) showMsg(context, context.l10n.logRevertFailed);
+    if (failed && context.mounted) {
+      showMsg(context, context.l10n.logRevertFailed);
+    }
   }
 
   @override
@@ -53,44 +64,78 @@ class ProposalsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: CcAppBar(title: l.recogTitle),
       body: list.isEmpty
-          ? EmptyState(icon: Icons.task_alt_rounded, message: l.recogNoProposals, help: l.recogNoProposalsHint)
-          : ListView.builder(
-              padding: const EdgeInsets.only(bottom: CcDims.gap16),
-              itemCount: list.length + 1,
-              itemBuilder: (_, i) {
-                if (i == 0) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(l.recogSuggested(list.length), style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: CcDims.gap12),
-                        ActionButton(
-                          label: l.recogAcceptAllCount(list.length),
-                          semantics: l.recogAcceptAllCount(list.length),
-                          failed: l.recogActionFailed,
-                          build: _filled(),
-                          action: () async {
-                            final done = await fixes.acceptAll(); // D-331: no dialog
-                            if (done.count > 0 && context.mounted) {
-                              showUndoSnack(context, l.recogAcceptedAll(done.count), () {
-                                unawaited(_undo(context, fixes, done, log));
-                              });
-                            }
-                            return true;
-                          },
+          ? EmptyState(
+              icon: Icons.task_alt_rounded,
+              message: l.recogNoProposals,
+              help: l.recogNoProposalsHint,
+            )
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 960),
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(bottom: CcDims.gap16),
+                  itemCount: list.length + 1,
+                  itemBuilder: (_, i) {
+                    if (i == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          CcDims.margin,
+                          0,
+                          CcDims.margin,
+                          CcDims.gap12,
                         ),
-                      ],
-                    ),
-                  );
-                }
-                final p = list[i - 1];
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
-                  child: _ProposalTile(key: ValueKey('proposal-${p.track.id}'), track: p.track, rec: p.rec, fixes: fixes),
-                );
-              },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              l.recogSuggested(list.length),
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: CcDims.gap12),
+                            ActionButton(
+                              label: l.recogAcceptAllCount(list.length),
+                              semantics: l.recogAcceptAllCount(list.length),
+                              failed: l.recogActionFailed,
+                              build: _filled(),
+                              action: () async {
+                                final done = await fixes
+                                    .acceptAll(); // D-331: no dialog
+                                if (done.count > 0 && context.mounted) {
+                                  showUndoSnack(
+                                    context,
+                                    l.recogAcceptedAll(done.count),
+                                    () {
+                                      unawaited(
+                                        _undo(context, fixes, done, log),
+                                      );
+                                    },
+                                  );
+                                }
+                                return true;
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    final p = list[i - 1];
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        CcDims.margin,
+                        0,
+                        CcDims.margin,
+                        CcDims.gap8,
+                      ),
+                      child: _ProposalTile(
+                        key: ValueKey('proposal-${p.track.id}'),
+                        track: p.track,
+                        rec: p.rec,
+                        fixes: fixes,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
     );
   }
@@ -99,7 +144,12 @@ class ProposalsScreen extends ConsumerWidget {
 /// One proposal: cover, the old values struck out and dimmed, the new ones
 /// highlighted where they differ, the source, and Scarta / Accetta.
 class _ProposalTile extends StatelessWidget {
-  const _ProposalTile({super.key, required this.track, required this.rec, required this.fixes});
+  const _ProposalTile({
+    super.key,
+    required this.track,
+    required this.rec,
+    required this.fixes,
+  });
 
   final Track track;
   final Recognition rec;
@@ -128,10 +178,20 @@ class _ProposalTile extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              child: Text(text, style: style, maxLines: 2, overflow: TextOverflow.ellipsis),
+              child: Text(
+                text,
+                style: style,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           )
-        : Text(text, style: style?.copyWith(color: cc.textMuted), maxLines: 2, overflow: TextOverflow.ellipsis);
+        : Text(
+            text,
+            style: style?.copyWith(color: cc.textMuted),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          );
 
     final artist = id.artist.isEmpty ? (track.artist ?? '') : id.artist;
     return CcTile(
@@ -154,9 +214,20 @@ class _ProposalTile extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(now, style: dimmed, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(
+                            now,
+                            style: dimmed,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           const SizedBox(height: CcDims.gap4),
-                          value(id.title, id.title != track.title, theme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+                          value(
+                            id.title,
+                            id.title != track.title,
+                            theme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           if (artist.isNotEmpty || src != null) ...[
                             const SizedBox(height: CcDims.gap4),
                             Wrap(
@@ -164,16 +235,31 @@ class _ProposalTile extends StatelessWidget {
                               runSpacing: CcDims.gap4,
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                if (artist.isNotEmpty) value(artist, artist != (track.artist ?? ''), theme.bodyMedium),
+                                if (artist.isNotEmpty)
+                                  value(
+                                    artist,
+                                    artist != (track.artist ?? ''),
+                                    theme.bodyMedium,
+                                  ),
                                 if (src != null)
                                   DecoratedBox(
                                     decoration: BoxDecoration(
                                       color: cc.surface2,
-                                      borderRadius: BorderRadius.circular(CcDims.rCard),
+                                      borderRadius: BorderRadius.circular(
+                                        CcDims.rCard,
+                                      ),
                                     ),
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                      child: Text(src, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 3,
+                                      ),
+                                      child: Text(
+                                        src,
+                                        style: theme.bodySmall?.copyWith(
+                                          color: cc.textMuted,
+                                        ),
+                                      ),
                                     ),
                                   ),
                               ],

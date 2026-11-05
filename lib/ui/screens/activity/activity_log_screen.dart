@@ -336,6 +336,7 @@ class _Pending extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Text(l.logPendingReview, style: theme.labelLarge?.copyWith(color: cc.accentSoft)),
                   const Icon(Icons.chevron_right_rounded),
                 ],

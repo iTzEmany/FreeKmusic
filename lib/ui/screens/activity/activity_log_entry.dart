@@ -290,6 +290,7 @@ class LogEntryCard extends StatelessWidget {
     final e = row.entry;
     final grouped = row.group.isNotEmpty;
     final text = logText(l, e);
+    final hasActions = grouped || e.revertible || text.how.isNotEmpty;
     final fmt = DateFormat.Hm(Localizations.localeOf(context).toLanguageTag());
     final title = grouped ? l.logDlGroup(row.group.length) : text.title;
     final label = [
@@ -317,9 +318,9 @@ class LogEntryCard extends StatelessWidget {
             onTap: onTap,
             semanticsLabel: label,
             selected: selected,
-            minHeight: 56,
+            minHeight: hasActions ? 0 : 56,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.fromLTRB(12, 12, 12, hasActions ? 0 : 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -364,7 +365,7 @@ class LogEntryCard extends StatelessWidget {
                   ],
                 ),
               ),
-          if (grouped || e.revertible || text.how.isNotEmpty)
+          if (hasActions)
             Padding(
               padding: const EdgeInsets.fromLTRB(40, 0, 12, 4),
               child: Wrap(
