@@ -1288,3 +1288,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 85.1 Contesto che segue l'handler (`playContextListenable`) e tetto delle schede in streaming in `shadowWaitProvider` (1d6b4388)
 - [x] 85.2 Ricerca fallita visibile nei selettori (`keepWhileLoading` + `AsyncBody`) e test a tappeto dei pulsanti (52230d15)
 - [x] 85.3 `libraryIndexProvider` in `library_providers.dart` e regola «Shuffle+ acceso» unica (`plusOn`) (954d1010)
+
+## Fase 86 — `JamMedia` fuori da `jam_providers.dart` (`fase-86-jam-media.md`)
+- [x] 86.1 `JamMedia` in `lib/providers/jam_media.dart`; il controller delega (cdca7734)
+- [x] 86.2 Test unitari di `JamMedia` dai mutanti sopravvissuti (fa949c38)

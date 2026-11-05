@@ -104,6 +104,9 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 81 | `fase-81-player-e-streaming.md` | Player a coda finita, skeleton delle schede in streaming e dei suggeriti in coda |
 | 82 | `fase-82-registro-e-revisione.md` | «Accetta tutte» in un colpo (D-361), Registro per giorno con filtri, Da confermare e Da revisionare |
 | 83 | `fase-83-chiusura-uso-quotidiano.md` | Misure finali e prova a mano del refactor |
+| 84 | `fase-84-broker-e-debito-jam.md` | HiveMQ di riserva, prove a mano rimaste e debito della fase 74 |
+| 85 | `fase-85-debito-review-83.md` | Debito della review di architettura della 83 |
+| 86 | `fase-86-jam-media.md` | `JamMedia` fuori da `jam_providers.dart` |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 

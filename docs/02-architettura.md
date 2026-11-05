@@ -124,6 +124,7 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
   `jam_guest` = client, `jam_output` = applica lo stato a un `AudioBackend`, `jam_cache`), orchestrazione in
   `lib/providers/jam_providers.dart` (`JamController`), UI in `lib/ui/screens/jam/`.
   `JamLocalQueue` (`lib/providers/jam_local_queue.dart`, fase 84) mette da parte e restituisce la coda dell'ospite e la modalità di shuffle (R-90, D-209, D-341, D-342).
+  `JamMedia` (`lib/providers/jam_media.dart`, fase 86) risolve file, metadati e copertine della Jam (libreria o cache locale, rete del proprietario, id YouTube) e possiede la cache della Jam, i pin e il client HTTP; il controller la costruisce e le delega `resolve`, `fetchCover` e `fetchMeta`.
 - La Jam usa un proprio `AudioBackend`: la coda locale (`PlayQueue`) non viene toccata; la riproduzione locale va in pausa all'avvio.
 - Permessi coda: tutti aggiungono e riordinano; l'ospite rimuove solo i propri brani (mai quello in riproduzione) e non
   cambia brano; l'host fa tutto.
