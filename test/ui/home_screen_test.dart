@@ -1,3 +1,5 @@
+import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
+import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:codecore/ui/screens/home/home_row.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
@@ -43,6 +45,38 @@ void main() {
     await _settle(tester);
     return h;
   }
+
+  testWidgets('Play is reachable by a semantic tap (TalkBack)', (tester) async {
+    final h = await openHome(tester);
+    final handle = tester.ensureSemantics();
+    tester.semantics.tap(find.semantics.byLabel('Riproduci'));
+    await _settle(tester);
+    expect(h.handler.queueIds, hasLength(4));
+    handle.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('Registro opens in one tap from the header', (tester) async {
+    final h = await openHome(tester);
+    await tester.tap(find.byTooltip('Registro'));
+    await _settle(tester);
+    expect(find.byType(ActivityLogScreen), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the shuffle title fits at text scale 2.0', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, const HomeScreen(), textScale: 2);
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(PlayCircleButton), findsOneWidget);
+    // displaySmall is 36 sp: at 2.0 one line is ~86 px, so >100 means it wrapped.
+    expect(tester.getSize(find.text('Casuale su tutto')).height, greaterThan(100));
+    await h.dispose(tester);
+  });
 
   testWidgets('home with music: shuffle hero, shortcuts, fan, no Riprendi', (
     tester,
@@ -114,7 +148,7 @@ void main() {
     tester,
   ) async {
     final h = await openHome(tester);
-    await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
     expect(h.handler.shuffleEnabled, isFalse);
     expect(h.handler.queueIds, hasLength(4));
@@ -128,7 +162,7 @@ void main() {
     final h = await openHome(tester);
     await tester.tap(find.byIcon(Icons.shuffle_rounded));
     await _settle(tester);
-    await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
     expect(h.handler.shuffleEnabled, isTrue);
     expect(h.handler.queueIds, hasLength(4));
@@ -203,7 +237,7 @@ void main() {
     tester,
   ) async {
     final h = await openHome(tester);
-    await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
     final row = find.byKey(const ValueKey('resume-queue'));
     expect(row, findsOneWidget);
@@ -311,7 +345,7 @@ void main() {
     '«Riprendi» orders the queue, then tracks left in the middle, then albums',
     (tester) async {
       final h = await openRanked(tester);
-      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await _settle(tester);
       final queue = y(tester, find.byKey(const ValueKey('resume-queue')));
       final track = y(

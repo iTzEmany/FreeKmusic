@@ -2155,7 +2155,7 @@ abstract class AppLocalizations {
   /// No description provided for @sortRecent.
   ///
   /// In it, this message translates to:
-  /// **'Recenti'**
+  /// **'Ascoltati di recente'**
   String get sortRecent;
 
   /// No description provided for @sortAlphabetical.

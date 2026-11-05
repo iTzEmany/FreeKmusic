@@ -10,6 +10,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/empty_state.dart';
 import '../../../providers/folder_actions.dart';
+import '../activity/activity_log_screen.dart';
 import '../settings/settings_screen.dart';
 import 'exportify_card.dart';
 import 'home_blocks.dart';
@@ -55,6 +56,11 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           const ActivityButton(),
+          IconButton(
+            tooltip: l.activityLog,
+            icon: const Icon(Icons.receipt_long_rounded),
+            onPressed: () => ShellNav.open<void>(context, const ActivityLogScreen()),
+          ),
           IconButton(
             tooltip: l.navSettings,
             icon: const Icon(Icons.settings_outlined),

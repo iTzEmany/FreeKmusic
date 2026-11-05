@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
+import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,10 @@ void main() {
     'the play icon starts the whole list from the first, shuffle off',
     (tester) async {
       final h = await _open(tester);
+      expect(
+        tester.getSize(find.byType(PlayCircleButton)),
+        const Size(48, 48),
+      );
       await tester.tap(find.byTooltip('Riproduci'));
       await _settle(tester);
       expect(h.handler.queueIds, hasLength(4));

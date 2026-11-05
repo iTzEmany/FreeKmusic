@@ -1237,7 +1237,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get sortRecent => 'Recenti';
+  String get sortRecent => 'Ascoltati di recente';
 
   @override
   String get sortAlphabetical => 'Alfabetico';

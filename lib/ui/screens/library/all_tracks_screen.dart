@@ -13,6 +13,7 @@ import '../../theme/tokens.dart';
 import '../../../data/db/app_database.dart';
 import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/play_buttons.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
 import '../../widgets/selection_bar.dart';
@@ -91,11 +92,7 @@ class _AllTracksHeader extends StatelessWidget {
             ),
           ),
           if (shown.isNotEmpty) ...[
-            IconButton(
-              tooltip: l.play,
-              onPressed: onPlay,
-              icon: Icon(Icons.play_arrow_rounded, color: cc.accent),
-            ),
+            PlayCircleButton(size: 48, onPressed: onPlay),
             ShuffleModeButton(
               size: 24,
               dot: false,
