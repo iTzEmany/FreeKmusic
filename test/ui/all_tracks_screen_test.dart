@@ -148,6 +148,18 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('changing the sort reorders the rows', (tester) async {
+    final h = await _open(tester);
+    double y(String t) => tester.getTopLeft(find.text(t)).dy;
+    expect(y('Song 0'), lessThan(y('Song 1'))); // default: by album
+    expect(y('Song 2'), lessThan(y('Song 1')));
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    c.read(trackQueryProvider(false).notifier).update((q) => q.copyWith(sort: SortOption.addedAt));
+    await _settle(tester);
+    expect(y('Song 3'), lessThan(y('Song 2'))); // newest first
+    expect(y('Song 1'), lessThan(y('Song 0')));
+    await h.dispose(tester);
+  });
   testWidgets('two screens open together do not share the search text', (
     tester,
   ) async {

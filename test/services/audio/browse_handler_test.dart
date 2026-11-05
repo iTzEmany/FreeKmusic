@@ -59,6 +59,15 @@ void main() {
     expect(handler.playContext, isNull, reason: 'the car menu is not the app\'s last list');
   });
 
+  test('an id that resolves to nothing leaves the play context alone', () async {
+    handler.browse = MediaBrowseTree(DbBrowseSource(
+        TrackRepository(db), LibraryQueries(db), PlaylistRepository(db)));
+    handler.setPlayContext(2, 'Last list of the app');
+    await handler.playFromMediaId('radio:nope');
+    await handler.playFromMediaId('garbage');
+    expect(handler.playContext, (kind: 2, name: 'Last list of the app'));
+  });
+
   test('choosing a saved station in the browser plays the saved list from it', () async {
     final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db),
         onError: (_) {}, online: OnlineEntries());

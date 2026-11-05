@@ -393,4 +393,4 @@ final permissionDeniedProvider =
 /// While a new query loads (and has no value yet) keep showing [prev]; an
 /// error or data shows at once.
 AsyncValue<T> keepWhileLoading<T>(AsyncValue<T> fresh, AsyncValue<T>? prev) =>
-    fresh.isLoading && !fresh.hasValue && prev != null ? prev : fresh;
+    fresh.isLoading && !fresh.hasValue && prev != null && prev.hasValue ? prev : fresh;

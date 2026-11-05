@@ -1,3 +1,4 @@
+import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
@@ -75,5 +76,19 @@ void main() {
     final err = AsyncError<int>('x', StackTrace.empty);
     expect(keepWhileLoading<int>(err, old), err);
     expect(keepWhileLoading<int>(const AsyncLoading(), null).isLoading, isTrue);
+  });
+
+  test('keepWhileLoading does not keep a previous error, so a retry shows the loading', () {
+    final err = AsyncError<int>('x', StackTrace.empty);
+    expect(keepWhileLoading<int>(const AsyncLoading(), err).isLoading, isTrue);
+  });
+
+  test('TrackQuery equality looks at text, sort and favoritesOnly', () {
+    const q = TrackQuery();
+    expect(q, const TrackQuery());
+    expect(q.hashCode, const TrackQuery().hashCode);
+    expect(q, isNot(q.copyWith(text: 'a')));
+    expect(q, isNot(q.copyWith(sort: SortOption.title)));
+    expect(q, isNot(q.copyWith(favoritesOnly: true)));
   });
 }

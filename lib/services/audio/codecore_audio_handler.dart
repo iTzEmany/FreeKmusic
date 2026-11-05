@@ -442,15 +442,20 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> playFromMediaId(String mediaId,
       [Map<String, dynamic>? extras]) async {
-    setPlayContext(null, null); // a list of the car's menu is not the last one of the app
     try {
+      // A list of the car's menu is not the last one of the app; an id that
+      // resolves to nothing leaves the context alone.
       final radio = await browse?.resolveRadio(mediaId);
       if (radio != null) {
+        setPlayContext(null, null);
         await playStations(radio.stations, radio.index);
         return;
       }
       final r = await browse?.resolve(mediaId);
-      if (r != null) await playQueue(r.ids, r.index);
+      if (r != null) {
+        setPlayContext(null, null);
+        await playQueue(r.ids, r.index);
+      }
     } on Object catch (e, st) {
       AppLog.w('play from $mediaId failed', e, st);
     }

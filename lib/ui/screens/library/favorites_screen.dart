@@ -53,7 +53,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final l = context.l10n;
     final query = ref.watch(trackQueryProvider(true));
     final tracks = keepWhileLoading(ref.watch(tracksProvider(query)), _prev);
-    _prev = tracks;
+    _prev = tracks.hasError ? null : tracks;
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final list = tracks.value ?? const [];

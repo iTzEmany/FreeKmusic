@@ -228,7 +228,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
     final query = ref.watch(trackQueryProvider(false)).copyWith(text: _text);
     final fresh = ref.watch(tracksProvider(query));
     final tracks = keepWhileLoading(fresh, _prev);
-    _prev = tracks;
+    _prev = tracks.hasError ? null : tracks;
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final ctx = PlayContext(

@@ -72,5 +72,24 @@ void main() {
     SharedPreferences.setMockInitialValues({'lastQueueIds': ['${ids[0]}']});
     final old = SettingsStore(await SharedPreferences.getInstance()).readPlayback();
     expect(old.contextKind, isNull);
+    final third = open();
+    addTearDown(third.dispose);
+    await PlaybackPersistence(third, SettingsStore(await SharedPreferences.getInstance())).restore();
+    expect(third.queueIds, [ids[0]]);
+    expect(playContextOf(third), isNull);
+
+    // A kind this version does not know is dropped, the queue is restored all the same.
+    for (final kind in [-1, PlayContextKind.values.length, 9999]) {
+      SharedPreferences.setMockInitialValues({
+        'lastQueueIds': ['${ids[0]}'],
+        'lastContextKind': kind,
+        'lastContextName': 'x',
+      });
+      final h = open();
+      addTearDown(h.dispose);
+      await PlaybackPersistence(h, SettingsStore(await SharedPreferences.getInstance())).restore();
+      expect(h.queueIds, [ids[0]]);
+      expect(playContextOf(h), isNull);
+    }
   });
 }
