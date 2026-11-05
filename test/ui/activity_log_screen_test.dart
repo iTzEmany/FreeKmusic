@@ -3,6 +3,7 @@ import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'package:codecore/providers/recognition_providers.dart';
+import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
 import 'package:codecore/l10n/app_localizations_it.dart';
 import 'package:codecore/ui/screens/activity/activity_log_entry.dart' show logDayLabel;
@@ -29,6 +30,31 @@ class _Log extends ActivityLogNotifier {
     state = const ActivityLogState([], 0);
   }
 }
+
+/// Only the first [first] lines are loaded; loadMore adds the rest.
+class _Paged extends _Log {
+  _Paged(super.entries, this.first);
+  final int first;
+  int loads = 0;
+
+  @override
+  ActivityLogState build() => ActivityLogState(entries.take(first).toList(), entries.length, logCounts(entries));
+  @override
+  Future<void> loadMore() async {
+    loads++;
+    state = ActivityLogState(entries, entries.length, logCounts(entries));
+  }
+}
+
+final _proposal = (
+  track: Track(
+    coverSource: 0, id: 1, path: '/m/1.mp3', title: 'Uno', artist: 'A', albumKey: 'k', durationMs: 1000,
+    format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false, enrichStatus: 0,
+    userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,
+  ),
+  rec: const Recognition(
+    at: 1, src: RecogSource.tags, sure: true, identity: TrackIdentity(title: 'Uno', artist: 'A'), prop: 'open'),
+);
 
 LogEntry _dl(DateTime at, String name) => LogEntry(
   at: at,
@@ -63,7 +89,7 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> pump(WidgetTester tester, {double scale = 1, List<LogEntry>? only, Size size = const Size(400, 900)}) async {
+  Future<void> pump(WidgetTester tester, {double scale = 1, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -71,8 +97,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activityLogProvider.overrideWith(() => _Log(only ?? entries)),
-          proposalsProvider.overrideWith((ref) => Stream.value(const [])),
+          activityLogProvider.overrideWith(() => firstPage == null ? _Log(only ?? entries) : _Paged(only ?? entries, firstPage)),
+          proposalsProvider.overrideWith((ref) => Stream.value(proposals ? [_proposal] : const [])),
         ],
         child: MaterialApp(
           locale: const Locale('it'),
@@ -214,6 +240,27 @@ void main() {
     expect(find.text('3 brani scaricati'), findsOneWidget);
     expect(find.text('Volare'), findsOneWidget);
     expect(find.text('Nascondi i brani'), findsOneWidget);
+  });
+
+  testWidgets('«Da confermare» shows with Tutto and Correzioni only', (tester) async {
+    await pump(tester, proposals: true);
+    expect(find.byKey(const ValueKey('to-confirm')), findsOneWidget);
+    await tapFilter(tester, 'Download 2');
+    expect(find.byKey(const ValueKey('to-confirm')), findsNothing);
+    await tapFilter(tester, 'Correzioni 1');
+    expect(find.byKey(const ValueKey('to-confirm')), findsOneWidget);
+  });
+
+  testWidgets('a filter with nothing on the first page reads on until it finds lines', (tester) async {
+    // 50 downloads fill the first page; the only correction is further down.
+    final many = [for (var i = 0; i < 50; i++) _dl(noon.subtract(Duration(minutes: i)), 'D$i'), entries.last];
+    await pump(tester, only: many, firstPage: 50);
+    await tapFilter(tester, 'Correzioni 1');
+    await tester.pump();
+    await tester.pump();
+    final log = ProviderScope.containerOf(tester.element(find.byType(ActivityLogScreen))).read(activityLogProvider.notifier) as _Paged;
+    expect(log.loads, greaterThan(0));
+    expect(find.text('Titolo e artista corretti'), findsOneWidget);
   });
 
   test('«Ieri» also on the first of January', () {

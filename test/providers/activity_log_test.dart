@@ -428,6 +428,62 @@ void main() {
     }, reason: 'a completion that nobody answered is stopped, not an error');
   });
 
+  ActivityLogRow importRow({required int failed, String? detail}) =>
+      ActivityLogRow(id: 1, at: 0, kind: 'import', name: 'Spotify', done: 0, total: 0, failed: failed, detail: detail);
+
+  test('an import row whose detail cannot be read follows its failed column, as the counts do', () {
+    expect(LogEntry.fromRow(importRow(failed: 1, detail: '{broken')).failed, isTrue);
+    expect(LogEntry.fromRow(importRow(failed: 0, detail: '{broken')).failed, isFalse);
+  });
+
+  test('a planned import is not an error, in the line or in the counts', () async {
+    await db.into(db.activityLogRows).insert(ActivityLogRowsCompanion.insert(
+      at: 1, kind: 'import', name: 'Spotify', detail: const Value('{"event":"planned"}')));
+    expect(LogEntry.fromRow(importRow(failed: 0, detail: '{"event":"planned"}')).failed, isFalse);
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    expect(c.read(activityLogProvider).counts[LogFilter.errors], 0);
+  });
+
+  test('a second opinion line belongs to Arricchimento', () {
+    expect(LogEntry.categoryOfKind('secondOpinion'), LogFilter.enrich);
+  });
+
+  test('the counts stay those of the whole Registro after add and after loadMore', () async {
+    for (var i = 1; i <= 120; i++) {
+      await db.into(db.activityLogRows).insert(ActivityLogRowsCompanion.insert(
+        at: DateTime.now().millisecondsSinceEpoch + i, kind: 'scan', name: 'n$i', failed: Value(i == 1 ? 1 : 0)));
+    }
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    await pumpEventQueue();
+    final log = c.read(activityLogProvider.notifier);
+    await log.add(LogEntry(
+      at: DateTime.now().add(const Duration(days: 1)),
+      item: const ActivityItem(kind: ActivityKind.download, key: 'd', name: 'x', running: false, failed: true),
+    ));
+    var counts = c.read(activityLogProvider).counts;
+    expect(counts[LogFilter.all], 121);
+    expect(counts[LogFilter.download], 1);
+    expect(counts[LogFilter.library], 120);
+    expect(counts[LogFilter.errors], 2);
+    await log.loadMore();
+    expect(c.read(activityLogProvider).entries.length, greaterThan(ActivityLogNotifier.pageSize));
+    counts = c.read(activityLogProvider).counts;
+    expect(counts[LogFilter.all], 121);
+    expect(counts[LogFilter.library], 120);
+    expect(counts[LogFilter.errors], 2);
+  });
+
   group('no doubles', () {
     late ProviderContainer c;
     setUp(() {

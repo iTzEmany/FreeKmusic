@@ -82,7 +82,7 @@ class LogEntry {
       importName = r.kind == _importKind ? r.name : null,
       event = r.kind == _importKind
           ? ImportEventKind.values.asNameMap()[_decode(r.detail)?['event']] ??
-                ImportEventKind.completed
+                (r.failed != 0 ? ImportEventKind.failing : ImportEventKind.completed)
           : null,
       item = r.kind == _importKind || r.kind == _correctionKind
           ? null

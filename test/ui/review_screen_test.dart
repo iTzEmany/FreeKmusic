@@ -106,6 +106,7 @@ void main() {
     await _settle(tester);
     expect(find.text('Song 0'), findsOneWidget);
     expect(find.text('Song 1'), findsNothing);
+    expect(find.text('Tutti 2'), findsOneWidget, reason: '«Tutti» keeps the total under a filter');
     await h.dispose(tester);
   });
 
@@ -138,6 +139,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('review-dismiss')));
     await _settle(tester);
     expect(find.text('Song 0'), findsNothing);
+    expect(find.byKey(const ValueKey('review-dismiss')), findsNothing, reason: 'the selection is emptied');
     expect(find.text('Annulla'), findsOneWidget);
     await tester.tap(find.text('Annulla'));
     await _settle(tester);

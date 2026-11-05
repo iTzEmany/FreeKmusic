@@ -44,4 +44,12 @@ void main() {
     await repo.clear();
     expect(await repo.count(), 0);
   });
+
+  test('countsByKind marks «nobody answered» only by the real key, not by a word in the detail', () async {
+    await repo.add(at: 1, kind: 'enrichBackground', name: '', failed: true, detail: '{"noAnswer":true}');
+    await repo.add(at: 2, kind: 'enrichBackground', name: '', failed: true, detail: '{"note":"noAnswer"}');
+    final rows = await repo.countsByKind();
+    expect(rows.where((r) => r.noAnswer).fold<int>(0, (a, r) => a + r.n), 1);
+    expect(rows.where((r) => !r.noAnswer).fold<int>(0, (a, r) => a + r.n), 1);
+  });
 }
