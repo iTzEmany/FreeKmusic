@@ -54,3 +54,11 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 2. Unificare le due code delle domande sulla cassa.
 3. Ricerca «notte», build p99 (D-176); 53.10 completamento intero sul Motorola.
 4. Picco di ~54 ms alla prima visita di ogni scheda della Libreria (F-60, invariato dal refactor).
+5. **Debito dalla review di architettura della 83** (nessuno bloccante):
+   - contesto in due copie: `playContextProvider` dovrebbe seguire l'handler (`ValueListenable`), via `PlayContextNotifier`/`onContext`; oggi `playFromMediaId` di Android Auto non lo avvisa e «In riproduzione da» resta vecchio fino al riavvio;
+   - nei selettori (`add_tracks_screen`, `track_picker_screen`) una ricerca fallita tiene i risultati vecchi in silenzio: usare `keepWhileLoading` + `AsyncBody`;
+   - il tetto di 60 s delle schede in streaming sta nell'handler (`shadowWaitOf`): spostarlo in `shadowWaitProvider`;
+   - `libraryIndexProvider` in `library_providers.dart`, e un debounce se le importazioni grandi rallentano;
+   - la regola «Shuffle+ spento» in un posto solo (`ShufflePlusPendingNotifier` contro `_gate()` del controller);
+   - un test a tappeto: ogni nodo-pulsante delle schermate principali ha il tocco.
+   - La dissolvenza fra pagine (D-382) non è stata misurata a parte sul Mi A3 (le misure 83.1 la comprendono solo nel cambio scheda).

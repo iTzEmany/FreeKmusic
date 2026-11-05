@@ -170,6 +170,7 @@ File scomparsi: `missing = true` **solo se la cartella radice è raggiungibile**
 | `autoLyrics` | bool | **false** | testi LRCLIB automatici |
 | `showUndoSnackbar` | bool | true | annulla rimozione preferito |
 | `lastQueueIds` | list<string> | `[]` | ultima coda |
+| `lastContextKind`, `lastContextName` | int, string | — | contesto dell'ultima coda (`PlayContextKind.index`: l'enum si allunga solo in fondo) |
 | `lastIndex`, `lastPositionMs` | int | 0 | ripresa |
 | `volume` | double | 1.0 | |
 | `shuffle` | bool | false | |
