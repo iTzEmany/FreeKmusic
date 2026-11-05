@@ -210,15 +210,16 @@ class _CoverFanState extends State<CoverFan>
           final artist = a.variousArtists
               ? l.variousArtists
               : (a.artist ?? l.unknownArtist);
+          void open() => ShellNav.open<void>(context, AlbumDetailScreen(album: a));
           return Semantics(
             button: true,
             label: '$title, $artist',
+            onTap: open,
             excludeSemantics: true,
             child: InkWell(
               key: ValueKey('fan-cover-$i'),
               borderRadius: BorderRadius.circular(CcDims.rList),
-              onTap: () =>
-                  ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
+              onTap: open,
               child: SizedBox(
                 width: _size,
                 child: Column(

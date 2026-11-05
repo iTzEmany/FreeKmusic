@@ -1,11 +1,14 @@
 // TalkBack labels fixed after the phone round of phase 83 (D-381): one node per
 // control, each with its own name.
-import 'dart:ui' show SemanticsAction;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/screens/home/cover_fan.dart';
 import 'package:codecore/ui/screens/home/home_blocks.dart';
+import 'package:codecore/ui/screens/library/library_toolbar.dart';
+import 'package:codecore/ui/shell/app_shell.dart';
+import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/cc_search_field.dart';
@@ -182,6 +185,44 @@ void main() {
       ),
     );
     expect(find.bySemanticsLabel('Cronologia'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('library sort button: the tap action opens the sort sheet', (
+    tester,
+  ) async {
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      Scaffold(
+        body: LibraryToolbar(
+          countLabel: '3 brani',
+          sort: LibrarySort.alpha,
+          grid: false,
+          onSort: (_) {},
+          onToggleGrid: () {},
+        ),
+      ),
+    );
+    tester.semantics.tap(find.semantics.byLabel(RegExp('^Ordina per')));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Recenti'), findsWidgets);
+    await h.dispose(tester);
+  });
+
+  testWidgets('bottom tab: read once, and its tap action switches tab', (
+    tester,
+  ) async {
+    phone(tester);
+    final h = await Harness.create(tester, tracks: 2);
+    await h.pump(tester, const AppShell());
+    final tab = find.semantics.byLabel('Libreria');
+    expect(tab, findsOneWidget); // not «Libreria\nLibreria»
+    expect(tab.evaluate().single.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    tester.semantics.tap(tab);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tab.evaluate().single.flagsCollection.isSelected, Tristate.isTrue);
     await h.dispose(tester);
   });
 }

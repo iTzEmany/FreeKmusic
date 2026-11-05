@@ -133,6 +133,9 @@ class _TrackInfo extends ConsumerWidget {
     final radio = radioOfTrack(ref, track);
     final onAir = radio == null ? null : ref.watch(onAirProvider).value;
     final texts = radio == null ? null : radioTexts(l, radio, onAir);
+    void openPlayer() => Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(builder: (_) => const NowPlayingScreen()),
+    );
     return Row(
       children: [
         MouseRegion(
@@ -140,13 +143,10 @@ class _TrackInfo extends ConsumerWidget {
           child: Semantics(
             button: true,
             label: l.nowPlaying,
+            onTap: openPlayer,
             excludeSemantics: true,
             child: FocusRingButton(
-              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const NowPlayingScreen(),
-                ),
-              ),
+              onTap: openPlayer,
               child: RingProgress(
                 size: 56,
                 live: radio != null,

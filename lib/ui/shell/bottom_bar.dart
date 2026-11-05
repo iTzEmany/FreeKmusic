@@ -219,6 +219,9 @@ class _Tabs extends StatelessWidget {
                     button: true,
                     selected: i == selected,
                     label: items[i].label,
+                    // The label above already names it: the text would be read twice.
+                    excludeSemantics: true,
+                    onTap: () => onSelect(i),
                     child: InkWell(
                       onTap: () => onSelect(i),
                       child: ConstrainedBox(

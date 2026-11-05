@@ -63,6 +63,7 @@ class JamInviteBanner extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final text = peer != null ? l.jamInviteBanner(peer.jamName!) : nearbyJamText(context, near!);
+    void join() => peer != null ? joinAnnouncedJam(context, ref, peer) : joinNearbyJam(context, ref, near!);
     return Padding(
       padding: const EdgeInsets.fromLTRB(CcDims.margin, 4, CcDims.margin, 0),
       child: Material(
@@ -75,9 +76,10 @@ class JamInviteBanner extends ConsumerWidget {
               child: Semantics(
                 button: true,
                 label: text,
+                onTap: join,
                 excludeSemantics: true,
                 child: InkWell(
-                  onTap: () => peer != null ? joinAnnouncedJam(context, ref, peer) : joinNearbyJam(context, ref, near!),
+                  onTap: join,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: CcDims.gap12,
@@ -125,6 +127,7 @@ class SpeakerAwayNotice extends ConsumerWidget {
     );
     if (!away) return const SizedBox.shrink();
     final isHost = ref.watch(jamProvider.select((j) => j.isHost));
+    void continueOnPhone() => unawaited(ref.read(jamProvider.notifier).continueOnPhone());
     final cc = context.cc;
     final l = context.l10n;
     final text = l.speakerAwayNotice;
@@ -146,9 +149,10 @@ class SpeakerAwayNotice extends ConsumerWidget {
                   Semantics(
                     button: true,
                     label: l.speakerContinueOnPhoneLabel,
+                    onTap: continueOnPhone,
                     excludeSemantics: true,
                     child: TextButton(
-                      onPressed: () => unawaited(ref.read(jamProvider.notifier).continueOnPhone()),
+                      onPressed: continueOnPhone,
                       child: Text(l.speakerContinueOnPhone),
                     ),
                   ),

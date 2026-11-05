@@ -40,6 +40,7 @@ class ArtistLinks extends ConsumerWidget {
               container: true,
               excludeSemantics: true,
               label: a.name,
+              onTap: () => openArtistLink(context, ref, a),
               child: InkWell(
                 onTap: () => openArtistLink(context, ref, a),
                 child: ConstrainedBox(
