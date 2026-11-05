@@ -1292,3 +1292,79 @@ mobile_scanner — fase 24 — 2026-10-19
 ## Fase 86 — `JamMedia` fuori da `jam_providers.dart` (`fase-86-jam-media.md`)
 - [x] 86.1 `JamMedia` in `lib/providers/jam_media.dart`; il controller delega (cdca7734)
 - [x] 86.2 Test unitari di `JamMedia` dai mutanti sopravvissuti (fa949c38)
+
+## Fase 87 — Rete di sicurezza e misure di partenza (`fase-87-rete-superfici.md`)
+- [ ] 87.1 Caratterizzazione: corpus delle regole, backup vecchi, ordine manuale, caso Bayou
+- [ ] 87.2 Caratterizzazione: schede della shell, risultati fusi, ordinamento della Libreria, salto A–Z
+- [ ] 87.3 Golden delle superfici toccate
+- [ ] 87.4 Scenari di velocità nuovi e misura di partenza sui due telefoni
+- [ ] 87.5 Controlli di fase
+
+## Fase 88 — Ritocchi rapidi (`fase-88-ritocchi-rapidi.md`)
+- [ ] 88.1 Suggeriti senza brani già in libreria (D-389)
+- [ ] 88.2 Home: Registro accanto a Impostazioni, «Casuale su tutto» su due righe
+- [ ] 88.3 Play tondo in Tutti i brani
+- [ ] 88.4 Nomi di «Ordina per»
+- [ ] 88.5 Cerca: info accanto al titolo, filtri solo testo
+- [ ] 88.6 Controlli di fase
+
+## Fase 89 — Dock flottante e sezioni che ripartono (`fase-89-dock-e-sezioni.md`)
+- [ ] 89.1 Altezza del dock e margine in fondo comune
+- [ ] 89.2 Dock flottante (`extendBody`)
+- [ ] 89.3 Sfocatura nel Tema
+- [ ] 89.4 Sezioni che tornano allo stato iniziale
+- [ ] 89.5 Controlli di fase
+
+## Fase 90 — Intestazioni che seguono lo scroll (`fase-90-intestazioni-che-scorrono.md`)
+- [ ] 90.1 Intestazione che si ritrae di quanto si scorre
+- [ ] 90.2 Tutti i brani
+- [ ] 90.3 Isola della Libreria
+- [ ] 90.4 Lente dentro l'isola
+- [ ] 90.5 Controlli di fase
+
+## Fase 91 — Ordinamenti e foglio delle playlist (`fase-91-ordinamenti-e-playlist.md`)
+- [ ] 91.1 Criteri nuovi e verso in Libreria
+- [ ] 91.2 Ordinamento dentro le playlist
+- [ ] 91.3 Foglio «Nuova playlist»
+- [ ] 91.4 Stesso foglio per «Aggiungi alla playlist»
+- [ ] 91.5 Controlli di fase
+
+## Fase 92 — Cerca: libreria, artisti e album (`fase-92-cerca-libreria-e-artisti.md`)
+- [ ] 92.1 «Nella tua libreria»
+- [ ] 92.2 Etichetta della fonte
+- [ ] 92.3 Righe di artisti e album
+- [ ] 92.4 Controlli di fase
+
+## Fase 93 — Dati per i filtri (`fase-93-dati-per-i-filtri.md`)
+- [ ] 93.1 Più generi per brano
+- [ ] 93.2 Nazionalità dell'artista
+- [ ] 93.3 BPM ed etichetta
+- [ ] 93.4 Controlli di fase
+
+## Fase 94 — Playlist intelligenti a filtri (`fase-94-playlist-intelligenti.md`)
+- [ ] 94.1 Valori multipli («uno tra»)
+- [ ] 94.2 Campi nuovi nelle regole
+- [ ] 94.3 Editor a filtri
+- [ ] 94.4 Conteggi per valore fuori dal thread UI
+- [ ] 94.5 Controlli di fase
+
+## Fase 95 — Artisti con due profili (`fase-95-artisti-uniti.md`)
+- [ ] 95.1 Alias dei profili
+- [ ] 95.2 Pagina unita e Separa
+- [ ] 95.3 «Unisci con…»
+- [ ] 95.4 Rilevamento dei doppioni
+- [ ] 95.5 Controlli di fase
+
+## Fase 96 — Podcast: Scopri e YouTube Music (`fase-96-podcast-scopri.md`)
+- [ ] 96.1 Pagina dei generi di YouTube Music
+- [ ] 96.2 Generi, classifiche e ricerca Apple
+- [ ] 96.3 Programmi di YouTube Music
+- [ ] 96.4 Pagina Podcast
+- [ ] 96.5 Controlli di fase
+
+## Fase 97 — Chiusura del refactor «superfici-e-ricerca» (`fase-97-chiusura-superfici.md`)
+- [ ] 97.1 Misure finali
+- [ ] 97.2 Prova a mano sui due telefoni
+- [ ] 97.3 Review di architettura e debito
+- [ ] 97.4 Documenti aggiornati
+- [ ] 97.5 Controlli di fase
