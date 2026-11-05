@@ -64,13 +64,15 @@ class LogEntry {
   bool get revertible => correction != null && detail?['old'] != null;
 
   /// A completion stopped for lack of answers is saved as failed but shown as stopped.
-  bool get failed =>
-      detail?['noAnswer'] != true &&
-      ((item?.failed ?? false) ||
-          (correction != null && correction!.failed != 0) ||
-          (event != null &&
-              event != ImportEventKind.completed &&
-              event != ImportEventKind.planned));
+  bool get failed => detail?['noAnswer'] != true && _storedFailed;
+
+  /// What the `failed` column holds: the counts in the DB tell «stopped» apart by the detail.
+  bool get _storedFailed =>
+      (item?.failed ?? false) ||
+      (correction != null && correction!.failed != 0) ||
+      (event != null &&
+          event != ImportEventKind.completed &&
+          event != ImportEventKind.planned);
 
   static const _importKind = 'import';
   static const _correctionKind = 'correction';
@@ -123,7 +125,7 @@ class LogEntry {
       name: i?.name ?? importName ?? '',
       done: i?.done ?? 0,
       total: i?.total ?? 0,
-      failed: failed,
+      failed: _storedFailed,
       detail: d.isEmpty ? null : jsonEncode(d),
     );
   }
