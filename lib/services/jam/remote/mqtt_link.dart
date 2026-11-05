@@ -12,6 +12,25 @@ import 'broker_entry.dart';
 /// A message that came back from the broker.
 typedef MqttIncoming = ({String topic, Uint8List payload});
 
+/// Connects [link] to [b]. [quick]: half timeout, and a first failure is retried at once
+/// on the same broker (a slow first TLS handshake on a weak link); [onRetry] logs that
+/// first failure. A failure while [stopped] is rethrown without retrying.
+Future<void> connectWithQuickRetry(
+  MqttLink link,
+  BrokerEntry b, {
+  required bool quick,
+  required bool Function() stopped,
+  required void Function(Object e, StackTrace st) onRetry,
+}) async {
+  try {
+    await link.connect(b, timeoutFactor: quick ? 0.5 : 1);
+  } on Object catch (e, st) {
+    if (!quick || stopped()) rethrow;
+    onRetry(e, st);
+    await link.connect(b, timeoutFactor: 0.5);
+  }
+}
+
 /// The small slice of MQTT the remote Jam needs. Faked in tests.
 abstract class MqttLink {
   /// Throws when the broker cannot be reached or refuses (bad certificate included).
