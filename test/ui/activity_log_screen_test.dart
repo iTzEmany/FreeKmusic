@@ -23,7 +23,7 @@ class _Log extends ActivityLogNotifier {
   void push(LogEntry e) => state = ActivityLogState([e, ...state.entries], state.total + 1);
 
   @override
-  Future<void> reload() async {}
+  Future<void> prune() async {}
   @override
   Future<void> clear() async {
     cleared++;
@@ -56,7 +56,8 @@ final _proposal = (
     at: 1, src: RecogSource.tags, sure: true, identity: TrackIdentity(title: 'Uno', artist: 'A'), prop: 'open'),
 );
 
-LogEntry _dl(DateTime at, String name) => LogEntry(
+LogEntry _dl(DateTime at, String name, {int? id}) => LogEntry(
+  id: id,
   at: at,
   item: ActivityItem(kind: ActivityKind.download, key: 'k$name', name: name, running: false),
 );
@@ -66,14 +67,16 @@ void main() {
   final noon = DateTime(now.year, now.month, now.day, 12);
   final old = noon.subtract(const Duration(days: 5));
   final entries = [
-    _dl(noon, 'Volare'),
-    LogEntry(at: noon.subtract(const Duration(minutes: 5)), importName: 'Spotify', event: ImportEventKind.toolMissing),
-    _dl(noon.subtract(const Duration(minutes: 10)), 'Blue Monday'),
+    _dl(noon, 'Volare', id: 1),
+    LogEntry(id: 2, at: noon.subtract(const Duration(minutes: 5)), importName: 'Spotify', event: ImportEventKind.toolMissing),
+    _dl(noon.subtract(const Duration(minutes: 10)), 'Blue Monday', id: 3),
     LogEntry(
+      id: 4,
       at: noon.subtract(const Duration(days: 1)),
       item: const ActivityItem(kind: ActivityKind.scan, key: 's', name: null, done: 340, total: 340, running: false),
     ),
     LogEntry(
+      id: 5,
       at: old,
       correction: ActivityLogRow(id: 1, at: 0, kind: 'correction', name: 'n', done: 0, total: 0, failed: 0),
       detail: const {
@@ -221,13 +224,19 @@ void main() {
 
   testWidgets('desktop: the list and the line picked side by side; the first one is shown at the start', (tester) async {
     await pump(tester, size: const Size(1200, 800));
-    expect(find.text('Brano scaricato'), findsOneWidget, reason: 'first line, in the panel');
+    expect(find.text('2 brani scaricati'), findsNWidgets(2), reason: 'first row, in the list and in the panel');
     await tester.tap(find.text('Libreria aggiornata'));
     await tester.pump();
     expect(find.text('Libreria aggiornata'), findsNWidgets(2), reason: 'in the list and in the panel');
-    expect(find.text('Brano scaricato'), findsNothing);
+    expect(find.text('2 brani scaricati'), findsOneWidget);
     await tapFilter(tester, 'Correzioni 1');
     expect(find.text('Titolo e artista corretti'), findsNWidgets(2), reason: 'the pick is gone: the first line is shown');
+  });
+
+  testWidgets('desktop: the panel of a group of downloads lists every song of the group', (tester) async {
+    await pump(tester, size: const Size(1200, 800));
+    expect(find.text('Volare'), findsOneWidget);
+    expect(find.text('Blue Monday'), findsOneWidget);
   });
 
   testWidgets('a group of downloads stays open when another download arrives', (tester) async {
@@ -261,6 +270,17 @@ void main() {
     final log = ProviderScope.containerOf(tester.element(find.byType(ActivityLogScreen))).read(activityLogProvider.notifier) as _Paged;
     expect(log.loads, greaterThan(0));
     expect(find.text('Titolo e artista corretti'), findsOneWidget);
+  });
+
+  testWidgets('a filter that has no line at all does not read the pages', (tester) async {
+    final many = [for (var i = 0; i < 50; i++) _dl(noon.subtract(Duration(minutes: i)), 'D$i'), entries.last];
+    await pump(tester, only: many, firstPage: 50);
+    final log = ProviderScope.containerOf(tester.element(find.byType(ActivityLogScreen))).read(activityLogProvider.notifier) as _Paged;
+    final before = log.loads; // the end of the list asks for more while the filter is Tutto
+    await tapFilter(tester, 'Errori 0');
+    await tester.pump();
+    await tester.pump();
+    expect(log.loads, before);
   });
 
   test('«Ieri» also on the first of January', () {

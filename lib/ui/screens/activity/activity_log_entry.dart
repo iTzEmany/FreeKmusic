@@ -14,7 +14,8 @@ import '../../theme/tokens.dart';
 import '../../widgets/tag_write_ui.dart' show tagReasonText;
 import '../../widgets/cc_tile.dart';
 import '../import/import_labels.dart' show importStopText;
-import '../now_playing/proposal_card.dart' show ActionButton, identLabel;
+import '../../widgets/action_button.dart';
+import '../now_playing/proposal_card.dart' show identLabel;
 
 /// What a line of the Registro says, in words for a person: a short title, one
 /// line of detail, numbers as chips and, for a failure, the steps to take.
@@ -39,7 +40,7 @@ LogText logText(AppLocalizations l, LogEntry e) {
   final i = e.item;
   if (e.revertible) return LogText(l.logCorrectionTitle, '');
   if (e.correction != null) {
-    final why = TagWriteReason.values.asNameMap()[e.detail?['file']];
+    final why = TagWriteReason.values.asNameMap()[e.file];
     return LogText(
       l.logFileTitle,
       e.correction!.name,
@@ -87,7 +88,7 @@ LogText logText(AppLocalizations l, LogEntry e) {
               chips: [if (i.done > 0) l.logChipSongs(i.done)],
             ),
     ActivityKind.enrichBackground =>
-      d?['noAnswer'] == true
+      e.noAnswer
           ? LogText(l.logBgStopped, l.logBgStoppedSub)
           : e.failed && i.done == 0 && i.total == 0
           ? LogText(l.logBgFailed, l.logBgFailedSub)
@@ -204,8 +205,8 @@ class CorrectionLines extends StatelessWidget {
 
   final LogEntry entry;
 
-  static String ident(AppLocalizations l, Object? m) =>
-      m is Map ? identLabel(l, '${m['title'] ?? ''}', m['artist'] as String?) : '';
+  static String ident(AppLocalizations l, ({String title, String? artist})? m) =>
+      m == null ? '' : identLabel(l, m.title, m.artist);
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +216,7 @@ class CorrectionLines extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          ident(l, entry.detail?['old']),
+          ident(l, entry.oldIdent),
           style: theme.bodyMedium?.copyWith(
             color: context.cc.textMuted,
             decoration: TextDecoration.lineThrough,
@@ -229,7 +230,7 @@ class CorrectionLines extends StatelessWidget {
               child: Icon(Icons.arrow_forward_rounded, size: 16, color: context.cc.accentSoft),
             ),
             Expanded(
-              child: Text(ident(l, entry.detail?['new']), style: theme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              child: Text(ident(l, entry.newIdent), style: theme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -247,7 +248,7 @@ class RevertButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final from = CorrectionLines.ident(l, entry.detail?['old']);
+    final from = CorrectionLines.ident(l, entry.oldIdent);
     return ActionButton(
       label: l.logRevert,
       semantics: '${l.logRevert}: $from',
@@ -299,8 +300,8 @@ class LogEntryCard extends StatelessWidget {
       text.detail,
       if (e.revertible)
         l.logCorrectionSem(
-          CorrectionLines.ident(l, e.detail?['old']),
-          CorrectionLines.ident(l, e.detail?['new']),
+          CorrectionLines.ident(l, e.oldIdent),
+          CorrectionLines.ident(l, e.newIdent),
         ),
       if (e.failed) l.logFailedLabel else if (e.stopped) l.logStoppedLabel,
       ...text.chips,
@@ -396,9 +397,12 @@ class LogEntryCard extends StatelessWidget {
 /// The whole line: in the side panel on desktop, in a sheet on a phone.
 /// [onOpen] adds «Vedi i brani» (the second opinion and the completion).
 class LogDetail extends StatelessWidget {
-  const LogDetail(this.entry, {super.key, this.sources, this.onOpen});
+  const LogDetail(this.entry, {super.key, this.sources, this.onOpen, this.group = const []});
 
   final LogEntry entry;
+
+  /// The finished downloads of a day shown as one row: all of them are listed.
+  final List<LogEntry> group;
   final String? sources;
   final VoidCallback? onOpen;
 
@@ -414,13 +418,26 @@ class LogDetail extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(text.title, style: theme.titleLarge),
+          Text(group.isEmpty ? text.title : l.logDlGroup(group.length), style: theme.titleLarge),
           const SizedBox(height: 4),
           Text(
             DateFormat.yMMMEd(locale).add_Hm().format(entry.at),
             style: theme.bodySmall?.copyWith(color: cc.textMuted),
           ),
-          if (entry.revertible) ...[
+          if (group.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            for (final g in group)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: Text(g.item?.name ?? '', style: theme.bodyLarge)),
+                    Text(DateFormat.Hm(locale).format(g.at), style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+                  ],
+                ),
+              ),
+          ] else if (entry.revertible) ...[
             const SizedBox(height: 12),
             CorrectionLines(entry),
             RevertButton(entry),

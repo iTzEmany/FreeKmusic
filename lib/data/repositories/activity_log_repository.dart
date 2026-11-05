@@ -32,15 +32,39 @@ class ActivityLogRepository {
         ),
       );
 
-  /// Newest first; [offset] rows are skipped.
-  Future<List<ActivityLogRow>> page({required int limit, int offset = 0}) =>
+  /// Newest first. With [before] (the last row seen) only the older ones come,
+  /// so rows added meanwhile do not shift the page.
+  Future<List<ActivityLogRow>> page({required int limit, ({int at, int id})? before}) =>
       (_db.select(_db.activityLogRows)
+            ..where((r) => before == null
+                ? const Constant(true)
+                : r.at.isSmallerThanValue(before.at) | (r.at.equals(before.at) & r.id.isSmallerThanValue(before.id)))
             ..orderBy([
               (r) => OrderingTerm.desc(r.at),
               (r) => OrderingTerm.desc(r.id),
             ])
-            ..limit(limit, offset: offset))
+            ..limit(limit))
           .get();
+
+  /// The rows added after row [id] (a bigger id), newest first.
+  Future<List<ActivityLogRow>> newerThan(int id) =>
+      (_db.select(_db.activityLogRows)
+            ..where((r) => r.id.isBiggerThanValue(id))
+            ..orderBy([(r) => OrderingTerm.desc(r.at), (r) => OrderingTerm.desc(r.id)]))
+          .get();
+
+  /// The rows with these [ids], [chunk] at a time (SQLite caps the variables of a query).
+  Future<List<ActivityLogRow>> byIds(List<int> ids, {int chunk = 500}) async {
+    final rows = <ActivityLogRow>[];
+    for (var i = 0; i < ids.length; i += chunk) {
+      final part = ids.sublist(i, i + chunk > ids.length ? ids.length : i + chunk);
+      rows.addAll(await (_db.select(_db.activityLogRows)..where((r) => r.id.isIn(part))).get());
+    }
+    return rows;
+  }
+
+  /// Fires when the table changes (a row added, dropped or cleared).
+  Stream<void> changes() => _db.tableUpdates(TableUpdateQuery.onTable(_db.activityLogRows));
 
   Future<int> count() async {
     final n = _db.activityLogRows.id.count();
@@ -52,7 +76,7 @@ class ActivityLogRepository {
   /// detail of a stopped completion), for the counts of the Registro filters.
   Future<List<({String kind, bool failed, bool noAnswer, int n})>> countsByKind() async {
     final rows = await _db.customSelect(
-      'SELECT kind, failed, COALESCE(detail LIKE \'%"noAnswer":true%\', 0) AS na, COUNT(*) AS n '
+      'SELECT kind, failed, COALESCE(CASE WHEN json_valid(detail) THEN json_extract(detail, \'\$.noAnswer\') END = 1, 0) AS na, COUNT(*) AS n '
       'FROM ${_db.activityLogRows.actualTableName} GROUP BY kind, failed, na',
       readsFrom: {_db.activityLogRows},
     ).get();

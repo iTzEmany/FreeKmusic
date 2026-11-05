@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
-import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/services/library/track_corrections.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
@@ -17,16 +16,6 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/app_harness.dart';
 
 /// Records the calls; `acceptAll` marks every open proposal as accepted, as the real one does.
-class _CountLog extends ActivityLogNotifier {
-  static var reloads = 0;
-
-  @override
-  Future<void> reload() {
-    reloads++;
-    return super.reload();
-  }
-}
-
 class _Fix extends Fake implements TrackCorrections {
   _Fix(this.db);
 
@@ -35,7 +24,7 @@ class _Fix extends Fake implements TrackCorrections {
   var reverted = 0;
   final revertedAll = <int>[];
   var revertOk = true;
-  final reopens = <bool>[];
+  final undone = <List<int>>[];
   var lastLog = <ActivityLogRow>[];
 
   /// Holds back the file part of `acceptAll` until completed.
@@ -72,8 +61,14 @@ class _Fix extends Fake implements TrackCorrections {
   Future<bool> revert(ActivityLogRow row, {bool reopen = false}) async {
     reverted = row.id;
     revertedAll.add(row.id);
-    reopens.add(reopen);
     return revertOk;
+  }
+
+  @override
+  Future<RevertedAll> revertAll(AcceptedAll done) async {
+    undone.add([for (final r in done.log) r.id]);
+    revertedAll.addAll(undone.last);
+    return RevertedAll(revertOk ? done.count : 0, done.files);
   }
 }
 
@@ -158,7 +153,7 @@ void main() {
   });
 
   /// «Da confermare» with [n] open proposals.
-  Future<(Harness, _Fix)> proposals(WidgetTester tester, {int n = 2, double textScale = 1, bool countLog = false}) async {
+  Future<(Harness, _Fix)> proposals(WidgetTester tester, {int n = 2, double textScale = 1, }) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -173,7 +168,6 @@ void main() {
       const ProposalsScreen(),
       extraOverrides: [
         trackCorrectionsProvider.overrideWithValue(fix),
-        if (countLog) activityLogProvider.overrideWith(_CountLog.new),
       ],
       textScale: textScale,
     );
@@ -216,21 +210,16 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('Annulla waits for the files, undoes in reverse order with reopen, and reloads the Registro', (tester) async {
-    final (h, fix) = await proposals(tester, countLog: true);
+  testWidgets('Annulla puts every correction back in one call, without waiting for the files', (tester) async {
+    final (h, fix) = await proposals(tester);
     fix.filesGate = Completer<void>();
     await tester.tap(find.text('Accetta tutte (2)'));
     await _settle(tester);
-    final before = _CountLog.reloads;
     await tester.tap(find.text('Annulla'));
-    await _settle(tester);
-    expect(fix.revertedAll, isEmpty); // the files are still being written
-    fix.filesGate!.complete();
-    await _settle(tester);
+    await _settle(tester); // the files are still being written
     expect(fix.lastLog, hasLength(2));
-    expect(fix.revertedAll, fix.lastLog.map((r) => r.id).toList().reversed.toList());
-    expect(fix.reopens, [true, true]);
-    expect(_CountLog.reloads, greaterThan(before));
+    expect(fix.undone, [fix.lastLog.map((r) => r.id).toList()]);
+    fix.filesGate!.complete();
     expect(find.text('Impossibile ripristinare questa correzione'), findsNothing);
     await h.dispose(tester);
   });

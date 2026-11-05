@@ -20,7 +20,7 @@ void main() {
       await repo.add(at: at, kind: 'scan', name: 'n$at');
     }
     expect((await repo.page(limit: 2)).map((r) => r.name), ['n3', 'n2']);
-    expect((await repo.page(limit: 2, offset: 2)).map((r) => r.name), ['n1']);
+    expect((await repo.page(limit: 2, before: (at: 2, id: 3))).map((r) => r.name), ['n1']);
     expect(await repo.count(), 3);
   });
 
@@ -39,6 +39,27 @@ void main() {
     expect((await repo.page(limit: 10)).map((r) => r.name), ['second', 'first']);
   });
 
+  test('the page after a row skips none and repeats none, also when a newer row came meanwhile or the time is the same', () async {
+    for (final n in ['a', 'b', 'c', 'd']) {
+      await repo.add(at: 5, kind: 'scan', name: n);
+    }
+    final first = await repo.page(limit: 2);
+    await repo.add(at: 9, kind: 'scan', name: 'new');
+    final last = first.last;
+    expect((await repo.page(limit: 5, before: (at: last.at, id: last.id))).map((r) => r.name), ['b', 'a']);
+  });
+
+  test('byIds reads the rows in chunks', () async {
+    final ids = [for (var i = 0; i < 5; i++) await repo.add(at: i, kind: 'scan', name: 'n$i')];
+    expect((await repo.byIds(ids, chunk: 2)).map((r) => r.name).toSet(), {'n0', 'n1', 'n2', 'n3', 'n4'});
+  });
+
+  test('changes fires for a row added by anyone', () async {
+    final fired = expectLater(repo.changes(), emits(anything));
+    await repo.add(at: 1, kind: 'scan', name: 'x');
+    await fired;
+  });
+
   test('clear empties the table', () async {
     await repo.add(at: now, kind: 'radio', name: '', detail: '{"a":1}');
     await repo.clear();
@@ -48,8 +69,10 @@ void main() {
   test('countsByKind marks «nobody answered» only by the real key, not by a word in the detail', () async {
     await repo.add(at: 1, kind: 'enrichBackground', name: '', failed: true, detail: '{"noAnswer":true}');
     await repo.add(at: 2, kind: 'enrichBackground', name: '', failed: true, detail: '{"note":"noAnswer"}');
+    await repo.add(at: 3, kind: 'enrichBackground', name: '', failed: true, detail: '{ "noAnswer" : true }');
+    await repo.add(at: 4, kind: 'enrichBackground', name: '', failed: true, detail: '{broken');
     final rows = await repo.countsByKind();
-    expect(rows.where((r) => r.noAnswer).fold<int>(0, (a, r) => a + r.n), 1);
-    expect(rows.where((r) => !r.noAnswer).fold<int>(0, (a, r) => a + r.n), 1);
+    expect(rows.where((r) => r.noAnswer).fold<int>(0, (a, r) => a + r.n), 2);
+    expect(rows.where((r) => !r.noAnswer).fold<int>(0, (a, r) => a + r.n), 2);
   });
 }

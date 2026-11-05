@@ -705,6 +705,12 @@ class TrackRepository {
     return rows.firstOrNull?.id;
   }
 
+  /// Marks a track as edited by hand (its tags then survive a rescan) or not.
+  Future<void> setUserEdited(int id, bool value) =>
+      (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(userEdited: Value(value)),
+      );
+
   Future<void> setFavorite(int id, bool value) =>
       (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
         TracksCompanion(isFavorite: Value(value)),
