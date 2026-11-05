@@ -83,9 +83,10 @@ class Device:
             time.sleep(0.8)
         raise RuntimeError('uiautomator dump failed')
 
-    def tap(self, pattern, cls=None):
+    def tap(self, pattern, cls=None, last=False):
         rx = re.compile(pattern)
-        for label, c, x, y in self.nodes():
+        nodes = self.nodes()
+        for label, c, x, y in (reversed(nodes) if last else nodes):
             if rx.search(label) and (cls is None or cls in c):
                 self.sh(f'input tap {x} {y}')
                 time.sleep(1.5)
@@ -309,7 +310,8 @@ def main():
         dev.sh('input keyevent KEYCODE_BACK')
         time.sleep(1.2)
 
-    tab = lambda name: dev.tap(rf'^{name}\n', cls='Button')
+    # The dock is the last match: the Library header has a «Cerca» button too.
+    tab = lambda name: dev.tap(rf'^{name}$', cls='Button', last=True)
     scenario('Pallino schede', lambda: None,
              lambda: [(tab(t), time.sleep(0.5)) for t in ('Libreria', 'Memoria', 'Home', 'Libreria', 'Home')])
     scenario('Tutti i brani', lambda: (dev.tap(r'^Libreria'), dev.tap(r'^Tutti i brani')), dev.flings)
@@ -345,7 +347,7 @@ def main():
     def leave_search():
         # The open search field hides the tabs: BACK (keyboard, then field) until they are back.
         for _ in range(3):
-            if any(l.startswith('Libreria\n') for l, *_ in dev.nodes()):
+            if any(l == 'Libreria' and 'Button' in c for l, c, *_ in dev.nodes()):
                 return
             dev.sh('input keyevent KEYCODE_BACK')
             time.sleep(1)
@@ -357,7 +359,7 @@ def main():
 
     def lens_cycles():
         for _ in range(4):
-            dev.tap(r'^Cerca$', cls='Button')  # the lens in the Library header (the dock tab is «Cerca\n…»)
+            dev.tap(r'^Cerca$', cls='Button')  # the lens: in tree order the header comes before the dock
             time.sleep(0.8)
             dev.tap(r'^Chiudi la ricerca$')
     scenario('Lente Libreria', to_library_top, lens_cycles)
@@ -416,14 +418,21 @@ def main():
         for _ in range(3):
             press(pos['mini'])
             time.sleep(1.5)
+            # A fresh install shows the Bluetooth permission card first («Cerca le Jam vicine»).
             for rx, fx, fy, shown in ((r'^Coda$', 0.85, 0.897, r'^Prossimi$'),
-                                      (r'^Dispositivi$', 0.2, 0.897, r'^Dispositivi vicini')):
+                                      (r'^Dispositivi$', 0.2, 0.897, r'^(Dispositivi vicini|Cerca le Jam vicine)')):
                 xy = target(rx, fx, fy)
                 timed(lambda: press(xy))
                 find(shown)
                 timed(lambda: dev.sh('input keyevent KEYCODE_BACK'))
                 time.sleep(0.7)
-            xy = target(r'^Altre opzioni$', 0.89, 0.08)
+            # The Bluetooth card can need a second BACK; untimed, and never past the player.
+            for _ in range(2):
+                if any(re.match(r'^Altre (azioni|opzioni)$', l) for l, *_ in dev.nodes()):
+                    break
+                dev.sh('input keyevent KEYCODE_BACK')
+                time.sleep(0.7)
+            xy = target(r'^Altre (azioni|opzioni)$', 0.89, 0.08)
             timed(lambda: press(xy))
             etichette = find(r'^Etichette')
             timed(lambda: press(etichette))
