@@ -60,8 +60,9 @@ class JamLocalQueue {
   }
 
   /// The Jam's part changed: write it aside again, only when it differs from the last write.
-  void refreshAside(List<int> part) {
-    if (saved != null && !listEquals(part, _asidePart)) unawaited(_keepAside());
+  void refreshAside() {
+    if (saved == null) return;
+    if (!listEquals(_unplayed(), _asidePart)) unawaited(_keepAside());
   }
 
   ShuffleMode _shuffleMode(CodecoreAudioHandler h) => !h.shuffleEnabled

@@ -635,13 +635,13 @@ class JamController extends Notifier<JamUiState> {
 
   void decline(JamRequest req) => _host?.decline(req.id);
 
-  /// The guest's own queue (or a host's shuffle mode) from before the Jam.
   /// Participant id -> name for the whole Jam: a guest who left is no longer
   /// among the participants, but their tracks stay in the queue.
   final _seenNames = <String, String>{};
 
   String? seenName(String id) => _seenNames[id];
 
+  /// The guest's own queue (or a host's shuffle mode) from before the Jam.
   late final _local = JamLocalQueue(() => ref, () => _part.unplayed(state.jam));
 
   @visibleForTesting
@@ -787,7 +787,7 @@ class JamController extends Notifier<JamUiState> {
     _part.notePlayed(s);
     unawaited(_part.feeder?.update(s));
     // Our part moved on: what the disk keeps for a closed app follows it (D-341).
-    if (_local.saved != null) _local.refreshAside(_part.unplayed(s));
+    _local.refreshAside();
   }
 
   void _onItemFailed(int id) {
