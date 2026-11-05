@@ -16,7 +16,6 @@ import '../../../services/online/youtube_urls.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
-import '../../widgets/activity_button.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/section_header.dart';
@@ -187,10 +186,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       child: Column(
         children: [
           const YtDlpOutdatedBanner(),
-          if (!seen)
-            const _LegalNotice()
-          else
-            const _ActivityRowBar(showInfo: true),
+          if (!seen) const _LegalNotice(),
           if (request == null)
             Expanded(
               child: EmptyState(
@@ -352,79 +348,53 @@ class _LegalNotice extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            CcDims.margin,
-            CcDims.gap4,
-            CcDims.margin,
-            CcDims.gap8,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(CcDims.gap12),
-            decoration: BoxDecoration(
-              color: context.cc.surface1,
-              borderRadius: BorderRadius.circular(CcDims.rCard),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l.ytLegal,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => ref
-                      .read(settingsProvider.notifier)
-                      .update((s) => s.copyWith(ytNoticeSeen: true)),
-                  child: Text(l.gotIt),
-                ),
-              ],
-            ),
-          ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap4,
+        CcDims.margin,
+        CcDims.gap8,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(CcDims.gap12),
+        decoration: BoxDecoration(
+          color: context.cc.surface1,
+          borderRadius: BorderRadius.circular(CcDims.rCard),
         ),
-        const _ActivityRowBar(showInfo: false),
-      ],
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                l.ytLegal,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            TextButton(
+              onPressed: () => ref
+                  .read(settingsProvider.notifier)
+                  .update((s) => s.copyWith(ytNoticeSeen: true)),
+              child: Text(l.gotIt),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-/// The row with the info button (once the notice was seen) and the activity button.
-class _ActivityRowBar extends StatelessWidget {
-  const _ActivityRowBar({required this.showInfo});
-
-  final bool showInfo;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-      child: Row(
-        children: [
-          if (showInfo)
-            IconButton(
-              tooltip: l.ytInfoTooltip,
-              icon: const Icon(Icons.info_outline_rounded),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  content: Text(l.ytLegal),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: Text(l.close),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          const Spacer(),
-          const ActivityButton(),
-        ],
-      ),
-    );
-  }
+/// The explanation of personal use, opened by the info icon next to «Cerca».
+Future<void> showLegalInfo(BuildContext context) {
+  final l = context.l10n;
+  return showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      content: Text(l.ytLegal),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(l.close),
+        ),
+      ],
+    ),
+  );
 }

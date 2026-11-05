@@ -9,6 +9,7 @@ import '../../../providers/settings_providers.dart';
 import '../../../providers/ui_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/activity_button.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../widgets/genre_grid.dart';
 import '../../widgets/motion.dart' show RiseIn;
@@ -124,7 +125,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
             child: Row(
               children: [
-                Expanded(child: Text(l.navSearch, style: theme.headlineSmall)),
+                Flexible(child: Text(l.navSearch, style: theme.headlineSmall)),
+                IconButton(
+                  tooltip: l.ytInfoTooltip,
+                  icon: const Icon(Icons.info_outline_rounded),
+                  onPressed: () => showLegalInfo(context),
+                ),
+                const Spacer(),
+                const ActivityButton(),
               ],
             ),
           ),

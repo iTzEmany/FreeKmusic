@@ -34,24 +34,22 @@ class SourceFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+      padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
       child: SegmentedBlocks<MediaKind?>(
+        compact: true,
         selected: filter,
         onChanged: onPick,
         items: [
           BlockItem(
             value: null,
-            icon: Icons.apps_rounded,
             label: l.onlineFilterAll,
           ),
           BlockItem(
             value: MediaKind.ytmSong,
-            icon: Icons.music_note_rounded,
             label: sourceName(l, MediaKind.ytmSong),
           ),
           BlockItem(
             value: MediaKind.ytVideo,
-            icon: Icons.smart_display_rounded,
             label: sourceName(l, MediaKind.ytVideo),
           ),
         ],

@@ -2,7 +2,6 @@ import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/query_match.dart' show MediaKind;
 import 'package:codecore/ui/screens/search/search_screen.dart';
-import 'package:codecore/ui/screens/youtube/online_results.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
@@ -161,7 +160,7 @@ void main() {
   );
 
   testWidgets(
-    'closing the legal notice dialog leaves the search screen in place',
+    'the info icon next to the title opens the legal explanation and closing leaves Cerca in place',
     (tester) async {
       // Like the Cerca tab: the screen lives in a nested Navigator, the dialog in the root one.
       tester.view.physicalSize = const Size(400, 900);
@@ -172,10 +171,8 @@ void main() {
         tester,
         Scaffold(
           body: Navigator(
-            onGenerateRoute: (_) => MaterialPageRoute<void>(
-              builder: (_) =>
-                  const OnlineResults(query: 'daft punk', submitted: 1),
-            ),
+            onGenerateRoute: (_) =>
+                MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
           ),
         ),
         extraOverrides: [
@@ -184,13 +181,16 @@ void main() {
         ],
       );
       await _settle(tester);
-      await tester.tap(
-        find.byType(TextButton),
-      ); // "got it" on the first-time notice
-      await _settle(tester);
-      await tester.tap(find.byIcon(Icons.info_outline_rounded));
+      final info = find.byIcon(Icons.info_outline_rounded);
+      final infoButton = find.ancestor(
+        of: info,
+        matching: find.byType(IconButton),
+      );
+      expect(tester.getSize(infoButton).shortestSide, greaterThanOrEqualTo(48));
+      await tester.tap(info);
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.textContaining('uso personale'), findsOneWidget);
 
       await tester.tap(
         find.descendant(
@@ -200,10 +200,35 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(SearchScreen), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets(
+    'source filter chips are text only, painted 36 dp, tap area at least 48 dp',
+    (tester) async {
+      await open(tester);
+      await searchOnline(tester, 'daft punk');
+      final chips = find.byType(SegmentedBlocks<MediaKind?>);
+      expect(chips, findsOneWidget);
       expect(
-        find.byType(OnlineResults),
-        findsOneWidget,
-        reason: 'only the dialog is closed',
+        find.descendant(of: chips, matching: find.byType(Icon)),
+        findsNothing,
+      );
+      final label = _filter('Tutte');
+      final painted = find.ancestor(of: label, matching: find.byType(InkWell));
+      final target = find.ancestor(
+        of: label,
+        matching: find.byType(GestureDetector),
+      );
+      // Up to 40: the wide test font wraps a label.
+      expect(tester.getSize(painted.first).height, inInclusiveRange(36, 40));
+      expect(
+        target.evaluate().map(
+          (e) => tester.getSize(find.byWidget(e.widget)).height,
+        ),
+        contains(48.0),
       );
       await h.dispose(tester);
     },
