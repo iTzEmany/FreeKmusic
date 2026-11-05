@@ -94,6 +94,45 @@ void main() {
       }
     });
 
+    // The new surfaces of phase 87 (the library is on the Album tab: back to «Tutto»).
+    await tester.tap(block('Tutto'));
+    await settle(tester);
+    await measure('Scroll Libreria', flings);
+
+    await measure('Lente Libreria', () async {
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.widgetWithIcon(IconButton, Icons.search_rounded).first);
+        await settle(tester, by: const Duration(milliseconds: 800));
+        await tester.tap(find.byTooltip('Chiudi la ricerca'));
+        await settle(tester, by: const Duration(milliseconds: 800));
+      }
+    });
+
+    await tester.tap(find.text('Tutti i brani').first);
+    await settle(tester);
+    await measure('Scroll Tutti i brani', () async {
+      for (final dy in const <double>[-600, -600, -600, 600, 600, 600]) {
+        await tester.drag(find.byType(Scrollable).last, Offset(0, dy));
+        await settle(tester, by: const Duration(milliseconds: 600));
+      }
+    });
+    await tester.tap(find.byType(BackButton).last);
+    await settle(tester);
+
+    await measure('Cambio scheda', () async {
+      for (var i = 0; i < 3; i++) {
+        // Search and Home: their icons are the same selected or not (Home: either of the two).
+        for (final tab in [
+          find.byIcon(Icons.search_rounded),
+          find.byWidgetPredicate((w) =>
+              w is Icon && (w.icon == Icons.home_outlined || w.icon == Icons.home_rounded)),
+        ]) {
+          await tester.tap(tab.last);
+          await settle(tester, by: const Duration(milliseconds: 500));
+        }
+      }
+    });
+
     await tester.tap(find.text('Cerca').last);
     await settle(tester);
     await measure('Ricerca', () async {

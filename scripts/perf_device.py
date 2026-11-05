@@ -162,7 +162,8 @@ def wait_for(dev, event, timeout_s):
 
 # Every scenario name, in order; the second tuple needs playback. scenario()/gestures() assert against it.
 SCENARIOS = ('Pallino schede', 'Tutti i brani', 'Album', 'Libreria Tutto→Playlist→Album→Artisti',
-             'Ricerca «notte»', 'Apri album', 'In riproduzione',
+             'Ricerca «notte»', 'Scroll Libreria', 'Lente Libreria', 'Scroll Tutti i brani', 'Cambio scheda',
+             'Apri album', 'In riproduzione',
              'Lettore dal dock', 'Swipe mini player', 'Fogli', 'Apertura player', 'Anello')
 PLAYBACK_SCENARIOS = set(SCENARIOS[SCENARIOS.index('In riproduzione'):])
 
@@ -348,6 +349,30 @@ def main():
                 return
             dev.sh('input keyevent KEYCODE_BACK')
             time.sleep(1)
+    def to_library_top():
+        leave_search(), tab('Libreria'), dev.tap(r'^Tutto$'), dev.top()
+
+    # The four below start from any screen (no --only dependency) and end on the Library.
+    scenario('Scroll Libreria', to_library_top, dev.flings)
+
+    def lens_cycles():
+        for _ in range(4):
+            dev.tap(r'^Cerca$', cls='Button')  # the lens in the Library header (the dock tab is «Cerca\n…»)
+            time.sleep(0.8)
+            dev.tap(r'^Chiudi la ricerca$')
+    scenario('Lente Libreria', to_library_top, lens_cycles)
+
+    def slow_scroll():
+        # Slow drags (unlike the fast flings of «Tutti i brani»): the retracting bar follows the finger.
+        for direction in (1, -1):
+            for _ in range(4):
+                a, b = (0.7, 0.3) if direction == 1 else (0.3, 0.7)
+                dev.sh(f'input swipe {w // 2} {int(h * a)} {w // 2} {int(h * b)} 700')
+                time.sleep(0.4)
+        dev.sh('input keyevent KEYCODE_BACK')
+    scenario('Scroll Tutti i brani', lambda: (to_library_top(), dev.tap(r'^Tutti i brani')), slow_scroll)
+    scenario('Cambio scheda', leave_search,
+             lambda: [(tab(t), time.sleep(0.5)) for _ in range(3) for t in ('Cerca', 'Memoria', 'Home', 'Libreria')])
     pos = {}  # screen positions resolved in the setups, never inside a measured span
 
     def setup_album():
