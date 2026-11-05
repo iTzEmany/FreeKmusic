@@ -24,12 +24,19 @@ import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/import_providers.dart' show searchCacheCountProvider;
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart' show ytmCatalogProvider;
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart' show clockProvider;
 import 'package:codecore/ui/screens/jam/jam_screen.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/screens/onboarding/onboarding_screen.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
+import 'package:codecore/data/repositories/podcast_repository.dart';
+import 'package:codecore/services/podcast/podcast_models.dart';
+import 'package:codecore/ui/screens/podcast/podcasts_screen.dart';
+import 'package:codecore/ui/screens/smart/smart_playlist_editor.dart';
+import 'package:codecore/ui/widgets/segmented_blocks.dart';
+import 'package:codecore/data/repositories/library_entries.dart' show LibraryKind;
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
@@ -40,6 +47,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_shots/support/shot_harness.dart';
+import '../support/fake_youtube.dart';
+import '../support/fake_ytm.dart' show FakeCatalog, ytmSong;
+import '../support/search_input.dart';
 import 'tolerant_comparator.dart';
 
 class _LibraryTab extends NavIndexNotifier {
@@ -83,6 +93,23 @@ Color _colourOf(String key) {
     h = ((h ^ c) * 0x01000193) & 0xFFFFFF;
   }
   return Color(0xFF000000 | h | 0x303030);
+}
+
+/// Several results per source, so «Cerca» is not a single row.
+class _RichYoutube extends FakeYoutube {
+  @override
+  Future<List<YtResult>> searchSongs(String query, {int limit = 5}) async => [
+        ytmSong('m1', 'Get Lucky', artist: 'Daft Punk', seconds: 248),
+        ytmSong('m2', 'One More Time', artist: 'Daft Punk', seconds: 320),
+        ytmSong('m3', 'Instant Crush', artist: 'Daft Punk', seconds: 337),
+        ytmSong('m4', 'Around the World', artist: 'Daft Punk', seconds: 429),
+      ];
+
+  @override
+  Future<List<YtResult>> search(String query) async => [
+        for (final (i, t) in ['Daft Punk - Live 2007', 'Daft Punk - Alive', 'Random Access Memories'].indexed)
+          YtResult(id: 'y$i', title: t, channel: 'Daft Punk Official', duration: Duration(minutes: 4 + i)),
+      ];
 }
 
 void main() {
@@ -263,4 +290,115 @@ void main() {
       });
     }
   }
+
+  // Phase 87.3: surfaces that later phases change. Phone and desktop, 100 %.
+  group('surfaces', () {
+    for (final size in ShotSize.values) {
+      final tag = '${size.name}_100';
+
+      Future<void> libraryTab(Shot s, WidgetTester tester, String label) async {
+        await s.show(const AppShell(), extra: [navIndexProvider.overrideWith(_LibraryTab.new)]);
+        await tester.tap(find.descendant(
+            of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text(label)));
+        await s.settle();
+      }
+
+      for (final (file, label) in const [
+        ('library_playlists', 'Playlist'),
+        ('library_albums', 'Album'),
+        ('library_artists', 'Artisti'),
+      ]) {
+        testWidgets('surface $tag $file', (tester) => withGoldenShot(tester, size, (s) async {
+              await libraryTab(s, tester, label);
+              await s.expectGolden('${tag}_$file.png');
+            }));
+      }
+
+      testWidgets('surface $tag library_lens', (tester) => withGoldenShot(tester, size, (s) async {
+            await s.show(const AppShell(), extra: [navIndexProvider.overrideWith(_LibraryTab.new)]);
+            await tester.tap(find.byIcon(Icons.search_rounded).first);
+            await s.settle();
+            await tester.enterText(find.byType(TextField), 'Daft');
+            await tester.pump(const Duration(milliseconds: 300));
+            await indexReady(tester);
+            await s.settle();
+            await s.expectGolden('${tag}_library_lens.png');
+          }));
+
+      testWidgets('surface $tag all_tracks_scrolled', (tester) => withGoldenShot(tester, size, (s) async {
+            await s.show(const AllTracksScreen());
+            await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+            await s.settle();
+            await s.expectGolden('${tag}_all_tracks_scrolled.png');
+          }));
+
+      testWidgets('surface $tag search_results', (tester) => withGoldenShot(tester, size, (s) async {
+            await s.show(const SearchScreen(),
+                extra: [
+                  youtubeServiceProvider.overrideWithValue(_RichYoutube()),
+                  ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+                ]);
+            typeSearch(tester, 'Daft Punk');
+            submitSearch(tester);
+            for (var i = 0; i < 3; i++) {
+              await s.settle();
+            }
+            await tester.pump(const Duration(seconds: 2)); // result fade-in
+            await s.expectGolden('${tag}_search_results.png');
+          }));
+
+      testWidgets('surface $tag smart_editor', (tester) => withGoldenShot(tester, size, (s) async {
+            await s.show(const SmartPlaylistEditor());
+            await tester.enterText(find.byType(TextField).first, 'Pink Floyd anni 70');
+            await tester.enterText(find.widgetWithText(TextField, 'Regole'), 'artista:"Pink Floyd"');
+            await s.settle();
+            await s.expectGolden('${tag}_smart_editor.png');
+          }));
+
+      testWidgets('surface $tag podcast', (tester) => withGoldenShot(tester, size, (s) async {
+            await tester.runAsync(() async {
+              final repo = PodcastRepository(s.h.db);
+              final now = DateTime(2026, 10, 17).millisecondsSinceEpoch;
+              for (final (i, (name, author)) in [
+                ('Il Podcast di Alberto', 'Alberto Angela'),
+                ('Tecnologia al bar', 'Redazione Bar'),
+                ('Storie della notte', 'Anna Bianchi'),
+                ('Radio Cucina', 'Marco Rossi'),
+              ].indexed) {
+                await repo.subscribe(
+                    'https://example.test/feed$i',
+                    PodcastFeed(title: name, author: author, episodes: [
+                      for (var e = 0; e < 3 + i; e++)
+                        PodcastEpisodeInfo(
+                            guid: 'g$i$e',
+                            title: 'Puntata $e',
+                            audioUrl: 'https://example.test/$i$e.mp3',
+                            publishedAt: DateTime(2026, 10, 1 + e),
+                            duration: const Duration(minutes: 40)),
+                    ]),
+                    now: now);
+              }
+            });
+            await s.show(const PodcastsScreen());
+            await s.expectGolden('${tag}_podcast.png');
+          }));
+    }
+
+    testWidgets('surface phone_200 home', (tester) => withGoldenShot(tester, ShotSize.phone, (s) async {
+          await tester.runAsync(() async {
+            for (final (i, id) in s.seed.trackIds.take(2).indexed) {
+              await (s.h.db.update(s.h.db.tracks)..where((t) => t.id.equals(id))).write(
+                  TracksCompanion(resumePositionMs: const Value(60000), lastPlayedAt: Value(1000 + i)));
+            }
+            await s.h.handler.playQueue(s.seed.trackIds.take(6).toList(), 2);
+          });
+          tester.view.physicalSize = const Size(360, 1150) * s.size.dpr;
+          await s.show(const AppShell(),
+              textScale: 2.0,
+              extra: [clockProvider.overrideWithValue(() => DateTime(2026, 1, 1, 14))]);
+          // The mini player overflows at 200 % (pinned elsewhere): drain it.
+          while (tester.takeException() != null) {}
+          await s.expectGolden('phone_200_home.png');
+        }));
+  });
 }

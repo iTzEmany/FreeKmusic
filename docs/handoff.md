@@ -1,6 +1,13 @@
-# Handoff — 2026-11-05 (fase 86: JamMedia; prima la 85 e la 84)
+# Handoff — 2026-11-05 (fase 87: rete del refactor superfici-e-ricerca; prima la 86, 85, 84)
 
 ## Stato
+**Fase 87 chiusa** (PR #113, `docs/fase-87-rete-superfici.md`): test di caratterizzazione (regole, backup v14, ordine manuale, Bayou, schede della shell, risultati fusi, ordinamento, salto A–Z), 17 golden, 4 scenari di fluidità nuovi, base del Mi A3 negli Esiti. `lib/` invariata. Debito trovato: **88.5b** (DB in attesa più nuovo non rifiutato dal ripristino). Base del Motorola rinviata (D-419).
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 88
+```
+
 **Fase 86 chiusa** (una PR, `docs/fase-86-jam-media.md`): `JamMedia` (`lib/providers/jam_media.dart`) fuori da `JamController`, `jam_providers.dart` da 1271 a 1073 righe, 7 test unitari nuovi in `jam_media_test.dart`.
 
 **Fase 85 chiusa** (una PR, `docs/fase-85-debito-review-83.md`): `playContextProvider` segue l'handler (anche Android Auto); tetto delle schede in streaming in `shadowWaitProvider`; ricerca fallita visibile nei selettori; test a tappeto dei pulsanti; `libraryIndexProvider` in `library_providers.dart`; regola «Shuffle+ acceso» unica (`plusOn`).
@@ -11,13 +18,9 @@
 - Prove a mano fatte dal vivo (5/11, rete di casa): Jam in LAN Motorola host + Mi A3 ospite; riserva fra broker (broker inesistente → HiveMQ); Sospendi 15 min con scadenza, «Fino alla fine della Jam», Blocca/Sblocca (Mi A3 host, Linux ospite col codice); Casuale+ col log; suggerito online in coda; «Proposta di correzione» (Accetta, Scarta, Ripristina dal Registro). Tutte OK.
 - Motorola aggiornato all'APK debug di oggi, dati intatti; copia di sicurezza in `.backup-motorola/2026-11-05/` (1,35 GB).
 
-Prompt di avvio (nuova chat nella cartella del progetto):
-```
-/obiettivo fase 87
-```
 
 ## Da sapere
-- Refactor «superfici-e-ricerca» pianificato (D-384…D-418): fasi 87–97; analisi in `docs/refactor/superfici-e-ricerca/analisi.md`, mockup approvati in `docs/refactor/superfici-e-ricerca/mockup/` (`indice.html`). Prossima: `/obiettivo fase 87`.
+- Refactor «superfici-e-ricerca» pianificato (D-384…D-418): fasi 87–97; analisi in `docs/refactor/superfici-e-ricerca/analisi.md`, mockup approvati in `docs/refactor/superfici-e-ricerca/mockup/` (`indice.html`). Prossima: `/obiettivo fase 88`.
 - Decisioni: fino a D-418. Le prove a due telefoni le fa l'agente via adb; il Motorola fa solo l'host in «Coda dell'host» e va tenuto sveglio (`KEYCODE_WAKEUP`, si sospende dopo 30 min).
 - In LAN non c'è un «Entra» da ospite: si preme «Jam» sulla riga dell'altro telefono e **chi accetta diventa host**.
 - «Sospendi» e «Blocca» esistono solo nel dialogo della richiesta in arrivo, non per un ospite già dentro.
@@ -33,6 +36,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - Il «+» di Casuale+ si scrive ~400 ms dopo; una Jam della cassa aperta prima del ripristino all'avvio potrebbe salvare la modalità sbagliata (non visto).
 
 ## Tocca a te
+- **Motorola (D-419, da domani o a fine fasi)**: collegalo via USB; la base si misura con `python3 scripts/perf_device.py ZY22HKD85K --label base --playback` (JAVA_HOME=~/.jdks/jbr-17.0.14) sul codice di master prima della 88, o si accetta una base più tarda.
 - **Scelta**: il Registro (e Da confermare) si apre solo dal foglio attività, che compare solo mentre qualcosa gira. Vuoi un ingresso fisso (Impostazioni o ⋮ della Libreria)?
 - **A vista sul Mi A3**: la copertina che resta tonda chiudendo il player, la dissolvenza fra le pagine, la lente della Libreria.
 - **Mi A3**: l'amico «emanuele-Aspire-A515-45» in «Jam a distanza»; toglilo a mano se non ti serve.
@@ -54,6 +58,6 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - Il debito dello streaming, in fondo a `docs/fase-47-jam-online.md`.
 
 ## Prossimi obiettivi
-1. **(Consigliato)** Fase 87 e seguenti: il refactor «superfici-e-ricerca» (fasi 87–97, piano già scritto).
+1. **(Consigliato)** Fase 88 e seguenti: il refactor «superfici-e-ricerca» (fasi 87–97, piano già scritto).
 2. Unificare le due code delle domande sulla cassa (`SpeakerMonitor._pending` e la coda della UI).
 3. Ricerca «notte», build p99 (D-176); picco di ~54 ms alla prima visita di ogni scheda della Libreria (F-60).
