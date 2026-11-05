@@ -33,4 +33,15 @@
 - `CcSearchField`: `touch()` dentro `_changed` sempre (oggi solo con `onQuery`); Cerca (`search_screen.dart:60-80`, debounce suo) e Radio (`radio_screen.dart:141`) passano a `onQuery`, insieme ai 4 campi di D-378; `searchPrefillProvider` da `radio_providers.dart` a `ui_providers.dart`.
 - Mix del genere: `interleave(tracks, GenreMixState)` funzione pura in `genre_mix.dart` (oggi `_mixRows` in `genre_screen.dart:33-80`), `_genreMix` da `shuffle_plus_providers.dart:318-343` a `services/shuffle_plus/`, predicato «già in libreria» e alimentatore dei semi comuni a Shuffle+ e mix, `libraryIndexProvider` con cache al posto del getter del controller e del `compute` per ogni genere (dopo il `RadioGate` della 81).
 
+## Dalla review della fase 81
+- **Prima di tutto (bug):** `PlayerController._context` (`player_providers.dart:131`) è una terza copia del contesto accanto a `playContextProvider` e a `_contextKind/_contextName` dell'handler (salvati). Dopo un riavvio `resumeLastQueue` passa `null` e cancella il contesto salvato: «Riprendi» perde il nome della lista. Rileggerlo dall'handler e togliere `_context`; test di regressione (riavvio simulato → contesto conservato).
+- Ciclo di import `player_providers.dart` ↔ `shuffle_plus_providers.dart`: `suggestionLogProvider` in un file foglia.
+- Una sola scrittura nel registro dei suggeriti: `SuggestionLog.addSuggestion(r, seedTitle)` al posto di `logSuggestion` (`player_providers.dart:457`) e del `log.add` di `shuffle_plus_controller.dart:443-448`.
+- `StreamCardsWait` (`now_playing_cards.dart:556-611`) legge `preparer.phases` e `indexKey`: un metodo/provider dell'handler (`shadowWaitOf(queueId)` → attesa / non disponibile, col tetto di 60 s) e il widget tiene solo il timer dei 20 s; `retryShadow` tramite `PlayerController`.
+- `shufflePlusPendingProvider` filtra da sé Shuffle+ spento e Jam (oggi lo fa `queue_sheet.dart:179-184`, che importa il servizio).
+- Player vuoto: `_EmptyInfo` di `desktop_player_bar.dart:83` riusa la scheda del mini player; un helper `emptyPlayerAction(l, last)` accanto a `emptyPlayerSubtitle` (tooltip ▶ copiato in `desktop_player_bar.dart:337` e `mini_player.dart:339`); `playWhenEmpty` in `TrackOps`.
+- `GenreMixState`: lista di `(YtResult, seedTitle)` invece della mappa `seedTitles` parallela (col refactor di `interleave`); `shuffle_plus_controller.dart:571` usa `gate.nextAsk`.
+- `Skeleton`: i parametri senza chiamanti (`margin`, `card(title:)`, `label` su card/gridCell/bars) si tolgono se la fase 82 non li usa.
+- `docs/02-architettura.md:398`: tetto di 60 s, `lastQueueProvider`/`resumeLastQueue`/`playShufflePlus` (D-364), `playStations` fuori da `_start`.
+
 ## Esiti
