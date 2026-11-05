@@ -98,10 +98,21 @@ class CoverImage extends ConsumerWidget {
                 ),
       ),
     );
-    if (heroTag != null) image = Hero(tag: heroTag!, child: image);
+    if (heroTag != null) image = coverHero(heroTag!, image);
     return coverSemantics(image, semanticLabel);
   }
 }
+
+/// The cover's [Hero]. Closing the player (pop), the flying cover stays round
+/// all the way down to the mini player instead of turning square halfway (D-382).
+Widget coverHero(Object tag, Widget child) => Hero(
+  tag: tag,
+  flightShuttleBuilder: (_, _, direction, from, to) {
+    final c = ((direction == HeroFlightDirection.push ? to : from).widget as Hero).child;
+    return direction == HeroFlightDirection.pop ? ClipOval(child: c) : c;
+  },
+  child: child,
+);
 
 /// Covers are hidden from the screen reader unless they have a label (D-16).
 Widget coverSemantics(Widget art, String? label) {

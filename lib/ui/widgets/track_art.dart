@@ -37,7 +37,7 @@ class TrackArt extends ConsumerWidget {
     final radio = online?.radioOf(track.id)?.station;
     if (radio != null) {
       final art = RadioArt(station: radio, size: size, radius: radius);
-      return coverSemantics(heroTag == null ? art : Hero(tag: heroTag!, child: art), semanticLabel);
+      return coverSemantics(heroTag == null ? art : coverHero(heroTag!, art), semanticLabel);
     }
     final url = online?[track.id]?.result.thumbnailUrl;
     final px = (size * MediaQuery.devicePixelRatioOf(context)).round();
@@ -48,7 +48,7 @@ class TrackArt extends ConsumerWidget {
       radius: radius,
       icon: Icons.cloud_outlined,
     );
-    if (heroTag != null) image = Hero(tag: heroTag!, child: image);
+    if (heroTag != null) image = coverHero(heroTag!, image);
     return coverSemantics(image, semanticLabel);
   }
 }

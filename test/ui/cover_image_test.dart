@@ -37,6 +37,7 @@ List<String> _labels(WidgetTester tester) {
 }
 
 void main() {
+  coverHeroTests();
   testWidgets('a cover is hidden from the screen reader unless it has a label', (tester) async {
     final h = await Harness.create(tester, tracks: 1);
     final sem = tester.ensureSemantics();
@@ -91,5 +92,30 @@ void main() {
     expect(_labels(tester).where((l) => l.contains(t.title)), hasLength(1));
     sem.dispose();
     await h.dispose(tester);
+  });
+}
+
+void coverHeroTests() {
+  testWidgets('coverHero: closing the player keeps the cover round mid-flight', (tester) async {
+    Widget cover(double s) => coverHero('c', SizedBox(width: s, height: s, key: Key('c$s')));
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (c) => TextButton(
+          onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(
+            builder: (_) => Scaffold(body: Align(alignment: Alignment.topLeft, child: cover(200))),
+          )),
+          child: cover(48),
+        ),
+      ),
+    ));
+    await tester.tap(find.byType(TextButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(ClipOval), findsNothing); // opening: no forced clip
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(ClipOval), findsOneWidget);
   });
 }

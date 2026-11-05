@@ -6,6 +6,8 @@ import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/library/library_results.dart' show LibraryResults;
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
+import 'package:codecore/ui/screens/library/library_toolbar.dart';
+import 'package:codecore/ui/screens/library/scan_status.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/cc_search_field.dart';
@@ -88,12 +90,25 @@ void main() {
   });
 
   testWidgets('the lens opens a focused search with grouped results; Back closes it', (t) async {
+    final sem = t.ensureSemantics();
     final h = await open(t, width: 900);
     await t.tap(find.byIcon(Icons.search_rounded));
     await _settle(t);
     expect(find.byType(CcSearchField), findsOneWidget);
     expect(t.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
-    expect(find.text('Libreria'), findsNothing);
+    expect(find.text('Libreria').hitTestable(), findsNothing);
+    expect(find.bySemanticsLabel('Libreria'), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Cerca, disattivato|disabled')), findsNothing);
+    // Tabs, toolbar and list live under one layer that is out of semantics.
+    for (final hidden in [ScanStatus, LibraryToolbar]) {
+      expect(
+        find.ancestor(
+          of: find.byType(hidden),
+          matching: find.byWidgetPredicate((w) => w is ExcludeSemantics && w.excluding),
+        ),
+        findsOneWidget,
+      );
+    }
     await t.enterText(find.byType(TextField), 'Song');
     await t.pump(const Duration(milliseconds: 300));
     await indexReady(t);
@@ -104,6 +119,7 @@ void main() {
     await _settle(t);
     expect(find.byType(CcSearchField), findsNothing);
     expect(find.text('Libreria'), findsOneWidget);
+    sem.dispose();
     await h.dispose(t);
   });
 
@@ -217,7 +233,7 @@ void main() {
     await t.pump();
     await t.pump();
     expect(find.byType(CcSearchField), findsOneWidget);
-    expect(find.text('Libreria'), findsNothing);
+    expect(find.text('Libreria').hitTestable(), findsNothing);
     await h.dispose(t);
   });
 
