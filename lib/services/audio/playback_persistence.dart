@@ -52,6 +52,8 @@ class PlaybackPersistence {
       final q = aside != null && aside.queue.queueIds.isNotEmpty ? aside.queue : s;
       _handler.setShuffleAndRepeat(shuffle: aside?.queue.shuffle ?? s.shuffle, repeat: s.repeat);
       if (q.queueIds.isNotEmpty) {
+        // The copy kept aside is the queue from before the Jam: same context as [s].
+        _handler.setPlayContext(s.contextKind, s.contextName);
         await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs));
         if (aside != null) {
           _position = Duration(milliseconds: q.positionMs);
@@ -130,6 +132,8 @@ class PlaybackPersistence {
         volume: _volume,
         shuffle: _handler.shuffleEnabled,
         repeat: _handler.repeatMode,
+        contextKind: _handler.playContext?.kind,
+        contextName: _handler.playContext?.name,
       ));
     } on Object catch (e, st) {
       AppLog.w('persist playback failed', e, st);

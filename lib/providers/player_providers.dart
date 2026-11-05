@@ -55,6 +55,14 @@ class PlayContext {
   final String? name;
 }
 
+/// The context the handler holds (saved with the queue); null for none or an unknown kind.
+PlayContext? playContextOf(CodecoreAudioHandler h) {
+  final c = h.playContext;
+  return c == null || c.kind < 0 || c.kind >= PlayContextKind.values.length
+      ? null
+      : PlayContext(PlayContextKind.values[c.kind], c.name);
+}
+
 class PlayContextNotifier extends Notifier<PlayContext?> {
   @override
   PlayContext? build() => null;
@@ -127,8 +135,8 @@ class PlayerController {
   final PlaybackPersistence? _persistence;
   bool _askedNotifications = false;
 
-  /// The context of the last list started: [resumeLastQueue] keeps it.
-  PlayContext? _context;
+  /// The context of the list started last, read from the handler.
+  PlayContext? get _context => playContextOf(_handler);
 
   /// The one way a list starts: context, notification permission, then the
   /// queue from [at]. [plus] / [shuffle] set Shuffle+ / plain shuffle once the
@@ -141,7 +149,6 @@ class PlayerController {
     bool? plus,
     bool? shuffle,
   }) async {
-    _context = context;
     onContext?.call(context);
     _handler.setPlayContext(context?.kind.index, context?.name);
     _requestNotificationPermissionOnce();
@@ -239,7 +246,7 @@ class PlayerController {
     try {
       final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
       if (stations.every((s) => s != null)) {
-        await playStations([for (final s in stations) s!], 0);
+        await playStations([for (final s in stations) s!], 0, context: _context);
       } else {
         await _start(ids, 0, _context);
       }
@@ -257,12 +264,15 @@ class PlayerController {
     PlayContext? context,
   }) async {
     if (stations.isEmpty) return;
-    final ctx = _context = context ?? const PlayContext(PlayContextKind.radio);
+    final ctx = context ?? const PlayContext(PlayContextKind.radio);
     onContext?.call(ctx);
-    _handler.setPlayContext(null, null);
+    _handler.setPlayContext(ctx.kind.index, ctx.name);
     _requestNotificationPermissionOnce();
     await _handler.playStations(stations, index);
   }
+
+  /// The player's «Riprova» on a streamed track still without its row.
+  Future<void> retryShadow() => _handler.retryShadow();
 
   Future<void> togglePlayPause() => _handler.togglePlayPause();
   Future<void> pause() => _handler.pause();
@@ -463,6 +473,11 @@ void logSuggestion(SuggestionLog log, YtResult r, String seedTitle) {
     seedTitle: seedTitle,
   );
 }
+
+/// Whether the cards of the streamed [id] still wait for their row ([waited]: already waited).
+final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, ({int id, Duration waited})>(
+  (ref, k) => ref.watch(audioHandlerProvider).shadowWaitOf(k.id, waited: k.waited),
+);
 
 final playerControllerProvider = Provider<PlayerController>(
   (ref) => PlayerController(

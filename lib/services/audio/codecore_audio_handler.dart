@@ -25,6 +25,9 @@ import 'play_queue.dart';
 import 'remote_transport.dart';
 import 'resume_point.dart';
 
+/// What the cards of a streamed track wait for: its row, or nothing now.
+enum ShadowWait { waiting, unavailable }
+
 enum PlaybackFailureReason {
   fileMissing,
   unplayable,
@@ -165,6 +168,41 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
     await _bindShadow(key, entry.id, token);
+  }
+
+  /// Past this the preparer's word is not enough: a job still queued or
+  /// downloading counts as stuck (it exposes no download progress).
+  static const shadowWaitCap = Duration(seconds: 60);
+
+  /// Whether the cards of the streamed [queueId] still wait for their row: emits
+  /// now and on each phase change; unavailable once the job failed, is unknown,
+  /// or [shadowWaitCap] passed ([waited]: how long the caller already waited).
+  Stream<ShadowWait> shadowWaitOf(int queueId, {Duration waited = Duration.zero}) {
+    final phases = preparer?.phases;
+    final key = online?.entryOf(queueId)?.result.indexKey;
+    late final StreamController<ShadowWait> c;
+    Timer? cap;
+    var capped = false;
+    void emit() {
+      final phase = phases?.value[key];
+      c.add(capped || phase == null || phase == StreamPhase.failed ? ShadowWait.unavailable : ShadowWait.waiting);
+    }
+
+    c = StreamController(
+      onListen: () {
+        phases?.addListener(emit);
+        cap = Timer(shadowWaitCap - waited, () {
+          capped = true;
+          emit();
+        });
+        emit();
+      },
+      onCancel: () {
+        phases?.removeListener(emit);
+        cap?.cancel();
+      },
+    );
+    return c.stream;
   }
 
   /// The queue entry now playing (an online entry keeps its own id even when
@@ -404,6 +442,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> playFromMediaId(String mediaId,
       [Map<String, dynamic>? extras]) async {
+    setPlayContext(null, null); // a list of the car's menu is not the last one of the app
     try {
       final radio = await browse?.resolveRadio(mediaId);
       if (radio != null) {
@@ -1144,6 +1183,13 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   void setPlayContext(int? kind, String? name) {
     _contextKind = kind;
     _contextName = name;
+  }
+
+  /// The context of the list started last (null: none); the one source, so a
+  /// new controller still resumes the queue with its name (D-364).
+  ({int kind, String? name})? get playContext {
+    final k = _contextKind;
+    return k == null ? null : (kind: k, name: _contextName);
   }
 
   /// The track just counted as played: opens its row in the history.

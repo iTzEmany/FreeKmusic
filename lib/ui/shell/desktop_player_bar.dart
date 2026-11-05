@@ -7,6 +7,7 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/jam_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../providers/track_ops.dart' show trackOpsProvider;
 import '../../services/audio/play_queue.dart';
 import '../../services/jam/jam_models.dart';
 import '../screens/devices/devices_sheet.dart';
@@ -96,13 +97,7 @@ class _EmptyInfo extends ConsumerWidget {
       excludeSemantics: true,
       child: Row(
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(color: cc.surface3, shape: BoxShape.circle),
-            child: SizedBox.square(
-              dimension: 56,
-              child: Icon(Icons.music_note_rounded, color: cc.textMuted),
-            ),
-          ),
+          const EmptyPlayerDisc(size: 56),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -336,10 +331,8 @@ class _Center extends ConsumerWidget {
                 playing: playing,
                 tooltip: hasTrack
                     ? null
-                    : (ref.watch(lastQueueProvider).value == null
-                          ? l.playerShufflePlusLibrary
-                          : l.playerResumeLastQueue),
-                onPressed: hasTrack ? ctrl.togglePlayPause : () => playWhenEmpty(ref),
+                    : emptyPlayerAction(l, ref.watch(lastQueueProvider).value),
+                onPressed: hasTrack ? ctrl.togglePlayPause : ref.read(trackOpsProvider).playWhenEmpty,
               ),
               IconButton(
                 tooltip: l.nextTrack,

@@ -287,10 +287,17 @@ class SavedPlayback {
     this.volume = 1.0,
     this.shuffle = false,
     this.repeat = PlayRepeat.off,
+    this.contextKind,
+    this.contextName,
   });
 
   final List<int> queueIds;
   final int index, positionMs;
+
+  /// Where the queue came from (`PlayContextKind.index` and the list's name);
+  /// null in what older versions saved.
+  final int? contextKind;
+  final String? contextName;
   final double volume;
   final bool shuffle;
   final PlayRepeat repeat;
@@ -590,6 +597,8 @@ class SettingsStore {
       volume: _prefs.getDouble('volume') ?? 1.0,
       shuffle: _prefs.getBool('shuffle') ?? false,
       repeat: repeat,
+      contextKind: _prefs.getInt('lastContextKind'),
+      contextName: _prefs.getString('lastContextName'),
     );
   }
 
@@ -601,6 +610,9 @@ class SettingsStore {
     await _prefs.setDouble('volume', s.volume);
     await _prefs.setBool('shuffle', s.shuffle);
     await _prefs.setString('repeat', s.repeat.name);
+    final kind = s.contextKind, name = s.contextName;
+    await (kind == null ? _prefs.remove('lastContextKind') : _prefs.setInt('lastContextKind', kind));
+    await (name == null ? _prefs.remove('lastContextName') : _prefs.setString('lastContextName', name));
   }
 
   /// The queue and shuffle mode a restart in the middle of a Jam must find (D-341);

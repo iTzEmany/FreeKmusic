@@ -240,6 +240,16 @@ void main() {
     expect(handler.queueIds, [station, ids[0]]);
   });
 
+  test('a new controller on the same handler resumes the queue with the list name', () async {
+    final tracks = await db.select(db.tracks).get();
+    await PlayerController(handler, null)
+        .playFromList(tracks, 0, context: const PlayContext(PlayContextKind.playlist, 'Mix'));
+    final seen = <PlayContext?>[];
+    await PlayerController(handler, null, onContext: seen.add).resumeLastQueue();
+    expect(seen.single?.kind, PlayContextKind.playlist);
+    expect(seen.single?.name, 'Mix');
+  });
+
   test('playMixed from an index starts there', () async {
     final tracks = await db.select(db.tracks).get();
     await player.playMixed([

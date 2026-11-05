@@ -5,7 +5,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/artist_info_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart';
-import 'package:codecore/providers/player_providers.dart' show liveCurrentTrackProvider, onlineEntriesProvider, playerControllerProvider;
+import 'package:codecore/providers/player_providers.dart' show liveCurrentTrackProvider, onlineEntriesProvider, playerControllerProvider, shadowWaitProvider;
 import 'package:codecore/providers/youtube_providers.dart'
     show downloadIndexProvider;
 import 'package:codecore/services/online/download_index.dart';
@@ -244,6 +244,7 @@ void main() {
     await t.pump(const Duration(seconds: 19));
     expect(find.text('Non disponibile'), findsNothing);
     await t.pump(const Duration(seconds: 2));
+    await t.pump(); // the handler's answer arrives after the frame that asked
     expect(find.text('Non disponibile'), findsOneWidget);
     expect(find.text('Riprova'), findsOneWidget);
 
@@ -252,7 +253,35 @@ void main() {
     expect(find.text('Non disponibile'), findsNothing);
     expect(find.byType(Skeleton), findsWidgets);
     await t.pump(const Duration(seconds: 21));
+    await t.pump();
     expect(find.text('Non disponibile'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+
+  testWidgets('Riprova in one place restarts the 60 s cap of the other widget on the same track', (t) async {
+    final (h, _, preparer, _) = await _open(t, panel: const SidePanelView(panel: SidePanel.info));
+    preparer.gates['youtube:v1'] = Completer<void>();
+    await t.tap(find.text('go'));
+    await _wait(t);
+    preparer.phases.value = {'youtube:v1': StreamPhase.downloading};
+    await t.pump(const Duration(seconds: 21));
+    await t.pump(const Duration(seconds: 30)); // 51 s: the cap is near
+    expect(find.text('Non disponibile'), findsNothing);
+    final wait = find.byType(StreamCardsWait);
+    expect(wait, findsWidgets);
+
+    // The retry of one widget (its own timer is armed again) resets the cap of every subscriber.
+    final ctx = t.element(wait.first);
+    final container = ProviderScope.containerOf(ctx);
+    container.invalidate(shadowWaitProvider((id: t.widget<StreamCardsWait>(wait.first).trackId, waited: StreamCardsWait.wait)));
+    await t.pump();
+    await t.pump(const Duration(seconds: 30)); // 81 s since the start, 30 s since the retry
+    expect(find.text('Non disponibile'), findsNothing);
+    await t.pump(const Duration(seconds: 15));
+    await t.pump();
+    expect(find.text('Non disponibile'), findsWidgets);
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
@@ -282,9 +311,11 @@ void main() {
     await t.tap(find.text('go'));
     await _wait(t);
     preparer.phases.value = {'youtube:v1': StreamPhase.downloading};
-    await t.pump(const Duration(seconds: 59));
+    await t.pump(const Duration(seconds: 21)); // the 20 s timer fires, a frame subscribes the cards
+    await t.pump(const Duration(seconds: 38));
     expect(find.text('Non disponibile'), findsNothing);
     await t.pump(const Duration(seconds: 2));
+    await t.pump();
     expect(find.text('Non disponibile'), findsOneWidget);
 
     await t.pumpWidget(const SizedBox());
