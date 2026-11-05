@@ -1,4 +1,8 @@
+import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
+import 'package:codecore/ui/screens/library/library_screen.dart';
+import 'package:codecore/ui/screens/memory/memory_screen.dart';
+import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +68,22 @@ void main() {
     expect(find.text('2 album'), findsOneWidget);
     await _roundTrip(t, 'Libreria');
     expect(find.text('2 album'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  // Pinned because 89.4 rebuilds the shell: hidden tabs must not tick.
+  testWidgets('only the shown tab has its tickers on', (t) async {
+    final h = await _open(t, tracks: 4);
+    bool ticking(Type page) => TickerMode.valuesOf(
+        t.element(find.byType(page, skipOffstage: false))).enabled;
+    expect(ticking(HomeScreen), isTrue);
+    for (final p in [SearchScreen, LibraryScreen, MemoryScreen]) {
+      expect(ticking(p), isFalse, reason: '$p hidden');
+    }
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    expect(ticking(LibraryScreen), isTrue);
+    expect(ticking(HomeScreen), isFalse);
     await h.dispose(t);
   });
 }

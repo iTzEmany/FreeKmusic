@@ -28,11 +28,11 @@ Future<Harness> _open(WidgetTester tester) async {
   return h;
 }
 
-// Drags the strip to 60 % of its height and checks where the list landed.
-Future<void> _expectJump(WidgetTester t) async {
+// Drags the strip to a fraction (60 % by default) of its height and checks where the list landed.
+Future<void> _expectJump(WidgetTester t, [double f = 0.6, int index = 23]) async {
   final strip = find.byType(AlphaScroller);
   final top = t.getTopLeft(strip).dy, height = t.getSize(strip).height;
-  await t.dragFrom(Offset(390, top + height * 0.4), Offset(0, height * 0.2));
+  await t.dragFrom(Offset(390, top + height * (f - 0.2)), Offset(0, height * 0.2));
   await t.pump();
   final list = t.widget<ListView>(find.descendant(
       of: strip, matching: find.byType(ListView)));
@@ -40,12 +40,18 @@ Future<void> _expectJump(WidgetTester t) async {
       of: strip,
       matching: find.byWidgetPredicate(
           (w) => w is Scrollable && w.axis == Axis.vertical)).first);
-  final index = (0.6 * (_rows - 1)).round();
-  expect(index, 23);
+  expect((f * (_rows - 1)).round(), index);
   expect(scrollable.position.pixels, index * list.itemExtent!);
 }
 
 void main() {
+  testWidgets('the jump rounds to the nearest row, not down', (t) async {
+    final h = await _open(t);
+    // 0.64 * 39 = 24.96: round gives 25, floor would give 24.
+    await _expectJump(t, 0.64, 25);
+    await h.dispose(t);
+  });
+
   testWidgets('the jump is index times row height with the bar shown', (t) async {
     final h = await _open(t);
     await _expectJump(t);
