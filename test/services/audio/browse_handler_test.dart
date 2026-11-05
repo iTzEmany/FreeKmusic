@@ -100,4 +100,22 @@ void main() {
     expect(h.currentIndex, 1);
     expect(h.currentTrack!.title, 'R manual:m');
   });
+
+  test('a saved station of the car menu clears the play context and the provider follows', () async {
+    final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db),
+        onError: (_) {}, online: OnlineEntries());
+    addTearDown(h.dispose);
+    final radios = RadioRepository(db);
+    await radios.save(const RadioStation(id: 'a', name: 'R a', streamUrl: 'http://r.test/a'));
+    h.browse = MediaBrowseTree(DbBrowseSource(
+        TrackRepository(db), LibraryQueries(db), PlaylistRepository(db), radios));
+    final c = ProviderContainer(overrides: [audioHandlerProvider.overrideWithValue(h)]);
+    addTearDown(c.dispose);
+    h.setPlayContext(PlayContextKind.playlist.index, 'Mix');
+    expect(c.read(playContextProvider)?.name, 'Mix');
+
+    await h.playFromMediaId((await h.getChildren('radio')).single.id);
+    expect(h.isRadio, isTrue);
+    expect(c.read(playContextProvider), isNull);
+  });
 }
