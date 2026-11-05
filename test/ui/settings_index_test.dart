@@ -1,3 +1,4 @@
+import 'package:codecore/providers/jam_gate_providers.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_providers.dart';
@@ -67,6 +68,20 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Rete locale'), findsNothing);
     expect(find.text('Dispositivi fidati'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('network page: unblocking removes the entry without reopening', (t) async {
+    _size(t, 400, 1200);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    _container(t).read(jamGateProvider).block('abcdefgh', 'Mario Blocked');
+    await t.tap(find.text('Rete e dispositivi'));
+    await t.pumpAndSettle();
+    expect(find.text('Mario Blocked'), findsOneWidget);
+    await t.tap(find.text('Sblocca'));
+    await t.pumpAndSettle();
+    expect(find.text('Mario Blocked'), findsNothing);
     await h.dispose(t);
   });
 
