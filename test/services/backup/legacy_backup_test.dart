@@ -66,7 +66,7 @@ void main() {
     expect(prefs.getString('deviceId'), 'this-device', reason: 'device-bound keys are never restored');
   });
 
-  test('GAP today: a staged database newer than this app is NOT refused by applyPendingRestore', () async {
+  test('a staged database newer than this app is refused and the current one is untouched', () async {
     final dbFile = File(p.join(dir.path, 'codecore.sqlite'))..writeAsStringSync('current');
     final staging = Directory(p.join(dir.path, 'restore'));
     SharedPreferences.setMockInitialValues({'deviceId': 'this-device'});
@@ -79,11 +79,9 @@ void main() {
         await applyPendingRestore(
             dbFile: dbFile, staging: staging, prefs: prefs, coversDir: Directory(p.join(dir.path, 'covers')),
             schemaVersion: kSchemaVersion),
-        isTrue);
-    // _checkStagedDatabase opens it through AppDatabase, and drift rewrites user_version to the
-    // current one (onUpgrade also runs on a downgrade) before the check reads it. Only the manifest
-    // gate below works. Flips if the check reads the version before opening with drift.
-    expect(prefs.getString('theme'), 'oled');
+        isFalse);
+    expect(dbFile.readAsStringSync(), 'current');
+    expect(prefs.getString('theme'), isNull);
   });
 
   test('a manifest from a newer schema is refused', () async {
