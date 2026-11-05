@@ -1,7 +1,7 @@
 # Avanzamento
 
 Legenda: `[ ]` da fare · `[~]` codice fatto e verde nei test, manca solo una prova a mano dell'utente · `[x]` fatto.
-Spunta a fine task (dopo `flutter analyze` + `flutter test` verdi). Annota **una riga** se hai deviato dal piano.
+Spunta a fine task (dopo `flutter analyze` + test mirati verdi; la suite completa la esegue la CI). Annota **una riga** se hai deviato dal piano.
 L'agente riparte sempre dal primo task non spuntato.
 
 ## Fase 0 — Setup (`fase-0-setup.md`)

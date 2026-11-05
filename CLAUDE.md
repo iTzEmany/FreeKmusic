@@ -33,7 +33,7 @@ flutter build linux / windows   # windows solo da una macchina Windows
 
 ## Regole d'oro (riassunto)
 - Un task alla volta, dal documento di fase, nell'ordine. Spunta `docs/PROGRESS.md` a fine task.
-- Dopo ogni task: `flutter analyze` pulito + `flutter test` verde. Se fallisce, correggi prima di proseguire.
+- Dopo ogni task: `flutter analyze` pulito + test mirati verdi (la suite completa la esegue la CI). Se fallisce, correggi prima di proseguire.
 - Non aggiungere pacchetti non elencati. Non inventare API: se un pacchetto non corrisponde a
   quanto scritto nei documenti, leggi il suo sorgente in `~/.pub-cache` e adatta.
 - Nessun `catch (_) {}` muto: logga con `AppLog`.

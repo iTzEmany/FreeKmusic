@@ -8,7 +8,8 @@ Scritte per un agente che lavora a task piccoli e precisi. Seguile alla lettera.
 3. Fai solo ciò che il task chiede. Niente refactoring "già che ci sono", niente funzioni extra.
 4. A fine task esegui, in questo ordine:
    `dart run build_runner build --delete-conflicting-outputs` (solo se toccate tabelle drift) →
-   `flutter analyze` → `flutter test`. Devono essere puliti.
+   `flutter analyze` → i test mirati del cambiamento (`flutter test <file…>`). Devono essere puliti.
+   La suite completa (`flutter test`) la esegue la CI.
 5. Spunta il task in `docs/PROGRESS.md` e scrivi **una riga** di nota se hai deviato dal piano.
 6. Se un criterio di verifica non è raggiungibile, **fermati e riportalo**: non aggirarlo.
 
