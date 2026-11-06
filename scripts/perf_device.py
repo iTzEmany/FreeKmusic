@@ -347,7 +347,9 @@ def main():
     def leave_search():
         # The open search field hides the tabs: BACK (keyboard, then field) until they are back.
         for _ in range(3):
-            if any(l == 'Libreria' and 'Button' in c for l, c, *_ in dev.nodes()):
+            ns = dev.nodes()
+            # The library lens keeps the dock visible but hides the tabs: close it too.
+            if any(l == 'Libreria' and 'Button' in c for l, c, *_ in ns) and not any(l == 'Chiudi la ricerca' for l, *_ in ns):
                 return
             dev.sh('input keyevent KEYCODE_BACK')
             time.sleep(1)
