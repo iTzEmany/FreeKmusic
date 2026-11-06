@@ -184,7 +184,10 @@ class AppShell extends ConsumerWidget {
     if (wide) {
       content = _WideShell(body: body);
     } else {
+      // extendBody: the body runs under the dock, and the Scaffold gives it the
+      // dock's height as MediaQuery.padding.bottom, the one inset lists read.
       content = Scaffold(
+        extendBody: true,
         body: SafeArea(
           bottom: false,
           child: Column(

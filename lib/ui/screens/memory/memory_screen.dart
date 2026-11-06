@@ -151,7 +151,7 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
       ..._groups(context, b),
       ..._heaviest(context, b),
     ];
-    const pad = EdgeInsets.only(bottom: CcDims.gap32);
+    final pad = EdgeInsets.only(bottom: CcDims.gap32 + MediaQuery.paddingOf(context).bottom);
     if (MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,

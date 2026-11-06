@@ -99,7 +99,9 @@ class HomeScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      // bottom: false, the list scrolls under the dock and pads itself.
       body: SafeArea(
+        bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),

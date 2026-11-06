@@ -120,6 +120,22 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('the body runs to the bottom edge and the dock is opaque',
+      (t) async {
+    _phone(t);
+    final h = await Harness.create(t, tracks: 2);
+    await h.pump(t, const AppShell());
+    await _settle(t);
+    final scaffold = t.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(scaffold.extendBody, isTrue);
+    expect(t.getBottomLeft(find.byType(HomeScreen)).dy, 800);
+    expect(
+        find.descendant(
+            of: find.byType(ShellDock), matching: find.byType(BackdropFilter)),
+        findsNothing);
+    await h.dispose(t);
+  });
+
   testWidgets('no track: the dock keeps its mini player, empty (D-364)', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
