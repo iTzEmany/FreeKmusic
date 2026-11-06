@@ -37,18 +37,41 @@ SmartResult _row(String id, String title, {String artist = 'Artist'}) =>
       hasVideo: false,
     );
 
+/// Counts the lookups, to show they run once per result and not per build.
+class _CountingIndex extends LibraryIndex {
+  _CountingIndex(super.tracks);
+
+  var finds = 0;
+
+  @override
+  LibraryEntryLite? find(ImportRow r, {String? baseDir}) {
+    finds++;
+    return super.find(r, baseDir: baseDir);
+  }
+}
+
 void main() {
   late StreamController<SmartSearchState> engine;
   late Harness h;
+  late _CountingIndex index;
 
   /// A library of [n] tracks "Song 0".."Song n-1" by "Artist" (the harness
   /// inserts them), found by the text and known to the library index.
-  Future<void> open(WidgetTester tester, {int n = 5}) async {
+  Future<void> open(WidgetTester tester, {int n = 5, bool textFindsThem = true}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     h = await Harness.create(tester, tracks: n);
     final tracks = await h.db.select(h.db.tracks).get();
+    index = _CountingIndex([
+      for (final t in tracks)
+        LibraryEntryLite(
+          id: t.id,
+          title: t.title,
+          artist: t.artist,
+          durationMs: t.durationMs,
+        ),
+    ]);
     engine = StreamController<SmartSearchState>.broadcast();
     addTearDown(engine.close);
     await h.pump(
@@ -56,18 +79,10 @@ void main() {
       const Scaffold(body: OnlineResults(query: 'song', submitted: 1)),
       extraOverrides: [
         smartSearchProvider.overrideWith((ref, request) => engine.stream),
-        searchTracksProvider.overrideWith((ref, text) => AsyncData(tracks)),
-        libraryIndexProvider.overrideWith(
-          (ref) async => LibraryIndex([
-            for (final t in tracks)
-              LibraryEntryLite(
-                id: t.id,
-                title: t.title,
-                artist: t.artist,
-                durationMs: t.durationMs,
-              ),
-          ]),
+        searchTracksProvider.overrideWith(
+          (ref, text) => AsyncData(textFindsThem ? tracks : const []),
         ),
+        libraryIndexProvider.overrideWith((ref) async => index),
       ],
     );
   }
@@ -75,12 +90,21 @@ void main() {
   Future<void> emit(
     WidgetTester tester, {
     List<SmartResult> best = const [],
+    List<SmartResult> others = const [],
     SearchIntent intent = SearchIntent.songs,
     TopCard? card,
   }) async {
     engine.add(
-      SmartSearchState(query: 'song', best: best, intent: intent, card: card),
+      SmartSearchState(
+        query: 'song',
+        best: best,
+        others: others,
+        intent: intent,
+        card: card,
+      ),
     );
+    await _settle(tester);
+    // The hidden rows' tracks are read from the database after the first build.
     await _settle(tester);
   }
 
@@ -178,6 +202,52 @@ void main() {
     expect(find.text('Nella tua libreria'), findsNothing);
     expect(find.byKey(const ValueKey('online-owned-hidden')), findsNothing);
     expect(find.byKey(const ValueKey('row-a')), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a hidden duplicate the text search misses still shows in the library section', (
+    tester,
+  ) async {
+    await open(tester, textFindsThem: false);
+    await emit(
+      tester,
+      best: [_row('dup', 'Song 1'), _row('a', 'Mother', artist: 'Pink Floyd')],
+    );
+    expect(find.text('1 risultato già in libreria nascosto'), findsOneWidget);
+    expect(find.byKey(const ValueKey('online-library')), findsOneWidget);
+    expect(find.text('Song 1'), findsOneWidget);
+    expect(find.textContaining('Mostra tutti'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a hidden duplicate the text search finds too is listed once, first', (
+    tester,
+  ) async {
+    await open(tester);
+    await emit(tester, best: [_row('dup', 'Song 3')]);
+    expect(find.text('Song 3'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Song 3')).dy,
+      lessThan(tester.getTopLeft(find.text('Song 0')).dy),
+    );
+    await h.dispose(tester);
+  });
+
+  testWidgets('the duplicates are looked up once per result, not at every rebuild', (
+    tester,
+  ) async {
+    await open(tester);
+    await emit(
+      tester,
+      best: [_row('dup', 'Song 1')],
+      others: [_row('b', 'Mother', artist: 'Pink Floyd')],
+    );
+    final once = index.finds;
+    expect(once, greaterThan(0));
+    await tester.tap(find.byKey(const ValueKey('others-chip')));
+    await _settle(tester);
+    expect(find.text('Mother'), findsOneWidget, reason: 'the page did rebuild');
+    expect(index.finds, once);
     await h.dispose(tester);
   });
 }

@@ -313,7 +313,11 @@ void main() {
         findsNWidgets(2),
         reason: 'a filter chip and the row',
       );
-      expect(find.text('Video'), findsOneWidget);
+      expect(
+        find.text('YouTube'),
+        findsNWidgets(2),
+        reason: 'a filter chip and the video row',
+      );
       expect(find.text('anche come video'), findsOneWidget);
       expect(find.byKey(const ValueKey('listen-video-a')), findsOneWidget);
       await h.dispose(tester);

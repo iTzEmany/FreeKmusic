@@ -1,4 +1,4 @@
-import '../../core/import_row.dart' show ImportRow;
+import '../../core/import_row.dart' show ImportRow, LibraryEntryLite;
 import '../import/track_matcher.dart' show LibraryIndex, matchKey, matchTitleKey;
 import 'query_cleaner.dart';
 import 'query_intent.dart' show SearchIntent;
@@ -181,26 +181,61 @@ ImportRow _asRow(String title, List<String> artists, Duration? length) => Import
       durationMs: length?.inMilliseconds,
     );
 
-/// Whether the song is already in the library: title and artist as the library
-/// compares them, whatever the length (D-389). Any upload of the row counts,
-/// and for a plain upload also its «Artist - Title» split.
-bool ownedByLibrary(SmartResult row, LibraryIndex library) {
+/// The library track the song is already, or null: title and artist as the
+/// library compares them, whatever the length (D-389). Any upload of the row
+/// counts, and for a plain upload also its «Artist - Title» split.
+LibraryEntryLite? ownedMatch(SmartResult row, LibraryIndex library) {
   for (final r in [row.primary, ...row.alternatives]) {
     final artists = r.artists.isNotEmpty ? r.artists : [_artistOf(r)];
-    if (library.find(_asRow(_titleOf(r), artists, r.duration)) != null) return true;
+    final hit = library.find(_asRow(_titleOf(r), artists, r.duration));
+    if (hit != null) return hit;
     final m = r.artists.isEmpty ? _dash.firstMatch(r.title) : null;
-    if (m != null &&
-        library.find(_asRow(r.title.substring(m.end), [r.title.substring(0, m.start)], r.duration)) != null) {
-      return true;
+    if (m != null) {
+      final split = library.find(
+          _asRow(r.title.substring(m.end), [r.title.substring(0, m.start)], r.duration));
+      if (split != null) return split;
     }
   }
-  return false;
+  return null;
 }
 
+bool ownedByLibrary(SmartResult row, LibraryIndex library) => ownedMatch(row, library) != null;
+
 /// [rows] without the songs the library already has, order kept; [hidden]
-/// counts them. Linear in the rows (the index lookup is O(1)), on the index
-/// already in memory.
-({List<SmartResult> kept, int hidden}) withoutOwned(List<SmartResult> rows, LibraryIndex library) {
-  final kept = [for (final r in rows) if (!ownedByLibrary(r, library)) r];
-  return (kept: kept, hidden: rows.length - kept.length);
+/// counts them and [matches] are the library tracks they stand for (each once).
+/// Linear in the rows (the index lookup is O(1)), on the index already in memory.
+({List<SmartResult> kept, int hidden, List<LibraryEntryLite> matches}) withoutOwned(
+    List<SmartResult> rows, LibraryIndex library) {
+  final kept = <SmartResult>[];
+  final matches = <int, LibraryEntryLite>{};
+  for (final r in rows) {
+    final m = ownedMatch(r, library);
+    if (m == null) {
+      kept.add(r);
+    } else {
+      matches[m.id] = m;
+    }
+  }
+  return (kept: kept, hidden: rows.length - kept.length, matches: matches.values.toList());
+}
+
+/// The page's rows without what the library has, worked out once per result
+/// (see `ownedSplitProvider`), not at every build.
+class OwnedSplit {
+  OwnedSplit(List<SmartResult> best, List<SmartResult> others, LibraryIndex library)
+      : this._(withoutOwned(best, library), withoutOwned(others, library));
+
+  OwnedSplit._(
+    ({List<SmartResult> kept, int hidden, List<LibraryEntryLite> matches}) b,
+    ({List<SmartResult> kept, int hidden, List<LibraryEntryLite> matches}) o,
+  )   : best = b.kept,
+        others = o.kept,
+        hidden = b.hidden + o.hidden,
+        // The tracks of the hidden rows, so «Nella tua libreria» always has
+        // what «N nascosti» refers to.
+        matchIds = {for (final m in [...b.matches, ...o.matches]) m.id}.toList();
+
+  final List<SmartResult> best, others;
+  final int hidden;
+  final List<int> matchIds;
 }

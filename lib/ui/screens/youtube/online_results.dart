@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/library_providers.dart' show libraryIndexProvider;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
@@ -27,6 +26,7 @@ import '../online/artist_page_screen.dart';
 import '../online/online_album_screen.dart';
 import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
+import 'online_results_rows.dart';
 import 'online_results_sections.dart';
 import 'playlist_source_sheet.dart';
 
@@ -152,15 +152,13 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         ? null
         : ref.watch(smartSearchProvider(request));
     final s = async?.value;
-    // D-399: songs the library already has leave the online rows (the index is
-    // in memory; until it is ready nothing is hidden).
+    // D-399: songs the library already has leave the online rows (the split is
+    // worked out once per result; until the index is ready nothing is hidden).
     final inLibrary = s != null && s.queryKind == QueryKind.text && libraryAppliesTo(s.intent);
-    final index = inLibrary ? ref.watch(libraryIndexProvider).value : null;
-    final bestOwn = index == null ? null : withoutOwned(s!.best, index);
-    final othersOwn = index == null ? null : withoutOwned(s!.others, index);
-    final bestRows = bestOwn?.kept ?? s?.best ?? const <SmartResult>[];
-    final othersRows = othersOwn?.kept ?? s?.others ?? const <SmartResult>[];
-    final hidden = (bestOwn?.hidden ?? 0) + (othersOwn?.hidden ?? 0);
+    final owned = s == null ? null : ref.watch(ownedSplitProvider(s));
+    final bestRows = owned?.best ?? s?.best ?? const <SmartResult>[];
+    final othersRows = owned?.others ?? s?.others ?? const <SmartResult>[];
+    final hidden = owned?.hidden ?? 0;
     final all = [...bestRows, ...othersRows];
     final bestEnd = bestRows.length;
     // (place in `all`, row) of what is shown under the filter.
@@ -233,7 +231,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
                           shownOthers,
                           picked.active,
                           showLibrary: inLibrary,
-                          hidden: hidden,
+                          owned: owned,
                         ),
                     ),
             ),
@@ -250,7 +248,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     List<(int, SmartResult)> others,
     bool selecting, {
     required bool showLibrary,
-    required int hidden,
+    required OwnedSplit? owned,
   }) {
     final l = context.l10n;
     var n = 0;
@@ -294,7 +292,10 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         );
       default:
     }
-    if (showLibrary) children.add(LibraryTracksSection(query: s.query));
+    final albums = AlbumsRow(albums: s.albums, onOpen: _openAlbum);
+    final artists = ArtistsRow(artists: s.artists, onOpen: _openArtist);
+    children.addAll(card is TopAlbum ? [albums, artists] : [artists, albums]);
+    if (showLibrary) children.add(LibraryTracksSection(query: s.query, owned: owned));
     var rest = best;
     if (s.intent == SearchIntent.artistPage && card is TopArtist) {
       final mine = [
@@ -315,7 +316,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         SectionHeader(s.noneSure ? l.onlineNoneSure : l.onlineBestResults),
       );
     }
-    if (hidden > 0) children.add(OwnedHiddenNote(count: hidden));
+    if (owned != null && owned.hidden > 0) children.add(OwnedHiddenNote(count: owned.hidden));
     children.addAll(rest.map(row));
     if (others.isNotEmpty) {
       children.add(

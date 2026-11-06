@@ -2815,7 +2815,7 @@
   "onlineOwnedHidden": "{count, plural, one{1 résultat déjà dans la bibliothèque masqué} other{{count} résultats déjà dans la bibliothèque masqués}}",
   "onlineArtistSongs": "Titres de {artist}",
   "onlineFilterAll": "Toutes",
-  "onlineSourceVideo": "Vidéo",
+  "onlineFromSource": "Depuis {source}",
   "onlineAlsoVideo": "aussi en vidéo",
   "onlineListenVideo": "Écouter la vidéo",
   "onlineNoticeRateLimited": "{source} demande une pause : résultats uniquement de {other}",

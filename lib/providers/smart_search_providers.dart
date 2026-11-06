@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/db/app_database.dart' show Track;
+import '../services/online/merge_results.dart';
+import '../services/online/query_intent.dart' show QueryKind;
 import '../services/online/query_match.dart' show libraryArtistKey;
 import '../services/online/smart_search.dart';
 import '../services/online/source_cooldown.dart';
-import 'library_providers.dart' show artistsProvider;
+import 'database_providers.dart' show trackRepositoryProvider;
+import 'library_providers.dart' show artistsProvider, libraryIndexProvider;
 import 'youtube_providers.dart';
 import 'ytm_catalog_providers.dart';
 
@@ -40,3 +44,17 @@ final smartSearchProvider = StreamProvider.autoDispose
         refresh: request.refresh,
       );
 });
+
+/// D-399: the page without the songs the library already has, worked out once
+/// per result and per read of the library (the key is the state itself), not
+/// at every build. Null while the index is not ready or the text is not a song.
+final ownedSplitProvider = Provider.autoDispose.family<OwnedSplit?, SmartSearchState>((ref, s) {
+  if (s.queryKind != QueryKind.text || !libraryAppliesTo(s.intent)) return null;
+  final index = ref.watch(libraryIndexProvider).value;
+  return index == null ? null : OwnedSplit(s.best, s.others, index);
+});
+
+/// The library tracks the hidden online rows stand for.
+final ownedTracksProvider = FutureProvider.autoDispose.family<List<Track>, OwnedSplit>(
+  (ref, owned) => ref.watch(trackRepositoryProvider).getByIds(owned.matchIds),
+);

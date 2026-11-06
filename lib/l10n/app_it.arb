@@ -3050,7 +3050,8 @@
     }
   },
   "onlineFilterAll": "Tutte",
-  "onlineSourceVideo": "Video",
+  "onlineFromSource": "Da {source}",
+  "@onlineFromSource": {"placeholders": {"source": {"type": "String"}}},
   "onlineAlsoVideo": "anche come video",
   "onlineListenVideo": "Ascolta il video",
   "onlineNoticeRateLimited": "{source} chiede una pausa: risultati solo da {other}",

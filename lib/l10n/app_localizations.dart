@@ -7359,11 +7359,11 @@ abstract class AppLocalizations {
   /// **'Tutte'**
   String get onlineFilterAll;
 
-  /// No description provided for @onlineSourceVideo.
+  /// No description provided for @onlineFromSource.
   ///
   /// In it, this message translates to:
-  /// **'Video'**
-  String get onlineSourceVideo;
+  /// **'Da {source}'**
+  String onlineFromSource(String source);
 
   /// No description provided for @onlineAlsoVideo.
   ///

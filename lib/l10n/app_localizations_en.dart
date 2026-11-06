@@ -4728,7 +4728,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onlineFilterAll => 'All';
 
   @override
-  String get onlineSourceVideo => 'Video';
+  String onlineFromSource(String source) {
+    return 'From $source';
+  }
 
   @override
   String get onlineAlsoVideo => 'also as a video';
