@@ -36,7 +36,7 @@ class GenreReread {
   final TrackGenreRepository genres;
   final TagReader reader;
 
-  /// Completes when the user leaves the app alone; asked before each batch.
+  /// Completes when the user leaves the app alone; asked before each file.
   final Future<void> Function() waitIdle;
   final int Function() loadAfter;
   final void Function(int id) saveAfter;
@@ -56,10 +56,14 @@ class GenreReread {
         markDone();
         return GenreRereadReport(read: read, changed: changed, finished: true);
       }
-      await waitIdle();
-      if (cancelled()) break;
-      // Each read runs in its own isolate (the reader).
-      final files = await Future.wait([for (final r in rows) _fromFile(r)]);
+      // One file at a time, so a user who comes back is waited for before the next read.
+      final files = <List<String>>[];
+      for (final r in rows) {
+        await waitIdle();
+        if (cancelled()) break;
+        files.add(await _fromFile(r));
+      }
+      if (files.length < rows.length) break;
       // The user may have edited a genre while the files were read: decide with the state of now.
       final now = await genres.editState([for (final r in rows) r.id]);
       for (var i = 0; i < rows.length; i++) {

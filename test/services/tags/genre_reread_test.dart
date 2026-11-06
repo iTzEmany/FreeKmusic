@@ -18,6 +18,19 @@ class _Reader implements TagReader {
   }
 }
 
+class _Counting implements TagReader {
+  int reads = 0, running = 0, maxParallel = 0;
+
+  @override
+  Future<TagInfo> read(String path, {bool withCover = true}) async {
+    reads++;
+    maxParallel = ++running > maxParallel ? running : maxParallel;
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+    running--;
+    return const TagInfo();
+  }
+}
+
 class _Racing implements TagReader {
   _Racing(this.inner, this.onRead);
   final _Reader inner;
@@ -108,6 +121,24 @@ void main() {
     await job(_Reader({'/a': const TagInfo(genres: ['Rock', 'Pop'])})).run();
     expect(await genres.of(a), ['Rock', 'Pop']);
     expect((await db.select(db.tracks).getSingle()).genre, 'rock');
+  });
+
+  test('files are read one at a time, waiting for idle before each, and a cancel mid-batch stops the reads', () async {
+    for (var i = 1; i <= 4; i++) {
+      await add('/t$i');
+    }
+    final reader = _Counting();
+    var waits = 0;
+    await GenreReread(
+      genres: genres, reader: reader, loadAfter: () => after, saveAfter: (id) => after = id, markDone: () {},
+      waitIdle: () async => waits++,
+      cancelled: () => reader.reads == 3,
+      batch: 4,
+    ).run();
+    expect(reader.maxParallel, 1);
+    expect(reader.reads, 3);
+    expect(waits, 4, reason: 'asked before each file, the cancel is seen after the last wait');
+    expect(after, 0, reason: 'a batch cut short saves no bookmark');
   });
 
   test('cancelled while waiting for idle: nothing is read', () async {

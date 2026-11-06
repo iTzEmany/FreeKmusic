@@ -6396,7 +6396,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logCountriesSub =>
-      'Le pays d\'origine des artistes de la bibliothèque a été recherché.';
+      'Le pays d’origine des artistes de la bibliothèque a été recherché.';
 
   @override
   String get logReleases => 'Nouveautés vérifiées';
