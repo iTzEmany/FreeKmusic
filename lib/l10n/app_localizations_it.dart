@@ -2928,12 +2928,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get smartNameRequired => 'Scrivi un nome';
 
   @override
-  String get smartRules => 'Regole';
-
-  @override
-  String get smartRulesHint => 'artista:\"pink floyd\" -live anno:1970..1979';
-
-  @override
   String get smartNoRules =>
       'Senza regole la playlist contiene tutta la libreria.';
 
@@ -2945,9 +2939,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get smartSortRandom => 'A caso';
-
-  @override
-  String get smartLimit => 'Limite di brani (facoltativo)';
 
   @override
   String get smartTemplates => 'Modelli';
@@ -6467,4 +6458,143 @@ class AppLocalizationsIt extends AppLocalizations {
   String logCorrectionSem(String from, String to) {
     return 'Da $from a $to';
   }
+
+  @override
+  String get smartAll => 'Tutte le condizioni';
+
+  @override
+  String get smartAny => 'Almeno una';
+
+  @override
+  String get smartAllNote => 'I brani devono rispettare tutti i filtri.';
+
+  @override
+  String get smartAnyNote => 'Basta che un filtro sia rispettato.';
+
+  @override
+  String get smartAddFilter => 'Aggiungi filtro';
+
+  @override
+  String get smartGroupMusic => 'Musica';
+
+  @override
+  String get smartGroupListening => 'Ascolto';
+
+  @override
+  String get smartGroupFile => 'File';
+
+  @override
+  String get smartFieldTag => 'Tag';
+
+  @override
+  String get smartFieldAlbumArtist => 'Artista dell’album';
+
+  @override
+  String get smartFieldCountry => 'Nazionalità';
+
+  @override
+  String get smartFieldPlays => 'Ascolti';
+
+  @override
+  String get smartFieldLastPlayed => 'Ultimo ascolto';
+
+  @override
+  String get smartFieldAdded => 'Aggiunto';
+
+  @override
+  String get smartFieldBitrate => 'Bitrate';
+
+  @override
+  String get smartFieldFolder => 'Cartella';
+
+  @override
+  String get smartFlagLyrics => 'Con testo';
+
+  @override
+  String get smartEnrichedOnly => 'Solo per i brani arricchiti';
+
+  @override
+  String get smartInclude => 'Includi';
+
+  @override
+  String get smartExclude => 'Escludi';
+
+  @override
+  String get smartPickValues => 'Scegli i valori';
+
+  @override
+  String get smartAddValue => 'Aggiungi';
+
+  @override
+  String get smartValueHint => 'Scrivi un valore';
+
+  @override
+  String get smartDone => 'Fatto';
+
+  @override
+  String get smartIncomplete =>
+      'Incompleto: completalo o rimuovilo per salvare.';
+
+  @override
+  String get smartRemoveFilter => 'Rimuovi filtro';
+
+  @override
+  String smartRemoveValue(String value) {
+    return 'Rimuovi $value';
+  }
+
+  @override
+  String get smartFrom => 'Da';
+
+  @override
+  String get smartTo => 'A';
+
+  @override
+  String get smartMoreThan => 'Più di';
+
+  @override
+  String get smartLessThan => 'Meno di';
+
+  @override
+  String get smartEqualTo => 'Uguale a';
+
+  @override
+  String get smartAgeRecent => 'Negli ultimi';
+
+  @override
+  String get smartAgeOlder => 'Da più di';
+
+  @override
+  String get smartDays => 'giorni';
+
+  @override
+  String get smartMinutes => 'minuti';
+
+  @override
+  String get smartContains => 'Contiene';
+
+  @override
+  String get smartAdvancedNote => 'Il testo della regola, in sola lettura.';
+
+  @override
+  String get smartNotVisual =>
+      'Questa regola è troppo articolata per l’editor a filtri. Resta com’è: la vedi in Avanzate e, se la salvi senza toccarla, non cambia.';
+
+  @override
+  String get smartNoFilters => 'Aggiungi un filtro per iniziare.';
+
+  @override
+  String get smartLimitShort => 'Limite';
+
+  @override
+  String get smartIs => 'È';
+
+  @override
+  String get smartRestart => 'Ricomincia con i filtri';
+
+  @override
+  String get smartRestarted => 'Regola azzerata';
+
+  @override
+  String get smartCountError => 'Conteggio non disponibile';
 }

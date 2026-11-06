@@ -1343,11 +1343,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 93.4 Controlli di fase
 
 ## Fase 94 — Playlist intelligenti a filtri (`fase-94-playlist-intelligenti.md`)
-- [ ] 94.1 Valori multipli («uno tra»)
-- [ ] 94.2 Campi nuovi nelle regole
-- [ ] 94.3 Editor a filtri
-- [ ] 94.4 Conteggi per valore fuori dal thread UI
-- [ ] 94.5 Controlli di fase
+- [x] 94.1 Valori multipli («uno tra»)
+- [x] 94.2 Campi nuovi nelle regole
+- [x] 94.3 Editor a filtri
+- [x] 94.4 Conteggi per valore fuori dal thread UI
+- [x] 94.5 Controlli di fase
 
 ## Fase 95 — Artisti con due profili (`fase-95-artisti-uniti.md`)
 - [ ] 95.1 Alias dei profili

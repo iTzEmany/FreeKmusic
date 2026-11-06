@@ -36,6 +36,16 @@ const _fields = <String, RuleField>{
   'format': RuleField.format,
   'cartella': RuleField.folder,
   'folder': RuleField.folder,
+  'ultimoascolto': RuleField.lastPlayed,
+  'last-played': RuleField.lastPlayed,
+  'artistaalbum': RuleField.albumArtist,
+  'album-artist': RuleField.albumArtist,
+  'nazionalita': RuleField.country,
+  'country': RuleField.country,
+  'etichetta': RuleField.recordLabel,
+  'label': RuleField.recordLabel,
+  'bpm': RuleField.bpm,
+  'bitrate': RuleField.bitrate,
 };
 
 const _flags = <String, RuleFlagKind>{
@@ -43,6 +53,8 @@ const _flags = <String, RuleFlagKind>{
   'favorites': RuleFlagKind.favorites,
   'mai-ascoltati': RuleFlagKind.neverPlayed,
   'never-played': RuleFlagKind.neverPlayed,
+  'con-testo': RuleFlagKind.hasLyrics,
+  'has-lyrics': RuleFlagKind.hasLyrics,
 };
 
 /// Splits on spaces, keeping what is inside double quotes together (an
@@ -51,12 +63,34 @@ List<String> _tokens(String text) {
   final out = <String>[];
   final cur = StringBuffer();
   var quoted = false;
-  for (final ch in text.split('')) {
-    if (ch == '"') {
+  final chars = text.split('');
+  for (var i = 0; i < chars.length; i++) {
+    final ch = chars[i];
+    if (quoted &&
+        ch == r'\' &&
+        i + 2 < chars.length &&
+        (chars[i + 1] == '"' || chars[i + 1] == r'\') &&
+        chars[i + 2].trim().isNotEmpty &&
+        chars[i + 2] != ',' &&
+        _escapes(cur.toString())) {
+      // `\"` and `\\` inside a list value (see RuleIn.canonical). Only when more of the
+      // token follows, so `cartella:"D:\Music\"` and old `artista:"A\",` read as before.
+      cur..write(ch)..write(chars[++i]);
+    } else if (ch == '"') {
       quoted = !quoted;
       cur.write(ch);
     } else if (!quoted && ch.trim().isEmpty) {
-      if (cur.isNotEmpty) out.add(cur.toString());
+      // `campo:"A", "B"`: spaces after the comma of a quoted list stay inside it.
+      var j = i;
+      while (j < chars.length && chars[j].trim().isEmpty) {
+        j++;
+      }
+      final s = cur.toString();
+      if (s.endsWith(',') && j < chars.length && chars[j] == '"' && _listStart.hasMatch(s)) {
+        i = j - 1;
+        continue;
+      }
+      if (cur.isNotEmpty) out.add(s);
       cur.clear();
     } else {
       cur.write(ch);
@@ -64,6 +98,16 @@ List<String> _tokens(String text) {
   }
   if (cur.isNotEmpty) out.add(cur.toString());
   return out;
+}
+
+final _listStart = RegExp(r'^-?[^\s:<>"]+:"');
+
+/// Whether [cur] (the token so far) is a list-capable field: not `cartella`, a path.
+bool _escapes(String cur) {
+  final m = _listStart.firstMatch(cur);
+  if (m == null) return false;
+  final name = cur.substring(0, cur.indexOf(':')).replaceFirst('-', '').toLowerCase();
+  return _fields[name] != RuleField.folder;
 }
 
 String _unquote(String v) {
@@ -82,9 +126,13 @@ double? _number(RuleField field, String raw, {required Set<RuleWarningKind> bad}
     return null;
   }
   final n = double.parse(m[1]!.replaceAll(',', '.'));
+  if (!isValidRuleNumber(n)) {
+    bad.add(RuleWarningKind.badNumber);
+    return null;
+  }
   final unit = m[2]!.toLowerCase();
   switch (field) {
-    case RuleField.year || RuleField.plays:
+    case RuleField.year || RuleField.plays || RuleField.bitrate:
       if (unit.isNotEmpty) {
         bad.add(RuleWarningKind.badUnit);
         return null;
@@ -99,7 +147,13 @@ double? _number(RuleField field, String raw, {required Set<RuleWarningKind> bad}
             return null;
           }(),
       };
-    case RuleField.added:
+    case RuleField.bpm:
+      if (unit.isNotEmpty) {
+        bad.add(RuleWarningKind.badUnit);
+        return null;
+      }
+      return n;
+    case RuleField.added || RuleField.lastPlayed:
       return switch (unit) {
         '' || 'g' || 'd' => n,
         'sett' || 'w' => n * 7,
@@ -162,12 +216,43 @@ RuleExpr? _term(String body, List<RuleWarning> warnings) {
       warnings.add(RuleWarning(body, RuleWarningKind.unknownField));
       return RuleText(_unquote(body));
     }
+    if (m[2] == ':' && !field.isNumeric && field != RuleField.folder && m[3]!.startsWith('"')) {
+      final list = _quotedList(m[3]!);
+      if (list != null) {
+        if (list.any((v) => v.trim().isEmpty)) {
+          warnings.add(RuleWarning(body, RuleWarningKind.emptyValue));
+          return null;
+        }
+        return RuleIn(field, [for (final v in list) v.trim()]);
+      }
+    }
     return _fieldTerm(body, field, m[2]!, _unquote(m[3]!), warnings);
   }
   final flag = _flags[body.toLowerCase()];
   if (flag != null) return RuleFlag(flag);
   final text = _unquote(body);
   return text.isEmpty ? null : RuleText(text);
+}
+
+/// `"A","B"` (optionally ending with a comma) as its values; null when [v] is
+/// not that: a lone `"pink floyd"`, or an unterminated quote, stays a plain
+/// substring value.
+List<String>? _quotedList(String v) {
+  var m = RegExp(r'^"(?:[^"\\]|\\.)*"(?:,"(?:[^"\\]|\\.)*")*(,?)$').firstMatch(v);
+  var item = RegExp(r'"((?:[^"\\]|\\.)*)"');
+  var unescape = true;
+  if (m == null) {
+    // Lists saved before escapes existed: a value may end with a backslash.
+    m = RegExp(r'^"[^"]*"(?:,"[^"]*")*(,?)$').firstMatch(v);
+    if (m == null) return null;
+    item = RegExp(r'"([^"]*)"');
+    unescape = false;
+  }
+  final items = [
+    for (final x in item.allMatches(v))
+      unescape ? x[1]!.replaceAllMapped(RegExp(r'\\(["\\])'), (e) => e[1]!) : x[1]!,
+  ];
+  return items.length == 1 && m[1]!.isEmpty ? null : items;
 }
 
 RuleExpr? _fieldTerm(

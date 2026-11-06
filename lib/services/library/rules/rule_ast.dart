@@ -14,7 +14,13 @@ enum RuleField {
   added,
   plays,
   format,
-  folder;
+  folder,
+  lastPlayed,
+  albumArtist,
+  country,
+  recordLabel,
+  bpm,
+  bitrate;
 
   /// The canonical (Italian) name used when a rule is printed.
   String get label => switch (this) {
@@ -28,13 +34,28 @@ enum RuleField {
         RuleField.plays => 'ascolti',
         RuleField.format => 'formato',
         RuleField.folder => 'cartella',
+        RuleField.lastPlayed => 'ultimoascolto',
+        RuleField.albumArtist => 'artistaalbum',
+        RuleField.country => 'nazionalita',
+        RuleField.recordLabel => 'etichetta',
+        RuleField.bpm => 'bpm',
+        RuleField.bitrate => 'bitrate',
       };
 
   bool get isNumeric =>
-      this == year || this == duration || this == added || this == plays;
+      this == year ||
+      this == duration ||
+      this == added ||
+      this == plays ||
+      this == lastPlayed ||
+      this == bpm ||
+      this == bitrate;
+
+  /// Ages in days («added», «lastPlayed»): `<30g` means newer than 30 days.
+  bool get isAge => this == added || this == lastPlayed;
 }
 
-enum RuleFlagKind { favorites, neverPlayed }
+enum RuleFlagKind { favorites, neverPlayed, hasLyrics }
 
 enum NumOp { eq, gt, ge, lt, le, range }
 
@@ -96,7 +117,7 @@ final class RuleText extends RuleExpr {
   String get canonical => quoteIfNeeded(text);
 }
 
-/// `preferiti`, `mai-ascoltati`.
+/// `preferiti`, `mai-ascoltati`, `con-testo`.
 final class RuleFlag extends RuleExpr {
   const RuleFlag(this.kind);
 
@@ -106,6 +127,7 @@ final class RuleFlag extends RuleExpr {
   String get canonical => switch (kind) {
         RuleFlagKind.favorites => 'preferiti',
         RuleFlagKind.neverPlayed => 'mai-ascoltati',
+        RuleFlagKind.hasLyrics => 'con-testo',
       };
 }
 
@@ -123,6 +145,21 @@ final class RuleContains extends RuleExpr {
   String get canonical => '${field.label}:${quoteIfNeeded(value)}';
 }
 
+/// `artista:"A","B"`: the field equals one of [values] (whole value, ignoring
+/// case; no substring). A single value prints with a trailing comma
+/// (`artista:"A",`) so it stays distinct from `artista:"A"`, a substring.
+/// Not for numeric fields, nor for `cartella` (a path is never equal to a folder).
+final class RuleIn extends RuleExpr {
+  const RuleIn(this.field, this.values);
+
+  final RuleField field;
+  final List<String> values;
+
+  @override
+  String get canonical =>
+      '${field.label}:${values.map((v) => '"${v.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"').join(',')}${values.length == 1 ? ',' : ''}';
+}
+
 /// A comparison on a number: the year, the length (in seconds), how long ago
 /// it was added (in days) or how many times it was played.
 ///
@@ -136,12 +173,12 @@ final class RuleNumber extends RuleExpr {
   final double? a, b;
 
   String _fmt(double v) {
-    final whole = v == v.roundToDouble();
+    final whole = v.isFinite && v == v.roundToDouble();
     switch (field) {
       case RuleField.duration:
         if (whole && v % 60 == 0) return '${(v / 60).round()}m';
         return whole ? '${v.round()}s' : '${v}s';
-      case RuleField.added:
+      case RuleField.added || RuleField.lastPlayed:
         return whole ? '${v.round()}g' : '${v}g';
       default:
         return whole ? '${v.round()}' : '$v';
@@ -168,3 +205,10 @@ String quoteIfNeeded(String v) {
   final plain = RegExp(r'^[^\s":<>]+$').hasMatch(v) && !v.startsWith('-') && v != 'OR';
   return plain ? v : '"${v.replaceAll('"', '')}"';
 }
+
+/// [s] as it ends up in a rule outside a list (`"` removed, trimmed): the editor
+/// checks it is not empty before adding it.
+String cleanRuleText(String s) => s.replaceAll('"', '').trim();
+
+/// A number a rule can hold: finite, not negative, below a sane maximum.
+bool isValidRuleNumber(double n) => n.isFinite && n >= 0 && n <= 1e9;
