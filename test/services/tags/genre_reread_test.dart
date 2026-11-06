@@ -210,4 +210,19 @@ void main() {
     expect(done, isTrue);
     expect(await db.select(db.trackGenres).get(), hasLength(5));
   });
+
+  test('a re-read that changes nothing does not notify the tracks table (lists would rebuild for nothing)', () async {
+    final a = await add('/a', genre: 'Rock');
+    await genres.write(a, ['Rock']);
+    var emissions = 0;
+    final sub = db.select(db.tracks).watch().listen((_) => emissions++);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(emissions, 1);
+
+    final report = await job(_Reader({'/a': const TagInfo(genres: ['Rock'])})).run();
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await sub.cancel();
+    expect(report.changed, 0);
+    expect(emissions, 1, reason: 'no row changed: no stream may run again');
+  });
 }

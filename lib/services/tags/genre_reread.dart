@@ -80,7 +80,8 @@ class GenreReread {
         final useFile = (!cur.userEdited || (own.isNotEmpty && own.first.toLowerCase() == fromFile.first.toLowerCase()));
         final list = useFile ? fromFile : own;
         if (await genres.replace(rows[i].id, list)) changed++;
-        if (!cur.userEdited && list.isNotEmpty) await genres.setFirstGenre(rows[i].id, list.first);
+        // Only on a real change: the write notifies every list watching `tracks`, even when it touches no row.
+        if (!cur.userEdited && list.isNotEmpty && list.first != cur.genre) await genres.setFirstGenre(rows[i].id, list.first);
       }
       read += rows.length;
       after = rows.last.id;
