@@ -22,22 +22,35 @@ final _editTail = RegExp(
     r'\s+[-–]\s+(radio edit|single version|album version|mono|stereo|mono version|stereo version)\s*$',
     caseSensitive: false);
 // Edition wrappers of the same recording («Deluxe Edition», «40th Anniversary»,
-// «Album Version»). A plain «X Version» (Taylor's, Spanish, Piano...) is
-// another recording and stays, and so does any group that also names one
-// (live, remix, acoustic...).
-const _editionWords =
-    r'\b(deluxe|expanded|anniversary|remaster(ed)?|edition|album version)\b';
-final _editionGroup = RegExp(
-    r'[\(\[][^\)\]]*' + _editionWords + r'[^\)\]]*[\)\]]',
-    caseSensitive: false);
-final _editionTail = RegExp(
-    r'\s+[-–]\s+[^-–]*' + _editionWords + r'[^-–]*$',
-    caseSensitive: false);
-final _qualifier = RegExp(
-    r'\b(live|acoustic|instrumental|remix(ed)?|mix(ed)?|demo|radio|edit|unplugged|karaoke|cover)\b',
-    caseSensitive: false);
+// «Album Version»): stripped only when every word of the group is an edition
+// word, so «Spanish Edition», «Taylor's Version» or «Piano Version» stay.
+final _editionGroup = RegExp(r'[\(\[]([^\)\]]*)[\)\]]');
+final _editionTail = RegExp(r'\s+[-–]\s+([^-–]*)$');
+final _wordSplit = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
+final _numberWord = RegExp(r'^\d+(st|nd|rd|th)?$');
+const _editionOnly = {
+  'deluxe', 'expanded', 'anniversary', 'remaster', 'remastered', 'edition',
+  'special', 'bonus',
+};
+
+bool _isEdition(String inner) {
+  final w = [for (final x in inner.toLowerCase().split(_wordSplit)) if (x.isNotEmpty) x];
+  var real = false;
+  for (var i = 0; i < w.length; i++) {
+    if (_editionOnly.contains(w[i])) {
+      real = true;
+    } else if (w[i] == 'album' && i + 1 < w.length && w[i + 1] == 'version') {
+      real = true;
+      i++;
+    } else if (w[i] != 'the' && !_numberWord.hasMatch(w[i])) {
+      return false;
+    }
+  }
+  return real;
+}
+
 String _dropEdition(String s, RegExp re) =>
-    s.replaceAllMapped(re, (m) => _qualifier.hasMatch(m[0]!) ? m[0]! : ' ');
+    s.replaceAllMapped(re, (m) => _isEdition(m[1]!) ? ' ' : m[0]!);
 
 final _nonWord = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
 
@@ -65,18 +78,27 @@ String matchTitleKey(String title) => matchKey(title
 
 /// [matchTitleKey] without edition wrappers too (deluxe, anniversary...): the
 /// key for «do I already own this song», not for ranking search results.
-String libraryTitleKey(String title) =>
-    matchTitleKey(_dropEdition(_dropEdition(title, _editionGroup), _editionTail));
+String libraryTitleKey(String title) {
+  // The cap keeps the regexes cheap on an unclosed «(» in a huge title.
+  final t = title.length > 500 ? title.substring(0, 500) : title;
+  final key = matchTitleKey(_dropEdition(_dropEdition(t, _editionGroup), _editionTail));
+  return key.isEmpty ? t.trim().toLowerCase() : key;
+}
 
 String _artistKey(String artist) => matchKey(extractPrimaryArtist(artist));
 
 const _artistStop = {'and', 'feat', 'ft', 'featuring', 'with'};
 
 /// The normalized words of every name in [artist], order and «feat.» ignored.
-Set<String> _artistWords(String artist) => {
-      for (final w in matchKey(artist).split(' '))
-        if (w.isNotEmpty && !_artistStop.contains(w)) w
-    };
+Set<String> _artistWords(String artist) {
+  final words = {
+    for (final w in matchKey(artist).split(' '))
+      if (w.isNotEmpty && !_artistStop.contains(w)) w
+  };
+  // A name made of symbols only («!!!», «+») is its own word.
+  if (words.isEmpty && artist.trim().isNotEmpty) words.add(artist.trim().toLowerCase());
+  return words;
+}
 
 bool _sameSet(Set<String> a, Set<String> b) =>
     a.length == b.length && a.containsAll(b);
@@ -158,13 +180,18 @@ class LibraryIndex {
       final byPath = findByPath(loc, baseDir: baseDir);
       if (byPath != null) return byPath;
     }
+    if (r.title.trim().isEmpty) return null;
     final c = _byTitle[libraryTitleKey(r.title)];
     if (c == null) return null;
     final want = r.durationMs ?? 0;
     final artist = _artistWords(r.artists.join(' '));
     if (artist.isEmpty) return null;
-    int gap(LibraryEntryLite t) =>
-        want > 0 && t.durationMs > 0 ? (t.durationMs - want).abs() : 0;
+    // An unknown library length loses to any known one.
+    int gap(LibraryEntryLite t) => want <= 0
+        ? 0
+        : t.durationMs > 0
+            ? (t.durationMs - want).abs()
+            : 1 << 30;
     LibraryEntryLite? best;
     LibraryEntryLite? near;
     for (final (words, t) in c) {

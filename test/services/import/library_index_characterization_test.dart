@@ -44,7 +44,7 @@ void main() {
     for (final t in [
       'Song (25th Anniversary Edition)',
       'Song - 40th Anniversary',
-      'Song - Deluxe Version',
+      'Song - Deluxe Edition',
       'Song [Expanded Edition]',
       'Song (2009 Remaster)',
       'Song (Album Version)',
@@ -100,5 +100,60 @@ void main() {
     ]);
     expect(l.find(const ImportRow(index: 0, title: 'Intro', artists: ['Band'], durationMs: 118000))?.id, 2);
     expect(l.find(const ImportRow(index: 0, title: 'Intro', artists: ['Band'], durationMs: 62000))?.id, 1);
+  });
+
+  LibraryIndex one(String title, [String artist = 'Band']) =>
+      LibraryIndex([LibraryEntryLite(id: 1, title: title, artist: artist, durationMs: 1000)]);
+  ImportRow rw(String title, [String artist = 'Band']) => ImportRow(index: 0, title: title, artists: [artist]);
+
+  test('a group with any non-edition word stays distinct', () {
+    final l = one('Song');
+    for (final t in [
+      'Song (Spanish Edition)',
+      "Song (Taylor's Version - Deluxe Edition)",
+      'Song (Sped Up Edition)',
+      'Song (Nightcore Edition)',
+      'Song (Extended Edition)',
+      'Song (Piano Version - Anniversary Edition)',
+      'Song - Piano Version Anniversary',
+    ]) {
+      expect(l.find(rw(t)), isNull, reason: t);
+    }
+    for (final t in ['Song (25th Anniversary Edition)', 'Song (Deluxe Edition)', 'Song [Special Edition]', 'Song - Expanded Edition']) {
+      expect(l.find(rw(t)), isNotNull, reason: t);
+    }
+  });
+
+  test('symbol-only titles do not collide, and an empty title never matches', () {
+    expect(one('😀').find(rw('🎉')), isNull);
+    expect(one('😀').find(rw('😀')), isNotNull);
+    expect(one('...').find(rw('???')), isNull);
+    expect(one('').find(rw('  ')), isNull);
+  });
+
+  test('symbol-only artists match only the same symbols', () {
+    expect(one('Song', '!!!').find(rw('Song', '!!!')), isNotNull);
+    expect(one('Song', '!!!').find(rw('Song', '+')), isNull);
+  });
+
+  test('a huge unclosed title is cheap', () {
+    final sw = Stopwatch()..start();
+    one('Song').find(rw('Song (${'a' * 10000}'));
+    expect(sw.elapsedMilliseconds, lessThan(1000));
+  });
+
+  test('a known close length beats an unknown one', () {
+    final l = LibraryIndex(const [
+      LibraryEntryLite(id: 1, title: 'Intro', artist: 'Band', durationMs: 0),
+      LibraryEntryLite(id: 2, title: 'Intro', artist: 'Band', durationMs: 90000),
+    ]);
+    expect(l.find(ImportRow(index: 0, title: 'Intro', artists: const ['Band'], durationMs: 100000))?.id, 2);
+  });
+
+  test('a longer credit in the library is an approximate match only: 20 s apart or unknown is null', () {
+    final l = one('Song', 'Queen & David Bowie');
+    expect(l.find(const ImportRow(index: 0, title: 'Song', artists: ['Queen'], durationMs: 21000)), isNull);
+    expect(l.find(rw('Song', 'Queen')), isNull);
+    expect(l.find(const ImportRow(index: 0, title: 'Song', artists: ['Queen'], durationMs: 3000))?.id, 1);
   });
 }
