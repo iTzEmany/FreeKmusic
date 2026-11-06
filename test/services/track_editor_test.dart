@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/track_editor.dart';
 import 'package:codecore/services/tags/tag_reader.dart';
@@ -34,6 +35,21 @@ void main() {
     editor = TrackEditor(db, _Tags());
   });
   tearDown(() => db.close());
+
+  test('a hand-edited genre rewrites track_genres; an unchanged one leaves the tag list alone', () async {
+    await repo.upsertBatch([row('Orig')]);
+    final t = (await db.select(db.tracks).get()).single;
+    final genres = TrackGenreRepository(db);
+    await genres.replace(t.id, ['Rock', 'Pop', 'Soul']);
+    await editor.save(t, const TrackEdit(title: 'Orig', genre: 'Rock; Pop'));
+    expect(await genres.of(t.id), ['Rock', 'Pop']);
+    final again = (await db.select(db.tracks).get()).single;
+    await genres.replace(t.id, ['Rock', 'Pop', 'Soul']);
+    await editor.save(again, const TrackEdit(title: 'Orig again', genre: 'Rock; Pop'));
+    expect(await genres.of(t.id), ['Rock', 'Pop', 'Soul']);
+    await editor.save(again, const TrackEdit(title: 'Orig again'));
+    expect(await genres.of(t.id), isEmpty);
+  });
 
   test('edit survives rescan (unchanged and modified file)', () async {
     await repo.upsertBatch([row('Orig')]);

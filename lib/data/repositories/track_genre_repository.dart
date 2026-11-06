@@ -26,12 +26,18 @@ class TrackGenreRepository {
   /// already there. True when the rows changed.
   Future<bool> replace(int trackId, List<String> genres) => _db.transaction(() async {
         if (_same(await of(trackId), genres)) return false;
+        await write(trackId, genres);
+        return true;
+      });
+
+  /// Like [replace] without reading first: for a caller that knows the genre changed
+  /// and is under a read budget (the enrichment commit).
+  Future<void> write(int trackId, List<String> genres) => _db.transaction(() async {
         await (_db.delete(_db.trackGenres)..where((g) => g.trackId.equals(trackId))).go();
         await _db.batch((b) => b.insertAll(_db.trackGenres, [
               for (var i = 0; i < genres.length; i++)
                 TrackGenresCompanion.insert(trackId: trackId, genre: genres[i], position: i),
             ]));
-        return true;
       });
 
   static bool _same(List<String> a, List<String> b) =>

@@ -12,7 +12,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_queries.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/settings/jam_secret_store.dart';
-import '../../data/settings/settings_store.dart' show enrichMarkKey, recogPassAfterKey, recogPassDoneKey;
+import '../../data/settings/settings_store.dart' show enrichMarkKey, genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey;
 
 const kBackupFormat = 1;
 
@@ -28,6 +28,8 @@ const kDeviceBoundKeys = {
   enrichMarkKey,
   recogPassAfterKey,
   recogPassDoneKey,
+  genreRereadAfterKey,
+  genreRereadDoneKey,
 };
 
 class BackupSummary {

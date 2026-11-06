@@ -3,8 +3,10 @@ import 'package:path/path.dart' as p;
 
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/track_genre_repository.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
+import '../tags/tag_reader.dart' show splitGenres;
 import 'enrich_parts.dart';
 import 'enrichment_proposal.dart';
 
@@ -46,22 +48,25 @@ class EnrichWriter {
         ? '${p.curiosity!.text}\n${p.curiosity!.source}'
         : null;
     Value<T> opt<T>(T? v) => v == null ? const Value.absent() : Value(v);
-    await (_db.update(_db.tracks)..where((r) => r.id.equals(t.id))).write(
-      TracksCompanion(
-        title: opt(title),
-        artist: opt(artist),
-        album: opt(album),
-        albumKey: Value(key),
-        year: opt(year),
-        genre: opt(genre),
-        discNumber: opt(disc),
-        isrc: opt(isrc),
-        trackNumber: opt(number),
-        lyricsPlain: opt(plain),
-        lyricsSynced: opt(synced),
-        curiosities: opt(curiosity),
-      ),
-    );
+    await _db.transaction(() async {
+      await (_db.update(_db.tracks)..where((r) => r.id.equals(t.id))).write(
+        TracksCompanion(
+          title: opt(title),
+          artist: opt(artist),
+          album: opt(album),
+          albumKey: Value(key),
+          year: opt(year),
+          genre: opt(genre),
+          discNumber: opt(disc),
+          isrc: opt(isrc),
+          trackNumber: opt(number),
+          lyricsPlain: opt(plain),
+          lyricsSynced: opt(synced),
+          curiosities: opt(curiosity),
+        ),
+      );
+      if (genre != null) await TrackGenreRepository(_db).write(t.id, splitGenres([genre]));
+    });
     await _tracks.settleMovedCover(t, key);
     final wrote = [title, artist, album, year, genre, disc, isrc, number, plain, synced, curiosity]
         .any((v) => v != null);

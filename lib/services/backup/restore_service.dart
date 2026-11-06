@@ -12,7 +12,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
 import 'user_data.dart';
-import '../../data/settings/settings_store.dart' show recogPassAfterKey, recogPassDoneKey;
+import '../../data/settings/settings_store.dart' show genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey;
 import 'backup_service.dart';
 
 class RestoreException implements Exception {
@@ -157,6 +157,9 @@ Future<bool> applyPendingRestore({
     // The restored rows may be older: the recognition pass must run again.
     await prefs.remove(recogPassAfterKey);
     await prefs.remove(recogPassDoneKey);
+    // Same for the genre re-read: the restored database may lack track_genres rows.
+    await prefs.remove(genreRereadAfterKey);
+    await prefs.remove(genreRereadDoneKey);
     // Playlist ids belong to the replaced database: an older backup without
     // the key must not leave sorts pointing at other playlists (D-424).
     await prefs.remove('playlistSorts');

@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/track_genre_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../tags/tag_reader.dart';
 import '../tags/tag_writer.dart';
@@ -111,19 +112,26 @@ class TrackEditor {
       album: album,
       directory: p.dirname(track.path),
     );
-    await (_db.update(_db.tracks)..where((t) => t.id.equals(track.id))).write(
-      TracksCompanion(
-        title: Value(e.title.trim()),
-        artist: Value(artist),
-        album: Value(album),
-        albumArtist: Value(albumArtist),
-        year: Value(e.year),
-        trackNumber: Value(e.trackNumber),
-        genre: Value(_blankToNull(e.genre)),
-        albumKey: Value(key),
-        userEdited: markEdited ? const Value(true) : const Value.absent(),
-      ),
-    );
+    final genre = _blankToNull(e.genre);
+    await _db.transaction(() async {
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(track.id))).write(
+        TracksCompanion(
+          title: Value(e.title.trim()),
+          artist: Value(artist),
+          album: Value(album),
+          albumArtist: Value(albumArtist),
+          year: Value(e.year),
+          trackNumber: Value(e.trackNumber),
+          genre: Value(genre),
+          albumKey: Value(key),
+          userEdited: markEdited ? const Value(true) : const Value.absent(),
+        ),
+      );
+      // Untouched genre text keeps the tag's own list (tracks.genre is only its first).
+      if (genre != track.genre) {
+        await TrackGenreRepository(_db).replace(track.id, splitGenres([genre]));
+      }
+    });
     await TrackRepository(_db).settleMovedCover(track, key);
   }
 
@@ -196,19 +204,22 @@ class TrackEditor {
       album: t.album,
       directory: dir,
     );
-    await (_db.update(_db.tracks)..where((r) => r.id.equals(track.id))).write(
-      TracksCompanion(
-        title: Value(t.title ?? p.basenameWithoutExtension(track.path)),
-        artist: Value(t.artist),
-        album: Value(t.album),
-        albumArtist: Value(t.albumArtist),
-        year: Value(t.year),
-        trackNumber: Value(t.trackNumber),
-        genre: Value(t.genre),
-        albumKey: Value(key),
-        userEdited: const Value(false),
-      ),
-    );
+    await _db.transaction(() async {
+      await (_db.update(_db.tracks)..where((r) => r.id.equals(track.id))).write(
+        TracksCompanion(
+          title: Value(t.title ?? p.basenameWithoutExtension(track.path)),
+          artist: Value(t.artist),
+          album: Value(t.album),
+          albumArtist: Value(t.albumArtist),
+          year: Value(t.year),
+          trackNumber: Value(t.trackNumber),
+          genre: Value(t.genre),
+          albumKey: Value(key),
+          userEdited: const Value(false),
+        ),
+      );
+      await TrackGenreRepository(_db).replace(track.id, t.genres);
+    });
     await TrackRepository(_db).settleMovedCover(track, key);
   }
 }

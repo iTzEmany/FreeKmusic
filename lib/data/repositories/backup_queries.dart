@@ -19,6 +19,10 @@ Future<UserData> collectUserData(AppDatabase db) {
     )..where((t) => t.kind.isNotValue(kStreamKind))).get();
     final portable = await CreditsRepository(db)
         .portableOfMany([for (final t in tracks) t.id]);
+    final genresOf = <int, List<String>>{};
+    for (final g in await (db.select(db.trackGenres)..orderBy([(g) => OrderingTerm.asc(g.position)])).get()) {
+      (genresOf[g.trackId] ??= []).add(g.genre);
+    }
     final refs = <int, TrackRef>{};
     final userData = <TrackUserData>[];
     for (final t in tracks) {
@@ -59,6 +63,7 @@ Future<UserData> collectUserData(AppDatabase db) {
           lastPlayedAt: t.lastPlayedAt,
           credits: portable[t.id]!.credits,
           details: portable[t.id]!.details,
+          genres: genresOf[t.id] ?? const [],
           coverSource: t.coverKey == null ? 0 : t.coverSource,
           coverKey: t.coverSource > 0 ? t.coverKey : null,
         ),
@@ -157,6 +162,11 @@ Future<UserData> collectUserData(AppDatabase db) {
         ),
     ];
 
+    final countries = [
+      for (final c in await (db.select(db.artistCountries)..orderBy([(c) => OrderingTerm.asc(c.artistKey)])).get())
+        ArtistCountryData(artistKey: c.artistKey, country: c.country, source: c.source, checkedAt: c.checkedAt),
+    ];
+
     return UserData(
       createdAt: DateTime.now().millisecondsSinceEpoch,
       tracks: userData,
@@ -164,6 +174,7 @@ Future<UserData> collectUserData(AppDatabase db) {
       imports: imports,
       radios: radios,
       followedArtists: followed,
+      artistCountries: countries,
     );
   });
 }

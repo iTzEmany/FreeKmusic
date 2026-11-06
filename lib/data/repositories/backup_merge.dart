@@ -4,10 +4,12 @@ import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/text_utils.dart';
+import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
 import '../../services/backup/user_data.dart';
 import '../db/app_database.dart';
 import 'credits_repository.dart';
+import 'track_genre_repository.dart';
 import 'track_repository.dart';
 
 class MergeReport {
@@ -94,6 +96,13 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         upd = upd.copyWith(coverSource: Value(u.coverSource), coverKey: Value(ck), hasCover: const Value(true));
       }
       await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(upd);
+      // A hand edit here sets the genres from its text; otherwise the backup's only fill a track that has none.
+      final genreRepo = TrackGenreRepository(db);
+      if (upd.userEdited.present) {
+        await genreRepo.replace(id, splitGenres([e!.genre]));
+      } else if (u.genres.isNotEmpty && (await genreRepo.of(id)).isEmpty) {
+        await genreRepo.replace(id, u.genres);
+      }
       if (u.credits.isNotEmpty || u.details != null) {
         await CreditsRepository(db).saveIfNone(id, u.credits, u.details);
       }
@@ -172,6 +181,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     }
     await _mergeRadios(db, data.radios, report);
     await _mergeFollowedArtists(db, data.followedArtists, report);
+    await _mergeArtistCountries(db, data.artistCountries);
     return report;
   });
 }
@@ -238,5 +248,23 @@ Future<void> _mergeFollowedArtists(
       await (db.update(db.followedArtists)..where((r) => r.ytmId.equals(a.ytmId)))
           .write(const FollowedArtistsCompanion(origin: Value(0), excluded: Value(false)));
     }
+  }
+}
+
+/// New artists are added; for one already here the more recent check wins.
+Future<void> _mergeArtistCountries(AppDatabase db, List<ArtistCountryData> items) async {
+  if (items.isEmpty) return;
+  final have = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c.checkedAt};
+  for (final c in items) {
+    if (c.artistKey.isEmpty) continue;
+    final local = have[c.artistKey];
+    if (local != null && local >= c.checkedAt) continue;
+    have[c.artistKey] = c.checkedAt;
+    await db.into(db.artistCountries).insertOnConflictUpdate(ArtistCountriesCompanion.insert(
+          artistKey: c.artistKey,
+          country: Value(c.country?.toUpperCase()),
+          source: Value(c.source),
+          checkedAt: c.checkedAt,
+        ));
   }
 }

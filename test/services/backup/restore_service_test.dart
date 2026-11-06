@@ -25,7 +25,8 @@ void main() {
 
   /// A real backup of a database with [titles] as tracks and [folders] as
   /// music folders.
-  Future<File> makeBackup(List<String> titles, {String deviceId = 'dev-A', List<String> folders = const []}) async {
+  Future<File> makeBackup(List<String> titles,
+      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed}) async {
     final db = AppDatabase(NativeDatabase.memory());
     for (final f in folders) {
       await db.into(db.folders).insert(FoldersCompanion.insert(path: f, addedAt: 1));
@@ -34,7 +35,9 @@ void main() {
       await db.into(db.tracks).insert(TracksCompanion.insert(
           path: '/m/$t.mp3', title: t, albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
     }
-    SharedPreferences.setMockInitialValues({'theme': 'oled', 'deviceId': deviceId});
+    await seed?.call(db);
+    SharedPreferences.setMockInitialValues(
+        {'theme': 'oled', 'deviceId': deviceId, 'genreRereadAfter': 7, 'genreRereadDone': 1});
     final prefs = await SharedPreferences.getInstance();
     final covers = Directory(p.join(dir.path, 'src-covers'))..createSync();
     File(p.join(covers.path, 'new.jpg')).writeAsBytesSync([1, 2, 3]);
@@ -131,6 +134,27 @@ void main() {
       await stageFullRestore(await makeBackup(['n1']), staging);
       expect(await apply(), isTrue);
       expect([prefs.containsKey('recogPassDone'), prefs.containsKey('recogPassAfter')], [false, false]);
+    });
+
+    test('track_genres and artist_countries come back with the database; the re-read bookmarks do not travel and are cleared', () async {
+      await prefs.setInt('genreRereadDone', 1);
+      await prefs.setInt('genreRereadAfter', 99);
+      final zip = await makeBackup(['n1'], seed: (db) async {
+        await db.into(db.trackGenres).insert(TrackGenresCompanion.insert(trackId: 1, genre: 'Rock', position: 0));
+        await db.into(db.trackGenres).insert(TrackGenresCompanion.insert(trackId: 1, genre: 'Pop', position: 1));
+        await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(
+            artistKey: 'queen', country: const Value('GB'), source: const Value('musicbrainz'), checkedAt: 5));
+      });
+      final settings = ZipDecoder().decodeBytes(zip.readAsBytesSync()).findFile('settings.json')!;
+      final json = jsonDecode(utf8.decode(settings.content as List<int>)) as Map<String, dynamic>;
+      expect(json.keys, isNot(anyOf(contains('genreRereadAfter'), contains('genreRereadDone'))));
+      await stageFullRestore(zip, staging);
+      expect(await apply(), isTrue);
+      expect([prefs.containsKey('genreRereadAfter'), prefs.containsKey('genreRereadDone')], [false, false]);
+      final db = AppDatabase(NativeDatabase(dbFile));
+      addTearDown(db.close);
+      expect([for (final g in await db.select(db.trackGenres).get()) g.genre], ['Rock', 'Pop']);
+      expect((await db.select(db.artistCountries).getSingle()).country, 'GB');
     });
 
     test('a v14 backup is accepted and upgraded to the current schema', () async {

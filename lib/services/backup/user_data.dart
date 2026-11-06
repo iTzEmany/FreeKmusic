@@ -96,6 +96,7 @@ class TrackUserData {
     this.lastPlayedAt,
     this.credits = const [],
     this.details,
+    this.genres = const [],
     this.coverSource = 0,
     this.coverKey,
   });
@@ -110,6 +111,9 @@ class TrackUserData {
   /// Enrichment: written only when the track has them.
   final List<TrackCredit> credits;
   final TrackDetails? details;
+
+  /// `track_genres` in order (absent in older backups = none).
+  final List<String> genres;
 
   /// Hand-set cover (1 album, 2 track) and its file key in the covers folder;
   /// written only when the cover is by hand.
@@ -127,6 +131,7 @@ class TrackUserData {
         'lastPlayedAt': lastPlayedAt,
         'credits': credits.isEmpty ? null : [for (final c in credits) c.toJson()],
         'details': details?.toJson(),
+        'genres': genres.isEmpty ? null : genres,
         'coverSource': coverSource == 0 ? null : coverSource,
         'coverKey': coverSource == 0 ? null : coverKey,
       });
@@ -144,6 +149,7 @@ class TrackUserData {
         lastPlayedAt: (j['lastPlayedAt'] as num?)?.toInt(),
         credits: parseCreditList(j['credits'], max: 2000),
         details: j['details'] is Map ? TrackDetails.fromJson(j['details'] as Map) : null,
+        genres: [for (final g in (j['genres'] as List? ?? const [])) if (g is String && g.trim().isNotEmpty) g],
         coverSource: switch (j['coverSource']) { final num n when n == 1 || n == 2 => n.toInt(), _ => 0 },
         coverKey: j['coverKey'] is String ? j['coverKey'] as String : null,
       );
@@ -361,6 +367,26 @@ class FollowedArtistData {
       );
 }
 
+/// The country found for an artist (`artist_countries`); [country] null means
+/// "searched, not found".
+class ArtistCountryData {
+  const ArtistCountryData({required this.artistKey, this.country, this.source, required this.checkedAt});
+
+  final String artistKey;
+  final String? country, source;
+  final int checkedAt;
+
+  Map<String, Object?> toJson() =>
+      _nonNull({'artistKey': artistKey, 'country': country, 'source': source, 'checkedAt': checkedAt});
+
+  factory ArtistCountryData.fromJson(Map<String, dynamic> j) => ArtistCountryData(
+        artistKey: j['artistKey'] as String? ?? '',
+        country: j['country'] as String?,
+        source: j['source'] as String?,
+        checkedAt: (j['checkedAt'] as num?)?.toInt() ?? 0,
+      );
+}
+
 class UserData {
   const UserData({
     required this.createdAt,
@@ -369,6 +395,7 @@ class UserData {
     this.imports = const [],
     this.radios = const [],
     this.followedArtists = const [],
+    this.artistCountries = const [],
   });
 
   final int createdAt;
@@ -382,6 +409,9 @@ class UserData {
   /// Artists followed for new releases (absent in older backups = none).
   final List<FollowedArtistData> followedArtists;
 
+  /// Where artists come from (absent in older backups = none).
+  final List<ArtistCountryData> artistCountries;
+
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -391,6 +421,7 @@ class UserData {
         if (radios.isNotEmpty) 'radios': [for (final r in radios) r.toJson()],
         if (followedArtists.isNotEmpty)
           'followedArtists': [for (final a in followedArtists) a.toJson()],
+        if (artistCountries.isNotEmpty) 'artistCountries': [for (final a in artistCountries) a.toJson()],
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -420,6 +451,10 @@ class UserData {
       followedArtists: [
         for (final a in (j['followedArtists'] as List? ?? const []))
           FollowedArtistData.fromJson(a as Map<String, dynamic>),
+      ],
+      artistCountries: [
+        for (final a in (j['artistCountries'] as List? ?? const []))
+          ArtistCountryData.fromJson(a as Map<String, dynamic>),
       ],
     );
   }
