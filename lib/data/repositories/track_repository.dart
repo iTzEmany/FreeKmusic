@@ -8,6 +8,7 @@ import '../../core/text_utils.dart';
 import '../../services/share/track_meta.dart';
 import '../../services/stream/stream_key.dart';
 import '../../services/library/rules/rule_ast.dart';
+import '../../services/library/rules/rule_country.dart';
 import '../../services/library/rules/rule_sql.dart';
 import '../../services/online/youtube_service.dart' show YtResult;
 import '../db/app_database.dart';
@@ -460,10 +461,11 @@ class TrackRepository {
     SortOption sort,
     int? limit,
     int? randomSeed,
-    int nowMs, {
+    int nowMs,
+    Map<String, List<String>> countryArtists, {
     bool mostPlayed = false,
   }) {
-    final q = toSql(rules, nowMs: nowMs);
+    final q = toSql(rules, nowMs: nowMs, countryArtists: countryArtists);
     final vars = [...q.vars];
     final lim = limit == null ? '' : ' LIMIT ?';
     if (limit != null) vars.add(Variable<int>(limit));
@@ -475,7 +477,14 @@ class TrackRepository {
     );
   }
 
-  Set<TableInfo> get _ruleTables => {_db.tracks, _db.trackTags, _db.userTags};
+  Set<TableInfo> get _ruleTables => {
+        _db.tracks,
+        _db.trackTags,
+        _db.userTags,
+        _db.trackGenres,
+        _db.trackEnrich,
+        _db.artistCountries,
+      };
 
   /// Tracks matching [rules] (the rule language of the search and of the smart
   /// playlists), kept up to date. «Added» terms count back from [now] at the
@@ -488,18 +497,16 @@ class TrackRepository {
     bool mostPlayed = false,
     DateTime? now,
   }) {
-    final q = _byRules(
-      rules,
-      sort,
-      limit,
-      randomSeed,
-      (now ?? DateTime.now()).millisecondsSinceEpoch,
-      mostPlayed: mostPlayed,
-    );
-    return _db
-        .customSelect(q.sql, variables: q.vars, readsFrom: _ruleTables)
-        .watch()
-        .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
+    final nowMs = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    // shortcut: countries are resolved once at subscription, not live; upgrade if
+    // a country change must refresh an open playlist.
+    return Stream.fromFuture(countryArtistsOf(_db, rules)).asyncExpand((ca) {
+      final q = _byRules(rules, sort, limit, randomSeed, nowMs, ca, mostPlayed: mostPlayed);
+      return _db
+          .customSelect(q.sql, variables: q.vars, readsFrom: _ruleTables)
+          .watch()
+          .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
+    });
   }
 
   /// How many tracks match (for the «37 brani» of the editor).
@@ -507,6 +514,7 @@ class TrackRepository {
     final q = toSql(
       rules,
       nowMs: (now ?? DateTime.now()).millisecondsSinceEpoch,
+      countryArtists: await countryArtistsOf(_db, rules),
     );
     final rows = await _db
         .customSelect(

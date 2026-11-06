@@ -36,6 +36,16 @@ const _fields = <String, RuleField>{
   'format': RuleField.format,
   'cartella': RuleField.folder,
   'folder': RuleField.folder,
+  'ultimoascolto': RuleField.lastPlayed,
+  'last-played': RuleField.lastPlayed,
+  'artistaalbum': RuleField.albumArtist,
+  'album-artist': RuleField.albumArtist,
+  'nazionalita': RuleField.country,
+  'country': RuleField.country,
+  'etichetta': RuleField.recordLabel,
+  'label': RuleField.recordLabel,
+  'bpm': RuleField.bpm,
+  'bitrate': RuleField.bitrate,
 };
 
 const _flags = <String, RuleFlagKind>{
@@ -43,6 +53,8 @@ const _flags = <String, RuleFlagKind>{
   'favorites': RuleFlagKind.favorites,
   'mai-ascoltati': RuleFlagKind.neverPlayed,
   'never-played': RuleFlagKind.neverPlayed,
+  'con-testo': RuleFlagKind.hasLyrics,
+  'has-lyrics': RuleFlagKind.hasLyrics,
 };
 
 /// Splits on spaces, keeping what is inside double quotes together (an
@@ -84,7 +96,7 @@ double? _number(RuleField field, String raw, {required Set<RuleWarningKind> bad}
   final n = double.parse(m[1]!.replaceAll(',', '.'));
   final unit = m[2]!.toLowerCase();
   switch (field) {
-    case RuleField.year || RuleField.plays:
+    case RuleField.year || RuleField.plays || RuleField.bitrate:
       if (unit.isNotEmpty) {
         bad.add(RuleWarningKind.badUnit);
         return null;
@@ -99,7 +111,13 @@ double? _number(RuleField field, String raw, {required Set<RuleWarningKind> bad}
             return null;
           }(),
       };
-    case RuleField.added:
+    case RuleField.bpm:
+      if (unit.isNotEmpty) {
+        bad.add(RuleWarningKind.badUnit);
+        return null;
+      }
+      return n;
+    case RuleField.added || RuleField.lastPlayed:
       return switch (unit) {
         '' || 'g' || 'd' => n,
         'sett' || 'w' => n * 7,
@@ -162,12 +180,32 @@ RuleExpr? _term(String body, List<RuleWarning> warnings) {
       warnings.add(RuleWarning(body, RuleWarningKind.unknownField));
       return RuleText(_unquote(body));
     }
+    if (m[2] == ':' && !field.isNumeric && m[3]!.startsWith('"')) {
+      final list = _quotedList(m[3]!);
+      if (list != null) {
+        if (list.any((v) => v.trim().isEmpty)) {
+          warnings.add(RuleWarning(body, RuleWarningKind.emptyValue));
+          return null;
+        }
+        return RuleIn(field, [for (final v in list) v.trim()]);
+      }
+    }
     return _fieldTerm(body, field, m[2]!, _unquote(m[3]!), warnings);
   }
   final flag = _flags[body.toLowerCase()];
   if (flag != null) return RuleFlag(flag);
   final text = _unquote(body);
   return text.isEmpty ? null : RuleText(text);
+}
+
+/// `"A","B"` (optionally ending with a comma) as its values; null when [v] is
+/// not that: a lone `"pink floyd"`, or an unterminated quote, stays a plain
+/// substring value.
+List<String>? _quotedList(String v) {
+  final m = RegExp(r'^"[^"]*"(?:,"[^"]*")*(,?)$').firstMatch(v);
+  if (m == null) return null;
+  final items = RegExp(r'"([^"]*)"').allMatches(v).map((x) => x[1]!).toList();
+  return items.length == 1 && m[1]!.isEmpty ? null : items;
 }
 
 RuleExpr? _fieldTerm(
