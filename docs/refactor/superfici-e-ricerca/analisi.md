@@ -108,3 +108,27 @@ Base: misura `base` su `origin/master` all'inizio della fase 87 su entrambi i te
 
 ## Suggeriti: come funziona oggi (risposta all'utente)
 Fonte: radio di YouTube Music (`shuffle_plus_controller.dart:531`, `radio.page(seed.videoId)`) partendo da brani della libreria. Esclusione dei brani già posseduti (`suggestion_pool.dart:27-39`): video già scaricato, oppure `LibraryIndex.find` = stesso titolo normalizzato (tolti remaster/feat/edit) + stesso primo artista normalizzato + durata entro 5 s. Indice rifatto quando cambia il numero dei brani o ogni 5 minuti (`library_providers.dart:408-421`). **Verificato sul Motorola (2 534 brani, D-389):** in libreria «Born On The Bayou» di *Bayou Country (Expanded Edition)* dura 5:15; il suggerito (stream `CNgUBQSpP7s`, *The Singles Collection*) dura 3:51. Titolo e artista coincidono, la durata differisce di 84 s: è la regola dei 5 s a farlo passare. Le versioni live hanno il suffisso nel titolo («- Live In Stockholm»), quindi restano distinte anche senza la durata.
+
+## Stato finale (fase 97, 2026-11-06)
+Fasi 87–97 chiuse (PR #113–#122 e la PR della 97). Misure sul Mi A3 (0d7ae9df206e), build profile, `scripts/perf_device.py --label finale --playback`, secondo giro (il primo fa da riscaldamento):
+
+| Scenario | Base 87 (frame > 16,7 ms) | Finale | build p99 base → finale (ms) |
+|---|---|---|---|
+| Pallino schede | 5,9 % | 1,0 % | 11,0 → 11,5 |
+| Tutti i brani | 2,0 % | 1,2 % | 12,1 → 10,9 |
+| Album | 4,2 % | 1,1 % | 13,2 → 12,2 |
+| Libreria Tutto→Playlist→Album→Artisti | 4,9 % | 2,1 % | 12,9 → 16,7 |
+| Ricerca «notte» | 0,2 % | 0,6 % | 8,1 → 12,4 |
+| Scroll Libreria | 4,7 % | 1,3 % | 10,0 → 12,1 |
+| Lente Libreria | 1,9 % | 1,8 % | 10,4 → 14,0 |
+| Scroll Tutti i brani | 2,3 % | 1,4 % | 8,7 → 12,0 |
+| Cambio scheda | 5,5 % | 2,0 % | 13,9 → 13,2 |
+| Apri album | 2,1 % | 3,6 % | 17,3 → 23,7 |
+| In riproduzione | 1,7 % | 1,1 % | 17,2 → 16,3 |
+| Lettore dal dock | 1,1 % | 2,0 % | 15,8 → 20,4 |
+| Swipe mini player | 1,6 % | 2,9 % | 15,0 → 17,2 |
+| Fogli | 4,1 % | 4,0 % | 24,7 → 23,5 |
+| Apertura player | 2,3 % | 2,5 % | 19,3 → 24,1 |
+| Anello | 0,7 % | 0,8 % | 16,4 → 16,5 |
+
+Tutti gli scenari sotto il 6 %; «Apri album» è sopra la base (+1,5 punti, circa 6 frame su 413) ma nel primo giro era 2,1 %: rumore. Avvio a freddo: mediana 2767 ms su 5 (base 87: 2697 ms), da `main` al primo frame 648 ms (base 685), PSS 246 MB (base 245). Scansione di 3000 brani: era salita a 30,7 s (base 14,5) per i generi scritti brano per brano (fase 93); corretta nella 97 (`TrackGenreRepository.replaceMany`, desktop 23,7 → 14,3 s). Motorola edge 40: misure all'utente (vedi `docs/fase-97-chiusura-superfici.md`).

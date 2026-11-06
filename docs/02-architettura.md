@@ -70,7 +70,7 @@ lib/
     theme/tokens.dart             # colori (CcColors), dimensioni e scala gap/r (CcDims), movimento, font
     theme/app_theme.dart          # ThemeData dai token (Notte viola / Nero puro)
     theme/cover_tint.dart         # colore dalla copertina (heroTint, coverTintProvider)
-    shell/app_shell.dart          # 4 schede (Home/Radio/Cerca/Libreria; Cerca solo con YouTube, D-358), un Navigator per scheda, tasto indietro
+    shell/app_shell.dart          # 4 schede (`NavTab.home|search|library|memory`; Cerca solo con YouTube, D-358), un Navigator per scheda, dock flottante, tasto indietro
     shell/shell_nav.dart          # open / openInLibrary: aprire pagine senza perdere mini-player e barra
     shell/bottom_bar.dart, desktop_sidebar.dart, desktop_player_bar.dart, side_panel.dart
     screens/                      # una cartella per schermata (home, search, library, now_playing, jam, ...)
@@ -148,6 +148,8 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
   con `ShellNav.open` nella scheda corrente; `ShellNav.openInLibrary` (Now Playing, menu «Vai a») chiude le rotte
   del navigatore principale e apre la pagina nella Libreria. Now Playing, Testi, Jam, dialoghi e fogli restano sul
   navigatore principale. Indietro di Android: navigatore annidato → Home → uscita (`PopScope` in `AppShell`).
+- **Schede che si azzerano (D-392):** `tabNavigatorKeysProvider` (`TabNavigatorKeys`, `providers/nav_providers.dart`) ha `reset(tab)`, che dà nuove chiavi ai `Navigator` della scheda. Uscire da una scheda la azzera: pagine aperte, scroll, testo cercato e filtri. Eccezione: `ShellNav.pageGuardsExit` (una pagina con modifiche non salvate trattiene l'uscita). Un tocco sulla scheda già attiva chiama `ShellNav.popToRoot`, che rispetta la stessa guardia.
+- **Dock flottante (fase 89):** `AppShell` usa `extendBody`: il contenuto scorre sotto il dock. L'altezza del dock arriva in `MediaQuery.padding.bottom` e `viewPadding.bottom`; le liste usano `context.dockInset` o `EdgeInsets.withDock` (`ui/theme/tokens.dart`) invece di un margine a mano. `blurredChrome` (impostazione «Tema», D-406) sfoca dock e isola; di serie è spento (opachi).
 - **Layout per larghezza (≥ 840):** barra laterale 240 (72 sotto i 1000 px) + barra player 80 + pannello destro
   320 (`sidePanelProvider`: coda, testo, info). Sotto: mini-player a card sopra la barra in basso.
 - **Token:** nessun esadecimale nei widget; `context.cc` (estensione `CcColors`) e `Theme.of(context)`.
@@ -413,6 +415,39 @@ Dettagli e motivazioni in `docs/refactor/ui-fluida/analisi.md` («Arrivo»), dec
   - `architecture_test`: `lib/ui` non usa `databaseProvider` né `*RepositoryProvider`, senza eccezioni.
 - **Movimento:** una sola scala in `tokens.dart` (120/180/250/320 ms, easeOutCubic/easeInCubic), sempre con `ccDuration`. Animazioni con transform e scale; unica eccezione la dissolvenza fra pagine (`CcPageTransitionsBuilder`, D-382; il player sale dal basso). Le transizioni di pagina stanno in `app_theme.dart`.
 - **Aspetto:** l'anello è l'unico segno grafico e porta lo stato; superfici piatte, niente gradienti né ombre. Mockup approvati in `docs/refactor/ui-fluida/mockup/`.
+
+## Superfici e ricerca (refactor superfici-e-ricerca, fasi 88–97)
+Dettagli in `docs/refactor/superfici-e-ricerca/analisi.md` e nelle fasi 88–96.
+
+### Intestazione, isola e ordinamenti
+- `ShrinkingHeader` (`widgets/shrinking_header.dart`) segue lo scroll 1:1 (Tutti i brani). `LibraryIsland` (`screens/library/library_island.dart`) è l'isola della Libreria: schede, lente e Ordina per.
+- Ordina per: `sort_sheet.dart`; `LibrarySort` ha 8 criteri; il verso sta in `librarySortAscending` (`SettingsStore`).
+- Ordinamento per playlist: mappa in `playlistSorts` (`shared_preferences`, D-424; il ripristino la cancella). `PlaylistOrder` (`playlist_order.dart`) ordina solo la vista e **non riscrive `position`**.
+
+### Regole e playlist intelligenti
+- `RuleIn` (`rule_ast.dart`): «uno tra». Un valore con virgola finale è un «uno tra» con un valore (D-426); l'escape vale solo dentro le liste.
+- Campi nuovi: `ultimoascolto`, `artistaalbum`, `nazionalita`, `etichetta`, `bpm`, `bitrate`, `con-testo`.
+- `toSql(countryArtists:)` riceve gli artisti di un paese (`rule_country.dart`); `TrackRepository._watchWithCountries` li ricalcola quando cambiano; `readsFrom` è dedotto dai campi usati dalla regola. Il genere si cerca su `track_genres` oppure sulla vecchia colonna `tracks.genre` (brani non ancora riletti), così la regola trova almeno quanto prima.
+- Editor: `FilterModel.fromExpr` (`smart/smart_filter_model.dart`) rilegge una regola e la ristampa identica, altrimenti passa a «Avanzate». `FilterCountsRepository` dà i conteggi delle opzioni.
+
+### Alias degli artisti (D-402, D-414, D-427)
+- `ArtistAliasRepository`: mai catene (`mainId` non è mai un alias). Operazioni: merge, split, separate, rejoin, dissolve.
+- `pickYtmArtistWithAliases` (`ytm_artist_resolver.dart`) è l'unico punto che sceglie il profilo YouTube Music.
+- Seguire vale per gruppo: `FollowRepository.watchIsFollowed`, `unfollow`; `ReleaseChecker` usa `toCheck`/`checkIds` e `joinedAfter`.
+- `ArtistMergeOps` (`providers/artist_merge_providers.dart`) è fra gli Ops; `artistMergeSuggestionProvider` sta nel budget delle richieste di Cerca. Impostazioni → «Artisti uniti» mostra i profili e «Separa».
+
+### Podcast (fasi 96, D-403)
+- Una pagina sola: i tuoi podcast in cima, «Scopri» sotto. `podcastSearchProvider` unisce le fonti con `mergeListings`.
+- `ApplePodcasts` (`services/podcast/apple_podcasts.dart`): provider proprio, cache di 4 ore. `YtmPodcasts` (`services/online/ytm_podcasts.dart`, InnerTube): 20 richieste/min e pausa 429 condivisa. `YtmPodcastSync` aggiorna gli episodi dei programmi YouTube Music (`podcasts.source`, `source_id`).
+- Il download di un episodio YTM passa da yt-dlp con `podcastAudioSelector` (`yt_dlp_args.dart`). `removeOrphans` (`EpisodeDownloader`) toglie all'avvio i file senza riga.
+
+### Cerca
+- «Nella tua libreria»: `ownedSplitProvider` divide i risultati, `ownedTracksProvider` dà i brani, `libraryMatchOf` fa l'abbinamento. `LibraryIndex.find` (`track_matcher.dart`): a titolo e artista uguali il brano è posseduto qualunque sia la durata (D-389); la chiave del titolo è `libraryTitleKey`.
+- Le righe Artisti e Album chiedono i dati a YouTube Music dentro `searchRowsLimiterProvider` (`kSearchRowsPerMinute`) e fermano la pausa 429 condivisa; `rowsMissing` dice quali righe mancano.
+
+### Dati di sfondo (D-421)
+- `genreRereadStartProvider` (`genre_reread_providers.dart`) rilegge i tag dei brani già in libreria per i generi, a blocchi, quando l'app è a riposo e senza scansione; il segnalibro sta nelle preferenze (`genreRereadAfter`, `genreRereadDone`, legati al dispositivo).
+- `artistCountryStartProvider` (`artist_country_providers.dart`) cerca la nazionalità degli artisti (MusicBrainz/Wikidata) solo con l'arricchimento acceso, rete non a consumo e nessuna Jam. Entrambi sono osservati dalla radice (`app.dart`).
 
 ## Accessibilità e token (fase 40)
 - **Token di forma:** `CcDims` ha la scala `gap` e `r`; fuori dal tema niente `fontSize` né `BorderRadius` letterali.

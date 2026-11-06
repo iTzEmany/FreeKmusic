@@ -32,7 +32,6 @@ class ActivitySheet extends ConsumerWidget {
   static Future<void> show(BuildContext context) => showCcSheet<void>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: true,
     builder: (_) => const ActivitySheet(),
   );
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../../data/repositories/enrich_filter_queries.dart';
+import '../../tags/tag_reader.dart' show splitGenres;
 import 'rule_ast.dart';
 
 const _dayMs = 86400000;
@@ -88,13 +89,25 @@ String _countrySql(String code, List<Variable> vars, Map<String, List<String>> c
 
 /// Genres: any of `track_genres`, or the old single column (tracks not read
 /// again yet), so every track the old rule found is still found.
-String _genreSql(String cmp, List<Variable> vars, List<String> params, String oldCmp) {
+///
+/// [joined] is a genre with separators («Hip-Hop/Rap») read whole before the split into
+/// `track_genres`: it also matches the track's genres joined back with `/` (D-397).
+String _genreSql(String cmp, List<Variable> vars, List<String> params, String oldCmp, {(String, String)? joined}) {
   vars
     ..addAll(params.map((p) => Variable<String>(p)))
     ..addAll(params.map((p) => Variable<String>(p)));
-  return _leaf(
-    'EXISTS (SELECT 1 FROM track_genres g WHERE g.track_id = tracks.id AND $cmp) OR $oldCmp',
-  );
+  if (joined != null) vars.add(Variable<String>(joined.$2));
+  final whole = joined == null
+      ? ''
+      : " OR (SELECT group_concat(genre, '/' ORDER BY position) FROM track_genres "
+          'WHERE track_id = tracks.id) ${joined.$1}';
+  return _leaf('EXISTS (SELECT 1 FROM track_genres g WHERE g.track_id = tracks.id AND $cmp) OR $oldCmp$whole');
+}
+
+/// The genres of [s] joined with `/` when it has several (`Rock; Pop` -> `Rock/Pop`).
+String? _joinedGenres(String s) {
+  final parts = splitGenres([s]);
+  return parts.length > 1 ? parts.join('/') : null;
 }
 
 String _in(RuleIn e, List<Variable> vars, Map<String, List<String>> ca) {
@@ -106,7 +119,14 @@ String _in(RuleIn e, List<Variable> vars, Map<String, List<String>> ca) {
     case RuleField.genre:
       final list = jsonEncode(values);
       const sub = '(SELECT value FROM json_each(?))';
-      return _genreSql('TRIM(g.genre) COLLATE NOCASE IN $sub', vars, [list], 'TRIM(genre) COLLATE NOCASE IN $sub');
+      final multi = [for (final v in values) ?_joinedGenres(v)];
+      return _genreSql(
+        'TRIM(g.genre) COLLATE NOCASE IN $sub',
+        vars,
+        [list],
+        'TRIM(genre) COLLATE NOCASE IN $sub',
+        joined: multi.isEmpty ? null : ('COLLATE NOCASE IN $sub', jsonEncode(multi)),
+      );
     case RuleField.tag:
       final marks = _jsonList(values, vars);
       return _leaf(
@@ -147,6 +167,10 @@ String _contains(RuleContains e, List<Variable> vars, Map<String, List<String>> 
         vars,
         [p],
         r"COALESCE(genre, '') LIKE ? ESCAPE '\'",
+        joined: switch (_joinedGenres(e.value)) {
+          final j? => (r"LIKE ? ESCAPE '\'", likeContains(j)),
+          _ => null,
+        },
       );
     case RuleField.tag:
       vars.add(Variable<String>(e.value));

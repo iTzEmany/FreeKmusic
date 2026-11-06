@@ -10,6 +10,7 @@ import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
 import '../services/online/ytm_artist.dart';
 import '../services/online/ytm_artist_resolver.dart' show YtmArtistPick, artistNameKeys, pickYtmArtistWithAliases;
 import 'database_providers.dart';
+import 'releases_providers.dart' show followRepositoryProvider;
 import 'smart_search_providers.dart';
 import 'ytm_catalog_providers.dart';
 
@@ -33,6 +34,11 @@ final mergedGroupsProvider = StreamProvider.autoDispose<List<List<String>>>(
     }
     return groups.values.toList();
   }),
+);
+
+/// Artist names by `UC…` id known locally (followed artists, lookups): for the lists of profiles.
+final artistNamesProvider = StreamProvider.autoDispose<Map<String, String>>(
+  (ref) => ref.watch(followRepositoryProvider).watchNames(),
 );
 
 /// The pairs the user marked «diversi».

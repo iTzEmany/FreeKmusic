@@ -19,7 +19,6 @@ import 'jam_track_info_screen.dart';
 Future<void> showJamQueueSheet(BuildContext context) => showCcSheet<void>(
   context: context,
   isScrollControlled: true,
-  useRootNavigator: true,
   builder: (_) => DraggableScrollableSheet(
     expand: false,
     initialChildSize: 0.7,

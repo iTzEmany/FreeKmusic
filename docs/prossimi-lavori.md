@@ -121,8 +121,8 @@ Stile voluto: niente tagli netti né slide laterali; ogni schermata nuova entra 
 |---|---|---|---|---|
 | 1 | Ricerca in Libreria che si apre come nel mockup `libreria-ricerca.html` | sembra un cambio di schermata (`AnimatedSwitcher`) | la lente resta lo stesso widget e scivola (`AnimatedAlign`), il campo si allarga attorno a lei, titolo e icone escono con opacità e spostamento, la lista sotto sfuma come strato unico | ~1 h, **già nella fase 83** |
 | 2 | Transizione fra schermate (Impostazioni e sottoimpostazioni, e tutte le altre) | slide da sinistra, fluido all'inizio e poi scatta | un `PageTransitionsTheme` unico con dissolvenza ease-in per tutte le route, tranne il player che tiene il suo slide dal basso | ~30 min, un punto solo |
-| 3 | Dock (navbar) flottante | lo sfondo della pagina si taglia di netto dove tocca il dock | `extendBody` nella shell: il contenuto scorre sotto il dock ed è visibile dove il dock non copre; le liste ricevono in fondo un margine pari all'altezza del dock (una costante nella shell, non a mano per schermata) | ~1–2 h, tocca tutte le liste lunghe |
-| 4 | Intestazione della Libreria flottante | intestazione piena sopra la lista | gli elementi scorrono sotto l'intestazione e restano visibili fuori dalle parti fisse (titolo, schede); va d'accordo con la striscia A–Z | ~1–2 h |
+| 3 | Dock (navbar) flottante — **chiuso nella fase 89** | lo sfondo della pagina si taglia di netto dove tocca il dock | `extendBody` nella shell: il contenuto scorre sotto il dock ed è visibile dove il dock non copre; le liste ricevono in fondo un margine pari all'altezza del dock (una costante nella shell, non a mano per schermata) | ~1–2 h, tocca tutte le liste lunghe |
+| 4 | Intestazione della Libreria flottante — **chiuso nella fase 90** (isola e `ShrinkingHeader`) | intestazione piena sopra la lista | gli elementi scorrono sotto l'intestazione e restano visibili fuori dalle parti fisse (titolo, schede); va d'accordo con la striscia A–Z | ~1–2 h |
 | 5 | Chiusura del player | la copertina passa da tonda a quadrata e poi torna tonda nel mini player | la copertina «in volo» resta tonda per tutta l'animazione (`flightShuttleBuilder` dell'`Hero` con lo stesso ritaglio tondo, o il raggio che interpola da tondo a tondo) | ~30–45 min |
 
 Consiglio: 2 e 5 costano poco e si possono aggiungere alla fase 83 insieme alla 1; 3 e 4 sono un passo a sé (toccano la shell e tutte le liste), da misurare sul Mi A3 dopo (scenario «Libreria Tutto→Playlist→Album→Artisti» e scroll di Tutti i brani).
@@ -134,3 +134,22 @@ Fuori dal perimetro della fase. Da valutare in una fase futura.
 - **Credito annidato troppo largo**: «Prince» contro «Prince Royce», con lo stesso titolo e una durata entro 5 s, risulta posseduto. È raro (serve un titolo generico identico). Rimedio possibile: l'artista più corto deve essere il prefisso dell'altro e avere almeno 2 parole non comuni.
 - **Remaster con live**: «Song (Remastered Live)» e «Song - 2011 Remaster - Live» coincidono con «Song», perché `_remasterGroup` e `_remasterTail` in `matchTitleKey` tolgono anche «Live» (comportamento precedente alla fase 88).
 - **Parentesi non chiuse**: «Song (Deluxe Edition» e «Song - Deluxe Edition - Remix» non vengono ripuliti, quindi lo stesso brano non viene riconosciuto (falso negativo, innocuo).
+
+## 6. Debito dalla review di architettura delle fasi 88–96 (6 nov, fase 97)
+Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti subito, qui c'è solo il debito.
+
+### Media
+- `countryArtistsOf` e `_countries()` (`TrackRepository`) si ricalcolano sul thread UI a ogni scrittura su `tracks`, senza debounce. Rimedio: debounce, o ricalcolo solo quando cambia `artist_countries`.
+- La logica «budget + pausa 429» è scritta tre volte (`artistMergeSearchProvider`, `mergeArtistWith` in `artist_picker_sheet.dart`, `smart_search`). Rimedio: un helper unico nei provider.
+- `mergeArtistShelves` e `groupShelvesProvider` stanno in `lib/ui` ma sono logica di dominio; la loro chiave è diversa da quella di `release_diff` e le pagine degli alias restano fuori dal budget. Rimedio: spostarli nei provider/servizi con la chiave di `release_diff`, e far passare le pagine dal budget.
+- La chiave artista `matchKey(extractPrimaryArtist(x))` è ripetuta in sei punti, più `_showKey` e `artistNameKeys`. Rimedio: una funzione condivisa (oggi `ArtistInfoRepository.keyOf` è la più vicina).
+
+### Bassa
+- Scritture dei podcast dalla UI senza Ops: `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`.
+- `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
+- `PlaylistOrder.apply` viene chiamato dentro `build`.
+- La cache di `artistMergeSearchProvider` non ha limite.
+- Test di poco valore in `settings_store_test` («blurred dock off by default and kept»): da togliere.- `libraryEntriesProvider` tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto (niente nuovo ordinamento tornando su una scheda). Rimedio: tenere viva solo l'ultima combinazione per scheda.
+- `m.createIndex` nelle migrazioni prima della v15 non usa IF NOT EXISTS: dopo un ritorno a una build più vecchia della v15 e un nuovo aggiornamento l'avvio fallisce. Rimedio: un helper unico per gli indici con IF NOT EXISTS.
+- `FollowRepository.watchNames` ricostruisce tutta la mappa nomi a ogni scrittura su `artist_lookups`/`followed_artists` (Impostazioni → Artisti uniti si ridisegna durante l'arricchimento). Rimedio: limitarla agli ID uniti o «diversi», o `.distinct`.
+- La rilettura dei generi si ferma mentre la musica suona (D-390): per chi ascolta quasi sempre può non finire mai, e le regole di genere restano sulla colonna vecchia per i brani non riletti. Rimedio: se dopo N giorni non è finita, leggere a basso ritmo anche durante la riproduzione.

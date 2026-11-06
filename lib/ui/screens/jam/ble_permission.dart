@@ -65,7 +65,6 @@ Future<bool> askBlePermission(BuildContext context, WidgetRef ref, {bool force =
     if (!context.mounted) return false;
     final go = await showCcSheet<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (_) => JamBlePermissionSheet(legacy: caps.needsLocation),
     );
     await store.writeJamBlePermAsked(true);

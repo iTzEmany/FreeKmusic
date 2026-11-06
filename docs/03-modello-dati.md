@@ -207,6 +207,23 @@ Le vecchie impostazioni finte (crossfade, gapless, normalizzazione, "bit-perfect
 - `activity_log` (`id`, `at`, `kind`, `name`, `done`, `total`, `failed`, `detail`; indice su `at`): il «Registro» dei lavori in background. `detail` è JSON e dipende dal tipo: `import` ha `event` (`ImportEventKind`); `correction` ha `trackId`, `old`/`new` (`title`, `artist`; `old` anche `isrc`, `mbid`) e `src`, oppure, se il file non è stato aggiornato (`failed` = 1), solo `trackId` e `file` (un `TagWriteReason`); `enrichBackground` ha gli id dei brani, `sources` e `noAnswer` (`failed` = 1 ma mostrata come fermata); gli altri lavori `stopped` o `updated`/`notFound`. Il tempo `at` viene da `nowMs()` (in test `nowMsOverride`).
 - `tracks.cover_source` (intero, di serie 0).
 
+## Generi e nazionalità (schema v16, fasi 93, D-390)
+- `track_genres`: `track_id` → `tracks` (cascade) · `genre` (testo, `NOCASE`) · `position`; chiave `(track_id, position)`, indice `track_genres_genre` su `genre`. Tutti i generi di un brano nell'ordine dei tag. `tracks.genre` resta il **primo** genere.
+- `artist_countries`: `artist_key` **PK** (`ArtistInfoRepository.keyOf`) · `country` text? (ISO 3166-1 alpha-2; null = non trovato) · `source` text? (`musicbrainz`/`wikidata`) · `checked_at` int. Un `country` nullo con `checked_at` si ritenta dopo 30 giorni.
+- Migrazione v15 → v16: due `createTable` e l'indice; nessuna colonna toccata.
+
+## Alias degli artisti (schema v17, fase 95)
+- `artist_aliases`: `alias_id` **PK** · `main_id` · `created_at`. Il profilo `alias_id` mostra la pagina di `main_id`; mai catene (`main_id` non è mai un alias).
+- `artist_not_same`: `(a, b)` **PK** · `created_at`, con `CHECK (a < b)` sull'ordine UTF-8 delle stringhe: una coppia ha una riga sola. Sono i profili che l'utente ha detto essere artisti diversi (D-414): non si propongono più di unire.
+
+## Podcast di YouTube Music (schema v18, fase 96)
+- `podcasts.source` (int, di serie 0 = feed RSS; `kPodcastSourceYtm` = programma di YouTube Music) e `podcasts.source_id` (testo, nullable: l'id del programma sulla sua fonte, `MPSPP…` per YTM; null per RSS). Due `addColumn`; i podcast esistenti restano RSS.
+
+## Backup portabile e nuovi dati (fasi 93–97)
+- Nei dati utente del backup (`user_data.dart`) entrano `genres` (per brano), `artistCountries`, `artistAliases` e `artistNotSame`. Un backup più vecchio non li ha e si legge lo stesso (campi assenti = vuoti).
+- `genreRereadAfter` e `genreRereadDone` (`SettingsStore`) sono legati al dispositivo: non viaggiano nel backup, perché gli id dei brani cambiano.
+- Il ripristino cancella `playlistSorts` (la mappa id playlist → ordinamento, D-424): gli id delle playlist non coincidono più.
+
 ## Blocco `meta` dei brani condivisi (fase 37)
 Oggetto JSON facoltativo nel manifesto di condivisione (`RemoteTrack.meta`, `TrackMeta.toJson`); solo i campi non nulli.
 Il ricevente valida ogni campo da solo (`TrackMeta.tryParse`): un campo fuori regola diventa null.

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/artist_merge_providers.dart';
-import '../../../providers/releases_providers.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
@@ -15,7 +14,7 @@ import '../online/artist_page_screen.dart';
 import '../online/merged_profiles.dart';
 
 /// Settings → «Artisti uniti»: the merged groups with «Separa», and the pairs
-/// marked «diversi» with «Rimuovi». Names come from the followed artists; no request.
+/// marked «diversi» with «Rimuovi». Names come from what is stored locally (followed artists, lookups); no request.
 class MergedArtistsScreen extends ConsumerWidget {
   const MergedArtistsScreen({super.key});
 
@@ -35,7 +34,7 @@ class MergedArtistsScreen extends ConsumerWidget {
     final l = context.l10n;
     final groups = ref.watch(mergedGroupsProvider).value ?? const <List<String>>[];
     final pairs = ref.watch(notSamePairsProvider).value ?? const <(String, String)>[];
-    final names = {for (final f in ref.watch(followedArtistsProvider).value ?? const []) f.ytmId: f.name};
+    final names = ref.watch(artistNamesProvider).value ?? const <String, String>{};
     String name(String id) => names[id] ?? id;
     void open(String id) =>
         ShellNav.open<void>(context, ArtistPageScreen(artist: YtmArtistRef(id: id, name: name(id))));

@@ -33,7 +33,6 @@ class PlaylistSourceSheet extends ConsumerStatefulWidget {
       showCcSheet<void>(
         context: context,
         isScrollControlled: true,
-        useRootNavigator: true,
         showDragHandle: true,
         builder: (_) => FractionallySizedBox(
           heightFactor: 0.9,

@@ -113,4 +113,9 @@ void main() {
     await repo.unmarkNotSame('B', 'A');
     expect(await repo.isNotSame('A', 'B'), isFalse);
   });
+
+  test('rejoin of a group with one profile does nothing instead of throwing', () async {
+    await repo.rejoin(['A'], 'A');
+    expect(await repo.groupOf('A'), ['A']);
+  });
 }

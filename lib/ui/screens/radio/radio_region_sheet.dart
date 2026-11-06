@@ -19,7 +19,6 @@ class RadioRegionSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) => showCcSheet<void>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: true,
     showDragHandle: true,
     builder: (_) => const FractionallySizedBox(
       heightFactor: 0.8,

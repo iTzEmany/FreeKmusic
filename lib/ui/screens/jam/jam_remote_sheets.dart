@@ -27,7 +27,6 @@ class JamInviteSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) => showCcSheet<void>(
         context: context,
         isScrollControlled: true,
-        useRootNavigator: true,
         builder: (_) => const JamInviteSheet(),
       );
 
@@ -140,7 +139,6 @@ class JamJoinSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) => showCcSheet<void>(
         context: context,
         isScrollControlled: true,
-        useRootNavigator: true,
         builder: (_) => const JamJoinSheet(),
       );
 

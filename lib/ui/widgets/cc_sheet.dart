@@ -13,7 +13,6 @@ Future<T?> showCcSheet<T>({
   required WidgetBuilder builder,
   bool isScrollControlled = false,
   bool? showDragHandle,
-  bool useRootNavigator = false,
   BoxConstraints? constraints,
   String? barrierLabel,
 }) {
@@ -23,11 +22,9 @@ Future<T?> showCcSheet<T>({
     builder: builder,
     isScrollControlled: isScrollControlled,
     showDragHandle: showDragHandle,
-    // Wide: the root route's barrier also covers the sidebar, the side panel
-    // and the player bar, so only one sheet can be open.
-    useRootNavigator:
-        useRootNavigator ||
-        MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint,
+    // Always the root route: its barrier covers the dock (phone) and the sidebar, side
+    // panel and player bar (wide), so a sheet is never drawn under them.
+    useRootNavigator: true,
     constraints: constraints,
     barrierLabel: barrierLabel,
     sheetAnimationStyle: AnimationStyle(duration: d, reverseDuration: d),
@@ -65,7 +62,6 @@ Future<T?> showCcActionSheet<T>({
   Widget? header,
   String? title,
   String? subtitle,
-  bool useRootNavigator = false,
   Listenable? refresh,
   List<List<CcAction<T>>> Function()? regroup,
 }) {
@@ -92,7 +88,6 @@ Future<T?> showCcActionSheet<T>({
   return showCcSheet<T>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: useRootNavigator,
     barrierLabel: context.l10n.close,
     builder: (sheet) {
       final cc = sheet.cc;

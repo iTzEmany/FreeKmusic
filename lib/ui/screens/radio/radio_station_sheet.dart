@@ -50,7 +50,6 @@ class RadioStationSheet extends ConsumerWidget {
       showCcSheet<void>(
         context: context,
         isScrollControlled: true,
-        useRootNavigator: true,
         showDragHandle: true,
         builder: (_) => RadioStationSheet(station: station),
       );

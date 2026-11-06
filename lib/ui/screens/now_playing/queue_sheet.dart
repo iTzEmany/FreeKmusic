@@ -23,7 +23,6 @@ import 'suggestions_screen.dart';
 Future<void> showQueueSheet(BuildContext context) => showCcSheet<void>(
   context: context,
   isScrollControlled: true,
-  useRootNavigator: true,
   builder: (_) => DraggableScrollableSheet(
     expand: false,
     initialChildSize: 0.7,

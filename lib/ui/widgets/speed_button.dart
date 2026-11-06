@@ -51,7 +51,6 @@ class SpeedSheet extends ConsumerWidget {
 
   static Future<void> show(BuildContext context) => showCcSheet<void>(
         context: context,
-        useRootNavigator: true,
         builder: (_) => const SpeedSheet(),
       );
 
