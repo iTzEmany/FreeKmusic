@@ -1365,8 +1365,8 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 96.5 Controlli di fase
 
 ## Fase 97 — Chiusura del refactor «superfici-e-ricerca» (`fase-97-chiusura-superfici.md`)
-- [ ] 97.1 Misure finali
-- [ ] 97.2 Prova a mano sui due telefoni
-- [ ] 97.3 Review di architettura e debito
-- [ ] 97.4 Documenti aggiornati
-- [ ] 97.5 Controlli di fase
+- [~] 97.1 Misure finali (Mi A3 fatte; Motorola all'utente: lo script non carica la libreria di prova su Android 15)
+- [x] 97.2 Prova a mano (Mi A3 completa, Motorola veloce)
+- [x] 97.3 Review di architettura e debito
+- [x] 97.4 Documenti aggiornati
+- [x] 97.5 Controlli di fase
