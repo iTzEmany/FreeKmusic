@@ -23,6 +23,15 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().acoustId, false);
   });
+  test('library sort direction: absent means the criterion default, a saved one is read back', () async {
+    SharedPreferences.setMockInitialValues({'librarySort': 'plays'});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().librarySort, 'plays');
+    expect(store.readSettings().librarySortAscending, isNull);
+    await store.writeSettings(store.readSettings().copyWith(librarySortAscending: true));
+    store = await SettingsStore.open();
+    expect(store.readSettings().librarySortAscending, true);
+  });
   streamCacheSettingTests();
   test('playback state round trip', () async {
     SharedPreferences.setMockInitialValues({});

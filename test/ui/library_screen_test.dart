@@ -10,6 +10,7 @@ import 'package:codecore/ui/screens/library/library_island.dart';
 import 'package:codecore/ui/screens/library/library_toolbar.dart';
 import 'package:codecore/providers/ui_providers.dart' show librarySearchRequestProvider;
 import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/settings_providers.dart' show settingsProvider;
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/cc_search_field.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
@@ -569,10 +570,27 @@ void main() {
     final h = await open(t);
     await t.tap(find.text('Ascoltati di recente'));
     await t.pumpAndSettle();
-    await t.tap(find.text('A–Z').last);
+    await t.tap(find.text('Titolo A–Z').last);
     await t.pumpAndSettle();
     await _settle(t);
-    expect(find.text('A–Z'), findsOneWidget);
+    expect(find.text('Titolo A–Z'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('sort sheet: track count not on the artists tab; «Più ascoltati» is saved descending', (t) async {
+    final h = await open(t);
+    await t.tap(find.text('Ascoltati di recente'));
+    await t.pumpAndSettle();
+    expect(find.text('Numero di brani'), findsOneWidget);
+    await t.tap(find.text('Più ascoltati'));
+    await t.pumpAndSettle();
+    final s = ProviderScope.containerOf(t.element(find.byType(LibraryScreen))).read(settingsProvider);
+    expect((s.librarySort, s.librarySortAscending), ('plays', false));
+    await t.tap(find.text('Artisti').first);
+    await _settle(t);
+    await t.tap(find.text('Più ascoltati'));
+    await t.pumpAndSettle();
+    expect(find.text('Numero di brani'), findsNothing);
     await h.dispose(t);
   });
 
@@ -718,7 +736,7 @@ void main() {
     expect(find.text('A'), findsNothing);
     await t.tap(find.text('Ascoltati di recente'));
     await t.pumpAndSettle();
-    await t.tap(find.text('A–Z').last);
+    await t.tap(find.text('Titolo A–Z').last);
     await t.pumpAndSettle();
     await _settle(t);
     // Headers only: covers may also show an initial.
@@ -819,7 +837,7 @@ void main() {
 
       await t.tap(find.text('Ascoltati di recente'));
       await t.pumpAndSettle();
-      await t.tap(find.text('A–Z').last);
+      await t.tap(find.text('Titolo A–Z').last);
       await t.pumpAndSettle();
       await _settle(t);
       const alphaAll = [

@@ -61,6 +61,7 @@ class LibraryIsland extends StatelessWidget {
     required this.onKind,
     required this.countLabel,
     required this.sort,
+    required this.ascending,
     required this.grid,
     required this.onSort,
     required this.onToggleGrid,
@@ -75,8 +76,9 @@ class LibraryIsland extends StatelessWidget {
   final ValueChanged<LibraryKind?> onKind;
   final String countLabel;
   final LibrarySort sort;
+  final bool ascending;
   final bool grid;
-  final ValueChanged<LibrarySort> onSort;
+  final void Function(LibrarySort sort, bool ascending) onSort;
   final VoidCallback onToggleGrid;
 
   /// Height of the scan status plus the tabs; reported only when it changes.
@@ -112,6 +114,8 @@ class LibraryIsland extends StatelessWidget {
             child: LibraryToolbar(
               countLabel: countLabel,
               sort: sort,
+              ascending: ascending,
+              kind: kind,
               grid: grid,
               onSort: onSort,
               onToggleGrid: onToggleGrid,

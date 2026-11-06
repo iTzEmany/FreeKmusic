@@ -110,10 +110,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  void _setSettings({LibrarySort? sort, bool? grid}) {
-    ref
-        .read(settingsProvider.notifier)
-        .update((s) => s.copyWith(librarySort: sort?.name, libraryGrid: grid));
+  void _setSettings({LibrarySort? sort, bool? ascending, bool? grid}) {
+    ref.read(settingsProvider.notifier).update(
+      (s) => s.copyWith(
+        librarySort: sort?.name,
+        librarySortAscending: ascending,
+        libraryGrid: grid,
+      ),
+    );
   }
 
   bool _onScroll(ScrollNotification n, double max) {
@@ -149,14 +153,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
-    final sort = LibrarySort.values.firstWhere(
+    var sort = LibrarySort.values.firstWhere(
       (s) => s.name == settings.librarySort,
       orElse: () => LibrarySort.recent,
     );
+    // Saved on another tab: the artists have no track count to sort by.
+    if (!LibrarySort.forKind(_kind).contains(sort)) sort = LibrarySort.alpha;
+    final ascending = settings.librarySortAscending ?? sort.defaultAscending;
     final playlists = ref.watch(playlistsProvider);
     final albums = ref.watch(albumsProvider);
     final artists = ref.watch(artistsProvider);
-    final built = ref.watch(libraryEntriesProvider((_kind, sort)));
+    final built = ref.watch(libraryEntriesProvider((_kind, sort, ascending)));
     final folders = ref.watch(foldersProvider).value;
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
     final denied = ref.watch(permissionDeniedProvider);
@@ -323,8 +330,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   },
                   countLabel: count,
                   sort: sort,
+                  ascending: ascending,
                   grid: settings.libraryGrid,
-                  onSort: (s) => _setSettings(sort: s),
+                  onSort: (s, asc) => _setSettings(sort: s, ascending: asc),
                   onToggleGrid: () {
                     // The new list starts at the top, so the island is whole.
                     _shrink.value = 0;

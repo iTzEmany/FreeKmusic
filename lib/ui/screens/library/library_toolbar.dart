@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../data/repositories/library_entries.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../theme/tokens.dart';
-import '../../widgets/cc_sheet.dart';
+import '../../widgets/sort_sheet.dart';
 
 /// Under the blocks: the count on the left, the sort menu and the list/grid
 /// toggle on the right.
@@ -12,6 +12,8 @@ class LibraryToolbar extends StatelessWidget {
     super.key,
     required this.countLabel,
     required this.sort,
+    required this.ascending,
+    this.kind,
     required this.grid,
     required this.onSort,
     required this.onToggleGrid,
@@ -19,8 +21,12 @@ class LibraryToolbar extends StatelessWidget {
 
   final String countLabel;
   final LibrarySort sort;
+  final bool ascending;
+
+  /// The tab shown: «Numero di brani» is not offered for the artists.
+  final LibraryKind? kind;
   final bool grid;
-  final ValueChanged<LibrarySort> onSort;
+  final void Function(LibrarySort sort, bool ascending) onSort;
   final VoidCallback onToggleGrid;
 
   @override
@@ -30,22 +36,24 @@ class LibraryToolbar extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     String name(LibrarySort s) => switch (s) {
       LibrarySort.recent => l.sortRecent,
-      LibrarySort.alpha => l.sortAToZ,
       LibrarySort.added => l.sortAddedRecently,
+      LibrarySort.alpha => l.sortTitleAToZ,
+      LibrarySort.artist => l.sortArtist,
+      LibrarySort.year => l.sortYear,
+      LibrarySort.plays => l.sortMostPlayed,
+      LibrarySort.duration => l.sortDuration,
+      LibrarySort.trackCount => l.sortTrackCount,
     };
-    Future<void> pickSort() async {
-      final s = await showCcActionSheet<LibrarySort>(
-        context: context,
-        title: l.sortBy,
-        groups: [
-          [
-            for (final o in LibrarySort.values)
-              CcAction(icon: Icons.sort_rounded, label: name(o), value: o, selected: o == sort),
-          ],
-        ],
-      );
-      if (s != null) onSort(s);
-    }
+    void pickSort() => showSortSheet<LibrarySort>(
+      context: context,
+      choices: [
+        for (final o in LibrarySort.forKind(kind))
+          SortChoice(o, name(o), ascendingByDefault: o.defaultAscending),
+      ],
+      selected: sort,
+      ascending: ascending,
+      onChanged: onSort,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.gap4, 0),

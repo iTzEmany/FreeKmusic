@@ -1324,7 +1324,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 90.5 Controlli di fase
 
 ## Fase 91 — Ordinamenti e foglio delle playlist (`fase-91-ordinamenti-e-playlist.md`)
-- [ ] 91.1 Criteri nuovi e verso in Libreria
+- [x] 91.1 Criteri nuovi e verso in Libreria
 - [ ] 91.2 Ordinamento dentro le playlist
 - [ ] 91.3 Foglio «Nuova playlist»
 - [ ] 91.4 Stesso foglio per «Aggiungi alla playlist»

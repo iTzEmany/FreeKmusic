@@ -1252,6 +1252,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sortAddedRecently => 'Añadidos recientemente';
 
   @override
+  String get sortTitleAToZ => 'Título A–Z';
+
+  @override
+  String get sortMostPlayed => 'Más escuchadas';
+
+  @override
+  String get sortTrackCount => 'Número de canciones';
+
+  @override
+  String get sortAscending => 'Ascendente';
+
+  @override
+  String get sortDescending => 'Descendente';
+
+  @override
   String get viewAsGrid => 'Ver como cuadrícula';
 
   @override

@@ -123,7 +123,7 @@ final favoriteCountProvider = StreamProvider<int>(
 /// back and forth does not sort again.
 final libraryEntriesProvider = Provider.family<
   AsyncValue<List<LibraryEntry>>,
-  (LibraryKind?, LibrarySort)
+  (LibraryKind?, LibrarySort, bool)
 >((ref, key) {
   final playlists = ref.watch(playlistsProvider);
   final albums = ref.watch(albumsProvider);
@@ -140,6 +140,7 @@ final libraryEntriesProvider = Provider.family<
       smart: smart,
       kind: key.$1,
       sort: key.$2,
+      ascending: key.$3,
     ),
   );
 });
