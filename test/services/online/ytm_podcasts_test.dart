@@ -1,0 +1,152 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:codecore/services/online/innertube_client.dart';
+import 'package:codecore/services/online/request_budget.dart';
+import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/services/online/ytm_podcasts.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+Map fixture(String name) =>
+    jsonDecode(File('test/fixtures/innertube/$name.json').readAsStringSync()) as Map;
+
+class _Adapter implements HttpClientAdapter {
+  _Adapter(this.status);
+  int status;
+  final sent = <RequestOptions>[];
+
+  @override
+  Future<ResponseBody> fetch(RequestOptions options, Stream<List<int>>? requestStream, Future<void>? cancelFuture) async {
+    sent.add(options);
+    final body = options.path.endsWith('/search')
+        ? fixture('ytm_podcast_search')
+        : (options.data as Map).containsKey('continuation')
+            ? fixture('ytm_podcast_show_more')
+            : fixture('ytm_podcast_show');
+    return ResponseBody.fromString(jsonEncode(status == 200 ? body : {}), status,
+        headers: {Headers.contentTypeHeader: [Headers.jsonContentType]});
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+YtmPodcasts podcasts(HttpClientAdapter a, {WindowLimiter? limiter}) {
+  final dio = Dio(BaseOptions(validateStatus: (_) => true))..httpClientAdapter = a;
+  return YtmPodcasts(InnerTubeClient(dio), limiter: limiter ?? WindowLimiter(perMinute: 100));
+}
+
+void main() {
+  test('the podcast search is read: show id, title, author, cover', () {
+    final hits = parseShowSearch(fixture('ytm_podcast_search'));
+    expect(hits, hasLength(20));
+    expect(hits.first.id, startsWith('MPSPP'));
+    expect(hits.first.title, 'Untold History Stories');
+    expect(hits.first.author, 'History After Dark');
+    expect(hits.first.thumbnailUrl, isNotNull);
+    expect(() => parseShowSearch({'contents': {}}), throwsA(isA<InnerTubeChanged>()));
+  });
+
+  test('the show page gives header and episodes with videoId, title, date and length', () {
+    final page = parseShowPage(fixture('ytm_podcast_show'), 'MPSPPLx', now: DateTime.utc(2026, 11, 6));
+    expect(page.title, 'Il Prof di Storia');
+    expect(page.author, 'Il Prof di Storia');
+    expect(page.description, startsWith('Mi chiamo Paolo'));
+    expect(page.episodes, hasLength(20));
+    final first = page.episodes.first;
+    expect(first.videoId, 'B2Tep-eGwmQ');
+    expect(first.title, startsWith('Budapest e Suez'));
+    expect(first.publishedAt, DateTime.utc(2026, 10, 28));
+    expect(first.duration, const Duration(minutes: 46));
+    expect(page.episodes[5].duration, const Duration(hours: 1, minutes: 2));
+    expect(page.episodes[12].duration, const Duration(minutes: 7, seconds: 37));
+    expect(first.watchUrl, 'https://music.youtube.com/watch?v=B2Tep-eGwmQ');
+    expect(() => parseShowPage({'contents': {}}, 'x'), throwsA(isA<InnerTubeChanged>()));
+  });
+
+  test('dates without a year are this year, or last when that is the future', () {
+    final now = DateTime.utc(2026, 2, 1);
+    expect(parseEpisodeDate('Jan 5', now), DateTime.utc(2026, 1, 5));
+    expect(parseEpisodeDate('Dec 30', now), DateTime.utc(2025, 12, 30));
+    expect(parseEpisodeDate('Mar 3, 2023', now), DateTime.utc(2023, 3, 3));
+    expect(parseEpisodeDate('2 days ago', now), isNull);
+  });
+
+  test('«today» a day ahead of the local clock stays this year', () {
+    final now = DateTime(2026, 2, 1, 23);
+    expect(parseEpisodeDate('Feb 2', now), DateTime.utc(2026, 2, 2));
+    expect(parseEpisodeDate('Feb 20', now), DateTime.utc(2025, 2, 20));
+  });
+
+  test('impossible dates are null, never moved to another day', () {
+    final now = DateTime.utc(2026, 11, 6);
+    for (final t in ['Oct 99', 'Oct 0', 'Feb 30', 'Feb 29', 'Maybe 5', 'Oct 5, 0000', 'Oct 5, 2100', 'Foo 5']) {
+      expect(parseEpisodeDate(t, now), isNull, reason: t);
+    }
+    expect(parseEpisodeDate('Feb 29, 2024', now), DateTime.utc(2024, 2, 29));
+    expect(parseEpisodeDate('Feb 29, 2023', now), isNull);
+    expect(parseEpisodeDate('Sept 5', now), DateTime.utc(2026, 9, 5));
+    expect(parseEpisodeDate('October 5', now), DateTime.utc(2026, 10, 5));
+  });
+
+  test('more length forms; negative, unknown units and huge numbers are null', () {
+    expect(parseEpisodeLength('45:30'), const Duration(minutes: 45, seconds: 30));
+    expect(parseEpisodeLength('1:02:03'), const Duration(hours: 1, minutes: 2, seconds: 3));
+    expect(parseEpisodeLength('5 minutes'), const Duration(minutes: 5));
+    expect(parseEpisodeLength('1 hour 5 minutes'), const Duration(hours: 1, minutes: 5));
+    expect(parseEpisodeLength('-5 min'), isNull);
+    expect(parseEpisodeLength('1 day 2 hr'), isNull);
+    expect(parseEpisodeLength('99999999999999999999 min'), isNull);
+    expect(parseEpisodeLength(''), isNull);
+  });
+
+  test('lengths accept the plurals', () {
+    expect(parseEpisodeLength('2 hrs 5 mins'), const Duration(hours: 2, minutes: 5));
+    expect(parseEpisodeLength('1 hr 2 min 3 secs'), const Duration(hours: 1, minutes: 2, seconds: 3));
+  });
+
+  test('the client asks with the podcasts filter and a 429 pauses the shows', () async {
+    final a = _Adapter(200);
+    final y = podcasts(a);
+    await y.searchShows('history');
+    expect(a.sent.single.data['params'], podcastsFilter);
+    final page = await y.show('MPSPPLGqhp239bqQz08jpYYsrXdCXAxqD9fXP4');
+    expect(page.episodes, isNotEmpty);
+    expect(a.sent[1].data['browseId'], 'MPSPPLGqhp239bqQz08jpYYsrXdCXAxqD9fXP4');
+
+    final limited = _Adapter(429);
+    final y2 = podcasts(limited);
+    await expectLater(y2.searchShows('x'), throwsA(isA<YtException>()));
+    final calls = limited.sent.length;
+    await expectLater(y2.show('MPSPPx'),
+        throwsA(isA<YtException>().having((e) => e.kind, 'kind', YtErrorKind.rateLimited)));
+    expect(limited.sent.length, calls, reason: 'paused: nothing was asked');
+  });
+
+  test('the show page is always asked in English, so dates and lengths can be read', () async {
+    final a = _Adapter(200);
+    await podcasts(a).show('MPSPPx');
+    expect(a.sent.first.data['context']['client']['hl'], 'en');
+  });
+
+  test('one more page is read only when every episode of the first is new', () async {
+    final first = parseShowPage(fixture('ytm_podcast_show'), 'x');
+    expect(first.episodes, hasLength(20));
+    expect(first.continuation, isNotNull);
+    final (more, next) = parseShowContinuation(fixture('ytm_podcast_show_more'));
+    expect(more, hasLength(4));
+    expect(next, isNull);
+
+    final a = _Adapter(200);
+    final all = await podcasts(a).show('MPSPPx');
+    expect(all.episodes, hasLength(24));
+    expect(a.sent.last.data['continuation'], isNotNull);
+    expect(a.sent, hasLength(2));
+
+    final b = _Adapter(200);
+    final some = await podcasts(b).show('MPSPPx', known: {'B2Tep-eGwmQ'});
+    expect(some.episodes, hasLength(20));
+    expect(b.sent, hasLength(1), reason: 'a known episode on the first page: nothing older is missing');
+  });
+}

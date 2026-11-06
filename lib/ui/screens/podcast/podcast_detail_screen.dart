@@ -57,7 +57,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
     } on PodcastException catch (e) {
       AppLog.w('podcast refresh failed', e);
       if (mounted) {
-        showMsg(context, podcastErrorText(context.l10n, e.kind));
+        showMsg(context, podcastFailureText(context, context.l10n, e.kind, e.yt));
       }
     } finally {
       if (mounted) setState(() => _refreshing = false);
@@ -90,6 +90,8 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
       destructive: true,
     );
     if (!ok) return;
+    final rows = await ref.read(podcastEpisodesProvider(p.id).future);
+    ref.read(podcastDownloadsProvider.notifier).cancelAll([for (final r in rows) r.episode.id]);
     await ref.read(podcastServiceProvider).unsubscribe(p.id);
     if (mounted) Navigator.of(context).maybePop();
   }
@@ -212,13 +214,13 @@ class _EpisodeTile extends ConsumerWidget {
   final EpisodeDownload? download;
   final VoidCallback onPlay;
 
-  String _status(AppLocalizations l) {
+  String _status(BuildContext context, AppLocalizations l) {
     final d = download;
     if (d != null && d.active) {
       return l.podcastStateDownloading(((d.progress ?? 0) * 100).round());
     }
     if (d != null && d.status == EpisodeDownloadStatus.failed && d.error != null) {
-      return podcastErrorText(l, d.error!);
+      return podcastFailureText(context, l, d.error!, d.ytError);
     }
     if (row.episode.played) return l.podcastStateHeard;
     final t = row.track;
@@ -239,9 +241,10 @@ class _EpisodeTile extends ConsumerWidget {
     final date = e.publishedAt == null
         ? null
         : DateFormat.yMMMd(locale).format(DateTime.fromMillisecondsSinceEpoch(e.publishedAt!));
-    final status = _status(l);
+    final status = _status(context, l);
     final podcastOps = ref.read(podcastOpsProvider);
     final busy = download?.active ?? false;
+    final failedYt = download?.status == EpisodeDownloadStatus.failed && download?.ytError != null;
     final Widget action;
     if (busy) {
       action = IconButton(
@@ -264,9 +267,9 @@ class _EpisodeTile extends ConsumerWidget {
     } else {
       action = IconButton(
         key: ValueKey('download-${e.id}'),
-        tooltip: l.ytDownload,
+        tooltip: failedYt ? l.retry : l.ytDownload,
         icon: const Icon(Icons.download_rounded),
-        onPressed: () => ref.read(podcastDownloadsProvider.notifier).add(e.id, e.title),
+        onPressed: failedYt && !podcastCanRetry(download?.ytError) ? null : () => ref.read(podcastDownloadsProvider.notifier).add(e.id, e.title),
       );
     }
     return InkWell(

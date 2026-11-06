@@ -1358,11 +1358,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 95.5 Controlli di fase
 
 ## Fase 96 — Podcast: Scopri e YouTube Music (`fase-96-podcast-scopri.md`)
-- [ ] 96.1 Pagina dei generi di YouTube Music
-- [ ] 96.2 Generi, classifiche e ricerca Apple
-- [ ] 96.3 Programmi di YouTube Music
-- [ ] 96.4 Pagina Podcast
-- [ ] 96.5 Controlli di fase
+- [x] 96.1 Pagina dei generi di YouTube Music
+- [x] 96.2 Generi, classifiche e ricerca Apple
+- [x] 96.3 Programmi di YouTube Music
+- [x] 96.4 Pagina Podcast
+- [x] 96.5 Controlli di fase
 
 ## Fase 97 — Chiusura del refactor «superfici-e-ricerca» (`fase-97-chiusura-superfici.md`)
 - [ ] 97.1 Misure finali

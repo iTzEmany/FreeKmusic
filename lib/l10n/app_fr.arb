@@ -2075,7 +2075,7 @@
   },
   "podcastUnsubscribe": "Se désabonner",
   "podcastUnsubscribeTitle": "Se désabonner ?",
-  "podcastUnsubscribeBody": "Le podcast et {count, plural, one{1 épisode téléchargé} other{{count} épisodes téléchargés}} seront supprimés de l’appareil.",
+  "podcastUnsubscribeBody": "{count, plural, =0{Le podcast sera supprimé de l’appareil.} one{Le podcast et 1 épisode téléchargé seront supprimés de l’appareil.} other{Le podcast et {count} épisodes téléchargés seront supprimés de l’appareil.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {
@@ -3626,5 +3626,39 @@
   "notSameTitle": "Marqués comme différents",
   "notSameRemove": "Retirer",
   "notSameEmpty": "Aucune paire n’est marquée comme différente.",
-  "openArtistPage": "Ouvrir la page de l’artiste"
+  "openArtistPage": "Ouvrir la page de l’artiste",
+  "podcastYours": "Vos podcasts",
+  "podcastDiscover": "Découvrir",
+  "podcastChartTitle": "Classement Apple Podcasts, Italie",
+  "podcastGenreAll": "Tous",
+  "podcastSearchLens": "Chercher un podcast",
+  "podcastSubscribedLabel": "Abonné",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "Le classement ne répond pas. Cela arrive, ce n’est pas de votre faute.",
+  "podcastNoFeed": "Apple n’a pas de flux pour ce podcast.",
+  "podcastGenreArts": "Arts",
+  "podcastGenreBusiness": "Économie",
+  "podcastGenreComedy": "Humour",
+  "podcastGenreEducation": "Éducation",
+  "podcastGenreKids": "Enfants et famille",
+  "podcastGenreHealth": "Santé et forme",
+  "podcastGenreTvFilm": "TV et cinéma",
+  "podcastGenreMusic": "Musique",
+  "podcastGenreNews": "Actualités",
+  "podcastGenreReligion": "Religion et spiritualité",
+  "podcastGenreScience": "Sciences",
+  "podcastGenreSports": "Sport",
+  "podcastGenreTechnology": "Technologie",
+  "podcastGenreSociety": "Société et culture",
+  "podcastGenreGovernment": "Gouvernement",
+  "podcastGenreHistory": "Histoire",
+  "podcastGenreTrueCrime": "True crime",
+  "podcastSubscribeTo": "S’abonner à {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

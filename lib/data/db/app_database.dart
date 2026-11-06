@@ -8,7 +8,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 17;
+const kSchemaVersion = 18;
 
 @DriftDatabase(
   tables: [
@@ -176,6 +176,17 @@ class AppDatabase extends _$AppDatabase {
       if (from < 17) {
         await m.createTable(artistAliases);
         await m.createTable(artistNotSame);
+      }
+      if (from < 18) {
+        // Existing podcasts keep source 0 (RSS) through the column default.
+        // A table made by the step for < 9 above already has them (created from today's definition).
+        final cols = {
+          for (final c in await customSelect("PRAGMA table_info('podcasts')").get()) c.read<String>('name'),
+        };
+        if (cols.isNotEmpty && !cols.contains('source')) {
+          await m.addColumn(podcasts, podcasts.source);
+          await m.addColumn(podcasts, podcasts.sourceId);
+        }
       }
     },
     beforeOpen: (details) async {

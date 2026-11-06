@@ -248,6 +248,12 @@ class Podcasts extends Table {
   /// Delete played episodes after this many days; null = never.
   IntColumn get autoDeleteDays => integer().nullable()();
   IntColumn get addedAt => integer()();
+
+  /// Where the episodes come from: 0 = RSS feed, 1 = YouTube Music show (D-404).
+  IntColumn get source => integer().withDefault(const Constant(0))();
+
+  /// The show's own id on its source (`MPSPP…` for YouTube Music); null for RSS.
+  TextColumn get sourceId => text().nullable()();
 }
 
 /// One episode of a feed. Downloaded ones also have a `tracks` row (kind 1),

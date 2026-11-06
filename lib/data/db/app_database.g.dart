@@ -5978,6 +5978,27 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<int> source = GeneratedColumn<int>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5990,6 +6011,8 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
     lastCheckedAt,
     autoDeleteDays,
     addedAt,
+    source,
+    sourceId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6072,6 +6095,18 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
     } else if (isInserting) {
       context.missing(_addedAtMeta);
     }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    }
     return context;
   }
 
@@ -6121,6 +6156,14 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
         DriftSqlType.int,
         data['${effectivePrefix}added_at'],
       )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source'],
+      )!,
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      ),
     );
   }
 
@@ -6149,6 +6192,12 @@ class Podcast extends DataClass implements Insertable<Podcast> {
   /// Delete played episodes after this many days; null = never.
   final int? autoDeleteDays;
   final int addedAt;
+
+  /// Where the episodes come from: 0 = RSS feed, 1 = YouTube Music show (D-404).
+  final int source;
+
+  /// The show's own id on its source (`MPSPP…` for YouTube Music); null for RSS.
+  final String? sourceId;
   const Podcast({
     required this.id,
     required this.feedUrl,
@@ -6160,6 +6209,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     this.lastCheckedAt,
     this.autoDeleteDays,
     required this.addedAt,
+    required this.source,
+    this.sourceId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6186,6 +6237,10 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       map['auto_delete_days'] = Variable<int>(autoDeleteDays);
     }
     map['added_at'] = Variable<int>(addedAt);
+    map['source'] = Variable<int>(source);
+    if (!nullToAbsent || sourceId != null) {
+      map['source_id'] = Variable<String>(sourceId);
+    }
     return map;
   }
 
@@ -6213,6 +6268,10 @@ class Podcast extends DataClass implements Insertable<Podcast> {
           ? const Value.absent()
           : Value(autoDeleteDays),
       addedAt: Value(addedAt),
+      source: Value(source),
+      sourceId: sourceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceId),
     );
   }
 
@@ -6232,6 +6291,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       lastCheckedAt: serializer.fromJson<int?>(json['lastCheckedAt']),
       autoDeleteDays: serializer.fromJson<int?>(json['autoDeleteDays']),
       addedAt: serializer.fromJson<int>(json['addedAt']),
+      source: serializer.fromJson<int>(json['source']),
+      sourceId: serializer.fromJson<String?>(json['sourceId']),
     );
   }
   @override
@@ -6248,6 +6309,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       'lastCheckedAt': serializer.toJson<int?>(lastCheckedAt),
       'autoDeleteDays': serializer.toJson<int?>(autoDeleteDays),
       'addedAt': serializer.toJson<int>(addedAt),
+      'source': serializer.toJson<int>(source),
+      'sourceId': serializer.toJson<String?>(sourceId),
     };
   }
 
@@ -6262,6 +6325,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     Value<int?> lastCheckedAt = const Value.absent(),
     Value<int?> autoDeleteDays = const Value.absent(),
     int? addedAt,
+    int? source,
+    Value<String?> sourceId = const Value.absent(),
   }) => Podcast(
     id: id ?? this.id,
     feedUrl: feedUrl ?? this.feedUrl,
@@ -6277,6 +6342,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
         ? autoDeleteDays.value
         : this.autoDeleteDays,
     addedAt: addedAt ?? this.addedAt,
+    source: source ?? this.source,
+    sourceId: sourceId.present ? sourceId.value : this.sourceId,
   );
   Podcast copyWithCompanion(PodcastsCompanion data) {
     return Podcast(
@@ -6294,6 +6361,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
           ? data.autoDeleteDays.value
           : this.autoDeleteDays,
       addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+      source: data.source.present ? data.source.value : this.source,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
     );
   }
 
@@ -6309,7 +6378,9 @@ class Podcast extends DataClass implements Insertable<Podcast> {
           ..write('language: $language, ')
           ..write('lastCheckedAt: $lastCheckedAt, ')
           ..write('autoDeleteDays: $autoDeleteDays, ')
-          ..write('addedAt: $addedAt')
+          ..write('addedAt: $addedAt, ')
+          ..write('source: $source, ')
+          ..write('sourceId: $sourceId')
           ..write(')'))
         .toString();
   }
@@ -6326,6 +6397,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     lastCheckedAt,
     autoDeleteDays,
     addedAt,
+    source,
+    sourceId,
   );
   @override
   bool operator ==(Object other) =>
@@ -6340,7 +6413,9 @@ class Podcast extends DataClass implements Insertable<Podcast> {
           other.language == this.language &&
           other.lastCheckedAt == this.lastCheckedAt &&
           other.autoDeleteDays == this.autoDeleteDays &&
-          other.addedAt == this.addedAt);
+          other.addedAt == this.addedAt &&
+          other.source == this.source &&
+          other.sourceId == this.sourceId);
 }
 
 class PodcastsCompanion extends UpdateCompanion<Podcast> {
@@ -6354,6 +6429,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
   final Value<int?> lastCheckedAt;
   final Value<int?> autoDeleteDays;
   final Value<int> addedAt;
+  final Value<int> source;
+  final Value<String?> sourceId;
   const PodcastsCompanion({
     this.id = const Value.absent(),
     this.feedUrl = const Value.absent(),
@@ -6365,6 +6442,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     this.lastCheckedAt = const Value.absent(),
     this.autoDeleteDays = const Value.absent(),
     this.addedAt = const Value.absent(),
+    this.source = const Value.absent(),
+    this.sourceId = const Value.absent(),
   });
   PodcastsCompanion.insert({
     this.id = const Value.absent(),
@@ -6377,6 +6456,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     this.lastCheckedAt = const Value.absent(),
     this.autoDeleteDays = const Value.absent(),
     required int addedAt,
+    this.source = const Value.absent(),
+    this.sourceId = const Value.absent(),
   }) : feedUrl = Value(feedUrl),
        title = Value(title),
        addedAt = Value(addedAt);
@@ -6391,6 +6472,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     Expression<int>? lastCheckedAt,
     Expression<int>? autoDeleteDays,
     Expression<int>? addedAt,
+    Expression<int>? source,
+    Expression<String>? sourceId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6403,6 +6486,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
       if (lastCheckedAt != null) 'last_checked_at': lastCheckedAt,
       if (autoDeleteDays != null) 'auto_delete_days': autoDeleteDays,
       if (addedAt != null) 'added_at': addedAt,
+      if (source != null) 'source': source,
+      if (sourceId != null) 'source_id': sourceId,
     });
   }
 
@@ -6417,6 +6502,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     Value<int?>? lastCheckedAt,
     Value<int?>? autoDeleteDays,
     Value<int>? addedAt,
+    Value<int>? source,
+    Value<String?>? sourceId,
   }) {
     return PodcastsCompanion(
       id: id ?? this.id,
@@ -6429,6 +6516,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
       autoDeleteDays: autoDeleteDays ?? this.autoDeleteDays,
       addedAt: addedAt ?? this.addedAt,
+      source: source ?? this.source,
+      sourceId: sourceId ?? this.sourceId,
     );
   }
 
@@ -6465,6 +6554,12 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     if (addedAt.present) {
       map['added_at'] = Variable<int>(addedAt.value);
     }
+    if (source.present) {
+      map['source'] = Variable<int>(source.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
     return map;
   }
 
@@ -6480,7 +6575,9 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
           ..write('language: $language, ')
           ..write('lastCheckedAt: $lastCheckedAt, ')
           ..write('autoDeleteDays: $autoDeleteDays, ')
-          ..write('addedAt: $addedAt')
+          ..write('addedAt: $addedAt, ')
+          ..write('source: $source, ')
+          ..write('sourceId: $sourceId')
           ..write(')'))
         .toString();
   }
@@ -17951,6 +18048,8 @@ typedef $$PodcastsTableCreateCompanionBuilder = PodcastsCompanion Function({
   Value<int?> lastCheckedAt,
   Value<int?> autoDeleteDays,
   required int addedAt,
+  Value<int> source,
+  Value<String?> sourceId,
 });
 typedef $$PodcastsTableUpdateCompanionBuilder = PodcastsCompanion Function({
   Value<int> id,
@@ -17963,6 +18062,8 @@ typedef $$PodcastsTableUpdateCompanionBuilder = PodcastsCompanion Function({
   Value<int?> lastCheckedAt,
   Value<int?> autoDeleteDays,
   Value<int> addedAt,
+  Value<int> source,
+  Value<String?> sourceId,
 });
 
 final class $$PodcastsTableReferences
@@ -18046,6 +18147,16 @@ class $$PodcastsTableFilterComposer
 
   ColumnFilters<int> get addedAt => $composableBuilder(
     column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18133,6 +18244,16 @@ class $$PodcastsTableOrderingComposer
     column: $table.addedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PodcastsTableAnnotationComposer
@@ -18177,6 +18298,12 @@ class $$PodcastsTableAnnotationComposer
 
   GeneratedColumn<int> get addedAt =>
       $composableBuilder(column: $table.addedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
 
   Expression<T> podcastEpisodesRefs<T extends Object>(
     Expression<T> Function($$PodcastEpisodesTableAnnotationComposer a) f,
@@ -18242,6 +18369,8 @@ class $$PodcastsTableTableManager
                 Value<int?> lastCheckedAt = const Value.absent(),
                 Value<int?> autoDeleteDays = const Value.absent(),
                 Value<int> addedAt = const Value.absent(),
+                Value<int> source = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
               }) => PodcastsCompanion(
                 id: id,
                 feedUrl: feedUrl,
@@ -18253,6 +18382,8 @@ class $$PodcastsTableTableManager
                 lastCheckedAt: lastCheckedAt,
                 autoDeleteDays: autoDeleteDays,
                 addedAt: addedAt,
+                source: source,
+                sourceId: sourceId,
               ),
           createCompanionCallback:
               ({
@@ -18266,6 +18397,8 @@ class $$PodcastsTableTableManager
                 Value<int?> lastCheckedAt = const Value.absent(),
                 Value<int?> autoDeleteDays = const Value.absent(),
                 required int addedAt,
+                Value<int> source = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
               }) => PodcastsCompanion.insert(
                 id: id,
                 feedUrl: feedUrl,
@@ -18277,6 +18410,8 @@ class $$PodcastsTableTableManager
                 lastCheckedAt: lastCheckedAt,
                 autoDeleteDays: autoDeleteDays,
                 addedAt: addedAt,
+                source: source,
+                sourceId: sourceId,
               ),
           withReferenceMapper: (p0) => p0
               .map(

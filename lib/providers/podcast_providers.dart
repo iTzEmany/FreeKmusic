@@ -9,14 +9,21 @@ import '../data/db/app_database.dart';
 import '../data/repositories/podcast_repository.dart';
 import '../services/covers/cover_store.dart';
 import '../services/online/http_client.dart';
+import '../services/online/youtube_service.dart' show YtErrorKind;
 import '../services/podcast/episode_downloader.dart';
+import '../services/podcast/apple_podcasts.dart';
 import '../services/podcast/feed_fetcher.dart';
 import '../services/podcast/podcast_cleanup.dart';
+import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/podcast_service.dart';
+import '../services/online/ytm_podcasts.dart';
+import '../services/podcast/ytm_podcast_sync.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
+import 'startup_providers.dart' show startupSettledProvider;
+import 'youtube_providers.dart';
 
 final podcastRepositoryProvider = Provider<PodcastRepository>(
   (ref) => PodcastRepository(ref.watch(databaseProvider)),
@@ -35,22 +42,38 @@ class PodcastRefreshing extends Notifier<bool> {
 
 final podcastRefreshingProvider = NotifierProvider<PodcastRefreshing, bool>(PodcastRefreshing.new);
 
+/// One Apple directory client for the whole app: its cache and rate limit
+/// must outlive a rebuild of [podcastServiceProvider].
+final applePodcastsProvider = Provider<ApplePodcasts>((ref) => ApplePodcasts(
+      web: DioWebClient(),
+      limiter: RateLimiter(minGap: const Duration(seconds: 1)),
+      now: DateTime.now,
+    ));
+
+/// Stores a podcast cover (downloaded from its address) under the podcast's album key.
+final podcastCoverSaverProvider = Provider<PodcastCoverSaver>((ref) {
+  final web = DioWebClient();
+  final covers = ref.watch(coverStoreProvider);
+  return (id, url) async {
+    final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
+    if (bytes == null) return null;
+    return covers.saveFromBytes(podcastAlbumKey(id), bytes, url);
+  };
+});
+
 final podcastServiceProvider = Provider<PodcastService>((ref) {
   final web = DioWebClient();
   // The folder is known a moment after start-up; until then nothing is deleted.
   final dir = ref.watch(podcastsDirProvider).value;
-  final covers = ref.watch(coverStoreProvider);
   return PodcastService(
     repo: ref.watch(podcastRepositoryProvider),
     fetch: dioFeedFetcher(),
     parse: parseFeed,
     web: web,
     podcastsDir: dir,
-    saveCover: (id, url) async {
-      final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
-      if (bytes == null) return null;
-      return covers.saveFromBytes(podcastAlbumKey(id), bytes, url);
-    },
+    ytm: ref.watch(ytmPodcastSyncProvider),
+    apple: ref.watch(applePodcastsProvider),
+    saveCover: ref.watch(podcastCoverSaverProvider),
   );
 });
 
@@ -77,8 +100,20 @@ final episodeDownloaderProvider = FutureProvider<EpisodeDownloader>((ref) async 
     tracks: ref.watch(trackRepositoryProvider),
     tags: ref.watch(tagReaderProvider),
     baseDir: await ref.watch(podcastsDirProvider.future),
+    youtube: ref.watch(ytDlpServiceProvider),
   );
 });
+
+/// YouTube Music shows: subscribing and reading their new episodes (D-404).
+final ytmPodcastsProvider = Provider<YtmPodcasts>(
+  (ref) => YtmPodcasts(ref.watch(innerTubeClientProvider)),
+);
+
+final ytmPodcastSyncProvider = Provider<YtmPodcastSync>((ref) => YtmPodcastSync(
+      repo: ref.watch(podcastRepositoryProvider),
+      ytm: ref.watch(ytmPodcastsProvider),
+      saveCover: ref.watch(podcastCoverSaverProvider),
+    ));
 
 enum EpisodeDownloadStatus { queued, downloading, done, failed }
 
@@ -91,6 +126,7 @@ class EpisodeDownload {
     this.status = EpisodeDownloadStatus.queued,
     this.progress,
     this.error,
+    this.ytError,
   });
 
   final int episodeId;
@@ -104,11 +140,15 @@ class EpisodeDownload {
   final double? progress;
   final PodcastErrorKind? error;
 
+  /// Set when YouTube Music / yt-dlp failed: show `ytErrorText` of it, and offer
+  /// «Riprova» only for `network` (or none).
+  final YtErrorKind? ytError;
+
   bool get active =>
       status == EpisodeDownloadStatus.queued ||
       status == EpisodeDownloadStatus.downloading;
 
-  EpisodeDownload copyWith({EpisodeDownloadStatus? status, double? progress, PodcastErrorKind? error}) =>
+  EpisodeDownload copyWith({EpisodeDownloadStatus? status, double? progress, PodcastErrorKind? error, YtErrorKind? ytError}) =>
       EpisodeDownload(
         episodeId: episodeId,
         title: title,
@@ -116,6 +156,7 @@ class EpisodeDownload {
         status: status ?? this.status,
         progress: progress ?? this.progress,
         error: error ?? this.error,
+        ytError: ytError ?? this.ytError,
       );
 }
 
@@ -146,6 +187,9 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
   }
 
   void cancel(int episodeId) => _tokens[episodeId]?.cancel();
+
+  /// Cancels the running downloads of these episodes (the podcast is going away).
+  void cancelAll(Iterable<int> episodeIds) => episodeIds.forEach(cancel);
 
   /// Forgets the finished ones («Pulisci»).
   void clearFinished() => state = [
@@ -185,7 +229,7 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
       }
     } on PodcastException catch (e) {
       AppLog.w('episode $id not downloaded', e);
-      _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: e.kind));
+      _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: e.kind, ytError: e.yt));
     } on Object catch (e, st) {
       AppLog.e('episode $id download crashed', e, st);
       _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: PodcastErrorKind.network));
@@ -200,6 +244,17 @@ final podcastDownloadsProvider =
     NotifierProvider<PodcastDownloadsNotifier, List<EpisodeDownload>>(
   PodcastDownloadsNotifier.new,
 );
+
+/// Once the app has settled: orphan podcast rows and folders go (watched from the root).
+final podcastOrphansStartProvider = FutureProvider<void>((ref) async {
+  await ref.watch(startupSettledProvider.future);
+  try {
+    final downloader = await ref.read(episodeDownloaderProvider.future);
+    await downloader.removeOrphans();
+  } on Object catch (e, st) {
+    AppLog.w('podcast orphan cleanup failed', e, st);
+  }
+});
 
 /// Run when the Podcast section opens: leftovers of interrupted downloads go,
 /// then the episodes heard longer ago than each podcast allows. Returns how

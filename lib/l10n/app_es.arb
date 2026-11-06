@@ -1917,7 +1917,7 @@
   },
   "podcastUnsubscribe": "Cancelar la suscripción",
   "podcastUnsubscribeTitle": "¿Cancelar la suscripción?",
-  "podcastUnsubscribeBody": "El podcast y {count, plural, one{1 episodio descargado} other{{count} episodios descargados}} se eliminarán del dispositivo.",
+  "podcastUnsubscribeBody": "{count, plural, =0{El podcast se eliminará del dispositivo.} one{El podcast y 1 episodio descargado se eliminarán del dispositivo.} other{El podcast y {count} episodios descargados se eliminarán del dispositivo.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {
@@ -3392,5 +3392,39 @@
   "notSameTitle": "Marcados como distintos",
   "notSameRemove": "Quitar",
   "notSameEmpty": "Ningún par está marcado como distinto.",
-  "openArtistPage": "Abrir la página del artista"
+  "openArtistPage": "Abrir la página del artista",
+  "podcastYours": "Tus podcasts",
+  "podcastDiscover": "Descubrir",
+  "podcastChartTitle": "Lista de Apple Podcasts, Italia",
+  "podcastGenreAll": "Todos",
+  "podcastSearchLens": "Buscar podcasts",
+  "podcastSubscribedLabel": "Suscrito",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "La lista no responde. Pasa, no es culpa tuya.",
+  "podcastNoFeed": "Apple no tiene un feed para este podcast.",
+  "podcastGenreArts": "Arte",
+  "podcastGenreBusiness": "Negocios",
+  "podcastGenreComedy": "Comedia",
+  "podcastGenreEducation": "Educación",
+  "podcastGenreKids": "Niños y familia",
+  "podcastGenreHealth": "Salud y bienestar",
+  "podcastGenreTvFilm": "TV y cine",
+  "podcastGenreMusic": "Música",
+  "podcastGenreNews": "Noticias",
+  "podcastGenreReligion": "Religión y espiritualidad",
+  "podcastGenreScience": "Ciencia",
+  "podcastGenreSports": "Deportes",
+  "podcastGenreTechnology": "Tecnología",
+  "podcastGenreSociety": "Sociedad y cultura",
+  "podcastGenreGovernment": "Gobierno",
+  "podcastGenreHistory": "Historia",
+  "podcastGenreTrueCrime": "True crime",
+  "podcastSubscribeTo": "Suscribirse a {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

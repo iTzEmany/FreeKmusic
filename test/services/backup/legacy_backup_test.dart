@@ -51,6 +51,8 @@ void main() {
     // ...and the two of schema 17 (D-397).
     expect(await db.select(db.artistAliases).get(), isEmpty);
     expect(await db.select(db.artistNotSame).get(), isEmpty);
+    // ...and the podcast source of schema 18: every podcast is an RSS one (the fixture has none, the column default says so).
+    expect((await db.customSelect("SELECT dflt_value FROM pragma_table_info('podcasts') WHERE name = 'source'").getSingle()).read<String>('dflt_value'), '0');
 
     final playlist = (await db.select(db.playlists).getSingle());
     expect(playlist.name, 'Mix');

@@ -15,6 +15,9 @@ import '../../data/repositories/podcast_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import '../online/http_client.dart';
+import '../online/yt_dlp_args.dart' show downloadExtensions, podcastAudioSelector;
+import '../online/youtube_service.dart';
+import 'ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import '../tags/tag_reader.dart';
 import 'podcast_models.dart';
 
@@ -64,6 +67,7 @@ class EpisodeDownloader {
     required this.baseDir,
     Dio? dio,
     this.readTagsInIsolate = true,
+    this.youtube,
   }) : _dio = dio ??
             Dio(BaseOptions(
               connectTimeout: const Duration(seconds: 15),
@@ -81,6 +85,9 @@ class EpisodeDownloader {
   final Dio _dio;
   final bool readTagsInIsolate;
 
+  /// yt-dlp, for the episodes of YouTube Music shows (audio only).
+  final YoutubeService? youtube;
+
   bool _inside(String path) => p.isWithin(baseDir, path);
 
   /// Downloads the episode and returns the id of its track, or null when it was
@@ -97,6 +104,9 @@ class EpisodeDownloader {
     if (existing != null && File(existing.path).existsSync()) return existing.id;
     final podcast = await repo.byId(episode.podcastId);
     if (podcast == null) return null;
+    if (podcast.source == kPodcastSourceYtm) {
+      return _downloadYtm(episode, podcast, cancel: cancel, onProgress: onProgress);
+    }
 
     final Response<ResponseBody> res;
     try {
@@ -158,8 +168,62 @@ class EpisodeDownloader {
       throw const PodcastException(PodcastErrorKind.network, 'empty answer');
     }
     await part.rename(target);
+    return _register(episode, podcast, target, ext);
+  }
 
+  /// Only the audio of the episode, with yt-dlp (the WEB_REMIX player says
+  /// UNPLAYABLE, so nothing else is tried). The file stays as served (m4a or opus).
+  Future<int?> _downloadYtm(PodcastEpisode episode, Podcast podcast,
+      {CancelToken? cancel, void Function(int received, int total)? onProgress}) async {
+    final yt = youtube;
+    if (yt == null) {
+      throw const PodcastException(PodcastErrorKind.unsupportedFormat, 'no yt-dlp');
+    }
+    final dir = Directory(p.join(baseDir, '${podcast.id}'));
+    final stem = p.join(dir.path, episodeFileStem(episode.guid));
+    // --no-part leaves a half file under its final name, which a retry would take as done.
+    await _deleteStale(stem);
+    String? path;
+    try {
+      await for (final prog in yt.download(
+        YtResult(
+          id: episode.guid,
+          title: episode.title,
+          channel: podcast.title,
+          duration: null,
+          downloadName: p.basename(stem),
+          webpageUrl: episode.audioUrl,
+        ),
+        dir,
+        cancel: cancel,
+        options: const DownloadOptions(selector: podcastAudioSelector),
+      )) {
+        if (prog.path != null) path = prog.path;
+        onProgress?.call(prog.received, prog.total);
+      }
+    } on YtException catch (e, st) {
+      AppLog.w('YouTube Music episode failed: ${episode.guid}', e, st);
+      await _deleteStale(stem);
+      // Only a network failure is worth «Riprova»; the others say what is wrong.
+      throw PodcastException(PodcastErrorKind.network, '$e', e.kind);
+    }
+    if (cancel?.isCancelled ?? false) {
+      await _deleteStale(stem);
+      return null;
+    }
+    if (path == null) return null;
+    final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
+    return _register(episode, podcast, path, ext);
+  }
+
+  /// Makes the saved file [target] a library track and links the episode to it.
+  Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
     final info = await _readTags(target);
+    // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
+    if (await repo.episodeById(episode.id) == null) {
+      await _deleteQuietly(File(target));
+      return null;
+    }
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
     await tracks.upsertBatch([
@@ -187,15 +251,17 @@ class EpisodeDownloader {
     if (trackId == null) {
       throw const PodcastException(PodcastErrorKind.network, 'library row missing');
     }
-    await repo.setTrackId(episodeId, trackId);
+    await repo.setTrackId(episode.id, trackId);
     return trackId;
   }
 
   Future<TagInfo> _readTags(String path) async {
     try {
+      // Local copy: the closure must not capture `this` (repo and DB cannot cross isolates).
+      final reader = tags;
       return readTagsInIsolate
-          ? await Isolate.run(() => tags.read(path, withCover: false))
-          : await tags.read(path, withCover: false);
+          ? await Isolate.run(() => reader.read(path, withCover: false))
+          : await reader.read(path, withCover: false);
     } on Object catch (e, st) {
       // A file without readable tags still plays: the feed's length stands in.
       AppLog.w('episode tags unreadable: $path', e, st);
@@ -233,6 +299,42 @@ class EpisodeDownloader {
       }
     }
     return n;
+  }
+
+  /// Library rows of kind 1 that no episode points to, and folders of podcasts
+  /// that are gone (left by an unsubscribe during a download). Returns how many.
+  Future<int> removeOrphans() async {
+    var n = 0;
+    for (final t in await repo.orphanEpisodeTracks()) {
+      AppLog.w('podcast cleanup: orphan episode row ${t.id} ${t.path}');
+      if (_inside(t.path)) await _deleteQuietly(File(t.path));
+      await tracks.deleteTrack(t.id);
+      n++;
+    }
+    final root = Directory(baseDir);
+    if (!await root.exists()) return n;
+    final alive = {for (final p in await repo.all()) '${p.id}'};
+    await for (final e in root.list(followLinks: false)) {
+      final id = p.basename(e.path);
+      if (e is Directory && int.tryParse(id) != null && !alive.contains(id)) {
+        AppLog.w('podcast cleanup: folder of a removed podcast ${e.path}');
+        try {
+          await e.delete(recursive: true);
+          n++;
+        } on FileSystemException catch (err, st) {
+          AppLog.w('could not delete ${e.path}', err, st);
+        }
+      }
+    }
+    return n;
+  }
+
+  /// Removes `<stem>.<ext>` of every container a download can leave.
+  Future<void> _deleteStale(String stem) async {
+    for (final e in downloadExtensions) {
+      final f = File('$stem.$e');
+      if (_inside(f.path)) await _deleteQuietly(f);
+    }
   }
 
   Future<void> _deleteQuietly(File f) async {

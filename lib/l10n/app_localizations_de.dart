@@ -3558,10 +3558,13 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count heruntergeladene Folgen',
-      one: '1 heruntergeladene Folge',
+      other:
+          'Der Podcast und $count heruntergeladene Folgen werden vom Gerät gelöscht.',
+      one:
+          'Der Podcast und 1 heruntergeladene Folge werden vom Gerät gelöscht.',
+      zero: 'Der Podcast wird vom Gerät gelöscht.',
     );
-    return 'Der Podcast und $_temp0 werden vom Gerät gelöscht.';
+    return '$_temp0';
   }
 
   @override
@@ -6701,4 +6704,88 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get openArtistPage => 'Künstlerseite öffnen';
+
+  @override
+  String get podcastYours => 'Deine Podcasts';
+
+  @override
+  String get podcastDiscover => 'Entdecken';
+
+  @override
+  String get podcastChartTitle => 'Apple-Podcasts-Charts, Italien';
+
+  @override
+  String get podcastGenreAll => 'Alle';
+
+  @override
+  String get podcastSearchLens => 'Podcasts suchen';
+
+  @override
+  String get podcastSubscribedLabel => 'Abonniert';
+
+  @override
+  String get podcastOriginApple => 'Apple Podcasts';
+
+  @override
+  String get podcastChartError =>
+      'Die Charts antworten nicht. Das passiert, es liegt nicht an dir.';
+
+  @override
+  String get podcastNoFeed => 'Apple hat keinen Feed für diesen Podcast.';
+
+  @override
+  String get podcastGenreArts => 'Kunst';
+
+  @override
+  String get podcastGenreBusiness => 'Wirtschaft';
+
+  @override
+  String get podcastGenreComedy => 'Comedy';
+
+  @override
+  String get podcastGenreEducation => 'Bildung';
+
+  @override
+  String get podcastGenreKids => 'Kinder & Familie';
+
+  @override
+  String get podcastGenreHealth => 'Gesundheit & Fitness';
+
+  @override
+  String get podcastGenreTvFilm => 'TV & Film';
+
+  @override
+  String get podcastGenreMusic => 'Musik';
+
+  @override
+  String get podcastGenreNews => 'Nachrichten';
+
+  @override
+  String get podcastGenreReligion => 'Religion & Spiritualität';
+
+  @override
+  String get podcastGenreScience => 'Wissenschaft';
+
+  @override
+  String get podcastGenreSports => 'Sport';
+
+  @override
+  String get podcastGenreTechnology => 'Technologie';
+
+  @override
+  String get podcastGenreSociety => 'Gesellschaft & Kultur';
+
+  @override
+  String get podcastGenreGovernment => 'Regierung';
+
+  @override
+  String get podcastGenreHistory => 'Geschichte';
+
+  @override
+  String get podcastGenreTrueCrime => 'True Crime';
+
+  @override
+  String podcastSubscribeTo(String name) {
+    return '$name abonnieren';
+  }
 }

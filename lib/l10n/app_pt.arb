@@ -2075,7 +2075,7 @@
   },
   "podcastUnsubscribe": "Cancelar a subscrição",
   "podcastUnsubscribeTitle": "Cancelar a subscrição?",
-  "podcastUnsubscribeBody": "O podcast e {count, plural, one{1 episódio descarregado} other{{count} episódios descarregados}} serão apagados do dispositivo.",
+  "podcastUnsubscribeBody": "{count, plural, =0{O podcast será apagado do dispositivo.} one{O podcast e 1 episódio descarregado serão apagados do dispositivo.} other{O podcast e {count} episódios descarregados serão apagados do dispositivo.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {
@@ -3626,5 +3626,39 @@
   "notSameTitle": "Marcados como diferentes",
   "notSameRemove": "Remover",
   "notSameEmpty": "Nenhum par está marcado como diferente.",
-  "openArtistPage": "Abrir a página do artista"
+  "openArtistPage": "Abrir a página do artista",
+  "podcastYours": "Os teus podcasts",
+  "podcastDiscover": "Descobrir",
+  "podcastChartTitle": "Tabela do Apple Podcasts, Itália",
+  "podcastGenreAll": "Todos",
+  "podcastSearchLens": "Pesquisar podcasts",
+  "podcastSubscribedLabel": "Subscrito",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "A tabela não responde. Acontece, não é culpa tua.",
+  "podcastNoFeed": "A Apple não tem feed para este podcast.",
+  "podcastGenreArts": "Artes",
+  "podcastGenreBusiness": "Negócios",
+  "podcastGenreComedy": "Comédia",
+  "podcastGenreEducation": "Educação",
+  "podcastGenreKids": "Crianças e família",
+  "podcastGenreHealth": "Saúde e fitness",
+  "podcastGenreTvFilm": "TV e cinema",
+  "podcastGenreMusic": "Música",
+  "podcastGenreNews": "Notícias",
+  "podcastGenreReligion": "Religião e espiritualidade",
+  "podcastGenreScience": "Ciência",
+  "podcastGenreSports": "Desporto",
+  "podcastGenreTechnology": "Tecnologia",
+  "podcastGenreSociety": "Sociedade e cultura",
+  "podcastGenreGovernment": "Governo",
+  "podcastGenreHistory": "História",
+  "podcastGenreTrueCrime": "True crime",
+  "podcastSubscribeTo": "Subscrever {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -2270,7 +2270,7 @@
   },
   "podcastUnsubscribe": "Annulla l’iscrizione",
   "podcastUnsubscribeTitle": "Annullare l’iscrizione?",
-  "podcastUnsubscribeBody": "Il podcast e {count, plural, one{1 episodio scaricato} other{{count} episodi scaricati}} verranno eliminati dal dispositivo.",
+  "podcastUnsubscribeBody": "{count, plural, =0{Il podcast verrà eliminato dal dispositivo.} one{Il podcast e 1 episodio scaricato verranno eliminati dal dispositivo.} other{Il podcast e {count} episodi scaricati verranno eliminati dal dispositivo.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {
@@ -4071,5 +4071,39 @@
   "notSameTitle": "Segnati come diversi",
   "notSameRemove": "Rimuovi",
   "notSameEmpty": "Nessuna coppia segnata come diversa.",
-  "openArtistPage": "Apri la pagina dell’artista"
+  "openArtistPage": "Apri la pagina dell’artista",
+  "podcastYours": "I tuoi podcast",
+  "podcastDiscover": "Scopri",
+  "podcastChartTitle": "Classifica italiana di Apple Podcasts",
+  "podcastGenreAll": "Tutti",
+  "podcastSearchLens": "Cerca podcast",
+  "podcastSubscribedLabel": "Iscritto",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "La classifica non risponde. Succede, non è colpa tua.",
+  "podcastNoFeed": "Apple non ha un feed per questo podcast.",
+  "podcastGenreArts": "Arti",
+  "podcastGenreBusiness": "Economia",
+  "podcastGenreComedy": "Comicità",
+  "podcastGenreEducation": "Educazione",
+  "podcastGenreKids": "Bambini e famiglia",
+  "podcastGenreHealth": "Salute e benessere",
+  "podcastGenreTvFilm": "TV e cinema",
+  "podcastGenreMusic": "Musica",
+  "podcastGenreNews": "Notizie",
+  "podcastGenreReligion": "Religione e spiritualità",
+  "podcastGenreScience": "Scienza",
+  "podcastGenreSports": "Sport",
+  "podcastGenreTechnology": "Tecnologia",
+  "podcastGenreSociety": "Società e cultura",
+  "podcastGenreGovernment": "Governo",
+  "podcastGenreHistory": "Storia",
+  "podcastGenreTrueCrime": "True crime",
+  "podcastSubscribeTo": "Iscriviti a {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

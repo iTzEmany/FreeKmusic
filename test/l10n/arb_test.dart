@@ -8,6 +8,7 @@ const _langs = ['en', 'de', 'es', 'fr', 'pt'];
 /// Strings that may read the same as the Italian: names, formats, units and
 /// words that are the same in the other languages.
 const _sameAsItalian = {
+  'podcastOriginApple', 'podcastGenreSports', 'podcastGenreTrueCrime', 'podcastGenreTvFilm', 'podcastGenreTechnology', 'podcastGenreGovernment',
   'speakerNo', 'recogSrcVideo', 'releaseAlbumYear', 'releaseAlbumPlain', 'settingsPageBackup', 'summaryCrossfade',
   'tokenSurface1', 'tokenSurface2', 'tokenSurface3', 'themeCopyName',
   'accentRosa', 'backupSection', 'accentVerde', 'activityDownload', 'albumMeta', 'appName',
@@ -129,6 +130,15 @@ void main() {
     expect(roles, isNotEmpty);
     for (final lang in _langs) {
       expect(roles.difference(_keys(_arb(lang))), isEmpty, reason: lang);
+    }
+  });
+
+  test('the unsubscribe dialog has an ICU plural with a zero, one and other form in every language', () {
+    for (final lang in ['it', ..._langs]) {
+      final v = _arb(lang)['podcastUnsubscribeBody'] as String;
+      expect(v, startsWith('{count, plural, =0{'), reason: lang);
+      expect(v, contains('one{'), reason: lang);
+      expect(v, contains('other{'), reason: lang);
     }
   });
 }

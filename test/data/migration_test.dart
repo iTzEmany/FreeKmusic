@@ -771,4 +771,25 @@ void main() {
     expect(await db.select(db.artistNotSame).get(), hasLength(1));
     await db.close();
   });
+  test('a v17 database gets the podcast source: existing podcasts are RSS, with their episodes', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE podcasts (id INTEGER PRIMARY KEY AUTOINCREMENT, feed_url TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, added_at INTEGER NOT NULL)',
+          );
+          raw.execute("INSERT INTO podcasts (id, feed_url, title, added_at) VALUES (1, 'https://x/feed', 'Old', 5)");
+          raw.userVersion = 17;
+        },
+      ),
+    );
+    final old = await db.select(db.podcasts).getSingle();
+    expect((old.title, old.source, old.sourceId), ('Old', 0, null));
+    await db.into(db.podcasts).insert(
+      PodcastsCompanion.insert(feedUrl: 'ytm:1', title: 'New', addedAt: 6, source: const Value(1), sourceId: const Value('MPSPPx')),
+    );
+    expect((await db.select(db.podcasts).get()).map((p) => p.source), [0, 1]);
+    await db.close();
+  });
 }

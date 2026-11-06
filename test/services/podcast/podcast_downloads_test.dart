@@ -66,6 +66,15 @@ void main() {
   Future<void> tick() => Future<void>.delayed(const Duration(milliseconds: 20));
   EpisodeDownload of(int id) => c.read(podcastDownloadsProvider).firstWhere((d) => d.episodeId == id);
 
+  test('cancelAll stops the running downloads of the given episodes only', () async {
+    notifier().add(1, 'a');
+    notifier().add(2, 'b');
+    await tick();
+    notifier().cancelAll([1, 3]);
+    await tick();
+    expect(downloader.cancelled, [1]);
+  });
+
   test('two at a time, the rest wait their turn', () async {
     for (final id in [1, 2, 3]) {
       notifier().add(id, 'Episode $id');
