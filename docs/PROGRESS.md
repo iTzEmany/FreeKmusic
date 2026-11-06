@@ -1321,7 +1321,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 90.2 Tutti i brani
 - [x] 90.3 Isola della Libreria
 - [x] 90.4 Lente dentro l'isola
-- [ ] 90.5 Controlli di fase
+- [x] 90.5 Controlli di fase
 
 ## Fase 91 — Ordinamenti e foglio delle playlist (`fase-91-ordinamenti-e-playlist.md`)
 - [ ] 91.1 Criteri nuovi e verso in Libreria

@@ -33,3 +33,29 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
 ## Esiti
+- **90.1**:
+  - `ShrinkingHeader` è uno sliver flottante scritto a mano (`RenderSliverSingleBoxAdapter`). Segue il dito 1:1 e non ha snap; il figlio è spostato con `paintOffset`, così disegno e tocco coincidono; ha sfondo opaco.
+  - `SliverFloatingHeader` di Flutter è stato scartato: fa sempre lo snap a fine gesto. `SliverAppBar(floating)` è stato scartato perché, con una parte fissa, ha una zona morta.
+- **90.2**: Tutti i brani ha una riga fissa fuori dallo scroll (conteggio, tempo, shuffle, play); ricerca e filtri stanno nell'intestazione che si ritrae. Il salto A–Z nasconde l'intestazione e porta la riga subito sotto la riga fissa; la striscia A–Z parte sotto l'intestazione visibile.
+- **90.3**:
+  - L'isola (`library_island.dart`) è un corpo unico sopra la lista. Il titolo esce per primo, poi Ordina per; le schede restano. Le righe crescono con la scala del testo, e a ogni frame di scroll si ricostruiscono solo i due ritagli.
+  - Il Registro è sempre visibile nel titolo.
+  - **Scostamento dal documento**: l'isola non usa `ShrinkingHeader`. La riga delle schede resta ferma fra due righe che escono, e uno sliver flottante non si può impilare (verificato nella review di 90.1). L'isola è quindi una superficie sopra la lista, guidata dalle notifiche di scroll.
+- **90.4**: la lente si allarga nel campo dentro l'isola (con riduci movimento non c'è animazione). In ricerca la riga di Ordina per si chiude; le schede filtrano i risultati e mostrano tutte le voci della sezione; la selezione non agisce sui brani nascosti.
+  - Differenza minore dal mockup, accettata (D-3a): i risultati della lente partono sotto l'isola invece di scorrerle sotto.
+- **Review**:
+  - review Sonnet (high) dello sliver: bug critico del `paintOffset` (l'intestazione non scorreva davvero e i tocchi andavano al bersaglio sbagliato), hit test oltre la viewport, unbind del controller; tutto corretto con test sulle posizioni disegnate;
+  - `code-review high` (Opus) su `library_screen`: 10 rilievi, 9 applicati (fling a lente aperta, selezione nascosta, campo che chiudendosi teneva il focus, animazione della lente inerte, scala del testo, risultati per scheda, risultati coperti durante l'animazione, ricostruzioni per frame, scroll fra griglia ed elenco); scartato «un solo componente» (vedi sopra). In più, il Registro mancava nel titolo.
+- **Scheggia**: 4 mutanti su 6 uccisi; i 2 sopravvissuti e un terzo caso sono stati coperti con test nuovi. Sul Mi A3 l'isola, la lente durante un fling, i filtri per scheda, il Registro, il salto A–Z avanti e indietro e l'ultima riga sopra il dock sono a posto. Due bug corretti con test: l'intestazione di Tutti i brani era trasparente sopra le righe; dopo un cambio di scheda o di vista le prime righe potevano restare sotto l'isola.
+- **Golden**: 16 rigenerati (Libreria in tutte le schede, lente, Tutti i brani).
+- **Misure sul Mi A3**, build profile, % di frame oltre 16,7 ms (il primo giro dopo l'installazione è scartato perché c'è il riscaldamento):
+
+  | Scenario | Base 87 | Fase 90 |
+  |---|---|---|
+  | Scroll Libreria (isola) | 4,7 % | 0,8–1,1 % |
+  | Lente Libreria | 1,9 % | 0,8–1,2 % |
+  | Scroll Tutti i brani | 2,3 % | 1,2 % |
+  | Cambio scheda | 5,5 % | 2,1 % |
+- **Limiti noti**: una scheda interna della Libreria non ricorda più la sua posizione (riparte in cima, per non lasciare righe sotto l'isola); con un tema con immagine di sfondo l'intestazione di Tutti i brani è un rettangolo pieno del colore di fondo.
+- **Non provati**: rotazione e scala del carattere di sistema sul telefono (regole del dispositivo); la scala 2.0 è coperta dai widget test.
+- **Motorola**: rinviato alla fase 97 (D-419, D-420).
