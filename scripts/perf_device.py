@@ -217,6 +217,8 @@ def main():
     else:
         apk = build(args.real)
     print(dev.adb('install', '-r', apk).strip().splitlines()[-1])
+    # Android 13+: the notification prompt would cover the mini player once playback starts.
+    dev.sh(f'pm grant {PKG} android.permission.POST_NOTIFICATIONS', check=False)
     model = dev.sh('getprop ro.product.model').strip()
     dev.sh('input keyevent KEYCODE_WAKEUP')
 
@@ -225,6 +227,8 @@ def main():
         dev.sh(f'pm clear {PKG}')
         dev.sh(f'mkdir -p {REMOTE}/Music')
         dev.adb('push', lib + '/.', f'{REMOTE}/Music/')
+        # Android 15: folders adb creates belong to the shell user and the app cannot list them.
+        dev.sh(f'chmod -R o+rX {REMOTE}/Music')
     else:
         dev.sh(f'rm -f {REMOTE}/perf/events.jsonl', check=False)
     dev.sh(f'am start -W -n {ACTIVITY}')
