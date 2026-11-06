@@ -61,6 +61,11 @@ void main() {
       'Song (Radio Version)',
       'Song (Demo Version)',
       'Song - Remix Version',
+      "Song (Taylor's Version)",
+      'Song (Extended Version)',
+      'Song (Piano Version)',
+      'Song - Orchestral Version',
+      'Song (Remixed Deluxe Edition)',
     ]) {
       expect(l.find(ImportRow(index: 0, title: t, artists: const ['Band'])), isNull, reason: t);
     }
@@ -69,5 +74,31 @@ void main() {
   test('a match within 5 s is found, and so is one with no known length', () {
     expect(lib.find(row(315222 + 4000))?.id, 1);
     expect(lib.find(const ImportRow(index: 0, title: 'Born On The Bayou', artists: ['Creedence Clearwater Revival']))?.id, 1);
+  });
+
+  test('subversion and conversion are not edition words', () {
+    final l = LibraryIndex(const [LibraryEntryLite(id: 1, title: 'Song', artist: 'Band', durationMs: 1000)]);
+    expect(l.find(const ImportRow(index: 0, title: 'Song (Subversion)', artists: ['Band'])), isNull);
+    expect(l.find(const ImportRow(index: 0, title: 'Song - Conversion', artists: ['Band'])), isNull);
+  });
+
+  test('a nested artist credit with an unknown length is not owned', () {
+    final l = LibraryIndex(const [LibraryEntryLite(id: 1, title: 'Smells Like Teen Spirit', artist: 'Nirvana', durationMs: 301000)]);
+    expect(l.find(const ImportRow(index: 0, title: 'Smells Like Teen Spirit', artists: ['Nirvana Tribute Band'])), isNull);
+    expect(l.find(const ImportRow(index: 0, title: 'Smells Like Teen Spirit', artists: ['Nirvana', 'Guest'])), isNull);
+  });
+
+  test('an untagged track is not owned by title alone', () {
+    final l = LibraryIndex(const [LibraryEntryLite(id: 1, title: 'Song', artist: null, durationMs: 1000)]);
+    expect(l.find(const ImportRow(index: 0, title: 'Song', artists: [])), isNull);
+  });
+
+  test('of several tracks with the same key the closest length wins', () {
+    final l = LibraryIndex(const [
+      LibraryEntryLite(id: 1, title: 'Intro', artist: 'Band', durationMs: 60000),
+      LibraryEntryLite(id: 2, title: 'Intro', artist: 'Band', durationMs: 120000),
+    ]);
+    expect(l.find(const ImportRow(index: 0, title: 'Intro', artists: ['Band'], durationMs: 118000))?.id, 2);
+    expect(l.find(const ImportRow(index: 0, title: 'Intro', artists: ['Band'], durationMs: 62000))?.id, 1);
   });
 }

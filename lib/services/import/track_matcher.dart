@@ -21,17 +21,20 @@ final _editGroup = RegExp(
 final _editTail = RegExp(
     r'\s+[-–]\s+(radio edit|single version|album version|mono|stereo|mono version|stereo version)\s*$',
     caseSensitive: false);
-// Edition wrappers of the same recording («Deluxe Version», «40th Anniversary
-// Edition»); a group that names another kind of version (live, acoustic...)
-// stays.
+// Edition wrappers of the same recording («Deluxe Edition», «40th Anniversary»,
+// «Album Version»). A plain «X Version» (Taylor's, Spanish, Piano...) is
+// another recording and stays, and so does any group that also names one
+// (live, remix, acoustic...).
+const _editionWords =
+    r'\b(deluxe|expanded|anniversary|remaster(ed)?|edition|album version)\b';
 final _editionGroup = RegExp(
-    r'[\(\[][^\)\]]*(anniversary|deluxe|expanded|edition|version)[^\)\]]*[\)\]]',
+    r'[\(\[][^\)\]]*' + _editionWords + r'[^\)\]]*[\)\]]',
     caseSensitive: false);
 final _editionTail = RegExp(
-    r'\s+[-–]\s+[^-–]*(anniversary|deluxe|expanded|edition|version)[^-–]*$',
+    r'\s+[-–]\s+[^-–]*' + _editionWords + r'[^-–]*$',
     caseSensitive: false);
 final _qualifier = RegExp(
-    r'\b(live|acoustic|instrumental|remix|demo|radio|edit|mix|unplugged|karaoke|cover)\b',
+    r'\b(live|acoustic|instrumental|remix(ed)?|mix(ed)?|demo|radio|edit|unplugged|karaoke|cover)\b',
     caseSensitive: false);
 String _dropEdition(String s, RegExp re) =>
     s.replaceAllMapped(re, (m) => _qualifier.hasMatch(m[0]!) ? m[0]! : ' ');
@@ -145,10 +148,10 @@ class LibraryIndex {
     return null;
   }
 
-  /// Same title and same artist words: owned whatever the length (D-389).
-  /// An artist credit that only contains the other («Queen» / «Queen & X») is
-  /// an approximate match: when both lengths are known they must be within
-  /// 5 s.
+  /// Same title and same artist words: owned whatever the length (D-389); of
+  /// several, the closest in length. An artist credit that only contains the
+  /// other («Queen» / «Queen & X») is an approximate match: both lengths must
+  /// be known and within 5 s.
   LibraryEntryLite? find(ImportRow r, {String? baseDir}) {
     final loc = r.location;
     if (loc != null) {
@@ -157,21 +160,24 @@ class LibraryIndex {
     }
     final c = _byTitle[libraryTitleKey(r.title)];
     if (c == null) return null;
-    final want = r.durationMs;
+    final want = r.durationMs ?? 0;
     final artist = _artistWords(r.artists.join(' '));
+    if (artist.isEmpty) return null;
+    int gap(LibraryEntryLite t) =>
+        want > 0 && t.durationMs > 0 ? (t.durationMs - want).abs() : 0;
+    LibraryEntryLite? best;
     LibraryEntryLite? near;
     for (final (words, t) in c) {
-      if (_sameSet(words, artist)) return t;
-      if (near == null && _nested(words, artist)) {
-        if (want == null ||
-            want <= 0 ||
-            t.durationMs <= 0 ||
-            (t.durationMs - want).abs() <= 5000) {
-          near = t;
-        }
+      if (_sameSet(words, artist)) {
+        if (best == null || gap(t) < gap(best)) best = t;
+      } else if (want > 0 &&
+          t.durationMs > 0 &&
+          gap(t) <= 5000 &&
+          _nested(words, artist)) {
+        if (near == null || gap(t) < gap(near)) near = t;
       }
     }
-    return near;
+    return best ?? near;
   }
 }
 
