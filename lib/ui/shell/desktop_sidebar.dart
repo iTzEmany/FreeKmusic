@@ -37,7 +37,7 @@ class DesktopSidebar extends ConsumerWidget {
     void select(NavTab t) {
       // Leaving a tab resets it (D-392): only the active one has pages to pop.
       if (index == t.index) {
-        keys[t.index].currentState?.popUntil((r) => r.isFirst);
+        ShellNav.popToRoot(keys[t.index].currentState);
       }
       if (index != t.index) ref.read(navIndexProvider.notifier).set(t.index);
     }

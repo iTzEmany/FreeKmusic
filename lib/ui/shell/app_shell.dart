@@ -137,14 +137,8 @@ class AppShell extends ConsumerWidget {
     // is untouched, so a page pushed there right after (openInLibrary) stays.
     ref.listen(navIndexProvider, (prev, next) {
       if (prev == null || prev == next) return;
-      // A page that guards its exit (unsaved edits, a running job) keeps the
-      // tab as it is.
-      var guarded = false;
-      keys[prev].currentState?.popUntil((r) {
-        guarded = r.popDisposition == RoutePopDisposition.doNotPop;
-        return true;
-      });
-      if (guarded) return;
+      // A page pushed in the tab that guards its exit keeps the tab as it is.
+      if (ShellNav.pageGuardsExit(keys[prev].currentState)) return;
       ref.read(tabNavigatorKeysProvider.notifier).reset(prev);
       if (prev == NavTab.search.index) ref.read(searchControllerProvider).clear();
       if (prev == NavTab.library.index) {
@@ -154,7 +148,7 @@ class AppShell extends ConsumerWidget {
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     final l = context.l10n;
     void select(int i) {
-      if (i == index) keys[i].currentState?.popUntil((r) => r.isFirst);
+      if (i == index) ShellNav.popToRoot(keys[i].currentState);
       if (i == NavTab.search.index) {
         ref.read(searchBarProvider.notifier).open();
       } else if (i != index) {

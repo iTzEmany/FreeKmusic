@@ -122,6 +122,45 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('leaving Library with the search lens open resets it', (t) async {
+    final h = await _open(t, tracks: 4);
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    final lens = find.descendant(
+        of: find.byType(LibraryScreen), matching: find.byIcon(Icons.search_rounded));
+    await t.tap(lens.first);
+    await _settle(t);
+    final field = find.descendant(
+        of: find.byType(LibraryScreen), matching: find.byType(TextField));
+    await t.enterText(field, 'luc');
+    await t.pump();
+    await t.tap(_bar('Home'));
+    await _settle(t);
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    expect(field, findsNothing);
+    expect(find.text('luc'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('selecting the active tab with a dirty editor keeps it',
+      (t) async {
+    final h = await _open(t, tracks: 4);
+    final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
+    c.read(tabNavigatorKeysProvider)[NavTab.home.index].currentState!.push(
+        MaterialPageRoute<void>(
+            builder: (_) => const ThemeEditorScreen(
+                initial: CustomTheme(id: 'sea', name: 'Mare'))));
+    await _settle(t);
+    await t.enterText(find.byType(TextField).first, 'Mare edit');
+    await t.pump();
+    await t.tap(_bar('Home'));
+    await _settle(t);
+    expect(find.byType(ThemeEditorScreen), findsOneWidget);
+    expect(find.text('Mare edit'), findsOneWidget);
+    await h.dispose(t);
+  });
+
   testWidgets('leaving Library keeps the Favorites sort, resets All tracks',
       (t) async {
     final h = await _open(t, tracks: 4);
