@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:codecore/data/repositories/backup_merge.dart';
 import 'package:codecore/data/repositories/backup_queries.dart';
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/data/repositories/artist_country_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
@@ -434,6 +435,44 @@ void main() {
       ]));
       final all = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c.country};
       expect(all, {'x': 'GB', 'y': 'FR'});
+    });
+  });
+
+  group('artist aliases and not-same pairs (D-402, D-414)', () {
+    test('they survive collect -> json -> merge into another library', () async {
+      final repo = ArtistAliasRepository(db);
+      await repo.merge('A', 'B');
+      await repo.markNotSame('X', 'Y');
+      final data = UserData.fromJson(jsonDecode(jsonEncode((await collectUserData(db)).toJson())) as Map<String, dynamic>);
+      await db.delete(db.artistAliases).go();
+      await db.delete(db.artistNotSame).go();
+      await merge(data);
+      expect(await repo.groupOf('A'), ['A', 'B']);
+      expect(await repo.isNotSame('Y', 'X'), isTrue);
+    });
+
+    test('an alias of the backup resolves to the local main; one already an alias here keeps the local choice', () async {
+      final repo = ArtistAliasRepository(db);
+      await repo.merge('M', 'A');
+      await repo.merge('Q', 'B');
+      await merge(const UserData(createdAt: 1, artistAliases: [
+        ArtistAliasData(aliasId: 'C', mainId: 'A'),
+        ArtistAliasData(aliasId: 'B', mainId: 'M'),
+        ArtistAliasData(aliasId: 'D', mainId: 'D'),
+      ], artistNotSame: [
+        ['M', 'C'],
+        ['M', 'Z'],
+      ]));
+      expect(await repo.groupOf('M'), ['M', 'A', 'C']);
+      expect(await repo.groupOf('B'), ['Q', 'B']);
+      expect(await repo.isNotSame('M', 'C'), isFalse, reason: 'same group here');
+      expect(await repo.isNotSame('Z', 'M'), isTrue);
+    });
+
+    test('a backup without them merges as before', () async {
+      await merge(UserData.fromJson({'format': 1, 'createdAt': 1}));
+      expect(await db.select(db.artistAliases).get(), isEmpty);
+      expect(await db.select(db.artistNotSame).get(), isEmpty);
     });
   });
 }

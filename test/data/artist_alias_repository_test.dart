@@ -1,0 +1,65 @@
+import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  late AppDatabase db;
+  late ArtistAliasRepository repo;
+
+  setUp(() {
+    db = AppDatabase(NativeDatabase.memory());
+    repo = ArtistAliasRepository(db);
+  });
+  tearDown(() => db.close());
+
+  test('merge: b becomes an alias of a; the group lists the main first', () async {
+    await repo.merge('A', 'B');
+    expect(await repo.mainOf('B'), 'A');
+    expect(await repo.mainOf('A'), 'A');
+    expect(await repo.groupOf('B'), ['A', 'B']);
+    expect(await repo.groupOf('Z'), ['Z']);
+  });
+
+  test('a main that gets merged into another takes its aliases along (no chain)', () async {
+    await repo.merge('B', 'A');
+    await repo.merge('C', 'B');
+    expect([for (final x in ['A', 'B', 'C']) await repo.mainOf(x)], ['C', 'C', 'C']);
+    expect(await repo.groupOf('A'), hasLength(3));
+    expect((await repo.allAliases()).values.toSet(), {'C'});
+  });
+
+  test('merging through an alias uses its main; merging a group into itself does nothing', () async {
+    await repo.merge('A', 'B');
+    await repo.merge('B', 'C');
+    expect(await repo.groupOf('C'), ['A', 'B', 'C']);
+    await repo.merge('C', 'A');
+    expect(await repo.groupOf('B'), ['A', 'B', 'C']);
+  });
+
+  test('split: an alias leaves; when the main leaves, the oldest alias leads the rest', () async {
+    await repo.merge('A', 'B');
+    await repo.merge('A', 'C');
+    await repo.split('C');
+    expect(await repo.groupOf('A'), ['A', 'B']);
+    expect(await repo.groupOf('C'), ['C']);
+    await repo.merge('A', 'C');
+    await repo.split('A');
+    expect(await repo.groupOf('A'), ['A']);
+    expect((await repo.groupOf('C')).toSet(), {'B', 'C'});
+    expect(await repo.mainOf('C'), 'B');
+    await repo.split('B');
+    expect(await db.select(db.artistAliases).get(), isEmpty);
+    await repo.split('nobody');
+  });
+
+  test('not-same pairs are unordered, and merging the profiles clears the pair', () async {
+    await repo.markNotSame('B', 'A');
+    expect(await repo.isNotSame('A', 'B'), isTrue);
+    expect(await repo.isNotSame('A', 'C'), isFalse);
+    await repo.markNotSame('A', 'B');
+    expect(await db.select(db.artistNotSame).get(), hasLength(1));
+    await repo.merge('A', 'B');
+    expect(await repo.isNotSame('A', 'B'), isFalse);
+  });
+}

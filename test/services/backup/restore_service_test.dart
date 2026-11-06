@@ -157,6 +157,19 @@ void main() {
       expect((await db.select(db.artistCountries).getSingle()).country, 'GB');
     });
 
+    test('artist_aliases and artist_not_same come back with the database', () async {
+      final zip = await makeBackup(['n1'], seed: (db) async {
+        await db.into(db.artistAliases).insert(ArtistAliasesCompanion.insert(aliasId: 'UC2', mainId: 'UC1'));
+        await db.into(db.artistNotSame).insert(ArtistNotSameCompanion.insert(a: 'UC1', b: 'UC3'));
+      });
+      await stageFullRestore(zip, staging);
+      expect(await apply(), isTrue);
+      final db = AppDatabase(NativeDatabase(dbFile));
+      addTearDown(db.close);
+      expect((await db.select(db.artistAliases).getSingle()).mainId, 'UC1');
+      expect((await db.select(db.artistNotSame).getSingle()).b, 'UC3');
+    });
+
     test('a v14 backup is accepted and upgraded to the current schema', () async {
       final old = AppDatabase(NativeDatabase.memory());
       await old.into(old.tracks).insert(TracksCompanion.insert(

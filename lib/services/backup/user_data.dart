@@ -387,6 +387,18 @@ class ArtistCountryData {
       );
 }
 
+/// A second profile of an artist: [aliasId] shows the page of [mainId] (`artist_aliases`).
+class ArtistAliasData {
+  const ArtistAliasData({required this.aliasId, required this.mainId});
+
+  final String aliasId, mainId;
+
+  Map<String, Object?> toJson() => {'aliasId': aliasId, 'mainId': mainId};
+
+  factory ArtistAliasData.fromJson(Map<String, dynamic> j) =>
+      ArtistAliasData(aliasId: j['aliasId'] as String? ?? '', mainId: j['mainId'] as String? ?? '');
+}
+
 class UserData {
   const UserData({
     required this.createdAt,
@@ -396,6 +408,8 @@ class UserData {
     this.radios = const [],
     this.followedArtists = const [],
     this.artistCountries = const [],
+    this.artistAliases = const [],
+    this.artistNotSame = const [],
   });
 
   final int createdAt;
@@ -412,6 +426,11 @@ class UserData {
   /// Where artists come from (absent in older backups = none).
   final List<ArtistCountryData> artistCountries;
 
+  /// Second profiles of an artist, and pairs of profiles said to be different
+  /// (`[a, b]` ids); absent in older backups = none.
+  final List<ArtistAliasData> artistAliases;
+  final List<List<String>> artistNotSame;
+
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -422,6 +441,8 @@ class UserData {
         if (followedArtists.isNotEmpty)
           'followedArtists': [for (final a in followedArtists) a.toJson()],
         if (artistCountries.isNotEmpty) 'artistCountries': [for (final a in artistCountries) a.toJson()],
+        if (artistAliases.isNotEmpty) 'artistAliases': [for (final a in artistAliases) a.toJson()],
+        if (artistNotSame.isNotEmpty) 'artistNotSame': artistNotSame,
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -455,6 +476,14 @@ class UserData {
       artistCountries: [
         for (final a in (j['artistCountries'] as List? ?? const []))
           ArtistCountryData.fromJson(a as Map<String, dynamic>),
+      ],
+      artistAliases: [
+        for (final a in (j['artistAliases'] as List? ?? const []))
+          if (a is Map<String, dynamic>) ArtistAliasData.fromJson(a),
+      ],
+      artistNotSame: [
+        for (final a in (j['artistNotSame'] as List? ?? const []))
+          if (a is List && a.length == 2 && a[0] is String && a[1] is String) [a[0] as String, a[1] as String],
       ],
     );
   }
