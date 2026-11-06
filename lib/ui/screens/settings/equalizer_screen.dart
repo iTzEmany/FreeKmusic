@@ -54,7 +54,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen> {
       body = EmptyState(icon: Icons.equalizer, message: l.eqUnavailable);
     } else {
       body = ListView(
-        padding: const EdgeInsets.symmetric(vertical: CcDims.gap8),
+        padding: const EdgeInsets.symmetric(vertical: CcDims.gap8).withDock(context),
         children: [
           SwitchListTile(
             title: Text(l.equalizer),

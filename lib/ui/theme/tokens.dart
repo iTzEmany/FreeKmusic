@@ -88,6 +88,16 @@ class CcColors extends ThemeExtension<CcColors> {
 
 extension CcContext on BuildContext {
   CcColors get cc => Theme.of(this).extension<CcColors>() ?? CcColors.notte;
+
+  /// The dock's height under the page (MediaQuery.padding.bottom, which the
+  /// shell's extendBody Scaffold sets): the end padding of every scrollable.
+  double get dockInset => MediaQuery.paddingOf(this).bottom;
+}
+
+extension DockPadding on EdgeInsets {
+  /// This padding with the dock's height added at the bottom.
+  EdgeInsets withDock(BuildContext context) =>
+      copyWith(bottom: bottom + context.dockInset);
 }
 
 /// Radii, spacing and sizes shared by every screen.

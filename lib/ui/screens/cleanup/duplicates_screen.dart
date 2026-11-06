@@ -89,7 +89,7 @@ class _Intro extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(CcDims.margin),
+      padding: const EdgeInsets.all(CcDims.margin).withDock(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

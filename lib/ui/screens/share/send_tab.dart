@@ -113,7 +113,7 @@ class _SendTabState extends ConsumerState<SendTab> {
     final hub = ref.watch(shareHubProvider);
     final all = _ids == null;
     return ListView(
-      padding: const EdgeInsets.all(CcDims.margin),
+      padding: const EdgeInsets.all(CcDims.margin).withDock(context),
       children: [
         SegmentedBlocks<bool>(
           selected: all,

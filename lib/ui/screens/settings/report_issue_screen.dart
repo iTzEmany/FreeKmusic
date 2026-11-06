@@ -72,7 +72,7 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
     return Scaffold(
       appBar: CcAppBar(title: l.reportIssue),
       body: ListView(
-        padding: const EdgeInsets.all(CcDims.gap16),
+        padding: const EdgeInsets.all(CcDims.gap16).withDock(context),
         children: [
           SegmentedBlocks<IssueKind>(
             items: [

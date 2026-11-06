@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureType;
 
 import '../screens/share/pairing_dialogs.dart';
@@ -136,9 +137,19 @@ class AppShell extends ConsumerWidget {
     // is untouched, so a page pushed there right after (openInLibrary) stays.
     ref.listen(navIndexProvider, (prev, next) {
       if (prev == null || prev == next) return;
+      // A page that guards its exit (unsaved edits, a running job) keeps the
+      // tab as it is.
+      var guarded = false;
+      keys[prev].currentState?.popUntil((r) {
+        guarded = r.popDisposition == RoutePopDisposition.doNotPop;
+        return true;
+      });
+      if (guarded) return;
       ref.read(tabNavigatorKeysProvider.notifier).reset(prev);
       if (prev == NavTab.search.index) ref.read(searchControllerProvider).clear();
-      if (prev == NavTab.library.index) ref.invalidate(trackQueryProvider);
+      if (prev == NavTab.library.index) {
+        ref.invalidate(trackQueryProvider(false));
+      }
     });
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     final l = context.l10n;
@@ -197,15 +208,29 @@ class AppShell extends ConsumerWidget {
       // dock's height as MediaQuery.padding.bottom, the one inset lists read.
       content = Scaffold(
         extendBody: true,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              Expanded(child: body),
-              const EnrichResultListener(),
-              const ImportEventListener(),
-            ],
-          ),
+        // viewPadding follows the dock too: nested Scaffolds lift their FABs
+        // by it, not by padding.
+        body: Builder(
+          builder: (c) {
+            final mq = MediaQuery.of(c);
+            return MediaQuery(
+              data: mq.copyWith(
+                viewPadding: mq.viewPadding.copyWith(
+                  bottom: math.max(mq.viewPadding.bottom, mq.padding.bottom),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    Expanded(child: body),
+                    const EnrichResultListener(),
+                    const ImportEventListener(),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,

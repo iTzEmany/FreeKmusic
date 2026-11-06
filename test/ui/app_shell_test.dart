@@ -129,6 +129,10 @@ void main() {
     await _settle(t);
     final scaffold = t.widget<Scaffold>(find.byType(Scaffold).first);
     expect(scaffold.extendBody, isTrue);
+    final dock = t.widget<Material>(find
+        .descendant(of: find.byType(ShellDock), matching: find.byType(Material))
+        .first);
+    expect(dock.color!.a, 1.0);
     expect(t.getBottomLeft(find.byType(HomeScreen)).dy, 800);
     expect(
         find.descendant(

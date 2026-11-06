@@ -115,7 +115,7 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
                 ),
                 ...widget.slivers,
                 SliverToBoxAdapter(
-                  child: SizedBox(height: 24 + MediaQuery.paddingOf(context).bottom),
+                  child: SizedBox(height: 24 + context.dockInset),
                 ),
               ],
             ),

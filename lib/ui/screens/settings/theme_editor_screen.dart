@@ -141,7 +141,7 @@ class _ThemeEditorScreenState extends ConsumerState<ThemeEditorScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap32),
+              padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap32).withDock(context),
               children: [
                 TextField(
                   controller: _name,

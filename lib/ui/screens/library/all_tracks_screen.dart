@@ -122,7 +122,8 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   static final _selectionKey = SelectionKey.all.key;
   final _controller = TextEditingController();
   final _scroll = ScrollController();
-  late final TrackQueryNotifier _query;
+  // Read at use time: the shell resets this provider when Library is left.
+  TrackQueryNotifier get _query => ref.read(trackQueryProvider(false).notifier);
   // Local: another AllTracksScreen open at the same time keeps its own text.
   String _text = '';
   // A new query is a new provider: keep the old list on screen until it loads.
@@ -137,11 +138,11 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   @override
   void initState() {
     super.initState();
-    // Captured now: `ref` must not be used from dispose().
-    _query = ref.read(trackQueryProvider(false).notifier);
     final sort = widget.initialSort;
     if (sort != null) {
-      Future<void>.microtask(() => _query.update((q) => q.copyWith(sort: sort)));
+      Future<void>.microtask(() {
+        if (mounted) _query.update((q) => q.copyWith(sort: sort));
+      });
     }
   }
 

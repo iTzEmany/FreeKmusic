@@ -69,7 +69,7 @@ class _JamRemoteSettingsState extends ConsumerState<JamRemoteSettings> {
         actions: [TextButton(onPressed: notifier.restore, child: Text(l.jamBrokerRestore))],
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: CcDims.gap24),
+        padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
         children: [
           SettingsGroup(children: [
             ListTile(dense: true, title: Text(l.jamRemoteHint)),

@@ -39,7 +39,7 @@ class JamTrackInfoScreen extends ConsumerWidget {
     return Scaffold(
       appBar: CcAppBar(title: l.trackInfo),
       body: ListView(
-        padding: const EdgeInsets.all(CcDims.margin),
+        padding: const EdgeInsets.all(CcDims.margin).withDock(context),
         children: [
           Center(
             child: cover == null

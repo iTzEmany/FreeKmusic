@@ -1,4 +1,8 @@
+import 'package:codecore/providers/library_providers.dart';
+import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
 import 'package:codecore/providers/nav_providers.dart';
+import 'package:codecore/ui/theme/custom_theme.dart';
+import 'package:codecore/ui/screens/settings/theme_editor_screen.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
@@ -96,6 +100,42 @@ void main() {
     await t.tap(_bar('Libreria'));
     await _settle(t);
     expect(find.byType(AllTracksScreen), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('a dirty theme editor survives a tab switch', (t) async {
+    final h = await _open(t, tracks: 4);
+    final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
+    c.read(tabNavigatorKeysProvider)[NavTab.home.index].currentState!.push(
+        MaterialPageRoute<void>(
+            builder: (_) => const ThemeEditorScreen(
+                initial: CustomTheme(id: 'sea', name: 'Mare'))));
+    await _settle(t);
+    await t.enterText(find.byType(TextField).first, 'Mare edit');
+    await t.pump();
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    await t.tap(_bar('Home'));
+    await _settle(t);
+    expect(find.byType(ThemeEditorScreen), findsOneWidget);
+    expect(find.text('Mare edit'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('leaving Library keeps the Favorites sort, resets All tracks',
+      (t) async {
+    final h = await _open(t, tracks: 4);
+    final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
+    for (final fav in [true, false]) {
+      c.read(trackQueryProvider(fav).notifier)
+          .update((q) => q.copyWith(sort: SortOption.title));
+    }
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    await t.tap(_bar('Home'));
+    await _settle(t);
+    expect(c.read(trackQueryProvider(true)).sort, SortOption.title);
+    expect(c.read(trackQueryProvider(false)).sort, SortOption.defaultOrder);
     await h.dispose(t);
   });
 

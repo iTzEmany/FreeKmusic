@@ -31,7 +31,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final cc = context.cc;
     final text = Theme.of(context).textTheme;
     return ListView(
-      padding: const EdgeInsets.all(CcDims.margin),
+      padding: const EdgeInsets.all(CcDims.margin).withDock(context),
       children: [
         Material(
           color: cc.surface1,

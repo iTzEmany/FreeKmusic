@@ -833,7 +833,7 @@ class _LibraryList extends StatelessWidget {
             );
           },
         ),
-        SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
+        SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
       ],
     );
   }
@@ -904,7 +904,7 @@ class _LibraryGrid extends StatelessWidget {
             itemBuilder: (_, i) => tile(entries[i]),
           ),
         ),
-        SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
+        SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
       ],
     );
   }

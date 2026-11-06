@@ -113,7 +113,7 @@ class SettingsPageView extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
         child: ListView(
-          padding: const EdgeInsets.only(bottom: CcDims.gap24),
+          padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
           children: [
             for (final g in groups)
               single ? SettingsGroup(children: g.children) : g,
