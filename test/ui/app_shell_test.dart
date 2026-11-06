@@ -2,6 +2,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'package:codecore/providers/memory_providers.dart';
 import 'package:codecore/providers/nav_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/ui_providers.dart';
 import 'package:codecore/providers/user_activity_provider.dart';
 import 'package:codecore/services/memory/app_data.dart';
@@ -133,6 +134,39 @@ void main() {
         find.descendant(
             of: find.byType(ShellDock), matching: find.byType(BackdropFilter)),
         findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('«Cerca questo brano» from another tab keeps its prefill (89.4)',
+      (t) async {
+    _phone(t);
+    final h = await Harness.create(t, tracks: 2);
+    await h.pump(t, const AppShell());
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    final c = _container(t);
+    // What searchOnAir does: the text first, then the Search tab.
+    c.read(searchPrefillProvider.notifier).set('Song 1');
+    c.read(searchBarProvider.notifier).open();
+    await _settle(t);
+    expect(c.read(navIndexProvider), NavTab.search.index);
+    expect(c.read(searchControllerProvider).text, 'Song 1');
+    await h.dispose(t);
+  });
+
+  testWidgets('the dock blurs only when the setting is on', (t) async {
+    _phone(t);
+    final h = await Harness.create(t, tracks: 2);
+    await h.pump(t, const AppShell());
+    await _settle(t);
+    final blur = find.descendant(
+        of: find.byType(ShellDock), matching: find.byType(BackdropFilter));
+    expect(blur, findsNothing);
+    _container(t)
+        .read(settingsProvider.notifier)
+        .update((s) => s.copyWith(blurredChrome: true));
+    await _settle(t);
+    expect(blur, findsOneWidget);
     await h.dispose(t);
   });
 
@@ -575,7 +609,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('phone: leaving a tab and coming back restores its open page',
+  testWidgets('phone: leaving a tab closes its page; the active tab pops to its root',
       (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 4);
@@ -589,6 +623,9 @@ void main() {
     await _settle(tester);
     await tester.tap(_bar('Libreria'));
     await _settle(tester);
+    expect(find.byType(AllTracksScreen), findsNothing);
+    await tester.tap(find.text('Tutti i brani'));
+    await _settle(tester);
     expect(find.byType(AllTracksScreen), findsOneWidget);
     // Tapping the already-selected tab goes back to its root.
     await tester.tap(_bar('Libreria'));
@@ -598,7 +635,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('phone: leaving a tab and coming back keeps its scroll offset',
+  testWidgets('phone: leaving a tab and coming back resets it (89.4)',
       (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 40);
@@ -622,11 +659,11 @@ void main() {
     await _settle(tester);
     await tester.tap(_bar('Libreria'));
     await _settle(tester);
-    expect(offset(), before);
+    expect(find.byType(AllTracksScreen), findsNothing);
     await h.dispose(tester);
   });
 
-  testWidgets('phone: a root page keeps its scroll offset across tab switches',
+  testWidgets('phone: a root page is back at the top after other tabs',
       (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 40);
@@ -662,11 +699,11 @@ void main() {
     await _settle(tester);
     await tester.tap(_bar('Libreria'));
     await _settle(tester);
-    expect(offset(), before);
+    expect(offset(), 0);
     await h.dispose(tester);
   });
 
-  testWidgets('phone: the Search tab keeps its query across tab switches',
+  testWidgets('phone: the Search tab is empty again after another tab',
       (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 4);
@@ -681,11 +718,11 @@ void main() {
     await _settle(tester);
     await tester.tap(_bar('Cerca'));
     await _settle(tester);
-    expect(tester.widget<TextField>(_dockField()).controller!.text, 'Song 2');
+    expect(tester.widget<TextField>(_dockField()).controller!.text, isEmpty);
     await h.dispose(tester);
   });
 
-  testWidgets('phone: the query survives closing the keyboard by hand and switching tab',
+  testWidgets('phone: the query is cleared by switching tab after closing the keyboard',
       (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 4);
@@ -704,7 +741,7 @@ void main() {
     await _settle(tester);
     await tester.tap(_bar('Cerca'));
     await _settle(tester);
-    expect(tester.widget<TextField>(_dockField()).controller!.text, 'Song 2');
+    expect(tester.widget<TextField>(_dockField()).controller!.text, isEmpty);
     await h.dispose(tester);
   });
 
@@ -761,10 +798,10 @@ void main() {
     final c = _container(t);
     expect(c.read(navIndexProvider), NavTab.home.index);
     expect(c.read(searchBarProvider), isFalse);
-    // Cerca again reopens the field with the kept text.
+    // Leaving Search cleared it (89.4).
     await t.tap(_bar('Cerca'));
     await _settle(t);
-    expect(c.read(searchControllerProvider).text, 'Song 2');
+    expect(c.read(searchControllerProvider).text, isEmpty);
     await h.dispose(t);
   });
 
@@ -829,7 +866,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('sidebar: leaving a tab keeps the page open in it',
+  testWidgets('sidebar: leaving a tab closes the page open in it',
       (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1;
@@ -845,13 +882,13 @@ void main() {
     await tester.tap(find.descendant(
         of: find.byType(DesktopSidebar), matching: find.text('Cerca')));
     await _settle(tester);
-    // The Library navigator still holds the page: leaving a tab never pops it.
+    // Leaving a tab resets it (89.4): the Library navigator is back at its root.
     final container =
         ProviderScope.containerOf(tester.element(find.byType(AppShell)));
     final nav = container
         .read(tabNavigatorKeysProvider)[NavTab.library.index]
         .currentState!;
-    expect(nav.canPop(), isTrue);
+    expect(nav.canPop(), isFalse);
     await h.dispose(tester);
   });
 

@@ -1,4 +1,6 @@
+import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/memory/memory_screen.dart';
@@ -10,11 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 
-// Characterization of phase 87: today a dock tab keeps its state when another
-// tab is shown. These flip in phase 89.4 (D-392). Scroll and search retention
-// are pinned in app_shell_test.dart ('leaving a tab and coming back keeps its
-// scroll offset', 'the Search tab keeps its query across tab switches') and
-// also flip in 89.4.
+// Phase 89.4 (D-392): leaving a dock tab sends it back to its first state.
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)));
@@ -46,7 +44,7 @@ Future<void> _roundTrip(WidgetTester tester, String tab) async {
 }
 
 void main() {
-  testWidgets('a page pushed inside a tab is still there after another tab',
+  testWidgets('a page pushed inside a tab is gone after another tab',
       (t) async {
     final h = await _open(t, tracks: 4);
     await t.tap(_bar('Libreria'));
@@ -55,11 +53,11 @@ void main() {
     await _settle(t);
     expect(find.byType(AllTracksScreen), findsOneWidget);
     await _roundTrip(t, 'Libreria');
-    expect(find.byType(AllTracksScreen), findsOneWidget);
+    expect(find.byType(AllTracksScreen), findsNothing);
     await h.dispose(t);
   });
 
-  testWidgets('the selected Library block is kept after another tab', (t) async {
+  testWidgets('the selected Library block is back to Tutti after another tab', (t) async {
     final h = await _open(t, tracks: 4);
     await t.tap(_bar('Libreria'));
     await _settle(t);
@@ -67,7 +65,37 @@ void main() {
     await _settle(t);
     expect(find.text('2 album'), findsOneWidget);
     await _roundTrip(t, 'Libreria');
-    expect(find.text('2 album'), findsOneWidget);
+    expect(find.text('2 album'), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('only the tab you leave is reset', (t) async {
+    final h = await _open(t, tracks: 4);
+    final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
+    NavigatorState nav(NavTab tab) =>
+        c.read(tabNavigatorKeysProvider)[tab.index].currentState!;
+    nav(NavTab.memory).push(
+        MaterialPageRoute<void>(builder: (_) => const Text('Marker')));
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    await t.tap(find.text('Tutti i brani'));
+    await _settle(t);
+    await t.tap(_bar('Home')); // leaves Library only
+    await _settle(t);
+    expect(nav(NavTab.library).canPop(), isFalse);
+    expect(nav(NavTab.memory).canPop(), isTrue);
+    await h.dispose(t);
+  });
+
+  testWidgets('selecting the active tab still pops to its root', (t) async {
+    final h = await _open(t, tracks: 4);
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    await t.tap(find.text('Tutti i brani'));
+    await _settle(t);
+    await t.tap(_bar('Libreria'));
+    await _settle(t);
+    expect(find.byType(AllTracksScreen), findsNothing);
     await h.dispose(t);
   });
 

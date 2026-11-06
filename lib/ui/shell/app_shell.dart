@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart' show kEnableYoutube;
 import '../../core/platform.dart';
+import '../../providers/library_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/pending_playlist_adds.dart';
@@ -131,6 +132,14 @@ class AppShell extends ConsumerWidget {
     _listen(context, ref);
     final index = ref.watch(navIndexProvider);
     final keys = ref.watch(tabNavigatorKeysProvider);
+    // Leaving a tab sends it back to its first state; the tab being entered
+    // is untouched, so a page pushed there right after (openInLibrary) stays.
+    ref.listen(navIndexProvider, (prev, next) {
+      if (prev == null || prev == next) return;
+      ref.read(tabNavigatorKeysProvider.notifier).reset(prev);
+      if (prev == NavTab.search.index) ref.read(searchControllerProvider).clear();
+      if (prev == NavTab.library.index) ref.invalidate(trackQueryProvider);
+    });
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     final l = context.l10n;
     void select(int i) {

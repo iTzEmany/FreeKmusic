@@ -15,13 +15,27 @@ final navIndexProvider = NotifierProvider<NavIndexNotifier, int>(
 );
 
 /// One navigator per tab, so pages opened in a tab keep the mini-player and
-/// the bottom bar on screen.
-final tabNavigatorKeysProvider = Provider<List<GlobalKey<NavigatorState>>>(
-  (ref) => [
-    for (final t in NavTab.values)
-      GlobalKey<NavigatorState>(debugLabel: 'tab-${t.name}'),
-  ],
-);
+/// the bottom bar on screen. A new key for one tab rebuilds it from scratch
+/// (D-392): leaving a tab bumps its key, so coming back finds it as on first
+/// open. The other tabs keep their key and are not rebuilt.
+class TabNavigatorKeys extends Notifier<List<GlobalKey<NavigatorState>>> {
+  @override
+  List<GlobalKey<NavigatorState>> build() => [
+    for (final t in NavTab.values) _key(t.index),
+  ];
+
+  static GlobalKey<NavigatorState> _key(int tab) =>
+      GlobalKey<NavigatorState>(debugLabel: 'tab-${NavTab.values[tab].name}');
+
+  void reset(int tab) => state = [
+    for (final (i, k) in state.indexed) i == tab ? _key(i) : k,
+  ];
+}
+
+final tabNavigatorKeysProvider =
+    NotifierProvider<TabNavigatorKeys, List<GlobalKey<NavigatorState>>>(
+      TabNavigatorKeys.new,
+    );
 
 /// Right-hand panel of the desktop layout.
 enum SidePanel { none, queue, lyrics, info }
