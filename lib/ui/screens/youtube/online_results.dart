@@ -97,7 +97,18 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       });
       return;
     }
-    final first = _request == null;
+    // The same text sent again while its search is still coming (a double
+    // Enter) is that search, not a second one.
+    final current = _request;
+    final running = current == null ? null : ref.read(smartSearchProvider(current));
+    if (!refresh &&
+        current != null &&
+        current.query == q &&
+        running != null &&
+        (running.isLoading || (running.value?.loading ?? false))) {
+      return;
+    }
+    final first = current == null;
     setState(() {
       _slots.clear();
       _request = (query: q, refresh: refresh, serial: ++_serial);
@@ -321,7 +332,14 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       default:
     }
     final albums = AlbumsRow(albums: s.albums, onOpen: _openAlbum);
-    final artists = ArtistsRow(artists: s.artists, onOpen: _openArtist);
+    final artists = ArtistsRow(
+      // The main card already shows its artist.
+      artists: [
+        for (final a in s.artists)
+          if (card is! TopArtist || a.id != card.artist.id) a,
+      ],
+      onOpen: _openArtist,
+    );
     children.addAll(card is TopAlbum ? [albums, artists] : [artists, albums]);
     if (showLibrary) children.add(LibraryTracksSection(query: s.query, owned: owned));
     var rest = best;

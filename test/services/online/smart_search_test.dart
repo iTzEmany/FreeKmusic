@@ -75,6 +75,9 @@ class _FakeCatalog implements YtmCatalog {
   var artistRows = <YtmArtistRef>[];
   var albumRows = <YtmAlbumHit>[];
   Object? rowsError;
+
+  /// Fails the albums request only.
+  Object? albumsError;
   Completer<void>? rowsGate;
   var rowCalls = 0;
 
@@ -90,6 +93,7 @@ class _FakeCatalog implements YtmCatalog {
   Future<List<YtmAlbumHit>> searchAlbums(String query, String hl, {CancelToken? cancel}) async {
     rowCalls++;
     if (rowsError != null) throw rowsError!;
+    if (albumsError != null) throw albumsError!;
     return albumRows;
   }
 
@@ -327,6 +331,71 @@ void main() {
       expect(youtube.songs, hasLength(1), reason: 'the page came from the copy');
       expect(catalog.cards, hasLength(1));
       expect(again.states.single.best, isNotEmpty);
+      await again.sub.cancel();
+    });
+
+    test('a page saved with the budget used up gets its rows when the budget is back', () async {
+      engine = withBudget(2);
+      catalog.artistRows = artists(3);
+      catalog.albumRows = albums(3);
+      expect(engine.rowsLimiter.tryAcquire(2), isTrue, reason: 'budget used up');
+      final s = await page();
+      expect(s.artists, isEmpty);
+      expect(catalog.rowCalls, 0);
+
+      clock = clock.add(const Duration(minutes: 1));
+      final again = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(youtube.songs, hasLength(1), reason: 'the page came from the copy');
+      expect(catalog.cards, hasLength(1));
+      expect(again.states.first.best, isNotEmpty);
+      expect(again.states.first.artists, isEmpty);
+      expect(catalog.rowCalls, 2, reason: 'the budget is back: the rows are asked again');
+      expect([again.states.last.artists.length, again.states.last.albums.length], [3, 3]);
+      expect(again.states.last.best.map((r) => r.primary.id), again.states.first.best.map((r) => r.primary.id));
+      await again.sub.cancel();
+
+      final third = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(catalog.rowCalls, 2, reason: 'the copy has the rows now');
+      expect(third.states.single.artists, hasLength(3));
+      await third.sub.cancel();
+    });
+
+    test('a copy without rows does not ask for them while YouTube Music is paused', () async {
+      engine = withBudget(2);
+      engine.rowsLimiter.tryAcquire(2);
+      await page();
+      engine.cooldown.trip(MediaKind.ytmSong);
+      clock = clock.add(const Duration(minutes: 1));
+      final again = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(catalog.rowCalls, 0);
+      expect(again.states.single.best, isNotEmpty);
+      await again.sub.cancel();
+    });
+
+    test('one failed row: the copy has no half rows and is not taken for whole', () async {
+      catalog.artistRows = artists(3);
+      catalog.albumRows = albums(3);
+      catalog.albumsError = const YtException(YtErrorKind.network);
+      final run = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      await answerCard();
+      await answerSongs();
+      await answerVideos();
+      expect(run.states.last.artists, hasLength(3), reason: 'on screen the row that came is kept');
+      await run.sub.cancel();
+      expect(catalog.rowCalls, 2);
+
+      catalog.albumsError = null;
+      final again = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(again.states.first.artists, isEmpty, reason: 'no half rows in the copy');
+      expect(again.states.first.albums, isEmpty);
+      expect(youtube.songs, hasLength(1), reason: 'the page came from the copy');
+      expect(catalog.rowCalls, 4, reason: 'the copy is not whole: both rows are asked again');
+      expect([again.states.last.artists.length, again.states.last.albums.length], [3, 3]);
       await again.sub.cancel();
     });
 

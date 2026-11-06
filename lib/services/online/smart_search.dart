@@ -127,10 +127,14 @@ const _cacheSize = 30;
 const _maxBest = 15;
 
 class _Cached {
-  _Cached(this.state, this.storedAt);
+  _Cached(this.state, this.storedAt, {required this.rowsMissing});
 
   final SmartSearchState state;
   final DateTime storedAt;
+
+  /// The rows were asked for but not all came (budget used up, or a failure):
+  /// [state] holds none, and the next read of the copy asks for them again.
+  final bool rowsMissing;
 }
 
 /// The online search: YouTube Music songs, YouTube videos and the top card
@@ -189,9 +193,10 @@ class SmartSearch {
     return hit;
   }
 
-  void _store(String key, SmartSearchState state) {
+  void _store(String key, SmartSearchState state,
+      {bool rowsMissing = false, DateTime? storedAt}) {
     _cache.remove(key);
-    _cache[key] = _Cached(state, _now());
+    _cache[key] = _Cached(state, storedAt ?? _now(), rowsMissing: rowsMissing);
     while (_cache.length > _cacheSize) {
       _cache.remove(_cache.keys.first);
     }
@@ -266,6 +271,7 @@ class _Run {
       final hit = engine._fromCache(key);
       if (hit != null) {
         _emit(hit.state);
+        if (hit.rowsMissing) await _lateRows(key, hit);
         return;
       }
     }
@@ -355,8 +361,25 @@ class _Run {
     if (!_finish(key)) return;
     await rowsDone.future;
     // The page is already saved; the copy with its rows replaces it unless a
-    // row failed (then the page alone stays, until it is refreshed).
+    // row failed (then the page alone stays, and the next read asks again).
     if (!_cancelled && !_rowsFailed) _store(key);
+  }
+
+  /// A saved page that has no rows: asked again when the budget allows, the
+  /// main requests are not repeated.
+  Future<void> _lateRows(String key, _Cached hit) async {
+    if (engine.cooldown.isPaused(MediaKind.ytmSong) || !engine.rowsLimiter.tryAcquire(2)) {
+      return;
+    }
+    _rowsOpen = 2;
+    await Future.wait([
+      _row(() => engine.catalog.searchArtists(query, hl, cancel: _token), (v) => _artists = v),
+      _row(() => engine.catalog.searchAlbums(query, hl, cancel: _token), (v) => _albums = v),
+    ]);
+    if (_cancelled) return;
+    final state = hit.state.copyWith(artists: _artists, albums: _albums);
+    _emit(state);
+    if (!_rowsFailed) engine._store(key, state, storedAt: hit.storedAt);
   }
 
   bool get _everythingIn =>
@@ -591,8 +614,15 @@ class _Run {
   }
 
   /// A failed row does not stop the page being saved; the rows only join the
-  /// copy when none failed.
+  /// copy when none failed (never half of them).
   void _store(String key) {
-    if (_notices.isEmpty) engine._store(key, _shown!);
+    if (_notices.isNotEmpty) return;
+    final rowsIn = !_cardAsked || (!_rowsFailed && _rowsOpen == 0);
+    final shown = _shown!;
+    engine._store(
+      key,
+      rowsIn ? shown : shown.copyWith(artists: const [], albums: const []),
+      rowsMissing: !rowsIn,
+    );
   }
 }

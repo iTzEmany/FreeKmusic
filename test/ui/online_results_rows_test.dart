@@ -166,6 +166,15 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('the card artist is not repeated in the Artisti row', (tester) async {
+      await open(tester);
+      await emit(tester, card: const TopArtist(_marco), artists: [_marco, ..._artists(2)]);
+      expect(find.byKey(const ValueKey('artist-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('artist-hit-UCm')), findsNothing);
+      expect(find.byKey(const ValueKey('artist-hit-UCa0')), findsOneWidget);
+      await h.dispose(tester);
+    });
+
     testWidgets('empty lists leave no row and no error', (tester) async {
       await open(tester);
       await emit(tester, card: const TopArtist(_marco));
