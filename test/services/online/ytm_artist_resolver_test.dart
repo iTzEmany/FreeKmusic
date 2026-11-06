@@ -25,4 +25,11 @@ void main() {
   test('a library name with «feat.» finds the main artist', () {
     expect(pickYtmArtist('Björk feat. Thom Yorke', [_a('1', 'Bjork')]), isA<ExactArtist>());
   });
+
+  test('two same-name profiles that are one group open the main one', () {
+    final found = [_a('1', 'Queen'), _a('2', 'Queen')];
+    final pick = pickYtmArtist('Queen', found, aliases: {'1': '2'});
+    expect((pick as ExactArtist).artist.id, '2');
+    expect(pickYtmArtist('Queen', found, aliases: {'1': '9'}), isA<ChooseArtist>());
+  });
 }

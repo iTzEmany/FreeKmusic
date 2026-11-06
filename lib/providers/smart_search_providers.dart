@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart' show Track;
 import '../services/online/merge_results.dart';
+import '../services/online/request_budget.dart';
 import '../services/online/query_match.dart' show libraryArtistKey;
 import '../services/online/smart_search.dart';
 import '../services/online/source_cooldown.dart';
@@ -12,6 +13,10 @@ import 'ytm_catalog_providers.dart';
 
 /// The pauses of the sources that said «too many requests», kept for the session.
 final sourceCooldownProvider = Provider<SourceCooldown>((ref) => SourceCooldown());
+
+/// The 20-per-minute budget of the artist/album rows, shared with the merge suggestions (D-425).
+final searchRowsLimiterProvider =
+    Provider<WindowLimiter>((ref) => WindowLimiter(perMinute: kSearchRowsPerMinute));
 
 /// Keys of the artists in the library, rebuilt only when the library's artists
 /// change; the online search favours their results for a phrase with no artist.
@@ -26,6 +31,7 @@ final smartSearchEngineProvider = Provider<SmartSearch>((ref) => SmartSearch(
       youtube: ref.watch(youtubeServiceProvider),
       catalog: ref.watch(ytmCatalogProvider),
       cooldown: ref.watch(sourceCooldownProvider),
+      rowsLimiter: ref.watch(searchRowsLimiterProvider),
       libraryArtists: () => ref.read(libraryArtistKeysProvider),
     ));
 
