@@ -110,16 +110,22 @@ class FilterCard {
 
   bool get isDuration => field == RuleField.duration;
 
+  /// Largest value a field accepts (in the rule's unit): beyond it the card stays incomplete.
+  static const maxNumber = 1e9;
+
   double? _num(String s) {
     final t = s.trim();
+    double? v;
     if (isDuration && t.contains(':')) {
       final p = t.split(':');
       final m = p.length == 2 ? int.tryParse(p[0]) : null;
       final sec = p.length == 2 ? int.tryParse(p[1]) : null;
-      return m == null || sec == null || sec < 0 || sec > 59 ? null : (m * 60 + sec).toDouble();
+      v = m == null || sec == null || m < 0 || sec < 0 || sec > 59 ? null : (m * 60 + sec).toDouble();
+    } else {
+      v = double.tryParse(t.replaceAll(',', '.'));
+      if (v != null && isDuration) v *= 60;
     }
-    final v = double.tryParse(t.replaceAll(',', '.'));
-    return v == null ? null : (isDuration ? v * 60 : v);
+    return v != null && v.isFinite && v >= 0 && v <= maxNumber ? v : null;
   }
 
   /// The filter as a rule, or null while it is incomplete.
@@ -127,15 +133,18 @@ class FilterCard {
     final RuleExpr? e = switch (kind) {
       FilterKind.flag => RuleFlag(flag!),
       FilterKind.list => values.isEmpty ? null : RuleIn(field!, List.of(values)),
-      FilterKind.text => text.trim().isEmpty ? null : RuleContains(field!, text.trim()),
+      FilterKind.text => _cleanText.isEmpty ? null : RuleContains(field!, text.trim()),
       FilterKind.age => () {
           final n = int.tryParse(from.trim());
-          return n == null || n <= 0 ? null : RuleNumber(field!, op, n.toDouble());
+          return n == null || n <= 0 || n > maxNumber ? null : RuleNumber(field!, op, n.toDouble());
         }(),
       FilterKind.number => _number(),
     };
     return e == null ? null : (exclude ? RuleNot(e) : e);
   }
+
+  /// The text without the quotes the parser would strip; empty means no filter.
+  String get _cleanText => text.trim().replaceAll('"', '').trim();
 
   RuleExpr? _number() {
     final f = _num(from), t = _num(to);

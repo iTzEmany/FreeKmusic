@@ -102,27 +102,31 @@ Future<FilterSpec?> showAddFilterSheet(BuildContext context) {
   );
 }
 
-/// Picks the values of a list field; returns the new selection on «Fatto».
-Future<List<String>?> showValuePicker(BuildContext context, RuleField field, List<String> current) =>
-    showCcSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      barrierLabel: context.l10n.close,
-      builder: (sheet) => _ValueSheet(field: field, initial: current),
-    );
+/// Picks the values of a list field. The selection counts however the sheet
+/// closes («Fatto», swipe, tap outside): the sheet edits [sel] in place.
+Future<List<String>> showValuePicker(BuildContext context, RuleField field, List<String> current) async {
+  final sel = List.of(current);
+  await showCcSheet<List<String>>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    barrierLabel: context.l10n.close,
+    builder: (sheet) => _ValueSheet(field: field, selection: sel),
+  );
+  return sel;
+}
 
 class _ValueSheet extends ConsumerStatefulWidget {
-  const _ValueSheet({required this.field, required this.initial});
+  const _ValueSheet({required this.field, required this.selection});
   final RuleField field;
-  final List<String> initial;
+  final List<String> selection;
 
   @override
   ConsumerState<_ValueSheet> createState() => _ValueSheetState();
 }
 
 class _ValueSheetState extends ConsumerState<_ValueSheet> {
-  late final List<String> _sel = List.of(widget.initial);
+  late final List<String> _sel = widget.selection;
   final _search = TextEditingController();
   String _q = '';
 
@@ -163,7 +167,8 @@ class _ValueSheetState extends ConsumerState<_ValueSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.8,
+        // Tall, so an artist list shows many rows; shorter while the keyboard is up.
+        height: (MediaQuery.sizeOf(context).height * 0.9 - MediaQuery.viewInsetsOf(context).bottom).clamp(240.0, double.infinity),
         child: SafeArea(
           child: Column(
             children: [
@@ -288,9 +293,9 @@ class FilterCardView extends StatelessWidget {
               padding: const EdgeInsets.only(right: CcDims.gap12),
               child: switch (card.kind) {
                 FilterKind.list => _values(context),
-                FilterKind.text => _textField(card.exact ? l.smartIs : l.smartContains, card.text, (v) => card.text = v),
-                FilterKind.number => _numbers(context),
-                FilterKind.age => _age(context),
+                FilterKind.text => _textField(title, card.exact ? l.smartIs : l.smartContains, card.text, (v) => card.text = v),
+                FilterKind.number => _numbers(context, title),
+                FilterKind.age => _age(context, title),
                 FilterKind.flag => const SizedBox.shrink(),
               },
             ),
@@ -305,8 +310,10 @@ class FilterCardView extends StatelessWidget {
     );
   }
 
-  Widget _textField(String label, String initial, ValueChanged<String> set, {String? suffix, bool number = false, bool digitsOnly = false, bool sync = false}) =>
-      TextFormField(
+  Widget _textField(String title, String label, String initial, ValueChanged<String> set, {String? suffix, bool number = false, bool digitsOnly = false, bool sync = false}) =>
+      Semantics(
+        label: '$title: $label',
+        child: TextFormField(
         key: ObjectKey(card),
         initialValue: initial,
         keyboardType: digitsOnly
@@ -315,14 +322,18 @@ class FilterCardView extends StatelessWidget {
                 // Durations also take m:ss, which the decimal pad cannot type.
                 ? (card.isDuration ? TextInputType.text : const TextInputType.numberWithOptions(decimal: true))
                 : null,
-        inputFormatters: digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
+        inputFormatters: digitsOnly
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : number
+                ? [FilteringTextInputFormatter.allow(RegExp(card.isDuration ? r'[0-9:.,]' : r'[0-9.,]'))]
+                : null,
         decoration: InputDecoration(labelText: label, suffixText: suffix, constraints: const BoxConstraints(minHeight: 48)),
         onChanged: (v) {
           set(v);
           if (sync) card.syncOp();
           onChanged();
         },
-      );
+      ));
 
   Widget _values(BuildContext context) {
     final l = context.l10n;
@@ -369,18 +380,15 @@ class FilterCardView extends StatelessWidget {
           icon: const Icon(Icons.checklist_rounded),
           label: Text(l.smartPickValues),
           onPressed: () async {
-            final picked = await showValuePicker(context, field, card.values);
-            if (picked != null) {
-              card.values = picked;
-              onChanged();
-            }
+            card.values = await showValuePicker(context, field, card.values);
+            onChanged();
           },
         ),
       ],
     );
   }
 
-  Widget _numbers(BuildContext context) {
+  Widget _numbers(BuildContext context, String title) {
     final l = context.l10n;
     final suffix = card.isDuration ? l.smartMinutes : null;
     final fromLabel = switch (card.op) {
@@ -391,14 +399,14 @@ class FilterCardView extends StatelessWidget {
     final toLabel = card.op == NumOp.lt ? l.smartLessThan : l.smartTo;
     return Row(
       children: [
-        Expanded(child: _textField(fromLabel, card.from, (v) => card.from = v, suffix: suffix, number: true, sync: true)),
+        Expanded(child: _textField(title, fromLabel, card.from, (v) => card.from = v, suffix: suffix, number: true, sync: true)),
         const SizedBox(width: CcDims.gap12),
-        Expanded(child: _textField(toLabel, card.to, (v) => card.to = v, suffix: suffix, number: true, sync: true)),
+        Expanded(child: _textField(title, toLabel, card.to, (v) => card.to = v, suffix: suffix, number: true, sync: true)),
       ],
     );
   }
 
-  Widget _age(BuildContext context) {
+  Widget _age(BuildContext context, String title) {
     final l = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,7 +423,7 @@ class FilterCardView extends StatelessWidget {
           },
         ),
         const SizedBox(height: CcDims.gap8),
-        _textField(l.smartDays, card.from, (v) => card.from = v, number: true, digitsOnly: true),
+        _textField(title, l.smartDays, card.from, (v) => card.from = v, number: true, digitsOnly: true),
       ],
     );
   }

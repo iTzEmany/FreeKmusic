@@ -5,6 +5,7 @@ import 'package:codecore/data/repositories/smart_playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/providers/filter_counts_providers.dart';
+import 'package:codecore/services/library/rules/rule_ast.dart';
 import 'package:codecore/services/library/rules/rule_parser.dart';
 import 'package:codecore/ui/screens/smart/smart_filter_model.dart';
 import 'package:codecore/ui/screens/smart/smart_playlist_editor.dart';
@@ -404,6 +405,99 @@ void main() {
       await _settle(tester);
       expect((await tester.runAsync(() => repo.get(id!)))!.rules, 'durata:200s..');
       await h.dispose(tester);
+    });
+
+    testWidgets('numbers outside the domain leave the card incomplete and never throw', (tester) async {
+      for (final v in ['NaN', '-5', 'Infinity', '1e400', '9' * 400]) {
+        final y = FilterCard(FilterKind.number, field: RuleField.year, from: v);
+        expect(y.toExpr(), isNull, reason: v);
+        final d = FilterCard(FilterKind.number, field: RuleField.duration, to: v);
+        expect(d.toExpr(), isNull, reason: v);
+        final a = FilterCard(FilterKind.age, field: RuleField.added, from: v);
+        expect(a.toExpr(), isNull, reason: v);
+        expect(FilterModel(cards: [y, d, a]).rules, '');
+      }
+      FilterCard dur(String v) => FilterCard(FilterKind.number, field: RuleField.duration, from: v);
+      expect(dur('1:75').toExpr(), isNull, reason: 'seconds stop at 59');
+      expect(dur('1:59').toExpr(), isNotNull);
+    });
+
+    testWidgets('a text made only of quotes is not a filter', (tester) async {
+      for (final v in ['"', '""', ' " " ']) {
+        expect(FilterCard(FilterKind.text, field: RuleField.folder, text: v).toExpr(), isNull, reason: v);
+      }
+      expect(FilterCard(FilterKind.text, field: RuleField.folder, text: 'a').toExpr(), isNotNull);
+    });
+
+    testWidgets('number fields take only digits and separators (m:ss for durations)', (tester) async {
+      await openEditor(tester);
+      await addFilter(tester, 'Durata');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Da'), 'ab1:3x0-');
+      await _settle(tester);
+      expect(find.text('1:30'), findsOneWidget);
+      await addFilter(tester, 'Anno');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Da').last, '19e9-0');
+      await _settle(tester);
+      expect(find.text('1990'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a value picked then closed by swiping down still counts', (tester) async {
+      await openEditor(tester);
+      await addFilter(tester, 'Artista');
+      await tester.tap(find.text('Scegli i valori'));
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('value:Artist')));
+      await tester.tapAt(const Offset(200, 20)); // the barrier above the sheet
+      await _settle(tester);
+      expect(find.text('Artist'), findsOneWidget, reason: 'the value became a chip');
+      expect(find.text('Incompleto: completalo o rimuovilo per salvare.'), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('the bottom bar goes away while the keyboard is up', (tester) async {
+      await openEditor(tester);
+      expect(saveButton(), findsOneWidget);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pump();
+      expect(saveButton(), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('number and limit fields have a spoken name', (tester) async {
+      final sem = tester.ensureSemantics();
+      try {
+        await openEditor(tester);
+        await addFilter(tester, 'Anno');
+        expect(find.bySemanticsLabel(RegExp('^Anno: Da')), findsOneWidget);
+        expect(find.bySemanticsLabel(RegExp('^Anno: A')), findsOneWidget);
+        expect(find.bySemanticsLabel(RegExp('Limite')), findsWidgets);
+        await h.dispose(tester);
+      } finally {
+        sem.dispose();
+      }
+    });
+
+    testWidgets('a rule the cards cannot print back identically (durata>1.9s) is kept untouched', (tester) async {
+      final id = await openEditor(tester, rules: 'durata>1.9s');
+      expect(find.textContaining('troppo articolata'), findsOneWidget);
+      final stored = (await tester.runAsync(() => repo.get(id!)))!.rules;
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect((await tester.runAsync(() => repo.get(id!)))!.rules, stored);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a single «>=» end opens as a card and saves the same rule', (tester) async {
+      for (final rules in ['bpm>=90', 'anno>=2000']) {
+        final id = await openEditor(tester, rules: rules);
+        expect(find.textContaining('troppo articolata'), findsNothing, reason: rules);
+        await tester.tap(saveButton());
+        await _settle(tester);
+        expect((await tester.runAsync(() => repo.get(id!)))!.rules, rules);
+        await h.dispose(tester);
+      }
     });
 
     testWidgets('tap targets and labels hold (48 dp, named, contrast)', (tester) async {

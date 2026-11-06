@@ -1,6 +1,7 @@
 import '../../../providers/playlist_ops.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
@@ -191,6 +192,8 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
     if (mounted) Navigator.of(context).pop(true);
   }
 
+  /// Count and «Salva» only: order and limit sit in the scrolling list, so the
+  /// bar stays low on a phone and can go away while the keyboard is up.
   Widget _bottomBar(BuildContext context) {
     final l = context.l10n;
     final cc = context.cc;
@@ -204,61 +207,27 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 960),
             child: Padding(
-              padding: const EdgeInsets.all(CcDims.margin),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap8),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.sort_rounded),
-                          label: Text(
-                            '${l.smartSortBy}: ${smartSortLabel(l, _sort)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onPressed: _pickSort,
-                        ),
+                  Expanded(
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        _countFailed
+                            ? l.smartCountError
+                            : _rules.isEmpty && !_emptyOk
+                                ? '—'
+                                : _count == null
+                                    ? ''
+                                    : l.tracksCount(_count!),
+                        style: theme.titleMedium?.copyWith(color: cc.accent),
                       ),
-                      const SizedBox(width: CcDims.gap12),
-                      SizedBox(
-                        width: 112,
-                        child: TextField(
-                          controller: _limit,
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => setState(() {}),
-                          decoration: InputDecoration(
-                            labelText: l.smartLimitShort,
-                            constraints: const BoxConstraints(minHeight: 48),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: CcDims.gap12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            _countFailed
-                                ? l.smartCountError
-                                : _rules.isEmpty && !_emptyOk
-                                    ? '—'
-                                    : _count == null
-                                        ? ''
-                                        : l.tracksCount(_count!),
-                            style: theme.titleMedium?.copyWith(color: cc.accent),
-                          ),
-                        ),
-                      ),
-                      FilledButton(
-                        onPressed: _canSave ? _save : null,
-                        child: Text(l.save),
-                      ),
-                    ],
+                  FilledButton(
+                    onPressed: _canSave ? _save : null,
+                    child: Text(l.save),
                   ),
                 ],
               ),
@@ -266,6 +235,42 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _orderAndLimit(BuildContext context) {
+    final l = context.l10n;
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.sort_rounded),
+            label: Text(
+              '${l.smartSortBy}: ${smartSortLabel(l, _sort)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onPressed: _pickSort,
+          ),
+        ),
+        const SizedBox(width: CcDims.gap12),
+        SizedBox(
+          width: 112,
+          child: Semantics(
+            label: l.smartLimitShort,
+            child: TextField(
+              controller: _limit,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: l.smartLimitShort,
+                constraints: const BoxConstraints(minHeight: 48),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -290,7 +295,7 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
       appBar: CcAppBar(
         title: widget.existing == null ? l.smartPlaylistNew : l.smartPlaylistEdit,
       ),
-      bottomNavigationBar: _bottomBar(context),
+      bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0 ? null : _bottomBar(context),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
@@ -378,6 +383,8 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
                 ),
               ],
               const SizedBox(height: CcDims.gap16),
+              _orderAndLimit(context),
+              const SizedBox(height: CcDims.gap8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l.settingsAdvanced),
