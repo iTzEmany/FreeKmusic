@@ -23,6 +23,8 @@ class AlphaScroller extends StatefulWidget {
     required this.controller,
     required this.letters,
     required this.itemExtent,
+    this.start,
+    this.topInset,
     required this.child,
   });
 
@@ -31,6 +33,15 @@ class AlphaScroller extends StatefulWidget {
   /// One letter per list item, in list order.
   final List<String> letters;
   final double itemExtent;
+
+  /// Called before each jump: returns the scroll offset of the first item
+  /// (0 by default). A list under a collapsing header hides the header here
+  /// and returns the header's height.
+  final double Function()? start;
+
+  /// Height at the top that the strip leaves free (the visible part of a
+  /// header), read again on every scroll.
+  final double Function()? topInset;
   final Widget child;
 
   @override
@@ -39,6 +50,7 @@ class AlphaScroller extends StatefulWidget {
 
 class _AlphaScrollerState extends State<AlphaScroller> {
   String? _bubble;
+  double _inset = 0;
 
   void _jump(double dy, double height) {
     final n = widget.letters.length;
@@ -48,7 +60,7 @@ class _AlphaScrollerState extends State<AlphaScroller> {
     final c = widget.controller;
     if (c.hasClients) {
       c.jumpTo(
-        (index * widget.itemExtent).clamp(0.0, c.position.maxScrollExtent),
+        ((widget.start?.call() ?? 0) + index * widget.itemExtent).clamp(0.0, c.position.maxScrollExtent),
       );
     }
     setState(() => _bubble = widget.letters[index]);
@@ -60,8 +72,22 @@ class _AlphaScrollerState extends State<AlphaScroller> {
     return Stack(
       children: [
         widget.child,
-        Positioned(
-          top: 0,
+        // Empty letters (not alphabetical, loading): no strip, so touches
+        // on the right edge scroll the list.
+        if (widget.letters.isNotEmpty)
+        ListenableBuilder(
+          listenable: widget.controller,
+          builder: (_, _) {
+            // Frozen while dragging: the jump hides the header and the strip
+            // must not move under the finger.
+            if (_bubble == null) _inset = widget.topInset?.call() ?? 0;
+            // Build runs before layout: catch up with the header's new size.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final now = widget.topInset?.call() ?? 0;
+              if (mounted && _bubble == null && now != _inset) setState(() {});
+            });
+            return Positioned(
+          top: _inset,
           bottom: 0,
           right: 0,
           width: isDesktop ? 28 : 48,
@@ -77,6 +103,8 @@ class _AlphaScrollerState extends State<AlphaScroller> {
               child: const SizedBox.expand(),
             ),
           ),
+        );
+          },
         ),
         if (_bubble != null)
           Positioned(

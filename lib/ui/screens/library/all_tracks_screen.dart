@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/track_repository.dart';
@@ -22,6 +21,7 @@ import '../../widgets/track_row_selection.dart';
 import 'album_detail_screen.dart' show durationWords;
 import 'scan_status.dart';
 import '../../widgets/motion.dart';
+import '../../widgets/shrinking_header.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/cc_search_field.dart';
@@ -105,8 +105,8 @@ class _AllTracksHeader extends StatelessWidget {
   }
 }
 
-/// Every track as a collection: header with Play and Shuffle, search, sort
-/// chips (header and bar hide on scroll down, come back on scroll up).
+/// Every track as a collection: a fixed row with count, Play and Shuffle; search
+/// and sort chips follow the scroll (gone going down, back going up).
 class AllTracksScreen extends ConsumerStatefulWidget {
   const AllTracksScreen({super.key, this.initialSort});
 
@@ -117,8 +117,7 @@ class AllTracksScreen extends ConsumerStatefulWidget {
   ConsumerState<AllTracksScreen> createState() => _AllTracksScreenState();
 }
 
-class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
-    with SingleTickerProviderStateMixin {
+class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
   static final _selectionKey = SelectionKey.all.key;
   final _controller = TextEditingController();
   final _scroll = ScrollController();
@@ -128,12 +127,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
   String _text = '';
   // A new query is a new provider: keep the old list on screen until it loads.
   AsyncValue<List<Track>>? _prev;
-  // 1 = header, search and chips shown, 0 = hidden (the animation's goal).
-  double _barTarget = 1;
-  late final AnimationController _bar = AnimationController(
-    vsync: this,
-    value: 1,
-  );
+  final _header = ShrinkingHeaderController();
 
   @override
   void initState() {
@@ -148,39 +142,13 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
 
   @override
   void dispose() {
-    _bar.dispose();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
-  bool _onScroll(Notification n) {
-    // Direction of the user's finger or wheel (jumpTo, e.g. the A-Z strip,
-    // never emits it); a list that fits, or the top, always shows the bar.
-    final bool? show = switch (n) {
-      UserScrollNotification(depth: 0, :final direction)
-          when direction != ScrollDirection.idle =>
-        direction == ScrollDirection.forward,
-      ScrollMetricsNotification(depth: 0, :final metrics)
-          when metrics.extentBefore <= 0 || metrics.maxScrollExtent <= 0 =>
-        true,
-      _ => null,
-    };
-    final target = show == null ? null : (show ? 1.0 : 0.0);
-    if (target != null && target != _barTarget) {
-      _barTarget = target;
-      _bar.animateTo(
-        target,
-        duration: ccDuration(context, CcMotion.enter),
-        curve: Curves.easeOutCubic,
-      );
-    }
-    return false;
-  }
-
   Widget _list(
     List<Track> list,
-    SortOption sort,
     bool compact,
     PlayerController ctrl,
     PlayContext ctx,
@@ -190,39 +158,27 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
       visibleIds: [for (final t in list) t.id],
     );
     final extent = trackRowExtentOf(context, compact);
-    final view = EntranceScope(
-      child: ListView.builder(
-        controller: _scroll,
+    return EntranceScope(
+      child: SliverFixedExtentList(
         itemExtent: extent,
-        itemCount: list.length,
-        itemBuilder: (_, i) => EnterOnce(
-          index: i,
-          child: LiveTrackRow(
-            track: list[i],
-            compact: compact,
-            selection: selection,
-            onTap: () => ctrl.playFromList(list, i, context: ctx),
+        delegate: SliverChildBuilderDelegate(
+          childCount: list.length,
+          (_, i) => EnterOnce(
+            index: i,
+            child: LiveTrackRow(
+              track: list[i],
+              compact: compact,
+              selection: selection,
+              onTap: () => ctrl.playFromList(list, i, context: ctx),
+            ),
           ),
         ),
       ),
-    );
-    // The A–Z strip only makes sense when the order is alphabetical.
-    final byTitle = sort == SortOption.title;
-    final byArtist = sort == SortOption.artist;
-    if (!byTitle && !byArtist) return view;
-    return AlphaScroller(
-      controller: _scroll,
-      itemExtent: extent,
-      letters: [
-        for (final t in list) leadingLetter(byTitle ? t.title : t.artist),
-      ],
-      child: view,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l = context.l10n;
     final query = ref.watch(trackQueryProvider(false)).copyWith(text: _text);
     final fresh = ref.watch(tracksProvider(query));
     final tracks = keepWhileLoading(fresh, _prev);
@@ -248,83 +204,113 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen>
         body: Column(
           children: [
             const ScanStatus(),
-            // Not a sliver: AlphaScroller offsets are index * itemExtent.
-            SizeTransition(
-              sizeFactor: _bar,
-              alignment: Alignment.topCenter,
-              child: Column(
-                children: [
-                  _AllTracksHeader(
-                    loaded: tracks.hasValue,
-                    shown: shown,
-                    wide: wide,
-                    onPlay: () => ctrl.playAll(shown, context: ctx),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      CcDims.margin,
-                      CcDims.gap4,
-                      CcDims.margin,
-                      CcDims.gap8,
-                    ),
-                    child: CcSearchField(
-                      controller: _controller,
-                      onQuery: (v) => setState(() => _text = v),
-                      hint: l.searchHint,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      CcDims.margin,
-                      0,
-                      CcDims.margin,
-                      CcDims.gap8,
-                    ),
-                    child: SegmentedBlocks<SortOption>(
-                      items: [
-                        for (final (o, icon) in const [
-                          (
-                            SortOption.defaultOrder,
-                            Icons.format_list_numbered_rounded,
-                          ),
-                          (SortOption.title, Icons.sort_by_alpha_rounded),
-                          (SortOption.artist, Icons.person_rounded),
-                          (SortOption.addedAt, Icons.schedule_rounded),
-                        ])
-                          BlockItem(
-                            value: o,
-                            icon: icon,
-                            label: _sortLabel(context, o),
-                          ),
-                      ],
-                      selected: query.sort,
-                      onChanged: (o) =>
-                          _query.update((q) => q.copyWith(sort: o)),
-                    ),
-                  ),
-                ],
-              ),
+            _AllTracksHeader(
+              loaded: tracks.hasValue,
+              shown: shown,
+              wide: wide,
+              onPlay: () => ctrl.playAll(shown, context: ctx),
             ),
-            Expanded(
-              child: NotificationListener<Notification>(
-                onNotification: _onScroll,
-                child: AsyncBody(
-                  value: tracks,
-                  rowHeight: trackRowExtentOf(context, compact),
-                  onRetry: () => ref.invalidate(tracksProvider(query)),
-                  isEmpty: (list) => list.isEmpty,
-                  empty: EmptyState(
-                    icon: query.text.isEmpty
-                        ? Icons.music_off
-                        : Icons.search_off,
-                    message: query.text.isEmpty ? l.noTracks : l.noResults,
-                  ),
-                  data: (list) => _list(list, query.sort, compact, ctrl, ctx),
-                ),
-              ),
-            ),
+            Expanded(child: _scrollView(query, tracks, shown, compact, ctrl, ctx)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _scrollView(
+    TrackQuery query,
+    AsyncValue<List<Track>> tracks,
+    List<Track> shown,
+    bool compact,
+    PlayerController ctrl,
+    PlayContext ctx,
+  ) {
+    final l = context.l10n;
+    final rowHeight = trackRowExtentOf(context, compact);
+    // The A–Z strip only makes sense when the order is alphabetical.
+    final byTitle = query.sort == SortOption.title;
+    final byArtist = query.sort == SortOption.artist;
+    return AlphaScroller(
+      controller: _scroll,
+      itemExtent: rowHeight,
+      topInset: () => _header.visible,
+      start: () {
+        _header.hide();
+        return _header.extent;
+      },
+      letters: [
+        if (byTitle || byArtist)
+          for (final t in shown) leadingLetter(byTitle ? t.title : t.artist),
+      ],
+      child: CustomScrollView(
+        controller: _scroll,
+        slivers: [
+          ShrinkingHeader(
+            controller: _header,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    CcDims.margin,
+                    CcDims.gap4,
+                    CcDims.margin,
+                    CcDims.gap8,
+                  ),
+                  child: CcSearchField(
+                    controller: _controller,
+                    onQuery: (v) => setState(() => _text = v),
+                    hint: l.searchHint,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    CcDims.margin,
+                    0,
+                    CcDims.margin,
+                    CcDims.gap8,
+                  ),
+                  child: SegmentedBlocks<SortOption>(
+                    items: [
+                      for (final (o, icon) in const [
+                        (
+                          SortOption.defaultOrder,
+                          Icons.format_list_numbered_rounded,
+                        ),
+                        (SortOption.title, Icons.sort_by_alpha_rounded),
+                        (SortOption.artist, Icons.person_rounded),
+                        (SortOption.addedAt, Icons.schedule_rounded),
+                      ])
+                        BlockItem(
+                          value: o,
+                          icon: icon,
+                          label: _sortLabel(context, o),
+                        ),
+                    ],
+                    selected: query.sort,
+                    onChanged: (o) => _query.update((q) => q.copyWith(sort: o)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SliverAsyncBody(
+            value: tracks,
+            loading: SliverToBoxAdapter(child: RowsLoading(rowHeight: rowHeight)),
+            onRetry: () => ref.invalidate(tracksProvider(query)),
+            data: (list) => list.isEmpty
+                ? SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyState(
+                      icon: query.text.isEmpty
+                          ? Icons.music_off
+                          : Icons.search_off,
+                      message: query.text.isEmpty ? l.noTracks : l.noResults,
+                    ),
+                  )
+                : _list(list, compact, ctrl, ctx),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
+        ],
       ),
     );
   }
