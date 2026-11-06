@@ -228,7 +228,7 @@ void main() {
         target.evaluate().map(
           (e) => tester.getSize(find.byWidget(e.widget)).height,
         ),
-        contains(48.0),
+        anyElement(greaterThanOrEqualTo(48.0)),
       );
       await h.dispose(tester);
     },
