@@ -23,6 +23,33 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().acoustId, false);
   });
+  test('library sort direction: absent means the criterion default, a saved one is read back', () async {
+    SharedPreferences.setMockInitialValues({'librarySort': 'plays'});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().librarySort, 'plays');
+    expect(store.readSettings().librarySortAscending, isNull);
+    await store.writeSettings(store.readSettings().copyWith(librarySortAscending: true));
+    store = await SettingsStore.open();
+    expect(store.readSettings().librarySortAscending, true);
+  });
+  test('each playlist keeps its own order, separate from the others', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, isEmpty);
+    await store.writeSettings(store.readSettings().copyWith(
+        playlistSorts: {'12': 'title:asc', '7': 'year:desc'}));
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, {'12': 'title:asc', '7': 'year:desc'});
+    SharedPreferences.setMockInitialValues({'playlistSorts': '{broken'});
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, isEmpty);
+  });
+  test('sort keys of the wrong type (a tampered backup) read as the defaults, without throwing', () async {
+    SharedPreferences.setMockInitialValues({'playlistSorts': 5, 'librarySortAscending': 'yes'});
+    final store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, isEmpty);
+    expect(store.readSettings().librarySortAscending, isNull);
+  });
   streamCacheSettingTests();
   test('playback state round trip', () async {
     SharedPreferences.setMockInitialValues({});

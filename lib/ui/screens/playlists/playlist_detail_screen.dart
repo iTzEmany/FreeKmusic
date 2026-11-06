@@ -30,6 +30,8 @@ import '../import/import_banner.dart';
 import '../library/album_detail_screen.dart' show collectionMeta;
 import 'add_tracks_screen.dart';
 import 'export_dialog.dart';
+import 'playlist_order.dart';
+import '../../widgets/sort_sheet.dart';
 import '../../widgets/motion.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
@@ -55,6 +57,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final l = context.l10n;
     final ops = ref.read(playlistOpsProvider);
     switch (v) {
+      case _PlaylistAction.sort:
+        _pickSort(id);
       case _PlaylistAction.edit:
         // Reordering and picking do not mix.
         ref.read(selectionProvider(key).notifier).clear();
@@ -98,19 +102,73 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         );
         if (!ok) return;
         await ops.delete(id);
+        ref.read(settingsProvider.notifier).update(
+          (s) => s.copyWith(playlistSorts: {...s.playlistSorts}..remove('$id')),
+        );
         if (mounted) Navigator.of(context).pop();
     }
   }
 
-  List<List<CcAction<_PlaylistAction>>> _menuGroups(bool hasCustomCover) {
+  void _saveOrder(int id, PlaylistSort sort, bool ascending) {
+    // Reordering only exists in the personal order.
+    if (sort != PlaylistSort.personal) _editing = false;
+    ref.read(settingsProvider.notifier).update((s) {
+      final m = {...s.playlistSorts};
+      if (sort == PlaylistSort.personal) {
+        m.remove('$id');
+      } else {
+        m['$id'] = PlaylistOrder(sort, ascending).encode();
+      }
+      return s.copyWith(playlistSorts: m);
+    });
+  }
+
+  void _pickSort(int id) {
+    final l = context.l10n;
+    final cur = PlaylistOrder.parse(
+      ref.read(settingsProvider).playlistSorts['$id'],
+    );
+    String name(PlaylistSort s) => switch (s) {
+      PlaylistSort.personal => l.sortPersonal,
+      PlaylistSort.title => l.sortTitle,
+      PlaylistSort.artist => l.sortArtist,
+      PlaylistSort.album => l.sortAlbum,
+      PlaylistSort.year => l.sortYear,
+      PlaylistSort.added => l.sortAddedRecently,
+      PlaylistSort.duration => l.sortDuration,
+    };
+    showSortSheet<PlaylistSort>(
+      context: context,
+      choices: [
+        for (final o in PlaylistSort.values)
+          SortChoice(
+            o,
+            name(o),
+            hasDirection: o != PlaylistSort.personal,
+            ascendingByDefault: o.ascendingByDefault,
+          ),
+      ],
+      selected: cur.sort,
+      ascending: cur.ascending,
+      onChanged: (v, asc) => _saveOrder(id, v, asc),
+    );
+  }
+
+  List<List<CcAction<_PlaylistAction>>> _menuGroups(bool hasCustomCover, bool personal) {
     final l = context.l10n;
     return [
       [
         CcAction(
-          icon: Icons.swap_vert_rounded,
-          label: _editing ? l.finishEditing : l.editOrder,
-          value: _PlaylistAction.edit,
+          icon: Icons.sort_rounded,
+          label: l.sortBy,
+          value: _PlaylistAction.sort,
         ),
+        if (personal)
+          CcAction(
+            icon: Icons.swap_vert_rounded,
+            label: _editing ? l.finishEditing : l.editOrder,
+            value: _PlaylistAction.edit,
+          ),
         CcAction(
           icon: Icons.playlist_add_rounded,
           label: l.addSongs,
@@ -153,8 +211,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final id = widget.playlist.id;
-    final tracks =
+    final stored =
         ref.watch(playlistTracksProvider(id)).value ?? const <Track>[];
+    final order = PlaylistOrder.parse(
+      ref.watch(settingsProvider.select((s) => s.playlistSorts))['$id'],
+    );
+    final personal = order.sort == PlaylistSort.personal;
+    final tracks = order.apply(stored);
     final ops = ref.read(playlistOpsProvider);
     final summary = ref
         .watch(playlistsProvider)
@@ -196,7 +259,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               ShellNav.open<void>(context, AddTracksScreen(playlistId: id)),
         ),
       );
-    } else if (_editing) {
+    } else if (_editing && personal) {
       list = SliverReorderableList(
         proxyDecorator: (child, _, anim) => ccDragProxy(context, child, anim),
         itemCount: tracks.length,
@@ -264,7 +327,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           onPressed: () async {
             final v = await showCcActionSheet<_PlaylistAction>(
               context: context,
-              groups: _menuGroups(custom != null),
+              groups: _menuGroups(custom != null, personal),
             );
             if (v != null) _onAction(v, id, key, tracks);
           },
@@ -278,7 +341,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 }
 
-enum _PlaylistAction { edit, add, cover, clearCover, export, rename, delete }
+enum _PlaylistAction { sort, edit, add, cover, clearCover, export, rename, delete }
 
 class _EditRow extends StatelessWidget {
   const _EditRow({

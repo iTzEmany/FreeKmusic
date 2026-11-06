@@ -22,7 +22,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({
       'theme': 'oled', 'compactMode': true, 'playbackSpeed': 1.25, 'volume': 3,
-      'notDuplicates': ['a', 'b'], 'deviceId': 'dev-1', 'deviceName': 'Telefono', 'trustedDevices': '[]', 'enrichMark': 42,
+      'notDuplicates': ['a', 'b'], 'deviceId': 'dev-1', 'deviceName': 'Telefono', 'trustedDevices': '[]', 'enrichMark': 42, 'playlistSorts': '{"12":"title:asc"}',
     });
     prefs = await SharedPreferences.getInstance();
     final folder = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
@@ -107,5 +107,6 @@ void main() {
     expect(fresh.getDouble('playbackSpeed'), 1.25);
     expect(fresh.getStringList('notDuplicates'), ['a', 'b']);
     expect(fresh.getString('deviceId'), 'other');
+    expect(fresh.getString('playlistSorts'), '{"12":"title:asc"}');
   });
 }

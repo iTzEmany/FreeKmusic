@@ -39,6 +39,18 @@ void main() {
     expect(all.single.trackCount, 3);
   });
 
+  test('plays and duration sum each track once per playlist', () async {
+    await db.customStatement('UPDATE tracks SET play_count = 2, duration_ms = 1000');
+    final p = await repo.create('Mix');
+    final q = await repo.create('Other');
+    await repo.addTracks(p, [ids[0], ids[1]]);
+    await repo.addTracks(p, [ids[1]]);
+    await repo.addTracks(q, ids);
+    final all = {for (final x in await repo.watchAll().first) x.playlist.name: x};
+    expect((all['Mix']!.playCount, all['Mix']!.durationMs), (4, 2000));
+    expect((all['Other']!.playCount, all['Other']!.durationMs), (6, 3000));
+  });
+
   test('the technical playlist of «Scarica album» is not listed', () async {
     final shown = await repo.create('Mix');
     final hidden = await repo.create('Album — Band');

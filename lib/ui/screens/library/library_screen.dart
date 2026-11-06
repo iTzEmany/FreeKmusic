@@ -69,6 +69,10 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryKind? _kind;
+
+  /// Direction of the A–Z shown instead of a saved criterion this tab lacks;
+  /// kept here so the saved criterion survives on the other tabs.
+  bool? _fallbackAscending;
   bool _searching = false;
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
@@ -110,10 +114,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  void _setSettings({LibrarySort? sort, bool? grid}) {
-    ref
-        .read(settingsProvider.notifier)
-        .update((s) => s.copyWith(librarySort: sort?.name, libraryGrid: grid));
+  void _setSettings({LibrarySort? sort, bool? ascending, bool? grid}) {
+    ref.read(settingsProvider.notifier).update(
+      (s) => s.copyWith(
+        librarySort: sort?.name,
+        librarySortAscending: ascending,
+        libraryGrid: grid,
+      ),
+    );
   }
 
   bool _onScroll(ScrollNotification n, double max) {
@@ -149,14 +157,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
-    final sort = LibrarySort.values.firstWhere(
+    var sort = LibrarySort.values.firstWhere(
       (s) => s.name == settings.librarySort,
       orElse: () => LibrarySort.recent,
     );
+    // Saved on another tab: the artists have no track count to sort by.
+    final fallback = !LibrarySort.forKind(_kind).contains(sort);
+    if (fallback) sort = LibrarySort.alpha;
+    final ascending = fallback
+        ? _fallbackAscending ?? sort.defaultAscending
+        : settings.librarySortAscending ?? sort.defaultAscending;
     final playlists = ref.watch(playlistsProvider);
     final albums = ref.watch(albumsProvider);
     final artists = ref.watch(artistsProvider);
-    final built = ref.watch(libraryEntriesProvider((_kind, sort)));
+    final built = ref.watch(libraryEntriesProvider((_kind, sort, ascending)));
     final folders = ref.watch(foldersProvider).value;
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
     final denied = ref.watch(permissionDeniedProvider);
@@ -323,8 +337,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   },
                   countLabel: count,
                   sort: sort,
+                  ascending: ascending,
                   grid: settings.libraryGrid,
-                  onSort: (s) => _setSettings(sort: s),
+                  onSort: (s, asc) {
+                    if (fallback && s == LibrarySort.alpha) {
+                      setState(() => _fallbackAscending = asc);
+                    } else {
+                      _fallbackAscending = null;
+                      _setSettings(sort: s, ascending: asc);
+                    }
+                  },
                   onToggleGrid: () {
                     // The new list starts at the top, so the island is whole.
                     _shrink.value = 0;

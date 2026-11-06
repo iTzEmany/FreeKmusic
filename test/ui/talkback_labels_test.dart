@@ -198,8 +198,9 @@ void main() {
         body: LibraryToolbar(
           countLabel: '3 brani',
           sort: LibrarySort.alpha,
+          ascending: true,
           grid: false,
-          onSort: (_) {},
+          onSort: (_, _) {},
           onToggleGrid: () {},
         ),
       ),

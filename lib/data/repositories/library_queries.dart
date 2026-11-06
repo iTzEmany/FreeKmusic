@@ -56,6 +56,8 @@ class ArtistSummary {
     this.coverKey,
     this.lastPlayedAt,
     this.addedAt = 0,
+    this.playCount = 0,
+    this.durationMs = 0,
   });
 
   final String key; // lowercase trimmed; '' = unknown artist
@@ -66,6 +68,9 @@ class ArtistSummary {
   final String? coverKey;
   final int? lastPlayedAt;
   final int addedAt;
+
+  /// Sum of the plays and of the durations of its tracks.
+  final int playCount, durationMs;
 }
 
 /// The columns an [AlbumSummary] is built from (add `WHERE ... GROUP BY album_key`).
@@ -160,11 +165,13 @@ best AS (
 )
 SELECT g.k AS k, g.name AS name, g.track_count AS track_count,
   g.album_count AS album_count, g.last_played AS last_played,
-  g.added AS added, best.cover_key AS cover_key
+  g.added AS added, g.plays AS plays, g.duration AS duration,
+  best.cover_key AS cover_key
 FROM (
   SELECT lower(trim(COALESCE(artist, ''))) AS k, MIN(artist) AS name,
     COUNT(*) AS track_count, COUNT(DISTINCT album_key) AS album_count,
-    MAX(last_played_at) AS last_played, MAX(added_at) AS added
+    MAX(last_played_at) AS last_played, MAX(added_at) AS added,
+    SUM(play_count) AS plays, SUM(duration_ms) AS duration
   FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 GROUP BY k
 ) g
 LEFT JOIN best ON best.k = g.k
@@ -183,6 +190,8 @@ ORDER BY g.k COLLATE NOCASE
                   coverKey: r.read<String?>('cover_key'),
                   lastPlayedAt: r.read<int?>('last_played'),
                   addedAt: r.read<int?>('added') ?? 0,
+                  playCount: r.read<int?>('plays') ?? 0,
+                  durationMs: r.read<int?>('duration') ?? 0,
                 ),
             ]);
   }

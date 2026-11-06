@@ -1324,11 +1324,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 90.5 Controlli di fase
 
 ## Fase 91 — Ordinamenti e foglio delle playlist (`fase-91-ordinamenti-e-playlist.md`)
-- [ ] 91.1 Criteri nuovi e verso in Libreria
-- [ ] 91.2 Ordinamento dentro le playlist
-- [ ] 91.3 Foglio «Nuova playlist»
-- [ ] 91.4 Stesso foglio per «Aggiungi alla playlist»
-- [ ] 91.5 Controlli di fase
+- [x] 91.1 Criteri nuovi e verso in Libreria
+- [x] 91.2 Ordinamento dentro le playlist
+- [x] 91.3 Foglio «Nuova playlist»
+- [x] 91.4 Stesso foglio per «Aggiungi alla playlist»
+- [x] 91.5 Controlli di fase
 
 ## Fase 92 — Cerca: libreria, artisti e album (`fase-92-cerca-libreria-e-artisti.md`)
 - [ ] 92.1 «Nella tua libreria»

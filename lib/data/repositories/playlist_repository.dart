@@ -10,7 +10,11 @@ import 'track_kinds.dart';
 
 class PlaylistSummary {
   const PlaylistSummary(this.playlist, this.trackCount,
-      [this.autoCoverKey, this.lastPlayedAt, this.addedAt = 0]);
+      [this.autoCoverKey,
+      this.lastPlayedAt,
+      this.addedAt = 0,
+      this.playCount = 0,
+      this.durationMs = 0]);
 
   final Playlist playlist;
   final int trackCount;
@@ -21,6 +25,9 @@ class PlaylistSummary {
 
   /// When the latest track was added to the library (0 when empty).
   final int addedAt;
+
+  /// Sum of the plays and of the durations of its tracks.
+  final int playCount, durationMs;
 
   /// Custom cover if set, otherwise the first track that has one.
   String? get coverKey => playlist.coverKey ?? autoCoverKey;
@@ -82,8 +89,14 @@ class PlaylistRepository {
           '(SELECT MAX(t.last_played_at) FROM playlist_tracks x JOIN tracks t '
           'ON t.id = x.track_id WHERE x.playlist_id = p.id) AS last_played, '
           '(SELECT MAX(t.added_at) FROM playlist_tracks x JOIN tracks t '
-          'ON t.id = x.track_id WHERE x.playlist_id = p.id) AS added '
+          'ON t.id = x.track_id WHERE x.playlist_id = p.id) AS added, '
+          'COALESCE(MAX(agg.plays), 0) AS plays, COALESCE(MAX(agg.dur), 0) AS duration '
           'FROM playlists p LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id '
+          // One pass for plays and duration; a song added twice counts once.
+          'LEFT JOIN (SELECT d.playlist_id, SUM(t.play_count) AS plays, SUM(t.duration_ms) AS dur '
+          'FROM (SELECT DISTINCT playlist_id, track_id FROM playlist_tracks) d '
+          'JOIN tracks t ON t.id = d.track_id WHERE t.kind = 0 GROUP BY d.playlist_id) agg '
+          'ON agg.playlist_id = p.id '
           // The technical playlist of «Scarica album» (see ytmAlbumSourceKind).
           'WHERE ${visiblePlaylistSql('p')} '
           'GROUP BY p.id ORDER BY p.name COLLATE NOCASE',
@@ -105,6 +118,8 @@ class PlaylistRepository {
                   r.read<String?>('auto_cover'),
                   r.read<int?>('last_played'),
                   r.read<int?>('added') ?? 0,
+                  r.read<int>('plays'),
+                  r.read<int>('duration'),
                 ),
             ]);
   }

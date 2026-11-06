@@ -80,4 +80,83 @@ void main() {
     expect(titles(e), ['Mina']);
     expect(e.single.kind, LibraryKind.artist);
   });
+
+  group('sort criteria', () {
+    AlbumSummary alb(String t, String? artist, int? year, int plays, int dur, int n) =>
+        AlbumSummary(
+            albumKey: t,
+            title: t,
+            artist: artist,
+            variousArtists: false,
+            trackCount: n,
+            durationMs: dur,
+            year: year,
+            coverKey: null,
+            playCount: plays);
+    final al = [
+      alb('B', 'Édith', 1990, 5, 300, 3),
+      alb('A', 'Zed', 2010, 9, 100, 12),
+      alb('C', 'abba', null, 9, 200, 7),
+      alb('D', null, 1990, 0, 200, 1),
+    ];
+    List<String?> by(LibrarySort s, {bool? asc, LibraryKind? kind = LibraryKind.album}) =>
+        titles(buildLibraryEntries(
+            playlists: [], albums: al, artists: [], sort: s, ascending: asc, kind: kind));
+
+    test('artist: accents folded, no artist last in both directions', () {
+      expect(by(LibrarySort.artist), ['C', 'B', 'A', 'D']);
+      expect(by(LibrarySort.artist, asc: false), ['A', 'B', 'C', 'D']);
+    });
+    test('year: ties fall back to the title, no year last', () {
+      expect(by(LibrarySort.year), ['B', 'D', 'A', 'C']);
+      expect(by(LibrarySort.year, asc: false), ['A', 'B', 'D', 'C']);
+    });
+    test('plays start descending, ties alphabetical', () {
+      expect(by(LibrarySort.plays), ['A', 'C', 'B', 'D']);
+      expect(by(LibrarySort.plays, asc: true), ['D', 'B', 'A', 'C']);
+    });
+    test('duration and track count', () {
+      expect(by(LibrarySort.duration), ['A', 'C', 'D', 'B']);
+      expect(by(LibrarySort.duration, asc: false), ['B', 'C', 'D', 'A']);
+      expect(by(LibrarySort.trackCount), ['D', 'B', 'C', 'A']);
+      expect(by(LibrarySort.trackCount, asc: false), ['A', 'C', 'B', 'D']);
+    });
+    test('alpha reversed and recent ascending', () {
+      expect(by(LibrarySort.alpha, asc: false), ['D', 'C', 'B', 'A']);
+      final e = buildLibraryEntries(
+          playlists: playlists, albums: [], artists: [], sort: LibrarySort.recent, ascending: true);
+      expect(titles(e), ['Notte', 'In macchina']);
+    });
+    test('various artists, unknown artist and no added date go last', () {
+      final e = buildLibraryEntries(
+        playlists: [],
+        albums: [
+          AlbumSummary(albumKey: 'v', title: 'V', artist: 'Aaa', variousArtists: true, trackCount: 1, durationMs: 1, year: null, coverKey: null, addedAt: 5),
+          alb('Z', 'Zed', 1, 1, 1, 1),
+          AlbumSummary(albumKey: 'n', title: 'N', artist: 'Bbb', variousArtists: false, trackCount: 1, durationMs: 1, year: null, coverKey: null, addedAt: 0),
+        ],
+        artists: [],
+        sort: LibrarySort.artist,
+      );
+      expect(titles(e), ['N', 'Z', 'V']);
+      final byAdded = buildLibraryEntries(
+          playlists: [], albums: [e[0].album!, e[2].album!], artists: [], sort: LibrarySort.added);
+      expect(titles(byAdded).last, 'N');
+      final art = buildLibraryEntries(
+        playlists: [],
+        albums: [],
+        artists: [
+          const ArtistSummary(key: '', name: null, trackCount: 1, albumCount: 1),
+          const ArtistSummary(key: 'm', name: 'Mina', trackCount: 1, albumCount: 1),
+        ],
+        sort: LibrarySort.artist,
+        ascending: false,
+      );
+      expect(art.last.id, '');
+    });
+    test('track count is not offered for the artists tab', () {
+      expect(LibrarySort.forKind(LibraryKind.artist), isNot(contains(LibrarySort.trackCount)));
+      expect(LibrarySort.forKind(LibraryKind.album), contains(LibrarySort.trackCount));
+    });
+  });
 }

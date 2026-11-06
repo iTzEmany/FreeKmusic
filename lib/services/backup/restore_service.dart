@@ -157,6 +157,9 @@ Future<bool> applyPendingRestore({
     // The restored rows may be older: the recognition pass must run again.
     await prefs.remove(recogPassAfterKey);
     await prefs.remove(recogPassDoneKey);
+    // Playlist ids belong to the replaced database: an older backup without
+    // the key must not leave sorts pointing at other playlists (D-424).
+    await prefs.remove('playlistSorts');
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {

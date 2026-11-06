@@ -32,3 +32,31 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui; il backup con la colonna nuova si ripristina.
 
 ## Esiti
+- **91.1**:
+  - otto criteri: Ascoltati di recente, Aggiunti di recente, Titolo A–Z, Artista, Anno, Più ascoltati, Durata, Numero di brani;
+  - tasto crescente/decrescente nel foglio comune `sort_sheet.dart`; il verso si vede nella barra (freccia) e nell'etichetta TalkBack;
+  - preferenze `librarySort` e `librarySortAscending`;
+  - «Numero di brani» non c'è nella scheda Artisti; se era scelto, lì si ripiega su A–Z senza perdere la scelta;
+  - Artisti vari, artista sconosciuto e date mancanti vanno in fondo;
+  - le somme delle playlist si calcolano in un solo passaggio aggregato, e un brano conta una volta.
+- **91.2**:
+  - **Scostamento dal documento (D-424)**: niente colonna né migrazione, lo schema resta v15. L'ordinamento di ogni playlist sta nella preferenza `playlistSorts`, che il backup porta in `settings.json`; un ripristino completo da un backup che non la contiene la azzera.
+  - L'ordinamento si applica in memoria e in modo stabile, con accenti piegati e mancanti in fondo, e `position` non viene mai riscritto.
+  - «Ordine personale» è la voce di serie, con il verso spento; «Modifica ordine» c'è solo lì.
+  - Play, shuffle e tocco seguono l'ordine mostrato.
+- **91.3–91.4**: un unico foglio a schermo intero, `playlist_sheet.dart`:
+  - modalità Nuova: «Crea» apre la playlist nuova, ci sono le scorciatoie «Playlist intelligente» e «Importa CSV», e il tocco su una playlist la apre;
+  - modalità Aggiungi: il tocco aggiunge, avvisa e chiude, e «già presente» è segnato sulla riga; le playlist intelligenti non compaiono.
+  - Differenza minore dal mockup, accettata: le playlist intelligenti non sono elencate nemmeno in modalità Nuova, perché stanno in una tabella a parte.
+- **Review**: `code-review high` (Opus) sulla 91.1, cioè query delle liste e ordinamenti: 10 rilievi, 9 applicati; il decimo era un commento, corretto.
+- **Scheggia**:
+  - un bug medio corretto con test: un ripristino completo da un backup precedente lasciava gli ordinamenti del dispositivo agganciati ad altre playlist;
+  - corretti anche: accenti e mancanti nell'ordinamento delle playlist; tipi sbagliati nelle preferenze, che ora non bloccano l'avvio;
+  - 3 mutanti sopravvissuti coperti con test (stabilità su 500 voci; coppie `(trackId, position)` intatte con brani in ordine non alfabetico; marcatore «già presente» sulla riga giusta);
+  - sul Mi A3: 8 criteri e verso, ordine personale intatto dopo Titolo crescente e decrescente, fogli corretti; nessuna playlist creata o modificata.
+- **Golden**: invariati. Il foglio Ordina per e il foglio playlist non hanno ancora un golden: sono coperti dai widget test e dagli screenshot della scheggia.
+- **Misure sul Mi A3**, build profile, % di frame oltre 16,7 ms:
+  - Scroll Libreria 0,9 % (base 87: 4,7 %), Lente 1,8–3,8 % (1,9 %), Scroll Tutti i brani 0,9 % (2,3 %).
+  - Due giri subito dopo l'installazione avevano dato 7,2 % e 15,6 % su Scroll Libreria, con «1 attività in corso» in background. Bisogna misurare dopo la fine dell'attività.
+  - Lo scenario «Libreria Tutto→Playlist→Album→Artisti» con `--only` parte dalla Home e fallisce: si misura solo nel giro completo.
+- **Motorola**: rinviato alla fase 97 (D-419, D-420). Sul Mi A3 c'è una playlist «scheggia-46» lasciata da una prova di una fase precedente.

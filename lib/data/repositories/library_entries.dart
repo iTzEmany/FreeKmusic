@@ -5,7 +5,29 @@ import 'playlist_repository.dart';
 
 enum LibraryKind { playlist, album, artist }
 
-enum LibrarySort { recent, alpha, added }
+/// `recent`, `alpha` and `added` keep their saved names (D-396).
+enum LibrarySort {
+  recent,
+  added,
+  alpha,
+  artist,
+  year,
+  plays,
+  duration,
+  trackCount;
+
+  /// Direction a criterion starts with: latest and most first.
+  bool get defaultAscending => switch (this) {
+    recent || added || plays => false,
+    _ => true,
+  };
+
+  /// «Numero di brani» makes no sense for artists (D-410).
+  static List<LibrarySort> forKind(LibraryKind? kind) => [
+    for (final s in values)
+      if (s != trackCount || kind != LibraryKind.artist) s,
+  ];
+}
 
 /// One row/tile of the Library: a playlist, an album or an artist.
 class LibraryEntry {
@@ -20,6 +42,9 @@ class LibraryEntry {
     this.variousArtists = false,
     this.lastPlayedAt,
     this.addedAt = 0,
+    this.year,
+    this.playCount,
+    this.durationMs,
     this.album,
     this.artistSummary,
     this.playlist,
@@ -42,6 +67,7 @@ class LibraryEntry {
   final bool variousArtists;
   final int? lastPlayedAt;
   final int addedAt;
+  final int? year, playCount, durationMs;
 
   final AlbumSummary? album;
   final ArtistSummary? artistSummary;
@@ -53,13 +79,17 @@ class LibraryEntry {
 
 /// Accent-folded; digits and symbols («#») come before the letters, so each
 /// initial is one contiguous block.
-String sortKeyOf(LibraryEntry e) {
-  final t = normalize(e.title ?? '');
+String sortKeyOf(LibraryEntry e) => sortKeyOfText(e.title ?? '');
+
+String sortKeyOfText(String text) {
+  final t = normalize(text);
   return (RegExp(r'^[a-z]').hasMatch(t) ? 'b' : 'a') + t;
 }
 
 /// Mixes the three collections, filters by [kind] (null = everything) and
-/// orders them. Ties always fall back to the alphabetical order.
+/// orders them ([ascending] null = the criterion's own direction). Entries
+/// without the value (never played, no year, no artist) come last whatever
+/// the direction; ties always fall back to the alphabetical order.
 List<LibraryEntry> buildLibraryEntries({
   required List<PlaylistSummary> playlists,
   required List<AlbumSummary> albums,
@@ -67,6 +97,7 @@ List<LibraryEntry> buildLibraryEntries({
   List<SmartPlaylist> smart = const [],
   LibraryKind? kind,
   LibrarySort sort = LibrarySort.recent,
+  bool? ascending,
 }) {
   final all = <LibraryEntry>[
     if (kind == null || kind == LibraryKind.playlist)
@@ -79,6 +110,8 @@ List<LibraryEntry> buildLibraryEntries({
           coverKey: p.coverKey,
           lastPlayedAt: p.lastPlayedAt,
           addedAt: p.addedAt,
+          playCount: p.playCount,
+          durationMs: p.durationMs,
           playlist: p,
         ),
     if (kind == null || kind == LibraryKind.playlist)
@@ -103,6 +136,9 @@ List<LibraryEntry> buildLibraryEntries({
           variousArtists: a.variousArtists,
           lastPlayedAt: a.lastPlayedAt,
           addedAt: a.addedAt,
+          year: a.year,
+          playCount: a.playCount,
+          durationMs: a.durationMs,
           album: a,
         ),
     if (kind == null || kind == LibraryKind.artist)
@@ -115,6 +151,8 @@ List<LibraryEntry> buildLibraryEntries({
           coverKey: a.coverKey,
           lastPlayedAt: a.lastPlayedAt,
           addedAt: a.addedAt,
+          playCount: a.playCount,
+          durationMs: a.durationMs,
           artistSummary: a,
         ),
   ];
@@ -124,26 +162,35 @@ List<LibraryEntry> buildLibraryEntries({
     keys[e] = sortKeyOf(e);
   }
   int alpha(LibraryEntry a, LibraryEntry b) => keys[a]!.compareTo(keys[b]!);
-  switch (sort) {
-    case LibrarySort.alpha:
-      all.sort(alpha);
-    case LibrarySort.recent:
-      // Played ones first (latest first), then the never-played alphabetically.
-      all.sort((a, b) {
-        final pa = a.lastPlayedAt, pb = b.lastPlayedAt;
-        if (pa != null && pb != null) {
-          final c = pb.compareTo(pa);
-          return c != 0 ? c : alpha(a, b);
-        }
-        if (pa != null) return -1;
-        if (pb != null) return 1;
-        return alpha(a, b);
-      });
-    case LibrarySort.added:
-      all.sort((a, b) {
-        final c = b.addedAt.compareTo(a.addedAt);
-        return c != 0 ? c : alpha(a, b);
-      });
+  final asc = ascending ?? sort.defaultAscending;
+  Comparable<dynamic>? value(LibraryEntry e) => switch (sort) {
+    LibrarySort.alpha => keys[e],
+    LibrarySort.recent => e.lastPlayedAt,
+    LibrarySort.added => e.addedAt == 0 ? null : e.addedAt,
+    LibrarySort.artist => switch (e.kind) {
+      LibraryKind.artist => e.artistSummary?.key == '' ? null : keys[e],
+      LibraryKind.album =>
+        e.variousArtists || e.artist == null || e.artist!.trim().isEmpty
+            ? null
+            : sortKeyOfText(e.artist!),
+      LibraryKind.playlist => null,
+    },
+    LibrarySort.year => e.year,
+    LibrarySort.plays => e.playCount,
+    LibrarySort.duration => e.durationMs,
+    LibrarySort.trackCount => e.smart != null ? null : e.count,
+  };
+  final values = Map<LibraryEntry, Comparable<dynamic>?>.identity();
+  for (final e in all) {
+    values[e] = value(e);
   }
+  all.sort((a, b) {
+    final va = values[a], vb = values[b];
+    if (va == null || vb == null) {
+      return va == vb ? alpha(a, b) : (va == null ? 1 : -1);
+    }
+    final c = va.compareTo(vb);
+    return c != 0 ? (asc ? c : -c) : alpha(a, b);
+  });
   return all;
 }

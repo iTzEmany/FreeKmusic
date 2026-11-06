@@ -316,6 +316,12 @@ abstract class AppLocalizations {
   /// **'Predefinito'**
   String get sortDefault;
 
+  /// No description provided for @sortPersonal.
+  ///
+  /// In it, this message translates to:
+  /// **'Ordine personale'**
+  String get sortPersonal;
+
   /// No description provided for @sortTitle.
   ///
   /// In it, this message translates to:
@@ -2175,6 +2181,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Aggiunti di recente'**
   String get sortAddedRecently;
+
+  /// No description provided for @sortTitleAToZ.
+  ///
+  /// In it, this message translates to:
+  /// **'Titolo A–Z'**
+  String get sortTitleAToZ;
+
+  /// No description provided for @sortMostPlayed.
+  ///
+  /// In it, this message translates to:
+  /// **'Più ascoltati'**
+  String get sortMostPlayed;
+
+  /// No description provided for @sortTrackCount.
+  ///
+  /// In it, this message translates to:
+  /// **'Numero di brani'**
+  String get sortTrackCount;
+
+  /// No description provided for @sortAscending.
+  ///
+  /// In it, this message translates to:
+  /// **'Crescente'**
+  String get sortAscending;
+
+  /// No description provided for @sortDescending.
+  ///
+  /// In it, this message translates to:
+  /// **'Decrescente'**
+  String get sortDescending;
 
   /// No description provided for @viewAsGrid.
   ///

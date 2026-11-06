@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/app_log.dart';
 import '../../services/audio/audio_backend.dart' show TransitionMode;
 import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
@@ -48,6 +49,8 @@ class AppSettings {
     this.normalizeVolume = false,
     this.receiveFromLan = false,
     this.librarySort = 'recent',
+    this.librarySortAscending,
+    this.playlistSorts = const {},
     this.libraryGrid = false,
     this.recentSearches = const [],
     this.ytNoticeSeen = false,
@@ -106,8 +109,15 @@ class AppSettings {
   final bool receiveFromLan;
   final String language;
 
-  /// Library order: `recent` | `alpha` | `added`.
+  /// Library order: the name of a `LibrarySort`.
   final String librarySort;
+
+  /// Direction of [librarySort]; null = the criterion's own (latest/most first).
+  final bool? librarySortAscending;
+
+  /// Each playlist's own order, by playlist id: «criterion:asc|desc» (D-424).
+  /// A missing id means the personal order.
+  final Map<String, String> playlistSorts;
 
   /// Library as a grid instead of a list.
   final bool libraryGrid;
@@ -200,6 +210,8 @@ class AppSettings {
     bool? normalizeVolume,
     bool? receiveFromLan,
     String? librarySort,
+    bool? librarySortAscending,
+    Map<String, String>? playlistSorts,
     bool? libraryGrid,
     List<String>? recentSearches,
     bool? ytNoticeSeen,
@@ -250,6 +262,8 @@ class AppSettings {
         normalizeVolume: normalizeVolume ?? this.normalizeVolume,
         receiveFromLan: receiveFromLan ?? this.receiveFromLan,
         librarySort: librarySort ?? this.librarySort,
+        librarySortAscending: librarySortAscending ?? this.librarySortAscending,
+        playlistSorts: playlistSorts ?? this.playlistSorts,
         libraryGrid: libraryGrid ?? this.libraryGrid,
         recentSearches: recentSearches ?? this.recentSearches,
         ytNoticeSeen: ytNoticeSeen ?? this.ytNoticeSeen,
@@ -321,6 +335,29 @@ class SettingsStore {
   static Future<SettingsStore> open() async =>
       SettingsStore(await SharedPreferences.getInstance());
 
+  Map<String, String> _readPlaylistSorts() {
+    final raw = _prefs.get('playlistSorts');
+    if (raw == null) return const {};
+    if (raw is! String) {
+      AppLog.w('playlistSorts has type ${raw.runtimeType}, back to personal order');
+      return const {};
+    }
+    try {
+      final m = jsonDecode(raw);
+      if (m is Map) return {for (final e in m.entries) '${e.key}': '${e.value}'};
+    } on FormatException catch (e) {
+      AppLog.w('playlistSorts unreadable, back to personal order', e);
+    }
+    return const {};
+  }
+
+  bool? _readSortAscending() {
+    final v = _prefs.get('librarySortAscending');
+    if (v is bool?) return v;
+    AppLog.w('librarySortAscending has type ${v.runtimeType}, using the default');
+    return null;
+  }
+
   AppSettings readSettings() => AppSettings(
         theme: _prefs.getString('theme') ?? 'notte',
         accent: _prefs.getString('accent') ?? 'viola',
@@ -342,6 +379,8 @@ class SettingsStore {
         receiveFromLan: _prefs.getBool('receiveFromLan') ?? false,
         jamLatencyMs: _prefs.getInt('jamLatencyMs') ?? 0,
         librarySort: _prefs.getString('librarySort') ?? 'recent',
+        librarySortAscending: _readSortAscending(),
+        playlistSorts: _readPlaylistSorts(),
         libraryGrid: _prefs.getBool('libraryGrid') ?? false,
         recentSearches: _prefs.getStringList('recentSearches') ?? const [],
         ytNoticeSeen: _prefs.getBool('ytNoticeSeen') ?? false,
@@ -422,6 +461,13 @@ class SettingsStore {
     await _prefs.setBool('receiveFromLan', s.receiveFromLan);
     await _prefs.setInt('jamLatencyMs', s.jamLatencyMs);
     await _prefs.setString('librarySort', s.librarySort);
+    final asc = s.librarySortAscending;
+    if (asc == null) {
+      await _prefs.remove('librarySortAscending');
+    } else {
+      await _prefs.setBool('librarySortAscending', asc);
+    }
+    await _prefs.setString('playlistSorts', jsonEncode(s.playlistSorts));
     await _prefs.setBool('libraryGrid', s.libraryGrid);
     await _prefs.setStringList('recentSearches', s.recentSearches);
     await _prefs.setBool('ytNoticeSeen', s.ytNoticeSeen);

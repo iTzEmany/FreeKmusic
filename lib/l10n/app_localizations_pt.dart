@@ -116,6 +116,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get sortDefault => 'Predefinido';
 
   @override
+  String get sortPersonal => 'Ordem pessoal';
+
+  @override
   String get sortTitle => 'Título';
 
   @override
@@ -1250,6 +1253,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get sortAddedRecently => 'Adicionados recentemente';
+
+  @override
+  String get sortTitleAToZ => 'Título A–Z';
+
+  @override
+  String get sortMostPlayed => 'Mais ouvidas';
+
+  @override
+  String get sortTrackCount => 'Número de faixas';
+
+  @override
+  String get sortAscending => 'Crescente';
+
+  @override
+  String get sortDescending => 'Decrescente';
 
   @override
   String get viewAsGrid => 'Ver em grelha';

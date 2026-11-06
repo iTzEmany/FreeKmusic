@@ -39,8 +39,8 @@ void main() {
       c.listen(p, (_, _) {});
       await c.read(p.future);
     }
-    const all = (null, LibrarySort.alpha);
-    const albums = (LibraryKind.album, LibrarySort.alpha);
+    const all = (null, LibrarySort.alpha, true);
+    const albums = (LibraryKind.album, LibrarySort.alpha, true);
     final first = c.read(libraryEntriesProvider(all)).value!;
     expect([for (final e in first) e.title], ['A', 'B']);
     c.read(libraryEntriesProvider(albums));
