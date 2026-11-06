@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
 import 'package:codecore/services/online/innertube_client.dart';
@@ -31,7 +32,7 @@ void main() {
   late ReleaseRepository releases;
   late List<String> asked;
   late List<Duration> waits;
-  final now = DateTime(2026, 10, 22, 9);
+  var now = DateTime(2026, 10, 22, 9);
   // What each artist's page answers (a function so a test can change it).
   late Object Function(String id) answer;
 
@@ -138,5 +139,36 @@ void main() {
     final out = await checker().run();
     expect(asked, isEmpty);
     expect((out.checked, out.stoppedBy), (0, null));
+  });
+
+  test('the merged profiles are fetched with the followed one and their news count for it', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC9', createdAt: 0);
+    await checker().run(only: 'UC1');
+    expect(asked, ['UC1', 'UC9']);
+    expect((await follows.all()).length, 3);
+    answer = (id) => id != 'UC9'
+        ? page('ytm_artist_releases', id)
+        : YtmArtistPage(ref: YtmArtistRef(id: id, name: id), shelves: const [
+            YtmReleaseShelf('Album', [YtmRelease(browseId: 'z', title: 'Zeta', subtitle: '2026')]),
+          ]);
+    final out = await checker().run(only: 'UC1');
+    expect(out.fresh.map((f) => (f.artist.ytmId, f.release.release.title)), [('UC1', 'Zeta')]);
+  });
+
+  test('a profile merged after the last check adds its releases as known, not as news', () async {
+    await checker().run(only: 'UC1');
+    now = now.add(const Duration(hours: 1));
+    await ArtistAliasRepository(db).merge('UC1', 'UC9', createdAt: now.millisecondsSinceEpoch);
+    now = now.add(const Duration(hours: 1));
+    YtmArtistPage alias(List<String> titles) => YtmArtistPage(
+        ref: YtmArtistRef(id: 'UC9', name: 'UC9'),
+        shelves: [YtmReleaseShelf('Album', [for (final t in titles) YtmRelease(browseId: t, title: t, subtitle: '2026')])]);
+    var titles = ['Zeta'];
+    answer = (id) => id == 'UC9' ? alias(titles) : page('ytm_artist_releases', id);
+    expect((await checker().run(only: 'UC1')).fresh, isEmpty);
+    titles = ['Zeta', 'Omega'];
+    now = now.add(const Duration(hours: 1));
+    final out = await checker().run(only: 'UC1');
+    expect(out.fresh.map((f) => f.release.release.title), ['Omega']);
   });
 }

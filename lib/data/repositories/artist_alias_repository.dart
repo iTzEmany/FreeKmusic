@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
@@ -55,10 +57,11 @@ class ArtistAliasRepository {
           return;
         }
         final newMain = group[1];
+        final kept = await (_db.select(_db.artistAliases)..where((x) => x.aliasId.isIn(group.skip(2)))).get();
         await (_db.delete(_db.artistAliases)..where((x) => x.mainId.equals(id))).go();
         await (_db.delete(_db.artistAliases)..where((x) => x.aliasId.equals(newMain))).go();
         await _db.batch((b) => b.insertAll(_db.artistAliases, [
-              for (final r in group.skip(2)) ArtistAliasesCompanion.insert(aliasId: r, mainId: newMain),
+              for (final r in kept) ArtistAliasesCompanion.insert(aliasId: r.aliasId, mainId: newMain, createdAt: Value(r.createdAt)),
             ]));
       });
 
@@ -93,5 +96,12 @@ class ArtistAliasRepository {
   Stream<Map<String, String>> watchAliases() =>
       _db.select(_db.artistAliases).watch().map((rows) => {for (final r in rows) r.aliasId: r.mainId});
 
-  static (String, String) _ordered(String a, String b) => a.compareTo(b) <= 0 ? (a, b) : (b, a);
+  // SQLite's CHECK (a < b) compares UTF-8 bytes, not UTF-16 units.
+  static (String, String) _ordered(String a, String b) {
+    final x = utf8.encode(a), y = utf8.encode(b);
+    for (var i = 0; i < x.length && i < y.length; i++) {
+      if (x[i] != y[i]) return x[i] < y[i] ? (a, b) : (b, a);
+    }
+    return x.length <= y.length ? (a, b) : (b, a);
+  }
 }

@@ -459,14 +459,21 @@ void main() {
         ArtistAliasData(aliasId: 'C', mainId: 'A'),
         ArtistAliasData(aliasId: 'B', mainId: 'M'),
         ArtistAliasData(aliasId: 'D', mainId: 'D'),
+        ArtistAliasData(aliasId: 'E', mainId: ''),
       ], artistNotSame: [
         ['M', 'C'],
         ['M', 'Z'],
+        ['', 'Y'],
+        ['\uFF21', '\u{1F600}'],
       ]));
       expect(await repo.groupOf('M'), ['M', 'A', 'C']);
       expect(await repo.groupOf('B'), ['Q', 'B']);
       expect(await repo.isNotSame('M', 'C'), isFalse, reason: 'same group here');
       expect(await repo.isNotSame('Z', 'M'), isTrue);
+      expect(await repo.groupOf('D'), ['D']);
+      expect(await repo.groupOf('E'), ['E']);
+      expect(await repo.isNotSame('', 'Y'), isFalse);
+      expect(await repo.isNotSame('\u{1F600}', '\uFF21'), isTrue);
     });
 
     test('the local choice wins: a different pair, or a profile already in a group, blocks the backup alias', () async {

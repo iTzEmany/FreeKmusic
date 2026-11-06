@@ -329,7 +329,10 @@ final _year = RegExp(r'\b(?:19|20)\d{2}\b');
 /// first. «Show all» stays the main profile's. Other shelf kinds stay the main's.
 List<YtmShelf> mergeArtistShelves(YtmArtistPage main, List<YtmArtistPage> others) {
   if (others.isEmpty) return main.shelves;
-  String key(YtmRelease r) => '${matchKey(r.title)}|${_yearOf(r)}';
+  String key(YtmRelease r) {
+    final k = matchKey(r.title);
+    return '${k.isEmpty ? r.title.trim().toLowerCase() : k}|${_yearOf(r)}';
+  }
   final shelves = [...main.shelves];
   final seen = {
     for (final x in shelves)

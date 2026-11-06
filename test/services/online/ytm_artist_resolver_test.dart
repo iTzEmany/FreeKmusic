@@ -37,5 +37,6 @@ void main() {
     final found = [_a('1', 'Queen'), _a('2', 'Queen')];
     final pick = pickYtmArtist('Queen', found, aliases: {'1': '9', '2': '9'});
     expect(pick, isA<ExactArtist>());
+    expect((pick as ExactArtist).artist.id, '1');
   });
 }

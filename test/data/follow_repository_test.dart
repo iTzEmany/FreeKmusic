@@ -168,11 +168,36 @@ void main() {
     expect(await follows.watchIsFollowed('UC2').first, isFalse);
   });
 
-  test('the alias of a followed main profile is checked too; not when the main is excluded', () async {
+  test('the group of a followed main is checked with it, with no row of its own; split frees the alias', () async {
+    final repo = ArtistAliasRepository(db);
+    await repo.merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    expect((await follows.toCheck()).map((r) => r.ytmId), ['UC1']);
+    expect(await follows.checkIds('UC1'), ['UC1', 'UC2']);
+    expect((await follows.all()).length, 1);
+    expect((await follows.watchFollowed().first).length, 1);
+    await repo.split('UC2');
+    expect(await follows.watchIsFollowed('UC2').first, isFalse);
+    expect(await follows.checkIds('UC1'), ['UC1']);
+  });
+
+  test('an excluded main leaves its aliases unchecked', () async {
     await ArtistAliasRepository(db).merge('UC1', 'UC2');
     await follows.follow(artist('UC1'));
-    expect((await follows.toCheck()).map((r) => r.ytmId).toSet(), {'UC1', 'UC2'});
     await follows.unfollow('UC1');
     expect(await follows.toCheck(), isEmpty);
+  });
+
+  test('a followed alias whose main is followed too is checked once', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    await follows.follow(artist('UC2'));
+    expect((await follows.toCheck()).map((r) => r.ytmId), ['UC1']);
+  });
+
+  test('following an alias makes its main profile followed', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC2'));
+    expect(await follows.watchIsFollowed('UC1').first, isTrue);
   });
 }

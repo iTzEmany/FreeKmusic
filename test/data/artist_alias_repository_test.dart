@@ -79,4 +79,19 @@ void main() {
     await repo.merge('A', 'C');
     expect([for (final r in await db.select(db.artistNotSame).get()) (r.a, r.b)], [('A', 'X')]);
   });
+
+  test('markNotSame orders by UTF-8 bytes, like the CHECK constraint', () async {
+    await repo.markNotSame('\uFF21', '\u{1F600}');
+    expect(await repo.isNotSame('\u{1F600}', '\uFF21'), isTrue);
+  });
+
+  test('split of the main keeps the remaining aliases\' createdAt', () async {
+    await repo.merge('A', 'B', createdAt: 5);
+    await repo.merge('A', 'C', createdAt: 10);
+    await repo.merge('A', 'D', createdAt: 20);
+    await repo.split('A');
+    final rows = await db.select(db.artistAliases).get();
+    expect({for (final r in rows) r.aliasId: r.createdAt}, {'C': 10, 'D': 20});
+    expect(rows.every((r) => r.mainId == 'B'), isTrue);
+  });
 }

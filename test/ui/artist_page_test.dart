@@ -606,6 +606,23 @@ void main() {
       expect([for (final r in shelves.single.releases) r.title], ['New', 'Mid', 'Old']);
       expect(shelves.single.more, isNotNull);
     });
+
+    test('merged shelves: same title in different years stays two releases; symbol-only titles do not collapse', () {
+      final main = YtmArtistPage(ref: a, shelves: const [
+        YtmReleaseShelf('Album', [
+          YtmRelease(browseId: 'l1', title: 'Live', subtitle: '2010'),
+          YtmRelease(browseId: 'h', title: '\u2665', subtitle: '2020'),
+        ]),
+      ]);
+      final other = YtmArtistPage(ref: b, shelves: const [
+        YtmReleaseShelf('Album', [
+          YtmRelease(browseId: 'l2', title: 'Live', subtitle: '2015'),
+          YtmRelease(browseId: 's', title: '\u2606', subtitle: '2020'),
+        ]),
+      ]);
+      final shelf = mergeArtistShelves(main, [other]).single as YtmReleaseShelf;
+      expect(shelf.releases.length, 4);
+    });
   });
 }
 

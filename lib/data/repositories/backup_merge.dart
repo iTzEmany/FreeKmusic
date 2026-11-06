@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
@@ -298,6 +299,10 @@ Future<void> _mergeArtistAliases(AppDatabase db, UserData data) async {
   }
   for (final pair in data.artistNotSame) {
     if (pair[0].isEmpty || pair[1].isEmpty || await repo.mainOf(pair[0]) == await repo.mainOf(pair[1])) continue;
-    await repo.markNotSame(pair[0], pair[1]);
+    try {
+      await repo.markNotSame(pair[0], pair[1]);
+    } catch (e) {
+      AppLog.w('backup: "different" pair skipped: $e');
+    }
   }
 }

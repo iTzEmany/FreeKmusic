@@ -122,16 +122,29 @@ class FollowRepository {
 
   /// Artists to check, the least recently checked first (never checked ones
   /// before any other); not the excluded nor the not found.
-  /// The aliases of a followed main profile are checked too: they get their own row.
+  /// The profiles merged with a followed one are checked with it ([checkIds]),
+  /// so they have no row of their own; a followed alias whose main is followed
+  /// too is left out (the main covers it).
   Future<List<FollowedArtist>> toCheck({int limit = 115}) async {
-    await _db.customInsert(
-      'INSERT OR IGNORE INTO followed_artists (ytm_id, name, thumb_url, origin, excluded, muted, followed_at) '
-      'SELECT a.alias_id, f.name, f.thumb_url, f.origin, 0, f.muted, f.followed_at '
-      'FROM artist_aliases a JOIN followed_artists f ON f.ytm_id = a.main_id WHERE f.excluded = 0',
-      updates: {_db.followedArtists},
-    );
-    return _toCheck(limit);
+    final aliases = await ArtistAliasRepository(_db).allAliases();
+    final rows = await _toCheck(1 << 30);
+    final ids = {for (final r in rows) r.ytmId};
+    return [for (final r in rows) if (!ids.contains(aliases[r.ytmId])) r].take(limit).toList();
   }
+
+  /// The aliases of [id]'s group that joined it after [since] (ms).
+  Future<Set<String>> joinedAfter(String id, int since) async {
+    final main = await ArtistAliasRepository(_db).mainOf(id);
+    return {
+      for (final r in await (_db.select(_db.artistAliases)
+            ..where((x) => x.mainId.equals(main) & x.createdAt.isBiggerThanValue(since)))
+          .get())
+        r.aliasId,
+    };
+  }
+
+  /// Every profile to fetch for the followed row [id]: its whole group.
+  Future<List<String>> checkIds(String id) => ArtistAliasRepository(_db).groupOf(id);
 
   Future<List<FollowedArtist>> _toCheck(int limit) => (_db.select(_db.followedArtists)
         ..where((a) => a.excluded.equals(false) & a.checksFailed.isSmallerThanValue(kMaxNotFound))
