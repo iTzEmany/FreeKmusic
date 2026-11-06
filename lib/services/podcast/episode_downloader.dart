@@ -15,6 +15,9 @@ import '../../data/repositories/podcast_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import '../online/http_client.dart';
+import '../online/yt_dlp_args.dart' show podcastAudioSelector;
+import '../online/youtube_service.dart';
+import 'ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import '../tags/tag_reader.dart';
 import 'podcast_models.dart';
 
@@ -64,6 +67,7 @@ class EpisodeDownloader {
     required this.baseDir,
     Dio? dio,
     this.readTagsInIsolate = true,
+    this.youtube,
   }) : _dio = dio ??
             Dio(BaseOptions(
               connectTimeout: const Duration(seconds: 15),
@@ -81,6 +85,9 @@ class EpisodeDownloader {
   final Dio _dio;
   final bool readTagsInIsolate;
 
+  /// yt-dlp, for the episodes of YouTube Music shows (audio only).
+  final YoutubeService? youtube;
+
   bool _inside(String path) => p.isWithin(baseDir, path);
 
   /// Downloads the episode and returns the id of its track, or null when it was
@@ -97,6 +104,9 @@ class EpisodeDownloader {
     if (existing != null && File(existing.path).existsSync()) return existing.id;
     final podcast = await repo.byId(episode.podcastId);
     if (podcast == null) return null;
+    if (podcast.source == kPodcastSourceYtm) {
+      return _downloadYtm(episode, podcast, cancel: cancel, onProgress: onProgress);
+    }
 
     final Response<ResponseBody> res;
     try {
@@ -158,7 +168,47 @@ class EpisodeDownloader {
       throw const PodcastException(PodcastErrorKind.network, 'empty answer');
     }
     await part.rename(target);
+    return _register(episode, podcast, target, ext);
+  }
 
+  /// Only the audio of the episode, with yt-dlp (the WEB_REMIX player says
+  /// UNPLAYABLE, so nothing else is tried). The file stays as served (m4a or opus).
+  Future<int?> _downloadYtm(PodcastEpisode episode, Podcast podcast,
+      {CancelToken? cancel, void Function(int received, int total)? onProgress}) async {
+    final yt = youtube;
+    if (yt == null) {
+      throw const PodcastException(PodcastErrorKind.unsupportedFormat, 'no yt-dlp');
+    }
+    final dir = Directory(p.join(baseDir, '${podcast.id}'));
+    String? path;
+    try {
+      await for (final prog in yt.download(
+        YtResult(
+          id: episode.guid,
+          title: episode.title,
+          channel: podcast.title,
+          duration: null,
+          downloadName: episodeFileStem(episode.guid),
+          webpageUrl: episode.audioUrl,
+        ),
+        dir,
+        cancel: cancel,
+        options: const DownloadOptions(selector: podcastAudioSelector),
+      )) {
+        if (prog.path != null) path = prog.path;
+        onProgress?.call(prog.received, prog.total);
+      }
+    } on YtException catch (e, st) {
+      AppLog.w('YouTube Music episode failed: ${episode.guid}', e, st);
+      throw PodcastException(PodcastErrorKind.network, '$e');
+    }
+    if (path == null || (cancel?.isCancelled ?? false)) return null;
+    final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
+    return _register(episode, podcast, path, ext);
+  }
+
+  /// Makes the saved file [target] a library track and links the episode to it.
+  Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
     final info = await _readTags(target);
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
@@ -187,7 +237,7 @@ class EpisodeDownloader {
     if (trackId == null) {
       throw const PodcastException(PodcastErrorKind.network, 'library row missing');
     }
-    await repo.setTrackId(episodeId, trackId);
+    await repo.setTrackId(episode.id, trackId);
     return trackId;
   }
 

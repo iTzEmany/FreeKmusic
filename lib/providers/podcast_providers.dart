@@ -14,9 +14,12 @@ import '../services/podcast/feed_fetcher.dart';
 import '../services/podcast/podcast_cleanup.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/podcast_service.dart';
+import '../services/online/ytm_podcasts.dart';
+import '../services/podcast/ytm_podcast_sync.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
+import 'youtube_providers.dart';
 
 final podcastRepositoryProvider = Provider<PodcastRepository>(
   (ref) => PodcastRepository(ref.watch(databaseProvider)),
@@ -77,6 +80,26 @@ final episodeDownloaderProvider = FutureProvider<EpisodeDownloader>((ref) async 
     tracks: ref.watch(trackRepositoryProvider),
     tags: ref.watch(tagReaderProvider),
     baseDir: await ref.watch(podcastsDirProvider.future),
+    youtube: ref.watch(ytDlpServiceProvider),
+  );
+});
+
+/// YouTube Music shows: subscribing and reading their new episodes (D-404).
+final ytmPodcastsProvider = Provider<YtmPodcasts>(
+  (ref) => YtmPodcasts(ref.watch(innerTubeClientProvider)),
+);
+
+final ytmPodcastSyncProvider = Provider<YtmPodcastSync>((ref) {
+  final web = DioWebClient();
+  final covers = ref.watch(coverStoreProvider);
+  return YtmPodcastSync(
+    repo: ref.watch(podcastRepositoryProvider),
+    ytm: ref.watch(ytmPodcastsProvider),
+    saveCover: (id, url) async {
+      final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
+      if (bytes == null) return null;
+      return covers.saveFromBytes(podcastAlbumKey(id), bytes, url);
+    },
   );
 });
 

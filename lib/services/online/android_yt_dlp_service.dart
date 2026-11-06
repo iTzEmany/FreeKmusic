@@ -176,7 +176,7 @@ class AndroidYtDlpService implements YoutubeService {
   }) async* {
     await outDir.create(recursive: true);
     // yt-dlp in the app always comes with ffmpeg.
-    final choice = downloadChoice(options.format, hasFfmpeg: true);
+    final choice = downloadChoice(options.format, hasFfmpeg: true, selector: options.selector);
     final target = uniquePath(
       outDir.path,
       downloadBaseName(r),

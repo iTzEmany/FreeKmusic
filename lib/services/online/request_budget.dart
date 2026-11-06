@@ -110,3 +110,8 @@ WindowLimiter wikimediaLimiter({DateTime Function()? now, Future<void> Function(
       now: now,
       pause: pause,
     );
+
+/// Podcast shows of YouTube Music (a search or a show page each): at most this
+/// many in any minute; past it the call waits (a refresh of every show is slow
+/// on purpose rather than a burst that earns a 429).
+const kPodcastRequestsPerMinute = 20;

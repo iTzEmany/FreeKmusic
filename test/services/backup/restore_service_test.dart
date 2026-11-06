@@ -170,6 +170,21 @@ void main() {
       expect((await db.select(db.artistNotSame).getSingle()).b, 'UC3');
     });
 
+    test('podcasts come back with their source: YouTube Music and RSS (D-404)', () async {
+      final zip = await makeBackup(['n1'], seed: (db) async {
+        await db.into(db.podcasts).insert(PodcastsCompanion.insert(
+            feedUrl: 'https://music.youtube.com/browse/MPSPPx', title: 'Show', addedAt: 1,
+            source: const Value(1), sourceId: const Value('MPSPPx')));
+        await db.into(db.podcasts).insert(PodcastsCompanion.insert(feedUrl: 'https://x/feed', title: 'Feed', addedAt: 2));
+      });
+      await stageFullRestore(zip, staging);
+      expect(await apply(), isTrue);
+      final db = AppDatabase(NativeDatabase(dbFile));
+      addTearDown(db.close);
+      final rows = await db.select(db.podcasts).get();
+      expect([for (final r in rows) (r.title, r.source, r.sourceId)], [('Show', 1, 'MPSPPx'), ('Feed', 0, null)]);
+    });
+
     test('a v14 backup is accepted and upgraded to the current schema', () async {
       final old = AppDatabase(NativeDatabase.memory());
       await old.into(old.tracks).insert(TracksCompanion.insert(

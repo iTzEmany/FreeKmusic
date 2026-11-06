@@ -6,6 +6,10 @@ import 'youtube_service.dart';
 /// served: m4a when there is one, else opus in webm).
 const downloadExtensions = ['mp3', 'm4a', 'opus', 'ogg', 'webm'];
 
+/// Audio-only formats of a YouTube Music podcast episode (139 m4a, 250 and 249
+/// opus; checked 2026-11-05). Never `best`: that would take the video.
+const podcastAudioSelector = '139/250/249/bestaudio';
+
 const _preferM4a = 'bestaudio[ext=m4a]/bestaudio/best';
 
 /// How yt-dlp is asked for [format]: the stream to pick and what ffmpeg turns
@@ -13,7 +17,10 @@ const _preferM4a = 'bestaudio[ext=m4a]/bestaudio/best';
 /// is converted and YouTube's m4a is preferred, since every player reads it.
 ({String selector, String? audioFormat, String? quality}) downloadChoice(
     DownloadFormat format,
-    {required bool hasFfmpeg}) {
+    {required bool hasFfmpeg,
+    String? selector}) {
+  // A chosen selector (a podcast episode) is taken as it is: never converted.
+  if (selector != null) return (selector: selector, audioFormat: null, quality: null);
   if (!hasFfmpeg) return (selector: _preferM4a, audioFormat: null, quality: null);
   return switch (format) {
     DownloadFormat.original =>
@@ -38,7 +45,7 @@ List<String> buildDownloadArgs({
   List<String> jsArgs = const [],
 }) {
   final rate = options.rateLimitKBps;
-  final choice = downloadChoice(options.format, hasFfmpeg: hasFfmpeg);
+  final choice = downloadChoice(options.format, hasFfmpeg: hasFfmpeg, selector: options.selector);
   final audioFormat = choice.audioFormat;
   return [
     '--no-playlist',
@@ -77,7 +84,7 @@ List<String> buildDownloadArgs({
 /// audio usually is as served (Opus once extracted, m4a without ffmpeg). Pair
 /// it with [anyDownloadExtensionExists] for the uniqueness check.
 String reservedExtension({required bool hasFfmpeg, required DownloadOptions options}) =>
-    downloadChoice(options.format, hasFfmpeg: hasFfmpeg).audioFormat ??
+    downloadChoice(options.format, hasFfmpeg: hasFfmpeg, selector: options.selector).audioFormat ??
     (hasFfmpeg ? 'opus' : 'm4a');
 
 /// True when `<stem>.<ext>` exists for any container a download can produce,

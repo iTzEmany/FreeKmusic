@@ -32,8 +32,10 @@ class PodcastRepository {
   final AppDatabase _db;
 
   /// Saves a podcast (or refreshes the one with the same address) and its
-  /// episodes. Returns the podcast's id.
-  Future<int> subscribe(String feedUrl, PodcastFeed feed, {required int now}) {
+  /// episodes. Returns the podcast's id. [source] and [sourceId] say where it
+  /// comes from (see [Podcasts.source]); a podcast already there keeps its own.
+  Future<int> subscribe(String feedUrl, PodcastFeed feed,
+      {required int now, int source = 0, String? sourceId}) {
     return _db.transaction(() async {
       final existing = await (_db.select(_db.podcasts)
             ..where((p) => p.feedUrl.equals(feedUrl)))
@@ -48,6 +50,8 @@ class PodcastRepository {
               language: Value(feed.language),
               addedAt: now,
               lastCheckedAt: Value(now),
+              source: Value(source),
+              sourceId: Value(sourceId),
             ));
       } else {
         id = existing.id;

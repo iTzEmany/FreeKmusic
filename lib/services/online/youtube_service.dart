@@ -95,7 +95,12 @@ class DownloadOptions {
     this.rateLimitKBps,
     this.format = DownloadFormat.m4a,
     this.emitStreamUrl = false,
+    this.selector,
   });
+
+  /// A yt-dlp format selector that replaces the one of [format] (the audio of
+  /// a podcast episode); the file is then kept as served.
+  final String? selector;
 
   /// `--limit-rate` in KB/s; null or 0 = unlimited.
   final int? rateLimitKBps;
