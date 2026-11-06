@@ -1339,7 +1339,7 @@ mobile_scanner — fase 24 — 2026-10-19
 ## Fase 93 — Dati per i filtri (`fase-93-dati-per-i-filtri.md`)
 - [ ] 93.1 Più generi per brano
 - [ ] 93.2 Nazionalità dell'artista
-- [ ] 93.3 BPM ed etichetta
+- [x] 93.3 BPM ed etichetta
 - [ ] 93.4 Controlli di fase
 
 ## Fase 94 — Playlist intelligenti a filtri (`fase-94-playlist-intelligenti.md`)

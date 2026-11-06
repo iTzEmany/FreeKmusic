@@ -31,3 +31,6 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
 ## Esiti
+
+### 93.3 — BPM ed etichetta
+Scelta: `json_extract` su `track_enrich.details` (campi `bpm`, `label`), protetto da `json_valid`; niente colonne derivate e niente migrazione, quindi nessun dato duplicato. I filtri girano su pochi brani arricchiti. API in `lib/data/repositories/enrich_filter_queries.dart`: `bpmSql(e)`, `labelSql(e)`, `trackIdsByBpm`, `trackIdsByLabel` (confronto con `normalize` in Dart, perché SQLite non toglie gli accenti). Brani non arricchiti, JSON malformato o campo mancante danno NULL e sono esclusi.
