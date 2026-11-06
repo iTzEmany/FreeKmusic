@@ -1307,18 +1307,18 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 88.4 Nomi di «Ordina per»
 - [x] 88.5 Cerca: info accanto al titolo, filtri solo testo
 - [x] 88.5b Ripristino: rifiutare il database in attesa con schema più nuovo (debito della 87)
-- [ ] 88.6 Controlli di fase
+- [x] 88.6 Controlli di fase
 
 ## Fase 89 — Dock flottante e sezioni che ripartono (`fase-89-dock-e-sezioni.md`)
-- [ ] 89.1 Altezza del dock e margine in fondo comune
-- [ ] 89.2 Dock flottante (`extendBody`)
-- [ ] 89.3 Sfocatura nel Tema
-- [ ] 89.4 Sezioni che tornano allo stato iniziale
-- [ ] 89.5 Controlli di fase
+- [x] 89.1 Altezza del dock e margine in fondo comune
+- [x] 89.2 Dock flottante (`extendBody`)
+- [x] 89.3 Sfocatura nel Tema
+- [x] 89.4 Sezioni che tornano allo stato iniziale
+- [x] 89.5 Controlli di fase
 
 ## Fase 90 — Intestazioni che seguono lo scroll (`fase-90-intestazioni-che-scorrono.md`)
-- [ ] 90.1 Intestazione che si ritrae di quanto si scorre
-- [ ] 90.2 Tutti i brani
+- [x] 90.1 Intestazione che si ritrae di quanto si scorre
+- [x] 90.2 Tutti i brani
 - [ ] 90.3 Isola della Libreria
 - [ ] 90.4 Lente dentro l'isola
 - [ ] 90.5 Controlli di fase
