@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:archive/archive_io.dart';
-import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -190,19 +189,15 @@ Future<void> _checkStagedDatabase(File f, int schemaVersion) async {
   final int v;
   try {
     v = raw.select('PRAGMA user_version').single.values.first as int;
+    // Before drift opens the file and runs migrations on a damaged one.
+    final check = raw.select('PRAGMA quick_check');
+    if (check.length != 1 || check.single.values.first != 'ok') {
+      throw const RestoreException('the backup database is damaged');
+    }
   } finally {
     raw.close();
   }
   if (v > schemaVersion) throw RestoreException('the backup database is newer (schema $v)');
-  final db = AppDatabase(NativeDatabase(f));
-  try {
-    final check = await db.customSelect('PRAGMA quick_check').get();
-    if (check.length != 1 || check.single.data.values.first != 'ok') {
-      throw const RestoreException('the backup database is damaged');
-    }
-  } finally {
-    await db.close();
-  }
 }
 
 void _quietDelete(Directory d) {
