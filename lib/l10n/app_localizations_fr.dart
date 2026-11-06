@@ -117,6 +117,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sortDefault => 'Par défaut';
 
   @override
+  String get sortPersonal => 'Ordre personnel';
+
+  @override
   String get sortTitle => 'Titre';
 
   @override

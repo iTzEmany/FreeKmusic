@@ -339,6 +339,7 @@ void main() {
       await h.pump(tester, PlaylistDetailScreen(playlist: playlist));
       await _settle(tester);
       expect(await _open(tester, find.byTooltip('Altre azioni')), [
+        'sort',
         'edit',
         'add',
         'cover',

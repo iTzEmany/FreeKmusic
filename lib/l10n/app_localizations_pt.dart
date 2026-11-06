@@ -116,6 +116,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get sortDefault => 'Predefinido';
 
   @override
+  String get sortPersonal => 'Ordem pessoal';
+
+  @override
   String get sortTitle => 'Título';
 
   @override

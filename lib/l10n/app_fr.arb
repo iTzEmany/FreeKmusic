@@ -35,6 +35,7 @@
   "emptyQueue": "La file d’attente est vide",
   "noResults": "Aucun résultat",
   "sortDefault": "Par défaut",
+  "sortPersonal": "Ordre personnel",
   "sortTitle": "Titre",
   "sortArtist": "Artiste",
   "sortAlbum": "Album",

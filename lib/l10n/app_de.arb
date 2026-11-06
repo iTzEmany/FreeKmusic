@@ -35,6 +35,7 @@
   "emptyQueue": "Die Warteschlange ist leer",
   "noResults": "Keine Ergebnisse",
   "sortDefault": "Standard",
+  "sortPersonal": "Eigene Reihenfolge",
   "sortTitle": "Titel",
   "sortArtist": "Künstler",
   "sortAlbum": "Album",

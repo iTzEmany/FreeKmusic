@@ -316,6 +316,12 @@ abstract class AppLocalizations {
   /// **'Predefinito'**
   String get sortDefault;
 
+  /// No description provided for @sortPersonal.
+  ///
+  /// In it, this message translates to:
+  /// **'Ordine personale'**
+  String get sortPersonal;
+
   /// No description provided for @sortTitle.
   ///
   /// In it, this message translates to:

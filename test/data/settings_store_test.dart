@@ -32,6 +32,18 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().librarySortAscending, true);
   });
+  test('each playlist keeps its own order, separate from the others', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, isEmpty);
+    await store.writeSettings(store.readSettings().copyWith(
+        playlistSorts: {'12': 'title:asc', '7': 'year:desc'}));
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, {'12': 'title:asc', '7': 'year:desc'});
+    SharedPreferences.setMockInitialValues({'playlistSorts': '{broken'});
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, isEmpty);
+  });
   streamCacheSettingTests();
   test('playback state round trip', () async {
     SharedPreferences.setMockInitialValues({});

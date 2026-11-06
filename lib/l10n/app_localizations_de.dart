@@ -116,6 +116,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sortDefault => 'Standard';
 
   @override
+  String get sortPersonal => 'Eigene Reihenfolge';
+
+  @override
   String get sortTitle => 'Titel';
 
   @override

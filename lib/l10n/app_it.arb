@@ -35,6 +35,7 @@
   "emptyQueue": "La coda è vuota",
   "noResults": "Nessun risultato",
   "sortDefault": "Predefinito",
+  "sortPersonal": "Ordine personale",
   "sortTitle": "Titolo",
   "sortArtist": "Artista",
   "sortAlbum": "Album",
