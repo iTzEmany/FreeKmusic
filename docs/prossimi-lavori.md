@@ -149,4 +149,7 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
 - `PlaylistOrder.apply` viene chiamato dentro `build`.
 - La cache di `artistMergeSearchProvider` non ha limite.
-- Test di poco valore in `settings_store_test` («blurred dock off by default and kept»): da togliere.
+- Test di poco valore in `settings_store_test` («blurred dock off by default and kept»): da togliere.- `libraryEntriesProvider` tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto (niente nuovo ordinamento tornando su una scheda). Rimedio: tenere viva solo l'ultima combinazione per scheda.
+- `m.createIndex` nelle migrazioni prima della v15 non usa IF NOT EXISTS: dopo un ritorno a una build più vecchia della v15 e un nuovo aggiornamento l'avvio fallisce. Rimedio: un helper unico per gli indici con IF NOT EXISTS.
+- `FollowRepository.watchNames` ricostruisce tutta la mappa nomi a ogni scrittura su `artist_lookups`/`followed_artists` (Impostazioni → Artisti uniti si ridisegna durante l'arricchimento). Rimedio: limitarla agli ID uniti o «diversi», o `.distinct`.
+- La rilettura dei generi si ferma mentre la musica suona (D-390): per chi ascolta quasi sempre può non finire mai, e le regole di genere restano sulla colonna vecchia per i brani non riletti. Rimedio: se dopo N giorni non è finita, leggere a basso ritmo anche durante la riproduzione.
