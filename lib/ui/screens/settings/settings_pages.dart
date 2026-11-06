@@ -113,7 +113,7 @@ class SettingsPageView extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
         child: ListView(
-          padding: const EdgeInsets.only(bottom: CcDims.gap24),
+          padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
           children: [
             for (final g in groups)
               single ? SettingsGroup(children: g.children) : g,
@@ -133,6 +133,13 @@ List<SettingsGroup> _appearance(BuildContext context, WidgetRef ref) {
       title: l.settingsAppearance,
       children: [
         const ThemeTiles(),
+        SwitchListTile(
+          key: const ValueKey('blurred-chrome'),
+          title: Text(l.blurredChrome),
+          subtitle: Text(l.blurredChromeHint),
+          value: s.blurredChrome,
+          onChanged: (v) => notifier.update((c) => c.copyWith(blurredChrome: v)),
+        ),
         const IconFollowTile(),
         ListTile(
           title: Text(l.settingsTextSize),

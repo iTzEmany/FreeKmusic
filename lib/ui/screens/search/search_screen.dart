@@ -226,7 +226,9 @@ class _EmptyQuery extends ConsumerWidget {
                 ShellNav.open<void>(context, GenreScreen(genre: name)),
           ),
         ],
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        SliverToBoxAdapter(
+          child: SizedBox(height: 24 + context.dockInset),
+        ),
       ],
     );
   }

@@ -2510,6 +2510,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get bgCoverBackdrop => 'Wiedergabe: Farbton des Covers';
 
   @override
+  String get blurredChrome => 'Unscharfes Dock und Kopfzeilen';
+
+  @override
+  String get blurredChromeHint => 'Kann auf schwächeren Handys bremsen';
+
+  @override
   String get bgImageFailed => 'Das Bild konnte nicht verwendet werden';
 
   @override

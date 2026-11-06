@@ -148,7 +148,9 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
                 ),
               ),
               ...body,
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              SliverToBoxAdapter(
+          child: SizedBox(height: 24 + context.dockInset),
+        ),
             ],
           ),
         ),

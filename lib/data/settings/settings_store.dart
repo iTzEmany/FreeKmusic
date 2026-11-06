@@ -34,6 +34,7 @@ class AppSettings {
     this.compactMode = false,
     this.reducedMotion = false,
     this.spinCover = false,
+    this.blurredChrome = false,
     this.language = 'it',
     this.autoEnrich = false,
     this.autoLyrics = false,
@@ -90,6 +91,9 @@ class AppSettings {
   final double fontScale;
   /// The now-playing cover turns while music plays; off by default.
   final bool spinCover;
+
+  /// Dock and headers semi-transparent with a blur; off by default (slow on weak phones, D-406).
+  final bool blurredChrome;
   final bool compactMode, reducedMotion, autoEnrich, autoLyrics, showUndoSnackbar;
 
   /// Deezer as a metadata source (data only); on unless the user turned it off.
@@ -182,6 +186,7 @@ class AppSettings {
     bool? compactMode,
     bool? reducedMotion,
     bool? spinCover,
+    bool? blurredChrome,
     String? language,
     bool? autoEnrich,
     bool? autoLyrics,
@@ -231,6 +236,7 @@ class AppSettings {
         compactMode: compactMode ?? this.compactMode,
         reducedMotion: reducedMotion ?? this.reducedMotion,
         spinCover: spinCover ?? this.spinCover,
+        blurredChrome: blurredChrome ?? this.blurredChrome,
         language: language ?? this.language,
         autoEnrich: autoEnrich ?? this.autoEnrich,
         autoLyrics: autoLyrics ?? this.autoLyrics,
@@ -322,6 +328,7 @@ class SettingsStore {
         compactMode: _prefs.getBool('compactMode') ?? false,
         reducedMotion: _prefs.getBool('reducedMotion') ?? false,
         spinCover: _prefs.getBool('spinCover') ?? false,
+        blurredChrome: _prefs.getBool('blurredChrome') ?? false,
         language: _prefs.getString('language') ?? 'it',
         autoEnrich: _prefs.getBool('autoEnrich') ?? false,
         autoLyrics: _prefs.getBool('autoLyrics') ?? false,
@@ -402,6 +409,7 @@ class SettingsStore {
     await _prefs.setBool('compactMode', s.compactMode);
     await _prefs.setBool('reducedMotion', s.reducedMotion);
     await _prefs.setBool('spinCover', s.spinCover);
+    await _prefs.setBool('blurredChrome', s.blurredChrome);
     await _prefs.setString('language', s.language);
     await _prefs.setBool('autoEnrich', s.autoEnrich);
     await _prefs.setBool('autoLyrics', s.autoLyrics);

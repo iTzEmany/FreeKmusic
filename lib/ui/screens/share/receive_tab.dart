@@ -269,7 +269,7 @@ class _ReceiveTabState extends ConsumerState<ReceiveTab> {
     ];
     final shown = _remoteName == null ? 0 : _tracks.length;
     return ListView.builder(
-      padding: const EdgeInsets.all(CcDims.margin),
+      padding: const EdgeInsets.all(CcDims.margin).withDock(context),
       itemCount: head.length + shown + foot.length,
       itemBuilder: (_, i) {
         if (i < head.length) return head[i];

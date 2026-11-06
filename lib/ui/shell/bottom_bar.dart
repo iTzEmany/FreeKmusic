@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/nav_providers.dart';
+import '../../providers/settings_providers.dart';
 import '../../providers/ui_providers.dart';
 import '../widgets/cc_search_field.dart';
 import '../theme/tokens.dart';
@@ -63,6 +65,7 @@ class ShellDock extends ConsumerWidget {
       const SizedBox(height: CcDims.gap4),
     ];
     return _DockFrame(
+      blurred: ref.watch(settingsProvider.select((s) => s.blurredChrome)),
       searching: field,
       // Both children are built here, not in the frame: the keyboard moving
       // rebuilds the frame only.
@@ -109,8 +112,10 @@ class _DockFrame extends StatelessWidget {
     required this.searching,
     required this.field,
     required this.layers,
+    required this.blurred,
   });
 
+  final bool blurred;
   final bool searching;
   final Widget field, layers;
 
@@ -120,6 +125,16 @@ class _DockFrame extends StatelessWidget {
     // The Scaffold does not lift its bottom bar: the field clears the
     // keyboard by itself.
     final keyboard = searching ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
+    // Off: no BackdropFilter at all in the tree (it costs on weak phones).
+    Widget wrap(Widget dock) => !blurred
+        ? dock
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(CcDims.dockRadius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: dock,
+            ),
+          );
     return Padding(
       padding: EdgeInsets.fromLTRB(
         m,
@@ -128,8 +143,9 @@ class _DockFrame extends StatelessWidget {
         CcDims.dockBottom + MediaQuery.paddingOf(context).bottom + keyboard,
       ),
       // Material (not a coloured Container) so the ink of the taps shows.
-      child: Material(
-        color: context.cc.surface2,
+      child: wrap(
+        Material(
+        color: blurred ? context.cc.surface2.withValues(alpha: 0.78) : context.cc.surface2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(CcDims.dockRadius),
         ),
@@ -157,6 +173,7 @@ class _DockFrame extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

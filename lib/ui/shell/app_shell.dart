@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureType;
 
 import '../screens/share/pairing_dialogs.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart' show kEnableYoutube;
 import '../../core/platform.dart';
+import '../../providers/library_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/pending_playlist_adds.dart';
@@ -131,10 +133,22 @@ class AppShell extends ConsumerWidget {
     _listen(context, ref);
     final index = ref.watch(navIndexProvider);
     final keys = ref.watch(tabNavigatorKeysProvider);
+    // Leaving a tab sends it back to its first state; the tab being entered
+    // is untouched, so a page pushed there right after (openInLibrary) stays.
+    ref.listen(navIndexProvider, (prev, next) {
+      if (prev == null || prev == next) return;
+      // A page pushed in the tab that guards its exit keeps the tab as it is.
+      if (ShellNav.pageGuardsExit(keys[prev].currentState)) return;
+      ref.read(tabNavigatorKeysProvider.notifier).reset(prev);
+      if (prev == NavTab.search.index) ref.read(searchControllerProvider).clear();
+      if (prev == NavTab.library.index) {
+        ref.invalidate(trackQueryProvider(false));
+      }
+    });
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     final l = context.l10n;
     void select(int i) {
-      if (i == index) keys[i].currentState?.popUntil((r) => r.isFirst);
+      if (i == index) ShellNav.popToRoot(keys[i].currentState);
       if (i == NavTab.search.index) {
         ref.read(searchBarProvider.notifier).open();
       } else if (i != index) {
@@ -184,16 +198,33 @@ class AppShell extends ConsumerWidget {
     if (wide) {
       content = _WideShell(body: body);
     } else {
+      // extendBody: the body runs under the dock, and the Scaffold gives it the
+      // dock's height as MediaQuery.padding.bottom, the one inset lists read.
       content = Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              Expanded(child: body),
-              const EnrichResultListener(),
-              const ImportEventListener(),
-            ],
-          ),
+        extendBody: true,
+        // viewPadding follows the dock too: nested Scaffolds lift their FABs
+        // by it, not by padding.
+        body: Builder(
+          builder: (c) {
+            final mq = MediaQuery.of(c);
+            return MediaQuery(
+              data: mq.copyWith(
+                viewPadding: mq.viewPadding.copyWith(
+                  bottom: math.max(mq.viewPadding.bottom, mq.padding.bottom),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    Expanded(child: body),
+                    const EnrichResultListener(),
+                    const ImportEventListener(),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,

@@ -12,6 +12,30 @@ abstract final class ShellNav {
   static Future<T?> open<T>(BuildContext context, Widget page) =>
       Navigator.of(context).push<T>(MaterialPageRoute<T>(builder: (_) => page));
 
+  /// True when a page pushed above the tab's root guards its exit (unsaved
+  /// edits, a running job). The root itself may guard (the Library lens): it
+  /// does not count.
+  static bool pageGuardsExit(NavigatorState? nav) {
+    if (nav == null || !nav.canPop()) return false;
+    var guarded = false;
+    nav.popUntil((r) {
+      guarded = r.popDisposition == RoutePopDisposition.doNotPop;
+      return true;
+    });
+    return guarded;
+  }
+
+  /// Re-selecting the active tab: back to its root, but a guarding page gets
+  /// to ask first (its own PopScope runs).
+  static void popToRoot(NavigatorState? nav) {
+    if (nav == null) return;
+    if (pageGuardsExit(nav)) {
+      nav.maybePop();
+    } else {
+      nav.popUntil((r) => r.isFirst);
+    }
+  }
+
   /// From anywhere (Now Playing, lyrics, other tabs): closes the routes above
   /// the shell, switches to Library and pushes [page] there.
   static void openInLibrary(BuildContext context, WidgetRef ref, Widget page) {

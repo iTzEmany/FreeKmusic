@@ -61,7 +61,7 @@ class ProposalsScreen extends ConsumerWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 960),
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: CcDims.gap16),
+                  padding: const EdgeInsets.only(bottom: CcDims.gap16).withDock(context),
                   itemCount: list.length + 1,
                   itemBuilder: (_, i) {
                     if (i == 0) {

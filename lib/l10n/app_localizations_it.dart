@@ -2502,6 +2502,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get bgCoverBackdrop => 'In riproduzione: tinta della copertina';
 
   @override
+  String get blurredChrome => 'Dock e intestazioni sfocati';
+
+  @override
+  String get blurredChromeHint => 'Può rallentare sui telefoni meno potenti';
+
+  @override
   String get bgImageFailed => 'Impossibile usare l\'immagine';
 
   @override

@@ -35,10 +35,9 @@ class DesktopSidebar extends ConsumerWidget {
     final index = ref.watch(navIndexProvider);
     final keys = ref.watch(tabNavigatorKeysProvider);
     void select(NavTab t) {
-      // The library entry is a destination, not a tab restore: a page left
-      // open in that tab must not hide the library itself.
-      if (index == t.index || t == NavTab.library) {
-        keys[t.index].currentState?.popUntil((r) => r.isFirst);
+      // Leaving a tab resets it (D-392): only the active one has pages to pop.
+      if (index == t.index) {
+        ShellNav.popToRoot(keys[t.index].currentState);
       }
       if (index != t.index) ref.read(navIndexProvider.notifier).set(t.index);
     }
