@@ -7,6 +7,7 @@ import '../../data/repositories/podcast_repository.dart';
 import '../online/http_client.dart';
 import 'apple_podcasts.dart';
 import 'podcast_models.dart';
+import 'ytm_podcast_sync.dart';
 
 /// A podcast is worth refreshing when it was last checked this long ago.
 const staleAfter = Duration(hours: 6);
@@ -33,6 +34,7 @@ class PodcastService {
     required this.parse,
     required this.web,
     this.saveCover,
+    this.ytm,
     this.podcastsDir,
     RateLimiter? searchLimiter,
     DateTime Function()? now,
@@ -50,6 +52,9 @@ class PodcastService {
 
   /// Downloads and stores the cover at [imageUrl]; returns its cover key.
   final Future<String?> Function(int podcastId, String imageUrl)? saveCover;
+  /// Reads the shows that come from YouTube Music (D-404).
+  final YtmPodcastSync? ytm;
+
   /// `<appSupportDir>/podcasts`: the only place files are deleted from.
   final String? podcastsDir;
   /// Genres, chart, lookup and search of the Apple directory.
@@ -152,6 +157,11 @@ class PodcastService {
   Future<int> refresh(int podcastId) async {
     final podcast = await repo.byId(podcastId);
     if (podcast == null) return 0;
+    if (podcast.source == kPodcastSourceYtm) {
+      final sync = ytm;
+      if (sync == null) throw const PodcastException(PodcastErrorKind.network, 'no YouTube Music reader');
+      return sync.refresh(podcastId);
+    }
     final feed = await _read(podcast.feedUrl);
     final added = await repo.upsertEpisodes(podcastId, feed.episodes);
     await repo.markChecked(podcastId, _nowMs);

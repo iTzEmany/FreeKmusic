@@ -103,6 +103,7 @@ class InnerTubeClient {
     String browseId,
     T Function(Map data) parse, {
     String? params,
+    String? continuation,
     String hl = 'en',
     String? mask,
     bool Function(T value)? isEmpty,
@@ -110,7 +111,7 @@ class InnerTubeClient {
   }) =>
       _musicPage(
         'browse',
-        {'browseId': browseId, 'params': ?params},
+        continuation != null ? {'continuation': continuation} : {'browseId': browseId, 'params': ?params},
         hl,
         parse,
         mask,

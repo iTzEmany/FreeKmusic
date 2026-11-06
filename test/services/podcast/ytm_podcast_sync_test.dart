@@ -19,10 +19,12 @@ import 'package:path/path.dart' as p;
 const showId = 'MPSPPLGqhp239bqQz08jpYYsrXdCXAxqD9fXP4';
 
 class _Adapter implements HttpClientAdapter {
+  final Map more = jsonDecode(File('test/fixtures/innertube/ytm_podcast_show_more.json').readAsStringSync()) as Map;
   Map page = jsonDecode(File('test/fixtures/innertube/ytm_podcast_show.json').readAsStringSync()) as Map;
   @override
   Future<ResponseBody> fetch(RequestOptions o, Stream<List<int>>? r, Future<void>? c) async =>
-      ResponseBody.fromString(jsonEncode(page), 200, headers: {Headers.contentTypeHeader: [Headers.jsonContentType]});
+      ResponseBody.fromString(jsonEncode((o.data as Map).containsKey('continuation') ? more : page), 200,
+          headers: {Headers.contentTypeHeader: [Headers.jsonContentType]});
   @override
   void close({bool force = false}) {}
 }
@@ -74,13 +76,13 @@ void main() {
   });
   tearDown(() => db.close());
 
-  test('subscribing saves the show with its source and 20 episodes; again changes nothing', () async {
+  test('subscribing saves the show with its source and 24 episodes (two pages); again changes nothing', () async {
     final id = await sync.subscribe(showId);
     final podcast = (await repo.byId(id))!;
     expect((podcast.source, podcast.sourceId, podcast.title), (kPodcastSourceYtm, showId, 'Il Prof di Storia'));
     expect(podcast.feedUrl, ytmShowFeedUrl(showId));
     final episodes = await repo.watchEpisodes(id).first;
-    expect(episodes, hasLength(20));
+    expect(episodes, hasLength(24));
     expect(episodes.first.episode.guid, 'B2Tep-eGwmQ');
     expect(episodes.first.episode.audioUrl, 'https://music.youtube.com/watch?v=B2Tep-eGwmQ');
     expect(await sync.subscribe(showId), id);
@@ -97,7 +99,7 @@ void main() {
     rows.insert(0, fresh);
     expect(await sync.refresh(id), 1);
     expect(await sync.refresh(id), 0);
-    expect(await repo.watchEpisodes(id).first, hasLength(21));
+    expect(await repo.watchEpisodes(id).first, hasLength(25));
 
     final rss = await repo.subscribe('https://x/feed', const PodcastFeed(title: 'RSS', episodes: []), now: 1);
     expect((await repo.byId(rss))!.source, 0);

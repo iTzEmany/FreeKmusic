@@ -7,7 +7,10 @@ import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/podcast/feed_fetcher.dart';
 import 'package:codecore/services/podcast/podcast_models.dart';
 import 'package:codecore/services/podcast/podcast_service.dart';
-import 'package:dio/dio.dart' show CancelToken;
+import 'package:codecore/services/online/innertube_client.dart';
+import 'package:codecore/services/online/ytm_podcasts.dart';
+import 'package:codecore/services/podcast/ytm_podcast_sync.dart';
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,6 +31,17 @@ class _Web implements WebClient {
 PodcastEpisodeInfo _ep(String guid) =>
     PodcastEpisodeInfo(guid: guid, title: 'Ep $guid', audioUrl: 'https://x/$guid.mp3');
 
+class _Ytm implements HttpClientAdapter {
+  _Ytm(this.page);
+  final Map page;
+  final Map more = jsonDecode(File('test/fixtures/innertube/ytm_podcast_show_more.json').readAsStringSync()) as Map;
+  @override
+  Future<ResponseBody> fetch(RequestOptions o, Stream<List<int>>? r, Future<void>? c) async =>
+      ResponseBody.fromString(jsonEncode((o.data as Map).containsKey('continuation') ? more : page), 200, headers: {Headers.contentTypeHeader: [Headers.jsonContentType]});
+  @override
+  void close({bool force = false}) {}
+}
+
 void main() {
   late AppDatabase db;
   late PodcastRepository repo;
@@ -38,8 +52,11 @@ void main() {
   final fetched = <String>[];
   final covers = <String>[];
 
+  YtmPodcastSync? ytm;
+
   PodcastService build({bool withCovers = true}) => PodcastService(
         repo: repo,
+        ytm: ytm,
         fetch: (url) async {
           fetched.add(url);
           final f = feeds[url];
@@ -70,6 +87,7 @@ void main() {
     feeds.clear();
     fetched.clear();
     covers.clear();
+    ytm = null;
   });
   tearDown(() => db.close());
 
@@ -207,6 +225,34 @@ void main() {
       expect(r.failed.keys, [b]);
       expect(r.failed[b]!.kind, PodcastErrorKind.network);
       expect(r.totalAdded, 3);
+    });
+  });
+
+  group('YouTube Music shows', () {
+    test('refresh and refreshAll read a YouTube Music show through its reader and leave the feed address alone', () async {
+      final page = jsonDecode(File('test/fixtures/innertube/ytm_podcast_show.json').readAsStringSync()) as Map;
+      final dio = Dio(BaseOptions(validateStatus: (_) => true))
+        ..httpClientAdapter = _Ytm(page);
+      ytm = YtmPodcastSync(repo: repo, ytm: YtmPodcasts(InnerTubeClient(dio)));
+      feeds['https://a.org/f'] = PodcastFeed(title: 'A', episodes: [_ep('1')]);
+      final svc = build();
+      final rss = await svc.subscribeFromUrl('https://a.org/f');
+      final show = await ytm!.subscribe('MPSPPx');
+      fetched.clear();
+      feeds['https://a.org/f'] = PodcastFeed(title: 'A', episodes: [_ep('1'), _ep('2')]);
+
+      final r = await svc.refreshAll();
+
+      expect(fetched, ['https://a.org/f'], reason: 'the YouTube Music show is not fetched as a feed');
+      expect(r.added, {rss: 1, show: 0});
+      expect(r.failed, isEmpty);
+    });
+
+    test('a YouTube Music show without a reader fails gently, the RSS ones go on', () async {
+      final id = await repo.subscribe('https://music.youtube.com/browse/MPSPPx', const PodcastFeed(title: 'Y', episodes: []),
+          now: 1, source: kPodcastSourceYtm, sourceId: 'MPSPPx');
+      final r = await build().refreshAll();
+      expect(r.failed[id]!.kind, PodcastErrorKind.network);
     });
   });
 

@@ -29,9 +29,9 @@ class YtmPodcastSync {
 
   int get _nowMs => _now().millisecondsSinceEpoch;
 
-  Future<YtmShowPage> _read(String showId) async {
+  Future<YtmShowPage> _read(String showId, {Set<String> known = const {}}) async {
     try {
-      return await ytm.show(showId);
+      return await ytm.show(showId, known: known);
     } on YtException catch (e, st) {
       AppLog.w('YouTube Music show failed: $showId', e, st);
       throw PodcastException(PodcastErrorKind.network, '$e');
@@ -75,7 +75,7 @@ class YtmPodcastSync {
     final podcast = await repo.byId(podcastId);
     final showId = podcast?.sourceId;
     if (podcast == null || podcast.source != kPodcastSourceYtm || showId == null) return 0;
-    final page = await _read(showId);
+    final page = await _read(showId, known: await repo.episodeGuids(podcastId));
     final added = await repo.upsertEpisodes(podcastId, _feed(page).episodes);
     await repo.markChecked(podcastId, _nowMs);
     await _cover(podcastId, page.thumbnailUrl ?? podcast.imageUrl);

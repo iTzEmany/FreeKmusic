@@ -19,7 +19,11 @@ class _Adapter implements HttpClientAdapter {
   @override
   Future<ResponseBody> fetch(RequestOptions options, Stream<List<int>>? requestStream, Future<void>? cancelFuture) async {
     sent.add(options);
-    final body = options.path.endsWith('/search') ? fixture('ytm_podcast_search') : fixture('ytm_podcast_show');
+    final body = options.path.endsWith('/search')
+        ? fixture('ytm_podcast_search')
+        : (options.data as Map).containsKey('continuation')
+            ? fixture('ytm_podcast_show_more')
+            : fixture('ytm_podcast_show');
     return ResponseBody.fromString(jsonEncode(status == 200 ? body : {}), status,
         headers: {Headers.contentTypeHeader: [Headers.jsonContentType]});
   }
@@ -76,7 +80,7 @@ void main() {
     expect(a.sent.single.data['params'], podcastsFilter);
     final page = await y.show('MPSPPLGqhp239bqQz08jpYYsrXdCXAxqD9fXP4');
     expect(page.episodes, isNotEmpty);
-    expect(a.sent.last.data['browseId'], 'MPSPPLGqhp239bqQz08jpYYsrXdCXAxqD9fXP4');
+    expect(a.sent[1].data['browseId'], 'MPSPPLGqhp239bqQz08jpYYsrXdCXAxqD9fXP4');
 
     final limited = _Adapter(429);
     final y2 = podcasts(limited);
@@ -85,5 +89,31 @@ void main() {
     await expectLater(y2.show('MPSPPx'),
         throwsA(isA<YtException>().having((e) => e.kind, 'kind', YtErrorKind.rateLimited)));
     expect(limited.sent.length, calls, reason: 'paused: nothing was asked');
+  });
+
+  test('the show page is always asked in English, so dates and lengths can be read', () async {
+    final a = _Adapter(200);
+    await podcasts(a).show('MPSPPx');
+    expect(a.sent.first.data['context']['client']['hl'], 'en');
+  });
+
+  test('one more page is read only when every episode of the first is new', () async {
+    final first = parseShowPage(fixture('ytm_podcast_show'), 'x');
+    expect(first.episodes, hasLength(20));
+    expect(first.continuation, isNotNull);
+    final (more, next) = parseShowContinuation(fixture('ytm_podcast_show_more'));
+    expect(more, hasLength(4));
+    expect(next, isNull);
+
+    final a = _Adapter(200);
+    final all = await podcasts(a).show('MPSPPx');
+    expect(all.episodes, hasLength(24));
+    expect(a.sent.last.data['continuation'], isNotNull);
+    expect(a.sent, hasLength(2));
+
+    final b = _Adapter(200);
+    final some = await podcasts(b).show('MPSPPx', known: {'B2Tep-eGwmQ'});
+    expect(some.episodes, hasLength(20));
+    expect(b.sent, hasLength(1), reason: 'a known episode on the first page: nothing older is missing');
   });
 }

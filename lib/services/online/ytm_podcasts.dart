@@ -49,13 +49,17 @@ class YtmShowPage {
     this.author,
     this.description,
     this.thumbnailUrl,
+    this.continuation,
   });
 
   final String id, title;
   final String? author, description, thumbnailUrl;
 
-  /// Newest first, the first page only (20): later ones are not read.
+  /// Newest first; the first page has 20.
   final List<YtmEpisode> episodes;
+
+  /// Token of the next page of episodes, null when there is none.
+  final String? continuation;
 }
 
 /// The shows of a YouTube Music search filtered on podcasts, best first.
@@ -129,8 +133,27 @@ YtmShowPage parseShowPage(Map data, String id, {DateTime? now}) {
       descriptions.isEmpty ? '' : htmlUnescape(runsText(descriptions.first['description'])).trim();
   final author = htmlUnescape(runsText(header['straplineTextOne'])).trim();
   final clock = now ?? DateTime.now();
+  final episodes = _episodes(data['contents'], clock);
+  return YtmShowPage(
+    id: id,
+    title: title,
+    author: author.isEmpty ? null : author,
+    description: description.isEmpty ? null : description,
+    thumbnailUrl: pickThumbnail(header['thumbnail'], minWidth: 120),
+    episodes: episodes,
+    continuation: _continuationOf(data['contents']),
+  );
+}
+
+String? _continuationOf(Object? node) {
+  final c = collectRenderers(node, 'nextContinuationData');
+  final token = c.isEmpty ? null : c.first['continuation'];
+  return token is String && token.isNotEmpty ? token : null;
+}
+
+List<YtmEpisode> _episodes(Object? contents, DateTime clock) {
   final episodes = <YtmEpisode>[];
-  for (final r in collectRenderers(data['contents'], 'musicMultiRowListItemRenderer')) {
+  for (final r in collectRenderers(contents, 'musicMultiRowListItemRenderer')) {
     final watch = (r['onTap'] is Map ? (r['onTap'] as Map)['watchEndpoint'] : null);
     if (watch is! Map || watch['videoId'] is! String) continue;
     final config = watch['watchEndpointMusicSupportedConfigs'];
@@ -153,14 +176,17 @@ YtmShowPage parseShowPage(Map data, String id, {DateTime? now}) {
       description: desc.isEmpty ? null : desc,
     ));
   }
-  return YtmShowPage(
-    id: id,
-    title: title,
-    author: author.isEmpty ? null : author,
-    description: description.isEmpty ? null : description,
-    thumbnailUrl: pickThumbnail(header['thumbnail'], minWidth: 120),
-    episodes: episodes,
-  );
+  return episodes;
+}
+
+/// The next page of episodes of a show (`continuationContents`): the episodes
+/// and the token of the one after, if any.
+(List<YtmEpisode>, String?) parseShowContinuation(Map data, {DateTime? now}) {
+  final c = data['continuationContents'];
+  if (c is! Map || c['musicShelfContinuation'] is! Map) {
+    throw const InnerTubeChanged('no musicShelfContinuation');
+  }
+  return (_episodes(c, now ?? DateTime.now()), _continuationOf(c));
 }
 
 /// Search and show pages of YouTube Music podcasts. Same rules as the other
@@ -187,8 +213,29 @@ class YtmPodcasts {
 
   /// The show [id] (`MPSP…`) with its newest episodes. Asked with `hl=en`
   /// (the date and length texts are read in English).
-  Future<YtmShowPage> show(String id, {CancelToken? cancel}) => _guarded(() =>
-      client.browseMusic(id, (data) => parseShowPage(data, id), cancel: cancel));
+  ///
+  /// With [known] (the video ids already saved) one more page is read when
+  /// every episode of the first is new: a refresh after a long pause. At most
+  /// two pages, ~40 episodes. shortcut: older ones are never fetched, so a
+  /// show that published 40+ since the last refresh loses the oldest of them.
+  Future<YtmShowPage> show(String id, {Set<String> known = const {}, CancelToken? cancel}) async {
+    final page = await _guarded(() =>
+        client.browseMusic(id, (data) => parseShowPage(data, id), cancel: cancel));
+    final token = page.continuation;
+    if (token == null || page.episodes.isEmpty || page.episodes.any((e) => known.contains(e.videoId))) {
+      return page;
+    }
+    final (more, _) = await _guarded(() => client.browseMusic(
+        '', parseShowContinuation, continuation: token, cancel: cancel));
+    return YtmShowPage(
+      id: page.id,
+      title: page.title,
+      author: page.author,
+      description: page.description,
+      thumbnailUrl: page.thumbnailUrl,
+      episodes: [...page.episodes, ...more],
+    );
+  }
 
   Future<T> _guarded<T>(Future<T> Function() call) async {
     if (_cooldown.isPaused(MediaKind.ytmSong)) {

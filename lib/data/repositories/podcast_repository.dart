@@ -119,6 +119,12 @@ class PodcastRepository {
     });
   }
 
+  /// The `guid` of every episode the podcast has.
+  Future<Set<String>> episodeGuids(int podcastId) async => {
+        for (final e in await (_db.select(_db.podcastEpisodes)..where((e) => e.podcastId.equals(podcastId))).get())
+          e.guid,
+      };
+
   bool _changed(PodcastEpisode e, PodcastEpisodeInfo i) =>
       e.title != i.title ||
       e.audioUrl != i.audioUrl ||

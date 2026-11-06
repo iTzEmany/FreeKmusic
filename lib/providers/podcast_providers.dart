@@ -49,6 +49,7 @@ final podcastServiceProvider = Provider<PodcastService>((ref) {
     parse: parseFeed,
     web: web,
     podcastsDir: dir,
+    ytm: ref.watch(ytmPodcastSyncProvider),
     saveCover: (id, url) async {
       final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
       if (bytes == null) return null;
