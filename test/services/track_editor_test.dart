@@ -14,6 +14,12 @@ class _Tags implements TagReader {
       const TagInfo(title: 'File Title', artist: 'File Artist', album: 'File Album');
 }
 
+class _GenreTags implements TagReader {
+  @override
+  Future<TagInfo> read(String path, {bool withCover = true}) async =>
+      const TagInfo(title: 'T', genre: 'Rock', genres: ['Rock', 'Pop']);
+}
+
 void main() {
   late AppDatabase db;
   late TrackRepository repo;
@@ -62,6 +68,13 @@ void main() {
     expect(t.artist, 'Joy');
     expect(t.albumKey, 'joy|alb');
     expect(t.userEdited, true);
+  });
+
+  test('restore from file puts every genre of the file in track_genres', () async {
+    await repo.upsertBatch([row('Orig')]);
+    final t = (await db.select(db.tracks).get()).single;
+    await TrackEditor(db, _GenreTags()).restoreFromFile(t);
+    expect(await TrackGenreRepository(db).of(t.id), ['Rock', 'Pop']);
   });
 
   test('restore from file clears userEdited', () async {

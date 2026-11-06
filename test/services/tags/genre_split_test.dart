@@ -15,4 +15,9 @@ void main() {
     const t = TagInfo(genre: 'Rock;Pop');
     expect(t.genres, ['Rock', 'Pop']);
   });
+
+  test('without slash splitting a web genre keeps its slash', () {
+    expect(splitGenres(['R&B/Soul'], slash: false), ['R&B/Soul']);
+    expect(splitGenres(['Hip-Hop/Rap; Pop'], slash: false), ['Hip-Hop/Rap', 'Pop']);
+  });
 }

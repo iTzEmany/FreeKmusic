@@ -412,5 +412,28 @@ void main() {
       expect(all['zz']!.country, isNull);
       expect(all['bjork']!.country, 'IS');
     });
+
+    test('artist countries: a country that is not two letters counts as «not found»', () async {
+      await merge(UserData(createdAt: 1, artistCountries: const [
+        ArtistCountryData(artistKey: 'a', country: '', source: 'x', checkedAt: 1),
+        ArtistCountryData(artistKey: 'b', country: 'ita', source: 'x', checkedAt: 1),
+        ArtistCountryData(artistKey: 'c', country: '3', source: 'x', checkedAt: 1),
+      ]));
+      final all = await db.select(db.artistCountries).get();
+      expect(all, hasLength(3));
+      expect(all.map((c) => c.country), everyElement(isNull));
+    });
+
+    test('artist countries: a found one beats a newer «not found», in both directions', () async {
+      final repo = ArtistCountryRepository(db);
+      await repo.upsert('x', checkedAtMs: 100);
+      await repo.upsert('y', country: 'FR', checkedAtMs: 50);
+      await merge(UserData(createdAt: 1, artistCountries: const [
+        ArtistCountryData(artistKey: 'x', country: 'GB', source: 'musicbrainz', checkedAt: 50),
+        ArtistCountryData(artistKey: 'y', country: null, source: null, checkedAt: 200),
+      ]));
+      final all = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c.country};
+      expect(all, {'x': 'GB', 'y': 'FR'});
+    });
   });
 }

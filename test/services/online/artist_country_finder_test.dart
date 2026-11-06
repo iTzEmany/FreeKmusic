@@ -174,6 +174,80 @@ void main() {
     expect(web.asked, hasLength(2), reason: 'nothing is asked after the 429');
     expect(await db.select(db.artistCountries).get(), hasLength(r.checked));
   });
+
+  test('503 or no network: artistOrigin throws and the finder writes no «not found»', () async {
+    await add('Coldplay');
+    final mb = MusicBrainzClient(_Down(), pause: (_) async {});
+    await expectLater(mb.artistOrigin('Coldplay'), throwsA(isA<MusicBrainzUnavailable>()));
+    final r = await ArtistCountryFinder(
+      repo: repo, mb: mb, wikidata: WikidataClient(_Down()), allowed: () async => true, waitIdle: () async {}, now: () => clock,
+    ).run();
+    expect(r.stopped, isTrue);
+    expect(await repo.of('coldplay'), isNull);
+  });
+
+  test('a search hit with a score of 50 is not the artist', () async {
+    final hit = {
+      'artists': [
+        {'id': 'a', 'name': 'Nobody', 'score': 50, 'country': 'GB'}
+      ]
+    };
+    expect(await MusicBrainzClient(_Inline(hit), pause: (_) async {}).artistOrigin('Nobody'), isNull);
+  });
+
+  group('WikidataClient.countryOf', () {
+    Future<String?> of(Map<String, Map<String, List<Object>>> data) => WikidataClient(_Claims(data)).countryOf('Q1');
+
+    test('a band has only P495: its country is used', () async {
+      expect(await of({'Q1': {'P495': [_item('Q145')]}, 'Q145': {'P297': ['GB']}}), 'GB');
+    });
+
+    test('the first country without P297 is skipped for the second that has it', () async {
+      expect(await of({'Q1': {'P27': [_item('Q1'), _item('Q2')]}, 'Q2': {'P297': ['FR']}}), 'FR');
+    });
+
+    test('a P297 in lower case or with three letters is not a code', () async {
+      expect(await of({'Q1': {'P27': [_item('Q2')]}, 'Q2': {'P297': ['fr']}}), isNull);
+      expect(await of({'Q1': {'P27': [_item('Q2')]}, 'Q2': {'P297': ['FRA']}}), isNull);
+    });
+  });
+}
+
+class _Down implements WebClient {
+  @override
+  Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async =>
+      throw WebUnavailableException(url, 503);
+
+  @override
+  Future<List<int>?> getBytes(String url, {int maxBytes = 0, CancelToken? cancel}) async => null;
+}
+
+Map<String, String> _item(String id) => {'id': id};
+
+/// Wikidata claims by entity id: `{id: {property: [value, ...]}}`, a map value is an item.
+class _Claims implements WebClient {
+  _Claims(this.byId);
+  final Map<String, Map<String, List<Object>>> byId;
+
+  @override
+  Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async => {
+        'entities': {
+          for (final id in query!['ids']!.split('|'))
+            if (byId[id] != null)
+              id: {
+                'claims': {
+                  for (final e in byId[id]!.entries)
+                    e.key: [
+                      for (final v in e.value)
+                        {'mainsnak': {'datavalue': {'value': v}}}
+                    ]
+                }
+              }
+        }
+      };
+
+  @override
+  Future<List<int>?> getBytes(String url, {int maxBytes = 0, CancelToken? cancel}) async => null;
 }
 
 class _Inline implements WebClient {

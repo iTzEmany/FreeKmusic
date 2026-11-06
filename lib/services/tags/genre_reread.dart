@@ -65,11 +65,15 @@ class GenreReread {
       for (var i = 0; i < rows.length; i++) {
         final cur = now[rows[i].id];
         if (cur == null) continue;
-        final own = splitGenres([cur.genre]);
         final fromFile = files[i];
+        // A file that gives nothing: the row's own genre, split on «;» only (a web genre may hold a «/»).
+        if (fromFile.isEmpty) {
+          if (await genres.replace(rows[i].id, splitGenres([cur.genre], slash: false))) changed++;
+          continue;
+        }
+        final own = splitGenres([cur.genre]);
         // A hand edit keeps its genre; the file's list is used only when it starts with that same genre.
-        final useFile = fromFile.isNotEmpty &&
-            (!cur.userEdited || (own.isNotEmpty && own.first.toLowerCase() == fromFile.first.toLowerCase()));
+        final useFile = (!cur.userEdited || (own.isNotEmpty && own.first.toLowerCase() == fromFile.first.toLowerCase()));
         final list = useFile ? fromFile : own;
         if (await genres.replace(rows[i].id, list)) changed++;
         if (!cur.userEdited && list.isNotEmpty) await genres.setFirstGenre(rows[i].id, list.first);

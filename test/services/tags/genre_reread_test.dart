@@ -92,7 +92,34 @@ void main() {
     final kept = await add('/kept', genre: 'Soul;Funk');
     await job(_Reader({})).run();
     expect(await genres.of(none), isEmpty);
-    expect(await genres.of(kept), ['Soul', 'Funk']);
+    expect(await genres.of(kept), ['Soul', 'Funk'], reason: 'a file with no genre splits the row genre on «;»');
+  });
+
+  test('a web genre with a slash and a file with no genre stays whole', () async {
+    final a = await add('/a', genre: 'Hip-Hop/Rap');
+    await genres.write(a, ['Hip-Hop/Rap']);
+    await job(_Reader({})).run();
+    expect(await genres.of(a), ['Hip-Hop/Rap']);
+    expect((await db.select(db.tracks).getSingle()).genre, 'Hip-Hop/Rap');
+  });
+
+  test('a hand-edited genre keeps its spelling in tracks.genre when the file list is used', () async {
+    final a = await add('/a', genre: 'rock', edited: true);
+    await job(_Reader({'/a': const TagInfo(genres: ['Rock', 'Pop'])})).run();
+    expect(await genres.of(a), ['Rock', 'Pop']);
+    expect((await db.select(db.tracks).getSingle()).genre, 'rock');
+  });
+
+  test('cancelled while waiting for idle: nothing is read', () async {
+    await add('/a');
+    final r = _Reader({});
+    var stop = false;
+    await GenreReread(
+      genres: genres, reader: r, loadAfter: () => after, saveAfter: (id) => after = id, markDone: () {},
+      waitIdle: () async => stop = true,
+      cancelled: () => stop,
+    ).run();
+    expect(r.reads, isEmpty);
   });
 
   test('a hand-edited track keeps its genre, and the file list is used only when it starts with it', () async {

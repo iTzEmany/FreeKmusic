@@ -255,7 +255,7 @@ Future<void> _mergeFollowedArtists(
   }
 }
 
-/// New artists are added; for one already here the more recent check wins.
+/// New artists are added; for one already here a found country beats «not found», else the more recent check wins.
 Future<void> _mergeArtistCountries(AppDatabase db, List<ArtistCountryData> items) async {
   if (items.isEmpty) return;
   final have = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c};
@@ -263,8 +263,15 @@ Future<void> _mergeArtistCountries(AppDatabase db, List<ArtistCountryData> items
   for (final c in items) {
     if (c.artistKey.isEmpty) continue;
     final local = have[c.artistKey];
-    if (local != null && (local.checkedAt >= c.checkedAt || (local.country != null && c.country == null))) continue;
-    await repo.upsert(c.artistKey, country: c.country, source: c.source, checkedAtMs: c.checkedAt);
-    have[c.artistKey] = ArtistCountry(artistKey: c.artistKey, country: c.country, source: c.source, checkedAt: c.checkedAt);
+    // Not an ISO alpha-2 code: counts as «not found».
+    final up = c.country?.toUpperCase();
+    final country = up != null && RegExp(r'^[A-Z]{2}$').hasMatch(up) ? up : null;
+    // A found country beats «not found» whatever the dates; between equals the more recent wins.
+    if (local != null) {
+      final localFound = local.country != null;
+      if (localFound != (country != null) ? localFound : local.checkedAt >= c.checkedAt) continue;
+    }
+    await repo.upsert(c.artistKey, country: country, source: c.source, checkedAtMs: c.checkedAt);
+    have[c.artistKey] = ArtistCountry(artistKey: c.artistKey, country: country, source: c.source, checkedAt: c.checkedAt);
   }
 }

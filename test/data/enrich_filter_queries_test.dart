@@ -42,4 +42,10 @@ void main() {
     expect(await trackIdsByLabel(db, ['7', 'fast']), isEmpty);
     expect(await trackIdsByBpm(db, min: 0), {1, 2});
   });
+
+  test('BPM bounds are inclusive', () async {
+    expect(await trackIdsByBpm(db, min: 120), {1});
+    expect(await trackIdsByBpm(db, max: 120), {1, 2});
+    expect(await trackIdsByBpm(db, min: 120, max: 120), {1});
+  });
 }
