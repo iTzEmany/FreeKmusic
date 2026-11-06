@@ -32,4 +32,10 @@ void main() {
     expect((pick as ExactArtist).artist.id, '2');
     expect(pickYtmArtist('Queen', found, aliases: {'1': '9'}), isA<ChooseArtist>());
   });
+
+  test('a group whose main profile is not among the results still opens', () {
+    final found = [_a('1', 'Queen'), _a('2', 'Queen')];
+    final pick = pickYtmArtist('Queen', found, aliases: {'1': '9', '2': '9'});
+    expect(pick, isA<ExactArtist>());
+  });
 }

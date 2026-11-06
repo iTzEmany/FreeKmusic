@@ -11,7 +11,7 @@ import '../services/online/youtube_service.dart';
 import '../services/online/ytm_artist.dart';
 import '../services/online/ytm_catalog.dart';
 import 'library_providers.dart';
-import 'artist_merge_providers.dart' show artistAliasRepositoryProvider;
+import 'database_providers.dart' show artistAliasRepositoryProvider;
 import 'settings_providers.dart';
 import 'youtube_providers.dart';
 

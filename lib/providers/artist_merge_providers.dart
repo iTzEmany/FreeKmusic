@@ -3,23 +3,22 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
-import '../data/repositories/artist_alias_repository.dart';
+import '../data/repositories/artist_alias_repository.dart' show ArtistAliasRepository;
 import '../services/import/track_matcher.dart' show matchKey;
-import '../services/online/query_cleaner.dart' show extractPrimaryArtist;
 import '../services/online/query_match.dart' show MediaKind;
 import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
 import '../services/online/ytm_artist.dart';
+import '../services/online/ytm_artist_resolver.dart' show artistNameKeys;
 import 'database_providers.dart';
 import 'smart_search_providers.dart';
 import 'ytm_catalog_providers.dart';
 
-final artistAliasRepositoryProvider =
-    Provider<ArtistAliasRepository>((ref) => ArtistAliasRepository(ref.watch(databaseProvider)));
+export 'database_providers.dart' show artistAliasRepositoryProvider;
 
 /// The group of [id] (main profile first, then aliases); follows merges and splits.
 final artistGroupProvider = StreamProvider.autoDispose.family<List<String>, String>((ref, id) async* {
   final repo = ref.watch(artistAliasRepositoryProvider);
-  yield await repo.groupOf(id);
+  // The drift watch emits at once, so no first read of its own.
   await for (final _ in repo.watchAliases()) {
     yield await repo.groupOf(id);
   }
@@ -70,10 +69,12 @@ final artistMergeSuggestionProvider =
     final found = await ref.read(artistMergeSearchProvider)(a.name);
     if (found == null) return null;
     final repo = ref.read(artistAliasRepositoryProvider);
-    final keys = {matchKey(a.name), matchKey(extractPrimaryArtist(a.name))}..remove('');
+    final keys = artistNameKeys(a.name);
     for (final c in found) {
       if (c.id == a.id || group.contains(c.id) || !keys.contains(matchKey(c.name))) continue;
-      if (await repo.isNotSame(a.id, c.id)) continue;
+      // D-414: a «diversi» pair holds for any member of either group.
+      final theirs = await repo.groupOf(c.id);
+      if (await _anyNotSame(repo, group, theirs)) continue;
       return c;
     }
   } catch (e, st) {
@@ -81,3 +82,12 @@ final artistMergeSuggestionProvider =
   }
   return null;
 });
+
+Future<bool> _anyNotSame(ArtistAliasRepository repo, List<String> xs, List<String> ys) async {
+  for (final x in xs) {
+    for (final y in ys) {
+      if (await repo.isNotSame(x, y)) return true;
+    }
+  }
+  return false;
+}

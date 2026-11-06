@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart';
+import '../data/repositories/artist_alias_repository.dart';
 import '../data/repositories/folder_repository.dart';
 import '../data/repositories/import_repository.dart';
 import '../data/repositories/play_history_repository.dart';
@@ -23,6 +24,10 @@ final artistInfoRepositoryProvider = Provider<ArtistInfoRepository>(
 /// What is stored about an artist (by name), or null.
 final artistInfoProvider = StreamProvider.autoDispose.family<ArtistInfo?, String>(
   (ref, artist) => ref.watch(artistInfoRepositoryProvider).watch(artist),
+);
+
+final artistAliasRepositoryProvider = Provider<ArtistAliasRepository>(
+  (ref) => ArtistAliasRepository(ref.watch(databaseProvider)),
 );
 
 final tagRepositoryProvider = Provider<TagRepository>(

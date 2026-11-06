@@ -1,3 +1,4 @@
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/play_history_repository.dart';
@@ -78,6 +79,7 @@ void main() {
           follows: follows,
           now: () => DateTime(2026, 10, 22),
           maxLookups: max,
+          aliases: ArtistAliasRepository(db),
           wait: (d) async => waits.add('${d.inMilliseconds}'),
           search: (name) async {
             searched.add(name);
@@ -126,6 +128,15 @@ void main() {
       final ids = (await follows.all()).map((a) => a.ytmId).toSet();
       expect(ids.contains('UCold'), isFalse);
       expect(ids.length, 7);
+    });
+
+    test('two namesakes that are one merged artist are followed, not left to confirm', () async {
+      await listened('Twin', 300);
+      await ArtistAliasRepository(db).merge('UC2', 'UC3');
+      catalog = {'Twin': [ref('UC2', 'Twin'), ref('UC3', 'Twin')]};
+      final plan = await service().run();
+      expect((await follows.all()).map((a) => a.ytmId), ['UC2']);
+      expect(plan.toConfirm, isEmpty);
     });
 
     test('a stopped search leaves the rest for the next round', () async {

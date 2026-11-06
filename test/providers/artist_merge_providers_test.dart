@@ -73,4 +73,11 @@ void main() {
     final link = await r.resolve('Queen');
     expect((link as OnlineArtist).artist.id, '2');
   });
+
+  test('a «diversi» pair saved with another member of the group still holds', () async {
+    final repo = c.read(artistAliasRepositoryProvider);
+    await repo.merge('1', '5');
+    await repo.markNotSame('5', '2');
+    expect(await ask(me), isNull);
+  });
 }

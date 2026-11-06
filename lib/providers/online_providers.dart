@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import '../data/repositories/credits_repository.dart';
-import 'artist_merge_providers.dart';
 import '../data/settings/settings_store.dart' show AppSettings;
 import '../services/online/acoustid_client.dart';
 import '../services/online/cover_fetcher.dart';
@@ -126,8 +125,8 @@ final curiosityFinderProvider = Provider(
       final catalog = ref.read(ytmCatalogProvider);
       final hl = ref.read(ytmLanguageProvider);
       // Only a certain match: a wrong artist's story is worse than none.
-      final pick = pickYtmArtist(name, await catalog.searchArtists(name, hl),
-          aliases: await ref.read(artistAliasRepositoryProvider).allAliases());
+      final pick = await pickYtmArtistWithAliases(
+          ref.read(artistAliasRepositoryProvider), name, await catalog.searchArtists(name, hl));
       if (pick is! ExactArtist) return null;
       final page = (await catalog.artist(pick.artist.id, hl)).value;
       final text = page.description;
