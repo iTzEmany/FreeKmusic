@@ -220,10 +220,8 @@ JamUiState _jam({required bool host}) => JamUiState(
 );
 
 // ---- Expected entries, in order: they stay the same in phase 61. ----
-const _newMenu = ['create', 'smart', 'csv'];
 const _sleepIdle = ['15', '30', '45', '60', '-1'];
 const _sleepActive = ['15', '30', '45', '60', '-1', '0'];
-const _librarySort = ['recent', 'alpha', 'added'];
 const _favoritesSort = [
   'defaultOrder', 'title', 'artist', 'album', 'year', 'addedAt', 'duration',
 ];
@@ -263,7 +261,7 @@ const _selectionMenu = [
 
 void main() {
   testWidgets(
-    'desktop sidebar «+»: new, smart, csv; «new» asks a name and creates the playlist',
+    'desktop sidebar «+» opens the sheet with smart and csv; «Crea» makes the playlist',
     (tester) async {
       _phone(tester);
       final h = await Harness.create(tester);
@@ -274,10 +272,12 @@ void main() {
         ),
       );
       await _settle(tester);
-      expect(await _open(tester, find.byTooltip('Nuova playlist')), _newMenu);
-      await tester.tap(find.text('Nuova playlist').last);
+      await tester.tap(find.byTooltip('Nuova playlist'));
       await _settle(tester);
+      expect(find.text('Nuova playlist intelligente'), findsOneWidget);
+      expect(find.text('Importa da Exportify (CSV)'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Dal menu');
+      await tester.pump();
       await tester.tap(find.text('Crea'));
       await _settle(tester);
       expect(await _playlistNames(tester, h), ['Dal menu']);
@@ -286,16 +286,18 @@ void main() {
   );
 
   testWidgets(
-    'library «+»: the same three values as the sidebar; «new» creates the playlist',
+    'library «+» opens the same sheet; «Crea» makes the playlist',
     (tester) async {
       _phone(tester);
       final h = await Harness.create(tester);
       await h.pump(tester, const Scaffold(body: LibraryScreen()));
       await _settle(tester);
-      expect(await _open(tester, find.byTooltip('Nuova playlist')), _newMenu);
-      await tester.tap(find.text('Nuova playlist').last);
+      await tester.tap(find.byTooltip('Nuova playlist'));
       await _settle(tester);
+      expect(find.text('Nuova playlist intelligente'), findsOneWidget);
+      expect(find.text('Importa da Exportify (CSV)'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Dalla libreria');
+      await tester.pump();
       await tester.tap(find.text('Crea'));
       await _settle(tester);
       expect(await _playlistNames(tester, h), ['Dalla libreria']);
@@ -576,17 +578,18 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('library sort: recent, alpha, added; «A–Z» becomes the shown order', (tester) async {
+  testWidgets('library sort: «Titolo A–Z» becomes the shown order', (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
     await _settle(tester);
-    expect(await _open(tester, find.text('Ascoltati di recente')), _librarySort);
-    await _choose(tester, 'A–Z');
+    await tester.tap(find.text('Ascoltati di recente'));
+    await _settle(tester);
+    await _choose(tester, 'Titolo A–Z');
     expect(
       find.descendant(
         of: find.byType(LibraryToolbar),
-        matching: find.text('A–Z'),
+        matching: find.text('Titolo A–Z'),
       ),
       findsOneWidget,
     );
