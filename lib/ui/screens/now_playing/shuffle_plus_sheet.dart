@@ -12,7 +12,6 @@ import 'suggestions_screen.dart';
 Future<void> showShufflePlusSheet(BuildContext context) => showCcSheet<void>(
       context: context,
       isScrollControlled: true,
-      useRootNavigator: true,
       builder: (sheet) => SafeArea(
         child: SingleChildScrollView(
           child: Column(

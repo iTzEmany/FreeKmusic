@@ -13,7 +13,6 @@ Future<T?> showCcSheet<T>({
   required WidgetBuilder builder,
   bool isScrollControlled = false,
   bool? showDragHandle,
-  bool useRootNavigator = false,
   BoxConstraints? constraints,
   String? barrierLabel,
 }) {
@@ -63,7 +62,6 @@ Future<T?> showCcActionSheet<T>({
   Widget? header,
   String? title,
   String? subtitle,
-  bool useRootNavigator = false,
   Listenable? refresh,
   List<List<CcAction<T>>> Function()? regroup,
 }) {
@@ -90,7 +88,6 @@ Future<T?> showCcActionSheet<T>({
   return showCcSheet<T>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: useRootNavigator,
     barrierLabel: context.l10n.close,
     builder: (sheet) {
       final cc = sheet.cc;

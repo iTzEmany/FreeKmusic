@@ -15,7 +15,6 @@ Future<int?> showDurationChoiceSheet(
   final l = context.l10n;
   return showCcSheet<int>(
     context: context,
-    useRootNavigator: true,
     builder: (sheet) => SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(

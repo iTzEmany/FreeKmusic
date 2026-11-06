@@ -35,7 +35,6 @@ class DevicesSheet extends ConsumerStatefulWidget {
       showCcSheet<void>(
         context: context,
         isScrollControlled: true,
-        useRootNavigator: true,
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),

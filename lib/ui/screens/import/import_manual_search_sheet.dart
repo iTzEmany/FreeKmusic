@@ -32,7 +32,6 @@ class ImportManualSearchSheet extends ConsumerStatefulWidget {
   }) => showCcSheet<void>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: true,
     builder: (_) => ImportManualSearchSheet(importId: importId, row: row),
   );
 

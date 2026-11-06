@@ -27,7 +27,6 @@ class ImportIntroSheet extends ConsumerStatefulWidget {
   static Future<Object?> show(BuildContext context) => showCcSheet<Object>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: true,
     builder: (_) => const ImportIntroSheet(),
   );
 

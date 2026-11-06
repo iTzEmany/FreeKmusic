@@ -99,8 +99,8 @@ String _genreSql(String cmp, List<Variable> vars, List<String> params, String ol
   if (joined != null) vars.add(Variable<String>(joined.$2));
   final whole = joined == null
       ? ''
-      : " OR (SELECT group_concat(genre, '/') FROM (SELECT genre FROM track_genres "
-          'WHERE track_id = tracks.id ORDER BY position)) ${joined.$1}';
+      : " OR (SELECT group_concat(genre, '/' ORDER BY position) FROM track_genres "
+          'WHERE track_id = tracks.id) ${joined.$1}';
   return _leaf('EXISTS (SELECT 1 FROM track_genres g WHERE g.track_id = tracks.id AND $cmp) OR $oldCmp$whole');
 }
 

@@ -39,6 +39,7 @@ void main() {
       settingsStoreProvider.overrideWithValue(store),
       tagReaderProvider.overrideWithValue(reader),
       startupSettledProvider.overrideWith((ref) async {}),
+      genreRereadPollProvider.overrideWithValue(const Duration(milliseconds: 20)),
       isPlayingProvider.overrideWith((ref) => playing.stream),
     ]);
     addTearDown(() async {
@@ -50,10 +51,10 @@ void main() {
     playing.add(true);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     c.read(genreRereadStartProvider);
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     expect(reader.calls, 0, reason: 'music is playing');
     playing.add(false);
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     expect(reader.calls, 1);
   });
 }

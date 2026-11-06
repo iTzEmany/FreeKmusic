@@ -17,6 +17,9 @@ import 'user_activity_provider.dart';
 /// How long the user must leave the app alone before the next batch (as the enrichment).
 const _idleFor = Duration(seconds: 5);
 
+/// How often the re-read looks again while paused; tests shorten it.
+final genreRereadPollProvider = Provider<Duration>((ref) => const Duration(seconds: 1));
+
 /// Reads the tags of the existing library again for their genres (D-390), once the app
 /// has settled and no scan runs, a batch at a time while the user leaves the app alone.
 /// The bookmark is in the preferences, so a closed app carries on at the next start.
@@ -31,7 +34,7 @@ final genreRereadStartProvider = Provider<void>((ref) {
   Future<void> waitIdle() async {
     // Paused while music plays too (D-390), not only while the user is busy.
     while (!disposed && (!activity.idleFor(_idleFor) || ref.read(isPlayingProvider).value == true)) {
-      await Future<void>.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(ref.read(genreRereadPollProvider));
     }
   }
 

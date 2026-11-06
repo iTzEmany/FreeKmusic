@@ -19,7 +19,6 @@ class PodcastSubscribeSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) => showCcSheet<void>(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: true,
     showDragHandle: true,
     builder: (_) => FractionallySizedBox(
       heightFactor: 0.9,

@@ -36,12 +36,12 @@ final mergedGroupsProvider = StreamProvider.autoDispose<List<List<String>>>(
   }),
 );
 
-/// The pairs the user marked «diversi».
 /// Artist names by `UC…` id known locally (followed artists, lookups): for the lists of profiles.
 final artistNamesProvider = StreamProvider.autoDispose<Map<String, String>>(
   (ref) => ref.watch(followRepositoryProvider).watchNames(),
 );
 
+/// The pairs the user marked «diversi».
 final notSamePairsProvider = StreamProvider.autoDispose<List<(String, String)>>(
   (ref) => ref.watch(artistAliasRepositoryProvider).watchNotSame(),
 );
