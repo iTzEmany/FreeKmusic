@@ -348,9 +348,10 @@ void main() {
           }));
 
       testWidgets('surface $tag smart_editor', (tester) => withGoldenShot(tester, size, (s) async {
-            await s.show(const SmartPlaylistEditor());
-            await tester.enterText(find.byType(TextField).first, 'Pink Floyd anni 70');
-            await tester.enterText(find.widgetWithText(TextField, 'Regole'), 'artista:"Pink Floyd"');
+            // An existing playlist: the editor opens with its filter cards filled in.
+            await s.show(const SmartPlaylistEditor(
+              existing: SmartPlaylist(id: 1, name: 'Pink Floyd anni 70', rules: 'artista:"Pink Floyd", anno:1970..1979 -mai-ascoltati', createdAt: 0),
+            ));
             await s.settle();
             await s.expectGolden('${tag}_smart_editor.png');
           }));
