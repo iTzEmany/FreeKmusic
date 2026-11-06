@@ -1,0 +1,24 @@
+{
+ "26": {
+  "name": "Podcasts",
+  "id": "26",
+  "subgenres": {
+   "1301": {
+    "name": "Arts",
+    "id": "1301"
+   },
+   "1321": {
+    "name": "Business",
+    "id": "1321"
+   },
+   "1303": {
+    "name": "Comedy",
+    "id": "1303"
+   },
+   "1304": {
+    "name": "Education",
+    "id": "1304"
+   }
+  }
+ }
+}

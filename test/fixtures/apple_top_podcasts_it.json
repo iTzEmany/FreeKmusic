@@ -1,0 +1,245 @@
+{
+ "feed": {
+  "author": {
+   "name": {
+    "label": "iTunes Store"
+   },
+   "uri": {
+    "label": "http://www.apple.com/it/itunes/"
+   }
+  },
+  "entry": [
+   {
+    "im:name": {
+     "label": "Lo Zoo di 105"
+    },
+    "im:image": [
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/9d/84/b8/9d84b8ba-474e-0bab-5229-492d7ec4c6ea/mza_16120883302885785777.jpeg/55x55bb.png",
+      "attributes": {
+       "height": "55"
+      }
+     },
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/9d/84/b8/9d84b8ba-474e-0bab-5229-492d7ec4c6ea/mza_16120883302885785777.jpeg/60x60bb.png",
+      "attributes": {
+       "height": "60"
+      }
+     },
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/9d/84/b8/9d84b8ba-474e-0bab-5229-492d7ec4c6ea/mza_16120883302885785777.jpeg/170x170bb.png",
+      "attributes": {
+       "height": "170"
+      }
+     }
+    ],
+    "summary": {
+     "label": "Il podcast ufficiale dello Zoo di 105"
+    },
+    "im:price": {
+     "label": "Ottieni",
+     "attributes": {
+      "amount": "0",
+      "currency": "EUR"
+     }
+    },
+    "im:contentType": {
+     "attributes": {
+      "term": "Podcast",
+      "label": "Podcast"
+     }
+    },
+    "rights": {
+     "label": "© Dopcast, distributed by Sony Music Entertainment"
+    },
+    "title": {
+     "label": "Lo Zoo di 105 - Radio 105"
+    },
+    "link": {
+     "attributes": {
+      "rel": "alternate",
+      "type": "text/html",
+      "href": "https://podcasts.apple.com/it/podcast/lo-zoo-di-105/id1591647170?uo=2"
+     }
+    },
+    "id": {
+     "label": "https://podcasts.apple.com/it/podcast/lo-zoo-di-105/id1591647170?uo=2",
+     "attributes": {
+      "im:id": "1591647170"
+     }
+    },
+    "im:artist": {
+     "label": "Radio 105"
+    },
+    "category": {
+     "attributes": {
+      "im:id": "1303",
+      "term": "Comedy",
+      "scheme": "https://podcasts.apple.com/it/genre/podcast-umorismo/id1303?uo=2",
+      "label": "Umorismo"
+     }
+    },
+    "im:releaseDate": {
+     "label": "2026-11-05T07:16:00-07:00",
+     "attributes": {
+      "label": "05/11/2026"
+     }
+    }
+   },
+   {
+    "im:name": {
+     "label": "De Core - Podcast"
+    },
+    "im:image": [
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/13/d7/16/13d7162a-f259-7a12-9d23-09d418b311c8/mza_9686696573083754774.jpeg/55x55bb.png",
+      "attributes": {
+       "height": "55"
+      }
+     },
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/13/d7/16/13d7162a-f259-7a12-9d23-09d418b311c8/mza_9686696573083754774.jpeg/60x60bb.png",
+      "attributes": {
+       "height": "60"
+      }
+     },
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/13/d7/16/13d7162a-f259-7a12-9d23-09d418b311c8/mza_9686696573083754774.jpeg/170x170bb.png",
+      "attributes": {
+       "height": "170"
+      }
+     }
+    ],
+    "summary": {
+     "label": "Il Podcast di interviste condotte da Alessandro Pieravanti e Danilo da Fiumicino. Un ospite ogni puntata per parlare delle cose che lo fanno stare bene: musica, cinema, viaggi, sport, cucina e tanto altro. Una produzione Dopcast."
+    },
+    "im:price": {
+     "label": "Ottieni",
+     "attributes": {
+      "amount": "0",
+      "currency": "EUR"
+     }
+    },
+    "im:contentType": {
+     "attributes": {
+      "term": "Podcast",
+      "label": "Podcast"
+     }
+    },
+    "rights": {
+     "label": "© Dopcast, distributed by Sony Music Entertainment"
+    },
+    "title": {
+     "label": "De Core - Podcast - Alessandro Pieravanti & Danilo da Fiumicino - Dopcast"
+    },
+    "link": {
+     "attributes": {
+      "rel": "alternate",
+      "type": "text/html",
+      "href": "https://podcasts.apple.com/it/podcast/de-core-podcast/id1694669718?uo=2"
+     }
+    },
+    "id": {
+     "label": "https://podcasts.apple.com/it/podcast/de-core-podcast/id1694669718?uo=2",
+     "attributes": {
+      "im:id": "1694669718"
+     }
+    },
+    "im:artist": {
+     "label": "Alessandro Pieravanti & Danilo da Fiumicino - Dopcast"
+    },
+    "category": {
+     "attributes": {
+      "im:id": "1496",
+      "term": "Comedy Interviews",
+      "scheme": "https://podcasts.apple.com/it/genre/podcast-umorismo-umorismo-interviste/id1496?uo=2",
+      "label": "Umorismo: interviste"
+     }
+    },
+    "im:releaseDate": {
+     "label": "2026-11-04T21:30:00-07:00",
+     "attributes": {
+      "label": "04/11/2026"
+     }
+    }
+   },
+   {
+    "im:name": {
+     "label": "Tintoria"
+    },
+    "im:image": [
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/61/cc/47/61cc4761-550c-2e15-8bde-96ebe3d71b42/mza_9135649439104772256.jpg/55x55bb.png",
+      "attributes": {
+       "height": "55"
+      }
+     },
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/61/cc/47/61cc4761-550c-2e15-8bde-96ebe3d71b42/mza_9135649439104772256.jpg/60x60bb.png",
+      "attributes": {
+       "height": "60"
+      }
+     },
+     {
+      "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/61/cc/47/61cc4761-550c-2e15-8bde-96ebe3d71b42/mza_9135649439104772256.jpg/170x170bb.png",
+      "attributes": {
+       "height": "170"
+      }
+     }
+    ],
+    "summary": {
+     "label": "Due stand-up comedian e tantissimi ospiti d'eccezione in oltre 250 puntate con più di 100 milioni di visualizzazioni su YouTube. Questo è Tintoria, il talk di Daniele Tinti e Stefano Rapone prodotto da THE COMEDY CLUB. \n\nNato nel 2018, Tintoria è il primo podcast italiano condotto da comici. Le nuove puntate di Tintoria sono disponibili ogni martedì su Spotify, YouTube e sulle principali piattaforme di streaming audio con OnePodcast."
+    },
+    "im:price": {
+     "label": "Ottieni",
+     "attributes": {
+      "amount": "0",
+      "currency": "EUR"
+     }
+    },
+    "im:contentType": {
+     "attributes": {
+      "term": "Podcast",
+      "label": "Podcast"
+     }
+    },
+    "rights": {
+     "label": "© 2025 OnePodcast"
+    },
+    "title": {
+     "label": "Tintoria - OnePodcast - The Comedy Club"
+    },
+    "link": {
+     "attributes": {
+      "rel": "alternate",
+      "type": "text/html",
+      "href": "https://podcasts.apple.com/it/podcast/tintoria/id1434243021?uo=2"
+     }
+    },
+    "id": {
+     "label": "https://podcasts.apple.com/it/podcast/tintoria/id1434243021?uo=2",
+     "attributes": {
+      "im:id": "1434243021"
+     }
+    },
+    "im:artist": {
+     "label": "OnePodcast - The Comedy Club"
+    },
+    "category": {
+     "attributes": {
+      "im:id": "1303",
+      "term": "Comedy",
+      "scheme": "https://podcasts.apple.com/it/genre/podcast-umorismo/id1303?uo=2",
+      "label": "Umorismo"
+     }
+    },
+    "im:releaseDate": {
+     "label": "2026-11-05T20:00:00-07:00",
+     "attributes": {
+      "label": "05/11/2026"
+     }
+    }
+   }
+  ]
+ }
+}

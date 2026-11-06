@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../../core/app_log.dart';
 import '../../data/repositories/podcast_repository.dart';
 import '../online/http_client.dart';
+import 'apple_podcasts.dart';
 import 'podcast_models.dart';
 
 /// A podcast is worth refreshing when it was last checked this long ago.
@@ -36,7 +37,11 @@ class PodcastService {
     RateLimiter? searchLimiter,
     DateTime Function()? now,
   })  : _now = now ?? DateTime.now,
-        _limiter = searchLimiter ?? RateLimiter(minGap: const Duration(seconds: 1));
+        apple = ApplePodcasts(
+          web: web,
+          limiter: searchLimiter ?? RateLimiter(minGap: const Duration(seconds: 1)),
+          now: now ?? DateTime.now,
+        );
 
   final PodcastRepository repo;
   final FeedFetcher fetch;
@@ -47,10 +52,9 @@ class PodcastService {
   final Future<String?> Function(int podcastId, String imageUrl)? saveCover;
   /// `<appSupportDir>/podcasts`: the only place files are deleted from.
   final String? podcastsDir;
-  final RateLimiter _limiter;
+  /// Genres, chart, lookup and search of the Apple directory.
+  final ApplePodcasts apple;
   final DateTime Function() _now;
-
-  static const _search = 'https://itunes.apple.com/search';
 
   int get _nowMs => _now().millisecondsSinceEpoch;
 
@@ -178,35 +182,7 @@ class PodcastService {
     return report;
   }
 
-  /// The public podcast directory (iTunes Search API, no key). Results without
-  /// a feed address are dropped.
-  Future<List<PodcastSearchHit>> search(String term, {int limit = 10}) async {
-    final t = term.trim();
-    if (t.isEmpty) return const [];
-    await _limiter.wait();
-    final json = await web.getJson(_search, query: {
-      'media': 'podcast',
-      'term': t,
-      'limit': '$limit',
-    });
-    if (json is! Map || json['results'] is! List) {
-      throw const PodcastException(PodcastErrorKind.network, 'search');
-    }
-    final out = <PodcastSearchHit>[];
-    for (final r in json['results'] as List) {
-      if (r is! Map) continue;
-      final feed = r['feedUrl'];
-      final name = r['collectionName'] ?? r['trackName'];
-      if (feed is! String || feed.isEmpty || name is! String) continue;
-      final count = r['trackCount'];
-      out.add(PodcastSearchHit(
-        name: name,
-        feedUrl: feed,
-        author: r['artistName'] as String?,
-        artworkUrl: (r['artworkUrl600'] ?? r['artworkUrl100']) as String?,
-        episodeCount: count is int ? count : null,
-      ));
-    }
-    return out;
-  }
+  /// The public podcast directory (iTunes Search API, no key); see [ApplePodcasts].
+  Future<List<PodcastSearchHit>> search(String term, {int limit = 10, String? country, String? genreId}) =>
+      apple.search(term, limit: limit, country: country, genreId: genreId);
 }
