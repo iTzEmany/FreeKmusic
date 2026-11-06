@@ -4701,6 +4701,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onlineNoneSure => 'No sure result';
 
   @override
+  String get onlineInLibrary => 'In your library';
+
+  @override
+  String onlineShowAllCount(int count) {
+    return 'Show all ($count)';
+  }
+
+  @override
+  String onlineOwnedHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results already in your library hidden',
+      one: '1 result already in your library hidden',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String onlineArtistSongs(String artist) {
     return 'Songs by $artist';
   }
@@ -4709,7 +4728,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onlineFilterAll => 'All';
 
   @override
-  String get onlineSourceVideo => 'Video';
+  String onlineFromSource(String source) {
+    return 'From $source';
+  }
 
   @override
   String get onlineAlsoVideo => 'also as a video';

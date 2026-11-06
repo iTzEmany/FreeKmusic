@@ -1331,10 +1331,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 91.5 Controlli di fase
 
 ## Fase 92 — Cerca: libreria, artisti e album (`fase-92-cerca-libreria-e-artisti.md`)
-- [ ] 92.1 «Nella tua libreria»
-- [ ] 92.2 Etichetta della fonte
-- [ ] 92.3 Righe di artisti e album
-- [ ] 92.4 Controlli di fase
+- [x] 92.1 «Nella tua libreria»
+- [x] 92.2 Etichetta della fonte
+- [x] 92.3 Righe di artisti e album
+- [x] 92.4 Controlli di fase
 
 ## Fase 93 — Dati per i filtri (`fase-93-dati-per-i-filtri.md`)
 - [ ] 93.1 Più generi per brano

@@ -30,3 +30,28 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
 ## Esiti
+- **92.1**:
+  - «Nella tua libreria» compare solo a intento noto e di tipo brano (D-400). I brani vengono dalla ricerca per testo della Libreria, più i brani locali abbinati ai doppioni nascosti, così la nota «N nascosti» non compare mai senza i brani a cui si riferisce.
+  - Mostra fino a 3 brani e «Mostra tutti (N)»; il tocco suona il file locale.
+  - La sezione compare anche se la parte online è vuota o in errore.
+  - I doppioni (titolo e artista, D-389, compresi i video già scaricati) si calcolano una volta per risultato in `ownedSplitProvider`. La regola è una sola, condivisa con Shuffle+ (`libraryMatchOf`).
+  - La riga «N risultati già in libreria nascosti» sta in fondo e conta solo i nascosti del filtro di fonte attivo.
+  - La selezione è per risultato, non per posizione.
+- **92.2**: ogni risultato online ha un'etichetta «YouTube Music» o «YouTube», che TalkBack legge come «Da …».
+- **92.3**:
+  - Righe orizzontali «Artisti» e «Album» sotto la scheda, fino a 10 voci; l'artista della scheda non viene ripetuto.
+  - Il filtro album di YouTube Music è stato verificato dal vivo, e la fixture è una risposta vera.
+  - Le due richieste prendono il budget insieme: 20 al minuto. Le righe non ritardano mai la pagina né l'errore, e la pagina va in cache anche senza righe.
+  - **D-425 (autonomia)**: non c'è uno stop in rete a consumo, perché il resto di Cerca non ne ha. Un 429 delle righe mette in pausa anche la scheda principale, per scelta.
+- **Review** `code-review high` (Opus) su merge e budget: 10 rilievi, tutti applicati (il 429 condiviso è tenuto e commentato). Tra questi, l'overflow a scala del testo 2,0 dell'avviso legale, un difetto precedente alla fase.
+- **Scheggia**:
+  - 3 mutanti su 4 uccisi; il quarto (copia in cache con righe parziali) ora è coperto da un test.
+  - Sul Mi A3:
+    - «bohemian rhapsody queen» mostra 3 brani in «Nella tua libreria» e «6 risultati già in libreria nascosti»;
+    - artisti e album («genesis», «nirvana», «pink floyd», «abbey road») mostrano le righe e nessuna sezione libreria;
+    - 15 ricerche di fila e 2 raffiche: nessun crash.
+    - «born on the bayou» non è nella libreria del telefono, quindi il doppione nascosto è stato provato con un altro brano.
+  - Bug corretti con test: una pagina in cache restava senza righe per 10 minuti dopo un budget esaurito; l'artista della scheda era ripetuto nella riga; un secondo invio dello stesso testo mentre la ricerca è in corso lanciava una seconda ricerca: ora riusa quella in corso; la digitazione non fa partire ricerche.
+- **Scorrimento delle righe** sul Mi A3, build debug a 60 Hz: mediana 16,7 ms, al massimo 50 ms in qualche gesto, meno scatti dello scroll verticale di riferimento (116 ms). Nessuno scatto evidente (D-398).
+- **Golden**: `search_results` rigenerati (telefono e desktop).
+- **Motorola**: rinviato alla fase 97 (D-419, D-420).

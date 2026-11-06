@@ -8,7 +8,7 @@ import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
 import '../../../services/online/merge_results.dart';
-import '../../../services/online/query_intent.dart';
+import '../../../services/online/query_intent.dart' show SearchIntent;
 import '../../../services/online/query_match.dart' show MediaKind;
 import '../../../services/online/smart_search.dart';
 import '../../../services/online/youtube_service.dart';
@@ -26,6 +26,7 @@ import '../online/artist_page_screen.dart';
 import '../online/online_album_screen.dart';
 import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
+import 'online_results_rows.dart';
 import 'online_results_sections.dart';
 import 'playlist_source_sheet.dart';
 
@@ -59,8 +60,11 @@ class OnlineResults extends ConsumerStatefulWidget {
 }
 
 class _OnlineResultsState extends ConsumerState<OnlineResults> {
-  /// Results are picked by their place in best + others (before any filter).
+  /// Picks are keyed by a number given to each result the first time it is seen
+  /// (any of its video ids finds it again), not by its place in the list: hiding
+  /// a row above (the library index changes) must not move the picks.
   static final _selectionKey = SelectionKey.online.key;
+  final _slots = <String, int>{};
   SmartSearchRequest? _request;
   int _serial = 0;
 
@@ -93,8 +97,20 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       });
       return;
     }
-    final first = _request == null;
+    // The same text sent again while its search is still coming (a double
+    // Enter) is that search, not a second one.
+    final current = _request;
+    final running = current == null ? null : ref.read(smartSearchProvider(current));
+    if (!refresh &&
+        current != null &&
+        current.query == q &&
+        running != null &&
+        (running.isLoading || (running.value?.loading ?? false))) {
+      return;
+    }
+    final first = current == null;
     setState(() {
+      _slots.clear();
       _request = (query: q, refresh: refresh, serial: ++_serial);
       _filter = null;
       _othersOpen = false;
@@ -130,16 +146,24 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
 
   /// Starts a download for each picked row that is not already in the library
   /// or on its way.
-  void _downloadSelection(List<SmartResult> all) {
+  void _downloadSelection(Map<int, SmartResult> bySlot) {
     final picked = ref.read(selectionProvider(_selectionKey));
     startOnlineDownloads(context, ref, [
       for (final i in picked.orderedIds)
-        if (i < all.length) all[i].primary,
+        if (bySlot[i] case final r?) r.primary,
     ]);
     ref.read(selectionProvider(_selectionKey).notifier).clear();
   }
 
   bool _shows(SmartResult r) => _filter == null || r.sources.contains(_filter);
+
+  int _slotOf(SmartResult r) {
+    final slot = r.ids.map((id) => _slots[id]).nonNulls.firstOrNull ?? _slots.length;
+    for (final id in r.ids) {
+      _slots[id] = slot;
+    }
+    return slot;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,16 +175,24 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         ? null
         : ref.watch(smartSearchProvider(request));
     final s = async?.value;
-    final all = s == null ? const <SmartResult>[] : [...s.best, ...s.others];
-    final bestEnd = s?.best.length ?? 0;
-    // (place in `all`, row) of what is shown under the filter.
+    // D-399: songs the library already has leave the online rows (the split is
+    // worked out once per result; until the index is ready nothing is hidden).
+    final inLibrary = s != null && s.showsLibrary;
+    final owned = s == null ? null : ref.watch(ownedSplitProvider(s));
+    final bestRows = owned?.best ?? s?.best ?? const <SmartResult>[];
+    final othersRows = owned?.others ?? s?.others ?? const <SmartResult>[];
+    final hidden = owned?.hidden ?? 0;
+    final all = [...bestRows, ...othersRows];
+    final bestEnd = bestRows.length;
+    final slots = [for (final r in all) _slotOf(r)];
+    // (slot, row) of what is shown under the filter.
     final shownBest = [
       for (var i = 0; i < bestEnd; i++)
-        if (_shows(all[i])) (i, all[i]),
+        if (_shows(all[i])) (slots[i], all[i]),
     ];
     final shownOthers = [
       for (var i = bestEnd; i < all.length; i++)
-        if (_shows(all[i])) (i, all[i]),
+        if (_shows(all[i])) (slots[i], all[i]),
     ];
     final shownIds = [
       for (final (i, _) in shownBest) i,
@@ -180,13 +212,20 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         IconButton(
           tooltip: l.ytDownload,
           icon: const Icon(Icons.download_rounded),
-          onPressed: () => _downloadSelection(all),
+          onPressed: () => _downloadSelection({
+            for (var i = 0; i < all.length; i++) slots[i]: all[i],
+          }),
         ),
       ],
       child: Column(
         children: [
           const YtDlpOutdatedBanner(),
-          if (!seen) const _LegalNotice(),
+          // Scrolls within a third of the screen: at a large text scale it is taller than the page.
+          if (!seen)
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height / 3),
+              child: const SingleChildScrollView(child: _LegalNotice()),
+            ),
           if (request == null)
             Expanded(
               child: EmptyState(
@@ -209,15 +248,23 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
               SourceFilterChips(filter: _filter, onPick: _pickFilter),
             Expanded(
               child: error != null && all.isEmpty
-                  ? _ErrorView(error: error, retry: retry)
-                  : s != null && all.isEmpty && s.card == null && !s.loading
-                  ? EmptyState(
-                      icon: Icons.smart_display,
-                      message: l.ytNoResults,
+                  ? _withLibrary(s, owned, _ErrorView(error: error, retry: retry))
+                  : s != null && all.isEmpty && hidden == 0 && s.card == null && !s.loading
+                  ? _withLibrary(
+                      s,
+                      owned,
+                      EmptyState(icon: Icons.smart_display, message: l.ytNoResults),
                     )
                   : RefreshIndicator(
                       onRefresh: _pullToRefresh,
-                      child: _list(s!, shownBest, shownOthers, picked.active),
+                      child: _list(
+                          s!,
+                          shownBest,
+                          shownOthers,
+                          picked.active,
+                          showLibrary: inLibrary,
+                          owned: owned,
+                        ),
                     ),
             ),
           ],
@@ -227,12 +274,21 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     );
   }
 
+  /// A song search shows what the library has even with nothing (or an error)
+  /// from online.
+  Widget _withLibrary(SmartSearchState? s, OwnedSplit? owned, Widget child) =>
+      s == null || !s.showsLibrary
+          ? child
+          : ListView(children: [LibraryTracksSection(query: s.query, owned: owned), child]);
+
   Widget _list(
     SmartSearchState s,
     List<(int, SmartResult)> best,
     List<(int, SmartResult)> others,
-    bool selecting,
-  ) {
+    bool selecting, {
+    required bool showLibrary,
+    required OwnedSplit? owned,
+  }) {
     final l = context.l10n;
     var n = 0;
     Widget enter(Widget child) => EnterOnce(index: n++, child: child);
@@ -275,6 +331,17 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         );
       default:
     }
+    final albums = AlbumsRow(albums: s.albums, onOpen: _openAlbum);
+    final artists = ArtistsRow(
+      // The main card already shows its artist.
+      artists: [
+        for (final a in s.artists)
+          if (card is! TopArtist || a.id != card.artist.id) a,
+      ],
+      onOpen: _openArtist,
+    );
+    children.addAll(card is TopAlbum ? [albums, artists] : [artists, albums]);
+    if (showLibrary) children.add(LibraryTracksSection(query: s.query, owned: owned));
     var rest = best;
     if (s.intent == SearchIntent.artistPage && card is TopArtist) {
       final mine = [
@@ -294,8 +361,8 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       children.add(
         SectionHeader(s.noneSure ? l.onlineNoneSure : l.onlineBestResults),
       );
-      children.addAll(rest.map(row));
     }
+    children.addAll(rest.map(row));
     if (others.isNotEmpty) {
       children.add(
         OthersChip(
@@ -306,6 +373,10 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       );
       if (_othersOpen) children.addAll(others.map(row));
     }
+    // At the end, where the total of the page makes sense; under a source
+    // filter only the hidden rows of that source count.
+    final hiddenShown = owned?.hiddenRows.where(_shows).length ?? 0;
+    if (hiddenShown > 0) children.add(OwnedHiddenNote(count: hiddenShown));
     return EntranceScope(
       // A new search is a new list: its rows come in again.
       key: ValueKey(_serial),

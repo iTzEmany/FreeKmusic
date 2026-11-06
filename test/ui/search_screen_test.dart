@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
@@ -12,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_youtube.dart';
+import '../support/fake_ytm.dart';
 import '../support/search_input.dart';
 
 Future<void> _settle(WidgetTester tester) async {
@@ -43,6 +48,17 @@ Future<void> _genre(Harness h, String genre, int n, int i) => h.db
       ),
     );
 
+/// Answers only once [gate] opens, so the search stays under way.
+class _SlowYoutube extends FakeYoutube {
+  final gate = Completer<void>();
+
+  @override
+  Future<List<YtResult>> searchSongs(String query, {int limit = 5}) async {
+    await gate.future;
+    return super.searchSongs(query, limit: limit);
+  }
+}
+
 void main() {
   testWidgets('typing shows no library result and asks nothing online', (
     tester,
@@ -63,6 +79,55 @@ void main() {
     expect(find.byType(SegmentedBlocks<bool>), findsNothing);
     expect(find.byType(FilterChip), findsNothing);
     expect(svc.calls, isEmpty, reason: 'online runs on submit only');
+    await h.dispose(tester);
+  });
+
+  testWidgets('typing, waiting and Enter ask the catalog once', (tester) async {
+    _size(tester, const Size(400, 900));
+    final h = await Harness.create(tester, tracks: 2);
+    final svc = FakeYoutube();
+    await h.pump(
+      tester,
+      const SearchScreen(),
+      extraOverrides: [
+        youtubeServiceProvider.overrideWithValue(svc),
+        ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+      ],
+    );
+    typeSearch(tester, 'oasis');
+    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
+    expect(svc.calls, isEmpty);
+    submitSearch(tester);
+    await _settle(tester);
+    expect(svc.calls.where((c) => c.startsWith('music:')), hasLength(1));
+    expect(svc.calls.where((c) => c.startsWith('youtube:')), hasLength(1));
+    await h.dispose(tester);
+  });
+
+  testWidgets('Enter again while the same search is coming is not a second search', (
+    tester,
+  ) async {
+    _size(tester, const Size(400, 900));
+    final h = await Harness.create(tester, tracks: 2);
+    final svc = _SlowYoutube();
+    await h.pump(
+      tester,
+      const SearchScreen(),
+      extraOverrides: [
+        youtubeServiceProvider.overrideWithValue(svc),
+        ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+      ],
+    );
+    typeSearch(tester, 'oasis');
+    submitSearch(tester);
+    await _settle(tester);
+    submitSearch(tester);
+    await _settle(tester);
+    svc.gate.complete();
+    await _settle(tester);
+    expect(svc.calls.where((c) => c.startsWith('music:')), hasLength(1));
+    expect(svc.calls.where((c) => c.startsWith('youtube:')), hasLength(1));
     await h.dispose(tester);
   });
 
@@ -160,4 +225,34 @@ void main() {
     expect(picked, [2], reason: 'the index is the tab, not the position');
     await h.dispose(tester);
   });
+
+  for (final online in [false, true]) {
+    testWidgets('no overflow at text scale 2.0 ${online ? 'with online results' : 'idle'}', (
+      tester,
+    ) async {
+      _size(tester, const Size(400, 900));
+      final h = await Harness.create(tester, tracks: 4);
+      await h.pump(
+        tester,
+        const SearchScreen(),
+        textScale: 2,
+        extraOverrides: [
+          youtubeServiceProvider.overrideWithValue(FakeYoutube()),
+          ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+        ],
+      );
+      ProviderScope.containerOf(tester.element(find.byType(SearchScreen)))
+          .read(settingsProvider.notifier)
+          .update((s) => s.copyWith(recentSearches: ['queen', 'a rather long recent search']));
+      if (online) {
+        typeSearch(tester, 'daft punk');
+        submitSearch(tester);
+      }
+      await _settle(tester);
+      await _settle(tester);
+      final ex = tester.takeException();
+      if (ex != null) fail(ex is FlutterError ? ex.toStringDeep() : '$ex');
+      await h.dispose(tester);
+    });
+  }
 }

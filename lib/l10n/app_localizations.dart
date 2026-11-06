@@ -7329,6 +7329,24 @@ abstract class AppLocalizations {
   /// **'Nessun risultato sicuro'**
   String get onlineNoneSure;
 
+  /// No description provided for @onlineInLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Nella tua libreria'**
+  String get onlineInLibrary;
+
+  /// No description provided for @onlineShowAllCount.
+  ///
+  /// In it, this message translates to:
+  /// **'Mostra tutti ({count})'**
+  String onlineShowAllCount(int count);
+
+  /// No description provided for @onlineOwnedHidden.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 risultato già in libreria nascosto} other{{count} risultati già in libreria nascosti}}'**
+  String onlineOwnedHidden(int count);
+
   /// No description provided for @onlineArtistSongs.
   ///
   /// In it, this message translates to:
@@ -7341,11 +7359,11 @@ abstract class AppLocalizations {
   /// **'Tutte'**
   String get onlineFilterAll;
 
-  /// No description provided for @onlineSourceVideo.
+  /// No description provided for @onlineFromSource.
   ///
   /// In it, this message translates to:
-  /// **'Video'**
-  String get onlineSourceVideo;
+  /// **'Da {source}'**
+  String onlineFromSource(String source);
 
   /// No description provided for @onlineAlsoVideo.
   ///

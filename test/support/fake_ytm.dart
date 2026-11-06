@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:codecore/services/online/catalog_cache.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/services/online/ytm_album_search.dart' show YtmAlbumHit;
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:dio/dio.dart' show CancelToken;
@@ -19,6 +20,14 @@ class FakeCatalog extends YtmCatalog {
 
   @override
   Future<YtmArtistRef?> topArtist(String query, String hl) => onTopArtist(query);
+
+  @override
+  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) async =>
+      const [];
+
+  @override
+  Future<List<YtmAlbumHit>> searchAlbums(String query, String hl, {CancelToken? cancel}) async =>
+      const [];
 
   @override
   Future<TopCard?> topCard(String query, String hl, {CancelToken? cancel}) async {

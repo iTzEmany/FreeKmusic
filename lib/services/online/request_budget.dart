@@ -17,6 +17,11 @@ import '../../core/app_info.dart';
 const kWikimediaAnonymousPerMinute = 8;
 const kWikimediaIdentifiedPerMinute = 150;
 
+/// The «Artists» and «Albums» rows of the online search are two requests more
+/// than the page needs; at most this many in any minute (about ten searches),
+/// past it the rows are left out instead of waiting.
+const kSearchRowsPerMinute = 20;
+
 /// True when the User-Agent this app sends carries a way to reach its author
 /// (`kApiContact`), which is what moves it from the 10 / min tier to 200 / min.
 bool get apiIdentified => kApiContact.trim().isNotEmpty;
@@ -71,16 +76,26 @@ class WindowLimiter {
     return turn;
   }
 
+  /// Takes [n] slots if they are all free right now, false (nothing taken)
+  /// otherwise: for requests that only add to a page and are not worth a wait.
+  bool tryAcquire([int n = 1]) {
+    final now = _now();
+    _stamps.removeWhere((s) => !s.isAfter(now.subtract(window)));
+    if (_stamps.length + n > perMinute) return false;
+    for (var i = 0; i < n; i++) {
+      _stamps.add(now);
+      granted.add(now);
+    }
+    while (granted.length > 200) {
+      granted.removeAt(0);
+    }
+    return true;
+  }
+
   Future<void> _take() async {
     while (true) {
+      if (tryAcquire()) return;
       final now = _now();
-      _stamps.removeWhere((s) => !s.isAfter(now.subtract(window)));
-      if (_stamps.length < perMinute) {
-        _stamps.add(now);
-        granted.add(now);
-        if (granted.length > 200) granted.removeAt(0);
-        return;
-      }
       // The oldest one leaves the window at its stamp + 60 s.
       final wait = _stamps.first.add(window).difference(now);
       await _pause(wait > Duration.zero ? wait : const Duration(milliseconds: 50));
