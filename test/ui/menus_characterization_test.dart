@@ -581,7 +581,7 @@ void main() {
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
     await _settle(tester);
-    expect(await _open(tester, find.text('Recenti')), _librarySort);
+    expect(await _open(tester, find.text('Ascoltati di recente')), _librarySort);
     await _choose(tester, 'A–Z');
     expect(
       find.descendant(
@@ -598,7 +598,7 @@ void main() {
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
     await _settle(tester);
-    await tester.tap(find.text('Recenti'));
+    await tester.tap(find.text('Ascoltati di recente'));
     await _settle(tester);
     final marked = find.descendant(
       of: find.byType(BottomSheet),
@@ -606,7 +606,7 @@ void main() {
     );
     expect(marked, findsOneWidget);
     expect(
-      find.descendant(of: marked, matching: find.text('Recenti')),
+      find.descendant(of: marked, matching: find.text('Ascoltati di recente')),
       findsOneWidget,
     );
     await h.dispose(tester);

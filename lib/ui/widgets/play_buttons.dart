@@ -23,20 +23,31 @@ class PlayCircleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cc = context.cc;
     final l = context.l10n;
-    return Tooltip(
-      message: tooltip ?? (playing ? l.pause : l.play),
-      child: Material(
-        color: cc.accent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox.square(
-            dimension: size,
-            child: Icon(
-              playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: size * 0.6,
-              color: cc.onAccent,
+    final label = tooltip ?? (playing ? l.pause : l.play);
+    // Its own node with a real label (a tooltip alone is not one for TalkBack).
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: onPressed != null,
+      label: label,
+      onTap: onPressed,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Material(
+          color: cc.accent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onPressed,
+            child: SizedBox.square(
+              dimension: size,
+              child: Icon(
+                playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                size: size * 0.6,
+                color: cc.onAccent,
+              ),
             ),
           ),
         ),

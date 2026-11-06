@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:archive/archive_io.dart';
-import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_log.dart';
@@ -184,17 +184,20 @@ Future<bool> applyPendingRestore({
 /// Opens the staged copy and asks SQLite whether it is sound and not newer
 /// than this app.
 Future<void> _checkStagedDatabase(File f, int schemaVersion) async {
-  final db = AppDatabase(NativeDatabase(f));
+  // Read the version with plain sqlite first: drift's onUpgrade rewrites user_version on open.
+  final raw = sqlite.sqlite3.open(f.path, mode: sqlite.OpenMode.readOnly);
+  final int v;
   try {
-    final check = await db.customSelect('PRAGMA quick_check').get();
-    if (check.length != 1 || check.single.data.values.first != 'ok') {
+    v = raw.select('PRAGMA user_version').single.values.first as int;
+    // Before drift opens the file and runs migrations on a damaged one.
+    final check = raw.select('PRAGMA quick_check');
+    if (check.length != 1 || check.single.values.first != 'ok') {
       throw const RestoreException('the backup database is damaged');
     }
-    final v = (await db.customSelect('PRAGMA user_version').getSingle()).data.values.first as int;
-    if (v > schemaVersion) throw RestoreException('the backup database is newer (schema $v)');
   } finally {
-    await db.close();
+    raw.close();
   }
+  if (v > schemaVersion) throw RestoreException('the backup database is newer (schema $v)');
 }
 
 void _quietDelete(Directory d) {

@@ -12,6 +12,7 @@ import '../../../providers/radio_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_tile.dart';
+import '../../widgets/play_buttons.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/shuffle_button.dart';
 import '../library/all_tracks_screen.dart';
@@ -29,7 +30,6 @@ class ShuffleHero extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     final totals = ref.watch(memoryTotalsProvider).value;
     return Padding(
@@ -42,10 +42,12 @@ class ShuffleHero extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Unbounded 28 on one line, shrunk rather than wrapped.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(l.homeShuffleAll, style: theme.displaySmall),
+          // Wraps on two lines at most inside the box width.
+          Text(
+            l.homeShuffleAll,
+            style: theme.displaySmall,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           Row(
             children: [
@@ -58,30 +60,16 @@ class ShuffleHero extends ConsumerWidget {
                           l.hoursCount(totals.durationMs ~/ 3600000),
                         ),
                   style: theme.bodyMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 12),
-              Semantics(
-                container: true, // its own node, not merged into the title
-                button: true,
-                label: l.play,
-                onTap: ref.read(trackOpsProvider).playLibrary,
-                excludeSemantics: true,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Material(
-                    color: cc.accent,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: ref.read(trackOpsProvider).playLibrary,
-                      child: SizedBox.square(
-                        dimension: 48,
-                        child: Icon(Icons.play_arrow, color: cc.onAccent),
-                      ),
-                    ),
-                  ),
+              const SizedBox(width: CcDims.gap16),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
+                child: PlayCircleButton(
+                  size: 48,
+                  onPressed: ref.read(trackOpsProvider).playLibrary,
                 ),
               ),
               ShuffleModeButton(

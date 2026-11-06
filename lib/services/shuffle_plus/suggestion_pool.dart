@@ -22,7 +22,8 @@ String suggestionArtistKey(YtResult r) {
 }
 
 /// Whether a suggestion is a song the user already has: downloaded, or found
-/// in the library by title, artist and duration. Shared by Shuffle+ and the
+/// in the library by title and artist (the duration only matters when one
+/// artist credit merely contains the other, D-389). Shared by Shuffle+ and the
 /// genre mix. [library] may be null before the first read.
 bool Function(YtResult r) inLibraryTest({
   required bool Function(String videoId) hasDownload,

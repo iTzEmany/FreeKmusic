@@ -9,6 +9,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart' show sqlite3;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -170,6 +171,26 @@ void main() {
       expect(await titles(dbFile), ['old']);
       expect(File('${dbFile.path}.before-restore').existsSync(), isFalse);
       expect(prefs.getString('theme'), 'light');
+    });
+
+    test('a staged database with a corrupt page (readable header) leaves the original in place', () async {
+      staging.createSync(recursive: true);
+      final staged = File(p.join(staging.path, 'codecore.sqlite'));
+      final raw = sqlite3.open(staged.path);
+      raw.execute('PRAGMA page_size = 4096; CREATE TABLE t(x TEXT); PRAGMA user_version = 1;');
+      for (var i = 0; i < 300; i++) {
+        raw.execute("INSERT INTO t VALUES ('${'row $i ' * 20}')");
+      }
+      raw.close();
+      final bytes = staged.readAsBytesSync();
+      expect(bytes.length, greaterThan(8192));
+      for (var i = 4096; i < 8192; i++) {
+        bytes[i] = 0xAB;
+      }
+      staged.writeAsBytesSync(bytes);
+      File(p.join(staging.path, 'ready')).writeAsStringSync('1');
+      expect(await apply(), isFalse);
+      expect(await titles(dbFile), ['old']);
     });
 
     test('a zip without a database cannot be staged; unexpected entries are never extracted', () async {

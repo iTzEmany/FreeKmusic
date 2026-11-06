@@ -18,11 +18,18 @@ class SegmentedBlocks<T> extends StatelessWidget {
     required this.items,
     required this.selected,
     required this.onChanged,
+    this.compact = false,
   });
 
   final List<BlockItem<T>> items;
   final T selected;
   final ValueChanged<T> onChanged;
+
+  /// Text-only chips painted [_compactHeight] tall inside a 48 dp tap area.
+  final bool compact;
+
+  static const _compactHeight = 36.0;
+  static const _compactInset = (48 - _compactHeight) / 2;
 
   static const _gap = 8.0;
   static const _radius = BorderRadius.all(Radius.circular(CcDims.rSheet));
@@ -31,7 +38,7 @@ class SegmentedBlocks<T> extends StatelessWidget {
     final cc = context.cc;
     final on = item.value == selected;
     final fg = on ? cc.bg : cc.text;
-    return Semantics(
+    final block = Semantics(
       button: true,
       selected: on,
       label: item.label,
@@ -45,9 +52,12 @@ class SegmentedBlocks<T> extends StatelessWidget {
             borderRadius: _radius,
             onTap: () => onChanged(item.value),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: item.icon == null ? 48 : 64),
+              constraints: BoxConstraints(minHeight: compact ? _compactHeight : (item.icon == null ? 48 : 64)),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: CcDims.gap4, vertical: CcDims.gap8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: CcDims.gap4,
+                  vertical: compact ? 0 : CcDims.gap8,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -69,6 +79,16 @@ class SegmentedBlocks<T> extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+    if (!compact) return block;
+    // The tap area is the full 48 dp; only the middle is painted.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(item.value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: _compactInset),
+        child: block,
       ),
     );
   }
@@ -117,7 +137,11 @@ class SegmentedBlocks<T> extends StatelessWidget {
       final w = (c.maxWidth - _gap * (n - 1)) / n;
       final index = items.indexWhere((e) => e.value == selected);
       return Stack(children: [
-        Positioned.fill(
+        Positioned(
+          left: 0,
+          right: 0,
+          top: compact ? _compactInset : 0,
+          bottom: compact ? _compactInset : 0,
           child: Row(children: [
             for (var i = 0; i < n; i++) ...[
               if (i > 0) const SizedBox(width: _gap),
@@ -132,8 +156,8 @@ class SegmentedBlocks<T> extends StatelessWidget {
         if (index >= 0)
           Positioned(
             left: 0,
-            top: 0,
-            bottom: 0,
+            top: compact ? _compactInset : 0,
+            bottom: compact ? _compactInset : 0,
             width: w,
             child: AnimatedSlide(
               offset: Offset(index * (w + _gap) / w, 0),

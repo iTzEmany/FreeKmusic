@@ -39,3 +39,36 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
 ## Esiti
+- **88.1**:
+  - a titolo e artista uguali il brano è posseduto qualunque durata; artista confrontato come insieme di parole;
+  - `libraryTitleKey` (solo per `LibraryIndex` e `LibraryOverlap`) toglie un suffisso solo se **ogni** parola è un'edizione (deluxe, expanded, anniversary, remaster, edition, special, bonus, «album version», anni e ordinali);
+  - «Taylor's Version», «Spanish Edition», «Piano Version» restano distinti;
+  - il credito annidato vale solo con durate note entro 5 s;
+  - titoli e artisti di soli simboli gestiti, titolo troncato a 500 caratteri.
+  - `matchTitleKey` e il ranking della ricerca sono invariati: metterci l'allow-list rompeva `query_match_test`.
+- **88.2–88.5**: fatte come da specifica. La 88.4 riguarda l'«Ordina per» della Libreria (Tutti i brani ha i suoi chip).
+- **88.5b** (trovato nella 87): il ripristino legge `user_version` e fa `quick_check` sul file in attesa con sqlite grezzo, in sola lettura, prima che drift lo apra. Uno schema più nuovo viene rifiutato e il database attuale resta intatto.
+- **Review Opus** (88.1 e 88.5b): 9 rilievi, 7 applicati. Rinviati in `prossimi-lavori.md` §5: la guardia contro il downgrade in `onUpgrade` e la chiave unica per «stesso brano».
+- **Scheggia**:
+  - 4 bug corretti con test: edizione più versione, titoli di simboli, artisti di simboli, durata sconosciuta;
+  - 2 mutanti sopravvissuti, coperti con test nuovi (`_sameSet`, `quick_check` su pagine rotte);
+  - rinviati in §5: credito annidato largo («Prince» / «Prince Royce»), remaster più live, parentesi non chiuse.
+- **Golden**: 14 rigenerati (Home, Tutti i brani, Cerca, mini player sopra la Home); gli altri sono invariati.
+- **Misure sul Mi A3**, build profile, % di frame oltre 16,7 ms, base 87 → 88:
+
+  | Schermata | Base 87 | Fase 88 |
+  |---|---|---|
+  | Pallino schede | 5,9 % | 0,7 % |
+  | Tutti i brani | 2,0 % | 1,6 % |
+  | Scroll Tutti i brani | 2,3 % | 1,0 % |
+  | Cambio scheda | 5,5 % | 1,4 % |
+  | Ricerca «notte» | 0,2 % | 0,0 % |
+
+  Un primo giro aveva dato 6,2 % su Tutti i brani: era rumore, la seconda misura è 1,6 %. `perf_device.py`: ora `leave_search` chiude anche la lente della Libreria.
+- **Prova adb sul Mi A3**:
+  - Home: Registro e play tondo OK;
+  - Tutti i brani: play tondo OK;
+  - Cerca: info accanto al titolo e filtri compatti OK; il pulsante attività compare solo con un'attività in corso;
+  - Cerca segna come «Già in libreria» solo i download con lo stesso id: il confronto della libreria in Cerca arriva con la fase 92 (D-399);
+  - il suggerito già posseduto è coperto dai test Bayou e `suggestion_pool`, non provato a vista.
+- **Motorola**: rinviato alla fase 97 (D-419, D-420).

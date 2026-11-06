@@ -21,6 +21,37 @@ final _editGroup = RegExp(
 final _editTail = RegExp(
     r'\s+[-–]\s+(radio edit|single version|album version|mono|stereo|mono version|stereo version)\s*$',
     caseSensitive: false);
+// Edition wrappers of the same recording («Deluxe Edition», «40th Anniversary»,
+// «Album Version»): stripped only when every word of the group is an edition
+// word, so «Spanish Edition», «Taylor's Version» or «Piano Version» stay.
+final _editionGroup = RegExp(r'[\(\[]([^\)\]]*)[\)\]]');
+final _editionTail = RegExp(r'\s+[-–]\s+([^-–]*)$');
+final _wordSplit = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
+final _numberWord = RegExp(r'^\d+(st|nd|rd|th)?$');
+const _editionOnly = {
+  'deluxe', 'expanded', 'anniversary', 'remaster', 'remastered', 'edition',
+  'special', 'bonus',
+};
+
+bool _isEdition(String inner) {
+  final w = [for (final x in inner.toLowerCase().split(_wordSplit)) if (x.isNotEmpty) x];
+  var real = false;
+  for (var i = 0; i < w.length; i++) {
+    if (_editionOnly.contains(w[i])) {
+      real = true;
+    } else if (w[i] == 'album' && i + 1 < w.length && w[i + 1] == 'version') {
+      real = true;
+      i++;
+    } else if (w[i] != 'the' && !_numberWord.hasMatch(w[i])) {
+      return false;
+    }
+  }
+  return real;
+}
+
+String _dropEdition(String s, RegExp re) =>
+    s.replaceAllMapped(re, (m) => _isEdition(m[1]!) ? ' ' : m[0]!);
+
 final _nonWord = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
 
 /// Apostrophe-like marks that Unicode files as letters (the Hawaiian ʻokina of
@@ -45,16 +76,46 @@ String matchTitleKey(String title) => matchKey(title
     .replaceAll(_featTail, '')
     .replaceAll(_editTail, ''));
 
+/// [matchTitleKey] without edition wrappers too (deluxe, anniversary...): the
+/// key for «do I already own this song», not for ranking search results.
+String libraryTitleKey(String title) {
+  // The cap keeps the regexes cheap on an unclosed «(» in a huge title.
+  final t = title.length > 500 ? title.substring(0, 500) : title;
+  final key = matchTitleKey(_dropEdition(_dropEdition(t, _editionGroup), _editionTail));
+  return key.isEmpty ? t.trim().toLowerCase() : key;
+}
+
 String _artistKey(String artist) => matchKey(extractPrimaryArtist(artist));
 
-/// `title|primary artist` -> library tracks; [find] is O(1) per row.
+const _artistStop = {'and', 'feat', 'ft', 'featuring', 'with'};
+
+/// The normalized words of every name in [artist], order and «feat.» ignored.
+Set<String> _artistWords(String artist) {
+  final words = {
+    for (final w in matchKey(artist).split(' '))
+      if (w.isNotEmpty && !_artistStop.contains(w)) w
+  };
+  // A name made of symbols only («!!!», «+») is its own word.
+  if (words.isEmpty && artist.trim().isNotEmpty) words.add(artist.trim().toLowerCase());
+  return words;
+}
+
+bool _sameSet(Set<String> a, Set<String> b) =>
+    a.length == b.length && a.containsAll(b);
+
+/// One name inside the other credit («Queen» in «Queen & David Bowie»).
+bool _nested(Set<String> a, Set<String> b) =>
+    a.isNotEmpty &&
+    b.isNotEmpty &&
+    (a.length <= b.length ? b.containsAll(a) : a.containsAll(b));
+
+/// title key -> library tracks with their artist words; [find] is O(1) per row.
 class LibraryIndex {
   LibraryIndex(Iterable<LibraryEntryLite> tracks) {
     for (final t in tracks) {
-      _byKey
-          .putIfAbsent('${matchTitleKey(t.title)}|${_artistKey(t.artist ?? '')}',
-              () => [])
-          .add(t);
+      _byTitle
+          .putIfAbsent(libraryTitleKey(t.title), () => [])
+          .add((_artistWords(t.artist ?? ''), t));
       final path = t.path;
       if (path != null) {
         final key = pathKey(path);
@@ -64,7 +125,7 @@ class LibraryIndex {
     }
   }
 
-  final Map<String, List<LibraryEntryLite>> _byKey = {};
+  final Map<String, List<(Set<String>, LibraryEntryLite)>> _byTitle = {};
   final Map<String, LibraryEntryLite> _byPath = {};
   final Map<String, List<(String, LibraryEntryLite)>> _byBase = {};
 
@@ -109,22 +170,41 @@ class LibraryIndex {
     return null;
   }
 
-  /// Same title and artist; when both lengths are known they must be within
-  /// 5 s (the same recording is often a few seconds apart between services).
+  /// Same title and same artist words: owned whatever the length (D-389); of
+  /// several, the closest in length. An artist credit that only contains the
+  /// other («Queen» / «Queen & X») is an approximate match: both lengths must
+  /// be known and within 5 s.
   LibraryEntryLite? find(ImportRow r, {String? baseDir}) {
     final loc = r.location;
     if (loc != null) {
       final byPath = findByPath(loc, baseDir: baseDir);
       if (byPath != null) return byPath;
     }
-    final c = _byKey['${matchTitleKey(r.title)}|${_artistKey(r.primaryArtist)}'];
+    if (r.title.trim().isEmpty) return null;
+    final c = _byTitle[libraryTitleKey(r.title)];
     if (c == null) return null;
-    final want = r.durationMs;
-    for (final t in c) {
-      if (want == null || want <= 0 || t.durationMs <= 0) return t;
-      if ((t.durationMs - want).abs() <= 5000) return t;
+    final want = r.durationMs ?? 0;
+    final artist = _artistWords(r.artists.join(' '));
+    if (artist.isEmpty) return null;
+    // An unknown library length loses to any known one.
+    int gap(LibraryEntryLite t) => want <= 0
+        ? 0
+        : t.durationMs > 0
+            ? (t.durationMs - want).abs()
+            : 1 << 30;
+    LibraryEntryLite? best;
+    LibraryEntryLite? near;
+    for (final (words, t) in c) {
+      if (_sameSet(words, artist)) {
+        if (best == null || gap(t) < gap(best)) best = t;
+      } else if (want > 0 &&
+          t.durationMs > 0 &&
+          gap(t) <= 5000 &&
+          _nested(words, artist)) {
+        if (near == null || gap(t) < gap(near)) near = t;
+      }
     }
-    return null;
+    return best ?? near;
   }
 }
 

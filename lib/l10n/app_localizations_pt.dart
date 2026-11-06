@@ -1240,7 +1240,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get sortRecent => 'Recentes';
+  String get sortRecent => 'Ouvidos recentemente';
 
   @override
   String get sortAlphabetical => 'Alfabética';

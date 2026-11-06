@@ -206,7 +206,7 @@ void main() {
     );
     tester.semantics.tap(find.semantics.byLabel(RegExp('^Ordina per')));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Recenti'), findsWidgets);
+    expect(find.text('Ascoltati di recente'), findsWidgets);
     await h.dispose(tester);
   });
 

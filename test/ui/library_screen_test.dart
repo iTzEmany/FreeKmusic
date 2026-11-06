@@ -237,9 +237,17 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('sort sheet names last played and date added', (t) async {
+    final h = await open(t);
+    await t.tap(find.text('Ascoltati di recente'));
+    await t.pumpAndSettle();
+    expect(find.text('Aggiunti di recente'), findsOneWidget);
+    await h.dispose(t);
+  });
+
   testWidgets('sort menu switches to A–Z', (t) async {
     final h = await open(t);
-    await t.tap(find.text('Recenti'));
+    await t.tap(find.text('Ascoltati di recente'));
     await t.pumpAndSettle();
     await t.tap(find.text('A–Z').last);
     await t.pumpAndSettle();
@@ -388,7 +396,7 @@ void main() {
     }
     await _settle(t);
     expect(find.text('A'), findsNothing);
-    await t.tap(find.text('Recenti'));
+    await t.tap(find.text('Ascoltati di recente'));
     await t.pumpAndSettle();
     await t.tap(find.text('A–Z').last);
     await t.pumpAndSettle();
@@ -489,7 +497,7 @@ void main() {
       await tab('Tutto');
       expect(order(everything), recentAll);
 
-      await t.tap(find.text('Recenti'));
+      await t.tap(find.text('Ascoltati di recente'));
       await t.pumpAndSettle();
       await t.tap(find.text('A–Z').last);
       await t.pumpAndSettle();

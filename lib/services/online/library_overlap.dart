@@ -1,11 +1,8 @@
 import '../../data/db/app_database.dart' show Track;
 import '../../data/repositories/library_queries.dart' show ArtistSummary;
-import '../import/track_matcher.dart' show matchKey, matchTitleKey;
+import '../import/track_matcher.dart' show libraryTitleKey, matchKey;
 import 'query_cleaner.dart' show extractPrimaryArtist;
 import 'youtube_service.dart' show YtResult;
-
-/// How far two lengths may differ for the same recording.
-const _lengthSlack = Duration(seconds: 5);
 
 String _artistKey(String name) => matchKey(extractPrimaryArtist(name));
 
@@ -27,24 +24,14 @@ ArtistSummary? localArtistFor(String name, List<ArtistSummary> artists) {
 /// The songs of one artist's library, to tell which online songs are already
 /// there even when they came from a file or from another video.
 class LibraryOverlap {
-  LibraryOverlap(Iterable<Track> artistTracks) {
-    for (final t in artistTracks) {
-      (_byTitle[matchTitleKey(t.title)] ??= []).add(t.durationMs);
-    }
-  }
+  LibraryOverlap(Iterable<Track> artistTracks)
+      : _titles = {for (final t in artistTracks) libraryTitleKey(t.title)};
 
-  final _byTitle = <String, List<int>>{};
+  final Set<String> _titles;
 
-  /// Same title (remaster and feat. tags ignored) and, when both lengths are
-  /// known, a length within 5 s (a song with no length matches on the title).
-  bool owns(YtResult r) {
-    final lengths = _byTitle[matchTitleKey(r.title)];
-    if (lengths == null) return false;
-    final want = r.duration;
-    if (want == null) return true;
-    return lengths.any((ms) =>
-        ms <= 0 || (Duration(milliseconds: ms) - want).abs() <= _lengthSlack);
-  }
+  /// Same title (remaster, feat. and edition tags ignored): the artist is
+  /// already the same, so the length does not matter (D-389).
+  bool owns(YtResult r) => _titles.contains(libraryTitleKey(r.title));
 }
 
 /// Whether [r] is one of [artistTracks] (see [LibraryOverlap.owns]).

@@ -1301,12 +1301,12 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 87.5 Controlli di fase
 
 ## Fase 88 — Ritocchi rapidi (`fase-88-ritocchi-rapidi.md`)
-- [ ] 88.1 Suggeriti senza brani già in libreria (D-389)
-- [ ] 88.2 Home: Registro accanto a Impostazioni, «Casuale su tutto» su due righe
-- [ ] 88.3 Play tondo in Tutti i brani
-- [ ] 88.4 Nomi di «Ordina per»
-- [ ] 88.5 Cerca: info accanto al titolo, filtri solo testo
-- [ ] 88.5b Ripristino: rifiutare il database in attesa con schema più nuovo (debito della 87)
+- [x] 88.1 Suggeriti senza brani già in libreria (D-389)
+- [x] 88.2 Home: Registro accanto a Impostazioni, «Casuale su tutto» su due righe
+- [x] 88.3 Play tondo in Tutti i brani
+- [x] 88.4 Nomi di «Ordina per»
+- [x] 88.5 Cerca: info accanto al titolo, filtri solo testo
+- [x] 88.5b Ripristino: rifiutare il database in attesa con schema più nuovo (debito della 87)
 - [ ] 88.6 Controlli di fase
 
 ## Fase 89 — Dock flottante e sezioni che ripartono (`fase-89-dock-e-sezioni.md`)
