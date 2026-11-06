@@ -8,6 +8,7 @@ import 'providers/player_providers.dart';
 import 'providers/settings_providers.dart';
 import 'providers/share_hub.dart';
 import 'providers/genre_reread_providers.dart';
+import 'providers/artist_country_providers.dart';
 import 'providers/startup_providers.dart' show enrichCompleterStartProvider, mp3LengthFixStartProvider;
 import 'providers/stream_providers.dart' show streamEnrichTriggerProvider;
 import 'providers/theme_providers.dart';
@@ -46,6 +47,8 @@ class CodecoreApp extends ConsumerWidget {
     ref.watch(mp3LengthFixStartProvider);
     // Reads the genres of the existing library again, in the background (starts once settled).
     ref.watch(genreRereadStartProvider);
+    // Looks up where the library's artists come from, only with the enrichment on (starts once settled).
+    ref.watch(artistCountryStartProvider);
     // A new version, at most once a day and only if the user asked for it.
     ref.listen(updateOnStartProvider, (_, next) {
       final info = next.value;

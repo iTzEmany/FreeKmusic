@@ -6355,6 +6355,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se leyeron las etiquetas de las canciones para hallar todos los géneros.';
 
   @override
+  String get logCountries => 'Países de los artistas buscados';
+
+  @override
+  String get logCountriesSub =>
+      'Se buscó el país de origen de los artistas de la biblioteca.';
+
+  @override
   String get logReleases => 'Novedades revisadas';
 
   @override
@@ -6416,6 +6423,17 @@ class AppLocalizationsEs extends AppLocalizations {
       locale: localeName,
       other: '$count canciones',
       one: '1 canción',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logChipArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artistas',
+      one: '1 artista',
     );
     return '$_temp0';
   }

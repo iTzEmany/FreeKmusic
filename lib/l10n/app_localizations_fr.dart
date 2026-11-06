@@ -6392,6 +6392,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les tags des titres ont été relus pour trouver tous les genres.';
 
   @override
+  String get logCountries => 'Pays des artistes recherchés';
+
+  @override
+  String get logCountriesSub =>
+      'Le pays d\'origine des artistes de la bibliothèque a été recherché.';
+
+  @override
   String get logReleases => 'Nouveautés vérifiées';
 
   @override
@@ -6454,6 +6461,17 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count titres',
       one: '1 titre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logChipArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artistes',
+      one: '1 artiste',
     );
     return '$_temp0';
   }

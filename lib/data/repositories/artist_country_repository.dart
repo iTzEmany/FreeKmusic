@@ -38,4 +38,17 @@ class ArtistCountryRepository {
     }
     return out;
   }
+
+  /// The artist field of every visible track, most songs first, one per spelling
+  /// (the same filter as the Libreria's artists).
+  Future<List<String>> libraryArtistNames() async {
+    final rows = await _db
+        .customSelect(
+          "SELECT MIN(artist) AS a FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 "
+          "AND trim(COALESCE(artist, '')) <> '' GROUP BY lower(trim(artist)) ORDER BY COUNT(*) DESC, 1",
+          readsFrom: {_db.tracks},
+        )
+        .get();
+    return [for (final r in rows) r.read<String>('a')];
+  }
 }

@@ -6319,6 +6319,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logGenresSub => 'The songs\' tags were read to find every genre.';
 
   @override
+  String get logCountries => 'Artists\' countries looked up';
+
+  @override
+  String get logCountriesSub =>
+      'The home country of the artists in the library was looked up.';
+
+  @override
   String get logReleases => 'New releases checked';
 
   @override
@@ -6379,6 +6386,17 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count songs',
       one: '1 song',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logChipArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artists',
+      one: '1 artist',
     );
     return '$_temp0';
   }
