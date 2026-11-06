@@ -87,6 +87,31 @@ class ArtistAliasRepository {
     await _db.into(_db.artistNotSame).insertOnConflictUpdate(ArtistNotSameCompanion.insert(a: x, b: y));
   }
 
+  /// «Rimuovi» on a «different» pair, so the merge can be offered again.
+  Future<void> unmarkNotSame(String a, String b) {
+    final (x, y) = _ordered(a, b);
+    return (_db.delete(_db.artistNotSame)..where((r) => r.a.equals(x) & r.b.equals(y))).go();
+  }
+
+  /// The «different» pairs, as ordered [a, b].
+  Stream<List<(String, String)>> watchNotSame() =>
+      _db.select(_db.artistNotSame).watch().map((rows) => [for (final r in rows) (r.a, r.b)]);
+
+  /// Takes [id] out of its group and marks it «different» from the rest, so the
+  /// detector does not offer the merge at once. Returns the group as it was.
+  Future<List<String>> separate(String id) => _db.transaction(() async {
+        final group = await groupOf(id);
+        await split(id);
+        for (final x in group) {
+          if (x != id) await markNotSame(id, x);
+        }
+        return group;
+      });
+
+  /// Undoes [separate]: [group] is what it returned.
+  Future<void> rejoin(List<String> group, String id) =>
+      id == group.first ? merge(id, group[1]) : merge(group.first, id);
+
   Future<bool> isNotSame(String a, String b) async {
     final (x, y) = _ordered(a, b);
     return await (_db.select(_db.artistNotSame)..where((r) => r.a.equals(x) & r.b.equals(y))).getSingleOrNull() != null;

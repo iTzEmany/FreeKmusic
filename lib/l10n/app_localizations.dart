@@ -10596,6 +10596,84 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Con quale profilo?'**
   String get artistMergePick;
+
+  /// No description provided for @mergedSheetTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Profili uniti'**
+  String get mergedSheetTitle;
+
+  /// No description provided for @artistMainProfile.
+  ///
+  /// In it, this message translates to:
+  /// **'Principale'**
+  String get artistMainProfile;
+
+  /// No description provided for @artistSeparate.
+  ///
+  /// In it, this message translates to:
+  /// **'Separa'**
+  String get artistSeparate;
+
+  /// No description provided for @artistSeparated.
+  ///
+  /// In it, this message translates to:
+  /// **'Profilo separato.'**
+  String get artistSeparated;
+
+  /// No description provided for @settingsMergedArtists.
+  ///
+  /// In it, this message translates to:
+  /// **'Artisti uniti'**
+  String get settingsMergedArtists;
+
+  /// No description provided for @settingsMergedArtistsHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Vedi i profili uniti e separali, o togli i «diversi».'**
+  String get settingsMergedArtistsHint;
+
+  /// No description provided for @mergedArtistsEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun artista unito.'**
+  String get mergedArtistsEmpty;
+
+  /// No description provided for @mergedArtistsEmptyHelp.
+  ///
+  /// In it, this message translates to:
+  /// **'Quando unisci due profili dello stesso artista, compaiono qui.'**
+  String get mergedArtistsEmptyHelp;
+
+  /// No description provided for @mergedArtistsSplitAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Separa tutto'**
+  String get mergedArtistsSplitAll;
+
+  /// No description provided for @notSameTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Segnati come diversi'**
+  String get notSameTitle;
+
+  /// No description provided for @notSameRemove.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovi'**
+  String get notSameRemove;
+
+  /// No description provided for @notSameEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna coppia segnata come diversa.'**
+  String get notSameEmpty;
+
+  /// No description provided for @openArtistPage.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri la pagina dell’artista'**
+  String get openArtistPage;
 }
 
 class _AppLocalizationsDelegate

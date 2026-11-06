@@ -51,7 +51,7 @@ Future<YtmArtistRef?> lookupYtmArtist(
   }
   messenger.clearSnackBars();
   if (!context.mounted) return null;
-  final pick = await pickYtmArtistWithAliases(ref.read(artistAliasRepositoryProvider), name, found);
+  final pick = await ref.read(artistMergeOpsProvider).pick(name, found);
   if (!context.mounted) return null;
   switch (pick) {
     case ExactArtist(:final artist):
@@ -115,8 +115,7 @@ Future<void> mergeArtistWith(
   );
   if (chosen == null || !context.mounted) return;
   try {
-    await ref.read(artistAliasRepositoryProvider).merge(head.id, chosen.id);
-    ref.read(artistMergeEpochProvider.notifier).bump();
+    await ref.read(artistMergeOpsProvider).merge(head.id, chosen.id);
     if (context.mounted) showMsg(context, l.artistMerged);
   } on Object catch (e, st) {
     AppLog.w('artist merge failed', e, st);

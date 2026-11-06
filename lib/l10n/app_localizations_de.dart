@@ -6660,4 +6660,45 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get artistMergePick => 'Welches Profil?';
+
+  @override
+  String get mergedSheetTitle => 'Vereinte Profile';
+
+  @override
+  String get artistMainProfile => 'Haupt';
+
+  @override
+  String get artistSeparate => 'Trennen';
+
+  @override
+  String get artistSeparated => 'Profil getrennt.';
+
+  @override
+  String get settingsMergedArtists => 'Vereinte Künstler';
+
+  @override
+  String get settingsMergedArtistsHint =>
+      'Vereinte Profile ansehen und trennen oder die „Verschieden“-Markierungen entfernen.';
+
+  @override
+  String get mergedArtistsEmpty => 'Keine vereinten Künstler.';
+
+  @override
+  String get mergedArtistsEmptyHelp =>
+      'Wenn du zwei Profile desselben Künstlers vereinst, erscheinen sie hier.';
+
+  @override
+  String get mergedArtistsSplitAll => 'Alle trennen';
+
+  @override
+  String get notSameTitle => 'Als verschieden markiert';
+
+  @override
+  String get notSameRemove => 'Entfernen';
+
+  @override
+  String get notSameEmpty => 'Kein Paar ist als verschieden markiert.';
+
+  @override
+  String get openArtistPage => 'Künstlerseite öffnen';
 }

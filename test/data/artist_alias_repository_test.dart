@@ -94,4 +94,23 @@ void main() {
     expect({for (final r in rows) r.aliasId: r.createdAt}, {'C': 10, 'D': 20});
     expect(rows.every((r) => r.mainId == 'B'), isTrue);
   });
+
+  test('separate marks the pair different; rejoin undoes it, for an alias and for the main', () async {
+    await repo.merge('A', 'B');
+    var group = await repo.separate('B');
+    expect(await repo.groupOf('A'), ['A']);
+    expect(await repo.isNotSame('A', 'B'), isTrue);
+    await repo.rejoin(group, 'B');
+    expect(await repo.groupOf('A'), ['A', 'B']);
+    expect(await repo.isNotSame('A', 'B'), isFalse);
+    group = await repo.separate('A');
+    await repo.rejoin(group, 'A');
+    expect(await repo.groupOf('B'), ['A', 'B']);
+  });
+
+  test('unmarkNotSame removes the pair whatever the order', () async {
+    await repo.markNotSame('A', 'B');
+    await repo.unmarkNotSame('B', 'A');
+    expect(await repo.isNotSame('A', 'B'), isFalse);
+  });
 }

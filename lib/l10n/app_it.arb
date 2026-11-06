@@ -4058,5 +4058,18 @@
   "artistMerged": "Profili uniti.",
   "artistSplitDone": "Profili separati.",
   "artistNotSameDone": "Va bene, non lo chiederò più per questi due profili.",
-  "artistMergePick": "Con quale profilo?"
+  "artistMergePick": "Con quale profilo?",
+  "mergedSheetTitle": "Profili uniti",
+  "artistMainProfile": "Principale",
+  "artistSeparate": "Separa",
+  "artistSeparated": "Profilo separato.",
+  "settingsMergedArtists": "Artisti uniti",
+  "settingsMergedArtistsHint": "Vedi i profili uniti e separali, o togli i «diversi».",
+  "mergedArtistsEmpty": "Nessun artista unito.",
+  "mergedArtistsEmptyHelp": "Quando unisci due profili dello stesso artista, compaiono qui.",
+  "mergedArtistsSplitAll": "Separa tutto",
+  "notSameTitle": "Segnati come diversi",
+  "notSameRemove": "Rimuovi",
+  "notSameEmpty": "Nessuna coppia segnata come diversa.",
+  "openArtistPage": "Apri la pagina dell’artista"
 }

@@ -3379,5 +3379,18 @@
   "artistMerged": "Profile zusammengeführt.",
   "artistSplitDone": "Profile getrennt.",
   "artistNotSameDone": "Okay, ich frage für diese beiden Profile nicht mehr nach.",
-  "artistMergePick": "Welches Profil?"
+  "artistMergePick": "Welches Profil?",
+  "mergedSheetTitle": "Vereinte Profile",
+  "artistMainProfile": "Haupt",
+  "artistSeparate": "Trennen",
+  "artistSeparated": "Profil getrennt.",
+  "settingsMergedArtists": "Vereinte Künstler",
+  "settingsMergedArtistsHint": "Vereinte Profile ansehen und trennen oder die „Verschieden“-Markierungen entfernen.",
+  "mergedArtistsEmpty": "Keine vereinten Künstler.",
+  "mergedArtistsEmptyHelp": "Wenn du zwei Profile desselben Künstlers vereinst, erscheinen sie hier.",
+  "mergedArtistsSplitAll": "Alle trennen",
+  "notSameTitle": "Als verschieden markiert",
+  "notSameRemove": "Entfernen",
+  "notSameEmpty": "Kein Paar ist als verschieden markiert.",
+  "openArtistPage": "Künstlerseite öffnen"
 }

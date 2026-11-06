@@ -495,6 +495,27 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('the note lists the profiles; «Separa» splits one, marks it different, and «Annulla» joins it back', (tester) async {
+      await openGroup(tester);
+      await tester.tap(find.byKey(const ValueKey('merged-note')));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('profile-UCa')), findsOneWidget);
+      expect(find.text('Principale'), findsOneWidget);
+      expect(tester.getSize(find.byKey(const ValueKey('separate-UCb'))).height, greaterThanOrEqualTo(48));
+      expect(find.byKey(const ValueKey('separate-UCa')), findsOneWidget, reason: 'the main one can leave too');
+      await tester.tap(find.byKey(const ValueKey('separate-UCb')));
+      await _settle(tester);
+      final repo = ArtistAliasRepository(h.db);
+      expect(await aliases(tester), ['UCa']);
+      expect(await tester.runAsync(() => repo.isNotSame('UCa', 'UCb')), isTrue);
+      expect(find.text('Profilo separato.'), findsOneWidget);
+      await tester.tap(find.text('Annulla'));
+      await _settle(tester);
+      expect(await aliases(tester), ['UCa', 'UCb']);
+      expect(await tester.runAsync(() => repo.isNotSame('UCa', 'UCb')), isFalse);
+      await h.dispose(tester);
+    });
+
     testWidgets('«Unisci con…» offers the likely profile first and merges the one chosen', (tester) async {
       await openGroup(tester, merged: false, found: const [c, b]);
       expect(find.text('Separa profili'), findsNothing);

@@ -25,10 +25,12 @@ import 'artist_picker_sheet.dart' show mergeArtistWith;
 import 'artist_songs_screen.dart';
 import 'catalog_error_view.dart';
 import 'discography_screen.dart';
+import 'merged_profiles.dart';
 import 'online_album_screen.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/cc_sheet.dart';
 import '../../widgets/show_msg.dart';
 
 /// The page of an artist on YouTube Music: the songs of the library first,
@@ -65,20 +67,14 @@ class ArtistPageScreen extends ConsumerWidget {
   /// «Separa profili»: the whole group of [head] breaks apart, and the pairs are
   /// marked «diversi» so the detector does not offer the merge again.
   Future<void> _split(BuildContext context, WidgetRef ref, String id) => _guard(context, () async {
-        await ref.read(artistAliasRepositoryProvider).dissolve(id);
-        ref.read(artistMergeEpochProvider.notifier).bump();
+        await ref.read(artistMergeOpsProvider).dissolve(id);
       }, context.l10n.artistSplitDone);
 
   Future<void> _decide(BuildContext context, WidgetRef ref, YtmArtistRef head, YtmArtistRef other, {required bool merge}) {
     final l = context.l10n;
     return _guard(context, () async {
-      final repo = ref.read(artistAliasRepositoryProvider);
-      if (merge) {
-        await repo.merge(head.id, other.id);
-      } else {
-        await repo.markNotSame(head.id, other.id);
-      }
-      ref.read(artistMergeEpochProvider.notifier).bump();
+      final ops = ref.read(artistMergeOpsProvider);
+      await (merge ? ops.merge(head.id, other.id) : ops.markNotSame(head.id, other.id));
     }, merge ? l.artistMerged : l.artistNotSameDone);
   }
 
@@ -134,7 +130,7 @@ class ArtistPageScreen extends ConsumerWidget {
               : null,
         ),
       ),
-      if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length)),
+      if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length, onTap: () => showMergedProfilesSheet(context, head.id))),
       if (suggestion != null)
         SliverToBoxAdapter(
           child: MergeWarning(
@@ -195,14 +191,29 @@ class ArtistPageScreen extends ConsumerWidget {
       pickable: songs,
       onRefresh: () => _refresh(ref, ids),
       actions: [
-        PopupMenuButton<bool>(
+        IconButton(
           key: const ValueKey('artist-menu'),
           tooltip: l.moreActions,
-          onSelected: (split) => split ? _split(context, ref, head.id) : mergeArtistWith(context, ref, head, ids),
-          itemBuilder: (_) => [
-            PopupMenuItem(value: false, height: 48, child: Text(l.artistMergeWith)),
-            if (ids.length > 1) PopupMenuItem(value: true, height: 48, child: Text(l.artistSplit)),
-          ],
+          icon: const Icon(Icons.more_vert),
+          onPressed: () => showCcActionSheet<bool>(
+            context: context,
+            title: head.name,
+            groups: [
+              [
+                CcAction<bool>(
+                    icon: Icons.merge_type_rounded,
+                    label: l.artistMergeWith,
+                    value: false,
+                    onTap: () => mergeArtistWith(context, ref, head, ids)),
+                if (ids.length > 1)
+                  CcAction<bool>(
+                      icon: Icons.call_split_rounded,
+                      label: l.artistSplit,
+                      value: true,
+                      onTap: () => _split(context, ref, head.id)),
+              ],
+            ],
+          ),
         ),
       ],
       slivers: slivers,

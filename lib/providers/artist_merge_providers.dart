@@ -8,7 +8,7 @@ import '../services/import/track_matcher.dart' show matchKey;
 import '../services/online/query_match.dart' show MediaKind;
 import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
 import '../services/online/ytm_artist.dart';
-import '../services/online/ytm_artist_resolver.dart' show artistNameKeys;
+import '../services/online/ytm_artist_resolver.dart' show YtmArtistPick, artistNameKeys, pickYtmArtistWithAliases;
 import 'database_providers.dart';
 import 'smart_search_providers.dart';
 import 'ytm_catalog_providers.dart';
@@ -24,6 +24,22 @@ final artistGroupProvider = StreamProvider.autoDispose.family<List<String>, Stri
   }
 });
 
+/// Every merged group (main first, then its aliases), for the settings page.
+final mergedGroupsProvider = StreamProvider.autoDispose<List<List<String>>>(
+  (ref) => ref.watch(artistAliasRepositoryProvider).watchAliases().map((m) {
+    final groups = <String, List<String>>{};
+    for (final e in m.entries) {
+      groups.putIfAbsent(e.value, () => [e.value]).add(e.key);
+    }
+    return groups.values.toList();
+  }),
+);
+
+/// The pairs the user marked «diversi».
+final notSamePairsProvider = StreamProvider.autoDispose<List<(String, String)>>(
+  (ref) => ref.watch(artistAliasRepositoryProvider).watchNotSame(),
+);
+
 /// Bumped after a merge or a «diversi» mark so the suggestions are asked again.
 class ArtistMergeEpoch extends Notifier<int> {
   @override
@@ -33,6 +49,54 @@ class ArtistMergeEpoch extends Notifier<int> {
 }
 
 final artistMergeEpochProvider = NotifierProvider<ArtistMergeEpoch, int>(ArtistMergeEpoch.new);
+
+/// Changes of the groups for the UI; each bumps the epoch so suggestions are asked again.
+class ArtistMergeOps {
+  ArtistMergeOps(this._ref);
+
+  final Ref _ref;
+
+  ArtistAliasRepository get _repo => _ref.read(artistAliasRepositoryProvider);
+  ArtistMergeEpoch get _epoch => _ref.read(artistMergeEpochProvider.notifier);
+
+  /// Takes [id] out of its group, «diverso» from the rest; returns the group as it was.
+  Future<List<String>> separate(String id) async {
+    final group = await _repo.separate(id);
+    _epoch.bump();
+    return group;
+  }
+
+  Future<void> rejoin(List<String> group, String id) async {
+    await _repo.rejoin(group, id);
+    _epoch.bump();
+  }
+
+  Future<void> dissolve(String id) async {
+    await _repo.dissolve(id);
+    _epoch.bump();
+  }
+
+  Future<void> merge(String a, String b) async {
+    await _repo.merge(a, b);
+    _epoch.bump();
+  }
+
+  Future<void> markNotSame(String a, String b) async {
+    await _repo.markNotSame(a, b);
+    _epoch.bump();
+  }
+
+  /// [pickYtmArtistWithAliases] with the groups of the database.
+  Future<YtmArtistPick> pick(String name, List<YtmArtistRef> found) =>
+      pickYtmArtistWithAliases(_repo, name, found);
+
+  Future<void> unmarkNotSame(String a, String b) async {
+    await _repo.unmarkNotSame(a, b);
+    _epoch.bump();
+  }
+}
+
+final artistMergeOpsProvider = Provider<ArtistMergeOps>(ArtistMergeOps.new);
 
 /// Artist search for the suggestions, cached by name for the session; null when over budget.
 final artistMergeSearchProvider = Provider<Future<List<YtmArtistRef>>? Function(String)>((ref) {

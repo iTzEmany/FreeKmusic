@@ -381,19 +381,36 @@ final groupShelvesProvider = Provider.autoDispose.family<List<YtmShelf>?, String
   ]);
 });
 
-/// «2 profili uniti» under the header of a merged page.
+/// «2 profili uniti» under the header of a merged page; a tap lists them.
 class MergedProfilesNote extends StatelessWidget {
-  const MergedProfilesNote({super.key, required this.count});
+  const MergedProfilesNote({super.key, required this.count, required this.onTap});
 
   final int count;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        key: const ValueKey('merged-note'),
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.margin, 0),
-        child: Text(
-          context.l10n.artistMergedNote(count),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.centerLeft,
+        child: Semantics(
+          button: true,
+          child: InkWell(
+            key: const ValueKey('merged-note'),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: 1,
+                  child: Text(
+                    context.l10n.artistMergedNote(count),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       );
 }
