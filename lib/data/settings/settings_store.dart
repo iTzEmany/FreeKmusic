@@ -336,8 +336,12 @@ class SettingsStore {
       SettingsStore(await SharedPreferences.getInstance());
 
   Map<String, String> _readPlaylistSorts() {
-    final raw = _prefs.getString('playlistSorts');
+    final raw = _prefs.get('playlistSorts');
     if (raw == null) return const {};
+    if (raw is! String) {
+      AppLog.w('playlistSorts has type ${raw.runtimeType}, back to personal order');
+      return const {};
+    }
     try {
       final m = jsonDecode(raw);
       if (m is Map) return {for (final e in m.entries) '${e.key}': '${e.value}'};
@@ -345,6 +349,13 @@ class SettingsStore {
       AppLog.w('playlistSorts unreadable, back to personal order', e);
     }
     return const {};
+  }
+
+  bool? _readSortAscending() {
+    final v = _prefs.get('librarySortAscending');
+    if (v is bool?) return v;
+    AppLog.w('librarySortAscending has type ${v.runtimeType}, using the default');
+    return null;
   }
 
   AppSettings readSettings() => AppSettings(
@@ -368,7 +379,7 @@ class SettingsStore {
         receiveFromLan: _prefs.getBool('receiveFromLan') ?? false,
         jamLatencyMs: _prefs.getInt('jamLatencyMs') ?? 0,
         librarySort: _prefs.getString('librarySort') ?? 'recent',
-        librarySortAscending: _prefs.getBool('librarySortAscending'),
+        librarySortAscending: _readSortAscending(),
         playlistSorts: _readPlaylistSorts(),
         libraryGrid: _prefs.getBool('libraryGrid') ?? false,
         recentSearches: _prefs.getStringList('recentSearches') ?? const [],

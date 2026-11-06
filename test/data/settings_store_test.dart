@@ -44,6 +44,12 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().playlistSorts, isEmpty);
   });
+  test('sort keys of the wrong type (a tampered backup) read as the defaults, without throwing', () async {
+    SharedPreferences.setMockInitialValues({'playlistSorts': 5, 'librarySortAscending': 'yes'});
+    final store = await SettingsStore.open();
+    expect(store.readSettings().playlistSorts, isEmpty);
+    expect(store.readSettings().librarySortAscending, isNull);
+  });
   streamCacheSettingTests();
   test('playback state round trip', () async {
     SharedPreferences.setMockInitialValues({});

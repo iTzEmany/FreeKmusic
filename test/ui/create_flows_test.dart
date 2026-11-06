@@ -86,10 +86,12 @@ void main() {
   });
 
   group('add to playlist', () {
-    Future<(Harness, List<Track>)> openAdd(WidgetTester tester) async {
+    Future<(Harness, List<Track>)> openAdd(WidgetTester tester,
+        {Future<void> Function(Harness, List<Track>)? seed}) async {
       final h = await Harness.create(tester, tracks: 2);
       final tracks = await h.db.select(h.db.tracks).get();
       await h.db.into(h.db.playlists).insert(PlaylistsCompanion.insert(name: 'Rock', createdAt: 1));
+      await seed?.call(h, tracks);
       await h.pump(
         tester,
         Consumer(
@@ -125,6 +127,21 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('Erano già tutti in «Rock»'), findsOneWidget);
       expect(await h.db.select(h.db.playlistTracks).get(), hasLength(1));
+      await h.dispose(tester);
+    });
+
+    testWidgets('a playlist that already holds the track shows the marker, the others do not', (tester) async {
+      final (h, _) = await openAdd(tester, seed: (h, tracks) async {
+        await h.db.into(h.db.playlists).insert(PlaylistsCompanion.insert(name: 'Jazz', createdAt: 2));
+        final rock = (await h.db.select(h.db.playlists).get()).firstWhere((p) => p.name == 'Rock').id;
+        await h.db.into(h.db.playlistTracks).insert(
+            PlaylistTracksCompanion.insert(playlistId: rock, trackId: tracks.first.id, position: 0));
+      });
+      await tester.pump(const Duration(milliseconds: 400));
+      Finder marker(String name) => find.descendant(
+          of: find.widgetWithText(ListTile, name), matching: find.byIcon(Icons.check_circle_rounded));
+      expect(marker('Rock'), findsOneWidget);
+      expect(marker('Jazz'), findsNothing);
       await h.dispose(tester);
     });
 

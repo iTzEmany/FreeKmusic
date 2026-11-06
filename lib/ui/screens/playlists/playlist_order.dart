@@ -1,4 +1,5 @@
 import '../../../data/db/app_database.dart';
+import '../../../data/repositories/library_entries.dart';
 
 /// How a playlist is shown. [personal] is `playlist_tracks.position`, which a
 /// view order never rewrites (D-424).
@@ -39,30 +40,41 @@ class PlaylistOrder {
   /// so equal keys keep their personal order.
   List<Track> apply(List<Track> tracks) {
     if (sort == PlaylistSort.personal) return tracks;
-    int cmpText(String? a, String? b) =>
-        (a ?? '').toLowerCase().compareTo((b ?? '').toLowerCase());
-    int cmpInt(int? a, int? b) => (a ?? 0).compareTo(b ?? 0);
-    final cmp = switch (sort) {
-      PlaylistSort.title => (Track a, Track b) => cmpText(a.title, b.title),
-      PlaylistSort.artist => (Track a, Track b) {
-        final c = cmpText(a.artist, b.artist);
-        return c != 0 ? c : cmpText(a.title, b.title);
-      },
-      PlaylistSort.album => (Track a, Track b) {
-        final c = cmpText(a.album, b.album);
-        if (c != 0) return c;
-        final d = cmpInt(a.discNumber, b.discNumber);
-        return d != 0 ? d : cmpInt(a.trackNumber, b.trackNumber);
-      },
-      PlaylistSort.year => (Track a, Track b) => cmpInt(a.year, b.year),
-      PlaylistSort.added => (Track a, Track b) => cmpInt(a.addedAt, b.addedAt),
-      _ => (Track a, Track b) => cmpInt(a.durationMs, b.durationMs),
+    // Same folding as the Library; a missing value (empty text, 0) comes last
+    // in both directions.
+    Comparable<dynamic>? text(String? v) =>
+        v == null || v.trim().isEmpty ? null : sortKeyOfText(v);
+    Comparable<dynamic>? number(int? v) => v == null || v == 0 ? null : v;
+    final fields = switch (sort) {
+      PlaylistSort.title => <Comparable<dynamic>? Function(Track)>[(t) => text(t.title)],
+      PlaylistSort.artist => [(t) => text(t.artist), (t) => text(t.title)],
+      PlaylistSort.album => [
+        (t) => text(t.album),
+        (t) => number(t.discNumber),
+        (t) => number(t.trackNumber),
+      ],
+      PlaylistSort.year => [(t) => number(t.year)],
+      PlaylistSort.added => [(t) => number(t.addedAt)],
+      _ => [(t) => number(t.durationMs)],
     };
-    final indexed = [for (var i = 0; i < tracks.length; i++) (i, tracks[i])];
-    indexed.sort((x, y) {
-      final c = cmp(x.$2, y.$2);
-      return c != 0 ? (ascending ? c : -c) : x.$1.compareTo(y.$1);
-    });
-    return [for (final e in indexed) e.$2];
+    // Keys computed once per track, not once per comparison.
+    final keys = [
+      for (final t in tracks) [for (final f in fields) f(t)],
+    ];
+    int cmp(int i, int j) {
+      for (var k = 0; k < fields.length; k++) {
+        final a = keys[i][k], b = keys[j][k];
+        if (a == null || b == null) {
+          if (a != b) return a == null ? 1 : -1;
+          continue;
+        }
+        final c = a.compareTo(b);
+        if (c != 0) return ascending ? c : -c;
+      }
+      return i.compareTo(j);
+    }
+
+    final order = [for (var i = 0; i < tracks.length; i++) i]..sort(cmp);
+    return [for (final i in order) tracks[i]];
   }
 }

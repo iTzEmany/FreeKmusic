@@ -66,6 +66,41 @@ void main() {
     expect(prefs.getString('deviceId'), 'this-device', reason: 'device-bound keys are never restored');
   });
 
+  Future<SharedPreferences> restoreWith(Map<String, Object> prefsBefore, File zip) async {
+    SharedPreferences.setMockInitialValues({'deviceId': 'this-device', ...prefsBefore});
+    final prefs = await SharedPreferences.getInstance();
+    final staging = Directory(p.join(dir.path, 'restore'));
+    await stageFullRestore(zip, staging);
+    expect(
+        await applyPendingRestore(
+            dbFile: File(p.join(dir.path, 'codecore.sqlite')), staging: staging, prefs: prefs,
+            coversDir: Directory(p.join(dir.path, 'covers')), schemaVersion: kSchemaVersion),
+        isTrue);
+    return prefs;
+  }
+
+  test('a full restore of a backup without playlistSorts drops the device ones (their ids are other playlists)', () async {
+    final prefs = await restoreWith({'playlistSorts': '{"1":"title:desc"}'}, _fixture);
+    expect(prefs.containsKey('playlistSorts'), isFalse);
+  });
+
+  test('a full restore of a backup holding playlistSorts takes the backup ones', () async {
+    final a = Archive();
+    for (final f in ZipDecoder().decodeBytes(_fixture.readAsBytesSync()).files) {
+      if (!f.isFile) continue;
+      var bytes = f.content as List<int>;
+      if (f.name == 'settings.json') {
+        final m = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+        m['playlistSorts'] = {'t': 'string', 'v': '{"1":"year:asc"}'};
+        bytes = utf8.encode(jsonEncode(m));
+      }
+      a.addFile(ArchiveFile.bytes(f.name, bytes));
+    }
+    final zip = File(p.join(dir.path, 'with-sorts.zip'))..writeAsBytesSync(ZipEncoder().encode(a));
+    final prefs = await restoreWith({'playlistSorts': '{"1":"title:desc"}'}, zip);
+    expect(prefs.getString('playlistSorts'), '{"1":"year:asc"}');
+  });
+
   test('a staged database newer than this app is refused and the current one is untouched', () async {
     final dbFile = File(p.join(dir.path, 'codecore.sqlite'))..writeAsStringSync('current');
     final staging = Directory(p.join(dir.path, 'restore'));
