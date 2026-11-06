@@ -48,7 +48,7 @@ class LibraryToolbar extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.gap4, 0),
+      padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.gap4, 0),
       child: Row(
         children: [
           Expanded(
@@ -70,24 +70,24 @@ class LibraryToolbar extends StatelessWidget {
                 excludeSemantics: true,
                 child: InkWell(
                 onTap: pickSort,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: CcDims.gap8,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name(sort),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.labelLarge,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name(sort),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.labelLarge,
+                          ),
                         ),
-                      ),
-                      Icon(Icons.arrow_drop_down_rounded, color: cc.textMuted),
-                    ],
+                        Icon(Icons.arrow_drop_down_rounded, color: cc.textMuted),
+                      ],
+                    ),
                   ),
                 ),
               ),

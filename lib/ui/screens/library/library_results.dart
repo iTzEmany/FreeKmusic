@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart';
+import '../../../data/repositories/library_entries.dart' show LibraryKind;
 import '../../../data/repositories/library_search.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/selection_providers.dart';
+import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/settings_providers.dart';
@@ -23,24 +25,33 @@ import 'search_section_screen.dart';
 /// Library results grouped by kind (Tracks, Albums, Artists, Playlists); moved
 /// from Search (D-355).
 class LibraryResults extends ConsumerWidget {
-  const LibraryResults({super.key, required this.text, required this.onOnline});
+  const LibraryResults({
+    super.key,
+    required this.text,
+    required this.onOnline,
+    this.kind,
+  });
 
   final String text;
+
+  /// The island's tab: only that kind of result (null = everything).
+  final LibraryKind? kind;
   final VoidCallback onOnline;
 
   /// Header, up to three rows, and «Tutti» when more matched; nothing when none.
   List<Widget> _section(
     BuildContext context,
     SearchSectionKind kind,
-    LibrarySearchResults res,
-  ) {
+    LibrarySearchResults res, {
+    bool whole = false,
+  }) {
     final l = context.l10n;
     final (shown, total) = searchSectionCount(kind, res);
     if (shown == 0) return const [];
     return [
       SectionHeader(
         searchSectionTitle(context, kind),
-        actionLabel: total > shown ? l.showAll : null,
+        actionLabel: !whole && total > shown ? l.showAll : null,
         onAction: () => ShellNav.open<void>(
           context,
           SearchSectionScreen(text: text, kind: kind),
@@ -56,18 +67,37 @@ class LibraryResults extends ConsumerWidget {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     final res = ref.watch(libraryResultsProvider(text));
+    final only = switch (kind) {
+      null => null,
+      LibraryKind.playlist => SearchSectionKind.playlists,
+      LibraryKind.album => SearchSectionKind.albums,
+      LibraryKind.artist => SearchSectionKind.artists,
+    };
     final ctrl = ref.read(playerControllerProvider);
     final compact = ref.watch(settingsProvider.select((s) => s.compactMode));
     final extent = trackRowExtentOf(context, compact);
     final key = SelectionKey.search.key;
+    // A tab hides the tracks: the selection must not reach them.
+    final shownTracks = only == null ? res.tracks : const <Track>[];
     final selection = RowSelection(
       listKey: key,
-      visibleIds: [for (final t in res.tracks) t.id],
+      visibleIds: [for (final t in shownTracks) t.id],
     );
+    // A tab shows every match of its kind, not the preview.
+    final full = only == null
+        ? res
+        : searchLibrary(
+            text: text,
+            tracks: ref.watch(searchTracksProvider(text)).value ?? const <Track>[],
+            artists: ref.watch(artistsProvider).value ?? const [],
+            albums: ref.watch(albumsProvider).value ?? const [],
+            playlists: ref.watch(playlistsProvider).value ?? const [],
+            sectionLimit: 1 << 30,
+          );
 
     final results = ListView(
       children: [
-        if (res.isEmpty)
+        if (only == null ? res.isEmpty : searchSectionCount(only, full).$1 == 0)
           Padding(
             padding: const EdgeInsets.all(CcDims.margin),
             child: Text(
@@ -76,7 +106,7 @@ class LibraryResults extends ConsumerWidget {
             ),
           )
         else ...[
-          if (res.tracks.isNotEmpty) ...[
+          if (only == null && res.tracks.isNotEmpty) ...[
             SectionHeader(
               l.tracks,
               actionLabel: res.trackTotal > res.tracks.length
@@ -105,8 +135,9 @@ class LibraryResults extends ConsumerWidget {
               ),
           ],
           for (final kind in SearchSectionKind.values)
-            ..._section(context, kind, res),
-          if (res.credited.isNotEmpty) ...[
+            if (only == null || only == kind)
+              ..._section(context, kind, full, whole: only != null),
+          if (only == null && res.credited.isNotEmpty) ...[
             SectionHeader(l.creditsInCredits),
             for (var i = 0; i < res.credited.length; i++)
               SizedBox(
@@ -151,7 +182,7 @@ class LibraryResults extends ConsumerWidget {
         children: [
           SelectionBarSlot(
             listKey: key,
-            tracks: res.tracks,
+            tracks: shownTracks,
             belowStatusBar: false,
           ),
           Expanded(child: results),

@@ -1319,8 +1319,8 @@ mobile_scanner — fase 24 — 2026-10-19
 ## Fase 90 — Intestazioni che seguono lo scroll (`fase-90-intestazioni-che-scorrono.md`)
 - [x] 90.1 Intestazione che si ritrae di quanto si scorre
 - [x] 90.2 Tutti i brani
-- [ ] 90.3 Isola della Libreria
-- [ ] 90.4 Lente dentro l'isola
+- [x] 90.3 Isola della Libreria
+- [x] 90.4 Lente dentro l'isola
 - [ ] 90.5 Controlli di fase
 
 ## Fase 91 — Ordinamenti e foglio delle playlist (`fase-91-ordinamenti-e-playlist.md`)

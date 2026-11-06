@@ -1,9 +1,10 @@
-import '../../widgets/cc_sheet.dart';
 
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 
-import '../playlists/export_dialog.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -23,7 +24,6 @@ import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
-import '../../widgets/activity_button.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../widgets/cover_image.dart';
@@ -35,7 +35,6 @@ import '../../widgets/progress_frame.dart';
 import '../../widgets/async_body.dart' show RowsLoading;
 import '../../../providers/player_providers.dart' show currentTrackProvider;
 import '../../widgets/smart_cover.dart';
-import '../devices/devices_sheet.dart';
 import '../playlists/playlist_detail_screen.dart';
 import '../podcast/podcasts_screen.dart';
 import '../radio/radio_screen.dart';
@@ -45,24 +44,19 @@ import 'all_tracks_screen.dart';
 import 'artist_screen.dart';
 import 'favorites_screen.dart';
 import '../history/history_screen.dart';
-import '../smart/smart_playlist_editor.dart';
 import '../smart/smart_playlist_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tags/tags_screen.dart';
 import '../../../providers/folder_actions.dart';
-import 'folders_sheet.dart';
 import '../../../core/constants.dart';
 import '../../../providers/releases_providers.dart'
     show followedArtistsProvider, releaseOptionsProvider;
 import '../releases/followed_artists_screen.dart';
 import 'review_screen.dart';
-import 'scan_status.dart';
 import 'library_shortcuts.dart';
-import 'library_toolbar.dart';
+import 'library_island.dart';
 import '../../widgets/alpha_scroller.dart';
 import '../../widgets/motion.dart';
-import '../../widgets/new_playlist_menu.dart';
-import '../../widgets/segmented_blocks.dart';
 
 /// Playlists, albums and artists in one place, with Favourites and
 /// «Tutti i brani» pinned on top.
@@ -79,8 +73,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
 
+  // How far the island has retracted, 1:1 with the scroll (D-407). Only the
+  // island listens, so a scroll frame does not rebuild the list.
+  final _shrink = ValueNotifier<double>(0);
+  double _tabsHeight = libraryIslandTabsHeight; // tabs + scan status, reported by the island
+
   @override
   void dispose() {
+    _shrink.dispose();
     _warm?.close();
     _searchController.dispose();
     _searchFocus.dispose();
@@ -95,7 +95,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     if (!v) _searchController.clear();
     // Index built on opening, before the first key (as Cerca does).
     _warm?.close();
+    if (!v) _searchFocus.unfocus(); // the keyboard goes down at once
     _warm = v ? ref.listenManual(searchIndexProvider, (_, _) {}) : null;
+    if (v) _shrink.value = 0; // the field lives in the title row
     setState(() => _searching = v);
   }
 
@@ -108,9 +110,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  void _setSettings({LibrarySort? sort, bool? grid}) => ref
-      .read(settingsProvider.notifier)
-      .update((s) => s.copyWith(librarySort: sort?.name, libraryGrid: grid));
+  void _setSettings({LibrarySort? sort, bool? grid}) {
+    ref
+        .read(settingsProvider.notifier)
+        .update((s) => s.copyWith(librarySort: sort?.name, libraryGrid: grid));
+  }
+
+  bool _onScroll(ScrollNotification n, double max) {
+    // A fling still running must not retract the row that holds the field.
+    if (_searching || n.depth != 0 || n.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    final delta = n is ScrollUpdateNotification ? n.scrollDelta ?? 0 : 0;
+    // Never more than the list has scrolled: at the top the island is whole.
+    _shrink.value = clampDouble(
+      _shrink.value + delta,
+      0,
+      math.min(max, math.max(0, n.metrics.pixels)),
+    );
+    return false;
+  }
 
   void _open(LibraryEntry e) {
     final Widget page = switch (e.kind) {
@@ -142,7 +161,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
     final denied = ref.watch(permissionDeniedProvider);
 
+    // The list starts under the island, which floats above it.
+    final rows = LibraryIslandRows.of(context);
+    final inset =
+        CcDims.gap12 + rows.fullHeight(_tabsHeight) + CcDims.gap8;
     Widget body;
+    var isList = false;
     var count = l.libraryItemsCount(0);
     final error = playlists.error ?? albums.error ?? artists.error;
     if (denied) {
@@ -186,21 +210,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         LibraryKind.artist => l.artistsCount(entries.length),
       };
       final shortcuts = _kind != null ? null : const _LibraryShortcuts();
+      isList = true;
       body = settings.libraryGrid
           ? _LibraryGrid(
               key: PageStorageKey<LibraryKind?>(_kind),
               header: shortcuts,
+              topInset: inset,
               entries: entries,
               onOpen: _open,
             )
           : _LibraryList(
               key: PageStorageKey<LibraryKind?>(_kind),
               header: shortcuts,
+              topInset: inset,
               entries: entries,
               onOpen: _open,
               showLetters: sort == LibrarySort.alpha,
             );
     }
+
+    if (!isList) body = Padding(padding: EdgeInsets.only(top: inset), child: body);
 
     ref.listen(librarySearchRequestProvider, (_, _) {
       if (!_searching) _setSearching(true);
@@ -221,363 +250,92 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          body: Column(
+          body: Stack(
             children: [
-              _LibraryHeader(
-                open: _searching,
-                onSearch: () => _setSearching(true),
-                field: CcSearchField(
-                  key: const ValueKey('library-search-bar'),
-                  controller: _searchController,
-                  focusNode: _searchFocus,
-                  hint: l.librarySearchHint,
-                  autofocus: true,
-                  onQuery: (v) => setState(() => _text = v),
-                  onCloseEmpty: () => _setSearching(false),
+              // Kept mounted so the scroll position survives the search.
+              Positioned.fill(
+                child: ExcludeFocus(
+                  excluding: _searching,
+                  child: Offstage(
+                    offstage: _searching,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (n) => _onScroll(n, rows.shrinkMax),
+                      child: body,
+                    ),
+                  ),
                 ),
               ),
-              Expanded(
-                child: Stack(
-                  children: [
-                    // One layer that fades as a whole (D-382); kept mounted so
-                    // the scroll position survives the search.
-                    Positioned.fill(
-                      child: _Veil(
-                        hidden: _searching,
-                        child: Column(
-                          children: [
-                            const ScanStatus(),
-                            _KindTabs(
-                              selected: _kind,
-                              onChanged: (k) => setState(() => _kind = k),
-                            ),
-                            LibraryToolbar(
-                              countLabel: count,
-                              sort: sort,
-                              grid: settings.libraryGrid,
-                              onSort: (s) => _setSettings(sort: s),
-                              onToggleGrid: () =>
-                                  _setSettings(grid: !settings.libraryGrid),
-                            ),
-                            Expanded(child: body),
-                          ],
-                        ),
-                      ),
+              if (_searching)
+                Positioned.fill(
+                  key: const ValueKey('library-results'),
+                  // Starts under the sort row and follows it as it closes.
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: ccDuration(context, CcMotion.sheet),
+                    curve: CcMotion.curveIn,
+                    builder: (_, t, child) => Padding(
+                      padding: EdgeInsets.only(top: inset - rows.toolbar * t),
+                      child: child,
                     ),
-                    if (_searching)
-                      Positioned.fill(
-                        key: const ValueKey('library-results'),
-                        child: text.isEmpty
-                            ? const SizedBox.shrink()
-                            : LibraryResults(
-                                text: text,
-                                onOnline: () {
-                                  ref
-                                      .read(searchPrefillProvider.notifier)
-                                      .set(text);
-                                  _setSearching(false);
-                                  ShellNav.showSearch(context, ref);
-                                },
-                              ),
-                      ),
-                  ],
+                    child: text.isEmpty
+                        ? const SizedBox.shrink()
+                        : LibraryResults(
+                            text: text,
+                            kind: _kind,
+                            onOnline: () {
+                              ref
+                                  .read(searchPrefillProvider.notifier)
+                                  .set(text);
+                              _setSearching(false);
+                              ShellNav.showSearch(context, ref);
+                            },
+                          ),
+                  ),
+                ),
+              Positioned(
+                top: CcDims.gap12,
+                left: CcDims.gap8,
+                right: CcDims.gap8,
+                child: LibraryIsland(
+                  shrink: _shrink,
+                  searching: _searching,
+                  onSearch: () => _setSearching(true),
+                  field: CcSearchField(
+                    key: const ValueKey('library-search-bar'),
+                    controller: _searchController,
+                    focusNode: _searchFocus,
+                    hint: l.librarySearchHint,
+                    autofocus: true,
+                    onQuery: (v) {
+                      if (_searching) setState(() => _text = v);
+                    },
+                    onCloseEmpty: () => _setSearching(false),
+                  ),
+                  kind: _kind,
+                  onKind: (k) {
+                    ref
+                        .read(selectionProvider(SelectionKey.search.key).notifier)
+                        .clear();
+                    setState(() {
+                      _kind = k;
+                      _shrink.value = 0;
+                    });
+                  },
+                  countLabel: count,
+                  sort: sort,
+                  grid: settings.libraryGrid,
+                  onSort: (s) => _setSettings(sort: s),
+                  onToggleGrid: () => _setSettings(grid: !settings.libraryGrid),
+                  onTabsHeight: (h) {
+                    if ((h - _tabsHeight).abs() > 0.5) {
+                      setState(() => _tabsHeight = h);
+                    }
+                  },
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Fades [child] out (shifted by [dx], [dy] of its own size) as one repainted layer; not tappable,
-/// focusable or spoken while [hidden]. Transform and opacity only.
-class _Veil extends StatelessWidget {
-  const _Veil({
-    required this.hidden,
-    required this.child,
-    this.dx = 0,
-    this.dy = 0.02,
-  });
-
-  final bool hidden;
-  final Widget child;
-  final double dx, dy;
-
-  @override
-  Widget build(BuildContext context) => IgnorePointer(
-    ignoring: hidden,
-    child: ExcludeFocus(
-      excluding: hidden,
-      child: ExcludeSemantics(
-        excluding: hidden,
-        child: RepaintBoundary(
-          child: AnimatedSlide(
-            offset: hidden ? Offset(dx, dy) : Offset.zero,
-            duration: ccDuration(context, CcMotion.enter),
-            curve: CcMotion.curveIn,
-            child: AnimatedOpacity(
-              opacity: hidden ? 0 : 1,
-              duration: ccDuration(context, CcMotion.enter),
-              curve: CcMotion.curveIn,
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _LibraryHeader extends ConsumerStatefulWidget {
-  const _LibraryHeader({
-    required this.open,
-    required this.onSearch,
-    required this.field,
-  });
-
-  final bool open;
-  final VoidCallback onSearch;
-  final Widget field;
-
-  @override
-  ConsumerState<_LibraryHeader> createState() => _LibraryHeaderState();
-}
-
-/// The lens becomes the search bar (D-382): title and icons leave with opacity
-/// and a shift, the lens slides to the left edge and the field opens around it.
-class _LibraryHeaderState extends ConsumerState<_LibraryHeader> {
-  final _lens = GlobalKey();
-  // Lens to the left edge, in lens widths; measured when the search opens.
-  Offset _lensShift = Offset.zero;
-  bool _fieldMounted = false;
-
-  double _width = 0;
-
-  // Lens shift to the left edge. Measured on opening and again when the width
-  // changes with the search open (desktop resize); the lens' own shift is
-  // taken out, so the natural position is what is measured.
-  void _measure({required bool shifted}) {
-    final box = _lens.currentContext?.findRenderObject() as RenderBox?;
-    final me = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize || me == null) return;
-    final natural =
-        box.localToGlobal(Offset.zero).dx -
-        (shifted ? _lensShift.dx * box.size.width : 0);
-    final dx =
-        (me.localToGlobal(Offset.zero).dx + 4 - natural) / box.size.width;
-    if (dx != _lensShift.dx) setState(() => _lensShift = Offset(dx, 0));
-  }
-
-  @override
-  void didUpdateWidget(_LibraryHeader old) {
-    super.didUpdateWidget(old);
-    if (widget.open && !old.open) {
-      final box = _lens.currentContext?.findRenderObject() as RenderBox?;
-      final me = context.findRenderObject() as RenderBox?;
-      if (box != null && me != null) {
-        final dx =
-            me.localToGlobal(Offset.zero).dx +
-            4 -
-            box.localToGlobal(Offset.zero).dx;
-        _lensShift = Offset(dx / box.size.width, 0);
-      }
-      _fieldMounted = true; // even if the lens could not be measured
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    final open = widget.open;
-    Widget out(Widget c, double dx) =>
-        _Veil(hidden: open, dx: dx, dy: 0, child: c);
-    return LayoutBuilder(
-      builder: (context, box) {
-        if (open && box.maxWidth != _width && _width != 0) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && widget.open) _measure(shifted: true);
-          });
-        }
-        _width = box.maxWidth;
-        return _header(context, theme, open, out);
-      },
-    );
-  }
-
-  Widget _header(
-    BuildContext context,
-    TextTheme theme,
-    bool open,
-    Widget Function(Widget, double) out,
-  ) {
-    final l = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.only(top: CcDims.gap12),
-      child: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          if (_fieldMounted)
-            Positioned.fill(
-              left: 4,
-              right: CcDims.gap12,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: open ? 1 : 0),
-                duration: ccDuration(context, CcMotion.sheet),
-                curve: CcMotion.curveIn,
-                onEnd: () {
-                  if (!open) setState(() => _fieldMounted = false);
-                },
-                builder: (_, t, child) => ClipRect(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 0.12 + 0.88 * t,
-                    child: child,
-                  ),
-                ),
-                child: IgnorePointer(
-                  ignoring: !open,
-                  child: ExcludeFocus(
-                    excluding: !open,
-                    child: ExcludeSemantics(
-                      excluding: !open,
-                      child: AnimatedOpacity(
-                        opacity: open ? 1 : 0,
-                        duration: ccDuration(context, CcMotion.enter),
-                        child: widget.field,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: CcDims.margin,
-              right: CcDims.gap4,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: out(
-                    Text(
-                      l.navLibrary,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.headlineSmall,
-                    ),
-                    -0.1,
-                  ),
-                ),
-                out(const ActivityButton(), 0.3),
-                AnimatedSlide(
-                  key: _lens,
-                  offset: open ? _lensShift : Offset.zero,
-                  duration: ccDuration(context, CcMotion.sheet),
-                  curve: CcMotion.curveIn,
-                  child: ExcludeSemantics(
-                    excluding: open,
-                    child: IconButton(
-                      tooltip: l.navSearch,
-                      icon: const Icon(Icons.search_rounded),
-                      onPressed: open ? null : widget.onSearch,
-                    ),
-                  ),
-                ),
-                out(
-                  NewPlaylistMenu(
-                    onSmart: () => ShellNav.open<bool>(
-                      context,
-                      const SmartPlaylistEditor(),
-                    ),
-                  ),
-                  0.3,
-                ),
-                out(
-                  IconButton(
-                    tooltip: l.moreActions,
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onPressed: () async {
-                      final v = await showCcActionSheet<_LibraryMenuAction>(
-                        context: context,
-                        groups: [
-                          [
-                            CcAction(
-                              icon: Icons.folder_open_rounded,
-                              label: l.folders,
-                              value: _LibraryMenuAction.folders,
-                            ),
-                            CcAction(
-                              icon: Icons.refresh_rounded,
-                              label: l.refreshLibrary,
-                              value: _LibraryMenuAction.scan,
-                            ),
-                            CcAction(
-                              icon: Icons.share_rounded,
-                              label: l.shareTitle,
-                              value: _LibraryMenuAction.share,
-                            ),
-                            CcAction(
-                              icon: Icons.upload_file_rounded,
-                              label: l.exportAllPlaylists,
-                              value: _LibraryMenuAction.exportAll,
-                            ),
-                          ],
-                        ],
-                      );
-                      if (v == null || !context.mounted) return;
-                      switch (v) {
-                        case _LibraryMenuAction.folders:
-                          showCcSheet<void>(
-                            context: context,
-                            builder: (_) => const FoldersSheet(),
-                          );
-                        case _LibraryMenuAction.scan:
-                          scanWithPermission(ref);
-                        case _LibraryMenuAction.share:
-                          DevicesSheet.show(context);
-                        case _LibraryMenuAction.exportAll:
-                          exportAllPlaylistsFlow(context, ref);
-                      }
-                    },
-                  ),
-                  0.3,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _KindTabs extends StatelessWidget {
-  const _KindTabs({required this.selected, required this.onChanged});
-
-  final LibraryKind? selected;
-  final ValueChanged<LibraryKind?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        CcDims.margin,
-        CcDims.gap8,
-        CcDims.margin,
-        0,
-      ),
-      child: SegmentedBlocks<LibraryKind?>(
-        items: [
-          BlockItem(value: null, label: l.libraryAll),
-          BlockItem(value: LibraryKind.playlist, label: l.navPlaylists),
-          BlockItem(value: LibraryKind.album, label: l.albums),
-          BlockItem(value: LibraryKind.artist, label: l.artists),
-        ],
-        selected: selected,
-        onChanged: onChanged,
       ),
     );
   }
@@ -738,12 +496,14 @@ class _LibraryList extends StatelessWidget {
   const _LibraryList({
     super.key,
     required this.header,
+    required this.topInset,
     required this.entries,
     required this.onOpen,
     required this.showLetters,
   });
 
   final Widget? header;
+  final double topInset;
   final List<LibraryEntry> entries;
   final void Function(LibraryEntry) onOpen;
   final bool showLetters;
@@ -810,6 +570,7 @@ class _LibraryList extends StatelessWidget {
     );
     return CustomScrollView(
       slivers: [
+        SliverToBoxAdapter(child: SizedBox(height: topInset)),
         if (header != null) SliverToBoxAdapter(child: header),
         SliverVariedExtentList.builder(
           itemCount: rows.length,
@@ -843,11 +604,13 @@ class _LibraryGrid extends StatelessWidget {
   const _LibraryGrid({
     super.key,
     required this.header,
+    required this.topInset,
     required this.entries,
     required this.onOpen,
   });
 
   final Widget? header;
+  final double topInset;
   final List<LibraryEntry> entries;
   final void Function(LibraryEntry) onOpen;
 
@@ -892,6 +655,7 @@ class _LibraryGrid extends StatelessWidget {
 
     return CustomScrollView(
       slivers: [
+        SliverToBoxAdapter(child: SizedBox(height: topInset)),
         if (header != null) SliverToBoxAdapter(child: header),
         SliverPadding(
           padding: const EdgeInsets.all(CcDims.margin - 6),
@@ -910,4 +674,3 @@ class _LibraryGrid extends StatelessWidget {
   }
 }
 
-enum _LibraryMenuAction { folders, scan, share, exportAll }
