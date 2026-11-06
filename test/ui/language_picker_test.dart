@@ -13,7 +13,8 @@ void main() {
     addTearDown(tester.view.reset);
     final h = await Harness.create(tester);
     await h.pump(tester, const Scaffold(body: SettingsScreen(initial: SettingsPage.appearance)));
-    await tester.ensureVisible(find.text('Italiano'));
+    // The list is lazy: scroll until the language row is built.
+    await tester.scrollUntilVisible(find.text('Italiano'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Italiano'));
     await tester.pumpAndSettle();
