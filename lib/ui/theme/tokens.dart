@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants.dart' show kInputDebounce;
+
 /// Visual tokens of docs/fase-11 («Sistema visivo»). Widgets read them through
 /// `context.cc`; no hex literals outside this file.
 @immutable
@@ -159,7 +161,7 @@ abstract final class CcMotion {
 /// Waits and loops that are not movement: they keep their value whatever the
 /// motion scale says.
 abstract final class CcTiming {
-  static const debounce = Duration(milliseconds: 250);
+  static const debounce = kInputDebounce;
   static const radioDebounce = Duration(milliseconds: 400);
   static const afterRefresh = Duration(milliseconds: 400);
   static const poll = Duration(milliseconds: 500);

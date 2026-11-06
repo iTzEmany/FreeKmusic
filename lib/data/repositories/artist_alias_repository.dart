@@ -110,7 +110,7 @@ class ArtistAliasRepository {
 
   /// Undoes [separate]: [group] is what it returned.
   Future<void> rejoin(List<String> group, String id) =>
-      id == group.first ? merge(id, group[1]) : merge(group.first, id);
+      group.length < 2 ? Future.value() : (id == group.first ? merge(id, group[1]) : merge(group.first, id));
 
   Future<bool> isNotSame(String a, String b) async {
     final (x, y) = _ordered(a, b);

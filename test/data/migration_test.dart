@@ -792,4 +792,20 @@ void main() {
     expect((await db.select(db.podcasts).get()).map((p) => p.source), [0, 1]);
     await db.close();
   });
+
+  test('the v16 step can run again over an index that already exists (downgrade and back)', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute('CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, title TEXT NOT NULL)');
+          raw.execute('CREATE TABLE track_genres (track_id INTEGER NOT NULL, genre TEXT NOT NULL, position INTEGER NOT NULL)');
+          raw.execute('CREATE INDEX track_genres_genre ON track_genres (genre)');
+          raw.userVersion = 15;
+        },
+      ),
+    );
+    final idx = await db.customSelect("SELECT name FROM sqlite_master WHERE name = 'track_genres_genre'").get();
+    expect(idx, hasLength(1));
+    await db.close();
+  });
 }

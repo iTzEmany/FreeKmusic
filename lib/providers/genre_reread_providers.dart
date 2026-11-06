@@ -8,6 +8,7 @@ import '../services/tags/genre_reread.dart';
 import 'activity_log_providers.dart';
 import 'activity_providers.dart';
 import 'database_providers.dart';
+import 'player_providers.dart' show isPlayingProvider;
 import 'library_providers.dart' show scanStateProvider, tagReaderProvider;
 import 'settings_providers.dart';
 import 'startup_providers.dart' show startupSettledProvider;
@@ -28,7 +29,8 @@ final genreRereadStartProvider = Provider<void>((ref) {
   final settings = ref.read(settingsStoreProvider);
 
   Future<void> waitIdle() async {
-    while (!disposed && !activity.idleFor(_idleFor)) {
+    // Paused while music plays too (D-390), not only while the user is busy.
+    while (!disposed && (!activity.idleFor(_idleFor) || ref.read(isPlayingProvider).value == true)) {
       await Future<void>.delayed(const Duration(seconds: 1));
     }
   }

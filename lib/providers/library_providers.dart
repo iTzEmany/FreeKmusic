@@ -121,7 +121,7 @@ final favoriteCountProvider = StreamProvider<int>(
 
 /// Library rows for a (tab, order): sorted once and kept, so switching tabs
 /// back and forth does not sort again.
-final libraryEntriesProvider = Provider.family<
+final libraryEntriesProvider = Provider.autoDispose.family<
   AsyncValue<List<LibraryEntry>>,
   (LibraryKind?, LibrarySort, bool)
 >((ref, key) {

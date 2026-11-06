@@ -22,6 +22,7 @@ import '../services/podcast/ytm_podcast_sync.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
+import 'smart_search_providers.dart' show sourceCooldownProvider;
 import 'startup_providers.dart' show startupSettledProvider;
 import 'youtube_providers.dart';
 
@@ -106,7 +107,7 @@ final episodeDownloaderProvider = FutureProvider<EpisodeDownloader>((ref) async 
 
 /// YouTube Music shows: subscribing and reading their new episodes (D-404).
 final ytmPodcastsProvider = Provider<YtmPodcasts>(
-  (ref) => YtmPodcasts(ref.watch(innerTubeClientProvider)),
+  (ref) => YtmPodcasts(ref.watch(innerTubeClientProvider), cooldown: ref.watch(sourceCooldownProvider)),
 );
 
 final ytmPodcastSyncProvider = Provider<YtmPodcastSync>((ref) => YtmPodcastSync(

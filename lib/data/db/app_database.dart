@@ -170,7 +170,7 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 16) {
         await m.createTable(trackGenres);
-        await m.createIndex(trackGenresGenre);
+        await customStatement('CREATE INDEX IF NOT EXISTS track_genres_genre ON track_genres (genre)');
         await m.createTable(artistCountries);
       }
       if (from < 17) {

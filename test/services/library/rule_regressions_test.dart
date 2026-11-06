@@ -113,4 +113,15 @@ void main() {
     expect(await FilterCountsRepository(db).counts(FilterList.countries),
         [const ValueCount('GB', 2), const ValueCount('SE', 1), const ValueCount('US', 1)]);
   });
+
+  test('a genre with separators survives the re-read split (D-397)', () async {
+    await add(1, 'a', genre: 'Hip-Hop');
+    await add(2, 'b', genre: 'Rock');
+    await db.customStatement("INSERT INTO track_genres (track_id, genre, position) VALUES (1,'Hip-Hop',0),(1,'Rap',1),(2,'Rock',0)");
+    expect(await count('genere:"Hip-Hop/Rap"'), 1);
+    expect(await count('-genere:"Hip-Hop/Rap"'), 1);
+    expect(await count('genere:"Hip-Hop; Rap"'), 1);
+    expect(await repo.countByRules(RuleIn(RuleField.genre, ['Hip-Hop/Rap'])), 1);
+    expect(await count('genere:"Rap/Hip-Hop"'), 0);
+  });
 }

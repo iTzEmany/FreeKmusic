@@ -1,6 +1,7 @@
 import 'package:codecore/data/repositories/podcast_repository.dart';
 import 'package:codecore/data/repositories/tag_repository.dart';
 import 'package:codecore/providers/jam_providers.dart';
+import 'package:codecore/providers/podcast_discover_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -93,7 +94,12 @@ void main() {
           );
         }))!;
         await h.pump(tester, Scaffold(body: s.value(podcastId)),
-            textScale: 1.5, colors: t.value, extraOverrides: [jamProvider.overrideWith(_FakeJam.new)]);
+            textScale: 1.5, colors: t.value, extraOverrides: [
+              jamProvider.overrideWith(_FakeJam.new),
+              // Never a request to Apple from the Podcasts page.
+              podcastGenresProvider.overrideWith((ref) async => const []),
+              podcastChartProvider.overrideWith((ref, genre) async => const []),
+            ]);
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
         await tester.pump(const Duration(milliseconds: 400));
         expect(tester.takeException(), isNull);
