@@ -6,6 +6,9 @@ import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:codecore/ui/screens/online/artist_page_screen.dart';
 import 'package:codecore/ui/screens/online/artist_page_sections.dart';
+import 'package:codecore/ui/screens/releases/follow_button.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtErrorKind, YtException;
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/ui/widgets/net_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +53,19 @@ final _full = YtmArtistPage(
     ]),
   ],
 );
+
+/// The sheet of «Unisci con…» searches through the catalog.
+class _SearchCatalog extends FakeCatalog {
+  _SearchCatalog(this.onSearch) : super((q) async => null);
+  final Future<List<YtmArtistRef>> Function(String q) onSearch;
+  final queries = <String>[];
+
+  @override
+  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) {
+    queries.add(query);
+    return onSearch(query);
+  }
+}
 
 class _CountingCatalog extends FakeCatalog {
   _CountingCatalog() : super((q) async => null);
@@ -411,12 +427,14 @@ void main() {
     };
 
     late Harness h;
+    late _SearchCatalog catalog;
 
     Future<void> openGroup(
       WidgetTester tester, {
       YtmArtistRef from = a,
       bool merged = true,
       List<YtmArtistRef> found = const [],
+      Future<List<YtmArtistRef>> Function(String q)? search,
     }) async {
       tester.view.physicalSize = const Size(600, 2600);
       tester.view.devicePixelRatio = 1;
@@ -424,10 +442,12 @@ void main() {
       h = await Harness.create(tester);
       if (merged) await tester.runAsync(() => ArtistAliasRepository(h.db).merge('UCa', 'UCb'));
       h.mergeSearch = (_) => Future.value(found);
+      catalog = _SearchCatalog(search ?? (_) async => found);
       await h.pump(
         tester,
         ArtistPageScreen(artist: from),
         extraOverrides: [
+          ytmCatalogProvider.overrideWithValue(catalog),
           artistPageProvider.overrideWith(
             (ref, id) async => CatalogResult(pages[id]!, DateTime(2026, 10, 22)),
           ),
@@ -529,5 +549,63 @@ void main() {
       expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
       await h.dispose(tester);
     });
+
+    testWidgets('the «Unisci con…» field starts as the name and searches for a different one', (tester) async {
+      await openGroup(tester, merged: false, search: (q) async => q == 'Marco Castello Official' ? [c] : [b]);
+      await menu(tester, 'Unisci con…');
+      expect(tester.widget<TextField>(find.byKey(const ValueKey('merge-search'))).controller!.text, 'Marco Castello');
+      await tester.enterText(find.byKey(const ValueKey('merge-search')), 'Marco Castello Official');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await _settle(tester);
+      expect(catalog.queries, ['Marco Castello', 'Marco Castello Official']);
+      expect(find.byKey(const ValueKey('pick-UCc')), findsOneWidget);
+      expect(find.byKey(const ValueKey('pick-UCb')), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a failed search says why; no result says so apart', (tester) async {
+      await openGroup(tester, merged: false, search: (_) => Future.error(const YtException(YtErrorKind.network)));
+      await menu(tester, 'Unisci con…');
+      expect(find.byKey(const ValueKey('merge-message')), findsOneWidget);
+      expect(find.text('Nessun artista trovato su YouTube Music'), findsNothing);
+      await tester.tapAt(const Offset(300, 20));
+      await _settle(tester);
+      await h.dispose(tester);
+      await openGroup(tester, merged: false, search: (_) async => const []);
+      await menu(tester, 'Unisci con…');
+      expect(find.text('Nessun artista trovato su YouTube Music'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('after «Separa profili» the pair is «diversi»: no warning comes back', (tester) async {
+      await openGroup(tester, found: const [b]);
+      await menu(tester, 'Separa profili');
+      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+      expect(await tester.runAsync(() => ArtistAliasRepository(h.db).isNotSame('UCa', 'UCb')), isTrue);
+      await h.dispose(tester);
+    });
+
+    testWidgets('opened from an alias, the follow button carries no photo of the alias', (tester) async {
+      await openGroup(tester, from: const YtmArtistRef(id: 'UCb', name: 'Marco Castello', thumbnailUrl: 'https://x/b.jpg'));
+      expect(tester.widget<FollowButton>(find.byType(FollowButton)).artist.id, 'UCa');
+      expect(tester.widget<FollowButton>(find.byType(FollowButton)).artist.thumbnailUrl, isNull);
+      await h.dispose(tester);
+    });
+
+    test('merged shelves: one release per title and year across shelves, newest first', () {
+      const old = YtmRelease(browseId: 'o', title: 'Old', subtitle: '2010');
+      final main = YtmArtistPage(ref: a, shelves: const [
+        YtmReleaseShelf('Album', [old, YtmRelease(browseId: 'n', title: 'New', subtitle: '2024')], more: YtmBrowseLink('M', null)),
+      ]);
+      final other = YtmArtistPage(ref: b, shelves: const [
+        YtmReleaseShelf('Singoli', [YtmRelease(browseId: 'x', title: 'new', subtitle: 'Singolo • 2024')]),
+        YtmReleaseShelf('Album', [YtmRelease(browseId: 'm', title: 'Mid', subtitle: '2018')]),
+      ]);
+      final shelves = mergeArtistShelves(main, [other]).cast<YtmReleaseShelf>();
+      expect(shelves.length, 1, reason: 'the single is the main profile\'s album: not a new shelf');
+      expect([for (final r in shelves.single.releases) r.title], ['New', 'Mid', 'Old']);
+      expect(shelves.single.more, isNotNull);
+    });
   });
 }
+

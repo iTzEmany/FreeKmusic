@@ -68,18 +68,18 @@ class FollowRepository {
   /// A followed artist leaves the list (and its releases); an automatic one is
   /// excluded, so it does not come back while it stays among the most listened.
   /// It applies to every profile of the group of [id] (D-402).
-  Future<void> unfollow(String id) async {
-    for (final member in await ArtistAliasRepository(_db).groupOf(id)) {
-      final row = await _get(member);
-      if (row == null) continue;
-      if (row.isAuto) {
-        await (_db.update(_db.followedArtists)..where((a) => a.ytmId.equals(member)))
-            .write(const FollowedArtistsCompanion(excluded: Value(true)));
-      } else {
-        await (_db.delete(_db.followedArtists)..where((a) => a.ytmId.equals(member))).go();
-      }
-    }
-  }
+  Future<void> unfollow(String id) => _db.transaction(() async {
+        for (final member in await ArtistAliasRepository(_db).groupOf(id)) {
+          final row = await _get(member);
+          if (row == null) continue;
+          if (row.isAuto) {
+            await (_db.update(_db.followedArtists)..where((a) => a.ytmId.equals(member)))
+                .write(const FollowedArtistsCompanion(excluded: Value(true)));
+          } else {
+            await (_db.delete(_db.followedArtists)..where((a) => a.ytmId.equals(member))).go();
+          }
+        }
+      });
 
   /// Takes an automatic artist off the list when it left the most listened.
   Future<void> removeAuto(String id) => (_db.delete(_db.followedArtists)
@@ -122,7 +122,18 @@ class FollowRepository {
 
   /// Artists to check, the least recently checked first (never checked ones
   /// before any other); not the excluded nor the not found.
-  Future<List<FollowedArtist>> toCheck({int limit = 115}) => (_db.select(_db.followedArtists)
+  /// The aliases of a followed main profile are checked too: they get their own row.
+  Future<List<FollowedArtist>> toCheck({int limit = 115}) async {
+    await _db.customInsert(
+      'INSERT OR IGNORE INTO followed_artists (ytm_id, name, thumb_url, origin, excluded, muted, followed_at) '
+      'SELECT a.alias_id, f.name, f.thumb_url, f.origin, 0, f.muted, f.followed_at '
+      'FROM artist_aliases a JOIN followed_artists f ON f.ytm_id = a.main_id WHERE f.excluded = 0',
+      updates: {_db.followedArtists},
+    );
+    return _toCheck(limit);
+  }
+
+  Future<List<FollowedArtist>> _toCheck(int limit) => (_db.select(_db.followedArtists)
         ..where((a) => a.excluded.equals(false) & a.checksFailed.isSmallerThanValue(kMaxNotFound))
         ..orderBy([
           (a) => OrderingTerm.asc(a.lastCheckedAt),

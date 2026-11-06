@@ -5,10 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/artist_merge_providers.dart';
+import '../../../providers/smart_search_providers.dart' show searchRowsLimiterProvider, sourceCooldownProvider;
+import '../../../services/online/query_match.dart' show MediaKind;
 import '../../../providers/ytm_catalog_providers.dart';
 import '../../../services/import/track_matcher.dart' show matchKey;
 import '../../../services/online/innertube_client.dart';
-import '../../../services/online/query_cleaner.dart' show extractPrimaryArtist;
 import '../../../services/online/youtube_service.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../../services/online/ytm_artist_resolver.dart';
@@ -50,7 +51,9 @@ Future<YtmArtistRef?> lookupYtmArtist(
   }
   messenger.clearSnackBars();
   if (!context.mounted) return null;
-  switch (pickYtmArtist(name, found)) {
+  final pick = await pickYtmArtistWithAliases(ref.read(artistAliasRepositoryProvider), name, found);
+  if (!context.mounted) return null;
+  switch (pick) {
     case ExactArtist(:final artist):
       return artist;
     case ChooseArtist(:final artists):
@@ -77,9 +80,9 @@ Future<void> openYtmArtist(
   if (artist != null) open(ArtistPageScreen(artist: artist));
 }
 
-/// «Unisci con…» (D-402): the profiles found for the name of [head] other than
-/// the ones of its [group], the likely one (same normalised name) first; the
-/// one chosen joins the group. Nothing changes when the sheet is dismissed.
+/// «Unisci con…» (D-402): a sheet with a search field (the artist's name filled
+/// in) listing the profiles found other than the ones of its [group], the likely
+/// one first; the one chosen joins the group. Nothing changes when it is dismissed.
 Future<void> mergeArtistWith(
   BuildContext context,
   WidgetRef ref,
@@ -87,26 +90,150 @@ Future<void> mergeArtistWith(
   List<String> group,
 ) async {
   final l = context.l10n;
-  final search = ref.read(artistMergeSearchProvider)(head.name);
-  if (search == null) return showMsg(context, l.loadFailed);
-  final found = [for (final a in await search) if (!group.contains(a.id)) a];
-  if (!context.mounted) return;
-  if (found.isEmpty) return showMsg(context, l.ytmArtistNone);
+  final cooldown = ref.read(sourceCooldownProvider);
+  final limiter = ref.read(searchRowsLimiterProvider);
+  final catalog = ref.read(ytmCatalogProvider);
+  final hl = ref.read(ytmLanguageProvider);
+  // The same budget and 429 pause as the search rows (D-425), but the error is shown.
+  Future<List<YtmArtistRef>> search(String q) async {
+    if (cooldown.isPaused(MediaKind.ytmSong) || !limiter.tryAcquire()) {
+      throw const YtException(YtErrorKind.rateLimited);
+    }
+    try {
+      return await catalog.searchArtists(q, hl);
+    } on YtException catch (e) {
+      if (e.kind == YtErrorKind.rateLimited) cooldown.trip(MediaKind.ytmSong);
+      rethrow;
+    }
+  }
+
   final chosen = await showCcSheet<YtmArtistRef>(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (_) => ArtistPickerSheet(artists: likelyFirst(head.name, found), title: l.artistMergePick),
+    builder: (_) => MergePickerSheet(name: head.name, exclude: group, search: search),
   );
   if (chosen == null || !context.mounted) return;
-  await ref.read(artistAliasRepositoryProvider).merge(head.id, chosen.id);
-  ref.read(artistMergeEpochProvider.notifier).bump();
-  if (context.mounted) showMsg(context, l.artistMerged);
+  try {
+    await ref.read(artistAliasRepositoryProvider).merge(head.id, chosen.id);
+    ref.read(artistMergeEpochProvider.notifier).bump();
+    if (context.mounted) showMsg(context, l.artistMerged);
+  } on Object catch (e, st) {
+    AppLog.w('artist merge failed', e, st);
+    if (context.mounted) showMsg(context, l.loadFailed);
+  }
+}
+
+/// The sheet of «Unisci con…»: a field (starts as [name]) and what [search] finds.
+class MergePickerSheet extends StatefulWidget {
+  const MergePickerSheet({super.key, required this.name, required this.exclude, required this.search});
+
+  final String name;
+
+  /// Profiles already in the group: never offered.
+  final List<String> exclude;
+  final Future<List<YtmArtistRef>> Function(String query) search;
+
+  @override
+  State<MergePickerSheet> createState() => _MergePickerSheetState();
+}
+
+class _MergePickerSheetState extends State<MergePickerSheet> {
+  late final _ctrl = TextEditingController(text: widget.name);
+  late Future<List<YtmArtistRef>> _found = _run();
+
+  Future<List<YtmArtistRef>> _run() async {
+    final q = _ctrl.text.trim();
+    if (q.isEmpty) return const [];
+    final all = await widget.search(q);
+    return likelyFirst(widget.name, [for (final a in all) if (!widget.exclude.contains(a.id)) a]);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String _error(Object e) {
+    final l = context.l10n;
+    AppLog.w('artist merge search failed ($e)');
+    return e is YtException
+        ? ytErrorText(context, e.kind)
+        : e is InnerTubeChanged
+            ? l.ytmPageUnreadable
+            : l.loadFailed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final cc = context.cc;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(l.artistMergePick, style: Theme.of(context).textTheme.titleMedium),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+                child: TextField(
+                  key: const ValueKey('merge-search'),
+                  controller: _ctrl,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: l.artistMergeWith),
+                  onSubmitted: (_) => setState(() {
+                    _found = _run();
+                  }),
+                ),
+              ),
+              Flexible(
+                child: FutureBuilder<List<YtmArtistRef>>(
+                  future: _found,
+                  builder: (context, snap) {
+                    if (snap.connectionState != ConnectionState.done) {
+                      return const Padding(padding: EdgeInsets.all(CcDims.gap16), child: CircularProgressIndicator());
+                    }
+                    final text = snap.hasError
+                        ? _error(snap.error!)
+                        : snap.data!.isEmpty
+                            ? l.ytmArtistNone
+                            : null;
+                    if (text != null) {
+                      return Padding(
+                        padding: const EdgeInsets.all(CcDims.margin),
+                        child: Text(text, key: const ValueKey('merge-message'), style: TextStyle(color: cc.textMuted)),
+                      );
+                    }
+                    final list = snap.data!;
+                    return ListView.builder(
+                      shrinkWrap: list.length <= 20,
+                      itemCount: list.length,
+                      itemBuilder: (context, i) => ArtistPickTile(artist: list[i]),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// [found] with the profiles named like [name] (accents, case and «feat.» ignored) first.
 List<YtmArtistRef> likelyFirst(String name, List<YtmArtistRef> found) {
-  final keys = {matchKey(name), matchKey(extractPrimaryArtist(name))}..remove('');
+  final keys = artistNameKeys(name);
   final same = [for (final a in found) if (keys.contains(matchKey(a.name))) a];
   return [...same, for (final a in found) if (!same.contains(a)) a];
 }
@@ -123,7 +250,6 @@ class ArtistPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final cc = context.cc;
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -153,37 +279,45 @@ class ArtistPickerSheet extends StatelessWidget {
                 shrinkWrap: artists.length <= 20,
                 itemCount: artists.length,
                 itemBuilder: (context, i) {
-                  final a = artists[i];
-                  return ListTile(
-                      key: ValueKey('pick-${a.id}'),
-                      leading: NetThumbnail(
-                        url: thumbAt(context, a.thumbnailUrl, 48),
-                        width: 48,
-                        height: 48,
-                        icon: Icons.person_rounded,
-                        circle: true,
-                      ),
-                      title: Text(
-                        a.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: a.audience == null
-                          ? null
-                          : Text(
-                              a.audience!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: cc.textMuted),
-                            ),
-                      onTap: () => Navigator.pop(context, a),
-                    );
+                  return ArtistPickTile(artist: artists[i]);
                 },
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// One row of an artist choice: photo, name and monthly audience; pops the artist.
+class ArtistPickTile extends StatelessWidget {
+  const ArtistPickTile({super.key, required this.artist});
+
+  final YtmArtistRef artist;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = artist;
+    return ListTile(
+      key: ValueKey('pick-${a.id}'),
+      leading: NetThumbnail(
+        url: thumbAt(context, a.thumbnailUrl, 48),
+        width: 48,
+        height: 48,
+        icon: Icons.person_rounded,
+        circle: true,
+      ),
+      title: Text(a.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: a.audience == null
+          ? null
+          : Text(
+              a.audience!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: context.cc.textMuted),
+            ),
+      onTap: () => Navigator.pop(context, a),
     );
   }
 }

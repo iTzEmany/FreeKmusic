@@ -62,6 +62,20 @@ class ArtistAliasRepository {
             ]));
       });
 
+  /// Breaks the whole group of [id] apart and marks every pair «different», so the
+  /// detector does not propose the merge again at once.
+  Future<void> dissolve(String id) => _db.transaction(() async {
+        final group = await groupOf(id);
+        for (final x in group.skip(1)) {
+          await split(x);
+        }
+        for (var i = 0; i < group.length; i++) {
+          for (var j = i + 1; j < group.length; j++) {
+            await markNotSame(group[i], group[j]);
+          }
+        }
+      });
+
   /// The user said [a] and [b] are different artists. A no-op for profiles
   /// already in the same group (they were merged: they are the same).
   Future<void> markNotSame(String a, String b) async {

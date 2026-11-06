@@ -167,4 +167,12 @@ void main() {
     expect((await follows.all()).map((r) => r.excluded), [true, true]);
     expect(await follows.watchIsFollowed('UC2').first, isFalse);
   });
+
+  test('the alias of a followed main profile is checked too; not when the main is excluded', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    expect((await follows.toCheck()).map((r) => r.ytmId).toSet(), {'UC1', 'UC2'});
+    await follows.unfollow('UC1');
+    expect(await follows.toCheck(), isEmpty);
+  });
 }

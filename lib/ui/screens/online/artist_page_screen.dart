@@ -51,27 +51,35 @@ class ArtistPageScreen extends ConsumerWidget {
     }
   }
 
-  /// «Separa profili»: every alias leaves the group of [head].
-  Future<void> _split(BuildContext context, WidgetRef ref, List<String> ids) async {
-    final repo = ref.read(artistAliasRepositoryProvider);
-    for (final id in ids.skip(1)) {
-      await repo.split(id);
+  /// Runs a change of the groups; a failure is logged and told, never left unhandled.
+  Future<void> _guard(BuildContext context, Future<void> Function() change, String done) async {
+    try {
+      await change();
+      if (context.mounted) showMsg(context, done);
+    } on Object catch (e, st) {
+      AppLog.w('artist merge change failed', e, st);
+      if (context.mounted) showMsg(context, context.l10n.loadFailed);
     }
-    ref.read(artistMergeEpochProvider.notifier).bump();
-    if (context.mounted) showMsg(context, context.l10n.artistSplitDone);
   }
 
-  Future<void> _decide(BuildContext context, WidgetRef ref, YtmArtistRef head, YtmArtistRef other, {required bool merge}) async {
-    final repo = ref.read(artistAliasRepositoryProvider);
-    if (merge) {
-      await repo.merge(head.id, other.id);
-    } else {
-      await repo.markNotSame(head.id, other.id);
-    }
-    ref.read(artistMergeEpochProvider.notifier).bump();
-    if (!context.mounted) return;
+  /// «Separa profili»: the whole group of [head] breaks apart, and the pairs are
+  /// marked «diversi» so the detector does not offer the merge again.
+  Future<void> _split(BuildContext context, WidgetRef ref, String id) => _guard(context, () async {
+        await ref.read(artistAliasRepositoryProvider).dissolve(id);
+        ref.read(artistMergeEpochProvider.notifier).bump();
+      }, context.l10n.artistSplitDone);
+
+  Future<void> _decide(BuildContext context, WidgetRef ref, YtmArtistRef head, YtmArtistRef other, {required bool merge}) {
     final l = context.l10n;
-    showMsg(context, merge ? l.artistMerged : l.artistNotSameDone);
+    return _guard(context, () async {
+      final repo = ref.read(artistAliasRepositoryProvider);
+      if (merge) {
+        await repo.merge(head.id, other.id);
+      } else {
+        await repo.markNotSame(head.id, other.id);
+      }
+      ref.read(artistMergeEpochProvider.notifier).bump();
+    }, merge ? l.artistMerged : l.artistNotSameDone);
   }
 
   /// The normal search for the artist's name, when the page cannot be read.
@@ -99,10 +107,7 @@ class ArtistPageScreen extends ConsumerWidget {
       );
     }
     final page = ref.watch(artistPageProvider(ids.first));
-    final others = [
-      for (final id in ids.skip(1))
-        ?ref.watch(artistPageProvider(id)).value?.value,
-    ];
+    final shelves = ref.watch(groupShelvesProvider(ids.join('|')));
     final main = page.value;
     final head = ids.first == artist.id
         ? artist
@@ -123,7 +128,10 @@ class ArtistPageScreen extends ConsumerWidget {
         child: ArtistHeader(
           artist: head,
           audience: data?.value.ref.audience,
-          action: kEnableYoutube ? FollowButton(artist: head) : null,
+          // The follow row is the main profile's: not the photo of the alias the page was opened from.
+          action: kEnableYoutube
+              ? FollowButton(artist: head.id == artist.id ? head : YtmArtistRef(id: head.id, name: head.name))
+              : null,
         ),
       ),
       if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length)),
@@ -144,7 +152,7 @@ class ArtistPageScreen extends ConsumerWidget {
         slivers.addAll(_library(context, ref, local, localTracks));
       }
       final overlap = LibraryOverlap(localTracks);
-      for (final shelf in mergeArtistShelves(data.value, others)) {
+      for (final shelf in shelves ?? data.value.shelves) {
         switch (shelf) {
           case YtmSongShelf():
             if (shelf.songs.isEmpty) break;
@@ -190,7 +198,7 @@ class ArtistPageScreen extends ConsumerWidget {
         PopupMenuButton<bool>(
           key: const ValueKey('artist-menu'),
           tooltip: l.moreActions,
-          onSelected: (split) => split ? _split(context, ref, ids) : mergeArtistWith(context, ref, head, ids),
+          onSelected: (split) => split ? _split(context, ref, head.id) : mergeArtistWith(context, ref, head, ids),
           itemBuilder: (_) => [
             PopupMenuItem(value: false, height: 48, child: Text(l.artistMergeWith)),
             if (ids.length > 1) PopupMenuItem(value: true, height: 48, child: Text(l.artistSplit)),
