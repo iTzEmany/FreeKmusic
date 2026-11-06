@@ -69,6 +69,7 @@ final autoFollowServiceProvider = Provider.family<AutoFollowService, String>((
     stats: StatsQueries(ref.watch(databaseProvider)),
     follows: ref.watch(followRepositoryProvider),
     search: (name) => catalog.searchArtists(name, hl),
+    aliases: ref.watch(artistAliasRepositoryProvider),
   );
 });
 

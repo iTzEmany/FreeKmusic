@@ -1350,11 +1350,12 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 94.5 Controlli di fase
 
 ## Fase 95 — Artisti con due profili (`fase-95-artisti-uniti.md`)
-- [ ] 95.1 Alias dei profili
-- [ ] 95.2 Pagina unita e Separa
-- [ ] 95.3 «Unisci con…»
-- [ ] 95.4 Rilevamento dei doppioni
-- [ ] 95.5 Controlli di fase
+- [x] 95.1 Alias dei profili
+- [x] 95.2 Pagina unita e Separa
+- [x] 95.3 «Unisci con…»
+- [x] 95.4 Rilevamento dei doppioni
+- [x] 95.6 Vedere e sciogliere le unioni (richiesta dell'utente, D-427)
+- [x] 95.5 Controlli di fase
 
 ## Fase 96 — Podcast: Scopri e YouTube Music (`fase-96-podcast-scopri.md`)
 - [ ] 96.1 Pagina dei generi di YouTube Music

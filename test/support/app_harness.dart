@@ -1,3 +1,5 @@
+import 'package:codecore/providers/artist_merge_providers.dart';
+import 'package:codecore/services/online/ytm_artist.dart' show YtmArtistRef;
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
@@ -59,6 +61,9 @@ class Harness {
     return Harness._(db, handler, backend, store);
   }
 
+  /// What the artist-merge search answers (nothing by default); set before `pump`.
+  Future<List<YtmArtistRef>>? Function(String) mergeSearch = (_) => Future.value(const <YtmArtistRef>[]);
+
   List<Override> get overrides => [
         databaseProvider.overrideWithValue(db),
         audioHandlerProvider.overrideWithValue(handler),
@@ -66,6 +71,8 @@ class Harness {
         coversDirProvider.overrideWithValue(coversDir),
         // No two-second wait in widget tests.
         startupSettledProvider.overrideWith((ref) async {}),
+        // Never a real search for the artist-merge suggestion.
+        artistMergeSearchProvider.overrideWithValue(mergeSearch),
       ];
 
   Future<void> pump(WidgetTester tester, Widget child,

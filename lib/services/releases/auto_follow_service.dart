@@ -1,5 +1,6 @@
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart' show FollowedArtist, ArtistLookup;
+import '../../data/repositories/artist_alias_repository.dart' show ArtistAliasRepository;
 import '../../data/repositories/follow_repository.dart';
 import '../../data/repositories/stats_queries.dart';
 import '../online/youtube_service.dart';
@@ -18,6 +19,7 @@ class AutoFollowService {
     required this.stats,
     required this.follows,
     required this.search,
+    this.aliases,
     DateTime Function()? now,
     this.gap = const Duration(milliseconds: 1500),
     this.maxLookups = 5,
@@ -27,6 +29,9 @@ class AutoFollowService {
   final StatsQueries stats;
   final FollowRepository follows;
   final ArtistSearch search;
+
+  /// Merged artists: a group's main profile counts as the one match.
+  final ArtistAliasRepository? aliases;
   final DateTime Function() _now;
   final Duration gap;
   final int maxLookups;
@@ -52,7 +57,7 @@ class AutoFollowService {
       asked++;
       try {
         final found = await search(names[key]!);
-        switch (pickYtmArtist(names[key]!, found)) {
+        switch (await pickYtmArtistWithAliases(aliases, names[key]!, found)) {
           case ExactArtist(:final artist):
             await follows.saveLookup(key, names[key]!, artist: artist);
           case ChooseArtist():

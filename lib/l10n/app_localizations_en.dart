@@ -6580,4 +6580,80 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smartCountError => 'Count unavailable';
+
+  @override
+  String artistMergedNote(int count) {
+    return '$count profiles merged';
+  }
+
+  @override
+  String get artistSplit => 'Split profiles';
+
+  @override
+  String get artistMergeWith => 'Merge with…';
+
+  @override
+  String artistSameWarn(String name) {
+    return 'This looks like the same artist as another profile ($name).';
+  }
+
+  @override
+  String get artistMergeYes => 'Merge';
+
+  @override
+  String get artistNotSame => 'They are different';
+
+  @override
+  String get artistMerged => 'Profiles merged.';
+
+  @override
+  String get artistSplitDone => 'Profiles split.';
+
+  @override
+  String get artistNotSameDone =>
+      'Okay, I won\'t ask again for these two profiles.';
+
+  @override
+  String get artistMergePick => 'Which profile?';
+
+  @override
+  String get mergedSheetTitle => 'Merged profiles';
+
+  @override
+  String get artistMainProfile => 'Main';
+
+  @override
+  String get artistSeparate => 'Split';
+
+  @override
+  String get artistSeparated => 'Profile split off.';
+
+  @override
+  String get settingsMergedArtists => 'Merged artists';
+
+  @override
+  String get settingsMergedArtistsHint =>
+      'See the merged profiles and split them, or remove the “different” marks.';
+
+  @override
+  String get mergedArtistsEmpty => 'No merged artists.';
+
+  @override
+  String get mergedArtistsEmptyHelp =>
+      'When you merge two profiles of the same artist, they show up here.';
+
+  @override
+  String get mergedArtistsSplitAll => 'Split all';
+
+  @override
+  String get notSameTitle => 'Marked as different';
+
+  @override
+  String get notSameRemove => 'Remove';
+
+  @override
+  String get notSameEmpty => 'No pair is marked as different.';
+
+  @override
+  String get openArtistPage => 'Open the artist page';
 }

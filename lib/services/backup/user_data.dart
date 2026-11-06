@@ -387,6 +387,24 @@ class ArtistCountryData {
       );
 }
 
+/// A second profile of an artist: [aliasId] shows the page of [mainId] (`artist_aliases`).
+class ArtistAliasData {
+  const ArtistAliasData({required this.aliasId, required this.mainId, this.createdAt});
+
+  final String aliasId, mainId;
+
+  /// When the profiles were merged; null in backups without it.
+  final int? createdAt;
+
+  Map<String, Object?> toJson() => _nonNull({'aliasId': aliasId, 'mainId': mainId, 'createdAt': createdAt});
+
+  /// Null when the ids are not strings: the entry is dropped, the backup still reads.
+  static ArtistAliasData? tryParse(Object? j) => j is Map && j['aliasId'] is String && j['mainId'] is String
+      ? ArtistAliasData(
+          aliasId: j['aliasId'] as String, mainId: j['mainId'] as String, createdAt: (j['createdAt'] as num?)?.toInt())
+      : null;
+}
+
 class UserData {
   const UserData({
     required this.createdAt,
@@ -396,6 +414,8 @@ class UserData {
     this.radios = const [],
     this.followedArtists = const [],
     this.artistCountries = const [],
+    this.artistAliases = const [],
+    this.artistNotSame = const [],
   });
 
   final int createdAt;
@@ -412,6 +432,11 @@ class UserData {
   /// Where artists come from (absent in older backups = none).
   final List<ArtistCountryData> artistCountries;
 
+  /// Second profiles of an artist, and pairs of profiles said to be different
+  /// (`[a, b]` ids); absent in older backups = none.
+  final List<ArtistAliasData> artistAliases;
+  final List<List<String>> artistNotSame;
+
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -422,6 +447,8 @@ class UserData {
         if (followedArtists.isNotEmpty)
           'followedArtists': [for (final a in followedArtists) a.toJson()],
         if (artistCountries.isNotEmpty) 'artistCountries': [for (final a in artistCountries) a.toJson()],
+        if (artistAliases.isNotEmpty) 'artistAliases': [for (final a in artistAliases) a.toJson()],
+        if (artistNotSame.isNotEmpty) 'artistNotSame': artistNotSame,
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -455,6 +482,14 @@ class UserData {
       artistCountries: [
         for (final a in (j['artistCountries'] as List? ?? const []))
           ArtistCountryData.fromJson(a as Map<String, dynamic>),
+      ],
+      artistAliases: [
+        for (final a in (j['artistAliases'] as List? ?? const []))
+          ?ArtistAliasData.tryParse(a),
+      ],
+      artistNotSame: [
+        for (final a in (j['artistNotSame'] as List? ?? const []))
+          if (a is List && a.length == 2 && a[0] is String && a[1] is String) [a[0] as String, a[1] as String],
       ],
     );
   }

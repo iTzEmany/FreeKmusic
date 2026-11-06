@@ -48,6 +48,9 @@ void main() {
     // D-397: the tables of schema 16 start empty; the genre re-read fills them.
     expect(await db.select(db.trackGenres).get(), isEmpty);
     expect(await db.select(db.artistCountries).get(), isEmpty);
+    // ...and the two of schema 17 (D-397).
+    expect(await db.select(db.artistAliases).get(), isEmpty);
+    expect(await db.select(db.artistNotSame).get(), isEmpty);
 
     final playlist = (await db.select(db.playlists).getSingle());
     expect(playlist.name, 'Mix');

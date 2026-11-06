@@ -43,6 +43,7 @@ import 'translation_models_tiles.dart';
 import 'update_tiles.dart';
 import 'shuffle_plus_tiles.dart';
 import 'release_settings_tiles.dart';
+import 'merged_artists_screen.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../import/exportify_remind_choice.dart';
 import '../../widgets/show_msg.dart';
@@ -364,7 +365,16 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
     if (kEnableYoutube)
       SettingsGroup(
         title: l.newReleasesTitle,
-        children: const [ReleaseSettingsTiles()],
+        children: [
+          const ReleaseSettingsTiles(),
+          ListTile(
+            key: const ValueKey('merged-artists-tile'),
+            title: Text(l.settingsMergedArtists),
+            subtitle: Text(l.settingsMergedArtistsHint),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ShellNav.open<void>(context, const MergedArtistsScreen()),
+          ),
+        ],
       ),
     if (kEnableYoutube)
       SettingsGroup(

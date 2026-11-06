@@ -87,19 +87,31 @@ class ReleaseChecker {
       if (i > 0) await _wait(gap);
       if (cancel?.isCancelled ?? false) return stop(CheckStop.cancelled);
       try {
-        final page = await fetch(artist.ytmId);
+        // The merged profiles' releases are stored under the followed row.
+        final shelves = <YtmReleaseShelf>[], late = <YtmReleaseShelf>[];
         final first = artist.lastCheckedAt == null;
+        final joined = first ? const <String>{} : await follows.joinedAfter(artist.ytmId, artist.lastCheckedAt!);
+        for (final id in await follows.checkIds(artist.ytmId)) {
+          if (id != artist.ytmId) await _wait(gap);
+          final page = id == artist.ytmId ? await fetch(id) : await _fetchAlias(id);
+          (joined.contains(id) ? late : shelves).addAll(page?.shelves.whereType<YtmReleaseShelf>() ?? const []);
+        }
         final diff = diffReleases(
           known: first ? const {} : await releases.knownIds(artist.ytmId),
           knownGroups: first ? const {} : await releases.knownGroups(artist.ytmId),
-          fetched: page.shelves.whereType<YtmReleaseShelf>().toList(),
+          fetched: shelves,
           firstCheck: first,
           now: _now(),
         );
         await releases.store(artist.ytmId, diff);
+        fresh.addAll([for (final n in diff.fresh) FreshRelease(artist, n)]);
+        // A profile merged since the last check: its whole discography is the base, not news.
+        if (late.isNotEmpty) {
+          await releases.store(
+              artist.ytmId, diffReleases(known: const {}, fetched: late, firstCheck: true, now: _now()));
+        }
         await follows.markChecked(artist.ytmId);
         checked++;
-        fresh.addAll([for (final n in diff.fresh) FreshRelease(artist, n)]);
       } on ArtistNotFound {
         await follows.markChecked(artist.ytmId, error: kArtistNotFound);
         failed++;
@@ -121,5 +133,15 @@ class ReleaseChecker {
       }
     }
     return CheckOutcome(fresh: fresh, checked: checked, failed: failed);
+  }
+
+  /// An alias page YouTube does not find is skipped: the main profile's check goes on.
+  Future<YtmArtistPage?> _fetchAlias(String id) async {
+    try {
+      return await fetch(id);
+    } on ArtistNotFound {
+      AppLog.w('release check: merged profile $id not found');
+      return null;
+    }
   }
 }

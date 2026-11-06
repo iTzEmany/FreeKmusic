@@ -748,4 +748,27 @@ void main() {
     expect(await db.select(db.trackGenres).get(), isEmpty);
     await db.close();
   });
+  test('a v16 database gets the alias and not-same tables, empty, and keeps its tracks and followed artists', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, title TEXT NOT NULL)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title) VALUES (1, '/1', 'one')");
+          raw.execute('CREATE TABLE followed_artists (yt_m_id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL)');
+          raw.execute("INSERT INTO followed_artists (yt_m_id, name) VALUES ('UC1', 'One')");
+          raw.userVersion = 16;
+        },
+      ),
+    );
+    expect(await db.select(db.artistAliases).get(), isEmpty);
+    expect(await db.select(db.artistNotSame).get(), isEmpty);
+    expect((await db.customSelect('SELECT title FROM tracks').getSingle()).read<String>('title'), 'one');
+    await db.into(db.artistAliases).insert(ArtistAliasesCompanion.insert(aliasId: 'UC2', mainId: 'UC1'));
+    await db.into(db.artistNotSame).insert(ArtistNotSameCompanion.insert(a: 'UC1', b: 'UC3'));
+    expect(await db.select(db.artistAliases).get(), hasLength(1));
+    expect(await db.select(db.artistNotSame).get(), hasLength(1));
+    await db.close();
+  });
 }

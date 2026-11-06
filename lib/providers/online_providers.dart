@@ -125,7 +125,8 @@ final curiosityFinderProvider = Provider(
       final catalog = ref.read(ytmCatalogProvider);
       final hl = ref.read(ytmLanguageProvider);
       // Only a certain match: a wrong artist's story is worse than none.
-      final pick = pickYtmArtist(name, await catalog.searchArtists(name, hl));
+      final pick = await pickYtmArtistWithAliases(
+          ref.read(artistAliasRepositoryProvider), name, await catalog.searchArtists(name, hl));
       if (pick is! ExactArtist) return null;
       final page = (await catalog.artist(pick.artist.id, hl)).value;
       final text = page.description;

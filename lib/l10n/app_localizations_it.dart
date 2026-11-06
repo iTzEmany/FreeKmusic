@@ -6597,4 +6597,80 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get smartCountError => 'Conteggio non disponibile';
+
+  @override
+  String artistMergedNote(int count) {
+    return '$count profili uniti';
+  }
+
+  @override
+  String get artistSplit => 'Separa profili';
+
+  @override
+  String get artistMergeWith => 'Unisci con…';
+
+  @override
+  String artistSameWarn(String name) {
+    return 'Sembra lo stesso artista di un altro profilo ($name).';
+  }
+
+  @override
+  String get artistMergeYes => 'Unisci';
+
+  @override
+  String get artistNotSame => 'Sono diversi';
+
+  @override
+  String get artistMerged => 'Profili uniti.';
+
+  @override
+  String get artistSplitDone => 'Profili separati.';
+
+  @override
+  String get artistNotSameDone =>
+      'Va bene, non lo chiederò più per questi due profili.';
+
+  @override
+  String get artistMergePick => 'Con quale profilo?';
+
+  @override
+  String get mergedSheetTitle => 'Profili uniti';
+
+  @override
+  String get artistMainProfile => 'Principale';
+
+  @override
+  String get artistSeparate => 'Separa';
+
+  @override
+  String get artistSeparated => 'Profilo separato.';
+
+  @override
+  String get settingsMergedArtists => 'Artisti uniti';
+
+  @override
+  String get settingsMergedArtistsHint =>
+      'Vedi i profili uniti e separali, o togli i «diversi».';
+
+  @override
+  String get mergedArtistsEmpty => 'Nessun artista unito.';
+
+  @override
+  String get mergedArtistsEmptyHelp =>
+      'Quando unisci due profili dello stesso artista, compaiono qui.';
+
+  @override
+  String get mergedArtistsSplitAll => 'Separa tutto';
+
+  @override
+  String get notSameTitle => 'Segnati come diversi';
+
+  @override
+  String get notSameRemove => 'Rimuovi';
+
+  @override
+  String get notSameEmpty => 'Nessuna coppia segnata come diversa.';
+
+  @override
+  String get openArtistPage => 'Apri la pagina dell’artista';
 }

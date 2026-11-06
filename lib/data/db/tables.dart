@@ -450,6 +450,31 @@ class ArtistCountries extends Table {
   Set<Column> get primaryKey => {artistKey};
 }
 
+/// A second YouTube Music profile of the same artist (D-402): [aliasId] shows
+/// the page of [mainId]. Never a chain: [mainId] is never itself an alias.
+class ArtistAliases extends Table {
+  TextColumn get aliasId => text()();
+  TextColumn get mainId => text()();
+  IntColumn get createdAt => integer().clientDefault(nowMs)();
+
+  @override
+  Set<Column> get primaryKey => {aliasId};
+}
+
+/// Two profiles the user said are different artists (D-414), never proposed
+/// to merge again. [a] < [b] (string order), so a pair has one row.
+class ArtistNotSame extends Table {
+  TextColumn get a => text()();
+  TextColumn get b => text()();
+  IntColumn get createdAt => integer().clientDefault(nowMs)();
+
+  @override
+  Set<Column> get primaryKey => {a, b};
+
+  @override
+  List<String> get customConstraints => ['CHECK (a < b)'];
+}
+
 /// Enrichment state of a track; the *_none_at columns hold when a part was
 /// searched and not found (retried after 30 days).
 class TrackEnrich extends Table {

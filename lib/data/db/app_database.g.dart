@@ -12289,6 +12289,523 @@ class ArtistCountriesCompanion extends UpdateCompanion<ArtistCountry> {
   }
 }
 
+class $ArtistAliasesTable extends ArtistAliases
+    with TableInfo<$ArtistAliasesTable, ArtistAliase> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArtistAliasesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _aliasIdMeta = const VerificationMeta(
+    'aliasId',
+  );
+  @override
+  late final GeneratedColumn<String> aliasId = GeneratedColumn<String>(
+    'alias_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mainIdMeta = const VerificationMeta('mainId');
+  @override
+  late final GeneratedColumn<String> mainId = GeneratedColumn<String>(
+    'main_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: nowMs,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [aliasId, mainId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'artist_aliases';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArtistAliase> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('alias_id')) {
+      context.handle(
+        _aliasIdMeta,
+        aliasId.isAcceptableOrUnknown(data['alias_id']!, _aliasIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_aliasIdMeta);
+    }
+    if (data.containsKey('main_id')) {
+      context.handle(
+        _mainIdMeta,
+        mainId.isAcceptableOrUnknown(data['main_id']!, _mainIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mainIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {aliasId};
+  @override
+  ArtistAliase map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArtistAliase(
+      aliasId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alias_id'],
+      )!,
+      mainId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}main_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ArtistAliasesTable createAlias(String alias) {
+    return $ArtistAliasesTable(attachedDatabase, alias);
+  }
+}
+
+class ArtistAliase extends DataClass implements Insertable<ArtistAliase> {
+  final String aliasId;
+  final String mainId;
+  final int createdAt;
+  const ArtistAliase({
+    required this.aliasId,
+    required this.mainId,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['alias_id'] = Variable<String>(aliasId);
+    map['main_id'] = Variable<String>(mainId);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ArtistAliasesCompanion toCompanion(bool nullToAbsent) {
+    return ArtistAliasesCompanion(
+      aliasId: Value(aliasId),
+      mainId: Value(mainId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArtistAliase.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArtistAliase(
+      aliasId: serializer.fromJson<String>(json['aliasId']),
+      mainId: serializer.fromJson<String>(json['mainId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'aliasId': serializer.toJson<String>(aliasId),
+      'mainId': serializer.toJson<String>(mainId),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ArtistAliase copyWith({String? aliasId, String? mainId, int? createdAt}) =>
+      ArtistAliase(
+        aliasId: aliasId ?? this.aliasId,
+        mainId: mainId ?? this.mainId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArtistAliase copyWithCompanion(ArtistAliasesCompanion data) {
+    return ArtistAliase(
+      aliasId: data.aliasId.present ? data.aliasId.value : this.aliasId,
+      mainId: data.mainId.present ? data.mainId.value : this.mainId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistAliase(')
+          ..write('aliasId: $aliasId, ')
+          ..write('mainId: $mainId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(aliasId, mainId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArtistAliase &&
+          other.aliasId == this.aliasId &&
+          other.mainId == this.mainId &&
+          other.createdAt == this.createdAt);
+}
+
+class ArtistAliasesCompanion extends UpdateCompanion<ArtistAliase> {
+  final Value<String> aliasId;
+  final Value<String> mainId;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ArtistAliasesCompanion({
+    this.aliasId = const Value.absent(),
+    this.mainId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArtistAliasesCompanion.insert({
+    required String aliasId,
+    required String mainId,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : aliasId = Value(aliasId),
+       mainId = Value(mainId);
+  static Insertable<ArtistAliase> custom({
+    Expression<String>? aliasId,
+    Expression<String>? mainId,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (aliasId != null) 'alias_id': aliasId,
+      if (mainId != null) 'main_id': mainId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArtistAliasesCompanion copyWith({
+    Value<String>? aliasId,
+    Value<String>? mainId,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ArtistAliasesCompanion(
+      aliasId: aliasId ?? this.aliasId,
+      mainId: mainId ?? this.mainId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (aliasId.present) {
+      map['alias_id'] = Variable<String>(aliasId.value);
+    }
+    if (mainId.present) {
+      map['main_id'] = Variable<String>(mainId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistAliasesCompanion(')
+          ..write('aliasId: $aliasId, ')
+          ..write('mainId: $mainId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArtistNotSameTable extends ArtistNotSame
+    with TableInfo<$ArtistNotSameTable, ArtistNotSameData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArtistNotSameTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _aMeta = const VerificationMeta('a');
+  @override
+  late final GeneratedColumn<String> a = GeneratedColumn<String>(
+    'a',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bMeta = const VerificationMeta('b');
+  @override
+  late final GeneratedColumn<String> b = GeneratedColumn<String>(
+    'b',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: nowMs,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [a, b, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'artist_not_same';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArtistNotSameData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('a')) {
+      context.handle(_aMeta, a.isAcceptableOrUnknown(data['a']!, _aMeta));
+    } else if (isInserting) {
+      context.missing(_aMeta);
+    }
+    if (data.containsKey('b')) {
+      context.handle(_bMeta, b.isAcceptableOrUnknown(data['b']!, _bMeta));
+    } else if (isInserting) {
+      context.missing(_bMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {a, b};
+  @override
+  ArtistNotSameData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArtistNotSameData(
+      a: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}a'],
+      )!,
+      b: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}b'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ArtistNotSameTable createAlias(String alias) {
+    return $ArtistNotSameTable(attachedDatabase, alias);
+  }
+}
+
+class ArtistNotSameData extends DataClass
+    implements Insertable<ArtistNotSameData> {
+  final String a;
+  final String b;
+  final int createdAt;
+  const ArtistNotSameData({
+    required this.a,
+    required this.b,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['a'] = Variable<String>(a);
+    map['b'] = Variable<String>(b);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ArtistNotSameCompanion toCompanion(bool nullToAbsent) {
+    return ArtistNotSameCompanion(
+      a: Value(a),
+      b: Value(b),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArtistNotSameData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArtistNotSameData(
+      a: serializer.fromJson<String>(json['a']),
+      b: serializer.fromJson<String>(json['b']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'a': serializer.toJson<String>(a),
+      'b': serializer.toJson<String>(b),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ArtistNotSameData copyWith({String? a, String? b, int? createdAt}) =>
+      ArtistNotSameData(
+        a: a ?? this.a,
+        b: b ?? this.b,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArtistNotSameData copyWithCompanion(ArtistNotSameCompanion data) {
+    return ArtistNotSameData(
+      a: data.a.present ? data.a.value : this.a,
+      b: data.b.present ? data.b.value : this.b,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistNotSameData(')
+          ..write('a: $a, ')
+          ..write('b: $b, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(a, b, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArtistNotSameData &&
+          other.a == this.a &&
+          other.b == this.b &&
+          other.createdAt == this.createdAt);
+}
+
+class ArtistNotSameCompanion extends UpdateCompanion<ArtistNotSameData> {
+  final Value<String> a;
+  final Value<String> b;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ArtistNotSameCompanion({
+    this.a = const Value.absent(),
+    this.b = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArtistNotSameCompanion.insert({
+    required String a,
+    required String b,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : a = Value(a),
+       b = Value(b);
+  static Insertable<ArtistNotSameData> custom({
+    Expression<String>? a,
+    Expression<String>? b,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (a != null) 'a': a,
+      if (b != null) 'b': b,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArtistNotSameCompanion copyWith({
+    Value<String>? a,
+    Value<String>? b,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ArtistNotSameCompanion(
+      a: a ?? this.a,
+      b: b ?? this.b,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (a.present) {
+      map['a'] = Variable<String>(a.value);
+    }
+    if (b.present) {
+      map['b'] = Variable<String>(b.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistNotSameCompanion(')
+          ..write('a: $a, ')
+          ..write('b: $b, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -12325,6 +12842,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ArtistCountriesTable artistCountries = $ArtistCountriesTable(
     this,
   );
+  late final $ArtistAliasesTable artistAliases = $ArtistAliasesTable(this);
+  late final $ArtistNotSameTable artistNotSame = $ArtistNotSameTable(this);
   late final Index tracksAlbumKey = Index(
     'tracks_album_key',
     'CREATE INDEX tracks_album_key ON tracks (album_key)',
@@ -12412,6 +12931,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     activityLogRows,
     trackGenres,
     artistCountries,
+    artistAliases,
+    artistNotSame,
     tracksAlbumKey,
     tracksArtist,
     tracksFavorite,
@@ -21552,6 +22073,352 @@ typedef $$ArtistCountriesTableProcessedTableManager =
       ArtistCountry,
       PrefetchHooks Function()
     >;
+typedef $$ArtistAliasesTableCreateCompanionBuilder =
+    ArtistAliasesCompanion Function({
+      required String aliasId,
+      required String mainId,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$ArtistAliasesTableUpdateCompanionBuilder =
+    ArtistAliasesCompanion Function({
+      Value<String> aliasId,
+      Value<String> mainId,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ArtistAliasesTableFilterComposer
+    extends Composer<_$AppDatabase, $ArtistAliasesTable> {
+  $$ArtistAliasesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get aliasId => $composableBuilder(
+    column: $table.aliasId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mainId => $composableBuilder(
+    column: $table.mainId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ArtistAliasesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArtistAliasesTable> {
+  $$ArtistAliasesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get aliasId => $composableBuilder(
+    column: $table.aliasId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mainId => $composableBuilder(
+    column: $table.mainId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ArtistAliasesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArtistAliasesTable> {
+  $$ArtistAliasesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get aliasId =>
+      $composableBuilder(column: $table.aliasId, builder: (column) => column);
+
+  GeneratedColumn<String> get mainId =>
+      $composableBuilder(column: $table.mainId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ArtistAliasesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArtistAliasesTable,
+          ArtistAliase,
+          $$ArtistAliasesTableFilterComposer,
+          $$ArtistAliasesTableOrderingComposer,
+          $$ArtistAliasesTableAnnotationComposer,
+          $$ArtistAliasesTableCreateCompanionBuilder,
+          $$ArtistAliasesTableUpdateCompanionBuilder,
+          (
+            ArtistAliase,
+            BaseReferences<_$AppDatabase, $ArtistAliasesTable, ArtistAliase>,
+          ),
+          ArtistAliase,
+          PrefetchHooks Function()
+        > {
+  $$ArtistAliasesTableTableManager(_$AppDatabase db, $ArtistAliasesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ArtistAliasesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ArtistAliasesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ArtistAliasesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> aliasId = const Value.absent(),
+                Value<String> mainId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArtistAliasesCompanion(
+                aliasId: aliasId,
+                mainId: mainId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String aliasId,
+                required String mainId,
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArtistAliasesCompanion.insert(
+                aliasId: aliasId,
+                mainId: mainId,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ArtistAliasesTable, ArtistAliase>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ArtistAliasesTable,
+                    ArtistAliase
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ArtistAliasesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArtistAliasesTable,
+      ArtistAliase,
+      $$ArtistAliasesTableFilterComposer,
+      $$ArtistAliasesTableOrderingComposer,
+      $$ArtistAliasesTableAnnotationComposer,
+      $$ArtistAliasesTableCreateCompanionBuilder,
+      $$ArtistAliasesTableUpdateCompanionBuilder,
+      (
+        ArtistAliase,
+        BaseReferences<_$AppDatabase, $ArtistAliasesTable, ArtistAliase>,
+      ),
+      ArtistAliase,
+      PrefetchHooks Function()
+    >;
+typedef $$ArtistNotSameTableCreateCompanionBuilder =
+    ArtistNotSameCompanion Function({
+      required String a,
+      required String b,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$ArtistNotSameTableUpdateCompanionBuilder =
+    ArtistNotSameCompanion Function({
+      Value<String> a,
+      Value<String> b,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ArtistNotSameTableFilterComposer
+    extends Composer<_$AppDatabase, $ArtistNotSameTable> {
+  $$ArtistNotSameTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get a => $composableBuilder(
+    column: $table.a,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get b => $composableBuilder(
+    column: $table.b,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ArtistNotSameTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArtistNotSameTable> {
+  $$ArtistNotSameTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get a => $composableBuilder(
+    column: $table.a,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get b => $composableBuilder(
+    column: $table.b,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ArtistNotSameTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArtistNotSameTable> {
+  $$ArtistNotSameTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get a =>
+      $composableBuilder(column: $table.a, builder: (column) => column);
+
+  GeneratedColumn<String> get b =>
+      $composableBuilder(column: $table.b, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ArtistNotSameTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArtistNotSameTable,
+          ArtistNotSameData,
+          $$ArtistNotSameTableFilterComposer,
+          $$ArtistNotSameTableOrderingComposer,
+          $$ArtistNotSameTableAnnotationComposer,
+          $$ArtistNotSameTableCreateCompanionBuilder,
+          $$ArtistNotSameTableUpdateCompanionBuilder,
+          (
+            ArtistNotSameData,
+            BaseReferences<
+              _$AppDatabase,
+              $ArtistNotSameTable,
+              ArtistNotSameData
+            >,
+          ),
+          ArtistNotSameData,
+          PrefetchHooks Function()
+        > {
+  $$ArtistNotSameTableTableManager(_$AppDatabase db, $ArtistNotSameTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ArtistNotSameTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ArtistNotSameTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ArtistNotSameTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> a = const Value.absent(),
+                Value<String> b = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArtistNotSameCompanion(
+                a: a,
+                b: b,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String a,
+                required String b,
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArtistNotSameCompanion.insert(
+                a: a,
+                b: b,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ArtistNotSameTable, ArtistNotSameData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ArtistNotSameTable,
+                    ArtistNotSameData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ArtistNotSameTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArtistNotSameTable,
+      ArtistNotSameData,
+      $$ArtistNotSameTableFilterComposer,
+      $$ArtistNotSameTableOrderingComposer,
+      $$ArtistNotSameTableAnnotationComposer,
+      $$ArtistNotSameTableCreateCompanionBuilder,
+      $$ArtistNotSameTableUpdateCompanionBuilder,
+      (
+        ArtistNotSameData,
+        BaseReferences<_$AppDatabase, $ArtistNotSameTable, ArtistNotSameData>,
+      ),
+      ArtistNotSameData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -21600,4 +22467,8 @@ class $AppDatabaseManager {
       $$TrackGenresTableTableManager(_db, _db.trackGenres);
   $$ArtistCountriesTableTableManager get artistCountries =>
       $$ArtistCountriesTableTableManager(_db, _db.artistCountries);
+  $$ArtistAliasesTableTableManager get artistAliases =>
+      $$ArtistAliasesTableTableManager(_db, _db.artistAliases);
+  $$ArtistNotSameTableTableManager get artistNotSame =>
+      $$ArtistNotSameTableTableManager(_db, _db.artistNotSame);
 }

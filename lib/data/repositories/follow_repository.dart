@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../core/clock.dart';
 import '../../services/online/ytm_artist.dart';
 import '../db/app_database.dart';
+import 'artist_alias_repository.dart';
 
 /// `last_error` of an artist whose page YouTube did not find.
 const kArtistNotFound = 'not_found';
@@ -66,16 +67,19 @@ class FollowRepository {
 
   /// A followed artist leaves the list (and its releases); an automatic one is
   /// excluded, so it does not come back while it stays among the most listened.
-  Future<void> unfollow(String id) async {
-    final row = await _get(id);
-    if (row == null) return;
-    if (row.isAuto) {
-      await (_db.update(_db.followedArtists)..where((a) => a.ytmId.equals(id)))
-          .write(const FollowedArtistsCompanion(excluded: Value(true)));
-    } else {
-      await (_db.delete(_db.followedArtists)..where((a) => a.ytmId.equals(id))).go();
-    }
-  }
+  /// It applies to every profile of the group of [id] (D-402).
+  Future<void> unfollow(String id) => _db.transaction(() async {
+        for (final member in await ArtistAliasRepository(_db).groupOf(id)) {
+          final row = await _get(member);
+          if (row == null) continue;
+          if (row.isAuto) {
+            await (_db.update(_db.followedArtists)..where((a) => a.ytmId.equals(member)))
+                .write(const FollowedArtistsCompanion(excluded: Value(true)));
+          } else {
+            await (_db.delete(_db.followedArtists)..where((a) => a.ytmId.equals(member))).go();
+          }
+        }
+      });
 
   /// Takes an automatic artist off the list when it left the most listened.
   Future<void> removeAuto(String id) => (_db.delete(_db.followedArtists)
@@ -96,8 +100,15 @@ class FollowRepository {
   Future<FollowedArtist?> _get(String id) =>
       (_db.select(_db.followedArtists)..where((a) => a.ytmId.equals(id))).getSingleOrNull();
 
-  Stream<bool> watchIsFollowed(String id) => (_db.select(_db.followedArtists)
-        ..where((a) => a.ytmId.equals(id) & a.excluded.equals(false)))
+  /// Whether [id] or any profile merged with it is followed.
+  Stream<bool> watchIsFollowed(String id) => _db
+      .customSelect(
+        'WITH m(id) AS (SELECT COALESCE((SELECT main_id FROM artist_aliases WHERE alias_id = ?1), ?1)) '
+        'SELECT 1 FROM followed_artists f, m WHERE f.excluded = 0 AND '
+        '(f.ytm_id = m.id OR f.ytm_id IN (SELECT alias_id FROM artist_aliases WHERE main_id = m.id)) LIMIT 1',
+        variables: [Variable<String>(id)],
+        readsFrom: {_db.followedArtists, _db.artistAliases},
+      )
       .watch()
       .map((l) => l.isNotEmpty);
 
@@ -111,7 +122,31 @@ class FollowRepository {
 
   /// Artists to check, the least recently checked first (never checked ones
   /// before any other); not the excluded nor the not found.
-  Future<List<FollowedArtist>> toCheck({int limit = 115}) => (_db.select(_db.followedArtists)
+  /// The profiles merged with a followed one are checked with it ([checkIds]),
+  /// so they have no row of their own; a followed alias whose main is followed
+  /// too is left out (the main covers it).
+  Future<List<FollowedArtist>> toCheck({int limit = 115}) async {
+    final aliases = await ArtistAliasRepository(_db).allAliases();
+    final rows = await _toCheck(1 << 30);
+    final ids = {for (final r in rows) r.ytmId};
+    return [for (final r in rows) if (!ids.contains(aliases[r.ytmId])) r].take(limit).toList();
+  }
+
+  /// The aliases of [id]'s group that joined it after [since] (ms).
+  Future<Set<String>> joinedAfter(String id, int since) async {
+    final main = await ArtistAliasRepository(_db).mainOf(id);
+    return {
+      for (final r in await (_db.select(_db.artistAliases)
+            ..where((x) => x.mainId.equals(main) & x.createdAt.isBiggerThanValue(since)))
+          .get())
+        r.aliasId,
+    };
+  }
+
+  /// Every profile to fetch for the followed row [id]: its whole group.
+  Future<List<String>> checkIds(String id) => ArtistAliasRepository(_db).groupOf(id);
+
+  Future<List<FollowedArtist>> _toCheck(int limit) => (_db.select(_db.followedArtists)
         ..where((a) => a.excluded.equals(false) & a.checksFailed.isSmallerThanValue(kMaxNotFound))
         ..orderBy([
           (a) => OrderingTerm.asc(a.lastCheckedAt),

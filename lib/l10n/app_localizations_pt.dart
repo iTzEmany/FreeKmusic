@@ -6609,4 +6609,80 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get smartCountError => 'Contagem indisponível';
+
+  @override
+  String artistMergedNote(int count) {
+    return '$count perfis unidos';
+  }
+
+  @override
+  String get artistSplit => 'Separar perfis';
+
+  @override
+  String get artistMergeWith => 'Unir com…';
+
+  @override
+  String artistSameWarn(String name) {
+    return 'Parece o mesmo artista de outro perfil ($name).';
+  }
+
+  @override
+  String get artistMergeYes => 'Unir';
+
+  @override
+  String get artistNotSame => 'São diferentes';
+
+  @override
+  String get artistMerged => 'Perfis unidos.';
+
+  @override
+  String get artistSplitDone => 'Perfis separados.';
+
+  @override
+  String get artistNotSameDone =>
+      'Certo, não vou perguntar de novo para estes dois perfis.';
+
+  @override
+  String get artistMergePick => 'Com qual perfil?';
+
+  @override
+  String get mergedSheetTitle => 'Perfis unidos';
+
+  @override
+  String get artistMainProfile => 'Principal';
+
+  @override
+  String get artistSeparate => 'Separar';
+
+  @override
+  String get artistSeparated => 'Perfil separado.';
+
+  @override
+  String get settingsMergedArtists => 'Artistas unidos';
+
+  @override
+  String get settingsMergedArtistsHint =>
+      'Veja os perfis unidos e separe-os, ou tire as marcas de «diferentes».';
+
+  @override
+  String get mergedArtistsEmpty => 'Nenhum artista unido.';
+
+  @override
+  String get mergedArtistsEmptyHelp =>
+      'Quando une dois perfis do mesmo artista, eles aparecem aqui.';
+
+  @override
+  String get mergedArtistsSplitAll => 'Separar tudo';
+
+  @override
+  String get notSameTitle => 'Marcados como diferentes';
+
+  @override
+  String get notSameRemove => 'Remover';
+
+  @override
+  String get notSameEmpty => 'Nenhum par está marcado como diferente.';
+
+  @override
+  String get openArtistPage => 'Abrir a página do artista';
 }

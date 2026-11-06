@@ -10536,6 +10536,144 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Conteggio non disponibile'**
   String get smartCountError;
+
+  /// No description provided for @artistMergedNote.
+  ///
+  /// In it, this message translates to:
+  /// **'{count} profili uniti'**
+  String artistMergedNote(int count);
+
+  /// No description provided for @artistSplit.
+  ///
+  /// In it, this message translates to:
+  /// **'Separa profili'**
+  String get artistSplit;
+
+  /// No description provided for @artistMergeWith.
+  ///
+  /// In it, this message translates to:
+  /// **'Unisci con…'**
+  String get artistMergeWith;
+
+  /// No description provided for @artistSameWarn.
+  ///
+  /// In it, this message translates to:
+  /// **'Sembra lo stesso artista di un altro profilo ({name}).'**
+  String artistSameWarn(String name);
+
+  /// No description provided for @artistMergeYes.
+  ///
+  /// In it, this message translates to:
+  /// **'Unisci'**
+  String get artistMergeYes;
+
+  /// No description provided for @artistNotSame.
+  ///
+  /// In it, this message translates to:
+  /// **'Sono diversi'**
+  String get artistNotSame;
+
+  /// No description provided for @artistMerged.
+  ///
+  /// In it, this message translates to:
+  /// **'Profili uniti.'**
+  String get artistMerged;
+
+  /// No description provided for @artistSplitDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Profili separati.'**
+  String get artistSplitDone;
+
+  /// No description provided for @artistNotSameDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Va bene, non lo chiederò più per questi due profili.'**
+  String get artistNotSameDone;
+
+  /// No description provided for @artistMergePick.
+  ///
+  /// In it, this message translates to:
+  /// **'Con quale profilo?'**
+  String get artistMergePick;
+
+  /// No description provided for @mergedSheetTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Profili uniti'**
+  String get mergedSheetTitle;
+
+  /// No description provided for @artistMainProfile.
+  ///
+  /// In it, this message translates to:
+  /// **'Principale'**
+  String get artistMainProfile;
+
+  /// No description provided for @artistSeparate.
+  ///
+  /// In it, this message translates to:
+  /// **'Separa'**
+  String get artistSeparate;
+
+  /// No description provided for @artistSeparated.
+  ///
+  /// In it, this message translates to:
+  /// **'Profilo separato.'**
+  String get artistSeparated;
+
+  /// No description provided for @settingsMergedArtists.
+  ///
+  /// In it, this message translates to:
+  /// **'Artisti uniti'**
+  String get settingsMergedArtists;
+
+  /// No description provided for @settingsMergedArtistsHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Vedi i profili uniti e separali, o togli i «diversi».'**
+  String get settingsMergedArtistsHint;
+
+  /// No description provided for @mergedArtistsEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun artista unito.'**
+  String get mergedArtistsEmpty;
+
+  /// No description provided for @mergedArtistsEmptyHelp.
+  ///
+  /// In it, this message translates to:
+  /// **'Quando unisci due profili dello stesso artista, compaiono qui.'**
+  String get mergedArtistsEmptyHelp;
+
+  /// No description provided for @mergedArtistsSplitAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Separa tutto'**
+  String get mergedArtistsSplitAll;
+
+  /// No description provided for @notSameTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Segnati come diversi'**
+  String get notSameTitle;
+
+  /// No description provided for @notSameRemove.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovi'**
+  String get notSameRemove;
+
+  /// No description provided for @notSameEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna coppia segnata come diversa.'**
+  String get notSameEmpty;
+
+  /// No description provided for @openArtistPage.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri la pagina dell’artista'**
+  String get openArtistPage;
 }
 
 class _AppLocalizationsDelegate

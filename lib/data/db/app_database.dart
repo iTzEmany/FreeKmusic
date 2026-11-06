@@ -8,7 +8,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 16;
+const kSchemaVersion = 17;
 
 @DriftDatabase(
   tables: [
@@ -34,6 +34,8 @@ const kSchemaVersion = 16;
     ActivityLogRows,
     TrackGenres,
     ArtistCountries,
+    ArtistAliases,
+    ArtistNotSame,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -170,6 +172,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(trackGenres);
         await m.createIndex(trackGenresGenre);
         await m.createTable(artistCountries);
+      }
+      if (from < 17) {
+        await m.createTable(artistAliases);
+        await m.createTable(artistNotSame);
       }
     },
     beforeOpen: (details) async {

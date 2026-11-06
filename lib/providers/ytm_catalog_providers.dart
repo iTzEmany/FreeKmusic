@@ -11,6 +11,7 @@ import '../services/online/youtube_service.dart';
 import '../services/online/ytm_artist.dart';
 import '../services/online/ytm_catalog.dart';
 import 'library_providers.dart';
+import 'database_providers.dart' show artistAliasRepositoryProvider;
 import 'settings_providers.dart';
 import 'youtube_providers.dart';
 
@@ -38,6 +39,7 @@ final artistLinkResolverProvider = Provider<ArtistLinkResolver>((ref) =>
       search: (name) => ref
           .read(ytmCatalogProvider)
           .searchArtists(name, ref.read(ytmLanguageProvider)),
+      aliases: () => ref.read(artistAliasRepositoryProvider).allAliases(),
     ));
 
 /// An artist page. A failure is shown with its own «Riprova»: no silent retries.

@@ -6625,4 +6625,80 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get smartCountError => 'Anzahl nicht verfügbar';
+
+  @override
+  String artistMergedNote(int count) {
+    return '$count Profile zusammengeführt';
+  }
+
+  @override
+  String get artistSplit => 'Profile trennen';
+
+  @override
+  String get artistMergeWith => 'Zusammenführen mit…';
+
+  @override
+  String artistSameWarn(String name) {
+    return 'Das scheint derselbe Künstler wie ein anderes Profil zu sein ($name).';
+  }
+
+  @override
+  String get artistMergeYes => 'Zusammenführen';
+
+  @override
+  String get artistNotSame => 'Sind verschieden';
+
+  @override
+  String get artistMerged => 'Profile zusammengeführt.';
+
+  @override
+  String get artistSplitDone => 'Profile getrennt.';
+
+  @override
+  String get artistNotSameDone =>
+      'Okay, ich frage für diese beiden Profile nicht mehr nach.';
+
+  @override
+  String get artistMergePick => 'Welches Profil?';
+
+  @override
+  String get mergedSheetTitle => 'Vereinte Profile';
+
+  @override
+  String get artistMainProfile => 'Haupt';
+
+  @override
+  String get artistSeparate => 'Trennen';
+
+  @override
+  String get artistSeparated => 'Profil getrennt.';
+
+  @override
+  String get settingsMergedArtists => 'Vereinte Künstler';
+
+  @override
+  String get settingsMergedArtistsHint =>
+      'Vereinte Profile ansehen und trennen oder die „Verschieden“-Markierungen entfernen.';
+
+  @override
+  String get mergedArtistsEmpty => 'Keine vereinten Künstler.';
+
+  @override
+  String get mergedArtistsEmptyHelp =>
+      'Wenn du zwei Profile desselben Künstlers vereinst, erscheinen sie hier.';
+
+  @override
+  String get mergedArtistsSplitAll => 'Alle trennen';
+
+  @override
+  String get notSameTitle => 'Als verschieden markiert';
+
+  @override
+  String get notSameRemove => 'Entfernen';
+
+  @override
+  String get notSameEmpty => 'Kein Paar ist als verschieden markiert.';
+
+  @override
+  String get openArtistPage => 'Künstlerseite öffnen';
 }

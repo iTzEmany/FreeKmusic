@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -147,4 +148,56 @@ void main() {
     expect(await follows.lookups(), isEmpty);
   });
 
+
+  test('following the main profile makes the alias followed too; unfollowing the alias stops both', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    expect(await follows.watchIsFollowed('UC2').first, isTrue);
+    expect(await follows.watchIsFollowed('UC3').first, isFalse);
+    await follows.unfollow('UC2');
+    expect(await follows.all(), isEmpty);
+    expect(await follows.watchIsFollowed('UC2').first, isFalse);
+  });
+
+  test('excluding an automatic profile excludes the whole group', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.followAuto(artist('UC1'));
+    await follows.followAuto(artist('UC2'));
+    await follows.unfollow('UC1');
+    expect((await follows.all()).map((r) => r.excluded), [true, true]);
+    expect(await follows.watchIsFollowed('UC2').first, isFalse);
+  });
+
+  test('the group of a followed main is checked with it, with no row of its own; split frees the alias', () async {
+    final repo = ArtistAliasRepository(db);
+    await repo.merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    expect((await follows.toCheck()).map((r) => r.ytmId), ['UC1']);
+    expect(await follows.checkIds('UC1'), ['UC1', 'UC2']);
+    expect((await follows.all()).length, 1);
+    expect((await follows.watchFollowed().first).length, 1);
+    await repo.split('UC2');
+    expect(await follows.watchIsFollowed('UC2').first, isFalse);
+    expect(await follows.checkIds('UC1'), ['UC1']);
+  });
+
+  test('an excluded main leaves its aliases unchecked', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    await follows.unfollow('UC1');
+    expect(await follows.toCheck(), isEmpty);
+  });
+
+  test('a followed alias whose main is followed too is checked once', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    await follows.follow(artist('UC2'));
+    expect((await follows.toCheck()).map((r) => r.ytmId), ['UC1']);
+  });
+
+  test('following an alias makes its main profile followed', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC2'));
+    expect(await follows.watchIsFollowed('UC1').first, isTrue);
+  });
 }

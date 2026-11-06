@@ -96,10 +96,13 @@ class NoArtistLink extends ArtistLink {
 /// Library first, then the artist's YouTube Music page. The network is used
 /// only when the library has nobody and there is no [ytmId]; its errors propagate.
 class ArtistLinkResolver {
-  const ArtistLinkResolver({required this.library, required this.search});
+  const ArtistLinkResolver({required this.library, required this.search, this.aliases});
 
   final Future<ArtistSummary?> Function(String name) library;
   final Future<List<YtmArtistRef>> Function(String name) search;
+
+  /// Alias id -> main id of the merged artists (D-402); a group opens its main profile.
+  final Future<Map<String, String>> Function()? aliases;
 
   Future<ArtistLink> resolve(String name, {String? ytmId}) async {
     final local = await library(name);
@@ -107,7 +110,7 @@ class ArtistLinkResolver {
     if (ytmId != null && ytmId.isNotEmpty) {
       return OnlineArtist(YtmArtistRef(id: ytmId, name: name));
     }
-    return switch (pickYtmArtist(name, await search(name))) {
+    return switch (pickYtmArtist(name, await search(name), aliases: await aliases?.call() ?? const {})) {
       ExactArtist(:final artist) => OnlineArtist(artist),
       ChooseArtist(:final artists) => ChooseArtists(artists),
       NoArtist() => const NoArtistLink(),
