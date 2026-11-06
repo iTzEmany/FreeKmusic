@@ -4,9 +4,11 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
+import 'package:codecore/ui/widgets/shrinking_header.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -97,44 +99,52 @@ void main() {
     await t.pump();
   }
 
+  // Visible height of the search and chips block (0 once it is gone).
   double barHeight(WidgetTester t) =>
-      t.getSize(find.byType(SizeTransition)).height;
+      t.renderObject<RenderSliver>(find.byType(ShrinkingHeader, skipOffstage: false)).geometry!.paintExtent;
 
-  testWidgets('the bar hides scrolling down and shows scrolling up', (
+  testWidgets('the search block follows the scroll 1:1 and returns going up', (
     tester,
   ) async {
     final h = await _open(tester, tracks: 40);
-    expect(barHeight(tester), greaterThan(100));
+    final full = barHeight(tester);
+    expect(full, greaterThan(100));
+    await wheel(tester, 100);
+    expect(barHeight(tester), full - 100);
     await wheel(tester, 400);
-    await _settle(tester);
     expect(barHeight(tester), 0);
-    await wheel(tester, -150);
-    await _settle(tester);
-    expect(barHeight(tester), greaterThan(100));
+    // The fixed row stays while the block is gone.
+    expect(find.byType(PlayCircleButton), findsOneWidget);
+    await wheel(tester, -60);
+    expect(barHeight(tester), 60);
     await h.dispose(tester);
   });
 
-  testWidgets('the A-Z strip reaches the last letter with the bar hidden', (
+  testWidgets('an active search survives the block scrolling away and back', (
+    tester,
+  ) async {
+    final h = await _open(tester, tracks: 40);
+    await tester.enterText(find.byType(TextField), 'Song');
+    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
+    await wheel(tester, 600);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.byType(TrackRow), findsWidgets);
+    await wheel(tester, -600);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'Song');
+    await h.dispose(tester);
+  });
+
+  testWidgets('the A-Z strip reaches the last letter with the block gone', (
     tester,
   ) async {
     final h = await _open(tester, tracks: 40, sort: SortOption.title);
     await wheel(tester, 400);
-    await _settle(tester);
     expect(barHeight(tester), 0);
     await tester.dragFrom(const Offset(390, 400), const Offset(0, 495));
     await _settle(tester);
     // Title order: «Song 9» is the last row.
     expect(find.text('Song 9'), findsOneWidget);
-    await h.dispose(tester);
-  });
-
-  testWidgets('the bar comes back when the list fits again', (tester) async {
-    final h = await _open(tester, tracks: 9);
-    await wheel(tester, 400);
-    await _settle(tester);
-    await _settle(tester); // hide, then the show it triggers
-    // Hidden, the list fits and cannot scroll: the bar must not stay away.
-    expect(barHeight(tester), greaterThan(100));
     await h.dispose(tester);
   });
 
