@@ -8,6 +8,7 @@ import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
 import '../../services/backup/user_data.dart';
 import '../db/app_database.dart';
+import 'artist_country_repository.dart';
 import 'credits_repository.dart';
 import 'track_genre_repository.dart';
 import 'track_repository.dart';
@@ -99,7 +100,10 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       // A hand edit here sets the genres from its text; otherwise the backup's only fill a track that has none.
       final genreRepo = TrackGenreRepository(db);
       if (upd.userEdited.present) {
-        await genreRepo.replace(id, splitGenres([e!.genre]));
+        // The backup's own list wins when it starts with the genre written by hand.
+        final text = splitGenres([e!.genre]);
+        final same = u.genres.isNotEmpty && text.isNotEmpty && u.genres.first.toLowerCase() == text.first.toLowerCase();
+        await genreRepo.replace(id, same ? u.genres : text);
       } else if (u.genres.isNotEmpty && (await genreRepo.of(id)).isEmpty) {
         await genreRepo.replace(id, u.genres);
       }
@@ -254,17 +258,13 @@ Future<void> _mergeFollowedArtists(
 /// New artists are added; for one already here the more recent check wins.
 Future<void> _mergeArtistCountries(AppDatabase db, List<ArtistCountryData> items) async {
   if (items.isEmpty) return;
-  final have = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c.checkedAt};
+  final have = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c};
+  final repo = ArtistCountryRepository(db);
   for (final c in items) {
     if (c.artistKey.isEmpty) continue;
     final local = have[c.artistKey];
-    if (local != null && local >= c.checkedAt) continue;
-    have[c.artistKey] = c.checkedAt;
-    await db.into(db.artistCountries).insertOnConflictUpdate(ArtistCountriesCompanion.insert(
-          artistKey: c.artistKey,
-          country: Value(c.country?.toUpperCase()),
-          source: Value(c.source),
-          checkedAt: c.checkedAt,
-        ));
+    if (local != null && (local.checkedAt >= c.checkedAt || (local.country != null && c.country == null))) continue;
+    await repo.upsert(c.artistKey, country: c.country, source: c.source, checkedAtMs: c.checkedAt);
+    have[c.artistKey] = ArtistCountry(artistKey: c.artistKey, country: c.country, source: c.source, checkedAt: c.checkedAt);
   }
 }

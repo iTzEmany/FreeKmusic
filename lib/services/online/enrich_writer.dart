@@ -65,7 +65,7 @@ class EnrichWriter {
           curiosities: opt(curiosity),
         ),
       );
-      if (genre != null) await TrackGenreRepository(_db).write(t.id, splitGenres([genre]));
+      if (genre != null) await TrackGenreRepository(_db).write(t.id, splitGenres([genre], slash: false));
     });
     await _tracks.settleMovedCover(t, key);
     final wrote = [title, artist, album, year, genre, disc, isrc, number, plain, synced, curiosity]

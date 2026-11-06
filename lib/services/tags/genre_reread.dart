@@ -19,7 +19,7 @@ class GenreRereadReport {
 }
 
 /// One-off (D-390): reads the tags of the existing library again, in batches, to fill
-/// `track_genres` with every genre. Only `track_genres` is written, never `tracks.genre`.
+/// `track_genres` with every genre. `tracks.genre` is only brought back to the first genre on rows not edited by hand.
 /// The bookmark is saved after each batch, so a stopped run carries on where it was.
 class GenreReread {
   GenreReread({
@@ -58,13 +58,21 @@ class GenreReread {
       }
       await waitIdle();
       if (cancelled()) break;
-      // Each read runs in its own isolate (the reader); a hand-edited genre stays what the user wrote.
-      final lists = await Future.wait([
-        for (final r in rows)
-          r.userEdited ? Future.value(splitGenres([r.genre])) : _fromFile(r),
-      ]);
+      // Each read runs in its own isolate (the reader).
+      final files = await Future.wait([for (final r in rows) _fromFile(r)]);
+      // The user may have edited a genre while the files were read: decide with the state of now.
+      final now = await genres.editState([for (final r in rows) r.id]);
       for (var i = 0; i < rows.length; i++) {
-        if (await genres.replace(rows[i].id, lists[i])) changed++;
+        final cur = now[rows[i].id];
+        if (cur == null) continue;
+        final own = splitGenres([cur.genre]);
+        final fromFile = files[i];
+        // A hand edit keeps its genre; the file's list is used only when it starts with that same genre.
+        final useFile = fromFile.isNotEmpty &&
+            (!cur.userEdited || (own.isNotEmpty && own.first.toLowerCase() == fromFile.first.toLowerCase()));
+        final list = useFile ? fromFile : own;
+        if (await genres.replace(rows[i].id, list)) changed++;
+        if (!cur.userEdited && list.isNotEmpty) await genres.setFirstGenre(rows[i].id, list.first);
       }
       read += rows.length;
       after = rows.last.id;
@@ -73,14 +81,13 @@ class GenreReread {
     return GenreRereadReport(read: read, changed: changed);
   }
 
-  /// A file that gives nothing (unreadable, no tag) keeps what the row says.
+  /// The genres of the file; empty when it gives nothing or cannot be read.
   Future<List<String>> _fromFile(GenreRereadRow r) async {
     try {
-      final fromFile = (await reader.read(r.path, withCover: false)).genres;
-      return fromFile.isNotEmpty ? fromFile : splitGenres([r.genre]);
+      return (await reader.read(r.path, withCover: false)).genres;
     } on Object catch (e, st) {
       AppLog.w('genre re-read: ${r.path}', e, st);
-      return splitGenres([r.genre]);
+      return const [];
     }
   }
 }

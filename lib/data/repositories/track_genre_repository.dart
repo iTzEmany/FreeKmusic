@@ -43,6 +43,25 @@ class TrackGenreRepository {
   static bool _same(List<String> a, List<String> b) =>
       a.length == b.length && [for (var i = 0; i < a.length; i++) a[i] == b[i]].every((x) => x);
 
+  /// The current `user_edited` and `genre` of [ids], by id (a deleted track is absent).
+  Future<Map<int, ({bool userEdited, String? genre})>> editState(List<int> ids) async {
+    final rows = await (_db.selectOnly(_db.tracks)
+          ..addColumns([_db.tracks.id, _db.tracks.userEdited, _db.tracks.genre])
+          ..where(_db.tracks.id.isIn(ids)))
+        .get();
+    return {
+      for (final r in rows)
+        r.read(_db.tracks.id)!: (userEdited: r.read(_db.tracks.userEdited)!, genre: r.read(_db.tracks.genre)),
+    };
+  }
+
+  /// Sets `tracks.genre` of [trackId] to [genre] when it differs (no read first).
+  Future<void> setFirstGenre(int trackId, String genre) => _db.customUpdate(
+        'UPDATE tracks SET genre = ?1 WHERE id = ?2 AND genre IS NOT ?1',
+        variables: [Variable<String>(genre), Variable<int>(trackId)],
+        updates: {_db.tracks},
+      );
+
   /// Music tracks with a file, by id above [after], for the re-read.
   Future<List<GenreRereadRow>> rereadBatch(int after, int limit) async {
     final rows = await _db

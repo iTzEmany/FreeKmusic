@@ -372,6 +372,13 @@ void main() {
       expect(await genresOf('a'), ['Blues', 'Soul']);
     });
 
+    test('a hand edit with the backup list starting at the same genre keeps the whole list', () async {
+      await merge(UserData(createdAt: 1, tracks: [
+        TrackUserData(ref: ref('a'), edit: const TrackEditData(title: 'x', genre: 'Rock'), genres: const ['rock', 'Pop']),
+      ]));
+      expect(await genresOf('x'), ['rock', 'Pop']);
+    });
+
     test('the genres survive collect -> json -> merge into another library', () async {
       final a = await track('a');
       await TrackGenreRepository(db).replace(a.id, ['Rock', 'Pop']);
@@ -396,11 +403,13 @@ void main() {
       await merge(UserData(createdAt: 1, artistCountries: const [
         ArtistCountryData(artistKey: 'queen', country: 'US', source: 'wikidata', checkedAt: 50),
         ArtistCountryData(artistKey: 'abba', country: null, source: null, checkedAt: 200),
+        ArtistCountryData(artistKey: 'zz', country: null, source: null, checkedAt: 5),
         ArtistCountryData(artistKey: 'bjork', country: 'is', source: 'musicbrainz', checkedAt: 10),
       ]));
       final all = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c};
       expect(all['queen']!.country, 'GB');
-      expect((all['abba']!.country, all['abba']!.checkedAt), (null, 200));
+      expect((all['abba']!.country, all['abba']!.checkedAt), ('SE', 100), reason: 'a newer «not found» never erases a country');
+      expect(all['zz']!.country, isNull);
       expect(all['bjork']!.country, 'IS');
     });
   });

@@ -183,6 +183,17 @@ void main() {
     expect(await TrackGenreRepository(r.db).of(id), ['Rock', 'Pop']);
   });
 
+  test('a web genre with a slash stays one genre, and tracks.genre is the first (D-390)', () async {
+    final id = await r.add();
+    final t = (await r.repo.getById(id))!;
+    final proposal = EnrichmentProposal(
+      track: t,
+      meta: const ItunesMatch(title: 'Song', artist: 'Band', genre: 'Hip-Hop/Rap; Pop'),
+    );
+    expect(await r.svc.apply(proposal, {EnrichField.genre}), isTrue);
+    expect(await TrackGenreRepository(r.db).of(id), ['Hip-Hop/Rap', 'Pop']);
+  });
+
   test('apply that writes no field leaves the status as it was', () async {
     final id = await r.add();
     final t = (await r.repo.getById(id))!;

@@ -1,13 +1,13 @@
 import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../data/repositories/artist_country_repository.dart';
-import '../import/track_matcher.dart' show matchKey;
+import '../../data/repositories/artist_info_repository.dart' show ArtistInfoRepository;
 import 'http_client.dart';
 import 'musicbrainz_client.dart';
 import 'query_cleaner.dart' show extractPrimaryArtist;
 
 /// The key of `artist_countries`: `matchKey` of the main artist's name, the one every artist table uses.
-String artistCountryKey(String artist) => matchKey(extractPrimaryArtist(artist));
+String artistCountryKey(String artist) => ArtistInfoRepository.keyOf(artist);
 
 /// A "not found" is asked again only after this long.
 const kArtistCountryRetry = Duration(days: 30);

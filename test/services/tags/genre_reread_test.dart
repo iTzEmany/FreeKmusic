@@ -18,6 +18,19 @@ class _Reader implements TagReader {
   }
 }
 
+class _Racing implements TagReader {
+  _Racing(this.inner, this.onRead);
+  final _Reader inner;
+  final Future<void> Function() onRead;
+
+  @override
+  Future<TagInfo> read(String path, {bool withCover = true}) async {
+    final info = await inner.read(path, withCover: withCover);
+    await onRead();
+    return info;
+  }
+}
+
 void main() {
   late AppDatabase db;
   late TrackGenreRepository genres;
@@ -82,14 +95,41 @@ void main() {
     expect(await genres.of(kept), ['Soul', 'Funk']);
   });
 
-  test('a hand-edited track is not read, and episodes and missing files are skipped', () async {
-    final edited = await add('/edited', genre: 'Mine', edited: true);
+  test('a hand-edited track keeps its genre, and the file list is used only when it starts with it', () async {
+    final other = await add('/other', genre: 'Mine', edited: true);
+    final same = await add('/same', genre: 'rock', edited: true);
+    final r = _Reader({
+      '/other': const TagInfo(genres: ['File', 'Pop']),
+      '/same': const TagInfo(genres: ['Rock', 'Pop']),
+    });
+    await job(r).run();
+    expect(await genres.of(other), ['Mine']);
+    expect(await genres.of(same), ['Rock', 'Pop']);
+  });
+
+  test('tracks.genre goes back to the first genre on a row not edited by hand', () async {
+    final raw = await add('/raw', genre: 'Rock; Pop');
+    await job(_Reader({'/raw': const TagInfo(genres: ['Rock', 'Pop'])})).run();
+    expect((await (db.select(db.tracks)..where((t) => t.id.equals(raw))).getSingle()).genre, 'Rock');
+  });
+
+  test('a genre edited by hand while the files are read is not overwritten', () async {
+    final a = await add('/a', genre: 'Old');
+    final r = _Reader({'/a': const TagInfo(genres: ['Old', 'Pop'])});
+    final racing = _Racing(r, () => (db.update(db.tracks)..where((t) => t.id.equals(a)))
+        .write(const TracksCompanion(genre: Value('Mine'), userEdited: Value(true))));
+    await GenreReread(
+      genres: genres, reader: racing, waitIdle: () async {}, loadAfter: () => after, saveAfter: (id) => after = id, markDone: () {},
+    ).run();
+    expect(await genres.of(a), ['Mine']);
+  });
+
+  test('episodes and missing files are skipped', () async {
     await add('/episode', kind: 1);
     final gone = await add('/gone');
     await (db.update(db.tracks)..where((t) => t.id.equals(gone))).write(const TracksCompanion(missing: Value(true)));
-    final r = _Reader({'/edited': const TagInfo(genres: ['File'])});
+    final r = _Reader({});
     await job(r).run();
-    expect(await genres.of(edited), ['Mine']);
     expect(r.reads, isEmpty);
   });
 

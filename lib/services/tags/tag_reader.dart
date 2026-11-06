@@ -60,13 +60,15 @@ class TagInfo {
 }
 
 /// Genres from raw tag values: split on `;`, `/` and NUL (ID3v2.4 lists), trimmed,
-/// blanks dropped, repeats (ignoring case) kept once, in order.
-List<String> splitGenres(Iterable<String?> raw) {
+/// blanks dropped, repeats (ignoring case) kept once, in order. [slash] false keeps `/` inside a
+/// name (web genres such as «Hip-Hop/Rap»).
+List<String> splitGenres(Iterable<String?> raw, {bool slash = true}) {
+  final sep = slash ? RegExp(r'[;/\u0000]') : RegExp(r'[;\u0000]');
   final seen = <String>{};
   return [
     for (final r in raw)
       if (r != null)
-        for (final g in r.split(RegExp(r'[;/\u0000]')))
+        for (final g in r.split(sep))
           if (g.trim().replaceAll(RegExp(r'\s+'), ' ') case final t when t.isNotEmpty && seen.add(t.toLowerCase())) t,
   ];
 }
