@@ -1,4 +1,6 @@
+import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:codecore/ui/screens/settings/merged_artists_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +14,7 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 void main() {
-  Future<(Harness, ArtistAliasRepository)> open(WidgetTester tester, {bool data = true}) async {
+  Future<(Harness, ArtistAliasRepository)> open(WidgetTester tester, {bool data = true, Future<void> Function(AppDatabase)? seed}) async {
     tester.view.physicalSize = const Size(600, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -25,6 +27,7 @@ void main() {
         await repo.markNotSame('UCx', 'UCy');
       });
     }
+    if (seed != null) await tester.runAsync(() => seed(h.db));
     await h.pump(tester, const MergedArtistsScreen());
     await _settle(tester);
     return (h, repo);
@@ -52,6 +55,19 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('split-all-UCa')));
     await _settle(tester);
     expect(await tester.runAsync(() => repo.groupOf('UCa')), ['UCa']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the different pairs show the names known locally, the id only when none is', (tester) async {
+    final (h, _) = await open(tester, seed: (db) async {
+      await db.into(db.followedArtists).insert(FollowedArtistsCompanion.insert(ytmId: 'UCx', name: 'Name X', excluded: const Value(true)));
+      await db.into(db.artistLookups).insert(ArtistLookupsCompanion.insert(
+          artistKey: 'k', name: 'y', status: 0, checkedAt: 1, ytmId: const Value('UCy'), ytmName: const Value('Name Y')));
+    });
+    expect(find.text('Name X'), findsOneWidget);
+    expect(find.text('Name Y'), findsOneWidget);
+    expect(find.text('UCx'), findsNothing);
+    expect(find.text('UCa'), findsWidgets, reason: 'no name known: the id');
     await h.dispose(tester);
   });
 

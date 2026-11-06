@@ -118,6 +118,18 @@ class FollowRepository {
         ..orderBy([(a) => OrderingTerm.asc(a.name.collate(Collate.noCase))]))
       .watch();
 
+  /// Names by `UC…` id from what is stored locally: the lookups of most-listened names, then the
+  /// followed artists (also the excluded), which win. No request.
+  Stream<Map<String, String>> watchNames() => _db
+          .customSelect(
+            'SELECT ytm_id AS id, ytm_name AS name, 0 AS pri FROM artist_lookups '
+            'WHERE ytm_id IS NOT NULL AND ytm_name IS NOT NULL '
+            'UNION ALL SELECT ytm_id, name, 1 FROM followed_artists ORDER BY pri',
+            readsFrom: {_db.artistLookups, _db.followedArtists},
+          )
+          .watch()
+          .map((rows) => {for (final r in rows) r.read<String>('id'): r.read<String>('name')});
+
   Future<List<FollowedArtist>> all() => _db.select(_db.followedArtists).get();
 
   /// Artists to check, the least recently checked first (never checked ones

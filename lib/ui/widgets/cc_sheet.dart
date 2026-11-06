@@ -23,11 +23,9 @@ Future<T?> showCcSheet<T>({
     builder: builder,
     isScrollControlled: isScrollControlled,
     showDragHandle: showDragHandle,
-    // Wide: the root route's barrier also covers the sidebar, the side panel
-    // and the player bar, so only one sheet can be open.
-    useRootNavigator:
-        useRootNavigator ||
-        MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint,
+    // Always the root route: its barrier covers the dock (phone) and the sidebar, side
+    // panel and player bar (wide), so a sheet is never drawn under them.
+    useRootNavigator: true,
     constraints: constraints,
     barrierLabel: barrierLabel,
     sheetAnimationStyle: AnimationStyle(duration: d, reverseDuration: d),

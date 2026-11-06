@@ -307,7 +307,8 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     }
 
     final card = s.card;
-    final children = <Widget>[];
+    // Above every online row, the cards and the Artists and Albums rows too (D-399).
+    final children = <Widget>[if (showLibrary) LibraryTracksSection(query: s.query, owned: owned)];
     switch (card) {
       case TopArtist(:final artist):
         children.add(
@@ -341,7 +342,6 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       onOpen: _openArtist,
     );
     children.addAll(card is TopAlbum ? [albums, artists] : [artists, albums]);
-    if (showLibrary) children.add(LibraryTracksSection(query: s.query, owned: owned));
     var rest = best;
     if (s.intent == SearchIntent.artistPage && card is TopArtist) {
       final mine = [

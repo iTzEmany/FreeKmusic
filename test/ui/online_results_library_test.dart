@@ -148,10 +148,12 @@ void main() {
     bool intentKnown = true,
     TopCard? card,
     Object? error,
+    List<YtmArtistRef> artists = const [],
   }) async {
     engine.add(
       SmartSearchState(
         query: 'song',
+        artists: artists,
         best: best,
         others: others,
         intent: intent,
@@ -373,6 +375,19 @@ void main() {
     expect(find.text('Nessun risultato'), findsOneWidget);
     expect(find.byKey(const ValueKey('online-library')), findsOneWidget);
     expect(find.text('Song 0'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a song search shows the library above the Artists row and the online rows', (tester) async {
+    await open(tester);
+    await emit(
+      tester,
+      best: [_row('a', 'Mother', artist: 'Pink Floyd')],
+      artists: const [YtmArtistRef(id: 'UC9', name: 'Other Artist')],
+    );
+    final lib = tester.getTopLeft(find.byKey(const ValueKey('online-library'))).dy;
+    expect(lib, lessThan(tester.getTopLeft(find.byKey(const ValueKey('online-artists'))).dy));
+    expect(lib, lessThan(tester.getTopLeft(find.byKey(const ValueKey('row-a'))).dy));
     await h.dispose(tester);
   });
 
