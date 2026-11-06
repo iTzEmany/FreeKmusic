@@ -6,6 +6,7 @@ import '../../core/app_log.dart';
 import '../../data/repositories/podcast_repository.dart';
 import '../online/http_client.dart';
 import 'apple_podcasts.dart';
+import 'podcast_cover.dart';
 import 'podcast_models.dart';
 import 'ytm_podcast_sync.dart';
 
@@ -36,10 +37,12 @@ class PodcastService {
     this.saveCover,
     this.ytm,
     this.podcastsDir,
+    ApplePodcasts? apple,
     RateLimiter? searchLimiter,
     DateTime Function()? now,
   })  : _now = now ?? DateTime.now,
-        apple = ApplePodcasts(
+        apple = apple ??
+            ApplePodcasts(
           web: web,
           limiter: searchLimiter ?? RateLimiter(minGap: const Duration(seconds: 1)),
           now: now ?? DateTime.now,
@@ -50,8 +53,7 @@ class PodcastService {
   final FeedParser parse;
   final WebClient web;
 
-  /// Downloads and stores the cover at [imageUrl]; returns its cover key.
-  final Future<String?> Function(int podcastId, String imageUrl)? saveCover;
+  final PodcastCoverSaver? saveCover;
   /// Reads the shows that come from YouTube Music (D-404).
   final YtmPodcastSync? ytm;
 
@@ -108,22 +110,8 @@ class PodcastService {
     final feedUrl = normalizeUrl(url);
     final feed = await _read(feedUrl);
     final id = await repo.subscribe(feedUrl, feed, now: _nowMs);
-    await _cover(id, feed.imageUrl);
+    await storePodcastCover(repo, saveCover, id, feed.imageUrl);
     return id;
-  }
-
-  Future<void> _cover(int id, String? imageUrl) async {
-    final save = saveCover;
-    if (save == null || imageUrl == null) return;
-    final podcast = await repo.byId(id);
-    if (podcast == null || podcast.coverKey != null) return;
-    try {
-      final key = await save(id, imageUrl);
-      if (key != null) await repo.setCoverKey(id, key);
-    } on Object catch (e, st) {
-      // A missing cover must never fail a subscription.
-      AppLog.w('podcast cover failed: $imageUrl', e, st);
-    }
   }
 
   /// Removes the podcast and the downloaded episodes: their library rows, and
@@ -165,7 +153,7 @@ class PodcastService {
     final feed = await _read(podcast.feedUrl);
     final added = await repo.upsertEpisodes(podcastId, feed.episodes);
     await repo.markChecked(podcastId, _nowMs);
-    await _cover(podcastId, feed.imageUrl ?? podcast.imageUrl);
+    await storePodcastCover(repo, saveCover, podcastId, feed.imageUrl ?? podcast.imageUrl);
     return added;
   }
 

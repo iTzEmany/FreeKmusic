@@ -6,9 +6,9 @@ import 'youtube_service.dart';
 /// served: m4a when there is one, else opus in webm).
 const downloadExtensions = ['mp3', 'm4a', 'opus', 'ogg', 'webm'];
 
-/// Audio-only formats of a YouTube Music podcast episode (139 m4a, 250 and 249
-/// opus; checked 2026-11-05). Never `best`: that would take the video.
-const podcastAudioSelector = '139/250/249/bestaudio';
+/// Audio-only format of a YouTube Music podcast episode: the best m4a, else the
+/// best audio. Never `best`: that would take the video.
+const podcastAudioSelector = 'bestaudio[ext=m4a]/bestaudio';
 
 const _preferM4a = 'bestaudio[ext=m4a]/bestaudio/best';
 

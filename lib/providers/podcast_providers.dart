@@ -9,9 +9,12 @@ import '../data/db/app_database.dart';
 import '../data/repositories/podcast_repository.dart';
 import '../services/covers/cover_store.dart';
 import '../services/online/http_client.dart';
+import '../services/online/youtube_service.dart' show YtErrorKind;
 import '../services/podcast/episode_downloader.dart';
+import '../services/podcast/apple_podcasts.dart';
 import '../services/podcast/feed_fetcher.dart';
 import '../services/podcast/podcast_cleanup.dart';
+import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/podcast_service.dart';
 import '../services/online/ytm_podcasts.dart';
@@ -38,11 +41,29 @@ class PodcastRefreshing extends Notifier<bool> {
 
 final podcastRefreshingProvider = NotifierProvider<PodcastRefreshing, bool>(PodcastRefreshing.new);
 
+/// One Apple directory client for the whole app: its cache and rate limit
+/// must outlive a rebuild of [podcastServiceProvider].
+final applePodcastsProvider = Provider<ApplePodcasts>((ref) => ApplePodcasts(
+      web: DioWebClient(),
+      limiter: RateLimiter(minGap: const Duration(seconds: 1)),
+      now: DateTime.now,
+    ));
+
+/// Stores a podcast cover (downloaded from its address) under the podcast's album key.
+final podcastCoverSaverProvider = Provider<PodcastCoverSaver>((ref) {
+  final web = DioWebClient();
+  final covers = ref.watch(coverStoreProvider);
+  return (id, url) async {
+    final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
+    if (bytes == null) return null;
+    return covers.saveFromBytes(podcastAlbumKey(id), bytes, url);
+  };
+});
+
 final podcastServiceProvider = Provider<PodcastService>((ref) {
   final web = DioWebClient();
   // The folder is known a moment after start-up; until then nothing is deleted.
   final dir = ref.watch(podcastsDirProvider).value;
-  final covers = ref.watch(coverStoreProvider);
   return PodcastService(
     repo: ref.watch(podcastRepositoryProvider),
     fetch: dioFeedFetcher(),
@@ -50,11 +71,8 @@ final podcastServiceProvider = Provider<PodcastService>((ref) {
     web: web,
     podcastsDir: dir,
     ytm: ref.watch(ytmPodcastSyncProvider),
-    saveCover: (id, url) async {
-      final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
-      if (bytes == null) return null;
-      return covers.saveFromBytes(podcastAlbumKey(id), bytes, url);
-    },
+    apple: ref.watch(applePodcastsProvider),
+    saveCover: ref.watch(podcastCoverSaverProvider),
   );
 });
 
@@ -90,19 +108,11 @@ final ytmPodcastsProvider = Provider<YtmPodcasts>(
   (ref) => YtmPodcasts(ref.watch(innerTubeClientProvider)),
 );
 
-final ytmPodcastSyncProvider = Provider<YtmPodcastSync>((ref) {
-  final web = DioWebClient();
-  final covers = ref.watch(coverStoreProvider);
-  return YtmPodcastSync(
-    repo: ref.watch(podcastRepositoryProvider),
-    ytm: ref.watch(ytmPodcastsProvider),
-    saveCover: (id, url) async {
-      final bytes = await web.getBytes(url, maxBytes: CoverStore.maxBytes);
-      if (bytes == null) return null;
-      return covers.saveFromBytes(podcastAlbumKey(id), bytes, url);
-    },
-  );
-});
+final ytmPodcastSyncProvider = Provider<YtmPodcastSync>((ref) => YtmPodcastSync(
+      repo: ref.watch(podcastRepositoryProvider),
+      ytm: ref.watch(ytmPodcastsProvider),
+      saveCover: ref.watch(podcastCoverSaverProvider),
+    ));
 
 enum EpisodeDownloadStatus { queued, downloading, done, failed }
 
@@ -115,6 +125,7 @@ class EpisodeDownload {
     this.status = EpisodeDownloadStatus.queued,
     this.progress,
     this.error,
+    this.ytError,
   });
 
   final int episodeId;
@@ -128,11 +139,15 @@ class EpisodeDownload {
   final double? progress;
   final PodcastErrorKind? error;
 
+  /// Set when YouTube Music / yt-dlp failed: show `ytErrorText` of it, and offer
+  /// «Riprova» only for `network` (or none).
+  final YtErrorKind? ytError;
+
   bool get active =>
       status == EpisodeDownloadStatus.queued ||
       status == EpisodeDownloadStatus.downloading;
 
-  EpisodeDownload copyWith({EpisodeDownloadStatus? status, double? progress, PodcastErrorKind? error}) =>
+  EpisodeDownload copyWith({EpisodeDownloadStatus? status, double? progress, PodcastErrorKind? error, YtErrorKind? ytError}) =>
       EpisodeDownload(
         episodeId: episodeId,
         title: title,
@@ -140,6 +155,7 @@ class EpisodeDownload {
         status: status ?? this.status,
         progress: progress ?? this.progress,
         error: error ?? this.error,
+        ytError: ytError ?? this.ytError,
       );
 }
 
@@ -209,7 +225,7 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
       }
     } on PodcastException catch (e) {
       AppLog.w('episode $id not downloaded', e);
-      _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: e.kind));
+      _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: e.kind, ytError: e.yt));
     } on Object catch (e, st) {
       AppLog.e('episode $id download crashed', e, st);
       _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: PodcastErrorKind.network));

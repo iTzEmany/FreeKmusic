@@ -5,6 +5,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/podcast_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/online/innertube_client.dart';
+import 'package:codecore/services/online/yt_dlp_args.dart' show podcastAudioSelector;
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_podcasts.dart';
 import 'package:codecore/services/podcast/episode_downloader.dart';
@@ -38,6 +39,7 @@ class _Tags implements TagReader {
 class _Yt extends YoutubeService {
   DownloadOptions? options;
   YtResult? asked;
+  Object? failWith;
   @override
   Stream<DownloadProgress> download(YtResult r, Directory outDir,
       {CancelToken? cancel, DownloadOptions options = const DownloadOptions()}) async* {
@@ -45,6 +47,7 @@ class _Yt extends YoutubeService {
     asked = r;
     outDir.createSync(recursive: true);
     final f = File(p.join(outDir.path, '${r.downloadName}.m4a'))..writeAsBytesSync([1, 2, 3]);
+    if (failWith != null) throw failWith!;
     yield DownloadProgress(received: 100, total: 100, path: f.path);
   }
 
@@ -117,11 +120,32 @@ void main() {
         repo: repo, tracks: TrackRepository(db), tags: _Tags(), baseDir: dir.path, readTagsInIsolate: false, youtube: yt);
     final trackId = await downloader.download(episode.id);
     expect(trackId, isNotNull);
-    expect(yt.options!.selector, '139/250/249/bestaudio');
+    expect(yt.options!.selector, podcastAudioSelector);
     expect(yt.asked!.downloadUrl, 'https://music.youtube.com/watch?v=B2Tep-eGwmQ');
     final row = (await repo.downloadedEpisodes()).single;
     expect(row.track!.format, 'm4a');
     expect(row.track!.kind, 1);
     expect(row.track!.title, episode.title);
+  });
+
+  test('a failed yt-dlp keeps its reason and leaves no half file; a retry starts clean', () async {
+    final id = await sync.subscribe(showId);
+    final episode = (await repo.watchEpisodes(id).first).first.episode;
+    final dir = Directory.systemTemp.createTempSync('ytmep');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final yt = _Yt()..failWith = const YtException(YtErrorKind.toolMissing);
+    final downloader = EpisodeDownloader(
+        repo: repo, tracks: TrackRepository(db), tags: _Tags(), baseDir: dir.path, readTagsInIsolate: false, youtube: yt);
+    await expectLater(
+        downloader.download(episode.id),
+        throwsA(isA<PodcastException>().having((e) => e.yt, 'yt', YtErrorKind.toolMissing)));
+    expect(Directory(dir.path).listSync(recursive: true).whereType<File>(), isEmpty);
+
+    final orphan = File(p.join(dir.path, '$id', '${episodeFileStem(episode.guid)}.webm'))
+      ..createSync(recursive: true)
+      ..writeAsBytesSync([9]);
+    yt.failWith = null;
+    expect(await downloader.download(episode.id), isNotNull);
+    expect(orphan.existsSync(), isFalse);
   });
 }

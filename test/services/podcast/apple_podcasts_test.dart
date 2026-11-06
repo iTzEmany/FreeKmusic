@@ -66,6 +66,36 @@ void main() {
     expect(await apple.lookup('1'), isNull);
   });
 
+  test('lookup asks the store the show was seen in', () async {
+    final c = await apple.chart(country: 'us');
+    await apple.lookup(c.first.appleId);
+    expect(web.calls.last.$2!['country'], 'us');
+    await apple.lookup(c.first.appleId, country: 'de');
+    expect(web.calls.last.$2!['country'], 'de');
+  });
+
+  test('fields of the wrong type are skipped, never a TypeError', () async {
+    web.answers['/json'] = {
+      'feed': {
+        'entry': [
+          {'id': {'attributes': 'x'}, 'im:name': {'label': 'A'}},
+          {'id': {'attributes': {'im:id': '7'}}, 'im:name': {'label': 'B'}, 'im:artist': 'oops', 'im:image': ['x'], 'summary': 3},
+        ]
+      }
+    };
+    final c = await apple.chart();
+    expect(c.single.name, 'B');
+    expect(c.single.author, isNull);
+    web.answers['/lookup'] = {
+      'results': [
+        {'feedUrl': 'https://f', 'collectionName': 'N', 'artistName': 5, 'artworkUrl600': 1},
+      ]
+    };
+    final h = await apple.lookup('7');
+    expect(h!.author, isNull);
+    expect(h.artworkUrl, isNull);
+  });
+
   test('search: country and genre are passed only when given', () async {
     final hits = await apple.search('comedy', limit: 3, country: 'it', genreId: '1303');
     expect(hits, hasLength(3));

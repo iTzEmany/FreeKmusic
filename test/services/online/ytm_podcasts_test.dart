@@ -73,6 +73,17 @@ void main() {
     expect(parseEpisodeDate('2 days ago', now), isNull);
   });
 
+  test('«today» a day ahead of the local clock stays this year', () {
+    final now = DateTime(2026, 2, 1, 23);
+    expect(parseEpisodeDate('Feb 2', now), DateTime.utc(2026, 2, 2));
+    expect(parseEpisodeDate('Feb 20', now), DateTime.utc(2025, 2, 20));
+  });
+
+  test('lengths accept the plurals', () {
+    expect(parseEpisodeLength('2 hrs 5 mins'), const Duration(hours: 2, minutes: 5));
+    expect(parseEpisodeLength('1 hr 2 min 3 secs'), const Duration(hours: 1, minutes: 2, seconds: 3));
+  });
+
   test('the client asks with the podcasts filter and a 429 pauses the shows', () async {
     final a = _Adapter(200);
     final y = podcasts(a);

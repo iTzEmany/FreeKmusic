@@ -105,18 +105,19 @@ DateTime? parseEpisodeDate(String text, DateTime now) {
   final day = int.parse(m.group(2)!);
   final year = m.group(3);
   if (year != null) return DateTime.utc(int.parse(year), month, day);
-  final d = DateTime.utc(now.year, month, day);
-  return d.isAfter(now) ? DateTime.utc(now.year - 1, month, day) : d;
+  // Compared in local time with a margin: the page's «today» may be a day ahead of us.
+  final future = DateTime(now.year, month, day).isAfter(now.add(const Duration(days: 2)));
+  return DateTime.utc(future ? now.year - 1 : now.year, month, day);
 }
 
 /// `46 min`, `1 hr 2 min`, `7 min 37 sec`; anything else is null.
 Duration? parseEpisodeLength(String text) {
   var seconds = 0;
   var any = false;
-  for (final m in RegExp(r'(\d+)\s*(hr|h|min|m|sec|s)\b').allMatches(text)) {
+  for (final m in RegExp(r'(\d+)\s*(hrs?|h|mins?|m|secs?|s)\b').allMatches(text)) {
     any = true;
     final n = int.parse(m.group(1)!);
-    seconds += n * switch (m.group(2)!) { 'hr' || 'h' => 3600, 'min' || 'm' => 60, _ => 1 };
+    seconds += n * switch (m.group(2)![0]) { 'h' => 3600, 'm' => 60, _ => 1 };
   }
   return any ? Duration(seconds: seconds) : null;
 }
@@ -208,7 +209,7 @@ class YtmPodcasts {
     final q = query.trim();
     if (q.isEmpty) return Future.value(const []);
     return _guarded(() => client.searchMusic(q, parseShowSearch,
-        params: podcastsFilter, hl: hl, isEmpty: (r) => r.isEmpty, cancel: cancel));
+        params: podcastsFilter, hl: hl, cancel: cancel));
   }
 
   /// The show [id] (`MPSP…`) with its newest episodes. Asked with `hl=en`

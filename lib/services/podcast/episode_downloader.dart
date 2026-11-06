@@ -15,7 +15,7 @@ import '../../data/repositories/podcast_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import '../online/http_client.dart';
-import '../online/yt_dlp_args.dart' show podcastAudioSelector;
+import '../online/yt_dlp_args.dart' show downloadExtensions, podcastAudioSelector;
 import '../online/youtube_service.dart';
 import 'ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import '../tags/tag_reader.dart';
@@ -180,6 +180,9 @@ class EpisodeDownloader {
       throw const PodcastException(PodcastErrorKind.unsupportedFormat, 'no yt-dlp');
     }
     final dir = Directory(p.join(baseDir, '${podcast.id}'));
+    final stem = p.join(dir.path, episodeFileStem(episode.guid));
+    // --no-part leaves a half file under its final name, which a retry would take as done.
+    await _deleteStale(stem);
     String? path;
     try {
       await for (final prog in yt.download(
@@ -188,7 +191,7 @@ class EpisodeDownloader {
           title: episode.title,
           channel: podcast.title,
           duration: null,
-          downloadName: episodeFileStem(episode.guid),
+          downloadName: p.basename(stem),
           webpageUrl: episode.audioUrl,
         ),
         dir,
@@ -200,9 +203,15 @@ class EpisodeDownloader {
       }
     } on YtException catch (e, st) {
       AppLog.w('YouTube Music episode failed: ${episode.guid}', e, st);
-      throw PodcastException(PodcastErrorKind.network, '$e');
+      await _deleteStale(stem);
+      // Only a network failure is worth «Riprova»; the others say what is wrong.
+      throw PodcastException(PodcastErrorKind.network, '$e', e.kind);
     }
-    if (path == null || (cancel?.isCancelled ?? false)) return null;
+    if (cancel?.isCancelled ?? false) {
+      await _deleteStale(stem);
+      return null;
+    }
+    if (path == null) return null;
     final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
     return _register(episode, podcast, path, ext);
   }
@@ -283,6 +292,14 @@ class EpisodeDownloader {
       }
     }
     return n;
+  }
+
+  /// Removes `<stem>.<ext>` of every container a download can leave.
+  Future<void> _deleteStale(String stem) async {
+    for (final e in downloadExtensions) {
+      final f = File('$stem.$e');
+      if (_inside(f.path)) await _deleteQuietly(f);
+    }
   }
 
   Future<void> _deleteQuietly(File f) async {

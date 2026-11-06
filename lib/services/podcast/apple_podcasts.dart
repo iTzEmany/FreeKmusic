@@ -32,6 +32,12 @@ class ApplePodcasts {
 
   final _cache = <String, ({DateTime at, Object value})>{};
 
+  /// The country each chart show came from: its lookup asks the same store.
+  final _countryOf = <String, String>{};
+
+  static String? _s(Object? v) => v is String ? v : null;
+  static Map<dynamic, dynamic>? _m(Object? v) => v is Map ? v : null;
+
   Future<T> _cached<T extends Object>(String key, Future<T> Function() load) async {
     final hit = _cache[key];
     if (hit != null && _now().difference(hit.at) < cacheFor) return hit.value as T;
@@ -62,11 +68,11 @@ class ApplePodcasts {
   /// The top-level categories of Podcasts.
   Future<List<PodcastGenre>> genres() => _cached('genres', () async {
         final json = await _getMap('$_host/WebObjects/MZStoreServices.woa/ws/genres', {'id': _podcastsGenre});
-        final sub = (json[_podcastsGenre] as Map?)?['subgenres'];
+        final sub = _m(json[_podcastsGenre])?['subgenres'];
         if (sub is! Map) throw const PodcastException(PodcastErrorKind.network, 'genres');
         return [
           for (final g in sub.values)
-            if (g is Map && g['id'] is String && g['name'] is String) PodcastGenre(g['id'] as String, g['name'] as String),
+            if (g is Map && _s(g['id']) != null && _s(g['name']) != null) PodcastGenre(_s(g['id'])!, _s(g['name'])!),
         ];
       });
 
@@ -75,22 +81,23 @@ class ApplePodcasts {
       _cached('chart:$country:${genreId ?? ''}:$limit', () async {
         final g = genreId == null ? '' : '/genre=$genreId';
         final json = await _getMap('$_host/$country/rss/toppodcasts/limit=$limit$g/json');
-        final entries = (json['feed'] as Map?)?['entry'];
+        final entries = _m(json['feed'])?['entry'];
         // One entry comes as a bare map, none as nothing.
         final list = entries is List ? entries : (entries is Map ? [entries] : const []);
         final out = <PodcastChartEntry>[];
         for (final e in list) {
           if (e is! Map) continue;
-          final id = (e['id'] as Map?)?['attributes']?['im:id'];
-          final name = (e['im:name'] as Map?)?['label'];
-          if (id is! String || name is! String) continue;
+          final id = _s(_m(_m(e['id'])?['attributes'])?['im:id']);
+          final name = _s(_m(e['im:name'])?['label']);
+          if (id == null || name == null) continue;
+          _countryOf[id] = country;
           final images = e['im:image'];
           out.add(PodcastChartEntry(
             appleId: id,
             name: name,
-            author: (e['im:artist'] as Map?)?['label'] as String?,
-            artworkUrl: images is List && images.isNotEmpty ? ((images.last as Map?)?['label'] as String?) : null,
-            summary: (e['summary'] as Map?)?['label'] as String?,
+            author: _s(_m(e['im:artist'])?['label']),
+            artworkUrl: images is List && images.isNotEmpty ? _s(_m(images.last)?['label']) : null,
+            summary: _s(_m(e['summary'])?['label']),
           ));
         }
         return out;
@@ -98,8 +105,9 @@ class ApplePodcasts {
 
   /// The show with this Apple id, with its feed address; null when Apple has
   /// no feed for it. Not cached: it is asked once, when the user subscribes.
-  Future<PodcastSearchHit?> lookup(String appleId, {String country = 'it'}) async {
-    final json = await _getMap('$_host/lookup', {'id': appleId, 'country': country});
+  /// [country] defaults to the chart the show was seen in, else Italy.
+  Future<PodcastSearchHit?> lookup(String appleId, {String? country}) async {
+    final json = await _getMap('$_host/lookup', {'id': appleId, 'country': country ?? _countryOf[appleId] ?? 'it'});
     final hits = _hits(json['results']);
     return hits.isEmpty ? null : hits.first;
   }
@@ -124,15 +132,15 @@ class ApplePodcasts {
     final out = <PodcastSearchHit>[];
     for (final r in results is List ? results : const []) {
       if (r is! Map) continue;
-      final feed = r['feedUrl'];
-      final name = r['collectionName'] ?? r['trackName'];
-      if (feed is! String || feed.isEmpty || name is! String) continue;
+      final feed = _s(r['feedUrl']);
+      final name = _s(r['collectionName']) ?? _s(r['trackName']);
+      if (feed == null || feed.isEmpty || name == null) continue;
       final count = r['trackCount'];
       out.add(PodcastSearchHit(
         name: name,
         feedUrl: feed,
-        author: r['artistName'] as String?,
-        artworkUrl: (r['artworkUrl600'] ?? r['artworkUrl100']) as String?,
+        author: _s(r['artistName']),
+        artworkUrl: _s(r['artworkUrl600']) ?? _s(r['artworkUrl100']),
         episodeCount: count is int ? count : null,
       ));
     }

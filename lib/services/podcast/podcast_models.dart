@@ -1,3 +1,5 @@
+import '../online/youtube_service.dart' show YtErrorKind;
+
 /// One episode as a feed lists it.
 class PodcastEpisodeInfo {
   const PodcastEpisodeInfo({
@@ -77,10 +79,13 @@ enum PodcastErrorKind {
 }
 
 class PodcastException implements Exception {
-  const PodcastException(this.kind, [this.detail]);
+  const PodcastException(this.kind, [this.detail, this.yt]);
 
   final PodcastErrorKind kind;
   final String? detail;
+
+  /// Why yt-dlp / YouTube Music failed, when it did (the text is the `yt*` one).
+  final YtErrorKind? yt;
 
   @override
   String toString() => 'PodcastException($kind${detail == null ? '' : ', $detail'})';

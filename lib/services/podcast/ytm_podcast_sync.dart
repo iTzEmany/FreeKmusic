@@ -2,6 +2,7 @@ import '../../core/app_log.dart';
 import '../../data/repositories/podcast_repository.dart';
 import '../online/youtube_service.dart' show YtException;
 import '../online/ytm_podcasts.dart';
+import 'podcast_cover.dart';
 import 'podcast_models.dart';
 
 /// `Podcasts.source` of a YouTube Music show (0 is an RSS feed).
@@ -23,8 +24,7 @@ class YtmPodcastSync {
   final PodcastRepository repo;
   final YtmPodcasts ytm;
 
-  /// Downloads and stores the cover at the address; returns its cover key.
-  final Future<String?> Function(int podcastId, String imageUrl)? saveCover;
+  final PodcastCoverSaver? saveCover;
   final DateTime Function() _now;
 
   int get _nowMs => _now().millisecondsSinceEpoch;
@@ -34,7 +34,7 @@ class YtmPodcastSync {
       return await ytm.show(showId, known: known);
     } on YtException catch (e, st) {
       AppLog.w('YouTube Music show failed: $showId', e, st);
-      throw PodcastException(PodcastErrorKind.network, '$e');
+      throw PodcastException(PodcastErrorKind.network, '$e', e.kind);
     } on Object catch (e, st) {
       // A page this client cannot read (InnerTubeChanged) is not a feed either.
       AppLog.w('YouTube Music show not readable: $showId', e, st);
@@ -65,7 +65,7 @@ class YtmPodcastSync {
     final page = await _read(showId);
     final id = await repo.subscribe(ytmShowFeedUrl(showId), _feed(page),
         now: _nowMs, source: kPodcastSourceYtm, sourceId: showId);
-    await _cover(id, page.thumbnailUrl);
+    await storePodcastCover(repo, saveCover, id, page.thumbnailUrl);
     return id;
   }
 
@@ -78,20 +78,7 @@ class YtmPodcastSync {
     final page = await _read(showId, known: await repo.episodeGuids(podcastId));
     final added = await repo.upsertEpisodes(podcastId, _feed(page).episodes);
     await repo.markChecked(podcastId, _nowMs);
-    await _cover(podcastId, page.thumbnailUrl ?? podcast.imageUrl);
+    await storePodcastCover(repo, saveCover, podcastId, page.thumbnailUrl ?? podcast.imageUrl);
     return added;
-  }
-
-  Future<void> _cover(int id, String? imageUrl) async {
-    final save = saveCover;
-    if (save == null || imageUrl == null) return;
-    final podcast = await repo.byId(id);
-    if (podcast == null || podcast.coverKey != null) return;
-    try {
-      final key = await save(id, imageUrl);
-      if (key != null) await repo.setCoverKey(id, key);
-    } on Object catch (e, st) {
-      AppLog.w('podcast cover failed: $imageUrl', e, st);
-    }
   }
 }
