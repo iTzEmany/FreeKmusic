@@ -169,9 +169,9 @@ void main() {
       expect(owned(result(artists: ['Other'])), isFalse);
     });
 
-    test('a duration more than 5 seconds apart is another recording', () {
+    test('the same title and artist is owned at any duration', () {
       expect(owned(result(seconds: 204)), isTrue);
-      expect(owned(result(seconds: 210)), isFalse);
+      expect(owned(result(seconds: 310)), isTrue);
     });
   });
 }

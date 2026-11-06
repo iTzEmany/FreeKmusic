@@ -39,17 +39,12 @@ Future<SuggestionCandidate?> suggest(int ms) async {
 }
 
 void main() {
-  test('a suggestion of a library song with a different length is not excluded today', () async {
-    // flips in phase 88.1 (D-389)
-    expect((await suggest(231000))?.result.id, 'bayou');
+  test('a suggestion of a library song with a different length is excluded (D-389)', () async {
+    expect(await suggest(231000), isNull);
   });
 
-  test('the 5 s edge: 5000 ms apart is excluded, 5001 ms is offered', () async {
-    expect(await suggest(315222 + 5000), isNull);
-    expect((await suggest(315222 + 5001))?.result.id, 'bayou');
-  });
-
-  test('control: the same suggestion within 5 s of the library length is excluded', () async {
+  test('the same suggestion at any other length is excluded too', () async {
+    expect(await suggest(315222 + 5001), isNull);
     expect(await suggest(315222 + 4000), isNull);
   });
 }

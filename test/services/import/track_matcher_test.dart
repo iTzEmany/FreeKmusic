@@ -194,9 +194,9 @@ void main() {
       expect(lib.find(row('Felicità', ['Lucio Dalla'], ms: 345360))?.id, 2);
     });
 
-    test('a few seconds of difference between services still matches', () {
+    test('the same title and artist matches whatever the length (D-389)', () {
       expect(lib.find(row('Let It Be', ['The Beatles'], ms: 247500))?.id, 1);
-      expect(lib.find(row('Let It Be', ['The Beatles'], ms: 249500)), isNull);
+      expect(lib.find(row('Let It Be', ['The Beatles'], ms: 249500))?.id, 1);
     });
 
     test('unknown library duration still matches', () {

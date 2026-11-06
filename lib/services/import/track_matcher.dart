@@ -21,6 +21,21 @@ final _editGroup = RegExp(
 final _editTail = RegExp(
     r'\s+[-–]\s+(radio edit|single version|album version|mono|stereo|mono version|stereo version)\s*$',
     caseSensitive: false);
+// Edition wrappers of the same recording («Deluxe Version», «40th Anniversary
+// Edition»); a group that names another kind of version (live, acoustic...)
+// stays.
+final _editionGroup = RegExp(
+    r'[\(\[][^\)\]]*(anniversary|deluxe|expanded|edition|version)[^\)\]]*[\)\]]',
+    caseSensitive: false);
+final _editionTail = RegExp(
+    r'\s+[-–]\s+[^-–]*(anniversary|deluxe|expanded|edition|version)[^-–]*$',
+    caseSensitive: false);
+final _qualifier = RegExp(
+    r'\b(live|acoustic|instrumental|remix|demo|radio|edit|mix|unplugged|karaoke|cover)\b',
+    caseSensitive: false);
+String _dropEdition(String s, RegExp re) =>
+    s.replaceAllMapped(re, (m) => _qualifier.hasMatch(m[0]!) ? m[0]! : ' ');
+
 final _nonWord = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
 
 /// Apostrophe-like marks that Unicode files as letters (the Hawaiian ʻokina of
@@ -45,16 +60,37 @@ String matchTitleKey(String title) => matchKey(title
     .replaceAll(_featTail, '')
     .replaceAll(_editTail, ''));
 
+/// [matchTitleKey] without edition wrappers too (deluxe, anniversary...): the
+/// key for «do I already own this song», not for ranking search results.
+String libraryTitleKey(String title) =>
+    matchTitleKey(_dropEdition(_dropEdition(title, _editionGroup), _editionTail));
+
 String _artistKey(String artist) => matchKey(extractPrimaryArtist(artist));
 
-/// `title|primary artist` -> library tracks; [find] is O(1) per row.
+const _artistStop = {'and', 'feat', 'ft', 'featuring', 'with'};
+
+/// The normalized words of every name in [artist], order and «feat.» ignored.
+Set<String> _artistWords(String artist) => {
+      for (final w in matchKey(artist).split(' '))
+        if (w.isNotEmpty && !_artistStop.contains(w)) w
+    };
+
+bool _sameSet(Set<String> a, Set<String> b) =>
+    a.length == b.length && a.containsAll(b);
+
+/// One name inside the other credit («Queen» in «Queen & David Bowie»).
+bool _nested(Set<String> a, Set<String> b) =>
+    a.isNotEmpty &&
+    b.isNotEmpty &&
+    (a.length <= b.length ? b.containsAll(a) : a.containsAll(b));
+
+/// title key -> library tracks with their artist words; [find] is O(1) per row.
 class LibraryIndex {
   LibraryIndex(Iterable<LibraryEntryLite> tracks) {
     for (final t in tracks) {
-      _byKey
-          .putIfAbsent('${matchTitleKey(t.title)}|${_artistKey(t.artist ?? '')}',
-              () => [])
-          .add(t);
+      _byTitle
+          .putIfAbsent(libraryTitleKey(t.title), () => [])
+          .add((_artistWords(t.artist ?? ''), t));
       final path = t.path;
       if (path != null) {
         final key = pathKey(path);
@@ -64,7 +100,7 @@ class LibraryIndex {
     }
   }
 
-  final Map<String, List<LibraryEntryLite>> _byKey = {};
+  final Map<String, List<(Set<String>, LibraryEntryLite)>> _byTitle = {};
   final Map<String, LibraryEntryLite> _byPath = {};
   final Map<String, List<(String, LibraryEntryLite)>> _byBase = {};
 
@@ -109,22 +145,33 @@ class LibraryIndex {
     return null;
   }
 
-  /// Same title and artist; when both lengths are known they must be within
-  /// 5 s (the same recording is often a few seconds apart between services).
+  /// Same title and same artist words: owned whatever the length (D-389).
+  /// An artist credit that only contains the other («Queen» / «Queen & X») is
+  /// an approximate match: when both lengths are known they must be within
+  /// 5 s.
   LibraryEntryLite? find(ImportRow r, {String? baseDir}) {
     final loc = r.location;
     if (loc != null) {
       final byPath = findByPath(loc, baseDir: baseDir);
       if (byPath != null) return byPath;
     }
-    final c = _byKey['${matchTitleKey(r.title)}|${_artistKey(r.primaryArtist)}'];
+    final c = _byTitle[libraryTitleKey(r.title)];
     if (c == null) return null;
     final want = r.durationMs;
-    for (final t in c) {
-      if (want == null || want <= 0 || t.durationMs <= 0) return t;
-      if ((t.durationMs - want).abs() <= 5000) return t;
+    final artist = _artistWords(r.artists.join(' '));
+    LibraryEntryLite? near;
+    for (final (words, t) in c) {
+      if (_sameSet(words, artist)) return t;
+      if (near == null && _nested(words, artist)) {
+        if (want == null ||
+            want <= 0 ||
+            t.durationMs <= 0 ||
+            (t.durationMs - want).abs() <= 5000) {
+          near = t;
+        }
+      }
     }
-    return null;
+    return near;
   }
 }
 

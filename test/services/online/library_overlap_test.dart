@@ -54,13 +54,13 @@ void main() {
   group('LibraryOverlap', () {
     final mine = [_track('Time', durationMs: 413000), _track('Money (2011 Remaster)', durationMs: 382000)];
 
-    test('same title and a length within 5 s is a song you have', () {
+    test('same title is a song you have, case ignored', () {
       expect(ownedIn(mine, _song('Time', seconds: 416)), isTrue);
       expect(ownedIn(mine, _song('time', seconds: 410)), isTrue);
     });
 
-    test('a length far off is another recording', () {
-      expect(ownedIn(mine, _song('Time', seconds: 300)), isFalse);
+    test('a different length is still the song you have (D-389)', () {
+      expect(ownedIn(mine, _song('Time', seconds: 300)), isTrue);
     });
 
     test('another title is not owned; remaster tags do not count', () {
