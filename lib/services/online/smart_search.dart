@@ -40,6 +40,7 @@ class SmartSearchState {
     this.queryKind = QueryKind.text,
     this.listingUrl,
     this.intent = SearchIntent.songs,
+    this.intentKnown = true,
     this.card,
     this.best = const [],
     this.others = const [],
@@ -57,6 +58,10 @@ class SmartSearchState {
   /// For [QueryKind.listing]: the playlist or channel to list; nothing is searched.
   final String? listingUrl;
   final SearchIntent intent;
+
+  /// [intent] is a real answer (the top card came, or the rows told what the
+  /// card could not), not the default of a page still waiting for it.
+  final bool intentKnown;
   final TopCard? card;
 
   /// «Migliori risultati» and «Altri risultati».
@@ -79,9 +84,15 @@ class SmartSearchState {
 
   bool get loading => pending.isNotEmpty;
 
+  /// «Nella tua libreria» and the duplicate filter (D-399, D-400) apply: text
+  /// for a song, and only once the intent is known, so they never come and go.
+  bool get showsLibrary =>
+      queryKind == QueryKind.text && intentKnown && libraryAppliesTo(intent);
+
   SmartSearchState copyWith({
     TopCard? card,
     SearchIntent? intent,
+    bool? intentKnown,
     List<SmartResult>? best,
     List<SmartResult>? others,
     bool? noneSure,
@@ -96,6 +107,7 @@ class SmartSearchState {
         queryKind: queryKind,
         listingUrl: listingUrl,
         intent: intent ?? this.intent,
+        intentKnown: intentKnown ?? this.intentKnown,
         card: card ?? this.card,
         best: best ?? this.best,
         others: others ?? this.others,
@@ -220,7 +232,7 @@ class _Run {
   void cancel() {
     _cancelled = true;
     _capTimer?.cancel();
-    _token.cancel('new search');
+    if (!_token.isCancelled) _token.cancel('new search');
   }
 
   void _emit(SmartSearchState s) {
@@ -277,20 +289,25 @@ class _Run {
     }
     _cardAsked = !isVideoUrl && _asked.contains(MediaKind.ytmSong);
     _emit(SmartSearchState(
-        query: query, queryKind: kind.kind, pending: {..._asked}, notices: [..._notices]));
+        query: query,
+        queryKind: kind.kind,
+        intentKnown: false,
+        pending: {..._asked},
+        notices: [..._notices]));
 
-    final done = Completer<void>();
+    final done = Completer<void>(), rowsDone = Completer<void>();
     void settled() {
       if (_cancelled) return;
       _onAnswer(kind.kind);
-      if (_everythingIn && _rowsOpen == 0 && !done.isCompleted) done.complete();
+      if (_everythingIn && !done.isCompleted) done.complete();
     }
 
-    // Rows come after the page: they never delay it, they are folded in.
+    // Rows come after the page: they never delay it (nor its error), they are
+    // folded in while the stream stays open.
     void rowIn() {
       if (_cancelled) return;
       if (_shown != null) _showLate();
-      if (_everythingIn && _rowsOpen == 0 && !done.isCompleted) done.complete();
+      if (_rowsOpen == 0 && !rowsDone.isCompleted) rowsDone.complete();
     }
 
     if (_asked.contains(MediaKind.ytmSong)) {
@@ -317,7 +334,8 @@ class _Run {
         settled();
       }));
     }
-    if (_cardAsked) {
+    // Both rows or none: artists without albums would look like a result.
+    if (_cardAsked && engine.rowsLimiter.tryAcquire(2)) {
       _rowsOpen = 2;
       unawaited(_row(() => engine.catalog.searchArtists(query, hl, cancel: _token),
               (v) => _artists = v)
@@ -325,10 +343,20 @@ class _Run {
       unawaited(_row(() => engine.catalog.searchAlbums(query, hl, cancel: _token),
               (v) => _albums = v)
           .then((_) => rowIn()));
+    } else {
+      if (_cardAsked) {
+        AppLog.d('search rows: request budget used up, rows left out');
+        _rowsFailed = true;
+      }
+      rowsDone.complete();
     }
     await done.future;
     if (_cancelled) return;
-    _finish(key);
+    if (!_finish(key)) return;
+    await rowsDone.future;
+    // The page is already saved; the copy with its rows replaces it unless a
+    // row failed (then the page alone stays, until it is refreshed).
+    if (!_cancelled && !_rowsFailed) _store(key);
   }
 
   bool get _everythingIn =>
@@ -362,19 +390,15 @@ class _Run {
   }
 
   /// One row's request. Its failure is not shown (the row is a bonus), but a
-  /// 429 is remembered and a failed row keeps the page out of the saved copy.
+  /// 429 is remembered and a failed row keeps the rows out of the saved copy.
   Future<void> _row<T>(Future<List<T>> Function() call, void Function(List<T>) put) async {
     try {
-      if (!engine.rowsLimiter.tryAcquire()) {
-        AppLog.d('search rows: request budget used up, row left out');
-        _rowsFailed = true;
-        return;
-      }
       put((await call()).take(_rowLimit).toList());
     } on Object catch (e) {
       if (_cancelled) return;
       AppLog.w('search row not read: $e');
       _rowsFailed = true;
+      // On purpose also the main source: a 429 is YouTube Music's as a whole.
       if (e is YtException && e.kind == YtErrorKind.rateLimited) {
         engine.cooldown.trip(MediaKind.ytmSong);
       }
@@ -435,23 +459,40 @@ class _Run {
         libraryArtists: engine.libraryArtists?.call() ?? const {});
   }
 
-  SmartSearchState _base(QueryKind kind) => SmartSearchState(
+  /// What the phrase is, and whether that is known yet: from the card once it
+  /// answered; when the card failed, from the artists row (the top artist
+  /// against the phrase); otherwise not known, and the library stays out.
+  (SearchIntent, bool) _intent() {
+    final card = _card;
+    if (card == null) return (SearchIntent.songs, false);
+    if (card.error == null) return (intentOf(query, card.value), true);
+    if (_rowsOpen > 0 || _artists.isEmpty) return (SearchIntent.songs, false);
+    return (intentOf(query, TopArtist(_artists.first)), true);
+  }
+
+  SmartSearchState _base(QueryKind kind) {
+    final (intent, known) = _intent();
+    return SmartSearchState(
         query: query,
         queryKind: kind,
         card: _card?.value,
-        intent: intentOf(query, _card?.value),
+        intent: intent,
+        intentKnown: known,
         pending: _pending,
         notices: [..._notices],
       );
+  }
 
   void _showFirst(QueryKind kind) {
+    final (intent, known) = _intent();
     final split = splitBest(mergeResults(_scored(useCard: true)), kBestThreshold,
         maxBest: _maxBest);
     final state = SmartSearchState(
       query: query,
       queryKind: kind,
       card: _card?.value,
-      intent: intentOf(query, _card?.value),
+      intent: intent,
+      intentKnown: known,
       best: split.best,
       others: split.others,
       noneSure: split.noneSure,
@@ -468,12 +509,8 @@ class _Run {
   /// replaced where it stands, anything else goes to the end of its block.
   void _showLate() {
     final prev = _shown!;
-    var card = prev.card;
-    var intent = prev.intent;
-    if (card == null && _card?.value != null) {
-      card = _card!.value;
-      intent = intentOf(query, card);
-    }
+    final card = prev.card ?? _card?.value;
+    final (intent, known) = _intent();
     final full = mergeResults(_scored(useCard: false));
     final claimed = <SmartResult>{};
     SmartResult? latest(SmartResult old) {
@@ -509,6 +546,7 @@ class _Run {
       queryKind: prev.queryKind,
       card: card,
       intent: intent,
+      intentKnown: known,
       best: best,
       others: others,
       noneSure: noneSure,
@@ -518,6 +556,8 @@ class _Run {
       albums: _albums,
     );
     final changed = !identical(state.card, prev.card) ||
+        state.intent != prev.intent ||
+        state.intentKnown != prev.intentKnown ||
         !_sameRows(state.best, prev.best) ||
         !_sameRows(state.others, prev.others) ||
         state.pending.length != prev.pending.length ||
@@ -534,15 +574,25 @@ class _Run {
           a[i].primary.id == b[i].primary.id &&
           a[i].alternatives.length == b[i].alternatives.length);
 
-  /// All answers are in: the last state, and the copy kept for ten minutes.
-  void _finish(String key) {
+  /// The main answers are in: the error at once if every source failed (the
+  /// rows are dropped), else the copy kept for ten minutes. False when there is
+  /// nothing more to wait for.
+  bool _finish(String key) {
     final queryKind = classifyQuery(query).kind;
     if (_shown == null && !_anyResult) {
       // Every source failed.
       final first = [_songs, _videos].whereType<_Answer>().map((a) => a.error).nonNulls;
       _emit(_base(queryKind).copyWith(error: first.isEmpty ? 'no answer' : first.first));
-      return;
+      cancel();
+      return false;
     }
-    if (_notices.isEmpty && !_rowsFailed) engine._store(key, _shown!);
+    _store(key);
+    return true;
+  }
+
+  /// A failed row does not stop the page being saved; the rows only join the
+  /// copy when none failed.
+  void _store(String key) {
+    if (_notices.isEmpty) engine._store(key, _shown!);
   }
 }

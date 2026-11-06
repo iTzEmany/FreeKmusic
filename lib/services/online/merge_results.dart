@@ -181,61 +181,106 @@ ImportRow _asRow(String title, List<String> artists, Duration? length) => Import
       durationMs: length?.inMilliseconds,
     );
 
-/// The library track the song is already, or null: title and artist as the
-/// library compares them, whatever the length (D-389). Any upload of the row
-/// counts, and for a plain upload also its «Artist - Title» split.
-LibraryEntryLite? ownedMatch(SmartResult row, LibraryIndex library) {
-  for (final r in [row.primary, ...row.alternatives]) {
-    final artists = r.artists.isNotEmpty ? r.artists : [_artistOf(r)];
-    final hit = library.find(_asRow(_titleOf(r), artists, r.duration));
-    if (hit != null) return hit;
-    final m = r.artists.isEmpty ? _dash.firstMatch(r.title) : null;
-    if (m != null) {
-      final split = library.find(
+/// The library track one result is already (the single rule of «already mine»
+/// by title and artist, shared with Shuffle+): title and artist as the library
+/// compares them, whatever the length (D-389); for a plain upload also its
+/// «Artist - Title» split.
+LibraryEntryLite? libraryMatchOf(YtResult r, LibraryIndex library) {
+  final artists = r.artists.isNotEmpty ? r.artists : [_artistOf(r)];
+  final hit = library.find(_asRow(_titleOf(r), artists, r.duration));
+  if (hit != null) return hit;
+  final m = r.artists.isEmpty ? _dash.firstMatch(r.title) : null;
+  return m == null
+      ? null
+      : library.find(
           _asRow(r.title.substring(m.end), [r.title.substring(0, m.start)], r.duration));
-      if (split != null) return split;
+}
+
+/// A song the library already has; [track] is the library track it stands for,
+/// null when it is only known as a download whose file the library has not read.
+typedef OwnedHit = ({LibraryEntryLite? track});
+
+/// Whether the row is already mine: any upload of it downloaded
+/// ([downloadPath] gives the file of a result, null when there is none; the
+/// library track of that file is the match, else the title rule's), or found in
+/// the library by [libraryMatchOf].
+OwnedHit? ownedMatch(
+  SmartResult row,
+  LibraryIndex library, {
+  String? Function(YtResult r)? downloadPath,
+}) {
+  var downloaded = false;
+  for (final r in [row.primary, ...row.alternatives]) {
+    final path = downloadPath?.call(r);
+    if (path != null) {
+      final file = library.findByPath(path);
+      if (file != null) return (track: file);
+      downloaded = true;
     }
+    final hit = libraryMatchOf(r, library);
+    if (hit != null) return (track: hit);
   }
-  return null;
+  return downloaded ? (track: null) : null;
 }
 
 bool ownedByLibrary(SmartResult row, LibraryIndex library) => ownedMatch(row, library) != null;
 
-/// [rows] without the songs the library already has, order kept; [hidden]
-/// counts them and [matches] are the library tracks they stand for (each once).
-/// Linear in the rows (the index lookup is O(1)), on the index already in memory.
-({List<SmartResult> kept, int hidden, List<LibraryEntryLite> matches}) withoutOwned(
-    List<SmartResult> rows, LibraryIndex library) {
-  final kept = <SmartResult>[];
+typedef WithoutOwned = ({
+  List<SmartResult> kept,
+  List<SmartResult> hiddenRows,
+  List<LibraryEntryLite> matches,
+});
+
+/// [rows] without the songs the library already has, order kept; [hiddenRows]
+/// are the ones taken out and [matches] the library tracks they stand for
+/// (each once). Linear in the rows (the index lookup is O(1)), on the index
+/// already in memory.
+WithoutOwned withoutOwned(
+  List<SmartResult> rows,
+  LibraryIndex library, {
+  String? Function(YtResult r)? downloadPath,
+}) {
+  final kept = <SmartResult>[], hiddenRows = <SmartResult>[];
   final matches = <int, LibraryEntryLite>{};
   for (final r in rows) {
-    final m = ownedMatch(r, library);
+    final m = ownedMatch(r, library, downloadPath: downloadPath);
     if (m == null) {
       kept.add(r);
     } else {
-      matches[m.id] = m;
+      hiddenRows.add(r);
+      final t = m.track;
+      if (t != null) matches[t.id] = t;
     }
   }
-  return (kept: kept, hidden: rows.length - kept.length, matches: matches.values.toList());
+  return (kept: kept, hiddenRows: hiddenRows, matches: matches.values.toList());
 }
 
 /// The page's rows without what the library has, worked out once per result
 /// (see `ownedSplitProvider`), not at every build.
 class OwnedSplit {
-  OwnedSplit(List<SmartResult> best, List<SmartResult> others, LibraryIndex library)
-      : this._(withoutOwned(best, library), withoutOwned(others, library));
+  OwnedSplit(
+    List<SmartResult> best,
+    List<SmartResult> others,
+    LibraryIndex library, {
+    String? Function(YtResult r)? downloadPath,
+  }) : this._(
+          withoutOwned(best, library, downloadPath: downloadPath),
+          withoutOwned(others, library, downloadPath: downloadPath),
+        );
 
-  OwnedSplit._(
-    ({List<SmartResult> kept, int hidden, List<LibraryEntryLite> matches}) b,
-    ({List<SmartResult> kept, int hidden, List<LibraryEntryLite> matches}) o,
-  )   : best = b.kept,
+  OwnedSplit._(WithoutOwned b, WithoutOwned o)
+      : best = b.kept,
         others = o.kept,
-        hidden = b.hidden + o.hidden,
+        hiddenRows = [...b.hiddenRows, ...o.hiddenRows],
         // The tracks of the hidden rows, so «Nella tua libreria» always has
         // what «N nascosti» refers to.
         matchIds = {for (final m in [...b.matches, ...o.matches]) m.id}.toList();
 
   final List<SmartResult> best, others;
-  final int hidden;
+
+  /// The rows taken out of the lists, best block first.
+  final List<SmartResult> hiddenRows;
   final List<int> matchIds;
+
+  int get hidden => hiddenRows.length;
 }

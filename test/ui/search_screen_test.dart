@@ -1,6 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_youtube.dart';
+import '../support/fake_ytm.dart';
 import '../support/search_input.dart';
 
 Future<void> _settle(WidgetTester tester) async {
@@ -160,4 +162,34 @@ void main() {
     expect(picked, [2], reason: 'the index is the tab, not the position');
     await h.dispose(tester);
   });
+
+  for (final online in [false, true]) {
+    testWidgets('no overflow at text scale 2.0 ${online ? 'with online results' : 'idle'}', (
+      tester,
+    ) async {
+      _size(tester, const Size(400, 900));
+      final h = await Harness.create(tester, tracks: 4);
+      await h.pump(
+        tester,
+        const SearchScreen(),
+        textScale: 2,
+        extraOverrides: [
+          youtubeServiceProvider.overrideWithValue(FakeYoutube()),
+          ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+        ],
+      );
+      ProviderScope.containerOf(tester.element(find.byType(SearchScreen)))
+          .read(settingsProvider.notifier)
+          .update((s) => s.copyWith(recentSearches: ['queen', 'a rather long recent search']));
+      if (online) {
+        typeSearch(tester, 'daft punk');
+        submitSearch(tester);
+      }
+      await _settle(tester);
+      await _settle(tester);
+      final ex = tester.takeException();
+      if (ex != null) fail(ex is FlutterError ? ex.toStringDeep() : '$ex');
+      await h.dispose(tester);
+    });
+  }
 }

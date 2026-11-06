@@ -63,6 +63,13 @@ void main() {
       expect(l.tryAcquire(), isTrue);
     });
 
+    test('tryAcquire(2) takes both slots or none', () {
+      final c = _Clock();
+      final l = WindowLimiter(perMinute: 3, now: c.now, pause: c.pause);
+      expect([l.tryAcquire(2), l.tryAcquire(2), l.recent], [true, false, 2]);
+      expect(l.tryAcquire(), isTrue);
+    });
+
     test('lets perMinute requests straight through, then waits for the oldest to leave the minute', () async {
       final c = _Clock();
       final l = WindowLimiter(perMinute: 3, now: c.now, pause: c.pause);

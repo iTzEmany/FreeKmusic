@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart' show Track;
 import '../services/online/merge_results.dart';
-import '../services/online/query_intent.dart' show QueryKind;
 import '../services/online/query_match.dart' show libraryArtistKey;
 import '../services/online/smart_search.dart';
 import '../services/online/source_cooldown.dart';
@@ -45,13 +44,17 @@ final smartSearchProvider = StreamProvider.autoDispose
       );
 });
 
-/// D-399: the page without the songs the library already has, worked out once
-/// per result and per read of the library (the key is the state itself), not
-/// at every build. Null while the index is not ready or the text is not a song.
+/// D-399: the page without the songs the library already has (or has
+/// downloaded), worked out once per result and per read of the library or of the
+/// download index (the key is the state itself), not at every build. Null while
+/// the library index is not ready or the page is not a song search.
 final ownedSplitProvider = Provider.autoDispose.family<OwnedSplit?, SmartSearchState>((ref, s) {
-  if (s.queryKind != QueryKind.text || !libraryAppliesTo(s.intent)) return null;
+  if (!s.showsLibrary) return null;
   final index = ref.watch(libraryIndexProvider).value;
-  return index == null ? null : OwnedSplit(s.best, s.others, index);
+  if (index == null) return null;
+  final downloads = ref.watch(downloadIndexProvider).value;
+  return OwnedSplit(s.best, s.others, index,
+      downloadPath: (r) => downloads?.pathFor(r.id, source: r.source));
 });
 
 /// The library tracks the hidden online rows stand for.

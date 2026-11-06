@@ -1,6 +1,6 @@
-import '../../core/import_row.dart';
 import '../../data/db/app_database.dart' show Track;
 import '../import/track_matcher.dart' show LibraryIndex, matchKey;
+import '../online/merge_results.dart' show libraryMatchOf;
 import '../online/query_cleaner.dart' show extractPrimaryArtist;
 import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
@@ -29,15 +29,7 @@ bool Function(YtResult r) inLibraryTest({
   required bool Function(String videoId) hasDownload,
   required LibraryIndex? library,
 }) =>
-    (r) =>
-        hasDownload(r.id) ||
-        (library?.find(ImportRow(
-                  index: 0,
-                  title: r.title,
-                  artists: r.artists.isEmpty ? [r.channel] : r.artists,
-                  durationMs: r.duration?.inMilliseconds,
-                )) !=
-            null);
+    (r) => hasDownload(r.id) || (library != null && libraryMatchOf(r, library) != null);
 
 /// A library song whose radio feeds a [SuggestionPool].
 class RadioSeed {

@@ -76,15 +76,19 @@ class WindowLimiter {
     return turn;
   }
 
-  /// Takes a slot if one is free right now, false (nothing taken) otherwise:
-  /// for requests that only add to a page and are not worth a wait.
-  bool tryAcquire() {
+  /// Takes [n] slots if they are all free right now, false (nothing taken)
+  /// otherwise: for requests that only add to a page and are not worth a wait.
+  bool tryAcquire([int n = 1]) {
     final now = _now();
     _stamps.removeWhere((s) => !s.isAfter(now.subtract(window)));
-    if (_stamps.length >= perMinute) return false;
-    _stamps.add(now);
-    granted.add(now);
-    if (granted.length > 200) granted.removeAt(0);
+    if (_stamps.length + n > perMinute) return false;
+    for (var i = 0; i < n; i++) {
+      _stamps.add(now);
+      granted.add(now);
+    }
+    while (granted.length > 200) {
+      granted.removeAt(0);
+    }
     return true;
   }
 

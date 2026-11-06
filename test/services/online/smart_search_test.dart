@@ -292,38 +292,145 @@ void main() {
       expect(s.best.first.primary.id, song);
     });
 
-    test('a 429 on the rows pauses YouTube Music, and the page is not saved', () async {
+    test('a 429 on the rows pauses YouTube Music, the page is saved all the same', () async {
       catalog.rowsError = const YtException(YtErrorKind.rateLimited);
       await page();
       expect(engine.cooldown.isPaused(MediaKind.ytmSong), isTrue);
-      catalog.rowsError = null;
-      clock = clock.add(const Duration(minutes: 6));
       final again = start('lucio corsi sigarette');
       await pumpEventQueue();
-      expect(youtube.songs, hasLength(2), reason: 'asked again, not served from the copy');
+      expect(youtube.songs, hasLength(1), reason: 'served from the copy, nothing asked');
+      expect(again.states.single.best, isNotEmpty);
       await again.sub.cancel();
     });
 
-    test('budget used up: the request does not leave and the rows are empty', () async {
-      engine = SmartSearch(
-        youtube: youtube,
-        catalog: catalog,
-        now: () => clock,
-        cap: const Duration(milliseconds: 50),
-        rowsLimiter: WindowLimiter(perMinute: 1, now: () => clock),
-      );
+    SmartSearch withBudget(int perMinute) => SmartSearch(
+          youtube: youtube,
+          catalog: catalog,
+          now: () => clock,
+          cap: const Duration(milliseconds: 50),
+          rowsLimiter: WindowLimiter(perMinute: perMinute, now: () => clock),
+        );
+
+    test('budget for one request only: neither row is asked, the page is whole and saved', () async {
+      engine = withBudget(1);
       catalog.artistRows = artists(3);
       catalog.albumRows = albums(3);
       final s = await page();
-      expect(catalog.rowCalls, 1, reason: 'one slot, two rows asked');
-      expect(s.artists.length + s.albums.length, 3);
+      expect(catalog.rowCalls, 0, reason: 'both rows or none');
+      expect(s.artists, isEmpty);
+      expect(s.albums, isEmpty);
       expect(s.best, isNotEmpty);
 
-      clock = clock.add(const Duration(minutes: 2));
-      catalog.rowCalls = 0;
-      // The page was not saved (a row was left out), so this asks again with a fresh slot.
+      clock = clock.add(const Duration(minutes: 1));
+      final again = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(youtube.songs, hasLength(1), reason: 'the page came from the copy');
+      expect(catalog.cards, hasLength(1));
+      expect(again.states.single.best, isNotEmpty);
+      await again.sub.cancel();
+    });
+
+    test('budget for two requests: both rows are asked together', () async {
+      engine = withBudget(2);
+      catalog.artistRows = artists(3);
+      catalog.albumRows = albums(3);
+      final s = await page();
+      expect(catalog.rowCalls, 2);
+      expect([s.artists.length, s.albums.length], [3, 3]);
+    });
+
+    test('the saved copy has the rows when none failed', () async {
+      catalog.artistRows = artists(2);
+      catalog.albumRows = albums(2);
       await page();
-      expect(catalog.rowCalls, 1);
+      final again = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(again.states.single.artists, hasLength(2));
+      expect(again.states.single.albums, hasLength(2));
+      await again.sub.cancel();
+    });
+
+    test('every main source failing shows the error at once, not after the rows', () async {
+      catalog.rowsGate = Completer<void>();
+      final run = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      catalog.cards.last.done.complete(null);
+      youtube.songs.last.done.completeError(const YtException(YtErrorKind.network));
+      youtube.videos.last.done.completeError(const YtException(YtErrorKind.network));
+      await pumpEventQueue();
+      expect(run.states.last.error, isA<YtException>());
+      expect(catalog.rowsGate!.isCompleted, isFalse, reason: 'the rows are still out');
+      await run.sub.cancel();
+    });
+
+    test('a page whose rows are late is not delayed, and the stream waits for them', () async {
+      catalog.rowsGate = Completer<void>();
+      catalog.artistRows = artists(1);
+      var closed = false;
+      final states = <SmartSearchState>[];
+      engine.run('lucio corsi sigarette', 'en').listen(states.add, onDone: () => closed = true);
+      await pumpEventQueue();
+      await answerCard();
+      await answerSongs();
+      await answerVideos();
+      expect(states.last.best, isNotEmpty);
+      expect(closed, isFalse);
+      catalog.rowsGate!.complete();
+      await pumpEventQueue();
+      expect(closed, isTrue);
+    });
+  });
+
+  group('intentKnown (D-400)', () {
+    test('false while waiting and when the page comes before the card, true once it answers', () async {
+      final run = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(run.states.single.intentKnown, isFalse);
+      expect(run.states.single.showsLibrary, isFalse);
+      await answerSongs();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(run.states.last.best, isNotEmpty);
+      expect(run.states.last.intentKnown, isFalse, reason: 'the card is late');
+      await answerCard();
+      expect(run.states.last.intentKnown, isTrue);
+      expect(run.states.last.intent, SearchIntent.song);
+      expect(run.states.last.showsLibrary, isTrue);
+      await run.sub.cancel();
+    });
+
+    test('an artist search never has the library, whatever the order of the answers', () async {
+      final run = start('lucio corsi');
+      await pumpEventQueue();
+      await answerSongs();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      catalog.cards.last.done.complete(const TopArtist(YtmArtistRef(id: 'UC1', name: 'Lucio Corsi')));
+      await pumpEventQueue();
+      expect(run.states.every((s) => !s.showsLibrary), isTrue);
+      expect(run.states.last.intent, SearchIntent.artistPage);
+      await run.sub.cancel();
+    });
+
+    test('a failed card: the artists row tells, with no row the intent stays unknown', () async {
+      catalog.artistRows = [const YtmArtistRef(id: 'UC1', name: 'Lucio Corsi')];
+      var run = start('lucio corsi');
+      await pumpEventQueue();
+      catalog.cards.last.done.completeError(StateError('card'));
+      await answerSongs();
+      await answerVideos();
+      expect(run.states.last.intentKnown, isTrue);
+      expect(run.states.last.intent, SearchIntent.artistPage);
+      await run.sub.cancel();
+
+      catalog.artistRows = [];
+      run = start('another phrase');
+      await pumpEventQueue();
+      catalog.cards.last.done.completeError(StateError('card'));
+      await answerSongs();
+      await answerVideos();
+      expect(run.states.last.best, isNotEmpty);
+      expect(run.states.last.intentKnown, isFalse);
+      expect(run.states.last.showsLibrary, isFalse);
+      await run.sub.cancel();
     });
   });
 

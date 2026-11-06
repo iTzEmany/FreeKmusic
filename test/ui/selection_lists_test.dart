@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
@@ -5,7 +6,9 @@ import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/track_repository.dart'
     show SortOption;
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/providers/library_providers.dart' show libraryIndexProvider;
 import 'package:codecore/providers/selection_providers.dart';
+import 'package:codecore/services/import/track_matcher.dart' show LibraryIndex;
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/download_index.dart';
@@ -287,6 +290,9 @@ void main() {
           ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
           downloadsProvider.overrideWith(() => downloads),
           downloadIndexProvider.overrideWith((ref) async => index),
+          // Never ready: nothing is hidden, so the downloaded «Clip 2» is still
+          // there to pick (a download that ends after the pick).
+          libraryIndexProvider.overrideWith((ref) => Completer<LibraryIndex>().future),
         ],
       );
       await _settle(tester);

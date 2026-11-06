@@ -138,19 +138,35 @@ void main() {
       final other = row(song('b', 'Proud Mary', secs: 187, artist: 'Creedence Clearwater Revival'));
       final r = withoutOwned([owned, other], library);
       expect(r.kept, [other]);
-      expect(r.hidden, 1);
+      expect(r.hiddenRows, [owned]);
     });
 
     test('another recording or another artist stays', () {
       final live = row(song('a', 'Born On The Bayou (Live)', artist: 'Creedence Clearwater Revival'));
       final cover = row(song('b', 'Born On The Bayou', artist: 'Dr. John'));
-      expect(withoutOwned([live, cover], library).hidden, 0);
+      expect(withoutOwned([live, cover], library).hiddenRows, isEmpty);
     });
 
     test('an upload «Artist - Title» from any channel is owned too', () {
       final up = row(video('v', 'Creedence Clearwater Revival - Born On The Bayou', channel: 'Some Channel'),
           MediaKind.ytVideo);
       expect(ownedByLibrary(up, library), isTrue);
+    });
+
+    test('the video already downloaded is owned: its file is the library track, else it stands alone', () {
+      final dl = row(song('dl', 'Some Other Title', artist: 'Someone Else'));
+      final file = LibraryEntryLite(id: 7, title: 'Whatever', artist: 'X', durationMs: 1, path: '/m/dl.m4a');
+      final withFile = LibraryIndex([file]);
+      String? path(YtResult r) => r.id == 'dl' ? '/m/dl.m4a' : null;
+      expect(ownedMatch(dl, withFile), isNull);
+      expect(ownedMatch(dl, withFile, downloadPath: path)?.track, file);
+      // The library has not read the file yet: still owned, no track to show.
+      final hit = ownedMatch(dl, LibraryIndex(const []), downloadPath: path);
+      expect(hit, isNotNull);
+      expect(hit!.track, isNull);
+      final r = withoutOwned([dl], LibraryIndex(const []), downloadPath: path);
+      expect(r.hiddenRows, [dl]);
+      expect(r.matches, isEmpty);
     });
 
     test('an empty library hides nothing', () {
