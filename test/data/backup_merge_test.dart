@@ -6,7 +6,9 @@ import 'dart:io';
 
 import 'package:codecore/data/repositories/backup_merge.dart';
 import 'package:codecore/data/repositories/backup_queries.dart';
+import 'package:codecore/data/repositories/artist_country_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
+import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
 import 'package:codecore/services/online/ytm_artist_parser.dart';
@@ -345,5 +347,93 @@ void main() {
       TrackUserData(ref: ref('b'), credits: [TrackCredit('Other', 'guitar', 'deezer')]),
     ]));
     expect((await repo.creditsOf(b)).map((x) => x.name), ['Mine']);
+  });
+
+  group('genres and artist countries (D-390)', () {
+    Future<List<String>> genresOf(String title) async =>
+        TrackGenreRepository(db).of((await track(title)).id);
+
+    test('the backup genres go to the matching tracks by ref; a track that has some keeps them', () async {
+      await TrackGenreRepository(db).replace((await track('b')).id, ['Jazz']);
+      await merge(UserData(createdAt: 1, tracks: [
+        TrackUserData(ref: ref('c'), genres: const ['Rock', 'Pop']),
+        TrackUserData(ref: ref('b'), genres: const ['Metal']),
+        TrackUserData(ref: ref('gone'), genres: const ['Folk']),
+      ]));
+      expect(await genresOf('c'), ['Rock', 'Pop']);
+      expect(await genresOf('b'), ['Jazz']);
+      expect(await db.select(db.trackGenres).get(), hasLength(3));
+    });
+
+    test('a hand edit applied here sets the genres from its text', () async {
+      await merge(UserData(createdAt: 1, tracks: [
+        TrackUserData(ref: ref('a'), edit: const TrackEditData(title: 'a', genre: 'Blues; Soul'), genres: const ['Blues', 'Soul']),
+      ]));
+      expect(await genresOf('a'), ['Blues', 'Soul']);
+    });
+
+    test('a hand edit with the backup list starting at the same genre keeps the whole list', () async {
+      await merge(UserData(createdAt: 1, tracks: [
+        TrackUserData(ref: ref('a'), edit: const TrackEditData(title: 'x', genre: 'Rock'), genres: const ['rock', 'Pop']),
+      ]));
+      expect(await genresOf('x'), ['rock', 'Pop']);
+    });
+
+    test('the genres survive collect -> json -> merge into another library', () async {
+      final a = await track('a');
+      await TrackGenreRepository(db).replace(a.id, ['Rock', 'Pop']);
+      await (db.update(db.tracks)..where((r) => r.id.equals(a.id))).write(const TracksCompanion(isFavorite: Value(true)));
+      final data = UserData.fromJson(jsonDecode(jsonEncode((await collectUserData(db)).toJson())) as Map<String, dynamic>);
+      await (db.delete(db.trackGenres)).go();
+      await merge(data);
+      expect(await genresOf('a'), ['Rock', 'Pop']);
+    });
+
+    test('a backup without the new fields merges as before', () async {
+      final data = UserData.fromJson({'format': 1, 'createdAt': 1, 'tracks': [{'ref': ref('a').toJson(), 'favorite': true}]});
+      expect((await merge(data)).favoritesAdded, 1);
+      expect(await db.select(db.trackGenres).get(), isEmpty);
+      expect(await db.select(db.artistCountries).get(), isEmpty);
+    });
+
+    test('artist countries: new keys are added, the more recent check wins, an older one never replaces', () async {
+      final repo = ArtistCountryRepository(db);
+      await repo.upsert('queen', country: 'GB', source: 'musicbrainz', checkedAtMs: 100);
+      await repo.upsert('abba', country: 'SE', source: 'wikidata', checkedAtMs: 100);
+      await merge(UserData(createdAt: 1, artistCountries: const [
+        ArtistCountryData(artistKey: 'queen', country: 'US', source: 'wikidata', checkedAt: 50),
+        ArtistCountryData(artistKey: 'abba', country: null, source: null, checkedAt: 200),
+        ArtistCountryData(artistKey: 'zz', country: null, source: null, checkedAt: 5),
+        ArtistCountryData(artistKey: 'bjork', country: 'is', source: 'musicbrainz', checkedAt: 10),
+      ]));
+      final all = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c};
+      expect(all['queen']!.country, 'GB');
+      expect((all['abba']!.country, all['abba']!.checkedAt), ('SE', 100), reason: 'a newer «not found» never erases a country');
+      expect(all['zz']!.country, isNull);
+      expect(all['bjork']!.country, 'IS');
+    });
+
+    test('artist countries: a country that is not two letters counts as «not found»', () async {
+      await merge(UserData(createdAt: 1, artistCountries: const [
+        ArtistCountryData(artistKey: 'a', country: '', source: 'x', checkedAt: 1),
+        ArtistCountryData(artistKey: 'b', country: 'ita', source: 'x', checkedAt: 1),
+        ArtistCountryData(artistKey: 'c', country: '3', source: 'x', checkedAt: 1),
+      ]));
+      final all = await db.select(db.artistCountries).get();
+      expect(all, hasLength(3));
+      expect(all.map((c) => c.country), everyElement(isNull));
+    });
+
+    test('artist countries: a found one beats a newer «not found», in both directions', () async {
+      final repo = ArtistCountryRepository(db);
+      await repo.upsert('x', checkedAtMs: 100);
+      await repo.upsert('y', country: 'FR', checkedAtMs: 50);
+      await merge(UserData(createdAt: 1, artistCountries: const [
+        ArtistCountryData(artistKey: 'x', country: 'GB', source: 'musicbrainz', checkedAt: 50),
+        ArtistCountryData(artistKey: 'y', country: null, source: null, checkedAt: 200),
+      ]));
+      final all = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c.country};
+      expect(all, {'x': 'GB', 'y': 'FR'});
+    });
   });
 }

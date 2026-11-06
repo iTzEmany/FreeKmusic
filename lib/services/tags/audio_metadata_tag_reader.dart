@@ -64,12 +64,14 @@ class AudioMetadataTagReader implements TagReader {
       final m = await (loftyRead ?? _loftyRead)(path);
       final ms = m.durationMs?.round();
       final pic = withCover ? m.picture : null;
+      final genres = splitGenres([m.genre]);
       return TagInfo(
         title: _clean(m.title),
         artist: _clean(m.artist),
         albumArtist: _clean(m.albumArtist),
         album: _clean(m.album),
-        genre: _clean(m.genre),
+        genre: genres.firstOrNull,
+        genres: genres,
         trackNumber: m.trackNumber,
         discNumber: m.discNumber,
         year: (m.year ?? 0) >= 1000 && m.year! <= 2100 ? m.year : null,
@@ -91,12 +93,14 @@ class AudioMetadataTagReader implements TagReader {
     // The package reports the first frame's bitrate; with the real length it is the average.
     final br = lame?.bps ?? m.bitrate;
     final extras = _extras(path);
+    final genres = splitGenres(m.genres);
     return TagInfo(
       title: _clean(m.title),
       artist: _clean(m.artist),
       albumArtist: _clean(m.albumArtist),
       album: _clean(m.album),
-      genre: m.genres.isEmpty ? null : _clean(m.genres.first),
+      genre: genres.firstOrNull,
+      genres: genres,
       trackNumber: m.trackNumber,
       discNumber: m.discNumber,
       year: (m.year?.year ?? 0) > 0 ? m.year!.year : null,

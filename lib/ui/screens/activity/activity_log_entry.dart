@@ -105,6 +105,17 @@ LogText logText(AppLocalizations l, LogEntry e) {
           ? LogText(l.logSecondOpinionFailed, l.logWhyRate)
           : LogText(l.logSecondOpinion, l.logSecondOpinionSub, chips: songs),
     ActivityKind.cleanup => plain(l.logCleanup, l.logCleanupSub, songs),
+    ActivityKind.genreReread => e.stopped
+        ? LogText(l.logGenres, l.logStoppedSub, chips: songs)
+        : plain(l.logGenres, l.logGenresSub, songs),
+    ActivityKind.artistCountries => plain(
+      l.logCountries,
+      e.stopped ? l.logStoppedSub : l.logCountriesSub,
+      [
+        if (i.total > 0) l.logChipArtists(i.total),
+        if (i.total > i.done) l.logChipNotFound(i.total - i.done),
+      ],
+    ),
     ActivityKind.releases => plain(l.logReleases, l.logReleasesSub),
     ActivityKind.podcastRefresh => plain(l.logPodcasts, ''),
     ActivityKind.radio => plain(l.logRadio, ''),

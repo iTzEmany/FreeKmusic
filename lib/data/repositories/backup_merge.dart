@@ -4,10 +4,13 @@ import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/text_utils.dart';
+import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
 import '../../services/backup/user_data.dart';
 import '../db/app_database.dart';
+import 'artist_country_repository.dart';
 import 'credits_repository.dart';
+import 'track_genre_repository.dart';
 import 'track_repository.dart';
 
 class MergeReport {
@@ -94,6 +97,16 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         upd = upd.copyWith(coverSource: Value(u.coverSource), coverKey: Value(ck), hasCover: const Value(true));
       }
       await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(upd);
+      // A hand edit here sets the genres from its text; otherwise the backup's only fill a track that has none.
+      final genreRepo = TrackGenreRepository(db);
+      if (upd.userEdited.present) {
+        // The backup's own list wins when it starts with the genre written by hand.
+        final text = splitGenres([e!.genre]);
+        final same = u.genres.isNotEmpty && text.isNotEmpty && u.genres.first.toLowerCase() == text.first.toLowerCase();
+        await genreRepo.replace(id, same ? u.genres : text);
+      } else if (u.genres.isNotEmpty && (await genreRepo.of(id)).isEmpty) {
+        await genreRepo.replace(id, u.genres);
+      }
       if (u.credits.isNotEmpty || u.details != null) {
         await CreditsRepository(db).saveIfNone(id, u.credits, u.details);
       }
@@ -172,6 +185,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     }
     await _mergeRadios(db, data.radios, report);
     await _mergeFollowedArtists(db, data.followedArtists, report);
+    await _mergeArtistCountries(db, data.artistCountries);
     return report;
   });
 }
@@ -238,5 +252,26 @@ Future<void> _mergeFollowedArtists(
       await (db.update(db.followedArtists)..where((r) => r.ytmId.equals(a.ytmId)))
           .write(const FollowedArtistsCompanion(origin: Value(0), excluded: Value(false)));
     }
+  }
+}
+
+/// New artists are added; for one already here a found country beats «not found», else the more recent check wins.
+Future<void> _mergeArtistCountries(AppDatabase db, List<ArtistCountryData> items) async {
+  if (items.isEmpty) return;
+  final have = {for (final c in await db.select(db.artistCountries).get()) c.artistKey: c};
+  final repo = ArtistCountryRepository(db);
+  for (final c in items) {
+    if (c.artistKey.isEmpty) continue;
+    final local = have[c.artistKey];
+    // Not an ISO alpha-2 code: counts as «not found».
+    final up = c.country?.toUpperCase();
+    final country = up != null && RegExp(r'^[A-Z]{2}$').hasMatch(up) ? up : null;
+    // A found country beats «not found» whatever the dates; between equals the more recent wins.
+    if (local != null) {
+      final localFound = local.country != null;
+      if (localFound != (country != null) ? localFound : local.checkedAt >= c.checkedAt) continue;
+    }
+    await repo.upsert(c.artistKey, country: country, source: c.source, checkedAtMs: c.checkedAt);
+    have[c.artistKey] = ArtistCountry(artistKey: c.artistKey, country: country, source: c.source, checkedAt: c.checkedAt);
   }
 }

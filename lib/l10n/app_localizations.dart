@@ -10081,6 +10081,30 @@ abstract class AppLocalizations {
   /// **'Confrontati i brani della libreria.'**
   String get logCleanupSub;
 
+  /// No description provided for @logGenres.
+  ///
+  /// In it, this message translates to:
+  /// **'Generi dei brani riletti'**
+  String get logGenres;
+
+  /// No description provided for @logGenresSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Letti i tag dei brani per trovare tutti i generi.'**
+  String get logGenresSub;
+
+  /// No description provided for @logCountries.
+  ///
+  /// In it, this message translates to:
+  /// **'Paesi degli artisti cercati'**
+  String get logCountries;
+
+  /// No description provided for @logCountriesSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Cercato il paese d\'origine degli artisti della libreria.'**
+  String get logCountriesSub;
+
   /// No description provided for @logReleases.
   ///
   /// In it, this message translates to:
@@ -10182,6 +10206,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{count, plural, one{1 brano} other{{count} brani}}'**
   String logChipSongs(int count);
+
+  /// No description provided for @logChipArtists.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 artista} other{{count} artisti}}'**
+  String logChipArtists(int count);
 
   /// No description provided for @logChipSongsOf.
   ///

@@ -6327,6 +6327,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get logCleanupSub => 'Confrontati i brani della libreria.';
 
   @override
+  String get logGenres => 'Generi dei brani riletti';
+
+  @override
+  String get logGenresSub =>
+      'Letti i tag dei brani per trovare tutti i generi.';
+
+  @override
+  String get logCountries => 'Paesi degli artisti cercati';
+
+  @override
+  String get logCountriesSub =>
+      'Cercato il paese d\'origine degli artisti della libreria.';
+
+  @override
   String get logReleases => 'Nuove uscite controllate';
 
   @override
@@ -6387,6 +6401,17 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: '$count brani',
       one: '1 brano',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logChipArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artisti',
+      one: '1 artista',
     );
     return '$_temp0';
   }

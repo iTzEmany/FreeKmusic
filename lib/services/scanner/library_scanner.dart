@@ -125,6 +125,7 @@ class LibraryScanner {
     var done = 0;
     yield ScanProgress(total: changed.length);
     final pending = <TracksCompanion>[];
+    final pendingGenres = <String, List<String>>{};
     final albumCovers = <String, ({String? key, int source})>{};
 
     for (var i = 0; i < changed.length; i += _group) {
@@ -134,14 +135,16 @@ class LibraryScanner {
       for (var j = 0; j < batch.length; j++) {
         try {
           pending.add(await _toRow(folder, batch[j], infos[j], albumCovers));
+          pendingGenres[batch[j].path] = infos[j].genres;
         } on Object catch (e, st) {
           AppLog.e('row build failed: ${batch[j].path}', e, st);
         }
       }
       done = end;
       if (pending.length >= _flushAt) {
-        await _tracks.upsertBatch(List.of(pending));
+        await _tracks.upsertBatch(List.of(pending), genresByPath: Map.of(pendingGenres));
         pending.clear();
+        pendingGenres.clear();
       }
       yield ScanProgress(
         done: done,
@@ -149,7 +152,7 @@ class LibraryScanner {
         currentPath: batch.last.path,
       );
     }
-    if (pending.isNotEmpty) await _tracks.upsertBatch(pending);
+    if (pending.isNotEmpty) await _tracks.upsertBatch(pending, genresByPath: pendingGenres);
 
     if (!markMissing) {
       yield ScanProgress(done: done, total: changed.length, finished: true);
@@ -214,7 +217,7 @@ class LibraryScanner {
       trackNumber: Value(t.trackNumber),
       discNumber: Value(t.discNumber),
       year: Value(t.year),
-      genre: Value(t.genre),
+      genre: Value(t.genres.firstOrNull),
       durationMs: Value(t.durationMs ?? 0),
       sampleRateHz: Value(t.sampleRateHz),
       bitDepth: Value(t.bitDepth),

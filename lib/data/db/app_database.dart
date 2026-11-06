@@ -8,7 +8,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 15;
+const kSchemaVersion = 16;
 
 @DriftDatabase(
   tables: [
@@ -32,6 +32,8 @@ const kSchemaVersion = 15;
     TrackCredits,
     TrackEnrich,
     ActivityLogRows,
+    TrackGenres,
+    ArtistCountries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -163,6 +165,11 @@ class AppDatabase extends _$AppDatabase {
             'ON CONFLICT(track_id) DO UPDATE SET lyrics_by_user = 1',
           );
         }
+      }
+      if (from < 16) {
+        await m.createTable(trackGenres);
+        await m.createIndex(trackGenresGenre);
+        await m.createTable(artistCountries);
       }
     },
     beforeOpen: (details) async {

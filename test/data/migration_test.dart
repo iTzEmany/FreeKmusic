@@ -719,4 +719,33 @@ void main() {
     expect(t.map((r) => r.read<String?>('lyrics_plain')), [null, 'words', null, '', 'w', null]);
     await db.close();
   });
+  test('a v15 database gets the genre and artist-country tables, empty, and keeps its tracks', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, '
+            'title TEXT NOT NULL, genre TEXT)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title, genre) VALUES (1, '/1', 'one', 'Rock'), (2, '/2', 'two', NULL)");
+          raw.userVersion = 15;
+        },
+      ),
+    );
+    final names = (await db.customSelect('SELECT name FROM sqlite_master').get()).map((r) => r.read<String>('name')).toSet();
+    expect(names, containsAll(['track_genres', 'artist_countries', 'track_genres_genre']));
+    expect(await db.select(db.trackGenres).get(), isEmpty);
+    expect(await db.select(db.artistCountries).get(), isEmpty);
+    final t = await db.customSelect('SELECT id, title, genre FROM tracks ORDER BY id').get();
+    expect(t.map((r) => r.read<String?>('genre')), ['Rock', null]);
+
+    // The genre matches ignoring case, and deleting a track takes its genres.
+    await db.into(db.trackGenres).insert(TrackGenresCompanion.insert(trackId: 1, genre: 'Rock', position: 0));
+    final hit = await db.customSelect("SELECT track_id FROM track_genres WHERE genre = 'rock'").get();
+    expect(hit, hasLength(1));
+    await db.customStatement('PRAGMA foreign_keys = ON');
+    await db.customStatement('DELETE FROM tracks WHERE id = 1');
+    expect(await db.select(db.trackGenres).get(), isEmpty);
+    await db.close();
+  });
 }

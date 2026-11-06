@@ -31,3 +31,25 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
 ## Esiti
+
+### 93.3 — BPM ed etichetta
+Scelta: `json_extract` su `track_enrich.details` (campi `bpm`, `label`), protetto da `json_valid`; niente colonne derivate e niente migrazione, quindi nessun dato duplicato. I filtri girano su pochi brani arricchiti. API in `lib/data/repositories/enrich_filter_queries.dart`: `bpmSql(e)`, `labelSql(e)`, `trackIdsByBpm`, `trackIdsByLabel` (confronto con `normalize` in Dart, perché SQLite non toglie gli accenti). Brani non arricchiti, JSON malformato o campo mancante danno NULL e sono esclusi.
+
+### 93.1, 93.2, 93.4 — Generi, nazionalità, backup
+- **93.1**: schema v16 in un solo passo (`track_genres`, `artist_countries`); `splitGenres` taglia su `;`, `/` e tag multipli per i file, solo su `;` per i generi dell'arricchimento («Hip-Hop/Rap» resta intero). Rilettura in background a lotti di 20, un file alla volta e solo dopo 5 s senza attività; riprende dal segnalibro; riga nel Registro.
+- **93.2**: nazionalità da MusicBrainz (`country`, poi codici dell'area) e Wikidata (P27, poi P495, poi P297), solo con l'arricchimento acceso, rete non a consumo e senza Jam (D-421). Stop al primo 429/503, «non trovato» riprovato dopo 30 giorni. Chiave = `ArtistInfoRepository.keyOf` («The» non tolto, come nel resto dell'app); i codici `X*` (anche Kosovo) sono scartati.
+- **93.4 backup**: generi e paesi nel backup e nel merge; i segnalibri della rilettura non viaggiano e si azzerano al ripristino. Nel merge un paese trovato batte un «non trovato», un codice non alpha-2 vale «non trovato». Backup della 87 → tabelle nuove vuote (`legacy_backup_test`); schema più nuovo rifiutato come nella 88.
+- **Code review high** (migrazione, backup, arricchimento): 10 rilievi, 7 applicati (generi persi per un titolo modificato a mano, «/» dell'arricchimento, `tracks.genre` non allineato, paese cancellato da un «non trovato», gara con la modifica a mano, chiave duplicata). Rinviati: lettura dei soli generi senza `readTrackIds` (serve un'API `withIds`), il rescan che sovrascrive i generi modificati a mano (comportamento precedente alla fase), duplicazione fra i due avvii in background (accettata).
+- **Scheggia**: 1 bug medio (genere web spezzato con file senza genere), 2 bassi nel merge dei paesi, corretti con test; 14 mutanti sopravvissuti su 50, 10 coperti da test nuovi. Non corretti: tipi sbagliati in un backup modificato a mano, varianti unicode dei generi.
+- **Misure sul Mi A3** (build perf, 3000 brani, % frame oltre 16,7 ms):
+
+  | Schermata | Base 87 | Fase 93 |
+  |---|---|---|
+  | Tutti i brani | 2,0 % | 1,3 % |
+  | Scroll Tutti i brani | 2,3 % | 0,6 % |
+  | Scroll Libreria | 4,7 % | 1,0 % |
+  | Cambio scheda | 5,5 % | 2,0 % |
+
+  Scroll di Tutti i brani **con la rilettura attiva** (prova a mano, 10 swipe): 39 % all'inizio, ~45–55 % con un file alla volta; la causa era `setFirstGenre`, che notificava `tracks` anche senza cambiare righe e faceva rifare le query delle liste a ogni brano. Corretto: ~2 % (rilettura attiva), 0 % (finita). Mentre la rilettura gira, uiautomator non trova mai l'app ferma (il pallino di attività anima), quindi `perf_device.py` misura a rilettura finita.
+- **Ripristino su profilo pulito**: fatto a livello di servizio con un backup zip vero (`restore_service_test`, `backup_service_test`, `legacy_backup_test`, 23 verdi), non con l'interfaccia desktop sotto xvfb.
+- **Motorola**: rinviato alla fase 97 (D-419, D-420).

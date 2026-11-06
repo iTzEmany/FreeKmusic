@@ -1,5 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/backup_queries.dart';
+import 'package:codecore/data/repositories/artist_country_repository.dart';
+import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,5 +84,23 @@ void main() {
     expect(two.items.map((i) => i.title), ['Z', 'X', 'Y']);
     expect(d.imports.single.playlistName, 'Two');
     expect(d.imports.single.rows.single.title, 'X');
+  });
+
+  test('track genres and artist countries are collected', () async {
+    final f = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/m', addedAt: 1));
+    final a = await db.into(db.tracks).insert(track('/m/a.mp3', 'A', f, fav: true));
+    await TrackGenreRepository(db).replace(a, ['Rock', 'Pop']);
+    await ArtistCountryRepository(db).upsert('queen', country: 'GB', source: 'musicbrainz', checkedAtMs: 7);
+    final d = await collectUserData(db);
+    expect(d.tracks.single.genres, ['Rock', 'Pop']);
+    expect(d.artistCountries.single.toJson(), {'artistKey': 'queen', 'country': 'GB', 'source': 'musicbrainz', 'checkedAt': 7});
+  });
+
+  test('genres inserted out of order come back by position', () async {
+    final f = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/m', addedAt: 1));
+    final a = await db.into(db.tracks).insert(track('/m/a.mp3', 'A', f, fav: true));
+    await db.into(db.trackGenres).insert(TrackGenresCompanion.insert(trackId: a, genre: 'Pop', position: 1));
+    await db.into(db.trackGenres).insert(TrackGenresCompanion.insert(trackId: a, genre: 'Rock', position: 0));
+    expect((await collectUserData(db)).tracks.single.genres, ['Rock', 'Pop']);
   });
 }

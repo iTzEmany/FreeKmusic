@@ -11700,6 +11700,595 @@ class ActivityLogRowsCompanion extends UpdateCompanion<ActivityLogRow> {
   }
 }
 
+class $TrackGenresTable extends TrackGenres
+    with TableInfo<$TrackGenresTable, TrackGenreRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrackGenresTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _trackIdMeta = const VerificationMeta(
+    'trackId',
+  );
+  @override
+  late final GeneratedColumn<int> trackId = GeneratedColumn<int>(
+    'track_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tracks (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _genreMeta = const VerificationMeta('genre');
+  @override
+  late final GeneratedColumn<String> genre = GeneratedColumn<String>(
+    'genre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL COLLATE NOCASE',
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [trackId, genre, position];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'track_genres';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrackGenreRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('track_id')) {
+      context.handle(
+        _trackIdMeta,
+        trackId.isAcceptableOrUnknown(data['track_id']!, _trackIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trackIdMeta);
+    }
+    if (data.containsKey('genre')) {
+      context.handle(
+        _genreMeta,
+        genre.isAcceptableOrUnknown(data['genre']!, _genreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_genreMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {trackId, position};
+  @override
+  TrackGenreRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrackGenreRow(
+      trackId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}track_id'],
+      )!,
+      genre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}genre'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+    );
+  }
+
+  @override
+  $TrackGenresTable createAlias(String alias) {
+    return $TrackGenresTable(attachedDatabase, alias);
+  }
+}
+
+class TrackGenreRow extends DataClass implements Insertable<TrackGenreRow> {
+  final int trackId;
+
+  /// Trimmed, as in the tag; compared ignoring case (the index too).
+  final String genre;
+  final int position;
+  const TrackGenreRow({
+    required this.trackId,
+    required this.genre,
+    required this.position,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['track_id'] = Variable<int>(trackId);
+    map['genre'] = Variable<String>(genre);
+    map['position'] = Variable<int>(position);
+    return map;
+  }
+
+  TrackGenresCompanion toCompanion(bool nullToAbsent) {
+    return TrackGenresCompanion(
+      trackId: Value(trackId),
+      genre: Value(genre),
+      position: Value(position),
+    );
+  }
+
+  factory TrackGenreRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrackGenreRow(
+      trackId: serializer.fromJson<int>(json['trackId']),
+      genre: serializer.fromJson<String>(json['genre']),
+      position: serializer.fromJson<int>(json['position']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'trackId': serializer.toJson<int>(trackId),
+      'genre': serializer.toJson<String>(genre),
+      'position': serializer.toJson<int>(position),
+    };
+  }
+
+  TrackGenreRow copyWith({int? trackId, String? genre, int? position}) =>
+      TrackGenreRow(
+        trackId: trackId ?? this.trackId,
+        genre: genre ?? this.genre,
+        position: position ?? this.position,
+      );
+  TrackGenreRow copyWithCompanion(TrackGenresCompanion data) {
+    return TrackGenreRow(
+      trackId: data.trackId.present ? data.trackId.value : this.trackId,
+      genre: data.genre.present ? data.genre.value : this.genre,
+      position: data.position.present ? data.position.value : this.position,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackGenreRow(')
+          ..write('trackId: $trackId, ')
+          ..write('genre: $genre, ')
+          ..write('position: $position')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(trackId, genre, position);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrackGenreRow &&
+          other.trackId == this.trackId &&
+          other.genre == this.genre &&
+          other.position == this.position);
+}
+
+class TrackGenresCompanion extends UpdateCompanion<TrackGenreRow> {
+  final Value<int> trackId;
+  final Value<String> genre;
+  final Value<int> position;
+  final Value<int> rowid;
+  const TrackGenresCompanion({
+    this.trackId = const Value.absent(),
+    this.genre = const Value.absent(),
+    this.position = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrackGenresCompanion.insert({
+    required int trackId,
+    required String genre,
+    required int position,
+    this.rowid = const Value.absent(),
+  }) : trackId = Value(trackId),
+       genre = Value(genre),
+       position = Value(position);
+  static Insertable<TrackGenreRow> custom({
+    Expression<int>? trackId,
+    Expression<String>? genre,
+    Expression<int>? position,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (trackId != null) 'track_id': trackId,
+      if (genre != null) 'genre': genre,
+      if (position != null) 'position': position,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrackGenresCompanion copyWith({
+    Value<int>? trackId,
+    Value<String>? genre,
+    Value<int>? position,
+    Value<int>? rowid,
+  }) {
+    return TrackGenresCompanion(
+      trackId: trackId ?? this.trackId,
+      genre: genre ?? this.genre,
+      position: position ?? this.position,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (trackId.present) {
+      map['track_id'] = Variable<int>(trackId.value);
+    }
+    if (genre.present) {
+      map['genre'] = Variable<String>(genre.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackGenresCompanion(')
+          ..write('trackId: $trackId, ')
+          ..write('genre: $genre, ')
+          ..write('position: $position, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ArtistCountriesTable extends ArtistCountries
+    with TableInfo<$ArtistCountriesTable, ArtistCountry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArtistCountriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _artistKeyMeta = const VerificationMeta(
+    'artistKey',
+  );
+  @override
+  late final GeneratedColumn<String> artistKey = GeneratedColumn<String>(
+    'artist_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countryMeta = const VerificationMeta(
+    'country',
+  );
+  @override
+  late final GeneratedColumn<String> country = GeneratedColumn<String>(
+    'country',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _checkedAtMeta = const VerificationMeta(
+    'checkedAt',
+  );
+  @override
+  late final GeneratedColumn<int> checkedAt = GeneratedColumn<int>(
+    'checked_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [artistKey, country, source, checkedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'artist_countries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArtistCountry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('artist_key')) {
+      context.handle(
+        _artistKeyMeta,
+        artistKey.isAcceptableOrUnknown(data['artist_key']!, _artistKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_artistKeyMeta);
+    }
+    if (data.containsKey('country')) {
+      context.handle(
+        _countryMeta,
+        country.isAcceptableOrUnknown(data['country']!, _countryMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('checked_at')) {
+      context.handle(
+        _checkedAtMeta,
+        checkedAt.isAcceptableOrUnknown(data['checked_at']!, _checkedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_checkedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {artistKey};
+  @override
+  ArtistCountry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArtistCountry(
+      artistKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}artist_key'],
+      )!,
+      country: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}country'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      ),
+      checkedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}checked_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ArtistCountriesTable createAlias(String alias) {
+    return $ArtistCountriesTable(attachedDatabase, alias);
+  }
+}
+
+class ArtistCountry extends DataClass implements Insertable<ArtistCountry> {
+  final String artistKey;
+
+  /// ISO 3166-1 alpha-2.
+  final String? country;
+
+  /// `musicbrainz` / `wikidata`; null when nothing answered.
+  final String? source;
+  final int checkedAt;
+  const ArtistCountry({
+    required this.artistKey,
+    this.country,
+    this.source,
+    required this.checkedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['artist_key'] = Variable<String>(artistKey);
+    if (!nullToAbsent || country != null) {
+      map['country'] = Variable<String>(country);
+    }
+    if (!nullToAbsent || source != null) {
+      map['source'] = Variable<String>(source);
+    }
+    map['checked_at'] = Variable<int>(checkedAt);
+    return map;
+  }
+
+  ArtistCountriesCompanion toCompanion(bool nullToAbsent) {
+    return ArtistCountriesCompanion(
+      artistKey: Value(artistKey),
+      country: country == null && nullToAbsent
+          ? const Value.absent()
+          : Value(country),
+      source: source == null && nullToAbsent
+          ? const Value.absent()
+          : Value(source),
+      checkedAt: Value(checkedAt),
+    );
+  }
+
+  factory ArtistCountry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArtistCountry(
+      artistKey: serializer.fromJson<String>(json['artistKey']),
+      country: serializer.fromJson<String?>(json['country']),
+      source: serializer.fromJson<String?>(json['source']),
+      checkedAt: serializer.fromJson<int>(json['checkedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'artistKey': serializer.toJson<String>(artistKey),
+      'country': serializer.toJson<String?>(country),
+      'source': serializer.toJson<String?>(source),
+      'checkedAt': serializer.toJson<int>(checkedAt),
+    };
+  }
+
+  ArtistCountry copyWith({
+    String? artistKey,
+    Value<String?> country = const Value.absent(),
+    Value<String?> source = const Value.absent(),
+    int? checkedAt,
+  }) => ArtistCountry(
+    artistKey: artistKey ?? this.artistKey,
+    country: country.present ? country.value : this.country,
+    source: source.present ? source.value : this.source,
+    checkedAt: checkedAt ?? this.checkedAt,
+  );
+  ArtistCountry copyWithCompanion(ArtistCountriesCompanion data) {
+    return ArtistCountry(
+      artistKey: data.artistKey.present ? data.artistKey.value : this.artistKey,
+      country: data.country.present ? data.country.value : this.country,
+      source: data.source.present ? data.source.value : this.source,
+      checkedAt: data.checkedAt.present ? data.checkedAt.value : this.checkedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistCountry(')
+          ..write('artistKey: $artistKey, ')
+          ..write('country: $country, ')
+          ..write('source: $source, ')
+          ..write('checkedAt: $checkedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(artistKey, country, source, checkedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArtistCountry &&
+          other.artistKey == this.artistKey &&
+          other.country == this.country &&
+          other.source == this.source &&
+          other.checkedAt == this.checkedAt);
+}
+
+class ArtistCountriesCompanion extends UpdateCompanion<ArtistCountry> {
+  final Value<String> artistKey;
+  final Value<String?> country;
+  final Value<String?> source;
+  final Value<int> checkedAt;
+  final Value<int> rowid;
+  const ArtistCountriesCompanion({
+    this.artistKey = const Value.absent(),
+    this.country = const Value.absent(),
+    this.source = const Value.absent(),
+    this.checkedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ArtistCountriesCompanion.insert({
+    required String artistKey,
+    this.country = const Value.absent(),
+    this.source = const Value.absent(),
+    required int checkedAt,
+    this.rowid = const Value.absent(),
+  }) : artistKey = Value(artistKey),
+       checkedAt = Value(checkedAt);
+  static Insertable<ArtistCountry> custom({
+    Expression<String>? artistKey,
+    Expression<String>? country,
+    Expression<String>? source,
+    Expression<int>? checkedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (artistKey != null) 'artist_key': artistKey,
+      if (country != null) 'country': country,
+      if (source != null) 'source': source,
+      if (checkedAt != null) 'checked_at': checkedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ArtistCountriesCompanion copyWith({
+    Value<String>? artistKey,
+    Value<String?>? country,
+    Value<String?>? source,
+    Value<int>? checkedAt,
+    Value<int>? rowid,
+  }) {
+    return ArtistCountriesCompanion(
+      artistKey: artistKey ?? this.artistKey,
+      country: country ?? this.country,
+      source: source ?? this.source,
+      checkedAt: checkedAt ?? this.checkedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (artistKey.present) {
+      map['artist_key'] = Variable<String>(artistKey.value);
+    }
+    if (country.present) {
+      map['country'] = Variable<String>(country.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (checkedAt.present) {
+      map['checked_at'] = Variable<int>(checkedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArtistCountriesCompanion(')
+          ..write('artistKey: $artistKey, ')
+          ..write('country: $country, ')
+          ..write('source: $source, ')
+          ..write('checkedAt: $checkedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -11730,6 +12319,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TrackCreditsTable trackCredits = $TrackCreditsTable(this);
   late final $TrackEnrichTable trackEnrich = $TrackEnrichTable(this);
   late final $ActivityLogRowsTable activityLogRows = $ActivityLogRowsTable(
+    this,
+  );
+  late final $TrackGenresTable trackGenres = $TrackGenresTable(this);
+  late final $ArtistCountriesTable artistCountries = $ArtistCountriesTable(
     this,
   );
   late final Index tracksAlbumKey = Index(
@@ -11788,6 +12381,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'activity_log_at',
     'CREATE INDEX activity_log_at ON activity_log (at)',
   );
+  late final Index trackGenresGenre = Index(
+    'track_genres_genre',
+    'CREATE INDEX track_genres_genre ON track_genres (genre)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11813,6 +12410,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     trackCredits,
     trackEnrich,
     activityLogRows,
+    trackGenres,
+    artistCountries,
     tracksAlbumKey,
     tracksArtist,
     tracksFavorite,
@@ -11827,6 +12426,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     podcastEpisodesPodcast,
     trackCreditsNameKey,
     activityLogAt,
+    trackGenresGenre,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -11920,6 +12520,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('track_enrich', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tracks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('track_genres', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -12141,6 +12748,24 @@ final class $$TracksTableReferences
     ).filter((f) => f.trackId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_trackEnrichRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TrackGenresTable, List<TrackGenreRow>>
+  _trackGenresRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.trackGenres,
+    aliasName: 'tracks__id__track_genres__track_id',
+  );
+
+  $$TrackGenresTableProcessedTableManager get trackGenresRefs {
+    final manager = $$TrackGenresTableTableManager(
+      $_db,
+      $_db.trackGenres,
+    ).filter((f) => f.trackId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_trackGenresRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -12517,6 +13142,31 @@ class $$TracksTableFilterComposer
           }) => $$TrackEnrichTableFilterComposer(
             $db: $db,
             $table: $db.trackEnrich,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> trackGenresRefs(
+    Expression<bool> Function($$TrackGenresTableFilterComposer f) f,
+  ) {
+    final $$TrackGenresTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trackGenres,
+      getReferencedColumn: (t) => t.trackId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackGenresTableFilterComposer(
+            $db: $db,
+            $table: $db.trackGenres,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13065,6 +13715,31 @@ class $$TracksTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> trackGenresRefs<T extends Object>(
+    Expression<T> Function($$TrackGenresTableAnnotationComposer a) f,
+  ) {
+    final $$TrackGenresTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trackGenres,
+      getReferencedColumn: (t) => t.trackId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackGenresTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trackGenres,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TracksTableTableManager
@@ -13088,6 +13763,7 @@ class $$TracksTableTableManager
             bool podcastEpisodesRefs,
             bool trackCreditsRefs,
             bool trackEnrichRefs,
+            bool trackGenresRefs,
           })
         > {
   $$TracksTableTableManager(_$AppDatabase db, $TracksTable table)
@@ -13282,6 +13958,7 @@ class $$TracksTableTableManager
                 podcastEpisodesRefs = false,
                 trackCreditsRefs = false,
                 trackEnrichRefs = false,
+                trackGenresRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -13293,6 +13970,7 @@ class $$TracksTableTableManager
                     if (podcastEpisodesRefs) db.podcastEpisodes,
                     if (trackCreditsRefs) db.trackCredits,
                     if (trackEnrichRefs) db.trackEnrich,
+                    if (trackGenresRefs) db.trackGenres,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -13436,6 +14114,27 @@ class $$TracksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (trackGenresRefs)
+                        await $_getPrefetchedData<
+                          Track,
+                          $TracksTable,
+                          TrackGenreRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TracksTableReferences
+                              ._trackGenresRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TracksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).trackGenresRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.trackId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -13464,6 +14163,7 @@ typedef $$TracksTableProcessedTableManager =
         bool podcastEpisodesRefs,
         bool trackCreditsRefs,
         bool trackEnrichRefs,
+        bool trackGenresRefs,
       })
     >;
 typedef $$FoldersTableCreateCompanionBuilder = FoldersCompanion Function({
@@ -20383,6 +21083,475 @@ typedef $$ActivityLogRowsTableProcessedTableManager =
       ActivityLogRow,
       PrefetchHooks Function()
     >;
+typedef $$TrackGenresTableCreateCompanionBuilder =
+    TrackGenresCompanion Function({
+      required int trackId,
+      required String genre,
+      required int position,
+      Value<int> rowid,
+    });
+typedef $$TrackGenresTableUpdateCompanionBuilder =
+    TrackGenresCompanion Function({
+      Value<int> trackId,
+      Value<String> genre,
+      Value<int> position,
+      Value<int> rowid,
+    });
+
+final class $$TrackGenresTableReferences
+    extends BaseReferences<_$AppDatabase, $TrackGenresTable, TrackGenreRow> {
+  $$TrackGenresTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TracksTable _trackIdTable(_$AppDatabase db) =>
+      db.tracks.createAlias('track_genres__track_id__tracks__id');
+
+  $$TracksTableProcessedTableManager get trackId {
+    final $_column = $_itemColumn<int>('track_id')!;
+
+    final manager = $$TracksTableTableManager(
+      $_db,
+      $_db.tracks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_trackIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TrackGenresTableFilterComposer
+    extends Composer<_$AppDatabase, $TrackGenresTable> {
+  $$TrackGenresTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get genre => $composableBuilder(
+    column: $table.genre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TracksTableFilterComposer get trackId {
+    final $$TracksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackId,
+      referencedTable: $db.tracks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TracksTableFilterComposer(
+            $db: $db,
+            $table: $db.tracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrackGenresTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrackGenresTable> {
+  $$TrackGenresTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get genre => $composableBuilder(
+    column: $table.genre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TracksTableOrderingComposer get trackId {
+    final $$TracksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackId,
+      referencedTable: $db.tracks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TracksTableOrderingComposer(
+            $db: $db,
+            $table: $db.tracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrackGenresTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrackGenresTable> {
+  $$TrackGenresTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get genre =>
+      $composableBuilder(column: $table.genre, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  $$TracksTableAnnotationComposer get trackId {
+    final $$TracksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackId,
+      referencedTable: $db.tracks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TracksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrackGenresTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrackGenresTable,
+          TrackGenreRow,
+          $$TrackGenresTableFilterComposer,
+          $$TrackGenresTableOrderingComposer,
+          $$TrackGenresTableAnnotationComposer,
+          $$TrackGenresTableCreateCompanionBuilder,
+          $$TrackGenresTableUpdateCompanionBuilder,
+          (TrackGenreRow, $$TrackGenresTableReferences),
+          TrackGenreRow,
+          PrefetchHooks Function({bool trackId})
+        > {
+  $$TrackGenresTableTableManager(_$AppDatabase db, $TrackGenresTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrackGenresTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrackGenresTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrackGenresTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> trackId = const Value.absent(),
+                Value<String> genre = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrackGenresCompanion(
+                trackId: trackId,
+                genre: genre,
+                position: position,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int trackId,
+                required String genre,
+                required int position,
+                Value<int> rowid = const Value.absent(),
+              }) => TrackGenresCompanion.insert(
+                trackId: trackId,
+                genre: genre,
+                position: position,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TrackGenresTable, TrackGenreRow>(table),
+                  $$TrackGenresTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({trackId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (trackId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.trackId,
+                        referencedTable: $$TrackGenresTableReferences
+                            ._trackIdTable(db),
+                        referencedColumn: $$TrackGenresTableReferences
+                            ._trackIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TrackGenresTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrackGenresTable,
+      TrackGenreRow,
+      $$TrackGenresTableFilterComposer,
+      $$TrackGenresTableOrderingComposer,
+      $$TrackGenresTableAnnotationComposer,
+      $$TrackGenresTableCreateCompanionBuilder,
+      $$TrackGenresTableUpdateCompanionBuilder,
+      (TrackGenreRow, $$TrackGenresTableReferences),
+      TrackGenreRow,
+      PrefetchHooks Function({bool trackId})
+    >;
+typedef $$ArtistCountriesTableCreateCompanionBuilder =
+    ArtistCountriesCompanion Function({
+      required String artistKey,
+      Value<String?> country,
+      Value<String?> source,
+      required int checkedAt,
+      Value<int> rowid,
+    });
+typedef $$ArtistCountriesTableUpdateCompanionBuilder =
+    ArtistCountriesCompanion Function({
+      Value<String> artistKey,
+      Value<String?> country,
+      Value<String?> source,
+      Value<int> checkedAt,
+      Value<int> rowid,
+    });
+
+class $$ArtistCountriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ArtistCountriesTable> {
+  $$ArtistCountriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get artistKey => $composableBuilder(
+    column: $table.artistKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get country => $composableBuilder(
+    column: $table.country,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get checkedAt => $composableBuilder(
+    column: $table.checkedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ArtistCountriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ArtistCountriesTable> {
+  $$ArtistCountriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get artistKey => $composableBuilder(
+    column: $table.artistKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get country => $composableBuilder(
+    column: $table.country,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get checkedAt => $composableBuilder(
+    column: $table.checkedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ArtistCountriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ArtistCountriesTable> {
+  $$ArtistCountriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get artistKey =>
+      $composableBuilder(column: $table.artistKey, builder: (column) => column);
+
+  GeneratedColumn<String> get country =>
+      $composableBuilder(column: $table.country, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get checkedAt =>
+      $composableBuilder(column: $table.checkedAt, builder: (column) => column);
+}
+
+class $$ArtistCountriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ArtistCountriesTable,
+          ArtistCountry,
+          $$ArtistCountriesTableFilterComposer,
+          $$ArtistCountriesTableOrderingComposer,
+          $$ArtistCountriesTableAnnotationComposer,
+          $$ArtistCountriesTableCreateCompanionBuilder,
+          $$ArtistCountriesTableUpdateCompanionBuilder,
+          (
+            ArtistCountry,
+            BaseReferences<_$AppDatabase, $ArtistCountriesTable, ArtistCountry>,
+          ),
+          ArtistCountry,
+          PrefetchHooks Function()
+        > {
+  $$ArtistCountriesTableTableManager(
+    _$AppDatabase db,
+    $ArtistCountriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ArtistCountriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ArtistCountriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ArtistCountriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> artistKey = const Value.absent(),
+                Value<String?> country = const Value.absent(),
+                Value<String?> source = const Value.absent(),
+                Value<int> checkedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ArtistCountriesCompanion(
+                artistKey: artistKey,
+                country: country,
+                source: source,
+                checkedAt: checkedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String artistKey,
+                Value<String?> country = const Value.absent(),
+                Value<String?> source = const Value.absent(),
+                required int checkedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ArtistCountriesCompanion.insert(
+                artistKey: artistKey,
+                country: country,
+                source: source,
+                checkedAt: checkedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ArtistCountriesTable, ArtistCountry>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ArtistCountriesTable,
+                    ArtistCountry
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ArtistCountriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ArtistCountriesTable,
+      ArtistCountry,
+      $$ArtistCountriesTableFilterComposer,
+      $$ArtistCountriesTableOrderingComposer,
+      $$ArtistCountriesTableAnnotationComposer,
+      $$ArtistCountriesTableCreateCompanionBuilder,
+      $$ArtistCountriesTableUpdateCompanionBuilder,
+      (
+        ArtistCountry,
+        BaseReferences<_$AppDatabase, $ArtistCountriesTable, ArtistCountry>,
+      ),
+      ArtistCountry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -20427,4 +21596,8 @@ class $AppDatabaseManager {
       $$TrackEnrichTableTableManager(_db, _db.trackEnrich);
   $$ActivityLogRowsTableTableManager get activityLogRows =>
       $$ActivityLogRowsTableTableManager(_db, _db.activityLogRows);
+  $$TrackGenresTableTableManager get trackGenres =>
+      $$TrackGenresTableTableManager(_db, _db.trackGenres);
+  $$ArtistCountriesTableTableManager get artistCountries =>
+      $$ArtistCountriesTableTableManager(_db, _db.artistCountries);
 }

@@ -45,6 +45,10 @@ void main() {
     addTearDown(db.close);
     expect((await db.customSelect('PRAGMA user_version').getSingle()).data.values.first, kSchemaVersion);
 
+    // D-397: the tables of schema 16 start empty; the genre re-read fills them.
+    expect(await db.select(db.trackGenres).get(), isEmpty);
+    expect(await db.select(db.artistCountries).get(), isEmpty);
+
     final playlist = (await db.select(db.playlists).getSingle());
     expect(playlist.name, 'Mix');
     final rows = await (db.select(db.playlistTracks)..orderBy([(r) => OrderingTerm.asc(r.position)])).get();

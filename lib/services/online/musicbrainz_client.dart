@@ -54,6 +54,14 @@ class MbWorkLink {
   final bool cover;
 }
 
+/// Where an artist comes from per MusicBrainz: an ISO [country], else the
+/// [wikidata] item (`Q…`) to ask; both null when it has neither.
+class MbArtistOrigin {
+  const MbArtistOrigin({this.country, this.wikidata});
+
+  final String? country, wikidata;
+}
+
 /// MusicBrainz did not answer (503 or network) even after the second try.
 class MusicBrainzUnavailable implements Exception {
   const MusicBrainzUnavailable(this.what);
@@ -320,18 +328,43 @@ class MusicBrainzClient {
   Future<({String id, String name})?> artist(String name, {CancelToken? cancel}) async {
     final n = name.replaceAll('"', ' ').trim();
     if (n.isEmpty) return null;
-    final data = await _get('artist', {'query': 'artist:"$n"', 'limit': '5'}, cancel);
+    final a = _artistHit(await _get('artist', {'query': 'artist:"$n"', 'limit': '5'}, cancel), n);
+    return a == null ? null : (id: a['id'] as String, name: a['name'] as String);
+  }
+
+  static Map? _artistHit(Map? data, String name) {
     final list = data?['artists'];
     if (list is! List) return null;
-    final want = matchKey(n);
+    final want = matchKey(name);
     for (final a in list) {
       if (a is! Map || a['id'] is! String || a['name'] is! String) continue;
       final score = a['score'];
-      if (matchKey(a['name'] as String) == want && (score is! num || score >= 90)) {
-        return (id: a['id'] as String, name: a['name'] as String);
-      }
+      if (matchKey(a['name'] as String) == want && (score is! num || score >= 90)) return a;
     }
     return null;
+  }
+
+  /// Where the artist [name] comes from (D-390): the ISO country of the search hit
+  /// (MusicBrainz fills `country` even when the area is a city), else the ISO code of
+  /// its area; with neither, the Wikidata item of its links. Null when no artist is sure.
+  /// Strict: a 503 or no network throws [MusicBrainzUnavailable], so "not found" is never a guess.
+  Future<MbArtistOrigin?> artistOrigin(String name, {CancelToken? cancel}) async {
+    final n = name.replaceAll('"', ' ').trim();
+    if (n.isEmpty) return null;
+    final a = _artistHit(await _get('artist', {'query': 'artist:"$n"', 'limit': '5'}, cancel, strict: true), n);
+    if (a == null) return null;
+    final area = a['area'];
+    final country = _iso(a['country']) ??
+        _iso(area is Map && area['iso-3166-1-codes'] is List ? (area['iso-3166-1-codes'] as List).firstOrNull : null);
+    if (country != null) return MbArtistOrigin(country: country);
+    final links = await _get('artist/${a['id']}', {'inc': 'url-rels'}, cancel, strict: true);
+    return MbArtistOrigin(wikidata: _wikidataOf(links));
+  }
+
+  // shortcut: every X?? code (XW worldwide, XE Europe...) is dropped, Kosovo (XK) with them; upgrade if one is missed.
+  static String? _iso(Object? code) {
+    if (code is! String || !RegExp(r'^[A-Za-z]{2}$').hasMatch(code) || code.toUpperCase().startsWith('X')) return null;
+    return code.toUpperCase();
   }
 
   /// The Wikidata item of the artist (`Q…`), or null.
@@ -443,5 +476,50 @@ class WikidataClient {
     }
     if (out.isEmpty) AppLog.i('wikidata: no pages for $ids');
     return out;
+  }
+
+  /// The ISO 3166-1 alpha-2 code of the country of item [id]: its citizenship (P27), else
+  /// its country of origin (P495, bands), through the country's own code (P297). Null when
+  /// the item has none. Strict: an unreachable service throws [WebUnavailableException].
+  Future<String?> countryOf(String id, {CancelToken? cancel}) async {
+    final own = (await _claims([id], cancel))[id];
+    var countries = _items(own?['P27']);
+    if (countries.isEmpty) countries = _items(own?['P495']);
+    if (countries.isEmpty) return null;
+    final claims = await _claims(countries, cancel);
+    for (final c in countries) {
+      final list = claims[c]?['P297'];
+      final value = list is List && list.isNotEmpty ? _mainValue(list.first) : null;
+      if (value is String && RegExp(r'^[A-Z]{2}$').hasMatch(value)) return value;
+    }
+    return null;
+  }
+
+  Future<Map<String, Map>> _claims(List<String> ids, CancelToken? cancel) async {
+    final data = await _web.getJson(
+      'https://www.wikidata.org/w/api.php',
+      query: {'action': 'wbgetentities', 'ids': ids.join('|'), 'props': 'claims', 'format': 'json'},
+      cancel: cancel,
+      strict: true,
+    );
+    final entities = data is Map ? data['entities'] : null;
+    if (entities is! Map) return const {};
+    return {
+      for (final e in entities.entries)
+        if (e.value is Map && (e.value as Map)['claims'] is Map) '${e.key}': (e.value as Map)['claims'] as Map,
+    };
+  }
+
+  // shortcut: at most 3 countries are read (the first listed); upgrade if dual citizens come out wrong.
+  static List<String> _items(Object? statements) => [
+        if (statements is List)
+          for (final s in statements)
+            if (_mainValue(s) case {'id': final String id}) id,
+      ].take(3).toList();
+
+  static Object? _mainValue(Object? statement) {
+    final snak = statement is Map ? statement['mainsnak'] : null;
+    final data = snak is Map ? snak['datavalue'] : null;
+    return data is Map ? data['value'] : null;
   }
 }

@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/services/online/enrichment_service.dart';
 import 'package:codecore/services/online/itunes_client.dart' show ItunesMatch;
 import 'package:drift/drift.dart' show QueryExecutor, QueryInterceptor, Value;
@@ -169,6 +170,28 @@ void main() {
       // A hand-picked cover with a changed album key (settleMovedCover) reads more, as before.
       expect(reads.selects, lessThanOrEqualTo(3));
     });
+  });
+
+  test('apply that writes the genre keeps track_genres in step (D-390)', () async {
+    final id = await r.add();
+    final t = (await r.repo.getById(id))!;
+    final proposal = EnrichmentProposal(
+      track: t,
+      meta: const ItunesMatch(title: 'Song', artist: 'Band', genre: 'Rock; Pop'),
+    );
+    expect(await r.svc.apply(proposal, {EnrichField.genre}), isTrue);
+    expect(await TrackGenreRepository(r.db).of(id), ['Rock', 'Pop']);
+  });
+
+  test('a web genre with a slash stays one genre, and tracks.genre is the first (D-390)', () async {
+    final id = await r.add();
+    final t = (await r.repo.getById(id))!;
+    final proposal = EnrichmentProposal(
+      track: t,
+      meta: const ItunesMatch(title: 'Song', artist: 'Band', genre: 'Hip-Hop/Rap; Pop'),
+    );
+    expect(await r.svc.apply(proposal, {EnrichField.genre}), isTrue);
+    expect(await TrackGenreRepository(r.db).of(id), ['Hip-Hop/Rap', 'Pop']);
   });
 
   test('apply that writes no field leaves the status as it was', () async {

@@ -1,0 +1,1 @@
+{"entities": {"Q303": {"type": "item", "id": "Q303", "claims": {"P27": [{"mainsnak": {"snaktype": "value", "property": "P27", "hash": "52d0408c7915122e0519a22577f0cbdcb28f749b", "datavalue": {"value": {"entity-type": "item", "numeric-id": 30, "id": "Q30"}, "type": "wikibase-entityid"}, "datatype": "wikibase-item"}, "type": "statement", "rank": "normal"}]}}}, "success": 1}

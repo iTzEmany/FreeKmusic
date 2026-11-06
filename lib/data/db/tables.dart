@@ -419,6 +419,37 @@ class TrackCredits extends Table {
   Set<Column> get primaryKey => {trackId, nameKey, role};
 }
 
+/// Every genre of a track (D-390), in tag order; `tracks.genre` stays the first.
+@TableIndex(name: 'track_genres_genre', columns: {#genre})
+@DataClassName('TrackGenreRow')
+class TrackGenres extends Table {
+  IntColumn get trackId =>
+      integer().references(Tracks, #id, onDelete: KeyAction.cascade)();
+
+  /// Trimmed, as in the tag; compared ignoring case (the index too).
+  TextColumn get genre => text().customConstraint('NOT NULL COLLATE NOCASE')();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column> get primaryKey => {trackId, position};
+}
+
+/// Where an artist comes from (D-390): `matchKey` of the main artist's name.
+/// A null [country] with a [checkedAt] is "not found", not asked again for 30 days.
+class ArtistCountries extends Table {
+  TextColumn get artistKey => text()();
+
+  /// ISO 3166-1 alpha-2.
+  TextColumn get country => text().nullable()();
+
+  /// `musicbrainz` / `wikidata`; null when nothing answered.
+  TextColumn get source => text().nullable()();
+  IntColumn get checkedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {artistKey};
+}
+
 /// Enrichment state of a track; the *_none_at columns hold when a part was
 /// searched and not found (retried after 30 days).
 class TrackEnrich extends Table {
