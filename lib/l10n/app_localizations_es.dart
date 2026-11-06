@@ -6695,4 +6695,88 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get openArtistPage => 'Abrir la página del artista';
+
+  @override
+  String get podcastYours => 'Tus podcasts';
+
+  @override
+  String get podcastDiscover => 'Descubrir';
+
+  @override
+  String get podcastChartTitle => 'Lista de Apple Podcasts, Italia';
+
+  @override
+  String get podcastGenreAll => 'Todos';
+
+  @override
+  String get podcastSearchLens => 'Buscar podcasts';
+
+  @override
+  String get podcastSubscribedLabel => 'Suscrito';
+
+  @override
+  String get podcastOriginApple => 'Apple Podcasts';
+
+  @override
+  String get podcastChartError =>
+      'La lista no responde. Pasa, no es culpa tuya.';
+
+  @override
+  String get podcastNoFeed => 'Apple no tiene un feed para este podcast.';
+
+  @override
+  String get podcastGenreArts => 'Arte';
+
+  @override
+  String get podcastGenreBusiness => 'Negocios';
+
+  @override
+  String get podcastGenreComedy => 'Comedia';
+
+  @override
+  String get podcastGenreEducation => 'Educación';
+
+  @override
+  String get podcastGenreKids => 'Niños y familia';
+
+  @override
+  String get podcastGenreHealth => 'Salud y bienestar';
+
+  @override
+  String get podcastGenreTvFilm => 'TV y cine';
+
+  @override
+  String get podcastGenreMusic => 'Música';
+
+  @override
+  String get podcastGenreNews => 'Noticias';
+
+  @override
+  String get podcastGenreReligion => 'Religión y espiritualidad';
+
+  @override
+  String get podcastGenreScience => 'Ciencia';
+
+  @override
+  String get podcastGenreSports => 'Deportes';
+
+  @override
+  String get podcastGenreTechnology => 'Tecnología';
+
+  @override
+  String get podcastGenreSociety => 'Sociedad y cultura';
+
+  @override
+  String get podcastGenreGovernment => 'Gobierno';
+
+  @override
+  String get podcastGenreHistory => 'Historia';
+
+  @override
+  String get podcastGenreTrueCrime => 'True crime';
+
+  @override
+  String podcastSubscribeTo(String name) {
+    return 'Suscribirse a $name';
+  }
 }

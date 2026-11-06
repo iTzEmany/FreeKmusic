@@ -4071,5 +4071,39 @@
   "notSameTitle": "Segnati come diversi",
   "notSameRemove": "Rimuovi",
   "notSameEmpty": "Nessuna coppia segnata come diversa.",
-  "openArtistPage": "Apri la pagina dell’artista"
+  "openArtistPage": "Apri la pagina dell’artista",
+  "podcastYours": "I tuoi podcast",
+  "podcastDiscover": "Scopri",
+  "podcastChartTitle": "Classifica italiana di Apple Podcasts",
+  "podcastGenreAll": "Tutti",
+  "podcastSearchLens": "Cerca podcast",
+  "podcastSubscribedLabel": "Iscritto",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "La classifica non risponde. Succede, non è colpa tua.",
+  "podcastNoFeed": "Apple non ha un feed per questo podcast.",
+  "podcastGenreArts": "Arti",
+  "podcastGenreBusiness": "Economia",
+  "podcastGenreComedy": "Comicità",
+  "podcastGenreEducation": "Educazione",
+  "podcastGenreKids": "Bambini e famiglia",
+  "podcastGenreHealth": "Salute e benessere",
+  "podcastGenreTvFilm": "TV e cinema",
+  "podcastGenreMusic": "Musica",
+  "podcastGenreNews": "Notizie",
+  "podcastGenreReligion": "Religione e spiritualità",
+  "podcastGenreScience": "Scienza",
+  "podcastGenreSports": "Sport",
+  "podcastGenreTechnology": "Tecnologia",
+  "podcastGenreSociety": "Società e cultura",
+  "podcastGenreGovernment": "Governo",
+  "podcastGenreHistory": "Storia",
+  "podcastGenreTrueCrime": "True crime",
+  "podcastSubscribeTo": "Iscriviti a {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

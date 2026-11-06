@@ -4,8 +4,10 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/podcast_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/podcast_discover_providers.dart';
 import 'package:codecore/providers/podcast_providers.dart';
 import 'package:codecore/services/online/http_client.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtErrorKind;
 import 'package:codecore/services/podcast/episode_downloader.dart';
 import 'package:codecore/services/podcast/podcast_models.dart';
 import 'package:codecore/services/podcast/podcast_service.dart';
@@ -37,6 +39,12 @@ class _Web implements WebClient {
   Future<List<int>?> getBytes(String url, {int maxBytes = 5 * 1024 * 1024, CancelToken? cancel}) async => null;
 }
 
+/// «Scopri» never asks the network in these tests (podcast_discover_test covers it).
+final _noDiscover = [
+  podcastGenresProvider.overrideWith((ref) async => const []),
+  podcastChartProvider.overrideWith((ref, genre) async => const []),
+];
+
 class _NoTags implements TagReader {
   @override
   Future<TagInfo> read(String path, {bool withCover = true}) async => const TagInfo();
@@ -45,6 +53,9 @@ class _NoTags implements TagReader {
 class _Downloads extends PodcastDownloadsNotifier {
   final added = <int>[];
   final cancelled = <int>[];
+  List<EpisodeDownload> Function()? initial;
+  @override
+  List<EpisodeDownload> build() => initial?.call() ?? const [];
   @override
   void add(int episodeId, String title) => added.add(episodeId);
   @override
@@ -114,6 +125,7 @@ void main() {
             readTagsInIsolate: false,
           )),
       podcastDownloadsProvider.overrideWith(() => downloads),
+      ..._noDiscover,
     ]);
     await _settle(tester);
   }
@@ -150,11 +162,11 @@ void main() {
   }
 
   group('the list', () {
-    testWidgets('empty: says so, repeats that nothing updates by itself, and offers to add one', (tester) async {
+    testWidgets('empty: only «Scopri», nothing to refresh, and «+» offers to add one', (tester) async {
       await open(tester, const PodcastsScreen());
       expect(find.text('Podcast'), findsOneWidget);
-      expect(find.textContaining('Non sei iscritto a nessun podcast.'), findsOneWidget);
-      expect(find.textContaining('I podcast si aggiornano solo quando lo chiedi.'), findsOneWidget);
+      expect(find.text('I tuoi podcast'), findsNothing);
+      expect(find.text('Scopri'), findsOneWidget);
       expect(find.byKey(const ValueKey('refresh-all')), findsNothing, reason: 'nothing to refresh');
 
       await tester.tap(find.byKey(const ValueKey('add-podcast')));
@@ -164,18 +176,19 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('podcasts by name with their episode count and how many downloaded ones wait', (tester) async {
+    testWidgets('«I tuoi podcast»: a row by name, saying how many downloaded episodes wait, and the note that nothing updates by itself', (tester) async {
       await open(tester, const PodcastsScreen());
       final b = await subscribe('beta show', [_ep('1', 'One'), _ep('2', 'Two')], author: 'Ann', url: 'https://x/b');
       await subscribe('Alpha show', [_ep('1', 'Solo')], url: 'https://x/a');
       await download(b, '1');
       await show(tester, const PodcastsScreen());
 
-      final alpha = tester.getTopLeft(find.text('Alpha show')).dy;
-      final beta = tester.getTopLeft(find.text('beta show')).dy;
+      expect(find.text('I tuoi podcast'), findsOneWidget);
+      expect(find.textContaining('I podcast si aggiornano solo quando lo chiedi.'), findsOneWidget);
+      final alpha = tester.getTopLeft(find.text('Alpha show')).dx;
+      final beta = tester.getTopLeft(find.text('beta show')).dx;
       expect(alpha, lessThan(beta));
-      expect(find.text('Ann, 2 episodi, 1 da ascoltare'), findsOneWidget);
-      expect(find.text('1 episodio'), findsOneWidget, reason: 'the other has no author and nothing to hear');
+      expect(find.text('1 da ascoltare'), findsOneWidget, reason: 'only beta has a downloaded episode left');
       await h.dispose(tester);
     });
 
@@ -346,6 +359,31 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('a YouTube Music download failure speaks the YouTube words; «Riprova» only when trying again can help', (tester) async {
+      await openDetail(tester, seed: () async {
+        downloads.initial = () => [
+              EpisodeDownload(
+                  episodeId: ids['new']!, title: 'x', status: EpisodeDownloadStatus.failed, error: PodcastErrorKind.network, ytError: YtErrorKind.unavailable),
+            ];
+      });
+      expect(find.textContaining('Video non disponibile'), findsOneWidget);
+      expect(tester.widget<IconButton>(find.byKey(ValueKey('download-${ids['new']}'))).onPressed, isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a rate-limited YouTube Music download can be retried', (tester) async {
+      await openDetail(tester, seed: () async {
+        downloads.initial = () => [
+              EpisodeDownload(
+                  episodeId: ids['new']!, title: 'x', status: EpisodeDownloadStatus.failed, error: PodcastErrorKind.network, ytError: YtErrorKind.rateLimited),
+            ];
+      });
+      final b = tester.widget<IconButton>(find.byKey(ValueKey('download-${ids['new']}')));
+      expect(b.onPressed, isNotNull);
+      expect(b.tooltip, 'Riprova');
+      await h.dispose(tester);
+    });
+
     testWidgets('«scarica» asks for the download', (tester) async {
       await openDetail(tester);
       await tester.tap(find.byKey(ValueKey('download-${ids['new']}')));
@@ -458,6 +496,7 @@ void main() {
     await repo.subscribe('https://x/b', const PodcastFeed(title: 'B', episodes: []), now: 1);
     await h.pump(tester, const AppShell(), extraOverrides: [
       podcastsDirProvider.overrideWith((ref) async => base),
+      ..._noDiscover,
     ]);
     await tester.tap(find.text('Libreria'));
     await _settle(tester);

@@ -6673,4 +6673,88 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get openArtistPage => 'Apri la pagina dell’artista';
+
+  @override
+  String get podcastYours => 'I tuoi podcast';
+
+  @override
+  String get podcastDiscover => 'Scopri';
+
+  @override
+  String get podcastChartTitle => 'Classifica italiana di Apple Podcasts';
+
+  @override
+  String get podcastGenreAll => 'Tutti';
+
+  @override
+  String get podcastSearchLens => 'Cerca podcast';
+
+  @override
+  String get podcastSubscribedLabel => 'Iscritto';
+
+  @override
+  String get podcastOriginApple => 'Apple Podcasts';
+
+  @override
+  String get podcastChartError =>
+      'La classifica non risponde. Succede, non è colpa tua.';
+
+  @override
+  String get podcastNoFeed => 'Apple non ha un feed per questo podcast.';
+
+  @override
+  String get podcastGenreArts => 'Arti';
+
+  @override
+  String get podcastGenreBusiness => 'Economia';
+
+  @override
+  String get podcastGenreComedy => 'Comicità';
+
+  @override
+  String get podcastGenreEducation => 'Educazione';
+
+  @override
+  String get podcastGenreKids => 'Bambini e famiglia';
+
+  @override
+  String get podcastGenreHealth => 'Salute e benessere';
+
+  @override
+  String get podcastGenreTvFilm => 'TV e cinema';
+
+  @override
+  String get podcastGenreMusic => 'Musica';
+
+  @override
+  String get podcastGenreNews => 'Notizie';
+
+  @override
+  String get podcastGenreReligion => 'Religione e spiritualità';
+
+  @override
+  String get podcastGenreScience => 'Scienza';
+
+  @override
+  String get podcastGenreSports => 'Sport';
+
+  @override
+  String get podcastGenreTechnology => 'Tecnologia';
+
+  @override
+  String get podcastGenreSociety => 'Società e cultura';
+
+  @override
+  String get podcastGenreGovernment => 'Governo';
+
+  @override
+  String get podcastGenreHistory => 'Storia';
+
+  @override
+  String get podcastGenreTrueCrime => 'True crime';
+
+  @override
+  String podcastSubscribeTo(String name) {
+    return 'Iscriviti a $name';
+  }
 }

@@ -3392,5 +3392,39 @@
   "notSameTitle": "Marcados como distintos",
   "notSameRemove": "Quitar",
   "notSameEmpty": "Ningún par está marcado como distinto.",
-  "openArtistPage": "Abrir la página del artista"
+  "openArtistPage": "Abrir la página del artista",
+  "podcastYours": "Tus podcasts",
+  "podcastDiscover": "Descubrir",
+  "podcastChartTitle": "Lista de Apple Podcasts, Italia",
+  "podcastGenreAll": "Todos",
+  "podcastSearchLens": "Buscar podcasts",
+  "podcastSubscribedLabel": "Suscrito",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "La lista no responde. Pasa, no es culpa tuya.",
+  "podcastNoFeed": "Apple no tiene un feed para este podcast.",
+  "podcastGenreArts": "Arte",
+  "podcastGenreBusiness": "Negocios",
+  "podcastGenreComedy": "Comedia",
+  "podcastGenreEducation": "Educación",
+  "podcastGenreKids": "Niños y familia",
+  "podcastGenreHealth": "Salud y bienestar",
+  "podcastGenreTvFilm": "TV y cine",
+  "podcastGenreMusic": "Música",
+  "podcastGenreNews": "Noticias",
+  "podcastGenreReligion": "Religión y espiritualidad",
+  "podcastGenreScience": "Ciencia",
+  "podcastGenreSports": "Deportes",
+  "podcastGenreTechnology": "Tecnología",
+  "podcastGenreSociety": "Sociedad y cultura",
+  "podcastGenreGovernment": "Gobierno",
+  "podcastGenreHistory": "Historia",
+  "podcastGenreTrueCrime": "True crime",
+  "podcastSubscribeTo": "Suscribirse a {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

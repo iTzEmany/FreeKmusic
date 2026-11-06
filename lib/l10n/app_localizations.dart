@@ -10674,6 +10674,168 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Apri la pagina dell’artista'**
   String get openArtistPage;
+
+  /// No description provided for @podcastYours.
+  ///
+  /// In it, this message translates to:
+  /// **'I tuoi podcast'**
+  String get podcastYours;
+
+  /// No description provided for @podcastDiscover.
+  ///
+  /// In it, this message translates to:
+  /// **'Scopri'**
+  String get podcastDiscover;
+
+  /// No description provided for @podcastChartTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Classifica italiana di Apple Podcasts'**
+  String get podcastChartTitle;
+
+  /// No description provided for @podcastGenreAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutti'**
+  String get podcastGenreAll;
+
+  /// No description provided for @podcastSearchLens.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca podcast'**
+  String get podcastSearchLens;
+
+  /// No description provided for @podcastSubscribedLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Iscritto'**
+  String get podcastSubscribedLabel;
+
+  /// No description provided for @podcastOriginApple.
+  ///
+  /// In it, this message translates to:
+  /// **'Apple Podcasts'**
+  String get podcastOriginApple;
+
+  /// No description provided for @podcastChartError.
+  ///
+  /// In it, this message translates to:
+  /// **'La classifica non risponde. Succede, non è colpa tua.'**
+  String get podcastChartError;
+
+  /// No description provided for @podcastNoFeed.
+  ///
+  /// In it, this message translates to:
+  /// **'Apple non ha un feed per questo podcast.'**
+  String get podcastNoFeed;
+
+  /// No description provided for @podcastGenreArts.
+  ///
+  /// In it, this message translates to:
+  /// **'Arti'**
+  String get podcastGenreArts;
+
+  /// No description provided for @podcastGenreBusiness.
+  ///
+  /// In it, this message translates to:
+  /// **'Economia'**
+  String get podcastGenreBusiness;
+
+  /// No description provided for @podcastGenreComedy.
+  ///
+  /// In it, this message translates to:
+  /// **'Comicità'**
+  String get podcastGenreComedy;
+
+  /// No description provided for @podcastGenreEducation.
+  ///
+  /// In it, this message translates to:
+  /// **'Educazione'**
+  String get podcastGenreEducation;
+
+  /// No description provided for @podcastGenreKids.
+  ///
+  /// In it, this message translates to:
+  /// **'Bambini e famiglia'**
+  String get podcastGenreKids;
+
+  /// No description provided for @podcastGenreHealth.
+  ///
+  /// In it, this message translates to:
+  /// **'Salute e benessere'**
+  String get podcastGenreHealth;
+
+  /// No description provided for @podcastGenreTvFilm.
+  ///
+  /// In it, this message translates to:
+  /// **'TV e cinema'**
+  String get podcastGenreTvFilm;
+
+  /// No description provided for @podcastGenreMusic.
+  ///
+  /// In it, this message translates to:
+  /// **'Musica'**
+  String get podcastGenreMusic;
+
+  /// No description provided for @podcastGenreNews.
+  ///
+  /// In it, this message translates to:
+  /// **'Notizie'**
+  String get podcastGenreNews;
+
+  /// No description provided for @podcastGenreReligion.
+  ///
+  /// In it, this message translates to:
+  /// **'Religione e spiritualità'**
+  String get podcastGenreReligion;
+
+  /// No description provided for @podcastGenreScience.
+  ///
+  /// In it, this message translates to:
+  /// **'Scienza'**
+  String get podcastGenreScience;
+
+  /// No description provided for @podcastGenreSports.
+  ///
+  /// In it, this message translates to:
+  /// **'Sport'**
+  String get podcastGenreSports;
+
+  /// No description provided for @podcastGenreTechnology.
+  ///
+  /// In it, this message translates to:
+  /// **'Tecnologia'**
+  String get podcastGenreTechnology;
+
+  /// No description provided for @podcastGenreSociety.
+  ///
+  /// In it, this message translates to:
+  /// **'Società e cultura'**
+  String get podcastGenreSociety;
+
+  /// No description provided for @podcastGenreGovernment.
+  ///
+  /// In it, this message translates to:
+  /// **'Governo'**
+  String get podcastGenreGovernment;
+
+  /// No description provided for @podcastGenreHistory.
+  ///
+  /// In it, this message translates to:
+  /// **'Storia'**
+  String get podcastGenreHistory;
+
+  /// No description provided for @podcastGenreTrueCrime.
+  ///
+  /// In it, this message translates to:
+  /// **'True crime'**
+  String get podcastGenreTrueCrime;
+
+  /// No description provided for @podcastSubscribeTo.
+  ///
+  /// In it, this message translates to:
+  /// **'Iscriviti a {name}'**
+  String podcastSubscribeTo(String name);
 }
 
 class _AppLocalizationsDelegate

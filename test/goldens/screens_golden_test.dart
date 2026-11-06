@@ -33,6 +33,8 @@ import 'package:codecore/ui/screens/onboarding/onboarding_screen.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/data/repositories/podcast_repository.dart';
 import 'package:codecore/services/podcast/podcast_models.dart';
+import 'package:codecore/providers/podcast_discover_providers.dart';
+import 'package:codecore/services/podcast/apple_podcasts.dart' show PodcastGenre;
 import 'package:codecore/ui/screens/podcast/podcasts_screen.dart';
 import 'package:codecore/ui/screens/smart/smart_playlist_editor.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
@@ -380,7 +382,18 @@ void main() {
                     now: now);
               }
             });
-            await s.show(const PodcastsScreen());
+            await s.show(const PodcastsScreen(), extra: [
+              podcastGenresProvider.overrideWith((ref) async => const [
+                    PodcastGenre('1311', 'News'),
+                    PodcastGenre('1303', 'Comedy'),
+                    PodcastGenre('1324', 'Society & Culture'),
+                  ]),
+              podcastChartProvider.overrideWith((ref, genre) async => const [
+                    PodcastListing(origin: PodcastOrigin.apple, title: 'Morning', author: 'Francesco Costa', appleId: '1'),
+                    PodcastListing(origin: PodcastOrigin.apple, title: 'Indagini', author: 'Stefano Nazzi', appleId: '2'),
+                    PodcastListing(origin: PodcastOrigin.apple, title: 'Il Mondo', author: 'Internazionale', appleId: '3'),
+                  ]),
+            ]);
             await s.expectGolden('${tag}_podcast.png');
           }));
     }

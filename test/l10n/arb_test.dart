@@ -8,6 +8,7 @@ const _langs = ['en', 'de', 'es', 'fr', 'pt'];
 /// Strings that may read the same as the Italian: names, formats, units and
 /// words that are the same in the other languages.
 const _sameAsItalian = {
+  'podcastOriginApple', 'podcastGenreSports', 'podcastGenreTrueCrime', 'podcastGenreTvFilm', 'podcastGenreTechnology', 'podcastGenreGovernment',
   'speakerNo', 'recogSrcVideo', 'releaseAlbumYear', 'releaseAlbumPlain', 'settingsPageBackup', 'summaryCrossfade',
   'tokenSurface1', 'tokenSurface2', 'tokenSurface3', 'themeCopyName',
   'accentRosa', 'backupSection', 'accentVerde', 'activityDownload', 'albumMeta', 'appName',

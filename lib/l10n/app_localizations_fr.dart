@@ -6733,4 +6733,88 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get openArtistPage => 'Ouvrir la page de l’artiste';
+
+  @override
+  String get podcastYours => 'Vos podcasts';
+
+  @override
+  String get podcastDiscover => 'Découvrir';
+
+  @override
+  String get podcastChartTitle => 'Classement Apple Podcasts, Italie';
+
+  @override
+  String get podcastGenreAll => 'Tous';
+
+  @override
+  String get podcastSearchLens => 'Chercher un podcast';
+
+  @override
+  String get podcastSubscribedLabel => 'Abonné';
+
+  @override
+  String get podcastOriginApple => 'Apple Podcasts';
+
+  @override
+  String get podcastChartError =>
+      'Le classement ne répond pas. Cela arrive, ce n’est pas de votre faute.';
+
+  @override
+  String get podcastNoFeed => 'Apple n’a pas de flux pour ce podcast.';
+
+  @override
+  String get podcastGenreArts => 'Arts';
+
+  @override
+  String get podcastGenreBusiness => 'Économie';
+
+  @override
+  String get podcastGenreComedy => 'Humour';
+
+  @override
+  String get podcastGenreEducation => 'Éducation';
+
+  @override
+  String get podcastGenreKids => 'Enfants et famille';
+
+  @override
+  String get podcastGenreHealth => 'Santé et forme';
+
+  @override
+  String get podcastGenreTvFilm => 'TV et cinéma';
+
+  @override
+  String get podcastGenreMusic => 'Musique';
+
+  @override
+  String get podcastGenreNews => 'Actualités';
+
+  @override
+  String get podcastGenreReligion => 'Religion et spiritualité';
+
+  @override
+  String get podcastGenreScience => 'Sciences';
+
+  @override
+  String get podcastGenreSports => 'Sport';
+
+  @override
+  String get podcastGenreTechnology => 'Technologie';
+
+  @override
+  String get podcastGenreSociety => 'Société et culture';
+
+  @override
+  String get podcastGenreGovernment => 'Gouvernement';
+
+  @override
+  String get podcastGenreHistory => 'Histoire';
+
+  @override
+  String get podcastGenreTrueCrime => 'True crime';
+
+  @override
+  String podcastSubscribeTo(String name) {
+    return 'S’abonner à $name';
+  }
 }

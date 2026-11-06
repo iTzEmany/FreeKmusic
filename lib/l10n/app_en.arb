@@ -3392,5 +3392,39 @@
   "notSameTitle": "Marked as different",
   "notSameRemove": "Remove",
   "notSameEmpty": "No pair is marked as different.",
-  "openArtistPage": "Open the artist page"
+  "openArtistPage": "Open the artist page",
+  "podcastYours": "Your podcasts",
+  "podcastDiscover": "Discover",
+  "podcastChartTitle": "Apple Podcasts top chart, Italy",
+  "podcastGenreAll": "All",
+  "podcastSearchLens": "Search podcasts",
+  "podcastSubscribedLabel": "Subscribed",
+  "podcastOriginApple": "Apple Podcasts",
+  "podcastChartError": "The chart is not responding. It happens, it is not your fault.",
+  "podcastNoFeed": "Apple has no feed for this podcast.",
+  "podcastGenreArts": "Arts",
+  "podcastGenreBusiness": "Business",
+  "podcastGenreComedy": "Comedy",
+  "podcastGenreEducation": "Education",
+  "podcastGenreKids": "Kids & Family",
+  "podcastGenreHealth": "Health & Fitness",
+  "podcastGenreTvFilm": "TV & Film",
+  "podcastGenreMusic": "Music",
+  "podcastGenreNews": "News",
+  "podcastGenreReligion": "Religion & Spirituality",
+  "podcastGenreScience": "Science",
+  "podcastGenreSports": "Sports",
+  "podcastGenreTechnology": "Technology",
+  "podcastGenreSociety": "Society & Culture",
+  "podcastGenreGovernment": "Government",
+  "podcastGenreHistory": "History",
+  "podcastGenreTrueCrime": "True Crime",
+  "podcastSubscribeTo": "Subscribe to {name}",
+  "@podcastSubscribeTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }
