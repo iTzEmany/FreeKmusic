@@ -126,3 +126,11 @@ Stile voluto: niente tagli netti né slide laterali; ogni schermata nuova entra 
 | 5 | Chiusura del player | la copertina passa da tonda a quadrata e poi torna tonda nel mini player | la copertina «in volo» resta tonda per tutta l'animazione (`flightShuttleBuilder` dell'`Hero` con lo stesso ritaglio tondo, o il raggio che interpola da tondo a tondo) | ~30–45 min |
 
 Consiglio: 2 e 5 costano poco e si possono aggiungere alla fase 83 insieme alla 1; 3 e 4 sono un passo a sé (toccano la shell e tutte le liste), da misurare sul Mi A3 dopo (scenario «Libreria Tutto→Playlist→Album→Artisti» e scroll di Tutti i brani).
+
+## 5. Rilievi rinviati dalla fase 88 (6 nov, review Opus e scheggia)
+Fuori dal perimetro della fase. Da valutare in una fase futura.
+- **Database più nuovo dell'app all'avvio normale**: se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`. Al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro invece del crash. Il ripristino è già protetto (88.5b).
+- **Una sola chiave per «stesso brano»**: `LibraryIndex` e `LibraryOverlap` usano `libraryTitleKey` più l'insieme delle parole dell'artista, mentre `TrackResolver`, `SeedIndex.keyOf`, `import_diff` e `playlist_import_service` usano ancora `matchTitleKey` più l'artista principale. Unificarle eviterebbe che la sincronizzazione delle playlist riaggiunga un brano già collegato.
+- **Credito annidato troppo largo**: «Prince» contro «Prince Royce», con lo stesso titolo e una durata entro 5 s, risulta posseduto. È raro (serve un titolo generico identico). Rimedio possibile: l'artista più corto deve essere il prefisso dell'altro e avere almeno 2 parole non comuni.
+- **Remaster con live**: «Song (Remastered Live)» e «Song - 2011 Remaster - Live» coincidono con «Song», perché `_remasterGroup` e `_remasterTail` in `matchTitleKey` tolgono anche «Live» (comportamento precedente alla fase 88).
+- **Parentesi non chiuse**: «Song (Deluxe Edition» e «Song - Deluxe Edition - Remix» non vengono ripuliti, quindi lo stesso brano non viene riconosciuto (falso negativo, innocuo).
