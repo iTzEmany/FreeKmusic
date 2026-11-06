@@ -59,8 +59,8 @@ Future<void> showSortSheet<T>({
               child: StatefulBuilder(
                 builder: (_, setState) {
                   final hasDirection = choices
-                      .firstWhere((c) => c.value == current)
-                      .hasDirection;
+                      .where((c) => c.value == current)
+                      .every((c) => c.hasDirection);
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -112,7 +112,10 @@ Future<void> showSortSheet<T>({
                             selected: c.value == current,
                             onTap: () {
                               Navigator.of(sheet).pop();
-                              onChanged(c.value, c.ascendingByDefault);
+                              // The same criterion again keeps its direction.
+                              if (c.value != current) {
+                                onChanged(c.value, c.ascendingByDefault);
+                              }
                             },
                           ),
                         ),

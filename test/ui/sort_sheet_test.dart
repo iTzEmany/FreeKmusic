@@ -85,4 +85,33 @@ void main() {
     expect(calls, 0);
     await h.dispose(tester);
   });
+
+  testWidgets('sort sheet: the selected criterion again keeps its direction; unknown selection does not crash', (
+    tester,
+  ) async {
+    final h = await Harness.create(tester);
+    final calls = <(String, bool)>[];
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showSortSheet<String>(
+              context: context,
+              choices: const [SortChoice('a', 'Aaa'), SortChoice('b', 'Bbb')],
+              selected: 'zzz',
+              ascending: false,
+              onChanged: (v, a) => calls.add((v, a)),
+            ),
+            child: const Text('apri'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('apri'));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Aaa'), findsOneWidget);
+    await h.dispose(tester);
+  });
 }

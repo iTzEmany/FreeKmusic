@@ -69,6 +69,10 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryKind? _kind;
+
+  /// Direction of the A–Z shown instead of a saved criterion this tab lacks;
+  /// kept here so the saved criterion survives on the other tabs.
+  bool? _fallbackAscending;
   bool _searching = false;
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
@@ -158,8 +162,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       orElse: () => LibrarySort.recent,
     );
     // Saved on another tab: the artists have no track count to sort by.
-    if (!LibrarySort.forKind(_kind).contains(sort)) sort = LibrarySort.alpha;
-    final ascending = settings.librarySortAscending ?? sort.defaultAscending;
+    final fallback = !LibrarySort.forKind(_kind).contains(sort);
+    if (fallback) sort = LibrarySort.alpha;
+    final ascending = fallback
+        ? _fallbackAscending ?? sort.defaultAscending
+        : settings.librarySortAscending ?? sort.defaultAscending;
     final playlists = ref.watch(playlistsProvider);
     final albums = ref.watch(albumsProvider);
     final artists = ref.watch(artistsProvider);
@@ -332,7 +339,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   sort: sort,
                   ascending: ascending,
                   grid: settings.libraryGrid,
-                  onSort: (s, asc) => _setSettings(sort: s, ascending: asc),
+                  onSort: (s, asc) {
+                    if (fallback && s == LibrarySort.alpha) {
+                      setState(() => _fallbackAscending = asc);
+                    } else {
+                      _fallbackAscending = null;
+                      _setSettings(sort: s, ascending: asc);
+                    }
+                  },
                   onToggleGrid: () {
                     // The new list starts at the top, so the island is whole.
                     _shrink.value = 0;

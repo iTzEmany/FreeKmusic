@@ -73,7 +73,8 @@ class LibraryToolbar extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Semantics(
                 button: true,
-                label: '${l.sortBy}: ${name(sort)}',
+                label:
+                    '${l.sortBy}: ${name(sort)}, ${ascending ? l.sortAscending : l.sortDescending}',
                 onTap: pickSort,
                 excludeSemantics: true,
                 child: InkWell(
@@ -92,6 +93,13 @@ class LibraryToolbar extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: theme.labelLarge,
                           ),
+                        ),
+                        Icon(
+                          ascending
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded,
+                          size: 16,
+                          color: cc.textMuted,
                         ),
                         Icon(Icons.arrow_drop_down_rounded, color: cc.textMuted),
                       ],

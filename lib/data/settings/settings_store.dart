@@ -109,7 +109,7 @@ class AppSettings {
   final bool receiveFromLan;
   final String language;
 
-  /// Library order: `recent` | `alpha` | `added`.
+  /// Library order: the name of a `LibrarySort`.
   final String librarySort;
 
   /// Direction of [librarySort]; null = the criterion's own (latest/most first).

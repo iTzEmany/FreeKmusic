@@ -594,6 +594,22 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('a saved track-count order shown as A–Z on Artisti is not overwritten by flipping it', (t) async {
+    final h = await open(t);
+    final c = ProviderScope.containerOf(t.element(find.byType(LibraryScreen)));
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(librarySort: 'trackCount', librarySortAscending: true));
+    await _settle(t);
+    await t.tap(find.text('Artisti').first);
+    await _settle(t);
+    await t.tap(find.text('Titolo A–Z'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Decrescente'));
+    await t.pumpAndSettle();
+    final s = c.read(settingsProvider);
+    expect((s.librarySort, s.librarySortAscending), ('trackCount', true));
+    await h.dispose(t);
+  });
+
   testWidgets('shortcuts only in Tutto, in spec order', (t) async {
     final h = await open(t);
     final fav = t.getRect(find.text('Preferiti'));

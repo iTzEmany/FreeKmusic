@@ -90,11 +90,13 @@ class PlaylistRepository {
           'ON t.id = x.track_id WHERE x.playlist_id = p.id) AS last_played, '
           '(SELECT MAX(t.added_at) FROM playlist_tracks x JOIN tracks t '
           'ON t.id = x.track_id WHERE x.playlist_id = p.id) AS added, '
-          '(SELECT COALESCE(SUM(t.play_count), 0) FROM playlist_tracks x JOIN tracks t '
-          'ON t.id = x.track_id WHERE x.playlist_id = p.id AND t.kind = 0) AS plays, '
-          '(SELECT COALESCE(SUM(t.duration_ms), 0) FROM playlist_tracks x JOIN tracks t '
-          'ON t.id = x.track_id WHERE x.playlist_id = p.id AND t.kind = 0) AS duration '
+          'COALESCE(MAX(agg.plays), 0) AS plays, COALESCE(MAX(agg.dur), 0) AS duration '
           'FROM playlists p LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id '
+          // One pass for plays and duration; a song added twice counts once.
+          'LEFT JOIN (SELECT d.playlist_id, SUM(t.play_count) AS plays, SUM(t.duration_ms) AS dur '
+          'FROM (SELECT DISTINCT playlist_id, track_id FROM playlist_tracks) d '
+          'JOIN tracks t ON t.id = d.track_id WHERE t.kind = 0 GROUP BY d.playlist_id) agg '
+          'ON agg.playlist_id = p.id '
           // The technical playlist of «Scarica album» (see ytmAlbumSourceKind).
           'WHERE ${visiblePlaylistSql('p')} '
           'GROUP BY p.id ORDER BY p.name COLLATE NOCASE',

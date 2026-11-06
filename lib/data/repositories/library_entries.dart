@@ -166,10 +166,13 @@ List<LibraryEntry> buildLibraryEntries({
   Comparable<dynamic>? value(LibraryEntry e) => switch (sort) {
     LibrarySort.alpha => keys[e],
     LibrarySort.recent => e.lastPlayedAt,
-    LibrarySort.added => e.addedAt,
+    LibrarySort.added => e.addedAt == 0 ? null : e.addedAt,
     LibrarySort.artist => switch (e.kind) {
-      LibraryKind.artist => keys[e],
-      LibraryKind.album => e.artist == null ? null : sortKeyOfText(e.artist!),
+      LibraryKind.artist => e.artistSummary?.key == '' ? null : keys[e],
+      LibraryKind.album =>
+        e.variousArtists || e.artist == null || e.artist!.trim().isEmpty
+            ? null
+            : sortKeyOfText(e.artist!),
       LibraryKind.playlist => null,
     },
     LibrarySort.year => e.year,
