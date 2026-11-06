@@ -6495,4 +6495,131 @@ class AppLocalizationsDe extends AppLocalizations {
   String logCorrectionSem(String from, String to) {
     return 'Von $from zu $to';
   }
+
+  @override
+  String get smartAll => 'Alle Bedingungen';
+
+  @override
+  String get smartAny => 'Mindestens eine';
+
+  @override
+  String get smartAllNote => 'Titel müssen allen Filtern entsprechen.';
+
+  @override
+  String get smartAnyNote => 'Ein passender Filter genügt.';
+
+  @override
+  String get smartAddFilter => 'Filter hinzufügen';
+
+  @override
+  String get smartGroupMusic => 'Musik';
+
+  @override
+  String get smartGroupListening => 'Hören';
+
+  @override
+  String get smartGroupFile => 'Datei';
+
+  @override
+  String get smartFieldTag => 'Tags';
+
+  @override
+  String get smartFieldAlbumArtist => 'Albuminterpret';
+
+  @override
+  String get smartFieldCountry => 'Nationalität';
+
+  @override
+  String get smartFieldPlays => 'Wiedergaben';
+
+  @override
+  String get smartFieldLastPlayed => 'Zuletzt gespielt';
+
+  @override
+  String get smartFieldAdded => 'Hinzugefügt';
+
+  @override
+  String get smartFieldBitrate => 'Datenrate';
+
+  @override
+  String get smartFieldFolder => 'Ordner';
+
+  @override
+  String get smartFlagLyrics => 'Mit Text';
+
+  @override
+  String get smartEnrichedOnly => 'Nur für angereicherte Titel';
+
+  @override
+  String get smartInclude => 'Einschließen';
+
+  @override
+  String get smartExclude => 'Ausschließen';
+
+  @override
+  String get smartPickValues => 'Werte wählen';
+
+  @override
+  String get smartAddValue => 'Hinzufügen';
+
+  @override
+  String get smartValueHint => 'Wert eingeben';
+
+  @override
+  String get smartDone => 'Fertig';
+
+  @override
+  String get smartIncomplete =>
+      'Unvollständig: zählt erst, wenn du ihn ergänzt.';
+
+  @override
+  String get smartRemoveFilter => 'Filter entfernen';
+
+  @override
+  String smartRemoveValue(String value) {
+    return '$value entfernen';
+  }
+
+  @override
+  String get smartFrom => 'Von';
+
+  @override
+  String get smartTo => 'Bis';
+
+  @override
+  String get smartMoreThan => 'Mehr als';
+
+  @override
+  String get smartLessThan => 'Weniger als';
+
+  @override
+  String get smartEqualTo => 'Gleich';
+
+  @override
+  String get smartAgeRecent => 'In den letzten';
+
+  @override
+  String get smartAgeOlder => 'Seit mehr als';
+
+  @override
+  String get smartDays => 'Tage';
+
+  @override
+  String get smartMinutes => 'Minuten';
+
+  @override
+  String get smartContains => 'Enthält';
+
+  @override
+  String get smartAdvancedNote => 'Der Regeltext, nur zum Lesen.';
+
+  @override
+  String get smartNotVisual =>
+      'Diese Regel ist für den Filter-Editor zu verschachtelt. Sie bleibt, wie sie ist: Du siehst sie unter Erweitert, und unverändert gespeichert ändert sie sich nicht.';
+
+  @override
+  String get smartNoFilters => 'Füge einen Filter hinzu, um zu beginnen.';
+
+  @override
+  String get smartLimitShort => 'Limit';
 }

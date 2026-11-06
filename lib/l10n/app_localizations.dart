@@ -10284,6 +10284,252 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Da {from} a {to}'**
   String logCorrectionSem(String from, String to);
+
+  /// No description provided for @smartAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutte le condizioni'**
+  String get smartAll;
+
+  /// No description provided for @smartAny.
+  ///
+  /// In it, this message translates to:
+  /// **'Almeno una'**
+  String get smartAny;
+
+  /// No description provided for @smartAllNote.
+  ///
+  /// In it, this message translates to:
+  /// **'I brani devono rispettare tutti i filtri.'**
+  String get smartAllNote;
+
+  /// No description provided for @smartAnyNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Basta che un filtro sia rispettato.'**
+  String get smartAnyNote;
+
+  /// No description provided for @smartAddFilter.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi filtro'**
+  String get smartAddFilter;
+
+  /// No description provided for @smartGroupMusic.
+  ///
+  /// In it, this message translates to:
+  /// **'Musica'**
+  String get smartGroupMusic;
+
+  /// No description provided for @smartGroupListening.
+  ///
+  /// In it, this message translates to:
+  /// **'Ascolto'**
+  String get smartGroupListening;
+
+  /// No description provided for @smartGroupFile.
+  ///
+  /// In it, this message translates to:
+  /// **'File'**
+  String get smartGroupFile;
+
+  /// No description provided for @smartFieldTag.
+  ///
+  /// In it, this message translates to:
+  /// **'Tag'**
+  String get smartFieldTag;
+
+  /// No description provided for @smartFieldAlbumArtist.
+  ///
+  /// In it, this message translates to:
+  /// **'Artista dell’album'**
+  String get smartFieldAlbumArtist;
+
+  /// No description provided for @smartFieldCountry.
+  ///
+  /// In it, this message translates to:
+  /// **'Nazionalità'**
+  String get smartFieldCountry;
+
+  /// No description provided for @smartFieldPlays.
+  ///
+  /// In it, this message translates to:
+  /// **'Ascolti'**
+  String get smartFieldPlays;
+
+  /// No description provided for @smartFieldLastPlayed.
+  ///
+  /// In it, this message translates to:
+  /// **'Ultimo ascolto'**
+  String get smartFieldLastPlayed;
+
+  /// No description provided for @smartFieldAdded.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiunto'**
+  String get smartFieldAdded;
+
+  /// No description provided for @smartFieldBitrate.
+  ///
+  /// In it, this message translates to:
+  /// **'Bitrate'**
+  String get smartFieldBitrate;
+
+  /// No description provided for @smartFieldFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'Cartella'**
+  String get smartFieldFolder;
+
+  /// No description provided for @smartFlagLyrics.
+  ///
+  /// In it, this message translates to:
+  /// **'Con testo'**
+  String get smartFlagLyrics;
+
+  /// No description provided for @smartEnrichedOnly.
+  ///
+  /// In it, this message translates to:
+  /// **'Solo per i brani arricchiti'**
+  String get smartEnrichedOnly;
+
+  /// No description provided for @smartInclude.
+  ///
+  /// In it, this message translates to:
+  /// **'Includi'**
+  String get smartInclude;
+
+  /// No description provided for @smartExclude.
+  ///
+  /// In it, this message translates to:
+  /// **'Escludi'**
+  String get smartExclude;
+
+  /// No description provided for @smartPickValues.
+  ///
+  /// In it, this message translates to:
+  /// **'Scegli i valori'**
+  String get smartPickValues;
+
+  /// No description provided for @smartAddValue.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi'**
+  String get smartAddValue;
+
+  /// No description provided for @smartValueHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Scrivi un valore'**
+  String get smartValueHint;
+
+  /// No description provided for @smartDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Fatto'**
+  String get smartDone;
+
+  /// No description provided for @smartIncomplete.
+  ///
+  /// In it, this message translates to:
+  /// **'Incompleto: non conta finché non lo completi.'**
+  String get smartIncomplete;
+
+  /// No description provided for @smartRemoveFilter.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovi filtro'**
+  String get smartRemoveFilter;
+
+  /// No description provided for @smartRemoveValue.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovi {value}'**
+  String smartRemoveValue(String value);
+
+  /// No description provided for @smartFrom.
+  ///
+  /// In it, this message translates to:
+  /// **'Da'**
+  String get smartFrom;
+
+  /// No description provided for @smartTo.
+  ///
+  /// In it, this message translates to:
+  /// **'A'**
+  String get smartTo;
+
+  /// No description provided for @smartMoreThan.
+  ///
+  /// In it, this message translates to:
+  /// **'Più di'**
+  String get smartMoreThan;
+
+  /// No description provided for @smartLessThan.
+  ///
+  /// In it, this message translates to:
+  /// **'Meno di'**
+  String get smartLessThan;
+
+  /// No description provided for @smartEqualTo.
+  ///
+  /// In it, this message translates to:
+  /// **'Uguale a'**
+  String get smartEqualTo;
+
+  /// No description provided for @smartAgeRecent.
+  ///
+  /// In it, this message translates to:
+  /// **'Negli ultimi'**
+  String get smartAgeRecent;
+
+  /// No description provided for @smartAgeOlder.
+  ///
+  /// In it, this message translates to:
+  /// **'Da più di'**
+  String get smartAgeOlder;
+
+  /// No description provided for @smartDays.
+  ///
+  /// In it, this message translates to:
+  /// **'giorni'**
+  String get smartDays;
+
+  /// No description provided for @smartMinutes.
+  ///
+  /// In it, this message translates to:
+  /// **'minuti'**
+  String get smartMinutes;
+
+  /// No description provided for @smartContains.
+  ///
+  /// In it, this message translates to:
+  /// **'Contiene'**
+  String get smartContains;
+
+  /// No description provided for @smartAdvancedNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Il testo della regola, in sola lettura.'**
+  String get smartAdvancedNote;
+
+  /// No description provided for @smartNotVisual.
+  ///
+  /// In it, this message translates to:
+  /// **'Questa regola è troppo articolata per l’editor a filtri. Resta com’è: la vedi in Avanzate e, se la salvi senza toccarla, non cambia.'**
+  String get smartNotVisual;
+
+  /// No description provided for @smartNoFilters.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi un filtro per iniziare.'**
+  String get smartNoFilters;
+
+  /// No description provided for @smartLimitShort.
+  ///
+  /// In it, this message translates to:
+  /// **'Limite'**
+  String get smartLimitShort;
 }
 
 class _AppLocalizationsDelegate

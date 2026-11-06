@@ -29,17 +29,6 @@ void main() {
   late SmartPlaylistRepository repo;
   late List<Track> tracks;
 
-  Future<void> open(WidgetTester tester, Widget Function(Harness h) page) async {
-    tester.view.physicalSize = const Size(400, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    h = await Harness.create(tester, tracks: 4);
-    repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
-    tracks = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
-    await h.pump(tester, page(h));
-    await _settle(tester);
-  }
-
   Future<int> make(WidgetTester tester, String name, String rules,
           {SmartSort sort = SmartSort.title, int? limit}) async =>
       (await tester.runAsync(() => repo.create(name: name, rules: rules, sort: sort, limit: limit)))!;
@@ -155,86 +144,179 @@ void main() {
   });
 
   group('the editor', () {
-    testWidgets('a live count under the rules, and the parser\'s remarks', (tester) async {
-      await open(tester, (_) => const SmartPlaylistEditor());
-      await tester.enterText(find.widgetWithText(TextField, 'Regole'), 'album:"Album 1"');
-      await _settle(tester);
-      expect(find.text('2 brani'), findsOneWidget);
-      await tester.enterText(find.widgetWithText(TextField, 'Regole'), 'colore:rosso');
-      await _settle(tester);
-      expect(find.textContaining('Non capisco «colore:rosso»'), findsOneWidget);
-      await tester.enterText(find.widgetWithText(TextField, 'Regole'), '');
-      await _settle(tester);
-      expect(find.text('Senza regole la playlist contiene tutta la libreria.'), findsOneWidget);
-      expect(find.text('4 brani'), findsOneWidget);
-      await h.dispose(tester);
-    });
-
-    testWidgets('a limit caps the count shown', (tester) async {
-      await open(tester, (_) => const SmartPlaylistEditor());
-      await tester.enterText(find.widgetWithText(TextField, 'Limite di brani (facoltativo)'), '3');
-      await _settle(tester);
-      expect(find.text('3 brani'), findsOneWidget);
-      await h.dispose(tester);
-    });
-
-    testWidgets('a template fills the name, the rules, the order and the limit', (tester) async {
-      await open(tester, (_) => const SmartPlaylistEditor());
-      await tester.tap(find.text('I più ascoltati'));
-      await _settle(tester);
-      expect(find.widgetWithText(TextField, 'I più ascoltati'), findsOneWidget, reason: 'the name');
-      expect(find.text('ascolti>0'), findsOneWidget);
-      expect(find.text('50'), findsOneWidget);
-      expect(find.text('Più ascoltati'), findsOneWidget, reason: 'the order');
-      await h.dispose(tester);
-    });
-
-    testWidgets('saving needs a name, then creates the playlist with the rules in canonical form', (tester) async {
-      await open(tester, (_) => Scaffold(body: Builder(builder: (c) => TextButton(
-          onPressed: () => Navigator.of(c).push(MaterialPageRoute<bool>(builder: (_) => const SmartPlaylistEditor())),
-          child: const Text('open')))));
-      await tester.tap(find.text('open'));
-      await _settle(tester);
-      await tester.tap(find.text('Salva'));
-      await _settle(tester);
-      expect(find.text('Scrivi un nome'), findsOneWidget);
-      expect(await tester.runAsync(() => repo.getAll()), isEmpty);
-
-      await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Mia');
-      await tester.enterText(find.widgetWithText(TextField, 'Regole'), 'ARTIST:artist year:1990..');
-      await tester.tap(find.text('Salva'));
-      await _settle(tester);
-      final saved = (await tester.runAsync(() => repo.getAll()))!.single;
-      expect(saved.name, 'Mia');
-      expect(saved.rules, 'artista:artist anno:1990..');
-      expect(find.text('open'), findsOneWidget, reason: 'the editor closed');
-      await h.dispose(tester);
-    });
-
-    testWidgets('editing starts from what was saved and updates it', (tester) async {
+    // Opens the editor as a pushed page (so «Salva» can close it); [rules] makes an existing playlist first.
+    Future<int?> openEditor(WidgetTester tester, {String? rules, SmartSort sort = SmartSort.title, int? limit}) async {
       h = await Harness.create(tester, tracks: 4);
       repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
-      final id = await make(tester, 'Prima', 'preferiti', sort: SmartSort.year, limit: 7);
-      final existing = (await tester.runAsync(() => repo.get(id)))!;
-      tester.view.physicalSize = const Size(400, 900);
+      tester.view.physicalSize = const Size(400, 2400); // tall: every card is built
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
+      int? id;
+      SmartPlaylist? existing;
+      if (rules != null) {
+        final made = await make(tester, 'Prima', rules, sort: sort, limit: limit);
+        id = made;
+        existing = await tester.runAsync<SmartPlaylist?>(() => repo.get(made));
+      }
       await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
           onPressed: () => Navigator.of(c).push(MaterialPageRoute<bool>(builder: (_) => SmartPlaylistEditor(existing: existing))),
           child: const Text('open')))));
       await tester.tap(find.text('open'));
       await _settle(tester);
+      return id;
+    }
+
+    Future<void> addFilter(WidgetTester tester, String field) async {
+      await tester.ensureVisible(find.text('Aggiungi filtro'));
+      await tester.tap(find.text('Aggiungi filtro'));
+      await _settle(tester);
+      await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text(field)));
+      await _settle(tester);
+    }
+
+    Future<String> savedRules(WidgetTester tester) async {
+      await tester.tap(find.text('Salva'));
+      await _settle(tester);
+      return (await tester.runAsync(() => repo.getAll()))!.single.rules;
+    }
+
+    Finder saveButton() => find.widgetWithText(FilledButton, 'Salva');
+
+    testWidgets('«Salva» waits for a complete filter, then needs a name', (tester) async {
+      await openEditor(tester);
+      expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull);
+      await addFilter(tester, 'Anno');
+      expect(find.text('Incompleto: non conta finché non lo completi.'), findsOneWidget);
+      expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull, reason: 'an empty card is not a filter');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Da'), '1990');
+      await _settle(tester);
+      expect(find.text('Incompleto: non conta finché non lo completi.'), findsNothing);
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect(find.text('Scrivi un nome'), findsOneWidget);
+      expect(await tester.runAsync(() => repo.getAll()), isEmpty);
+      await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Mia');
+      await tester.tap(saveButton());
+      await _settle(tester);
+      final saved = (await tester.runAsync(() => repo.getAll()))!.single;
+      expect((saved.name, saved.rules), ('Mia', 'anno:1990..'));
+      expect(find.text('open'), findsOneWidget, reason: 'the editor closed');
+      await h.dispose(tester);
+    });
+
+    testWidgets('values come from a list with counts; «Almeno una» joins filters with OR; «Escludi» negates', (tester) async {
+      await openEditor(tester);
+      await addFilter(tester, 'Artista');
+      await tester.tap(find.text('Scegli i valori'));
+      await _settle(tester);
+      expect(find.descendant(of: find.byType(CheckboxListTile), matching: find.text('4 brani')), findsOneWidget, reason: 'the count of the value');
+      await tester.tap(find.byKey(const ValueKey('value:Artist')));
+      await tester.tap(find.text('Fatto'));
+      await _settle(tester);
+      await addFilter(tester, 'Preferiti');
+      await tester.tap(find.text('Almeno una'));
+      await tester.tap(find.text('Escludi').last);
+      await _settle(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Mix');
+      expect(await savedRules(tester), 'artista:"Artist", OR -preferiti');
+      await h.dispose(tester);
+    });
+
+    testWidgets('dates and numbers: «Negli ultimi N giorni», «Da più di N giorni», da…a', (tester) async {
+      await openEditor(tester);
+      await addFilter(tester, 'Aggiunto');
+      await tester.enterText(find.widgetWithText(TextFormField, 'giorni'), '30');
+      await addFilter(tester, 'Ultimo ascolto');
+      await tester.tap(find.text('Da più di').last);
+      await _settle(tester);
+      await tester.enterText(find.widgetWithText(TextFormField, 'giorni').last, '7');
+      await addFilter(tester, 'Durata');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Da'), '2');
+      await tester.enterText(find.widgetWithText(TextFormField, 'A'), '5');
+      await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Date');
+      expect(await savedRules(tester), 'aggiunto<30g ultimoascolto>7g durata:2m..5m');
+      await h.dispose(tester);
+    });
+
+    testWidgets('an existing playlist opens filled in and saves the same string', (tester) async {
+      const rules = 'artista:"Artist", -genere:live ascolti>0 anno:1990..1999 durata:..5m';
+      final id = await openEditor(tester, rules: rules);
+      expect(find.text('Incompleto: non conta finché non lo completi.'), findsNothing);
       expect(find.text('Modifica playlist intelligente'), findsOneWidget);
-      expect(find.widgetWithText(TextField, 'Prima'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'live'), findsOneWidget, reason: 'a contains filter, excluded');
+      expect(find.widgetWithText(TextFormField, 'Più di'), findsOneWidget, reason: 'ascolti>0 keeps its operator');
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect((await tester.runAsync(() => repo.get(id!)))!.rules, rules);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a rule the cards cannot show is said so, kept in «Avanzate» and saved untouched', (tester) async {
+      const rules = 'preferiti OR anno:2000.. album:x'; // the repository stores the canonical text
+      final id = await openEditor(tester, rules: rules);
+      expect(find.textContaining('troppo articolata'), findsOneWidget);
+      expect(find.text('Aggiungi filtro'), findsNothing);
+      expect(find.text(rules), findsOneWidget, reason: 'Avanzate is open, with the stored text');
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect((await tester.runAsync(() => repo.get(id!)))!.rules, rules, reason: 'not rewritten');
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Avanzate» shows the canonical text, read only', (tester) async {
+      await openEditor(tester, rules: 'preferiti');
+      expect(find.text('preferiti'), findsNothing);
+      await tester.tap(find.text('Avanzate'));
+      await _settle(tester);
       expect(find.text('preferiti'), findsOneWidget);
+      expect(find.byType(SelectableText), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a live count at the bottom, capped by the limit', (tester) async {
+      await openEditor(tester, rules: 'album:"Album 1"');
+      expect(find.text('2 brani'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextField, 'Limite'), '1');
+      await _settle(tester);
+      expect(find.text('1 brano'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a template fills the name, the filters, the order and the limit', (tester) async {
+      await openEditor(tester);
+      await tester.tap(find.text('I più ascoltati'));
+      await _settle(tester);
+      expect(find.widgetWithText(TextField, 'I più ascoltati'), findsOneWidget, reason: 'the name');
+      expect(find.widgetWithText(TextFormField, 'Più di'), findsOneWidget, reason: 'the filter');
+      expect(find.text('50'), findsOneWidget);
+      expect(find.textContaining('Più ascoltati'), findsOneWidget, reason: 'the order');
+      await h.dispose(tester);
+    });
+
+    testWidgets('editing updates the playlist', (tester) async {
+      final id = await openEditor(tester, rules: 'preferiti', sort: SmartSort.year, limit: 7);
+      expect(find.widgetWithText(TextField, 'Prima'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
       await tester.enterText(find.widgetWithText(TextField, 'Prima'), 'Dopo');
       await tester.enterText(find.widgetWithText(TextField, '7'), '');
       await tester.tap(find.text('Salva'));
       await _settle(tester);
-      final p = (await tester.runAsync(() => repo.get(id)))!;
-      expect((p.name, p.limitCount, p.sort), ('Dopo', null, 'year'));
+      final p = (await tester.runAsync(() => repo.get(id!)))!;
+      expect((p.name, p.limitCount, p.sort, p.rules), ('Dopo', null, 'year', 'preferiti'));
       await h.dispose(tester);
+    });
+
+    testWidgets('tap targets and labels hold (48 dp, named, contrast)', (tester) async {
+      final sem = tester.ensureSemantics();
+      try {
+        await openEditor(tester, rules: 'artista:"Artist", -genere:live ascolti>0 aggiunto<30g preferiti');
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+        await h.dispose(tester);
+      } finally {
+        sem.dispose();
+      }
     });
   });
 
