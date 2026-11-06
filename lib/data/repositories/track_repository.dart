@@ -32,6 +32,7 @@ class TrackRepository {
     if (rows.isEmpty) return;
     final genres = TrackGenreRepository(_db);
     await _db.transaction(() async {
+      final newGenres = <int, List<String>>{};
       for (var row in rows) {
         final path = row.path.value;
         // The album's hand-picked cover may have changed since the scan read it.
@@ -44,7 +45,7 @@ class TrackRepository {
         if (existing == null) {
           final id = await _db.into(_db.tracks).insert(row);
           final g = genresByPath[path];
-          if (g != null) await genres.replace(id, g);
+          if (g != null) newGenres[id] = g;
           continue;
         }
         final keepText = existing.userEdited;
@@ -97,8 +98,9 @@ class TrackRepository {
           ),
         );
         final g = genresByPath[path];
-        if (g != null) await genres.replace(existing.id, g);
+        if (g != null) newGenres[existing.id] = g;
       }
+      await genres.replaceMany(newGenres);
     });
   }
 

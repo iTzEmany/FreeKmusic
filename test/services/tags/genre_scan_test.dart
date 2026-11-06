@@ -66,4 +66,20 @@ void main() {
     );
     expect(await TrackGenreRepository(db).of(id), ['Jazz']);
   });
+
+  test('replaceMany writes only the tracks whose genres differ, keeping tag order', () async {
+    await scan({
+      for (var i = 0; i < 3; i++) 't$i.mp3': TagInfo(title: 'T$i', genres: ['G$i', 'Z']),
+    });
+    final ids = {for (final t in await db.select(db.tracks).get()) t.title: t.id};
+    final repo = TrackGenreRepository(db);
+    await repo.replaceMany({
+      ids['T0']!: ['G0', 'Z'], // same: untouched
+      ids['T1']!: ['Z', 'A', 'B'], // changed
+      ids['T2']!: [], // cleared
+    });
+    expect(await repo.of(ids['T0']!), ['G0', 'Z']);
+    expect(await repo.of(ids['T1']!), ['Z', 'A', 'B']);
+    expect(await repo.of(ids['T2']!), isEmpty);
+  });
 }

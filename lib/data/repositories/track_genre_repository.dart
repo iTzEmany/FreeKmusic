@@ -30,6 +30,38 @@ class TrackGenreRepository {
         return true;
       });
 
+  /// [replace] for many tracks at once (the scan): one read, one delete, one insert,
+  /// instead of three statements per track.
+  Future<void> replaceMany(Map<int, List<String>> byTrack) async {
+    if (byTrack.isEmpty) return;
+    await _db.transaction(() async {
+      final old = <int, List<String>>{};
+      final ids = byTrack.keys.toList();
+      for (var i = 0; i < ids.length; i += 500) {
+        final rows = await (_db.select(_db.trackGenres)
+              ..where((g) => g.trackId.isIn(ids.sublist(i, i + 500 > ids.length ? ids.length : i + 500)))
+              ..orderBy([(g) => OrderingTerm.asc(g.position)]))
+            .get();
+        for (final r in rows) {
+          (old[r.trackId] ??= []).add(r.genre);
+        }
+      }
+      final changed = [
+        for (final e in byTrack.entries)
+          if (!_same(old[e.key] ?? const [], e.value)) e.key,
+      ];
+      for (var i = 0; i < changed.length; i += 500) {
+        final chunk = changed.sublist(i, i + 500 > changed.length ? changed.length : i + 500);
+        await (_db.delete(_db.trackGenres)..where((g) => g.trackId.isIn(chunk))).go();
+      }
+      await _db.batch((b) => b.insertAll(_db.trackGenres, [
+            for (final id in changed)
+              for (var i = 0; i < byTrack[id]!.length; i++)
+                TrackGenresCompanion.insert(trackId: id, genre: byTrack[id]![i], position: i),
+          ]));
+    });
+  }
+
   /// Like [replace] without reading first: for a caller that knows the genre changed
   /// and is under a read budget (the enrichment commit).
   Future<void> write(int trackId, List<String> genres) => _db.transaction(() async {
