@@ -6619,4 +6619,39 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get smartCountError => 'Recuento no disponible';
+
+  @override
+  String artistMergedNote(int count) {
+    return '$count perfiles unidos';
+  }
+
+  @override
+  String get artistSplit => 'Separar perfiles';
+
+  @override
+  String get artistMergeWith => 'Unir con…';
+
+  @override
+  String artistSameWarn(String name) {
+    return 'Parece el mismo artista que otro perfil ($name).';
+  }
+
+  @override
+  String get artistMergeYes => 'Unir';
+
+  @override
+  String get artistNotSame => 'Son distintos';
+
+  @override
+  String get artistMerged => 'Perfiles unidos.';
+
+  @override
+  String get artistSplitDone => 'Perfiles separados.';
+
+  @override
+  String get artistNotSameDone =>
+      'De acuerdo, no volveré a preguntar por estos dos perfiles.';
+
+  @override
+  String get artistMergePick => '¿Con qué perfil?';
 }

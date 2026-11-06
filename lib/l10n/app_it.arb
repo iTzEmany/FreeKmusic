@@ -4046,5 +4046,17 @@
   "smartIs": "È",
   "smartRestart": "Ricomincia con i filtri",
   "smartRestarted": "Regola azzerata",
-  "smartCountError": "Conteggio non disponibile"
+  "smartCountError": "Conteggio non disponibile",
+  "artistMergedNote": "{count} profili uniti",
+  "@artistMergedNote": {"placeholders": {"count": {"type": "int"}}},
+  "artistSplit": "Separa profili",
+  "artistMergeWith": "Unisci con…",
+  "artistSameWarn": "Sembra lo stesso artista di un altro profilo ({name}).",
+  "@artistSameWarn": {"placeholders": {"name": {"type": "String"}}},
+  "artistMergeYes": "Unisci",
+  "artistNotSame": "Sono diversi",
+  "artistMerged": "Profili uniti.",
+  "artistSplitDone": "Profili separati.",
+  "artistNotSameDone": "Va bene, non lo chiederò più per questi due profili.",
+  "artistMergePick": "Con quale profilo?"
 }

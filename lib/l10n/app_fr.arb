@@ -3603,5 +3603,15 @@
   "smartIs": "Est",
   "smartRestart": "Recommencer avec des filtres",
   "smartRestarted": "Règle effacée",
-  "smartCountError": "Décompte indisponible"
+  "smartCountError": "Décompte indisponible",
+  "artistMergedNote": "{count} profils réunis",
+  "artistSplit": "Séparer les profils",
+  "artistMergeWith": "Réunir avec…",
+  "artistSameWarn": "Il semble s’agir du même artiste qu’un autre profil ({name}).",
+  "artistMergeYes": "Réunir",
+  "artistNotSame": "Ils sont différents",
+  "artistMerged": "Profils réunis.",
+  "artistSplitDone": "Profils séparés.",
+  "artistNotSameDone": "D’accord, je ne redemanderai plus pour ces deux profils.",
+  "artistMergePick": "Avec quel profil ?"
 }

@@ -6,6 +6,7 @@ import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/library_queries.dart' show ArtistSummary;
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/artist_merge_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/player_providers.dart';
@@ -20,6 +21,7 @@ import '../library/artist_screen.dart';
 import '../releases/follow_button.dart';
 import '../youtube/online_results.dart';
 import 'artist_page_sections.dart';
+import 'artist_picker_sheet.dart' show mergeArtistWith;
 import 'artist_songs_screen.dart';
 import 'catalog_error_view.dart';
 import 'discography_screen.dart';
@@ -27,6 +29,7 @@ import 'online_album_screen.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/show_msg.dart';
 
 /// The page of an artist on YouTube Music: the songs of the library first,
 /// then top songs, releases, similar artists and the biography. [artist] is
@@ -36,21 +39,43 @@ class ArtistPageScreen extends ConsumerWidget {
 
   final YtmArtistRef artist;
 
-  String get _listKey => SelectionKey.ytmArtistOf(artist.id);
-
-  Future<void> _refresh(WidgetRef ref) async {
-    try {
-      await ref
-          .read(ytmCatalogProvider)
-          .artist(artist.id, ref.read(ytmLanguageProvider), refresh: true);
-    } on Object catch (e) {
-      AppLog.w('artist page: refresh failed ($e)');
+  /// Reads again every profile of the group.
+  Future<void> _refresh(WidgetRef ref, List<String> ids) async {
+    for (final id in ids) {
+      try {
+        await ref.read(ytmCatalogProvider).artist(id, ref.read(ytmLanguageProvider), refresh: true);
+      } on Object catch (e) {
+        AppLog.w('artist page: refresh failed ($e)');
+      }
+      ref.invalidate(artistPageProvider(id));
     }
-    ref.invalidate(artistPageProvider(artist.id));
+  }
+
+  /// «Separa profili»: every alias leaves the group of [head].
+  Future<void> _split(BuildContext context, WidgetRef ref, List<String> ids) async {
+    final repo = ref.read(artistAliasRepositoryProvider);
+    for (final id in ids.skip(1)) {
+      await repo.split(id);
+    }
+    ref.read(artistMergeEpochProvider.notifier).bump();
+    if (context.mounted) showMsg(context, context.l10n.artistSplitDone);
+  }
+
+  Future<void> _decide(BuildContext context, WidgetRef ref, YtmArtistRef head, YtmArtistRef other, {required bool merge}) async {
+    final repo = ref.read(artistAliasRepositoryProvider);
+    if (merge) {
+      await repo.merge(head.id, other.id);
+    } else {
+      await repo.markNotSame(head.id, other.id);
+    }
+    ref.read(artistMergeEpochProvider.notifier).bump();
+    if (!context.mounted) return;
+    final l = context.l10n;
+    showMsg(context, merge ? l.artistMerged : l.artistNotSameDone);
   }
 
   /// The normal search for the artist's name, when the page cannot be read.
-  void _searchSongs(BuildContext context) => ShellNav.open<void>(
+  void _searchSongs(BuildContext context, YtmArtistRef artist) => ShellNav.open<void>(
         context,
         Scaffold(
           appBar: CcAppBar(title: artist.name),
@@ -61,21 +86,55 @@ class ArtistPageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final page = ref.watch(artistPageProvider(artist.id));
-    final local = localArtistFor(artist.name, ref.watch(artistsProvider).value ?? const []);
+    // An alias opens the page of its main profile; the group is read first.
+    final groupAsync = ref.watch(artistGroupProvider(artist.id));
+    final ids = groupAsync.hasError ? [artist.id] : groupAsync.value;
+    if (ids == null) {
+      return OnlinePageFrame(
+        title: artist.name,
+        slivers: [
+          SliverToBoxAdapter(child: ArtistHeader(artist: artist)),
+          const SliverToBoxAdapter(child: PageSkeleton()),
+        ],
+      );
+    }
+    final page = ref.watch(artistPageProvider(ids.first));
+    final others = [
+      for (final id in ids.skip(1))
+        ?ref.watch(artistPageProvider(id)).value?.value,
+    ];
+    final main = page.value;
+    final head = ids.first == artist.id
+        ? artist
+        : YtmArtistRef(
+            id: ids.first,
+            name: main?.value.ref.name ?? artist.name,
+            thumbnailUrl: artist.thumbnailUrl,
+          );
+    final suggestion = ref.watch(artistMergeSuggestionProvider((id: head.id, name: head.name))).value;
+    final local = localArtistFor(head.name, ref.watch(artistsProvider).value ?? const []);
     final localTracks = local == null
         ? const <Track>[]
         : ref.watch(artistTracksProvider(local.key)).value ?? const <Track>[];
-    final data = page.value;
+    final data = main;
     final songs = <YtResult>[];
     final slivers = <Widget>[
       SliverToBoxAdapter(
         child: ArtistHeader(
-          artist: artist,
+          artist: head,
           audience: data?.value.ref.audience,
-          action: kEnableYoutube ? FollowButton(artist: artist) : null,
+          action: kEnableYoutube ? FollowButton(artist: head) : null,
         ),
       ),
+      if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length)),
+      if (suggestion != null)
+        SliverToBoxAdapter(
+          child: MergeWarning(
+            other: suggestion.audience == null ? suggestion.name : '${suggestion.name}, ${suggestion.audience}',
+            onMerge: () => _decide(context, ref, head, suggestion, merge: true),
+            onDifferent: () => _decide(context, ref, head, suggestion, merge: false),
+          ),
+        ),
     ];
     if (data != null) {
       if (data.stale) {
@@ -85,16 +144,16 @@ class ArtistPageScreen extends ConsumerWidget {
         slivers.addAll(_library(context, ref, local, localTracks));
       }
       final overlap = LibraryOverlap(localTracks);
-      for (final shelf in data.value.shelves) {
+      for (final shelf in mergeArtistShelves(data.value, others)) {
         switch (shelf) {
           case YtmSongShelf():
             if (shelf.songs.isEmpty) break;
             final start = songs.length;
             songs.addAll(shelf.songs);
-            slivers.addAll(_songs(context, shelf, start, overlap));
+            slivers.addAll(_songs(context, head, shelf, start, overlap));
           case YtmReleaseShelf():
             if (shelf.releases.isEmpty) break;
-            slivers.add(SliverToBoxAdapter(child: _releases(context, shelf)));
+            slivers.add(SliverToBoxAdapter(child: _releases(context, head, shelf)));
           case YtmArtistShelf():
             if (shelf.artists.isEmpty) break;
             slivers.add(SliverToBoxAdapter(
@@ -112,21 +171,32 @@ class ArtistPageScreen extends ConsumerWidget {
       slivers.add(SliverToBoxAdapter(
         child: CatalogErrorView(
           error: page.error!,
-          onRetry: () => ref.invalidate(artistPageProvider(artist.id)),
+          onRetry: () => ref.invalidate(artistPageProvider(head.id)),
           notFoundText: l.ytmArtistNotFound,
           unreadableText: l.ytmArtistUnreadable,
-          onSearch: () => _searchSongs(context),
-          searchLabel: l.ytmSearchSongsOf(artist.name),
+          onSearch: () => _searchSongs(context, head),
+          searchLabel: l.ytmSearchSongsOf(head.name),
         ),
       ));
     } else {
       slivers.add(const SliverToBoxAdapter(child: PageSkeleton()));
     }
     return OnlinePageFrame(
-      title: artist.name,
-      selectionKey: _listKey,
+      title: head.name,
+      selectionKey: SelectionKey.ytmArtistOf(head.id),
       pickable: songs,
-      onRefresh: () => _refresh(ref),
+      onRefresh: () => _refresh(ref, ids),
+      actions: [
+        PopupMenuButton<bool>(
+          key: const ValueKey('artist-menu'),
+          tooltip: l.moreActions,
+          onSelected: (split) => split ? _split(context, ref, ids) : mergeArtistWith(context, ref, head, ids),
+          itemBuilder: (_) => [
+            PopupMenuItem(value: false, height: 48, child: Text(l.artistMergeWith)),
+            if (ids.length > 1) PopupMenuItem(value: true, height: 48, child: Text(l.artistSplit)),
+          ],
+        ),
+      ],
       slivers: slivers,
     );
   }
@@ -160,7 +230,7 @@ class ArtistPageScreen extends ConsumerWidget {
   }
 
   List<Widget> _songs(
-      BuildContext context, YtmSongShelf shelf, int start, LibraryOverlap overlap) {
+      BuildContext context, YtmArtistRef artist, YtmSongShelf shelf, int start, LibraryOverlap overlap) {
     final l = context.l10n;
     final link = shelf.allSongs;
     return [
@@ -179,14 +249,14 @@ class ArtistPageScreen extends ConsumerWidget {
         itemBuilder: (_, i) => OnlineSongTile(
           result: shelf.songs[i],
           index: start + i,
-          selectionKey: _listKey,
+          selectionKey: SelectionKey.ytmArtistOf(artist.id),
           ownedLocally: overlap.owns(shelf.songs[i]),
         ),
       ),
     ];
   }
 
-  Widget _releases(BuildContext context, YtmReleaseShelf shelf) {
+  Widget _releases(BuildContext context, YtmArtistRef artist, YtmReleaseShelf shelf) {
     final more = shelf.more;
     return ReleaseList(
       shelf: shelf,

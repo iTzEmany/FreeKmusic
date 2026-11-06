@@ -3369,5 +3369,15 @@
   "smartIs": "Is",
   "smartRestart": "Start over with filters",
   "smartRestarted": "Rule cleared",
-  "smartCountError": "Count unavailable"
+  "smartCountError": "Count unavailable",
+  "artistMergedNote": "{count} profiles merged",
+  "artistSplit": "Split profiles",
+  "artistMergeWith": "Merge with…",
+  "artistSameWarn": "This looks like the same artist as another profile ({name}).",
+  "artistMergeYes": "Merge",
+  "artistNotSame": "They are different",
+  "artistMerged": "Profiles merged.",
+  "artistSplitDone": "Profiles split.",
+  "artistNotSameDone": "Okay, I won't ask again for these two profiles.",
+  "artistMergePick": "Which profile?"
 }

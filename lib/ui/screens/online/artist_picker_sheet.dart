@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/artist_merge_providers.dart';
 import '../../../providers/ytm_catalog_providers.dart';
+import '../../../services/import/track_matcher.dart' show matchKey;
 import '../../../services/online/innertube_client.dart';
+import '../../../services/online/query_cleaner.dart' show extractPrimaryArtist;
 import '../../../services/online/youtube_service.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../../services/online/ytm_artist_resolver.dart';
@@ -74,11 +77,48 @@ Future<void> openYtmArtist(
   if (artist != null) open(ArtistPageScreen(artist: artist));
 }
 
+/// «Unisci con…» (D-402): the profiles found for the name of [head] other than
+/// the ones of its [group], the likely one (same normalised name) first; the
+/// one chosen joins the group. Nothing changes when the sheet is dismissed.
+Future<void> mergeArtistWith(
+  BuildContext context,
+  WidgetRef ref,
+  YtmArtistRef head,
+  List<String> group,
+) async {
+  final l = context.l10n;
+  final search = ref.read(artistMergeSearchProvider)(head.name);
+  if (search == null) return showMsg(context, l.loadFailed);
+  final found = [for (final a in await search) if (!group.contains(a.id)) a];
+  if (!context.mounted) return;
+  if (found.isEmpty) return showMsg(context, l.ytmArtistNone);
+  final chosen = await showCcSheet<YtmArtistRef>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (_) => ArtistPickerSheet(artists: likelyFirst(head.name, found), title: l.artistMergePick),
+  );
+  if (chosen == null || !context.mounted) return;
+  await ref.read(artistAliasRepositoryProvider).merge(head.id, chosen.id);
+  ref.read(artistMergeEpochProvider.notifier).bump();
+  if (context.mounted) showMsg(context, l.artistMerged);
+}
+
+/// [found] with the profiles named like [name] (accents, case and «feat.» ignored) first.
+List<YtmArtistRef> likelyFirst(String name, List<YtmArtistRef> found) {
+  final keys = {matchKey(name), matchKey(extractPrimaryArtist(name))}..remove('');
+  final same = [for (final a in found) if (keys.contains(matchKey(a.name))) a];
+  return [...same, for (final a in found) if (!same.contains(a)) a];
+}
+
 /// The few artists to choose from: photo, name and monthly audience.
 class ArtistPickerSheet extends StatelessWidget {
-  const ArtistPickerSheet({super.key, required this.artists});
+  const ArtistPickerSheet({super.key, required this.artists, this.title});
 
   final List<YtmArtistRef> artists;
+
+  /// The heading; «Quale artista?» when null.
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +142,7 @@ class ArtistPickerSheet extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  l.ytmPickArtist,
+                  title ?? l.ytmPickArtist,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),

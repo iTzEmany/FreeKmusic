@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../core/clock.dart';
 import '../../services/online/ytm_artist.dart';
 import '../db/app_database.dart';
+import 'artist_alias_repository.dart';
 
 /// `last_error` of an artist whose page YouTube did not find.
 const kArtistNotFound = 'not_found';
@@ -66,14 +67,17 @@ class FollowRepository {
 
   /// A followed artist leaves the list (and its releases); an automatic one is
   /// excluded, so it does not come back while it stays among the most listened.
+  /// It applies to every profile of the group of [id] (D-402).
   Future<void> unfollow(String id) async {
-    final row = await _get(id);
-    if (row == null) return;
-    if (row.isAuto) {
-      await (_db.update(_db.followedArtists)..where((a) => a.ytmId.equals(id)))
-          .write(const FollowedArtistsCompanion(excluded: Value(true)));
-    } else {
-      await (_db.delete(_db.followedArtists)..where((a) => a.ytmId.equals(id))).go();
+    for (final member in await ArtistAliasRepository(_db).groupOf(id)) {
+      final row = await _get(member);
+      if (row == null) continue;
+      if (row.isAuto) {
+        await (_db.update(_db.followedArtists)..where((a) => a.ytmId.equals(member)))
+            .write(const FollowedArtistsCompanion(excluded: Value(true)));
+      } else {
+        await (_db.delete(_db.followedArtists)..where((a) => a.ytmId.equals(member))).go();
+      }
     }
   }
 
@@ -96,8 +100,15 @@ class FollowRepository {
   Future<FollowedArtist?> _get(String id) =>
       (_db.select(_db.followedArtists)..where((a) => a.ytmId.equals(id))).getSingleOrNull();
 
-  Stream<bool> watchIsFollowed(String id) => (_db.select(_db.followedArtists)
-        ..where((a) => a.ytmId.equals(id) & a.excluded.equals(false)))
+  /// Whether [id] or any profile merged with it is followed.
+  Stream<bool> watchIsFollowed(String id) => _db
+      .customSelect(
+        'WITH m(id) AS (SELECT COALESCE((SELECT main_id FROM artist_aliases WHERE alias_id = ?1), ?1)) '
+        'SELECT 1 FROM followed_artists f, m WHERE f.excluded = 0 AND '
+        '(f.ytm_id = m.id OR f.ytm_id IN (SELECT alias_id FROM artist_aliases WHERE main_id = m.id)) LIMIT 1',
+        variables: [Variable<String>(id)],
+        readsFrom: {_db.followedArtists, _db.artistAliases},
+      )
       .watch()
       .map((l) => l.isNotEmpty);
 

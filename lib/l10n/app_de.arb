@@ -3369,5 +3369,15 @@
   "smartIs": "Ist",
   "smartRestart": "Mit Filtern neu beginnen",
   "smartRestarted": "Regel geleert",
-  "smartCountError": "Anzahl nicht verfügbar"
+  "smartCountError": "Anzahl nicht verfügbar",
+  "artistMergedNote": "{count} Profile zusammengeführt",
+  "artistSplit": "Profile trennen",
+  "artistMergeWith": "Zusammenführen mit…",
+  "artistSameWarn": "Das scheint derselbe Künstler wie ein anderes Profil zu sein ({name}).",
+  "artistMergeYes": "Zusammenführen",
+  "artistNotSame": "Sind verschieden",
+  "artistMerged": "Profile zusammengeführt.",
+  "artistSplitDone": "Profile getrennt.",
+  "artistNotSameDone": "Okay, ich frage für diese beiden Profile nicht mehr nach.",
+  "artistMergePick": "Welches Profil?"
 }

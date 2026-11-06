@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -147,4 +148,23 @@ void main() {
     expect(await follows.lookups(), isEmpty);
   });
 
+
+  test('following the main profile makes the alias followed too; unfollowing the alias stops both', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.follow(artist('UC1'));
+    expect(await follows.watchIsFollowed('UC2').first, isTrue);
+    expect(await follows.watchIsFollowed('UC3').first, isFalse);
+    await follows.unfollow('UC2');
+    expect(await follows.all(), isEmpty);
+    expect(await follows.watchIsFollowed('UC2').first, isFalse);
+  });
+
+  test('excluding an automatic profile excludes the whole group', () async {
+    await ArtistAliasRepository(db).merge('UC1', 'UC2');
+    await follows.followAuto(artist('UC1'));
+    await follows.followAuto(artist('UC2'));
+    await follows.unfollow('UC1');
+    expect((await follows.all()).map((r) => r.excluded), [true, true]);
+    expect(await follows.watchIsFollowed('UC2').first, isFalse);
+  });
 }

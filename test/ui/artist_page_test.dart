@@ -1,4 +1,6 @@
 import 'package:codecore/core/constants.dart';
+import 'package:codecore/data/repositories/artist_alias_repository.dart';
+import 'package:codecore/providers/artist_merge_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -79,7 +81,10 @@ void main() {
     await h.pump(
       tester,
       ArtistPageScreen(artist: artist),
-      extraOverrides: [artistPageProvider.overrideWith((ref, id) => page())],
+      extraOverrides: [
+        artistPageProvider.overrideWith((ref, id) => page()),
+        artistMergeSearchProvider.overrideWithValue((_) => Future.value(const <YtmArtistRef>[])),
+      ],
     );
     await _settle(tester);
     return h;
@@ -387,4 +392,144 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  group('merged profiles (D-402)', () {
+    const a = YtmArtistRef(id: 'UCa', name: 'Marco Castello');
+    const b = YtmArtistRef(id: 'UCb', name: 'Marco Castello', audience: '38 mila');
+    const c = YtmArtistRef(id: 'UCc', name: 'Altro Nome');
+
+    YtmArtistPage pageOf(YtmArtistRef ref, List<YtmRelease> albums) =>
+        YtmArtistPage(ref: ref, shelves: [YtmReleaseShelf('Album', albums)]);
+
+    final pages = {
+      'UCa': pageOf(a, const [
+        YtmRelease(browseId: 'M1', title: 'Contenta Tuttə', subtitle: 'Album • 2021'),
+        YtmRelease(browseId: 'M2', title: 'Pezzi', subtitle: 'Album • 2019'),
+      ]),
+      'UCb': pageOf(b, const [
+        YtmRelease(browseId: 'M3', title: 'CONTENTA tuttə', subtitle: '2021'),
+        YtmRelease(browseId: 'M4', title: 'Nella stanza', subtitle: '2023'),
+      ]),
+    };
+
+    late Harness h;
+
+    Future<void> openGroup(
+      WidgetTester tester, {
+      YtmArtistRef from = a,
+      bool merged = true,
+      List<YtmArtistRef> found = const [],
+    }) async {
+      tester.view.physicalSize = const Size(600, 2600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      h = await Harness.create(tester);
+      if (merged) await tester.runAsync(() => ArtistAliasRepository(h.db).merge('UCa', 'UCb'));
+      await h.pump(
+        tester,
+        ArtistPageScreen(artist: from),
+        extraOverrides: [
+          artistPageProvider.overrideWith(
+            (ref, id) async => CatalogResult(pages[id]!, DateTime(2026, 10, 22)),
+          ),
+          artistMergeSearchProvider.overrideWithValue((_) => Future.value(found)),
+        ],
+      );
+      await _settle(tester);
+    }
+
+    Future<List<String>> aliases(WidgetTester tester) async =>
+        (await tester.runAsync(() => ArtistAliasRepository(h.db).groupOf('UCa')))!;
+
+    Future<void> menu(WidgetTester tester, String item) async {
+      await tester.tap(find.byKey(const ValueKey('artist-menu')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(item));
+      await _settle(tester);
+    }
+
+    testWidgets('two profiles with a shared album show it once, with the note', (tester) async {
+      await openGroup(tester);
+      expect(find.text('2 profili uniti'), findsOneWidget);
+      expect(find.text('Contenta Tuttə'), findsOneWidget);
+      expect(find.text('CONTENTA tuttə'), findsNothing);
+      expect(find.text('Pezzi'), findsOneWidget);
+      expect(find.text('Nella stanza'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('opening the alias shows the main profile page', (tester) async {
+      await openGroup(tester, from: b);
+      expect(find.text('2 profili uniti'), findsOneWidget);
+      expect(find.text('Marco Castello'), findsWidgets);
+      expect(find.text('Pezzi'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Separa profili» goes back to the main profile alone', (tester) async {
+      await openGroup(tester);
+      await menu(tester, 'Separa profili');
+      expect(await aliases(tester), ['UCa']);
+      expect(find.text('2 profili uniti'), findsNothing);
+      expect(find.text('Nella stanza'), findsNothing);
+      expect(find.text('Pezzi'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Unisci con…» offers the likely profile first and merges the one chosen', (tester) async {
+      await openGroup(tester, merged: false, found: const [c, b]);
+      expect(find.text('Separa profili'), findsNothing);
+      await menu(tester, 'Unisci con…');
+      expect(find.byKey(const ValueKey('pick-UCa')), findsNothing, reason: 'the page itself is not offered');
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('pick-UCb'))).dy,
+        lessThan(tester.getTopLeft(find.byKey(const ValueKey('pick-UCc'))).dy),
+      );
+      await tester.tap(find.byKey(const ValueKey('pick-UCc')));
+      await _settle(tester);
+      expect(await aliases(tester), ['UCa', 'UCc']);
+      await h.dispose(tester);
+    });
+
+    testWidgets('dismissing the «Unisci con…» sheet changes nothing', (tester) async {
+      await openGroup(tester, merged: false, found: const [b]);
+      await menu(tester, 'Unisci con…');
+      expect(find.byKey(const ValueKey('pick-UCb')), findsOneWidget);
+      await tester.tapAt(const Offset(300, 20));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('pick-UCb')), findsNothing);
+      expect(await aliases(tester), ['UCa']);
+      await h.dispose(tester);
+    });
+
+    testWidgets('the warning offers «Unisci»', (tester) async {
+      await openGroup(tester, merged: false, found: const [b]);
+      expect(find.byKey(const ValueKey('merge-warning')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('merge-yes')));
+      await _settle(tester);
+      expect(await aliases(tester), ['UCa', 'UCb']);
+      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Sono diversi» hides the warning and it does not come back', (tester) async {
+      await openGroup(tester, merged: false, found: const [b]);
+      await tester.tap(find.byKey(const ValueKey('merge-different')));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+      expect(await aliases(tester), ['UCa']);
+      expect(await tester.runAsync(() => ArtistAliasRepository(h.db).isNotSame('UCa', 'UCb')), isTrue);
+      await h.dispose(tester);
+    });
+
+    testWidgets('no warning for a different name or an already merged profile', (tester) async {
+      await openGroup(tester, merged: false, found: const [c]);
+      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+      await h.dispose(tester);
+      await openGroup(tester, found: const [b]);
+      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+      await h.dispose(tester);
+    });
+  });
 }

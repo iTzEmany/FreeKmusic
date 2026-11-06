@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../services/import/track_matcher.dart' show matchKey;
 import '../../../services/online/google_thumb.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../theme/tokens.dart';
@@ -313,6 +314,97 @@ class _AboutSectionState extends State<AboutSection> {
           ),
         ),
       ],
+    );
+  }
+}
+
+final _year = RegExp(r'\b(?:19|20)\d{2}\b');
+
+/// The shelves of the merged profiles as one page (D-402): the main profile's
+/// shelves, plus the releases of the other profiles that it does not have yet
+/// (same shelf, same normalised title and year). Other shelf kinds stay the main's.
+List<YtmShelf> mergeArtistShelves(YtmArtistPage main, List<YtmArtistPage> others) {
+  final shelves = [...main.shelves];
+  for (final other in others) {
+    for (final shelf in other.shelves) {
+      if (shelf is! YtmReleaseShelf) continue;
+      String key(YtmRelease r) => '${matchKey(r.title)}|${_year.firstMatch(r.subtitle)?.group(0) ?? ''}';
+      final at = shelves.indexWhere((x) => x is YtmReleaseShelf && x.title == shelf.title);
+      if (at < 0) {
+        shelves.add(shelf);
+        continue;
+      }
+      final mine = shelves[at] as YtmReleaseShelf;
+      final seen = {for (final r in mine.releases) key(r)};
+      final added = [for (final r in shelf.releases) if (seen.add(key(r))) r];
+      if (added.isNotEmpty) shelves[at] = YtmReleaseShelf(mine.title, [...mine.releases, ...added], more: mine.more);
+    }
+  }
+  return shelves;
+}
+
+/// «2 profili uniti» under the header of a merged page.
+class MergedProfilesNote extends StatelessWidget {
+  const MergedProfilesNote({super.key, required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        key: const ValueKey('merged-note'),
+        padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.margin, 0),
+        child: Text(
+          context.l10n.artistMergedNote(count),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+        ),
+      );
+}
+
+/// «Sembra lo stesso artista…»: merge the two profiles or say they are different.
+class MergeWarning extends StatelessWidget {
+  const MergeWarning({super.key, required this.other, required this.onMerge, required this.onDifferent});
+
+  /// What names the other profile («Marco Castello · 38 mila iscritti»).
+  final String other;
+  final VoidCallback onMerge, onDifferent;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final cc = context.cc;
+    return Container(
+      key: const ValueKey('merge-warning'),
+      margin: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, 0),
+      padding: const EdgeInsets.fromLTRB(CcDims.gap12, CcDims.gap12, CcDims.gap8, CcDims.gap4),
+      decoration: BoxDecoration(color: cc.surface2, borderRadius: BorderRadius.circular(CcDims.rCard)),
+      child: Semantics(
+        liveRegion: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l.artistSameWarn(other), style: Theme.of(context).textTheme.bodyLarge),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                children: [
+                  TextButton(
+                    key: const ValueKey('merge-different'),
+                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    onPressed: onDifferent,
+                    child: Text(l.artistNotSame),
+                  ),
+                  TextButton(
+                    key: const ValueKey('merge-yes'),
+                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    onPressed: onMerge,
+                    child: Text(l.artistMergeYes),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

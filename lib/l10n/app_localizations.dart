@@ -10536,6 +10536,66 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Conteggio non disponibile'**
   String get smartCountError;
+
+  /// No description provided for @artistMergedNote.
+  ///
+  /// In it, this message translates to:
+  /// **'{count} profili uniti'**
+  String artistMergedNote(int count);
+
+  /// No description provided for @artistSplit.
+  ///
+  /// In it, this message translates to:
+  /// **'Separa profili'**
+  String get artistSplit;
+
+  /// No description provided for @artistMergeWith.
+  ///
+  /// In it, this message translates to:
+  /// **'Unisci con…'**
+  String get artistMergeWith;
+
+  /// No description provided for @artistSameWarn.
+  ///
+  /// In it, this message translates to:
+  /// **'Sembra lo stesso artista di un altro profilo ({name}).'**
+  String artistSameWarn(String name);
+
+  /// No description provided for @artistMergeYes.
+  ///
+  /// In it, this message translates to:
+  /// **'Unisci'**
+  String get artistMergeYes;
+
+  /// No description provided for @artistNotSame.
+  ///
+  /// In it, this message translates to:
+  /// **'Sono diversi'**
+  String get artistNotSame;
+
+  /// No description provided for @artistMerged.
+  ///
+  /// In it, this message translates to:
+  /// **'Profili uniti.'**
+  String get artistMerged;
+
+  /// No description provided for @artistSplitDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Profili separati.'**
+  String get artistSplitDone;
+
+  /// No description provided for @artistNotSameDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Va bene, non lo chiederò più per questi due profili.'**
+  String get artistNotSameDone;
+
+  /// No description provided for @artistMergePick.
+  ///
+  /// In it, this message translates to:
+  /// **'Con quale profilo?'**
+  String get artistMergePick;
 }
 
 class _AppLocalizationsDelegate
