@@ -6338,6 +6338,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get logCleanupSub => 'As músicas da biblioteca foram comparadas.';
 
   @override
+  String get logGenres => 'Géneros das músicas relidos';
+
+  @override
+  String get logGenresSub =>
+      'As etiquetas das músicas foram lidas para encontrar todos os géneros.';
+
+  @override
   String get logReleases => 'Novidades verificadas';
 
   @override

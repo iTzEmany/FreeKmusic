@@ -137,7 +137,7 @@ void main() {
       final old = AppDatabase(NativeDatabase.memory());
       await old.into(old.tracks).insert(TracksCompanion.insert(
           path: '/m/v14.mp3', title: 'v14', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
-      for (final t in ['track_credits', 'track_enrich', 'activity_log']) {
+      for (final t in ['track_credits', 'track_enrich', 'activity_log', 'track_genres', 'artist_countries']) {
         await old.customStatement('DROP TABLE $t');
       }
       await old.customStatement('ALTER TABLE tracks DROP COLUMN cover_source');

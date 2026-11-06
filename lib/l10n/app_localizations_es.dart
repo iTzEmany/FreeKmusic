@@ -6348,6 +6348,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get logCleanupSub => 'Se compararon las canciones de la biblioteca.';
 
   @override
+  String get logGenres => 'Géneros de las canciones releídos';
+
+  @override
+  String get logGenresSub =>
+      'Se leyeron las etiquetas de las canciones para hallar todos los géneros.';
+
+  @override
   String get logReleases => 'Novedades revisadas';
 
   @override

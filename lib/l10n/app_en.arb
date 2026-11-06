@@ -3293,6 +3293,8 @@
   "logSecondOpinionFailed": "Second opinion interrupted",
   "logCleanup": "Duplicates searched",
   "logCleanupSub": "The library songs were compared.",
+  "logGenres": "Song genres read again",
+  "logGenresSub": "The songs' tags were read to find every genre.",
   "logReleases": "New releases checked",
   "logReleasesSub": "Looked for news from the artists you follow.",
   "logPodcasts": "Podcasts updated",

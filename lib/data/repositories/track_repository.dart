@@ -13,6 +13,7 @@ import '../../services/online/youtube_service.dart' show YtResult;
 import '../db/app_database.dart';
 import 'duplicate_repository.dart';
 import 'light_tracks.dart';
+import 'track_genre_repository.dart';
 import 'track_kinds.dart';
 
 enum SortOption { defaultOrder, title, artist, album, year, addedAt, duration }
@@ -23,9 +24,11 @@ class TrackRepository {
   final AppDatabase _db;
 
   /// Inserts new rows; for existing paths only file-derived fields change, so
-  /// favourites, lyrics, counters and user edits survive a rescan.
-  Future<void> upsertBatch(List<TracksCompanion> rows) async {
+  /// favourites, lyrics, counters and user edits survive a rescan. [genresByPath]
+  /// are the genres read for a path; they replace its `track_genres` rows.
+  Future<void> upsertBatch(List<TracksCompanion> rows, {Map<String, List<String>> genresByPath = const {}}) async {
     if (rows.isEmpty) return;
+    final genres = TrackGenreRepository(_db);
     await _db.transaction(() async {
       for (var row in rows) {
         final path = row.path.value;
@@ -37,7 +40,9 @@ class TrackRepository {
           _db.tracks,
         )..where((t) => t.path.equals(path))).getSingleOrNull();
         if (existing == null) {
-          await _db.into(_db.tracks).insert(row);
+          final id = await _db.into(_db.tracks).insert(row);
+          final g = genresByPath[path];
+          if (g != null) await genres.replace(id, g);
           continue;
         }
         final keepText = existing.userEdited;
@@ -89,6 +94,8 @@ class TrackRepository {
             sha256: changed ? const Value(null) : const Value.absent(),
           ),
         );
+        final g = genresByPath[path];
+        if (g != null) await genres.replace(existing.id, g);
       }
     });
   }

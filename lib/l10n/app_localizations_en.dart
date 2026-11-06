@@ -6313,6 +6313,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logCleanupSub => 'The library songs were compared.';
 
   @override
+  String get logGenres => 'Song genres read again';
+
+  @override
+  String get logGenresSub => 'The songs\' tags were read to find every genre.';
+
+  @override
   String get logReleases => 'New releases checked';
 
   @override

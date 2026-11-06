@@ -3527,6 +3527,8 @@
   "logSecondOpinionFailed": "Second avis interrompu",
   "logCleanup": "Doublons recherchés",
   "logCleanupSub": "Les titres de la bibliothèque ont été comparés.",
+  "logGenres": "Genres des titres relus",
+  "logGenresSub": "Les tags des titres ont été relus pour trouver tous les genres.",
   "logReleases": "Nouveautés vérifiées",
   "logReleasesSub": "Nouveautés des artistes que vous suivez recherchées.",
   "logPodcasts": "Podcasts mis à jour",

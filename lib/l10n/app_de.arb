@@ -3293,6 +3293,8 @@
   "logSecondOpinionFailed": "Zweite Meinung unterbrochen",
   "logCleanup": "Duplikate gesucht",
   "logCleanupSub": "Die Titel der Mediathek wurden verglichen.",
+  "logGenres": "Genres der Titel neu gelesen",
+  "logGenresSub": "Die Tags der Titel wurden gelesen, um alle Genres zu finden.",
   "logReleases": "Neuerscheinungen geprüft",
   "logReleasesSub": "Neuigkeiten der Künstler, denen du folgst, gesucht.",
   "logPodcasts": "Podcasts aktualisiert",

@@ -10081,6 +10081,18 @@ abstract class AppLocalizations {
   /// **'Confrontati i brani della libreria.'**
   String get logCleanupSub;
 
+  /// No description provided for @logGenres.
+  ///
+  /// In it, this message translates to:
+  /// **'Generi dei brani riletti'**
+  String get logGenres;
+
+  /// No description provided for @logGenresSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Letti i tag dei brani per trovare tutti i generi.'**
+  String get logGenresSub;
+
   /// No description provided for @logReleases.
   ///
   /// In it, this message translates to:

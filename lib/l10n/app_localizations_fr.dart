@@ -6385,6 +6385,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get logCleanupSub => 'Les titres de la bibliothèque ont été comparés.';
 
   @override
+  String get logGenres => 'Genres des titres relus';
+
+  @override
+  String get logGenresSub =>
+      'Les tags des titres ont été relus pour trouver tous les genres.';
+
+  @override
   String get logReleases => 'Nouveautés vérifiées';
 
   @override

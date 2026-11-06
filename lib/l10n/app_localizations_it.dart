@@ -6327,6 +6327,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get logCleanupSub => 'Confrontati i brani della libreria.';
 
   @override
+  String get logGenres => 'Generi dei brani riletti';
+
+  @override
+  String get logGenresSub =>
+      'Letti i tag dei brani per trovare tutti i generi.';
+
+  @override
   String get logReleases => 'Nuove uscite controllate';
 
   @override

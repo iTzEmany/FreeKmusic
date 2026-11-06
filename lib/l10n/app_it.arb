@@ -3960,6 +3960,8 @@
   "logSecondOpinionFailed": "Secondo parere interrotto",
   "logCleanup": "Doppioni cercati",
   "logCleanupSub": "Confrontati i brani della libreria.",
+  "logGenres": "Generi dei brani riletti",
+  "logGenresSub": "Letti i tag dei brani per trovare tutti i generi.",
   "logReleases": "Nuove uscite controllate",
   "logReleasesSub": "Cercate le novità degli artisti che segui.",
   "logPodcasts": "Podcast aggiornati",

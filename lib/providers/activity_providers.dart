@@ -28,6 +28,7 @@ enum ActivityKind {
   podcastRefresh,
   radio,
   enrichBackground,
+  genreReread,
 }
 
 /// One line of the Activity centre. [progress] is 0..1, null = indeterminate.

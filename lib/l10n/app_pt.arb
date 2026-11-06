@@ -3527,6 +3527,8 @@
   "logSecondOpinionFailed": "Segunda opinião interrompida",
   "logCleanup": "Duplicados procurados",
   "logCleanupSub": "As músicas da biblioteca foram comparadas.",
+  "logGenres": "Géneros das músicas relidos",
+  "logGenresSub": "As etiquetas das músicas foram lidas para encontrar todos os géneros.",
   "logReleases": "Novidades verificadas",
   "logReleasesSub": "Procuradas as novidades dos artistas que segue.",
   "logPodcasts": "Podcasts atualizados",

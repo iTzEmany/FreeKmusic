@@ -105,6 +105,9 @@ LogText logText(AppLocalizations l, LogEntry e) {
           ? LogText(l.logSecondOpinionFailed, l.logWhyRate)
           : LogText(l.logSecondOpinion, l.logSecondOpinionSub, chips: songs),
     ActivityKind.cleanup => plain(l.logCleanup, l.logCleanupSub, songs),
+    ActivityKind.genreReread => e.stopped
+        ? LogText(l.logGenres, l.logStoppedSub, chips: songs)
+        : plain(l.logGenres, l.logGenresSub, songs),
     ActivityKind.releases => plain(l.logReleases, l.logReleasesSub),
     ActivityKind.podcastRefresh => plain(l.logPodcasts, ''),
     ActivityKind.radio => plain(l.logRadio, ''),

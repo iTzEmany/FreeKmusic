@@ -6354,6 +6354,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get logCleanupSub => 'Die Titel der Mediathek wurden verglichen.';
 
   @override
+  String get logGenres => 'Genres der Titel neu gelesen';
+
+  @override
+  String get logGenresSub =>
+      'Die Tags der Titel wurden gelesen, um alle Genres zu finden.';
+
+  @override
   String get logReleases => 'Neuerscheinungen geprüft';
 
   @override

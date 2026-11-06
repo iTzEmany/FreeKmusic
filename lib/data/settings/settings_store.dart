@@ -326,6 +326,8 @@ class SavedPlayback {
 const enrichMarkKey = 'enrichMark';
 const recogPassAfterKey = 'recogPassAfter';
 const recogPassDoneKey = 'recogPassDone';
+const genreRereadAfterKey = 'genreRereadAfter';
+const genreRereadDoneKey = 'genreRereadDone';
 
 class SettingsStore {
   SettingsStore(this._prefs);
@@ -575,6 +577,13 @@ class SettingsStore {
   Future<void> writeRecogPassAfter(int id) => _prefs.setString(recogPassAfterKey, '$kRecogVersion:$id');
   int get recogPassDone => _prefs.getInt(recogPassDoneKey) ?? 0;
   Future<void> writeRecogPassDone(int v) => _prefs.setInt(recogPassDoneKey, v);
+
+  /// Genre re-read of the existing library (D-390): the last track done, and the
+  /// `kGenreRereadVersion` it finished for. Device-bound (track ids), never in a backup.
+  int get genreRereadAfter => _prefs.getInt(genreRereadAfterKey) ?? 0;
+  Future<void> writeGenreRereadAfter(int id) => _prefs.setInt(genreRereadAfterKey, id);
+  int get genreRereadDone => _prefs.getInt(genreRereadDoneKey) ?? 0;
+  Future<void> writeGenreRereadDone(int v) => _prefs.setInt(genreRereadDoneKey, v);
 
   // New releases of followed artists (phase 34).
 
