@@ -469,6 +469,33 @@ void main() {
       expect(await repo.isNotSame('Z', 'M'), isTrue);
     });
 
+    test('the local choice wins: a different pair, or a profile already in a group, blocks the backup alias', () async {
+      final repo = ArtistAliasRepository(db);
+      await repo.markNotSame('A', 'B');
+      await repo.merge('M', 'N');
+      await merge(const UserData(createdAt: 1, artistAliases: [
+        ArtistAliasData(aliasId: 'B', mainId: 'A'),
+        ArtistAliasData(aliasId: 'M', mainId: 'Z'),
+        ArtistAliasData(aliasId: 'Z', mainId: 'N'),
+      ]));
+      expect(await repo.isNotSame('A', 'B'), isTrue);
+      expect(await repo.groupOf('B'), ['B']);
+      expect(await repo.groupOf('Z'), ['M', 'N', 'Z']);
+    });
+
+    test('createdAt travels with the alias, so the group order and the next main survive; bad ids are dropped', () async {
+      final repo = ArtistAliasRepository(db);
+      await merge(UserData.fromJson({'format': 1, 'createdAt': 1, 'artistAliases': [
+        {'aliasId': 'C', 'mainId': 'A', 'createdAt': 20},
+        {'aliasId': 'B', 'mainId': 'A', 'createdAt': 10},
+        {'aliasId': 5, 'mainId': 'A'},
+        'junk',
+      ]}));
+      expect(await repo.groupOf('A'), ['A', 'B', 'C']);
+      final back = (await collectUserData(db)).artistAliases.map((a) => a.createdAt).toSet();
+      expect(back, {10, 20});
+    });
+
     test('a backup without them merges as before', () async {
       await merge(UserData.fromJson({'format': 1, 'createdAt': 1}));
       expect(await db.select(db.artistAliases).get(), isEmpty);

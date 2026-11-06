@@ -62,4 +62,21 @@ void main() {
     await repo.merge('A', 'B');
     expect(await repo.isNotSame('A', 'B'), isFalse);
   });
+
+  test('markNotSame on two profiles of one group saves nothing; the table refuses an unordered pair', () async {
+    await repo.merge('A', 'B');
+    await repo.markNotSame('B', 'A');
+    expect(await db.select(db.artistNotSame).get(), isEmpty);
+    await expectLater(
+        db.customStatement("INSERT INTO artist_not_same (a, b, created_at) VALUES ('Z', 'A', 1)"), throwsA(anything));
+  });
+
+  test('merging two groups clears every different pair between their profiles', () async {
+    await repo.merge('A', 'B');
+    await repo.merge('C', 'D');
+    await repo.markNotSame('B', 'D');
+    await repo.markNotSame('A', 'X');
+    await repo.merge('A', 'C');
+    expect([for (final r in await db.select(db.artistNotSame).get()) (r.a, r.b)], [('A', 'X')]);
+  });
 }

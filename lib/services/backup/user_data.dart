@@ -389,14 +389,20 @@ class ArtistCountryData {
 
 /// A second profile of an artist: [aliasId] shows the page of [mainId] (`artist_aliases`).
 class ArtistAliasData {
-  const ArtistAliasData({required this.aliasId, required this.mainId});
+  const ArtistAliasData({required this.aliasId, required this.mainId, this.createdAt});
 
   final String aliasId, mainId;
 
-  Map<String, Object?> toJson() => {'aliasId': aliasId, 'mainId': mainId};
+  /// When the profiles were merged; null in backups without it.
+  final int? createdAt;
 
-  factory ArtistAliasData.fromJson(Map<String, dynamic> j) =>
-      ArtistAliasData(aliasId: j['aliasId'] as String? ?? '', mainId: j['mainId'] as String? ?? '');
+  Map<String, Object?> toJson() => _nonNull({'aliasId': aliasId, 'mainId': mainId, 'createdAt': createdAt});
+
+  /// Null when the ids are not strings: the entry is dropped, the backup still reads.
+  static ArtistAliasData? tryParse(Object? j) => j is Map && j['aliasId'] is String && j['mainId'] is String
+      ? ArtistAliasData(
+          aliasId: j['aliasId'] as String, mainId: j['mainId'] as String, createdAt: (j['createdAt'] as num?)?.toInt())
+      : null;
 }
 
 class UserData {
@@ -479,7 +485,7 @@ class UserData {
       ],
       artistAliases: [
         for (final a in (j['artistAliases'] as List? ?? const []))
-          if (a is Map<String, dynamic>) ArtistAliasData.fromJson(a),
+          ?ArtistAliasData.tryParse(a),
       ],
       artistNotSame: [
         for (final a in (j['artistNotSame'] as List? ?? const []))

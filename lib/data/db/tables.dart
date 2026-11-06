@@ -470,6 +470,9 @@ class ArtistNotSame extends Table {
 
   @override
   Set<Column> get primaryKey => {a, b};
+
+  @override
+  List<String> get customConstraints => ['CHECK (a < b)'];
 }
 
 /// Enrichment state of a track; the *_none_at columns hold when a part was

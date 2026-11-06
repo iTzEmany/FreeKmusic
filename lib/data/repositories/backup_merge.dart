@@ -279,15 +279,22 @@ Future<void> _mergeArtistCountries(AppDatabase db, List<ArtistCountryData> items
 }
 
 /// A backup alias is applied through the repository, so it resolves to the main profile
-/// and never makes a chain; one whose profile is already an alias here keeps the local choice.
+/// and never makes a chain; a profile already in a group here keeps the local choice.
 /// A "different" pair is kept unless both profiles are in the same group here.
 Future<void> _mergeArtistAliases(AppDatabase db, UserData data) async {
   if (data.artistAliases.isEmpty && data.artistNotSame.isEmpty) return;
   final repo = ArtistAliasRepository(db);
   for (final a in data.artistAliases) {
     if (a.aliasId.isEmpty || a.mainId.isEmpty || a.aliasId == a.mainId) continue;
-    if (await repo.mainOf(a.aliasId) != a.aliasId) continue;
-    await repo.merge(a.mainId, a.aliasId);
+    // The local choice wins: the alias is applied only if its profile is alone here and
+    // no profile of the target group was said to be different from it.
+    if ((await repo.groupOf(a.aliasId)).length > 1) continue;
+    var different = false;
+    for (final x in await repo.groupOf(a.mainId)) {
+      different = different || await repo.isNotSame(x, a.aliasId);
+    }
+    if (different) continue;
+    await repo.merge(a.mainId, a.aliasId, createdAt: a.createdAt);
   }
   for (final pair in data.artistNotSame) {
     if (pair[0].isEmpty || pair[1].isEmpty || await repo.mainOf(pair[0]) == await repo.mainOf(pair[1])) continue;

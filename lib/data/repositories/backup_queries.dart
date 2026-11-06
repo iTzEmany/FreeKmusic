@@ -177,7 +177,7 @@ Future<UserData> collectUserData(AppDatabase db) {
       artistCountries: countries,
       artistAliases: [
         for (final r in await (db.select(db.artistAliases)..orderBy([(r) => OrderingTerm.asc(r.aliasId)])).get())
-          ArtistAliasData(aliasId: r.aliasId, mainId: r.mainId),
+          ArtistAliasData(aliasId: r.aliasId, mainId: r.mainId, createdAt: r.createdAt),
       ],
       artistNotSame: [
         for (final r in await (db.select(db.artistNotSame)..orderBy([(r) => OrderingTerm.asc(r.a), (r) => OrderingTerm.asc(r.b)])).get())

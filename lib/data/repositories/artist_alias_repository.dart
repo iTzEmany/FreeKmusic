@@ -31,52 +31,48 @@ class ArtistAliasRepository {
 
   /// Joins the group of [b] to the group of [a]: the main of [a] stays main, [b]'s
   /// main and its aliases become aliases of it. Clears the "different" pairs between the groups.
-  Future<void> merge(String a, String b) => _db.transaction(() async {
+  /// [createdAt] (a backup's) keeps the group order; default now.
+  Future<void> merge(String a, String b, {int? createdAt}) => _db.transaction(() async {
         final main = await mainOf(a);
         final other = await groupOf(b);
         if (other.first == main) return;
         final mine = await groupOf(main);
         await (_db.update(_db.artistAliases)..where((x) => x.mainId.equals(other.first)))
             .write(ArtistAliasesCompanion(mainId: Value(main)));
-        await _db.into(_db.artistAliases).insert(ArtistAliasesCompanion.insert(aliasId: other.first, mainId: main));
-        for (final x in mine) {
-          for (final y in other) {
-            await _unmarkNotSame(x, y);
-          }
-        }
+        await _db.into(_db.artistAliases).insert(ArtistAliasesCompanion.insert(
+            aliasId: other.first, mainId: main, createdAt: createdAt == null ? const Value.absent() : Value(createdAt)));
+        final all = [...mine, ...other];
+        await (_db.delete(_db.artistNotSame)..where((r) => r.a.isIn(all) & r.b.isIn(all))).go();
       });
 
   /// Takes [id] out of its group. An alias just leaves; when the main leaves, its
   /// oldest alias becomes the main of the rest. A profile alone: nothing happens.
   Future<void> split(String id) => _db.transaction(() async {
         final group = await groupOf(id);
-        if (group.length < 2 || !group.contains(id)) return;
+        if (group.length < 2) return;
         if (id != group.first) {
           await (_db.delete(_db.artistAliases)..where((x) => x.aliasId.equals(id))).go();
           return;
         }
         final newMain = group[1];
-        await (_db.delete(_db.artistAliases)..where((x) => x.mainId.equals(id) | x.aliasId.equals(newMain))).go();
+        await (_db.delete(_db.artistAliases)..where((x) => x.mainId.equals(id))).go();
+        await (_db.delete(_db.artistAliases)..where((x) => x.aliasId.equals(newMain))).go();
         await _db.batch((b) => b.insertAll(_db.artistAliases, [
               for (final r in group.skip(2)) ArtistAliasesCompanion.insert(aliasId: r, mainId: newMain),
             ]));
       });
 
-  /// The user said [a] and [b] are different artists.
-  Future<void> markNotSame(String a, String b) {
-    if (a == b) return Future.value();
+  /// The user said [a] and [b] are different artists. A no-op for profiles
+  /// already in the same group (they were merged: they are the same).
+  Future<void> markNotSame(String a, String b) async {
+    if (a == b || await mainOf(a) == await mainOf(b)) return;
     final (x, y) = _ordered(a, b);
-    return _db.into(_db.artistNotSame).insertOnConflictUpdate(ArtistNotSameCompanion.insert(a: x, b: y));
+    await _db.into(_db.artistNotSame).insertOnConflictUpdate(ArtistNotSameCompanion.insert(a: x, b: y));
   }
 
   Future<bool> isNotSame(String a, String b) async {
     final (x, y) = _ordered(a, b);
     return await (_db.select(_db.artistNotSame)..where((r) => r.a.equals(x) & r.b.equals(y))).getSingleOrNull() != null;
-  }
-
-  Future<void> _unmarkNotSame(String a, String b) {
-    final (x, y) = _ordered(a, b);
-    return (_db.delete(_db.artistNotSame)..where((r) => r.a.equals(x) & r.b.equals(y))).go();
   }
 
   /// Emits when a profile joins or leaves a group.
