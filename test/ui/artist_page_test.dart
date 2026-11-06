@@ -1,6 +1,5 @@
 import 'package:codecore/core/constants.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
-import 'package:codecore/providers/artist_merge_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -83,7 +82,6 @@ void main() {
       ArtistPageScreen(artist: artist),
       extraOverrides: [
         artistPageProvider.overrideWith((ref, id) => page()),
-        artistMergeSearchProvider.overrideWithValue((_) => Future.value(const <YtmArtistRef>[])),
       ],
     );
     await _settle(tester);
@@ -425,6 +423,7 @@ void main() {
       addTearDown(tester.view.reset);
       h = await Harness.create(tester);
       if (merged) await tester.runAsync(() => ArtistAliasRepository(h.db).merge('UCa', 'UCb'));
+      h.mergeSearch = (_) => Future.value(found);
       await h.pump(
         tester,
         ArtistPageScreen(artist: from),
@@ -432,7 +431,6 @@ void main() {
           artistPageProvider.overrideWith(
             (ref, id) async => CatalogResult(pages[id]!, DateTime(2026, 10, 22)),
           ),
-          artistMergeSearchProvider.overrideWithValue((_) => Future.value(found)),
         ],
       );
       await _settle(tester);
