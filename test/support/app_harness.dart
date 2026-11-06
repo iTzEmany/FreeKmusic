@@ -9,7 +9,6 @@ import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
-import 'package:codecore/providers/podcast_discover_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
@@ -74,9 +73,6 @@ class Harness {
         startupSettledProvider.overrideWith((ref) async {}),
         // Never a real search for the artist-merge suggestion.
         artistMergeSearchProvider.overrideWithValue(mergeSearch),
-        // Never a request to Apple from the Podcasts page.
-        podcastGenresProvider.overrideWith((ref) async => const []),
-        podcastChartProvider.overrideWith((ref, genre) async => const []),
       ];
 
   Future<void> pump(WidgetTester tester, Widget child,
