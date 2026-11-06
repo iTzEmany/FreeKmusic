@@ -22,7 +22,8 @@ Map _card(String title, String pageType, String browseId) => {
     };
 
 void main() {
-  // Rewritten in phase 92.1 when local tracks join Cerca.
+  // Local tracks never enter mergeResults (92.1): a song the library has is
+  // taken out afterwards, by withoutOwned.
   test('every merged row is online: sources and primary come from the input', () {
     final input = [
       ytm(song('s1', 'Sigarette', secs: 180)),

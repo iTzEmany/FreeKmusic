@@ -4724,6 +4724,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onlineNoneSure => 'Ningún resultado seguro';
 
   @override
+  String get onlineInLibrary => 'En tu biblioteca';
+
+  @override
+  String onlineShowAllCount(int count) {
+    return 'Mostrar todo ($count)';
+  }
+
+  @override
+  String onlineOwnedHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count resultados que ya están en la biblioteca, ocultos',
+      one: '1 resultado que ya está en la biblioteca, oculto',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String onlineArtistSongs(String artist) {
     return 'Canciones de $artist';
   }

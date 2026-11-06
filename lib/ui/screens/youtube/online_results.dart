@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/library_providers.dart' show libraryIndexProvider;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
@@ -151,8 +152,17 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         ? null
         : ref.watch(smartSearchProvider(request));
     final s = async?.value;
-    final all = s == null ? const <SmartResult>[] : [...s.best, ...s.others];
-    final bestEnd = s?.best.length ?? 0;
+    // D-399: songs the library already has leave the online rows (the index is
+    // in memory; until it is ready nothing is hidden).
+    final inLibrary = s != null && s.queryKind == QueryKind.text && libraryAppliesTo(s.intent);
+    final index = inLibrary ? ref.watch(libraryIndexProvider).value : null;
+    final bestOwn = index == null ? null : withoutOwned(s!.best, index);
+    final othersOwn = index == null ? null : withoutOwned(s!.others, index);
+    final bestRows = bestOwn?.kept ?? s?.best ?? const <SmartResult>[];
+    final othersRows = othersOwn?.kept ?? s?.others ?? const <SmartResult>[];
+    final hidden = (bestOwn?.hidden ?? 0) + (othersOwn?.hidden ?? 0);
+    final all = [...bestRows, ...othersRows];
+    final bestEnd = bestRows.length;
     // (place in `all`, row) of what is shown under the filter.
     final shownBest = [
       for (var i = 0; i < bestEnd; i++)
@@ -210,14 +220,21 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
             Expanded(
               child: error != null && all.isEmpty
                   ? _ErrorView(error: error, retry: retry)
-                  : s != null && all.isEmpty && s.card == null && !s.loading
+                  : s != null && all.isEmpty && hidden == 0 && s.card == null && !s.loading
                   ? EmptyState(
                       icon: Icons.smart_display,
                       message: l.ytNoResults,
                     )
                   : RefreshIndicator(
                       onRefresh: _pullToRefresh,
-                      child: _list(s!, shownBest, shownOthers, picked.active),
+                      child: _list(
+                          s!,
+                          shownBest,
+                          shownOthers,
+                          picked.active,
+                          showLibrary: inLibrary,
+                          hidden: hidden,
+                        ),
                     ),
             ),
           ],
@@ -231,8 +248,10 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     SmartSearchState s,
     List<(int, SmartResult)> best,
     List<(int, SmartResult)> others,
-    bool selecting,
-  ) {
+    bool selecting, {
+    required bool showLibrary,
+    required int hidden,
+  }) {
     final l = context.l10n;
     var n = 0;
     Widget enter(Widget child) => EnterOnce(index: n++, child: child);
@@ -275,6 +294,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         );
       default:
     }
+    if (showLibrary) children.add(LibraryTracksSection(query: s.query));
     var rest = best;
     if (s.intent == SearchIntent.artistPage && card is TopArtist) {
       final mine = [
@@ -294,8 +314,9 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       children.add(
         SectionHeader(s.noneSure ? l.onlineNoneSure : l.onlineBestResults),
       );
-      children.addAll(rest.map(row));
     }
+    if (hidden > 0) children.add(OwnedHiddenNote(count: hidden));
+    children.addAll(rest.map(row));
     if (others.isNotEmpty) {
       children.add(
         OthersChip(

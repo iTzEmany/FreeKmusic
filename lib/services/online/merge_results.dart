@@ -1,5 +1,7 @@
-import '../import/track_matcher.dart' show matchKey, matchTitleKey;
+import '../../core/import_row.dart' show ImportRow;
+import '../import/track_matcher.dart' show LibraryIndex, matchKey, matchTitleKey;
 import 'query_cleaner.dart';
+import 'query_intent.dart' show SearchIntent;
 import 'query_match.dart';
 import 'youtube_service.dart';
 
@@ -162,4 +164,43 @@ BestSplit splitBest(List<SmartResult> merged, double threshold, {int maxBest = 1
     [for (final r in merged) if (!best.contains(r)) r],
     noneSure: false,
   );
+}
+
+
+/// D-400: the library has its say only when a song is what was asked for
+/// (also with the artist), not when the phrase is an artist or an album.
+bool libraryAppliesTo(SearchIntent intent) =>
+    intent == SearchIntent.song ||
+    intent == SearchIntent.songs ||
+    intent == SearchIntent.artistAndSongs;
+
+ImportRow _asRow(String title, List<String> artists, Duration? length) => ImportRow(
+      index: 0,
+      title: title,
+      artists: artists,
+      durationMs: length?.inMilliseconds,
+    );
+
+/// Whether the song is already in the library: title and artist as the library
+/// compares them, whatever the length (D-389). Any upload of the row counts,
+/// and for a plain upload also its «Artist - Title» split.
+bool ownedByLibrary(SmartResult row, LibraryIndex library) {
+  for (final r in [row.primary, ...row.alternatives]) {
+    final artists = r.artists.isNotEmpty ? r.artists : [_artistOf(r)];
+    if (library.find(_asRow(_titleOf(r), artists, r.duration)) != null) return true;
+    final m = r.artists.isEmpty ? _dash.firstMatch(r.title) : null;
+    if (m != null &&
+        library.find(_asRow(r.title.substring(m.end), [r.title.substring(0, m.start)], r.duration)) != null) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// [rows] without the songs the library already has, order kept; [hidden]
+/// counts them. Linear in the rows (the index lookup is O(1)), on the index
+/// already in memory.
+({List<SmartResult> kept, int hidden}) withoutOwned(List<SmartResult> rows, LibraryIndex library) {
+  final kept = [for (final r in rows) if (!ownedByLibrary(r, library)) r];
+  return (kept: kept, hidden: rows.length - kept.length);
 }

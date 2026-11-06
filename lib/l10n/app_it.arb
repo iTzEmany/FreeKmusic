@@ -3036,6 +3036,11 @@
     }
   },
   "onlineNoneSure": "Nessun risultato sicuro",
+  "onlineInLibrary": "Nella tua libreria",
+  "onlineShowAllCount": "Mostra tutti ({count})",
+  "@onlineShowAllCount": {"placeholders": {"count": {"type": "int"}}},
+  "onlineOwnedHidden": "{count, plural, one{1 risultato già in libreria nascosto} other{{count} risultati già in libreria nascosti}}",
+  "@onlineOwnedHidden": {"placeholders": {"count": {"type": "int"}}},
   "onlineArtistSongs": "Brani di {artist}",
   "@onlineArtistSongs": {
     "placeholders": {
