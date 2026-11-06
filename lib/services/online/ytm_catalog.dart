@@ -6,6 +6,7 @@ import 'catalog_cache.dart';
 import 'innertube_client.dart';
 import 'search_cache.dart' show ytResultFromJson, ytResultToJson;
 import 'ytm_album_parser.dart';
+import 'ytm_album_search.dart';
 import 'ytm_artist.dart';
 import 'ytm_artist_parser.dart';
 import 'youtube_service.dart';
@@ -45,6 +46,14 @@ const discographyMask = '$_singleColumn.gridRenderer.items.musicTwoRowItemRender
 
 /// YouTube Music search filter: «Artists».
 const artistsFilter = 'EgWKAQIgAWoKEAMQBBAJEAoQBQ%3D%3D';
+
+/// YouTube Music search filter: «Albums» (albums, singles and EPs). Built like
+/// the two above, filter code 0x18 in place of songs' 0x08 and artists' 0x20;
+/// checked against the live search (only `MUSIC_PAGE_TYPE_ALBUM` rows came back).
+const albumsFilter = 'EgWKAQIYAWoKEAkQBRAKEAMQBA%3D%3D';
+
+/// Same shelf of list items as the artists filter.
+const albumsMask = artistsMask;
 
 const _languages = {'it', 'en', 'de', 'es', 'fr', 'pt'};
 
@@ -90,10 +99,11 @@ class YtmCatalog {
   /// Artists matching [query], best first. Not cached.
   /// When the search cannot reach YouTube (offline), an artist whose page was
   /// opened before is found by name in the cache, so its saved page opens.
-  Future<List<YtmArtistRef>> searchArtists(String query, String hl) async {
+  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) async {
     try {
       return await client.searchMusic(query, parseArtistSearch,
-          params: artistsFilter, hl: hl, mask: artistsMask, isEmpty: (r) => r.isEmpty);
+          params: artistsFilter,
+          hl: hl, mask: artistsMask, isEmpty: (r) => r.isEmpty, cancel: cancel);
     } on YtException {
       final saved = await _cachedArtist(query);
       if (saved == null) rethrow;
@@ -101,6 +111,11 @@ class YtmCatalog {
       return [saved];
     }
   }
+
+  /// Albums, singles and EPs matching [query], best first. Not cached.
+  Future<List<YtmAlbumHit>> searchAlbums(String query, String hl, {CancelToken? cancel}) =>
+      client.searchMusic(query, parseAlbumSearch,
+          params: albumsFilter, hl: hl, mask: albumsMask, isEmpty: (r) => r.isEmpty, cancel: cancel);
 
   Future<YtmArtistRef?> _cachedArtist(String name) async {
     final want = normalize(name);

@@ -54,6 +54,15 @@ void main() {
   });
 
   group('WindowLimiter', () {
+    test('tryAcquire says no instead of waiting once the minute is full, and yes again after it', () {
+      final c = _Clock();
+      final l = WindowLimiter(perMinute: 2, now: c.now, pause: c.pause);
+      expect([l.tryAcquire(), l.tryAcquire(), l.tryAcquire()], [true, true, false]);
+      expect(c.waits, isEmpty);
+      c.t = c.t.add(const Duration(seconds: 61));
+      expect(l.tryAcquire(), isTrue);
+    });
+
     test('lets perMinute requests straight through, then waits for the oldest to leave the minute', () async {
       final c = _Clock();
       final l = WindowLimiter(perMinute: 3, now: c.now, pause: c.pause);

@@ -7,8 +7,10 @@ import '../import/track_matcher.dart' show matchKey;
 import 'merge_results.dart';
 import 'query_intent.dart';
 import 'query_match.dart';
+import 'request_budget.dart';
 import 'source_cooldown.dart';
 import 'youtube_service.dart';
+import 'ytm_album_search.dart' show YtmAlbumHit;
 import 'ytm_artist.dart';
 import 'ytm_catalog.dart';
 
@@ -44,6 +46,8 @@ class SmartSearchState {
     this.noneSure = false,
     this.pending = const {},
     this.notices = const [],
+    this.artists = const [],
+    this.albums = const [],
     this.error,
   });
 
@@ -65,6 +69,11 @@ class SmartSearchState {
   final Set<MediaKind> pending;
   final List<SearchNotice> notices;
 
+  /// The «Artisti» and «Album» rows (at most [_rowLimit] each). A bonus: empty
+  /// when their request failed or the budget was used up, never an error.
+  final List<YtmArtistRef> artists;
+  final List<YtmAlbumHit> albums;
+
   /// Every source failed: the first error ([YtException] for the known ones).
   final Object? error;
 
@@ -78,6 +87,8 @@ class SmartSearchState {
     bool? noneSure,
     Set<MediaKind>? pending,
     List<SearchNotice>? notices,
+    List<YtmArtistRef>? artists,
+    List<YtmAlbumHit>? albums,
     Object? error,
   }) =>
       SmartSearchState(
@@ -91,11 +102,14 @@ class SmartSearchState {
         noneSure: noneSure ?? this.noneSure,
         pending: pending ?? this.pending,
         notices: notices ?? this.notices,
+        artists: artists ?? this.artists,
+        albums: albums ?? this.albums,
         error: error ?? this.error,
       );
 }
 
 const _resultsPerSource = 10;
+const _rowLimit = 10;
 const _cacheLife = Duration(minutes: 10);
 const _cacheSize = 30;
 const _maxBest = 15;
@@ -118,12 +132,17 @@ class SmartSearch {
     DateTime Function()? now,
     this.cap = const Duration(milliseconds: 1500),
     this.libraryArtists,
+    WindowLimiter? rowsLimiter,
   })  : _now = now ?? DateTime.now,
-        cooldown = cooldown ?? SourceCooldown(now: now);
+        cooldown = cooldown ?? SourceCooldown(now: now),
+        rowsLimiter = rowsLimiter ?? WindowLimiter(perMinute: kSearchRowsPerMinute, now: now);
 
   final YoutubeService youtube;
   final YtmCatalog catalog;
   final SourceCooldown cooldown;
+
+  /// The requests of the «Artisti» and «Album» rows; none left, no rows.
+  final WindowLimiter rowsLimiter;
 
   /// [libraryArtistKey] of the artists in the library, read at each search: a
   /// phrase with no artist favours their results.
@@ -191,6 +210,10 @@ class _Run {
   final _asked = <MediaKind>{};
   var _cardAsked = false;
   final _notices = <SearchNotice>[];
+  var _artists = const <YtmArtistRef>[];
+  var _albums = const <YtmAlbumHit>[];
+  var _rowsOpen = 0;
+  var _rowsFailed = false;
   SmartSearchState? _shown;
   Timer? _capTimer;
 
@@ -260,7 +283,14 @@ class _Run {
     void settled() {
       if (_cancelled) return;
       _onAnswer(kind.kind);
-      if (_everythingIn && !done.isCompleted) done.complete();
+      if (_everythingIn && _rowsOpen == 0 && !done.isCompleted) done.complete();
+    }
+
+    // Rows come after the page: they never delay it, they are folded in.
+    void rowIn() {
+      if (_cancelled) return;
+      if (_shown != null) _showLate();
+      if (_everythingIn && _rowsOpen == 0 && !done.isCompleted) done.complete();
     }
 
     if (_asked.contains(MediaKind.ytmSong)) {
@@ -286,6 +316,15 @@ class _Run {
         _card = a;
         settled();
       }));
+    }
+    if (_cardAsked) {
+      _rowsOpen = 2;
+      unawaited(_row(() => engine.catalog.searchArtists(query, hl, cancel: _token),
+              (v) => _artists = v)
+          .then((_) => rowIn()));
+      unawaited(_row(() => engine.catalog.searchAlbums(query, hl, cancel: _token),
+              (v) => _albums = v)
+          .then((_) => rowIn()));
     }
     await done.future;
     if (_cancelled) return;
@@ -319,6 +358,28 @@ class _Run {
         engine.cooldown.trip(MediaKind.ytmSong);
       }
       return _Answer.failed(e);
+    }
+  }
+
+  /// One row's request. Its failure is not shown (the row is a bonus), but a
+  /// 429 is remembered and a failed row keeps the page out of the saved copy.
+  Future<void> _row<T>(Future<List<T>> Function() call, void Function(List<T>) put) async {
+    try {
+      if (!engine.rowsLimiter.tryAcquire()) {
+        AppLog.d('search rows: request budget used up, row left out');
+        _rowsFailed = true;
+        return;
+      }
+      put((await call()).take(_rowLimit).toList());
+    } on Object catch (e) {
+      if (_cancelled) return;
+      AppLog.w('search row not read: $e');
+      _rowsFailed = true;
+      if (e is YtException && e.kind == YtErrorKind.rateLimited) {
+        engine.cooldown.trip(MediaKind.ytmSong);
+      }
+    } finally {
+      _rowsOpen--;
     }
   }
 
@@ -396,6 +457,8 @@ class _Run {
       noneSure: split.noneSure,
       pending: _pending,
       notices: [..._notices],
+      artists: _artists,
+      albums: _albums,
     );
     _shown = state;
     _emit(state);
@@ -451,12 +514,16 @@ class _Run {
       noneSure: noneSure,
       pending: _pending,
       notices: [..._notices],
+      artists: _artists,
+      albums: _albums,
     );
     final changed = !identical(state.card, prev.card) ||
         !_sameRows(state.best, prev.best) ||
         !_sameRows(state.others, prev.others) ||
         state.pending.length != prev.pending.length ||
-        state.notices.length != prev.notices.length;
+        state.notices.length != prev.notices.length ||
+        state.artists.length != prev.artists.length ||
+        state.albums.length != prev.albums.length;
     _shown = state;
     if (changed) _emit(state);
   }
@@ -476,6 +543,6 @@ class _Run {
       _emit(_base(queryKind).copyWith(error: first.isEmpty ? 'no answer' : first.first));
       return;
     }
-    if (_notices.isEmpty) engine._store(key, _shown!);
+    if (_notices.isEmpty && !_rowsFailed) engine._store(key, _shown!);
   }
 }

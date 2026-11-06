@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:codecore/services/online/query_intent.dart';
 import 'package:codecore/services/online/smart_search.dart';
 import 'package:codecore/services/online/query_match.dart';
+import 'package:codecore/services/online/request_budget.dart';
+import 'package:codecore/services/online/ytm_album_search.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
@@ -67,6 +69,28 @@ class _FakeCatalog implements YtmCatalog {
     final c = _Call<TopCard?>()..cancel = cancel;
     cards.add(c);
     return c.done.future;
+  }
+
+  /// What the «Artisti» and «Album» rows get; [rowsError] makes both fail.
+  var artistRows = <YtmArtistRef>[];
+  var albumRows = <YtmAlbumHit>[];
+  Object? rowsError;
+  Completer<void>? rowsGate;
+  var rowCalls = 0;
+
+  @override
+  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) async {
+    rowCalls++;
+    await rowsGate?.future;
+    if (rowsError != null) throw rowsError!;
+    return artistRows;
+  }
+
+  @override
+  Future<List<YtmAlbumHit>> searchAlbums(String query, String hl, {CancelToken? cancel}) async {
+    rowCalls++;
+    if (rowsError != null) throw rowsError!;
+    return albumRows;
   }
 
   @override
@@ -209,6 +233,98 @@ void main() {
     expect(last.pending, isEmpty);
     expect(last.notices.map((n) => n.kind), everyElement(NoticeKind.offline));
     await run.sub.cancel();
+  });
+
+  group('Artisti and Album rows', () {
+    List<YtmArtistRef> artists(int n) =>
+        [for (var i = 0; i < n; i++) YtmArtistRef(id: 'UC$i', name: 'Artist $i')];
+    List<YtmAlbumHit> albums(int n) => [
+          for (var i = 0; i < n; i++)
+            (release: YtmRelease(browseId: 'MPREb_$i', title: 'Album $i', subtitle: 'Album'), artist: null),
+        ];
+
+    Future<SmartSearchState> page() async {
+      final run = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      await answerCard();
+      await answerSongs();
+      await answerVideos();
+      await run.sub.cancel();
+      return run.states.last;
+    }
+
+    test('both lists sit beside the page, at most 10 each', () async {
+      catalog.artistRows = artists(15);
+      catalog.albumRows = albums(12);
+      final s = await page();
+      expect(s.artists, hasLength(10));
+      expect(s.albums, hasLength(10));
+      expect(s.artists.first.id, 'UC0');
+      expect(s.best, isNotEmpty);
+    });
+
+    test('rows arriving after the page are folded into it', () async {
+      catalog.artistRows = artists(2);
+      catalog.rowsGate = Completer<void>();
+      final run = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      await answerCard();
+      await answerSongs();
+      await answerVideos();
+      expect(run.states.last.best, isNotEmpty);
+      expect(run.states.last.artists, isEmpty);
+      final before = run.states.last.best.map((r) => r.primary.id).toList();
+
+      catalog.rowsGate!.complete();
+      await pumpEventQueue();
+      expect(run.states.last.artists, hasLength(2));
+      expect(run.states.last.best.map((r) => r.primary.id), before);
+      await run.sub.cancel();
+    });
+
+    test('a failing request leaves the page whole and the rows empty, no notice', () async {
+      catalog.rowsError = const YtException(YtErrorKind.network);
+      final s = await page();
+      expect(s.artists, isEmpty);
+      expect(s.albums, isEmpty);
+      expect(s.error, isNull);
+      expect(s.notices, isEmpty);
+      expect(s.best.first.primary.id, song);
+    });
+
+    test('a 429 on the rows pauses YouTube Music, and the page is not saved', () async {
+      catalog.rowsError = const YtException(YtErrorKind.rateLimited);
+      await page();
+      expect(engine.cooldown.isPaused(MediaKind.ytmSong), isTrue);
+      catalog.rowsError = null;
+      clock = clock.add(const Duration(minutes: 6));
+      final again = start('lucio corsi sigarette');
+      await pumpEventQueue();
+      expect(youtube.songs, hasLength(2), reason: 'asked again, not served from the copy');
+      await again.sub.cancel();
+    });
+
+    test('budget used up: the request does not leave and the rows are empty', () async {
+      engine = SmartSearch(
+        youtube: youtube,
+        catalog: catalog,
+        now: () => clock,
+        cap: const Duration(milliseconds: 50),
+        rowsLimiter: WindowLimiter(perMinute: 1, now: () => clock),
+      );
+      catalog.artistRows = artists(3);
+      catalog.albumRows = albums(3);
+      final s = await page();
+      expect(catalog.rowCalls, 1, reason: 'one slot, two rows asked');
+      expect(s.artists.length + s.albums.length, 3);
+      expect(s.best, isNotEmpty);
+
+      clock = clock.add(const Duration(minutes: 2));
+      catalog.rowCalls = 0;
+      // The page was not saved (a row was left out), so this asks again with a fresh slot.
+      await page();
+      expect(catalog.rowCalls, 1);
+    });
   });
 
   test('the same phrase within 10 minutes asks nothing, a refresh or 10 minutes later does',
