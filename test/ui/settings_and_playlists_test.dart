@@ -27,6 +27,26 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('the blurred dock switch is off, labelled, at least 48 dp tall, and the tap saves it', (tester) async {
+    tester.view.physicalSize = const Size(500, 3400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    await h.pump(tester, const Scaffold(body: SettingsScreen(initial: SettingsPage.appearance)));
+    final row = find.byKey(const ValueKey('blurred-chrome'));
+    expect(h.store.readSettings().blurredChrome, isFalse);
+    expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
+    expect(
+      tester.getSemantics(row).label,
+      'Dock e intestazioni sfocati\nPuò rallentare sui telefoni meno potenti',
+    );
+    await tester.tap(row);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(h.store.readSettings().blurredChrome, isTrue);
+    await h.dispose(tester);
+  });
+
   testWidgets('settings has «Pulizia libreria»: duplicates open their screen, hidden tracks are counted',
       (tester) async {
     tester.view.physicalSize = const Size(500, 2400);

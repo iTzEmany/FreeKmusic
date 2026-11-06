@@ -133,6 +133,13 @@ List<SettingsGroup> _appearance(BuildContext context, WidgetRef ref) {
       title: l.settingsAppearance,
       children: [
         const ThemeTiles(),
+        SwitchListTile(
+          key: const ValueKey('blurred-chrome'),
+          title: Text(l.blurredChrome),
+          subtitle: Text(l.blurredChromeHint),
+          value: s.blurredChrome,
+          onChanged: (v) => notifier.update((c) => c.copyWith(blurredChrome: v)),
+        ),
         const IconFollowTile(),
         ListTile(
           title: Text(l.settingsTextSize),

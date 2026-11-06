@@ -200,8 +200,6 @@ class _ThemeEditorScreenState extends ConsumerState<ThemeEditorScreen> {
                   onFix: (token, color) => _set(_t.withColor(token, color)),
                 ),
                 const SizedBox(height: 16),
-                const _BlurredChromeRow(),
-                const SizedBox(height: 16),
                 ThemeBackgroundEditor(
                   themeId: _t.id,
                   colors: colors,
@@ -443,25 +441,6 @@ class ThemePreview extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-/// App-wide switch (not part of the theme draft): it applies at once.
-class _BlurredChromeRow extends ConsumerWidget {
-  const _BlurredChromeRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final on = ref.watch(settingsProvider.select((s) => s.blurredChrome));
-    return SwitchListTile(
-      key: const ValueKey('blurred-chrome'),
-      contentPadding: EdgeInsets.zero,
-      title: Text(l.blurredChrome),
-      subtitle: Text(l.blurredChromeHint),
-      value: on,
-      onChanged: (v) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(blurredChrome: v)),
     );
   }
 }
