@@ -28,8 +28,10 @@ class ShrinkingHeaderController {
 /// A part that must stay on screen goes outside the scroll view, above it.
 /// One header per scroll view: each keeps its own state, so two would overlap.
 class ShrinkingHeader extends SingleChildRenderObjectWidget {
-  const ShrinkingHeader({super.key, required Widget child, this.controller})
-    : super(child: child);
+  /// [color] makes the header opaque, so rows scrolled under it while it
+  /// grows back do not show through.
+  ShrinkingHeader({super.key, required Widget child, this.controller, Color? color})
+    : super(child: color == null ? child : ColoredBox(color: color, child: child));
 
   final ShrinkingHeaderController? controller;
 

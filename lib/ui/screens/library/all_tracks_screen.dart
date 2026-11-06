@@ -247,6 +247,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
         slivers: [
           ShrinkingHeader(
             controller: _header,
+            color: context.cc.bg,
             child: Column(
               children: [
                 Padding(

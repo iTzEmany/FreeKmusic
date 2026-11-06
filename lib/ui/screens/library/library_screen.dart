@@ -213,14 +213,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       isList = true;
       body = settings.libraryGrid
           ? _LibraryGrid(
-              key: PageStorageKey<LibraryKind?>(_kind),
+              key: ValueKey<LibraryKind?>(_kind),
               header: shortcuts,
               topInset: inset,
               entries: entries,
               onOpen: _open,
             )
           : _LibraryList(
-              key: PageStorageKey<LibraryKind?>(_kind),
+              key: ValueKey<LibraryKind?>(_kind),
               header: shortcuts,
               topInset: inset,
               entries: entries,
@@ -325,7 +325,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   sort: sort,
                   grid: settings.libraryGrid,
                   onSort: (s) => _setSettings(sort: s),
-                  onToggleGrid: () => _setSettings(grid: !settings.libraryGrid),
+                  onToggleGrid: () {
+                    // The new list starts at the top, so the island is whole.
+                    _shrink.value = 0;
+                    _setSettings(grid: !settings.libraryGrid);
+                  },
                   onTabsHeight: (h) {
                     if ((h - _tabsHeight).abs() > 0.5) {
                       setState(() => _tabsHeight = h);

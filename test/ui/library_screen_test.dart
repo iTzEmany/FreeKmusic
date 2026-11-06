@@ -16,6 +16,7 @@ import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
@@ -316,6 +317,120 @@ void main() {
     c.read(selectionProvider(key).notifier).toggle(1);
     await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
     await _settle(t);
+    expect(c.read(selectionProvider(key)).active, isFalse);
+    await h.dispose(t);
+  });
+
+  testWidgets('a scroll past the top (bounce) leaves the island whole', (t) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      final h = await open(t, width: 900);
+      await manyPlaylists(h, t);
+      t.view.physicalSize = const Size(900, 600);
+      await _settle(t);
+      final island = find.byType(LibraryIsland);
+      final full = t.getRect(island).height;
+      await scrollBy(t, 50);
+      expect(full - t.getRect(island).height, closeTo(offset(t), 0.5));
+      await scrollBy(t, -400);
+      expect(t.takeException(), isNull);
+      expect(t.getRect(island).height, closeTo(full, 0.5));
+      await h.dispose(t);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('changing the tab and coming back never leaves rows scrolled under a whole island', (t) async {
+    final h = await open(t, width: 900);
+    await manyPlaylists(h, t);
+    t.view.physicalSize = const Size(900, 600);
+    await _settle(t);
+    final island = find.byType(LibraryIsland);
+    final full = t.getRect(island).height;
+    await scrollBy(t, 142);
+    expect(offset(t), greaterThan(100));
+    Finder tab(String s) =>
+        find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text(s));
+    await t.tap(tab('Playlist'));
+    await _settle(t);
+    await t.tap(tab('Tutto'));
+    await _settle(t);
+    // Either at the top with a whole island, or the island follows the offset.
+    expect(full - t.getRect(island).height, closeTo(offset(t).clamp(0, 104), 0.5));
+    expect(
+      t.getTopLeft(find.text('Playlist 00')).dy,
+      greaterThanOrEqualTo(t.getRect(island).bottom),
+    );
+    await h.dispose(t);
+  });
+
+  Future<void> insertThe(Harness h) => h.db.into(h.db.tracks).insert(
+    TracksCompanion.insert(
+      path: '/m/the.mp3',
+      title: 'The Track',
+      albumKey: 'the artist|the album',
+      format: 'mp3',
+      sizeBytes: 1,
+      mtimeMs: 1,
+      addedAt: 9,
+      artist: const Value('The Artist'),
+      album: const Value('The Album'),
+    ),
+  );
+
+  testWidgets('in the Album tab, search does not show the other kinds', (t) async {
+    final h = await open(t, width: 900);
+    await insertThe(h);
+    await PlaylistRepository(h.db).create('The List');
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    await t.enterText(find.byType(TextField), 'the');
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+    Finder inResults(String s) =>
+        find.descendant(of: find.byType(LibraryResults), matching: find.text(s));
+    for (final s in ['Brani', 'The Track', 'Artisti', 'The Artist', 'Playlist', 'The List']) {
+      expect(inResults(s), findsWidgets, reason: s);
+    }
+    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
+    await _settle(t);
+    expect(inResults('The Album'), findsWidgets);
+    // «The Artist» stays: it is the album's subtitle.
+    for (final s in ['Brani', 'The Track', 'Artisti', 'Playlist', 'The List']) {
+      expect(inResults(s), findsNothing, reason: s);
+    }
+    await h.dispose(t);
+  });
+
+  testWidgets('in the Album tab, Ctrl+A selects no hidden track', (t) async {
+    final h = await open(t, width: 900, tracks: 4);
+    await t.tap(find.byIcon(Icons.search_rounded));
+    await _settle(t);
+    await t.enterText(find.byType(TextField), 'Album');
+    await t.pump(const Duration(milliseconds: 300));
+    await indexReady(t);
+    await _settle(t);
+    final c = ProviderScope.containerOf(t.element(find.byType(LibraryScreen)));
+    final key = SelectionKey.search.key;
+    c.listen(selectionProvider(key), (_, _) {});
+    Future<void> ctrlA() async {
+      await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await t.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await t.pump();
+    }
+    // All tabs: the shown tracks are selected.
+    c.read(selectionProvider(key).notifier).toggle(1);
+    await t.pump();
+    await ctrlA();
+    expect(c.read(selectionProvider(key)).count, greaterThan(1));
+    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
+    await _settle(t);
+    c.read(selectionProvider(key).notifier).toggle(1);
+    await t.pump();
+    await ctrlA();
     expect(c.read(selectionProvider(key)).active, isFalse);
     await h.dispose(t);
   });
