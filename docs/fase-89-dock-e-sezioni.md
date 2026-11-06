@@ -33,3 +33,34 @@
 **Fatto quando:** i controlli sopra sono fatti e scritti qui.
 
 ## Esiti
+- **89.1–89.2**: lo `Scaffold` del telefono ha `extendBody: true`. L'ingombro reale di dock, mini player e banner arriva al corpo come `MediaQuery.padding.bottom`, e la shell alza anche `viewPadding.bottom` così i FAB degli `Scaffold` interni stanno sopra il dock. Il margine finale si prende in un modo solo: `context.dockInset` / `EdgeInsets.withDock`, usato dalle liste della shell e dalle pagine interne con padding esplicito (Impostazioni, Tema, Equalizzatore, Duplicati, Proposte, Invio/Ricezione, editor delle smart playlist…). Il dock è opaco di serie.
+- **89.3**: `blurredChrome` in `AppSettings`, spento di serie. L'interruttore sta in Impostazioni → Aspetto e lingua, accanto ai temi (D-406). Il documento indicava `theme_editor_screen`, ma lì si raggiunge solo modificando un tema personalizzato, quindi è stato spostato. Acceso: dock con `BackdropFilter` (sigma 20) e `surface2` al 78 %.
+- **89.4**: la scheda che si lascia riceve un navigatore nuovo (`TabNavigatorKeys.reset`) e azzera ricerca di Cerca e ordinamento di Tutti i brani; quello dei Preferiti resta. La scheda di destinazione resta intatta, così `openInLibrary`, il prefill della Radio e Ctrl+F funzionano. Una pagina **interna** che protegge l'uscita (tema non salvato, sync in corso) blocca il reset. Riselezionare la scheda attiva con una pagina protetta passa da `maybePop` e chiede conferma.
+- **Review Opus** (`code-review high` sulla shell): 8 rilievi, 6 applicati:
+  - FAB sotto il dock;
+  - pagine interne senza margine;
+  - `PopScope` scavalcato;
+  - reset troppo largo di `trackQueryProvider`;
+  - test dell'opacità;
+  - un solo punto per il margine.
+
+  Scartati:
+  - il rimontaggio del dock quando si cambia l'interruttore (succede di rado, nessun danno);
+  - il reset rinviato al ritorno nella scheda: la misura dice che il reset immediato non costa (sotto).
+- **Scheggia**:
+  - 4 mutanti su 4 uccisi.
+  - Sul Mi A3, nessun crash in 100 cambi di scheda casuali, anche con play/pausa.
+  - Ultima riga sopra il dock in Libreria, Tutti i brani, playlist, Memoria e Impostazioni; FAB visibili.
+  - 2 bug corretti con test: la lente della Libreria sopravviveva al cambio scheda; riselezionare la scheda attiva buttava le modifiche di un tema (difetto già su master).
+- **Golden**: 10 rigenerati (Home e Libreria con il contenuto sotto il dock).
+- **Misure sul Mi A3**, build profile, % di frame oltre 16,7 ms:
+
+  | Scenario | Base 87 | 89 senza sfocatura | 89 con sfocatura |
+  |---|---|---|---|
+  | Scroll Libreria | 4,7 % | 0,6–0,7 % | 5,4 % |
+  | Scroll Tutti i brani | 2,3 % | 0,6 % | 7,9 % |
+  | Cambio scheda (con reset) | 5,5 % | 1,1–3,0 % | 2,5 % |
+
+  Un primo giro dopo l'installazione aveva dato 12,3 % su Scroll Libreria (riscaldamento); le due ripetizioni sono sotto l'1 %. Con la sfocatura il raster p50 passa da circa 6 a circa 10 ms: è il costo previsto, per cui resta spenta di serie con l'avviso.
+- **Prova adb sul Mi A3**, fatta dalla scheggia sull'app vera: cambi scheda, reset, ultima riga, FAB, sfocatura accesa e spenta, editor sporco. La rotazione non è stata provata (regole del telefono).
+- **Motorola**: rinviato alla fase 97 (D-419, D-420).
