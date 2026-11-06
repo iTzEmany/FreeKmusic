@@ -2075,7 +2075,7 @@
   },
   "podcastUnsubscribe": "Se désabonner",
   "podcastUnsubscribeTitle": "Se désabonner ?",
-  "podcastUnsubscribeBody": "Le podcast et {count, plural, one{1 épisode téléchargé} other{{count} épisodes téléchargés}} seront supprimés de l’appareil.",
+  "podcastUnsubscribeBody": "{count, plural, =0{Le podcast sera supprimé de l’appareil.} one{Le podcast et 1 épisode téléchargé seront supprimés de l’appareil.} other{Le podcast et {count} épisodes téléchargés seront supprimés de l’appareil.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {

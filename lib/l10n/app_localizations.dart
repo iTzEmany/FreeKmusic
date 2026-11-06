@@ -5593,7 +5593,7 @@ abstract class AppLocalizations {
   /// No description provided for @podcastUnsubscribeBody.
   ///
   /// In it, this message translates to:
-  /// **'Il podcast e {count, plural, one{1 episodio scaricato} other{{count} episodi scaricati}} verranno eliminati dal dispositivo.'**
+  /// **'{count, plural, =0{Il podcast verrà eliminato dal dispositivo.} one{Il podcast e 1 episodio scaricato verranno eliminati dal dispositivo.} other{Il podcast e {count} episodi scaricati verranno eliminati dal dispositivo.}}'**
   String podcastUnsubscribeBody(int count);
 
   /// No description provided for @podcastLastChecked.

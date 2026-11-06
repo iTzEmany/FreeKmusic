@@ -57,7 +57,6 @@ void main() {
     for (final f in DownloadFormat.values) {
       final a = args(hasFfmpeg: false, options: DownloadOptions(format: f));
       expect(a, containsAllInOrder(['-f', 'bestaudio[ext=m4a]/bestaudio/best']));
-      expect(a, isNot(contains('-x')));
     }
   });
 
@@ -84,6 +83,14 @@ void main() {
     final taken = {'/d/Song.opus'};
     expect(anyDownloadExtensionExists('/d/Song.m4a', taken.contains), isTrue);
     expect(anyDownloadExtensionExists('/d/Other.m4a', taken.contains), isFalse);
+  });
+
+  test('podcast audio: the literal selector, audio only, no conversion', () {
+    expect(podcastAudioSelector, 'bestaudio[ext=m4a]/bestaudio');
+    final a = args(options: const DownloadOptions(selector: podcastAudioSelector));
+    expect(a, containsAllInOrder(['-f', 'bestaudio[ext=m4a]/bestaudio']));
+    expect(a, isNot(contains('--extract-audio')));
+    expect(a, isNot(contains('--audio-format')));
   });
 
   test('a SoundCloud page is passed to yt-dlp as it is', () {

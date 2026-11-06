@@ -3543,10 +3543,12 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count episodi scaricati',
-      one: '1 episodio scaricato',
+      other:
+          'Il podcast e $count episodi scaricati verranno eliminati dal dispositivo.',
+      one: 'Il podcast e 1 episodio scaricato verranno eliminati dal dispositivo.',
+      zero: 'Il podcast verrà eliminato dal dispositivo.',
     );
-    return 'Il podcast e $_temp0 verranno eliminati dal dispositivo.';
+    return '$_temp0';
   }
 
   @override

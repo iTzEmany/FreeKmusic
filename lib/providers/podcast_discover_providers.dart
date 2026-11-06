@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_log.dart';
 import '../core/constants.dart' show kEnableYoutube;
 import '../data/repositories/podcast_repository.dart';
+import '../services/import/track_matcher.dart' show matchKey;
 import '../services/podcast/apple_podcasts.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/ytm_podcast_sync.dart' show kPodcastSourceYtm;
@@ -32,11 +33,17 @@ class PodcastListing {
 
   String get key => origin == PodcastOrigin.ytm ? 'ytm-$ytmId' : 'apple-${feedUrl ?? appleId}';
 
-  /// Same show on two sources: same title and author, ignoring case and punctuation.
-  String get sameShow => '${_norm(title)}|${_norm(author ?? '')}';
+  /// Same show on two sources: same normalized title, and the same author unless one side has none.
+  bool isSameShow(String titleKey, String authorKey) =>
+      _showKey(title) == titleKey && (authorKey.isEmpty || _showKey(author ?? '').isEmpty || _showKey(author ?? '') == authorKey);
 }
 
-String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '');
+/// The project's `matchKey` (case, accents, punctuation) after dropping combining marks, so
+/// composed and decomposed accents agree; a text with no letters (only emoji) keeps its raw self.
+String _showKey(String s) {
+  final k = matchKey(s.replaceAll(RegExp('[\u0300-\u036f]'), ''));
+  return k.isEmpty ? s.trim().toLowerCase() : k;
+}
 
 /// What the user already follows, to tell «Iscriviti» from «Iscritto».
 class PodcastSubscriptions {
@@ -46,31 +53,43 @@ class PodcastSubscriptions {
           for (final s in all)
             if (s.podcast.source == kPodcastSourceYtm && s.podcast.sourceId != null) s.podcast.sourceId!: s.podcast.id,
         },
-        _shows = {
-          for (final s in all) '${_norm(s.podcast.title)}|${_norm(s.podcast.author ?? '')}': s.podcast.id,
-        };
+        _shows = [
+          for (final s in all) (title: _showKey(s.podcast.title), author: _showKey(s.podcast.author ?? ''), id: s.podcast.id),
+        ];
 
-  final Map<String, int> _feeds, _ytm, _shows;
+  final Map<String, int> _feeds, _ytm;
+  final List<({String title, String author, int id})> _shows;
+
+  int? _showId(PodcastListing l) {
+    for (final s in _shows) {
+      if (l.isSameShow(s.title, s.author)) return s.id;
+    }
+    return null;
+  }
 
   /// The podcast id when [l] is already followed (by feed, YouTube Music id or same show).
-  int? idOf(PodcastListing l) => _feeds[l.feedUrl] ?? _ytm[l.ytmId] ?? _shows[l.sameShow];
+  int? idOf(PodcastListing l) => _feeds[l.feedUrl] ?? _ytm[l.ytmId] ?? _showId(l);
 
   /// 2: followed through this very source, 1: followed through the same show elsewhere, 0: not followed.
   int _score(PodcastListing l) => _feeds.containsKey(l.feedUrl) || _ytm.containsKey(l.ytmId)
       ? 2
-      : _shows.containsKey(l.sameShow)
+      : _showId(l) != null
           ? 1
           : 0;
 }
 
 /// Apple results first, then YouTube Music; one row per show, the followed one kept.
 List<PodcastListing> mergeListings(List<PodcastListing> all, PodcastSubscriptions subs) {
-  final byShow = <String, PodcastListing>{};
+  final out = <PodcastListing>[];
   for (final l in all) {
-    final old = byShow[l.sameShow];
-    if (old == null || subs._score(l) > subs._score(old)) byShow[l.sameShow] = l;
+    final i = out.indexWhere((o) => o.isSameShow(_showKey(l.title), _showKey(l.author ?? '')));
+    if (i < 0) {
+      out.add(l);
+    } else if (subs._score(l) > subs._score(out[i])) {
+      out[i] = l;
+    }
   }
-  return byShow.values.toList();
+  return out;
 }
 
 Duration? _noRetry(int _, Object _) => null;

@@ -1917,7 +1917,7 @@
   },
   "podcastUnsubscribe": "Unsubscribe",
   "podcastUnsubscribeTitle": "Unsubscribe?",
-  "podcastUnsubscribeBody": "The podcast and {count, plural, one{1 downloaded episode} other{{count} downloaded episodes}} will be deleted from the device.",
+  "podcastUnsubscribeBody": "{count, plural, =0{The podcast will be deleted from the device.} one{The podcast and 1 downloaded episode will be deleted from the device.} other{The podcast and {count} downloaded episodes will be deleted from the device.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {

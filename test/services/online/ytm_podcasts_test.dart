@@ -79,6 +79,28 @@ void main() {
     expect(parseEpisodeDate('Feb 20', now), DateTime.utc(2025, 2, 20));
   });
 
+  test('impossible dates are null, never moved to another day', () {
+    final now = DateTime.utc(2026, 11, 6);
+    for (final t in ['Oct 99', 'Oct 0', 'Feb 30', 'Feb 29', 'Maybe 5', 'Oct 5, 0000', 'Oct 5, 2100', 'Foo 5']) {
+      expect(parseEpisodeDate(t, now), isNull, reason: t);
+    }
+    expect(parseEpisodeDate('Feb 29, 2024', now), DateTime.utc(2024, 2, 29));
+    expect(parseEpisodeDate('Feb 29, 2023', now), isNull);
+    expect(parseEpisodeDate('Sept 5', now), DateTime.utc(2026, 9, 5));
+    expect(parseEpisodeDate('October 5', now), DateTime.utc(2026, 10, 5));
+  });
+
+  test('more length forms; negative, unknown units and huge numbers are null', () {
+    expect(parseEpisodeLength('45:30'), const Duration(minutes: 45, seconds: 30));
+    expect(parseEpisodeLength('1:02:03'), const Duration(hours: 1, minutes: 2, seconds: 3));
+    expect(parseEpisodeLength('5 minutes'), const Duration(minutes: 5));
+    expect(parseEpisodeLength('1 hour 5 minutes'), const Duration(hours: 1, minutes: 5));
+    expect(parseEpisodeLength('-5 min'), isNull);
+    expect(parseEpisodeLength('1 day 2 hr'), isNull);
+    expect(parseEpisodeLength('99999999999999999999 min'), isNull);
+    expect(parseEpisodeLength(''), isNull);
+  });
+
   test('lengths accept the plurals', () {
     expect(parseEpisodeLength('2 hrs 5 mins'), const Duration(hours: 2, minutes: 5));
     expect(parseEpisodeLength('1 hr 2 min 3 secs'), const Duration(hours: 1, minutes: 2, seconds: 3));

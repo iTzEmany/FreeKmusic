@@ -90,6 +90,8 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
       destructive: true,
     );
     if (!ok) return;
+    final rows = await ref.read(podcastEpisodesProvider(p.id).future);
+    ref.read(podcastDownloadsProvider.notifier).cancelAll([for (final r in rows) r.episode.id]);
     await ref.read(podcastServiceProvider).unsubscribe(p.id);
     if (mounted) Navigator.of(context).maybePop();
   }

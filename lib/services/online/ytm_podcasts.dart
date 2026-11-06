@@ -91,33 +91,66 @@ List<YtmShowHit> parseShowSearch(Map data) {
   return out;
 }
 
-const _months = {
-  'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-  'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12, //
-};
+const _monthNames = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december', //
+];
 
-/// `Oct 28` (this year, or last when that would be in the future) or
-/// `Oct 28, 2024`, as the page answers with `hl=en`; anything else is null.
-DateTime? parseEpisodeDate(String text, DateTime now) {
-  final m = RegExp(r'^([A-Za-z]{3})[a-z]*\.? (\d{1,2})(?:, (\d{4}))?$').firstMatch(text.trim());
-  final month = m == null ? null : _months[m.group(1)!.toLowerCase()];
-  if (m == null || month == null) return null;
-  final day = int.parse(m.group(2)!);
-  final year = m.group(3);
-  if (year != null) return DateTime.utc(int.parse(year), month, day);
-  // Compared in local time with a margin: the page's «today» may be a day ahead of us.
-  final future = DateTime(now.year, month, day).isAfter(now.add(const Duration(days: 2)));
-  return DateTime.utc(future ? now.year - 1 : now.year, month, day);
+int? _monthOf(String token) {
+  final t = token.toLowerCase();
+  for (var i = 0; i < 12; i++) {
+    if (t == _monthNames[i] || t == _monthNames[i].substring(0, 3) || (i == 8 && t == 'sept')) return i + 1;
+  }
+  return null;
 }
 
-/// `46 min`, `1 hr 2 min`, `7 min 37 sec`; anything else is null.
+/// `Oct 28` (this year, or last when that would be in the future) or
+/// `Oct 28, 2024`, as the page answers with `hl=en`. Anything else is null, and
+/// so is a date that does not exist (`Feb 30`) or a year that makes no sense.
+DateTime? parseEpisodeDate(String text, DateTime now) {
+  final m = RegExp(r'^([A-Za-z]+)\.? (\d{1,2})(?:, (\d{4}))?$').firstMatch(text.trim());
+  final month = m == null ? null : _monthOf(m.group(1)!);
+  if (m == null || month == null) return null;
+  final day = int.parse(m.group(2)!);
+  final int year;
+  if (m.group(3) != null) {
+    year = int.parse(m.group(3)!);
+  } else {
+    // Compared in local time with a margin: the page's «today» may be a day ahead of us.
+    final future = DateTime(now.year, month, day).isAfter(now.add(const Duration(days: 2)));
+    year = future ? now.year - 1 : now.year;
+  }
+  if (year < 1990 || year > now.year + 1) return null;
+  final d = DateTime.utc(year, month, day);
+  return d.month == month && d.day == day ? d : null;
+}
+
+/// `46 min`, `1 hr 2 min`, `7 min 37 sec`, `5 minutes`, `1:02:03`, `45:30`.
+/// Anything else is null: a negative number, an unknown unit (`1 day`), a huge one.
 Duration? parseEpisodeLength(String text) {
+  final t = text.trim().toLowerCase();
+  final clock = RegExp(r'^(?:(\d{1,3}):)?(\d{1,2}):(\d{2})$').firstMatch(t);
+  if (clock != null) {
+    return Duration(
+      hours: int.tryParse(clock.group(1) ?? '0')!,
+      minutes: int.parse(clock.group(2)!),
+      seconds: int.parse(clock.group(3)!),
+    );
+  }
+  if (RegExp(r'-\s*\d').hasMatch(t)) return null;
   var seconds = 0;
   var any = false;
-  for (final m in RegExp(r'(\d+)\s*(hrs?|h|mins?|m|secs?|s)\b').allMatches(text)) {
+  for (final m in RegExp(r'(\d+)\s*([a-z]+)').allMatches(t)) {
+    final n = int.tryParse(m.group(1)!);
+    final unit = switch (m.group(2)!) {
+      'h' || 'hr' || 'hrs' || 'hour' || 'hours' => 3600,
+      'm' || 'min' || 'mins' || 'minute' || 'minutes' => 60,
+      's' || 'sec' || 'secs' || 'second' || 'seconds' => 1,
+      _ => null,
+    };
+    if (n == null || n > 100000 || unit == null) return null;
     any = true;
-    final n = int.parse(m.group(1)!);
-    seconds += n * switch (m.group(2)![0]) { 'h' => 3600, 'm' => 60, _ => 1 };
+    seconds += n * unit;
   }
   return any ? Duration(seconds: seconds) : null;
 }

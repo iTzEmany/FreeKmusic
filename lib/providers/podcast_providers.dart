@@ -22,6 +22,7 @@ import '../services/podcast/ytm_podcast_sync.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
+import 'startup_providers.dart' show startupSettledProvider;
 import 'youtube_providers.dart';
 
 final podcastRepositoryProvider = Provider<PodcastRepository>(
@@ -187,6 +188,9 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
 
   void cancel(int episodeId) => _tokens[episodeId]?.cancel();
 
+  /// Cancels the running downloads of these episodes (the podcast is going away).
+  void cancelAll(Iterable<int> episodeIds) => episodeIds.forEach(cancel);
+
   /// Forgets the finished ones («Pulisci»).
   void clearFinished() => state = [
         for (final d in state)
@@ -240,6 +244,17 @@ final podcastDownloadsProvider =
     NotifierProvider<PodcastDownloadsNotifier, List<EpisodeDownload>>(
   PodcastDownloadsNotifier.new,
 );
+
+/// Once the app has settled: orphan podcast rows and folders go (watched from the root).
+final podcastOrphansStartProvider = FutureProvider<void>((ref) async {
+  await ref.watch(startupSettledProvider.future);
+  try {
+    final downloader = await ref.read(episodeDownloaderProvider.future);
+    await downloader.removeOrphans();
+  } on Object catch (e, st) {
+    AppLog.w('podcast orphan cleanup failed', e, st);
+  }
+});
 
 /// Run when the Podcast section opens: leftovers of interrupted downloads go,
 /// then the episodes heard longer ago than each podcast allows. Returns how

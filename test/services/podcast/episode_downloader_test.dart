@@ -26,6 +26,27 @@ class _Tags implements TagReader {
   }
 }
 
+/// Waits for [gate] before it answers: the download is stopped inside the tag read.
+class _GatedTags implements TagReader {
+  final gate = Completer<void>();
+  final entered = Completer<void>();
+
+  @override
+  Future<TagInfo> read(String path, {bool withCover = true}) async {
+    entered.complete();
+    await gate.future;
+    return const TagInfo();
+  }
+}
+
+/// Holds nothing that cannot cross an isolate.
+class _PlainTags implements TagReader {
+  const _PlainTags();
+
+  @override
+  Future<TagInfo> read(String path, {bool withCover = true}) async => const TagInfo(durationMs: 4242);
+}
+
 void main() {
   late Directory dir;
   late String base;
@@ -137,6 +158,47 @@ void main() {
     expect(File('${t.path}.part').existsSync(), isFalse);
     expect((await repo.episodeById(episodeId))!.trackId, trackId);
     expect(progress.last, (3000, 3000));
+  });
+
+  test('unsubscribing during the download leaves no file, no row and returns null', () async {
+    final tags = _GatedTags();
+    final pending = build(tags: tags).download(episodeId);
+    await tags.entered.future;
+    final paths = await repo.unsubscribe(podcastId);
+    expect(paths, isEmpty);
+    tags.gate.complete();
+    expect(await pending, isNull);
+    final files = Directory(base).listSync(recursive: true).whereType<File>().toList();
+    expect(files, isEmpty);
+    expect(await db.select(db.tracks).get(), isEmpty);
+  });
+
+  test('the tags are read in an isolate without taking the downloader along', () async {
+    final dl = EpisodeDownloader(repo: repo, tracks: tracks, tags: const _PlainTags(), baseDir: base);
+    final id = await dl.download(episodeId);
+    expect((await tracks.getById(id!))!.durationMs, 4242);
+  });
+
+  group('orphans', () {
+    Future<int> orphanRow(String path) => db.into(db.tracks).insert(TracksCompanion.insert(
+        path: path, title: 't', albumKey: 'podcast|9', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
+        kind: const Value(1)));
+
+    test('removes a kind 1 row with no episode and the folder of a podcast that is gone', () async {
+      final keep = (await build().download(episodeId))!;
+      final lost = File(p.join(base, '9', 'x.mp3'))..createSync(recursive: true);
+      final lostId = await orphanRow(lost.path);
+      final other = File(p.join(base, 'notes', 'keep.txt'))..createSync(recursive: true);
+
+      expect(await build().removeOrphans(), 2);
+
+      expect(lost.existsSync(), isFalse);
+      expect(Directory(p.join(base, '9')).existsSync(), isFalse);
+      expect(await tracks.getById(lostId), isNull);
+      expect(await tracks.getById(keep), isNotNull);
+      expect(File((await tracks.getById(keep))!.path).existsSync(), isTrue);
+      expect(other.existsSync(), isTrue, reason: 'only numbered folders are ours');
+    });
   });
 
   test('unreadable tags do not stop it: the feed\'s length stands in', () async {

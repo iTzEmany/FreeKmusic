@@ -132,7 +132,7 @@ class ApplePodcasts {
     final out = <PodcastSearchHit>[];
     for (final r in results is List ? results : const []) {
       if (r is! Map) continue;
-      final feed = _s(r['feedUrl']);
+      final feed = _s(r['feedUrl'])?.trim();
       final name = _s(r['collectionName']) ?? _s(r['trackName']);
       if (feed == null || feed.isEmpty || name == null) continue;
       final count = r['trackCount'];

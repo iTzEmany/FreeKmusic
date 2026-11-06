@@ -371,6 +371,19 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('a YouTube Music network failure offers «Riprova»', (tester) async {
+      await openDetail(tester, seed: () async {
+        downloads.initial = () => [
+              EpisodeDownload(
+                  episodeId: ids['new']!, title: 'x', status: EpisodeDownloadStatus.failed, error: PodcastErrorKind.network, ytError: YtErrorKind.network),
+            ];
+      });
+      final b = tester.widget<IconButton>(find.byKey(ValueKey('download-${ids['new']}')));
+      expect(b.onPressed, isNotNull);
+      expect(b.tooltip, 'Riprova');
+      await h.dispose(tester);
+    });
+
     testWidgets('a rate-limited YouTube Music download can be retried', (tester) async {
       await openDetail(tester, seed: () async {
         downloads.initial = () => [

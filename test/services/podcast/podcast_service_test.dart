@@ -275,6 +275,7 @@ void main() {
         'results': [
           {'collectionName': 'No feed', 'artistName': 'x'},
           {'collectionName': 'Empty feed', 'feedUrl': ''},
+          {'collectionName': 'Blank feed', 'feedUrl': '  '},
           {'collectionName': 'Fine', 'feedUrl': 'https://x/f', 'artworkUrl100': 'https://x/a.jpg'},
         ],
       };

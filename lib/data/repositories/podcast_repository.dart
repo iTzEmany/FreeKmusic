@@ -160,6 +160,16 @@ class PodcastRepository {
     });
   }
 
+  /// Podcast tracks (kind 1) that no episode points to.
+  Future<List<Track>> orphanEpisodeTracks() async {
+    final linked = {
+      for (final e in await _db.select(_db.podcastEpisodes).get())
+        if (e.trackId != null) e.trackId!,
+    };
+    final rows = await (_db.select(_db.tracks)..where((t) => t.kind.equals(1))).get();
+    return [for (final t in rows) if (!linked.contains(t.id)) t];
+  }
+
   Future<Podcast?> byId(int id) =>
       (_db.select(_db.podcasts)..where((p) => p.id.equals(id))).getSingleOrNull();
 

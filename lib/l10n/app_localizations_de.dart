@@ -3558,10 +3558,13 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count heruntergeladene Folgen',
-      one: '1 heruntergeladene Folge',
+      other:
+          'Der Podcast und $count heruntergeladene Folgen werden vom Gerät gelöscht.',
+      one:
+          'Der Podcast und 1 heruntergeladene Folge werden vom Gerät gelöscht.',
+      zero: 'Der Podcast wird vom Gerät gelöscht.',
     );
-    return 'Der Podcast und $_temp0 werden vom Gerät gelöscht.';
+    return '$_temp0';
   }
 
   @override

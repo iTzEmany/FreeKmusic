@@ -92,6 +92,13 @@ void main() {
     expect(await repo.all(), hasLength(1));
   });
 
+  test('an unreadable page is «not a feed» and saves nothing', () async {
+    adapter.page = {'contents': {}};
+    await expectLater(sync.subscribe(showId),
+        throwsA(isA<PodcastException>().having((e) => e.kind, 'kind', PodcastErrorKind.notFeed)));
+    expect(await repo.all(), isEmpty);
+  });
+
   test('refresh adds only the new episodes; an RSS podcast is left alone', () async {
     final id = await sync.subscribe(showId);
     // The oldest episode is gone from the page; a new one is on top.
@@ -101,6 +108,7 @@ void main() {
     fresh['musicMultiRowListItemRenderer']['onTap']['watchEndpoint']['videoId'] = 'NEWVIDEO001';
     rows.insert(0, fresh);
     expect(await sync.refresh(id), 1);
+    expect((await repo.byId(id))!.lastCheckedAt, DateTime.utc(2026, 11, 6).millisecondsSinceEpoch);
     expect(await sync.refresh(id), 0);
     expect(await repo.watchEpisodes(id).first, hasLength(25));
 

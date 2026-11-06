@@ -1917,7 +1917,7 @@
   },
   "podcastUnsubscribe": "Abo beenden",
   "podcastUnsubscribeTitle": "Abo beenden?",
-  "podcastUnsubscribeBody": "Der Podcast und {count, plural, one{1 heruntergeladene Folge} other{{count} heruntergeladene Folgen}} werden vom Gerät gelöscht.",
+  "podcastUnsubscribeBody": "{count, plural, =0{Der Podcast wird vom Gerät gelöscht.} one{Der Podcast und 1 heruntergeladene Folge werden vom Gerät gelöscht.} other{Der Podcast und {count} heruntergeladene Folgen werden vom Gerät gelöscht.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
       "count": {

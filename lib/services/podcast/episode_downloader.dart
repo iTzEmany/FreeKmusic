@@ -219,6 +219,11 @@ class EpisodeDownloader {
   /// Makes the saved file [target] a library track and links the episode to it.
   Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
     final info = await _readTags(target);
+    // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
+    if (await repo.episodeById(episode.id) == null) {
+      await _deleteQuietly(File(target));
+      return null;
+    }
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
     await tracks.upsertBatch([
@@ -252,9 +257,11 @@ class EpisodeDownloader {
 
   Future<TagInfo> _readTags(String path) async {
     try {
+      // Local copy: the closure must not capture `this` (repo and DB cannot cross isolates).
+      final reader = tags;
       return readTagsInIsolate
-          ? await Isolate.run(() => tags.read(path, withCover: false))
-          : await tags.read(path, withCover: false);
+          ? await Isolate.run(() => reader.read(path, withCover: false))
+          : await reader.read(path, withCover: false);
     } on Object catch (e, st) {
       // A file without readable tags still plays: the feed's length stands in.
       AppLog.w('episode tags unreadable: $path', e, st);
@@ -289,6 +296,34 @@ class EpisodeDownloader {
       if (e is File && e.path.endsWith('.part') && _inside(e.path)) {
         await _deleteQuietly(e);
         n++;
+      }
+    }
+    return n;
+  }
+
+  /// Library rows of kind 1 that no episode points to, and folders of podcasts
+  /// that are gone (left by an unsubscribe during a download). Returns how many.
+  Future<int> removeOrphans() async {
+    var n = 0;
+    for (final t in await repo.orphanEpisodeTracks()) {
+      AppLog.w('podcast cleanup: orphan episode row ${t.id} ${t.path}');
+      if (_inside(t.path)) await _deleteQuietly(File(t.path));
+      await tracks.deleteTrack(t.id);
+      n++;
+    }
+    final root = Directory(baseDir);
+    if (!await root.exists()) return n;
+    final alive = {for (final p in await repo.all()) '${p.id}'};
+    await for (final e in root.list(followLinks: false)) {
+      final id = p.basename(e.path);
+      if (e is Directory && int.tryParse(id) != null && !alive.contains(id)) {
+        AppLog.w('podcast cleanup: folder of a removed podcast ${e.path}');
+        try {
+          await e.delete(recursive: true);
+          n++;
+        } on FileSystemException catch (err, st) {
+          AppLog.w('could not delete ${e.path}', err, st);
+        }
       }
     }
     return n;
