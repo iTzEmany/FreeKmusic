@@ -1219,6 +1219,8 @@
   "bgDim": "Oscurecimiento",
   "bgBlur": "Desenfoque",
   "bgCoverBackdrop": "Reproduciendo: tono de la carátula",
+  "blurredChrome": "Dock y cabeceras desenfocados",
+  "blurredChromeHint": "Puede ralentizar los teléfonos menos potentes",
   "bgImageFailed": "No se pudo usar la imagen",
   "themeCopyName": "{name} (copia)",
   "selectedCount": "{count, plural, one{1 seleccionada} other{{count} seleccionadas}}",

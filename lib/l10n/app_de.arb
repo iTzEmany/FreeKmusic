@@ -1219,6 +1219,8 @@
   "bgDim": "Abdunklung",
   "bgBlur": "Unschärfe",
   "bgCoverBackdrop": "Wiedergabe: Farbton des Covers",
+  "blurredChrome": "Unscharfes Dock und Kopfzeilen",
+  "blurredChromeHint": "Kann auf schwächeren Handys bremsen",
   "bgImageFailed": "Das Bild konnte nicht verwendet werden",
   "themeCopyName": "{name} (Kopie)",
   "selectedCount": "{count, plural, one{1 ausgewählt} other{{count} ausgewählt}}",

@@ -1377,6 +1377,8 @@
   "bgDim": "Assombrissement",
   "bgBlur": "Flou",
   "bgCoverBackdrop": "Lecture : teinte de la pochette",
+  "blurredChrome": "Dock et en-têtes floutés",
+  "blurredChromeHint": "Peut ralentir les téléphones moins puissants",
   "bgImageFailed": "Impossible d’utiliser l’image",
   "themeCopyName": "{name} (copie)",
   "selectedCount": "{count, plural, =0{0 sélectionné} one{1 sélectionné} other{{count} sélectionnés}}",

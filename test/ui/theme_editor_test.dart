@@ -90,6 +90,23 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('the blurred dock switch is off, kept in the settings, labelled and at least 48 dp tall', (tester) async {
+    final c = await open(tester);
+    final row = find.byKey(const ValueKey('blurred-chrome'));
+    await tester.ensureVisible(row);
+    expect(c.read(settingsProvider).blurredChrome, isFalse);
+    expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
+    expect(find.text('Può rallentare sui telefoni meno potenti'), findsOneWidget);
+    expect(
+      tester.getSemantics(row).label,
+      'Dock e intestazioni sfocati\nPuò rallentare sui telefoni meno potenti',
+    );
+    await tester.tap(row);
+    await _settle(tester);
+    expect(c.read(settingsProvider).blurredChrome, isTrue);
+    await h.dispose(tester);
+  });
+
   testWidgets('typing a colour changes the theme, saving stores it and makes it the one in use', (tester) async {
     final c = await open(tester);
     await tester.tap(find.byKey(const ValueKey('token-bg')));

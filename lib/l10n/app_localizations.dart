@@ -4246,6 +4246,18 @@ abstract class AppLocalizations {
   /// **'In riproduzione: tinta della copertina'**
   String get bgCoverBackdrop;
 
+  /// No description provided for @blurredChrome.
+  ///
+  /// In it, this message translates to:
+  /// **'Dock e intestazioni sfocati'**
+  String get blurredChrome;
+
+  /// No description provided for @blurredChromeHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Può rallentare sui telefoni meno potenti'**
+  String get blurredChromeHint;
+
   /// No description provided for @bgImageFailed.
   ///
   /// In it, this message translates to:

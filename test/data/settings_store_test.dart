@@ -116,6 +116,14 @@ void main() {
     expect(s.accent, 'rosa');
   });
 
+  test('the blurred dock is off by default and the choice is kept', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await SettingsStore.open();
+    expect(store.readSettings().blurredChrome, isFalse);
+    await store.writeSettings(const AppSettings(blurredChrome: true));
+    expect(store.readSettings().blurredChrome, isTrue);
+  });
+
   test('the spinning cover is off by default and the choice is kept', () async {
     SharedPreferences.setMockInitialValues({});
     final store = await SettingsStore.open();

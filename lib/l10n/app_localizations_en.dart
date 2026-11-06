@@ -2497,6 +2497,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bgCoverBackdrop => 'Now playing: tint of the cover';
 
   @override
+  String get blurredChrome => 'Blurred dock and headers';
+
+  @override
+  String get blurredChromeHint => 'May slow down less powerful phones';
+
+  @override
   String get bgImageFailed => 'The picture could not be used';
 
   @override

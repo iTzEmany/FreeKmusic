@@ -1555,6 +1555,8 @@
   "bgDim": "Oscuramento",
   "bgBlur": "Sfocatura",
   "bgCoverBackdrop": "In riproduzione: tinta della copertina",
+  "blurredChrome": "Dock e intestazioni sfocati",
+  "blurredChromeHint": "Può rallentare sui telefoni meno potenti",
   "bgImageFailed": "Impossibile usare l'immagine",
   "themeCopyName": "{name} (copia)",
   "@themeCopyName": {

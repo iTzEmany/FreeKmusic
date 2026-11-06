@@ -1219,6 +1219,8 @@
   "bgDim": "Darkening",
   "bgBlur": "Blur",
   "bgCoverBackdrop": "Now playing: tint of the cover",
+  "blurredChrome": "Blurred dock and headers",
+  "blurredChromeHint": "May slow down less powerful phones",
   "bgImageFailed": "The picture could not be used",
   "themeCopyName": "{name} (copy)",
   "selectedCount": "{count, plural, one{1 selected} other{{count} selected}}",

@@ -1377,6 +1377,8 @@
   "bgDim": "Escurecimento",
   "bgBlur": "Desfoque",
   "bgCoverBackdrop": "Tocando: tom da capa",
+  "blurredChrome": "Dock e cabeçalhos desfocados",
+  "blurredChromeHint": "Pode deixar mais lento em telemóveis menos potentes",
   "bgImageFailed": "Não foi possível usar a imagem",
   "themeCopyName": "{name} (cópia)",
   "selectedCount": "{count, plural, one{1 selecionado} other{{count} selecionados}}",

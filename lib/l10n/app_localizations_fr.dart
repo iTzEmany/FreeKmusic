@@ -2519,6 +2519,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bgCoverBackdrop => 'Lecture : teinte de la pochette';
 
   @override
+  String get blurredChrome => 'Dock et en-têtes floutés';
+
+  @override
+  String get blurredChromeHint =>
+      'Peut ralentir les téléphones moins puissants';
+
+  @override
   String get bgImageFailed => 'Impossible d’utiliser l’image';
 
   @override

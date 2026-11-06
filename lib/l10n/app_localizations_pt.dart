@@ -2506,6 +2506,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get bgCoverBackdrop => 'Tocando: tom da capa';
 
   @override
+  String get blurredChrome => 'Dock e cabeçalhos desfocados';
+
+  @override
+  String get blurredChromeHint =>
+      'Pode deixar mais lento em telemóveis menos potentes';
+
+  @override
   String get bgImageFailed => 'Não foi possível usar a imagem';
 
   @override
