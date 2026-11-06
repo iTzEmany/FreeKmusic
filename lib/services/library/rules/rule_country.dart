@@ -41,3 +41,12 @@ Future<Map<String, List<String>>> countryArtistsOf(AppDatabase db, RuleExpr e) a
   }
   return out;
 }
+
+/// The fields a rule reads, to know which tables it depends on.
+Set<RuleField> fieldsOf(RuleExpr e) => switch (e) {
+      RuleAnd(:final terms) => {for (final t in terms) ...fieldsOf(t)},
+      RuleOr(:final left, :final right) => {...fieldsOf(left), ...fieldsOf(right)},
+      RuleNot(:final inner) => fieldsOf(inner),
+      RuleContains(:final field) || RuleIn(:final field) || RuleNumber(:final field) => {field},
+      _ => const {},
+    };

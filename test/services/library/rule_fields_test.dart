@@ -97,6 +97,18 @@ void main() {
       expect(parseRules('artista:"A",b').expr, isA<RuleContains>());
     });
 
+    test('spaces after the comma of a quoted list are allowed; canonical has none', () async {
+      final p = parseRules('artista:"Queen", "Daft Punk"');
+      expect(p.warnings, isEmpty);
+      expect(formatRules(p.expr), 'artista:"Queen","Daft Punk"');
+      expect(await run('artista:"Queen", "Daft Punk"'), {1, 5});
+      expect(formatRules(parseRules('artista:"Queen", preferiti').expr), 'artista:"Queen", preferiti');
+    });
+
+    test('cartella stays a substring, never a list', () {
+      expect(parseRules('cartella:"a","b"').expr, isNot(isA<RuleIn>()));
+    });
+
     test('an empty value is reported and skipped', () {
       final p = parseRules('artista:"A",""');
       expect(p.warnings.single.kind, RuleWarningKind.emptyValue);
@@ -107,7 +119,9 @@ void main() {
   group('new fields', () {
     test('ultimoascolto counts days back; never played is out', () async {
       expect(await run('ultimoascolto<7g'), {1});
-      expect(await run('ultimoascolto>30g'), {2});
+      expect(await run('ultimoascolto>30g'), {2, 3, 4, 5}); // never played = long ago
+      expect(await run('-ultimoascolto<7g'), {2, 3, 4, 5});
+      expect(await run('ultimoascolto:30..'), {2, 3, 4, 5});
       expect(await run('ultimoascolto:0..60d'), {1, 2});
       expect(formatRules(parseRules('ultimoascolto>30d').expr), 'ultimoascolto>30g');
     });
@@ -134,6 +148,8 @@ void main() {
       expect(await run('bpm:80..100'), {2});
       expect(await run('bpm:120.5'), {1});
       expect(await run('-bpm>100'), {2, 3, 4, 5});
+      expect(await run('bpm:121'), {1}); // equality rounds: 120.5 -> 121
+      expect(await run('bpm:90'), {2});
     });
 
     test('bitrate, con-testo', () async {
@@ -147,6 +163,32 @@ void main() {
       expect(await run('genere:soul'), {3});
       expect(await run('genere:rock'), {1, 2}); // 2 has no track_genres row
       expect(await run('-genere:pop'), {1, 2, 4, 5});
+    });
+
+    test('rules read only the tables they use', () async {
+      var n = 0;
+      final sub = repo.watchByRules(parseRules('artista:queen').expr, now: now).listen((_) => n++);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final before = n;
+      await db.into(db.trackEnrich).insert(TrackEnrichCompanion(trackId: const Value(4), details: const Value('{}')));
+      await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'zz', checkedAt: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(n, before);
+      await sub.cancel();
+    });
+
+    test('a nazionalita rule follows new countries without reopening', () async {
+      final lists = <Set<int>>[];
+      final sub = repo.watchByRules(parseRules('nazionalita:IT').expr, now: now).listen((r) => lists.add({for (final t in r) t.id}));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(lists.last, isEmpty);
+      await db.into(db.artistCountries).insertOnConflictUpdate(ArtistCountriesCompanion.insert(artistKey: 'daft punk', country: const Value('IT'), checkedAt: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(lists.last, {5});
+      await add(6, 'f', artist: 'Daft Punk');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(lists.last, {5, 6});
+      await sub.cancel();
     });
 
     test('sort and limit are unchanged', () async {

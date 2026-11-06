@@ -63,12 +63,24 @@ List<String> _tokens(String text) {
   final out = <String>[];
   final cur = StringBuffer();
   var quoted = false;
-  for (final ch in text.split('')) {
+  final chars = text.split('');
+  for (var i = 0; i < chars.length; i++) {
+    final ch = chars[i];
     if (ch == '"') {
       quoted = !quoted;
       cur.write(ch);
     } else if (!quoted && ch.trim().isEmpty) {
-      if (cur.isNotEmpty) out.add(cur.toString());
+      // `campo:"A", "B"`: spaces after the comma of a quoted list stay inside it.
+      var j = i;
+      while (j < chars.length && chars[j].trim().isEmpty) {
+        j++;
+      }
+      final s = cur.toString();
+      if (s.endsWith(',') && j < chars.length && chars[j] == '"' && _listStart.hasMatch(s)) {
+        i = j - 1;
+        continue;
+      }
+      if (cur.isNotEmpty) out.add(s);
       cur.clear();
     } else {
       cur.write(ch);
@@ -77,6 +89,8 @@ List<String> _tokens(String text) {
   if (cur.isNotEmpty) out.add(cur.toString());
   return out;
 }
+
+final _listStart = RegExp(r'^-?[^\s:<>"]+:"');
 
 String _unquote(String v) {
   var s = v;
@@ -180,7 +194,7 @@ RuleExpr? _term(String body, List<RuleWarning> warnings) {
       warnings.add(RuleWarning(body, RuleWarningKind.unknownField));
       return RuleText(_unquote(body));
     }
-    if (m[2] == ':' && !field.isNumeric && m[3]!.startsWith('"')) {
+    if (m[2] == ':' && !field.isNumeric && field != RuleField.folder && m[3]!.startsWith('"')) {
       final list = _quotedList(m[3]!);
       if (list != null) {
         if (list.any((v) => v.trim().isEmpty)) {

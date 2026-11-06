@@ -148,7 +148,7 @@ final class RuleContains extends RuleExpr {
 /// `artista:"A","B"`: the field equals one of [values] (whole value, ignoring
 /// case; no substring). A single value prints with a trailing comma
 /// (`artista:"A",`) so it stays distinct from `artista:"A"`, a substring.
-/// Not for numeric fields.
+/// Not for numeric fields, nor for `cartella` (a path is never equal to a folder).
 final class RuleIn extends RuleExpr {
   const RuleIn(this.field, this.values);
 

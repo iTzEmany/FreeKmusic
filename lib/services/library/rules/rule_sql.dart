@@ -114,8 +114,7 @@ String _in(RuleIn e, List<Variable> vars, Map<String, List<String>> ca) {
         RuleField.artist => 'artist',
         RuleField.album => 'album',
         RuleField.albumArtist => 'album_artist',
-        RuleField.format => 'format',
-        _ => 'path', // folder
+        _ => 'format',
       };
       vars.addAll(values.map((v) => Variable<String>(v)));
       return _leaf('TRIM($column) COLLATE NOCASE IN ($marks)');
@@ -205,7 +204,8 @@ String _bpm(RuleNumber e, List<Variable> vars) {
   final col = bpmSql();
   final parts = <String>[];
   void cmp(String op, double x) {
-    parts.add('$col $op ?');
+    // Equality rounds both sides: `bpm:120` finds a stored 120.4.
+    parts.add(op == '=' ? 'ROUND($col) = ROUND(?)' : '$col $op ?');
     vars.add(Variable<double>(x));
   }
 
@@ -233,6 +233,14 @@ String _bpm(RuleNumber e, List<Variable> vars) {
 /// «aggiunto» speaks of age: `<30g` is newer than 30 days, so `added_at` is
 /// *after* the moment 30 days ago.
 String _added(RuleNumber e, int now, List<Variable> vars) {
+  final sql = _addedCore(e, now, vars);
+  // A track never played counts as played infinitely long ago: it is «older than N»
+  // (`>`, `>=`, an open-ended range) and never «in the last N days».
+  final older = e.op == NumOp.gt || e.op == NumOp.ge || (e.op == NumOp.range && e.a != null && e.b == null);
+  return e.field == RuleField.lastPlayed && older ? '(last_played_at IS NULL OR $sql)' : sql;
+}
+
+String _addedCore(RuleNumber e, int now, List<Variable> vars) {
   final c = e.field == RuleField.lastPlayed ? 'last_played_at' : 'added_at';
   int ago(double days) => now - (days * _dayMs).round();
   switch (e.op) {

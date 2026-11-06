@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -477,14 +478,17 @@ class TrackRepository {
     );
   }
 
-  Set<TableInfo> get _ruleTables => {
-        _db.tracks,
-        _db.trackTags,
-        _db.userTags,
-        _db.trackGenres,
-        _db.trackEnrich,
-        _db.artistCountries,
-      };
+  /// The tables a rule reads: a write to any other must not redo its query.
+  Set<TableInfo> _ruleTables(RuleExpr rules) {
+    final f = fieldsOf(rules);
+    return {
+      _db.tracks,
+      if (f.contains(RuleField.tag)) ...[_db.trackTags, _db.userTags],
+      if (f.contains(RuleField.genre)) _db.trackGenres,
+      if (f.contains(RuleField.bpm) || f.contains(RuleField.recordLabel)) _db.trackEnrich,
+      if (f.contains(RuleField.country)) _db.artistCountries,
+    };
+  }
 
   /// Tracks matching [rules] (the rule language of the search and of the smart
   /// playlists), kept up to date. «Added» terms count back from [now] at the
@@ -498,15 +502,50 @@ class TrackRepository {
     DateTime? now,
   }) {
     final nowMs = (now ?? DateTime.now()).millisecondsSinceEpoch;
-    // shortcut: countries are resolved once at subscription, not live; upgrade if
-    // a country change must refresh an open playlist.
-    return Stream.fromFuture(countryArtistsOf(_db, rules)).asyncExpand((ca) {
+    Stream<List<Track>> query(Map<String, List<String>> ca) {
       final q = _byRules(rules, sort, limit, randomSeed, nowMs, ca, mostPlayed: mostPlayed);
       return _db
-          .customSelect(q.sql, variables: q.vars, readsFrom: _ruleTables)
+          .customSelect(q.sql, variables: q.vars, readsFrom: _ruleTables(rules))
           .watch()
           .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
+    }
+
+    if (countriesOf(rules).isEmpty) return query(const {});
+    // The country -> artists map depends on tracks and countries: redo it, and the
+    // query, at every change of either (only rules that use «nazionalita»).
+    return _watchWithCountries(rules, () async {
+      final ca = await countryArtistsOf(_db, rules);
+      final q = _byRules(rules, sort, limit, randomSeed, nowMs, ca, mostPlayed: mostPlayed);
+      final rows = await _db.customSelect(q.sql, variables: q.vars).get();
+      return [for (final r in rows) _db.tracks.map(r.data)];
     });
+  }
+
+  Stream<List<Track>> _watchWithCountries(RuleExpr rules, Future<List<Track>> Function() run) {
+    late final StreamController<List<Track>> c;
+    StreamSubscription<Set<TableUpdate>>? sub;
+    var gen = 0;
+    Future<void> refresh() async {
+      final mine = ++gen;
+      try {
+        final r = await run();
+        if (mine == gen && !c.isClosed) c.add(r); // only the latest answer counts
+      } catch (e, st) {
+        if (!c.isClosed) c.addError(e, st);
+      }
+    }
+
+    c = StreamController<List<Track>>(
+      onListen: () {
+        refresh();
+        sub = _db.tableUpdates(TableUpdateQuery.onAllTables(_ruleTables(rules))).listen((_) => refresh());
+      },
+      onCancel: () async {
+        gen++;
+        await sub?.cancel();
+      },
+    );
+    return c.stream;
   }
 
   /// How many tracks match (for the «37 brani» of the editor).
@@ -520,7 +559,7 @@ class TrackRepository {
         .customSelect(
           'SELECT COUNT(*) AS n FROM tracks WHERE ${q.where}',
           variables: q.vars,
-          readsFrom: _ruleTables,
+          readsFrom: _ruleTables(rules),
         )
         .get();
     return rows.single.read<int>('n');
