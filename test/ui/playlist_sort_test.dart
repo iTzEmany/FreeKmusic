@@ -76,4 +76,64 @@ void main() {
     expect([for (final r in rows!) r.position]..sort(), [0, 1, 2]);
     await h.dispose(tester);
   });
+
+  testWidgets('descending title order is shown, and play and a row tap follow it',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 3);
+    final id = (await tester.runAsync(() async {
+      final repo = PlaylistRepository(h.db);
+      final id = await repo.create('Notte');
+      await repo.addTracks(id, [for (final t in await h.db.select(h.db.tracks).get()) t.id]);
+      return id;
+    }))!;
+    await h.pump(tester,
+        PlaylistDetailScreen(playlist: Playlist(id: id, name: 'Notte', createdAt: 0, updatedAt: 0)));
+    Future<void> settle() async {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> openSort() async {
+      await tester.tap(find.byTooltip('Altre azioni'));
+      await settle();
+      await tester.tap(find.text('Ordina per'));
+      await settle();
+    }
+
+    await settle();
+    await openSort();
+    await tester.tap(find.text('Titolo'));
+    await settle();
+    await openSort();
+    await tester.tap(find.text('Decrescente'));
+    await settle();
+    await tester.tapAt(const Offset(200, 20)); // closes the sheet
+    await settle();
+    expect(h.store.readSettings().playlistSorts['$id'], 'title:desc');
+    final ys = [for (var n = 2; n >= 0; n--) tester.getTopLeft(find.text('Song $n')).dy];
+    expect(ys, orderedEquals([...ys]..sort()));
+
+    Future<List<int>> queue() async {
+      for (var i = 0; i < 100 && h.handler.queueIds.isEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      }
+      return h.handler.queueIds.toList();
+    }
+
+    final byTitle = {
+      for (final t in (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!) t.title: t.id,
+    };
+    final want = [byTitle['Song 2']!, byTitle['Song 1']!, byTitle['Song 0']!];
+    await tester.tap(find.text('Song 1'));
+    await settle();
+    expect(await queue(), want);
+    await tester.tap(find.widgetWithText(FilledButton, 'Riproduci'));
+    await settle();
+    expect(await queue(), want);
+    await h.dispose(tester);
+  });
 }
