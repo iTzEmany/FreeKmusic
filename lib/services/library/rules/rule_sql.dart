@@ -72,6 +72,15 @@ String _expr(RuleExpr e, int now, List<Variable> vars, Map<String, List<String>>
 }
 
 /// The artists of a country, as a single JSON variable (no variable limit).
+/// All [values] as one JSON variable: no limit on the number of variables.
+String _jsonList(List<String> values, List<Variable> vars) {
+  vars.add(Variable<String>(jsonEncode(values)));
+  return '(SELECT value FROM json_each(?))';
+}
+
+/// Integer for a SQL variable; never throws on huge or non-finite values.
+int _int(double x) => x.isNaN ? 0 : x.clamp(-9e15, 9e15).round();
+
 String _countrySql(String code, List<Variable> vars, Map<String, List<String>> ca) {
   vars.add(Variable<String>(jsonEncode(ca[code.toUpperCase()] ?? const <String>[])));
   return 'artist IN (SELECT value FROM json_each(?))';
@@ -90,24 +99,25 @@ String _genreSql(String cmp, List<Variable> vars, List<String> params, String ol
 
 String _in(RuleIn e, List<Variable> vars, Map<String, List<String>> ca) {
   final values = e.values;
-  final marks = List.filled(values.length, '?').join(',');
   switch (e.field) {
     case RuleField.country:
-      final parts = [for (final v in values) _countrySql(v, vars, ca)];
-      return _leaf(parts.join(' OR '));
+      final artists = {for (final v in values) ...?ca[v.toUpperCase()]}.toList();
+      return _leaf('artist IN ${_jsonList(artists, vars)}');
     case RuleField.genre:
-      return _genreSql('g.genre IN ($marks)', vars, values, 'genre COLLATE NOCASE IN ($marks)');
+      final list = jsonEncode(values);
+      const sub = '(SELECT value FROM json_each(?))';
+      return _genreSql('TRIM(g.genre) COLLATE NOCASE IN $sub', vars, [list], 'TRIM(genre) COLLATE NOCASE IN $sub');
     case RuleField.tag:
-      vars.addAll(values.map((v) => Variable<String>(v)));
+      final marks = _jsonList(values, vars);
       return _leaf(
         'EXISTS (SELECT 1 FROM track_tags tt JOIN user_tags u ON u.id = tt.tag_id '
-        'WHERE tt.track_id = tracks.id AND u.name COLLATE NOCASE IN ($marks))',
+        'WHERE tt.track_id = tracks.id AND u.name COLLATE NOCASE IN $marks)',
       );
     case RuleField.recordLabel:
-      vars.addAll(values.map((v) => Variable<String>(v)));
+      final marks = _jsonList(values, vars);
       return _leaf(
         'EXISTS (SELECT 1 FROM track_enrich e WHERE e.track_id = tracks.id '
-        'AND ${labelSql()} COLLATE NOCASE IN ($marks))',
+        'AND TRIM(${labelSql()}) COLLATE NOCASE IN $marks)',
       );
     default:
       final column = switch (e.field) {
@@ -116,8 +126,7 @@ String _in(RuleIn e, List<Variable> vars, Map<String, List<String>> ca) {
         RuleField.albumArtist => 'album_artist',
         _ => 'format',
       };
-      vars.addAll(values.map((v) => Variable<String>(v)));
-      return _leaf('TRIM($column) COLLATE NOCASE IN ($marks)');
+      return _leaf('TRIM($column) COLLATE NOCASE IN ${_jsonList(values, vars)}');
   }
 }
 
@@ -172,7 +181,7 @@ String _number(RuleNumber e, int now, List<Variable> vars) {
   final scale = e.field == RuleField.duration ? 1000.0 : 1.0;
   Variable v(double x) => e.field == RuleField.duration
       ? Variable<double>(x * scale)
-      : Variable<int>(x.round());
+      : Variable<int>(_int(x));
   switch (e.op) {
     case NumOp.range:
       final parts = <String>[];
@@ -242,7 +251,7 @@ String _added(RuleNumber e, int now, List<Variable> vars) {
 
 String _addedCore(RuleNumber e, int now, List<Variable> vars) {
   final c = e.field == RuleField.lastPlayed ? 'last_played_at' : 'added_at';
-  int ago(double days) => now - (days * _dayMs).round();
+  int ago(double days) => now - _int(days * _dayMs);
   switch (e.op) {
     case NumOp.range:
       final parts = <String>[];

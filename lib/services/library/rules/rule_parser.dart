@@ -66,7 +66,17 @@ List<String> _tokens(String text) {
   final chars = text.split('');
   for (var i = 0; i < chars.length; i++) {
     final ch = chars[i];
-    if (ch == '"') {
+    if (quoted &&
+        ch == r'\' &&
+        i + 2 < chars.length &&
+        (chars[i + 1] == '"' || chars[i + 1] == r'\') &&
+        chars[i + 2].trim().isNotEmpty &&
+        chars[i + 2] != ',' &&
+        _escapes(cur.toString())) {
+      // `\"` and `\\` inside a list value (see RuleIn.canonical). Only when more of the
+      // token follows, so `cartella:"D:\Music\"` and old `artista:"A\",` read as before.
+      cur..write(ch)..write(chars[++i]);
+    } else if (ch == '"') {
       quoted = !quoted;
       cur.write(ch);
     } else if (!quoted && ch.trim().isEmpty) {
@@ -92,6 +102,14 @@ List<String> _tokens(String text) {
 
 final _listStart = RegExp(r'^-?[^\s:<>"]+:"');
 
+/// Whether [cur] (the token so far) is a list-capable field: not `cartella`, a path.
+bool _escapes(String cur) {
+  final m = _listStart.firstMatch(cur);
+  if (m == null) return false;
+  final name = cur.substring(0, cur.indexOf(':')).replaceFirst('-', '').toLowerCase();
+  return _fields[name] != RuleField.folder;
+}
+
 String _unquote(String v) {
   var s = v;
   if (s.startsWith('"')) s = s.substring(1);
@@ -108,6 +126,10 @@ double? _number(RuleField field, String raw, {required Set<RuleWarningKind> bad}
     return null;
   }
   final n = double.parse(m[1]!.replaceAll(',', '.'));
+  if (!isValidRuleNumber(n)) {
+    bad.add(RuleWarningKind.badNumber);
+    return null;
+  }
   final unit = m[2]!.toLowerCase();
   switch (field) {
     case RuleField.year || RuleField.plays || RuleField.bitrate:
@@ -216,9 +238,20 @@ RuleExpr? _term(String body, List<RuleWarning> warnings) {
 /// not that: a lone `"pink floyd"`, or an unterminated quote, stays a plain
 /// substring value.
 List<String>? _quotedList(String v) {
-  final m = RegExp(r'^"[^"]*"(?:,"[^"]*")*(,?)$').firstMatch(v);
-  if (m == null) return null;
-  final items = RegExp(r'"([^"]*)"').allMatches(v).map((x) => x[1]!).toList();
+  var m = RegExp(r'^"(?:[^"\\]|\\.)*"(?:,"(?:[^"\\]|\\.)*")*(,?)$').firstMatch(v);
+  var item = RegExp(r'"((?:[^"\\]|\\.)*)"');
+  var unescape = true;
+  if (m == null) {
+    // Lists saved before escapes existed: a value may end with a backslash.
+    m = RegExp(r'^"[^"]*"(?:,"[^"]*")*(,?)$').firstMatch(v);
+    if (m == null) return null;
+    item = RegExp(r'"([^"]*)"');
+    unescape = false;
+  }
+  final items = [
+    for (final x in item.allMatches(v))
+      unescape ? x[1]!.replaceAllMapped(RegExp(r'\\(["\\])'), (e) => e[1]!) : x[1]!,
+  ];
   return items.length == 1 && m[1]!.isEmpty ? null : items;
 }
 

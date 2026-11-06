@@ -88,18 +88,18 @@ class FilterCountsRepository {
 
   // `genere:"X"`: any genre of track_genres, or the old tracks.genre column.
   Future<List<ValueCount>> _genres() => _grouped(
-        "SELECT MIN(g) AS v, COUNT(DISTINCT x.id) AS n FROM ("
+        "SELECT MIN(trim(g)) AS v, COUNT(DISTINCT x.id) AS n FROM ("
         "SELECT g.track_id AS id, g.genre AS g FROM track_genres g "
         "UNION SELECT t.id, t.genre FROM tracks t WHERE t.genre IS NOT NULL) x "
         "JOIN tracks t ON t.id = x.id WHERE $_visible AND trim(g) <> '' "
-        "GROUP BY g COLLATE NOCASE",
+        "GROUP BY trim(g) COLLATE NOCASE",
         {_db.trackGenres, _db.tracks},
       );
 
   Future<List<ValueCount>> _labels() => _grouped(
-        "SELECT MIN(l) AS v, COUNT(*) AS n FROM (SELECT ${labelSql()} AS l FROM track_enrich e "
+        "SELECT MIN(trim(l)) AS v, COUNT(*) AS n FROM (SELECT ${labelSql()} AS l FROM track_enrich e "
         "JOIN tracks t ON t.id = e.track_id WHERE $_visible) "
-        "WHERE typeof(l) = 'text' AND trim(l) <> '' GROUP BY l COLLATE NOCASE",
+        "WHERE typeof(l) = 'text' AND trim(l) <> '' GROUP BY trim(l) COLLATE NOCASE",
         {_db.trackEnrich, _db.tracks},
       );
 

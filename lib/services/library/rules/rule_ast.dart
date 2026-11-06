@@ -157,7 +157,7 @@ final class RuleIn extends RuleExpr {
 
   @override
   String get canonical =>
-      '${field.label}:${values.map((v) => '"${v.replaceAll('"', '')}"').join(',')}${values.length == 1 ? ',' : ''}';
+      '${field.label}:${values.map((v) => '"${v.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"').join(',')}${values.length == 1 ? ',' : ''}';
 }
 
 /// A comparison on a number: the year, the length (in seconds), how long ago
@@ -173,7 +173,7 @@ final class RuleNumber extends RuleExpr {
   final double? a, b;
 
   String _fmt(double v) {
-    final whole = v == v.roundToDouble();
+    final whole = v.isFinite && v == v.roundToDouble();
     switch (field) {
       case RuleField.duration:
         if (whole && v % 60 == 0) return '${(v / 60).round()}m';
@@ -205,3 +205,10 @@ String quoteIfNeeded(String v) {
   final plain = RegExp(r'^[^\s":<>]+$').hasMatch(v) && !v.startsWith('-') && v != 'OR';
   return plain ? v : '"${v.replaceAll('"', '')}"';
 }
+
+/// [s] as it ends up in a rule outside a list (`"` removed, trimmed): the editor
+/// checks it is not empty before adding it.
+String cleanRuleText(String s) => s.replaceAll('"', '').trim();
+
+/// A number a rule can hold: finite, not negative, below a sane maximum.
+bool isValidRuleNumber(double n) => n.isFinite && n >= 0 && n <= 1e9;
