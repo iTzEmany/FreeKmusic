@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/filter_counts_repository.dart';
@@ -54,7 +55,8 @@ String valueLabel(BuildContext context, RuleField field, String v) {
 }
 
 FilterList? _listOf(RuleField f) => switch (f) {
-      RuleField.artist || RuleField.albumArtist => FilterList.artists,
+      RuleField.artist => FilterList.artists,
+      RuleField.albumArtist => FilterList.albumArtists,
       RuleField.genre => FilterList.genres,
       RuleField.country => FilterList.countries,
       RuleField.recordLabel => FilterList.labels,
@@ -286,7 +288,7 @@ class FilterCardView extends StatelessWidget {
               padding: const EdgeInsets.only(right: CcDims.gap12),
               child: switch (card.kind) {
                 FilterKind.list => _values(context),
-                FilterKind.text => _textField(l.smartContains, card.text, (v) => card.text = v),
+                FilterKind.text => _textField(card.exact ? l.smartIs : l.smartContains, card.text, (v) => card.text = v),
                 FilterKind.number => _numbers(context),
                 FilterKind.age => _age(context),
                 FilterKind.flag => const SizedBox.shrink(),
@@ -303,14 +305,21 @@ class FilterCardView extends StatelessWidget {
     );
   }
 
-  Widget _textField(String label, String initial, ValueChanged<String> set, {String? suffix, bool number = false}) =>
+  Widget _textField(String label, String initial, ValueChanged<String> set, {String? suffix, bool number = false, bool digitsOnly = false, bool sync = false}) =>
       TextFormField(
         key: ObjectKey(card),
         initialValue: initial,
-        keyboardType: number ? const TextInputType.numberWithOptions(decimal: true) : null,
+        keyboardType: digitsOnly
+            ? TextInputType.number
+            : number
+                // Durations also take m:ss, which the decimal pad cannot type.
+                ? (card.isDuration ? TextInputType.text : const TextInputType.numberWithOptions(decimal: true))
+                : null,
+        inputFormatters: digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
         decoration: InputDecoration(labelText: label, suffixText: suffix, constraints: const BoxConstraints(minHeight: 48)),
         onChanged: (v) {
           set(v);
+          if (sync) card.syncOp();
           onChanged();
         },
       );
@@ -382,9 +391,9 @@ class FilterCardView extends StatelessWidget {
     final toLabel = card.op == NumOp.lt ? l.smartLessThan : l.smartTo;
     return Row(
       children: [
-        Expanded(child: _textField(fromLabel, card.from, (v) => card.from = v, suffix: suffix, number: true)),
+        Expanded(child: _textField(fromLabel, card.from, (v) => card.from = v, suffix: suffix, number: true, sync: true)),
         const SizedBox(width: CcDims.gap12),
-        Expanded(child: _textField(toLabel, card.to, (v) => card.to = v, suffix: suffix, number: true)),
+        Expanded(child: _textField(toLabel, card.to, (v) => card.to = v, suffix: suffix, number: true, sync: true)),
       ],
     );
   }
@@ -406,7 +415,7 @@ class FilterCardView extends StatelessWidget {
           },
         ),
         const SizedBox(height: CcDims.gap8),
-        _textField(l.smartDays, card.from, (v) => card.from = v, number: true),
+        _textField(l.smartDays, card.from, (v) => card.from = v, number: true, digitsOnly: true),
       ],
     );
   }

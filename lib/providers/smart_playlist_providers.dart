@@ -26,9 +26,3 @@ final smartTracksProvider = StreamProvider.family<List<Track>, int>((ref, id) {
       .watch(smartPlaylistRepositoryProvider)
       .watchTracks(p, randomSeed: sessionSeed);
 });
-
-/// How many tracks some rule text selects (the editor's preview). The rules
-/// are the argument, so typing makes a new request.
-final ruleCountProvider = FutureProvider.autoDispose.family<int, String>(
-  (ref, rules) => ref.watch(smartPlaylistRepositoryProvider).count(rules),
-);

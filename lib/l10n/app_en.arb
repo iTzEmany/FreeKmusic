@@ -1482,13 +1482,10 @@
   "smartPlaylistLabel": "Smart playlist",
   "smartName": "Name",
   "smartNameRequired": "Enter a name",
-  "smartRules": "Rules",
-  "smartRulesHint": "artist:\"pink floyd\" -live year:1970..1979",
   "smartNoRules": "With no rules the playlist holds the whole library.",
   "smartSortBy": "Sort by",
   "smartSortMostPlayed": "Most played",
   "smartSortRandom": "Random",
-  "smartLimit": "Track limit (optional)",
   "smartTemplates": "Templates",
   "smartTplNever": "Never played",
   "smartTplRecent": "Recently added",
@@ -3351,7 +3348,7 @@
   "smartAddValue": "Add",
   "smartValueHint": "Type a value",
   "smartDone": "Done",
-  "smartIncomplete": "Incomplete: it does not count until you finish it.",
+  "smartIncomplete": "Incomplete: finish it or remove it to save.",
   "smartRemoveFilter": "Remove filter",
   "smartRemoveValue": "Remove {value}",
   "@smartRemoveValue": {"placeholders": {"value": {"type": "String"}}},
@@ -3368,5 +3365,9 @@
   "smartAdvancedNote": "The rule text, read only.",
   "smartNotVisual": "This rule is too elaborate for the filter editor. It stays as it is: you can see it under Advanced, and saving it untouched changes nothing.",
   "smartNoFilters": "Add a filter to start.",
-  "smartLimitShort": "Limit"
+  "smartLimitShort": "Limit",
+  "smartIs": "Is",
+  "smartRestart": "Start over with filters",
+  "smartRestarted": "Rule cleared",
+  "smartCountError": "Count unavailable"
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/filter_counts_repository.dart';
+import '../ui/theme/tokens.dart';
 import 'database_providers.dart';
 
 final filterCountsRepositoryProvider = Provider<FilterCountsRepository>(
@@ -33,7 +34,7 @@ final liveRuleCountProvider =
     FutureProvider.autoDispose.family<int, ({String rules, int? limit})>((ref, a) async {
   var gone = false;
   ref.onDispose(() => gone = true);
-  await Future<void>.delayed(const Duration(milliseconds: 250));
+  await Future<void>.delayed(CcTiming.debounce);
   if (gone) return 0;
   final n = await ref.read(smartPlaylistRepositoryProvider).count(a.rules);
   final limit = a.limit;

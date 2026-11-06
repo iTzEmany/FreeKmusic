@@ -4816,18 +4816,6 @@ abstract class AppLocalizations {
   /// **'Scrivi un nome'**
   String get smartNameRequired;
 
-  /// No description provided for @smartRules.
-  ///
-  /// In it, this message translates to:
-  /// **'Regole'**
-  String get smartRules;
-
-  /// No description provided for @smartRulesHint.
-  ///
-  /// In it, this message translates to:
-  /// **'artista:\"pink floyd\" -live anno:1970..1979'**
-  String get smartRulesHint;
-
   /// No description provided for @smartNoRules.
   ///
   /// In it, this message translates to:
@@ -4851,12 +4839,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'A caso'**
   String get smartSortRandom;
-
-  /// No description provided for @smartLimit.
-  ///
-  /// In it, this message translates to:
-  /// **'Limite di brani (facoltativo)'**
-  String get smartLimit;
 
   /// No description provided for @smartTemplates.
   ///
@@ -10432,7 +10414,7 @@ abstract class AppLocalizations {
   /// No description provided for @smartIncomplete.
   ///
   /// In it, this message translates to:
-  /// **'Incompleto: non conta finché non lo completi.'**
+  /// **'Incompleto: completalo o rimuovilo per salvare.'**
   String get smartIncomplete;
 
   /// No description provided for @smartRemoveFilter.
@@ -10530,6 +10512,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Limite'**
   String get smartLimitShort;
+
+  /// No description provided for @smartIs.
+  ///
+  /// In it, this message translates to:
+  /// **'È'**
+  String get smartIs;
+
+  /// No description provided for @smartRestart.
+  ///
+  /// In it, this message translates to:
+  /// **'Ricomincia con i filtri'**
+  String get smartRestart;
+
+  /// No description provided for @smartRestarted.
+  ///
+  /// In it, this message translates to:
+  /// **'Regola azzerata'**
+  String get smartRestarted;
+
+  /// No description provided for @smartCountError.
+  ///
+  /// In it, this message translates to:
+  /// **'Conteggio non disponibile'**
+  String get smartCountError;
 }
 
 class _AppLocalizationsDelegate

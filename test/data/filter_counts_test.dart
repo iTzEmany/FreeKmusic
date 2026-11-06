@@ -49,6 +49,14 @@ void main() {
     }
   });
 
+  test('album artists: grouped like the rule, hidden out', () async {
+    await db.customStatement("UPDATE tracks SET album_artist = ' Various ' WHERE id IN (1, 4)");
+    await db.customStatement("UPDATE tracks SET album_artist = 'various' WHERE id = 2");
+    final v = await repo.counts(FilterList.albumArtists);
+    expect(v.map((x) => x.count), [2]);
+    expect(await TrackRepository(db).countByRules(parseRules('artistaalbum:"Various",').expr), 2);
+  });
+
   test('genres: all genres, case folded, old column as fallback, no double count', () async {
     await add(6, 'Old'); // no track_genres row, only the column
     await db.customStatement("UPDATE tracks SET genre = 'Rock' WHERE id IN (1, 6)");

@@ -13,6 +13,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/segmented_blocks.dart';
+import '../../widgets/show_msg.dart';
 import 'smart_filter_model.dart';
 import 'smart_filter_widgets.dart';
 
@@ -78,6 +79,7 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
   bool _showAdvanced = false;
   bool _triedSave = false;
   int? _count;
+  bool _countFailed = false;
 
   @override
   void initState() {
@@ -105,7 +107,32 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
 
   String get _rules => _raw ?? _model.rules;
 
-  bool get _canSave => _raw != null || _model.hasComplete;
+  /// A saved playlist whose rule is empty may be saved as it is (rename, order, limit).
+  bool get _emptyOk => widget.existing?.rules.trim().isEmpty ?? false;
+
+  /// A new playlist needs a complete filter, and no card may be left half done.
+  bool get _canSave =>
+      _raw != null || (_model.cards.isEmpty ? _emptyOk : !_model.hasIncomplete && _model.hasComplete);
+
+  void _restart() {
+    final l = context.l10n;
+    final before = _raw;
+    setState(() {
+      _raw = null;
+      _model = FilterModel();
+    });
+    if (before == null) return;
+    showMsg(
+      context,
+      l.smartRestarted,
+      action: SnackBarAction(
+        label: l.undo,
+        onPressed: () {
+          if (mounted) setState(() => _load(before));
+        },
+      ),
+    );
+  }
 
   void _apply(_Template t) {
     final l = context.l10n;
@@ -216,7 +243,13 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
                         child: Semantics(
                           liveRegion: true,
                           child: Text(
-                            _count == null ? '' : l.tracksCount(_count!),
+                            _countFailed
+                                ? l.smartCountError
+                                : _rules.isEmpty && !_emptyOk
+                                    ? '—'
+                                    : _count == null
+                                        ? ''
+                                        : l.tracksCount(_count!),
                             style: theme.titleMedium?.copyWith(color: cc.accent),
                           ),
                         ),
@@ -242,8 +275,17 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     // The provider answers null while a newer request supersedes it: keep the last number.
-    final live = ref.watch(liveRuleCountProvider((rules: _rules, limit: _limitValue))).value;
-    if (live != null) _count = live;
+    // Keep the last number while a newer one is computed; say so when it fails.
+    ref.listen(liveRuleCountProvider((rules: _rules, limit: _limitValue)), (_, n) {
+      if (n.hasError) {
+        setState(() => _countFailed = true);
+      } else if (n.hasValue) {
+        setState(() {
+          _count = n.value;
+          _countFailed = false;
+        });
+      }
+    });
     return Scaffold(
       appBar: CcAppBar(
         title: widget.existing == null ? l.smartPlaylistNew : l.smartPlaylistEdit,
@@ -285,7 +327,21 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
               if (_raw != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: CcDims.gap12),
-                  child: Text(l.smartNotVisual, style: theme.bodyMedium),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.smartNotVisual, style: theme.bodyMedium),
+                      for (final w in parseRules(_raw!).warnings.where(
+                        (w) => w.kind != RuleWarningKind.emptyValue && w.kind != RuleWarningKind.danglingOr,
+                      ))
+                        Padding(
+                          padding: const EdgeInsets.only(top: CcDims.gap4),
+                          child: Text(l.ruleWarning(w.term), style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+                        ),
+                      const SizedBox(height: CcDims.gap8),
+                      OutlinedButton(onPressed: _restart, child: Text(l.smartRestart)),
+                    ],
+                  ),
                 )
               else ...[
                 SegmentedBlocks<bool>(

@@ -2928,12 +2928,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get smartNameRequired => 'Scrivi un nome';
 
   @override
-  String get smartRules => 'Regole';
-
-  @override
-  String get smartRulesHint => 'artista:\"pink floyd\" -live anno:1970..1979';
-
-  @override
   String get smartNoRules =>
       'Senza regole la playlist contiene tutta la libreria.';
 
@@ -2945,9 +2939,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get smartSortRandom => 'A caso';
-
-  @override
-  String get smartLimit => 'Limite di brani (facoltativo)';
 
   @override
   String get smartTemplates => 'Modelli';
@@ -6541,7 +6532,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get smartDone => 'Fatto';
 
   @override
-  String get smartIncomplete => 'Incompleto: non conta finché non lo completi.';
+  String get smartIncomplete =>
+      'Incompleto: completalo o rimuovilo per salvare.';
 
   @override
   String get smartRemoveFilter => 'Rimuovi filtro';
@@ -6593,4 +6585,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get smartLimitShort => 'Limite';
+
+  @override
+  String get smartIs => 'È';
+
+  @override
+  String get smartRestart => 'Ricomincia con i filtri';
+
+  @override
+  String get smartRestarted => 'Regola azzerata';
+
+  @override
+  String get smartCountError => 'Conteggio non disponibile';
 }

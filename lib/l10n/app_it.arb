@@ -1835,13 +1835,10 @@
   "smartPlaylistLabel": "Playlist intelligente",
   "smartName": "Nome",
   "smartNameRequired": "Scrivi un nome",
-  "smartRules": "Regole",
-  "smartRulesHint": "artista:\"pink floyd\" -live anno:1970..1979",
   "smartNoRules": "Senza regole la playlist contiene tutta la libreria.",
   "smartSortBy": "Ordina per",
   "smartSortMostPlayed": "Più ascoltati",
   "smartSortRandom": "A caso",
-  "smartLimit": "Limite di brani (facoltativo)",
   "smartTemplates": "Modelli",
   "smartTplNever": "Mai ascoltati",
   "smartTplRecent": "Aggiunti di recente",
@@ -4028,7 +4025,7 @@
   "smartAddValue": "Aggiungi",
   "smartValueHint": "Scrivi un valore",
   "smartDone": "Fatto",
-  "smartIncomplete": "Incompleto: non conta finché non lo completi.",
+  "smartIncomplete": "Incompleto: completalo o rimuovilo per salvare.",
   "smartRemoveFilter": "Rimuovi filtro",
   "smartRemoveValue": "Rimuovi {value}",
   "@smartRemoveValue": {"placeholders": {"value": {"type": "String"}}},
@@ -4045,5 +4042,9 @@
   "smartAdvancedNote": "Il testo della regola, in sola lettura.",
   "smartNotVisual": "Questa regola è troppo articolata per l’editor a filtri. Resta com’è: la vedi in Avanzate e, se la salvi senza toccarla, non cambia.",
   "smartNoFilters": "Aggiungi un filtro per iniziare.",
-  "smartLimitShort": "Limite"
+  "smartLimitShort": "Limite",
+  "smartIs": "È",
+  "smartRestart": "Ricomincia con i filtri",
+  "smartRestarted": "Regola azzerata",
+  "smartCountError": "Conteggio non disponibile"
 }

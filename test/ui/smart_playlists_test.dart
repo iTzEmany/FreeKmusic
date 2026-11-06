@@ -1,8 +1,12 @@
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/smart_playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
+import 'package:codecore/providers/filter_counts_providers.dart';
+import 'package:codecore/services/library/rules/rule_parser.dart';
+import 'package:codecore/ui/screens/smart/smart_filter_model.dart';
 import 'package:codecore/ui/screens/smart/smart_playlist_editor.dart';
 import 'package:codecore/ui/screens/smart/smart_playlist_screen.dart';
 import 'package:codecore/ui/widgets/smart_cover.dart';
@@ -145,7 +149,7 @@ void main() {
 
   group('the editor', () {
     // Opens the editor as a pushed page (so «Salva» can close it); [rules] makes an existing playlist first.
-    Future<int?> openEditor(WidgetTester tester, {String? rules, SmartSort sort = SmartSort.title, int? limit}) async {
+    Future<int?> openEditor(WidgetTester tester, {String? rules, SmartSort sort = SmartSort.title, int? limit, List<Override> overrides = const []}) async {
       h = await Harness.create(tester, tracks: 4);
       repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
       tester.view.physicalSize = const Size(400, 2400); // tall: every card is built
@@ -160,7 +164,7 @@ void main() {
       }
       await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
           onPressed: () => Navigator.of(c).push(MaterialPageRoute<bool>(builder: (_) => SmartPlaylistEditor(existing: existing))),
-          child: const Text('open')))));
+          child: const Text('open')))), extraOverrides: overrides);
       await tester.tap(find.text('open'));
       await _settle(tester);
       return id;
@@ -186,11 +190,11 @@ void main() {
       await openEditor(tester);
       expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull);
       await addFilter(tester, 'Anno');
-      expect(find.text('Incompleto: non conta finché non lo completi.'), findsOneWidget);
+      expect(find.text('Incompleto: completalo o rimuovilo per salvare.'), findsOneWidget);
       expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull, reason: 'an empty card is not a filter');
       await tester.enterText(find.widgetWithText(TextFormField, 'Da'), '1990');
       await _settle(tester);
-      expect(find.text('Incompleto: non conta finché non lo completi.'), findsNothing);
+      expect(find.text('Incompleto: completalo o rimuovilo per salvare.'), findsNothing);
       await tester.tap(saveButton());
       await _settle(tester);
       expect(find.text('Scrivi un nome'), findsOneWidget);
@@ -241,7 +245,7 @@ void main() {
     testWidgets('an existing playlist opens filled in and saves the same string', (tester) async {
       const rules = 'artista:"Artist", -genere:live ascolti>0 anno:1990..1999 durata:..5m';
       final id = await openEditor(tester, rules: rules);
-      expect(find.text('Incompleto: non conta finché non lo completi.'), findsNothing);
+      expect(find.text('Incompleto: completalo o rimuovilo per salvare.'), findsNothing);
       expect(find.text('Modifica playlist intelligente'), findsOneWidget);
       expect(find.widgetWithText(TextFormField, 'live'), findsOneWidget, reason: 'a contains filter, excluded');
       expect(find.widgetWithText(TextFormField, 'Più di'), findsOneWidget, reason: 'ascolti>0 keeps its operator');
@@ -303,6 +307,102 @@ void main() {
       await _settle(tester);
       final p = (await tester.runAsync(() => repo.get(id!)))!;
       expect((p.name, p.limitCount, p.sort, p.rules), ('Dopo', null, 'year', 'preferiti'));
+      await h.dispose(tester);
+    });
+
+    testWidgets('an existing playlist with an empty rule still saves (rename, order, limit)', (tester) async {
+      final id = await openEditor(tester, rules: '');
+      expect(tester.widget<FilledButton>(saveButton()).onPressed, isNotNull);
+      await tester.enterText(find.widgetWithText(TextField, 'Prima'), 'Tutta');
+      await tester.tap(saveButton());
+      await _settle(tester);
+      final p = (await tester.runAsync(() => repo.get(id!)))!;
+      expect((p.name, p.rules), ('Tutta', ''));
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Ricomincia con i filtri» frees an elaborate rule, with undo', (tester) async {
+      final id = await openEditor(tester, rules: 'colore:rosso OR anno:2000..');
+      final stored = (await tester.runAsync(() => repo.get(id!)))!.rules;
+      await tester.tap(find.text('Ricomincia con i filtri'));
+      await _settle(tester);
+      expect(find.text('Aggiungi filtro'), findsOneWidget);
+      expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull, reason: 'now it needs a filter');
+      await tester.tap(find.text('Annulla'));
+      await _settle(tester);
+      expect(find.textContaining('troppo articolata'), findsOneWidget);
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect((await tester.runAsync(() => repo.get(id!)))!.rules, stored);
+      await h.dispose(tester);
+    });
+
+    testWidgets('filling both ends turns «Più di» into a «da…a» range; one end left brings the operator back', (tester) async {
+      final id = await openEditor(tester, rules: 'ascolti>0');
+      expect(find.widgetWithText(TextFormField, 'Più di'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextFormField, 'A'), '5');
+      await _settle(tester);
+      expect(find.widgetWithText(TextFormField, 'Più di'), findsNothing);
+      expect(find.widgetWithText(TextFormField, 'Da'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextFormField, 'A'), '');
+      await _settle(tester);
+      expect(find.widgetWithText(TextFormField, 'Più di'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextFormField, 'A'), '5');
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect((await tester.runAsync(() => repo.get(id!)))!.rules, 'ascolti:0..5');
+      await h.dispose(tester);
+    });
+
+    testWidgets('days are whole numbers, and what is saved opens again as a card', (tester) async {
+      await openEditor(tester);
+      await addFilter(tester, 'Aggiunto');
+      await tester.enterText(find.widgetWithText(TextFormField, 'giorni'), '3.5');
+      await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Giorni');
+      final rules = await savedRules(tester);
+      expect(rules, 'aggiunto<35g');
+      expect(FilterModel.fromExpr(parseRules(rules).expr), isNotNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a half-done card blocks «Salva» and says why', (tester) async {
+      await openEditor(tester);
+      await addFilter(tester, 'Anno');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Da'), '1990');
+      await addFilter(tester, 'Durata');
+      expect(find.text('Incompleto: completalo o rimuovilo per salvare.'), findsOneWidget);
+      expect(tester.widget<FilledButton>(saveButton()).onPressed, isNull);
+      await tester.tap(find.byTooltip('Rimuovi filtro').last);
+      await _settle(tester);
+      expect(tester.widget<FilledButton>(saveButton()).onPressed, isNotNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('the count shows a dash for a new empty rule, and says when it fails', (tester) async {
+      await openEditor(tester);
+      expect(find.text('—'), findsOneWidget);
+      expect(find.text('4 brani'), findsNothing);
+      await h.dispose(tester);
+      await openEditor(tester, rules: 'preferiti', overrides: [
+        liveRuleCountProvider.overrideWith((ref, a) async => throw StateError('boom')),
+      ]);
+      expect(find.text('Conteggio non disponibile'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('tag and format compare the whole value: the field says «È», not «Contiene»', (tester) async {
+      await openEditor(tester, rules: 'tag:rock genere:live');
+      expect(find.widgetWithText(TextFormField, 'È'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Contiene'), findsOneWidget, reason: 'the genre is a substring');
+      await h.dispose(tester);
+    });
+
+    testWidgets('a duration that is not whole minutes shows as m:ss and saves the same rule', (tester) async {
+      final id = await openEditor(tester, rules: 'durata:200s..');
+      expect(find.text('3:20'), findsOneWidget);
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect((await tester.runAsync(() => repo.get(id!)))!.rules, 'durata:200s..');
       await h.dispose(tester);
     });
 

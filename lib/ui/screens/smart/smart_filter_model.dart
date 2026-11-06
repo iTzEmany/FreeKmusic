@@ -70,7 +70,8 @@ class FilterCard {
     this.from = '',
     this.to = '',
     this.op = NumOp.range,
-  }) : values = values ?? [];
+  }) : values = values ?? [],
+       loadedOp = op;
 
   factory FilterCard.fromSpec(FilterSpec s) => FilterCard(
         s.kind,
@@ -95,13 +96,29 @@ class FilterCard {
   /// Operator kept from a loaded rule (`ascolti>0`) so it is written back as it was.
   NumOp op;
 
+  /// The operator the rule was loaded with: back in force when only one end is left.
+  final NumOp loadedOp;
+
+  /// Both ends filled make a «da…a» range; with one left the loaded operator returns.
+  void syncOp() => op = _num(from) != null && _num(to) != null ? NumOp.range : loadedOp;
+
+  /// tag and formato compare the whole value (RuleContains.exact).
+  bool get exact => field == RuleField.tag || field == RuleField.format;
+
   /// Age filter: «Negli ultimi» (newer than) rather than «Da più di».
   bool get recent => op == NumOp.lt || op == NumOp.le;
 
   bool get isDuration => field == RuleField.duration;
 
   double? _num(String s) {
-    final v = double.tryParse(s.trim().replaceAll(',', '.'));
+    final t = s.trim();
+    if (isDuration && t.contains(':')) {
+      final p = t.split(':');
+      final m = p.length == 2 ? int.tryParse(p[0]) : null;
+      final sec = p.length == 2 ? int.tryParse(p[1]) : null;
+      return m == null || sec == null || sec < 0 || sec > 59 ? null : (m * 60 + sec).toDouble();
+    }
+    final v = double.tryParse(t.replaceAll(',', '.'));
     return v == null ? null : (isDuration ? v * 60 : v);
   }
 
@@ -112,8 +129,8 @@ class FilterCard {
       FilterKind.list => values.isEmpty ? null : RuleIn(field!, List.of(values)),
       FilterKind.text => text.trim().isEmpty ? null : RuleContains(field!, text.trim()),
       FilterKind.age => () {
-          final n = double.tryParse(from.trim());
-          return n == null || n <= 0 ? null : RuleNumber(field!, op, n);
+          final n = int.tryParse(from.trim());
+          return n == null || n <= 0 ? null : RuleNumber(field!, op, n.toDouble());
         }(),
       FilterKind.number => _number(),
     };
@@ -135,6 +152,9 @@ class FilterCard {
   }
 
   static String _fmt(double v, RuleField f) {
+    if (f == RuleField.duration && v % 60 != 0 && v == v.roundToDouble()) {
+      return '${v ~/ 60}:${(v % 60).round().toString().padLeft(2, '0')}';
+    }
     final x = f == RuleField.duration ? v / 60 : v;
     return x == x.roundToDouble() ? '${x.round()}' : '$x';
   }
@@ -182,6 +202,8 @@ class FilterModel {
   String get rules => expr.canonical;
 
   bool get hasComplete => cards.any((c) => c.toExpr() != null);
+
+  bool get hasIncomplete => cards.any((c) => c.toExpr() == null);
 
   /// The cards of [e], or null when the rule is not a flat «all» / «any» of
   /// cards (nested OR, free words...) or would not print back identically.

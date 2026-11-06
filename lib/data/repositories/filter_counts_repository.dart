@@ -6,7 +6,7 @@ import 'artist_info_repository.dart';
 import 'enrich_filter_queries.dart';
 
 /// The lists of values the filter editor offers (F-91, D-393).
-enum FilterList { artists, genres, countries, labels }
+enum FilterList { artists, albumArtists, genres, countries, labels }
 
 /// One value of a list and how many visible tracks carry it. [value] is what
 /// goes into the rule (artist name, genre, ISO country code, label).
@@ -54,6 +54,7 @@ class FilterCountsRepository {
   Future<List<KeyedCount>> load(FilterList list) async {
     final all = switch (list) {
       FilterList.artists => await _artists(),
+      FilterList.albumArtists => await _albumArtists(),
       FilterList.genres => await _genres(),
       FilterList.countries => await _countries(),
       FilterList.labels => await _labels(),
@@ -75,6 +76,13 @@ class FilterCountsRepository {
   Future<List<ValueCount>> _artists() => _grouped(
         "SELECT MIN(trim(t.artist)) AS v, COUNT(*) AS n FROM tracks t WHERE $_visible "
         "AND trim(COALESCE(t.artist, '')) <> '' GROUP BY trim(t.artist) COLLATE NOCASE",
+        {_db.tracks},
+      );
+
+  // `artistaalbum:"X"` is TRIM(album_artist) COLLATE NOCASE = X.
+  Future<List<ValueCount>> _albumArtists() => _grouped(
+        "SELECT MIN(trim(t.album_artist)) AS v, COUNT(*) AS n FROM tracks t WHERE $_visible "
+        "AND trim(COALESCE(t.album_artist, '')) <> '' GROUP BY trim(t.album_artist) COLLATE NOCASE",
         {_db.tracks},
       );
 

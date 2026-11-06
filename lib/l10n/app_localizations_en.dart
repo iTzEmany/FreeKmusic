@@ -2923,12 +2923,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smartNameRequired => 'Enter a name';
 
   @override
-  String get smartRules => 'Rules';
-
-  @override
-  String get smartRulesHint => 'artist:\"pink floyd\" -live year:1970..1979';
-
-  @override
   String get smartNoRules =>
       'With no rules the playlist holds the whole library.';
 
@@ -2940,9 +2934,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smartSortRandom => 'Random';
-
-  @override
-  String get smartLimit => 'Track limit (optional)';
 
   @override
   String get smartTemplates => 'Templates';
@@ -6525,8 +6516,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smartDone => 'Done';
 
   @override
-  String get smartIncomplete =>
-      'Incomplete: it does not count until you finish it.';
+  String get smartIncomplete => 'Incomplete: finish it or remove it to save.';
 
   @override
   String get smartRemoveFilter => 'Remove filter';
@@ -6578,4 +6568,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smartLimitShort => 'Limit';
+
+  @override
+  String get smartIs => 'Is';
+
+  @override
+  String get smartRestart => 'Start over with filters';
+
+  @override
+  String get smartRestarted => 'Rule cleared';
+
+  @override
+  String get smartCountError => 'Count unavailable';
 }
