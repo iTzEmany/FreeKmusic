@@ -13,6 +13,7 @@ import '../../../services/library/rules/rule_parser.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/confirm.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/show_msg.dart';
 import 'smart_filter_model.dart';
@@ -81,6 +82,8 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
   bool _triedSave = false;
   int? _count;
   bool _countFailed = false;
+  bool _saved = false;
+  late final String _initial;
 
   @override
   void initState() {
@@ -91,7 +94,12 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
     _sort = SmartSort.fromName(p?.sort);
     _load(p?.rules ?? '');
     _showAdvanced = _raw != null;
+    _initial = _snapshot;
   }
+
+  String get _snapshot => '${_name.text.trim()}|$_rules|${_sort.name}|${_limit.text.trim()}';
+
+  bool get _dirty => _snapshot != _initial;
 
   @override
   void dispose() {
@@ -189,7 +197,9 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
       sort: _sort,
       limit: _limitValue,
     );
-    if (mounted) Navigator.of(context).pop(true);
+    if (!mounted) return;
+    _saved = true;
+    Navigator.of(context).pop(true);
   }
 
   /// Count and «Salva» only: order and limit sit in the scrolling list, so the
@@ -291,7 +301,21 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
         });
       }
     });
-    return Scaffold(
+    return PopScope(
+      canPop: _saved || !_dirty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final nav = Navigator.of(context);
+        final discard = await showConfirm(
+          context,
+          title: l.themeDiscardTitle,
+          body: l.smartDiscardBody,
+          confirmLabel: l.themeDiscard,
+          destructive: true,
+        );
+        if (discard) nav.pop();
+      },
+      child: Scaffold(
       appBar: CcAppBar(
         title: widget.existing == null ? l.smartPlaylistNew : l.smartPlaylistEdit,
       ),
@@ -300,7 +324,7 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
           child: ListView(
-            padding: const EdgeInsets.all(CcDims.margin),
+            padding: const EdgeInsets.all(CcDims.margin).withDock(context),
             children: [
               TextField(
                 controller: _name,
@@ -402,6 +426,6 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

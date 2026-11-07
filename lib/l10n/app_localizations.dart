@@ -4012,6 +4012,12 @@ abstract class AppLocalizations {
   /// **'Scarta'**
   String get themeDiscard;
 
+  /// No description provided for @smartDiscardBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Le modifiche a questa playlist non sono state salvate.'**
+  String get smartDiscardBody;
+
   /// No description provided for @themePreview.
   ///
   /// In it, this message translates to:
@@ -10608,6 +10614,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Principale'**
   String get artistMainProfile;
+
+  /// No description provided for @artistOtherProfileOf.
+  ///
+  /// In it, this message translates to:
+  /// **'Altro profilo di {name}'**
+  String artistOtherProfileOf(String name);
 
   /// No description provided for @artistSeparate.
   ///

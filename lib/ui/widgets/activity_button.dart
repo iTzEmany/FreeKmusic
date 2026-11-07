@@ -13,6 +13,8 @@ class ActivityButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final n = ref.watch(activityProvider.select((a) => a.running.length));
+    // Only waiting or paused lines: a still ring, an endless one repaints at 120 fps for nothing.
+    final working = ref.watch(activityProvider.select((a) => a.running.any((i) => !i.waiting && !i.paused)));
     if (n == 0) return const SizedBox.shrink();
     final cc = context.cc;
     final label = context.l10n.activityRunning(n);
@@ -46,6 +48,7 @@ class ActivityButton extends ConsumerWidget {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
+                      value: working ? null : 0.25,
                       strokeWidth: 2,
                       color: cc.accentSoft,
                     ),

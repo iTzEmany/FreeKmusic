@@ -18,6 +18,7 @@ import '../../widgets/track_row_selection.dart';
 import '../library/album_detail_screen.dart' show collectionMeta;
 import 'tags_sheet.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../theme/tokens.dart';
 
 /// The user's tags with how many tracks each one has; a tap opens its tracks.
 class TagsScreen extends ConsumerWidget {
@@ -48,6 +49,7 @@ class TagsScreen extends ConsumerWidget {
                   message: l.tagsEmpty,
                 )
               : ListView(
+                  padding: EdgeInsets.zero.withDock(context),
                   children: [
                     for (final s in tags)
                       ListTile(

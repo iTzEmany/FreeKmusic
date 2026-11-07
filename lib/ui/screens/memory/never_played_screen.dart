@@ -68,6 +68,7 @@ class NeverPlayedScreen extends ConsumerWidget {
                         ),
                         Expanded(
                           child: ListView.builder(
+                            padding: EdgeInsets.zero.withDock(context),
                             itemCount: list.length,
                             itemExtent: extent,
                             itemBuilder: (_, i) => LiveTrackRow(

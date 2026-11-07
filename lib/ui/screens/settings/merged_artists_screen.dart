@@ -35,7 +35,14 @@ class MergedArtistsScreen extends ConsumerWidget {
     final groups = ref.watch(mergedGroupsProvider).value ?? const <List<String>>[];
     final pairs = ref.watch(notSamePairsProvider).value ?? const <(String, String)>[];
     final names = ref.watch(artistNamesProvider).value ?? const <String, String>{};
-    String name(String id) => names[id] ?? id;
+    // A merged profile with no name known locally reads as «Altro profilo di <main>»; the id is the last resort.
+    final mainOf = {for (final g in groups) for (final id in g.skip(1)) id: g.first};
+    String name(String id) {
+      final known = names[id];
+      if (known != null) return known;
+      final main = names[mainOf[id]];
+      return main == null ? id : l.artistOtherProfileOf(main);
+    }
     void open(String id) =>
         ShellNav.open<void>(context, ArtistPageScreen(artist: YtmArtistRef(id: id, name: name(id))));
     final ops = ref.read(artistMergeOpsProvider);
@@ -54,7 +61,7 @@ class MergedArtistsScreen extends ConsumerWidget {
               help: l.mergedArtistsEmptyHelp,
             )
           : ListView(
-              padding: const EdgeInsets.only(bottom: CcDims.gap24),
+              padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
               children: [
                 for (final g in groups) ...[
                   Padding(

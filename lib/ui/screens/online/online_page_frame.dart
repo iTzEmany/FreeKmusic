@@ -62,7 +62,7 @@ class OnlinePageFrame extends ConsumerWidget {
           ],
         ),
         ...slivers,
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        SliverToBoxAdapter(child: SizedBox(height: 24 + context.dockInset)),
       ],
     );
     final body = Align(

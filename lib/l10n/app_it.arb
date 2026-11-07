@@ -1516,6 +1516,7 @@
   "themeDiscardTitle": "Scartare le modifiche?",
   "themeDiscardBody": "Le modifiche a questo tema non sono state salvate.",
   "themeDiscard": "Scarta",
+  "smartDiscardBody": "Le modifiche a questa playlist non sono state salvate.",
   "themePreview": "Anteprima",
   "themeResetColor": "Ripristina il colore",
   "themeContrastTitle": "Leggibilità",
@@ -4061,6 +4062,14 @@
   "artistMergePick": "Con quale profilo?",
   "mergedSheetTitle": "Profili uniti",
   "artistMainProfile": "Principale",
+  "artistOtherProfileOf": "Altro profilo di {name}",
+  "@artistOtherProfileOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "artistSeparate": "Separa",
   "artistSeparated": "Profilo separato.",
   "settingsMergedArtists": "Artisti uniti",

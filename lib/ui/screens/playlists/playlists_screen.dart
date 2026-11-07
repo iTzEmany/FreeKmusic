@@ -9,6 +9,7 @@ import '../../widgets/cover_image.dart';
 import '../import/import_flow.dart';
 import 'playlist_detail_screen.dart';
 import '../../widgets/async_body.dart';
+import '../../theme/tokens.dart';
 
 class PlaylistsScreen extends ConsumerWidget {
   const PlaylistsScreen({super.key});
@@ -44,6 +45,7 @@ class PlaylistsScreen extends ConsumerWidget {
         data: (items) => items.isEmpty
             ? EmptyState(icon: Icons.queue_music, message: l.noPlaylists)
             : ListView.builder(
+                padding: EdgeInsets.zero.withDock(context),
                 itemExtent: 64,
                 itemCount: items.length,
                 itemBuilder: (_, i) {

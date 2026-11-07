@@ -15,6 +15,7 @@ import '../../widgets/cc_app_bar.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/track_row.dart';
+import '../../theme/tokens.dart';
 
 String enrichPartLabel(AppLocalizations l, EnrichPart p) => switch (p) {
   EnrichPart.meta => l.enrichPartMeta,
@@ -73,6 +74,7 @@ class EnrichRoundScreen extends ConsumerWidget {
                 if (round.none.isNotEmpty) ...[l.enrichRoundNone, ...round.none],
               ];
               return ListView.builder(
+                padding: EdgeInsets.zero.withDock(context),
                 itemCount: items.length,
                 itemBuilder: (context, i) {
                   final item = items[i];

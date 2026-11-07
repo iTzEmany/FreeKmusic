@@ -45,6 +45,24 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('only waiting lines: the ring stands still, no frame is scheduled', (tester) async {
+    final h = await pump(
+      tester,
+      const ActivityState([
+        ActivityItem(kind: ActivityKind.enrichBackground, key: 'enrichBackground', name: null, waiting: true),
+      ], []),
+    );
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a working line keeps the ring turning', (tester) async {
+    final h = await pump(tester, busy);
+    expect(tester.binding.hasScheduledFrame, isTrue);
+    await h.dispose(tester);
+  });
+
   testWidgets('TalkBack: the chip reads «N attività in corso», the sheet reads a percentage', (tester) async {
     final handle = tester.ensureSemantics();
     final h = await pump(tester, busy);

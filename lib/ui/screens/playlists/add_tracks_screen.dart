@@ -109,6 +109,7 @@ class _AddTracksScreenState extends ConsumerState<AddTracksScreen> {
                           );
                         }
                         return ListView.builder(
+                          padding: EdgeInsets.zero.withDock(context),
                           itemExtent: trackRowExtentOf(context, false),
                           itemCount: tracks.length,
                           itemBuilder: (_, i) {

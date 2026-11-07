@@ -69,6 +69,33 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('album page: the last song clears the dock height (extendBody padding)', (tester) async {
+    final long = YtmAlbum(
+      browseId: 'MPREb_long',
+      title: 'Long',
+      artist: _pink,
+      kindLabel: 'Album',
+      tracks: [for (var i = 0; i < 30; i++) YtmAlbumTrack(i + 1, ytmSong('l$i', 'Long song $i', seconds: 100 + i))],
+    );
+    final h = await show(
+      tester,
+      Builder(
+        builder: (c) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(padding: const EdgeInsets.only(bottom: 90)),
+          child: const OnlineAlbumScreen(browseId: 'MPREb_long'),
+        ),
+      ),
+      [onlineAlbumProvider.overrideWith((ref, id) async => CatalogResult(long, DateTime(2026, 10, 22)))],
+    );
+    final pos = tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    for (var i = 0; i < 4; i++) {
+      pos.jumpTo(pos.maxScrollExtent);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    expect(tester.getRect(find.text('Long song 29')).bottom, lessThanOrEqualTo(1400.0 - 90));
+    await h.dispose(tester);
+  });
+
   testWidgets('long song list shows every song', (tester) async {
     final h = await show(
       tester,

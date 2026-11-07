@@ -216,7 +216,7 @@ class SearchSectionScreen extends ConsumerWidget {
           : ListView.builder(
               itemCount: rows.length + 1,
               itemBuilder: (_, i) =>
-                  i < rows.length ? rows[i] : const SizedBox(height: 24),
+                  i < rows.length ? rows[i] : SizedBox(height: 24 + context.dockInset),
             ),
     );
   }

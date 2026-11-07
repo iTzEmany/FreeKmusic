@@ -13,6 +13,7 @@ import '../../widgets/async_body.dart' show RowsLoading;
 import '../../widgets/empty_state.dart';
 import '../online/online_song_row.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../theme/tokens.dart';
 
 /// Newest first; waits for the file to be read.
 final suggestionRecordsProvider = FutureProvider.autoDispose<List<SuggestionRecord>>((ref) async {
@@ -86,6 +87,7 @@ class SuggestionsScreen extends ConsumerWidget {
         data: (list) => list.isEmpty
             ? EmptyState(icon: Icons.cloud_outlined, message: l.suggestionsRecentEmpty)
             : ListView.builder(
+                padding: EdgeInsets.zero.withDock(context),
                 itemCount: list.length,
                 itemExtent: onlineRowExtentOf(context),
                 itemBuilder: (_, i) => _SuggestionRow(record: list[i]),

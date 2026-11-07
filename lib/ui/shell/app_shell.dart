@@ -231,7 +231,9 @@ class AppShell extends ConsumerWidget {
           children: [
             const SpeakerAwayNotice(),
             const JamInviteBanner(),
-            ShellDock(items: items, selected: index, onSelect: select),
+            // Own layer: the dot, ink and mini player repaint only the dock, and the
+            // engine can cache it while the page under it animates.
+            RepaintBoundary(child: ShellDock(items: items, selected: index, onSelect: select)),
           ],
         ),
       );

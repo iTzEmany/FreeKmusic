@@ -8,6 +8,7 @@ import '../../../providers/library_providers.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../theme/tokens.dart';
 
 class MissingTracksScreen extends ConsumerStatefulWidget {
   const MissingTracksScreen({super.key});
@@ -82,6 +83,7 @@ class _MissingTracksScreenState extends ConsumerState<MissingTracksScreen> {
               message: l.noMissingTracks,
             )
           : ListView.builder(
+              padding: EdgeInsets.zero.withDock(context),
               itemCount: items.length,
               itemBuilder: (_, i) {
                 final t = items[i];
