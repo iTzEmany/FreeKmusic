@@ -130,7 +130,9 @@ List<Track> smartSearch(
     }
     final byPlays = b.$2.playCount.compareTo(a.$2.playCount);
     if (byPlays != 0) return byPlays;
-    return a.$2.title.toLowerCase().compareTo(b.$2.title.toLowerCase());
+    final byTitle = a.$2.title.toLowerCase().compareTo(b.$2.title.toLowerCase());
+    // Dart's sort is not stable: the id keeps equal titles in one order.
+    return byTitle != 0 ? byTitle : a.$2.id.compareTo(b.$2.id);
   });
   return [for (final s in scored) s.$2];
 }

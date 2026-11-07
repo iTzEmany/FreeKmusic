@@ -71,6 +71,15 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('a merged profile with no known name reads as «Altro profilo di <principale>»', (tester) async {
+    final (h, _) = await open(tester, seed: (db) async {
+      await db.into(db.followedArtists).insert(FollowedArtistsCompanion.insert(ytmId: 'UCa', name: 'Main Name'));
+    });
+    expect(find.text('Altro profilo di Main Name'), findsNWidgets(2));
+    expect(find.text('UCb'), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets('nothing merged: a clear empty state', (tester) async {
     final (h, _) = await open(tester, data: false);
     expect(find.text('Nessun artista unito.'), findsOneWidget);

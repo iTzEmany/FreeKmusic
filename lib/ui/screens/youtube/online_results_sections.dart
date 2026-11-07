@@ -36,8 +36,8 @@ class LibraryTracksSection extends ConsumerWidget {
 
   final String query;
 
-  /// The library tracks of the hidden online rows come first, even when the
-  /// text search does not find them, so «N nascosti» never stands alone.
+  /// The library tracks of the hidden online rows the text search does not find
+  /// come after its results, so «N nascosti» does not stand alone on a short list.
   final OwnedSplit? owned;
 
   static const _preview = 3;
@@ -49,12 +49,18 @@ class LibraryTracksSection extends ConsumerWidget {
     final extra = o == null || o.matchIds.isEmpty
         ? const <Track>[]
         : ref.watch(ownedTracksProvider(o)).value ?? const <Track>[];
-    final extraIds = {for (final t in extra) t.id};
-    final tracks = [
-      ...extra,
-      for (final t in byText ?? const <Track>[])
-        if (!extraIds.contains(t.id)) t,
-    ];
+    // The text search's order, which «Mostra tutti» shows too, so the preview is its
+    // first rows; hidden duplicates the text misses follow, in a fixed order.
+    final found = byText ?? const <Track>[];
+    final foundIds = {for (final t in found) t.id};
+    final missed = [
+      for (final t in extra)
+        if (!foundIds.contains(t.id)) t,
+    ]..sort((a, b) {
+        final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+      });
+    final tracks = [...found, ...missed];
     if (tracks.isEmpty) return const SizedBox.shrink();
     final l = context.l10n;
     final compact = ref.watch(settingsProvider.select((s) => s.compactMode));

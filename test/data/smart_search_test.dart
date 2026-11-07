@@ -57,6 +57,15 @@ void main() {
     track(5, 'Radio Ga Ga', artist: 'Queen', album: 'The Works', genre: 'Rock', year: 1984),
   ];
 
+  test('equal scores and titles keep one order whatever the index order', () {
+    final a = track(7, 'Same', artist: 'Dylan'), b = track(3, 'Same', artist: 'Dylan');
+    List<int> ids(List<Track> t) => [
+          for (final x in smartSearch(SearchIndex(t, const {}), 'dylan', nowMs: _now)) x.id,
+        ];
+    expect(ids([a, b]), [3, 7]);
+    expect(ids([b, a]), [3, 7]);
+  });
+
   test('one word matches title, artist, album, genre and year', () {
     expect(find(lib, 'opera'), ['Bohemian Rhapsody']);
     expect(find(lib, 'country'), ['Queen of Hearts']);

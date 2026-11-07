@@ -279,16 +279,14 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a hidden duplicate the text search finds too is listed once, first', (
+  testWidgets('a hidden duplicate the text search finds too is listed once, in the text search order', (
     tester,
   ) async {
     await open(tester);
     await emit(tester, best: [_row('dup', 'Song 3')]);
-    expect(find.text('Song 3'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Song 3')).dy,
-      lessThan(tester.getTopLeft(find.text('Song 0')).dy),
-    );
+    // The preview is the first three of the text search, not the duplicate first.
+    expect(find.text('Song 3'), findsNothing);
+    expect(find.text('Song 0'), findsOneWidget);
     await h.dispose(tester);
   });
 

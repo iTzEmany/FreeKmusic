@@ -311,6 +311,31 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('Back with edits asks first; «Annulla» stays, «Scarta» leaves; untouched leaves at once', (tester) async {
+      await openEditor(tester);
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(SmartPlaylistEditor), findsNothing, reason: 'nothing typed: no question');
+      await tester.tap(find.text('open'));
+      await _settle(tester);
+      await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Mia');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await _settle(tester);
+      expect(find.text('Scartare le modifiche?'), findsOneWidget);
+      await tester.tap(find.text('Annulla'));
+      await _settle(tester);
+      expect(find.byType(SmartPlaylistEditor), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await _settle(tester);
+      await tester.tap(find.text('Scarta'));
+      await _settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(SmartPlaylistEditor), findsNothing);
+      await h.dispose(tester);
+    });
+
     testWidgets('an existing playlist with an empty rule still saves (rename, order, limit)', (tester) async {
       final id = await openEditor(tester, rules: '');
       expect(tester.widget<FilledButton>(saveButton()).onPressed, isNotNull);

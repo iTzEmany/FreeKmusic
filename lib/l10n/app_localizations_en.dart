@@ -2380,6 +2380,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDiscard => 'Discard';
 
   @override
+  String get smartDiscardBody =>
+      'The changes to this playlist have not been saved.';
+
+  @override
   String get themePreview => 'Preview';
 
   @override
@@ -6623,6 +6627,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get artistMainProfile => 'Main';
+
+  @override
+  String artistOtherProfileOf(String name) {
+    return 'Other profile of $name';
+  }
 
   @override
   String get artistSeparate => 'Split';
