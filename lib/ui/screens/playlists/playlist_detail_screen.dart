@@ -135,6 +135,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       PlaylistSort.album => l.sortAlbum,
       PlaylistSort.year => l.sortYear,
       PlaylistSort.added => l.sortAddedRecently,
+      PlaylistSort.recent => l.sortRecent,
+      PlaylistSort.plays => l.sortMostPlayed,
       PlaylistSort.duration => l.sortDuration,
     };
     showSortSheet<PlaylistSort>(
@@ -228,7 +230,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final playCtx = PlayContext(PlayContextKind.playlist, _name);
-    final coverKeys = playlistCoverKeys(custom, tracks.map((t) => t.coverKey));
+    // The mosaic follows the personal order, never the view order (D-424).
+    final coverKeys = playlistCoverKeys(custom, stored.map((t) => t.coverKey));
     final durationMs = tracks.fold<int>(0, (a, t) => a + t.durationMs);
     final extent = trackRowExtentOf(context, compact);
     final key = SelectionKey.playlistOf(id);

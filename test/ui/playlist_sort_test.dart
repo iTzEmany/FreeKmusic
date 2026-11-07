@@ -2,13 +2,14 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
 import 'package:codecore/ui/screens/playlists/playlist_order.dart';
+import 'package:codecore/ui/widgets/playlist_cover.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 
-Track _t(int i, String? title, {int year = 0, int added = 0, int duration = 0, String? artist, String? album}) => Track(
+Track _t(int i, String? title, {int plays = 0, int? last, int year = 0, int added = 0, int duration = 0, String? artist, String? album}) => Track(
       id: i,
       path: '/$i',
       title: title ?? '',
@@ -28,7 +29,8 @@ Track _t(int i, String? title, {int year = 0, int added = 0, int duration = 0, S
       isFavorite: false,
       kind: 0,
       missing: false,
-      playCount: 0,
+      playCount: plays,
+      lastPlayedAt: last,
       userEdited: false,
     );
 
@@ -67,6 +69,51 @@ void main() {
     expect(ids(PlaylistOrder.parse('year:desc'), src), [2, 1, 3, 0]);
     expect(ids(PlaylistOrder.parse('duration:asc'), src), [1, 2, 3, 0]);
     expect(ids(PlaylistOrder.parse('duration:desc'), src), [3, 2, 1, 0]);
+  });
+
+  test('recent and plays: never played last, bigger first, ties keep the personal order', () {
+    final src = [
+      _t(0, 'a', plays: 2, last: 50),
+      _t(1, 'b'),
+      _t(2, 'c', plays: 9, last: 90),
+      _t(3, 'd', plays: 2, last: 50),
+    ];
+    expect(ids(PlaylistOrder.parse('recent:desc'), src), [2, 0, 3, 1]);
+    expect(ids(PlaylistOrder.parse('recent:asc'), src), [0, 3, 2, 1]);
+    expect(ids(PlaylistOrder.parse('plays:desc'), src), [2, 0, 3, 1]);
+    expect(ids(PlaylistOrder.parse('plays:asc'), src), [1, 0, 3, 2]);
+    expect(PlaylistSort.recent.ascendingByDefault, isFalse);
+    expect(PlaylistSort.plays.ascendingByDefault, isFalse);
+    expect(PlaylistOrder.parse('plays:desc').sort, PlaylistSort.plays);
+  });
+
+  testWidgets('the mosaic keeps the personal order whatever the view order', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final id = (await tester.runAsync(() async {
+      final all = await h.db.select(h.db.tracks).get();
+      for (final t in all) {
+        await (h.db.update(h.db.tracks)..where((x) => x.id.equals(t.id)))
+            .write(TracksCompanion(coverKey: Value('c${t.id}')));
+      }
+      final repo = PlaylistRepository(h.db);
+      final id = await repo.create('Notte');
+      await repo.addTracks(id, [for (final t in all) t.id]);
+      await h.store.writeSettings(h.store
+          .readSettings()
+          .copyWith(playlistSorts: {'$id': 'title:desc'}));
+      return id;
+    }))!;
+    await h.pump(tester,
+        PlaylistDetailScreen(playlist: Playlist(id: id, name: 'Notte', createdAt: 0, updatedAt: 0)));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    final first4 = [for (final t in (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.take(4)) 'c${t.id}'];
+    expect(tester.widget<PlaylistCover>(find.byType(PlaylistCover).first).coverKeys, first4);
+    await h.dispose(tester);
   });
 
   test('equal keys keep the personal order, also descending, on a long list', () {

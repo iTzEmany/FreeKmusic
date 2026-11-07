@@ -2200,6 +2200,30 @@ abstract class AppLocalizations {
   /// **'Numero di brani'**
   String get sortTrackCount;
 
+  /// No description provided for @sortRecentShort.
+  ///
+  /// In it, this message translates to:
+  /// **'Recenti'**
+  String get sortRecentShort;
+
+  /// No description provided for @sortAddedShort.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiunti'**
+  String get sortAddedShort;
+
+  /// No description provided for @sortTrackCountShort.
+  ///
+  /// In it, this message translates to:
+  /// **'N. brani'**
+  String get sortTrackCountShort;
+
+  /// No description provided for @sortMostPlayedShort.
+  ///
+  /// In it, this message translates to:
+  /// **'Più ascoltati'**
+  String get sortMostPlayedShort;
+
   /// No description provided for @sortAscending.
   ///
   /// In it, this message translates to:

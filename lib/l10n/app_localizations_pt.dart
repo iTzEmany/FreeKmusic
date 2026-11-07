@@ -1264,6 +1264,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get sortTrackCount => 'Número de faixas';
 
   @override
+  String get sortRecentShort => 'Recentes';
+
+  @override
+  String get sortAddedShort => 'Adicionados';
+
+  @override
+  String get sortTrackCountShort => 'Faixas';
+
+  @override
+  String get sortMostPlayedShort => 'Mais ouvidas';
+
+  @override
   String get sortAscending => 'Crescente';
 
   @override
