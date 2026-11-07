@@ -1,0 +1,119 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1500"><title>Mockup Daylist</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css"><style>
+body{min-width:0;padding:32px 40px 80px}.wrap{max-width:1500px}.row{gap:32px}.cap,.note{max-width:360px}
+.prima-card{width:360px;border:1px solid #CFC8DC;border-radius:24px;padding:20px 24px;background:#fff;color:#1B1626}
+.prima-card p{font-size:14px;margin-bottom:8px}.prima-card p:last-child{margin-bottom:0}.prima-card b{color:#5B2BB5}
+.demo{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 24px;max-width:1280px}
+.dbtn{min-height:48px;padding:0 16px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:700 14px/1 Figtree,sans-serif;cursor:pointer}
+.dbtn[aria-pressed=true]{background:#5B2BB5;color:#fff}
+.dbtn:focus-visible,.dev button:focus-visible,.dev a:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.dbtn small{display:block;font:500 12px/1.2 Figtree,sans-serif;margin-top:2px}
+.dbg{margin:0 0 24px;max-width:1280px;padding:12px 16px;border-radius:12px;background:#fff;border:1px solid #CFC8DC;font-size:14px;color:#1B1626}.dbg b{color:#5B2BB5}
+.hrs{border-collapse:collapse;margin-top:8px;font-size:13px}.hrs td{padding:2px 14px 2px 0}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.dock.blur{background:rgba(29,22,48,.68);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.sq{display:block;width:52px;height:52px;border-radius:var(--r-list);flex:none}
+.blk{margin:0 16px;padding:4px 0}.blk.box{background:var(--s1);border-radius:var(--r-card)}.blk .li{padding:6px 12px}.blk .li::after{display:none}
+.hero{margin:8px 16px 0;padding:16px;background:var(--s1);border-radius:var(--r-card)}
+.hero h2{font:var(--display);letter-spacing:-.02em}
+.hero .hr{display:flex;align-items:center;gap:16px;margin-top:8px}.hero p{font:var(--small);color:var(--muted);flex:1}
+.dev .pc{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+/* daylist card */
+.dl{margin:16px 16px 0;background:var(--s1);border-radius:var(--r-card);padding:12px;display:flex;gap:12px;align-items:center;position:relative;width:calc(100% - 32px);text-align:left}
+.dl .cv{width:88px;height:88px;border-radius:var(--r-grid);flex:none;display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.dl .cv i{display:block}
+.dl .tx{flex:1;min-width:0}
+.dl .k{font:var(--small);color:var(--accent-soft)}
+.dl .t{font:var(--body-l);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dl .s{font:var(--small);color:var(--muted);margin-top:2px}
+.dl .pc{margin-right:-2px}
+.cvbig{width:112px;height:112px;border-radius:var(--r-card);flex:none;display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.dh{display:flex;gap:16px;padding:8px 16px 0}
+.dh .tx{min-width:0;display:flex;flex-direction:column;justify-content:space-between}
+.dh h2{font:600 17px/1.25 Unbounded,sans-serif;letter-spacing:-.01em}
+.dh .s{font:var(--small);color:var(--muted)}
+.gch{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px 0}
+.gch span{font:var(--small);color:var(--accent-soft);background:var(--s2);border-radius:var(--r-card);padding:5px 10px}
+.acts{display:flex;align-items:center;gap:8px;padding:12px 16px 0}
+.upd{display:flex;align-items:center;gap:8px;margin:12px 16px 0;padding:10px 12px;background:var(--s1);border-radius:var(--r-card);font:var(--small);color:var(--muted)}
+.upd .i{width:20px;height:20px;color:var(--accent-soft)}
+.upd b{color:var(--text);font-weight:600}
+.li .sg{display:flex;align-items:center;gap:4px;font:var(--small);color:var(--accent-soft);white-space:nowrap}
+.li .sg .i{width:16px;height:16px}
+.li .t2{display:flex;align-items:center;gap:8px}
+.off{margin:16px;padding:16px;border:1px dashed var(--s3);border-radius:var(--r-card);font:var(--body);color:var(--muted)}
+.off b{display:block;color:var(--text);font:var(--body-l);margin-bottom:4px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+<symbol id="act" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 9.5a4.3 4.3 0 0 1 0 8.5z"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+</defs></svg>
+<div class="pg-h"><h1>Daylist</h1><p>Una playlist da 50 brani che cambia da sola a ogni fascia del giorno: card in Home e schermata di dettaglio.</p></div>
+<div class="nav"><a href="indice.html">Indice</a><a href="daylist.html">Daylist</a><a href="daylist-impostazioni.html">Daylist · impostazioni</a></div>
+<div class="wrap">
+<div class="dbg"><b>Provalo.</b> I pulsanti scelgono la fascia mostrata nei due telefoni (nome, generi, brani, ora del prossimo cambio). «Fascia spenta» mostra la Home senza card.
+<table class="hrs" aria-label="Orari proposti delle fasce"><tbody id="hrs"></tbody></table>
+<p style="margin-top:8px"><b>Orari proposti</b> (modificabili in Impostazioni → Daylist): ogni fascia dura fino all'inizio della successiva; la daylist si rigenera all'inizio della fascia. Il primo avvio dopo l'inizio della fascia la rigenera subito, se l'app era chiusa.</p></div>
+<div class="demo" id="demo" role="group" aria-label="Fascia mostrata"></div>
+<div class="row">
+<div class="col"><h2 class="cap">Prima (oggi)</h2><div class="prima-card"><p>Non esiste una playlist legata all'ora: Home ha Riprendi, Più ascoltati e Riscopri (<b>home_sections.dart</b>, <b>resume_rows.dart</b>), tutte uguali a qualsiasi ora.</p><p>Lo storico con ora c'è già (<b>Plays.playedAt</b>, <b>stats_queries.dart:321-337</b>) ma nessuno lo usa per proporre musica (F-115).</p><p>I suggeriti online esistono in Shuffle+ e nei mix di genere con l'icona nuvola e «Suggerito» (<b>suggested_info.dart:32-40</b>, <b>genre_screen.dart:143</b>): la daylist li riusa uguali.</p></div>
+<div class="ann" style="margin-top:24px;max-width:360px"><h2 class="cap">Note</h2><ol>
+<li><b>Card in Home, dopo «Riprendi» (D-433)</b><span>Riprendi resta il primo gesto (riprendere ciò che stavo facendo); la daylist è la proposta «adesso». Un tocco sulla card apre il dettaglio, il tondo viola riproduce subito.</span></li>
+<li><b>Nome «Fascia · generi» (D-440)</b><span>Fascia e al massimo 3 generi, i più presenti nei 50 brani; mai meno di 3 generi diversi nella lista.</span></li>
+<li><b>Suggeriti marcati come oggi (D-437)</b><span>Nuvola + «Suggerito» in viola chiaro, quota 30% di serie (15 brani su 50), regolabile per fascia. Il menu del brano ha «Non mi piace» come ovunque.</span></li>
+<li><b>«Si aggiorna alle…» (D-433)</b><span>Riga fissa sotto Play/Shuffle: dice quando cambia e a quale fascia. Nessun pulsante «aggiorna»: cambia da sola.</span></li>
+<li><b>Fascia spenta = niente card</b><span>Se la fascia è disattivata in Impostazioni la card sparisce e la Home torna com'è oggi; l'ingranaggio nel dettaglio porta a Impostazioni → Daylist.</span></li>
+<li><b>Accessibilità</b><span>La card è un solo bersaglio con etichetta «Daylist: Tarda sera, lo-fi, jazz, soul. 50 brani. Si aggiorna alle 22:00»; il tondo play ha la sua («Riproduci la daylist»). Righe suggerite: «Suggerito, …» in lettura.</span></li></ol></div></div>
+<div class="col"><h2 class="cap">Dopo · Home</h2><div class="dev phone" id="phH"></div></div>
+<div class="col"><h2 class="cap">Dopo · dettaglio daylist</h2><div class="dev phone" id="phD"></div></div>
+</div></div>
+<script>
+const S=[
+{n:'Mattina presto',h:5,g:['folk','cantautorato','jazz'],c:[3,5,7,1],t:[['Blowin\' in the Wind','Bob Dylan'],['Cavalli bianchi','Calcutta'],['La canzone di Marinella','Fabrizio De André'],['Sunday Morning','Velvet Underground'],['Ho visto anche degli zingari felici','Nicola Di Bari'],['Heart of Gold','Neil Young'],['Fiori rosa fiori di pesco','Lucio Battisti'],['Coffee','Beabadoobee']],s:[3,7]},
+{n:'Tarda mattinata',h:9,g:['indie','pop','funk'],c:[5,2,1,7],t:[['Do I Wanna Know?','Arctic Monkeys'],['Pesto','Marco Castello'],['Tutta l\'Italia','Gazzelle'],['Dreams','Fleetwood Mac'],['Sedotto e Abbandonato','Marco Castello'],['Take Me Out','Franz Ferdinand'],['Cinema','Calcutta'],['Electric Feel','MGMT']],s:[2,6]},
+{n:'Primo pomeriggio',h:13,g:['rock','blues','soul'],c:[2,4,6,5],t:[['Fortunate Son','Creedence Clearwater Revival'],['Born on the Bayou','Creedence Clearwater Revival'],['Go Your Own Way','Fleetwood Mac'],['Albatross','Fleetwood Mac'],['Gimme Shelter','The Rolling Stones'],['Pride and Joy','Stevie Ray Vaughan'],['Green Onions','Booker T. & the M.G.\'s'],['Black Magic Woman','Santana']],s:[4,6]},
+{n:'Tardo pomeriggio',h:16,g:['cantautorato','pop','folk'],c:[4,1,3,7],t:[['Emozioni','Lucio Battisti'],['Gaetano','Calcutta'],['Un\'avventura','Lucio Battisti'],['Mattanza','Daniela Pes'],['Il tempo di morire','Lucio Battisti'],['Luca lo stesso','Luca Carocci'],['Rumours','Fleetwood Mac'],['Rocky Raccoon','The Beatles']],s:[3,6]},
+{n:'Sera',h:19,g:['funk','soul','indie'],c:[6,2,5,4],t:[['Sedotto e Abbandonato','Marco Castello'],['Dreams','Fleetwood Mac'],['Superstition','Stevie Wonder'],['Cercando un nome','Luca Carocci'],['Suspicious Minds','Elvis Presley'],['Cherry Wine','Hozier'],['Redbone','Childish Gambino'],['A Love Supreme','John Coltrane']],s:[2,5]},
+{n:'Tarda sera',h:22,g:['lo-fi','jazz','soul'],c:[1,6,3,7],t:[['Blue in Green','Miles Davis'],['Dreams','Fleetwood Mac'],['Chet\'s Romance','Chet Baker'],['Feather','Nujabes'],['Soul Kitchen','The Doors'],['Pesto','Marco Castello'],['Cherry','Lana Del Rey'],['Hold On','Alabama Shakes']],s:[3,5]},
+{n:'Notte',h:0,g:['ambient','elettronica','lo-fi'],c:[1,7,3,6],t:[['An Ending (Ascent)','Brian Eno'],['Svefn-g-englar','Sigur Rós'],['Teardrop','Massive Attack'],['Weightless','Marconi Union'],['Open Eye Signal','Jon Hopkins'],['Mattanza','Daniela Pes'],['Intro','The xx'],['Re: Stacks','Bon Iver']],s:[2,5]},
+{n:'Tarda notte',h:3,g:['classica','ambient','jazz'],c:[7,1,6,3],t:[['Gymnopédie No. 1','Erik Satie'],['Clair de Lune','Claude Debussy'],['Nuvole bianche','Ludovico Einaudi'],['Kind of Blue','Miles Davis'],['Spiegel im Spiegel','Arvo Pärt'],['Nocturne Op. 9 No. 2','Chopin'],['Avril 14th','Aphex Twin'],['Metamorphosis Two','Philip Glass']],s:[4,7]}
+];
+const pad=n=>String(n).padStart(2,'0'),hh=h=>pad(h)+':00';
+const nm=s=>s.n+' · '+s.g.join(', ');
+const cv=(s,cl)=>`<span class="${cl}" aria-hidden="true">${s.c.map(k=>`<i class="c${k}"></i>`).join('')}</span>`;
+const sb=s=>`<div class="sb"><span>${hh(s.h===0?0:s.h)==='00:00'?'00:20':pad(s.h)+':20'}</span><span class="r"><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><span>82%</span></span></div>`;
+const dock=`<div class="dock blur"><div class="tabs"><a class="tab on"><span class="ic"><svg class="i"><use href="#home"/></svg></span>Home</a><a class="tab"><span class="ic"><svg class="i"><use href="#search"/></svg></span>Cerca</a><a class="tab"><span class="ic"><svg class="i"><use href="#lib"/></svg></span>Libreria</a></div></div>`;
+function next(i){return S[(i+1)%8]}
+function home(i,off){const s=S[i];
+ const card=off?'':`<div class="dl" role="group"><button style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;text-align:left;min-height:88px" aria-label="Daylist: ${nm(s)}. 50 brani. Si aggiorna alle ${hh(next(i).h)}"><span class="cv">${s.c.map(k=>`<i class="c${k}"></i>`).join('')}</span><span class="tx"><span class="k" style="display:block">Daylist · adesso</span><span class="t" style="display:-webkit-box">${nm(s)}</span><span class="s" style="display:block">50 brani · cambia alle ${hh(next(i).h)}</span></span></button><button class="pc" aria-label="Riproduci la daylist"><svg class="i f"><use href="#play"/></svg></button></div>`;
+ return sb(s)+`<div class="scr"><div class="hd"><h1>Buonanotte</h1><button class="btn m" aria-label="Registro attività"><svg class="i"><use href="#act"/></svg></button><button class="btn m" aria-label="Impostazioni"><svg class="i"><use href="#set"/></svg></button></div>
+<div class="hero"><h2>Casuale<br>su tutto</h2><div class="hr"><p>2 534 brani · 163 h</p><button class="pc" aria-label="Riproduci tutta la libreria"><svg class="i f"><use href="#play"/></svg></button><button class="btn m" aria-label="Riproduzione casuale"><svg class="i"><use href="#shuf"/></svg></button></div></div>
+<div class="sec"><h2>Riprendi</h2></div><div class="blk box"><div class="li"><span class="sq cv c1"></span><div class="tx"><div class="t">Bayou Country</div><div class="s">Creedence Clearwater Revival · album</div><div class="seek" style="height:4px;margin-top:6px;max-width:160px"><i style="width:40%"></i></div></div></div><div class="li"><span class="sq cv c6"></span><div class="tx"><div class="t">In macchina</div><div class="s">Playlist · mancano 2 minuti</div><div class="seek" style="height:4px;margin-top:6px;max-width:160px"><i style="width:72%"></i></div></div></div></div>
+${off?'<div class="off"><b>Nessuna daylist in questa fascia</b>'+s.n+' è spenta in Impostazioni → Daylist: la Home resta com\'è oggi.</div>':card}
+<div class="sec"><h2>Più ascoltati</h2><a class="a">Tutti</a></div><div class="blk box"><div class="li"><span class="sq cv c3"></span><div class="tx"><div class="t">Dreams</div><div class="s">Fleetwood Mac · 42 ascolti</div></div></div><div class="li"><span class="sq cv c5"></span><div class="tx"><div class="t">Emozioni</div><div class="s">Lucio Battisti · 38 ascolti</div></div></div></div>
+<div class="sec"><h2>Riscopri</h2></div><div class="blk box"><div class="li"><span class="sq cv c4"></span><div class="tx"><div class="t">Il tempo di morire</div><div class="s">Lucio Battisti · da 8 mesi</div></div></div></div></div>`+dock}
+function detail(i){const s=S[i],n=next(i);
+ const rows=s.t.map((t,k)=>{const sg=s.s.includes(k);return `<div class="li${k==7?' last':''}"><span class="sq cv c${s.c[k%4]}"></span><div class="tx"><div class="t">${t[0]}</div><div class="s">${t[1]}</div></div>${sg?`<span class="sg" aria-label="Suggerito"><svg class="i"><use href="#cloud"/></svg>Suggerito</span>`:''}<button class="btn m" aria-label="Altre azioni per ${t[0]}"><svg class="i"><use href="#mv"/></svg></button></div>`}).join('');
+ return sb(s)+`<div class="scr"><div class="hd"><button class="btn" aria-label="Indietro"><svg class="i"><use href="#back"/></svg></button><h1>Daylist</h1><button class="btn m" aria-label="Impostazioni daylist"><svg class="i"><use href="#set"/></svg></button></div>
+<div class="dh">${cv(s,'cvbig')}<div class="tx"><h2>${nm(s)}</h2><div class="s">50 brani · 3 h 14 min<br>15 suggeriti da YouTube Music</div></div></div>
+<div class="gch" aria-label="Generi della daylist">${s.g.map(g=>`<span>${g}</span>`).join('')}<span>+4</span></div>
+<div class="acts"><button class="btnp"><svg class="i f"><use href="#play"/></svg>Riproduci</button><button class="btng"><svg class="i"><use href="#shuf"/></svg>Casuale</button></div>
+<div class="upd"><svg class="i"><use href="#clock"/></svg><span>Si aggiorna alle <b>${hh(n.h)}</b> con «${n.n}»</span></div>
+<div style="height:8px"></div>${rows}<div class="sec" style="min-height:40px"><span class="s" style="font:var(--small);color:var(--muted)">Altri 42 brani sotto</span></div></div>`+dock}
+let cur=5,offState=false;
+function draw(){document.getElementById('phH').innerHTML=home(cur,offState);document.getElementById('phD').innerHTML=detail(cur);
+ [...document.querySelectorAll('#demo button')].forEach(b=>b.setAttribute('aria-pressed',b.dataset.i==(offState?'off':cur)))}
+document.getElementById('demo').innerHTML=S.map((s,i)=>`<button class="dbtn" data-i="${i}" aria-pressed="false">${s.n}<small>${hh(s.h)}</small></button>`).join('')+`<button class="dbtn" data-i="off" aria-pressed="false">Fascia spenta<small>senza card</small></button>`;
+document.getElementById('demo').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.i==='off')offState=!offState;else{cur=+b.dataset.i;offState=false}draw()};
+document.getElementById('hrs').innerHTML=S.map((s,i)=>`<tr><td><b>${s.n}</b></td><td>${hh(s.h)} – ${hh(next(i).h)}</td></tr>`).join('');
+draw();
+</script></body></html>

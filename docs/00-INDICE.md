@@ -118,6 +118,14 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 95 | `fase-95-artisti-uniti.md` | Artisti con due profili YouTube Music |
 | 96 | `fase-96-podcast-scopri.md` | Podcast: Scopri (Apple) e programmi di YouTube Music |
 | 97 | `fase-97-chiusura-superfici.md` | Chiusura del refactor «superfici-e-ricerca» |
+| 98 | `fase-98-rete-ascolto.md` | Refactor «ascolto-quotidiano»: rete, formattazione di 4 file, script delle misure |
+| 99 | `fase-99-debito-artisti.md` | Debito: 429 unico, chiave artista, scaffali, paesi |
+| 100 | `fase-100-coda-simili-artista.md` | Coda di simili da Cerca, Play/Shuffle di tutti i brani dell'artista |
+| 101 | `fase-101-non-mi-piace.md` | «Non mi piace» brano o artista, player del suggerito |
+| 102 | `fase-102-podcast-senza-iscrizione.md` | Podcast senza iscrizione (v19), episodi in «Riprendi» |
+| 103 | `fase-103-testi-e-memoria.md` | Testi a mano, sincronia spegnibile, Memoria |
+| 104 | `fase-104-daylist.md` | Daylist a fasce orarie |
+| 105 | `fase-105-chiusura-ascolto.md` | Chiusura del refactor «ascolto-quotidiano» |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 

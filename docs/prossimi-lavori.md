@@ -139,6 +139,7 @@ Fuori dal perimetro della fase. Da valutare in una fase futura.
 Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti subito, qui c'è solo il debito.
 
 ### Media
+(Pianificate nella fase 99, refactor «ascolto-quotidiano», D-454.)
 - `countryArtistsOf` e `_countries()` (`TrackRepository`) si ricalcolano sul thread UI a ogni scrittura su `tracks`, senza debounce. Rimedio: debounce, o ricalcolo solo quando cambia `artist_countries`.
 - La logica «budget + pausa 429» è scritta tre volte (`artistMergeSearchProvider`, `mergeArtistWith` in `artist_picker_sheet.dart`, `smart_search`). Rimedio: un helper unico nei provider.
 - `mergeArtistShelves` e `groupShelvesProvider` stanno in `lib/ui` ma sono logica di dominio; la loro chiave è diversa da quella di `release_diff` e le pagine degli alias restano fuori dal budget. Rimedio: spostarli nei provider/servizi con la chiave di `release_diff`, e far passare le pagine dal budget.

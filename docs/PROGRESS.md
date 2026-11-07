@@ -1370,3 +1370,59 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 97.3 Review di architettura e debito
 - [x] 97.4 Documenti aggiornati
 - [x] 97.5 Controlli di fase
+
+## Fase 98 — Rete di sicurezza, formattazione e script delle misure (`fase-98-rete-ascolto.md`)
+- [ ] 98.1 `dart format` di 4 file (commit a parte)
+- [ ] 98.2 Script delle misure: Album da solo, scenari a gesti
+- [ ] 98.3 Caratterizzazione del debito (429, chiave artista, scaffali, paesi)
+- [ ] 98.4 Caratterizzazione del backup
+- [ ] 98.5 Controlli di fase
+
+## Fase 99 — Debito: 429, chiave artista, scaffali, paesi (`fase-99-debito-artisti.md`)
+- [ ] 99.1 Un solo «budget + pausa dopo un 429»
+- [ ] 99.2 Una sola chiave artista
+- [ ] 99.3 Scaffali dell'artista fuori da `lib/ui`
+- [ ] 99.4 Paesi senza ricalcolo a ogni scrittura
+- [ ] 99.5 Controlli di fase
+
+## Fase 100 — Coda di simili da Cerca e Play/Shuffle dell'artista (`fase-100-coda-simili-artista.md`)
+- [ ] 100.1 `RadioFill` estratto da `genre_mix`
+- [ ] 100.2 `playFromSearch`: brano + simili da libreria e online
+- [ ] 100.3 Tutti i brani dell'artista
+- [ ] 100.4 Controlli di fase
+
+## Fase 101 — «Non mi piace» brano o artista, player del suggerito (`fase-101-non-mi-piace.md`)
+- [ ] 101.1 `DislikeStore`
+- [ ] 101.2 `SuggestionGate`
+- [ ] 101.3 Foglio «brano o artista» con Annulla
+- [ ] 101.4 Impostazioni → «Non mi piace»
+- [ ] 101.5 Player di un suggerito
+- [ ] 101.6 Controlli di fase
+
+## Fase 102 — Podcast senza iscrizione e «Riprendi» con gli episodi (`fase-102-podcast-senza-iscrizione.md`)
+- [ ] 102.1 Schema v19: `podcasts.followed`
+- [ ] 102.2 Anteprima senza iscrizione
+- [ ] 102.3 «Riprendi» con gli episodi
+- [ ] 102.4 Controlli di fase
+
+## Fase 103 — Testi a mano, sincronia spegnibile, Memoria (`fase-103-testi-e-memoria.md`)
+- [ ] 103.1 Scrivi o incolla un testo
+- [ ] 103.2 «Testo sincronizzato» per brano
+- [ ] 103.3 Copertine delle playlist in Memoria
+- [ ] 103.4 Aprire una cartella
+- [ ] 103.5 Controlli di fase
+
+## Fase 104 — Daylist (`fase-104-daylist.md`)
+- [ ] 104.1 Fasce e tabella degli umori
+- [ ] 104.2 `DaylistBuilder`
+- [ ] 104.3 Provider e rigenerazione
+- [ ] 104.4 Card in Home e schermata
+- [ ] 104.5 Impostazioni → Daylist
+- [ ] 104.6 Controlli di fase
+
+## Fase 105 — Chiusura del refactor «ascolto-quotidiano» (`fase-105-chiusura-ascolto.md`)
+- [ ] 105.1 Metriche di arrivo
+- [ ] 105.2 Prova sul Mi A3 contro i mockup
+- [ ] 105.3 Review di architettura
+- [ ] 105.4 Documenti
+- [ ] 105.5 Controlli di fase
