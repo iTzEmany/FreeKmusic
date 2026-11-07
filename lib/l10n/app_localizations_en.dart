@@ -1259,6 +1259,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortTrackCount => 'Number of tracks';
 
   @override
+  String get sortRecentShort => 'Recent';
+
+  @override
+  String get sortAddedShort => 'Added';
+
+  @override
+  String get sortTrackCountShort => 'Tracks';
+
+  @override
+  String get sortMostPlayedShort => 'Most played';
+
+  @override
   String get sortAscending => 'Ascending';
 
   @override

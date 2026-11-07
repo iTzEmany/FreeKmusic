@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
@@ -19,6 +20,7 @@ import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,6 +38,37 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('the sort button label is not truncated at 360 dp, for every criterion and language',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    for (final locale in AppLocalizations.supportedLocales) {
+      for (final s in LibrarySort.values) {
+        await h.pump(
+          tester,
+          Scaffold(
+            body: LibraryToolbar(
+              countLabel: '2.120 elementi',
+              sort: s,
+              ascending: false,
+              grid: false,
+              onSort: (_, _) {},
+              onToggleGrid: () {},
+            ),
+          ),
+          locale: locale,
+        );
+        expect(tester.takeException(), isNull, reason: '$locale/$s');
+        final label = find.descendant(of: find.byType(InkWell), matching: find.byType(Text));
+        final p = tester.renderObject<RenderParagraph>(label);
+        expect(p.didExceedMaxLines, isFalse, reason: '$locale/$s');
+      }
+    }
+    await h.dispose(tester);
+  });
+
   Future<Harness> open(
     WidgetTester tester, {
     double width = 400,
@@ -107,7 +140,7 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('Cerca, disattivato|disabled')), findsNothing);
     expect(t.getRect(find.byType(TextField)).bottom, lessThanOrEqualTo(tabs.dy));
     // The sort row is closed, the tabs stay where they were and answer.
-    expect(find.text('Ascoltati di recente').hitTestable(), findsNothing);
+    expect(find.text('Recenti').hitTestable(), findsNothing);
     expect(
       find.ancestor(
         of: find.byType(LibraryToolbar),
@@ -132,7 +165,7 @@ void main() {
     await _settle(t);
     expect(find.byType(CcSearchField), findsNothing);
     expect(find.text('Libreria').hitTestable(), findsOneWidget);
-    expect(find.text('Ascoltati di recente').hitTestable(), findsOneWidget);
+    expect(find.text('Recenti').hitTestable(), findsOneWidget);
     sem.dispose();
     await h.dispose(t);
   });
@@ -242,7 +275,7 @@ void main() {
     final full = t.getRect(island).height;
     final tabsTop = t.getTopLeft(tabs).dy;
     expect(find.text('Libreria').hitTestable(), findsOneWidget);
-    expect(find.text('Ascoltati di recente').hitTestable(), findsOneWidget);
+    expect(find.text('Recenti').hitTestable(), findsOneWidget);
 
     await scrollBy(t, 60);
     final s1 = offset(t);
@@ -251,19 +284,19 @@ void main() {
     expect(tabsTop - t.getTopLeft(tabs).dy, closeTo(s1, 0.5));
     expect(full - t.getRect(island).height, closeTo(s1, 0.5));
     expect(find.text('Libreria').hitTestable(), findsNothing);
-    expect(find.text('Ascoltati di recente').hitTestable(), findsOneWidget);
+    expect(find.text('Recenti').hitTestable(), findsOneWidget);
 
     await scrollBy(t, 300);
     // Both gone, the tabs 56 up and still on screen and tappable.
     expect(full - t.getRect(island).height, closeTo(104, 0.5));
     expect(tabsTop - t.getTopLeft(tabs).dy, closeTo(56, 0.5));
-    expect(find.text('Ascoltati di recente').hitTestable(), findsNothing);
+    expect(find.text('Recenti').hitTestable(), findsNothing);
     expect(find.text('Playlist').hitTestable(), findsOneWidget);
 
     // Back up by a little: the sort row returns first, the title waits.
     await scrollBy(t, -70);
     expect(full - t.getRect(island).height, inInclusiveRange(28, 56));
-    expect(find.text('Ascoltati di recente').hitTestable(), findsOneWidget);
+    expect(find.text('Recenti').hitTestable(), findsOneWidget);
     expect(find.text('Libreria').hitTestable(), findsNothing);
 
     await scrollBy(t, -2000);
@@ -442,7 +475,7 @@ void main() {
     final h = await open(t, width: 900);
     expect(t.takeException(), isNull);
     final isl = t.getRect(find.byType(LibraryIsland));
-    for (final f in [find.text('Libreria'), find.text('Ascoltati di recente'), find.text('Tutto')]) {
+    for (final f in [find.text('Libreria'), find.text('Recenti'), find.text('Tutto')]) {
       final r = t.getRect(f);
       expect(r.top, greaterThanOrEqualTo(isl.top));
       expect(r.bottom, lessThanOrEqualTo(isl.bottom));
@@ -472,7 +505,7 @@ void main() {
     expect(t.getRect(log).bottom, lessThan(t.getTopLeft(find.byType(SegmentedBlocks<LibraryKind?>)).dy));
     for (final f in [
       find.descendant(of: find.byType(LibraryIsland), matching: find.byType(IconButton)),
-      find.ancestor(of: find.text('Ascoltati di recente'), matching: find.byType(InkWell)),
+      find.ancestor(of: find.text('Recenti'), matching: find.byType(InkWell)),
       find.ancestor(of: find.text('Playlist'), matching: find.byType(InkWell)),
     ]) {
       for (final e in f.evaluate()) {
@@ -560,7 +593,7 @@ void main() {
 
   testWidgets('sort sheet names last played and date added', (t) async {
     final h = await open(t);
-    await t.tap(find.text('Ascoltati di recente'));
+    await t.tap(find.text('Recenti'));
     await t.pumpAndSettle();
     expect(find.text('Aggiunti di recente'), findsOneWidget);
     await h.dispose(t);
@@ -568,18 +601,18 @@ void main() {
 
   testWidgets('sort menu switches to A–Z', (t) async {
     final h = await open(t);
-    await t.tap(find.text('Ascoltati di recente'));
+    await t.tap(find.text('Recenti'));
     await t.pumpAndSettle();
     await t.tap(find.text('Titolo A–Z').last);
     await t.pumpAndSettle();
     await _settle(t);
-    expect(find.text('Titolo A–Z'), findsOneWidget);
+    expect(find.text('Titolo'), findsOneWidget);
     await h.dispose(t);
   });
 
   testWidgets('sort sheet: track count not on the artists tab; «Più ascoltati» is saved descending', (t) async {
     final h = await open(t);
-    await t.tap(find.text('Ascoltati di recente'));
+    await t.tap(find.text('Recenti'));
     await t.pumpAndSettle();
     expect(find.text('Numero di brani'), findsOneWidget);
     await t.tap(find.text('Più ascoltati'));
@@ -601,7 +634,7 @@ void main() {
     await _settle(t);
     await t.tap(find.text('Artisti').first);
     await _settle(t);
-    await t.tap(find.text('Titolo A–Z'));
+    await t.tap(find.text('Titolo'));
     await t.pumpAndSettle();
     await t.tap(find.text('Decrescente'));
     await t.pumpAndSettle();
@@ -750,7 +783,7 @@ void main() {
     }
     await _settle(t);
     expect(find.text('A'), findsNothing);
-    await t.tap(find.text('Ascoltati di recente'));
+    await t.tap(find.text('Recenti'));
     await t.pumpAndSettle();
     await t.tap(find.text('Titolo A–Z').last);
     await t.pumpAndSettle();
@@ -851,7 +884,7 @@ void main() {
       await tab('Tutto');
       expect(order(everything), recentAll);
 
-      await t.tap(find.text('Ascoltati di recente'));
+      await t.tap(find.text('Recenti'));
       await t.pumpAndSettle();
       await t.tap(find.text('Titolo A–Z').last);
       await t.pumpAndSettle();

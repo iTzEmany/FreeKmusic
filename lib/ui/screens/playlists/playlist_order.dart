@@ -10,10 +10,12 @@ enum PlaylistSort {
   album,
   year,
   added,
+  recent,
+  plays,
   duration;
 
   bool get ascendingByDefault =>
-      this != year && this != added && this != duration;
+      this != year && this != added && this != duration && this != recent && this != plays;
 }
 
 /// A playlist's saved order, read from «criterion:asc|desc».
@@ -55,6 +57,9 @@ class PlaylistOrder {
       ],
       PlaylistSort.year => [(t) => number(t.year)],
       PlaylistSort.added => [(t) => number(t.addedAt)],
+      // Never played comes last, as in the Library.
+      PlaylistSort.recent => [(t) => t.lastPlayedAt],
+      PlaylistSort.plays => [(t) => t.playCount],
       _ => [(t) => number(t.durationMs)],
     };
     // Keys computed once per track, not once per comparison.

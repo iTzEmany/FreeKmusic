@@ -584,13 +584,13 @@ void main() {
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
     await _settle(tester);
-    await tester.tap(find.text('Ascoltati di recente'));
+    await tester.tap(find.text('Recenti'));
     await _settle(tester);
     await _choose(tester, 'Titolo A–Z');
     expect(
       find.descendant(
         of: find.byType(LibraryToolbar),
-        matching: find.text('Titolo A–Z'),
+        matching: find.text('Titolo'),
       ),
       findsOneWidget,
     );
@@ -602,7 +602,7 @@ void main() {
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
     await _settle(tester);
-    await tester.tap(find.text('Ascoltati di recente'));
+    await tester.tap(find.text('Recenti'));
     await _settle(tester);
     final marked = find.descendant(
       of: find.byType(BottomSheet),

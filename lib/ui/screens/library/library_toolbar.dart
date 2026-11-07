@@ -44,6 +44,17 @@ class LibraryToolbar extends StatelessWidget {
       LibrarySort.duration => l.sortDuration,
       LibrarySort.trackCount => l.sortTrackCount,
     };
+    // Short forms for the button, which shares its row with the count.
+    String shortName(LibrarySort s) => switch (s) {
+      LibrarySort.recent => l.sortRecentShort,
+      LibrarySort.added => l.sortAddedShort,
+      LibrarySort.alpha => l.sortTitle,
+      LibrarySort.artist => l.sortArtist,
+      LibrarySort.year => l.sortYear,
+      LibrarySort.plays => l.sortMostPlayedShort,
+      LibrarySort.duration => l.sortDuration,
+      LibrarySort.trackCount => l.sortTrackCountShort,
+    };
     void pickSort() => showSortSheet<LibrarySort>(
       context: context,
       choices: [
@@ -67,11 +78,8 @@ class LibraryToolbar extends StatelessWidget {
               style: theme.bodyMedium,
             ),
           ),
-          Flexible(
-            // Right-aligned: the flexible slot is half the row, sort sits by the grid button.
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Semantics(
+          // Not flexible: the button takes what it needs, the count gives way.
+          Semantics(
                 button: true,
                 label:
                     '${l.sortBy}: ${name(sort)}, ${ascending ? l.sortAscending : l.sortDescending}',
@@ -88,7 +96,7 @@ class LibraryToolbar extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            name(sort),
+                            shortName(sort),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.labelLarge,
@@ -108,8 +116,6 @@ class LibraryToolbar extends StatelessWidget {
                 ),
               ),
               ),
-            ),
-          ),
           IconButton(
             tooltip: grid ? l.viewAsList : l.viewAsGrid,
             icon: Icon(
