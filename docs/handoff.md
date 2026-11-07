@@ -1,3 +1,23 @@
+# Handoff — 2026-11-07 (refactor «ascolto-quotidiano» pianificato: fasi 98–105)
+
+## Stato
+**Refactor «ascolto-quotidiano» pianificato** (D-428…D-455): fasi 98–105 in `docs/fase-98…105-*.md`, spunte in `PROGRESS.md`, righe in `00-INDICE.md`. Contiene le funzioni chieste dall'utente il 7/11 (coda di simili da Cerca, Play/Shuffle dell'artista, «non mi piace» brano o artista, podcast senza iscrizione, «Riprendi» con gli episodi, testi a mano e sincronia spegnibile, Memoria, daylist) e il debito §6 «Media» di `prossimi-lavori.md`, lo script delle misure e la formattazione di 4 file.
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 98
+```
+
+## Da sapere
+- Analisi, scelte, architettura di arrivo, rete e metriche: `docs/refactor/ascolto-quotidiano/analisi.md` (F-103…F-122).
+- Mockup approvati (D-453): `docs/refactor/ascolto-quotidiano/mockup/indice.html` (10 schermate). Sono la specifica visiva.
+- Schema DB v19 solo nella fase 102 (`podcasts.followed`, D-435). Nessun pacchetto nuovo (D-442).
+- `dart format` solo sui 4 file della 98.1 e sui file toccati: gli altri ~495 file non formattati restano così (D-434).
+- Prove sul Mi A3 via adb, poi ripulire (D-455).
+- Domande e messaggi all'utente sempre in italiano.
+
+---
+
 # Handoff — 2026-11-05 (fase 87: rete del refactor superfici-e-ricerca; prima la 86, 85, 84)
 
 ## Stato
