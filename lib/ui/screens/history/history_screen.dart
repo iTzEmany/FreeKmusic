@@ -18,6 +18,7 @@ import '../settings/settings_screen.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../theme/tokens.dart';
 
 const _block = 200;
 const _headerExtent = 56.0;
@@ -139,6 +140,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               }
               return ListView.builder(
                 controller: _scroll,
+                padding: EdgeInsets.zero.withDock(context),
                 itemCount: items.length,
                 itemExtentBuilder: (i, _) =>
                     items[i] is HistoryEntry ? extent : _headerExtent,

@@ -240,6 +240,7 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
           child: ListView(
+            padding: EdgeInsets.zero.withDock(context),
             children: [
               if (!searchingNow && podcasts.isNotEmpty) ...[
                 SectionHeader(l.podcastYours),

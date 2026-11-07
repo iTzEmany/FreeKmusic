@@ -300,7 +300,7 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
           child: ListView(
-            padding: const EdgeInsets.all(CcDims.margin),
+            padding: const EdgeInsets.all(CcDims.margin).withDock(context),
             children: [
               TextField(
                 controller: _name,

@@ -62,6 +62,7 @@ class SecondOpinionLogScreen extends ConsumerWidget {
                   message: l.secondOpinionLogEmpty,
                 )
               : ListView.builder(
+                  padding: EdgeInsets.zero.withDock(context),
                   itemExtent: 84,
                   itemCount: log.length,
                   itemBuilder: (_, i) {

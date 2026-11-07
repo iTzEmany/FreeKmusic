@@ -216,7 +216,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
         if (log.entries.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(CcDims.margin),
+              padding: const EdgeInsets.all(CcDims.margin).withDock(context),
               child: Text(l.logRetention, style: theme.bodySmall?.copyWith(color: context.cc.textMuted)),
             ),
           ),

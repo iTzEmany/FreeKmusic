@@ -54,7 +54,7 @@ class MergedArtistsScreen extends ConsumerWidget {
               help: l.mergedArtistsEmptyHelp,
             )
           : ListView(
-              padding: const EdgeInsets.only(bottom: CcDims.gap24),
+              padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
               children: [
                 for (final g in groups) ...[
                   Padding(

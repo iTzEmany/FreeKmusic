@@ -224,6 +224,7 @@ class _Body extends StatelessWidget {
 
     final fav = stats.favouriteHour;
     return ListView(
+      padding: EdgeInsets.zero.withDock(context),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(

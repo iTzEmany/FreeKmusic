@@ -66,6 +66,7 @@ class FollowedArtistsScreen extends ConsumerWidget {
                         message: l.followedEmpty,
                       )
                     : ListView.builder(
+                        padding: EdgeInsets.zero.withDock(context),
                         itemCount: toConfirm.length + rows.length,
                         itemBuilder: (_, i) => i < toConfirm.length
                             ? _PendingRow(lookup: toConfirm[i])

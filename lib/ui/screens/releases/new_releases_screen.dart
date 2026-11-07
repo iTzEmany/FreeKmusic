@@ -177,6 +177,7 @@ class _NewReleasesScreenState extends ConsumerState<NewReleasesScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
           child: ListView(
+            padding: EdgeInsets.zero.withDock(context),
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(
