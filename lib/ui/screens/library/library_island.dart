@@ -87,7 +87,8 @@ class LibraryIsland extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rows = LibraryIslandRows.of(context);
-    return Material(
+    // Own layer: the page under it (tab change, results) repaints without it.
+    return RepaintBoundary(child: Material(
       color: context.cc.surface2,
       borderRadius: BorderRadius.circular(CcDims.dockRadius),
       clipBehavior: Clip.antiAlias,
@@ -151,7 +152,7 @@ class LibraryIsland extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
 
@@ -253,7 +254,7 @@ class _TitleRow extends ConsumerWidget {
           excluding: searching,
           child: Opacity(
             opacity: 1 - t,
-            child: Padding(
+            child: RepaintBoundary(child: Padding(
               padding: const EdgeInsets.only(
                 left: CcDims.margin,
                 right: CcDims.gap4,
@@ -295,7 +296,7 @@ class _TitleRow extends ConsumerWidget {
                   ),
                 ],
               ),
-            ),
+            )),
           ),
         ),
       ),
@@ -321,7 +322,7 @@ class _TitleRow extends ConsumerWidget {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         widthFactor: 0.12 + 0.88 * t,
-                        child: Opacity(opacity: math.min(1, t * 2), child: field),
+                        child: Opacity(opacity: math.min(1, t * 2), child: RepaintBoundary(child: field)),
                       ),
                     ),
                   ),
