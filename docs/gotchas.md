@@ -67,3 +67,5 @@
 - **Un `FutureProvider` di Riverpod 3 ritenta da solo fino a 10 volte** (backoff da 200 ms a 6,4 s) su ogni eccezione che non sia `Error`: un provider che spende budget prima della richiesta lo consuma a ogni tentativo. I provider di rete del catalogo hanno `retry: (_, _) => null` apposta (fase 99, review di 99.3).
 - **Un debounce che si riavvia a ogni evento non scatta mai se le scritture continuano** (scansione, arricchimento): per un aggiornamento «al più ogni N ms» il timer non va riavviato (`debounce ??= Timer(...)`), come in `_watchWithCountries` (fase 99).
 - **`latestIs(x)` in `watch_with_countries_test.dart` ritorna subito se l'ultimo valore è già `x`**: dopo una scrittura che deve dare lo stesso risultato, aspetta davvero la riesecuzione (contatore dello `_Spy` o un'attesa oltre i 300 ms).
+
+- **I test che fanno `implements PlayerController` con `noSuchMethod` rispondono `null` anche ai campi nuovi**: un `ValueNotifier` aggiunto al controller (es. `similarTitle`) rompe a sorpresa i test UI che aprono il foglio della coda (CI rossa in #135, `seek_characterization_test`). Aggiungi il campo agli spy.

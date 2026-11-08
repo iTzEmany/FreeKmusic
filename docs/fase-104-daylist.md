@@ -15,6 +15,7 @@
 
 ### 104.2 — `DaylistBuilder` (logica pura, D-440, D-452)
 - Input iniettati (ascolti, generi, tabella, orologio, casuale, suggeriti). Semi = brani dell'utente più ascoltati nella fascia oraria (`Plays.playedAt`, raggruppamento per ora come `stats_queries.dart:321-337`); brani propri = ascoltati nella fascia + stesso artista o genere dei semi, filtrati per generi e umori della fascia; suggeriti = radio dei semi via `RadioFill` e `SuggestionGate`, filtrati per generi evitati e umori; 50 brani, quota di suggeriti della fascia, almeno 3 generi diversi, nessuna ripetizione; fascia senza storico → generi e umori scelti e brani più ascoltati in assoluto come semi.
+- Nota: il filtro di generi e umori va dentro `RadioFill.take` con un predicato `accept(SuggestionCandidate)` applicato prima di contare il suggerito (filtrare a valle brucia righe del pool e il budget di richieste).
 - Nome «<Fascia> · <fino a 3 generi>».
 - Test `test/services/daylist/daylist_builder_test.dart`: 50 brani, quota, ≥ 3 generi, evitati esclusi anche dai suggeriti, semi, fascia senza storico, nessuna ripetizione.
 
