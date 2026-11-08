@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import '../../services/import/track_matcher.dart' show matchKey;
+import '../../services/import/track_matcher.dart' show artistKey;
 import '../../services/online/query_cleaner.dart' show extractPrimaryArtist;
 import '../db/app_database.dart';
 import 'track_kinds.dart';
@@ -383,7 +383,7 @@ class StatsQueries {
     for (final r in rows) {
       final artist = (r.data['artist']! as String).trim();
       final main = extractPrimaryArtist(artist);
-      final key = matchKey(main);
+      final key = artistKey(artist);
       if (key.isEmpty) continue;
       final n = (r.data['n'] as int?) ?? 0, ms = (r.data['ms'] as int?) ?? 0;
       final cur = groups[key];
