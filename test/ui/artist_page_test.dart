@@ -11,6 +11,7 @@ import 'package:codecore/services/online/youtube_service.dart' show YtErrorKind,
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/ui/widgets/net_thumbnail.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -644,6 +645,60 @@ void main() {
       final shelf = mergeArtistShelves(main, [other]).single as YtmReleaseShelf;
       expect(shelf.releases.length, 4);
     });
+
+    test('groupShelvesProvider groups like mergeArtistShelves, and is null while the main page is missing', () async {
+      final main = YtmArtistPage(
+        ref: a,
+        shelves: const [
+          YtmReleaseShelf('Album', [
+            YtmRelease(browseId: 'n', title: 'New', subtitle: '2024'),
+          ]),
+        ],
+      );
+      final other = YtmArtistPage(
+        ref: b,
+        shelves: const [
+          YtmReleaseShelf('Album', [
+            YtmRelease(browseId: 'm', title: 'Mid', subtitle: '2018'),
+          ]),
+        ],
+      );
+      ProviderContainer make(Map<String, YtmArtistPage> pages) =>
+          ProviderContainer(
+            overrides: [
+              artistPageProvider.overrideWith((ref, id) async {
+                final p = pages[id];
+                if (p == null) throw StateError('missing $id');
+                return CatalogResult(p, DateTime(2026, 10, 22));
+              }),
+            ],
+          );
+      List<List<String>> titles(List<YtmShelf>? l) => [
+        for (final s in l!.cast<YtmReleaseShelf>())
+          [for (final r in s.releases) r.title],
+      ];
+
+      final both = make({a.id: main, b.id: other});
+      addTearDown(both.dispose);
+      final sub = both.listen(
+        groupShelvesProvider('${a.id}|${b.id}'),
+        (_, _) {},
+      );
+      await both.read(artistPageProvider(a.id).future);
+      await both.read(artistPageProvider(b.id).future);
+      expect(titles(sub.read()), titles(mergeArtistShelves(main, [other])));
+
+      final none = make({b.id: other});
+      addTearDown(none.dispose);
+      final sub2 = none.listen(
+        groupShelvesProvider('${a.id}|${b.id}'),
+        (_, _) {},
+      );
+      await none.read(artistPageProvider(b.id).future);
+      await Future<void>.delayed(Duration.zero);
+      expect(sub2.read(), isNull);
+    });
+
   });
 }
 
