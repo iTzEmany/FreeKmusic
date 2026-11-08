@@ -30,10 +30,15 @@ void main() {
     for (var i = 0; i < 3; i++) {
       await db.into(db.tracks).insert(TracksCompanion.insert(
           path: '/music/$i.mp3', title: 'T$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
-          folderId: Value(folder), isFavorite: Value(i == 0)));
+          folderId: Value(folder), isFavorite: Value(i == 0),
+          playCount: Value(i == 0 ? 5 : 0), lastPlayedAt: Value(i == 0 ? 99 : null),
+          lyricsPlain: Value(i == 0 ? 'la la' : null), lyricsSynced: Value(i == 0 ? '[00:01.00]la' : null),
+          curiosities: Value(i == 0 ? 'curious' : null)));
     }
     final pl = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
     await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 1, position: 0));
+    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 3, position: 1));
+    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 2, position: 2));
   });
   tearDown(() async {
     await db.close();
@@ -170,10 +175,13 @@ void main() {
         .where((t) => t.isFavorite)
         .map((t) => t.path);
     expect(favs, ['/music/0.mp3']);
+    final t0 = (await fresh.select(fresh.tracks).get()).firstWhere((t) => t.path == '/music/0.mp3');
+    expect((t0.playCount, t0.lastPlayedAt), (5, 99));
+    expect((t0.lyricsPlain, t0.lyricsSynced, t0.curiosities), ('la la', '[00:01.00]la', 'curious'));
     final pl = await fresh.select(fresh.playlists).getSingle();
     expect(pl.name, 'Mix');
     final items = await fresh.select(fresh.playlistTracks).get();
-    expect([for (final i in items) (i.trackId, i.position)], [(1, 0)]);
+    expect([for (final i in items) (i.trackId, i.position)], [(1, 0), (3, 1), (2, 2)]);
   }
 
   test('a backup in today\'s format restores into a fresh library with the same user data', () async {
