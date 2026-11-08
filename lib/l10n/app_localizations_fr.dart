@@ -1160,6 +1160,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loadFailed => 'Impossible de charger les données.';
 
   @override
+  String get artistLoadingSongs => 'Chargement des titres…';
+
+  @override
   String get artistTopMissing => 'Top indisponible';
 
   @override

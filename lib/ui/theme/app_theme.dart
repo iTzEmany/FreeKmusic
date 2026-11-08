@@ -194,6 +194,7 @@ ThemeData buildThemeFromColors(CcColors c, bool compact, {bool pageBackdrop = fa
         shape: pill,
         side: BorderSide(color: c.surface3),
         foregroundColor: c.text,
+        disabledForegroundColor: c.textFaint,
         textStyle: text.labelLarge,
       ),
     ),

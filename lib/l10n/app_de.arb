@@ -466,6 +466,7 @@
   "playNextDone": "Wird als Nächstes gespielt",
   "ytSearchPrompt": "Titel suchen oder Link einfügen",
   "loadFailed": "Die Daten konnten nicht geladen werden.",
+  "artistLoadingSongs": "Songs werden geladen…",
   "artistTopMissing": "Top-Songs nicht verfügbar",
   "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Start",

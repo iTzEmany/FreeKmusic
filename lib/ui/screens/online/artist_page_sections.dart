@@ -105,7 +105,7 @@ class _ArtistPlayRowState extends State<ArtistPlayRow> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, semanticsLabel: l.playerLoading))
                   : const Icon(Icons.play_arrow_rounded),
-              label: Text(l.play),
+              label: Text(busy ? l.artistLoadingSongs : l.play),
             ),
           ),
           const SizedBox(width: CcDims.gap8),

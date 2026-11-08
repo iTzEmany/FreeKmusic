@@ -466,6 +466,7 @@
   "playNextDone": "Will play next",
   "ytSearchPrompt": "Search for a track or paste a link",
   "loadFailed": "Couldn't load the data.",
+  "artistLoadingSongs": "Loading songs…",
   "artistTopMissing": "Top songs unavailable",
   "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Home",

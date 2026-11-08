@@ -60,6 +60,8 @@ void main() {
     );
     expect(find.text('Searched'), findsOneWidget);
     expect(find.text('Suggerito'), findsNothing);
+    expect(find.text('Ann'), findsOneWidget);
+    expect(find.text(', '), findsNothing);
     await tester.tap(find.byTooltip('Altre opzioni'));
     await tester.pumpAndSettle();
     expect(find.text('Scarica'), findsOneWidget);
@@ -76,6 +78,26 @@ void main() {
     );
     expect(find.byType(OnlineQueueRow), findsNothing);
     expect(find.text('Suggerito'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the «in libreria» check shows on a queue row only when asked', (tester) async {
+    final h = await Harness.create(tester, tracks: 1);
+    final track = (await h.db.select(h.db.tracks).get()).single;
+    for (final on in [false, true]) {
+      await h.pump(
+        tester,
+        Scaffold(
+          body: LiveTrackRow(
+              track: track, variant: TrackRowVariant.queue, inLibrary: on, onTap: () {}),
+        ),
+      );
+      expect(find.byIcon(Icons.check_circle_rounded), on ? findsOneWidget : findsNothing);
+      if (on) {
+        expect(tester.widget<Icon>(find.byIcon(Icons.check_circle_rounded)).semanticLabel,
+            'Già in libreria');
+      }
+    }
     await h.dispose(tester);
   });
 }

@@ -64,12 +64,16 @@ class TrackRow extends StatefulWidget {
     this.selectedPosition,
     this.subtitleSuffix,
     this.albumAsSubtitle = false,
+    this.inLibrary = false,
   });
 
   final Track track;
   final VoidCallback onTap;
   final TrackRowVariant variant;
   final bool isCurrent, isPlaying, compact, picked;
+
+  /// Queue variant: the song is in the library (check circle before the handle).
+  final bool inLibrary;
 
   /// The list is in selection mode: a tick box replaces the cover or number,
   /// and a picked row ([selected]) is tinted. Same height either way.
@@ -293,13 +297,28 @@ class _TrackRowState extends State<TrackRow> {
         final i = widget.reorderIndex;
         final handle = Icon(Icons.drag_handle_rounded, color: cc.textMuted);
         // Hidden from TalkBack: the list already offers move actions on the row.
-        return ExcludeSemantics(
+        final grip = ExcludeSemantics(
           child: Padding(
             padding: const EdgeInsets.only(left: CcDims.gap8),
             child: i == null
                 ? handle
                 : ReorderableDragStartListener(index: i, child: handle),
           ),
+        );
+        if (!widget.inLibrary) return grip;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: CcDims.gap8),
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: cc.accentSoft,
+                semanticLabel: l.ytAlreadyInLibrary,
+              ),
+            ),
+            grip,
+          ],
         );
       case _:
     }
@@ -532,12 +551,13 @@ class LiveTrackRow extends ConsumerWidget {
     this.selection,
     this.subtitleSuffix,
     this.albumAsSubtitle = false,
+    this.inLibrary = false,
   });
 
   final Track track;
   final VoidCallback onTap;
   final TrackRowVariant variant;
-  final bool compact;
+  final bool compact, inLibrary;
   final bool albumAsSubtitle;
 
   final int? index;
@@ -616,6 +636,7 @@ class LiveTrackRow extends ConsumerWidget {
       selectedPosition: picked ? position + 1 : null,
       subtitleSuffix: subtitleSuffix,
       albumAsSubtitle: albumAsSubtitle,
+      inLibrary: inLibrary,
       onSecondaryTap: (_) => actions(),
       onFavorite: () => toggleFavorite(context, ref, track),
       compact: compact,

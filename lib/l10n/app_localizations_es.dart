@@ -1155,6 +1155,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loadFailed => 'No se pudieron cargar los datos.';
 
   @override
+  String get artistLoadingSongs => 'Cargando canciones…';
+
+  @override
   String get artistTopMissing => 'Top no disponible';
 
   @override

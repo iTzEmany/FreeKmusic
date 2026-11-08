@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:codecore/core/constants.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/providers/artist_all_songs_provider.dart';
@@ -655,6 +657,23 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('artist-play')));
     await tester.tap(find.byKey(const ValueKey('artist-shuffle')));
     expect(ctrl.calls, ['1 index=0 shuffle=false', '1 index=0 shuffle=true']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('while the page loads Play and Shuffle are there, off', (tester) async {
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const ArtistPageScreen(artist: _ref),
+      extraOverrides: [
+        artistPageProvider.overrideWith((ref, id) => Completer<CatalogResult<YtmArtistPage>>().future),
+        artistAllSongsProvider.overrideWith((ref, key) => Completer<ArtistAllSongs>().future),
+      ],
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('artist-play'))).onPressed, isNull);
+    expect(tester.widget<OutlinedButton>(find.byKey(const ValueKey('artist-shuffle'))).onPressed, isNull);
+    expect(find.text('Carico i brani…'), findsOneWidget);
     await h.dispose(tester);
   });
 }
