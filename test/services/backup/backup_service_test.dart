@@ -186,7 +186,10 @@ void main() {
 
   test('a backup in today\'s format restores into a fresh library with the same user data', () async {
     final fresh = await freshLibrary();
-    await restoreInto(fresh);
+    await restoreInto(fresh, edit: (j) {
+      expect(j['manifest.json']!['playlistCount'], 1);
+      expect(j['manifest.json']!['trackCount'], 3);
+    });
     await expectSameUserData(fresh);
   });
 
