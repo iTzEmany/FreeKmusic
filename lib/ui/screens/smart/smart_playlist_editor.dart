@@ -97,7 +97,8 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
     _initial = _snapshot;
   }
 
-  String get _snapshot => '${_name.text.trim()}|$_rules|${_sort.name}|${_limit.text.trim()}';
+  String get _snapshot =>
+      '${_name.text.trim()}|$_rules|${_sort.name}|${_limit.text.trim()}';
 
   bool get _dirty => _snapshot != _initial;
 
@@ -121,7 +122,10 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
 
   /// A new playlist needs a complete filter, and no card may be left half done.
   bool get _canSave =>
-      _raw != null || (_model.cards.isEmpty ? _emptyOk : !_model.hasIncomplete && _model.hasComplete);
+      _raw != null ||
+      (_model.cards.isEmpty
+          ? _emptyOk
+          : !_model.hasIncomplete && _model.hasComplete);
 
   void _restart() {
     final l = context.l10n;
@@ -190,13 +194,15 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
       setState(() => _triedSave = true);
       return;
     }
-    await ref.read(playlistOpsProvider).saveSmart(
-      existingId: widget.existing?.id,
-      name: _name.text,
-      rules: _rules,
-      sort: _sort,
-      limit: _limitValue,
-    );
+    await ref
+        .read(playlistOpsProvider)
+        .saveSmart(
+          existingId: widget.existing?.id,
+          name: _name.text,
+          rules: _rules,
+          sort: _sort,
+          limit: _limitValue,
+        );
     if (!mounted) return;
     _saved = true;
     Navigator.of(context).pop(true);
@@ -217,7 +223,10 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 960),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: CcDims.margin,
+                vertical: CcDims.gap8,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -227,10 +236,10 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
                         _countFailed
                             ? l.smartCountError
                             : _rules.isEmpty && !_emptyOk
-                                ? '—'
-                                : _count == null
-                                    ? ''
-                                    : l.tracksCount(_count!),
+                            ? '—'
+                            : _count == null
+                            ? ''
+                            : l.tracksCount(_count!),
                         style: theme.titleMedium?.copyWith(color: cc.accent),
                       ),
                     ),
@@ -291,7 +300,10 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
     final theme = Theme.of(context).textTheme;
     // The provider answers null while a newer request supersedes it: keep the last number.
     // Keep the last number while a newer one is computed; say so when it fails.
-    ref.listen(liveRuleCountProvider((rules: _rules, limit: _limitValue)), (_, n) {
+    ref.listen(liveRuleCountProvider((rules: _rules, limit: _limitValue)), (
+      _,
+      n,
+    ) {
       if (n.hasError) {
         setState(() => _countFailed = true);
       } else if (n.hasValue) {
@@ -316,116 +328,143 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
         if (discard) nav.pop();
       },
       child: Scaffold(
-      appBar: CcAppBar(
-        title: widget.existing == null ? l.smartPlaylistNew : l.smartPlaylistEdit,
-      ),
-      bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0 ? null : _bottomBar(context),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: ListView(
-            padding: const EdgeInsets.all(CcDims.margin).withDock(context),
-            children: [
-              TextField(
-                controller: _name,
-                maxLength: 60,
-                textCapitalization: TextCapitalization.sentences,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  labelText: l.smartName,
-                  errorText: _triedSave && _name.text.trim().isEmpty
-                      ? l.smartNameRequired
-                      : null,
-                ),
-              ),
-              const SizedBox(height: CcDims.gap8),
-              Text(l.smartTemplates, style: theme.labelLarge),
-              const SizedBox(height: CcDims.gap8),
-              Wrap(
-                spacing: CcDims.gap8,
-                runSpacing: CcDims.gap4,
-                children: [
-                  for (final t in _templates)
-                    ActionChip(
-                      label: Text(t.label(l)),
-                      onPressed: () => _apply(t),
-                    ),
-                ],
-              ),
-              const SizedBox(height: CcDims.gap16),
-              if (_raw != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: CcDims.gap12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l.smartNotVisual, style: theme.bodyMedium),
-                      for (final w in parseRules(_raw!).warnings.where(
-                        (w) => w.kind != RuleWarningKind.emptyValue && w.kind != RuleWarningKind.danglingOr,
-                      ))
-                        Padding(
-                          padding: const EdgeInsets.only(top: CcDims.gap4),
-                          child: Text(l.ruleWarning(w.term), style: theme.bodySmall?.copyWith(color: cc.textMuted)),
-                        ),
-                      const SizedBox(height: CcDims.gap8),
-                      OutlinedButton(onPressed: _restart, child: Text(l.smartRestart)),
-                    ],
+        appBar: CcAppBar(
+          title: widget.existing == null
+              ? l.smartPlaylistNew
+              : l.smartPlaylistEdit,
+        ),
+        bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0
+            ? null
+            : _bottomBar(context),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: ListView(
+              padding: const EdgeInsets.all(CcDims.margin).withDock(context),
+              children: [
+                TextField(
+                  controller: _name,
+                  maxLength: 60,
+                  textCapitalization: TextCapitalization.sentences,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: l.smartName,
+                    errorText: _triedSave && _name.text.trim().isEmpty
+                        ? l.smartNameRequired
+                        : null,
                   ),
-                )
-              else ...[
-                SegmentedBlocks<bool>(
-                  items: [
-                    BlockItem(value: false, label: l.smartAll),
-                    BlockItem(value: true, label: l.smartAny),
+                ),
+                const SizedBox(height: CcDims.gap8),
+                Text(l.smartTemplates, style: theme.labelLarge),
+                const SizedBox(height: CcDims.gap8),
+                Wrap(
+                  spacing: CcDims.gap8,
+                  runSpacing: CcDims.gap4,
+                  children: [
+                    for (final t in _templates)
+                      ActionChip(
+                        label: Text(t.label(l)),
+                        onPressed: () => _apply(t),
+                      ),
                   ],
-                  selected: _model.any,
-                  onChanged: (v) => setState(() => _model.any = v),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(CcDims.gap4, CcDims.gap8, CcDims.gap4, CcDims.gap12),
-                  child: Text(
-                    _model.any ? l.smartAnyNote : l.smartAllNote,
-                    style: theme.bodySmall?.copyWith(color: cc.textMuted),
-                  ),
-                ),
-                for (final c in _model.cards)
-                  FilterCardView(
-                    key: ObjectKey(c),
-                    card: c,
-                    onChanged: () => setState(() {}),
-                    onRemove: () => setState(() => _model.cards.remove(c)),
-                  ),
-                if (_model.cards.isEmpty)
+                const SizedBox(height: CcDims.gap16),
+                if (_raw != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: CcDims.gap12),
-                    child: Text(l.smartNoFilters, style: theme.bodyMedium),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l.smartNotVisual, style: theme.bodyMedium),
+                        for (final w in parseRules(_raw!).warnings.where(
+                          (w) =>
+                              w.kind != RuleWarningKind.emptyValue &&
+                              w.kind != RuleWarningKind.danglingOr,
+                        ))
+                          Padding(
+                            padding: const EdgeInsets.only(top: CcDims.gap4),
+                            child: Text(
+                              l.ruleWarning(w.term),
+                              style: theme.bodySmall?.copyWith(
+                                color: cc.textMuted,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: CcDims.gap8),
+                        OutlinedButton(
+                          onPressed: _restart,
+                          child: Text(l.smartRestart),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  SegmentedBlocks<bool>(
+                    items: [
+                      BlockItem(value: false, label: l.smartAll),
+                      BlockItem(value: true, label: l.smartAny),
+                    ],
+                    selected: _model.any,
+                    onChanged: (v) => setState(() => _model.any = v),
                   ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.add_rounded),
-                  label: Text(l.smartAddFilter),
-                  onPressed: _add,
-                ),
-              ],
-              const SizedBox(height: CcDims.gap16),
-              _orderAndLimit(context),
-              const SizedBox(height: CcDims.gap8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.settingsAdvanced),
-                trailing: Icon(_showAdvanced ? Icons.expand_less_rounded : Icons.expand_more_rounded),
-                onTap: () => setState(() => _showAdvanced = !_showAdvanced),
-              ),
-              if (_showAdvanced) ...[
-                Text(l.smartAdvancedNote, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      CcDims.gap4,
+                      CcDims.gap8,
+                      CcDims.gap4,
+                      CcDims.gap12,
+                    ),
+                    child: Text(
+                      _model.any ? l.smartAnyNote : l.smartAllNote,
+                      style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                    ),
+                  ),
+                  for (final c in _model.cards)
+                    FilterCardView(
+                      key: ObjectKey(c),
+                      card: c,
+                      onChanged: () => setState(() {}),
+                      onRemove: () => setState(() => _model.cards.remove(c)),
+                    ),
+                  if (_model.cards.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: CcDims.gap12),
+                      child: Text(l.smartNoFilters, style: theme.bodyMedium),
+                    ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(l.smartAddFilter),
+                    onPressed: _add,
+                  ),
+                ],
+                const SizedBox(height: CcDims.gap16),
+                _orderAndLimit(context),
                 const SizedBox(height: CcDims.gap8),
-                SelectableText(_rules, style: theme.bodyMedium),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.settingsAdvanced),
+                  trailing: Icon(
+                    _showAdvanced
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                  ),
+                  onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+                ),
+                if (_showAdvanced) ...[
+                  Text(
+                    l.smartAdvancedNote,
+                    style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                  ),
+                  const SizedBox(height: CcDims.gap8),
+                  SelectableText(_rules, style: theme.bodyMedium),
+                ],
+                const SizedBox(height: CcDims.gap16),
+                Text(l.smartAutoNote, style: theme.bodyMedium),
               ],
-              const SizedBox(height: CcDims.gap16),
-              Text(l.smartAutoNote, style: theme.bodyMedium),
-            ],
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 }
