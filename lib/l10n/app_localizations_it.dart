@@ -6899,4 +6899,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get artistBlockedLabel => 'Artista bloccato';
+
+  @override
+  String dislikesBlockedOn(String date) {
+    return 'Escluso il $date';
+  }
 }

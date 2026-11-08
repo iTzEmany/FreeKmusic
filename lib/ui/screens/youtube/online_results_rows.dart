@@ -4,6 +4,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../services/online/ytm_album_search.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/section_header.dart';
 import '../online/artist_page_sections.dart' show releaseLine, thumbAt;
@@ -43,6 +44,7 @@ class ArtistsRow extends StatelessWidget {
             circle: true,
           ),
           title: a.name,
+          mark: BlockedArtistMark(a.name),
           subtitle: l.kindArtist,
           centered: true,
           onTap: () => onOpen(a),
@@ -154,7 +156,11 @@ class _ShelfTile extends StatelessWidget {
     required this.onTap,
     this.lines = 1,
     this.centered = false,
+    this.mark,
   });
+
+  /// Next to the title (the lock of a blocked artist).
+  final Widget? mark;
 
   final double width;
   final Widget cover;
@@ -182,12 +188,20 @@ class _ShelfTile extends StatelessWidget {
             children: [
               cover,
               const SizedBox(height: 6),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: align,
-                style: theme.titleSmall,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: align,
+                      style: theme.titleSmall,
+                    ),
+                  ),
+                  ?mark,
+                ],
               ),
               if (subtitle.isNotEmpty)
                 Text(

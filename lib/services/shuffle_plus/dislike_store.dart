@@ -10,13 +10,21 @@ class DislikedTrack {
     required this.videoId,
     required this.title,
     required this.artist,
+    this.at,
   });
   final String videoId, title, artist;
+
+  /// When it was blocked (epoch ms); null for old and migrated entries.
+  final int? at;
+
+  DislikedTrack withAt(int at) =>
+      DislikedTrack(videoId: videoId, title: title, artist: artist, at: at);
 
   Map<String, Object?> toJson() => {
     'id': videoId,
     'title': title,
     'artist': artist,
+    'at': ?at,
   };
 
   static DislikedTrack? fromJson(Object? j) => j is Map && j['id'] is String
@@ -24,20 +32,30 @@ class DislikedTrack {
           videoId: j['id'] as String,
           title: '${j['title'] ?? ''}',
           artist: '${j['artist'] ?? ''}',
+          at: j['at'] is int ? j['at'] as int : null,
         )
       : null;
 }
 
 class DislikedArtist {
-  const DislikedArtist({required this.key, required this.name});
+  const DislikedArtist({required this.key, required this.name, this.at});
 
   /// `artistKey(name)`.
   final String key, name;
 
-  Map<String, Object?> toJson() => {'key': key, 'name': name};
+  /// When it was blocked (epoch ms); null for old entries.
+  final int? at;
+
+  DislikedArtist withAt(int at) => DislikedArtist(key: key, name: name, at: at);
+
+  Map<String, Object?> toJson() => {'key': key, 'name': name, 'at': ?at};
 
   static DislikedArtist? fromJson(Object? j) => j is Map && j['key'] is String
-      ? DislikedArtist(key: j['key'] as String, name: '${j['name'] ?? ''}')
+      ? DislikedArtist(
+          key: j['key'] as String,
+          name: '${j['name'] ?? ''}',
+          at: j['at'] is int ? j['at'] as int : null,
+        )
       : null;
 }
 
@@ -48,7 +66,10 @@ class DislikeStore {
   DislikeStore({
     required this.file,
     this.writeDelay = const Duration(seconds: 1),
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
+
+  final DateTime Function() _now;
 
   final Future<File> Function() file;
   final Duration writeDelay;
@@ -177,7 +198,7 @@ class DislikeStore {
 
   void blockTrack(DislikedTrack t) {
     if (trackBlocked(t.videoId)) return;
-    _tracks.add(t);
+    _tracks.add(t.at == null ? t.withAt(_now().millisecondsSinceEpoch) : t);
     _changed();
   }
 
@@ -188,7 +209,7 @@ class DislikeStore {
 
   void blockArtist(DislikedArtist a) {
     if (a.key.isEmpty || artistBlocked(a.key)) return;
-    _artists.add(a);
+    _artists.add(a.at == null ? a.withAt(_now().millisecondsSinceEpoch) : a);
     _changed();
   }
 

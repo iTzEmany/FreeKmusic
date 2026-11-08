@@ -3518,5 +3518,13 @@
       }
     }
   },
-  "artistBlockedLabel": "Artist blocked"
+  "artistBlockedLabel": "Artist blocked",
+  "dislikesBlockedOn": "Excluded on {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

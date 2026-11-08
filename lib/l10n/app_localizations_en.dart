@@ -6882,4 +6882,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get artistBlockedLabel => 'Artist blocked';
+
+  @override
+  String dislikesBlockedOn(String date) {
+    return 'Excluded on $date';
+  }
 }

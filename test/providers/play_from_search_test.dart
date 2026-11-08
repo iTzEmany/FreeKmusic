@@ -21,6 +21,8 @@ import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
 import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/similar_queue.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
+import 'package:codecore/services/shuffle_plus/suggestion_gate.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_pool.dart';
 import 'package:drift/native.dart';
@@ -60,6 +62,7 @@ void main() {
   late SeedIndex seedIndex;
   late DateTime now;
   late RadioGate gate;
+  late SuggestionGate dislikeGate;
   final asked = <(String, String?)>[];
   final suggested = <String>[];
   final timers = <_FakeTimer>[];
@@ -102,7 +105,7 @@ void main() {
       file: () async => File(p.join(dir.path, 'l.json')),
       writeDelay: const Duration(days: 1),
     ),
-    filter: testGate(),
+    filter: dislikeGate,
     gate: gate,
     inLibrary: (_) => false,
   );
@@ -173,6 +176,7 @@ void main() {
       writeDelay: const Duration(days: 1),
     );
     now = DateTime(2026, 11, 8);
+    dislikeGate = testGate();
     gate = RadioGate(now: () => now);
     asked.clear();
     suggested.clear();
@@ -490,6 +494,29 @@ void main() {
       s.close();
     },
   );
+
+  test('an artist blocked while a song is registered: that song is not inserted', () async {
+    final id = online.register(_r('s'));
+    await handler.playQueue([id], 0);
+    var first = true;
+    final s = sessionFor(
+      id,
+      's',
+      hold: () {
+        if (!first) return null;
+        first = false;
+        dislikeGate.store.blockArtist(
+          const DislikedArtist(key: 'artist r1 0', name: 'Artist r1_0'),
+        );
+        return null;
+      },
+    );
+    await s.start();
+    expect(suggested, isNot(contains('r1_0')));
+    expect(suggested, ['r1_1', 'r1_2']);
+    expect(handler.queueIds.length, 3);
+    s.close();
+  });
 
   test('inserts during a refill do not start another one', () async {
     final id = online.register(_r('s'));

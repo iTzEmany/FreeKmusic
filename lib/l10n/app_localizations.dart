@@ -11046,6 +11046,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Artista bloccato'**
   String get artistBlockedLabel;
+
+  /// No description provided for @dislikesBlockedOn.
+  ///
+  /// In it, this message translates to:
+  /// **'Escluso il {date}'**
+  String dislikesBlockedOn(String date);
 }
 
 class _AppLocalizationsDelegate

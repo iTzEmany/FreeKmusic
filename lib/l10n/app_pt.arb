@@ -3704,5 +3704,13 @@
   "queueSimilarTo": "Semelhantes a «{title}»",
   "queueSimilarTag": "rádio do YouTube Music",
   "queueSimilarCount": "{total, plural, one{1 música} other{{total} músicas}}, {owned} já na biblioteca",
-  "queueSimilarSearching": "A procurar músicas semelhantes…"
+  "queueSimilarSearching": "A procurar músicas semelhantes…",
+  "dislikesBlockedOn": "Excluído em {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

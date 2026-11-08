@@ -39,6 +39,33 @@ void main() {
     expect(again.artists, isEmpty);
   });
 
+  test(
+    'the block date is saved and read back; an entry without it reads fine',
+    () async {
+      final s = DislikeStore(
+        file: () async => f,
+        writeDelay: Duration.zero,
+        now: () => DateTime.fromMillisecondsSinceEpoch(1234),
+      );
+      await s.load();
+      s.blockTrack(track('1'));
+      s.blockArtist(const DislikedArtist(key: 'queen', name: 'Queen'));
+      await s.flush();
+      final again = store();
+      await again.load();
+      expect(again.tracks.single.at, 1234);
+      expect(again.artists.single.at, 1234);
+
+      f.writeAsStringSync(
+        '{"tracks":[{"id":"9","title":"t","artist":"a"}],"artists":[{"key":"k","name":"K"}]}',
+      );
+      final old = store();
+      await old.load();
+      expect(old.tracks.single.at, isNull);
+      expect(old.artists.single.at, isNull);
+    },
+  );
+
   test('nothing is trimmed, however many are blocked', () async {
     final s = store();
     await s.load();

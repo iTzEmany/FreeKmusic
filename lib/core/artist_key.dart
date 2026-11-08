@@ -15,7 +15,7 @@ String matchKey(String s) => normalize(s.replaceAll('&', ' and '))
     .trim();
 
 /// Single artist key: [matchKey] of the primary artist (null -> '').
-// Persistent format (artist_countries, artist_infos, artist_lookups, backup): changing it needs a data migration.
+// Persistent format (artist_countries, artist_infos, artist_lookups, dislikes.json, backup): changing it needs a data migration.
 String artistKey(String? artist) => matchKey(extractPrimaryArtist(artist ?? ''));
 
 /// Splits a credit line like «A, B feat. C» into its artists.

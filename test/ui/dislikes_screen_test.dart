@@ -14,10 +14,15 @@ void main() {
   setUp(() => dir = Directory.systemTemp.createTempSync('dislikes_screen'));
   tearDown(() => dir.deleteSync(recursive: true));
 
-  Future<DislikeStore> open(WidgetTester tester, {bool seeded = true}) async {
+  Future<DislikeStore> open(
+    WidgetTester tester, {
+    bool seeded = true,
+    DateTime Function()? now,
+  }) async {
     final store = DislikeStore(
       file: () async => File(p.join(dir.path, 'd.json')),
       writeDelay: const Duration(days: 1),
+      now: now,
     );
     await tester.runAsync(store.load);
     if (seeded) {
@@ -42,7 +47,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
     await tester.pumpAndSettle();
     return store;
   }
@@ -78,6 +85,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.trackBlocked('v1'), isTrue);
     expect(find.text('Despacito'), findsOneWidget);
+    await tester.runAsync(store.flush);
+  });
+
+  testWidgets('a row shows the day it was blocked; an old entry shows none', (
+    tester,
+  ) async {
+    final store = await open(tester, now: () => DateTime(2026, 10, 29));
+    expect(find.text('Escluso il 29 ott'), findsOneWidget);
+    await tester.runAsync(store.flush);
+  });
+
+  testWidgets('an entry without a date shows no date', (tester) async {
+    final store = await open(tester, seeded: false);
+    store.mergeJson({
+      'tracks': [
+        {'id': 'o', 'title': 'Vecchio', 'artist': 'X'},
+      ],
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Vecchio'), findsOneWidget);
+    expect(find.textContaining('Escluso il'), findsNothing);
     await tester.runAsync(store.flush);
   });
 

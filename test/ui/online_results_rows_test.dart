@@ -13,7 +13,12 @@ import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:codecore/ui/screens/online/artist_page_screen.dart';
 import 'package:codecore/ui/screens/online/online_album_screen.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
+import 'dart:io';
+
+import 'package:codecore/providers/dislike_store_provider.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -64,7 +69,7 @@ void main() {
   setUp(() => semantics = TestWidgetsFlutterBinding.ensureInitialized().ensureSemantics());
   tearDown(() => semantics.dispose());
 
-  Future<void> open(WidgetTester tester, {double textScale = 1}) async {
+  Future<void> open(WidgetTester tester, {double textScale = 1, List<Override> extra = const []}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -76,6 +81,7 @@ void main() {
       const Scaffold(body: OnlineResults(query: 'marco', submitted: 1)),
       textScale: textScale,
       extraOverrides: [
+        ...extra,
         smartSearchProvider.overrideWith((ref, request) => engine.stream),
         artistPageProvider.overrideWith(
           (ref, id) async => CatalogResult(
@@ -181,6 +187,31 @@ void main() {
       expect(find.byKey(const ValueKey('online-artists')), findsNothing);
       expect(find.byKey(const ValueKey('online-albums')), findsNothing);
       expect(find.byKey(const ValueKey('artist-card')), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('a blocked artist shows the lock on the card and in the Artisti row', (tester) async {
+      final store = DislikeStore(file: () async => File('/nonexistent/dislikes.json'));
+      await tester.runAsync(store.load);
+      store
+        ..blockArtist(const DislikedArtist(key: 'marco castello', name: 'Marco Castello'))
+        ..blockArtist(const DislikedArtist(key: 'artist 1', name: 'Artist 1'));
+      await open(tester, extra: [dislikeStoreProvider.overrideWithValue(store)]);
+      await emit(tester, card: const TopArtist(_marco), artists: _artists(3));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('artist-card')), matching: find.byIcon(Icons.block)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('artist-hit-UCa1')), matching: find.byIcon(Icons.block)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('artist-hit-UCa0')), matching: find.byIcon(Icons.block)),
+        findsNothing,
+      );
       await h.dispose(tester);
     });
 

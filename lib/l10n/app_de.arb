@@ -3518,5 +3518,13 @@
       }
     }
   },
-  "artistBlockedLabel": "Künstler blockiert"
+  "artistBlockedLabel": "Künstler blockiert",
+  "dislikesBlockedOn": "Ausgeschlossen am {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }
