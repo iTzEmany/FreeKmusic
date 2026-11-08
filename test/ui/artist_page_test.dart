@@ -686,7 +686,10 @@ void main() {
       );
       await both.read(artistPageProvider(a.id).future);
       await both.read(artistPageProvider(b.id).future);
-      expect(titles(sub.read()), titles(mergeArtistShelves(main, [other])));
+      expect(titles(sub.read()), [
+        ['New', 'Mid'],
+      ]);
+      expect([for (final s in sub.read()!) s.title], ['Album']);
 
       final none = make({b.id: other});
       addTearDown(none.dispose);
@@ -698,7 +701,6 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(sub2.read(), isNull);
     });
-
   });
 }
 

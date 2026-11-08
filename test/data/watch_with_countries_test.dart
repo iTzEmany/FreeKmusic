@@ -98,4 +98,13 @@ void main() {
     await add(2, 'Muse');
     await latestIs(['t1', 't2']);
   });
+
+  test('a country that arrives (or changes) after the track makes the result follow', () async {
+    await add(2, 'Muse');
+    await latestIs(['t1']);
+    await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'muse', country: const Value('GB'), checkedAt: 1));
+    await latestIs(['t1', 't2']);
+    await (db.update(db.artistCountries)..where((c) => c.artistKey.equals('muse'))).write(const ArtistCountriesCompanion(country: Value('FR')));
+    await latestIs(['t1']);
+  });
 }
