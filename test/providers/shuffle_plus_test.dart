@@ -12,6 +12,7 @@ import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_service.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
 import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
@@ -352,6 +353,23 @@ void main() {
     await settle();
     final now = [for (final id in host.queueIds.where(isOnlineId)) suggestionArtistKey(online[id]!.result)];
     expect(now.where(keys.contains), isEmpty);
+  });
+
+  test('a block that arrives between the pick and the insertion inserts nothing', () async {
+    prepareHook = (r) async {
+      prepared.add(r.id);
+      filterOverride.store.blockArtist(DislikedArtist(key: suggestionArtistKey(r), name: 'x'));
+    };
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => prepared.isNotEmpty);
+    await settle();
+    await settle();
+    expect(host.queueIds.where(isOnlineId), isEmpty);
   });
 
   test('an online entry the user picked stays in the queue once passed', () async {

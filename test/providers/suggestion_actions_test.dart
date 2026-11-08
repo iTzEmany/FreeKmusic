@@ -216,4 +216,33 @@ void main() {
     expect(back.result.id, 'v2');
     expect(back.suggested, isTrue);
   });
+
+  test('dislikeArtist on a name with no letters blocks and removes nothing', () async {
+    final bang = online.register(const YtResult(id: 'z', title: 'Z', channel: '!!!', duration: null), suggested: true);
+    queue = [bang, id];
+    final undo = await actions.dislikeArtist(bang);
+    expect(store.artists, isEmpty);
+    expect(queue, [bang, id]);
+    expect(undo.removed, isEmpty);
+  });
+
+  test('a second undo does nothing', () async {
+    final other = reg('v2', 'Chan');
+    queue = [id, other];
+    final undo = await actions.dislikeArtist(id);
+    await actions.undo(undo);
+    await actions.undo(undo);
+    expect(queue, [id, other]);
+  });
+
+  test('undo restarts the current song also at index 0', () async {
+    final x = reg('x', 'Else', suggested: false);
+    queue = [id, x];
+    current = id;
+    final undo = await actions.dislikeTrack(id);
+    played = -1;
+    await actions.undo(undo);
+    expect(queue, [id, x]);
+    expect(played, 0);
+  });
 }

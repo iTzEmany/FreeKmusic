@@ -250,8 +250,12 @@ Future<MergeReport> mergeBackup(
     // «Non mi piace» blocks are added to the current ones (union).
     final dl = archive.findFile(_stagedDislikes);
     if (dislikes != null && dl != null) {
-      await dislikes.load();
-      dislikes.mergeJson(jsonDecode(utf8.decode(dl.content as List<int>)));
+      try {
+        await dislikes.load();
+        dislikes.mergeJson(jsonDecode(utf8.decode(dl.content as List<int>)));
+      } on Object catch (e, st) {
+        AppLog.w('dislikes.json of the backup unreadable, blocks skipped', e, st);
+      }
     }
     coversDir.createSync(recursive: true);
     for (final f in archive.files) {

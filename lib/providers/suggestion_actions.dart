@@ -15,7 +15,7 @@ import 'youtube_providers.dart';
 
 /// What [SuggestionActions.undo] needs to put a «Non mi piace» back.
 class DislikeUndo {
-  const DislikeUndo({
+  DislikeUndo({
     this.trackId,
     this.artistKey,
     this.outcomeBefore,
@@ -24,6 +24,9 @@ class DislikeUndo {
   });
 
   final String? trackId, artistKey;
+
+  /// Set by the first [SuggestionActions.undo]; a second one does nothing.
+  bool used = false;
   final SuggestionOutcome? outcomeBefore;
 
   /// Already blocked before: Annulla must not unblock it.
@@ -80,7 +83,7 @@ class SuggestionActions {
   /// next song plays if it was the current one).
   Future<DislikeUndo> dislikeTrack(int queueId) async {
     final r = online?[queueId]?.result;
-    if (r == null) return const DislikeUndo();
+    if (r == null) return DislikeUndo();
     final before = log.latest(r.id)?.outcome;
     final was = store.trackBlocked(r.id);
     log.setOutcome(r.id, SuggestionOutcome.disliked);
@@ -103,8 +106,9 @@ class SuggestionActions {
   /// song of the same artist leave the queue (D-469); the user's own stay.
   Future<DislikeUndo> dislikeArtist(int queueId) async {
     final r = online?[queueId]?.result;
-    if (r == null) return const DislikeUndo();
+    if (r == null) return DislikeUndo();
     final key = suggestionArtistKey(r);
+    if (key.isEmpty) return DislikeUndo(); // would block every nameless artist
     final was = store.artistBlocked(key);
     store.blockArtist(
       DislikedArtist(
@@ -129,6 +133,8 @@ class SuggestionActions {
   /// Unblocks and puts the removed entries back where they were; the song
   /// that was playing starts again (D-446).
   Future<void> undo(DislikeUndo u) async {
+    if (u.used) return;
+    u.used = true;
     if (u.trackId case final id?) {
       if (!u.wasBlocked) store.unblockTrack(id);
       if (u.outcomeBefore != null) log.setOutcome(id, u.outcomeBefore!);

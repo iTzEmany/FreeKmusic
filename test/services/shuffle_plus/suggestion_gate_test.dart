@@ -38,4 +38,8 @@ void main() {
   test('a blocked song at row 10 of two seeds is allowed', () {
     expect(gate.allows('bad', 'fine', [10, 4]), isTrue);
   });
+
+  test('an empty artist key is never blocked, even if the store holds one', () {
+    expect(gate.allows('x', '', const []), isTrue);
+  });
 }

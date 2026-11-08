@@ -60,13 +60,15 @@ Future<void> showDislikeSheet(
                 hint: l.dislikeSheetTrackHint(r.title),
                 onTap: () => pick(false),
               ),
-              _Choice(
-                key: const ValueKey('dislike-artist'),
-                icon: Icons.close_rounded,
-                title: l.dislikeSheetArtist(artist),
-                hint: l.dislikeSheetArtistHint(artist),
-                onTap: () => pick(true),
-              ),
+              // A name with no letters has an empty key: it would block them all.
+              if (artistKey(artist).isNotEmpty)
+                _Choice(
+                  key: const ValueKey('dislike-artist'),
+                  icon: Icons.close_rounded,
+                  title: l.dislikeSheetArtist(artist),
+                  hint: l.dislikeSheetArtistHint(artist),
+                  onTap: () => pick(true),
+                ),
               Align(
                 alignment: Alignment.centerRight,
                 child: Padding(

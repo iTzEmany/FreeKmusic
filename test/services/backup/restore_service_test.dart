@@ -169,6 +169,16 @@ void main() {
       expect(store.artistBlocked('k'), isTrue);
     });
 
+    test('an unreadable dislikes.json in the zip does not fail the merge', () async {
+      final src = File(p.join(dir.path, 'src-bad.json'))..writeAsStringSync('{nope');
+      final zip = await makeBackup(['n1'], dislikes: src);
+      final store = DislikeStore(file: () async => File(p.join(dir.path, 'l2.json')), writeDelay: Duration.zero);
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeBackup(zip, here, Directory(p.join(dir.path, 'm-covers2')), dislikes: store);
+      expect(store.tracks, isEmpty);
+    });
+
     test('the recognition pass bookmarks are cleared: the restored rows may be older', () async {
       await prefs.setInt('recogPassDone', 2);
       await prefs.setString('recogPassAfter', '2:50');

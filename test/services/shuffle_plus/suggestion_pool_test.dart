@@ -202,4 +202,18 @@ void main() {
       expect(owned(result(seconds: 310)), isTrue);
     });
   });
+
+  test('clear forgets the positions', () {
+    pool.addPage('s', 'Seed', page([item('a')]));
+    expect(pool.positionsOf('a'), [1]);
+    pool.clear();
+    expect(pool.positionsOf('a'), isEmpty);
+  });
+
+  test('the same id on two pages of one seed keeps its first position', () {
+    pool.addPage('s', 'Seed', RadioPage([item('a'), item('b')], continuation: 'n'));
+    pool.addPage('s', 'Seed', page([item('c'), item('a')]));
+    expect(pool.positionsOf('a'), [1]);
+    expect(pool.positionsOf('c'), [3]);
+  });
 }

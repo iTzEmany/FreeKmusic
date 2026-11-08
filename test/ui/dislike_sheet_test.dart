@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _FakeActions implements SuggestionActions {
   final calls = <String>[];
-  static const token = DislikeUndo(trackId: 'x');
+  static final token = DislikeUndo(trackId: 'x');
 
   @override
   Future<DislikeUndo> dislikeTrack(int queueId) async {
