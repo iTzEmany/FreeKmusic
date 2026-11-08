@@ -1432,4 +1432,6 @@ mobile_scanner — fase 24 — 2026-10-19
 - [ ] 106.2 `romalrc` di NetEase
 - [ ] 106.3 Cache e provider
 - [ ] 106.4 Vista e menu
-- [ ] 106.5 Controlli di fase
+- [ ] 106.5 Cinese con il dizionario scaricato
+- [ ] 106.6 Traslitterazione scritta a mano
+- [ ] 106.7 Controlli di fase

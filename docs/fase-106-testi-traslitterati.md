@@ -27,12 +27,24 @@
 - Menu del testo: interruttore «Traslitterazione» (impostazione unica in `SettingsStore`), visibile solo se `hasCjk`. Pannello laterale desktop incluso (riusa `LyricsScreen`); card del player esclusa (F-127). Stringhe ARB it/en/de/es, etichette TalkBack.
 - Widget test `test/ui/lyrics_view_test.dart`: traslitterazione + traduzione insieme; ramo non sincronizzato a coppie; interruttore assente su un testo senza CJK.
 
-### 106.5 — Controlli di fase
+### 106.5 — Cinese con il dizionario scaricato (D-476)
+- `lib/services/lyrics/pinyin_dictionary.dart`: legge CC-CEDICT (`.txt.gz`, gzip di `dart:io`) in una mappa parola → pinyin con i toni, in un isolate; ricerca della parola più lunga sulla riga (fino a 8 caratteri), carattere singolo come ripiego, caratteri sconosciuti lasciati come sono.
+- Download alla prima richiesta (testo cinese senza `romalrc`), con `dio`, dalla copia nelle release del repo GitHub (da caricare con `gh release` all'inizio della fase, dopo conferma dell'utente); stesse regole di rete dell'arricchimento dei testi; mentre scarica «Scarico il dizionario cinese…», se fallisce «Traslitterazione non disponibile» e si riprova alla prossima apertura.
+- Impostazioni, accanto ai modelli di traduzione (`translation_models_tiles.dart`): «Dizionario cinese» con dimensione ed «Elimina». Informazioni dell'app: citazione di CC-CEDICT (CC BY-SA 4.0).
+- `romanizationProvider`: coreano → calcolata; poi cache → NetEase; poi, per il cinese, il dizionario.
+- Test: tabella (银行 → yínháng, 音乐 → yīnyuè, 我爱你 → wǒ ài nǐ, carattere ignoto), file gzip finto, download fallito → «non disponibile».
+
+### 106.6 — Traslitterazione scritta a mano (D-475)
+- «Modifica traslitterazione» nel menu del testo, come «Modifica testo» della 103 (una riga per riga del testo); vince su quella trovata; «Elimina» la toglie. Salvata come i testi a mano e nel backup (solo aggiunte al formato, test del backup verde con un campo in più).
+- Test: salva/rilegge, vince su NetEase, backup con e senza il campo.
+
+### 106.7 — Controlli di fase
 `flutter analyze`; comando mirato; `git diff origin/master -- pubspec.yaml` vuoto; review del diff (Sonnet); scheggia passo e fase; prova sul Mi A3 via adb contro il mockup (un brano giapponese con `romalrc`, uno coreano, uno cinese senza traslitterazione, interruttore spento = schermata di oggi) e su Linux nello schermo virtuale (pannello laterale). Ripulire il telefono.
 
-**Fatto quando:** i tre casi del mockup funzionano sul telefono, con l'interruttore spento nulla cambia, nessun pacchetto nuovo.
+**Fatto quando:** i tre casi del mockup funzionano sul telefono, il cinese senza `romalrc` ha il pinyin dal dizionario, la traslitterazione si scrive a mano, con l'interruttore spento nulla cambia, nessun pacchetto nuovo.
 
 ## Scelte dell'utente (8/11, dopo la fase 99)
-- **D-475** (106.2, 106.4): accesa di serie per i testi CJK; sotto metà delle righe abbinate «Traslitterazione non disponibile»; sui testi scritti a mano solo il coreano calcolato; «Modifica traslitterazione» nel menu, che vince su quella trovata e va nel backup come i testi a mano. È un task in più: va aggiunto al piano della fase prima di cominciarla.
+- **D-475** (106.2, 106.4): accesa di serie per i testi CJK; sotto metà delle righe abbinate «Traslitterazione non disponibile»; sui testi scritti a mano solo il coreano calcolato; «Modifica traslitterazione» nel menu, che vince su quella trovata e va nel backup come i testi a mano. Task 106.6.
+- **D-476**: cinese senza `romalrc` dal dizionario CC-CEDICT scaricato alla prima richiesta (task 106.5).
 
 ## Esiti
