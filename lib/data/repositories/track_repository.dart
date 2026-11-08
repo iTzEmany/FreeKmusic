@@ -515,22 +515,35 @@ class TrackRepository {
     if (countriesOf(rules).isEmpty) return query(const {});
     // The country -> artists map depends on tracks and countries: redo it, and the
     // query, at every change of either (only rules that use «nazionalita»).
-    return _watchWithCountries(rules, () async {
-      final ca = await countryArtistsOf(_db, rules);
+    // The map is reused while no write touched artist_countries (`version`) and
+    // the distinct artists are the same: the key resolution is the costly part.
+    Set<String>? cachedArtists;
+    Map<String, List<String>>? cachedMap;
+    var cachedVersion = -1;
+    return _watchWithCountries(rules, (version) async {
+      final artists = await distinctArtists(_db);
+      if (cachedMap == null || cachedVersion != version || cachedArtists!.length != artists.length || !cachedArtists!.containsAll(artists)) {
+        cachedMap = await countryArtistsOf(_db, rules, artists: artists);
+        cachedArtists = artists;
+        cachedVersion = version;
+      }
+      final ca = cachedMap!;
       final q = _byRules(rules, sort, limit, randomSeed, nowMs, ca, mostPlayed: mostPlayed);
       final rows = await _db.customSelect(q.sql, variables: q.vars).get();
       return [for (final r in rows) _db.tracks.map(r.data)];
     });
   }
 
-  Stream<List<Track>> _watchWithCountries(RuleExpr rules, Future<List<Track>> Function() run) {
+  Stream<List<Track>> _watchWithCountries(RuleExpr rules, Future<List<Track>> Function(int countriesVersion) run) {
     late final StreamController<List<Track>> c;
     StreamSubscription<Set<TableUpdate>>? sub;
+    Timer? debounce;
     var gen = 0;
+    var countriesVersion = 0; // bumped by every write on artist_countries
     Future<void> refresh() async {
       final mine = ++gen;
       try {
-        final r = await run();
+        final r = await run(countriesVersion);
         if (mine == gen && !c.isClosed) c.add(r); // only the latest answer counts
       } catch (e, st) {
         if (!c.isClosed) c.addError(e, st);
@@ -540,10 +553,15 @@ class TrackRepository {
     c = StreamController<List<Track>>(
       onListen: () {
         refresh();
-        sub = _db.tableUpdates(TableUpdateQuery.onAllTables(_ruleTables(rules))).listen((_) => refresh());
+        sub = _db.tableUpdates(TableUpdateQuery.onAllTables(_ruleTables(rules))).listen((u) {
+          if (u.any((t) => t.table == _db.artistCountries.actualTableName)) countriesVersion++;
+          debounce?.cancel(); // a burst of writes costs one re-run
+          debounce = Timer(const Duration(milliseconds: 300), refresh);
+        });
       },
       onCancel: () async {
         gen++;
+        debounce?.cancel();
         await sub?.cancel();
       },
     );

@@ -15,12 +15,25 @@ Set<String> countriesOf(RuleExpr e) => switch (e) {
       _ => const {},
     };
 
+/// The distinct non-empty `tracks.artist` spellings, in query order.
+Future<Set<String>> distinctArtists(AppDatabase db) async {
+  final rows = await db.customSelect(
+    "SELECT DISTINCT artist FROM tracks WHERE artist IS NOT NULL AND artist <> ''",
+    readsFrom: {db.tracks},
+  ).get();
+  return {for (final r in rows) r.read<String>('artist')};
+}
+
 /// For each country the rule mentions, the `tracks.artist` spellings whose main
 /// artist (`ArtistInfoRepository.keyOf`) is stored in `artist_countries` with
 /// that country. The key is a Dart normalisation SQL cannot reproduce, so it is
 /// resolved here over the distinct artists of the library (not per track).
 /// Pass the result to `toSql(countryArtists:)`.
-Future<Map<String, List<String>>> countryArtistsOf(AppDatabase db, RuleExpr e) async {
+Future<Map<String, List<String>>> countryArtistsOf(
+  AppDatabase db,
+  RuleExpr e, {
+  Set<String>? artists, // already read by the caller (see distinctArtists)
+}) async {
   final wanted = countriesOf(e);
   if (wanted.isEmpty) return const {};
   final byKey = <String, String>{};
@@ -30,12 +43,7 @@ Future<Map<String, List<String>>> countryArtistsOf(AppDatabase db, RuleExpr e) a
   }
   final out = {for (final c in wanted) c: <String>[]};
   if (byKey.isEmpty) return out;
-  final artists = await db.customSelect(
-    "SELECT DISTINCT artist FROM tracks WHERE artist IS NOT NULL AND artist <> ''",
-    readsFrom: {db.tracks},
-  ).get();
-  for (final r in artists) {
-    final a = r.read<String>('artist');
+  for (final a in artists ?? await distinctArtists(db)) {
     final c = byKey[ArtistInfoRepository.keyOf(a)];
     if (c != null) out[c]!.add(a);
   }

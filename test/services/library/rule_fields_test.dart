@@ -182,11 +182,12 @@ void main() {
       final sub = repo.watchByRules(parseRules('nazionalita:IT').expr, now: now).listen((r) => lists.add({for (final t in r) t.id}));
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(lists.last, isEmpty);
+      // > debounce of 300 ms of _watchWithCountries
       await db.into(db.artistCountries).insertOnConflictUpdate(ArtistCountriesCompanion.insert(artistKey: 'daft punk', country: const Value('IT'), checkedAt: 1));
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       expect(lists.last, {5});
       await add(6, 'f', artist: 'Daft Punk');
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       expect(lists.last, {5, 6});
       await sub.cancel();
     });
