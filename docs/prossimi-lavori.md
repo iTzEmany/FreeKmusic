@@ -145,6 +145,13 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - [x] `mergeArtistShelves`/`groupShelvesProvider` in `lib/ui` → `lib/providers/artist_shelves_providers.dart` (99.3). Restano aperte, di proposito: la chiave propria (quella di `release_diff` unirebbe edizioni diverse) e le pagine degli alias fuori dal budget (D-465: il blocco va nel fetch di `_cached`, cambio di comportamento).
 - [x] Chiave artista ripetuta → `artistKey` accanto a `matchKey` (99.2).
 
+### Dalla review di architettura della fase 99
+- Budget e pausa scritti a mano fuori da `budgetedYtm`: `YtmPodcasts._guarded` (con attesa), `_askCard`/`_fail` di `smart_search`, `second_opinion_providers.dart`. Rimedio: una variante con attesa e un `tripIfRateLimited(cooldown, e)`; i podcast prima o insieme alla fase 102.
+- `artistKey`/`matchKey`/`extractPrimaryArtist` stanno in `services/import/track_matcher.dart`, importato da `data/` e `services/backup` per una funzione di testo. Rimedio: spostarle in `lib/core/` all'inizio della fase 101, prima che `DislikeStore` diventi un altro consumatore.
+- `mergeArtistWith` (UI) compone cooldown, limiter e catalogo da sé, come `artistMergeSearchProvider`. Rimedio: una ricerca degli artisti con budget in `ArtistMergeOps`, con le due varianti di esito.
+- La cache dei paesi è divisa fra la closure di `watchByRules` e `_watchWithCountries` (versione passata come `int`). Rimedio (basso): una piccola `CountryArtistsCache` in `rule_country.dart`.
+- Nomi paralleli: `artistCountryKey` → `ArtistInfoRepository.keyOf` → `artistKey`; `_artistKey` di `stats_queries.dart` è un'altra chiave (minuscole ASCII come `lower()` di SQLite). Rimedio: rinominarla (`_libraryNameKey`) e togliere gli alias quando si sposta il modulo.
+
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`.
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
