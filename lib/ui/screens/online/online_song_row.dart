@@ -12,7 +12,7 @@ import '../../../providers/player_providers.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/track_actions.dart' show showOnlineActions;
 import '../../widgets/track_row.dart' show SwipeToQueue;
-import '../now_playing/now_playing_screen.dart' show playOnlineAndOpen;
+import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
 import '../../widgets/format_utils.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/track_row_selection.dart';
@@ -68,7 +68,7 @@ void startOnlineDownloads(
 void tapOnline(BuildContext context, WidgetRef ref, YtResult r) {
   unawaited(ref.read(playerControllerProvider).inJam
       ? queueOnline(context, ref, r)
-      : playOnlineAndOpen(context, ref, r));
+      : playFromSearchAndOpen(context, ref, r));
 }
 
 /// Swipe or «In coda» on an online row; says so only when it worked.

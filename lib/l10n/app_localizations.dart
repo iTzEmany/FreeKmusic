@@ -2020,6 +2020,12 @@ abstract class AppLocalizations {
   /// **'Non riesco a caricare i dati.'**
   String get loadFailed;
 
+  /// Notice on an artist page when the top songs could not be read: only downloaded songs play
+  ///
+  /// In it, this message translates to:
+  /// **'Top non disponibile'**
+  String get artistTopMissing;
+
   /// No description provided for @navHome.
   ///
   /// In it, this message translates to:
@@ -10872,6 +10878,54 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Iscriviti a {name}'**
   String podcastSubscribeTo(String name);
+
+  /// Snackbar right after a pick in Search: the radio is being asked for similar songs.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerco brani simili…'**
+  String get searchSimilarLooking;
+
+  /// Snackbar once the pick plays with similar songs after it.
+  ///
+  /// In it, this message translates to:
+  /// **'Coda: «{title}» e brani simili'**
+  String searchSimilarQueued(String title);
+
+  /// Snackbar when no similar song came (offline, source off or none found): only the pick plays.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun brano simile: suono solo «{title}»'**
+  String searchSimilarNone(String title);
+
+  /// Action of the snackbar: opens the queue sheet.
+  ///
+  /// In it, this message translates to:
+  /// **'Vedi coda'**
+  String get searchSeeQueue;
+
+  /// Header of the queue sheet above the songs that follow a Search pick.
+  ///
+  /// In it, this message translates to:
+  /// **'Simili a «{title}»'**
+  String queueSimilarTo(String title);
+
+  /// Small tag in the queue header after a Search pick: where the similar songs come from.
+  ///
+  /// In it, this message translates to:
+  /// **'radio YouTube Music'**
+  String get queueSimilarTag;
+
+  /// Count line of the queue header after a Search pick: songs that follow, and how many are already in the library.
+  ///
+  /// In it, this message translates to:
+  /// **'{total, plural, one{1 brano} other{{total} brani}}, {owned} già in libreria'**
+  String queueSimilarCount(int total, int owned);
+
+  /// Line of the queue header while the first similar songs are being asked.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerco i brani simili…'**
+  String get queueSimilarSearching;
 }
 
 class _AppLocalizationsDelegate

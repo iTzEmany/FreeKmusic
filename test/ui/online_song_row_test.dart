@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:codecore/app.dart';
+import 'package:codecore/data/db/app_database.dart' show Track;
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
@@ -33,6 +34,11 @@ class _Ctrl implements PlayerController {
 
   @override
   Future<void> playOnline(YtResult r) async => calls.add('play');
+  @override
+  Future<bool?> playFromSearch({Track? track, YtResult? online}) async {
+    calls.add('play');
+    return false;
+  }
   @override
   Future<void> enqueueOnline(YtResult r) async {
     if (failEnqueue) throw StateError('no');

@@ -14,6 +14,7 @@ import '../../services/library/rules/rule_sql.dart';
 import '../../services/online/youtube_service.dart' show YtResult;
 import '../db/app_database.dart';
 import 'duplicate_repository.dart';
+import 'artist_info_repository.dart' show ArtistInfoRepository;
 import 'light_tracks.dart';
 import 'track_genre_repository.dart';
 import 'track_kinds.dart';
@@ -478,6 +479,26 @@ class TrackRepository {
           'ORDER BY ${_orderSql(sort, randomSeed, mostPlayed: mostPlayed)}$lim',
       vars: vars,
     );
+  }
+
+  /// The library songs whose main artist is [name], whatever the spelling in
+  /// the tags (same artist key), by title.
+  Future<List<Track>> tracksOfArtist(String name) async {
+    final key = ArtistInfoRepository.keyOf(name);
+    // A name of only symbols has an empty key: match the exact spelling.
+    final spellings = key.isEmpty ? [name] : await spellingsOf(_db, key);
+    if (spellings.isEmpty) return const [];
+    return _db
+        .customSelect(
+          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 '
+          'AND ignored = 0 AND kind = 0 AND artist IN '
+          '(${List.filled(spellings.length, '?').join(',')}) '
+          'ORDER BY title COLLATE NOCASE',
+          variables: [for (final s in spellings) Variable<String>(s)],
+          readsFrom: {_db.tracks},
+        )
+        .map((r) => _db.tracks.map(r.data))
+        .get();
   }
 
   /// The tables a rule reads: a write to any other must not redo its query.

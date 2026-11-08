@@ -24,6 +24,20 @@ Future<Set<String>> distinctArtists(AppDatabase db) async {
   return {for (final r in rows) r.read<String>('artist')};
 }
 
+/// The `tracks.artist` spellings grouped by their main artist key
+/// (`ArtistInfoRepository.keyOf`).
+Map<String, List<String>> spellingsByKey(Iterable<String> artists) {
+  final out = <String, List<String>>{};
+  for (final a in artists) {
+    (out[ArtistInfoRepository.keyOf(a)] ??= []).add(a);
+  }
+  return out;
+}
+
+/// The spellings of the artist with main key [key] in the library.
+Future<List<String>> spellingsOf(AppDatabase db, String key) async =>
+    spellingsByKey(await distinctArtists(db))[key] ?? const [];
+
 /// For each country the rule mentions, the `tracks.artist` spellings whose main
 /// artist (`ArtistInfoRepository.keyOf`) is stored in `artist_countries` with
 /// that country. The key is a Dart normalisation SQL cannot reproduce, so it is
@@ -43,9 +57,9 @@ Future<Map<String, List<String>>> countryArtistsOf(
   }
   final out = {for (final c in wanted) c: <String>[]};
   if (byKey.isEmpty) return out;
-  for (final a in artists ?? await distinctArtists(db)) {
-    final c = byKey[ArtistInfoRepository.keyOf(a)];
-    if (c != null) out[c]!.add(a);
+  final spellings = spellingsByKey(artists ?? await distinctArtists(db));
+  for (final e in byKey.entries) {
+    out[e.value]!.addAll(spellings[e.key] ?? const []);
   }
   return out;
 }

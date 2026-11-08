@@ -30,18 +30,30 @@ bool Function(YtResult r) inLibraryTest({
 }) =>
     (r) => hasDownload(r.id) || (library != null && libraryMatchOf(r, library) != null);
 
-/// A library song whose radio feeds a [SuggestionPool].
+/// A song whose radio feeds a [SuggestionPool]: a library song, or an online
+/// one by its video id ([RadioSeed.online]).
 class RadioSeed {
-  RadioSeed(this.track);
+  RadioSeed(Track track)
+    : source = track,
+      title = track.title,
+      key = '${track.id}';
 
-  final Track track;
+  RadioSeed.online(String this.videoId, this.title) : source = null, key = videoId;
+
+  /// The library song, null for an online seed.
+  final Track? source;
+
+  /// The library song; only for seeds that have one (no video id yet).
+  Track get track => source!;
+
+  final String title;
   String? videoId;
   bool fetched = false;
   bool searchOnly = false;
   bool dead = false;
 
   /// Key of the seed in the pool.
-  String get key => '${track.id}';
+  final String key;
 
   /// Whether [pool] has no page of this seed, or has used up the last one
   /// and the radio has more.

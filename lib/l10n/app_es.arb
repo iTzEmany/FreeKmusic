@@ -466,6 +466,8 @@
   "playNextDone": "Sonará a continuación",
   "ytSearchPrompt": "Busca una canción o pega un enlace",
   "loadFailed": "No se pudieron cargar los datos.",
+  "artistTopMissing": "Top no disponible",
+  "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Inicio",
   "navSearch": "Buscar",
   "devicesTitle": "Dispositivos",
@@ -3432,5 +3434,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "Buscando canciones similares…",
+  "searchSimilarQueued": "Cola: «{title}» y canciones similares",
+  "searchSimilarNone": "Sin canciones similares: suena solo «{title}»",
+  "searchSeeQueue": "Ver cola",
+  "queueSimilarTo": "Similares a «{title}»",
+  "queueSimilarTag": "radio de YouTube Music",
+  "queueSimilarCount": "{total, plural, one{1 canción} other{{total} canciones}}, {owned} ya en la biblioteca",
+  "queueSimilarSearching": "Buscando canciones similares…"
 }

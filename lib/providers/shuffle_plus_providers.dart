@@ -8,11 +8,14 @@ import '../core/network_kind.dart';
 import '../data/settings/settings_store.dart';
 import '../services/audio/codecore_audio_handler.dart';
 import '../services/import/track_matcher.dart';
+import '../services/online/merge_results.dart' show libraryMatchOf;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
+import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/radio_gate.dart';
+import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed;
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
@@ -265,6 +268,56 @@ class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
   }
 }
 
+/// Why the radio must not be asked (null: it may), the same for the genre mix
+/// and for the songs similar to a Search pick.
+Future<GenreMixOff?> radioOffReason({
+  required bool jam,
+  required Future<String?> toolVersion,
+  required NetworkProbe probe,
+  required bool unmeteredOnly,
+  required RadioGate gate,
+}) async {
+  if (jam) return GenreMixOff.jam;
+  if (await toolVersion == null) return GenreMixOff.noTool;
+  final net = await probe.current();
+  if (!net.online) return GenreMixOff.offline;
+  if (net.metered && unmeteredOnly) return GenreMixOff.metered;
+  return gate.rateLimited ? GenreMixOff.rateLimited : null;
+}
+
+/// The library track an online song already is by title and artist, for the
+/// similar songs of a Search pick (null: none, or the index is not ready).
+final libraryMatchIdProvider = Provider<Future<int?> Function(YtResult r)>((ref) {
+  return (r) async => libraryMatchOf(r, await ref.read(libraryIndexProvider.future))?.id;
+});
+
+/// The radio of a Search pick (D-429, D-467): null when [radioOffReason] says
+/// so. The library is not left out: its songs and the online ones mix.
+final similarFillProvider = Provider<Future<RadioFill?> Function(RadioSeed seed)>((ref) {
+  return (seed) async {
+    if (!kEnableYoutube) return null;
+    final gate = ref.read(radioGateProvider);
+    final off = await radioOffReason(
+      jam: ref.read(jamProvider).active,
+      toolVersion: ref.read(ytDlpStatusProvider.future).then((s) => s.version),
+      probe: ref.read(networkProbeProvider),
+      unmeteredOnly: ref.read(shufflePlusConfigProvider).unmeteredOnly,
+      gate: gate,
+    );
+    if (off != null) return null;
+    final log = ref.read(suggestionLogProvider);
+    await log.load();
+    return RadioFill(
+      seeds: [seed],
+      resolver: await ref.read(seedResolverProvider.future),
+      radioPage: ref.read(ytmRadioServiceProvider).page,
+      log: log,
+      gate: gate,
+      inLibrary: (_) => false,
+    );
+  };
+});
+
 /// The online songs of a genre page (D-356): the library songs of the genre
 /// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,
 /// no yt-dlp, rate limit) but whether Shuffle+ is on or not. Worked out once
@@ -298,14 +351,13 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
     radioPage: radio.page,
     log: log,
     gate: gate,
-    offReason: () async {
-      if (jam) return GenreMixOff.jam;
-      if ((await tool).version == null) return GenreMixOff.noTool;
-      final net = await probe.current();
-      if (!net.online) return GenreMixOff.offline;
-      if (net.metered && unmeteredOnly) return GenreMixOff.metered;
-      return gate.rateLimited ? GenreMixOff.rateLimited : null;
-    },
+    offReason: () => radioOffReason(
+      jam: jam,
+      toolVersion: tool.then((s) => s.version),
+      probe: probe,
+      unmeteredOnly: unmeteredOnly,
+      gate: gate,
+    ),
     // Read after awaits: a disposed ref cannot read, and the mix is cancelled anyway.
     library: () async => ref.mounted ? ref.read(libraryIndexProvider.future) : LibraryIndex(const []),
     cancelled: () => !ref.mounted,

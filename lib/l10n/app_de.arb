@@ -466,6 +466,8 @@
   "playNextDone": "Wird als Nächstes gespielt",
   "ytSearchPrompt": "Titel suchen oder Link einfügen",
   "loadFailed": "Die Daten konnten nicht geladen werden.",
+  "artistTopMissing": "Top-Songs nicht verfügbar",
+  "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Start",
   "navSearch": "Suche",
   "devicesTitle": "Geräte",
@@ -3432,5 +3434,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "Suche ähnliche Titel …",
+  "searchSimilarQueued": "Warteschlange: «{title}» und ähnliche Titel",
+  "searchSimilarNone": "Keine ähnlichen Titel: nur «{title}» läuft",
+  "searchSeeQueue": "Warteschlange ansehen",
+  "queueSimilarTo": "Ähnlich wie «{title}»",
+  "queueSimilarTag": "YouTube-Music-Radio",
+  "queueSimilarCount": "{total, plural, one{1 Titel} other{{total} Titel}}, {owned} schon in der Mediathek",
+  "queueSimilarSearching": "Suche ähnliche Titel …"
 }

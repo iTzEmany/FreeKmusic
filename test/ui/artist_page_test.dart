@@ -1,5 +1,7 @@
 import 'package:codecore/core/constants.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
+import 'package:codecore/providers/artist_all_songs_provider.dart';
+import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -80,6 +82,16 @@ class _CountingCatalog extends FakeCatalog {
     refreshFlags.add(refresh);
     return CatalogResult(_full, DateTime(2026, 10, 22));
   }
+}
+
+class _Ctrl implements PlayerController {
+  final calls = <String>[];
+  @override
+  Future<void> playMixed(List<MixItem> items,
+          {int? index, PlayContext? context, bool? shuffle}) async =>
+      calls.add('${items.length} index=$index shuffle=$shuffle');
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 void main() {
@@ -237,7 +249,13 @@ void main() {
     expect(find.text('25.9M ascoltatori mensili'), findsOneWidget);
     if (kEnableYoutube) {
       expect(find.byKey(const ValueKey('follow-button')), findsOneWidget);
-      expect(find.byType(FilledButton), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('follow-button')),
+          matching: find.byType(FilledButton),
+        ),
+        findsNothing,
+      );
     }
     await h.dispose(tester);
   });
@@ -613,5 +631,30 @@ void main() {
       await h.dispose(tester);
     });
   });
-}
 
+  testWidgets('Play and Shuffle play the list (shuffle false/true)',
+      (tester) async {
+    final ctrl = _Ctrl();
+    tester.view.physicalSize = const Size(600, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const ArtistPageScreen(artist: _ref),
+      extraOverrides: [
+        artistPageProvider.overrideWith(
+            (ref, id) async => CatalogResult(_full, DateTime(2026, 10, 22))),
+        artistAllSongsProvider.overrideWith((ref, key) async =>
+            (items: [(track: null, online: ytmSong('s1', 'Time'), seedTitle: null)],
+              topMissing: false)),
+        playerControllerProvider.overrideWithValue(ctrl),
+      ],
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('artist-play')));
+    await tester.tap(find.byKey(const ValueKey('artist-shuffle')));
+    expect(ctrl.calls, ['1 index=0 shuffle=false', '1 index=0 shuffle=true']);
+    await h.dispose(tester);
+  });
+}

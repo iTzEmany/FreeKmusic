@@ -1160,6 +1160,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loadFailed => 'Impossible de charger les données.';
 
   @override
+  String get artistTopMissing => 'Top indisponible';
+
+  @override
   String get navHome => 'Accueil';
 
   @override
@@ -6840,4 +6843,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String podcastSubscribeTo(String name) {
     return 'S’abonner à $name';
   }
+
+  @override
+  String get searchSimilarLooking => 'Recherche de morceaux similaires…';
+
+  @override
+  String searchSimilarQueued(String title) {
+    return 'File : «$title» et morceaux similaires';
+  }
+
+  @override
+  String searchSimilarNone(String title) {
+    return 'Aucun morceau similaire : lecture de «$title» seul';
+  }
+
+  @override
+  String get searchSeeQueue => 'Voir la file';
+
+  @override
+  String queueSimilarTo(String title) {
+    return 'Similaires à «$title»';
+  }
+
+  @override
+  String get queueSimilarTag => 'radio de YouTube Music';
+
+  @override
+  String queueSimilarCount(int total, int owned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total morceaux',
+      one: '1 morceau',
+    );
+    return '$_temp0, $owned déjà dans la bibliothèque';
+  }
+
+  @override
+  String get queueSimilarSearching => 'Recherche de morceaux similaires…';
 }
