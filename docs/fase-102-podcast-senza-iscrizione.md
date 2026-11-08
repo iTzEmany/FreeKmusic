@@ -27,4 +27,7 @@
 
 **Fatto quando:** migrazione provata sopra dati veri, anteprima e ripresa funzionano senza iscrizione, «Riprendi» mostra l'episodio.
 
+## Scelte dell'utente (8/11, dopo la fase 99)
+- **D-470** (102.2): smettendo di seguire un podcast con episodi scaricati, un avviso chiede se tenerli o cancellarli; senza download nessuna domanda; nessuna pulizia automatica dei non seguiti.
+
 ## Esiti

@@ -32,4 +32,7 @@
 
 **Fatto quando:** i tre casi del mockup funzionano sul telefono, con l'interruttore spento nulla cambia, nessun pacchetto nuovo.
 
+## Scelte dell'utente (8/11, dopo la fase 99)
+- **D-475** (106.2, 106.4): accesa di serie per i testi CJK; sotto metà delle righe abbinate «Traslitterazione non disponibile»; sui testi scritti a mano solo il coreano calcolato; «Modifica traslitterazione» nel menu, che vince su quella trovata e va nel backup come i testi a mano. È un task in più: va aggiunto al piano della fase prima di cominciarla.
+
 ## Esiti

@@ -33,4 +33,8 @@
 
 **Fatto quando:** la daylist cambia al cambio di fascia, rispetta quota, generi e umori, e le impostazioni la modificano.
 
+## Scelte dell'utente (8/11, dopo la fase 99)
+- **D-473** (104.2): la daylist si accorcia; sotto i 15 brani non si crea e la card non compare, con l'avviso nelle impostazioni accanto alla fascia; con meno di 50 brani il dettaglio lo dice sotto il titolo.
+- **D-474** (104.3): la daylist si salva fino al cambio di fascia; al cambio la coda in corso non si tocca; ripremendo Play sulla card parte la nuova.
+
 ## Esiti
