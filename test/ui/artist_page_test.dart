@@ -89,7 +89,7 @@ class _Ctrl implements PlayerController {
   @override
   Future<void> playMixed(List<MixItem> items,
           {int? index, PlayContext? context, bool? shuffle}) async =>
-      calls.add('${items.length} shuffle=$shuffle');
+      calls.add('${items.length} index=$index shuffle=$shuffle');
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
@@ -654,7 +654,7 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('artist-play')));
     await tester.tap(find.byKey(const ValueKey('artist-shuffle')));
-    expect(ctrl.calls, ['1 shuffle=false', '1 shuffle=true']);
+    expect(ctrl.calls, ['1 index=0 shuffle=false', '1 index=0 shuffle=true']);
     await h.dispose(tester);
   });
 }

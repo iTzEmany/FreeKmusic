@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show Random;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,7 +135,7 @@ class ArtistPageScreen extends ConsumerWidget {
               : null,
         ),
       ),
-      if (data != null) SliverToBoxAdapter(child: _playRow(ref, head, shelves ?? data.value.shelves)),
+      if (data != null || page.hasError) SliverToBoxAdapter(child: _playRow(ref, head, ids)),
       if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length, onTap: () => showMergedProfilesSheet(context, head.id))),
       if (suggestion != null)
         SliverToBoxAdapter(
@@ -227,16 +228,20 @@ class ArtistPageScreen extends ConsumerWidget {
 
   /// Play / Shuffle of the top songs plus the downloaded ones (no player
   /// opens, as on the genre page: the mini player shows it).
-  Widget _playRow(WidgetRef ref, YtmArtistRef head, List<YtmShelf> shelves) {
-    final link = shelves.whereType<YtmSongShelf>().map((s) => s.allSongs).nonNulls.firstOrNull;
-    final all = ref.watch(artistAllSongsProvider(
-        (name: head.name, browseId: link?.browseId, params: link?.params)));
+  Widget _playRow(WidgetRef ref, YtmArtistRef head, List<String> ids) {
+    final all = ref.watch(
+        artistAllSongsProvider((name: head.name, ids: ids.join('|'))));
+    if (all.hasError) AppLog.w('artist songs not read', all.error, all.stackTrace);
     final data = all.value;
     final ctx = PlayContext(PlayContextKind.artist, head.name);
-    void play({required bool shuffle}) => unawaited(ref
-        .read(playerControllerProvider)
-        .playMixed(data!.items,
-            index: shuffle ? null : 0, context: ctx, shuffle: shuffle));
+    Future<void> play({required bool shuffle}) {
+      final items = data!.items;
+      return ref.read(playerControllerProvider).playMixed(items,
+          index: shuffle ? Random().nextInt(items.length) : 0,
+          context: ctx,
+          shuffle: shuffle);
+    }
+
     return ArtistPlayRow(
       busy: all.isLoading,
       canPlay: data != null && data.items.isNotEmpty,
