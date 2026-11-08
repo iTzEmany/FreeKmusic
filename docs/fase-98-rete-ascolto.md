@@ -33,3 +33,6 @@
 **Fatto quando:** 98.1 in un commit a sé, lo script gira con `--only "Album"`, i test di caratterizzazione sono verdi su `master`.
 
 ## Esiti
+
+- **98.2** (script, Mi A3 `0d7ae9df206e`, build profile; non è una nuova base, serve solo a vedere che lo script gira): `scripts/perf_device.py` non ha più `scenario()`, tutti gli scenari sono `gestures()` con posizioni trovate nella preparazione e solo `input tap`/`swipe` sulle coordinate salvate dentro la misura. «Album» e «Libreria Tutto→…» partono da `to_library_top` (via il BACK di `open_album_tab`); «Ricerca» usa la scheda Cerca del dock (la lente della Libreria si teneva la query e rompeva «Scroll Libreria»). `--only "Album"` da solo: 578 frame, build p50/p90/p99 3,2/5,6/10,8 ms, raster 6,5/9,6/22,7 ms, 1,7 % oltre 16,7 ms. Giro completo (`--playback`, 15 scenari) senza errori: da Pallino schede 2,3 % a Apertura player 4,0 % oltre 16,7 ms (Album 595 frame, 1,3 %; Ricerca 0,4 %; Cambio scheda 3,8 %; Fogli 3,8 %); avvio a freddo mediana 2804 ms, PSS 270 MB.
+- **Anello** tolto: era solo `mini` + `sleep(6)` (il player aperto fermo), nessun gesto da misurare; le animazioni dell'anello sono già dentro «Apertura player», «Lettore dal dock» e «Fogli». Tolto anche dall'elenco `SCENARIOS`.

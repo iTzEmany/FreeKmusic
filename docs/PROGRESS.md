@@ -1372,11 +1372,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 97.5 Controlli di fase
 
 ## Fase 98 — Rete di sicurezza, formattazione e script delle misure (`fase-98-rete-ascolto.md`)
-- [ ] 98.1 `dart format` di 4 file (commit a parte)
-- [ ] 98.2 Script delle misure: Album da solo, scenari a gesti
-- [ ] 98.3 Caratterizzazione del debito (429, chiave artista, scaffali, paesi)
-- [ ] 98.4 Caratterizzazione del backup
-- [ ] 98.5 Controlli di fase
+- [x] 98.1 `dart format` di 4 file (commit a parte)
+- [x] 98.2 Script delle misure: Album da solo, scenari a gesti
+- [x] 98.3 Caratterizzazione del debito (429, chiave artista, scaffali, paesi)
+- [x] 98.4 Caratterizzazione del backup
+- [x] 98.5 Controlli di fase
 
 ## Fase 99 — Debito: 429, chiave artista, scaffali, paesi (`fase-99-debito-artisti.md`)
 - [ ] 99.1 Un solo «budget + pausa dopo un 429»

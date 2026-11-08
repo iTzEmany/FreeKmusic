@@ -1,13 +1,36 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/artist_merge_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/smart_search_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/artist_link_resolver.dart';
+import 'package:codecore/services/online/request_budget.dart' show WindowLimiter;
+import 'package:codecore/services/online/source_cooldown.dart';
+import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/services/online/ytm_catalog.dart';
+import 'package:codecore/services/online/query_match.dart' show MediaKind;
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:drift/native.dart';
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 YtmArtistRef _a(String id, String name) => YtmArtistRef(id: id, name: name);
+
+class _FakeCatalog implements YtmCatalog {
+  _FakeCatalog(this.onSearch);
+  final Future<List<YtmArtistRef>> Function() onSearch;
+  int calls = 0;
+
+  @override
+  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) {
+    calls++;
+    return onSearch();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
 
 void main() {
   late AppDatabase db;
@@ -79,5 +102,63 @@ void main() {
     await repo.merge('1', '5');
     await repo.markNotSame('5', '2');
     expect(await ask(me), isNull);
+  });
+
+  group('real search provider', () {
+    late ProviderContainer rc;
+    Future<YtmArtistRef?> suggest(_FakeCatalog cat, {bool paused = false, WindowLimiter? limiter}) async {
+      rc = ProviderContainer(overrides: [
+        databaseProvider.overrideWithValue(db),
+        ytmCatalogProvider.overrideWithValue(cat),
+        ytmLanguageProvider.overrideWithValue('en'),
+        if (limiter != null) searchRowsLimiterProvider.overrideWithValue(limiter),
+      ]);
+      addTearDown(rc.dispose);
+      if (paused) rc.read(sourceCooldownProvider).trip(MediaKind.ytmSong);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      rc.listen(artistMergeSuggestionProvider(me), (_, _) {});
+      return rc.read(artistMergeSuggestionProvider(me).future);
+    }
+
+    test('a 429 gives no suggestion and pauses YouTube Music', () async {
+      final cat = _FakeCatalog(() => Future.error(const YtException(YtErrorKind.rateLimited)));
+      expect(await suggest(cat), isNull);
+      expect(cat.calls, 1);
+      expect(rc.read(sourceCooldownProvider).isPaused(MediaKind.ytmSong), isTrue);
+    });
+
+    test('already paused: no search, no suggestion', () async {
+      final cat = _FakeCatalog(() async => [_a('2', 'Queen')]);
+      expect(await suggest(cat, paused: true), isNull);
+      expect(cat.calls, 0);
+    });
+
+    test('no slot left: no search, no suggestion', () async {
+      final limiter = WindowLimiter(perMinute: 1)..tryAcquire();
+      final cat = _FakeCatalog(() async => [_a('2', 'Queen')]);
+      expect(await suggest(cat, limiter: limiter), isNull);
+      expect(cat.calls, 0);
+    });
+
+    test('same name searches once; a 429 drops the entry so the next ask searches again', () async {
+      var fail = true;
+      final cat = _FakeCatalog(() => fail
+          ? Future.error(const YtException(YtErrorKind.rateLimited))
+          : Future.value([_a('2', 'Queen')]));
+      rc = ProviderContainer(overrides: [
+        ytmCatalogProvider.overrideWithValue(cat),
+        ytmLanguageProvider.overrideWithValue('en'),
+        sourceCooldownProvider.overrideWithValue(SourceCooldown(pause: Duration.zero)), // so a 429 does not block the retry
+      ]);
+      addTearDown(rc.dispose);
+      final search = rc.read(artistMergeSearchProvider);
+      await search('Queen');
+      await search('QUEEN'); // same matchKey, but the failed entry was dropped
+      expect(cat.calls, 2);
+      fail = false;
+      await search('Queen');
+      await search('queen');
+      expect(cat.calls, 3);
+    });
   });
 }

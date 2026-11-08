@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/backup/backup_service.dart';
+import 'package:codecore/services/backup/restore_service.dart' show mergeBackup;
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,10 +30,15 @@ void main() {
     for (var i = 0; i < 3; i++) {
       await db.into(db.tracks).insert(TracksCompanion.insert(
           path: '/music/$i.mp3', title: 'T$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
-          folderId: Value(folder), isFavorite: Value(i == 0)));
+          folderId: Value(folder), isFavorite: Value(i == 0),
+          playCount: Value(i == 0 ? 5 : 0), lastPlayedAt: Value(i == 0 ? 99 : null),
+          lyricsPlain: Value(i == 0 ? 'la la' : null), lyricsSynced: Value(i == 0 ? '[00:01.00]la' : null),
+          curiosities: Value(i == 0 ? 'curious' : null)));
     }
     final pl = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
     await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 1, position: 0));
+    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 3, position: 1));
+    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 2, position: 2));
   });
   tearDown(() async {
     await db.close();
@@ -108,5 +114,99 @@ void main() {
     expect(fresh.getStringList('notDuplicates'), ['a', 'b']);
     expect(fresh.getString('deviceId'), 'other');
     expect(fresh.getString('playlistSorts'), '{"12":"title:asc"}');
+  });
+
+  /// A library with the same three tracks as [db] and none of its user data.
+  Future<AppDatabase> freshLibrary() async {
+    final fresh = AppDatabase(NativeDatabase.memory());
+    addTearDown(fresh.close);
+    for (var i = 0; i < 3; i++) {
+      await fresh
+          .into(fresh.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/music/$i.mp3',
+              title: 'T$i',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+            ),
+          );
+    }
+    return fresh;
+  }
+
+  /// Backup of [db] restored (merged) into [fresh]; [edit] may rewrite the zip's JSON files first.
+  Future<void> restoreInto(
+    AppDatabase fresh, {
+    void Function(Map<String, Map<String, dynamic>> json)? edit,
+  }) async {
+    final out = p.join(dir.path, 'rt.zip');
+    await service().createBackup(out);
+    if (edit != null) {
+      final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
+      final json = {
+        for (final n in ['manifest.json', 'user_data.json'])
+          n: jsonDecode(
+            utf8.decode(zip.findFile(n)!.content as List<int>),
+          ) as Map<String, dynamic>,
+      };
+      edit(json);
+      final enc = Archive();
+      for (final f in zip.files) {
+        final body = json[f.name] != null
+            ? utf8.encode(jsonEncode(json[f.name]))
+            : f.content as List<int>;
+        enc.addFile(ArchiveFile(f.name, body.length, body));
+      }
+      File(out).writeAsBytesSync(ZipEncoder().encode(enc));
+    }
+    await mergeBackup(
+      File(out),
+      fresh,
+      Directory(p.join(dir.path, 'restored-covers'))..createSync(),
+    );
+  }
+
+  Future<void> expectSameUserData(AppDatabase fresh) async {
+    final favs = (await fresh.select(fresh.tracks).get())
+        .where((t) => t.isFavorite)
+        .map((t) => t.path);
+    expect(favs, ['/music/0.mp3']);
+    final t0 = (await fresh.select(fresh.tracks).get()).firstWhere((t) => t.path == '/music/0.mp3');
+    expect((t0.playCount, t0.lastPlayedAt), (5, 99));
+    expect((t0.lyricsPlain, t0.lyricsSynced, t0.curiosities), ('la la', '[00:01.00]la', 'curious'));
+    final pl = await fresh.select(fresh.playlists).getSingle();
+    expect(pl.name, 'Mix');
+    final items = await fresh.select(fresh.playlistTracks).get();
+    expect([for (final i in items) (i.trackId, i.position)], [(1, 0), (3, 1), (2, 2)]);
+  }
+
+  test('a backup in today\'s format restores into a fresh library with the same user data', () async {
+    final fresh = await freshLibrary();
+    await restoreInto(fresh, edit: (j) {
+      expect(j['manifest.json']!['playlistCount'], 1);
+      expect(j['manifest.json']!['trackCount'], 3);
+    });
+    await expectSameUserData(fresh);
+  });
+
+  test('a backup with unknown extra fields (top level and inside entries) restores as if they were absent', () async {
+    final fresh = await freshLibrary();
+    await restoreInto(
+      fresh,
+      edit: (j) {
+        j['manifest.json']!['future'] = {'x': 1};
+        j['user_data.json']!['future'] = [1, 2];
+        (j['user_data.json']!['tracks'] as List).first['whatever'] = 7;
+        (j['user_data.json']!['playlists'] as List).first['extra'] = 'y';
+        ((j['user_data.json']!['playlists'] as List).first['items'] as List)
+                .first['more'] =
+            true;
+      },
+    );
+    await expectSameUserData(fresh);
   });
 }

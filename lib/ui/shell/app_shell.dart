@@ -68,7 +68,10 @@ class AppShell extends ConsumerWidget {
     control: true,
   );
 
-  Map<ShortcutActivator, VoidCallback> _shortcuts(WidgetRef ref, {required bool preview}) {
+  Map<ShortcutActivator, VoidCallback> _shortcuts(
+    WidgetRef ref, {
+    required bool preview,
+  }) {
     void back() => ref
         .read(tabNavigatorKeysProvider)[ref.read(navIndexProvider)]
         .currentState
@@ -140,7 +143,9 @@ class AppShell extends ConsumerWidget {
       // A page pushed in the tab that guards its exit keeps the tab as it is.
       if (ShellNav.pageGuardsExit(keys[prev].currentState)) return;
       ref.read(tabNavigatorKeysProvider.notifier).reset(prev);
-      if (prev == NavTab.search.index) ref.read(searchControllerProvider).clear();
+      if (prev == NavTab.search.index) {
+        ref.read(searchControllerProvider).clear();
+      }
       if (prev == NavTab.library.index) {
         ref.invalidate(trackQueryProvider(false));
       }
@@ -233,7 +238,9 @@ class AppShell extends ConsumerWidget {
             const JamInviteBanner(),
             // Own layer: the dot, ink and mini player repaint only the dock, and the
             // engine can cache it while the page under it animates.
-            RepaintBoundary(child: ShellDock(items: items, selected: index, onSelect: select)),
+            RepaintBoundary(
+              child: ShellDock(items: items, selected: index, onSelect: select),
+            ),
           ],
         ),
       );

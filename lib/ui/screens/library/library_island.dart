@@ -88,78 +88,86 @@ class LibraryIsland extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = LibraryIslandRows.of(context);
     // Own layer: the page under it (tab change, results) repaints without it.
-    return RepaintBoundary(child: Material(
-      color: context.cc.surface2,
-      borderRadius: BorderRadius.circular(CcDims.dockRadius),
-      clipBehavior: Clip.antiAlias,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(end: searching ? 1 : 0),
-        duration: ccDuration(context, CcMotion.sheet),
-        curve: CcMotion.curveIn,
-        builder: (context, t, _) {
-          // Built once per search frame, not per scroll frame.
-          final title = _TitleRow(
-            t: t,
-            height: rows.title,
-            searching: searching,
-            field: field,
-            onSearch: onSearch,
-          );
-          final tabs = _Tabs(
-            kind: kind,
-            onKind: onKind,
-            onHeight: onTabsHeight,
-          );
-          final toolbar = SizedBox(
-            height: rows.toolbar,
-            child: LibraryToolbar(
-              countLabel: countLabel,
-              sort: sort,
-              ascending: ascending,
+    return RepaintBoundary(
+      child: Material(
+        color: context.cc.surface2,
+        borderRadius: BorderRadius.circular(CcDims.dockRadius),
+        clipBehavior: Clip.antiAlias,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: searching ? 1 : 0),
+          duration: ccDuration(context, CcMotion.sheet),
+          curve: CcMotion.curveIn,
+          builder: (context, t, _) {
+            // Built once per search frame, not per scroll frame.
+            final title = _TitleRow(
+              t: t,
+              height: rows.title,
+              searching: searching,
+              field: field,
+              onSearch: onSearch,
+            );
+            final tabs = _Tabs(
               kind: kind,
-              grid: grid,
-              onSort: onSort,
-              onToggleGrid: onToggleGrid,
-            ),
-          );
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
-            child: ValueListenableBuilder<double>(
-              valueListenable: shrink,
-              builder: (context, s, _) {
-                final titleF = 1 - clampDouble(s, 0, rows.title) / rows.title;
-                final toolF =
-                    (1 - t) *
-                    (1 - clampDouble(s - rows.title, 0, rows.toolbar) / rows.toolbar);
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _Retract(
-                      factor: titleF,
-                      alignment: Alignment.bottomCenter,
-                      child: title,
-                    ),
-                    tabs,
-                    _Retract(
-                      factor: toolF,
-                      alignment: Alignment.topCenter,
-                      child: toolbar,
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-        },
+              onKind: onKind,
+              onHeight: onTabsHeight,
+            );
+            final toolbar = SizedBox(
+              height: rows.toolbar,
+              child: LibraryToolbar(
+                countLabel: countLabel,
+                sort: sort,
+                ascending: ascending,
+                kind: kind,
+                grid: grid,
+                onSort: onSort,
+                onToggleGrid: onToggleGrid,
+              ),
+            );
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
+              child: ValueListenableBuilder<double>(
+                valueListenable: shrink,
+                builder: (context, s, _) {
+                  final titleF = 1 - clampDouble(s, 0, rows.title) / rows.title;
+                  final toolF =
+                      (1 - t) *
+                      (1 -
+                          clampDouble(s - rows.title, 0, rows.toolbar) /
+                              rows.toolbar);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _Retract(
+                        factor: titleF,
+                        alignment: Alignment.bottomCenter,
+                        child: title,
+                      ),
+                      tabs,
+                      _Retract(
+                        factor: toolF,
+                        alignment: Alignment.topCenter,
+                        child: toolbar,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
-    ));
+    );
   }
 }
 
 /// Scan status and tabs; tells the screen its height when it changes (a
 /// banner, large text), not on every scroll frame.
 class _Tabs extends StatefulWidget {
-  const _Tabs({required this.kind, required this.onKind, required this.onHeight});
+  const _Tabs({
+    required this.kind,
+    required this.onKind,
+    required this.onHeight,
+  });
 
   final LibraryKind? kind;
   final ValueChanged<LibraryKind?> onKind;
@@ -254,49 +262,51 @@ class _TitleRow extends ConsumerWidget {
           excluding: searching,
           child: Opacity(
             opacity: 1 - t,
-            child: RepaintBoundary(child: Padding(
-              padding: const EdgeInsets.only(
-                left: CcDims.margin,
-                right: CcDims.gap4,
+            child: RepaintBoundary(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: CcDims.margin,
+                  right: CcDims.gap4,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l.navLibrary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    const ActivityButton(),
+                    IconButton(
+                      tooltip: l.activityLog,
+                      icon: const Icon(Icons.receipt_long_rounded),
+                      onPressed: () => ShellNav.open<void>(
+                        context,
+                        const ActivityLogScreen(),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l.navSearch,
+                      icon: const Icon(Icons.search_rounded),
+                      onPressed: onSearch,
+                    ),
+                    NewPlaylistMenu(
+                      onSmart: () => ShellNav.open<bool>(
+                        context,
+                        const SmartPlaylistEditor(),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l.moreActions,
+                      icon: const Icon(Icons.more_vert_rounded),
+                      onPressed: () => _menu(context, ref),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l.navLibrary,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ),
-                  const ActivityButton(),
-                  IconButton(
-                    tooltip: l.activityLog,
-                    icon: const Icon(Icons.receipt_long_rounded),
-                    onPressed: () => ShellNav.open<void>(
-                      context,
-                      const ActivityLogScreen(),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: l.navSearch,
-                    icon: const Icon(Icons.search_rounded),
-                    onPressed: onSearch,
-                  ),
-                  NewPlaylistMenu(
-                    onSmart: () => ShellNav.open<bool>(
-                      context,
-                      const SmartPlaylistEditor(),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: l.moreActions,
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onPressed: () => _menu(context, ref),
-                  ),
-                ],
-              ),
-            )),
+            ),
           ),
         ),
       ),
@@ -322,7 +332,10 @@ class _TitleRow extends ConsumerWidget {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         widthFactor: 0.12 + 0.88 * t,
-                        child: Opacity(opacity: math.min(1, t * 2), child: RepaintBoundary(child: field)),
+                        child: Opacity(
+                          opacity: math.min(1, t * 2),
+                          child: RepaintBoundary(child: field),
+                        ),
                       ),
                     ),
                   ),

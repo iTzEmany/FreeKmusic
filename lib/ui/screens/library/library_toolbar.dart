@@ -80,42 +80,42 @@ class LibraryToolbar extends StatelessWidget {
           ),
           // Not flexible: the button takes what it needs, the count gives way.
           Semantics(
-                button: true,
-                label:
-                    '${l.sortBy}: ${name(sort)}, ${ascending ? l.sortAscending : l.sortDescending}',
-                onTap: pickSort,
-                excludeSemantics: true,
-                child: InkWell(
-                onTap: pickSort,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            shortName(sort),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.labelLarge,
-                          ),
+            button: true,
+            label:
+                '${l.sortBy}: ${name(sort)}, ${ascending ? l.sortAscending : l.sortDescending}',
+            onTap: pickSort,
+            excludeSemantics: true,
+            child: InkWell(
+              onTap: pickSort,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          shortName(sort),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.labelLarge,
                         ),
-                        Icon(
-                          ascending
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          size: 16,
-                          color: cc.textMuted,
-                        ),
-                        Icon(Icons.arrow_drop_down_rounded, color: cc.textMuted),
-                      ],
-                    ),
+                      ),
+                      Icon(
+                        ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                        color: cc.textMuted,
+                      ),
+                      Icon(Icons.arrow_drop_down_rounded, color: cc.textMuted),
+                    ],
                   ),
                 ),
               ),
-              ),
+            ),
+          ),
           IconButton(
             tooltip: grid ? l.viewAsList : l.viewAsGrid,
             icon: Icon(
