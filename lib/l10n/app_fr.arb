@@ -3673,5 +3673,8 @@
   "searchSimilarQueued": "File : «{title}» et morceaux similaires",
   "searchSimilarNone": "Aucun morceau similaire : lecture de «{title}» seul",
   "searchSeeQueue": "Voir la file",
-  "queueSimilarTo": "Similaires à «{title}»"
+  "queueSimilarTo": "Similaires à «{title}»",
+  "queueSimilarTag": "radio de YouTube Music",
+  "queueSimilarCount": "{total, plural, one{1 morceau} other{{total} morceaux}}, {owned} déjà dans la bibliothèque",
+  "queueSimilarSearching": "Recherche de morceaux similaires…"
 }

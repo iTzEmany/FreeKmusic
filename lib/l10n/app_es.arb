@@ -3439,5 +3439,8 @@
   "searchSimilarQueued": "Cola: «{title}» y canciones similares",
   "searchSimilarNone": "Sin canciones similares: suena solo «{title}»",
   "searchSeeQueue": "Ver cola",
-  "queueSimilarTo": "Similares a «{title}»"
+  "queueSimilarTo": "Similares a «{title}»",
+  "queueSimilarTag": "radio de YouTube Music",
+  "queueSimilarCount": "{total, plural, one{1 canción} other{{total} canciones}}, {owned} ya en la biblioteca",
+  "queueSimilarSearching": "Buscando canciones similares…"
 }

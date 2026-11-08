@@ -6833,4 +6833,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String queueSimilarTo(String title) {
     return 'Ähnlich wie «$title»';
   }
+
+  @override
+  String get queueSimilarTag => 'YouTube-Music-Radio';
+
+  @override
+  String queueSimilarCount(int total, int owned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total Titel',
+      one: '1 Titel',
+    );
+    return '$_temp0, $owned schon in der Mediathek';
+  }
+
+  @override
+  String get queueSimilarSearching => 'Suche ähnliche Titel …';
 }

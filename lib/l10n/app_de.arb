@@ -3439,5 +3439,8 @@
   "searchSimilarQueued": "Warteschlange: «{title}» und ähnliche Titel",
   "searchSimilarNone": "Keine ähnlichen Titel: nur «{title}» läuft",
   "searchSeeQueue": "Warteschlange ansehen",
-  "queueSimilarTo": "Ähnlich wie «{title}»"
+  "queueSimilarTo": "Ähnlich wie «{title}»",
+  "queueSimilarTag": "YouTube-Music-Radio",
+  "queueSimilarCount": "{total, plural, one{1 Titel} other{{total} Titel}}, {owned} schon in der Mediathek",
+  "queueSimilarSearching": "Suche ähnliche Titel …"
 }

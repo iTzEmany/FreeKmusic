@@ -35,7 +35,7 @@ class _Ctrl implements PlayerController {
   @override
   Future<void> playOnline(YtResult r) async => calls.add('play');
   @override
-  Future<bool> playFromSearch({Track? track, YtResult? online}) async {
+  Future<bool?> playFromSearch({Track? track, YtResult? online}) async {
     calls.add('play');
     return false;
   }

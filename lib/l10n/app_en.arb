@@ -3439,5 +3439,8 @@
   "searchSimilarQueued": "Queue: «{title}» and similar songs",
   "searchSimilarNone": "No similar songs: playing only «{title}»",
   "searchSeeQueue": "See queue",
-  "queueSimilarTo": "Similar to «{title}»"
+  "queueSimilarTo": "Similar to «{title}»",
+  "queueSimilarTag": "YouTube Music radio",
+  "queueSimilarCount": "{total, plural, one{1 song} other{{total} songs}}, {owned} already in the library",
+  "queueSimilarSearching": "Looking for similar songs…"
 }

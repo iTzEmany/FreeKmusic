@@ -3673,5 +3673,8 @@
   "searchSimilarQueued": "Fila: «{title}» e músicas semelhantes",
   "searchSimilarNone": "Sem músicas semelhantes: a tocar só «{title}»",
   "searchSeeQueue": "Ver fila",
-  "queueSimilarTo": "Semelhantes a «{title}»"
+  "queueSimilarTo": "Semelhantes a «{title}»",
+  "queueSimilarTag": "rádio do YouTube Music",
+  "queueSimilarCount": "{total, plural, one{1 música} other{{total} músicas}}, {owned} já na biblioteca",
+  "queueSimilarSearching": "A procurar músicas semelhantes…"
 }

@@ -4130,5 +4130,11 @@
   "searchSeeQueue": "Vedi coda",
   "@searchSeeQueue": {"description": "Action of the snackbar: opens the queue sheet."},
   "queueSimilarTo": "Simili a «{title}»",
-  "@queueSimilarTo": {"description": "Header of the queue sheet above the songs that follow a Search pick.", "placeholders": {"title": {"type": "String"}}}
+  "@queueSimilarTo": {"description": "Header of the queue sheet above the songs that follow a Search pick.", "placeholders": {"title": {"type": "String"}}},
+  "queueSimilarTag": "radio YouTube Music",
+  "@queueSimilarTag": {"description": "Small tag in the queue header after a Search pick: where the similar songs come from."},
+  "queueSimilarCount": "{total, plural, one{1 brano} other{{total} brani}}, {owned} già in libreria",
+  "@queueSimilarCount": {"description": "Count line of the queue header after a Search pick: songs that follow, and how many are already in the library.", "placeholders": {"total": {"type": "int"}, "owned": {"type": "int"}}},
+  "queueSimilarSearching": "Cerco i brani simili…",
+  "@queueSimilarSearching": {"description": "Line of the queue header while the first similar songs are being asked."}
 }

@@ -91,10 +91,13 @@ Future<void> playFromSearchNotice(
   }
   final l = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
+  // The root navigator outlives the row: «Vedi coda» may come long after the tap.
+  final root = Navigator.of(context, rootNavigator: true).context;
   final title = track?.title ?? online!.title;
   showMsgOn(messenger, l.searchSimilarLooking);
   final found = await ctrl.playFromSearch(track: track, online: online);
-  if (!messenger.mounted) return;
+  // null: another pick or queue took over, the notice would be about the wrong song.
+  if (found == null || !messenger.mounted) return;
   showMsgOn(
     messenger,
     found ? l.searchSimilarQueued(title) : l.searchSimilarNone(title),
@@ -102,7 +105,7 @@ Future<void> playFromSearchNotice(
         ? SnackBarAction(
             label: l.searchSeeQueue,
             onPressed: () {
-              if (context.mounted) unawaited(showQueueSheet(context));
+              if (root.mounted) unawaited(showQueueSheet(root));
             },
           )
         : null,

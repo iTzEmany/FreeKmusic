@@ -8,6 +8,7 @@ import '../core/network_kind.dart';
 import '../data/settings/settings_store.dart';
 import '../services/audio/codecore_audio_handler.dart';
 import '../services/import/track_matcher.dart';
+import '../services/online/merge_results.dart' show libraryMatchOf;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
@@ -283,6 +284,12 @@ Future<GenreMixOff?> radioOffReason({
   if (net.metered && unmeteredOnly) return GenreMixOff.metered;
   return gate.rateLimited ? GenreMixOff.rateLimited : null;
 }
+
+/// The library track an online song already is by title and artist, for the
+/// similar songs of a Search pick (null: none, or the index is not ready).
+final libraryMatchIdProvider = Provider<Future<int?> Function(YtResult r)>((ref) {
+  return (r) async => libraryMatchOf(r, await ref.read(libraryIndexProvider.future))?.id;
+});
 
 /// The radio of a Search pick (D-429, D-467): null when [radioOffReason] says
 /// so. The library is not left out: its songs and the online ones mix.

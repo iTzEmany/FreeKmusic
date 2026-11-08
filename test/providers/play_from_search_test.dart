@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' show max;
 
+import 'package:audio_service/audio_service.dart' show AudioServiceShuffleMode;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/player_providers.dart';
@@ -10,6 +12,7 @@ import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_parser.dart';
+import 'package:codecore/services/radio/radio_station.dart';
 import 'package:codecore/services/shuffle_plus/radio_fill.dart';
 import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
@@ -62,10 +65,18 @@ void main() {
   var fills = 0;
   var jam = false;
   String? downloaded;
+  String? matched;
+  Completer<void>? holdFill, holdRegister;
+  var closed = 0;
+  var autoAdvance = false;
+  int? failOnCall;
+  var registering = 0, maxRegistering = 0;
 
   // The radio: `pageSize` songs per page, ids r<call>_<n>, endless.
   Future<RadioPage> radio(String id, {String? continuation}) async {
     asked.add((id, continuation));
+    if (autoAdvance) now = now.add(const Duration(minutes: 2));
+    if (failOnCall == asked.length) throw StateError('page failed');
     final e = radioError;
     if (e != null) throw e;
     final c = asked.length;
@@ -97,17 +108,25 @@ void main() {
     String videoId, {
     int block = 3,
     int low = 2,
+    Duration retryAfter = const Duration(minutes: 1),
+    Future<void>? Function()? hold,
   }) => SimilarQueue(
     handler: handler,
     fill: fillFor(RadioSeed.online(videoId, 'Seed')),
     seedId: seedId,
     seedVideoId: videoId,
-    register: (r, t) async => online.register(r, seedTitle: t, suggested: true),
+    register: (r, t) async {
+      maxRegistering = max(maxRegistering, ++registering);
+      await hold?.call();
+      registering--;
+      return online.register(r, seedTitle: t, suggested: true);
+    },
     onSuggested: (r, t) => suggested.add(r.id),
-    onClosed: () {},
-    blocked: () => false,
+    onClosed: () => closed++,
+    blocked: () => jam,
     block: block,
     low: low,
+    retryAfter: retryAfter,
     now: () => now,
     schedule: (d, f) {
       final t = _FakeTimer(d, f);
@@ -159,17 +178,35 @@ void main() {
     fills = 0;
     jam = false;
     downloaded = null;
+    matched = null;
+    holdFill = holdRegister = null;
+    closed = 0;
+    autoAdvance = false;
+    failOnCall = null;
+    registering = maxRegistering = 0;
     player = PlayerController(
       handler,
       null,
       jamActive: () => jam,
       addToJam: (ids) async => throw StateError('unexpected addToJam'),
       addOnlineToJam: (_) => true,
-      libraryIdOf: (r) async => r.id == downloaded ? lib[1].id : null,
+      libraryIdOf: (r) async {
+        // Only the similar songs wait: the pick's own lookup goes through.
+        if (r.id.startsWith('r')) await holdRegister?.future;
+        return r.id == downloaded ? lib[1].id : null;
+      },
+      libraryMatchIdOf: (r) async => r.id == matched ? lib[1].id : null,
       onSuggested: (r, t) => suggested.add('${r.id}/$t'),
       similarFill: (seed) async {
         fills++;
+        if (seed.title == 'TA') await holdFill?.future;
         return fillFor(seed);
+      },
+      similarNow: () => now,
+      similarSchedule: (d, f) {
+        final t = _FakeTimer(d, f);
+        timers.add(t);
+        return t;
       },
     );
     await handler.playQueue([lib[0].id], 0);
@@ -228,6 +265,7 @@ void main() {
     () async {
       jam = true;
       final joined = <int>[];
+      final joinedOnline = <String>[];
       player = PlayerController(
         handler,
         null,
@@ -235,6 +273,10 @@ void main() {
         addToJam: (ids) async {
           joined.addAll(ids);
           throw StateError('stop here');
+        },
+        addOnlineToJam: (r) {
+          joinedOnline.add(r.id);
+          return true;
         },
         similarFill: (_) async {
           fills++;
@@ -244,6 +286,7 @@ void main() {
       await expectLater(player.playFromSearch(track: lib[1]), throwsStateError);
       expect(joined, [lib[1].id]);
       expect(await player.playFromSearch(online: _r('x')), isFalse);
+      expect(joinedOnline, ['x']);
       expect(fills, 0);
       expect(handler.queueIds, [lib[0].id]);
     },
@@ -256,11 +299,15 @@ void main() {
     expect(await s.start(), isTrue);
     expect(handler.queueIds.length, 4);
     now = now.add(const Duration(minutes: 2));
+    await handler.skipToQueueItem(1); // exactly `low` left: no request
+    await pumpEventQueue();
+    expect(asked.length, 1);
     await handler.skipToQueueItem(2); // 1 left, under the threshold of 2
     await pumpEventQueue();
     expect(asked.length, 2);
     expect(asked.last.$2, 'more');
     expect(handler.queueIds.length, 7);
+    expect(timers, isEmpty); // a full block leaves nothing to wait for
     s.close();
   });
 
@@ -300,17 +347,185 @@ void main() {
     },
   );
 
-  test('another queue ends the refill: no request, no insert', () async {
-    expect(await player.playFromSearch(online: _r('x')), isTrue);
-    expect(asked.length, 1);
+  test(
+    'a new queue during a slow lookup: nothing of the old session gets in',
+    () async {
+      holdRegister = Completer<void>();
+      final picked = player.playFromSearch(online: _r('x'));
+      await pumpEventQueue(); // the first similar song is being looked up
+      await player.playFromList(lib, 0);
+      holdRegister!.complete();
+      expect(await picked, isNull);
+      await pumpEventQueue();
+      expect(handler.queueIds, [for (final t in lib) t.id]);
+      expect(asked.length, 1);
+      expect(player.similarTitle.value, isNull);
+    },
+  );
+
+  test(
+    'a Jam that starts during a lookup: the similar song does not get in',
+    () async {
+      holdRegister = Completer<void>();
+      final picked = player.playFromSearch(online: _r('x'));
+      await pumpEventQueue();
+      jam = true;
+      holdRegister!.complete();
+      expect(await picked, isFalse);
+      expect(handler.queueIds.length, 1);
+    },
+  );
+
+  test('a pick overtaken by another is told to nobody (null)', () async {
+    holdFill = Completer<void>();
+    final a = player.playFromSearch(online: _r('A'));
+    await pumpEventQueue();
+    expect(await player.playFromSearch(online: _r('B')), isTrue);
+    holdFill!.complete();
+    expect(await a, isNull);
+    expect(player.similarTitle.value, 'TB');
+  });
+
+  test(
+    'a library song of another source is the library track, not a duplicate',
+    () async {
+      matched = 'r1_1';
+      await player.playFromSearch(online: _r('x'));
+      final q = handler.queueIds;
+      expect(q[2], lib[1].id);
+      expect(online.idsOf(_r('r1_1')), isEmpty);
+      expect(suggested, ['r1_0/Tx', 'r1_2/Tx']);
+    },
+  );
+
+  test('shuffle on before the pick: the queue plays in order', () async {
+    await handler.setShuffleMode(AudioServiceShuffleMode.all);
+    await player.playFromSearch(online: _r('x'));
+    expect(handler.shuffleEnabled, isFalse);
+  });
+
+  test(
+    'every other way to start a queue ends the session and its wait',
+    () async {
+      await player.playFromSearch(
+        online: _r('x'),
+      ); // 3 < block: a wait is pending
+      expect(timers.single.isActive, isTrue);
+      player.rebuildUpcoming(); // «Svuota»
+      expect(timers.single.isActive, isFalse);
+      expect(player.similarTitle.value, isNull);
+      await player.playFromSearch(online: _r('y'));
+      expect(timers.last.isActive, isTrue);
+      await player.playStations([
+        const RadioStation(id: 's', name: 'S', streamUrl: 'http://s'),
+      ], 0);
+      expect(timers.last.isActive, isFalse);
+      expect(player.similarTitle.value, isNull);
+      player.dispose();
+      player.dispose(); // twice is fine
+    },
+  );
+
+  test(
+    'the seed downloaded midway swaps its id: the session lives on',
+    () async {
+      final id = online.register(_r('s'));
+      await handler.playQueue([id], 0);
+      final s = sessionFor(id, 's');
+      await s.start();
+      await handler.skipToQueueItem(1); // the current entry is never swapped
+      expect(handler.replaceQueueId(id, lib[1].id), isTrue);
+      now = now.add(const Duration(minutes: 2));
+      await handler.skipToQueueItem(2);
+      await pumpEventQueue();
+      expect(s.closed, isFalse);
+      expect(asked.length, 2);
+      expect(handler.queueIds.length, 7);
+      s.close();
+    },
+  );
+
+  test('with a wait pending a new queue closes at once, once, and cancels the timer', () async {
+    final id = online.register(_r('s'));
+    await handler.playQueue([id], 0);
+    final s = sessionFor(id, 's');
+    await s.start();
     await handler.skipToQueueItem(2);
     await pumpEventQueue();
-    await player.playFromList(lib, 0);
-    expect(player.similarTitle.value, isNull);
-    now = now.add(const Duration(hours: 1));
-    await handler.skipToQueueItem(1);
+    expect(timers.single.isActive, isTrue); // inside the gap
+    await handler.playQueue([lib[0].id], 0);
     await pumpEventQueue();
-    expect(asked.length, 1);
-    expect(handler.queueIds, [for (final t in lib) t.id]);
+    expect(s.closed, isTrue);
+    expect(timers.single.isActive, isFalse);
+    s.close();
+    expect(closed, 1);
+  });
+
+  test(
+    'with a wait pending, queue changes ask nothing and set no second timer',
+    () async {
+      final id = online.register(_r('s'));
+      await handler.playQueue([id], 0);
+      final s = sessionFor(id, 's');
+      await s.start();
+      await handler.skipToQueueItem(2);
+      await pumpEventQueue();
+      handler.insertAt(handler.queueIds.length, lib[0].id);
+      await handler.skipToQueueItem(3);
+      await pumpEventQueue();
+      expect(asked.length, 1);
+      expect(timers.length, 1);
+      s.close();
+    },
+  );
+
+  test('inserts during a refill do not start another one', () async {
+    final id = online.register(_r('s'));
+    await handler.playQueue([id], 0);
+    final gateOpen = Completer<void>();
+    final s = sessionFor(id, 's', hold: () => holdRegister?.future);
+    await s.start();
+    now = now.add(const Duration(minutes: 2));
+    holdRegister = gateOpen;
+    await handler.skipToQueueItem(2); // starts a refill, stuck at its lookup
+    await pumpEventQueue();
+    handler.insertAt(handler.queueIds.length, lib[0].id);
+    await handler.skipToQueueItem(3);
+    await pumpEventQueue();
+    gateOpen.complete();
+    await pumpEventQueue();
+    expect(maxRegistering, 1);
+    s.close();
+  });
+
+  test(
+    'a failure other than a rate limit holds the next request for retryAfter',
+    () async {
+      final id = online.register(_r('s'));
+      await handler.playQueue([id], 0);
+      final s = sessionFor(id, 's', retryAfter: const Duration(minutes: 7));
+      await s.start();
+      now = now.add(const Duration(minutes: 2));
+      radioError = StateError('boom');
+      await handler.skipToQueueItem(2);
+      await pumpEventQueue();
+      expect(asked.length, 2);
+      expect(timers.single.delay, const Duration(minutes: 7));
+      expect(gate.rateLimited, isFalse);
+      s.close();
+    },
+  );
+
+  test('a failure inside the first block holds the refill back', () async {
+    final id = online.register(_r('s'));
+    await handler.playQueue([id], 0);
+    autoAdvance = true;
+    failOnCall = 2;
+    final s = sessionFor(id, 's', block: 10, low: 20);
+    expect(await s.start(), isTrue); // 3 songs, then the second page fails
+    await pumpEventQueue();
+    expect(asked.length, 2); // low is huge, yet nothing more is asked now
+    expect(timers.single.delay, RadioGate.minGap);
+    s.close();
   });
 }

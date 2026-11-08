@@ -8,8 +8,9 @@ import 'radio_fill.dart';
 
 /// Songs similar to the one picked in Search, added at the end of the queue
 /// after it: a first block, then another whenever few songs are left after
-/// the current one (D-467). It lives until [close]: another queue starts, the
-/// seed leaves the queue, or a Jam begins.
+/// the current one (D-467). It lives until [close]: another queue starts (none
+/// of its songs is queued any more), or a Jam begins. A download that swaps
+/// the seed's id keeps it alive: the songs it added are still there.
 class SimilarQueue {
   SimilarQueue({
     required this.handler,
@@ -53,6 +54,7 @@ class SimilarQueue {
   final Timer Function(Duration, void Function()) _schedule;
 
   final _seen = <String>{};
+  late final _ids = <int>{seedId}; // the seed and what the session queued
   final _subs = <StreamSubscription<Object?>>[];
   Timer? _timer;
   DateTime? _backoff;
@@ -65,7 +67,7 @@ class SimilarQueue {
   Future<bool> start() async {
     if (seedVideoId != null) _seen.add(seedVideoId!);
     final n = await _take(block);
-    if (_closed) return n > 0;
+    if (_closed) return false;
     if (n == 0) {
       close();
       return false;
@@ -73,7 +75,9 @@ class SimilarQueue {
     _subs
       ..add(handler.queueChanges.listen((_) => _check()))
       ..add(handler.currentTrackStream.listen((_) => _check()));
-    _check();
+    // A failure inside the first block holds the next request back.
+    final at = n < block ? _next() : null;
+    at != null ? _wait(at) : _check();
     return true;
   }
 
@@ -87,9 +91,18 @@ class SimilarQueue {
     onClosed();
   }
 
+  /// A Jam started, or none of the session's songs is queued: another queue
+  /// took over.
+  bool _gone() {
+    if (blocked()) return true;
+    final queued = handler.queueIds.toSet();
+    return !_ids.any(queued.contains);
+  }
+
   void _check() {
-    if (_closed || _busy || _timer != null) return;
-    if (blocked() || !handler.queueIds.contains(seedId)) return close();
+    if (_closed) return;
+    if (_gone()) return close();
+    if (_busy || _timer != null) return;
     final left = handler.queueIds.length - 1 - handler.currentIndex;
     if (left >= low) return;
     unawaited(_refill());
@@ -133,8 +146,13 @@ class SimilarQueue {
       )) {
         final id = await register(c.result, c.seedTitle);
         if (_closed) break;
+        if (_gone()) {
+          close();
+          break;
+        }
         if (id == null) continue;
         _seen.add(c.result.id);
+        _ids.add(id);
         handler.insertAt(handler.queueIds.length, id);
         // Logged once queued; a library track is no suggestion to remember.
         if (isOnlineId(id)) onSuggested(c.result, c.seedTitle);
@@ -150,6 +168,7 @@ class SimilarQueue {
     } finally {
       _busy = false;
     }
+    if (!_closed && _gone()) close();
     return added;
   }
 }

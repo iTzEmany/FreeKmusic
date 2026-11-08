@@ -10908,6 +10908,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Simili a «{title}»'**
   String queueSimilarTo(String title);
+
+  /// Small tag in the queue header after a Search pick: where the similar songs come from.
+  ///
+  /// In it, this message translates to:
+  /// **'radio YouTube Music'**
+  String get queueSimilarTag;
+
+  /// Count line of the queue header after a Search pick: songs that follow, and how many are already in the library.
+  ///
+  /// In it, this message translates to:
+  /// **'{total, plural, one{1 brano} other{{total} brani}}, {owned} già in libreria'**
+  String queueSimilarCount(int total, int owned);
+
+  /// Line of the queue header while the first similar songs are being asked.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerco i brani simili…'**
+  String get queueSimilarSearching;
 }
 
 class _AppLocalizationsDelegate
