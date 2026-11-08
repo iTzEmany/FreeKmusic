@@ -4,6 +4,7 @@ import 'package:dio/dio.dart' show CancelToken;
 
 import '../../core/app_log.dart';
 import '../import/track_matcher.dart' show matchKey;
+import 'budgeted_call.dart';
 import 'merge_results.dart';
 import 'query_intent.dart';
 import 'query_match.dart';
@@ -368,14 +369,16 @@ class _Run {
   /// A saved page that has no rows: asked again when the budget allows, the
   /// main requests are not repeated.
   Future<void> _lateRows(String key, _Cached hit) async {
-    if (engine.cooldown.isPaused(MediaKind.ytmSong) || !engine.rowsLimiter.tryAcquire(2)) {
-      return;
-    }
-    _rowsOpen = 2;
-    await Future.wait([
-      _row(() => engine.catalog.searchArtists(query, hl, cancel: _token), (v) => _artists = v),
-      _row(() => engine.catalog.searchAlbums(query, hl, cancel: _token), (v) => _albums = v),
-    ]);
+    // The two rows are one budgeted call of cost 2; each row still handles its own failure.
+    final rows = budgetedYtm(engine.cooldown, engine.rowsLimiter, () {
+      _rowsOpen = 2;
+      return Future.wait([
+        _row(() => engine.catalog.searchArtists(query, hl, cancel: _token), (v) => _artists = v),
+        _row(() => engine.catalog.searchAlbums(query, hl, cancel: _token), (v) => _albums = v),
+      ]);
+    }, cost: 2);
+    if (rows == null) return;
+    await rows;
     if (_cancelled) return;
     final state = hit.state.copyWith(artists: _artists, albums: _albums);
     _emit(state);

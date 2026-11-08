@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_log.dart';
 import '../data/repositories/artist_alias_repository.dart' show ArtistAliasRepository;
 import '../services/import/track_matcher.dart' show matchKey;
-import '../services/online/query_match.dart' show MediaKind;
-import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
+import '../services/online/budgeted_call.dart';
 import '../services/online/ytm_artist.dart';
 import '../services/online/ytm_artist_resolver.dart' show YtmArtistPick, artistNameKeys, pickYtmArtistWithAliases;
 import 'database_providers.dart';
@@ -112,16 +111,14 @@ final artistMergeSearchProvider = Provider<Future<List<YtmArtistRef>>? Function(
     final hit = cache[key];
     if (hit != null) return hit;
     // Same budget and 429 pause as the search rows (D-425).
-    if (ref.read(sourceCooldownProvider).isPaused(MediaKind.ytmSong) ||
-        !ref.read(searchRowsLimiterProvider).tryAcquire()) {
-      return null;
-    }
-    return cache[key] = ref
-        .read(ytmCatalogProvider)
-        .searchArtists(name, ref.read(ytmLanguageProvider))
-        .catchError((Object e, StackTrace st) {
+    final call = budgetedYtm(
+      ref.read(sourceCooldownProvider),
+      ref.read(searchRowsLimiterProvider),
+      () => ref.read(ytmCatalogProvider).searchArtists(name, ref.read(ytmLanguageProvider)),
+    );
+    if (call == null) return null;
+    return cache[key] = call.catchError((Object e, StackTrace st) {
       cache.remove(key);
-      if (e is YtException && e.kind == YtErrorKind.rateLimited) ref.read(sourceCooldownProvider).trip(MediaKind.ytmSong);
       AppLog.w('Artist merge search failed', e, st);
       return <YtmArtistRef>[];
     });
