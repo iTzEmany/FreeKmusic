@@ -6,6 +6,7 @@ import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/library_queries.dart' show ArtistSummary;
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/artist_shelves_providers.dart';
 import '../../../providers/artist_merge_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/library_providers.dart';

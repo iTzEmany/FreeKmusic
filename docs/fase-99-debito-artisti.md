@@ -30,3 +30,4 @@
 **Fatto quando:** metriche rispettate, test di caratterizzazione verdi senza modifiche, `prossimi-lavori.md` §6 «Media» spuntato.
 
 ## Esiti
+- 99.3: la chiave di `mergeArtistShelves` (`matchKey(title)|anno`) resta propria: `releaseGroupKey` di `release_diff` toglie parentesi, «Deluxe/Edition/Version» e quel che segue «:» o «+», quindi unirebbe edizioni che oggi restano due uscite (valori diversi nei casi reali).
