@@ -40,4 +40,17 @@ void main() {
     expect(limiter.recent, 2);
     expect(cooldown.isPaused(MediaKind.ytmSong), isFalse);
   });
+
+  test(
+    'an error that is not a 429 is rethrown and does not pause the source',
+    () async {
+      final f = budgetedYtm<int>(
+        cooldown,
+        limiter,
+        () async => throw const YtException(YtErrorKind.network),
+      );
+      await expectLater(f, throwsA(isA<YtException>()));
+      expect(cooldown.isPaused(MediaKind.ytmSong), isFalse);
+    },
+  );
 }

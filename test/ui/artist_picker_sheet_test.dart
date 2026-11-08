@@ -112,4 +112,35 @@ void main() {
     expect(cooldown.isPaused(MediaKind.ytmSong), isTrue);
     expect(limiter.recent, 1); // today one search spends one slot (the analysis said 2)
   });
+
+  testWidgets('mergeArtistWith: already paused shows the rate-limit message without asking the catalog', (tester) async {
+    final cat = _Throwing429();
+    final cooldown = SourceCooldown()..trip(MediaKind.ytmSong);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        ytmCatalogProvider.overrideWithValue(cat),
+        ytmLanguageProvider.overrideWithValue('it'),
+        sourceCooldownProvider.overrideWithValue(cooldown),
+      ],
+      child: MaterialApp(
+        locale: const Locale('it'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: buildThemeFromColors(CcColors.notte, false),
+        home: Consumer(
+          builder: (context, ref, _) => Scaffold(
+            body: TextButton(
+              onPressed: () => mergeArtistWith(context, ref, const YtmArtistRef(id: 'UC1', name: 'Queen'), ['UC1']),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    final shown = tester.widget<Text>(find.byKey(const ValueKey('merge-message'))).data;
+    expect(shown, lookupAppLocalizations(const Locale('it')).ytErrRateLimited);
+    expect(cat.calls, 0);
+  });
 }
