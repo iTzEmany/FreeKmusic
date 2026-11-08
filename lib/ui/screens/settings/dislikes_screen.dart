@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/dislike_lists_provider.dart';
 import '../../../providers/dislike_store_provider.dart';
 import '../../../services/shuffle_plus/dislike_store.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart' show RowsLoading;
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/show_msg.dart';
 
@@ -32,10 +34,13 @@ class _DislikesScreenState extends ConsumerState<DislikesScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final lists = ref.watch(dislikeListsProvider).value;
+    final async = ref.watch(dislikeListsProvider);
+    final lists = async.value;
+    if (async.hasError) AppLog.w('dislikes list failed', async.error, async.stackTrace);
     final store = ref.read(dislikeStoreProvider);
     final tracks = lists?.tracks ?? const <DislikedTrack>[];
     final artists = lists?.artists ?? const <DislikedArtist>[];
+    final loading = lists == null && !async.hasError;
     final empty = _artists ? artists.isEmpty : tracks.isEmpty;
     // Not a ListTile: it would merge «Togli» into the row and hide its own tap action.
     Widget row(String title, String? subtitle, IconData icon, VoidCallback remove) => Padding(
@@ -98,7 +103,9 @@ class _DislikesScreenState extends ConsumerState<DislikesScreen> {
               ],
             ),
           ),
-          if (empty)
+          if (loading)
+            const SizedBox(height: 300, child: RowsLoading())
+          else if (empty)
             Padding(
               key: const ValueKey('dislikes-empty'),
               padding: const EdgeInsets.all(CcDims.margin),

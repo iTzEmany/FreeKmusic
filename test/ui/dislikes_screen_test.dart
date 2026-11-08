@@ -69,6 +69,18 @@ void main() {
     await tester.runAsync(store.flush); // cancels the pending write timer
   });
 
+  testWidgets('Togli and Annulla on a song put the block back', (tester) async {
+    final store = await open(tester);
+    await tester.tap(find.text('Togli'));
+    await tester.pumpAndSettle();
+    expect(store.trackBlocked('v1'), isFalse);
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    expect(store.trackBlocked('v1'), isTrue);
+    expect(find.text('Despacito'), findsOneWidget);
+    await tester.runAsync(store.flush);
+  });
+
   testWidgets('empty lists show the explanation', (tester) async {
     final store = await open(tester, seeded: false);
     expect(find.byKey(const ValueKey('dislikes-empty')), findsOneWidget);

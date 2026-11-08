@@ -4587,7 +4587,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String suggestedSimilarTo(String seed) {
-    return 'Sugerido: parecido com «$seed»';
+    return 'Sugerido · parecido com «$seed»';
   }
 
   @override
@@ -4599,50 +4599,50 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get dislikesTitle => 'Non mi piace';
+  String get dislikesTitle => 'Não gosto';
 
   @override
   String get dislikesHint =>
-      'Cosa non vuoi tra i suggeriti. I brani possono tornare solo se molto vicini a ciò che ascolti; gli artisti mai più.';
+      'O que não queres entre as sugestões. As músicas só voltam se forem muito parecidas com o que ouves; os artistas, nunca.';
 
   @override
   String dislikesTracksTab(int count) {
-    return 'Brani $count';
+    return 'Músicas $count';
   }
 
   @override
   String dislikesArtistsTab(int count) {
-    return 'Artisti $count';
+    return 'Artistas $count';
   }
 
   @override
-  String get dislikesEmptyTracks => 'Nessun brano escluso';
+  String get dislikesEmptyTracks => 'Nenhuma música excluída';
 
   @override
-  String get dislikesEmptyArtists => 'Nessun artista escluso';
+  String get dislikesEmptyArtists => 'Nenhum artista excluído';
 
   @override
   String get dislikesEmptyHint =>
-      'Quando tocchi «Non mi piace» su un suggerito, lo trovi qui e puoi toglierlo.';
+      'Quando tocas em «Não gosto» numa sugestão, ela aparece aqui e podes retirá-la.';
 
   @override
-  String get dislikesRemove => 'Togli';
+  String get dislikesRemove => 'Remover';
 
   @override
   String dislikesRemoveLabel(String name) {
-    return 'Togli «$name» dai non mi piace';
+    return 'Remover «$name» de Não gosto';
   }
 
   @override
   String dislikesRemoved(String name) {
-    return '«$name» tolto dai non mi piace';
+    return '«$name» removido de Não gosto';
   }
 
   @override
-  String get dislikesTileHint => 'Brani e artisti esclusi dai suggeriti';
+  String get dislikesTileHint => 'Músicas e artistas excluídos das sugestões';
 
   @override
-  String get dislikePlayerLabel => 'Non mi piace: brano o artista';
+  String get dislikePlayerLabel => 'Não gosto: música ou artista';
 
   @override
   String get suggestionDislike => 'Não gosto';
@@ -6884,31 +6884,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queueSimilarSearching => 'A procurar músicas semelhantes…';
 
   @override
-  String get dislikeSheetTitle => 'Non ti piace il brano o l’artista?';
+  String get dislikeSheetTitle => 'Não gostas da música ou do artista?';
 
   @override
-  String get dislikeSheetTrack => 'Solo questo brano';
+  String get dislikeSheetTrack => 'Só esta música';
 
   @override
   String dislikeSheetTrackHint(String title) {
-    return '«$title» non torna, salvo che sia molto vicino a ciò che ascolti.';
+    return '«$title» não volta, a menos que seja muito parecida com o que ouves.';
   }
 
   @override
   String dislikeSheetArtist(String artist) {
-    return 'Tutto $artist';
+    return 'Tudo de $artist';
   }
 
   @override
   String dislikeSheetArtistHint(String artist) {
-    return 'Nessun brano di $artist ti verrà più suggerito.';
+    return 'Nenhuma música de $artist voltará a ser sugerida.';
   }
 
   @override
   String dislikeArtistDone(String artist) {
-    return '$artist non ti verrà più suggerito';
+    return '$artist não voltará a ser sugerido';
   }
 
   @override
-  String get artistBlockedLabel => 'Artista bloccato';
+  String get artistBlockedLabel => 'Artista bloqueado';
 }

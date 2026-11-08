@@ -4629,7 +4629,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String suggestedSimilarTo(String seed) {
-    return 'Suggéré : proche de « $seed »';
+    return 'Suggéré · proche de « $seed »';
   }
 
   @override
@@ -4641,50 +4641,50 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dislikesTitle => 'Non mi piace';
+  String get dislikesTitle => 'Je n’aime pas';
 
   @override
   String get dislikesHint =>
-      'Cosa non vuoi tra i suggeriti. I brani possono tornare solo se molto vicini a ciò che ascolti; gli artisti mai più.';
+      'Ce que tu ne veux pas dans les suggestions. Les titres ne reviennent que s’ils sont très proches de ce que tu écoutes ; les artistes, jamais.';
 
   @override
   String dislikesTracksTab(int count) {
-    return 'Brani $count';
+    return 'Titres $count';
   }
 
   @override
   String dislikesArtistsTab(int count) {
-    return 'Artisti $count';
+    return 'Artistes $count';
   }
 
   @override
-  String get dislikesEmptyTracks => 'Nessun brano escluso';
+  String get dislikesEmptyTracks => 'Aucun titre exclu';
 
   @override
-  String get dislikesEmptyArtists => 'Nessun artista escluso';
+  String get dislikesEmptyArtists => 'Aucun artiste exclu';
 
   @override
   String get dislikesEmptyHint =>
-      'Quando tocchi «Non mi piace» su un suggerito, lo trovi qui e puoi toglierlo.';
+      'Quand tu touches « Je n’aime pas » sur une suggestion, elle apparaît ici et tu peux la retirer.';
 
   @override
-  String get dislikesRemove => 'Togli';
+  String get dislikesRemove => 'Retirer';
 
   @override
   String dislikesRemoveLabel(String name) {
-    return 'Togli «$name» dai non mi piace';
+    return 'Retirer « $name » de Je n’aime pas';
   }
 
   @override
   String dislikesRemoved(String name) {
-    return '«$name» tolto dai non mi piace';
+    return '« $name » retiré de Je n’aime pas';
   }
 
   @override
-  String get dislikesTileHint => 'Brani e artisti esclusi dai suggeriti';
+  String get dislikesTileHint => 'Titres et artistes exclus des suggestions';
 
   @override
-  String get dislikePlayerLabel => 'Non mi piace: brano o artista';
+  String get dislikePlayerLabel => 'Je n’aime pas : titre ou artiste';
 
   @override
   String get suggestionDislike => 'Je n’aime pas';
