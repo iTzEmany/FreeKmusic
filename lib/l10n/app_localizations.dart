@@ -7110,7 +7110,7 @@ abstract class AppLocalizations {
   /// No description provided for @suggestedSimilarTo.
   ///
   /// In it, this message translates to:
-  /// **'Suggerito · simile a «{seed}»'**
+  /// **'Suggerito: simile a «{seed}»'**
   String suggestedSimilarTo(String seed);
 
   /// No description provided for @suggestionDownloadStarted.

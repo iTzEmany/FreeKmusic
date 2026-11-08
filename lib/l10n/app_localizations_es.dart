@@ -4593,7 +4593,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String suggestedSimilarTo(String seed) {
-    return 'Sugerido · parecido a «$seed»';
+    return 'Sugerido: parecido a «$seed»';
   }
 
   @override

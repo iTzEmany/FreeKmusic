@@ -2956,7 +2956,7 @@
   "ytmPickArtist": "Quale artista?",
   "ytmArtistNone": "Nessun artista trovato su YouTube Music",
   "suggestedBadge": "Suggerito",
-  "suggestedSimilarTo": "Suggerito · simile a «{seed}»",
+  "suggestedSimilarTo": "Suggerito: simile a «{seed}»",
   "@suggestedSimilarTo": {
     "placeholders": {
       "seed": {

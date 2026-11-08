@@ -174,15 +174,18 @@ class DislikeStore {
       if (_migrated) return;
       await log.load();
       _migrated = true;
+      var added = false;
       for (final r in log.recent.reversed) {
         if (r.outcome == SuggestionOutcome.disliked &&
             !trackBlocked(r.videoId)) {
           _tracks.add(
             DislikedTrack(videoId: r.videoId, title: r.title, artist: r.artist),
           );
+          added = true;
         }
       }
-      _changed();
+      // Nothing to import: no write now (the flag goes out with the next change).
+      if (added) _changed();
     }();
   }
 

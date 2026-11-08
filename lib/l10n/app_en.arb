@@ -2530,7 +2530,7 @@
   "ytmPickArtist": "Which artist?",
   "ytmArtistNone": "No artist found on YouTube Music",
   "suggestedBadge": "Suggested",
-  "suggestedSimilarTo": "Suggested · similar to “{seed}”",
+  "suggestedSimilarTo": "Suggested: similar to “{seed}”",
   "suggestionDownloadStarted": "Download started",
   "suggestionAddWhenDownloaded": "Downloading it and adding it to “{name}”",
   "dislikesTitle": "Dislikes",

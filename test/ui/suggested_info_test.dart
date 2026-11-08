@@ -71,7 +71,7 @@ void main() {
   ) async {
     var taps = 0;
     await open(tester, suggested: true, onDislike: () => taps++);
-    expect(find.text('Suggerito · simile a «Nella stanza 2»'), findsOneWidget);
+    expect(find.text('Suggerito: simile a «Nella stanza 2»'), findsOneWidget);
     expect(find.byType(TextButton), findsNWidgets(3));
     await tester.tap(find.text('Non mi piace'));
     expect(taps, 1);
