@@ -5,6 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/backup/backup_service.dart';
 import 'package:codecore/services/backup/restore_service.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -149,6 +150,23 @@ void main() {
           dbFile: dbFile, staging: staging, prefs: prefs, coversDir: covers, schemaVersion: schema, dislikesFile: live),
           isTrue);
       expect(live.readAsStringSync(), 'keep');
+    });
+
+    test('merging adds the blocks of dislikes.json to the current ones', () async {
+      final src = File(p.join(dir.path, 'src-dislikes.json'))
+        ..writeAsStringSync(
+          '{"tracks":[{"id":"b","title":"B","artist":"x"}],"artists":[{"key":"k","name":"K"}]}',
+        );
+      final zip = await makeBackup(['n1'], dislikes: src);
+      final live = File(p.join(dir.path, 'live-dislikes.json'));
+      final store = DislikeStore(file: () async => live, writeDelay: Duration.zero);
+      await store.load();
+      store.blockTrack(const DislikedTrack(videoId: 'a', title: 'A', artist: 'x'));
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeBackup(zip, here, Directory(p.join(dir.path, 'm-covers')), dislikes: store);
+      expect([for (final t in store.tracks) t.videoId], unorderedEquals(['a', 'b']));
+      expect(store.artistBlocked('k'), isTrue);
     });
 
     test('the recognition pass bookmarks are cleared: the restored rows may be older', () async {

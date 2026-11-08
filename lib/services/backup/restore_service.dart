@@ -11,6 +11,7 @@ import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
+import '../shuffle_plus/dislike_store.dart';
 import 'user_data.dart';
 import '../../data/settings/settings_store.dart' show genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey;
 import 'backup_service.dart';
@@ -175,7 +176,8 @@ Future<bool> applyPendingRestore({
     final dislikes = File(p.join(staging.path, _stagedDislikes));
     if (dislikesFile != null && dislikes.existsSync()) {
       dislikesFile.parent.createSync(recursive: true);
-      dislikes.copySync(dislikesFile.path);
+      final tmp = dislikes.copySync('${dislikesFile.path}.tmp');
+      tmp.renameSync(dislikesFile.path);
     }
     final covers = Directory(p.join(staging.path, 'covers'));
     if (covers.existsSync()) {
@@ -226,7 +228,12 @@ void _quietDelete(Directory d) {
 /// «Unisci a questa libreria»: merges the user data of [zip] into [db] (see
 /// [mergeUserData]) and copies its covers into [coversDir] without
 /// overwriting any. The database file of the backup is not used.
-Future<MergeReport> mergeBackup(File zip, AppDatabase db, Directory coversDir) async {
+Future<MergeReport> mergeBackup(
+  File zip,
+  AppDatabase db,
+  Directory coversDir, {
+  DislikeStore? dislikes,
+}) async {
   final input = InputFileStream(zip.path);
   late final UserData data;
   var windows = Platform.isWindows;
@@ -239,6 +246,12 @@ Future<MergeReport> mergeBackup(File zip, AppDatabase db, Directory coversDir) a
     if (manifest != null) {
       final m = jsonDecode(utf8.decode(manifest.content as List<int>)) as Map<String, dynamic>;
       windows = windows || m['platform'] == 'windows';
+    }
+    // «Non mi piace» blocks are added to the current ones (union).
+    final dl = archive.findFile(_stagedDislikes);
+    if (dislikes != null && dl != null) {
+      await dislikes.load();
+      dislikes.mergeJson(jsonDecode(utf8.decode(dl.content as List<int>)));
     }
     coversDir.createSync(recursive: true);
     for (final f in archive.files) {

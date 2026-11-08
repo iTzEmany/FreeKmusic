@@ -66,14 +66,54 @@ void main() {
     await again.migrateFrom(log);
     expect(again.trackBlocked('d'), isFalse, reason: 'already migrated: an unblock sticks');
 
+    again.blockTrack(track('keep'));
+    await again.flush();
     await log.clear();
-    expect(again.tracks, isEmpty, reason: 'clearing the log does not touch the store');
+    final third = store();
+    await third.load();
+    expect(
+      third.trackBlocked('keep'),
+      isTrue,
+      reason: 'clearing the log does not touch the store',
+    );
   });
 
-  test('a corrupt file starts empty', () async {
+  test('a corrupt file starts empty and is kept as .bad', () async {
     f.writeAsStringSync('{nope');
     final s = store();
     await s.load();
     expect(s.tracks, isEmpty);
+    s.blockTrack(track('1'));
+    await s.flush();
+    expect(File('${f.path}.bad').readAsStringSync(), '{nope');
+    expect(f.readAsStringSync(), contains('"1"'));
+  });
+
+  test('a write before load ends does not wipe the file', () async {
+    final first = store();
+    await first.load();
+    first.blockTrack(track('old'));
+    await first.flush();
+
+    final s = store();
+    final loading = s.load();
+    s.blockTrack(track('new'));
+    await s.flush();
+    await loading;
+    final again = store();
+    await again.load();
+    expect(again.trackBlocked('old'), isTrue);
+  });
+
+  test('mergeJson adds blocks and keeps the current ones', () async {
+    final s = store();
+    await s.load();
+    s.blockTrack(track('a'));
+    s.mergeJson({
+      'tracks': [track('a').toJson(), track('b').toJson()],
+      'artists': [const DislikedArtist(key: 'k', name: 'K').toJson()],
+    });
+    expect(s.tracks, hasLength(2));
+    expect(s.artistBlocked('k'), isTrue);
   });
 }

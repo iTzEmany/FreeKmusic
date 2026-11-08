@@ -7,6 +7,7 @@ import '../data/repositories/backup_merge.dart' show MergeReport;
 import '../services/backup/restore_service.dart';
 import 'backup_providers.dart';
 import 'database_providers.dart';
+import 'dislike_store_provider.dart';
 import 'settings_providers.dart';
 
 /// Backups: create, look inside, replace the library or merge into it.
@@ -16,7 +17,13 @@ class BackupOps {
   final Ref _ref;
 
   /// Writes a backup zip to [path].
-  Future<void> create(String path) async => (await _ref.read(backupServiceProvider.future)).createBackup(path);
+  Future<void> create(String path) async {
+    // The zip takes the file: make sure it is loaded and up to date.
+    final s = _ref.read(dislikeStoreProvider);
+    await s.load();
+    await s.flush();
+    await (await _ref.read(backupServiceProvider.future)).createBackup(path);
+  }
 
   /// What the zip holds and how it fits this device; throws [RestoreException] if it is no backup.
   Future<RestorePlan> inspect(File zip) async => inspectBackup(
@@ -29,8 +36,12 @@ class BackupOps {
   Future<void> stageReplace(File zip) async => stageFullRestore(zip, await restoreStagingDir());
 
   /// Merges the zip into the live library.
-  Future<MergeReport> merge(File zip) async =>
-      mergeBackup(zip, _ref.read(databaseProvider), Directory(await coversDir()));
+  Future<MergeReport> merge(File zip) async => mergeBackup(
+    zip,
+    _ref.read(databaseProvider),
+    Directory(await coversDir()),
+    dislikes: _ref.read(dislikeStoreProvider),
+  );
 }
 
 final backupOpsProvider = Provider<BackupOps>(BackupOps.new);

@@ -63,7 +63,30 @@ class DislikeStore {
       }
     } on Object catch (e, st) {
       AppLog.w('dislikes unreadable, starting empty', e, st);
+      // Keep the bad file: the next write must not destroy it.
+      try {
+        final f = await file();
+        if (await f.exists()) await f.rename('${f.path}.bad');
+      } on Object catch (e2, st2) {
+        AppLog.w('dislikes.json.bad not saved', e2, st2);
+      }
     }
+  }
+
+  /// Adds what [json] (the content of a `dislikes.json`) blocks; nothing is removed.
+  void mergeJson(Object? json) {
+    if (json is! Map) return;
+    if (json['tracks'] case final List l) {
+      for (final t in [for (final j in l) ?DislikedTrack.fromJson(j)]) {
+        if (!trackBlocked(t.videoId)) _tracks.add(t);
+      }
+    }
+    if (json['artists'] case final List l) {
+      for (final a in [for (final j in l) ?DislikedArtist.fromJson(j)]) {
+        if (!artistBlocked(a.key)) _artists.add(a);
+      }
+    }
+    _changed();
   }
 
   /// Turns the old `disliked` records of [log] into blocked songs, once.
@@ -126,14 +149,23 @@ class DislikeStore {
   }
 
   Future<void> _writeNow() async {
+    // Before load ends the lists are incomplete: writing would wipe the file.
+    final loading = _loading;
+    if (loading == null) return;
     try {
+      await loading;
       final f = await file();
       await f.parent.create(recursive: true);
-      await f.writeAsString(jsonEncode({
-        'migrated': _migrated,
-        'tracks': [for (final t in _tracks) t.toJson()],
-        'artists': [for (final a in _artists) a.toJson()],
-      }));
+      // Write beside, then rename: a crash never leaves a half file.
+      final tmp = File('${f.path}.tmp');
+      await tmp.writeAsString(
+        jsonEncode({
+          'migrated': _migrated,
+          'tracks': [for (final t in _tracks) t.toJson()],
+          'artists': [for (final a in _artists) a.toJson()],
+        }),
+      );
+      await tmp.rename(f.path);
     } on Object catch (e, st) {
       AppLog.w('dislikes write failed', e, st);
     }
