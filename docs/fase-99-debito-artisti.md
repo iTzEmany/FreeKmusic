@@ -31,3 +31,4 @@
 
 ## Esiti
 - 99.3: la chiave di `mergeArtistShelves` (`matchKey(title)|anno`) resta propria: `releaseGroupKey` di `release_diff` toglie parentesi, «Deluxe/Edition/Version» e quel che segue «:» o «+», quindi unirebbe edizioni che oggi restano due uscite (valori diversi nei casi reali).
+- 99.3: pagine degli alias non messe sotto `budgetedYtm`: a livello di provider il blocco nasconderebbe le pagine in cache, svuoterebbe gli scaffali dopo "Aggiorna" e spenderebbe budget senza rete; il posto giusto è il fetch di `_cached` in `ytm_catalog.dart`, cambio di comportamento da decidere in una fase futura.

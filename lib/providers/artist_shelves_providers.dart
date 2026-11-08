@@ -1,22 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/import/track_matcher.dart' show matchKey;
-import '../services/online/budgeted_call.dart';
 import '../services/online/ytm_artist.dart';
-import '../services/online/ytm_catalog.dart' show CatalogResult;
-import 'smart_search_providers.dart';
 import 'ytm_catalog_providers.dart' show artistPageProvider;
-
-/// The page of an alias profile: [artistPageProvider] under the shared budget and
-/// 429 pause (D-425); null when there is no budget. The main profile's page is not.
-final aliasArtistPageProvider = FutureProvider.autoDispose
-    .family<CatalogResult<YtmArtistPage>?, String>((ref, id) async {
-      return budgetedYtm(
-        ref.read(sourceCooldownProvider),
-        ref.read(searchRowsLimiterProvider),
-        () => ref.watch(artistPageProvider(id).future),
-      );
-    });
 
 final _year = RegExp(r'\b(?:19|20)\d{2}\b');
 
@@ -93,6 +79,6 @@ final groupShelvesProvider = Provider.autoDispose
       if (main == null) return null;
       return mergeArtistShelves(main, [
         for (final id in ids.skip(1))
-          ?ref.watch(aliasArtistPageProvider(id)).value?.value,
+          ?ref.watch(artistPageProvider(id)).value?.value,
       ]);
     });

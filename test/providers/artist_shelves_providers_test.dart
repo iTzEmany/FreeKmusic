@@ -1,8 +1,5 @@
 import 'package:codecore/providers/artist_shelves_providers.dart';
-import 'package:codecore/providers/smart_search_providers.dart'
-    show sourceCooldownProvider;
 import 'package:codecore/providers/ytm_catalog_providers.dart';
-import 'package:codecore/services/online/query_match.dart' show MediaKind;
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -107,7 +104,6 @@ void main() {
     final sub = both.listen(groupShelvesProvider('${a.id}|${b.id}'), (_, _) {});
     await both.read(artistPageProvider(a.id).future);
     await both.read(artistPageProvider(b.id).future);
-    await both.read(aliasArtistPageProvider(b.id).future);
     expect(titles(sub.read()), [
       ['New', 'Mid'],
     ]);
@@ -122,44 +118,5 @@ void main() {
     await none.read(artistPageProvider(b.id).future);
     await Future<void>.delayed(Duration.zero);
     expect(sub2.read(), isNull);
-  });
-
-  test('groupShelvesProvider: while the source is paused the alias pages are left out', () async {
-    final main = YtmArtistPage(
-      ref: a,
-      shelves: const [
-        YtmReleaseShelf('Album', [
-          YtmRelease(browseId: 'n', title: 'New', subtitle: '2024'),
-        ]),
-      ],
-    );
-    final other = YtmArtistPage(
-      ref: b,
-      shelves: const [
-        YtmReleaseShelf('Album', [
-          YtmRelease(browseId: 'm', title: 'Mid', subtitle: '2018'),
-        ]),
-      ],
-    );
-    final c = ProviderContainer(
-      overrides: [
-        artistPageProvider.overrideWith(
-          (ref, id) async =>
-              CatalogResult(id == a.id ? main : other, DateTime(2026, 10, 22)),
-        ),
-      ],
-    );
-    addTearDown(c.dispose);
-    c.read(sourceCooldownProvider).trip(MediaKind.ytmSong);
-    final sub = c.listen(groupShelvesProvider('${a.id}|${b.id}'), (_, _) {});
-    await c.read(artistPageProvider(a.id).future);
-    await Future<void>.delayed(Duration.zero);
-    expect(
-      [
-        for (final s in sub.read()!.cast<YtmReleaseShelf>())
-          for (final r in s.releases) r.title,
-      ],
-      ['New'],
-    );
   });
 }
