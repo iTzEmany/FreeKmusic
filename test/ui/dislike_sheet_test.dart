@@ -1,5 +1,10 @@
 import 'package:codecore/l10n/app_localizations.dart';
+
+import 'dart:io';
+
+import 'package:codecore/providers/dislike_store_provider.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -104,4 +109,52 @@ void main() {
       expect(actions.calls.last, 'undo x');
     },
   );
+
+  testWidgets(
+    'a double tap on a choice runs one action and keeps the page below',
+    (tester) async {
+      await open(tester);
+      await tester.tap(find.byKey(const ValueKey('dislike-track')));
+      await tester.tap(
+        find.byKey(const ValueKey('dislike-track')),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(actions.calls, ['track $id']);
+      expect(find.text('apri'), findsOneWidget);
+    },
+  );
+
+  testWidgets('the lock mark follows the block and is named', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('blocked_mark');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final store = DislikeStore(
+      file: () async => File('${dir.path}/d.json'),
+      writeDelay: const Duration(days: 1),
+    );
+    await tester.runAsync(store.load);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [dislikeStoreProvider.overrideWithValue(store)],
+        child: const MaterialApp(
+          locale: Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: BlockedArtistMark('Calcutta', label: true)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.block), findsNothing);
+    store.blockArtist(const DislikedArtist(key: 'calcutta', name: 'Calcutta'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.block), findsOneWidget);
+    expect(find.bySemanticsLabel('Artista bloccato'), findsOneWidget);
+    store.unblockArtist('calcutta');
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.block), findsNothing);
+    await tester.runAsync(store.flush); // no write timer left pending
+  });
 }

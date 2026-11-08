@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_log.dart';
 import '../../core/artist_key.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/dislike_store_provider.dart';
@@ -20,67 +21,95 @@ Future<void> showDislikeSheet(
   if (r == null) return;
   final l = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
-  final actions = ref.read(suggestionActionsProvider);
   final artist = r.artists.isEmpty ? r.channel : r.artists.first;
+  var picked =
+      false; // a second tap while the sheet closes must not pop the page below
   final artistChoice = await showCcSheet<bool>(
     context: context,
     barrierLabel: l.close,
-    builder: (sheet) => SafeArea(
-      child: Semantics(
-        scopesRoute: true,
-        explicitChildNodes: true,
-        namesRoute: true,
-        label: l.dislikeSheetTitle,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l.dislikeSheetTitle,
-                  style: Theme.of(sheet).textTheme.titleMedium,
+    builder: (sheet) {
+      void pick(bool? v) {
+        if (picked) return;
+        picked = true;
+        Navigator.pop(sheet, v);
+      }
+
+      return SafeArea(
+        child: Semantics(
+          scopesRoute: true,
+          explicitChildNodes: true,
+          namesRoute: true,
+          label: l.dislikeSheetTitle,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l.dislikeSheetTitle,
+                    style: Theme.of(sheet).textTheme.titleMedium,
+                  ),
                 ),
               ),
-            ),
-            _Choice(
-              key: const ValueKey('dislike-track'),
-              icon: Icons.thumb_down_outlined,
-              title: l.dislikeSheetTrack,
-              hint: l.dislikeSheetTrackHint(r.title),
-              onTap: () => Navigator.pop(sheet, false),
-            ),
-            _Choice(
-              key: const ValueKey('dislike-artist'),
-              icon: Icons.close_rounded,
-              title: l.dislikeSheetArtist(artist),
-              hint: l.dislikeSheetArtistHint(artist),
-              onTap: () => Navigator.pop(sheet, true),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: TextButton(
-                  onPressed: () => Navigator.pop(sheet),
-                  child: Text(l.cancel),
+              _Choice(
+                key: const ValueKey('dislike-track'),
+                icon: Icons.thumb_down_outlined,
+                title: l.dislikeSheetTrack,
+                hint: l.dislikeSheetTrackHint(r.title),
+                onTap: () => pick(false),
+              ),
+              _Choice(
+                key: const ValueKey('dislike-artist'),
+                icon: Icons.close_rounded,
+                title: l.dislikeSheetArtist(artist),
+                hint: l.dislikeSheetArtistHint(artist),
+                onTap: () => pick(true),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: TextButton(
+                    onPressed: () => pick(null),
+                    child: Text(l.cancel),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
-  if (artistChoice == null) return;
-  final undo = artistChoice
-      ? await actions.dislikeArtist(queueId)
-      : await actions.dislikeTrack(queueId);
+  if (artistChoice == null || !context.mounted) return;
+  final actions = ref.read(suggestionActionsProvider);
+  // The notice shows at once; the action (the next song may load) runs meanwhile.
+  final done = () async {
+    try {
+      return await (artistChoice
+          ? actions.dislikeArtist(queueId)
+          : actions.dislikeTrack(queueId));
+    } on Object catch (e, st) {
+      AppLog.w('dislike failed', e, st);
+      return null;
+    }
+  }();
   showMsgOn(
     messenger,
     artistChoice ? l.dislikeArtistDone(artist) : l.suggestionDisliked,
-    action: SnackBarAction(label: l.undo, onPressed: () => actions.undo(undo)),
+    action: SnackBarAction(
+      label: l.undo,
+      onPressed: () async {
+        try {
+          final u = await done;
+          if (u != null) await actions.undo(u);
+        } on Object catch (e, st) {
+          AppLog.w('dislike undo failed', e, st);
+        }
+      },
+    ),
     duration: const Duration(seconds: 4),
   );
 }
@@ -118,9 +147,10 @@ class BlockedArtistMark extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final blocked =
-        ref.watch(blockedArtistKeysProvider).value?.contains(artistKey(name)) ??
-        false;
+    final key = artistKey(name);
+    final blocked = ref.watch(
+      blockedArtistKeysProvider.select((v) => v.value?.contains(key) ?? false),
+    );
     if (!blocked) return const SizedBox.shrink();
     final l = context.l10n;
     final color = Theme.of(context).textTheme.bodySmall?.color;
