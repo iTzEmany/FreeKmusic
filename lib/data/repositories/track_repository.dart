@@ -484,7 +484,9 @@ class TrackRepository {
   /// The library songs whose main artist is [name], whatever the spelling in
   /// the tags (same artist key), by title.
   Future<List<Track>> tracksOfArtist(String name) async {
-    final spellings = await spellingsOf(_db, ArtistInfoRepository.keyOf(name));
+    final key = ArtistInfoRepository.keyOf(name);
+    // A name of only symbols has an empty key: match the exact spelling.
+    final spellings = key.isEmpty ? [name] : await spellingsOf(_db, key);
     if (spellings.isEmpty) return const [];
     return _db
         .customSelect(

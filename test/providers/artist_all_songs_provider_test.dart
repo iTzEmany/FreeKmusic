@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/artist_all_songs_provider.dart';
 import 'package:codecore/providers/artist_shelves_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
@@ -28,7 +29,13 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<void> add(String title, String artist) => db
+  Future<void> add(
+    String title,
+    String artist, {
+    bool missing = false,
+    bool ignored = false,
+    int kind = 0,
+  }) => db
       .into(db.tracks)
       .insert(
         TracksCompanion.insert(
@@ -42,6 +49,9 @@ void main() {
           mtimeMs: 1,
           hasCover: const Value(false),
           addedAt: 1,
+          missing: Value(missing),
+          ignored: Value(ignored),
+          kind: Value(kind),
         ),
       );
 
@@ -50,6 +60,7 @@ void main() {
     List<YtResult>? top,
     YtmBrowseLink? link = const YtmBrowseLink('VL1', null),
     bool noPage = false,
+    List<YtmShelf>? shelves,
   }) {
     final c = ProviderContainer(
       overrides: [
@@ -57,7 +68,7 @@ void main() {
         groupShelvesProvider.overrideWith(
           (ref, ids) => noPage
               ? null
-              : [YtmSongShelf('Top', top ?? _top, allSongs: link)],
+              : shelves ?? [YtmSongShelf('Top', top ?? _top, allSongs: link)],
         ),
         artistSongsProvider.overrideWith((ref, l) async {
           if (fails) throw StateError('offline');
@@ -128,5 +139,50 @@ void main() {
     final r = await read(noPage: true);
     expect(titles(r), ['Echoes']);
     expect(r.topMissing, isTrue);
+  });
+
+  test(
+    'missing, ignored and episode rows stay out; title order ignores case',
+    () async {
+      await add('c', 'Pink Floyd');
+      await add('B', 'Pink Floyd');
+      await add('a', 'Pink Floyd');
+      await add('gone', 'Pink Floyd', missing: true);
+      await add('hidden', 'Pink Floyd', ignored: true);
+      await add('episode', 'Pink Floyd', kind: 1);
+      final r = await read(fails: true);
+      expect(titles(r), ['a', 'B', 'c']);
+    },
+  );
+
+  test('a name of only symbols matches its exact spelling', () async {
+    await add('x', '!!!');
+    await add('y', '???');
+    final r = await TrackRepository(db).tracksOfArtist('!!!');
+    expect([for (final t in r) t.title], ['x']);
+  });
+
+  test(
+    'two downloaded songs with one title: first in the top, second last',
+    () async {
+      await add('Time', 'Pink Floyd');
+      await add('Time', 'pink floyd');
+      final r = await read(top: [ytmSong('a', 'Time')]);
+      expect(
+        [for (final i in r.items) i.track!.artist],
+        ['Pink Floyd', 'pink floyd'],
+      );
+    },
+  );
+
+  test('without «show all» every shelf of the page is the top', () async {
+    final r = await read(
+      fails: true,
+      shelves: [
+        YtmSongShelf('A', [ytmSong('a', 'Time')]),
+        YtmSongShelf('B', [ytmSong('b', 'Money')]),
+      ],
+    );
+    expect(titles(r), ['Time', 'Money']);
   });
 }
