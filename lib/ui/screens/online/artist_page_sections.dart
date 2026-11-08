@@ -5,6 +5,7 @@ import '../../../services/online/google_thumb.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/collection_header.dart';
+import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/motion.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/section_header.dart';
@@ -49,7 +50,7 @@ class ArtistHeader extends StatelessWidget {
       ),
       name: artist.name,
       meta: text == null || text.isEmpty ? null : text,
-      actions: [?action],
+      actions: [BlockedArtistMark(artist.name, label: true), ?action],
     );
   }
 }
@@ -323,11 +324,18 @@ class ArtistList extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            a.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.titleSmall,
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  a.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.titleSmall,
+                                ),
+                              ),
+                              BlockedArtistMark(a.name),
+                            ],
                           ),
                           if (a.audience != null && a.audience!.isNotEmpty)
                             Text(

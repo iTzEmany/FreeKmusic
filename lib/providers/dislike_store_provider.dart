@@ -14,7 +14,7 @@ import 'suggestion_log_provider.dart';
 /// the old `disliked` records of the suggestion log.
 final dislikeStoreProvider = Provider<DislikeStore>((ref) {
   final store = DislikeStore(file: () async => File(p.join(await appSupportDir(), 'dislikes.json')));
-  unawaited(store.migrateFrom(ref.watch(suggestionLogProvider)));
+  unawaited(store.migrateFrom(ref.read(suggestionLogProvider)));
   ref.onDispose(() => unawaited(store.flush()));
   return store;
 });
@@ -23,3 +23,14 @@ final dislikeStoreProvider = Provider<DislikeStore>((ref) {
 final suggestionGateProvider = Provider<SuggestionGate>(
   (ref) => SuggestionGate(ref.watch(dislikeStoreProvider)),
 );
+
+/// Keys of the blocked artists, live (D-468: the lock mark next to their name).
+final blockedArtistKeysProvider = StreamProvider<Set<String>>((ref) async* {
+  final store = ref.watch(dislikeStoreProvider);
+  Set<String> keys() => {for (final a in store.artists) a.key};
+  await store.load();
+  yield keys();
+  await for (final _ in store.changes) {
+    yield keys();
+  }
+});

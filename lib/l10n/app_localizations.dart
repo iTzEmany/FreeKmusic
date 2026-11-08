@@ -11004,6 +11004,48 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Cerco i brani simili…'**
   String get queueSimilarSearching;
+
+  /// No description provided for @dislikeSheetTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Non ti piace il brano o l’artista?'**
+  String get dislikeSheetTitle;
+
+  /// No description provided for @dislikeSheetTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Solo questo brano'**
+  String get dislikeSheetTrack;
+
+  /// No description provided for @dislikeSheetTrackHint.
+  ///
+  /// In it, this message translates to:
+  /// **'«{title}» non torna, salvo che sia molto vicino a ciò che ascolti.'**
+  String dislikeSheetTrackHint(String title);
+
+  /// No description provided for @dislikeSheetArtist.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutto {artist}'**
+  String dislikeSheetArtist(String artist);
+
+  /// No description provided for @dislikeSheetArtistHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun brano di {artist} ti verrà più suggerito.'**
+  String dislikeSheetArtistHint(String artist);
+
+  /// No description provided for @dislikeArtistDone.
+  ///
+  /// In it, this message translates to:
+  /// **'{artist} non ti verrà più suggerito'**
+  String dislikeArtistDone(String artist);
+
+  /// No description provided for @artistBlockedLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Artista bloccato'**
+  String get artistBlockedLabel;
 }
 
 class _AppLocalizationsDelegate

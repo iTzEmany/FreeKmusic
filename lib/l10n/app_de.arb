@@ -3483,5 +3483,40 @@
   "queueSimilarTo": "Ähnlich wie «{title}»",
   "queueSimilarTag": "YouTube-Music-Radio",
   "queueSimilarCount": "{total, plural, one{1 Titel} other{{total} Titel}}, {owned} schon in der Mediathek",
-  "queueSimilarSearching": "Suche ähnliche Titel …"
+  "queueSimilarSearching": "Suche ähnliche Titel …",
+  "dislikeSheetTitle": "Gefällt dir der Titel oder der Künstler nicht?",
+  "dislikeSheetTrack": "Nur dieser Titel",
+  "dislikeSheetTrackHint": "„{title}“ kommt nicht wieder, außer er ist sehr nah an dem, was du hörst.",
+  "@dislikeSheetTrackHint": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtist": "Alles von {artist}",
+  "@dislikeSheetArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtistHint": "Kein Titel von {artist} wird dir mehr vorgeschlagen.",
+  "@dislikeSheetArtistHint": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeArtistDone": "{artist} wird dir nicht mehr vorgeschlagen",
+  "@dislikeArtistDone": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "artistBlockedLabel": "Künstler blockiert"
 }

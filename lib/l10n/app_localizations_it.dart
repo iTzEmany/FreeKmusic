@@ -6870,4 +6870,33 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queueSimilarSearching => 'Cerco i brani simili…';
+
+  @override
+  String get dislikeSheetTitle => 'Non ti piace il brano o l’artista?';
+
+  @override
+  String get dislikeSheetTrack => 'Solo questo brano';
+
+  @override
+  String dislikeSheetTrackHint(String title) {
+    return '«$title» non torna, salvo che sia molto vicino a ciò che ascolti.';
+  }
+
+  @override
+  String dislikeSheetArtist(String artist) {
+    return 'Tutto $artist';
+  }
+
+  @override
+  String dislikeSheetArtistHint(String artist) {
+    return 'Nessun brano di $artist ti verrà più suggerito.';
+  }
+
+  @override
+  String dislikeArtistDone(String artist) {
+    return '$artist non ti verrà più suggerito';
+  }
+
+  @override
+  String get artistBlockedLabel => 'Artista bloccato';
 }

@@ -1,5 +1,6 @@
 import '../../services/audio/online_entries.dart';
 import 'cc_sheet.dart';
+import 'dislike_sheet.dart';
 import 'cover_picker_sheet.dart';
 import '../../providers/cover_ops.dart';
 import 'track_artists_sheet.dart';
@@ -141,10 +142,7 @@ List<TrackActionGroup> onlineTrackActions(
     ]),
     TrackActionGroup(l.groupQueue, [
       if (ref.read(onlineEntriesProvider)?[track.id]?.suggested ?? false)
-        TrackAction(Icons.thumb_down_outlined, l.suggestionDislike, () async {
-          await actions.dislikeTrack(track.id);
-          snack(l.suggestionDisliked);
-        }),
+        TrackAction(Icons.thumb_down_outlined, l.suggestionDislike, () => showDislikeSheet(outer, ref, track.id)),
       TrackAction(
         Icons.remove_circle_outline_rounded,
         l.removeFromQueueAction,

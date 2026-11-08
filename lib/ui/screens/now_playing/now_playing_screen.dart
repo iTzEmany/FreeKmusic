@@ -27,6 +27,7 @@ import '../../../providers/radio_providers.dart' show onAirProvider;
 import '../../widgets/radio_now.dart';
 import '../../widgets/favorite_actions.dart';
 import '../../widgets/mini_player.dart' show coverHeroTagFor;
+import '../../widgets/dislike_sheet.dart' show showDislikeSheet;
 import '../../widgets/track_actions.dart';
 import 'now_playing_cards.dart';
 import 'credits_card.dart';
@@ -378,7 +379,10 @@ class _Player extends ConsumerWidget {
           if (radio != null)
             NpRadioActions(station: radio, onAir: onAir)
           else if (online)
-            SuggestedInfo(track: track),
+            SuggestedInfo(
+              track: track,
+              onDislike: () => showDislikeSheet(context, ref, track.id),
+            ),
           if (radio != null)
             NpLiveRow(station: radio)
           else

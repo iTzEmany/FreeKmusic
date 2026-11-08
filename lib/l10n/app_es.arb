@@ -3483,5 +3483,40 @@
   "queueSimilarTo": "Similares a «{title}»",
   "queueSimilarTag": "radio de YouTube Music",
   "queueSimilarCount": "{total, plural, one{1 canción} other{{total} canciones}}, {owned} ya en la biblioteca",
-  "queueSimilarSearching": "Buscando canciones similares…"
+  "queueSimilarSearching": "Buscando canciones similares…",
+  "dislikeSheetTitle": "¿No te gusta la canción o el artista?",
+  "dislikeSheetTrack": "Solo esta canción",
+  "dislikeSheetTrackHint": "«{title}» no vuelve, salvo que se parezca mucho a lo que escuchas.",
+  "@dislikeSheetTrackHint": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtist": "Todo {artist}",
+  "@dislikeSheetArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtistHint": "Ninguna canción de {artist} se te sugerirá más.",
+  "@dislikeSheetArtistHint": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeArtistDone": "{artist} no se te sugerirá más",
+  "@dislikeArtistDone": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "artistBlockedLabel": "Artista bloqueado"
 }

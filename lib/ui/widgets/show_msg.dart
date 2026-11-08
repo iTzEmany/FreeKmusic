@@ -36,6 +36,7 @@ void showMsgOn(
   String text, {
   SnackBarAction? action,
   bool persist = false,
+  Duration? duration,
 }) {
   messenger.clearSnackBars();
   messenger.showSnackBar(SnackBar(
@@ -43,6 +44,6 @@ void showMsgOn(
     action: action,
     // Explicit persist: an action alone must not keep it on screen forever.
     persist: persist && action != null,
-    duration: action == null ? CcTiming.msg : CcTiming.msgAction,
+    duration: duration ?? (action == null ? CcTiming.msg : CcTiming.msgAction),
   ));
 }
