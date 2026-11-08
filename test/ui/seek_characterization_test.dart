@@ -19,6 +19,12 @@ import '../support/app_harness.dart';
 class _Spy implements PlayerController {
   final seeks = <Duration>[];
 
+  // The queue sheet watches these through similarSeedProvider (phase 100).
+  @override
+  final similarTitle = ValueNotifier<String?>(null);
+  @override
+  final similarLoading = ValueNotifier<bool>(false);
+
   @override
   Future<void> seek(Duration position) async => seeks.add(position);
 
