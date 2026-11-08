@@ -15,6 +15,7 @@ import 'insertion_plan.dart';
 import 'radio_gate.dart';
 import 'seed_resolver.dart';
 import 'shuffle_host.dart';
+import 'suggestion_gate.dart';
 import 'suggestion_log.dart';
 import 'suggestion_pool.dart';
 
@@ -63,6 +64,7 @@ class ShufflePlusController {
     required this.host,
     required this.online,
     required this.log,
+    required this.filter,
     required this.resolver,
     required this.radio,
     required this.config,
@@ -104,6 +106,7 @@ class ShufflePlusController {
   final ShuffleHost host;
   final OnlineEntries online;
   final SuggestionLog log;
+  final SuggestionGate filter;
   final SuggestionPool pool;
   final SeedResolver resolver;
   final YtmRadioService radio;
@@ -486,6 +489,7 @@ class ShufflePlusController {
 
   Future<SuggestionCandidate?> _take() async {
     await log.load();
+    await filter.load();
     final queued = {
       for (final id in host.queueIds)
         if (isOnlineId(id)) ?online[id]?.result.id,
@@ -494,6 +498,7 @@ class ShufflePlusController {
       inLibrary: inLibraryTest(hasDownload: hasDownload, library: _library),
       inQueue: queued.contains,
       log: log,
+      filter: filter,
       lastArtists: _lastArtists,
     );
   }

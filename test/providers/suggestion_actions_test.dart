@@ -4,6 +4,7 @@ import 'package:codecore/providers/pending_playlist_adds.dart';
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -14,6 +15,10 @@ void main() {
   late Directory dir;
   late OnlineEntries online;
   late SuggestionLog log;
+  late DislikeStore store;
+  late List<int> queue; // the play order, ids
+  late int? current;
+  var played = -1;
   late int id;
   late List<(String, String?)> downloads;
   var instant = false; // what the download callback reports
@@ -29,7 +34,18 @@ void main() {
       writeDelay: const Duration(days: 1),
     );
     await log.load();
-    log.add(videoId: 'v1', title: 'Streamed', artist: 'Chan', seedTitle: 'Seed');
+    log.add(
+      videoId: 'v1',
+      title: 'Streamed',
+      artist: 'Chan',
+      seedTitle: 'Seed',
+    );
+    store = DislikeStore(
+      file: () async => File(p.join(dir.path, 'dislikes.json')),
+    );
+    queue = [id];
+    current = null;
+    played = -1;
     downloads = [];
     instant = false;
     removed = [];
@@ -40,7 +56,15 @@ void main() {
         downloads.add((r.id, tag));
         return instant;
       },
-      removeQueueId: (i) async => removed.add(i),
+      store: store,
+      removeQueueId: (i) async {
+        removed.add(i);
+        queue.remove(i);
+      },
+      queueIds: () => List.of(queue),
+      currentQueueId: () => current,
+      insertAt: (i, v) => queue.insert(i, v),
+      playIndex: (i) async => played = i,
     );
   });
 
@@ -63,12 +87,58 @@ void main() {
     expect(log.latest('v1')?.outcome, SuggestionOutcome.downloaded);
   });
 
-  test('dislike marks it and takes it out of the queue', () async {
-    await actions.dislike(id);
+  test('dislikeTrack blocks the song and takes it out of the queue', () async {
+    await actions.dislikeTrack(id);
+    expect(store.trackBlocked('v1'), isTrue);
     expect(log.latest('v1')?.outcome, SuggestionOutcome.disliked);
-    expect(log.disliked('v1'), isTrue);
     expect(removed, [id]);
   });
+
+  test(
+    'dislikeArtist takes out only the suggested songs of that artist',
+    () async {
+      final other = online.register(
+        const YtResult(id: 'v2', title: 'B', channel: 'Chan', duration: null),
+        suggested: true,
+      );
+      final own = online.register(
+        const YtResult(id: 'v3', title: 'C', channel: 'Chan', duration: null),
+      );
+      final stranger = online.register(
+        const YtResult(id: 'v4', title: 'D', channel: 'Else', duration: null),
+        suggested: true,
+      );
+      queue = [id, own, other, stranger];
+      await actions.dislikeArtist(id);
+      expect(store.artistBlocked('chan'), isTrue);
+      expect(queue, [own, stranger]);
+    },
+  );
+
+  test(
+    'undo unblocks, puts the entries back and restarts the playing one',
+    () async {
+      final other = online.register(
+        const YtResult(id: 'v2', title: 'B', channel: 'Chan', duration: null),
+        suggested: true,
+      );
+      final stranger = online.register(
+        const YtResult(id: 'v4', title: 'D', channel: 'Else', duration: null),
+      );
+      queue = [stranger, id, other];
+      current = id;
+      final undo = await actions.dislikeArtist(id);
+      expect(queue, [stranger]);
+      await actions.undo(undo);
+      expect(queue, [stranger, id, other]);
+      expect(store.artistBlocked('chan'), isFalse);
+      expect(played, 1);
+      final t = await actions.dislikeTrack(id);
+      await actions.undo(t);
+      expect(store.trackBlocked('v1'), isFalse);
+      expect(log.latest('v1')?.outcome, SuggestionOutcome.queued);
+    },
+  );
 
   test('remove only takes it out of the queue', () async {
     await actions.remove(id);

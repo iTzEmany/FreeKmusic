@@ -6,7 +6,9 @@ import '../services/import/track_matcher.dart' show libraryTitleKey;
 import '../services/online/ytm_artist.dart' show YtmSongShelf;
 import 'artist_shelves_providers.dart';
 import '../services/online/youtube_service.dart' show YtResult;
+import '../core/artist_key.dart';
 import 'database_providers.dart';
+import 'dislike_store_provider.dart';
 import 'player_providers.dart' show MixItem;
 import 'ytm_catalog_providers.dart';
 
@@ -51,6 +53,15 @@ final artistAllSongsProvider = FutureProvider.autoDispose
           }
         }
       }
+      // Blocked online songs (and all of a blocked artist's) are not played;
+      // the user's own downloaded ones always are (D-468).
+      final store = ref.read(dislikeStoreProvider);
+      await store.load();
+      final artistBlocked = store.artistBlocked(artistKey(key.name));
+      top = [
+        for (final r in top)
+          if (!artistBlocked && !store.trackBlocked(r.id)) r,
+      ];
       final byTitle = <String, Track>{};
       for (final t in local.reversed) {
         byTitle[libraryTitleKey(t.title)] = t; // first of the list wins

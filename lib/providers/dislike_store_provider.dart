@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../core/paths.dart';
 import '../services/shuffle_plus/dislike_store.dart';
+import '../services/shuffle_plus/suggestion_gate.dart';
 import 'suggestion_log_provider.dart';
 
 /// `dislikes.json`: songs and artists marked «Non mi piace». A leaf file.
@@ -17,3 +18,8 @@ final dislikeStoreProvider = Provider<DislikeStore>((ref) {
   ref.onDispose(() => unawaited(store.flush()));
   return store;
 });
+
+/// The «Non mi piace» filter of every suggestion source (101.2).
+final suggestionGateProvider = Provider<SuggestionGate>(
+  (ref) => SuggestionGate(ref.watch(dislikeStoreProvider)),
+);

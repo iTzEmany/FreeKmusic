@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import '../support/suggestion_gate_fake.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
@@ -209,6 +210,7 @@ void main() {
       host: host,
       online: online,
       log: log,
+      filter: testGate(),
       resolver: SeedResolver(
         downloads: downloads,
         index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),

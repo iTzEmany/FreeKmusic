@@ -102,9 +102,6 @@ class SuggestionLog {
     return _records.any((r) => r.videoId == videoId && r.at.isAfter(limit));
   }
 
-  bool disliked(String videoId) => _records
-      .any((r) => r.videoId == videoId && r.outcome == SuggestionOutcome.disliked);
-
   /// A new suggestion, as «queued».
   void add({
     required String videoId,

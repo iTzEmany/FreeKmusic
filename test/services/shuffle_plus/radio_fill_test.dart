@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import '../../support/suggestion_gate_fake.dart';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -49,6 +51,7 @@ void main() {
         file: () async => File(p.join(dir.path, 'l.json')),
         writeDelay: const Duration(days: 1),
       ),
+      filter: testGate(),
       gate: gate,
       inLibrary: (r) => false,
     );
@@ -123,6 +126,7 @@ void main() {
           file: () async => File(p.join(dir.path, 'l.json')),
           writeDelay: const Duration(days: 1),
         ),
+        filter: testGate(),
         gate: RadioGate(now: () => t = t.add(const Duration(minutes: 2))),
         inLibrary: (r) => false,
       );

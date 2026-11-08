@@ -142,7 +142,7 @@ List<TrackActionGroup> onlineTrackActions(
     TrackActionGroup(l.groupQueue, [
       if (ref.read(onlineEntriesProvider)?[track.id]?.suggested ?? false)
         TrackAction(Icons.thumb_down_outlined, l.suggestionDislike, () async {
-          await actions.dislike(track.id);
+          await actions.dislikeTrack(track.id);
           snack(l.suggestionDisliked);
         }),
       TrackAction(

@@ -1,4 +1,7 @@
 import 'dart:async';
+
+import '../support/suggestion_gate_fake.dart';
+
 import 'dart:io';
 import 'dart:math' show max;
 
@@ -99,6 +102,7 @@ void main() {
       file: () async => File(p.join(dir.path, 'l.json')),
       writeDelay: const Duration(days: 1),
     ),
+    filter: testGate(),
     gate: gate,
     inLibrary: (_) => false,
   );

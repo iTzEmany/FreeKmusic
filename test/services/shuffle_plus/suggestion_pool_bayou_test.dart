@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import '../../support/suggestion_gate_fake.dart';
+
 import 'package:codecore/core/import_row.dart';
 import 'package:codecore/services/import/track_matcher.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -35,6 +37,7 @@ Future<SuggestionCandidate?> suggest(int ms) async {
     inLibrary: inLibraryTest(hasDownload: (_) => false, library: library),
     inQueue: (_) => false,
     log: log,
+    filter: testGate(),
   );
 }
 

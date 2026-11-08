@@ -59,10 +59,12 @@ void main() {
 
     final again = open();
     await again.load();
-    expect(again.recent.map((r) => (r.videoId, r.outcome)),
-        [('b', SuggestionOutcome.disliked), ('a', SuggestionOutcome.heard)]);
-    expect(again.disliked('b'), isTrue);
-    expect(again.disliked('a'), isFalse);
+    expect(again.recent.map((r) => (r.videoId, r.outcome)), [
+      ('b', SuggestionOutcome.disliked),
+      ('a', SuggestionOutcome.heard),
+    ]);
+    expect(again.latest('b')?.outcome == SuggestionOutcome.disliked, isTrue);
+    expect(again.latest('a')?.outcome == SuggestionOutcome.disliked, isFalse);
     expect(again.recent.first.seedTitle, 'S');
   });
 
@@ -77,20 +79,23 @@ void main() {
       add(log, 'x$i');
     }
     expect(log.length, 5);
-    expect(log.disliked('x0'), isTrue);
+    expect(log.latest('x0')?.outcome == SuggestionOutcome.disliked, isTrue);
     expect(log.recent.map((r) => r.videoId), ['x8', 'x7', 'x6', 'x5', 'x0']);
   });
 
-  test('clear empties the history and the file but keeps «Non mi piace»', () async {
-    final log = open();
-    await log.load();
-    add(log, 'a');
-    add(log, 'b');
-    log.setOutcome('b', SuggestionOutcome.disliked);
-    await log.clear();
-    final again = open();
-    await again.load();
-    expect(again.recent.map((r) => r.videoId), ['b']);
-    expect(again.disliked('b'), isTrue);
-  });
+  test(
+    'clear empties the history and the file but keeps «Non mi piace»',
+    () async {
+      final log = open();
+      await log.load();
+      add(log, 'a');
+      add(log, 'b');
+      log.setOutcome('b', SuggestionOutcome.disliked);
+      await log.clear();
+      final again = open();
+      await again.load();
+      expect(again.recent.map((r) => r.videoId), ['b']);
+      expect(again.latest('b')?.outcome == SuggestionOutcome.disliked, isTrue);
+    },
+  );
 }

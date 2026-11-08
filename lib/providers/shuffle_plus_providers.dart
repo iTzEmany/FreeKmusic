@@ -23,6 +23,7 @@ import 'database_providers.dart';
 import 'library_providers.dart' show genreTracksProvider, libraryIndexProvider;
 import 'jam_providers.dart';
 import 'seed_resolver_provider.dart';
+import 'dislike_store_provider.dart';
 import 'suggestion_log_provider.dart';
 import 'player_providers.dart';
 import 'settings_providers.dart';
@@ -217,6 +218,7 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
     host: host,
     online: online,
     log: ref.watch(suggestionLogProvider),
+    filter: ref.watch(suggestionGateProvider),
     resolver: await ref.watch(seedResolverProvider.future),
     radio: ref.watch(ytmRadioServiceProvider),
     gate: ref.watch(radioGateProvider),
@@ -307,11 +309,14 @@ final similarFillProvider = Provider<Future<RadioFill?> Function(RadioSeed seed)
     if (off != null) return null;
     final log = ref.read(suggestionLogProvider);
     await log.load();
+    final filter = ref.read(suggestionGateProvider);
+    await filter.load();
     return RadioFill(
       seeds: [seed],
       resolver: await ref.read(seedResolverProvider.future),
       radioPage: ref.read(ytmRadioServiceProvider).page,
       log: log,
+      filter: filter,
       gate: gate,
       inLibrary: (_) => false,
     );
@@ -341,6 +346,7 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
   final probe = ref.read(networkProbeProvider);
   final radio = ref.read(ytmRadioServiceProvider);
   final log = ref.read(suggestionLogProvider);
+  final filter = ref.read(suggestionGateProvider);
   final jam = ref.read(jamProvider).active;
   final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
   final gate = ref.read(radioGateProvider);
@@ -350,6 +356,7 @@ final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String
     downloads: downloads,
     radioPage: radio.page,
     log: log,
+    filter: filter,
     gate: gate,
     offReason: () => radioOffReason(
       jam: jam,
