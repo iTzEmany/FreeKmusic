@@ -1,3 +1,21 @@
+# Handoff — 2026-11-08 (fase 98 chiusa: rete del refactor «ascolto-quotidiano»)
+
+## Stato
+**Fase 98 chiusa** (PR #128, `docs/fase-98-rete-ascolto.md`): `dart format` dei 4 file (D-434); `scripts/perf_device.py` tutto a `gestures()`, «Album» gira da solo, «Anello» tolto; test di caratterizzazione per 429/budget, chiave artista, scaffali uniti, paesi in `watchByRules`, backup (formato di oggi e campi sconosciuti). `lib/` invariata salvo formattazione.
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 99
+```
+
+## Da sapere per la 99
+- I test della 98 non si cambiano nella 99 (analisi §Rete). Valori veri fissati, diversi dall'analisi: «Unisci con…» spende **1** unità di budget (non 2); `AC/DC` → chiave `ac` (la «/» separa gli artisti). `artist_key_test.dart` ha un helper `key()` da ripuntare su `artistKey` (una riga).
+- `groupShelvesProvider` è importato dal file della schermata: spostandolo in `lib/providers/` cambia solo l'import del test.
+- La guardia `gen` di `_watchWithCountries` non ha un test (non pilotabile dall'API pubblica): con il debounce della 99 scrivi lì il test «risposta vecchia dopo una nuova» e «annullato con query in volo».
+- Prossimi obiettivi: fase 99 (consigliata, debito sulla strada di 100–104), poi 100–105 in ordine.
+
+---
+
 # Handoff — 2026-11-07 (refactor «ascolto-quotidiano» pianificato: fasi 98–105)
 
 ## Stato
