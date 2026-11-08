@@ -33,4 +33,9 @@
 
 **Fatto quando:** artista bloccato mai più proposto da nessuna fonte, brano bloccato solo alla soglia, liste nel backup, player centrato.
 
+## Scelte dell'utente (8/11, dopo la fase 99)
+- **D-468** (101.2): il blocco vale solo per i suggeriti online; i brani propri restano ascoltabili ovunque. Icona di blocco sull'artista nei risultati online e nella sua pagina.
+- **D-469** (101.3): bloccando un artista si tolgono dalla coda i suoi suggeriti (Annulla li rimette); i brani messi dall'utente restano.
+- Il mockup `non-mi-piace.html` dice «Annulla non lo fa ripartire»: vale D-446 (Annulla toglie il blocco e fa ripartire il brano); testo del mockup corretto.
+
 ## Esiti

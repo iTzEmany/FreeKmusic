@@ -29,4 +29,8 @@
 
 **Fatto quando:** i quattro comportamenti funzionano come nei mockup e il backup porta `unsyncedLyrics`.
 
+## Scelte dell'utente (8/11, dopo la fase 99)
+- **D-471** (103.1): voce «Elimina testo» nel menu; il brano torna com'era e la ricerca automatica riparte; salvare vuoto resta rifiutato.
+- **D-472** (103.2): «Testo sincronizzato» spento vale ovunque, card del player compresa; con testo solo semplice l'interruttore non compare.
+
 ## Esiti

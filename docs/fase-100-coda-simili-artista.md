@@ -29,4 +29,8 @@
 
 **Fatto quando:** i due gesti di Cerca danno la stessa coda di simili, la pagina artista suona tutti i brani, i test sono verdi.
 
+## Scelte dell'utente (8/11, dopo la fase 99)
+- **D-467** (100.2): primo blocco di simili e poi rabbocco automatico quando ne restano pochi, all'infinito, sotto `RadioGate`.
+- **D-468** (100.3): Play/Shuffle di un artista bloccato suonano i suoi brani scaricati; icona di blocco nell'intestazione della pagina e nei risultati online.
+
 ## Esiti
