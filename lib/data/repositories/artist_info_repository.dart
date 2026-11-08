@@ -1,6 +1,5 @@
 import '../../core/clock.dart';
 import '../../services/import/track_matcher.dart';
-import '../../services/online/query_cleaner.dart';
 import '../db/app_database.dart';
 
 /// What Wikipedia says about an artist, one row per artist.
@@ -10,7 +9,7 @@ class ArtistInfoRepository {
   final AppDatabase _db;
 
   /// The key of an artist as the library names them («Queen feat. X» → «queen»).
-  static String keyOf(String artist) => matchKey(extractPrimaryArtist(artist));
+  static String keyOf(String artist) => artistKey(artist);
 
   Stream<ArtistInfo?> watch(String artist) {
     final key = keyOf(artist);

@@ -1,6 +1,5 @@
 import '../../core/audio_format.dart';
 import '../import/track_matcher.dart';
-import '../online/query_cleaner.dart';
 
 /// Two durations this close (ms) are the same recording.
 const duplicateDurationToleranceMs = 2000;
@@ -121,7 +120,7 @@ List<DuplicateGroup> findDuplicates(
       if (first != i) union(first, i);
     }
     final title = matchTitleKey(e.title);
-    final artist = matchKey(extractPrimaryArtist(e.artist ?? ''));
+    final artist = artistKey(e.artist);
     if (title.isNotEmpty && artist.isNotEmpty) {
       (byName['$title|$artist'] ??= []).add(i);
     }

@@ -1,9 +1,8 @@
-import 'package:codecore/services/import/track_matcher.dart' show matchKey;
-import 'package:codecore/services/online/query_cleaner.dart' show extractPrimaryArtist;
+import 'package:codecore/services/import/track_matcher.dart' show artistKey;
 import 'package:flutter_test/flutter_test.dart';
 
 // Callers pass null as `artist ?? ''`; the signature takes a non-null String.
-String key(String? x) => matchKey(extractPrimaryArtist(x ?? ''));
+String key(String? x) => artistKey(x);
 
 void main() {
   const cases = <String?, String>{

@@ -1,7 +1,6 @@
 import '../../data/db/app_database.dart' show Track;
-import '../import/track_matcher.dart' show LibraryIndex, matchKey;
+import '../import/track_matcher.dart' show LibraryIndex, artistKey;
 import '../online/merge_results.dart' show libraryMatchOf;
-import '../online/query_cleaner.dart' show extractPrimaryArtist;
 import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
 import 'suggestion_log.dart';
@@ -18,7 +17,7 @@ class SuggestionCandidate {
 /// The artist as compared between suggestions («A feat. B» is A).
 String suggestionArtistKey(YtResult r) {
   final name = r.artists.isEmpty ? r.channel : r.artists.first;
-  return matchKey(extractPrimaryArtist(name));
+  return artistKey(name);
 }
 
 /// Whether a suggestion is a song the user already has: downloaded, or found

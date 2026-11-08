@@ -4,7 +4,6 @@ import '../../core/app_log.dart';
 import '../import/track_matcher.dart';
 import 'credits.dart';
 import 'http_client.dart';
-import 'query_cleaner.dart';
 import 'wikipedia_client.dart';
 
 /// One recording of MusicBrainz (a performance of a song, with its credit).
@@ -151,7 +150,7 @@ class MusicBrainzClient {
     final list = data?['recordings'];
     if (list is! List) return const [];
     final wantTitle = matchKey(title);
-    final wantArtist = matchKey(extractPrimaryArtist(artist));
+    final wantArtist = artistKey(artist);
     final out = <MbRecording>[];
     for (final r in list) {
       if (r is! Map || r['title'] is! String) continue;
@@ -193,7 +192,7 @@ class MusicBrainzClient {
     // Without a [title] and an [artist] (dirty tags) nothing is filtered out.
     final filter = title != null && artist != null;
     final wantTitle = matchKey(title ?? '');
-    final wantArtist = matchKey(extractPrimaryArtist(artist ?? ''));
+    final wantArtist = artistKey(artist);
     final out = <MbRecording>[];
     for (final r in list) {
       if (r is! Map || r['id'] is! String || r['title'] is! String) continue;

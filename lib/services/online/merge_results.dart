@@ -1,5 +1,5 @@
 import '../../core/import_row.dart' show ImportRow, LibraryEntryLite;
-import '../import/track_matcher.dart' show LibraryIndex, matchKey, matchTitleKey;
+import '../import/track_matcher.dart' show LibraryIndex, artistKey, matchTitleKey;
 import 'query_cleaner.dart';
 import 'query_intent.dart' show SearchIntent;
 import 'query_match.dart';
@@ -62,7 +62,7 @@ String _titleOf(YtResult r) => r.artists.isNotEmpty
     : cleanSearchQuery(r.title, r.channel).title;
 
 String _key(String title, String artist) =>
-    '${matchTitleKey(title)}|${matchKey(extractPrimaryArtist(artist))}';
+    '${matchTitleKey(title)}|${artistKey(artist)}';
 
 final _dash = RegExp(r'\s[-–—]\s');
 

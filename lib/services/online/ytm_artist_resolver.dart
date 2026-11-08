@@ -1,6 +1,5 @@
 import '../../data/repositories/artist_alias_repository.dart' show ArtistAliasRepository;
-import '../import/track_matcher.dart' show matchKey;
-import 'query_cleaner.dart' show extractPrimaryArtist;
+import '../import/track_matcher.dart' show artistKey, matchKey;
 import 'ytm_artist.dart';
 
 /// How many artists the choice sheet offers.
@@ -32,7 +31,7 @@ class NoArtist extends YtmArtistPick {
 
 /// The normalized forms a name is compared by: whole, and without «feat.» (never empty).
 Set<String> artistNameKeys(String name) =>
-    {matchKey(name), matchKey(extractPrimaryArtist(name))}..remove('');
+    {matchKey(name), artistKey(name)}..remove('');
 
 /// [pickYtmArtist] with the merged artists of [repo]: the one place that applies aliases.
 Future<YtmArtistPick> pickYtmArtistWithAliases(
