@@ -18,6 +18,7 @@ import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_host.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_plus_controller.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
+import 'package:codecore/services/shuffle_plus/suggestion_pool.dart' show suggestionArtistKey;
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:codecore/providers/stream_providers.dart';
@@ -154,6 +155,7 @@ void main() {
   var jam = false;
   var metered = false;
   var searches = 0;
+  var filterOverride = testGate();
   Future<void> Function(YtResult) prepareHook = (_) async {};
   Future<void> Function(List<int>) enrichHook = (_) async {};
   final withins = <Duration>[];
@@ -188,6 +190,7 @@ void main() {
     jam = false;
     metered = false;
     searches = 0;
+    filterOverride = testGate();
     prepared.clear();
     prepareHook = (r) async => prepared.add(r.id);
     enriched.clear();
@@ -210,7 +213,7 @@ void main() {
       host: host,
       online: online,
       log: log,
-      filter: testGate(),
+      filter: filterOverride,
       resolver: SeedResolver(
         downloads: downloads,
         index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),
@@ -326,6 +329,29 @@ void main() {
     await settle();
     expect(host.queueIds.take(host.currentIndex).where(isOnlineId), isEmpty,
         reason: 'passed suggestions are taken out');
+  });
+
+  test('a blocked artist is never inserted', () async {
+    void fresh() => host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 20; i++) i]);
+    fresh();
+    host.sourceIds = [...library];
+    host.currentIndex = 5;
+    controller.start();
+    await until(() => host.queueIds.where(isOnlineId).length == 3);
+    final keys = [
+      for (final id in host.queueIds.where(isOnlineId)) suggestionArtistKey(online[id]!.result),
+    ];
+    controller.dispose();
+
+    filterOverride = testGate(artists: keys);
+    fresh();
+    controller = make()..start();
+    await settle();
+    await settle();
+    final now = [for (final id in host.queueIds.where(isOnlineId)) suggestionArtistKey(online[id]!.result)];
+    expect(now.where(keys.contains), isEmpty);
   });
 
   test('an online entry the user picked stays in the queue once passed', () async {

@@ -9,7 +9,12 @@ import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-const _song = YtResult(id: 'v1', title: 'Streamed', channel: 'Chan', duration: null);
+const _song = YtResult(
+  id: 'v1',
+  title: 'Streamed',
+  channel: 'Chan',
+  duration: null,
+);
 
 void main() {
   late Directory dir;
@@ -150,5 +155,65 @@ void main() {
     online.forget(id);
     expect(await actions.downloadEntry(id), isNull);
     expect(downloads, isEmpty);
+  });
+
+  int reg(String vid, String chan, {bool suggested = true}) => online.register(
+    YtResult(id: vid, title: vid, channel: chan, duration: null),
+    suggested: suggested,
+  );
+
+  test(
+    'undo with entries removed from non-contiguous places puts each back',
+    () async {
+      final x = reg('x', 'Else', suggested: false);
+      final y = reg('y', 'Else', suggested: false);
+      final other = reg('v2', 'Chan');
+      queue = [x, id, y, other];
+      current = id;
+      final undo = await actions.dislikeArtist(id);
+      expect(queue, [x, y]);
+      await actions.undo(undo);
+      expect(queue, [x, id, y, other]);
+      expect(played, 1, reason: 'the song that played starts again');
+    },
+  );
+
+  test(
+    'undo after the queue changed restarts the song where it is now',
+    () async {
+      final x = reg('x', 'Else', suggested: false);
+      final y = reg('y', 'Else', suggested: false);
+      final other = reg('v2', 'Chan');
+      queue = [x, y, id, other];
+      current = id;
+      final undo = await actions.dislikeArtist(id);
+      queue.remove(x); // the user took x out meanwhile
+      await actions.undo(undo);
+      expect(queue, [y, id, other]);
+      expect(played, 1);
+    },
+  );
+
+  test('undo does not unblock what was blocked before', () async {
+    store.blockTrack(
+      const DislikedTrack(videoId: 'v1', title: 't', artist: 'a'),
+    );
+    store.blockArtist(const DislikedArtist(key: 'chan', name: 'Chan'));
+    await actions.undo(await actions.dislikeTrack(id));
+    await actions.undo(await actions.dislikeArtist(id));
+    expect(store.trackBlocked('v1'), isTrue);
+    expect(store.artistBlocked('chan'), isTrue);
+  });
+
+  test('undo re-registers an entry the registry forgot, with its data and suggested flag', () async {
+    final other = reg('v2', 'Chan');
+    queue = [id, other];
+    final undo = await actions.dislikeArtist(id);
+    online.forget(other); // Shuffle+ forgets what the user took out
+    await actions.undo(undo);
+    expect(queue, hasLength(2));
+    final back = online[queue.last]!;
+    expect(back.result.id, 'v2');
+    expect(back.suggested, isTrue);
   });
 }

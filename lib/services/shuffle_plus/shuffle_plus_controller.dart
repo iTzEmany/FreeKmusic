@@ -430,6 +430,12 @@ class ShufflePlusController {
     if (plan.isEmpty) return false;
     final at = plan.first;
     final r = candidate.result;
+    // A «Non mi piace» may have come in while the address was prepared: drop
+    // this one (the pool already used it up) and look again for another.
+    if (!filter.allows(r.id, suggestionArtistKey(r), pool.positionsOf(r.id))) {
+      poke();
+      return false;
+    }
     final id = online.register(r, seedTitle: candidate.seedTitle, suggested: true);
     _mine.add(id);
     log.addSuggestion(r, candidate.seedTitle);

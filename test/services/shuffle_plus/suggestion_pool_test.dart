@@ -92,6 +92,20 @@ void main() {
     expect(takeAll(), ['bad']);
   });
 
+  test('rows are counted across the pages of a seed: row 10 counts, row 11 does not', () {
+    blockedTracks = ['bad'];
+    List<RadioItem> fillers(String p) => [for (var i = 0; i < 10; i++) item('$p$i', artist: 'A$p$i')];
+    // s1 has it at row 10 of its first page; s2 only at row 11 (second page).
+    pool.addPage('s1', 'One', page([...fillers('x').take(9), item('bad')]));
+    pool.addPage('s2', 'Two', RadioPage(fillers('y'), continuation: 'next'));
+    pool.addPage('s2', 'Two', page([item('bad')]));
+    expect(pool.positionsOf('bad'), [10, 11]);
+    expect(takeAll(), isNot(contains('bad')));
+    // a third seed with it at row 1 makes two seeds in the top 10
+    pool.addPage('s3', 'Three', page([item('bad')]));
+    expect(takeAll(), ['bad']);
+  });
+
   test('a blocked artist is never taken', () {
     blockedArtists = ['b'];
     pool.addPage('s1', 'One', page([item('ok', artist: 'B')]));

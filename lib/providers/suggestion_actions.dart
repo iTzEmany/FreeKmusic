@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/audio/online_entries.dart';
@@ -17,14 +19,19 @@ class DislikeUndo {
     this.trackId,
     this.artistKey,
     this.outcomeBefore,
+    this.wasBlocked = false,
     this.removed = const [],
   });
 
   final String? trackId, artistKey;
   final SuggestionOutcome? outcomeBefore;
 
+  /// Already blocked before: Annulla must not unblock it.
+  final bool wasBlocked;
+
   /// Entries taken out of the queue, ascending by their old index.
-  final List<({int index, int id, bool wasCurrent})> removed;
+  final List<({int index, int id, bool wasCurrent, OnlineEntry? entry})>
+  removed;
 }
 
 /// What the user can do with a streamed (suggested) entry of the queue.
@@ -75,6 +82,7 @@ class SuggestionActions {
     final r = online?[queueId]?.result;
     if (r == null) return const DislikeUndo();
     final before = log.latest(r.id)?.outcome;
+    final was = store.trackBlocked(r.id);
     log.setOutcome(r.id, SuggestionOutcome.disliked);
     store.blockTrack(
       DislikedTrack(
@@ -86,6 +94,7 @@ class SuggestionActions {
     return DislikeUndo(
       trackId: r.id,
       outcomeBefore: before,
+      wasBlocked: was,
       removed: await _take({queueId}),
     );
   }
@@ -96,6 +105,7 @@ class SuggestionActions {
     final r = online?[queueId]?.result;
     if (r == null) return const DislikeUndo();
     final key = suggestionArtistKey(r);
+    final was = store.artistBlocked(key);
     store.blockArtist(
       DislikedArtist(
         key: key,
@@ -109,35 +119,63 @@ class SuggestionActions {
             when e.suggested && suggestionArtistKey(e.result) == key)
           id,
     };
-    return DislikeUndo(artistKey: key, removed: await _take(ids));
+    return DislikeUndo(
+      artistKey: key,
+      wasBlocked: was,
+      removed: await _take(ids),
+    );
   }
 
   /// Unblocks and puts the removed entries back where they were; the song
   /// that was playing starts again (D-446).
   Future<void> undo(DislikeUndo u) async {
     if (u.trackId case final id?) {
-      store.unblockTrack(id);
+      if (!u.wasBlocked) store.unblockTrack(id);
       if (u.outcomeBefore != null) log.setOutcome(id, u.outcomeBefore!);
     }
-    if (u.artistKey case final key?) store.unblockArtist(key);
-    for (final e in u.removed) {
-      insertAt(e.index, e.id);
+    if (u.artistKey case final key? when !u.wasBlocked) {
+      store.unblockArtist(key);
     }
+    final back = <int>[]; // the id each entry has now
     for (final e in u.removed) {
-      if (e.wasCurrent) await playIndex(e.index);
+      var id = e.id;
+      // Shuffle+ forgets entries the user took out: register the song again
+      // (a new id, same data and suggested flag).
+      final en = e.entry;
+      if (online != null && en != null && online![id] == null) {
+        id = online!.register(
+          en.result,
+          seedTitle: en.seedTitle,
+          suggested: en.suggested,
+        );
+      }
+      back.add(id);
+      // The queue may have shrunk meanwhile.
+      insertAt(min(e.index, queueIds().length), id);
+    }
+    for (var k = 0; k < back.length; k++) {
+      if (!u.removed[k].wasCurrent) continue;
+      final i = queueIds().indexOf(
+        back[k],
+      ); // where it is now, not where it was
+      if (i >= 0) await playIndex(i);
     }
   }
 
   /// Takes [ids] out of the queue, the playing one last; returns where they were.
-  Future<List<({int index, int id, bool wasCurrent})>> _take(
-    Set<int> ids,
-  ) async {
+  Future<List<({int index, int id, bool wasCurrent, OnlineEntry? entry})>>
+  _take(Set<int> ids) async {
     final queue = queueIds();
     final current = currentQueueId();
     final removed = [
       for (var i = 0; i < queue.length; i++)
         if (ids.contains(queue[i]))
-          (index: i, id: queue[i], wasCurrent: queue[i] == current),
+          (
+            index: i,
+            id: queue[i],
+            wasCurrent: queue[i] == current,
+            entry: online?[queue[i]],
+          ),
     ];
     for (final e in removed.where((e) => !e.wasCurrent)) {
       await removeQueueId(e.id);
