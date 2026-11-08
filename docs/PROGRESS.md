@@ -1386,9 +1386,9 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 99.5 Controlli di fase
 
 ## Fase 100 — Coda di simili da Cerca e Play/Shuffle dell'artista (`fase-100-coda-simili-artista.md`)
-- [ ] 100.1 `RadioFill` estratto da `genre_mix`
-- [ ] 100.2 `playFromSearch`: brano + simili da libreria e online
-- [ ] 100.3 Tutti i brani dell'artista
+- [x] 100.1 `RadioFill` estratto da `genre_mix`
+- [x] 100.2 `playFromSearch`: brano + simili da libreria e online
+- [x] 100.3 Tutti i brani dell'artista
 - [ ] 100.4 Controlli di fase
 
 ## Fase 101 — «Non mi piace» brano o artista, player del suggerito (`fase-101-non-mi-piace.md`)
