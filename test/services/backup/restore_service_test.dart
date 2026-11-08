@@ -26,7 +26,7 @@ void main() {
   /// A real backup of a database with [titles] as tracks and [folders] as
   /// music folders.
   Future<File> makeBackup(List<String> titles,
-      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed}) async {
+      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed, File? dislikes}) async {
     final db = AppDatabase(NativeDatabase.memory());
     for (final f in folders) {
       await db.into(db.folders).insert(FoldersCompanion.insert(path: f, addedAt: 1));
@@ -44,7 +44,7 @@ void main() {
     File(p.join(covers.path, 'both.jpg')).writeAsBytesSync([9, 9]);
     final out = File(p.join(dir.path, 'b-${titles.length}.zip'));
     await BackupService(
-      db: db, prefs: prefs, coversDir: covers, downloadsFile: File(p.join(dir.path, 'none.json')), deviceId: deviceId,
+      db: db, prefs: prefs, coversDir: covers, downloadsFile: File(p.join(dir.path, 'none.json')), dislikesFile: dislikes, deviceId: deviceId,
     ).createBackup(out.path);
     await db.close();
     return out;
@@ -126,6 +126,29 @@ void main() {
       expect(File(p.join(covers.path, 'new.jpg')).existsSync(), isTrue);
       expect(File(p.join(covers.path, 'both.jpg')).readAsBytesSync(), [5], reason: 'the existing cover wins');
       expect(staging.existsSync(), isFalse);
+    });
+
+    test('dislikes.json travels in the backup and replaces the current one', () async {
+      final src = File(p.join(dir.path, 'src-dislikes.json'))..writeAsStringSync('{"tracks":[{"id":"x"}]}');
+      final live = File(p.join(dir.path, 'live', 'dislikes.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"tracks":[]}');
+      await stageFullRestore(await makeBackup(['n1'], dislikes: src), staging);
+      expect(await applyPendingRestore(
+          dbFile: dbFile, staging: staging, prefs: prefs, coversDir: covers, schemaVersion: schema, dislikesFile: live),
+          isTrue);
+      expect(live.readAsStringSync(), '{"tracks":[{"id":"x"}]}');
+    });
+
+    test('a backup without dislikes.json leaves the current choices alone', () async {
+      final live = File(p.join(dir.path, 'live', 'dislikes.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('keep');
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await applyPendingRestore(
+          dbFile: dbFile, staging: staging, prefs: prefs, coversDir: covers, schemaVersion: schema, dislikesFile: live),
+          isTrue);
+      expect(live.readAsStringSync(), 'keep');
     });
 
     test('the recognition pass bookmarks are cleared: the restored rows may be older', () async {

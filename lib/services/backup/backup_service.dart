@@ -83,13 +83,14 @@ Future<void> applySettingsJson(SharedPreferences prefs, Map<String, dynamic> jso
 
 /// Creates `codecore-backup-YYYY-MM-DD.zip`: the database (a consistent copy
 /// via `VACUUM INTO`), settings, the portable user data, covers and
-/// `downloads.json`. The temporary files are ours and always removed.
+/// `downloads.json` and `dislikes.json`. The temporary files are ours and always removed.
 class BackupService {
   BackupService({
     required this.db,
     required this.prefs,
     required this.coversDir,
     required this.downloadsFile,
+    this.dislikesFile,
     required this.deviceId,
     String? platform,
     DateTime Function()? now,
@@ -100,6 +101,9 @@ class BackupService {
   final SharedPreferences prefs;
   final Directory coversDir;
   final File downloadsFile;
+
+  /// `dislikes.json`; left out of the zip when null or missing.
+  final File? dislikesFile;
   final String deviceId, platform;
   final DateTime Function() _now;
 
@@ -134,8 +138,9 @@ class BackupService {
           ? [for (final f in coversDir.listSync().whereType<File>()) f.path]
           : <String>[];
       final downloads = downloadsFile.existsSync() ? downloadsFile.path : null;
+      final dislikes = (dislikesFile?.existsSync() ?? false) ? dislikesFile!.path : null;
       final tmpPath = tmp.path;
-      await Isolate.run(() => _zip(outPath, tmpPath, covers, downloads));
+      await Isolate.run(() => _zip(outPath, tmpPath, covers, downloads, dislikes));
       onProgress?.call(1);
       return BackupSummary(
         path: outPath,
@@ -156,13 +161,14 @@ class BackupService {
 
 const _alreadyCompressed = {'.jpg', '.jpeg', '.png', '.webp'};
 
-void _zip(String outPath, String tmp, List<String> covers, String? downloads) {
+void _zip(String outPath, String tmp, List<String> covers, String? downloads, String? dislikes) {
   final enc = ZipFileEncoder()..create(outPath);
   for (final name in ['manifest.json', 'settings.json', 'user_data.json']) {
     enc.addFileSync(File(p.join(tmp, name)), name);
   }
   enc.addFileSync(File(p.join(tmp, 'codecore.sqlite')), 'codecore.sqlite');
   if (downloads != null) enc.addFileSync(File(downloads), 'downloads.json');
+  if (dislikes != null) enc.addFileSync(File(dislikes), 'dislikes.json');
   for (final c in covers) {
     final level = _alreadyCompressed.contains(p.extension(c).toLowerCase())
         ? ZipFileEncoder.store
