@@ -2530,9 +2530,49 @@
   "ytmPickArtist": "Which artist?",
   "ytmArtistNone": "No artist found on YouTube Music",
   "suggestedBadge": "Suggested",
-  "suggestedSimilarTo": "Suggested: similar to “{seed}”",
+  "suggestedSimilarTo": "Suggested · similar to “{seed}”",
   "suggestionDownloadStarted": "Download started",
   "suggestionAddWhenDownloaded": "Downloading it and adding it to “{name}”",
+  "dislikesTitle": "Dislikes",
+  "dislikesHint": "What you don't want among suggestions. Songs can come back only if very close to what you listen to; artists never.",
+  "dislikesTracksTab": "Songs {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Artists {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "No songs excluded",
+  "dislikesEmptyArtists": "No artists excluded",
+  "dislikesEmptyHint": "When you tap “Dislike” on a suggestion, it shows up here and you can take it off.",
+  "dislikesRemove": "Remove",
+  "dislikesRemoveLabel": "Remove “{name}” from dislikes",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "“{name}” removed from dislikes",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Songs and artists excluded from suggestions",
+  "dislikePlayerLabel": "Dislike: song or artist",
   "suggestionDislike": "Don’t like it",
   "suggestionDisliked": "It won’t be suggested again",
   "removeFromQueueAction": "Remove from queue",

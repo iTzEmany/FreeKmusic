@@ -4600,7 +4600,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String suggestedSimilarTo(String seed) {
-    return 'Vorgeschlagen: ähnlich wie „$seed“';
+    return 'Vorgeschlagen · ähnlich wie „$seed“';
   }
 
   @override
@@ -4610,6 +4610,53 @@ class AppLocalizationsDe extends AppLocalizations {
   String suggestionAddWhenDownloaded(String name) {
     return 'Wird geladen und zu „$name“ hinzugefügt';
   }
+
+  @override
+  String get dislikesTitle => 'Gefällt mir nicht';
+
+  @override
+  String get dislikesHint =>
+      'Was du bei den Vorschlägen nicht willst. Titel können nur zurückkehren, wenn sie sehr nah an deinem Hörverhalten liegen; Künstler nie wieder.';
+
+  @override
+  String dislikesTracksTab(int count) {
+    return 'Titel $count';
+  }
+
+  @override
+  String dislikesArtistsTab(int count) {
+    return 'Künstler $count';
+  }
+
+  @override
+  String get dislikesEmptyTracks => 'Keine Titel ausgeschlossen';
+
+  @override
+  String get dislikesEmptyArtists => 'Keine Künstler ausgeschlossen';
+
+  @override
+  String get dislikesEmptyHint =>
+      'Wenn du bei einem Vorschlag auf „Gefällt mir nicht“ tippst, erscheint er hier und du kannst ihn entfernen.';
+
+  @override
+  String get dislikesRemove => 'Entfernen';
+
+  @override
+  String dislikesRemoveLabel(String name) {
+    return '„$name“ aus „Gefällt mir nicht“ entfernen';
+  }
+
+  @override
+  String dislikesRemoved(String name) {
+    return '„$name“ aus „Gefällt mir nicht“ entfernt';
+  }
+
+  @override
+  String get dislikesTileHint =>
+      'Von Vorschlägen ausgeschlossene Titel und Künstler';
+
+  @override
+  String get dislikePlayerLabel => 'Gefällt mir nicht: Titel oder Künstler';
 
   @override
   String get suggestionDislike => 'Gefällt mir nicht';

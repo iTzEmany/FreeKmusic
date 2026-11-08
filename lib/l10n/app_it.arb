@@ -2956,7 +2956,7 @@
   "ytmPickArtist": "Quale artista?",
   "ytmArtistNone": "Nessun artista trovato su YouTube Music",
   "suggestedBadge": "Suggerito",
-  "suggestedSimilarTo": "Suggerito: simile a «{seed}»",
+  "suggestedSimilarTo": "Suggerito · simile a «{seed}»",
   "@suggestedSimilarTo": {
     "placeholders": {
       "seed": {
@@ -2973,6 +2973,46 @@
       }
     }
   },
+  "dislikesTitle": "Non mi piace",
+  "dislikesHint": "Cosa non vuoi tra i suggeriti. I brani possono tornare solo se molto vicini a ciò che ascolti; gli artisti mai più.",
+  "dislikesTracksTab": "Brani {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Artisti {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "Nessun brano escluso",
+  "dislikesEmptyArtists": "Nessun artista escluso",
+  "dislikesEmptyHint": "Quando tocchi «Non mi piace» su un suggerito, lo trovi qui e puoi toglierlo.",
+  "dislikesRemove": "Togli",
+  "dislikesRemoveLabel": "Togli «{name}» dai non mi piace",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "«{name}» tolto dai non mi piace",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Brani e artisti esclusi dai suggeriti",
+  "dislikePlayerLabel": "Non mi piace: brano o artista",
   "suggestionDislike": "Non mi piace",
   "suggestionDisliked": "Non te lo suggerirò più",
   "removeFromQueueAction": "Rimuovi dalla coda",

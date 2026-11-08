@@ -4574,7 +4574,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String suggestedSimilarTo(String seed) {
-    return 'Suggested: similar to “$seed”';
+    return 'Suggested · similar to “$seed”';
   }
 
   @override
@@ -4584,6 +4584,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String suggestionAddWhenDownloaded(String name) {
     return 'Downloading it and adding it to “$name”';
   }
+
+  @override
+  String get dislikesTitle => 'Dislikes';
+
+  @override
+  String get dislikesHint =>
+      'What you don\'t want among suggestions. Songs can come back only if very close to what you listen to; artists never.';
+
+  @override
+  String dislikesTracksTab(int count) {
+    return 'Songs $count';
+  }
+
+  @override
+  String dislikesArtistsTab(int count) {
+    return 'Artists $count';
+  }
+
+  @override
+  String get dislikesEmptyTracks => 'No songs excluded';
+
+  @override
+  String get dislikesEmptyArtists => 'No artists excluded';
+
+  @override
+  String get dislikesEmptyHint =>
+      'When you tap “Dislike” on a suggestion, it shows up here and you can take it off.';
+
+  @override
+  String get dislikesRemove => 'Remove';
+
+  @override
+  String dislikesRemoveLabel(String name) {
+    return 'Remove “$name” from dislikes';
+  }
+
+  @override
+  String dislikesRemoved(String name) {
+    return '“$name” removed from dislikes';
+  }
+
+  @override
+  String get dislikesTileHint => 'Songs and artists excluded from suggestions';
+
+  @override
+  String get dislikePlayerLabel => 'Dislike: song or artist';
 
   @override
   String get suggestionDislike => 'Don’t like it';

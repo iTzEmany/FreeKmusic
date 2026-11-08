@@ -7110,7 +7110,7 @@ abstract class AppLocalizations {
   /// No description provided for @suggestedSimilarTo.
   ///
   /// In it, this message translates to:
-  /// **'Suggerito: simile a «{seed}»'**
+  /// **'Suggerito · simile a «{seed}»'**
   String suggestedSimilarTo(String seed);
 
   /// No description provided for @suggestionDownloadStarted.
@@ -7124,6 +7124,78 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Lo scarico e lo aggiungo a «{name}»'**
   String suggestionAddWhenDownloaded(String name);
+
+  /// No description provided for @dislikesTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Non mi piace'**
+  String get dislikesTitle;
+
+  /// No description provided for @dislikesHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Cosa non vuoi tra i suggeriti. I brani possono tornare solo se molto vicini a ciò che ascolti; gli artisti mai più.'**
+  String get dislikesHint;
+
+  /// No description provided for @dislikesTracksTab.
+  ///
+  /// In it, this message translates to:
+  /// **'Brani {count}'**
+  String dislikesTracksTab(int count);
+
+  /// No description provided for @dislikesArtistsTab.
+  ///
+  /// In it, this message translates to:
+  /// **'Artisti {count}'**
+  String dislikesArtistsTab(int count);
+
+  /// No description provided for @dislikesEmptyTracks.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun brano escluso'**
+  String get dislikesEmptyTracks;
+
+  /// No description provided for @dislikesEmptyArtists.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun artista escluso'**
+  String get dislikesEmptyArtists;
+
+  /// No description provided for @dislikesEmptyHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Quando tocchi «Non mi piace» su un suggerito, lo trovi qui e puoi toglierlo.'**
+  String get dislikesEmptyHint;
+
+  /// No description provided for @dislikesRemove.
+  ///
+  /// In it, this message translates to:
+  /// **'Togli'**
+  String get dislikesRemove;
+
+  /// No description provided for @dislikesRemoveLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Togli «{name}» dai non mi piace'**
+  String dislikesRemoveLabel(String name);
+
+  /// No description provided for @dislikesRemoved.
+  ///
+  /// In it, this message translates to:
+  /// **'«{name}» tolto dai non mi piace'**
+  String dislikesRemoved(String name);
+
+  /// No description provided for @dislikesTileHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Brani e artisti esclusi dai suggeriti'**
+  String get dislikesTileHint;
+
+  /// No description provided for @dislikePlayerLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Non mi piace: brano o artista'**
+  String get dislikePlayerLabel;
 
   /// No description provided for @suggestionDislike.
   ///

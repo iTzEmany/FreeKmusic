@@ -2530,9 +2530,49 @@
   "ytmPickArtist": "Welcher Künstler?",
   "ytmArtistNone": "Kein Künstler auf YouTube Music gefunden",
   "suggestedBadge": "Vorgeschlagen",
-  "suggestedSimilarTo": "Vorgeschlagen: ähnlich wie „{seed}“",
+  "suggestedSimilarTo": "Vorgeschlagen · ähnlich wie „{seed}“",
   "suggestionDownloadStarted": "Download gestartet",
   "suggestionAddWhenDownloaded": "Wird geladen und zu „{name}“ hinzugefügt",
+  "dislikesTitle": "Gefällt mir nicht",
+  "dislikesHint": "Was du bei den Vorschlägen nicht willst. Titel können nur zurückkehren, wenn sie sehr nah an deinem Hörverhalten liegen; Künstler nie wieder.",
+  "dislikesTracksTab": "Titel {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Künstler {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "Keine Titel ausgeschlossen",
+  "dislikesEmptyArtists": "Keine Künstler ausgeschlossen",
+  "dislikesEmptyHint": "Wenn du bei einem Vorschlag auf „Gefällt mir nicht“ tippst, erscheint er hier und du kannst ihn entfernen.",
+  "dislikesRemove": "Entfernen",
+  "dislikesRemoveLabel": "„{name}“ aus „Gefällt mir nicht“ entfernen",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "„{name}“ aus „Gefällt mir nicht“ entfernt",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Von Vorschlägen ausgeschlossene Titel und Künstler",
+  "dislikePlayerLabel": "Gefällt mir nicht: Titel oder Künstler",
   "suggestionDislike": "Gefällt mir nicht",
   "suggestionDisliked": "Wird nicht mehr vorgeschlagen",
   "removeFromQueueAction": "Aus der Warteschlange entfernen",

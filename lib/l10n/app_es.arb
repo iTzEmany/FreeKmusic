@@ -2530,9 +2530,49 @@
   "ytmPickArtist": "¿Qué artista?",
   "ytmArtistNone": "No se encontró ningún artista en YouTube Music",
   "suggestedBadge": "Sugerido",
-  "suggestedSimilarTo": "Sugerido: parecido a «{seed}»",
+  "suggestedSimilarTo": "Sugerido · parecido a «{seed}»",
   "suggestionDownloadStarted": "Descarga iniciada",
   "suggestionAddWhenDownloaded": "Lo descargo y lo añado a «{name}»",
+  "dislikesTitle": "No me gusta",
+  "dislikesHint": "Lo que no quieres entre las sugerencias. Las canciones solo vuelven si se parecen mucho a lo que escuchas; los artistas, nunca.",
+  "dislikesTracksTab": "Canciones {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Artistas {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "Ninguna canción excluida",
+  "dislikesEmptyArtists": "Ningún artista excluido",
+  "dislikesEmptyHint": "Cuando tocas «No me gusta» en una sugerencia, aparece aquí y puedes quitarla.",
+  "dislikesRemove": "Quitar",
+  "dislikesRemoveLabel": "Quitar «{name}» de No me gusta",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "«{name}» quitado de No me gusta",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Canciones y artistas excluidos de las sugerencias",
+  "dislikePlayerLabel": "No me gusta: canción o artista",
   "suggestionDislike": "No me gusta",
   "suggestionDisliked": "No te lo sugeriré más",
   "removeFromQueueAction": "Quitar de la cola",

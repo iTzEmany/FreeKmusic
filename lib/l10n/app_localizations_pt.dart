@@ -4599,6 +4599,52 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get dislikesTitle => 'Non mi piace';
+
+  @override
+  String get dislikesHint =>
+      'Cosa non vuoi tra i suggeriti. I brani possono tornare solo se molto vicini a ciò che ascolti; gli artisti mai più.';
+
+  @override
+  String dislikesTracksTab(int count) {
+    return 'Brani $count';
+  }
+
+  @override
+  String dislikesArtistsTab(int count) {
+    return 'Artisti $count';
+  }
+
+  @override
+  String get dislikesEmptyTracks => 'Nessun brano escluso';
+
+  @override
+  String get dislikesEmptyArtists => 'Nessun artista escluso';
+
+  @override
+  String get dislikesEmptyHint =>
+      'Quando tocchi «Non mi piace» su un suggerito, lo trovi qui e puoi toglierlo.';
+
+  @override
+  String get dislikesRemove => 'Togli';
+
+  @override
+  String dislikesRemoveLabel(String name) {
+    return 'Togli «$name» dai non mi piace';
+  }
+
+  @override
+  String dislikesRemoved(String name) {
+    return '«$name» tolto dai non mi piace';
+  }
+
+  @override
+  String get dislikesTileHint => 'Brani e artisti esclusi dai suggeriti';
+
+  @override
+  String get dislikePlayerLabel => 'Non mi piace: brano o artista';
+
+  @override
   String get suggestionDislike => 'Não gosto';
 
   @override
