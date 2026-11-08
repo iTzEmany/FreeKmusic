@@ -177,18 +177,24 @@ void main() {
       await sub.cancel();
     });
 
+    // The stream is debounced: wait (up to 3 s) until the last list is [want].
+    Future<void> settles(List<Set<int>> lists, Set<int> want) async {
+      final end = DateTime.now().add(const Duration(seconds: 3));
+      while (DateTime.now().isBefore(end) && !(lists.last.length == want.length && lists.last.containsAll(want))) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(lists.last, want);
+    }
+
     test('a nazionalita rule follows new countries without reopening', () async {
       final lists = <Set<int>>[];
       final sub = repo.watchByRules(parseRules('nazionalita:IT').expr, now: now).listen((r) => lists.add({for (final t in r) t.id}));
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(lists.last, isEmpty);
-      // > debounce of 300 ms of _watchWithCountries
       await db.into(db.artistCountries).insertOnConflictUpdate(ArtistCountriesCompanion.insert(artistKey: 'daft punk', country: const Value('IT'), checkedAt: 1));
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      expect(lists.last, {5});
+      await settles(lists, {5});
       await add(6, 'f', artist: 'Daft Punk');
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      expect(lists.last, {5, 6});
+      await settles(lists, {5, 6});
       await sub.cancel();
     });
 

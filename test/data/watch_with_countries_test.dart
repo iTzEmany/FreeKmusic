@@ -199,4 +199,47 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(seen.length, n);
   });
+
+  test('an artist renamed to another with a known country (same artist count) appears', () async {
+    await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'muse', country: const Value('GB'), checkedAt: 1));
+    await add(2, 'Zed');
+    await Future<void>.delayed(const Duration(milliseconds: 600)); // let the re-run (and its cache) settle
+    await (db.update(db.tracks)..where((t) => t.id.equals(2))).write(const TracksCompanion(artist: Value('Muse')));
+    await latestIs(['t1', 't2']);
+  });
+
+  test('cancelled while the debounce timer waits: no query runs afterwards', () async {
+    await latestIs(['t1']);
+    final before = spy.mainRuns;
+    await add(2, 'Queen');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await sub.cancel();
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    expect(spy.mainRuns, before);
+  });
+
+  test('one transaction writing tracks and artist_countries together is followed', () async {
+    await latestIs(['t1']);
+    await db.transaction(() async {
+      await add(2, 'Muse');
+      await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'muse', country: const Value('GB'), checkedAt: 1));
+    });
+    await latestIs(['t1', 't2']);
+    await db.transaction(() async {
+      await (db.update(db.artistCountries)..where((c) => c.artistKey.equals('muse'))).write(const ArtistCountriesCompanion(country: Value('FR')));
+      await (db.update(db.tracks)..where((t) => t.id.equals(1))).write(const TracksCompanion(title: Value('t1b')));
+    });
+    await latestIs(['t1b']);
+  });
+
+  test('writes spread inside the first 300 ms window run the query once (the timer is not restarted)', () async {
+    await latestIs(['t1']);
+    final before = spy.mainRuns;
+    for (var i = 2; i <= 4; i++) {
+      await add(i, 'Queen');
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+    }
+    await latestIs(['t1', 't2', 't3', 't4']);
+    expect(spy.mainRuns, before + 1);
+  });
 }
