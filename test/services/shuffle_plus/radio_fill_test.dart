@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_parser.dart';
@@ -60,5 +61,144 @@ void main() {
     gate.lastRadio = now.subtract(RadioGate.minGap * 2);
     expect(await take(), ['r2']);
     expect(calls, [null, 'next']);
+  });
+
+  group('seeds and pool', () {
+    late Directory dir;
+    late int searches;
+    late List<YtResult> found;
+    late List<String> asked;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('radio_fill2');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      searches = 0;
+      found = [];
+      asked = [];
+    });
+
+    Track libTrack(int id) => Track(
+      coverSource: 0,
+      id: id,
+      path: '/m/$id.mp3',
+      title: 'Song $id',
+      artist: 'Band $id',
+      genre: 'Rock',
+      albumKey: 'k',
+      durationMs: 200000,
+      format: 'mp3',
+      sizeBytes: 1,
+      mtimeMs: 1,
+      hasCover: false,
+      isFavorite: false,
+      enrichStatus: 0,
+      userEdited: false,
+      missing: false,
+      ignored: false,
+      kind: 0,
+      addedAt: 1,
+      playCount: 0,
+    );
+
+    RadioFill fill(
+      List<RadioSeed> seeds,
+      RadioPage Function(String id) pageOf,
+    ) {
+      var t = DateTime(2026, 11, 4); // the gap never holds a test back
+      return RadioFill(
+        seeds: seeds,
+        resolver: SeedResolver(
+          downloads: DownloadIndex(File(p.join(dir.path, 'd.json'))),
+          index: SeedIndex(file: () async => File(p.join(dir.path, 's.json'))),
+          searchSongs: (q) async {
+            searches++;
+            return found;
+          },
+        ),
+        radioPage: (id, {continuation}) async {
+          asked.add(id);
+          return pageOf(id);
+        },
+        log: SuggestionLog(
+          file: () async => File(p.join(dir.path, 'l.json')),
+          writeDelay: const Duration(days: 1),
+        ),
+        gate: RadioGate(now: () => t = t.add(const Duration(minutes: 2))),
+        inLibrary: (r) => false,
+      );
+    }
+
+    YtResult by(String id, String artist) => YtResult(
+      id: id,
+      title: 'Title $id',
+      channel: artist,
+      duration: const Duration(seconds: 200),
+      artists: [artist],
+      album: 'Album',
+    );
+
+    Future<List<String>> ids(RadioFill f, int want, {int maxRequests = 4}) => f
+        .take(want, inQueue: (_) => false, maxRequests: maxRequests)
+        .map((c) => c.result.id)
+        .toList();
+
+    test('the same artist is never served twice in a row', () async {
+      final f = fill([RadioSeed.online('s', 'S')], (id) {
+        final items = [
+          for (final r in [('a1', 'A'), ('a2', 'A'), ('b1', 'B'), ('c1', 'C')])
+            RadioItem(by(r.$1, r.$2), RadioKind.song),
+        ];
+        return RadioPage([
+          RadioItem(song('s'), RadioKind.song, isSeed: true),
+          ...items,
+        ]);
+      });
+      expect(await ids(f, 4), ['a1', 'b1', 'c1', 'a2']);
+    });
+
+    test('a seed the resolver cannot find is skipped, now and later', () async {
+      final f = fill(
+        [RadioSeed(libTrack(1)), RadioSeed.online('s', 'S')],
+        (id) => RadioPage([
+          RadioItem(song('s'), RadioKind.song, isSeed: true),
+          RadioItem(song('r${asked.length}'), RadioKind.song),
+        ], continuation: 'next'),
+      );
+      expect(await ids(f, 2), ['r1', 'r2']);
+      expect(asked, ['s', 's']); // never the dead seed's id
+      expect(searches, 1); // not searched again
+    });
+
+    test(
+      'an online seed whose radio has no seed row is not looked up',
+      () async {
+        final f = fill([
+          RadioSeed.online('s', 'S'),
+        ], (id) => RadioPage([RadioItem(song('r'), RadioKind.song)]));
+        expect(await ids(f, 1), ['r']);
+        expect(searches, 0);
+        expect(asked, ['s']);
+      },
+    );
+
+    test('the search counts in the request budget', () async {
+      found = [
+        YtResult(
+          id: 'v1',
+          title: 'Song 1',
+          channel: 'Band 1',
+          duration: const Duration(seconds: 200),
+          artists: ['Band 1'],
+          album: 'Album',
+        ),
+      ];
+      final f = fill([
+        RadioSeed(libTrack(1)),
+      ], (id) => RadioPage([RadioItem(song('r'), RadioKind.song)]));
+      // Search + radio = 2 requests: no second radio page for the clip.
+      expect(await ids(f, 1, maxRequests: 2), ['r']);
+      expect(searches, 1);
+      expect(asked, ['v1']);
+    });
   });
 }
