@@ -152,6 +152,8 @@ class SimilarQueue {
         }
         if (id == null) continue;
         _seen.add(c.result.id);
+        // Two videos can match the same library track.
+        if (!isOnlineId(id) && _ids.contains(id)) continue;
         _ids.add(id);
         handler.insertAt(handler.queueIds.length, id);
         // Logged once queued; a library track is no suggestion to remember.

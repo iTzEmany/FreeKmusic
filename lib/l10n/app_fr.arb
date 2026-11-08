@@ -624,6 +624,7 @@
   "playNextDone": "Sera lu ensuite",
   "ytSearchPrompt": "Recherchez un titre ou collez un lien",
   "loadFailed": "Impossible de charger les données.",
+  "artistLoadingSongs": "Chargement des titres…",
   "artistTopMissing": "Top indisponible",
   "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Accueil",

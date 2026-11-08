@@ -2020,6 +2020,12 @@ abstract class AppLocalizations {
   /// **'Non riesco a caricare i dati.'**
   String get loadFailed;
 
+  /// Label of Play on an artist page while the song list loads or the queue starts
+  ///
+  /// In it, this message translates to:
+  /// **'Carico i brani…'**
+  String get artistLoadingSongs;
+
   /// Notice on an artist page when the top songs could not be read: only downloaded songs play
   ///
   /// In it, this message translates to:

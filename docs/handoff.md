@@ -1,3 +1,22 @@
+# Handoff — 2026-11-08 (fase 100 chiusa: coda di simili da Cerca, Play/Shuffle dell'artista)
+
+## Stato
+**Fase 100 chiusa** (PR #135 e il seguito, `docs/fase-100-coda-simili-artista.md`): `RadioFill` estratto da `genre_mix`; `playFromSearch` + `SimilarQueue` (brano scelto + blocchi di 10 simili, rabbocco sotto 5, sotto `RadioGate`); `artistAllSongsProvider` e Play/Shuffle nella pagina artista. Scelte in autonomia D-477, D-478. Provato sul Mi A3.
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 101
+```
+
+## Da sapere per la 101
+- Il gate dei «non mi piace» si aggancia in `SuggestionPool` (`_takeKind`), così vale per Shuffle+, mix di genere e `RadioFill` insieme; la regola dei 2 semi entro le prime 10 posizioni vuole la posizione della riga radio, che il pool oggi perde (nota nel doc della 101).
+- `artistKey` va spostata in `lib/core/` all'inizio della 101 (dalla 99, ancora da fare).
+- Spy di `PlayerController` con `noSuchMethod`: un campo nuovo del controller va aggiunto anche lì (`gotchas.md`).
+- Debito nuovo: «Dalla review di architettura della fase 100» in `prossimi-lavori.md` (estrarre `SimilarSession`, doppia logica «id locale», grafie dell'artista da due fonti).
+- Prossimi obiettivi: fase 101 (consigliata), poi 102–105 e la 106 in ordine.
+
+---
+
 # Handoff — 2026-11-08 (fase 99 chiusa: debito di 429, chiave artista, scaffali, paesi)
 
 ## Stato

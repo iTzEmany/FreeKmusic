@@ -16,6 +16,7 @@
 ### 101.2 — `SuggestionGate`: un solo filtro (F-114, D-437)
 - Usato da `SuggestionPool` e quindi da Shuffle+, mix di genere, `RadioFill` (Cerca), daylist; anche il Play/Shuffle dell'artista (100.3) scarta i brani bloccati e non apre la pagina di un artista bloccato ai suggeriti (la sua pagina resta visitabile).
 - Regole: artista bloccato → mai. Brano bloccato → ammesso solo se compare nella radio di almeno 2 brani della coda attuale entro le prime 10 posizioni (`RadioFill` passa le posizioni per seme).
+- Nota: il gate si aggancia in `SuggestionPool` (`_takeKind`, dove oggi c'è `log.disliked`), così valgono insieme Shuffle+, mix di genere e `RadioFill`; non toccare i tre giri di fetch. La regola dei 2 semi entro le prime 10 posizioni vuole la posizione della riga nella pagina radio, che `SuggestionPool.addPage` oggi perde: aggiungerla a `RadioItem`/pool in questa fase.
 - Test `test/services/shuffle_plus/suggestion_gate_test.dart`: artista mai; brano con 1 seme no, 2 semi in posizione 11 no, 2 semi in posizione 10 sì.
 
 ### 101.3 — Foglio «Non ti piace il brano o l'artista?» (D-436, D-446)

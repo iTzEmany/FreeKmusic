@@ -1389,7 +1389,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 100.1 `RadioFill` estratto da `genre_mix`
 - [x] 100.2 `playFromSearch`: brano + simili da libreria e online
 - [x] 100.3 Tutti i brani dell'artista
-- [ ] 100.4 Controlli di fase
+- [x] 100.4 Controlli di fase
 
 ## Fase 101 — «Non mi piace» brano o artista, player del suggerito (`fase-101-non-mi-piace.md`)
 - [ ] 101.1 `DislikeStore`

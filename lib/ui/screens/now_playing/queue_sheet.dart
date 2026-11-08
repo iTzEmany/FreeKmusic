@@ -121,6 +121,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     int first,
     int queueLength,
     Set<int> enriching,
+    bool similar,
   ) {
     final ctrl = ref.read(playerControllerProvider);
     final l = context.l10n;
@@ -150,6 +151,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
               track: t,
               variant: TrackRowVariant.queue,
               reorderIndex: i,
+              inLibrary: similar && !isOnlineId(t.id),
               onTap: () => ctrl.jumpToQueueIndex(first + i),
             ),
           ),
@@ -286,6 +288,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
               first,
               queue.length,
               pending.enriching,
+              similar != null,
             ),
           ),
         ),

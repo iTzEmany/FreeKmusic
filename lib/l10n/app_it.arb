@@ -648,6 +648,8 @@
   "playNextDone": "Verrà riprodotto dopo",
   "ytSearchPrompt": "Cerca un brano o incolla un link",
   "loadFailed": "Non riesco a caricare i dati.",
+  "artistLoadingSongs": "Carico i brani…",
+  "@artistLoadingSongs": {"description": "Label of Play on an artist page while the song list loads or the queue starts"},
   "artistTopMissing": "Top non disponibile",
   "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Home",

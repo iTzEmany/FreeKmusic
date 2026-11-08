@@ -135,7 +135,7 @@ class ArtistPageScreen extends ConsumerWidget {
               : null,
         ),
       ),
-      if (data != null || page.hasError) SliverToBoxAdapter(child: _playRow(ref, head, ids)),
+      SliverToBoxAdapter(child: _playRow(ref, head, ids, loading: data == null && !page.hasError)),
       if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length, onTap: () => showMergedProfilesSheet(context, head.id))),
       if (suggestion != null)
         SliverToBoxAdapter(
@@ -228,7 +228,8 @@ class ArtistPageScreen extends ConsumerWidget {
 
   /// Play / Shuffle of the top songs plus the downloaded ones (no player
   /// opens, as on the genre page: the mini player shows it).
-  Widget _playRow(WidgetRef ref, YtmArtistRef head, List<String> ids) {
+  Widget _playRow(WidgetRef ref, YtmArtistRef head, List<String> ids,
+      {required bool loading}) {
     final all = ref.watch(
         artistAllSongsProvider((name: head.name, ids: ids.join('|'))));
     if (all.hasError) AppLog.w('artist songs not read', all.error, all.stackTrace);
@@ -243,7 +244,7 @@ class ArtistPageScreen extends ConsumerWidget {
     }
 
     return ArtistPlayRow(
-      busy: all.isLoading,
+      busy: all.isLoading || loading,
       canPlay: data != null && data.items.isNotEmpty,
       topMissing: data?.topMissing ?? false,
       onPlay: () => play(shuffle: false),

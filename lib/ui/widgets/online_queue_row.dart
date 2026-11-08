@@ -110,7 +110,7 @@ class OnlineQueueRow extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Text(l.radioLive, style: theme.bodySmall),
                       ] else if (track.artist != null) ...[
-                        Text(', ', style: theme.bodySmall),
+                        if (suggested) Text(', ', style: theme.bodySmall),
                         Flexible(
                           child: Text(
                             track.artist!,
