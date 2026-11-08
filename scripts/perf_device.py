@@ -161,11 +161,11 @@ def wait_for(dev, event, timeout_s):
     raise RuntimeError(f'no «{event}» from the app within {timeout_s} s')
 
 
-# Every scenario name, in order; the second tuple needs playback. scenario()/gestures() assert against it.
+# Every scenario name, in order; the second tuple needs playback. gestures() asserts against it.
 SCENARIOS = ('Pallino schede', 'Tutti i brani', 'Album', 'Libreria Tutto→Playlist→Album→Artisti',
              'Ricerca «notte»', 'Scroll Libreria', 'Lente Libreria', 'Scroll Tutti i brani', 'Cambio scheda',
              'Apri album', 'In riproduzione',
-             'Lettore dal dock', 'Swipe mini player', 'Fogli', 'Apertura player', 'Anello')
+             'Lettore dal dock', 'Swipe mini player', 'Fogli', 'Apertura player')
 PLAYBACK_SCENARIOS = set(SCENARIOS[SCENARIOS.index('In riproduzione'):])
 
 
@@ -256,29 +256,12 @@ def main():
     windows = {}
     w, h = map(int, re.search(r'(\d+)x(\d+)', dev.sh('wm size')).groups())
 
-    def scenario(name, setup, action):
+    def gestures(name, setup, action):
+        """Only short spans around each gesture are measured (not the idle between); setup does the lookups."""
         assert name in SCENARIOS, name
         if only and name not in only:
             if name == 'In riproduzione':  # starts the playback the later scenarios need
-                setup(), action()
-            return
-        try:
-            setup()
-            time.sleep(2.5)
-            t0 = dev.now_ms()
-            action()
-            time.sleep(2.5)
-        except RuntimeError as e:
-            if not args.real:
-                raise
-            return print(f'  {name}: saltato ({e})')
-        windows[name] = ([(t0, dev.now_ms() + 3000)], False)
-        print(f'  {name}: fatto')
-
-    def gestures(name, setup, action):
-        """Like scenario(), but only short spans around each gesture are measured (not the idle between)."""
-        assert name in SCENARIOS, name
-        if only and name not in only:
+                setup(), action(lambda act, wait=0.8: (act(), time.sleep(wait)))
             return
         spans = []
 
@@ -300,12 +283,14 @@ def main():
         windows[name] = (spans, True)
         print(f'  {name}: fatto')
 
-    def find(pattern, cls=None):
+    def find(pattern, cls=None, last=False):
         rx = re.compile(pattern)
-        for label, c, x, y in dev.nodes():
+        for label, c, x, y in (reversed(dev.nodes()) if last else dev.nodes()):
             if rx.search(label) and (cls is None or cls in c):
                 return x, y
         raise RuntimeError(f'nothing on screen matches {pattern!r}')
+
+    pos = {}  # screen positions resolved in the setups, never inside a measured span
 
     def press(xy):
         dev.sh(f'input tap {xy[0]} {xy[1]}')
@@ -316,38 +301,7 @@ def main():
 
     # The dock is the last match: the Library header has a «Cerca» button too.
     tab = lambda name: dev.tap(rf'^{name}$', cls='Button', last=True)
-    scenario('Pallino schede', lambda: None,
-             lambda: [(tab(t), time.sleep(0.5)) for t in ('Libreria', 'Memoria', 'Home', 'Libreria', 'Home')])
-    scenario('Tutti i brani', lambda: (dev.tap(r'^Libreria'), dev.tap(r'^Tutti i brani')), dev.flings)
-    def open_album_tab():
-        # One BACK leaves «Tutti i brani»; if «Album» is not there yet, go through the Libreria dock tab
-        # (more BACKs would walk out of the Library into whatever screen sits below).
-        dev.sh('input keyevent KEYCODE_BACK')
-        time.sleep(1.5)
-        try:
-            return dev.tap(r'^Album$')
-        except RuntimeError:
-            tab('Libreria')
-            time.sleep(1)
-            return dev.tap(r'^Album$')
-    scenario('Album', open_album_tab, dev.flings)
-    # Needs «Tutti i brani» and «Album» before it in --only: Album leaves the Library on its tab bar.
-    scenario('Libreria Tutto→Playlist→Album→Artisti', dev.top,
-             lambda: [(dev.tap(rf'^{b}$'), time.sleep(0.6)) for _ in range(3)
-                      for b in ('Tutto', 'Playlist', 'Album', 'Artisti')])
-    scenario('Ricerca «notte»',
-             lambda: (dev.sh('input keyevent KEYCODE_BACK'), time.sleep(1), dev.tap(r'^Cerca'),
-                      dev.tap(r'', cls='EditText')),
-             lambda: (dev.sh('input text notte'), time.sleep(2), dev.flings(3)))
-    def mini():
-        # The mini-player: the «title\nartist» View on the row of its «Dispositivi» button.
-        ns = dev.nodes()
-        y = next(y for l, c, x, y in ns if l == 'Dispositivi')
-        x = next(x for l, c, x, yy in ns if '\n' in l and c in ('android.view.View', 'android.widget.Button')
-                 and abs(yy - y) <= 24)
-        # Since 43.1 the whole card is one button: tap its left half, clear of the action buttons.
-        dev.sh(f'input tap {x // 2} {y}')
-        time.sleep(1.5)
+
     def leave_search():
         # The open search field hides the tabs: BACK (keyboard, then field) until they are back.
         for _ in range(3):
@@ -357,31 +311,81 @@ def main():
                 return
             dev.sh('input keyevent KEYCODE_BACK')
             time.sleep(1)
+
     def to_library_top():
         leave_search(), tab('Libreria'), dev.tap(r'^Tutto$'), dev.top()
 
+    def find_docks(*names):
+        pos['dock'] = {t: find(rf'^{t}$', cls='Button', last=True) for t in names}
+
+    def tabs(*names):
+        def action(timed):
+            for t in names:
+                timed(lambda: press(pos['dock'][t]), wait=0.5)
+        return action
+
+    def flings(timed, n=5):
+        for direction in ('up', 'down'):
+            for _ in range(n):
+                y1, y2 = (int(h * 0.7), int(h * 0.3)) if direction == 'up' else (int(h * 0.3), int(h * 0.7))
+                timed(lambda: dev.sh(f'input swipe {w // 2} {y1} {w // 2} {y2} 120'), wait=0.4)
+
+    gestures('Pallino schede', lambda: find_docks('Libreria', 'Memoria', 'Home'),
+             tabs('Libreria', 'Memoria', 'Home', 'Libreria', 'Home'))
+    # Each of the next two starts from any screen (no --only dependency): to_library_top first.
+    gestures('Tutti i brani', lambda: (to_library_top(), dev.tap(r'^Tutti i brani')), flings)
+    gestures('Album', lambda: (to_library_top(), dev.tap(r'^Album$')), flings)
+
+    def setup_library_tabs():
+        to_library_top()
+        pos['lib'] = {b: find(rf'^{b}$') for b in ('Tutto', 'Playlist', 'Album', 'Artisti')}
+
+    def library_tabs(timed):
+        for _ in range(3):
+            for b in ('Tutto', 'Playlist', 'Album', 'Artisti'):
+                timed(lambda: press(pos['lib'][b]), wait=0.6)
+    gestures('Libreria Tutto→Playlist→Album→Artisti', setup_library_tabs, library_tabs)
+
+    def setup_search():
+        leave_search(), tab('Cerca')  # the search tab, not the Library lens: that one would keep the query
+        dev.tap(r'', cls='EditText')
+
+    def search(timed):
+        timed(lambda: dev.sh('input text notte'), wait=2)
+        flings(timed, 3)
+    gestures('Ricerca «notte»', setup_search, search)
+
     # The four below start from any screen (no --only dependency) and end on the Library.
-    scenario('Scroll Libreria', to_library_top, dev.flings)
+    gestures('Scroll Libreria', to_library_top, flings)
 
-    def lens_cycles():
+    def setup_lens():
+        to_library_top()
+        time.sleep(2.5)  # the header finishes expanding before its buttons are looked up
+        pos['lens'] = find(r'^Cerca$', cls='Button')  # in tree order the header comes before the dock
+        if pos['lens'][1] > h // 2:
+            raise RuntimeError('the Library header (with its lens) is not on screen')
+        press(pos['lens'])
+        time.sleep(1)
+        pos['close'] = find(r'^Chiudi la ricerca$')
+        press(pos['close'])
+        time.sleep(1)
+
+    def lens_cycles(timed):
         for _ in range(4):
-            dev.tap(r'^Cerca$', cls='Button')  # the lens: in tree order the header comes before the dock
-            time.sleep(0.8)
-            dev.tap(r'^Chiudi la ricerca$')
-    scenario('Lente Libreria', to_library_top, lens_cycles)
+            timed(lambda: press(pos['lens']), wait=0.8)
+            timed(lambda: press(pos['close']))
+    gestures('Lente Libreria', setup_lens, lens_cycles)
 
-    def slow_scroll():
+    def slow_scroll(timed):
         # Slow drags (unlike the fast flings of «Tutti i brani»): the retracting bar follows the finger.
         for direction in (1, -1):
             for _ in range(4):
                 a, b = (0.7, 0.3) if direction == 1 else (0.3, 0.7)
-                dev.sh(f'input swipe {w // 2} {int(h * a)} {w // 2} {int(h * b)} 700')
-                time.sleep(0.4)
+                timed(lambda: dev.sh(f'input swipe {w // 2} {int(h * a)} {w // 2} {int(h * b)} 700'), wait=0.4)
         dev.sh('input keyevent KEYCODE_BACK')
-    scenario('Scroll Tutti i brani', lambda: (to_library_top(), dev.tap(r'^Tutti i brani')), slow_scroll)
-    scenario('Cambio scheda', leave_search,
-             lambda: [(tab(t), time.sleep(0.5)) for _ in range(3) for t in ('Cerca', 'Memoria', 'Home', 'Libreria')])
-    pos = {}  # screen positions resolved in the setups, never inside a measured span
+    gestures('Scroll Tutti i brani', lambda: (to_library_top(), dev.tap(r'^Tutti i brani')), slow_scroll)
+    gestures('Cambio scheda', lambda: (leave_search(), find_docks('Cerca', 'Memoria', 'Home', 'Libreria')),
+             tabs(*('Cerca', 'Memoria', 'Home', 'Libreria') * 3))
 
     def setup_album():
         leave_search(), tab('Libreria'), dev.tap(r'^Tutto$')
@@ -473,17 +477,25 @@ def main():
         raise RuntimeError(f'the mini player opened the player only {opened} times in 12 tries')
 
     if args.playback:
-        scenario('In riproduzione',
-                 lambda: (leave_search(), tab('Libreria'), dev.tap(r'^Tutto$'), dev.top(), dev.tap(r'^Tutti i brani'),
-                          dev.tap(r'^[A-Z].* \d+')),
-                 lambda: (mini(), time.sleep(2), dev.sh('input keyevent KEYCODE_BACK')))
-        scenario('Lettore dal dock', lambda: None,
-                 lambda: [(mini(), dev.sh('input keyevent KEYCODE_BACK'), time.sleep(1.5)) for _ in range(3)])
+        def setup_playing():
+            leave_search(), tab('Libreria'), dev.tap(r'^Tutto$'), dev.top(), dev.tap(r'^Tutti i brani')
+            dev.tap(r'^[A-Z].* \d+')
+            time.sleep(2)
+            setup_mini()
+
+        def play_open(timed):
+            timed(lambda: press(pos['mini']), wait=2)
+            timed(lambda: dev.sh('input keyevent KEYCODE_BACK'))
+        gestures('In riproduzione', setup_playing, play_open)
+
+        def dock_player(timed):
+            for _ in range(3):
+                timed(lambda: press(pos['mini']), wait=1.2)
+                timed(lambda: dev.sh('input keyevent KEYCODE_BACK'), wait=1.5)
+        gestures('Lettore dal dock', setup_mini, dock_player)
         gestures('Swipe mini player', setup_mini, swipes)
         gestures('Fogli', setup_mini, sheets)
         gestures('Apertura player', setup_mini, open_player)
-        scenario('Anello', mini, lambda: time.sleep(6))
-        dev.sh('input keyevent KEYCODE_BACK')
         dev.sh('input keyevent KEYCODE_MEDIA_PAUSE', check=False)
 
     mem = dev.sh(f'dumpsys meminfo {PKG}')
