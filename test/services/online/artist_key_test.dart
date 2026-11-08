@@ -1,5 +1,5 @@
-import 'package:codecore/services/import/track_matcher.dart' show artistKey;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:codecore/core/artist_key.dart';
 
 // Callers pass null as `artist ?? ''`; the signature takes a non-null String.
 String key(String? x) => artistKey(x);

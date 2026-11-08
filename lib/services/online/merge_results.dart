@@ -1,9 +1,10 @@
 import '../../core/import_row.dart' show ImportRow, LibraryEntryLite;
-import '../import/track_matcher.dart' show LibraryIndex, artistKey, matchTitleKey;
+import '../import/track_matcher.dart' show LibraryIndex, matchTitleKey;
 import 'query_cleaner.dart';
 import 'query_intent.dart' show SearchIntent;
 import 'query_match.dart';
 import 'youtube_service.dart';
+import '../../core/artist_key.dart';
 
 /// One row of the online results: the same song found in one or both sources.
 class SmartResult {

@@ -1,6 +1,6 @@
-import '../import/track_matcher.dart' show matchKey;
 import 'youtube_urls.dart';
 import 'ytm_artist.dart';
+import '../../core/artist_key.dart';
 
 /// What the text typed in the online search is.
 enum QueryKind { listing, video, text }

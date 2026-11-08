@@ -5,6 +5,7 @@ import '../../core/text_utils.dart';
 import 'http_client.dart';
 import 'lrclib_client.dart';
 import 'query_cleaner.dart';
+import '../../core/artist_key.dart';
 
 /// Synchronised lyrics from NetEase Cloud Music (fallback after LRCLIB, D-111).
 /// A hit counts only for the same song: same cleaned title, a shared artist, no

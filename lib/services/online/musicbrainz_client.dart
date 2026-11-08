@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 
 import '../../core/app_log.dart';
-import '../import/track_matcher.dart';
 import 'credits.dart';
 import 'http_client.dart';
 import 'wikipedia_client.dart';
+import '../../core/artist_key.dart';
 
 /// One recording of MusicBrainz (a performance of a song, with its credit).
 class MbRecording {

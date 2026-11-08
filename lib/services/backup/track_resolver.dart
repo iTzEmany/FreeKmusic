@@ -1,6 +1,7 @@
 import '../../core/import_row.dart';
 import '../import/track_matcher.dart';
 import 'user_data.dart';
+import '../../core/artist_key.dart';
 
 /// Finds the local track a backup reference points to. A wrong match is worse
 /// than none, so ties resolve to null.

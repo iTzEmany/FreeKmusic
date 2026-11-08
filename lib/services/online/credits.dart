@@ -1,4 +1,4 @@
-import '../import/track_matcher.dart';
+import '../../core/artist_key.dart';
 
 // Names without letters («!!!») have an empty matchKey: keep them apart.
 String creditNameKey(String name) {

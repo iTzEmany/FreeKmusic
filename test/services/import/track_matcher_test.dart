@@ -2,6 +2,7 @@ import 'package:codecore/core/import_row.dart';
 import 'package:codecore/services/import/track_matcher.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:codecore/core/artist_key.dart';
 
 ImportRow row(String title, List<String> artists,
         {int? ms, String? album, int index = 0}) =>

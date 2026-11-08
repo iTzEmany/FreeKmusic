@@ -1,9 +1,8 @@
 import 'package:drift/drift.dart';
 
-import '../../services/import/track_matcher.dart' show artistKey;
-import '../../services/online/query_cleaner.dart' show extractPrimaryArtist;
 import '../db/app_database.dart';
 import 'track_kinds.dart';
+import '../../core/artist_key.dart';
 
 final _listenKinds = listenKinds.join(',');
 

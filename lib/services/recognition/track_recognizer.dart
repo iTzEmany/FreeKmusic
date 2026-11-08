@@ -3,7 +3,7 @@ import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart' show Track;
-import '../import/track_matcher.dart' show hasPhrase, matchKey, otherVersions;
+import '../import/track_matcher.dart' show hasPhrase, otherVersions;
 import '../online/acoustid_client.dart';
 import '../online/innertube_client.dart';
 import '../online/ytm_song_parser.dart' show YtmSong, ytmMatches;
@@ -19,6 +19,7 @@ import 'channel_detector.dart';
 import 'cover_detector.dart';
 import 'track_identity.dart';
 import 'video_id.dart';
+import '../../core/artist_key.dart';
 
 /// AcoustID matches below this score are not the song (D-300).
 const kAcoustIdMinScore = 0.9;

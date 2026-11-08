@@ -2,6 +2,7 @@ import '../../core/import_row.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/import_repository.dart' show PlaylistImportItemX;
 import 'track_matcher.dart';
+import '../../core/artist_key.dart';
 
 export '../../core/playlist_order.dart';
 

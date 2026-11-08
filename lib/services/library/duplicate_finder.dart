@@ -1,5 +1,6 @@
 import '../../core/audio_format.dart';
 import '../import/track_matcher.dart';
+import '../../core/artist_key.dart';
 
 /// Two durations this close (ms) are the same recording.
 const duplicateDurationToleranceMs = 2000;

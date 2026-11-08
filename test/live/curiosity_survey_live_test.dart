@@ -13,13 +13,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:codecore/services/import/csv_profiles.dart';
-import 'package:codecore/services/import/track_matcher.dart';
 import 'package:codecore/services/online/curiosity_finder.dart';
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/musicbrainz_client.dart';
 import 'package:codecore/services/online/query_cleaner.dart';
 import 'package:codecore/services/online/wikipedia_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:codecore/core/artist_key.dart';
 
 /// The same song whatever the file calls it: core title + main artist.
 String songKey(String title, String artist) {

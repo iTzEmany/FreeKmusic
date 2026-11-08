@@ -20,6 +20,7 @@ import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_artist_parser.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:codecore/core/artist_key.dart';
 
 void main() {
   final env = Platform.environment;

@@ -19,6 +19,7 @@ import 'eta_estimator.dart';
 import 'import_options.dart';
 import 'playlist_paths.dart';
 import 'track_matcher.dart';
+import '../../core/artist_key.dart';
 
 export '../../data/repositories/hidden_playlists.dart' show ytmAlbumSourceKind;
 

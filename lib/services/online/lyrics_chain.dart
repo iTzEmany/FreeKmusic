@@ -7,6 +7,7 @@ import 'lrclib_client.dart';
 import 'lyrics_ovh_client.dart';
 import 'netease_lyrics_client.dart';
 import 'query_cleaner.dart';
+import '../../core/artist_key.dart';
 
 class LyricsChainResult {
   const LyricsChainResult({

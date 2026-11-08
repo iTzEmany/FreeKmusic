@@ -1,9 +1,10 @@
 import '../../data/db/app_database.dart' show Track;
-import '../import/track_matcher.dart' show LibraryIndex, artistKey;
+import '../import/track_matcher.dart' show LibraryIndex;
 import '../online/merge_results.dart' show libraryMatchOf;
 import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
 import 'suggestion_log.dart';
+import '../../core/artist_key.dart';
 
 /// A song picked to be suggested, with the seed it came from.
 class SuggestionCandidate {
