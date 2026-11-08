@@ -1379,11 +1379,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 98.5 Controlli di fase
 
 ## Fase 99 — Debito: 429, chiave artista, scaffali, paesi (`fase-99-debito-artisti.md`)
-- [ ] 99.1 Un solo «budget + pausa dopo un 429»
-- [ ] 99.2 Una sola chiave artista
-- [ ] 99.3 Scaffali dell'artista fuori da `lib/ui`
-- [ ] 99.4 Paesi senza ricalcolo a ogni scrittura
-- [ ] 99.5 Controlli di fase
+- [x] 99.1 Un solo «budget + pausa dopo un 429»
+- [x] 99.2 Una sola chiave artista
+- [x] 99.3 Scaffali dell'artista fuori da `lib/ui`
+- [x] 99.4 Paesi senza ricalcolo a ogni scrittura
+- [x] 99.5 Controlli di fase
 
 ## Fase 100 — Coda di simili da Cerca e Play/Shuffle dell'artista (`fase-100-coda-simili-artista.md`)
 - [ ] 100.1 `RadioFill` estratto da `genre_mix`

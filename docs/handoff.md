@@ -1,3 +1,23 @@
+# Handoff — 2026-11-08 (fase 99 chiusa: debito di 429, chiave artista, scaffali, paesi)
+
+## Stato
+**Fase 99 chiusa** (una PR, `docs/fase-99-debito-artisti.md`): `budgetedYtm` (`lib/services/online/budgeted_call.dart`) per le tre copie di «budget + pausa dopo un 429»; `artistKey` unica in `track_matcher.dart`, formato salvato; `mergeArtistShelves`/`groupShelvesProvider` in `lib/providers/artist_shelves_providers.dart`; `_watchWithCountries` con un timer di 300 ms che non si riavvia e la cache della mappa paese → artisti. Nessun cambio di comportamento, a parte i 300 ms dei paesi.
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 100
+```
+
+## Da sapere per la 100
+- **100.1:** `RadioFill` resta sotto `RadioGate` e non sotto `budgetedYtm`: la radio ha la sua politica, e `genre_mix_test` deve restare invariato. Il doc della fase è già corretto.
+- **100.3:** prima di `artistAllSongsProvider` serve una scelta. O `ytmCatalog.songs` sotto `budgetedYtm` (null → «Top non disponibile»), o il blocco in `_cached` per tutto il catalogo (cambio di comportamento). C'è anche un helper chiave → grafie da estrarre da `countryArtistsOf`. Nota nel doc della 100.
+- **Alias:** le pagine degli alias non spendono budget (D-465). Il blocco giusto sta nel fetch di `_cached`.
+- **Formattazione:** solo i file nuovi, a 80 colonne (D-464).
+- **Debito nuovo:** «Dalla review di architettura della fase 99» in `prossimi-lavori.md`. `artistKey` va spostata in `lib/core/` all'inizio della 101.
+- Prossimi obiettivi: fase 100 (consigliata), poi 101–105 e la 106 in ordine.
+
+---
+
 # Handoff — 2026-11-08 (fase 98 chiusa: rete del refactor «ascolto-quotidiano»)
 
 ## Stato

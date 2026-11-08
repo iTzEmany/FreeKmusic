@@ -139,11 +139,18 @@ Fuori dal perimetro della fase. Da valutare in una fase futura.
 Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti subito, qui c'è solo il debito.
 
 ### Media
-(Pianificate nella fase 99, refactor «ascolto-quotidiano», D-454.)
-- `countryArtistsOf` e `_countries()` (`TrackRepository`) si ricalcolano sul thread UI a ogni scrittura su `tracks`, senza debounce. Rimedio: debounce, o ricalcolo solo quando cambia `artist_countries`.
-- La logica «budget + pausa 429» è scritta tre volte (`artistMergeSearchProvider`, `mergeArtistWith` in `artist_picker_sheet.dart`, `smart_search`). Rimedio: un helper unico nei provider.
-- `mergeArtistShelves` e `groupShelvesProvider` stanno in `lib/ui` ma sono logica di dominio; la loro chiave è diversa da quella di `release_diff` e le pagine degli alias restano fuori dal budget. Rimedio: spostarli nei provider/servizi con la chiave di `release_diff`, e far passare le pagine dal budget.
-- La chiave artista `matchKey(extractPrimaryArtist(x))` è ripetuta in sei punti, più `_showKey` e `artistNameKeys`. Rimedio: una funzione condivisa (oggi `ArtistInfoRepository.keyOf` è la più vicina).
+(Fatte nella fase 99, refactor «ascolto-quotidiano», D-454.)
+- [x] `countryArtistsOf` ricalcolato a ogni scrittura su `tracks` → timer di 300 ms che non si riavvia e cache della mappa per insieme di artisti (99.4).
+- [x] «Budget + pausa 429» scritto tre volte → `budgetedYtm` in `lib/services/online/budgeted_call.dart` (99.1).
+- [x] `mergeArtistShelves`/`groupShelvesProvider` in `lib/ui` → `lib/providers/artist_shelves_providers.dart` (99.3). Restano aperte, di proposito: la chiave propria (quella di `release_diff` unirebbe edizioni diverse) e le pagine degli alias fuori dal budget (D-465: il blocco va nel fetch di `_cached`, cambio di comportamento).
+- [x] Chiave artista ripetuta → `artistKey` accanto a `matchKey` (99.2).
+
+### Dalla review di architettura della fase 99
+- Budget e pausa scritti a mano fuori da `budgetedYtm`: `YtmPodcasts._guarded` (con attesa), `_askCard`/`_fail` di `smart_search`, `second_opinion_providers.dart`. Rimedio: una variante con attesa e un `tripIfRateLimited(cooldown, e)`; i podcast prima o insieme alla fase 102.
+- `artistKey`/`matchKey`/`extractPrimaryArtist` stanno in `services/import/track_matcher.dart`, importato da `data/` e `services/backup` per una funzione di testo. Rimedio: spostarle in `lib/core/` all'inizio della fase 101, prima che `DislikeStore` diventi un altro consumatore.
+- `mergeArtistWith` (UI) compone cooldown, limiter e catalogo da sé, come `artistMergeSearchProvider`. Rimedio: una ricerca degli artisti con budget in `ArtistMergeOps`, con le due varianti di esito.
+- La cache dei paesi è divisa fra la closure di `watchByRules` e `_watchWithCountries` (versione passata come `int`). Rimedio (basso): una piccola `CountryArtistsCache` in `rule_country.dart`.
+- Nomi paralleli: `artistCountryKey` → `ArtistInfoRepository.keyOf` → `artistKey`; `_artistKey` di `stats_queries.dart` è un'altra chiave (minuscole ASCII come `lower()` di SQLite). Rimedio: rinominarla (`_libraryNameKey`) e togliere gli alias quando si sposta il modulo.
 
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`.

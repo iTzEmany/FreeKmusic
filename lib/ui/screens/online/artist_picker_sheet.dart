@@ -6,7 +6,7 @@ import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/artist_merge_providers.dart';
 import '../../../providers/smart_search_providers.dart' show searchRowsLimiterProvider, sourceCooldownProvider;
-import '../../../services/online/query_match.dart' show MediaKind;
+import '../../../services/online/budgeted_call.dart';
 import '../../../providers/ytm_catalog_providers.dart';
 import '../../../services/import/track_matcher.dart' show matchKey;
 import '../../../services/online/innertube_client.dart';
@@ -95,17 +95,9 @@ Future<void> mergeArtistWith(
   final catalog = ref.read(ytmCatalogProvider);
   final hl = ref.read(ytmLanguageProvider);
   // The same budget and 429 pause as the search rows (D-425), but the error is shown.
-  Future<List<YtmArtistRef>> search(String q) async {
-    if (cooldown.isPaused(MediaKind.ytmSong) || !limiter.tryAcquire()) {
-      throw const YtException(YtErrorKind.rateLimited);
-    }
-    try {
-      return await catalog.searchArtists(q, hl);
-    } on YtException catch (e) {
-      if (e.kind == YtErrorKind.rateLimited) cooldown.trip(MediaKind.ytmSong);
-      rethrow;
-    }
-  }
+  Future<List<YtmArtistRef>> search(String q) =>
+      budgetedYtm(cooldown, limiter, () => catalog.searchArtists(q, hl)) ??
+      Future.error(const YtException(YtErrorKind.rateLimited));
 
   final chosen = await showCcSheet<YtmArtistRef>(
     context: context,

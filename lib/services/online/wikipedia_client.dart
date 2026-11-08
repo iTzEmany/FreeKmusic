@@ -41,7 +41,7 @@ class WikipediaClient {
       head,
       coreTitle(head),
     }.where((v) => v.isNotEmpty).toList();
-    final by = matchKey(extractPrimaryArtist(artist));
+    final by = artistKey(artist);
     final keys = {for (final n in names) matchKey(n)}..remove('');
     if (keys.isEmpty) return null;
     final main = extractPrimaryArtist(artist).trim();

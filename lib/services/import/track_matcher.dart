@@ -66,6 +66,10 @@ String matchKey(String s) => normalize(s.replaceAll('&', ' and '))
     .replaceAll(_nonWord, ' ')
     .trim();
 
+/// Single artist key: [matchKey] of the primary artist (null -> '').
+// Persistent format (artist_countries, artist_infos, artist_lookups, backup): changing it needs a data migration.
+String artistKey(String? artist) => matchKey(extractPrimaryArtist(artist ?? ''));
+
 /// [matchKey] of a title without the qualifiers that do not change the
 /// recording (remaster year, feat., radio edit). `live`, `remix`... are kept.
 String matchTitleKey(String title) => matchKey(title
@@ -85,7 +89,6 @@ String libraryTitleKey(String title) {
   return key.isEmpty ? t.trim().toLowerCase() : key;
 }
 
-String _artistKey(String artist) => matchKey(extractPrimaryArtist(artist));
 
 const _artistStop = {'and', 'feat', 'ft', 'featuring', 'with'};
 
@@ -278,12 +281,12 @@ double _durationScore(int? wantMs, Duration? got) {
 final _channelNoise = RegExp(r'\s*[-–]?\s*(topic|vevo|official)$');
 
 double _artistScore(ImportRow r, YtResult c, String titleKey) {
-  final want = [for (final a in r.artists) _artistKey(a)]
+  final want = [for (final a in r.artists) artistKey(a)]
       .where((a) => a.isNotEmpty)
       .toList();
   if (want.isEmpty) return 0.5;
   final got = <String>{
-    for (final a in c.artists) _artistKey(a),
+    for (final a in c.artists) artistKey(a),
     matchKey(c.channel).replaceFirst(_channelNoise, '').trim(),
   }..remove('');
   if (got.contains(want.first)) return 1;

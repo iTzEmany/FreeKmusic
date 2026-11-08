@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import '../../services/import/track_matcher.dart' show matchKey;
+import '../../services/import/track_matcher.dart' show artistKey;
 import '../../services/online/query_cleaner.dart' show extractPrimaryArtist;
 import '../db/app_database.dart';
 import 'track_kinds.dart';
@@ -363,7 +363,7 @@ class StatsQueries {
   }
 
   /// The [limit] artists listened to most since [from], by main artist
-  /// (`matchKey(extractPrimaryArtist)`, as the library names them). The
+  /// (`artistKey`, as the library names them). The
   /// measure is the time really played (listens break ties); a history that
   /// has no listens at all falls back to the sum of `play_count`.
   Future<List<ListenedArtist>> topArtistsSince(DateTime from, {int limit = 15}) async {
@@ -383,7 +383,7 @@ class StatsQueries {
     for (final r in rows) {
       final artist = (r.data['artist']! as String).trim();
       final main = extractPrimaryArtist(artist);
-      final key = matchKey(main);
+      final key = artistKey(artist);
       if (key.isEmpty) continue;
       final n = (r.data['n'] as int?) ?? 0, ms = (r.data['ms'] as int?) ?? 0;
       final cur = groups[key];

@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../core/app_log.dart';
-import '../import/track_matcher.dart' show matchKey, matchTitleKey;
-import '../online/query_cleaner.dart' show extractPrimaryArtist;
+import '../import/track_matcher.dart' show artistKey, matchTitleKey;
 
 /// What is known about the YouTube Music id of one library song.
 class SeedEntry {
@@ -41,7 +40,7 @@ class SeedIndex {
   /// Same key the library matching uses: title without remaster/feat. tails
   /// and the first credited artist.
   static String keyOf(String title, String? artist) =>
-      '${matchTitleKey(title)}|${matchKey(extractPrimaryArtist(artist ?? ''))}';
+      '${matchTitleKey(title)}|${artistKey(artist)}';
 
   Future<Map<String, SeedEntry>> _load() async {
     final cached = _entries;

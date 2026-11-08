@@ -160,5 +160,23 @@ void main() {
       await search('queen');
       expect(cat.calls, 3);
     });
+
+    test('no slot left: null, nothing cached; once a slot is free the same name searches', () async {
+      var now = DateTime(2026, 11, 8);
+      final limiter = WindowLimiter(perMinute: 1, now: () => now)..tryAcquire();
+      final cat = _FakeCatalog(() async => [_a('2', 'Queen')]);
+      rc = ProviderContainer(overrides: [
+        ytmCatalogProvider.overrideWithValue(cat),
+        ytmLanguageProvider.overrideWithValue('en'),
+        searchRowsLimiterProvider.overrideWithValue(limiter),
+      ]);
+      addTearDown(rc.dispose);
+      final search = rc.read(artistMergeSearchProvider);
+      expect(search('Queen'), isNull);
+      expect(cat.calls, 0);
+      now = now.add(const Duration(seconds: 61));
+      expect(await search('Queen'), isNotEmpty);
+      expect(cat.calls, 1);
+    });
   });
 }

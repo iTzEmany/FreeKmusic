@@ -1,21 +1,19 @@
 import '../../data/db/app_database.dart' show Track;
 import '../../data/repositories/library_queries.dart' show ArtistSummary;
-import '../import/track_matcher.dart' show libraryTitleKey, matchKey;
-import 'query_cleaner.dart' show extractPrimaryArtist;
+import '../import/track_matcher.dart' show artistKey, libraryTitleKey;
 import 'youtube_service.dart' show YtResult;
 
-String _artistKey(String name) => matchKey(extractPrimaryArtist(name));
 
 /// The library artist that is [name] on YouTube Music: same main artist once
 /// case, accents and «feat.» are ignored («PINK FLOYD» = «Pink Floyd»). With
 /// several (spelled differently in the tags) the one with most tracks.
 ArtistSummary? localArtistFor(String name, List<ArtistSummary> artists) {
-  final want = _artistKey(name);
+  final want = artistKey(name);
   if (want.isEmpty) return null;
   ArtistSummary? best;
   for (final a in artists) {
     final n = a.name;
-    if (n == null || _artistKey(n) != want) continue;
+    if (n == null || artistKey(n) != want) continue;
     if (best == null || a.trackCount > best.trackCount) best = a;
   }
   return best;

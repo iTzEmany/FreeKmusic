@@ -87,7 +87,9 @@ Una colonna su `tracks` (`kind`, vedi sopra) e due tabelle; la migrazione non ca
 Un episodio **scaricato** ha una riga in `tracks` con `kind = 1`, `folderId = null` e il file in `<appSupportDir>/podcasts/<podcastId>/`, cartella che non è in `folders` e quindi la scansione non vede.
 
 ## Curiosità sull'artista (schema v11)
-`artist_infos`: `artistKey` text **PK** (`matchKey` dell'artista principale: «Queen feat. X» e «queen» sono lo stesso) · `body` text · `sourceUrl` text · `lang` text · `fetchedAt` int (epoch ms). Una riga per artista, non per brano: tutti i brani dello stesso artista la mostrano senza altre richieste. È una cache: non entra nei dati utente portabili del backup (il file `.sqlite` del backup però la contiene).
+**Chiave artista** (fase 99): `artistKey` è un formato salvato (`artist_infos`, `artist_lookups`, `artist_countries`, backup): cambiarla richiede una migrazione delle righe esistenti. La protegge `test/services/online/artist_key_test.dart`.
+
+`artist_infos`: `artistKey` text **PK** (`artistKey(nome)` in `track_matcher.dart`: «Queen feat. X» e «queen» sono lo stesso) · `body` text · `sourceUrl` text · `lang` text · `fetchedAt` int (epoch ms). Una riga per artista, non per brano: tutti i brani dello stesso artista la mostrano senza altre richieste. È una cache: non entra nei dati utente portabili del backup (il file `.sqlite` del backup però la contiene).
 
 ## Radio (schema v12, fase 33)
 Una tabella nuova, nessuna esistente toccata.
@@ -105,7 +107,7 @@ Tre tabelle nuove, nessuna esistente toccata (il passaggio v12 → v13 è un `cr
 `browse_id` text **PK** (`MPREb_…`) · `artist_id` text → `followed_artists` (cascade) · `title` text · `kind` int (0 album · 1 singolo/EP, dalla sezione) · `year` int? · `thumb_url` text? · `first_seen_at` int · `is_new` bool (finché l'utente non la apre) · `opened_at` int? · `group_key` text (titolo senza parentesi, senza ciò che segue «:» o «+», senza «Deluxe/Edition/Version»: le varianti dello stesso album hanno la stessa chiave). Le uscite **non** vanno nel backup portabile (dopo un'unione il primo giro le segna come viste).
 
 ### `artist_lookups`
-`artist_key` text **PK** (`matchKey` dell'artista principale) · `name` text · `status` int (0 un solo artista uguale · 1 nessuno · 2 più d'uno, «Da confermare») · `ytm_id`, `ytm_name`, `thumb_url` text? · `checked_at` int. Memoria di 30 giorni delle ricerche dei più ascoltati, perché non si ripetano.
+`artist_key` text **PK** (`artistKey(nome)`) · `name` text · `status` int (0 un solo artista uguale · 1 nessuno · 2 più d'uno, «Da confermare») · `ytm_id`, `ytm_name`, `thumb_url` text? · `checked_at` int. Memoria di 30 giorni delle ricerche dei più ascoltati, perché non si ripetano.
 
 Impostazioni nuove in `SettingsStore` (fuori da `AppSettings`, quindi non nel backup): `releasesTopArtists` (bool, false) · `releasesNotify` (bool, true) · `releasesUnmeteredOnly` (bool, false) · `releasesTopCardSeen` (bool) · `releasesLastRunAt`, `releasesRetryAt`, `releasesLastNotifiedAt` (int? ms).
 
@@ -209,7 +211,7 @@ Le vecchie impostazioni finte (crossfade, gapless, normalizzazione, "bit-perfect
 
 ## Generi e nazionalità (schema v16, fasi 93, D-390)
 - `track_genres`: `track_id` → `tracks` (cascade) · `genre` (testo, `NOCASE`) · `position`; chiave `(track_id, position)`, indice `track_genres_genre` su `genre`. Tutti i generi di un brano nell'ordine dei tag. `tracks.genre` resta il **primo** genere.
-- `artist_countries`: `artist_key` **PK** (`ArtistInfoRepository.keyOf`) · `country` text? (ISO 3166-1 alpha-2; null = non trovato) · `source` text? (`musicbrainz`/`wikidata`) · `checked_at` int. Un `country` nullo con `checked_at` si ritenta dopo 30 giorni.
+- `artist_countries`: `artist_key` **PK** (`artistKey(nome)`, tramite `ArtistInfoRepository.keyOf`) · `country` text? (ISO 3166-1 alpha-2; null = non trovato) · `source` text? (`musicbrainz`/`wikidata`) · `checked_at` int. Un `country` nullo con `checked_at` si ritenta dopo 30 giorni.
 - Migrazione v15 → v16: due `createTable` e l'indice; nessuna colonna toccata.
 
 ## Alias degli artisti (schema v17, fase 95)

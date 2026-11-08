@@ -1,6 +1,5 @@
 import '../../core/import_row.dart';
 import '../import/track_matcher.dart';
-import '../online/query_cleaner.dart';
 import 'user_data.dart';
 
 /// Finds the local track a backup reference points to. A wrong match is worse
@@ -20,7 +19,7 @@ class TrackResolver {
       }
       final sha = sha256ById[t.id];
       if (sha != null) (_bySha[sha] ??= []).add(t.id);
-      (_byTitle['${matchTitleKey(t.title)}|${_artistKey(t.artist)}'] ??= [])
+      (_byTitle['${matchTitleKey(t.title)}|${artistKey(t.artist)}'] ??= [])
           .add(t);
     }
   }
@@ -39,8 +38,6 @@ class TrackResolver {
     return caseInsensitive ? s.toLowerCase() : s;
   }
 
-  static String _artistKey(String? a) =>
-      matchKey(extractPrimaryArtist(a ?? ''));
 
   int? resolve(TrackRef r) {
     final byPath = r.relPath == null ? null : _byRelPath[_pathKey(r.relPath!)];
@@ -74,7 +71,7 @@ class TrackResolver {
   }
 
   int? _byMetadata(TrackRef r) {
-    final c = _byTitle['${matchTitleKey(r.title)}|${_artistKey(r.artist)}'];
+    final c = _byTitle['${matchTitleKey(r.title)}|${artistKey(r.artist)}'];
     if (c == null) return null;
     final scored = <(int distance, int id)>[];
     for (final t in c) {

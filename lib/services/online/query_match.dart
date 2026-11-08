@@ -106,7 +106,7 @@ String _without(String queryKey, String phrase) {
 /// The key under which a library artist is compared with a result's artist:
 /// primary artist only, without a leading «the».
 String libraryArtistKey(String name) {
-  final key = matchKey(extractPrimaryArtist(name));
+  final key = artistKey(name);
   return key.startsWith('the ') ? key.substring(4) : key;
 }
 
