@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,7 +7,6 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../providers/library_providers.dart' show searchTracksProvider;
-import '../../../providers/player_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart' show ownedTracksProvider;
 import '../../../providers/youtube_providers.dart';
@@ -21,6 +22,7 @@ import '../../widgets/track_actions.dart' show showOnlineActions;
 import '../../theme/app_theme.dart' show trackRowExtentOf;
 import '../../widgets/track_row.dart';
 import '../library/library_results.dart' show SearchTracksScreen;
+import '../now_playing/now_playing_screen.dart' show playFromSearchNotice;
 import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
 
@@ -65,7 +67,6 @@ class LibraryTracksSection extends ConsumerWidget {
     final l = context.l10n;
     final compact = ref.watch(settingsProvider.select((s) => s.compactMode));
     final extent = trackRowExtentOf(context, compact);
-    final ctrl = ref.read(playerControllerProvider);
     final shown = tracks.take(_preview).toList();
     return Column(
       key: const ValueKey('online-library'),
@@ -87,11 +88,9 @@ class LibraryTracksSection extends ConsumerWidget {
             child: LiveTrackRow(
               track: shown[i],
               compact: compact,
-              // The queue is every match, as in the Library search.
-              onTap: () => ctrl.playFromList(
-                tracks,
-                i,
-                context: const PlayContext(PlayContextKind.search),
+              // The song and those similar to it (F-103), not the matches.
+              onTap: () => unawaited(
+                playFromSearchNotice(context, ref, track: shown[i]),
               ),
             ),
           ),

@@ -172,6 +172,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     );
     ref.watch(currentTrackProvider.select((t) => t.value?.id));
     final pending = ref.watch(shufflePlusPendingProvider);
+    final similarTo = ref.watch(similarSeedProvider);
     final ctrl = ref.read(playerControllerProvider);
     if (queue.isEmpty) {
       return EmptyState(icon: Icons.queue_music_rounded, message: l.emptyQueue);
@@ -223,7 +224,10 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                     ),
                   ),
                 ],
-                if (upcoming.isNotEmpty) SectionHeader(l.queueNext),
+                if (upcoming.isNotEmpty)
+                  SectionHeader(
+                    similarTo == null ? l.queueNext : l.queueSimilarTo(similarTo),
+                  ),
               ],
             ),
             // Rows for the suggestions Shuffle+ is still choosing.

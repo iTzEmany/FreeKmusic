@@ -3,6 +3,7 @@ import 'dart:math';
 
 import '../core/app_log.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -22,6 +23,10 @@ import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
 import '../services/shuffle_plus/plus_allowed.dart';
+import '../services/shuffle_plus/radio_fill.dart';
+import '../services/shuffle_plus/similar_queue.dart';
+import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed;
+import 'shuffle_plus_providers.dart' show similarFillProvider;
 import 'suggestion_log_provider.dart';
 
 /// Overridden in `main` once the handler has been created (and, on Android,
@@ -96,6 +101,7 @@ class PlayerController {
     this.addOnlineToJam,
     this.plusBlock,
     this.onSuggested,
+    this.similarFill,
     Random? random,
   }) : _random = random ?? Random();
 
@@ -126,7 +132,31 @@ class PlayerController {
   /// A suggested song entered the queue (it goes to the suggestions log).
   final void Function(YtResult r, String seedTitle)? onSuggested;
 
+  /// The radio of [RadioSeed] for the songs similar to a Search pick; null
+  /// when the source is off (Jam, metered or no network, no yt-dlp, 429).
+  final Future<RadioFill?> Function(RadioSeed seed)? similarFill;
+
+  /// The title of the song whose similar songs keep filling the queue; null
+  /// when no such session runs.
+  final similarTitle = ValueNotifier<String?>(null);
+  SimilarQueue? _similar;
+  int _epoch = 0;
+
   bool get inJam => jamActive?.call() ?? false;
+
+  /// Ends the similar-songs session: every way of starting another queue
+  /// calls this first.
+  void _stopSimilar() {
+    _epoch++;
+    _similar?.close();
+    _similar = null;
+    similarTitle.value = null;
+  }
+
+  void dispose() {
+    _stopSimilar();
+    similarTitle.dispose();
+  }
 
   final CodecoreAudioHandler _handler;
   final PlaybackPersistence? _persistence;
@@ -146,6 +176,7 @@ class PlayerController {
     bool? plus,
     bool? shuffle,
   }) async {
+    _stopSimilar();
     _handler.setPlayContext(context?.kind.index, context?.name);
     _requestNotificationPermissionOnce();
     final load = _handler.playQueue(ids, at);
@@ -260,6 +291,7 @@ class PlayerController {
     PlayContext? context,
   }) async {
     if (stations.isEmpty) return;
+    _stopSimilar();
     final ctx = context ?? const PlayContext(PlayContextKind.radio);
     _handler.setPlayContext(ctx.kind.index, ctx.name);
     _requestNotificationPermissionOnce();
@@ -283,7 +315,10 @@ class PlayerController {
   }
 
   /// «Svuota»: see [CodecoreAudioHandler.rebuildUpcoming].
-  QueueState? rebuildUpcoming() => _handler.rebuildUpcoming();
+  QueueState? rebuildUpcoming() {
+    _stopSimilar(); // the user emptied what follows: no refill
+    return _handler.rebuildUpcoming();
+  }
   bool get hasQueueSource => _handler.hasSource;
   void restoreQueue(QueueState state) => _handler.restoreQueue(state);
 
@@ -336,6 +371,49 @@ class PlayerController {
     final at = _handler.currentIndex + 1;
     _handler.insertAt(at, id);
     await _handler.skipToQueueItem(at);
+  }
+
+  /// A pick in Search (D-429): [track] (library) or [online] plays at once,
+  /// alone; then the songs similar to it follow, from the radio, library and
+  /// online mixed, and keep coming while it plays (D-467). The old queue is
+  /// dropped. In a Jam it only joins the shared queue. True when similar
+  /// songs came; false: only the pick plays.
+  Future<bool> playFromSearch({Track? track, YtResult? online}) async {
+    if (inJam) {
+      if (track != null) await addToJam?.call([track.id]);
+      if (online != null) _onlineToJam(online);
+      return false;
+    }
+    final id = track?.id ?? await _idOrLog(online!);
+    if (id == null) return false;
+    // Not awaited: a stream may take minutes to load and the radio need not wait.
+    unawaited(_start([id], 0, const PlayContext(PlayContextKind.search), shuffle: false)
+        .catchError((Object e, StackTrace st) => AppLog.w('search pick not played', e, st)));
+    final epoch = _epoch; // after _start, which ended the old session
+    final seed = track != null ? RadioSeed(track) : RadioSeed.online(online!.id, online.title);
+    try {
+      final fill = await similarFill?.call(seed);
+      if (fill == null || epoch != _epoch) return false;
+      final session = _similar = SimilarQueue(
+        handler: _handler,
+        fill: fill,
+        seedId: id,
+        seedVideoId: online?.id,
+        register: (r, seedTitle) => _idOf(r, seedTitle: seedTitle),
+        onSuggested: (r, t) => onSuggested?.call(r, t),
+        onClosed: () {
+          if (epoch != _epoch) return; // stopped from outside: already reset
+          _similar = null;
+          similarTitle.value = null;
+        },
+        blocked: () => inJam,
+      );
+      similarTitle.value = seed.title;
+      return await session.start();
+    } on Object catch (e, st) {
+      AppLog.w('similar songs not queued', e, st);
+      return false;
+    }
   }
 
   /// In a Jam: before any id lookup (library and negative ids mean nothing to guests); returns once accepted.
@@ -493,8 +571,8 @@ final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, int>((r
   return c.stream;
 });
 
-final playerControllerProvider = Provider<PlayerController>(
-  (ref) => PlayerController(
+final playerControllerProvider = Provider<PlayerController>((ref) {
+  final c = PlayerController(
     ref.watch(audioHandlerProvider),
     ref.watch(playbackPersistenceProvider),
     shufflePlus: () => ref.read(settingsProvider).shufflePlus,
@@ -507,13 +585,25 @@ final playerControllerProvider = Provider<PlayerController>(
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
     onSuggested: (r, seed) => ref.read(suggestionLogProvider).addSuggestion(r, seed),
+    similarFill: ref.read(similarFillProvider),
     libraryIdOf: (r) async {
       final path = (await ref.read(downloadIndexProvider.future))
           .pathFor(r.id, source: r.source);
       return path == null ? null : ref.read(trackRepositoryProvider).idForPath(path);
     },
-  ),
-);
+  );
+  ref.onDispose(c.dispose);
+  return c;
+});
+
+/// Title of the song whose similar songs fill the queue (null: no session).
+final similarSeedProvider = Provider<String?>((ref) {
+  final n = ref.watch(playerControllerProvider).similarTitle;
+  void changed() => ref.invalidateSelf();
+  n.addListener(changed);
+  ref.onDispose(() => n.removeListener(changed));
+  return n.value;
+});
 
 /// The queue that ended and stays in the player, for the empty states (D-364):
 /// null when there is none. Read again whenever the current track changes.

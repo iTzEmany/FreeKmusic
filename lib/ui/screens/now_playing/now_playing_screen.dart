@@ -21,6 +21,8 @@ import '../../widgets/empty_player.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/track_art.dart';
 import 'suggested_info.dart';
+import 'queue_sheet.dart' show showQueueSheet;
+import '../../widgets/show_msg.dart';
 import '../../../providers/radio_providers.dart' show onAirProvider;
 import '../../widgets/radio_now.dart';
 import '../../widgets/favorite_actions.dart';
@@ -72,6 +74,47 @@ Future<void> playOnlineAndOpen(
   WidgetRef ref,
   YtResult r,
 ) => _playAndOpen(context, ref.read(playerControllerProvider).playOnline(r));
+
+/// Tap on a Search result, library [track] or [online] song: it plays and the
+/// songs similar to it follow (F-103), telling what happens (D-448). In a Jam
+/// it just joins the shared queue. The messenger is taken before the awaits.
+Future<void> playFromSearchNotice(
+  BuildContext context,
+  WidgetRef ref, {
+  Track? track,
+  YtResult? online,
+}) async {
+  final ctrl = ref.read(playerControllerProvider);
+  if (ctrl.inJam) {
+    await ctrl.playFromSearch(track: track, online: online);
+    return;
+  }
+  final l = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  final title = track?.title ?? online!.title;
+  showMsgOn(messenger, l.searchSimilarLooking);
+  final found = await ctrl.playFromSearch(track: track, online: online);
+  if (!messenger.mounted) return;
+  showMsgOn(
+    messenger,
+    found ? l.searchSimilarQueued(title) : l.searchSimilarNone(title),
+    action: found
+        ? SnackBarAction(
+            label: l.searchSeeQueue,
+            onPressed: () {
+              if (context.mounted) unawaited(showQueueSheet(context));
+            },
+          )
+        : null,
+  );
+}
+
+/// [playOnlineAndOpen] for a Search result: the similar songs follow.
+Future<void> playFromSearchAndOpen(
+  BuildContext context,
+  WidgetRef ref,
+  YtResult r,
+) => _playAndOpen(context, playFromSearchNotice(context, ref, online: r));
 
 /// A second tap while the player is already on top plays but does not push again.
 bool _playerOnTop(BuildContext context) {

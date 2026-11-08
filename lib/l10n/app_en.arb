@@ -3434,5 +3434,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "Looking for similar songs…",
+  "searchSimilarQueued": "Queue: «{title}» and similar songs",
+  "searchSimilarNone": "No similar songs: playing only «{title}»",
+  "searchSeeQueue": "See queue",
+  "queueSimilarTo": "Similar to «{title}»"
 }

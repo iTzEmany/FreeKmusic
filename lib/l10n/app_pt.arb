@@ -3668,5 +3668,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "A procurar músicas semelhantes…",
+  "searchSimilarQueued": "Fila: «{title}» e músicas semelhantes",
+  "searchSimilarNone": "Sem músicas semelhantes: a tocar só «{title}»",
+  "searchSeeQueue": "Ver fila",
+  "queueSimilarTo": "Semelhantes a «{title}»"
 }

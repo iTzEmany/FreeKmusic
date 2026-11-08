@@ -4120,5 +4120,15 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "Cerco brani simili…",
+  "@searchSimilarLooking": {"description": "Snackbar right after a pick in Search: the radio is being asked for similar songs."},
+  "searchSimilarQueued": "Coda: «{title}» e brani simili",
+  "@searchSimilarQueued": {"description": "Snackbar once the pick plays with similar songs after it.", "placeholders": {"title": {"type": "String"}}},
+  "searchSimilarNone": "Nessun brano simile: suono solo «{title}»",
+  "@searchSimilarNone": {"description": "Snackbar when no similar song came (offline, source off or none found): only the pick plays.", "placeholders": {"title": {"type": "String"}}},
+  "searchSeeQueue": "Vedi coda",
+  "@searchSeeQueue": {"description": "Action of the snackbar: opens the queue sheet."},
+  "queueSimilarTo": "Simili a «{title}»",
+  "@queueSimilarTo": {"description": "Header of the queue sheet above the songs that follow a Search pick.", "placeholders": {"title": {"type": "String"}}}
 }

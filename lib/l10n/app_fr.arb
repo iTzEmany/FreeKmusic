@@ -3668,5 +3668,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "Recherche de morceaux similaires…",
+  "searchSimilarQueued": "File : «{title}» et morceaux similaires",
+  "searchSimilarNone": "Aucun morceau similaire : lecture de «{title}» seul",
+  "searchSeeQueue": "Voir la file",
+  "queueSimilarTo": "Similaires à «{title}»"
 }

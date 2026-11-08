@@ -6783,4 +6783,25 @@ class AppLocalizationsIt extends AppLocalizations {
   String podcastSubscribeTo(String name) {
     return 'Iscriviti a $name';
   }
+
+  @override
+  String get searchSimilarLooking => 'Cerco brani simili…';
+
+  @override
+  String searchSimilarQueued(String title) {
+    return 'Coda: «$title» e brani simili';
+  }
+
+  @override
+  String searchSimilarNone(String title) {
+    return 'Nessun brano simile: suono solo «$title»';
+  }
+
+  @override
+  String get searchSeeQueue => 'Vedi coda';
+
+  @override
+  String queueSimilarTo(String title) {
+    return 'Simili a «$title»';
+  }
 }

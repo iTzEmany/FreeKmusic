@@ -3434,5 +3434,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchSimilarLooking": "Suche ähnliche Titel …",
+  "searchSimilarQueued": "Warteschlange: «{title}» und ähnliche Titel",
+  "searchSimilarNone": "Keine ähnlichen Titel: nur «{title}» läuft",
+  "searchSeeQueue": "Warteschlange ansehen",
+  "queueSimilarTo": "Ähnlich wie «{title}»"
 }
