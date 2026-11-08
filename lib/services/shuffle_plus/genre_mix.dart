@@ -6,6 +6,7 @@ import '../import/track_matcher.dart' show LibraryIndex;
 import '../online/download_index.dart';
 import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
+import 'radio_fill.dart';
 import 'radio_gate.dart';
 import 'seed_resolver.dart';
 import 'suggestion_log.dart';
@@ -84,35 +85,26 @@ Stream<GenreMixState> genreMix({
   }
   yield GenreMixState(incoming: want);
   final found = <MixSuggestion>[];
-  final lastArtists = <String>[];
-  final seeds = [for (final t in chooseSeeds(tracks, random: random)) RadioSeed(t)];
-  final queue = pool ?? SuggestionPool();
-  var requests = 0;
-  var radioAsked = false;
   GenreMixOff? stopped;
   try {
     await log.load();
-    final inLibrary = await loadInLibrary();
-    while (found.length < want) {
-      final c = queue.take(
-        inLibrary: inLibrary,
-        inQueue: (id) => found.any((s) => s.result.id == id),
-        log: log,
-        lastArtists: lastArtists,
-      );
-      if (c != null) {
-        found.add((result: c.result, seedTitle: c.seedTitle));
-        lastArtists
-          ..add(suggestionArtistKey(c.result))
-          ..removeRange(0, max(0, lastArtists.length - 2));
-        yield GenreMixState(suggested: List.of(found), incoming: want - found.length);
-        continue;
-      }
-      if (requests >= _maxRequests || (cancelled?.call() ?? false)) break;
-      final r = await _fetch(seeds, queue, resolver, radioPage, gate, _maxRequests - requests, first: !radioAsked);
-      if (r.used == 0) break;
-      requests += r.used;
-      radioAsked |= r.asked;
+    final fill = RadioFill(
+      seeds: [for (final t in chooseSeeds(tracks, random: random)) RadioSeed(t)],
+      resolver: resolver,
+      radioPage: radioPage,
+      log: log,
+      gate: gate,
+      inLibrary: await loadInLibrary(),
+      pool: pool,
+    );
+    await for (final c in fill.take(
+      want,
+      inQueue: (id) => found.any((s) => s.result.id == id),
+      cancelled: cancelled,
+      maxRequests: _maxRequests,
+    )) {
+      found.add((result: c.result, seedTitle: c.seedTitle));
+      yield GenreMixState(suggested: List.of(found), incoming: want - found.length);
     }
   } on YtException catch (e, st) {
     AppLog.w('genre mix stopped', e, st);
@@ -124,55 +116,6 @@ Stream<GenreMixState> genreMix({
     AppLog.w('genre mix stopped', e, st);
   }
   yield GenreMixState(suggested: List.of(found), off: stopped);
-}
-
-/// One radio page of the next seed that needs one, within [budget] requests
-/// and what [gate] allows; returns the requests made (searches included), 0
-/// when none is left or the gate is closed, and whether a radio page was asked.
-/// The [first] page of a mix is the user's own action: it waits for the 429
-/// pause only, not for the gap.
-Future<({int used, bool asked})> _fetch(
-  List<RadioSeed> seeds,
-  SuggestionPool pool,
-  SeedResolver resolver,
-  Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
-  RadioGate gate,
-  int budget, {
-  required bool first,
-}) async {
-  var used = 0;
-  bool closed() => first ? gate.rateLimited : !gate.canAsk;
-  for (final s in seeds) {
-    if (s.dead) continue;
-    if (!s.needsPage(pool)) continue;
-    if (closed()) return (used: used, asked: false); // no search for a request that cannot follow
-    if (s.videoId == null) {
-      used++; // a search, unless the download or the index knows the id
-      s.videoId = await resolver.resolve(s.track);
-    }
-    if (s.videoId == null) {
-      s.dead = true;
-      continue;
-    }
-    gate.asked();
-    var page = await radioPage(s.videoId!, continuation: s.fetched ? pool.continuationOf(s.key) : null);
-    used++;
-    if (!s.fetched && used < budget && (first || gate.canAsk) && !page.items.any((i) => i.isSeed && i.kind == RadioKind.song)) {
-      // The id was a video clip's: look the song up and ask again.
-      s.videoId = await resolver.resolve(s.track, searchOnly: true);
-      if (s.videoId == null) {
-        s.dead = true;
-        continue;
-      }
-      gate.asked();
-      page = await radioPage(s.videoId!);
-      used++;
-    }
-    s.fetched = true;
-    pool.addPage(s.key, s.track.title, page);
-    return (used: used, asked: true);
-  }
-  return (used: used, asked: false);
 }
 
 /// [genreMix] for a genre page, from what the providers hold: the library
