@@ -65,7 +65,7 @@ void main() {
   var fills = 0;
   var jam = false;
   String? downloaded;
-  String? matched;
+  Set<String> matched = {};
   Completer<void>? holdFill, holdRegister;
   var closed = 0;
   var autoAdvance = false;
@@ -178,7 +178,7 @@ void main() {
     fills = 0;
     jam = false;
     downloaded = null;
-    matched = null;
+    matched = {};
     holdFill = holdRegister = null;
     closed = 0;
     autoAdvance = false;
@@ -195,7 +195,7 @@ void main() {
         if (r.id.startsWith('r')) await holdRegister?.future;
         return r.id == downloaded ? lib[1].id : null;
       },
-      libraryMatchIdOf: (r) async => r.id == matched ? lib[1].id : null,
+      libraryMatchIdOf: (r) async => matched.contains(r.id) ? lib[1].id : null,
       onSuggested: (r, t) => suggested.add('${r.id}/$t'),
       similarFill: (seed) async {
         fills++;
@@ -389,7 +389,7 @@ void main() {
   test(
     'a library song of another source is the library track, not a duplicate',
     () async {
-      matched = 'r1_1';
+      matched = {'r1_1'};
       await player.playFromSearch(online: _r('x'));
       final q = handler.queueIds;
       expect(q[2], lib[1].id);
@@ -397,6 +397,14 @@ void main() {
       expect(suggested, ['r1_0/Tx', 'r1_2/Tx']);
     },
   );
+
+  test('two videos matching the same library track queue it once', () async {
+    matched = {'r1_0', 'r1_1'};
+    await player.playFromSearch(online: _r('x'));
+    final q = handler.queueIds;
+    expect(q.where((i) => i == lib[1].id).length, 1);
+    expect(q.length, 3); // x, the library track, r1_2
+  });
 
   test('shuffle on before the pick: the queue plays in order', () async {
     await handler.setShuffleMode(AudioServiceShuffleMode.all);
