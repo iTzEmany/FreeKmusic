@@ -2020,6 +2020,12 @@ abstract class AppLocalizations {
   /// **'Non riesco a caricare i dati.'**
   String get loadFailed;
 
+  /// Notice on an artist page when the top songs could not be read: only downloaded songs play
+  ///
+  /// In it, this message translates to:
+  /// **'Top non disponibile'**
+  String get artistTopMissing;
+
   /// No description provided for @navHome.
   ///
   /// In it, this message translates to:

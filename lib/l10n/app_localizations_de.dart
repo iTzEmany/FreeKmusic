@@ -1154,6 +1154,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get loadFailed => 'Die Daten konnten nicht geladen werden.';
 
   @override
+  String get artistTopMissing => 'Top-Songs nicht verfügbar';
+
+  @override
   String get navHome => 'Start';
 
   @override

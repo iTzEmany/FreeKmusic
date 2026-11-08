@@ -466,6 +466,8 @@
   "playNextDone": "Sonará a continuación",
   "ytSearchPrompt": "Busca una canción o pega un enlace",
   "loadFailed": "No se pudieron cargar los datos.",
+  "artistTopMissing": "Top no disponible",
+  "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Inicio",
   "navSearch": "Buscar",
   "devicesTitle": "Dispositivos",

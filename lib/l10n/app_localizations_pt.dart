@@ -1155,6 +1155,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get loadFailed => 'Não foi possível carregar os dados.';
 
   @override
+  String get artistTopMissing => 'Top indisponível';
+
+  @override
   String get navHome => 'Início';
 
   @override

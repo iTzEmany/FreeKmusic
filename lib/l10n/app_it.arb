@@ -648,6 +648,8 @@
   "playNextDone": "Verrà riprodotto dopo",
   "ytSearchPrompt": "Cerca un brano o incolla un link",
   "loadFailed": "Non riesco a caricare i dati.",
+  "artistTopMissing": "Top non disponibile",
+  "@artistTopMissing": {"description": "Notice on an artist page when the top songs could not be read: only downloaded songs play"},
   "navHome": "Home",
   "navSearch": "Cerca",
   "devicesTitle": "Dispositivi",

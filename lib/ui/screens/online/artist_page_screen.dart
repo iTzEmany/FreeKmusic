@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,7 @@ import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/library_queries.dart' show ArtistSummary;
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/artist_all_songs_provider.dart';
 import '../../../providers/artist_shelves_providers.dart';
 import '../../../providers/artist_merge_providers.dart';
 import '../../../providers/selection_providers.dart';
@@ -131,6 +134,7 @@ class ArtistPageScreen extends ConsumerWidget {
               : null,
         ),
       ),
+      if (data != null) SliverToBoxAdapter(child: _playRow(ref, head, shelves ?? data.value.shelves)),
       if (ids.length > 1) SliverToBoxAdapter(child: MergedProfilesNote(count: ids.length, onTap: () => showMergedProfilesSheet(context, head.id))),
       if (suggestion != null)
         SliverToBoxAdapter(
@@ -218,6 +222,27 @@ class ArtistPageScreen extends ConsumerWidget {
         ),
       ],
       slivers: slivers,
+    );
+  }
+
+  /// Play / Shuffle of the top songs plus the downloaded ones (no player
+  /// opens, as on the genre page: the mini player shows it).
+  Widget _playRow(WidgetRef ref, YtmArtistRef head, List<YtmShelf> shelves) {
+    final link = shelves.whereType<YtmSongShelf>().map((s) => s.allSongs).nonNulls.firstOrNull;
+    final all = ref.watch(artistAllSongsProvider(
+        (name: head.name, browseId: link?.browseId, params: link?.params)));
+    final data = all.value;
+    final ctx = PlayContext(PlayContextKind.artist, head.name);
+    void play({required bool shuffle}) => unawaited(ref
+        .read(playerControllerProvider)
+        .playMixed(data!.items,
+            index: shuffle ? null : 0, context: ctx, shuffle: shuffle));
+    return ArtistPlayRow(
+      busy: all.isLoading,
+      canPlay: data != null && data.items.isNotEmpty,
+      topMissing: data?.topMissing ?? false,
+      onPlay: () => play(shuffle: false),
+      onShuffle: () => play(shuffle: true),
     );
   }
 

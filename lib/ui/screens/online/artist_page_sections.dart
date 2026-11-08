@@ -54,6 +54,64 @@ class ArtistHeader extends StatelessWidget {
   }
 }
 
+/// Play / Shuffle of every song of the artist (D-430); both wait while the
+/// list loads and stay off when there is nothing to play.
+class ArtistPlayRow extends StatelessWidget {
+  const ArtistPlayRow({
+    super.key,
+    required this.busy,
+    required this.canPlay,
+    required this.topMissing,
+    required this.onPlay,
+    required this.onShuffle,
+  });
+
+  final bool busy, canPlay, topMissing;
+  final VoidCallback onPlay, onShuffle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final on = !busy && canPlay;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          CcDims.margin, CcDims.gap4, CcDims.margin, CcDims.gap4),
+      child: Column(children: [
+        Row(children: [
+          Expanded(
+            child: FilledButton.icon(
+              key: const ValueKey('artist-play'),
+              onPressed: on ? onPlay : null,
+              icon: busy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.play_arrow_rounded),
+              label: Text(l.play),
+            ),
+          ),
+          const SizedBox(width: CcDims.gap8),
+          Expanded(
+            child: OutlinedButton.icon(
+              key: const ValueKey('artist-shuffle'),
+              onPressed: on ? onShuffle : null,
+              icon: const Icon(Icons.shuffle_rounded),
+              label: Text(l.shuffle),
+            ),
+          ),
+        ]),
+        if (topMissing && !busy)
+          Padding(
+            padding: const EdgeInsets.only(top: CcDims.gap4),
+            child: Text(l.artistTopMissing,
+                key: const ValueKey('artist-top-missing'),
+                style: Theme.of(context).textTheme.bodySmall),
+          ),
+      ]),
+    );
+  }
+}
+
 /// «Non in linea · dati del 21/10/2026» over an old copy of the page.
 class OfflineNotice extends StatelessWidget {
   const OfflineNotice({super.key, required this.fetchedAt});
