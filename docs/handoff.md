@@ -15,6 +15,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - `dart format` solo sui 4 file della 98.1 e sui file toccati: gli altri ~495 file non formattati restano così (D-434).
 - Prove sul Mi A3 via adb, poi ripulire (D-455).
 - Domande e messaggi all'utente sempre in italiano.
+- Fase 106 aggiunta l'8/11 (refactor «testi-traslitterati», D-456…D-462): traslitterazione dei testi asiatici, dopo la 103. Analisi `docs/refactor/testi-traslitterati/analisi.md`, mockup `docs/refactor/testi-traslitterati/mockup/testo-traslitterato.html`.
 
 ---
 

@@ -1426,3 +1426,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [ ] 105.3 Review di architettura
 - [ ] 105.4 Documenti
 - [ ] 105.5 Controlli di fase
+
+## Fase 106 — Testi traslitterati (`fase-106-testi-traslitterati.md`)
+- [ ] 106.1 Scrittura e coreano
+- [ ] 106.2 `romalrc` di NetEase
+- [ ] 106.3 Cache e provider
+- [ ] 106.4 Vista e menu
+- [ ] 106.5 Controlli di fase

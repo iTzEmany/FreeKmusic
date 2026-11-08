@@ -126,6 +126,7 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 103 | `fase-103-testi-e-memoria.md` | Testi a mano, sincronia spegnibile, Memoria |
 | 104 | `fase-104-daylist.md` | Daylist a fasce orarie |
 | 105 | `fase-105-chiusura-ascolto.md` | Chiusura del refactor «ascolto-quotidiano» |
+| 106 | `fase-106-testi-traslitterati.md` | Testi traslitterati in alfabeto latino (giapponese, cinese, coreano) |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 
