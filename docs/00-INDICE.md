@@ -127,6 +127,13 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 104 | `fase-104-daylist.md` | Daylist a fasce orarie |
 | 105 | `fase-105-chiusura-ascolto.md` | Chiusura del refactor «ascolto-quotidiano» |
 | 106 | `fase-106-testi-traslitterati.md` | Testi traslitterati in alfabeto latino (giapponese, cinese, coreano) |
+| 107 | `fase-107-rete-coda-libreria.md` | Refactor «coda-e-libreria»: rete (caratterizzazione della coda, ricerca, titoli) e misure di partenza sul Mi A3 |
+| 108 | `fase-108-coda-blocco-utente.md` | «Aggiungi in coda» come blocco in cima alla coda, «Riproduci dopo» tolto, Shuffle+ dopo il blocco |
+| 109 | `fase-109-titoli-che-scorrono.md` | Titoli lunghi che scorrono (player, mini player, barra desktop, Jam) |
+| 110 | `fase-110-libreria-e-playlist.md` | Statistiche in Impostazioni, «Scaricati senza playlist», ricerca nelle playlist, accenti nella ricerca |
+| 111 | `fase-111-pausa-volume-zero.md` | Pausa a volume zero (Android e desktop), interruttore in Riproduzione |
+| 112 | `fase-112-link-in-cerca.md` | Link incollati in Cerca: playlist e canali YouTube in una pagina in streaming, album YouTube Music, singolo video che suona subito |
+| 113 | `fase-113-chiusura-coda-libreria.md` | Chiusura del refactor «coda-e-libreria» |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 

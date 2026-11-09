@@ -38,6 +38,7 @@
 - Nessun pacchetto nuovo (fasi 45–54); dalla fase 69 solo `sodium` e `mqtt_client` (D-251, D-252). Schema DB: v15 nella fase 50; v16 nella fase 93 (tabelle `track_genres` e `artist_countries`, D-390); v17 nella fase 95 (tabelle `artist_aliases` e `artist_not_same`, D-402, D-414); v18 nella fase 96 (fonte dei podcast YouTube Music, D-404); ogni volta in un solo passo; poi invariato
 - Chiamate dal vivo a Deezer, MusicBrainz, NetEase, lyrics.ovh solo per salvare le risposte di test (fixture), mai nella suite
 - Telefono Mi A3 (`0d7ae9df206e`): **di test**, ci si fa quello che si vuole (installare sopra, creare, cambiare e cancellare dati e brani); Jam e prove fra dispositivi solo con altri dispositivi di test e istanze Linux avviate dall'agente (D-91)
+- Telefono Redmi Note 9 Pro (`8bbad1cd`): **di test solo per l'app** (D-502): installarla, cancellarne i dati, copiare brani di prova; **mai** toccare, leggere o cancellare i file già presenti (foto, documenti in `/sdcard/Download`); a fine prova togliere ciò che si è messo. Playlist di prova: `~/Downloads/Liked_Songs.csv` (Exportify, 2253 brani, D-503)
 - Motorola edge 40 (`ZY22HKD85K`, libreria vera) nelle fasi 50–54 e 55–57 (D-125, D-126, D-146): APK debug e prove con i brani presenti; prima chiedi all'utente un backup completo dall'app; firma diversa → fermati, backup confermato, poi `uninstall -k` e ripristino; mai cancellare file musicali
 
 ## Risparmio di token (dalla fase 51: 27,7M, metà nella chat principale)

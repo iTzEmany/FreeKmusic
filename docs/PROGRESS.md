@@ -1435,3 +1435,54 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 106.5 Cinese con il dizionario scaricato
 - [x] 106.6 Traslitterazione scritta a mano
 - [x] 106.7 Controlli di fase
+
+## Fase 107 — Rete del refactor «coda-e-libreria» (`fase-107-rete-coda-libreria.md`)
+- [ ] 107.1 Caratterizzazione di `PlayQueue`
+- [ ] 107.2 Salvataggio vecchio senza `lastQueueUser`
+- [ ] 107.3 Ricerca di oggi («e» non trova «é»)
+- [ ] 107.4 Titolo lungo con «…»
+- [ ] 107.5 Misure di partenza sul Mi A3
+- [ ] 107.6 Controlli di fase
+
+## Fase 108 — Coda: «Aggiungi in coda» come blocco (`fase-108-coda-blocco-utente.md`)
+- [ ] 108.1 Via «Riproduci dopo»
+- [ ] 108.2 Blocco in `PlayQueue`
+- [ ] 108.3 Gestore, persistenza, radio, Jam
+- [ ] 108.4 Intestazioni nel foglio della coda
+- [ ] 108.5 Shuffle+ dopo il blocco e correzione dello skip
+- [ ] 108.6 Controlli di fase
+
+## Fase 109 — Titoli che scorrono (`fase-109-titoli-che-scorrono.md`)
+- [ ] 109.1 `MarqueeText`
+- [ ] 109.2 Dove si usa
+- [ ] 109.3 Prestazioni
+- [ ] 109.4 Controlli di fase
+
+## Fase 110 — Libreria e playlist (`fase-110-libreria-e-playlist.md`)
+- [ ] 110.1 «Statistiche» fuori dalla Libreria
+- [ ] 110.2 Stream «Scaricati senza playlist»
+- [ ] 110.3 Sorgente nuova in «Tutti i brani» e voce in Libreria
+- [ ] 110.4 Ricerca nel dettaglio playlist
+- [ ] 110.5 Playlist intelligente e ricerca senza accenti
+- [ ] 110.6 Controlli di fase
+
+## Fase 111 — Pausa a volume zero (`fase-111-pausa-volume-zero.md`)
+- [ ] 111.1 Impostazione
+- [ ] 111.2 Logica unica in Dart
+- [ ] 111.3 Android: osservare il volume multimediale
+- [ ] 111.4 Desktop: cursore del volume dell'app
+- [ ] 111.5 Controlli di fase
+
+## Fase 112 — Link in Cerca (`fase-112-link-in-cerca.md`)
+- [ ] 112.1 Riconoscere i link
+- [ ] 112.2 Pagina della playlist online
+- [ ] 112.3 Album YouTube Music e singolo video
+- [ ] 112.4 Controlli di fase
+
+## Fase 113 — Chiusura del refactor «coda-e-libreria» (`fase-113-chiusura-coda-libreria.md`)
+- [ ] 113.1 Metriche di arrivo
+- [ ] 113.2 Prova sui telefoni contro i mockup
+- [ ] 113.3 Pulizia dei telefoni e dei dati di prova
+- [ ] 113.4 Review di architettura
+- [ ] 113.5 Documenti
+- [ ] 113.6 Controlli di fase

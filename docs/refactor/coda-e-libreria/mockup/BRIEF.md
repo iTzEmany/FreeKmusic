@@ -1,0 +1,10 @@
+# Brief comune dei mockup (coda-e-libreria)
+- Cartella: `docs/refactor/coda-e-libreria/mockup/`, sorella di `ascolto-quotidiano`. Ogni `.html` è autonomo: `<link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css">` + `<style>` proprio. Niente CDN, rete o immagini scaricate: copertine = blocchi colorati `.cv .c1…c7`, icone SVG `<symbol>` inline. Modelli di struttura e «prima» di oggi: `../../superfici-e-ricerca/mockup/*.html`, `../../ui-uso-quotidiano/mockup/*.html`, `../../ascolto-quotidiano/mockup/*.html`.
+- Stile approvato (D-408): token di tokens.css, Unbounded per i titoli di schermata, Figtree per il resto, accento viola #A06BFF, tema notte. Niente gradienti, ombre o emoji come icone. Testo ≥ 12px. Bersagli ≥ 48px. Animazioni con le durate dei token, ferme con `prefers-reduced-motion`. Dock flottante come nei mockup di superfici-e-ricerca.
+- Pagina: titolo, una riga di spiegazione, barra di link agli altri mockup (`indice.html` + i file di questa cartella); per ogni schermata un riquadro «prima» (2-3 righe su com'è oggi, con file:riga dal rilievo) e il «dopo» in un telefono 360×780 (`.phone`), più note numerate (`.ann`) che citano i rilievi F-NN (`../analisi.md`, F-129…F-143) e le decisioni D-NNN (`../../../decisioni.md`, D-483…D-491). Leggi analisi.md e quelle decisioni prima di disegnare.
+- Contenuti realistici in italiano (libreria ~2500 brani: Creedence Clearwater Revival, Marco Castello, Luca Carocci, Lucio Battisti, Fleetwood Mac, Calcutta, Daniela Pes, Arctic Monkeys…; podcast: «Il Post – Morning», «Tienimi Bordone», «Muschio Selvaggio»).
+- Interattività dove il compito lo chiede (pulsanti nel mockup per mostrare gli stati), JS inline breve.
+- Accessibilità: ogni pulsante solo icona ha un nome (aria-label = etichetta TalkBack prevista), contrasto AA verificato sui token.
+- Non toccare file di altri; i file comuni si leggono e basta. Nessun commit.
+
+File: `indice.html`, `titoli.html` (D-486), `libreria.html` (D-484, D-485), `playlist-ricerca.html` (D-490), `coda.html` (D-487..D-489).

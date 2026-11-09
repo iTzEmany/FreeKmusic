@@ -1,5 +1,13 @@
 # Handoff — 2026-11-09 (fase 106 chiusa: testi traslitterati; fasi 101–106 finite)
 
+## Prossimo: refactor coda-e-libreria
+- Prompt: `/obiettivo fase 107` (poi 108..113, una PR per fase; piano in D-508 e D-514, fasi in `docs/fase-107-*.md` .. `fase-113-*.md`).
+- Analisi: `docs/refactor/coda-e-libreria/analisi.md` (F-129..F-143, «Arrivo», «Rete»); decisioni D-483..D-508.
+- Mockup approvati (D-498): `docs/refactor/coda-e-libreria/mockup/titoli.html`, `libreria.html`, `playlist-ricerca.html`, `coda.html`.
+- Telefoni: Mi A3 `0d7ae9df206e` (di test, mai i file musicali); Redmi Note 9 Pro `8bbad1cd` solo per l'app (D-502): mai toccare i file già presenti, a fine prova togliere ciò che si è messo.
+- Playlist di prova: `~/Downloads/Liked_Songs.csv` (2253 brani, D-503), da importare sui telefoni e togliere a fine prova.
+- Fase 111 (pausa a volume zero): `VOLUME_CHANGED_ACTION` è `@hide`, da provare sui due telefoni.
+
 ## Stato
 **Fasi 101–106 chiuse** (PR #137–#141 e la PR della 106). Ultima fase documentata in `docs/PROGRESS.md`: la 106, testi traslitterati.
 - Sotto un testo giapponese, cinese o coreano compare la stessa riga in alfabeto latino:
