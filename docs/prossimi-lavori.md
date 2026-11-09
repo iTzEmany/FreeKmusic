@@ -206,5 +206,5 @@ Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup;
 - `FollowRepository.watchNames` ricostruisce tutta la mappa nomi a ogni scrittura su `artist_lookups`/`followed_artists` (Impostazioni → Artisti uniti si ridisegna durante l'arricchimento). Rimedio: limitarla agli ID uniti o «diversi», o `.distinct`.
 - La rilettura dei generi si ferma mentre la musica suona (D-390): per chi ascolta quasi sempre può non finire mai, e le regole di genere restano sulla colonna vecchia per i brani non riletti. Rimedio: se dopo N giorni non è finita, leggere a basso ritmo anche durante la riproduzione.
 
-## 7. Link Spotify e Deezer in Cerca (9 nov, da progettare con `/kickoff`, D-511)
-Oggi un link `open.spotify.com/…` o `deezer.com/…` incollato in Cerca diventa una ricerca testuale (F-146 in `refactor/coda-e-libreria/analisi.md`). Serve leggere il link (brano, album, playlist) e abbinare ogni brano su YouTube Music come fa l'import Exportify (fase 36), sotto il budget di rete, poi aprire la pagina della playlist online della fase 112. Da decidere nel `/kickoff`: come leggere i metadati senza account, limiti di playlist lunghe, cosa fare dei brani non trovati.
+## 7. Link Spotify e Deezer, brani da Shazam (9 nov, D-529)
+Pianificato: vedi `feature-link-e-shazam.md` e le fasi 114–116 (`fase-114-link-spotify-deezer.md`, `fase-115-salva-e-condividi.md`, `fase-116-brani-da-shazam.md`).

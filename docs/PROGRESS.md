@@ -1486,3 +1486,20 @@ mobile_scanner — fase 24 — 2026-10-19
 - [ ] 113.4 Review di architettura
 - [ ] 113.5 Documenti
 - [ ] 113.6 Controlli di fase
+
+## Fase 114 — Link Spotify e Deezer in Cerca (`fase-114-link-spotify-deezer.md`)
+- [ ] 114.1 Link, link brevi, lettori
+- [ ] 114.2a Estrarre l'abbinamento dell'import
+- [ ] 114.2b Matcher progressivo
+- [ ] 114.3 Fonti nella pagina comune e brano singolo
+- [ ] 114.4 Controlli di fase
+
+## Fase 115 — Salva in Libreria e «Condividi verso Codecore» (`fase-115-salva-e-condividi.md`)
+- [ ] 115.1 Righe in streaming nelle playlist
+- [ ] 115.2 «Salva in Libreria» e «Aggiorna»
+- [ ] 115.3 Testo condiviso e «Condividi verso Codecore»
+- [ ] 115.4 Controlli di fase
+
+## Fase 116 — Brani da Shazam (`fase-116-brani-da-shazam.md`)
+- [ ] 116.1 Lettore del testo e «Da Shazam»
+- [ ] 116.2 Controlli di fase

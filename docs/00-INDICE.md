@@ -134,6 +134,9 @@ un'unica codebase Flutter per Android, Windows e Linux. Uso personale, niente co
 | 111 | `fase-111-pausa-volume-zero.md` | Pausa a volume zero (Android e desktop), interruttore in Riproduzione |
 | 112 | `fase-112-link-in-cerca.md` | Link incollati in Cerca: playlist e canali YouTube in una pagina in streaming, album YouTube Music, singolo video che suona subito |
 | 113 | `fase-113-chiusura-coda-libreria.md` | Chiusura del refactor «coda-e-libreria» |
+| 114 | `fase-114-link-spotify-deezer.md` | Link Spotify e Deezer in Cerca: pagina in streaming con abbinamento in sottofondo (feature `feature-link-e-shazam.md`) |
+| 115 | `fase-115-salva-e-condividi.md` | Brani in streaming nelle playlist, «Salva in Libreria», «Aggiorna», «Condividi verso Codecore» (feature `feature-link-e-shazam.md`) |
+| 116 | `fase-116-brani-da-shazam.md` | Brani da Shazam in «Da Shazam» (ferma finché manca un testo vero condiviso da Shazam, R-210; feature `feature-link-e-shazam.md`) |
 
 Dopo la **Fase 3** l'app è già usabile come lettore. Le fasi 5 e 6 sono indipendenti tra loro. La fase 8 (Jam) richiede la 6.
 
