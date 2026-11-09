@@ -17,6 +17,8 @@ import '../../data/settings/settings_store.dart'
     show
         genreRereadAfterKey,
         genreRereadDoneKey,
+        handWrittenLyricsKey,
+        manualRomanizationKey,
         recogPassAfterKey,
         recogPassDoneKey,
         unsyncedLyricsKey;
@@ -156,6 +158,7 @@ Future<bool> applyPendingRestore({
   required int schemaVersion,
   File? dislikesFile,
   File? daylistFile,
+  File? romanizationCacheFile,
 }) async {
   final stagedDb = File(p.join(staging.path, _stagedDb));
   if (!File(p.join(staging.path, _readyMarker)).existsSync() ||
@@ -188,6 +191,8 @@ Future<bool> applyPendingRestore({
     await prefs.remove('playlistSorts');
     // Track ids too: the set belongs to the replaced database (D-472).
     await prefs.remove(unsyncedLyricsKey);
+    await prefs.remove(manualRomanizationKey);
+    await prefs.remove(handWrittenLyricsKey);
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {
@@ -210,6 +215,14 @@ Future<bool> applyPendingRestore({
         daylistFile.deleteSync();
       } on FileSystemException catch (e, st) {
         AppLog.w('daylist file not removed', e, st);
+      }
+    }
+    // Keyed by track id, and ids are reassigned by the restored database.
+    if (romanizationCacheFile != null && romanizationCacheFile.existsSync()) {
+      try {
+        romanizationCacheFile.deleteSync();
+      } on FileSystemException catch (e, st) {
+        AppLog.w('romanization cache not removed', e, st);
       }
     }
     final covers = Directory(p.join(staging.path, 'covers'));

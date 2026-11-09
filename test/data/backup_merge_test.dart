@@ -56,6 +56,35 @@ void main() {
     expect((b.playCount, b.lastPlayedAt, b.lyricsPlain), (9, 900, 'mine'));
   });
 
+  test('a transliteration comes only with the same text: another synced text brings none', () async {
+    await (db.update(db.tracks)..where((r) => r.title.equals('a'))).write(
+        const TracksCompanion(lyricsSynced: Value('[00:01.00]local')));
+    await (db.update(db.tracks)..where((r) => r.title.equals('b'))).write(
+        const TracksCompanion(lyricsSynced: Value('[00:01.00]same')));
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: ref('a'), lyricsSynced: '[00:01.00]theirs', romanization: 'ra'),
+      TrackUserData(ref: ref('b'), lyricsSynced: '[00:01.00]same', romanization: 'rb'),
+      TrackUserData(ref: ref('c'), lyricsSynced: '[00:01.00]filled', romanization: 'rc'),
+    ]));
+    expect(r.romanizations, {(await track('b')).id: 'rb', (await track('c')).id: 'rc'});
+    expect(r.handWritten, isEmpty, reason: 'only what the backup marks');
+  });
+
+  test('the hand-written mark comes only with the same text', () async {
+    await (db.update(db.tracks)..where((r) => r.title.equals('a'))).write(
+        const TracksCompanion(lyricsPlain: Value('local')));
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: ref('a'), lyricsPlain: 'theirs', handWritten: true),
+      TrackUserData(ref: ref('b'), lyricsPlain: 'filled', handWritten: true),
+      TrackUserData(ref: ref('c'), lyricsPlain: 'plain'),
+    ]));
+    expect(r.handWritten, {(await track('b')).id});
+    final back = TrackUserData.fromJson(
+        TrackUserData(ref: ref('b'), handWritten: true).toJson());
+    expect(back.handWritten, isTrue);
+    expect(TrackUserData(ref: ref('b')).toJson().containsKey('handWritten'), isFalse);
+  });
+
   test('a hand cover is taken only when its file is there; old backups leave covers alone', () async {
     final covers = Directory.systemTemp.createTempSync('bm');
     addTearDown(() => covers.deleteSync(recursive: true));

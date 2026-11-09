@@ -91,7 +91,8 @@ void main() {
     expect(find.text('Scrivi qualcosa prima di salvare'), findsOneWidget);
     expect((await stored(tester, h)).$1.lyricsPlain, isNull);
     await tester.enterText(find.byType(TextField), 'just words');
-    await tester.tap(find.byKey(const ValueKey('lyrics-save')));
+    // The refusal snackbar covers the lower button: use the bar's.
+    await tester.tap(find.byKey(const ValueKey('lyrics-save-bar')));
     await tester.pumpAndSettle();
     final (t, e) = await stored(tester, h);
     expect((t.lyricsPlain, t.lyricsSynced), ('just words', null));
@@ -104,7 +105,12 @@ void main() {
     await tester.tap(find.text('Scrivi o incolla'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'never saved');
+    await tester.pump();
     await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    // Unsaved text: asked first.
+    expect(find.text('Scartare le modifiche?'), findsOneWidget);
+    await tester.tap(find.text('Scarta'));
     await tester.pumpAndSettle();
     expect((await stored(tester, h)).$1.lyricsPlain, isNull);
     expect(find.byType(TextField), findsNothing);
@@ -247,6 +253,49 @@ void main() {
     await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     expect(find.text('Modifica testo'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Annulla without changes leaves at once; with changes it asks', (
+    tester,
+  ) async {
+    final h = await open(tester, plain: 'Hello');
+    await menu(tester, 'Modifica testo');
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    expect(find.text('Scartare le modifiche?'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    await menu(tester, 'Modifica testo');
+    await tester.enterText(find.byType(TextField), 'Hello there');
+    await tester.pump();
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    // Keep editing: the dialog's own Annulla.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Annulla'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('with the keyboard open the field stays and the buttons reach', (
+    tester,
+  ) async {
+    final h = await open(tester, plain: 'Hello');
+    await menu(tester, 'Modifica testo');
+    tester.view.physicalSize = const Size(500, 700);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    final field = tester.getRect(find.byType(TextField));
+    final save = tester.getRect(find.byKey(const ValueKey('lyrics-save')));
+    expect(field.height, greaterThan(100));
+    expect(save.bottom, lessThanOrEqualTo(400));
+    expect(field.bottom, lessThanOrEqualTo(save.top));
     await h.dispose(tester);
   });
 }

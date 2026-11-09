@@ -1104,6 +1104,14 @@ class TrackRepository {
     _db.tracks,
   )..where((t) => t.id.equals(id))).watchSingleOrNull();
 
+  /// Ids of every row of `tracks`, whatever its kind.
+  Future<Set<int>> allIds() async {
+    final rows = await (_db.selectOnly(
+      _db.tracks,
+    )..addColumns([_db.tracks.id])).get();
+    return {for (final r in rows) r.read(_db.tracks.id)!};
+  }
+
   /// How many music tracks there are (podcast episodes are not counted).
   Future<int> countAll() async {
     final c = _db.tracks.id.count();

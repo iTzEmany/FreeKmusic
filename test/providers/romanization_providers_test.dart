@@ -1,0 +1,315 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/chinese_dictionary_providers.dart';
+import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/online_providers.dart';
+import 'package:codecore/providers/romanization_ops.dart';
+import 'package:codecore/providers/romanization_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/services/lyrics/romanization_cache.dart';
+import 'package:codecore/services/lyrics/romanization_resolver.dart';
+import 'package:codecore/services/online/netease_lyrics_client.dart';
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _BrokenCache extends RomanizationCache {
+  _BrokenCache() : super(file: () async => File('/nonexistent/c.json'));
+
+  @override
+  Future<CachedRomanization?> get(int trackId, {String? key}) =>
+      throw StateError('boom');
+}
+
+class _Netease implements NeteaseLyricsClient {
+  String? answer;
+  var calls = 0;
+
+  @override
+  Future<String?> romanized({
+    required String title,
+    required String artist,
+    required int? durationSec,
+    CancelToken? cancel,
+  }) async {
+    calls++;
+    return answer;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+void main() {
+  late Directory dir;
+  late AppDatabase db;
+  late _Netease netease;
+  late RomanizationCache cache;
+  late ProviderContainer c;
+
+  Future<void> boot([
+    Map<String, Object> prefs = const {},
+    RomanizationCache? useCache,
+  ]) async {
+    SharedPreferences.setMockInitialValues({'autoLyrics': true, ...prefs});
+    c = ProviderContainer(
+      overrides: [
+        settingsStoreProvider.overrideWithValue(await SettingsStore.open()),
+        databaseProvider.overrideWithValue(db),
+        neteaseLyricsClientProvider.overrideWithValue(netease),
+        romanizationCacheProvider.overrideWithValue(useCache ?? cache),
+        cedictPathProvider.overrideWith((_) => p.join(dir.path, 'cedict.gz')),
+      ],
+    );
+    addTearDown(c.dispose);
+  }
+
+  Future<int> addTrack({
+    String? plain,
+    String? synced,
+    bool byUser = false,
+  }) async {
+    final id = await db
+        .into(db.tracks)
+        .insert(
+          TracksCompanion.insert(
+            path: '/m/${plain ?? synced}.mp3',
+            title: 'T',
+            albumKey: 'k',
+            format: 'mp3',
+            sizeBytes: 1,
+            mtimeMs: 1,
+            addedAt: 1,
+            artist: const Value('A'),
+            durationMs: const Value(200000),
+            lyricsPlain: Value(plain),
+            lyricsSynced: Value(synced),
+          ),
+        );
+    if (byUser) {
+      await db
+          .into(db.trackEnrich)
+          .insert(
+            TrackEnrichCompanion(
+              trackId: Value(id),
+              lyricsByUser: const Value(true),
+            ),
+          );
+    }
+    return id;
+  }
+
+  /// The first state that is neither loading nor downloading.
+  Future<RomanizationState> settled(int id) {
+    final done = Completer<RomanizationState>();
+    c.listen(romanizationProvider(id), (_, n) {
+      final v = n.value;
+      if (v != null &&
+          v.status != RomanizationStatus.loading &&
+          v.status != RomanizationStatus.downloading &&
+          !done.isCompleted) {
+        done.complete(v);
+      }
+    }, fireImmediately: true);
+    return done.future.timeout(const Duration(seconds: 5));
+  }
+
+  setUp(() {
+    dir = Directory.systemTemp.createTempSync('romprov');
+    db = AppDatabase(NativeDatabase.memory());
+    netease = _Netease();
+    cache = RomanizationCache(
+      file: () async => File(p.join(dir.path, 'cache.json')),
+    );
+  });
+  tearDown(() async {
+    await db.close();
+    dir.deleteSync(recursive: true);
+  });
+
+  test('Korean is computed from the track\'s lyrics, no lookup', () async {
+    await boot();
+    final id = await addTrack(plain: '안녕하세요');
+    final s = await settled(id);
+    expect(s.lines, ['annyeonghaseyo']);
+    expect(netease.calls, 0);
+  });
+
+  test('Japanese: the lookup answer is saved in the cache', () async {
+    netease.answer = '[00:01.00]konnichiwa';
+    await boot();
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    final s = await settled(id);
+    expect(s.source, RomanizationSource.found);
+    expect(s.lines, ['konnichiwa']);
+    expect((await cache.get(id, key: 'T\u0000A'))!.lrc, '[00:01.00]konnichiwa');
+  });
+
+  test('the setting off: off, and no lookup', () async {
+    await boot({'romanization': false});
+    final id = await addTrack(plain: '안녕하세요');
+    expect((await settled(id)).status, RomanizationStatus.off);
+  });
+
+  test('the automatic lyrics search off: no lookup', () async {
+    netease.answer = '[00:01.00]konnichiwa';
+    await boot({'autoLyrics': false});
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    expect((await settled(id)).status, RomanizationStatus.unavailable);
+    expect(netease.calls, 0);
+  });
+
+  test('hand-written lyrics: no lookup, Korean still computed', () async {
+    netease.answer = '[00:01.00]konnichiwa';
+    await boot();
+    final ja = await addTrack(synced: '[00:01.00]こんにちは');
+    final ko = await addTrack(plain: '좋아');
+    final marks = c.read(handWrittenLyricsProvider.notifier);
+    await marks.set(ja, true);
+    await marks.set(ko, true);
+    expect((await settled(ja)).status, RomanizationStatus.unavailable);
+    expect((await settled(ko)).lines, ['joa']);
+    expect(netease.calls, 0);
+  });
+
+  test(
+    'lyrics chosen with the search (by user, not typed) get the lookup',
+    () async {
+      netease.answer = '[00:01.00]konnichiwa';
+      await boot();
+      final id = await addTrack(synced: '[00:01.00]こんにちは', byUser: true);
+      expect((await settled(id)).lines, ['konnichiwa']);
+      expect(netease.calls, 1);
+    },
+  );
+
+  test('the sync switch off: the plain text of the synced lyrics is aligned by index', () async {
+    netease.answer = '[00:01.00]konnichiwa';
+    await boot();
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    await c.read(unsyncedLyricsProvider.notifier).setSynced(id, false);
+    final s = await settled(id);
+    expect(s.lines, ['konnichiwa']);
+  });
+
+  test(
+    'the sync switch off, lines at different times: by index, not by stamp',
+    () async {
+      netease.answer = '[00:02.00]a\n[00:20.00]b';
+      await boot();
+      final id = await addTrack(synced: '[00:01.00]こんにちは\n[00:09.00]さようなら');
+      await c.read(unsyncedLyricsProvider.notifier).setSynced(id, false);
+      expect((await settled(id)).lines, ['a', 'b']);
+    },
+  );
+
+  test(
+    'a text change never shows the old transliteration under the new text',
+    () async {
+      await boot();
+      final id = await addTrack(plain: '안녕하세요');
+      expect((await settled(id)).lines, ['annyeonghaseyo']);
+      final seen = <List<String?>>[];
+      c.listen(romanizationProvider(id), (_, n) {
+        final v = n.value;
+        if (v != null) seen.add(v.lines);
+      });
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
+        const TracksCompanion(lyricsPlain: Value('좋아')),
+      );
+      for (var i = 0; i < 100; i++) {
+        if (seen.any((l) => l.contains('joa'))) break;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      expect(seen, isNotEmpty);
+      expect(seen.any((l) => l.contains('annyeonghaseyo')), isFalse);
+      expect(c.read(romanizationProvider(id)).value!.lines, ['joa']);
+    },
+  );
+
+  test('a typed transliteration keeps its leading blank lines', () async {
+    await boot();
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    await c.read(romanizationOpsProvider).save(id, '\nmine');
+    expect(c.read(manualRomanizationProvider), {id: '\nmine'});
+  });
+
+  test(
+    'a typed transliteration wins over the lookup and follows save/delete/undo',
+    () async {
+      netease.answer = '[00:01.00]konnichiwa';
+      await boot();
+      final id = await addTrack(synced: '[00:01.00]こんにちは');
+      final ops = c.read(romanizationOpsProvider);
+      expect(await ops.save(id, '  '), isNull);
+      final undoSave = await ops.save(id, 'mine');
+      expect(c.read(manualRomanizationProvider), {id: 'mine'});
+      expect((await settled(id)).lines, ['mine']);
+      expect((await SettingsStore.open()).readManualRomanizations(), {
+        id: 'mine',
+      }, reason: 'saved in the settings, which the backup carries');
+
+      final undoDelete = await ops.delete(id);
+      expect(c.read(manualRomanizationProvider), isEmpty);
+      await undoDelete!();
+      expect(c.read(manualRomanizationProvider), {id: 'mine'});
+      await undoSave!();
+      expect(c.read(manualRomanizationProvider), isEmpty);
+      expect(await ops.delete(id), isNull);
+    },
+  );
+
+  test(
+    'Chinese with no romalrc: the dictionary on disk gives the pinyin',
+    () async {
+      await boot();
+      File(p.join(dir.path, 'cedict.gz')).writeAsBytesSync(
+        gzip.encode(utf8.encode('銀行 银行 [yin2 hang2] /bank/\n')),
+      );
+      final id = await addTrack(plain: '银行');
+      final s = await settled(id);
+      expect(s.source, RomanizationSource.dictionary);
+      expect(s.lines, ['yínháng']);
+      final dict = c.read(chineseDictionaryProvider);
+      expect(dict.status, ChineseDictionaryStatus.ready);
+      expect(dict.sizeBytes, greaterThan(0));
+    },
+  );
+
+  test('the dictionary is kept in memory only for Chinese text', () async {
+    await boot();
+    final ko = await addTrack(plain: '안녕하세요');
+    await settled(ko);
+    final ja = await addTrack(synced: '[00:01.00]こんにちは');
+    await settled(ja);
+    expect(c.exists(chineseDictionaryProvider), isFalse);
+    File(
+      p.join(dir.path, 'cedict.gz'),
+    ).writeAsBytesSync(gzip.encode(utf8.encode('銀行 银行 [yin2 hang2] /bank/\n')));
+    final zh = await addTrack(plain: '银行');
+    await settled(zh);
+    expect(c.exists(chineseDictionaryProvider), isTrue);
+  });
+
+  test('a failure inside the resolver shows as unavailable, not as loading forever', () async {
+    await boot({}, _BrokenCache());
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    expect((await settled(id)).status, RomanizationStatus.unavailable);
+  });
+
+  test('a ready transliteration says which text it was computed for', () async {
+    await boot();
+    final id = await addTrack(plain: '안녕하세요\n\n좋아');
+    final s = await settled(id);
+    expect(s.forText, '안녕하세요\n\n좋아');
+    expect(s.lines.length, 3);
+  });
+}

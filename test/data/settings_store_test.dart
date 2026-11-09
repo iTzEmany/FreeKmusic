@@ -8,6 +8,54 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test(
+    'the transliteration is on when absent and a saved off stays off',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      var store = await SettingsStore.open();
+      expect(store.readSettings().romanization, isTrue);
+      await store.writeSettings(
+        store.readSettings().copyWith(romanization: false),
+      );
+      store = await SettingsStore.open();
+      expect(store.readSettings().romanization, isFalse);
+    },
+  );
+
+  test(
+    'handWrittenLyrics round trips, ignores junk and is removed when empty',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'handWrittenLyrics': ['4', 'x', '4'],
+      });
+      var store = await SettingsStore.open();
+      expect(store.readHandWrittenLyrics(), {4});
+      await store.writeHandWrittenLyrics({9, 2});
+      store = await SettingsStore.open();
+      expect(store.readHandWrittenLyrics(), {2, 9});
+      await store.writeHandWrittenLyrics({});
+      expect(
+        (await SharedPreferences.getInstance()).containsKey(
+          'handWrittenLyrics',
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  test('manualRomanization: texts round trip; wrong types read as empty, without throwing', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    await store.writeManualRomanizations({3: 'a\nb'});
+    store = await SettingsStore.open();
+    expect(store.readManualRomanizations(), {3: 'a\nb'});
+    for (final bad in <Object>[5, '[1]', '{"1":5}', 'not json']) {
+      SharedPreferences.setMockInitialValues({'manualRomanization': bad});
+      store = await SettingsStore.open();
+      expect(store.readManualRomanizations(), isEmpty, reason: '$bad');
+    }
+  });
+
+  test(
     'unsyncedLyrics ignores values that are not numbers and duplicates',
     () async {
       SharedPreferences.setMockInitialValues({

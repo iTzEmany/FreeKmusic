@@ -39,6 +39,7 @@ import '../../../providers/jam_gate_providers.dart';
 import 'jam_gate_tiles.dart';
 import 'jam_remote_settings.dart';
 import 'trusted_devices_tiles.dart';
+import 'chinese_dictionary_tile.dart';
 import 'translation_models_tiles.dart';
 import 'update_tiles.dart';
 import 'daylist_settings.dart';
@@ -406,6 +407,10 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
         title: l.translationModels,
         children: const [TranslationModelsTiles()],
       ),
+    SettingsGroup(
+      title: l.chineseDictionary,
+      children: const [ChineseDictionaryTile()],
+    ),
   ];
 }
 
@@ -477,6 +482,12 @@ List<SettingsGroup> _advanced(BuildContext context, WidgetRef ref) {
           leading: const Icon(Icons.description_outlined),
           title: Text(l.licenses),
           onTap: () => showLicensePage(context: context),
+        ),
+        ListTile(
+          key: const ValueKey('about-cedict'),
+          leading: const Icon(Icons.translate_rounded),
+          title: const Text('CC-CEDICT'),
+          subtitle: SelectableText(l.aboutCedictBody),
         ),
         ...updateTiles(context, ref),
         const LogExportTile(),

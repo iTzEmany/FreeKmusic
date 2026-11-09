@@ -44,6 +44,7 @@ class AppSettings {
     this.deezerMeta = true,
     this.acoustId = true,
     this.creditsDetails = false,
+    this.romanization = true,
     this.autoCuriosities = false,
     this.showUndoSnackbar = true,
     this.deviceName,
@@ -108,6 +109,9 @@ class AppSettings {
 
   /// Deezer as a metadata source (data only); on unless the user turned it off.
   final bool deezerMeta, acoustId, creditsDetails, autoCuriosities;
+
+  /// Transliteration under CJK lyrics (D-459, D-475): on unless the user turned it off.
+  final bool romanization;
 
   /// Applies ReplayGain (track gain) at playback time.
   final bool normalizeVolume;
@@ -210,6 +214,7 @@ class AppSettings {
     bool? deezerMeta,
     bool? acoustId,
     bool? creditsDetails,
+    bool? romanization,
     bool? autoCuriosities,
     bool? showUndoSnackbar,
     String? deviceName,
@@ -261,6 +266,7 @@ class AppSettings {
     deezerMeta: deezerMeta ?? this.deezerMeta,
     acoustId: acoustId ?? this.acoustId,
     creditsDetails: creditsDetails ?? this.creditsDetails,
+    romanization: romanization ?? this.romanization,
     autoCuriosities: autoCuriosities ?? this.autoCuriosities,
     showUndoSnackbar: showUndoSnackbar ?? this.showUndoSnackbar,
     deviceName: deviceName ?? this.deviceName,
@@ -332,6 +338,12 @@ const enrichMarkKey = 'enrichMark';
 /// Tracks whose synced lyrics are switched off (track ids, D-472).
 const unsyncedLyricsKey = 'unsyncedLyrics';
 
+/// Tracks whose lyrics the user typed in the editor (track ids, D-475).
+const handWrittenLyricsKey = 'handWrittenLyrics';
+
+/// Transliterations typed by hand, as JSON `{"trackId": "text"}` (D-475).
+const manualRomanizationKey = 'manualRomanization';
+
 /// Daylist slots and the user's changes to the genre -> mood table. Not
 /// device-bound: they travel in the backup's settings.json.
 const daylistSlotsKey = 'daylistSlots';
@@ -392,6 +404,7 @@ class SettingsStore {
     deezerMeta: _prefs.getBool('deezerMeta') ?? true,
     acoustId: _prefs.getBool('acoustId') ?? true,
     creditsDetails: _prefs.getBool('creditsDetails') ?? false,
+    romanization: _prefs.getBool('romanization') ?? true,
     autoCuriosities: _prefs.getBool('autoCuriosities') ?? false,
     showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,
     deviceName: _prefs.getString('deviceName'),
@@ -475,6 +488,7 @@ class SettingsStore {
     await _prefs.setBool('deezerMeta', s.deezerMeta);
     await _prefs.setBool('acoustId', s.acoustId);
     await _prefs.setBool('creditsDetails', s.creditsDetails);
+    await _prefs.setBool('romanization', s.romanization);
     await _prefs.setBool('autoCuriosities', s.autoCuriosities);
     await _prefs.setBool('showUndoSnackbar', s.showUndoSnackbar);
     await _prefs.setBool('normalizeVolume', s.normalizeVolume);
@@ -701,6 +715,45 @@ class SettingsStore {
     unsyncedLyricsKey,
     [for (final i in ids.toList()..sort()) '$i'],
   );
+
+  /// Tracks whose lyrics were typed or pasted in the editor (track ids).
+  Set<int> readHandWrittenLyrics() =>
+      (_prefs.getStringList(handWrittenLyricsKey) ?? const [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toSet();
+
+  Future<void> writeHandWrittenLyrics(Set<int> ids) => ids.isEmpty
+      ? _prefs.remove(handWrittenLyricsKey)
+      : _prefs.setStringList(handWrittenLyricsKey, [
+          for (final i in ids.toList()..sort()) '$i',
+        ]);
+
+  /// Transliterations typed by hand: track id -> text, one line per lyrics line.
+  Map<int, String> readManualRomanizations() {
+    try {
+      final raw = _prefs.getString(manualRomanizationKey);
+      if (raw == null) return const {};
+      final m = jsonDecode(raw);
+      if (m is Map) {
+        return {
+          for (final e in m.entries)
+            if (int.tryParse('${e.key}') != null && e.value is String)
+              int.parse('${e.key}'): e.value as String,
+        };
+      }
+    } on Object catch (e, st) {
+      AppLog.w('manual transliterations unreadable, starting empty', e, st);
+    }
+    return const {};
+  }
+
+  Future<void> writeManualRomanizations(Map<int, String> texts) => texts.isEmpty
+      ? _prefs.remove(manualRomanizationKey)
+      : _prefs.setString(
+          manualRomanizationKey,
+          jsonEncode({for (final e in texts.entries) '${e.key}': e.value}),
+        );
 
   DaylistConfig readDaylistConfig() =>
       DaylistConfig.fromJsonString(_prefs.getString(daylistSlotsKey));

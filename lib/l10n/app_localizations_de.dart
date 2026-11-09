@@ -7381,4 +7381,94 @@ class AppLocalizationsDe extends AppLocalizations {
   String daylistGenreMoodLabel(Object genre, Object mood) {
     return '$genre, $mood';
   }
+
+  @override
+  String get romanization => 'Transliteration';
+
+  @override
+  String get romanizationEdit => 'Transliteration bearbeiten';
+
+  @override
+  String get romanizationDelete => 'Transliteration löschen';
+
+  @override
+  String get romanizationDeleted => 'Transliteration gelöscht';
+
+  @override
+  String get romanizationDeleteFailed =>
+      'Transliteration konnte nicht gelöscht werden';
+
+  @override
+  String get romanizationSaveFailed =>
+      'Transliteration konnte nicht gespeichert werden';
+
+  @override
+  String get romanizationEditorTitle => 'Transliteration des Songtexts';
+
+  @override
+  String get romanizationEditorLabel => 'Eine Zeile pro Zeile des Songtexts';
+
+  @override
+  String get romanizationEditorHint =>
+      'Schreibe die Transliteration, eine Zeile pro Zeile des Songtexts.';
+
+  @override
+  String get romanizationEditorInfo =>
+      'Die Zeilen folgen der Reihenfolge des Songtexts; lass eine Zeile leer, wenn sie keine Transliteration hat. Was du hier schreibst, hat Vorrang vor einer gefundenen.';
+
+  @override
+  String get romanizationEmptyWarn => 'Nichts zu speichern';
+
+  @override
+  String get romanizationSaveA11y => 'Transliteration speichern';
+
+  @override
+  String get romanizationSaved => 'Transliteration gespeichert';
+
+  @override
+  String get romanizationUnavailable =>
+      'Transliteration für diesen Text nicht verfügbar';
+
+  @override
+  String get romanizationDownloading => 'Chinesisches Wörterbuch wird geladen…';
+
+  @override
+  String get chineseDictionary => 'Chinesisches Wörterbuch';
+
+  @override
+  String get chineseDictionaryHint =>
+      'Wird für die Transliteration chinesischer Songtexte gebraucht, wenn online keine zu finden ist.';
+
+  @override
+  String get chineseDictionaryNone => 'Nicht geladen';
+
+  @override
+  String get chineseDictionaryDownload => 'Herunterladen';
+
+  @override
+  String get chineseDictionaryDownloading => 'Wird geladen…';
+
+  @override
+  String get chineseDictionaryError => 'Download fehlgeschlagen';
+
+  @override
+  String get chineseDictionaryDelete => 'Chinesisches Wörterbuch löschen';
+
+  @override
+  String get chineseDictionaryDeleteTitle => 'Chinesisches Wörterbuch löschen?';
+
+  @override
+  String get chineseDictionaryDeleteBody =>
+      'Du kannst es hier erneut herunterladen.';
+
+  @override
+  String get aboutCedictBody =>
+      'CC-CEDICT, das chinesische Wörterbuch von MDBG für die Transliteration. Lizenz CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Quelle: https://www.mdbg.net/chinese/dictionary?page=cedict';
+
+  @override
+  String get chineseDictionaryDeleteFailed =>
+      'Chinesisches Wörterbuch konnte nicht gelöscht werden';
+
+  @override
+  String get editorDiscardBody => 'Deine Änderungen wurden nicht gespeichert.';
 }

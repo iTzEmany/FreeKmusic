@@ -20,7 +20,7 @@ import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/skeleton.dart';
 import '../lyrics/lyrics_screen.dart';
-import '../lyrics/lyrics_view.dart' show lyricsAsShown;
+import '../../../services/lyrics/lyrics_shown.dart' show lyricsAsShown;
 import '../lyrics/lyrics_translate_flow.dart';
 import 'proposal_card.dart' show CoverLine;
 import 'queue_sheet.dart';

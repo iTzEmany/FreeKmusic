@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,33 +7,17 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/track_ops.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/romanization_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/translation_providers.dart';
+import '../../../services/lyrics/lyrics_shown.dart';
+import '../../../services/lyrics/romanization_resolver.dart';
 import '../../../services/online/http_client.dart';
 import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lrclib_client.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/show_msg.dart';
 import 'lyrics_editor.dart';
-
-/// Plain text of a track's lyrics (copy action), or null.
-String? lyricsPlainText(Track t) {
-  if (t.lyricsPlain != null) return t.lyricsPlain;
-  final synced = t.lyricsSynced;
-  if (synced == null) return null;
-  final lines = parseLrc(synced);
-  return lines.isEmpty ? null : lines.map((e) => e.text).join('\n');
-}
-
-/// [t] as shown: with the sync switched off for it (D-472) only the plain text
-/// is left, the synced one stays stored.
-Track lyricsAsShown(Track t, Set<int> unsynced) =>
-    unsynced.contains(t.id) && t.lyricsSynced != null
-    ? t.copyWith(
-        lyricsPlain: Value(lyricsPlainText(t)),
-        lyricsSynced: const Value(null),
-      )
-    : t;
 
 /// Synchronised lyrics that scroll by themselves (variable-height rows, the
 /// current one near the upper third), or the plain text, or a search button.
@@ -120,6 +103,28 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     }
   }
 
+  Widget _plainPair(
+    String line,
+    String? rom,
+    TextStyle? big,
+    TextStyle? small,
+  ) {
+    if (line.trim().isEmpty) return const SizedBox(height: CcDims.gap16);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: CcDims.gap8),
+      // One announcement per pair: the line, then its transliteration.
+      child: MergeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(line, style: big),
+            if (rom != null) Text(rom, style: small),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _search(Track t) async {
     final l = context.l10n;
     setState(() => _searching = true);
@@ -165,10 +170,26 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     _ensureParsed(track.lyricsSynced);
     final tr = ref.watch(lyricsTranslationProvider);
     final translated = tr != null && tr.trackId == track.id ? tr : null;
+    final rom =
+        ref.watch(romanizationProvider(track.id)).value ??
+        RomanizationState.loading;
+    // Lines worked out for another text (the stream lags a frame) are not shown.
+    final shownCount = _lines.isNotEmpty
+        ? _lines.length
+        : plainLines(track.lyricsPlain ?? '').length;
+    final romLines =
+        rom.status == RomanizationStatus.ready && rom.lines.length == shownCount
+        ? rom.lines
+        : const <String?>[];
+    final notice = switch (rom.status) {
+      RomanizationStatus.unavailable => l.romanizationUnavailable,
+      RomanizationStatus.downloading => l.romanizationDownloading,
+      _ => null,
+    };
 
     if (_lines.isNotEmpty) {
       final ctrl = ref.read(playerControllerProvider);
-      return ListView.builder(
+      final list = ListView.builder(
         controller: _scroll,
         padding: const EdgeInsets.fromLTRB(
           CcDims.margin,
@@ -183,6 +204,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           current: _index,
           onTap: () => ctrl.seek(_lines[i].time),
           text: _lines[i].text.isEmpty ? '♪' : _lines[i].text,
+          romanization: i < romLines.length ? romLines[i] : null,
           translation:
               translated != null &&
                   translated.synced &&
@@ -192,18 +214,43 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               : null,
         ),
       );
+      // Same structure with or without the notice: the list keeps its scroll.
+      return Column(
+        children: [
+          notice == null
+              ? const SizedBox.shrink()
+              : _RomanizationNotice(notice),
+          Expanded(child: list),
+        ],
+      );
     }
     final plain = track.lyricsPlain;
     if (plain != null) {
+      final big = theme.titleLarge?.copyWith(fontWeight: FontWeight.w500);
       return SingleChildScrollView(
         padding: const EdgeInsets.all(CcDims.margin),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SelectableText(
-              plain,
-              style: theme.titleLarge?.copyWith(fontWeight: FontWeight.w500),
-            ),
+            if (notice != null) _RomanizationNotice(notice),
+            if (romLines.isNotEmpty)
+              // Pairs of line and transliteration, still selectable (F-126).
+              SelectionArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final (i, line) in plainLines(plain).indexed)
+                      _plainPair(
+                        line,
+                        i < romLines.length ? romLines[i] : null,
+                        big,
+                        theme.titleMedium?.copyWith(color: cc.textMuted),
+                      ),
+                  ],
+                ),
+              )
+            else
+              SelectableText(plain, style: big),
             if (unsynced.contains(track.id) &&
                 widget.track.lyricsSynced != null) ...[
               const SizedBox(height: CcDims.gap16),
@@ -266,6 +313,7 @@ class _LyricRow extends StatefulWidget {
     required this.current,
     required this.onTap,
     required this.text,
+    this.romanization,
     this.translation,
   });
 
@@ -273,7 +321,7 @@ class _LyricRow extends StatefulWidget {
   final ValueListenable<int> current;
   final VoidCallback onTap;
   final String text;
-  final String? translation;
+  final String? romanization, translation;
 
   @override
   State<_LyricRow> createState() => _LyricRowState();
@@ -308,6 +356,11 @@ class _LyricRowState extends State<_LyricRow> {
     final theme = Theme.of(context).textTheme;
     final big = theme.titleLarge;
     final small = theme.titleMedium?.copyWith(color: context.cc.textMuted);
+    final roman = small?.copyWith(
+      fontWeight: FontWeight.w500,
+      // The current row takes the accent (alpha 1 only on that row).
+      color: _alpha == 1.0 ? context.cc.accentSoft : small.color,
+    );
     Color? fade(TextStyle? s, double a) =>
         s?.color?.withValues(alpha: a * (s.color?.a ?? 1));
     return InkWell(
@@ -318,18 +371,74 @@ class _LyricRowState extends State<_LyricRow> {
         child: TweenAnimationBuilder<double>(
           tween: Tween(end: _alpha),
           duration: ccDuration(context, CcMotion.enter),
-          builder: (_, a, _) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(widget.text, style: big?.copyWith(color: fade(big, a))),
-              if (widget.translation != null)
-                Text(
-                  widget.translation!,
-                  key: ValueKey('translated-${widget.index}'),
-                  style: small?.copyWith(color: fade(small, a)),
-                ),
-            ],
+          builder: (_, a, _) => _merge(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.text, style: big?.copyWith(color: fade(big, a))),
+                if (widget.romanization != null)
+                  Text(
+                    widget.romanization!,
+                    key: ValueKey('romanized-${widget.index}'),
+                    style: roman?.copyWith(color: fade(roman, a)),
+                  ),
+                if (widget.translation != null)
+                  Text(
+                    widget.translation!,
+                    key: ValueKey('translated-${widget.index}'),
+                    style: small?.copyWith(color: fade(small, a)),
+                  ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // One announcement for the original and its transliteration.
+  Widget _merge(Widget child) =>
+      widget.romanization == null ? child : MergeSemantics(child: child);
+}
+
+/// «Traslitterazione non disponibile» / «Scarico il dizionario cinese…».
+class _RomanizationNotice extends StatelessWidget {
+  const _RomanizationNotice(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = context.cc;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          CcDims.gap8,
+          CcDims.margin,
+          0,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: CcDims.gap12,
+          vertical: CcDims.gap8,
+        ),
+        decoration: BoxDecoration(
+          color: cc.surface1,
+          borderRadius: BorderRadius.circular(CcDims.rGrid),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, size: 18, color: cc.textMuted),
+            const SizedBox(width: CcDims.gap8),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: cc.textMuted),
+              ),
+            ),
+          ],
         ),
       ),
     );

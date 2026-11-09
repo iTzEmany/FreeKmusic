@@ -175,9 +175,8 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - `unfollowPodcast` è un flusso di dominio nella UI (`podcast_preview_screen.dart`, importato dal dettaglio) e `_toggleFollow`/`_play`/`unfollowPodcast` non mostrano errori. Rimedio: `PodcastOps.unfollow(id, deleteDownloads:)`, dialogo in un file a parte, `showMsg` sull'errore.
 
 ### Dalla review di architettura della fase 103
-- `lyricsPlainText`/`lyricsAsShown` sono funzioni pure in `lyrics_view.dart` (le importano la card e la schermata; `lyricsAsShown` fabbrica un `Track` con `copyWith`): spostarle accanto a `lrc_parser.dart` o in un `shownLyricsProvider(track)`, meglio nella 106 (la traslitterazione entra nel «come mostrato»).
 - SQL della copertina automatica ripetuto (`memory_queries.dart` e `playlist_repository.dart:84-86`): una costante condivisa.
-- `unsyncedLyrics` non viene mai potato (id AUTOINCREMENT: nessun abbinamento sbagliato, cresce soltanto).
+- `unsyncedLyrics`, `manualRomanization` e `handWrittenLyrics` non vengono mai potati (id AUTOINCREMENT: nessun abbinamento sbagliato, crescono soltanto); l'unione dei doppioni (`duplicate_repository._mergeTrackFields`) sposta il testo senza traslitterazione a mano né segni.
 
 ### Dalla review di architettura della fase 104
 - Costruzione di `RadioFill` con `radioOffReason` → `log.load` → `filter.load` in 3-4 copie (`daylist_providers.dart`, `similarFillProvider`, `genreMixProvider`) e `gate.trip()` sul 429 in `genre_mix.dart` e `similar_queue.dart`. Rimedio: un helper `radioFillFor(ref, seeds, inLibrary)` e `RadioFill.take` che fa il trip da solo.
@@ -189,6 +188,13 @@ Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup;
 - `musicLight()` porta tutta la libreria (`List<Track>`) nel main isolate e `Isolate.run` la copia a ogni build della daylist: da misurare sul Mi A3 con la fixture 50k; se costa, passare all'isolate solo le colonne che servono.
 - Dalla prova sul Mi A3 della fase 105 (preesistente): dopo un'interruzione di rete il player resta in «Caricamento…» a 0:00 per circa 77 s (`stream url source=ytdlp … ms=77321`): la risoluzione con yt-dlp aspetta a lungo quando NewPipe ha appena fallito per DNS. Rimedio: un timeout più corto per yt-dlp (o rinunciare se la rete è ancora assente) e l'errore «Impossibile riprodurre» al suo posto.
 - Dalla stessa prova, minori di TalkBack: risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
+
+### Dalla review di architettura della fase 106
+- Due giri su NetEase per lo stesso brano: la catena dei testi riceve già `romalrc` (`rv=-1`) e lo scarta, poi il resolver rifà ricerca e lyric. Rimedio: con fonte `netease` l'arricchimento salva `romalrc` in `RomanizationCache`.
+- Le «righe come mostrate» si calcolano in 4-5 punti (`lyricsLinesOf` con `split('\n')`, resolver con `\r?\n`, provider, vista, menu): con un testo CRLF la traduzione tiene un `\r`. Rimedio: una `shownLines(plain, synced)` in `lyrics_shown.dart` usata da tutti.
+- `romanization_cache.json` e `cedict/` non compaiono in Memoria e la cache non si svuota con «Svuota cache». Rimedio: aggiungerli ad `AppDataPaths` e al pulitore.
+- Download verificato duplicato (`cedict_download` e `yt_dlp_updater`: `.tmp`, sha256, rename; stesso `Dio` con 8/15 s e User-Agent in due provider). Rimedio: un `downloadVerified(...)` e un `downloadDioProvider`.
+- La tile «Scarica» del dizionario carica tutta la mappa dopo il download solo per verificarla (lo sha256 basta).
 
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».

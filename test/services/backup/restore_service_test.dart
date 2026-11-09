@@ -259,6 +259,42 @@ void main() {
       expect(prefs.getStringList('unsyncedLyrics'), ['2']);
     });
 
+    test('manualRomanization is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
+      await prefs.setString('manualRomanization', '{"9":"old"}');
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect(prefs.containsKey('manualRomanization'), isFalse);
+      await prefs.setString('manualRomanization', '{"9":"old"}');
+      await stageFullRestore(
+        await makeBackup(
+          ['n1'],
+          extraPrefs: {'manualRomanization': '{"1":"new"}'},
+        ),
+        staging,
+      );
+      expect(await apply(), isTrue);
+      expect(prefs.getString('manualRomanization'), '{"1":"new"}');
+    });
+
+    test('handWrittenLyrics is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
+      await prefs.setStringList('handWrittenLyrics', ['9']);
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect(prefs.containsKey('handWrittenLyrics'), isFalse);
+      await prefs.setStringList('handWrittenLyrics', ['9']);
+      await stageFullRestore(
+        await makeBackup(
+          ['n1'],
+          extraPrefs: {
+            'handWrittenLyrics': ['1'],
+          },
+        ),
+        staging,
+      );
+      expect(await apply(), isTrue);
+      expect(prefs.getStringList('handWrittenLyrics'), ['1']);
+    });
+
     test(
       'dislikes.json travels in the backup and replaces the current one',
       () async {
@@ -301,6 +337,28 @@ void main() {
             coversDir: covers,
             schemaVersion: schema,
             daylistFile: live,
+          ),
+          isTrue,
+        );
+        expect(live.existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'a full restore deletes the romanization cache (ids of the old database)',
+      () async {
+        final live = File(p.join(dir.path, 'live', 'romanization_cache.json'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('{"1":{"at":1}}');
+        await stageFullRestore(await makeBackup(['n1']), staging);
+        expect(
+          await applyPendingRestore(
+            dbFile: dbFile,
+            staging: staging,
+            prefs: prefs,
+            coversDir: covers,
+            schemaVersion: schema,
+            romanizationCacheFile: live,
           ),
           isTrue,
         );

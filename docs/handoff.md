@@ -1,3 +1,33 @@
+# Handoff — 2026-11-09 (fase 106 chiusa: testi traslitterati; fasi 101–106 finite)
+
+## Stato
+**Fasi 101–106 chiuse** (PR #137–#141 e la PR della 106). Ultima fase documentata in `docs/PROGRESS.md`: la 106, testi traslitterati.
+- Sotto un testo giapponese, cinese o coreano compare la stessa riga in alfabeto latino:
+  - giapponese da `romalrc` di NetEase;
+  - coreano calcolato sul telefono;
+  - cinese dal dizionario CC-CEDICT, scaricato alla prima richiesta dalla release `data-cedict-2026-11-08`.
+- La traslitterazione si scrive anche a mano, ed entra nel backup.
+- Niente versione 1.4.0 né tag: l'utente ha rinunciato al rilascio (D-480 annullata). L'app resta a 1.3.0+4.
+
+Prossimi lavori: l'utente ha in programma un `/refactor` e un `/kickoff`. Il debito aperto è in `docs/prossimi-lavori.md` §6, con le sezioni per fase 99–106.
+
+## Da sapere
+- **Formato:** i file toccati dalle fasi 98–106 sono a larghezza 80 (`dart format` di serie), con le graffe negli `if` che vanno a capo. Non usare `dart fix` sul progetto: aggiunge `fake_async` a `pubspec.yaml`. Formatta solo i file che tocchi, mai le cartelle intere.
+- **Traslitterazione:** è descritta in `docs/02-architettura.md`, sezione «Traslitterazione dei testi».
+  - Un testo «scritto a mano» è segnato da `handWrittenLyrics` (lo mette solo l'editor), non da `byUser` (D-482).
+  - Il dizionario resta in memoria solo mentre si guarda un testo cinese.
+- **Test:** con il carico della suite falliscono a volte, mentre da soli passano: `seek_characterization`, `now_playing_loading`, il test «slot changes» di `daylist_provider` e `performance_backup`.
+- **Harness dei test:** la traslitterazione si imposta con il campo `h.romanization`. Non si passa in `extraOverrides`, perché la famiglia non si può sovrascrivere due volte.
+
+## Tocca a te
+- **Mi A3:**
+  - prova il download vero del dizionario cinese con una rete stabile: Impostazioni → Online e download → Dizionario cinese → Scarica, poi esci dalle Impostazioni e controlla che il download finisca;
+  - rimetti un testo vero, con «Cerca testo», a «Blue In Green» (id 36) e a «月亮代表我的心» (id 414): ora hanno testi di prova.
+- **Linux, dalla fase 103:** `flutter run -d linux` → Memoria → tocca una cartella: si apre il file manager. Con una cartella cancellata deve comparire «Non riesco ad aprire la cartella: percorso copiato».
+- Sul Mi A3 restano il dizionario cinese installato e «Spring Day» (BTS) scaricato per la prova.
+
+---
+
 # Handoff — 2026-11-09 (fasi 101–105 chiuse: refactor «ascolto-quotidiano» finito)
 
 ## Stato

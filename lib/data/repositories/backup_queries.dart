@@ -9,7 +9,11 @@ import 'track_kinds.dart';
 
 /// Reads everything the user created into the portable format, in one
 /// read transaction and without a query per row.
-Future<UserData> collectUserData(AppDatabase db) {
+Future<UserData> collectUserData(
+  AppDatabase db, {
+  Map<int, String> romanizations = const {},
+  Set<int> handWritten = const {},
+}) {
   return db.transaction(() async {
     final folders = {
       for (final f in await db.select(db.folders).get()) f.id: f.path,
@@ -31,7 +35,8 @@ Future<UserData> collectUserData(AppDatabase db) {
       final hasLyrics =
           t.lyricsPlain != null ||
           t.lyricsSynced != null ||
-          t.curiosities != null;
+          t.curiosities != null ||
+          romanizations.containsKey(t.id);
       if (!(t.isFavorite ||
           t.userEdited ||
           hasLyrics ||
@@ -59,6 +64,8 @@ Future<UserData> collectUserData(AppDatabase db) {
           lyricsPlain: t.lyricsPlain,
           lyricsSynced: t.lyricsSynced,
           curiosities: t.curiosities,
+          romanization: romanizations[t.id],
+          handWritten: handWritten.contains(t.id),
           playCount: t.playCount,
           lastPlayedAt: t.lastPlayedAt,
           credits: portable[t.id]!.credits,
