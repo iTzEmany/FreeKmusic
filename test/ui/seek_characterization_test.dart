@@ -39,6 +39,14 @@ double _deg(double d) => d * math.pi / 180;
 Offset _at(double deg, double r) =>
     Offset(math.cos(_deg(deg)), math.sin(_deg(deg))) * r;
 
+/// Real async work (DB, files) settles in a few event-queue turns; no wall-clock sleep.
+Future<void> _settle(WidgetTester t) async {
+  for (var i = 0; i < 20; i++) {
+    await t.runAsync(() => pumpEventQueue());
+    await t.pump();
+  }
+}
+
 void main() {
   group('RingPainter.fractionAt: angle to position', () {
     // The 320 deg arc starts at -25 deg (clockwise from the right, y down)
@@ -165,9 +173,7 @@ void main() {
           ),
         ],
       );
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 100)),
-      );
+      await _settle(tester);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 

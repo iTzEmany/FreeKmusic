@@ -22,6 +22,14 @@ const _r = YtResult(
   duration: Duration(minutes: 3),
 );
 
+/// Real async work (DB, files) settles in a few event-queue turns; no wall-clock sleep.
+Future<void> _settle(WidgetTester t) async {
+  for (var i = 0; i < 20; i++) {
+    await t.runAsync(() => pumpEventQueue());
+    await t.pump();
+  }
+}
+
 void main() {
   testWidgets(
     'tap on a result: NowPlaying opens in loading with the title, then the ring goes',
@@ -49,9 +57,7 @@ void main() {
         ],
       );
       await t.tap(find.text('go'));
-      await t.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 100)),
-      );
+      await _settle(t);
       for (var i = 0; i < 3; i++) {
         await t.pump(const Duration(milliseconds: 300));
       }
@@ -63,9 +69,7 @@ void main() {
       expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
 
       gate.complete();
-      await t.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 100)),
-      );
+      await _settle(t);
       await t.pump(const Duration(milliseconds: 300));
       expect(find.byKey(const ValueKey('np-cover-loading')), findsNothing);
       expect(find.byKey(const ValueKey('np-controls-loading')), findsNothing);
