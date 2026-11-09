@@ -52,6 +52,8 @@ class TrackOps {
   Future<void> setLyrics(int id, {String? plain, String? synced, bool byUser = false}) =>
       _repo.setLyrics(id, plain: plain, synced: synced, byUser: byUser);
 
+  Future<void> clearLyrics(int id) => _repo.clearLyrics(id);
+
   Future<void> setIgnored(Set<int> ids, bool value) => _repo.setIgnored(ids, value);
 
   Future<void> deleteTrack(int id) => _repo.deleteTrack(id);

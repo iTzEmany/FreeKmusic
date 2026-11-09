@@ -836,6 +836,15 @@ class TrackRepository {
         }
       });
 
+  /// Removes the lyrics of one track and lets the automatic search try again:
+  /// the «by user» flag and the «nothing found» marks go too (D-471).
+  Future<void> clearLyrics(int id) => _db.transaction(() async {
+        await (_db.update(_db.tracks)..where((t) => t.id.equals(id)))
+            .write(const TracksCompanion(lyricsPlain: Value(null), lyricsSynced: Value(null)));
+        await (_db.update(_db.trackEnrich)..where((e) => e.trackId.equals(id))).write(const TrackEnrichCompanion(
+            lyricsByUser: Value(false), lyricsNoneAt: Value(null), syncedNoneAt: Value(null)));
+      });
+
   /// Stores the «curiosities» text of one track (null clears it).
   Future<void> setCuriosities(int id, String? text) =>
       (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(

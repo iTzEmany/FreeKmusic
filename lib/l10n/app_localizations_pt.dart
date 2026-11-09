@@ -6991,4 +6991,63 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get podcastDeleteDownloads => 'Apagar';
+
+  @override
+  String get lyricsWrite => 'Escrever ou colar';
+
+  @override
+  String get lyricsWriteA11y => 'Escrever ou colar a letra';
+
+  @override
+  String get lyricsEdit => 'Editar letra';
+
+  @override
+  String get lyricsDelete => 'Eliminar letra';
+
+  @override
+  String get lyricsSyncSwitch => 'Letra sincronizada';
+
+  @override
+  String get lyricsEditorTitle => 'Letra da faixa';
+
+  @override
+  String get lyricsEditorLabel => 'Cole ou escreva aqui';
+
+  @override
+  String get lyricsEditorHint =>
+      'Escreva ou cole a letra, uma linha por verso.';
+
+  @override
+  String get lyricsEditorInfo =>
+      'Se as linhas começam com um tempo, como [01:23.45], o texto é reconhecido como sincronizado e acompanha a faixa. Caso contrário, fica como texto simples. Guardá-lo aqui impede que a pesquisa automática o substitua.';
+
+  @override
+  String get lyricsEditorSaveA11y => 'Guardar a letra';
+
+  @override
+  String get lyricsDetectNone => 'Ainda nada para guardar';
+
+  @override
+  String lyricsDetectSynced(int count) {
+    return 'Reconhecida como sincronizada: $count linhas com tempo';
+  }
+
+  @override
+  String get lyricsDetectPlain => 'Texto simples, sem tempos';
+
+  @override
+  String get lyricsEmptyWarn => 'Escreva algo antes de guardar';
+
+  @override
+  String get lyricsSavedSynced => 'Letra guardada, sincronizada';
+
+  @override
+  String get lyricsSavedPlain => 'Letra guardada, texto simples';
+
+  @override
+  String get lyricsDeleted => 'Letra eliminada';
+
+  @override
+  String get lyricsSyncedKept =>
+      'A versão sincronizada fica guardada: volte a ativá-la no menu.';
 }

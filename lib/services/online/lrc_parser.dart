@@ -40,6 +40,15 @@ List<LrcLine> parseLrc(String raw) {
   return lines;
 }
 
+/// Lyrics typed or pasted by hand: two or more timed lines make them synced
+/// (the plain version is the text without the stamps), otherwise plain only.
+({String? plain, String? synced}) lyricsFromText(String raw) {
+  final text = raw.trim();
+  final lines = parseLrc(text);
+  if (lines.length < 2) return (plain: text.isEmpty ? null : text, synced: null);
+  return (plain: lines.map((e) => e.text).join('\n'), synced: text);
+}
+
 /// Index of the line playing at [position], or -1 before the first one.
 int currentLrcIndex(List<LrcLine> lines, Duration position) {
   var lo = 0, hi = lines.length - 1, ans = -1;

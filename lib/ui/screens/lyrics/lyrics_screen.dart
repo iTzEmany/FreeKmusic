@@ -5,10 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/settings_providers.dart';
+import '../../../providers/track_ops.dart';
+import '../../../services/online/lrc_parser.dart';
 import '../../../providers/translation_providers.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/cc_sheet.dart';
 import '../../widgets/cover_backdrop.dart';
 import '../../widgets/cover_image.dart';
+import 'lyrics_editor.dart';
 import 'lyrics_translate_flow.dart';
 import 'lyrics_view.dart';
 import '../../widgets/show_msg.dart';
@@ -84,6 +89,7 @@ class LyricsScreen extends ConsumerWidget {
                 if (context.mounted) showMsg(context, l.copied);
               },
             ),
+          _LyricsMenu(track: track, hasLyrics: plain != null),
         ],
       ),
       extendBodyBehindAppBar: false,
@@ -116,6 +122,57 @@ class _TranslateButton extends ConsumerWidget {
       onPressed: () => active
           ? ref.read(lyricsTranslationProvider.notifier).clear()
           : runTranslateFlow(context, ref, track),
+    );
+  }
+}
+
+/// Menu of the lyrics page: write or edit, the per-track sync switch (only with
+/// a synced text, D-472) and delete (D-471).
+class _LyricsMenu extends ConsumerWidget {
+  const _LyricsMenu({required this.track, required this.hasLyrics});
+
+  final Track track;
+  final bool hasLyrics;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final hasSynced = track.lyricsSynced != null && parseLrc(track.lyricsSynced!).isNotEmpty;
+    final syncOn = !ref.watch(unsyncedLyricsProvider).contains(track.id);
+    final unsynced = ref.read(unsyncedLyricsProvider.notifier);
+    return IconButton(
+      tooltip: l.moreActions,
+      icon: const Icon(Icons.more_vert_rounded),
+      onPressed: () => showCcActionSheet<void>(
+        context: context,
+        groups: [
+          [
+            CcAction(
+              icon: Icons.edit_rounded,
+              label: hasLyrics ? l.lyricsEdit : l.lyricsWrite,
+              onTap: () => openLyricsEditor(context, track),
+            ),
+            if (hasSynced)
+              CcAction(
+                icon: Icons.timer_rounded,
+                label: l.lyricsSyncSwitch,
+                selected: syncOn,
+                onTap: () => unsynced.setSynced(track.id, !syncOn),
+              ),
+            if (hasLyrics)
+              CcAction(
+                icon: Icons.delete_outline_rounded,
+                label: l.lyricsDelete,
+                destructive: true,
+                onTap: () async {
+                  await ref.read(trackOpsProvider).clearLyrics(track.id);
+                  await unsynced.setSynced(track.id, true);
+                  if (context.mounted) showMsg(context, l.lyricsDeleted);
+                },
+              ),
+          ],
+        ],
+      ),
     );
   }
 }

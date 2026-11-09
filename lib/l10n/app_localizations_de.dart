@@ -7010,4 +7010,63 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get podcastDeleteDownloads => 'Löschen';
+
+  @override
+  String get lyricsWrite => 'Schreiben oder einfügen';
+
+  @override
+  String get lyricsWriteA11y => 'Songtext schreiben oder einfügen';
+
+  @override
+  String get lyricsEdit => 'Songtext bearbeiten';
+
+  @override
+  String get lyricsDelete => 'Songtext löschen';
+
+  @override
+  String get lyricsSyncSwitch => 'Synchronisierter Songtext';
+
+  @override
+  String get lyricsEditorTitle => 'Songtext des Titels';
+
+  @override
+  String get lyricsEditorLabel => 'Hier einfügen oder schreiben';
+
+  @override
+  String get lyricsEditorHint =>
+      'Songtext schreiben oder einfügen, eine Zeile pro Vers.';
+
+  @override
+  String get lyricsEditorInfo =>
+      'Beginnen die Zeilen mit einer Zeit, etwa [01:23.45], wird der Text als synchronisiert erkannt und läuft mit dem Titel mit. Sonst bleibt er einfacher Text. Wenn du ihn hier speicherst, ersetzt ihn die automatische Suche nicht.';
+
+  @override
+  String get lyricsEditorSaveA11y => 'Songtext speichern';
+
+  @override
+  String get lyricsDetectNone => 'Noch nichts zu speichern';
+
+  @override
+  String lyricsDetectSynced(int count) {
+    return 'Als synchronisiert erkannt: $count Zeilen mit Zeit';
+  }
+
+  @override
+  String get lyricsDetectPlain => 'Einfacher Text, ohne Zeiten';
+
+  @override
+  String get lyricsEmptyWarn => 'Schreibe etwas, bevor du speicherst';
+
+  @override
+  String get lyricsSavedSynced => 'Songtext gespeichert, synchronisiert';
+
+  @override
+  String get lyricsSavedPlain => 'Songtext gespeichert, einfacher Text';
+
+  @override
+  String get lyricsDeleted => 'Songtext gelöscht';
+
+  @override
+  String get lyricsSyncedKept =>
+      'Die synchronisierte Version bleibt gespeichert: Im Menü wieder einschalten.';
 }

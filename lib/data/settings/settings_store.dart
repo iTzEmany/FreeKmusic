@@ -644,6 +644,17 @@ class SettingsStore {
     [for (final i in ids.toList()..sort()) '$i'],
   );
 
+  /// Tracks whose synced lyrics are switched off: the plain text is shown (track ids).
+  Set<int> readUnsyncedLyrics() => (_prefs.getStringList('unsyncedLyrics') ?? const [])
+      .map(int.tryParse)
+      .whereType<int>()
+      .toSet();
+
+  Future<void> writeUnsyncedLyrics(Set<int> ids) => _prefs.setStringList(
+    'unsyncedLyrics',
+    [for (final i in ids.toList()..sort()) '$i'],
+  );
+
   SavedPlayback readPlayback() {
     final ids = (_prefs.getStringList('lastQueueIds') ?? const [])
         .map(int.tryParse)

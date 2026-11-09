@@ -6961,4 +6961,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get podcastDeleteDownloads => 'Delete';
+
+  @override
+  String get lyricsWrite => 'Write or paste';
+
+  @override
+  String get lyricsWriteA11y => 'Write or paste the lyrics';
+
+  @override
+  String get lyricsEdit => 'Edit lyrics';
+
+  @override
+  String get lyricsDelete => 'Delete lyrics';
+
+  @override
+  String get lyricsSyncSwitch => 'Synced lyrics';
+
+  @override
+  String get lyricsEditorTitle => 'Track lyrics';
+
+  @override
+  String get lyricsEditorLabel => 'Paste or write here';
+
+  @override
+  String get lyricsEditorHint =>
+      'Write or paste the lyrics, one line per verse.';
+
+  @override
+  String get lyricsEditorInfo =>
+      'If lines start with a time, like [01:23.45], the text is recognised as synced and follows the track. Otherwise it stays plain text. Saving it here stops the automatic search from replacing it.';
+
+  @override
+  String get lyricsEditorSaveA11y => 'Save the lyrics';
+
+  @override
+  String get lyricsDetectNone => 'Nothing to save yet';
+
+  @override
+  String lyricsDetectSynced(int count) {
+    return 'Recognised as synced: $count timed lines';
+  }
+
+  @override
+  String get lyricsDetectPlain => 'Plain text, no timestamps';
+
+  @override
+  String get lyricsEmptyWarn => 'Write something before saving';
+
+  @override
+  String get lyricsSavedSynced => 'Lyrics saved, synced';
+
+  @override
+  String get lyricsSavedPlain => 'Lyrics saved, plain text';
+
+  @override
+  String get lyricsDeleted => 'Lyrics deleted';
+
+  @override
+  String get lyricsSyncedKept =>
+      'The synced version is kept: turn it back on from the menu.';
 }

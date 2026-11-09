@@ -43,3 +43,18 @@ class SettingsNotifier extends Notifier<AppSettings> {
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(
   SettingsNotifier.new,
 );
+
+/// Tracks whose «Testo sincronizzato» switch is off (D-472), kept in the settings.
+class UnsyncedLyricsNotifier extends Notifier<Set<int>> {
+  @override
+  Set<int> build() => ref.read(settingsStoreProvider).readUnsyncedLyrics();
+
+  Future<void> setSynced(int id, bool synced) async {
+    state = synced ? ({...state}..remove(id)) : {...state, id};
+    await ref.read(settingsStoreProvider).writeUnsyncedLyrics(state);
+  }
+}
+
+final unsyncedLyricsProvider = NotifierProvider<UnsyncedLyricsNotifier, Set<int>>(
+  UnsyncedLyricsNotifier.new,
+);
