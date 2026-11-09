@@ -5,10 +5,8 @@ import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/settings_providers.dart';
 import '../../../providers/track_ops.dart';
-import '../../../providers/translation_providers.dart';
-import '../../../services/online/lrc_parser.dart';
+import '../../../services/online/lrc_parser.dart' show lyricsFromText, parseLrc;
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/show_msg.dart';
@@ -44,31 +42,24 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
   Future<void> _save() async {
     if (_saving) return;
     final l = context.l10n;
-    final parsed = lyricsFromText(_ctrl.text);
-    if (parsed.plain == null && parsed.synced == null) {
-      showMsg(context, l.lyricsEmptyWarn);
-      return;
-    }
-    _saving = true;
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final ops = ref.read(trackOpsProvider);
-    final unsynced = ref.read(unsyncedLyricsProvider.notifier);
-    final translation = ref.read(lyricsTranslationProvider.notifier);
-    final id = widget.track.id;
+    _saving = true;
     try {
-      await ops.setLyrics(id, plain: parsed.plain, synced: parsed.synced, byUser: true);
-      // A new text starts with the sync on, and an old translation no longer fits.
-      await unsynced.setSynced(id, true);
-      translation.clearFor(id);
+      final synced = await ops.saveLyricsText(widget.track.id, _ctrl.text);
+      if (synced == null) {
+        _saving = false;
+        showMsgOn(messenger, l.lyricsEmptyWarn);
+        return;
+      }
+      nav.pop();
+      showMsgOn(messenger, synced ? l.lyricsSavedSynced : l.lyricsSavedPlain);
     } on Object catch (e, st) {
       AppLog.e('save lyrics failed', e, st);
       _saving = false;
       showMsgOn(messenger, l.lyricsSaveFailed);
-      return;
     }
-    nav.pop();
-    showMsgOn(messenger, parsed.synced != null ? l.lyricsSavedSynced : l.lyricsSavedPlain);
   }
 
   @override
@@ -91,12 +82,19 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap24),
         children: [
+          Text(l.lyricsEditorLabel, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+          const SizedBox(height: 6),
           TextField(
             controller: _ctrl,
             minLines: 11,
             maxLines: null,
             keyboardType: TextInputType.multiline,
-            decoration: InputDecoration(labelText: l.lyricsEditorLabel, hintText: l.lyricsEditorHint),
+            decoration: InputDecoration(
+              hintText: l.lyricsEditorHint,
+              border: _border(Colors.transparent),
+              enabledBorder: _border(Colors.transparent),
+              focusedBorder: _border(cc.accent),
+            ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: CcDims.gap8),
@@ -116,6 +114,10 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
       ),
     );
   }
+
+  // Small radius, not the theme's pill: a multi-line field.
+  OutlineInputBorder _border(Color c) =>
+      OutlineInputBorder(borderRadius: BorderRadius.circular(CcDims.rCard), borderSide: BorderSide(color: c));
 
   String _detection(AppLocalizations l) {
     final text = _ctrl.text;

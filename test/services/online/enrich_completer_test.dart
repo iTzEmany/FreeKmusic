@@ -617,6 +617,17 @@ void main() {
       expect((e.details, e.deezerId, e.metaNoneAt, e.lyricsByUser, e.lyricsNoneAt), ('d', 7, 3, false, null));
     });
 
+    test('restoreLyrics puts back the texts, the flag and both marks as they were', () async {
+      final id = await track(plain: 'la', synced: '[00:01.00]la');
+      await r.db.into(r.db.trackEnrich).insert(TrackEnrichCompanion(
+          trackId: Value(id), lyricsNoneAt: const Value(5), syncedNoneAt: const Value(6)));
+      await r.repo.restoreLyrics(id, await r.repo.clearLyrics(id));
+      final t = await (r.db.select(r.db.tracks)..where((t) => t.id.equals(id))).getSingle();
+      final e = (await r.credits.enrichOf(id))!;
+      expect((t.lyricsPlain, t.lyricsSynced), ('la', '[00:01.00]la'));
+      expect((e.lyricsByUser, e.lyricsNoneAt, e.syncedNoneAt), (false, 5, 6));
+    });
+
     test('after: only ids above the bookmark', () async {
       final ids = [for (var n = 0; n < 4; n++) await track()];
       expect(

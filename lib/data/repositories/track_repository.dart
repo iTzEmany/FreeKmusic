@@ -21,6 +21,9 @@ import 'track_kinds.dart';
 
 enum SortOption { defaultOrder, title, artist, album, year, addedAt, duration }
 
+/// The lyrics of a track and its enrichment marks, as [TrackRepository.clearLyrics] found them.
+typedef LyricsSnapshot = ({String? plain, String? synced, bool byUser, int? noneAt, int? syncedNoneAt});
+
 class TrackRepository {
   TrackRepository(this._db);
 
@@ -837,12 +840,30 @@ class TrackRepository {
       });
 
   /// Removes the lyrics of one track and lets the automatic search try again:
-  /// the «by user» flag and the «nothing found» marks go too (D-471).
-  Future<void> clearLyrics(int id) => _db.transaction(() async {
+  /// the «by user» flag and the «nothing found» marks go too (D-471). Returns
+  /// what was there, for [restoreLyrics].
+  Future<LyricsSnapshot> clearLyrics(int id) => _db.transaction(() async {
+        final t = await (_db.select(_db.tracks)..where((t) => t.id.equals(id))).getSingle();
+        final e = await (_db.select(_db.trackEnrich)..where((e) => e.trackId.equals(id))).getSingleOrNull();
         await (_db.update(_db.tracks)..where((t) => t.id.equals(id)))
             .write(const TracksCompanion(lyricsPlain: Value(null), lyricsSynced: Value(null)));
         await (_db.update(_db.trackEnrich)..where((e) => e.trackId.equals(id))).write(const TrackEnrichCompanion(
             lyricsByUser: Value(false), lyricsNoneAt: Value(null), syncedNoneAt: Value(null)));
+        return (
+          plain: t.lyricsPlain,
+          synced: t.lyricsSynced,
+          byUser: e?.lyricsByUser ?? false,
+          noneAt: e?.lyricsNoneAt,
+          syncedNoneAt: e?.syncedNoneAt,
+        );
+      });
+
+  /// Puts back exactly what [clearLyrics] took away.
+  Future<void> restoreLyrics(int id, LyricsSnapshot s) => _db.transaction(() async {
+        await (_db.update(_db.tracks)..where((t) => t.id.equals(id)))
+            .write(TracksCompanion(lyricsPlain: Value(s.plain), lyricsSynced: Value(s.synced)));
+        await (_db.update(_db.trackEnrich)..where((e) => e.trackId.equals(id))).write(TrackEnrichCompanion(
+            lyricsByUser: Value(s.byUser), lyricsNoneAt: Value(s.noneAt), syncedNoneAt: Value(s.syncedNoneAt)));
       });
 
   /// Stores the «curiosities» text of one track (null clears it).

@@ -34,3 +34,10 @@
 - **D-472** (103.2): «Testo sincronizzato» spento vale ovunque, card del player compresa; con testo solo semplice l'interruttore non compare.
 
 ## Esiti
+- 103.1 (2026-11-09): «Scrivi o incolla» e «Modifica testo» con editor (`lyricsFromText`: sincronizzato solo se più di metà delle righe iniziano con un tempo; altrimenti testo integrale), «Elimina testo» con Annulla che rimette tutto com'era (D-471) e ricerca che riparte se l'arricchimento è acceso; salvataggio ed eliminazione in `TrackOps`.
+- 103.2: `unsyncedLyrics` in `SettingsStore` e nel backup (azzerato dalla sostituzione totale prima di applicare il file); spento vale nella vista, nella card del player e nella traduzione, con l'avviso «La versione sincronizzata è conservata»; menu del testo pubblico (`LyricsMenuButton`) anche nel pannello laterale desktop.
+- 103.3: `autoCoverKey` in Memoria come `playlist_sheet`, anche per playlist con brani mancanti.
+- 103.4: `FolderOpener` (Linux `xdg-open` con codice d'uscita, Windows `explorer` se la cartella esiste, Android `DocumentsContract`); ripiego con percorso copiato e avviso.
+- Review: Sonnet su testi (8 rilievi: ripristino, ricerca che riparte, traduzione, LRC) e Memoria (6: codice d'uscita, URI Android, TalkBack), scheggia di passo (LRC che perdeva testo, URI di `/storage/emulated/10`): corretti con i test.
+- 103.5: `flutter analyze` pulito, test mirati verdi; review di architettura Sonnet (scritture spostate in `TrackOps`, Annulla corretto, menu pubblico per la 106, 3 voci di debito). Prova sul Mi A3: tutti i flussi (cartella interna aperta in DocumentsUI, ripiego su `Android/data`); corretti dopo la prova il bordo dell'editor e la traduzione dopo aver riacceso la sincronia. Su Linux build riuscita, ma l'apertura con `xdg-open` non è stata provata (lancerebbe il file manager sul desktop vero): in «Tocca a te».
+

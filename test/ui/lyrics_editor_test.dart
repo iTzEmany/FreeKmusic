@@ -1,6 +1,8 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
 import 'package:codecore/ui/screens/lyrics/lyrics_screen.dart';
+import 'package:codecore/ui/shell/side_panel.dart';
+import 'package:codecore/providers/nav_providers.dart' show SidePanel;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -134,7 +136,7 @@ void main() {
     await tester.pumpAndSettle();
     final (t, e) = await stored(tester, h);
     expect((t.lyricsPlain, t.lyricsSynced), ('Hello\nWorld', _lrc));
-    expect(e?.lyricsByUser, isTrue);
+    expect(e?.lyricsByUser ?? false, isFalse, reason: 'it was not the user\'s text before');
     expect(h.store.readUnsyncedLyrics(), {1});
     await h.dispose(tester);
   });
@@ -143,6 +145,23 @@ void main() {
     final h = await open(tester, plain: 'Hello\nWorld', synced: _lrc, unsynced: {1});
     expect(find.textContaining('Hello'), findsOneWidget);
     expect(find.textContaining('La versione sincronizzata è conservata'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the desktop side panel has the lyrics menu', (tester) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    await tester.runAsync(() async {
+      await h.db.update(h.db.tracks).write(const TracksCompanion(lyricsPlain: Value('Hello')));
+      await h.handler.playQueue([(await h.db.select(h.db.tracks).get()).single.id], 0);
+    });
+    await h.pump(tester, const Scaffold(body: SidePanelView(panel: SidePanel.lyrics)));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.pumpAndSettle();
+    expect(find.text('Modifica testo'), findsOneWidget);
     await h.dispose(tester);
   });
 }

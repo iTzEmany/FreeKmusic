@@ -13,7 +13,7 @@ import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
 import '../shuffle_plus/dislike_store.dart';
 import 'user_data.dart';
-import '../../data/settings/settings_store.dart' show genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey;
+import '../../data/settings/settings_store.dart' show genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey, unsyncedLyricsKey;
 import 'backup_service.dart';
 
 class RestoreException implements Exception {
@@ -167,7 +167,7 @@ Future<bool> applyPendingRestore({
     // the key must not leave sorts pointing at other playlists (D-424).
     await prefs.remove('playlistSorts');
     // Track ids too: the set belongs to the replaced database (D-472).
-    await prefs.remove('unsyncedLyrics');
+    await prefs.remove(unsyncedLyricsKey);
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {

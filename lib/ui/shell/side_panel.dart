@@ -5,6 +5,7 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../services/audio/online_entries.dart' show isOnlineId;
+import '../screens/lyrics/lyrics_menu.dart';
 import '../screens/lyrics/lyrics_screen.dart';
 import '../screens/now_playing/now_playing_cards.dart';
 import '../screens/now_playing/queue_sheet.dart';
@@ -38,6 +39,10 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
         ref.watch(currentTrackProvider).value;
     // A streamed track shows the info of its shadow row (real id).
     final info = track != null && isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
+    // The lyrics page reads a streamed track on its shadow row too.
+    final lyricsTrack = widget.panel == SidePanel.lyrics
+        ? ref.watch(currentShadowRowProvider) ?? ref.watch(liveCurrentTrackProvider).value
+        : null;
     final title = switch (widget.panel) {
       SidePanel.queue => l.queue,
       SidePanel.lyrics => l.lyrics,
@@ -84,6 +89,7 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
+                  if (lyricsTrack != null) LyricsMenuButton(track: lyricsTrack),
                   IconButton(
                     tooltip: l.close,
                     icon: const Icon(Icons.close_rounded),
