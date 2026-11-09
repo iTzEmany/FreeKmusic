@@ -85,3 +85,13 @@ RomanizationMatch matchRomanizationByIndex(
   }
   return RomanizationMatch(out, idx.length);
 }
+
+/// Transliteration typed by hand (plain text, one line per original line,
+/// no stamps) against the original lines: by index among the non-empty lines.
+RomanizationMatch matchManualRomanization(List<String> original, String text) {
+  final asLrc = [
+    for (final l in text.split(RegExp(r'\r?\n')))
+      if (l.trim().isNotEmpty) '[00:00.00]${l.trim()}',
+  ].join('\n');
+  return matchRomanizationByIndex(original, asLrc);
+}

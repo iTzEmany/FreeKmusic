@@ -286,6 +286,42 @@ void main() {
     );
   }
 
+  test('hand-typed transliterations travel in settings.json and user_data.json; a backup without them stays valid', () async {
+    final out = p.join(dir.path, 'rom.zip');
+    // Track 3 has no other user data: the transliteration alone must keep it in.
+    await prefs.setString(
+      'manualRomanization',
+      '{"1":"la la","3":"ra ra"}',
+    );
+    await service().createBackup(out);
+    final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
+    Map<String, dynamic> read(String n) =>
+        jsonDecode(utf8.decode(zip.findFile(n)!.content as List<int>))
+            as Map<String, dynamic>;
+    expect(read('settings.json')['manualRomanization'], {
+      't': 'string',
+      'v': '{"1":"la la","3":"ra ra"}',
+    });
+    final fresh = await freshLibrary();
+    final report = await mergeBackup(
+      File(out),
+      fresh,
+      Directory(p.join(dir.path, 'rom-covers'))..createSync(),
+    );
+    expect(report.romanizations, {1: 'la la', 3: 'ra ra'});
+
+    // Older backup: no field at all.
+    await prefs.remove('manualRomanization');
+    await service().createBackup(out);
+    final older = await mergeBackup(
+      File(out),
+      await freshLibrary(),
+      Directory(p.join(dir.path, 'rom-covers'))..createSync(),
+    );
+    expect(older.romanizations, isEmpty);
+    expect(older.recognized, greaterThan(0));
+  });
+
   test('a backup in today\'s format restores into a fresh library with the same user data', () async {
     final fresh = await freshLibrary();
     await restoreInto(

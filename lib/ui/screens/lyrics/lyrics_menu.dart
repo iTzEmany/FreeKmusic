@@ -10,7 +10,7 @@ import '../../../services/online/lrc_parser.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/show_msg.dart';
 import 'lyrics_editor.dart';
-import 'lyrics_view.dart' show lyricsPlainText;
+import '../../../services/lyrics/lyrics_shown.dart' show lyricsPlainText;
 
 /// Menu of the lyrics (page and desktop side panel): write or edit, the
 /// per-track sync switch (only with a synced text, D-472) and delete (D-471).

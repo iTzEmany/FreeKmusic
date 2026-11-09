@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,31 +9,13 @@ import '../../../providers/online_providers.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/translation_providers.dart';
+import '../../../services/lyrics/lyrics_shown.dart';
 import '../../../services/online/http_client.dart';
 import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lrclib_client.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/show_msg.dart';
 import 'lyrics_editor.dart';
-
-/// Plain text of a track's lyrics (copy action), or null.
-String? lyricsPlainText(Track t) {
-  if (t.lyricsPlain != null) return t.lyricsPlain;
-  final synced = t.lyricsSynced;
-  if (synced == null) return null;
-  final lines = parseLrc(synced);
-  return lines.isEmpty ? null : lines.map((e) => e.text).join('\n');
-}
-
-/// [t] as shown: with the sync switched off for it (D-472) only the plain text
-/// is left, the synced one stays stored.
-Track lyricsAsShown(Track t, Set<int> unsynced) =>
-    unsynced.contains(t.id) && t.lyricsSynced != null
-    ? t.copyWith(
-        lyricsPlain: Value(lyricsPlainText(t)),
-        lyricsSynced: const Value(null),
-      )
-    : t;
 
 /// Synchronised lyrics that scroll by themselves (variable-height rows, the
 /// current one near the upper third), or the plain text, or a search button.

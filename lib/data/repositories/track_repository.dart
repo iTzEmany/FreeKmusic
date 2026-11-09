@@ -1031,6 +1031,13 @@ class TrackRepository {
     );
   });
 
+  /// True when the user typed or chose the lyrics of [id] (the enrichment never replaces them).
+  Future<bool> lyricsByUser(int id) async =>
+      (await (_db.select(
+        _db.trackEnrich,
+      )..where((e) => e.trackId.equals(id))).getSingleOrNull())?.lyricsByUser ??
+      false;
+
   /// Puts back exactly what [clearLyrics] took away.
   Future<void> restoreLyrics(int id, LyricsSnapshot s) =>
       _db.transaction(() async {

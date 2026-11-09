@@ -62,3 +62,34 @@ final unsyncedLyricsProvider =
     NotifierProvider<UnsyncedLyricsNotifier, Set<int>>(
       UnsyncedLyricsNotifier.new,
     );
+
+/// Transliterations typed by hand, track id -> text (D-475), kept in the
+/// settings so they travel in the backup like the other user data.
+class ManualRomanizationNotifier extends Notifier<Map<int, String>> {
+  @override
+  Map<int, String> build() =>
+      ref.read(settingsStoreProvider).readManualRomanizations();
+
+  /// [text] null removes the entry.
+  Future<void> setText(int id, String? text) =>
+      _write(text == null ? ({...state}..remove(id)) : {...state, id: text});
+
+  /// Adds what [texts] bring for tracks that have none (the backup merge).
+  Future<void> addMissing(Map<int, String> texts) {
+    final fresh = {
+      for (final e in texts.entries)
+        if (!state.containsKey(e.key)) e.key: e.value,
+    };
+    return fresh.isEmpty ? Future.value() : _write({...state, ...fresh});
+  }
+
+  Future<void> _write(Map<int, String> next) async {
+    state = next;
+    await ref.read(settingsStoreProvider).writeManualRomanizations(next);
+  }
+}
+
+final manualRomanizationProvider =
+    NotifierProvider<ManualRomanizationNotifier, Map<int, String>>(
+      ManualRomanizationNotifier.new,
+    );

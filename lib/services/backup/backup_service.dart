@@ -14,6 +14,7 @@ import '../../data/repositories/track_kinds.dart';
 import '../../data/settings/jam_secret_store.dart';
 import '../../data/settings/settings_store.dart'
     show
+        SettingsStore,
         enrichMarkKey,
         genreRereadAfterKey,
         genreRereadDoneKey,
@@ -128,7 +129,10 @@ class BackupService {
       final dbCopy = p.join(tmp.path, 'codecore.sqlite');
       await db.customStatement('VACUUM INTO ?', [dbCopy]);
 
-      final data = await collectUserData(db);
+      final data = await collectUserData(
+        db,
+        romanizations: SettingsStore(prefs).readManualRomanizations(),
+      );
       final trackCount = (await (db.select(
         db.tracks,
       )..where((t) => t.kind.isNotValue(kStreamKind))).get()).length;

@@ -17,6 +17,7 @@ import '../../data/settings/settings_store.dart'
     show
         genreRereadAfterKey,
         genreRereadDoneKey,
+        manualRomanizationKey,
         recogPassAfterKey,
         recogPassDoneKey,
         unsyncedLyricsKey;
@@ -188,6 +189,7 @@ Future<bool> applyPendingRestore({
     await prefs.remove('playlistSorts');
     // Track ids too: the set belongs to the replaced database (D-472).
     await prefs.remove(unsyncedLyricsKey);
+    await prefs.remove(manualRomanizationKey);
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {

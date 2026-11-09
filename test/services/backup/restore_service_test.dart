@@ -259,6 +259,23 @@ void main() {
       expect(prefs.getStringList('unsyncedLyrics'), ['2']);
     });
 
+    test('manualRomanization is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
+      await prefs.setString('manualRomanization', '{"9":"old"}');
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect(prefs.containsKey('manualRomanization'), isFalse);
+      await prefs.setString('manualRomanization', '{"9":"old"}');
+      await stageFullRestore(
+        await makeBackup(
+          ['n1'],
+          extraPrefs: {'manualRomanization': '{"1":"new"}'},
+        ),
+        staging,
+      );
+      expect(await apply(), isTrue);
+      expect(prefs.getString('manualRomanization'), '{"1":"new"}');
+    });
+
     test(
       'dislikes.json travels in the backup and replaces the current one',
       () async {

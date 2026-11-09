@@ -37,12 +37,18 @@ class BackupOps {
       stageFullRestore(zip, await restoreStagingDir());
 
   /// Merges the zip into the live library.
-  Future<MergeReport> merge(File zip) async => mergeBackup(
-    zip,
-    _ref.read(databaseProvider),
-    Directory(await coversDir()),
-    dislikes: _ref.read(dislikeStoreProvider),
-  );
+  Future<MergeReport> merge(File zip) async {
+    final report = await mergeBackup(
+      zip,
+      _ref.read(databaseProvider),
+      Directory(await coversDir()),
+      dislikes: _ref.read(dislikeStoreProvider),
+    );
+    await _ref
+        .read(manualRomanizationProvider.notifier)
+        .addMissing(report.romanizations);
+    return report;
+  }
 }
 
 final backupOpsProvider = Provider<BackupOps>(BackupOps.new);
