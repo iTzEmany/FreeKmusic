@@ -185,12 +185,14 @@ class PodcastOps {
   Future<void> markPlayed(int episodeId, bool played) async {
     final repo = _ref.read(podcastRepositoryProvider);
     await repo.markPlayed(episodeId, played, now: nowMs());
-    // The player may have it open: it must not write the place again.
-    final trackId = played
-        ? (await repo.episodeById(episodeId))?.trackId
-        : null;
-    if (trackId != null) {
-      _ref.read(audioHandlerProvider).episodeHeardByHand(trackId);
+    // The player may have it open: by hand «heard» stops writing the place, «not heard» lets it again.
+    final trackId = (await repo.episodeById(episodeId))?.trackId;
+    if (trackId == null) return;
+    final handler = _ref.read(audioHandlerProvider);
+    if (played) {
+      handler.episodeHeardByHand(trackId);
+    } else {
+      handler.episodeUnheardByHand(trackId);
     }
   }
 }

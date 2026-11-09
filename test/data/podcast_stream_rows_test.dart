@@ -4,6 +4,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/podcast_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/services/stream/stream_key.dart';
 import 'package:codecore/services/podcast/podcast_models.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -132,6 +133,25 @@ void main() {
         );
       },
     );
+
+    test('the same video in two YouTube Music shows: two rows, both stream the video', () async {
+      final p1 = await show('https://music.youtube.com/browse/M1', [
+        _ep('v', 'https://music.youtube.com/watch?v=v'),
+      ], source: kPodcastSourceYtm);
+      final p2 = await show('https://music.youtube.com/browse/M2', [
+        _ep('v', 'https://music.youtube.com/watch?v=v'),
+      ], source: kPodcastSourceYtm);
+      final a = (await repo.playableTrack(await epId(p1, 'v')))!;
+      final b = (await repo.playableTrack(await epId(p2, 'v')))!;
+      expect(a.id, isNot(b.id));
+      expect(
+        [
+          for (final t in [a, b]) keyOfStreamPath(t.path),
+        ],
+        ['youtube:v', 'youtube:v'],
+        reason: 'the player must not ask YouTube for «v#cc-ep=…»',
+      );
+    });
 
     test(
       'a row with that address that no episode links is taken over',

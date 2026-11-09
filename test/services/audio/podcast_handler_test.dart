@@ -416,6 +416,23 @@ void main() {
       expect(resumed, isEmpty, reason: 'and the heard mark would go');
     });
 
+    test('marked as heard by hand and then as not heard: the place is written again and the end counts', () async {
+      await fresh();
+      await handler.playQueue([remoteId], 0);
+      await settle();
+      handler.episodeHeardByHand(remoteId);
+      handler.episodeUnheardByHand(remoteId);
+      await at(const Duration(minutes: 5));
+      await handler.pause();
+      await settle();
+      expect(await saved(remoteId), const Duration(minutes: 5).inMilliseconds);
+      await handler.play();
+      await at(const Duration(minutes: 59, seconds: 40));
+      await handler.pause();
+      await settle();
+      expect(heard, [remoteId]);
+    });
+
     group(
       'with the network gone, the last place that was really reached stays',
       () {

@@ -1918,6 +1918,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 
+  /// The user took the heard mark off [trackId]: this listen saves its place and ends as heard again.
+  void episodeUnheardByHand(int trackId) {
+    _heard.remove(trackId);
+    if (_noSaveId == trackId) _noSaveId = null;
+  }
+
   void _markResumed(Track episode) {
     if (!_resumed.add(episode.id)) return;
     _heard.remove(episode.id);
