@@ -27,7 +27,9 @@ class LyricsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     // A streamed track reads and saves on its shadow row (real id).
-    final track = ref.watch(currentShadowRowProvider) ?? ref.watch(liveCurrentTrackProvider).value;
+    final track =
+        ref.watch(currentShadowRowProvider) ??
+        ref.watch(liveCurrentTrackProvider).value;
     if (track == null) {
       return Scaffold(
         backgroundColor: embedded ? Colors.transparent : context.cc.bg,
@@ -76,7 +78,9 @@ class LyricsScreen extends ConsumerWidget {
         ),
         actions: [
           if (plain != null && ref.watch(lyricsTranslatorProvider) != null)
-            _TranslateButton(track: lyricsAsShown(track, ref.watch(unsyncedLyricsProvider))),
+            _TranslateButton(
+              track: lyricsAsShown(track, ref.watch(unsyncedLyricsProvider)),
+            ),
           if (plain != null)
             IconButton(
               tooltip: l.copy,

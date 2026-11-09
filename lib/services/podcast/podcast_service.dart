@@ -40,13 +40,16 @@ class PodcastService {
     ApplePodcasts? apple,
     RateLimiter? searchLimiter,
     DateTime Function()? now,
-  })  : _now = now ?? DateTime.now,
-        apple = apple ??
-            ApplePodcasts(
-          web: web,
-          limiter: searchLimiter ?? RateLimiter(minGap: const Duration(seconds: 1)),
-          now: now ?? DateTime.now,
-        );
+  }) : _now = now ?? DateTime.now,
+       apple =
+           apple ??
+           ApplePodcasts(
+             web: web,
+             limiter:
+                 searchLimiter ??
+                 RateLimiter(minGap: const Duration(seconds: 1)),
+             now: now ?? DateTime.now,
+           );
 
   final PodcastRepository repo;
   final FeedFetcher fetch;
@@ -54,11 +57,13 @@ class PodcastService {
   final WebClient web;
 
   final PodcastCoverSaver? saveCover;
+
   /// Reads the shows that come from YouTube Music (D-404).
   final YtmPodcastSync? ytm;
 
   /// `<appSupportDir>/podcasts`: the only place files are deleted from.
   final String? podcastsDir;
+
   /// Genres, chart, lookup and search of the Apple directory.
   final ApplePodcasts apple;
   final DateTime Function() _now;
@@ -74,9 +79,13 @@ class PodcastService {
     } else if (t.toLowerCase().startsWith('feed:')) {
       t = t.substring(5);
     }
-    if (!t.contains('://') && t.contains('.') && !t.contains(' ')) t = 'https://$t';
+    if (!t.contains('://') && t.contains('.') && !t.contains(' ')) {
+      t = 'https://$t';
+    }
     final u = Uri.tryParse(t);
-    if (u == null || !(u.scheme == 'http' || u.scheme == 'https') || u.host.isEmpty) {
+    if (u == null ||
+        !(u.scheme == 'http' || u.scheme == 'https') ||
+        u.host.isEmpty) {
       throw PodcastException(PodcastErrorKind.invalidUrl, input);
     }
     return u.toString();
@@ -122,7 +131,9 @@ class PodcastService {
     final root = podcastsDir;
     for (final path in paths) {
       if (root == null || !p.isWithin(root, path)) {
-        AppLog.w('unsubscribe: not deleting a file outside the podcast folder: $path');
+        AppLog.w(
+          'unsubscribe: not deleting a file outside the podcast folder: $path',
+        );
         continue;
       }
       try {
@@ -148,13 +159,23 @@ class PodcastService {
     if (podcast == null) return 0;
     if (podcast.source == kPodcastSourceYtm) {
       final sync = ytm;
-      if (sync == null) throw const PodcastException(PodcastErrorKind.network, 'no YouTube Music reader');
+      if (sync == null) {
+        throw const PodcastException(
+          PodcastErrorKind.network,
+          'no YouTube Music reader',
+        );
+      }
       return sync.refresh(podcastId);
     }
     final feed = await peek(podcast.feedUrl);
     final added = await repo.upsertEpisodes(podcastId, feed.episodes);
     await repo.markChecked(podcastId, _nowMs);
-    await storePodcastCover(repo, saveCover, podcastId, feed.imageUrl ?? podcast.imageUrl);
+    await storePodcastCover(
+      repo,
+      saveCover,
+      podcastId,
+      feed.imageUrl ?? podcast.imageUrl,
+    );
     return added;
   }
 
@@ -182,6 +203,10 @@ class PodcastService {
   }
 
   /// The public podcast directory (iTunes Search API, no key); see [ApplePodcasts].
-  Future<List<PodcastSearchHit>> search(String term, {int limit = 10, String? country, String? genreId}) =>
-      apple.search(term, limit: limit, country: country, genreId: genreId);
+  Future<List<PodcastSearchHit>> search(
+    String term, {
+    int limit = 10,
+    String? country,
+    String? genreId,
+  }) => apple.search(term, limit: limit, country: country, genreId: genreId);
 }

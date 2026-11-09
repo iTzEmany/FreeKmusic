@@ -29,7 +29,12 @@ import '../../widgets/show_msg.dart';
 
 /// The titled rounded card of the player (the Jam reuses it for its text cards).
 class NpCard extends StatelessWidget {
-  const NpCard({super.key, required this.title, required this.child, this.onTap});
+  const NpCard({
+    super.key,
+    required this.title,
+    required this.child,
+    this.onTap,
+  });
 
   final String title;
   final Widget child;
@@ -122,9 +127,8 @@ const _lyricsLineHeight = 1.5;
 
 /// One line (strut height) plus 2 dp of air above and below.
 double _lyricsRowHeight(BuildContext context) =>
-    MediaQuery.textScalerOf(context).scale(
-          _lyricsFontSize(Theme.of(context).textTheme),
-        ) *
+    MediaQuery.textScalerOf(context)
+            .scale(_lyricsFontSize(Theme.of(context).textTheme)) *
         _lyricsLineHeight +
     4;
 
@@ -198,10 +202,15 @@ class InfoCard extends ConsumerStatefulWidget {
 class _InfoCardState extends ConsumerState<InfoCard> {
   Future<void> _fetch() async {
     final l = context.l10n;
-    final out = await ref.read(curiosityProvider(widget.track.id).notifier).fetch(widget.track);
+    final out = await ref
+        .read(curiosityProvider(widget.track.id).notifier)
+        .fetch(widget.track);
     if (!mounted) return;
     if (out.limited || out.failed || out.nothing) {
-      showMsg(context, out.limited || out.failed ? l.serviceUnavailable : l.noResults);
+      showMsg(
+        context,
+        out.limited || out.failed ? l.serviceUnavailable : l.noResults,
+      );
     }
   }
 
@@ -239,7 +248,8 @@ class _InfoCardState extends ConsumerState<InfoCard> {
         ),
       );
     }
-    final muted = Theme.of(context).textTheme.bodyMedium?.copyWith(color: cc.textMuted);
+    final muted = Theme.of(context).textTheme.bodyMedium
+        ?.copyWith(color: cc.textMuted);
     final idx = raw?.lastIndexOf('\n') ?? -1;
     return NpCard(
       title: l.fieldCuriosity,
@@ -256,7 +266,9 @@ class _InfoCardState extends ConsumerState<InfoCard> {
             )
           else
             Text(
-              (outcome?.songLimited ?? false) ? l.serviceUnavailable : l.curiosityNoSong,
+              (outcome?.songLimited ?? false)
+                  ? l.serviceUnavailable
+                  : l.curiosityNoSong,
               key: const ValueKey('curiosity-no-song'),
               style: muted,
             ),
@@ -282,7 +294,10 @@ class _InfoCardState extends ConsumerState<InfoCard> {
           Align(
             alignment: Alignment.centerLeft,
             child: loading
-                ? Padding(padding: const EdgeInsets.all(CcDims.gap8), child: spinner)
+                ? Padding(
+                    padding: const EdgeInsets.all(CcDims.gap8),
+                    child: spinner,
+                  )
                 : TextButton(onPressed: _fetch, child: Text(l.retry)),
           ),
         ],
@@ -294,7 +309,9 @@ class _InfoCardState extends ConsumerState<InfoCard> {
 /// `it` for `https://it.wikipedia.org/wiki/…`; null when it cannot be told.
 String? wikiLangOf(String? url) {
   final host = url == null ? null : Uri.tryParse(url.trim())?.host;
-  final m = host == null ? null : RegExp(r'^([a-z-]+)\.wikipedia\.org$').firstMatch(host);
+  final m = host == null
+      ? null
+      : RegExp(r'^([a-z-]+)\.wikipedia\.org$').firstMatch(host);
   return m?.group(1);
 }
 
@@ -328,7 +345,9 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
   @override
   void didUpdateWidget(_CuriosityText old) {
     super.didUpdateWidget(old);
-    if (old.text != widget.text) _translated = null; // a new search brought other text
+    if (old.text != widget.text) {
+      _translated = null; // a new search brought other text
+    }
   }
 
   Future<void> _translate(String from, String to) async {
@@ -344,7 +363,12 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
       }
       // Paragraphs one by one: the model keeps the sense of each.
       final parts = widget.text.split('\n');
-      final out = await translateKeepingLayout(translator, parts, from: from, to: to);
+      final out = await translateKeepingLayout(
+        translator,
+        parts,
+        from: from,
+        to: to,
+      );
       if (mounted) setState(() => _translated = out.join('\n'));
       ok = true;
     } on Object catch (e, st) {
@@ -365,7 +389,8 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
     final style = theme.bodyLarge;
     final appLang = ref.watch(settingsProvider).language;
     final from = widget.lang;
-    final canTranslate = ref.watch(lyricsTranslatorProvider) != null &&
+    final canTranslate =
+        ref.watch(lyricsTranslatorProvider) != null &&
         from != null &&
         from != appLang &&
         translationLanguages.containsKey(from) &&
@@ -400,7 +425,9 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
                     child: Text(
                       shown,
                       maxLines: _open ? null : _collapsedLines,
-                      overflow: _open ? TextOverflow.visible : TextOverflow.ellipsis,
+                      overflow: _open
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
                       style: style,
                     ),
                   ),
@@ -419,7 +446,9 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
                               child: SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           : TextButton.icon(
@@ -428,11 +457,15 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
                                   ? () => _translate(from, appLang)
                                   : () => setState(() => _translated = null),
                               icon: Icon(
-                                _translated == null ? Icons.translate_rounded : Icons.undo_rounded,
+                                _translated == null
+                                    ? Icons.translate_rounded
+                                    : Icons.undo_rounded,
                                 size: 18,
                               ),
                               label: Text(
-                                _translated == null ? l.translateLyrics : l.translateRemove,
+                                _translated == null
+                                    ? l.translateLyrics
+                                    : l.translateRemove,
                               ),
                             ),
                   ],
@@ -444,14 +477,12 @@ class _CuriosityTextState extends ConsumerState<_CuriosityText> {
         Row(
           children: [
             Expanded(
-              child: Text(
-                switch (Uri.tryParse(widget.url ?? '')?.host) {
-                  final h? when h.endsWith('discogs.com') => l.curiositySourceDiscogs,
-                  final h? when h.endsWith('youtube.com') => l.sourceYoutubeMusic,
-                  _ => l.sourceWikipedia,
-                },
-                style: theme.labelSmall?.copyWith(color: cc.textMuted),
-              ),
+              child: Text(switch (Uri.tryParse(widget.url ?? '')?.host) {
+                final h? when h.endsWith('discogs.com') =>
+                  l.curiositySourceDiscogs,
+                final h? when h.endsWith('youtube.com') => l.sourceYoutubeMusic,
+                _ => l.sourceWikipedia,
+              }, style: theme.labelSmall?.copyWith(color: cc.textMuted)),
             ),
             if (widget.url != null)
               TextButton(
@@ -552,9 +583,14 @@ double _lineOf(BuildContext context, TextStyle? style) {
 /// shape and height of the real ones (no jump on arrival); after 20 s a single
 /// «Non disponibile» card with Riprova (F-52). [infoOnly] is the side panel's.
 class StreamCardsWait extends ConsumerStatefulWidget {
-  const StreamCardsWait({super.key, required this.trackId, this.infoOnly = false});
+  const StreamCardsWait({
+    super.key,
+    required this.trackId,
+    this.infoOnly = false,
+  });
 
   static const wait = Duration(seconds: 20);
+
   /// The queue id of the streamed track (negative).
   final int trackId;
   final bool infoOnly;
@@ -590,7 +626,10 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
     // A sibling widget on this track may still watch the wait: it starts over too.
     ref.invalidate(shadowWaitProvider(widget.trackId));
     unawaited(
-      ref.read(playerControllerProvider).retryShadow().catchError((Object e, StackTrace st) {
+      ref.read(playerControllerProvider).retryShadow().catchError((
+        Object e,
+        StackTrace st,
+      ) {
         AppLog.w('stream cards retry failed', e, st);
       }),
     );
@@ -603,7 +642,9 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
     if (!_late) return _skeleton(context);
     // A slow but working download keeps the skeleton: the row is made when the file is whole.
     final wait = ref.watch(shadowWaitProvider(widget.trackId)).value;
-    return wait == ShadowWait.unavailable ? _unavailable(l, t) : _skeleton(context);
+    return wait == ShadowWait.unavailable
+        ? _unavailable(l, t)
+        : _skeleton(context);
   }
 
   Widget _unavailable(AppLocalizations l, TextTheme t) => NpCard(
@@ -611,8 +652,15 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l.streamCardsUnavailableBody, style: t.bodyMedium?.copyWith(color: context.cc.textMuted)),
-        TextButton.icon(onPressed: _retry, icon: const Icon(Icons.refresh), label: Text(l.retry)),
+        Text(
+          l.streamCardsUnavailableBody,
+          style: t.bodyMedium?.copyWith(color: context.cc.textMuted),
+        ),
+        TextButton.icon(
+          onPressed: _retry,
+          icon: const Icon(Icons.refresh),
+          label: Text(l.retry),
+        ),
       ],
     ),
   );
@@ -650,7 +698,10 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
                 children: [
                   NpCard(
                     title: l.lyrics,
-                    child: Skeleton.card(lines: 5, lineHeight: _lyricsRowHeight(context)),
+                    child: Skeleton.card(
+                      lines: 5,
+                      lineHeight: _lyricsRowHeight(context),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   info,

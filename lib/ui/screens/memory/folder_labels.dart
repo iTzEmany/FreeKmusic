@@ -4,8 +4,8 @@ import '../../../data/repositories/memory_queries.dart';
 
 /// Display names for the folder rows, keyed by folder path. Folders whose
 /// names are unique keep them; when names collide each one gets the shortest
-/// trailing part of its path that tells them apart (`0/Music` vs
-/// `files/Music`).
+/// trailing part of its path that tells them apart, skipping technical
+/// segments (`0`, `files`...): `Music` vs `com.codecore.player/Music`.
 Map<String, String> folderLabels(List<SizeGroup> folders) {
   final paths = [
     for (final g in folders)
@@ -22,7 +22,7 @@ Map<String, String> folderLabels(List<SizeGroup> folders) {
   final out = <String, String>{...names};
   for (final group in byName.values) {
     if (group.length < 2) continue;
-    final parts = {for (final path in group) path: p.split(path)};
+    final parts = {for (final path in group) path: _readable(p.split(path))};
     for (final path in group) {
       final mine = parts[path]!;
       var n = 1;
@@ -40,3 +40,14 @@ Map<String, String> folderLabels(List<SizeGroup> folders) {
 
 String _tail(List<String> parts, int n) =>
     parts.sublist(parts.length > n ? parts.length - n : 0).join('/');
+
+const _technical = {'/', 'storage', 'emulated', 'android', 'data', 'files'};
+
+/// Drops segments that say nothing to a person (never the last one).
+List<String> _readable(List<String> parts) => [
+  for (var i = 0; i < parts.length; i++)
+    if (i == parts.length - 1 ||
+        !(_technical.contains(parts[i].toLowerCase()) ||
+            int.tryParse(parts[i]) != null))
+      parts[i],
+];

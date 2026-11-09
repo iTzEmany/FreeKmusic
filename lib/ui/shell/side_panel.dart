@@ -38,10 +38,13 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
         ref.watch(liveCurrentTrackProvider).value ??
         ref.watch(currentTrackProvider).value;
     // A streamed track shows the info of its shadow row (real id).
-    final info = track != null && isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
+    final info = track != null && isOnlineId(track.id)
+        ? ref.watch(currentShadowRowProvider)
+        : track;
     // The lyrics page reads a streamed track on its shadow row too.
     final lyricsTrack = widget.panel == SidePanel.lyrics
-        ? ref.watch(currentShadowRowProvider) ?? ref.watch(liveCurrentTrackProvider).value
+        ? ref.watch(currentShadowRowProvider) ??
+              ref.watch(liveCurrentTrackProvider).value
         : null;
     final title = switch (widget.panel) {
       SidePanel.queue => l.queue,
@@ -58,11 +61,19 @@ class _SidePanelViewState extends ConsumerState<SidePanelView> {
       SidePanel.info =>
         info == null
             // A streamed track waits for its row (D-350); nothing for a radio or no track.
-            ? track == null || ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true
+            ? track == null ||
+                      ref.watch(onlineEntriesProvider)?.isRadioId(track.id) ==
+                          true
                   ? const SizedBox.shrink()
                   : ListView(
                       padding: const EdgeInsets.all(CcDims.gap12),
-                      children: [StreamCardsWait(key: ValueKey(track.id), trackId: track.id, infoOnly: true)],
+                      children: [
+                        StreamCardsWait(
+                          key: ValueKey(track.id),
+                          trackId: track.id,
+                          infoOnly: true,
+                        ),
+                      ],
                     )
             : ListView(
                 padding: const EdgeInsets.all(CcDims.gap12),

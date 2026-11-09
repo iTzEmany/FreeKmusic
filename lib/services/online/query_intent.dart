@@ -51,7 +51,8 @@ SearchIntent intentOf(String query, TopCard? card) {
   switch (card) {
     case TopArtist(:final artist):
       final phrase = _nameKey(query), name = _nameKey(artist.name);
-      final isName = phrase == name ||
+      final isName =
+          phrase == name ||
           (phrase.replaceAll(' ', '').length >= _minPrefixLetters &&
               name.startsWith('$phrase '));
       return isName ? SearchIntent.artistPage : SearchIntent.artistAndSongs;

@@ -25,9 +25,16 @@ class DaylistCard extends ConsumerWidget {
     final name = daylistName(l, d.slotIndex, d.result.genres);
     final time = daylistHour(d.nextChange.hour);
     final count = d.result.items.length;
-    final covers = playlistCoverKeys(null, [for (final i in d.result.items) i.track?.coverKey]);
+    final covers = playlistCoverKeys(null, [
+      for (final i in d.result.items) i.track?.coverKey,
+    ]);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, 0),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap16,
+        CcDims.margin,
+        0,
+      ),
       child: Material(
         color: cc.surface1,
         borderRadius: BorderRadius.circular(CcDims.rCard),
@@ -39,27 +46,45 @@ class DaylistCard extends ConsumerWidget {
                 button: true,
                 label: l.daylistCardLabel(count, name, time),
                 excludeSemantics: true,
-                onTap: () => ShellNav.open<void>(context, const DaylistScreen()),
+                onTap: () =>
+                    ShellNav.open<void>(context, const DaylistScreen()),
                 child: InkWell(
                   key: const ValueKey('daylist-card'),
-                  onTap: () => ShellNav.open<void>(context, const DaylistScreen()),
+                  onTap: () =>
+                      ShellNav.open<void>(context, const DaylistScreen()),
                   child: Padding(
                     padding: const EdgeInsets.all(CcDims.gap12),
                     child: Row(
                       children: [
-                        PlaylistCover(size: 88, radius: CcDims.rList, coverKeys: covers),
+                        PlaylistCover(
+                          size: 88,
+                          radius: CcDims.rList,
+                          coverKeys: covers,
+                        ),
                         const SizedBox(width: CcDims.gap12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(l.daylistNow, style: text.bodySmall?.copyWith(color: cc.accentSoft)),
-                              Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: text.bodyLarge),
+                              Text(
+                                l.daylistNow,
+                                style: text.bodySmall?.copyWith(
+                                  color: cc.accentSoft,
+                                ),
+                              ),
+                              Text(
+                                name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: text.bodyLarge,
+                              ),
                               Text(
                                 l.daylistCardMeta(count, time),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: text.bodySmall?.copyWith(color: cc.textMuted),
+                                style: text.bodySmall?.copyWith(
+                                  color: cc.textMuted,
+                                ),
                               ),
                             ],
                           ),

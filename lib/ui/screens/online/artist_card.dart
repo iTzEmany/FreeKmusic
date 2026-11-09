@@ -11,7 +11,12 @@ import '../../widgets/net_thumbnail.dart';
 /// monthly audience»; a tap opens the artist's page. [large] is the card of a
 /// search that is just the artist's name.
 class ArtistCard extends StatelessWidget {
-  const ArtistCard({super.key, required this.artist, required this.onTap, this.large = false});
+  const ArtistCard({
+    super.key,
+    required this.artist,
+    required this.onTap,
+    this.large = false,
+  });
 
   final YtmArtistRef artist;
   final VoidCallback onTap;
@@ -30,7 +35,12 @@ class ArtistCard extends StatelessWidget {
     final audience = artist.audience;
     final size = large ? largePhoto : photo;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.margin, CcDims.gap8),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap4,
+        CcDims.margin,
+        CcDims.gap8,
+      ),
       child: Material(
         key: const ValueKey('artist-card'),
         color: cc.surface1,
@@ -43,7 +53,9 @@ class ArtistCard extends StatelessWidget {
             child: Row(
               children: [
                 NetThumbnail(
-                  url: thumb == null ? null : googleThumbAt(thumb, (size * dpr).round()),
+                  url: thumb == null
+                      ? null
+                      : googleThumbAt(thumb, (size * dpr).round()),
                   width: size,
                   height: size,
                   icon: Icons.person_rounded,
@@ -57,10 +69,14 @@ class ArtistCard extends StatelessWidget {
                       Row(
                         children: [
                           Flexible(
-                            child: Text(artist.name,
-                                maxLines: large ? 2 : 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: large ? theme.headlineSmall : theme.titleMedium),
+                            child: Text(
+                              artist.name,
+                              maxLines: large ? 2 : 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: large
+                                  ? theme.headlineSmall
+                                  : theme.titleMedium,
+                            ),
                           ),
                           BlockedArtistMark(artist.name),
                         ],

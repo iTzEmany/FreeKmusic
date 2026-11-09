@@ -111,17 +111,25 @@ List<TrackActionGroup> onlineTrackActions(
     TrackActionGroup(l.groupCollection, [
       // Gone as soon as the entry is in the library, also with the sheet open (R-93).
       if (!entryInLibrary(ref, track.id))
-        TrackAction(Icons.download_rounded, l.ytDownload, () => downloadOnline(
-              outer,
-              inLibrary: entryInLibrary(ref, track.id),
-              start: () => actions.downloadEntry(track.id),
-            )),
+        TrackAction(
+          Icons.download_rounded,
+          l.ytDownload,
+          () => downloadOnline(
+            outer,
+            inLibrary: entryInLibrary(ref, track.id),
+            start: () => actions.downloadEntry(track.id),
+          ),
+        ),
       TrackAction(Icons.playlist_add_rounded, l.addToPlaylist, () async {
         final picked = await pickPlaylist(outer, ref);
         if (picked == null) return;
         final now = await actions.addToPlaylist(track.id, picked.id);
         if (now != null) {
-          snack(now ? l.addedToPlaylist(picked.name) : l.suggestionAddWhenDownloaded(picked.name));
+          snack(
+            now
+                ? l.addedToPlaylist(picked.name)
+                : l.suggestionAddWhenDownloaded(picked.name),
+          );
         }
       }),
     ]),
@@ -142,7 +150,11 @@ List<TrackActionGroup> onlineTrackActions(
     ]),
     TrackActionGroup(l.groupQueue, [
       if (ref.read(onlineEntriesProvider)?[track.id]?.suggested ?? false)
-        TrackAction(Icons.thumb_down_outlined, l.suggestionDislike, () => showDislikeSheet(outer, ref, track.id)),
+        TrackAction(
+          Icons.thumb_down_outlined,
+          l.suggestionDislike,
+          () => showDislikeSheet(outer, ref, track.id),
+        ),
       TrackAction(
         Icons.remove_circle_outline_rounded,
         l.removeFromQueueAction,
@@ -243,7 +255,9 @@ List<TrackActionGroup> trackActions(
       TrackAction(Icons.playlist_play_rounded, l.playNext, () async {
         final inJam = ctrl.inJam;
         final added = await ctrl.playNext(track.id);
-        if (outer.mounted) showQueued(outer, added, ok: inJam ? l.addedToQueue : l.playNextDone);
+        if (outer.mounted) {
+          showQueued(outer, added, ok: inJam ? l.addedToQueue : l.playNextDone);
+        }
       }, onStreamRow: true),
       TrackAction(Icons.queue_rounded, l.addToQueue, () async {
         final added = await ctrl.addToQueue(track.id);
@@ -254,7 +268,11 @@ List<TrackActionGroup> trackActions(
       // A streamed shadow row: the download promotes it to a real library track.
       if (track.kind == kStreamKind &&
           keyOfStreamPath(track.path) != null &&
-          ref.read(downloadIndexProvider).value?.pathForKey(keyOfStreamPath(track.path)!) == null)
+          ref
+                  .read(downloadIndexProvider)
+                  .value
+                  ?.pathForKey(keyOfStreamPath(track.path)!) ==
+              null)
         TrackAction(Icons.download_rounded, l.ytDownload, () async {
           ref
               .read(downloadsProvider.notifier)
@@ -281,11 +299,7 @@ List<TrackActionGroup> trackActions(
     TrackActionGroup(l.groupGoTo, [
       TrackAction(Icons.album_outlined, l.goToAlbum, goToAlbum),
       if ((track.artist ?? '').trim().isNotEmpty)
-        TrackAction(
-          Icons.person_outline_rounded,
-          l.goToArtist,
-          goToArtist,
-        ),
+        TrackAction(Icons.person_outline_rounded, l.goToArtist, goToArtist),
       if (kEnableYoutube && (track.artist ?? '').trim().isNotEmpty)
         TrackAction(
           Icons.smart_display_rounded,
@@ -300,8 +314,11 @@ List<TrackActionGroup> trackActions(
           l.coverChange,
           () => showCoverPicker(
             outer,
-            save: (ops, bytes, mime) => ops.setTrackCover(track.id, bytes, mime),
-            online: (track.album ?? '').trim().isEmpty ? null : (album: track.album!, artist: track.artist ?? ''),
+            save: (ops, bytes, mime) =>
+                ops.setTrackCover(track.id, bytes, mime),
+            online: (track.album ?? '').trim().isEmpty
+                ? null
+                : (album: track.album!, artist: track.artist ?? ''),
           ),
         ),
         if (track.coverSource > 0)
@@ -356,7 +373,8 @@ List<TrackActionGroup> trackActions(
   ];
   // A streamed shadow row (kind 2) keeps only queue actions and Details until phase 46; so
   // does a podcast episode not downloaded yet (a row on an address), which has no file to act on.
-  if (track.kind != kStreamKind && !(track.kind == kEpisodeKind && isRemoteEpisodePath(track.path))) {
+  if (track.kind != kStreamKind &&
+      !(track.kind == kEpisodeKind && isRemoteEpisodePath(track.path))) {
     return groups;
   }
   return [
@@ -385,7 +403,9 @@ Future<void> showTrackActions(
   // The caller may be gone while the sheet is open: keep the last groups then.
   List<TrackActionGroup> groups() => context.mounted ? last = build() : last;
   // An online entry or streamed row: the groups follow the download index while the sheet is open.
-  final changed = isOnlineId(track.id) || track.kind == kStreamKind ? ValueNotifier(0) : null;
+  final changed = isOnlineId(track.id) || track.kind == kStreamKind
+      ? ValueNotifier(0)
+      : null;
   final sub = changed == null
       ? null
       : ref.listenManual(downloadIndexProvider, (_, _) => changed.value++);
@@ -576,7 +596,11 @@ List<TrackAction> onlineResultActions(
       final full = ctrl.jamQueueFull;
       await ctrl.playOnlineNext(r);
       if (outer.mounted) {
-        showQueued(outer, full ? jamFullResult : null, ok: ctrl.inJam ? l.addedToQueue : l.playNextDone);
+        showQueued(
+          outer,
+          full ? jamFullResult : null,
+          ok: ctrl.inJam ? l.addedToQueue : l.playNextDone,
+        );
       }
     }),
     TrackAction(Icons.queue_rounded, l.addToQueue, () async {
@@ -591,14 +615,28 @@ List<TrackAction> onlineResultActions(
           .read(downloadsProvider.notifier)
           .add(r, tag: addToPlaylistTag(picked.id));
       if (outer.mounted) {
-        showMsg(outer, now ? l.addedToPlaylist(picked.name) : l.suggestionAddWhenDownloaded(picked.name));
+        showMsg(
+          outer,
+          now
+              ? l.addedToPlaylist(picked.name)
+              : l.suggestionAddWhenDownloaded(picked.name),
+        );
       }
     }),
-    TrackAction(Icons.download_rounded, l.ytDownload, () => downloadOnline(
-          outer,
-          inLibrary: ref.read(downloadIndexProvider).value?.contains(r.id, source: r.source) ?? false,
-          start: () => ref.read(downloadsProvider.notifier).add(r),
-        )),
+    TrackAction(
+      Icons.download_rounded,
+      l.ytDownload,
+      () => downloadOnline(
+        outer,
+        inLibrary:
+            ref
+                .read(downloadIndexProvider)
+                .value
+                ?.contains(r.id, source: r.source) ??
+            false,
+        start: () => ref.read(downloadsProvider.notifier).add(r),
+      ),
+    ),
     TrackAction(
       Icons.person_outline_rounded,
       l.goToArtist,

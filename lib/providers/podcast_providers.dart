@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart' show CancelToken;
+
 import '../services/podcast/rss_parser.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -18,7 +20,8 @@ import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/podcast_service.dart';
 import '../services/online/ytm_podcasts.dart';
-import '../services/podcast/ytm_podcast_sync.dart' show YtmPodcastSync, ytmShowFeedUrl;
+import '../services/podcast/ytm_podcast_sync.dart'
+    show YtmPodcastSync, ytmShowFeedUrl;
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
@@ -41,15 +44,19 @@ class PodcastRefreshing extends Notifier<bool> {
   void set(bool on) => state = on;
 }
 
-final podcastRefreshingProvider = NotifierProvider<PodcastRefreshing, bool>(PodcastRefreshing.new);
+final podcastRefreshingProvider = NotifierProvider<PodcastRefreshing, bool>(
+  PodcastRefreshing.new,
+);
 
 /// One Apple directory client for the whole app: its cache and rate limit
 /// must outlive a rebuild of [podcastServiceProvider].
-final applePodcastsProvider = Provider<ApplePodcasts>((ref) => ApplePodcasts(
-      web: DioWebClient(),
-      limiter: RateLimiter(minGap: const Duration(seconds: 1)),
-      now: DateTime.now,
-    ));
+final applePodcastsProvider = Provider<ApplePodcasts>(
+  (ref) => ApplePodcasts(
+    web: DioWebClient(),
+    limiter: RateLimiter(minGap: const Duration(seconds: 1)),
+    now: DateTime.now,
+  ),
+);
 
 /// Stores a podcast cover (downloaded from its address) under the podcast's album key.
 final podcastCoverSaverProvider = Provider<PodcastCoverSaver>((ref) {
@@ -88,7 +95,8 @@ final podcastProvider = StreamProvider.family<Podcast?, int>(
 
 /// The podcast saved under [feedUrl] (followed or only played from a preview), if any.
 final savedPodcastProvider = StreamProvider.family<Podcast?, String>(
-  (ref, feedUrl) => ref.watch(podcastRepositoryProvider).watchByFeedUrl(feedUrl),
+  (ref, feedUrl) =>
+      ref.watch(podcastRepositoryProvider).watchByFeedUrl(feedUrl),
 );
 
 final podcastEpisodesProvider = StreamProvider.family<List<EpisodeRow>, int>(
@@ -97,7 +105,12 @@ final podcastEpisodesProvider = StreamProvider.family<List<EpisodeRow>, int>(
 
 /// A show read in memory, not saved: where it comes from and what its feed says.
 class PodcastPreview {
-  const PodcastPreview({required this.feedUrl, required this.feed, this.source = 0, this.sourceId});
+  const PodcastPreview({
+    required this.feedUrl,
+    required this.feed,
+    this.source = 0,
+    this.sourceId,
+  });
 
   final String feedUrl;
   final PodcastFeed feed;
@@ -111,24 +124,33 @@ class PodcastPreview {
 typedef PodcastPreviewKey = ({String? feedUrl, String? appleId, String? ytmId});
 
 /// The feed of a show not followed, kept in memory while its preview is open.
-final podcastPreviewProvider = FutureProvider.autoDispose.family<PodcastPreview, PodcastPreviewKey>((ref, key) async {
-  final ytmId = key.ytmId;
-  if (ytmId != null) {
-    final feed = await ref.read(ytmPodcastSyncProvider).peek(ytmId);
-    return PodcastPreview(feedUrl: ytmShowFeedUrl(ytmId), feed: feed, source: kPodcastSourceYtm, sourceId: ytmId);
-  }
-  final service = ref.read(podcastServiceProvider);
-  final url = key.feedUrl ?? (await service.apple.lookup(key.appleId!))?.feedUrl;
-  if (url == null) throw const PodcastException(PodcastErrorKind.notFeed);
-  return PodcastPreview(feedUrl: url, feed: await service.peek(url));
-}, retry: (_, _) => null);
+final podcastPreviewProvider = FutureProvider.autoDispose
+    .family<PodcastPreview, PodcastPreviewKey>((ref, key) async {
+      final ytmId = key.ytmId;
+      if (ytmId != null) {
+        final feed = await ref.read(ytmPodcastSyncProvider).peek(ytmId);
+        return PodcastPreview(
+          feedUrl: ytmShowFeedUrl(ytmId),
+          feed: feed,
+          source: kPodcastSourceYtm,
+          sourceId: ytmId,
+        );
+      }
+      final service = ref.read(podcastServiceProvider);
+      final url =
+          key.feedUrl ?? (await service.apple.lookup(key.appleId!))?.feedUrl;
+      if (url == null) throw const PodcastException(PodcastErrorKind.notFeed);
+      return PodcastPreview(feedUrl: url, feed: await service.peek(url));
+    }, retry: (_, _) => null);
 
 /// `<appSupportDir>/podcasts`: where episodes live, outside every music folder.
 final podcastsDirProvider = FutureProvider<String>(
   (ref) async => p.join(await appSupportDir(), 'podcasts'),
 );
 
-final episodeDownloaderProvider = FutureProvider<EpisodeDownloader>((ref) async {
+final episodeDownloaderProvider = FutureProvider<EpisodeDownloader>((
+  ref,
+) async {
   return EpisodeDownloader(
     repo: ref.watch(podcastRepositoryProvider),
     tracks: ref.watch(trackRepositoryProvider),
@@ -140,14 +162,19 @@ final episodeDownloaderProvider = FutureProvider<EpisodeDownloader>((ref) async 
 
 /// YouTube Music shows: subscribing and reading their new episodes (D-404).
 final ytmPodcastsProvider = Provider<YtmPodcasts>(
-  (ref) => YtmPodcasts(ref.watch(innerTubeClientProvider), cooldown: ref.watch(sourceCooldownProvider)),
+  (ref) => YtmPodcasts(
+    ref.watch(innerTubeClientProvider),
+    cooldown: ref.watch(sourceCooldownProvider),
+  ),
 );
 
-final ytmPodcastSyncProvider = Provider<YtmPodcastSync>((ref) => YtmPodcastSync(
-      repo: ref.watch(podcastRepositoryProvider),
-      ytm: ref.watch(ytmPodcastsProvider),
-      saveCover: ref.watch(podcastCoverSaverProvider),
-    ));
+final ytmPodcastSyncProvider = Provider<YtmPodcastSync>(
+  (ref) => YtmPodcastSync(
+    repo: ref.watch(podcastRepositoryProvider),
+    ytm: ref.watch(ytmPodcastsProvider),
+    saveCover: ref.watch(podcastCoverSaverProvider),
+  ),
+);
 
 enum EpisodeDownloadStatus { queued, downloading, done, failed }
 
@@ -182,16 +209,20 @@ class EpisodeDownload {
       status == EpisodeDownloadStatus.queued ||
       status == EpisodeDownloadStatus.downloading;
 
-  EpisodeDownload copyWith({EpisodeDownloadStatus? status, double? progress, PodcastErrorKind? error, YtErrorKind? ytError}) =>
-      EpisodeDownload(
-        episodeId: episodeId,
-        title: title,
-        serial: serial,
-        status: status ?? this.status,
-        progress: progress ?? this.progress,
-        error: error ?? this.error,
-        ytError: ytError ?? this.ytError,
-      );
+  EpisodeDownload copyWith({
+    EpisodeDownloadStatus? status,
+    double? progress,
+    PodcastErrorKind? error,
+    YtErrorKind? ytError,
+  }) => EpisodeDownload(
+    episodeId: episodeId,
+    title: title,
+    serial: serial,
+    status: status ?? this.status,
+    progress: progress ?? this.progress,
+    error: error ?? this.error,
+    ytError: ytError ?? this.ytError,
+  );
 }
 
 /// What the Activity centre needs to cancel an episode download.
@@ -227,17 +258,21 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
 
   /// Forgets the finished ones («Pulisci»).
   void clearFinished() => state = [
-        for (final d in state)
-          if (d.active) d,
-      ];
+    for (final d in state)
+      if (d.active) d,
+  ];
 
   void _set(int id, EpisodeDownload Function(EpisodeDownload) f) {
     state = [for (final d in state) d.episodeId == id ? f(d) : d];
   }
 
   void _pump() {
-    final running = state.where((d) => d.status == EpisodeDownloadStatus.downloading).length;
-    final waiting = state.where((d) => d.status == EpisodeDownloadStatus.queued).toList();
+    final running = state
+        .where((d) => d.status == EpisodeDownloadStatus.downloading)
+        .length;
+    final waiting = state
+        .where((d) => d.status == EpisodeDownloadStatus.queued)
+        .toList();
     for (var i = 0; i < maxParallel - running && i < waiting.length; i++) {
       _start(waiting[i].episodeId);
     }
@@ -252,21 +287,42 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
         id,
         cancel: token,
         onProgress: (received, total) {
-          if (total > 0) _set(id, (d) => d.copyWith(progress: received / total));
+          if (total > 0) {
+            _set(id, (d) => d.copyWith(progress: received / total));
+          }
         },
       );
       if (trackId == null) {
         // Cancelled: nothing to show.
-        state = [for (final d in state) if (d.episodeId != id) d];
+        state = [
+          for (final d in state)
+            if (d.episodeId != id) d,
+        ];
       } else {
-        _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.done, progress: 1));
+        _set(
+          id,
+          (d) => d.copyWith(status: EpisodeDownloadStatus.done, progress: 1),
+        );
       }
     } on PodcastException catch (e) {
       AppLog.w('episode $id not downloaded', e);
-      _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: e.kind, ytError: e.yt));
+      _set(
+        id,
+        (d) => d.copyWith(
+          status: EpisodeDownloadStatus.failed,
+          error: e.kind,
+          ytError: e.yt,
+        ),
+      );
     } on Object catch (e, st) {
       AppLog.e('episode $id download crashed', e, st);
-      _set(id, (d) => d.copyWith(status: EpisodeDownloadStatus.failed, error: PodcastErrorKind.network));
+      _set(
+        id,
+        (d) => d.copyWith(
+          status: EpisodeDownloadStatus.failed,
+          error: PodcastErrorKind.network,
+        ),
+      );
     } finally {
       _tokens.remove(id);
       _pump();
@@ -276,8 +332,8 @@ class PodcastDownloadsNotifier extends Notifier<List<EpisodeDownload>> {
 
 final podcastDownloadsProvider =
     NotifierProvider<PodcastDownloadsNotifier, List<EpisodeDownload>>(
-  PodcastDownloadsNotifier.new,
-);
+      PodcastDownloadsNotifier.new,
+    );
 
 /// Once the app has settled: orphan podcast rows and folders go (watched from the root).
 final podcastOrphansStartProvider = FutureProvider<void>((ref) async {
@@ -302,9 +358,6 @@ final podcastMaintenanceProvider = FutureProvider.autoDispose<int>((ref) async {
     repo: ref.read(podcastRepositoryProvider),
     downloader: downloader,
     baseDir: base,
-    inUse: () => {
-      ...handler.queueIds,
-      ?handler.currentTrack?.id,
-    },
+    inUse: () => {...handler.queueIds, ?handler.currentTrack?.id},
   ).run();
 });

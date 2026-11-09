@@ -10,20 +10,24 @@ import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_pool.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-RadioItem item(String id,
-        {String artist = 'Artist', int seconds = 200, RadioKind kind = RadioKind.song, bool seed = false}) =>
-    RadioItem(
-      YtResult(
-        id: id,
-        title: 'Title $id',
-        channel: artist,
-        duration: Duration(seconds: seconds),
-        artists: kind == RadioKind.song ? [artist] : const [],
-        album: kind == RadioKind.song ? 'Album' : null,
-      ),
-      kind,
-      isSeed: seed,
-    );
+RadioItem item(
+  String id, {
+  String artist = 'Artist',
+  int seconds = 200,
+  RadioKind kind = RadioKind.song,
+  bool seed = false,
+}) => RadioItem(
+  YtResult(
+    id: id,
+    title: 'Title $id',
+    channel: artist,
+    duration: Duration(seconds: seconds),
+    artists: kind == RadioKind.song ? [artist] : const [],
+    album: kind == RadioKind.song ? 'Album' : null,
+  ),
+  kind,
+  isSeed: seed,
+);
 
 RadioPage page(List<RadioItem> items) => RadioPage(items);
 
@@ -69,20 +73,47 @@ void main() {
 
   test('skips what is in the library by id and by title', () {
     libraryIds = {'a'};
-    pool.addPage('s', 'Seed', page([item('a'), item('b'), RadioItem(
-        const YtResult(id: 'c', title: 'Owned', channel: 'X', duration: Duration(seconds: 200), artists: ['X'], album: 'A'),
-        RadioKind.song)]));
+    pool.addPage(
+      's',
+      'Seed',
+      page([
+        item('a'),
+        item('b'),
+        RadioItem(
+          const YtResult(
+            id: 'c',
+            title: 'Owned',
+            channel: 'X',
+            duration: Duration(seconds: 200),
+            artists: ['X'],
+            album: 'A',
+          ),
+          RadioKind.song,
+        ),
+      ]),
+    );
     expect(takeAll(), ['b']);
   });
 
-  test('skips a song suggested 10 days ago but not one suggested 40 days ago', () {
-    log.add(videoId: 'old', title: 't', artist: 'a', seedTitle: 's');
-    now = now.add(const Duration(days: 40));
-    log.add(videoId: 'recent', title: 't', artist: 'a', seedTitle: 's');
-    now = now.add(const Duration(days: 10));
-    pool.addPage('s', 'Seed', page([item('old', artist: 'A'), item('recent', artist: 'B'), item('new', artist: 'C')]));
-    expect(takeAll(), ['old', 'new']);
-  });
+  test(
+    'skips a song suggested 10 days ago but not one suggested 40 days ago',
+    () {
+      log.add(videoId: 'old', title: 't', artist: 'a', seedTitle: 's');
+      now = now.add(const Duration(days: 40));
+      log.add(videoId: 'recent', title: 't', artist: 'a', seedTitle: 's');
+      now = now.add(const Duration(days: 10));
+      pool.addPage(
+        's',
+        'Seed',
+        page([
+          item('old', artist: 'A'),
+          item('recent', artist: 'B'),
+          item('new', artist: 'C'),
+        ]),
+      );
+      expect(takeAll(), ['old', 'new']);
+    },
+  );
 
   test('a blocked song needs two seeds with it in their first 10 rows', () {
     blockedTracks = ['bad'];
@@ -94,7 +125,9 @@ void main() {
 
   test('rows are counted across the pages of a seed: row 10 counts, row 11 does not', () {
     blockedTracks = ['bad'];
-    List<RadioItem> fillers(String p) => [for (var i = 0; i < 10; i++) item('$p$i', artist: 'A$p$i')];
+    List<RadioItem> fillers(String p) => [
+      for (var i = 0; i < 10; i++) item('$p$i', artist: 'A$p$i'),
+    ];
     // s1 has it at row 10 of its first page; s2 only at row 11 (second page).
     pool.addPage('s1', 'One', page([...fillers('x').take(9), item('bad')]));
     pool.addPage('s2', 'Two', RadioPage(fillers('y'), continuation: 'next'));
@@ -115,7 +148,11 @@ void main() {
 
   test('skips what is already in the queue, and takes it once it is gone', () {
     queued = {'a'};
-    pool.addPage('s', 'Seed', page([item('a', artist: 'A'), item('b', artist: 'B')]));
+    pool.addPage(
+      's',
+      'Seed',
+      page([item('a', artist: 'A'), item('b', artist: 'B')]),
+    );
     expect(take()?.result.id, 'b');
     expect(take(), isNull);
     queued = {};
@@ -123,30 +160,50 @@ void main() {
   });
 
   test('skips too short, too long, uploads and the seed itself', () {
-    pool.addPage('s', 'Seed', page([
-      item('short', seconds: 59, artist: 'A'),
-      item('long', seconds: 12 * 60 + 1, artist: 'B'),
-      item('upload', kind: RadioKind.upload, artist: 'C'),
-      item('seed', seed: true, artist: 'D'),
-      item('edge1', seconds: 60, artist: 'E'),
-      item('edge2', seconds: 12 * 60, artist: 'F'),
-    ]));
+    pool.addPage(
+      's',
+      'Seed',
+      page([
+        item('short', seconds: 59, artist: 'A'),
+        item('long', seconds: 12 * 60 + 1, artist: 'B'),
+        item('upload', kind: RadioKind.upload, artist: 'C'),
+        item('seed', seed: true, artist: 'D'),
+        item('edge1', seconds: 60, artist: 'E'),
+        item('edge2', seconds: 12 * 60, artist: 'F'),
+      ]),
+    );
     expect(takeAll(), ['edge1', 'edge2']);
   });
 
   test('artist videos only when the songs are finished', () {
-    pool.addPage('s', 'Seed', page([
-      item('clip1', kind: RadioKind.artistVideo, artist: 'A'),
-      item('song1', artist: 'B'),
-      item('clip2', kind: RadioKind.artistVideo, artist: 'C'),
-      item('song2', artist: 'D'),
-    ]));
+    pool.addPage(
+      's',
+      'Seed',
+      page([
+        item('clip1', kind: RadioKind.artistVideo, artist: 'A'),
+        item('song1', artist: 'B'),
+        item('clip2', kind: RadioKind.artistVideo, artist: 'C'),
+        item('song2', artist: 'D'),
+      ]),
+    );
     expect(takeAll(), ['song1', 'song2', 'clip1', 'clip2']);
   });
 
   test('seeds take turns', () {
-    pool.addPage('s1', 'One', page([item('a1', artist: 'A1'), item('a2', artist: 'A2'), item('a3', artist: 'A3')]));
-    pool.addPage('s2', 'Two', page([item('b1', artist: 'B1'), item('b2', artist: 'B2')]));
+    pool.addPage(
+      's1',
+      'One',
+      page([
+        item('a1', artist: 'A1'),
+        item('a2', artist: 'A2'),
+        item('a3', artist: 'A3'),
+      ]),
+    );
+    pool.addPage(
+      's2',
+      'Two',
+      page([item('b1', artist: 'B1'), item('b2', artist: 'B2')]),
+    );
     final picked = <String>[];
     for (var c = take(); c != null; c = take()) {
       picked.add('${c.result.id}/${c.seedTitle}');
@@ -155,11 +212,15 @@ void main() {
   });
 
   test('the same artist does not come back within the last two', () {
-    pool.addPage('s', 'Seed', page([
-      item('a1', artist: 'Queen'),
-      item('a2', artist: 'Queen'),
-      item('b1', artist: 'Dire Straits'),
-    ]));
+    pool.addPage(
+      's',
+      'Seed',
+      page([
+        item('a1', artist: 'Queen'),
+        item('a2', artist: 'Queen'),
+        item('b1', artist: 'Dire Straits'),
+      ]),
+    );
     final first = take()!;
     expect(first.result.id, 'a1');
     final second = take(last: [suggestionArtistKey(first.result)])!;
@@ -186,11 +247,23 @@ void main() {
 
   group('inLibraryTest', () {
     final library = LibraryIndex(const [
-      LibraryEntryLite(id: 1, title: 'Song', artist: 'Channel', durationMs: 200000),
+      LibraryEntryLite(
+        id: 1,
+        title: 'Song',
+        artist: 'Channel',
+        durationMs: 200000,
+      ),
     ]);
-    bool owned(YtResult r) => inLibraryTest(hasDownload: (_) => false, library: library)(r);
-    YtResult result({List<String> artists = const [], int seconds = 200}) => YtResult(
-          id: 'x', title: 'Song', channel: 'Channel', duration: Duration(seconds: seconds), artists: artists);
+    bool owned(YtResult r) =>
+        inLibraryTest(hasDownload: (_) => false, library: library)(r);
+    YtResult result({List<String> artists = const [], int seconds = 200}) =>
+        YtResult(
+          id: 'x',
+          title: 'Song',
+          channel: 'Channel',
+          duration: Duration(seconds: seconds),
+          artists: artists,
+        );
 
     test('without credited artists the channel is the artist', () {
       expect(owned(result()), isTrue);
@@ -211,7 +284,11 @@ void main() {
   });
 
   test('the same id on two pages of one seed keeps its first position', () {
-    pool.addPage('s', 'Seed', RadioPage([item('a'), item('b')], continuation: 'n'));
+    pool.addPage(
+      's',
+      'Seed',
+      RadioPage([item('a'), item('b')], continuation: 'n'),
+    );
     pool.addPage('s', 'Seed', page([item('c'), item('a')]));
     expect(pool.positionsOf('a'), [1]);
     expect(pool.positionsOf('c'), [3]);

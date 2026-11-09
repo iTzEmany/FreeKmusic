@@ -12,10 +12,10 @@ import '../../widgets/cc_app_bar.dart';
 import '../../widgets/show_msg.dart';
 
 /// Opens the lyrics editor for [track] (F-110).
-Future<void> openLyricsEditor(BuildContext context, Track track) => Navigator.of(
-  context,
-  rootNavigator: true,
-).push(MaterialPageRoute<void>(builder: (_) => LyricsEditorScreen(track: track)));
+Future<void> openLyricsEditor(BuildContext context, Track track) =>
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(builder: (_) => LyricsEditorScreen(track: track)),
+    );
 
 /// Type or paste the lyrics of a track. Timed lines make them synced; the text
 /// is always saved as the user's own, so the automatic search leaves it alone.
@@ -29,7 +29,9 @@ class LyricsEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
-  late final _ctrl = TextEditingController(text: widget.track.lyricsSynced ?? widget.track.lyricsPlain ?? '');
+  late final _ctrl = TextEditingController(
+    text: widget.track.lyricsSynced ?? widget.track.lyricsPlain ?? '',
+  );
 
   @override
   void dispose() {
@@ -75,14 +77,26 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
           TextButton(
             key: const ValueKey('lyrics-save-bar'),
             onPressed: _save,
-            child: Semantics(label: l.lyricsEditorSaveA11y, excludeSemantics: true, child: Text(l.save)),
+            child: Semantics(
+              label: l.lyricsEditorSaveA11y,
+              excludeSemantics: true,
+              child: Text(l.save),
+            ),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap24),
+        padding: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          CcDims.gap8,
+          CcDims.margin,
+          CcDims.gap24,
+        ),
         children: [
-          Text(l.lyricsEditorLabel, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+          Text(
+            l.lyricsEditorLabel,
+            style: theme.bodySmall?.copyWith(color: cc.textMuted),
+          ),
           const SizedBox(height: 6),
           TextField(
             controller: _ctrl,
@@ -98,16 +112,29 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: CcDims.gap8),
-          Semantics(liveRegion: true, child: Text(_detection(l), style: theme.bodyMedium)),
+          Semantics(
+            liveRegion: true,
+            child: Text(_detection(l), style: theme.bodyMedium),
+          ),
           const SizedBox(height: CcDims.gap8),
-          Text(l.lyricsEditorInfo, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+          Text(
+            l.lyricsEditorInfo,
+            style: theme.bodySmall?.copyWith(color: cc.textMuted),
+          ),
           const SizedBox(height: CcDims.gap16),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l.cancel)),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l.cancel),
+              ),
               const SizedBox(width: 4),
-              FilledButton(key: const ValueKey('lyrics-save'), onPressed: _save, child: Text(l.save)),
+              FilledButton(
+                key: const ValueKey('lyrics-save'),
+                onPressed: _save,
+                child: Text(l.save),
+              ),
             ],
           ),
         ],
@@ -116,13 +143,17 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
   }
 
   // Small radius, not the theme's pill: a multi-line field.
-  OutlineInputBorder _border(Color c) =>
-      OutlineInputBorder(borderRadius: BorderRadius.circular(CcDims.rCard), borderSide: BorderSide(color: c));
+  OutlineInputBorder _border(Color c) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(CcDims.rCard),
+    borderSide: BorderSide(color: c),
+  );
 
   String _detection(AppLocalizations l) {
     final text = _ctrl.text;
     if (text.trim().isEmpty) return l.lyricsDetectNone;
     final n = parseLrc(text).length;
-    return lyricsFromText(text).synced != null ? l.lyricsDetectSynced(n) : l.lyricsDetectPlain;
+    return lyricsFromText(text).synced != null
+        ? l.lyricsDetectSynced(n)
+        : l.lyricsDetectPlain;
   }
 }

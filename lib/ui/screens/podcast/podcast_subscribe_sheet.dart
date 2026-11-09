@@ -1,4 +1,5 @@
 import '../../widgets/cc_sheet.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -120,7 +121,8 @@ class _PodcastSubscribeSheetState extends ConsumerState<PodcastSubscribeSheet> {
                   keyboardType: TextInputType.url,
                   decoration: InputDecoration(labelText: l.podcastFeedUrl),
                   onChanged: (_) => setState(() {}),
-                  onSubmitted: (v) => _busy || v.trim().isEmpty ? null : _subscribe(v),
+                  onSubmitted: (v) =>
+                      _busy || v.trim().isEmpty ? null : _subscribe(v),
                 ),
               ),
               const SizedBox(width: 8),
@@ -144,10 +146,11 @@ class _PodcastSubscribeSheetState extends ConsumerState<PodcastSubscribeSheet> {
             ),
             onSubmitted: (_) => _busy ? null : _search(),
           ),
-          if (_busy) const Padding(
-            padding: EdgeInsets.only(top: CcDims.gap12),
-            child: LinearProgressIndicator(),
-          ),
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.only(top: CcDims.gap12),
+              child: LinearProgressIndicator(),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: CcDims.gap12),
@@ -176,7 +179,8 @@ class _PodcastSubscribeSheetState extends ConsumerState<PodcastSubscribeSheet> {
               subtitle: Text(
                 [
                   if (h.author != null) h.author!,
-                  if (h.episodeCount != null) l.podcastEpisodesCount(h.episodeCount!),
+                  if (h.episodeCount != null)
+                    l.podcastEpisodesCount(h.episodeCount!),
                 ].join(', '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

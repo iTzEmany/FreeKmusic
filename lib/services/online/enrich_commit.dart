@@ -2,7 +2,8 @@ import 'package:drift/drift.dart';
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
-import '../../data/repositories/credits_repository.dart' show CreditsRepository, decodeRec, mergeDetails;
+import '../../data/repositories/credits_repository.dart'
+    show CreditsRepository, decodeRec, mergeDetails;
 import '../recognition/track_identity.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
@@ -20,7 +21,8 @@ import '../../core/artist_key.dart';
 /// One track's commit in flight: the row and `track_enrich` read once, and
 /// what the parts decided on the way.
 class _Commit {
-  _Commit(this.g, this.f, this.enrichRow, this.fields) : raw = enrichRow?.details ?? '{}';
+  _Commit(this.g, this.f, this.enrichRow, this.fields)
+    : raw = enrichRow?.details ?? '{}';
 
   final EnrichGather g;
   final Track f;
@@ -132,7 +134,13 @@ class EnrichCommitter {
   Future<void> _commitMeta(_Commit c) async {
     final g = c.g, f = c.f, marks = g.marks;
     final at = DateTime.fromMillisecondsSinceEpoch(g.now);
-    final metaEmpty = isDue(EnrichPart.meta, f, c.enrichRow, at, mode: AskMode.force);
+    final metaEmpty = isDue(
+      EnrichPart.meta,
+      f,
+      c.enrichRow,
+      at,
+      mode: AskMode.force,
+    );
     final meta = g.meta;
     final m = meta?.match;
     final fields = c.fields;
@@ -176,11 +184,19 @@ class EnrichCommitter {
       )).key;
     }
     // Only if the album is still the one the file was saved for.
-    final fetched = g.cover == CoverResult.saved || g.cover == CoverResult.albumHasCover;
+    final fetched =
+        g.cover == CoverResult.saved || g.cover == CoverResult.albumHasCover;
     final saved =
-        fetched && g.coverAlbum == albumKey && !f.hasCover && f.coverSource == 0;
+        fetched &&
+        g.coverAlbum == albumKey &&
+        !f.hasCover &&
+        f.coverSource == 0;
     if (saved) {
-      await tracks.setCoverForAlbum(albumKey, true, CoverStore.coverKeyFor(albumKey));
+      await tracks.setCoverForAlbum(
+        albumKey,
+        true,
+        CoverStore.coverKeyFor(albumKey),
+      );
     }
     if (c.coverPending) {
       // No cover, nothing else filled: not «found». A cover that does not exist
@@ -200,7 +216,15 @@ class EnrichCommitter {
     if (g.mode != AskMode.force && c.stored!.isNotEmpty) {
       c.leave(EnrichPart.credits);
     } else {
-      c.raw = await credits!.save(g.trackId, g.credits, trackKnown: true, stored: c.stored, baseDetails: c.raw) ?? c.raw;
+      c.raw =
+          await credits!.save(
+            g.trackId,
+            g.credits,
+            trackKnown: true,
+            stored: c.stored,
+            baseDetails: c.raw,
+          ) ??
+          c.raw;
       c.credited = true;
     }
   }
@@ -220,14 +244,19 @@ class EnrichCommitter {
     var prop = rec.prop;
     final same = old != null && _sameIdentity(old.identity, rec.identity);
     // The same song keeps what was decided about it.
-    if (same && const {'discarded', 'accepted', 'auto'}.contains(old.prop)) prop = old.prop;
+    if (same && const {'discarded', 'accepted', 'auto'}.contains(old.prop)) {
+      prop = old.prop;
+    }
     final id = rec.identity;
-    final differs = id != null &&
+    final differs =
+        id != null &&
         (matchKey(id.title) != matchKey(c.f.title) ||
-            (id.artist.isNotEmpty && matchKey(id.artist) != matchKey(c.f.artist ?? '')));
+            (id.artist.isNotEmpty &&
+                matchKey(id.artist) != matchKey(c.f.artist ?? '')));
     final decided = const {'discarded', 'accepted', 'auto'}.contains(prop);
     final fixes = differs && !c.f.userEdited && !decided;
-    final fillsArtist = id != null &&
+    final fillsArtist =
+        id != null &&
         matchKey(id.title) == matchKey(c.f.title) &&
         id.artist.isNotEmpty &&
         isGenericArtist(c.f.artist ?? '');
@@ -236,8 +265,14 @@ class EnrichCommitter {
     if (fixes && !auto) prop = 'open';
     if (prop == 'open' && c.f.userEdited) prop = null;
     final original = rec.original ?? (same ? old.original : null);
-    if (prop != rec.prop || (rec.was == null && old?.was != null) || original != rec.original) {
-      rec = rec.copyWith(prop: prop, was: rec.was ?? old?.was, original: original);
+    if (prop != rec.prop ||
+        (rec.was == null && old?.was != null) ||
+        original != rec.original) {
+      rec = rec.copyWith(
+        prop: prop,
+        was: rec.was ?? old?.was,
+        original: original,
+      );
     }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
@@ -245,10 +280,20 @@ class EnrichCommitter {
       // Same title by matchKey: the correction fills the artist and keeps the track's title.
       c.correct = found
           ? rec.copyWith(
-              identity: TrackIdentity(title: c.f.title, artist: id.artist, ms: id.ms, isrc: id.isrc, mbid: id.mbid, vid: id.vid))
+              identity: TrackIdentity(
+                title: c.f.title,
+                artist: id.artist,
+                ms: id.ms,
+                isrc: id.isrc,
+                mbid: id.mbid,
+                vid: id.vid,
+              ),
+            )
           : rec;
     }
-    if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) c.mbid = rec.identity?.mbid;
+    if ((c.enrichRow?.mbid ?? '').isEmpty && rec.sure && rec.usable) {
+      c.mbid = rec.identity?.mbid;
+    }
   }
 
   Future<void> _commitCurio(_Commit c) async {
@@ -288,5 +333,6 @@ class EnrichCommitter {
 bool _sameIdentity(TrackIdentity? a, TrackIdentity? b) {
   if (a == null || b == null) return false;
   if (a.mbid != null && a.mbid == b.mbid) return true;
-  return matchKey(a.title) == matchKey(b.title) && matchKey(a.artist) == matchKey(b.artist);
+  return matchKey(a.title) == matchKey(b.title) &&
+      matchKey(a.artist) == matchKey(b.artist);
 }

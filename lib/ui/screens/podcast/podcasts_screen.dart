@@ -83,13 +83,20 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
       if (mounted) showMsg(context, l.podcastSubscribed(item.title));
     } on PodcastException catch (e) {
       AppLog.w('podcast subscribe failed', e);
-      if (mounted) showMsg(context, podcastFailureText(context, l, e.kind, e.yt));
+      if (mounted) {
+        showMsg(context, podcastFailureText(context, l, e.kind, e.yt));
+      }
     } finally {
       if (mounted) setState(() => _busy.remove(item.key));
     }
   }
 
-  PodcastListingRow _row(PodcastListing item, PodcastSubscriptions subs, {int? rank, bool origin = false}) {
+  PodcastListingRow _row(
+    PodcastListing item,
+    PodcastSubscriptions subs, {
+    int? rank,
+    bool origin = false,
+  }) {
     final id = subs.idOf(item);
     return PodcastListingRow(
       key: ValueKey('listing-${item.key}'),
@@ -101,7 +108,9 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
       onSubscribe: () => _subscribe(item),
       onOpen: () => ShellNav.open<void>(
         context,
-        id == null ? PodcastPreviewScreen(listing: item) : PodcastDetailScreen(podcastId: id),
+        id == null
+            ? PodcastPreviewScreen(listing: item)
+            : PodcastDetailScreen(podcastId: id),
       ),
     );
   }
@@ -113,13 +122,20 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
       SectionHeader(l.podcastDiscover),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-        child: Text(l.podcastChartTitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted)),
+        child: Text(
+          l.podcastChartTitle,
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: context.cc.textMuted),
+        ),
       ),
       SizedBox(
         height: 56,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CcDims.margin,
+            vertical: CcDims.gap4,
+          ),
           children: [
             _chip(l.podcastGenreAll, null),
             for (final g in genres) _chip(podcastGenreName(l, g), g.id),
@@ -140,7 +156,9 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
             ),
           ];
         },
-        data: (items) => [for (final (i, e) in items.indexed) _row(e, subs, rank: i + 1)],
+        data: (items) => [
+          for (final (i, e) in items.indexed) _row(e, subs, rank: i + 1),
+        ],
       ),
     ];
   }
@@ -156,23 +174,33 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
   );
 
   List<Widget> _results(AppLocalizations l, PodcastSubscriptions subs) {
-    final arg = (query: _query, hl: Localizations.localeOf(context).languageCode);
-    return ref.watch(podcastSearchProvider(arg)).when(
-      loading: () => const [Skeleton.bigRow(rows: 5)],
-      error: (e, _) => [
-        ErrorState(
-          message: podcastErrorText(l, PodcastErrorKind.network),
-          onRetry: () => ref.invalidate(podcastSearchProvider(arg)),
-        ),
-      ],
-      data: (items) {
-        final merged = mergeListings(items, subs);
-        if (merged.isEmpty) {
-          return [Padding(padding: const EdgeInsets.all(CcDims.margin), child: Text(l.podcastSearchNone))];
-        }
-        return [for (final e in merged) _row(e, subs, origin: true)];
-      },
+    final arg = (
+      query: _query,
+      hl: Localizations.localeOf(context).languageCode,
     );
+    return ref
+        .watch(podcastSearchProvider(arg))
+        .when(
+          loading: () => const [Skeleton.bigRow(rows: 5)],
+          error: (e, _) => [
+            ErrorState(
+              message: podcastErrorText(l, PodcastErrorKind.network),
+              onRetry: () => ref.invalidate(podcastSearchProvider(arg)),
+            ),
+          ],
+          data: (items) {
+            final merged = mergeListings(items, subs);
+            if (merged.isEmpty) {
+              return [
+                Padding(
+                  padding: const EdgeInsets.all(CcDims.margin),
+                  child: Text(l.podcastSearchNone),
+                ),
+              ];
+            }
+            return [for (final e in merged) _row(e, subs, origin: true)];
+          },
+        );
   }
 
   @override
@@ -181,7 +209,8 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
     final cc = context.cc;
     // Watching keeps the maintenance alive while the page is open.
     ref.watch(podcastMaintenanceProvider);
-    final podcasts = ref.watch(podcastsProvider).value ?? const <PodcastSummary>[];
+    final podcasts =
+        ref.watch(podcastsProvider).value ?? const <PodcastSummary>[];
     final subs = PodcastSubscriptions(podcasts);
     final searchingNow = _searching && _query.isNotEmpty;
     return Scaffold(
@@ -209,7 +238,11 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
               _refreshing
                   ? const Padding(
                       padding: EdgeInsets.all(14),
-                      child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     )
                   : IconButton(
                       key: const ValueKey('refresh-all'),
@@ -245,14 +278,25 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
                   height: 176,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: CcDims.margin,
+                    ),
                     itemCount: podcasts.length,
                     itemBuilder: (_, i) => _YourPodcast(podcasts[i]),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, 0),
-                  child: Text(l.podcastsNotice, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cc.textMuted)),
+                  padding: const EdgeInsets.fromLTRB(
+                    CcDims.margin,
+                    CcDims.gap8,
+                    CcDims.margin,
+                    0,
+                  ),
+                  child: Text(
+                    l.podcastsNotice,
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: cc.textMuted),
+                  ),
                 ),
               ],
               ...searchingNow ? _results(l, subs) : _discover(l, subs),
@@ -281,7 +325,8 @@ class _YourPodcast extends StatelessWidget {
       child: InkWell(
         key: ValueKey('podcast-${p.id}'),
         borderRadius: BorderRadius.circular(CcDims.rGrid),
-        onTap: () => ShellNav.open<void>(context, PodcastDetailScreen(podcastId: p.id)),
+        onTap: () =>
+            ShellNav.open<void>(context, PodcastDetailScreen(podcastId: p.id)),
         child: Padding(
           padding: const EdgeInsets.all(CcDims.gap4),
           child: Column(
@@ -289,7 +334,12 @@ class _YourPodcast extends StatelessWidget {
             children: [
               CoverImage(coverKey: p.coverKey, size: 96, radius: CcDims.rGrid),
               const SizedBox(height: CcDims.gap4),
-              Text(p.title, style: theme.labelLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(
+                p.title,
+                style: theme.labelLarge,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               if (summary.toListen > 0)
                 Text(
                   l.podcastToListen(summary.toListen),
@@ -330,34 +380,71 @@ class PodcastListingRow extends StatelessWidget {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    final origin = item.origin == PodcastOrigin.ytm ? l.searchSourceYoutubeMusic : l.podcastOriginApple;
+    final origin = item.origin == PodcastOrigin.ytm
+        ? l.searchSourceYoutubeMusic
+        : l.podcastOriginApple;
     return InkWell(
       onTap: onOpen,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 72),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CcDims.margin,
+            vertical: CcDims.gap8,
+          ),
           child: Row(
             children: [
               if (rank != null)
-                SizedBox(width: 28, child: Text('$rank', style: theme.titleSmall?.copyWith(color: cc.textMuted))),
-              NetThumbnail(url: item.artworkUrl, width: 56, height: 56, icon: Icons.podcasts_rounded, radius: CcDims.rGrid),
+                SizedBox(
+                  width: 28,
+                  child: Text(
+                    '$rank',
+                    style: theme.titleSmall?.copyWith(color: cc.textMuted),
+                  ),
+                ),
+              NetThumbnail(
+                url: item.artworkUrl,
+                width: 56,
+                height: 56,
+                icon: Icons.podcasts_rounded,
+                radius: CcDims.rGrid,
+              ),
               const SizedBox(width: CcDims.gap12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.title, style: theme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      item.title,
+                      style: theme.titleSmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     if (item.author != null)
-                      Text(item.author!, style: theme.bodySmall?.copyWith(color: cc.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(
+                        item.author!,
+                        style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     if (showOrigin)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: DecoratedBox(
-                          decoration: BoxDecoration(color: cc.surface2, borderRadius: BorderRadius.circular(4)),
+                          decoration: BoxDecoration(
+                            color: cc.surface2,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            child: Text(origin, key: ValueKey('origin-${item.key}'), style: theme.labelSmall),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            child: Text(
+                              origin,
+                              key: ValueKey('origin-${item.key}'),
+                              style: theme.labelSmall,
+                            ),
                           ),
                         ),
                       ),
@@ -368,7 +455,11 @@ class PodcastListingRow extends StatelessWidget {
               if (subscribed)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
-                  child: Text(l.podcastSubscribedLabel, key: ValueKey('subscribed-${item.key}'), style: theme.labelLarge?.copyWith(color: cc.textMuted)),
+                  child: Text(
+                    l.podcastSubscribedLabel,
+                    key: ValueKey('subscribed-${item.key}'),
+                    style: theme.labelLarge?.copyWith(color: cc.textMuted),
+                  ),
                 )
               else
                 Semantics(
@@ -379,7 +470,9 @@ class PodcastListingRow extends StatelessWidget {
                   onTap: busy ? null : onSubscribe,
                   child: OutlinedButton(
                     key: ValueKey('subscribe-${item.key}'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                    ),
                     onPressed: busy ? null : onSubscribe,
                     child: Text(l.podcastSubscribe),
                   ),

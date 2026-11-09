@@ -30,7 +30,9 @@ bool Function(YtResult r) inLibraryTest({
   required bool Function(String videoId) hasDownload,
   required LibraryIndex? library,
 }) =>
-    (r) => hasDownload(r.id) || (library != null && libraryMatchOf(r, library) != null);
+    (r) =>
+        hasDownload(r.id) ||
+        (library != null && libraryMatchOf(r, library) != null);
 
 /// A song whose radio feeds a [SuggestionPool]: a library song, or an online
 /// one by its video id ([RadioSeed.online]).
@@ -40,7 +42,9 @@ class RadioSeed {
       title = track.title,
       key = '${track.id}';
 
-  RadioSeed.online(String this.videoId, this.title) : source = null, key = videoId;
+  RadioSeed.online(String this.videoId, this.title)
+    : source = null,
+      key = videoId;
 
   /// The library song, null for an online seed.
   final Track? source;
@@ -152,7 +156,15 @@ class SuggestionPool {
     bool Function(SuggestionCandidate c)? accept,
   }) {
     for (final kind in [RadioKind.song, RadioKind.artistVideo]) {
-      final c = _takeKind(kind, inLibrary, inQueue, log, filter, lastArtists, accept);
+      final c = _takeKind(
+        kind,
+        inLibrary,
+        inQueue,
+        log,
+        filter,
+        lastArtists,
+        accept,
+      );
       if (c != null) return c;
     }
     return null;
@@ -174,7 +186,8 @@ class SuggestionPool {
       for (var i = 0; i < queue.length;) {
         final item = queue[i];
         final r = item.result;
-        final never = item.kind == RadioKind.upload ||
+        final never =
+            item.kind == RadioKind.upload ||
             !_fits(r) ||
             _used.contains(r.id) ||
             log.recentlySuggested(r.id) ||

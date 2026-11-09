@@ -58,10 +58,15 @@ class _Adapter implements HttpClientAdapter {
   void Function()? onFetch;
   String? clipJson;
   final bodies = <String>[];
-  final String json = File('test/fixtures/innertube/ytm_radio.json').readAsStringSync();
+  final String json = File('test/fixtures/innertube/ytm_radio.json')
+      .readAsStringSync();
 
   @override
-  Future<ResponseBody> fetch(RequestOptions o, Stream<List<int>>? s, Future<void>? c) async {
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<List<int>>? s,
+    Future<void>? c,
+  ) async {
     bodies.add(o.data.toString());
     final g = gate;
     gate = null;
@@ -70,9 +75,13 @@ class _Adapter implements HttpClientAdapter {
     if (g != null) await g.future;
     final answer = clipJson ?? json;
     clipJson = null;
-    return ResponseBody.fromString(answer, 200, headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    });
+    return ResponseBody.fromString(
+      answer,
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
   }
 
   @override
@@ -84,31 +93,32 @@ class _NoMix implements YoutubeService {
   Future<PlaylistListing> listPlaylist(String url, {int limit = 500}) async =>
       const PlaylistListing.empty();
   @override
-  dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
+  dynamic noSuchMethod(Invocation i) =>
+      throw UnimplementedError('${i.memberName}');
 }
 
 Track _track(int id) => Track(
-      coverSource: 0,
-      id: id,
-      path: '/m/$id.mp3',
-      title: 'Song $id',
-      artist: 'Rock Band',
-      genre: 'Rock',
-      albumKey: 'k',
-      durationMs: 200000,
-      format: 'mp3',
-      sizeBytes: 1,
-      mtimeMs: 1,
-      hasCover: false,
-      isFavorite: false,
-      enrichStatus: 0,
-      userEdited: false,
-      missing: false,
-      ignored: false,
-      kind: 0,
-      addedAt: 1,
-      playCount: 0,
-    );
+  coverSource: 0,
+  id: id,
+  path: '/m/$id.mp3',
+  title: 'Song $id',
+  artist: 'Rock Band',
+  genre: 'Rock',
+  albumKey: 'k',
+  durationMs: 200000,
+  format: 'mp3',
+  sizeBytes: 1,
+  mtimeMs: 1,
+  hasCover: false,
+  isFavorite: false,
+  enrichStatus: 0,
+  userEdited: false,
+  missing: false,
+  ignored: false,
+  kind: 0,
+  addedAt: 1,
+  playCount: 0,
+);
 
 void main() {
   final oldList = [for (var i = 1; i <= 12; i++) i];
@@ -132,8 +142,10 @@ void main() {
     for (final id in [...oldList, ...newList]) {
       await downloads.add('dl$id', '/m/$id.mp3');
     }
-    final client = InnerTubeClient(Dio(BaseOptions(validateStatus: (_) => true))
-      ..httpClientAdapter = adapter);
+    final client = InnerTubeClient(
+      Dio(BaseOptions(validateStatus: (_) => true))
+        ..httpClientAdapter = adapter,
+    );
     controller = ShufflePlusController(
       host: host,
       online: OnlineEntries(),
@@ -145,7 +157,9 @@ void main() {
       filter: testGate(),
       resolver: SeedResolver(
         downloads: downloads,
-        index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),
+        index: SeedIndex(
+          file: () async => File(p.join(dir.path, 'seeds.json')),
+        ),
         searchSongs: (q) async => const [],
       ),
       radio: YtmRadioService(client, _NoMix(), now: () => now),
@@ -173,7 +187,8 @@ void main() {
     expect(done(), isTrue);
   }
 
-  Future<void> pause() => Future<void>.delayed(const Duration(milliseconds: 200));
+  Future<void> pause() =>
+      Future<void>.delayed(const Duration(milliseconds: 200));
 
   /// A new list starts. [quiet]: no event reaches the controller.
   void newSource({bool quiet = false}) {
@@ -184,73 +199,110 @@ void main() {
   }
 
   /// The id after «dl» in the radio request [i]: 1-2 digits old, 3 new.
-  String seed(int i) => RegExp(r'dl(\d+)').firstMatch(adapter.bodies[i])!.group(1)!;
+  String seed(int i) =>
+      RegExp(r'dl(\d+)').firstMatch(adapter.bodies[i])!.group(1)!;
 
   test('a radio answer for the old source is dropped; new seeds are used afterwards', () async {
     final gate = Completer<void>();
     adapter.gate = gate;
     controller.start();
-    await until(() => adapter.bodies.length == 1); // radio of an old seed, stuck
+    await until(
+      () => adapter.bodies.length == 1,
+    ); // radio of an old seed, stuck
     newSource();
     gate.complete();
     await pause();
-    expect(host.queueIds.where(isOnlineId), isEmpty, reason: 'nothing of the old list');
-    expect(adapter.bodies, hasLength(1), reason: 'the radio gap holds the next request');
+    expect(
+      host.queueIds.where(isOnlineId),
+      isEmpty,
+      reason: 'nothing of the old list',
+    );
+    expect(
+      adapter.bodies,
+      hasLength(1),
+      reason: 'the radio gap holds the next request',
+    );
 
     now = now.add(const Duration(minutes: 2));
     controller.poke();
     await until(() => adapter.bodies.length == 2);
     expect(seed(0), hasLength(lessThan(3)), reason: 'first request: old seed');
-    expect(seed(1), hasLength(3), reason: 'second request: seed of the new list');
+    expect(
+      seed(1),
+      hasLength(3),
+      reason: 'second request: seed of the new list',
+    );
   });
 
   test('a slow radio request that outlasts the gap: the next seed is asked at once, no failed step', () async {
     adapter
-      ..clipJson = File('test/fixtures/innertube/ytm_radio_video_seed.json').readAsStringSync()
+      ..clipJson = File('test/fixtures/innertube/ytm_radio_video_seed.json')
+          .readAsStringSync()
       ..onFetch = () => now = now.add(const Duration(minutes: 2));
     controller.start();
     await until(() => adapter.bodies.length == 2);
     expect(controller.stoppedForSession, isFalse);
     await pause();
-    expect(adapter.bodies, hasLength(2), reason: 'the gap (from the new clock) holds a third one');
-    expect(seed(1), isNot(seed(0)), reason: 'the next seed, not the same one again');
+    expect(
+      adapter.bodies,
+      hasLength(2),
+      reason: 'the gap (from the new clock) holds a third one',
+    );
+    expect(
+      seed(1),
+      isNot(seed(0)),
+      reason: 'the next seed, not the same one again',
+    );
   });
 
-  test('a source change nobody announces is noticed by the interrupted work', () async {
-    final gate = Completer<void>();
-    adapter.gate = gate;
-    controller.start();
-    await until(() => adapter.bodies.length == 1);
-    newSource(quiet: true);
-    now = now.add(const Duration(minutes: 2));
-    gate.complete();
-    await until(() => adapter.bodies.length == 2); // no poke from outside
-    expect(seed(1), hasLength(3));
-  });
+  test(
+    'a source change nobody announces is noticed by the interrupted work',
+    () async {
+      final gate = Completer<void>();
+      adapter.gate = gate;
+      controller.start();
+      await until(() => adapter.bodies.length == 1);
+      newSource(quiet: true);
+      now = now.add(const Duration(minutes: 2));
+      gate.complete();
+      await until(() => adapter.bodies.length == 2); // no poke from outside
+      expect(seed(1), hasLength(3));
+    },
+  );
 
-  test('a source change while the library loads: no radio for the old seed', () async {
-    final gate = Completer<void>();
-    libraryHook = () => gate.future;
-    controller.start();
-    await pause();
-    newSource(quiet: true);
-    gate.complete();
-    await until(() => adapter.bodies.isNotEmpty);
-    expect(seed(0), hasLength(3), reason: 'the first radio asked is the new list\'s');
-  });
+  test(
+    'a source change while the library loads: no radio for the old seed',
+    () async {
+      final gate = Completer<void>();
+      libraryHook = () => gate.future;
+      controller.start();
+      await pause();
+      newSource(quiet: true);
+      gate.complete();
+      await until(() => adapter.bodies.isNotEmpty);
+      expect(
+        seed(0),
+        hasLength(3),
+        reason: 'the first radio asked is the new list\'s',
+      );
+    },
+  );
 
-  test('a source change while an address is prepared inserts nothing', () async {
-    final gate = Completer<void>();
-    var preparing = false;
-    prepareHook = () {
-      preparing = true;
-      return gate.future;
-    };
-    controller.start();
-    await until(() => preparing);
-    newSource(quiet: true);
-    gate.complete();
-    await pause();
-    expect(host.queueIds.where(isOnlineId), isEmpty);
-  });
+  test(
+    'a source change while an address is prepared inserts nothing',
+    () async {
+      final gate = Completer<void>();
+      var preparing = false;
+      prepareHook = () {
+        preparing = true;
+        return gate.future;
+      };
+      controller.start();
+      await until(() => preparing);
+      newSource(quiet: true);
+      gate.complete();
+      await pause();
+      expect(host.queueIds.where(isOnlineId), isEmpty);
+    },
+  );
 }

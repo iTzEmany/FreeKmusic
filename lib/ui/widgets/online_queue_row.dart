@@ -100,27 +100,37 @@ class OnlineQueueRow extends ConsumerWidget {
                     style: theme.bodyLarge,
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (radio != null)
-                        Icon(Icons.circle, size: 8, color: cc.accent)
-                      else if (suggested)
-                        const SuggestedMarker(),
-                      if (radio != null) ...[
-                        const SizedBox(width: 6),
-                        Text(l.radioLive, style: theme.bodySmall),
-                      ] else if (track.artist != null) ...[
-                        if (suggested) Text(', ', style: theme.bodySmall),
-                        Flexible(
-                          child: Text(
-                            track.artist!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.bodySmall,
+                  // One label for the marker and the artist: a separate ', '
+                  // would be read as its own item.
+                  Semantics(
+                    label: radio == null && suggested
+                        ? (track.artist == null
+                              ? l.suggestedBadge
+                              : '${l.suggestedBadge}, ${track.artist}')
+                        : null,
+                    excludeSemantics: radio == null && suggested,
+                    child: Row(
+                      children: [
+                        if (radio != null)
+                          Icon(Icons.circle, size: 8, color: cc.accent)
+                        else if (suggested)
+                          const SuggestedMarker(),
+                        if (radio != null) ...[
+                          const SizedBox(width: 6),
+                          Text(l.radioLive, style: theme.bodySmall),
+                        ] else if (track.artist != null) ...[
+                          if (suggested) Text(', ', style: theme.bodySmall),
+                          Flexible(
+                            child: Text(
+                              track.artist!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.bodySmall,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ],
               ),

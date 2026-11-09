@@ -48,15 +48,19 @@ class PodcastOps {
 
   /// Follows a show of «Scopri» or of the search; null when Apple has no feed for it.
   Future<int?> followListing(PodcastListing item) async {
-    if (item.origin == PodcastOrigin.ytm) return _ref.read(ytmPodcastSyncProvider).subscribe(item.ytmId!);
+    if (item.origin == PodcastOrigin.ytm) {
+      return _ref.read(ytmPodcastSyncProvider).subscribe(item.ytmId!);
+    }
     final service = _ref.read(podcastServiceProvider);
     // A chart row has no feed yet: Apple gives it on request.
-    final feed = item.feedUrl ?? (await service.apple.lookup(item.appleId!))?.feedUrl;
+    final feed =
+        item.feedUrl ?? (await service.apple.lookup(item.appleId!))?.feedUrl;
     return feed == null ? null : service.subscribeFromUrl(feed);
   }
 
   /// Follows the feed at [url] (typed or picked in the directory).
-  Future<int> followUrl(String url) => _ref.read(podcastServiceProvider).subscribeFromUrl(url);
+  Future<int> followUrl(String url) =>
+      _ref.read(podcastServiceProvider).subscribeFromUrl(url);
 
   /// Reads the feed again (only when stale if [onlyIfStale]); the new episodes, null when the network was not asked.
   Future<int?> refresh(int podcastId, {bool onlyIfStale = false}) {
@@ -67,7 +71,9 @@ class PodcastOps {
   /// Removes the podcast with its episodes and downloaded files.
   Future<void> unsubscribe(int podcastId) async {
     final rows = await _ref.read(podcastEpisodesProvider(podcastId).future);
-    _ref.read(podcastDownloadsProvider.notifier).cancelAll([for (final r in rows) r.episode.id]);
+    _ref.read(podcastDownloadsProvider.notifier).cancelAll([
+      for (final r in rows) r.episode.id,
+    ]);
     await _ref.read(podcastServiceProvider).unsubscribe(podcastId);
   }
 
@@ -76,7 +82,10 @@ class PodcastOps {
 
   /// How many episodes of the podcast are downloaded.
   Future<int> downloadedCount(int podcastId) async =>
-      (await _ref.read(podcastRepositoryProvider).downloadedEpisodes(podcastId: podcastId)).length;
+      (await _ref
+              .read(podcastRepositoryProvider)
+              .downloadedEpisodes(podcastId: podcastId))
+          .length;
 
   /// «Segui» / «Segui già»: only the flag changes, heard episodes and bookmarks stay.
   Future<void> setFollowed(int podcastId, bool followed) =>
@@ -84,8 +93,12 @@ class PodcastOps {
 
   /// Deletes the downloaded files of the podcast, which stays listed (D-470).
   Future<void> deleteDownloads(int podcastId) async {
-    final rows = await _ref.read(podcastRepositoryProvider).downloadedEpisodes(podcastId: podcastId);
-    _ref.read(podcastDownloadsProvider.notifier).cancelAll([for (final r in rows) r.episode.id]);
+    final rows = await _ref
+        .read(podcastRepositoryProvider)
+        .downloadedEpisodes(podcastId: podcastId);
+    _ref.read(podcastDownloadsProvider.notifier).cancelAll([
+      for (final r in rows) r.episode.id,
+    ]);
     for (final r in rows) {
       await deleteEpisodeFile(r.episode.id);
     }
@@ -95,9 +108,20 @@ class PodcastOps {
   /// (an already saved podcast keeps its flag). Returns its id.
   Future<int> save(PodcastPreview d, {required bool followed}) async {
     final repo = _ref.read(podcastRepositoryProvider);
-    final id = await repo.subscribe(d.feedUrl, d.feed,
-        now: nowMs(), source: d.source, sourceId: d.sourceId, followed: followed);
-    await storePodcastCover(repo, _ref.read(podcastCoverSaverProvider), id, d.feed.imageUrl);
+    final id = await repo.subscribe(
+      d.feedUrl,
+      d.feed,
+      now: nowMs(),
+      source: d.source,
+      sourceId: d.sourceId,
+      followed: followed,
+    );
+    await storePodcastCover(
+      repo,
+      _ref.read(podcastCoverSaverProvider),
+      id,
+      d.feed.imageUrl,
+    );
     return id;
   }
 
@@ -107,14 +131,22 @@ class PodcastOps {
   Future<Track?> saveForPlay(PodcastPreview d, String guid) async {
     final info = d.feed.episodes.where((e) => e.guid == guid).firstOrNull;
     if (info == null) return null;
-    if (d.source != kPodcastSourceYtm && !isHttpAddress(info.audioUrl)) return null;
+    if (d.source != kPodcastSourceYtm && !isHttpAddress(info.audioUrl)) {
+      return null;
+    }
     final repo = _ref.read(podcastRepositoryProvider);
     final saved = await repo.byFeedUrl(d.feedUrl);
-    var episode = saved == null ? null : await repo.episodeByGuid(saved.id, guid);
+    var episode = saved == null
+        ? null
+        : await repo.episodeByGuid(saved.id, guid);
     // The feed is written only when the show or the episode is missing, or the feed has an
     // episode newer than the last time it was read: not at every tap.
     final checked = saved?.lastCheckedAt;
-    final newer = checked == null || d.feed.episodes.any((e) => (e.publishedAt?.millisecondsSinceEpoch ?? 0) > checked);
+    final newer =
+        checked == null ||
+        d.feed.episodes.any(
+          (e) => (e.publishedAt?.millisecondsSinceEpoch ?? 0) > checked,
+        );
     if (saved == null || episode == null || newer) {
       final id = await save(d, followed: false);
       episode = await repo.episodeByGuid(id, guid);
@@ -126,7 +158,11 @@ class PodcastOps {
     if (track == null) return false;
     await _ref
         .read(playerControllerProvider)
-        .playFromList([track], 0, context: PlayContext(PlayContextKind.podcast, podcastTitle));
+        .playFromList(
+          [track],
+          0,
+          context: PlayContext(PlayContextKind.podcast, podcastTitle),
+        );
     return true;
   }
 
@@ -149,9 +185,15 @@ class PodcastOps {
   Future<void> markPlayed(int episodeId, bool played) async {
     final repo = _ref.read(podcastRepositoryProvider);
     await repo.markPlayed(episodeId, played, now: nowMs());
-    // The player may have it open: it must not write the place again.
-    final trackId = played ? (await repo.episodeById(episodeId))?.trackId : null;
-    if (trackId != null) _ref.read(audioHandlerProvider).episodeHeardByHand(trackId);
+    // The player may have it open: by hand «heard» stops writing the place, «not heard» lets it again.
+    final trackId = (await repo.episodeById(episodeId))?.trackId;
+    if (trackId == null) return;
+    final handler = _ref.read(audioHandlerProvider);
+    if (played) {
+      handler.episodeHeardByHand(trackId);
+    } else {
+      handler.episodeUnheardByHand(trackId);
+    }
   }
 }
 

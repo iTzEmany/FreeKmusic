@@ -31,7 +31,11 @@ enum SecondOpinionKind {
 }
 
 class SecondOpinionOutcome {
-  const SecondOpinionOutcome(this.kind, {this.written = const {}, this.videoId});
+  const SecondOpinionOutcome(
+    this.kind, {
+    this.written = const {},
+    this.videoId,
+  });
 
   final SecondOpinionKind kind;
 
@@ -70,12 +74,17 @@ class SecondOpinion {
 
   Future<SecondOpinionOutcome> check(Track track, {CancelToken? cancel}) async {
     final t = await tracks.getById(track.id) ?? track;
-    if (t.durationMs <= 0) return const SecondOpinionOutcome(SecondOpinionKind.notConfirmed);
+    if (t.durationMs <= 0) {
+      return const SecondOpinionOutcome(SecondOpinionKind.notConfirmed);
+    }
     final List<YtResult> results;
     try {
       await enrichment.limiter.wait();
       final artist = (t.artist ?? '').trim();
-      results = await client.searchSongs('${t.title} $artist'.trim(), cancel: cancel);
+      results = await client.searchSongs(
+        '${t.title} $artist'.trim(),
+        cancel: cancel,
+      );
     } on YtException catch (e) {
       return _failed(e, e.kind == YtErrorKind.rateLimited);
     } on InnerTubeChanged catch (e) {
@@ -85,32 +94,42 @@ class SecondOpinion {
       return _failed(e, false);
     }
     final hit = _confirmed(t, results);
-    if (hit == null) return const SecondOpinionOutcome(SecondOpinionKind.notConfirmed);
+    if (hit == null) {
+      return const SecondOpinionOutcome(SecondOpinionKind.notConfirmed);
+    }
     return _fill(t, hit, cancel);
   }
 
   SecondOpinionOutcome _failed(Object e, bool rateLimited) {
     AppLog.w('second opinion search failed: $e');
     return SecondOpinionOutcome(
-        rateLimited ? SecondOpinionKind.throttled : SecondOpinionKind.networkError);
+      rateLimited
+          ? SecondOpinionKind.throttled
+          : SecondOpinionKind.networkError,
+    );
   }
 
   YtResult? _confirmed(Track t, List<YtResult> results) {
     final artist = (t.artist ?? '').trim();
     final row = ImportRow(
-        index: 0,
-        title: t.title,
-        artists: [if (artist.isNotEmpty) artist],
-        album: t.album,
-        durationMs: t.durationMs);
+      index: 0,
+      title: t.title,
+      artists: [if (artist.isNotEmpty) artist],
+      album: t.album,
+      durationMs: t.durationMs,
+    );
     final scored = [for (final r in results) (r, scoreCandidate(row, r))];
     YtResult? best;
     var bestScore = 0.0;
     for (final (r, score) in scored) {
       final d = r.duration;
       if (r.albumId == null || (d != null && d > _maxDuration)) continue;
-      if (!ytmMatches(d, t.durationMs,
-          slackMs: _durationSlack.inMilliseconds, titleOk: score >= sureThreshold)) {
+      if (!ytmMatches(
+        d,
+        t.durationMs,
+        slackMs: _durationSlack.inMilliseconds,
+        titleOk: score >= sureThreshold,
+      )) {
         continue;
       }
       if (artist.isEmpty) {
@@ -118,8 +137,11 @@ class SecondOpinion {
         // no other artist may sing a song just as good a match.
         if (matchTitleKey(r.title) != matchTitleKey(t.title)) continue;
         final who = matchKey(r.artists.firstOrNull ?? '');
-        final rival = scored.any((o) =>
-            o.$2 >= sureThreshold && matchKey(o.$1.artists.firstOrNull ?? '') != who);
+        final rival = scored.any(
+          (o) =>
+              o.$2 >= sureThreshold &&
+              matchKey(o.$1.artists.firstOrNull ?? '') != who,
+        );
         if (rival) continue;
       }
       if (score > bestScore) {
@@ -130,15 +152,22 @@ class SecondOpinion {
     return best;
   }
 
-  Future<SecondOpinionOutcome> _fill(Track t, YtResult r, CancelToken? cancel) async {
+  Future<SecondOpinionOutcome> _fill(
+    Track t,
+    YtResult r,
+    CancelToken? cancel,
+  ) async {
     final fields = <EnrichField>{};
     var limited = false;
     final resultArtist = r.artists.firstOrNull;
-    final artist = (t.artist ?? '').trim().isEmpty && !t.userEdited ? resultArtist : null;
+    final artist = (t.artist ?? '').trim().isEmpty && !t.userEdited
+        ? resultArtist
+        : null;
     if (artist != null) fields.add(EnrichField.artist);
     // A local album that is another one: the song is the same but the file
     // belongs to a different release, so only the artist is believed.
-    final differentAlbum = t.album != null &&
+    final differentAlbum =
+        t.album != null &&
         (r.album == null || matchTitleKey(t.album!) != matchTitleKey(r.album!));
     String? album, cover, genre, lyrics;
     int? year, number;
@@ -156,9 +185,11 @@ class SecondOpinion {
           if (wantCover) cover = page.coverUrl;
           if (t.trackNumber == null) {
             number = page.tracks
-                .where((x) =>
-                    x.result.id == r.id ||
-                    matchTitleKey(x.result.title) == matchTitleKey(r.title))
+                .where(
+                  (x) =>
+                      x.result.id == r.id ||
+                      matchTitleKey(x.result.title) == matchTitleKey(r.title),
+                )
                 .firstOrNull
                 ?.number;
           }
@@ -176,11 +207,16 @@ class SecondOpinion {
       if (cover != null) fields.add(EnrichField.cover);
       if (number != null) fields.add(EnrichField.trackNumber);
       final mbRest = _mbRestUntil;
-      if (t.genre == null && (mbRest == null || DateTime.now().isAfter(mbRest))) {
+      if (t.genre == null &&
+          (mbRest == null || DateTime.now().isAfter(mbRest))) {
         try {
           genre = await musicBrainz.genreFor(
-              t.title, (t.artist ?? '').trim().isEmpty ? resultArtist ?? '' : t.artist!,
-              t.durationMs, isrc: t.isrc, cancel: cancel);
+            t.title,
+            (t.artist ?? '').trim().isEmpty ? resultArtist ?? '' : t.artist!,
+            t.durationMs,
+            isrc: t.isrc,
+            cancel: cancel,
+          );
         } on RateLimitedException catch (e) {
           _mbRestUntil = DateTime.now().add(const Duration(minutes: 10));
           AppLog.w('second opinion genre skipped: $e');
@@ -211,7 +247,9 @@ class SecondOpinion {
     if (cur != null) {
       if (cur.year != null) fields.remove(EnrichField.year);
       if (cur.genre != null) fields.remove(EnrichField.genre);
-      if (cur.lyricsPlain != null || cur.lyricsSynced != null) fields.remove(EnrichField.lyrics);
+      if (cur.lyricsPlain != null || cur.lyricsSynced != null) {
+        fields.remove(EnrichField.lyrics);
+      }
     }
     final proposal = EnrichmentProposal(
       track: t,
@@ -231,12 +269,18 @@ class SecondOpinion {
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) rethrow;
       AppLog.w('second opinion write failed: $e');
-      return SecondOpinionOutcome(SecondOpinionKind.networkError, videoId: r.id);
+      return SecondOpinionOutcome(
+        SecondOpinionKind.networkError,
+        videoId: r.id,
+      );
     }
-    AppLog.i('second opinion: ${r.id} confirmed, wrote ${fields.map((f) => f.name).join(', ')}');
+    AppLog.i(
+      'second opinion: ${r.id} confirmed, wrote ${fields.map((f) => f.name).join(', ')}',
+    );
     return SecondOpinionOutcome(
-        limited ? SecondOpinionKind.throttled : SecondOpinionKind.confirmed,
-        written: fields,
-        videoId: r.id);
+      limited ? SecondOpinionKind.throttled : SecondOpinionKind.confirmed,
+      written: fields,
+      videoId: r.id,
+    );
   }
 }

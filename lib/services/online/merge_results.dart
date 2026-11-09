@@ -58,9 +58,8 @@ String _artistOf(YtResult r) {
   return c.artist.isEmpty ? r.channel : c.artist;
 }
 
-String _titleOf(YtResult r) => r.artists.isNotEmpty
-    ? r.title
-    : cleanSearchQuery(r.title, r.channel).title;
+String _titleOf(YtResult r) =>
+    r.artists.isNotEmpty ? r.title : cleanSearchQuery(r.title, r.channel).title;
 
 String _key(String title, String artist) =>
     '${matchTitleKey(title)}|${artistKey(artist)}';
@@ -89,7 +88,8 @@ bool _fits(_Group g, ScoredResult s) {
   if (g.members.any((m) => m.result.id == s.result.id)) return true;
   // Two uploads of one source are two catalog entries: only the other source
   // is the same song seen twice.
-  return !g.has(s.source) && g.members.any((m) => _sameSong(m.result, s.result));
+  return !g.has(s.source) &&
+      g.members.any((m) => _sameSong(m.result, s.result));
 }
 
 int _byConfidence(ScoredResult a, ScoredResult b) {
@@ -118,7 +118,8 @@ List<SmartResult> mergeResults(List<ScoredResult> scored) {
 SmartResult _toResult(_Group g) {
   // A group holds at most one song and one video: the catalog song, with its
   // album and artist pages, is the one shown.
-  final members = [...g.members]..sort((a, b) => a.source.index.compareTo(b.source.index));
+  final members = [...g.members]
+    ..sort((a, b) => a.source.index.compareTo(b.source.index));
   final primary = members.first.result;
   final others = <YtResult>[];
   for (final m in members.skip(1)) {
@@ -130,7 +131,8 @@ SmartResult _toResult(_Group g) {
     alternatives: others,
     confidence: g.confidence,
     hasVideo: g.members.any(
-        (m) => m.source == MediaKind.ytVideo && m.result.id != primary.id),
+      (m) => m.source == MediaKind.ytVideo && m.result.id != primary.id,
+    ),
   );
 }
 
@@ -152,21 +154,32 @@ class BestSplit {
 const kNoneSureCount = 5;
 
 /// [merged] must be best first, as [mergeResults] gives it.
-BestSplit splitBest(List<SmartResult> merged, double threshold, {int maxBest = 15}) {
+BestSplit splitBest(
+  List<SmartResult> merged,
+  double threshold, {
+  int maxBest = 15,
+}) {
   final sure = merged.where((r) => r.confidence >= threshold).toList();
   if (sure.isEmpty) {
-    return BestSplit(merged.take(kNoneSureCount).toList(),
-        merged.skip(kNoneSureCount).toList(),
-        noneSure: merged.isNotEmpty);
+    return BestSplit(
+      merged.take(kNoneSureCount).toList(),
+      merged.skip(kNoneSureCount).toList(),
+      noneSure: merged.isNotEmpty,
+    );
   }
   final best = sure.take(maxBest).toSet();
   return BestSplit(
-    [for (final r in merged) if (best.contains(r)) r],
-    [for (final r in merged) if (!best.contains(r)) r],
+    [
+      for (final r in merged)
+        if (best.contains(r)) r,
+    ],
+    [
+      for (final r in merged)
+        if (!best.contains(r)) r,
+    ],
     noneSure: false,
   );
 }
-
 
 /// D-400: the library has its say only when a song is what was asked for
 /// (also with the artist), not when the phrase is an artist or an album.
@@ -175,7 +188,8 @@ bool libraryAppliesTo(SearchIntent intent) =>
     intent == SearchIntent.songs ||
     intent == SearchIntent.artistAndSongs;
 
-ImportRow _asRow(String title, List<String> artists, Duration? length) => ImportRow(
+ImportRow _asRow(String title, List<String> artists, Duration? length) =>
+    ImportRow(
       index: 0,
       title: title,
       artists: artists,
@@ -194,7 +208,10 @@ LibraryEntryLite? libraryMatchOf(YtResult r, LibraryIndex library) {
   return m == null
       ? null
       : library.find(
-          _asRow(r.title.substring(m.end), [r.title.substring(0, m.start)], r.duration));
+          _asRow(r.title.substring(m.end), [
+            r.title.substring(0, m.start),
+          ], r.duration),
+        );
 }
 
 /// A song the library already has; [track] is the library track it stands for,
@@ -224,7 +241,8 @@ OwnedHit? ownedMatch(
   return downloaded ? (track: null) : null;
 }
 
-bool ownedByLibrary(SmartResult row, LibraryIndex library) => ownedMatch(row, library) != null;
+bool ownedByLibrary(SmartResult row, LibraryIndex library) =>
+    ownedMatch(row, library) != null;
 
 typedef WithoutOwned = ({
   List<SmartResult> kept,
@@ -265,17 +283,19 @@ class OwnedSplit {
     LibraryIndex library, {
     String? Function(YtResult r)? downloadPath,
   }) : this._(
-          withoutOwned(best, library, downloadPath: downloadPath),
-          withoutOwned(others, library, downloadPath: downloadPath),
-        );
+         withoutOwned(best, library, downloadPath: downloadPath),
+         withoutOwned(others, library, downloadPath: downloadPath),
+       );
 
   OwnedSplit._(WithoutOwned b, WithoutOwned o)
-      : best = b.kept,
-        others = o.kept,
-        hiddenRows = [...b.hiddenRows, ...o.hiddenRows],
-        // The tracks of the hidden rows, so «Nella tua libreria» always has
-        // what «N nascosti» refers to.
-        matchIds = {for (final m in [...b.matches, ...o.matches]) m.id}.toList();
+    : best = b.kept,
+      others = o.kept,
+      hiddenRows = [...b.hiddenRows, ...o.hiddenRows],
+      // The tracks of the hidden rows, so «Nella tua libreria» always has
+      // what «N nascosti» refers to.
+      matchIds = {
+        for (final m in [...b.matches, ...o.matches]) m.id,
+      }.toList();
 
   final List<SmartResult> best, others;
 

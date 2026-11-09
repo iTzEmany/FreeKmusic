@@ -19,10 +19,10 @@ void main() {
       ),
       _g('Podcasts', '/storage/emulated/0/Podcasts'),
     ]);
-    expect(labels['/storage/emulated/0/Music'], '0/Music');
+    expect(labels['/storage/emulated/0/Music'], 'Music');
     expect(
       labels['/storage/emulated/0/Android/data/com.codecore.player/files/Music'],
-      'files/Music',
+      'com.codecore.player/Music',
     );
     expect(labels['/storage/emulated/0/Podcasts'], 'Podcasts');
   });

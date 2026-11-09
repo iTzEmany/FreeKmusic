@@ -18,6 +18,7 @@ const _scoreRange = 0.55;
 
 /// Versions the phrase may ask for; a result without it is a different recording.
 const _askedVersionPenalty = 0.7;
+
 /// Studio leftovers: a different recording unless the phrase asks for it.
 const _alternateTakes = ['take', 'demo', 'alternate', 'outtake', 'rehearsal'];
 const _alternateTakePenalty = 0.8;
@@ -56,7 +57,8 @@ class ScoredResult {
   /// Place in its source's list, 0 first.
   final int position;
 
-  ScoredResult withConfidence(double c) => ScoredResult(result, c, source, position);
+  ScoredResult withConfidence(double c) =>
+      ScoredResult(result, c, source, position);
 }
 
 /// The name [r] credits (artists, the one in «Artist - Title», the channel
@@ -77,7 +79,9 @@ _Recognized? _recognizedArtist(String queryKey, YtResult r) {
     if (key.length < 2) continue;
     final typed = hasPhrase(queryKey, key) ? key : _typedStartOf(queryKey, key);
     if (typed == null) continue;
-    if (best == null || typed.length > best.typed.length) best = (name: key, typed: typed);
+    if (best == null || typed.length > best.typed.length) {
+      best = (name: key, typed: typed);
+    }
   }
   return best;
 }
@@ -98,7 +102,10 @@ String _without(String queryKey, String phrase) {
   final words = queryKey.split(' '), drop = phrase.split(' ');
   for (var i = 0; i + drop.length <= words.length; i++) {
     if (words.sublist(i, i + drop.length).join(' ') == phrase) {
-      return [...words.sublist(0, i), ...words.sublist(i + drop.length)].join(' ');
+      return [
+        ...words.sublist(0, i),
+        ...words.sublist(i + drop.length),
+      ].join(' ');
     }
   }
   return queryKey;
@@ -130,10 +137,13 @@ bool _byLibraryArtist(YtResult r, Set<String> library) {
 /// [fromTopCard] marks the song the top card points to. [libraryArtists]
 /// ([libraryArtistKey] of each) give a small bonus to their results; pass it
 /// only for a phrase that names no artist (see [scoreAll]).
-double queryConfidence(String query, YtResult r,
-    {int rank = -1,
-    bool fromTopCard = false,
-    Set<String> libraryArtists = const {}}) {
+double queryConfidence(
+  String query,
+  YtResult r, {
+  int rank = -1,
+  bool fromTopCard = false,
+  Set<String> libraryArtists = const {},
+}) {
   final queryKey = matchKey(query);
   final artist = _recognizedArtist(queryKey, r);
   // With only the artist in the phrase the title cannot tell results apart:
@@ -153,10 +163,14 @@ double queryConfidence(String query, YtResult r,
       !rest.split(' ').any(gotWords.contains)) {
     c *= _noTitleWordPenalty;
   }
-  if (otherVersions.any((w) => hasPhrase(queryKey, w) && !hasPhrase(gotTitle, w))) {
+  if (otherVersions.any(
+    (w) => hasPhrase(queryKey, w) && !hasPhrase(gotTitle, w),
+  )) {
     c *= _askedVersionPenalty;
   }
-  if (_alternateTakes.any((w) => !hasPhrase(queryKey, w) && hasPhrase(gotTitle, w))) {
+  if (_alternateTakes.any(
+    (w) => !hasPhrase(queryKey, w) && hasPhrase(gotTitle, w),
+  )) {
     c *= _alternateTakePenalty;
   }
   final length = r.duration;
@@ -187,24 +201,38 @@ List<ScoredResult> scoreAll(
   Set<String> libraryArtists = const {},
 }) {
   final phraseKey = matchKey(query);
-  final namesArtist = libraryArtists.isNotEmpty &&
+  final namesArtist =
+      libraryArtists.isNotEmpty &&
       [...songs, ...videos].any((r) => _recognizedArtist(phraseKey, r) != null);
   final affinity = namesArtist ? const <String>{} : libraryArtists;
   final cardSong = card is TopSong ? card.videoId : null;
   final out = <ScoredResult>[
     for (final (i, r) in songs.indexed)
-      ScoredResult(r,
-          queryConfidence(query, r,
-              rank: i, fromTopCard: r.id == cardSong, libraryArtists: affinity),
-          MediaKind.ytmSong, i),
+      ScoredResult(
+        r,
+        queryConfidence(
+          query,
+          r,
+          rank: i,
+          fromTopCard: r.id == cardSong,
+          libraryArtists: affinity,
+        ),
+        MediaKind.ytmSong,
+        i,
+      ),
     for (final (i, r) in videos.indexed)
       ScoredResult(
-          r, queryConfidence(query, r, libraryArtists: affinity), MediaKind.ytVideo, i),
+        r,
+        queryConfidence(query, r, libraryArtists: affinity),
+        MediaKind.ytVideo,
+        i,
+      ),
   ];
   final queryKey = matchKey(query);
   final asksLong = _longAsks.any((w) => hasPhrase(queryKey, w));
   final looksForSong = out.any(
-      (s) => s.source == MediaKind.ytmSong && s.confidence >= kBestThreshold);
+    (s) => s.source == MediaKind.ytmSong && s.confidence >= kBestThreshold,
+  );
   if (asksLong || !looksForSong) return out;
   return [
     for (final s in out)

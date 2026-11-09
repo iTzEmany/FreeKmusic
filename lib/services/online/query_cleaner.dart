@@ -19,47 +19,59 @@ final _ext = RegExp(r'\.(mp3|m4a|flac|wav|ogg|aac|wma)$', caseSensitive: false);
 final _prefix = RegExp(r'^(mix|audio|video|mashup)\s+', caseSensitive: false);
 final _numbering = RegExp(r'^\d{1,3}[\s._-]+');
 final _noiseGroup = RegExp(
-    r'[\(\[\{][^\)\]\}]*(official|video|audio|remaster|hd|4k|hq|lyric|visualizer|clip|deluxe|bonus)[^\)\]\}]*[\)\]\}]',
-    caseSensitive: false);
+  r'[\(\[\{][^\)\]\}]*(official|video|audio|remaster|hd|4k|hq|lyric|visualizer|clip|deluxe|bonus)[^\)\]\}]*[\)\]\}]',
+  caseSensitive: false,
+);
+
 /// «- Remastered 2011», «- 2009 Remaster», «- Remaster»: a tail that says
 /// nothing about which song it is.
 final _remasterTail = RegExp(
-    r'\s*[-–—]\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+(?:version|edition))?(?:\s+\d{4})?\s*$',
-    caseSensitive: false);
+  r'\s*[-–—]\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+(?:version|edition))?(?:\s+\d{4})?\s*$',
+  caseSensitive: false,
+);
 
 /// «Song (2)»: the copy number a file manager adds to a duplicate.
 final _copyNumber = RegExp(r'\s*\(\d{1,2}\)\s*$');
 
 final _noisePhrase = RegExp(
-    r'\b(official video|official audio|lyric video|4k remaster|remastered)\b',
-    caseSensitive: false);
+  r'\b(official video|official audio|lyric video|4k remaster|remastered)\b',
+  caseSensitive: false,
+);
 final _separator = RegExp(r' [-–—] ');
+
 /// B of «A - B» that is a version of the song, not its title («Song - Live»);
 /// read outside brackets, so «Believer (Romy Wave Cover)» is still a title.
 /// Mirrors `otherVersions` (track_matcher imports this file, so no import).
 final _versionTail = RegExp(
-    r'\b(live|cover|karaoke|remix|mix|edit|radio|extended|original|version|acoustic|demo|instrumental|remaster(?:ed)?|unplugged|slowed|sped up|nightcore|reverb|mashup|from|feat|ft)\b',
-    caseSensitive: false);
+  r'\b(live|cover|karaoke|remix|mix|edit|radio|extended|original|version|acoustic|demo|instrumental|remaster(?:ed)?|unplugged|slowed|sped up|nightcore|reverb|mashup|from|feat|ft)\b',
+  caseSensitive: false,
+);
 
 /// Pictographs, dingbats and joiners that YouTube titles decorate with.
 final _emoji = RegExp(
-    '[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\uFE0F\\u200D]',
-    unicode: true);
+  '[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\uFE0F\\u200D]',
+  unicode: true,
+);
 final _cjkBrackets = RegExp('【[^】]*】');
 final _emptyPiece = RegExp(r'^\s*$|^\s*[-–—]\s|\s[-–—]\s*$');
 final _squareGroup = RegExp(r'\[[^\]]*\]');
 final _ostTag = RegExp(r'[\(\[]\s*ost\s*[\)\]]', caseSensitive: false);
+
 /// Channel numbering «No.19»: only bracketed, or leading/trailing around a
 /// separator, so «Symphony No. 5 - I. Allegro» keeps its number.
 final _channelNo = RegExp(
-    r'[\(\[]\s*no\.?\s*\d+\s*[\)\]]|^no\.?\s*\d+\s*[-–—|:]\s*|\s[-–—|]\s*no\.?\s*\d+\s*$',
-    caseSensitive: false);
+  r'[\(\[]\s*no\.?\s*\d+\s*[\)\]]|^no\.?\s*\d+\s*[-–—|:]\s*|\s[-–—|]\s*no\.?\s*\d+\s*$',
+  caseSensitive: false,
+);
+
 /// «"Song" by X» / «_Song_ by X»: only after a closing quote or underscore,
 /// so «Stand by Me» is not split.
 final _byArtist = RegExp(r'(?<=["”_])\s+by\s+([^"”_]+)$', caseSensitive: false);
 final _bracketGroup = RegExp(r'[\(\[\{][^\)\]\}]*[\)\]\}]');
-final _artistSuffix =
-    RegExp(r'\s*(?:-\s*)?(official|vevo|topic)$', caseSensitive: false);
+final _artistSuffix = RegExp(
+  r'\s*(?:-\s*)?(official|vevo|topic)$',
+  caseSensitive: false,
+);
 
 String _fixQuotes(String s) => s
     .replaceAll(RegExp('["“”`]'), '')
@@ -97,7 +109,9 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
       .replaceAll(_ostTag, ' ')
       .replaceAll(_channelNo, ' ');
   final noSquare = title.replaceAllMapped(
-      _squareGroup, (m) => _versionTail.hasMatch(m[0]!) ? m[0]! : ' ');
+    _squareGroup,
+    (m) => _versionTail.hasMatch(m[0]!) ? m[0]! : ' ',
+  );
   // «[Intro]» or «Artist - [Intro]» is all title: keep the brackets then.
   if (!_emptyPiece.hasMatch(noSquare)) title = noSquare;
   final by = _byArtist.firstMatch(title);
@@ -137,7 +151,10 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
             !normalize(b).contains(tag) &&
             !_versionTail.hasMatch(b.replaceAll(_bracketGroup, ' '))) {
           // The tagged artist is the YouTube uploader: «Real Artist - Title».
-          tagged = CleanQuery(title, artist.replaceFirst(_artistSuffix, '').trim());
+          tagged = CleanQuery(
+            title,
+            artist.replaceFirst(_artistSuffix, '').trim(),
+          );
           (artist, title) = _creditSplit(a, b);
         }
       }
@@ -152,7 +169,8 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   // «Fueled By Ramen and twenty one pilots - twenty one pilots Stressed
   // Out»: when the title repeats one side of an «and», that side is the
   // artist and the other is a label or a guest.
-  for (final side in a.split(RegExp(r'\s+(?:and|&)\s+', caseSensitive: false)).reversed) {
+  for (final side
+      in a.split(RegExp(r'\s+(?:and|&)\s+', caseSensitive: false)).reversed) {
     final sideTrim = side.trim();
     if (sideTrim.isNotEmpty &&
         sideTrim != a &&
@@ -162,7 +180,6 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   }
   return (a, b);
 }
-
 
 /// The names of [artist] in order, each with the separator text that follows it
 /// ('' for the last); empty pieces are dropped.
@@ -183,10 +200,10 @@ List<({String name, String sep})> splitArtists(String artist) {
   return out;
 }
 
-
 final _coreNoise = RegExp(
-    r'[\(\[\{][^\)\]\}]*(live|unplugged|acoustic|version|session|edit|from the series)[^\)\]\}]*[\)\]\}]',
-    caseSensitive: false);
+  r'[\(\[\{][^\)\]\}]*(live|unplugged|acoustic|version|session|edit|from the series)[^\)\]\}]*[\)\]\}]',
+  caseSensitive: false,
+);
 
 String coreTitle(String title) =>
     title.replaceAll(_coreNoise, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();

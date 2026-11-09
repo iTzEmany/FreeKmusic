@@ -8,7 +8,8 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../providers/library_providers.dart' show searchTracksProvider;
 import '../../../providers/settings_providers.dart';
-import '../../../providers/smart_search_providers.dart' show ownedTracksProvider;
+import '../../../providers/smart_search_providers.dart'
+    show ownedTracksProvider;
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/merge_results.dart';
 import '../../../services/online/query_match.dart' show MediaKind;
@@ -55,13 +56,16 @@ class LibraryTracksSection extends ConsumerWidget {
     // first rows; hidden duplicates the text misses follow, in a fixed order.
     final found = byText ?? const <Track>[];
     final foundIds = {for (final t in found) t.id};
-    final missed = [
-      for (final t in extra)
-        if (!foundIds.contains(t.id)) t,
-    ]..sort((a, b) {
-        final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
-        return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
-      });
+    final missed =
+        [
+          for (final t in extra)
+            if (!foundIds.contains(t.id)) t,
+        ]..sort((a, b) {
+          final byTitle = a.title.toLowerCase().compareTo(
+            b.title.toLowerCase(),
+          );
+          return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+        });
     final tracks = [...found, ...missed];
     if (tracks.isEmpty) return const SizedBox.shrink();
     final l = context.l10n;
@@ -117,9 +121,8 @@ class OwnedHiddenNote extends StatelessWidget {
       ),
       child: Text(
         context.l10n.onlineOwnedHidden(count),
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: context.cc.textMuted,
-        ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: context.cc.textMuted),
       ),
     );
   }
@@ -146,10 +149,7 @@ class SourceFilterChips extends StatelessWidget {
         selected: filter,
         onChanged: onPick,
         items: [
-          BlockItem(
-            value: null,
-            label: l.onlineFilterAll,
-          ),
+          BlockItem(value: null, label: l.onlineFilterAll),
           BlockItem(
             value: MediaKind.ytmSong,
             label: sourceName(l, MediaKind.ytmSong),
@@ -226,7 +226,12 @@ class OthersChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap8),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap8,
+        CcDims.margin,
+        CcDims.gap8,
+      ),
       child: Align(
         alignment: Alignment.centerLeft,
         child: ActionChip(
@@ -317,7 +322,9 @@ class SmartRow extends ConsumerWidget {
       ),
     );
     final who = r.artistIds.indexWhere((id) => id.isNotEmpty);
-    final kind = row.sources.contains(MediaKind.ytmSong) ? MediaKind.ytmSong : MediaKind.ytVideo;
+    final kind = row.sources.contains(MediaKind.ytmSong)
+        ? MediaKind.ytmSong
+        : MediaKind.ytVideo;
     final small = Theme.of(context).textTheme.labelSmall
         ?.copyWith(color: cc.textMuted);
     return OnlineSongRow(

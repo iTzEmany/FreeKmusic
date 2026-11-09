@@ -6,7 +6,10 @@ import 'package:flutter/services.dart';
 import '../../core/app_log.dart';
 import '../memory/disk_space.dart' show storageChannelName;
 
-typedef ProcessStarter = Future<Process> Function(String exe, List<String> args);
+typedef ProcessStarter = Future<Process> Function(
+  String exe,
+  List<String> args,
+);
 
 /// Opens a folder in the system file manager: `xdg-open` on Linux, `explorer`
 /// on Windows, an `ACTION_VIEW` intent (channel `codecore/storage`) on Android.
@@ -32,11 +35,16 @@ class FolderOpener {
   /// → `primary:Music`, an SD card keeps its volume id); null for any other path,
   /// for other users' storage, `..` and the app folders DocumentsUI does not open.
   static String? documentUri(String path) {
-    final clean = path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'/$'), '');
+    final clean = path
+        .replaceAll(RegExp(r'/+'), '/')
+        .replaceAll(RegExp(r'/$'), '');
     if (clean.split('/').contains('..')) return null;
     final m =
-        RegExp(r'^/(?:storage/emulated/0|sdcard|storage/self/primary)(?:/(.*))?$').firstMatch(clean) ??
-        RegExp(r'^/storage/(?!(?:emulated|self)(?:/|$))([^/]+)(?:/(.*))?$').firstMatch(clean);
+        RegExp(
+          r'^/(?:storage/emulated/0|sdcard|storage/self/primary)(?:/(.*))?$',
+        ).firstMatch(clean) ??
+        RegExp(r'^/storage/(?!(?:emulated|self)(?:/|$))([^/]+)(?:/(.*))?$')
+            .firstMatch(clean);
     if (m == null) return null;
     final primary = m.groupCount == 1;
     final volume = primary ? 'primary' : m.group(1)!;
@@ -51,7 +59,8 @@ class FolderOpener {
       if (_android) {
         final uri = documentUri(path);
         if (uri == null) return false;
-        return await _channel.invokeMethod<bool>('openFolder', {'uri': uri}) ?? false;
+        return await _channel.invokeMethod<bool>('openFolder', {'uri': uri}) ??
+            false;
       }
       // explorer would open Documents for a folder that is gone.
       if (!await Directory(path).exists()) return false;

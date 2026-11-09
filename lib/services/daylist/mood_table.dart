@@ -14,7 +14,8 @@ class MoodTable {
 
   /// The table as shipped.
   factory MoodTable.defaults() => MoodTable._({
-    for (final e in _defaults.entries) matchKey(e.key): Set.unmodifiable(e.value),
+    for (final e in _defaults.entries)
+      matchKey(e.key): Set.unmodifiable(e.value),
   });
 
   static const _defaults = <String, Set<Mood>>{
@@ -46,7 +47,9 @@ class MoodTable {
   Set<Mood> moodsOf(String genre) => _entries[matchKey(genre)] ?? const {};
 
   /// Moods of a genre field that may list several genres.
-  Set<Mood> moodsOfAll(Iterable<String> genres) => {for (final g in genres) ...moodsOf(g)};
+  Set<Mood> moodsOfAll(Iterable<String> genres) => {
+    for (final g in genres) ...moodsOf(g),
+  };
 
   /// Genres with an entry, normalized, sorted.
   List<String> get genres => _entries.keys.toList()..sort();
@@ -60,7 +63,8 @@ class MoodTable {
     final base = MoodTable.defaults()._entries;
     final diff = {
       for (final e in _entries.entries)
-        if (!_same(e.value, base[e.key])) e.key: [for (final m in e.value) m.name],
+        if (!_same(e.value, base[e.key]))
+          e.key: [for (final m in e.value) m.name],
     };
     return jsonEncode(diff);
   }
@@ -80,7 +84,9 @@ class MoodTable {
             for (final mood in Mood.values)
               if (mood.name == n) mood,
         };
-        if (names.isNotEmpty && moods.isEmpty) continue; // only unknown names: not «no mood»
+        if (names.isNotEmpty && moods.isEmpty) {
+          continue; // only unknown names: not «no mood»
+        }
         t._entries[matchKey('${e.key}')] = Set.unmodifiable(moods);
       }
     } on FormatException catch (e) {
@@ -90,5 +96,6 @@ class MoodTable {
     return t;
   }
 
-  static bool _same(Set<Mood> a, Set<Mood>? b) => b != null && a.length == b.length && a.containsAll(b);
+  static bool _same(Set<Mood> a, Set<Mood>? b) =>
+      b != null && a.length == b.length && a.containsAll(b);
 }

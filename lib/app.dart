@@ -10,7 +10,8 @@ import 'providers/settings_providers.dart';
 import 'providers/share_hub.dart';
 import 'providers/genre_reread_providers.dart';
 import 'providers/artist_country_providers.dart';
-import 'providers/startup_providers.dart' show enrichCompleterStartProvider, mp3LengthFixStartProvider;
+import 'providers/startup_providers.dart'
+    show enrichCompleterStartProvider, mp3LengthFixStartProvider;
 import 'providers/stream_providers.dart' show streamEnrichTriggerProvider;
 import 'providers/theme_providers.dart';
 import 'providers/update_providers.dart';
@@ -58,25 +59,39 @@ class CodecoreApp extends ConsumerWidget {
     ref.listen(updateOnStartProvider, (_, next) {
       final info = next.value;
       if (info == null) return;
-      _messengerKey.currentState?.showSnackBar(SnackBar(
-        duration: const Duration(seconds: 8),
-        content: Builder(builder: (c) => Text(c.l10n.updateAvailable(info.version))),
-      ));
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 8),
+          content: Builder(
+            builder: (c) => Text(c.l10n.updateAvailable(info.version)),
+          ),
+        ),
+      );
     });
     ref.listen(promoteErrorsProvider, (_, next) {
       final e = next.value;
       if (e != null) {
-        _messengerKey.currentState?.showSnackBar(SnackBar(
-          content: Builder(builder: (c) => Text(e.noSpace ? c.l10n.promoteNoSpace : c.l10n.promoteFailed)),
-        ));
+        _messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Builder(
+              builder: (c) => Text(
+                e.noSpace ? c.l10n.promoteNoSpace : c.l10n.promoteFailed,
+              ),
+            ),
+          ),
+        );
       }
     });
     ref.listen(jamOnlineFailuresProvider, (_, next) {
       final r = next.value;
       if (r != null) {
-        _messengerKey.currentState?.showSnackBar(SnackBar(
-          content: Builder(builder: (c) => Text(c.l10n.jamOnlineFailed(r.title))),
-        ));
+        _messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Builder(
+              builder: (c) => Text(c.l10n.jamOnlineFailed(r.title)),
+            ),
+          ),
+        );
       }
     });
     final s = ref.watch(settingsProvider);
@@ -106,9 +121,12 @@ class CodecoreApp extends ConsumerWidget {
       builder: (context, child) => MediaQuery(
         // App setting OR system flag; system text scale times the app one, capped at 2.0 (D-31).
         data: MediaQuery.of(context).copyWith(
-          disableAnimations: s.reducedMotion || MediaQuery.disableAnimationsOf(context),
-          textScaler: AppTextScaler(MediaQuery.textScalerOf(context), s.fontScale)
-              .clamp(maxScaleFactor: 2.0),
+          disableAnimations:
+              s.reducedMotion || MediaQuery.disableAnimationsOf(context),
+          textScaler: AppTextScaler(
+            MediaQuery.textScalerOf(context),
+            s.fontScale,
+          ).clamp(maxScaleFactor: 2.0),
         ),
         child: AppBackground(
           colors: themeColors,

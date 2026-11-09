@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier, listEquals, setEquals;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, ValueNotifier, listEquals, setEquals;
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
-import '../audio/codecore_audio_handler.dart' show PlaybackFailure, PlaybackFailureReason;
+import '../audio/codecore_audio_handler.dart'
+    show PlaybackFailure, PlaybackFailureReason;
 import '../audio/online_entries.dart';
 import '../import/track_matcher.dart';
 import '../online/youtube_service.dart';
@@ -21,7 +23,11 @@ import 'suggestion_pool.dart';
 
 /// The user's choices (settings, phase 31.12).
 class ShufflePlusConfig {
-  const ShufflePlusConfig({this.enabled = false, this.every = 4, this.unmeteredOnly = true});
+  const ShufflePlusConfig({
+    this.enabled = false,
+    this.every = 4,
+    this.unmeteredOnly = true,
+  });
 
   final bool enabled;
 
@@ -45,7 +51,9 @@ class ShufflePlusPending {
 
   @override
   bool operator ==(Object other) =>
-      other is ShufflePlusPending && other.incoming == incoming && setEquals(other.enriching, enriching);
+      other is ShufflePlusPending &&
+      other.incoming == incoming &&
+      setEquals(other.enriching, enriching);
 
   @override
   int get hashCode => Object.hash(incoming, Object.hashAllUnordered(enriching));
@@ -54,7 +62,11 @@ class ShufflePlusPending {
 /// The one rule for «Shuffle+ is on»: chosen, shuffle running and no Jam. The
 /// engine adds its own stops (session, source, tool, network) on top; the
 /// placeholder-row provider uses this for UI immediacy only.
-bool plusOn({required bool enabled, required bool shuffle, required bool jam}) => enabled && shuffle && !jam;
+bool plusOn({
+  required bool enabled,
+  required bool shuffle,
+  required bool jam,
+}) => enabled && shuffle && !jam;
 
 /// Puts a song you do not have in the queue every N songs of a shuffled
 /// list. It works from [ShuffleHost] events; every piece of the outside
@@ -81,10 +93,10 @@ class ShufflePlusController {
     RadioGate? gate,
     DateTime Function()? now,
     Random? random,
-  })  : pool = pool ?? SuggestionPool(),
-        gate = gate ?? RadioGate(now: now),
-        _now = now ?? DateTime.now,
-        _random = random ?? Random();
+  }) : pool = pool ?? SuggestionPool(),
+       gate = gate ?? RadioGate(now: now),
+       _now = now ?? DateTime.now,
+       _random = random ?? Random();
 
   static const retryAfterError = Duration(minutes: 2);
   static const seedsLifetime = 8;
@@ -150,8 +162,10 @@ class ShufflePlusController {
   final _duration = <int, Duration>{};
   final _mine = <int>{};
   final _block = <int>[]; // suggestions queued since the last enrichment
-  Future<void>? _enriching; // the block being enriched: no new suggestion meanwhile
-  int _enrichGen = 0; // bumped on a reset: an old block no longer holds the engine
+  Future<void>?
+  _enriching; // the block being enriched: no new suggestion meanwhile
+  int _enrichGen =
+      0; // bumped on a reset: an old block no longer holds the engine
   Set<int> _enrichingIds = const {}; // the ids of the block being enriched
   final _pending = ValueNotifier(ShufflePlusPending.none);
 
@@ -294,11 +308,14 @@ class ShufflePlusController {
     final pos = _maxPos.remove(id) ?? Duration.zero;
     final length = _duration.remove(id);
     if (entry != null) {
-      final heard = length != null && pos >= length - const Duration(seconds: 3);
+      final heard =
+          length != null && pos >= length - const Duration(seconds: 3);
       if (pos >= const Duration(seconds: 10)) _errors = 0;
       if (log.latest(entry.result.id)?.outcome == SuggestionOutcome.queued) {
-        log.setOutcome(entry.result.id,
-            heard ? SuggestionOutcome.heard : SuggestionOutcome.skipped);
+        log.setOutcome(
+          entry.result.id,
+          heard ? SuggestionOutcome.heard : SuggestionOutcome.skipped,
+        );
       }
     }
     await _drop(id);
@@ -317,7 +334,8 @@ class ShufflePlusController {
       if (ids.contains(id) || id == _curId) continue;
       _mine.remove(id);
       final entry = online[id];
-      if (entry != null && log.latest(entry.result.id)?.outcome == SuggestionOutcome.queued) {
+      if (entry != null &&
+          log.latest(entry.result.id)?.outcome == SuggestionOutcome.queued) {
         log.setOutcome(entry.result.id, SuggestionOutcome.skipped);
       }
       online.forget(id);
@@ -336,7 +354,12 @@ class ShufflePlusController {
 
   Future<_Gate> _gate() async {
     final cfg = config();
-    if (!plusOn(enabled: cfg.enabled, shuffle: host.shuffleEnabled, jam: jamActive()) || _sessionOff) {
+    if (!plusOn(
+          enabled: cfg.enabled,
+          shuffle: host.shuffleEnabled,
+          jam: jamActive(),
+        ) ||
+        _sessionOff) {
       return _Gate.off;
     }
     await _syncSource();
@@ -366,7 +389,9 @@ class ShufflePlusController {
     _suggestedWithSeeds = 0;
     _resetBlock();
     _sourceTracks = await loadTracks(src);
-    _eligible = _sourceTracks.where((t) => !t.missing && t.kind == 0).length >= minSourceSize;
+    _eligible =
+        _sourceTracks.where((t) => !t.missing && t.kind == 0).length >=
+        minSourceSize;
     final cur = _current;
     _played = cur == null || isOnlineId(cur) ? 0 : 1;
   }
@@ -387,9 +412,13 @@ class ShufflePlusController {
     );
   }
 
-  List<int> _plan() => plusPlan(host.queueIds, host.currentIndex,
-      config().every.clamp(3, 10),
-      playedSinceLast: _played, max: maxAhead);
+  List<int> _plan() => plusPlan(
+    host.queueIds,
+    host.currentIndex,
+    config().every.clamp(3, 10),
+    playedSinceLast: _played,
+    max: maxAhead,
+  );
 
   /// True when one more was inserted (the plan may have more slots).
   Future<bool> _suggestOne() async {
@@ -423,7 +452,13 @@ class ShufflePlusController {
         }
         if (_disposed || _changedSince(src)) return false;
       }
-      if (_disposed || _changedSince(src) || !config().enabled || !host.shuffleEnabled || jamActive()) return false;
+      if (_disposed ||
+          _changedSince(src) ||
+          !config().enabled ||
+          !host.shuffleEnabled ||
+          jamActive()) {
+        return false;
+      }
     }
     // The queue may have changed while the radio was asked for.
     final plan = _plan();
@@ -436,7 +471,11 @@ class ShufflePlusController {
       poke();
       return false;
     }
-    final id = online.register(r, seedTitle: candidate.seedTitle, suggested: true);
+    final id = online.register(
+      r,
+      seedTitle: candidate.seedTitle,
+      suggested: true,
+    );
     _mine.add(id);
     log.addSuggestion(r, candidate.seedTitle);
     _lastArtists
@@ -479,7 +518,9 @@ class ShufflePlusController {
     try {
       await enrich(ids, entryEnrichLimit).timeout(enrichTimeout);
     } on TimeoutException {
-      AppLog.w('shuffle+ enrich block timed out ids=$ids (the rest goes on in the background)');
+      AppLog.w(
+        'shuffle+ enrich block timed out ids=$ids (the rest goes on in the background)',
+      );
     } on Object catch (e, st) {
       AppLog.w('shuffle+ enrich block failed ids=$ids', e, st);
     }
@@ -531,7 +572,10 @@ class ShufflePlusController {
         if (seed.videoId == null) {
           if (searches >= 3) break;
           searches++;
-          seed.videoId = await resolver.resolve(seed.track, searchOnly: seed.searchOnly);
+          seed.videoId = await resolver.resolve(
+            seed.track,
+            searchOnly: seed.searchOnly,
+          );
           if (_changedSince(src)) return;
           if (seed.videoId == null) {
             seed.dead = true;
@@ -539,15 +583,20 @@ class ShufflePlusController {
           }
         }
         gate.asked();
-        final page = await radio.page(seed.videoId!,
-            continuation: seed.fetched ? pool.continuationOf(seed.key) : null);
+        final page = await radio.page(
+          seed.videoId!,
+          continuation: seed.fetched ? pool.continuationOf(seed.key) : null,
+        );
         if (_changedSince(src)) return;
-        final hasSong = page.items.any((i) => i.isSeed && i.kind == RadioKind.song);
+        final hasSong = page.items.any(
+          (i) => i.isSeed && i.kind == RadioKind.song,
+        );
         if (!seed.fetched && !hasSong && !seed.searchOnly) {
           // The id was a video clip's: look the song up and ask again later.
           seed.searchOnly = true;
           seed.videoId = null;
-          _retryAt = gate.nextAsk ?? _now(); // null: a slow request outlasted the gap
+          _retryAt =
+              gate.nextAsk ?? _now(); // null: a slow request outlasted the gap
           _wakeAt(_retryAt!);
           return;
         }

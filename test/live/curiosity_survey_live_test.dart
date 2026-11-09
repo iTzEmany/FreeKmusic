@@ -31,69 +31,87 @@ void main() {
   final live = Platform.environment['CODECORE_LIVE'] == '1';
   final fresh = Platform.environment['CODECORE_SURVEY_FRESH'] == '1';
 
-  test('curiosity survey over Just a mood, each song once', () async {
-    final csv = File('test/fixtures/Just_a_mood.csv');
-    final rows = readCsvPlaylist('Just_a_mood.csv', csv.readAsStringSync()).rows;
+  test(
+    'curiosity survey over Just a mood, each song once',
+    () async {
+      final csv = File('test/fixtures/Just_a_mood.csv');
+      final rows = readCsvPlaylist(
+        'Just_a_mood.csv',
+        csv.readAsStringSync(),
+      ).rows;
 
-    final songs = <String, CleanQuery>{};
-    for (final r in rows) {
-      final c = cleanSearchQuery(r.title, r.artists.join(', '));
-      songs.putIfAbsent(songKey(c.title, c.artist), () => c);
-    }
-
-    final cacheFile = File('build/curiosity_survey.json');
-    final cache = <String, Map<String, dynamic>>{};
-    if (!fresh && cacheFile.existsSync()) {
-      final saved = jsonDecode(cacheFile.readAsStringSync()) as Map<String, dynamic>;
-      for (final e in saved.entries) {
-        cache[e.key] = (e.value as Map).cast<String, dynamic>();
+      final songs = <String, CleanQuery>{};
+      for (final r in rows) {
+        final c = cleanSearchQuery(r.title, r.artists.join(', '));
+        songs.putIfAbsent(songKey(c.title, c.artist), () => c);
       }
-    }
 
-    final web = DioWebClient();
-    final finder = CuriosityFinder(
-      wikipedia: WikipediaClient(web),
-      musicBrainz: MusicBrainzClient(web),
-      wikidata: WikidataClient(web),
-    );
-    String? describe(Object? found, Object? error) => error != null
-        ? 'ERR $error'
-        : found is Curiosity
-            ? '${found.lang}:${found.source.pathSegments.last}'
-            : null;
-
-    var asked = 0;
-    for (final e in songs.entries) {
-      final done = cache[e.key];
-      // An answer (found or not) is final; an error is asked again.
-      if (done != null && !'${done['song']}${done['artist']}'.contains('ERR')) continue;
-      final p = await finder.find(e.value.title, e.value.artist, 'it');
-      asked++;
-      cache[e.key] = {
-        'title': e.value.title,
-        'artist': e.value.artist,
-        'song': describe(p.song, p.songError),
-        'artistPage': describe(p.artist, p.artistError),
-      };
-      cacheFile
-        ..createSync(recursive: true)
-        ..writeAsStringSync(const JsonEncoder.withIndent(' ').convert(cache));
-    }
-
-    final all = [for (final k in songs.keys) cache[k]!];
-    bool ok(Object? v) => v != null && !'$v'.startsWith('ERR');
-    final songPages = all.where((r) => ok(r['song'])).length;
-    final artistPages = all.where((r) => ok(r['artistPage'])).length;
-    final errors = all.where((r) => '${r['song']}${r['artistPage']}'.contains('ERR')).length;
-    // ignore: avoid_print
-    print('${rows.length} rows, ${songs.length} songs, $asked asked now: '
-        'song pages $songPages, artist pages $artistPages, errors $errors');
-    for (final r in all) {
-      if (!ok(r['song']) || !ok(r['artistPage'])) {
-        // ignore: avoid_print
-        print('  ${r['title']} / ${r['artist']}: song ${r['song']}, artist ${r['artistPage']}');
+      final cacheFile = File('build/curiosity_survey.json');
+      final cache = <String, Map<String, dynamic>>{};
+      if (!fresh && cacheFile.existsSync()) {
+        final saved =
+            jsonDecode(cacheFile.readAsStringSync()) as Map<String, dynamic>;
+        for (final e in saved.entries) {
+          cache[e.key] = (e.value as Map).cast<String, dynamic>();
+        }
       }
-    }
-    expect(songs.length, lessThanOrEqualTo(rows.length));
-  }, skip: live ? false : 'set CODECORE_LIVE=1', timeout: const Timeout(Duration(minutes: 60)));
+
+      final web = DioWebClient();
+      final finder = CuriosityFinder(
+        wikipedia: WikipediaClient(web),
+        musicBrainz: MusicBrainzClient(web),
+        wikidata: WikidataClient(web),
+      );
+      String? describe(Object? found, Object? error) => error != null
+          ? 'ERR $error'
+          : found is Curiosity
+          ? '${found.lang}:${found.source.pathSegments.last}'
+          : null;
+
+      var asked = 0;
+      for (final e in songs.entries) {
+        final done = cache[e.key];
+        // An answer (found or not) is final; an error is asked again.
+        if (done != null &&
+            !'${done['song']}${done['artist']}'.contains('ERR')) {
+          continue;
+        }
+        final p = await finder.find(e.value.title, e.value.artist, 'it');
+        asked++;
+        cache[e.key] = {
+          'title': e.value.title,
+          'artist': e.value.artist,
+          'song': describe(p.song, p.songError),
+          'artistPage': describe(p.artist, p.artistError),
+        };
+        cacheFile
+          ..createSync(recursive: true)
+          ..writeAsStringSync(const JsonEncoder.withIndent(' ').convert(cache));
+      }
+
+      final all = [for (final k in songs.keys) cache[k]!];
+      bool ok(Object? v) => v != null && !'$v'.startsWith('ERR');
+      final songPages = all.where((r) => ok(r['song'])).length;
+      final artistPages = all.where((r) => ok(r['artistPage'])).length;
+      final errors = all
+          .where((r) => '${r['song']}${r['artistPage']}'.contains('ERR'))
+          .length;
+      // ignore: avoid_print
+      print(
+        '${rows.length} rows, ${songs.length} songs, $asked asked now: '
+        'song pages $songPages, artist pages $artistPages, errors $errors',
+      );
+      for (final r in all) {
+        if (!ok(r['song']) || !ok(r['artistPage'])) {
+          // ignore: avoid_print
+          print(
+            '  ${r['title']} / ${r['artist']}: song ${r['song']}, artist ${r['artistPage']}',
+          );
+        }
+      }
+      expect(songs.length, lessThanOrEqualTo(rows.length));
+    },
+    skip: live ? false : 'set CODECORE_LIVE=1',
+    timeout: const Timeout(Duration(minutes: 60)),
+  );
 }

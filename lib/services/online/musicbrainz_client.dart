@@ -80,8 +80,8 @@ class MusicBrainzClient {
     this._web, {
     Future<void> Function(Duration)? pause,
     DateTime Function()? now,
-  })  : _pause = pause ?? Future<void>.delayed,
-        _now = now ?? DateTime.now;
+  }) : _pause = pause ?? Future<void>.delayed,
+       _now = now ?? DateTime.now;
 
   final WebClient _web;
   final Future<void> Function(Duration) _pause;
@@ -93,8 +93,13 @@ class MusicBrainzClient {
   static const gap = Duration(milliseconds: 1100);
   DateTime? _last;
 
-  Future<Map?> _get(String path, Map<String, String> query, CancelToken? cancel,
-      {bool retry = true, bool strict = false}) async {
+  Future<Map?> _get(
+    String path,
+    Map<String, String> query,
+    CancelToken? cancel, {
+    bool retry = true,
+    bool strict = false,
+  }) async {
     // The service answers 503 now and then; a non-answer is tried once more.
     for (var attempt = 0; attempt < (retry ? 2 : 1); attempt++) {
       final last = _last;
@@ -105,7 +110,12 @@ class MusicBrainzClient {
       _last = _now();
       Object? res;
       try {
-        res = await _web.getJson('$_base/$path', query: {...query, 'fmt': 'json'}, cancel: cancel, strict: strict);
+        res = await _web.getJson(
+          '$_base/$path',
+          query: {...query, 'fmt': 'json'},
+          cancel: cancel,
+          strict: strict,
+        );
         if (strict && res == null) return null; // strict: null is a 404, final
       } on WebUnavailableException catch (e) {
         if (attempt == (retry ? 1 : 0)) throw MusicBrainzUnavailable(path);
@@ -120,33 +130,39 @@ class MusicBrainzClient {
   /// The credits of recording [mbid] in one request. Empty when unknown;
   /// throws [MusicBrainzUnavailable] when the service does not answer after
   /// the retry (network, timeout, 5xx); an unknown mbid (404) is just empty.
-  Future<List<TrackCredit>> recordingCredits(String mbid, {CancelToken? cancel}) async {
+  Future<List<TrackCredit>> recordingCredits(
+    String mbid, {
+    CancelToken? cancel,
+  }) async {
     final data = await _get(
       'recording/$mbid',
       {'inc': 'artist-rels+work-rels+work-level-rels'},
       cancel,
       strict: true,
     );
-    return data == null ? const [] : parseMbCredits(Map<String, dynamic>.from(data));
+    return data == null
+        ? const []
+        : parseMbCredits(Map<String, dynamic>.from(data));
   }
 
   /// The recordings called [title] by [artist], best first: the ones whose
   /// title and credit are the same as asked (compared without accents and case).
   /// With [studioOnly] the search leaves out live recordings and bootlegs.
-  Future<List<MbRecording>> recordings(String title, String artist,
-      {bool studioOnly = false, CancelToken? cancel}) async {
+  Future<List<MbRecording>> recordings(
+    String title,
+    String artist, {
+    bool studioOnly = false,
+    CancelToken? cancel,
+  }) async {
     final t = title.replaceAll('"', ' ').trim();
     if (t.isEmpty) return const [];
     final by = artist.replaceAll('"', ' ').trim();
-    final data = await _get(
-      'recording',
-      {
-        'query': '${by.isEmpty ? 'recording:"$t"' : 'recording:"$t" AND artist:"$by"'}'
-            '${studioOnly ? ' AND status:official AND primarytype:album AND NOT secondarytype:live' : ''}',
-        'limit': '8',
-      },
-      cancel,
-    );
+    final data = await _get('recording', {
+      'query':
+          '${by.isEmpty ? 'recording:"$t"' : 'recording:"$t" AND artist:"$by"'}'
+          '${studioOnly ? ' AND status:official AND primarytype:album AND NOT secondarytype:live' : ''}',
+      'limit': '8',
+    }, cancel);
     final list = data?['recordings'];
     if (list is! List) return const [];
     final wantTitle = matchKey(title);
@@ -161,14 +177,19 @@ class MusicBrainzClient {
         final a = c is Map ? c['artist'] : null;
         if (a is! Map || a['id'] is! String || a['name'] is! String) continue;
         // With an artist asked for, the credit has to be that artist.
-        if (wantArtist.isNotEmpty && matchKey(a['name'] as String) != wantArtist) continue;
-        out.add(MbRecording(
-          id: r['id'] as String,
-          title: r['title'] as String,
-          artistId: a['id'] as String,
-          artistName: a['name'] as String,
-          length: r['length'] is num ? (r['length'] as num).toInt() : null,
-        ));
+        if (wantArtist.isNotEmpty &&
+            matchKey(a['name'] as String) != wantArtist) {
+          continue;
+        }
+        out.add(
+          MbRecording(
+            id: r['id'] as String,
+            title: r['title'] as String,
+            artistId: a['id'] as String,
+            artistName: a['name'] as String,
+            length: r['length'] is num ? (r['length'] as num).toInt() : null,
+          ),
+        );
         break;
       }
     }
@@ -179,14 +200,26 @@ class MusicBrainzClient {
   /// [durationMs] first (those with no length last). Empty when unknown.
   /// A recording counts only if its title or its first artist is the local
   /// [title] / [artist] (an ISRC is sometimes reused for another song).
-  Future<List<MbRecording>> recordingsByIsrc(String isrc, int durationMs,
-      {String? title, String? artist, CancelToken? cancel, bool strict = false}) async {
+  Future<List<MbRecording>> recordingsByIsrc(
+    String isrc,
+    int durationMs, {
+    String? title,
+    String? artist,
+    CancelToken? cancel,
+    bool strict = false,
+  }) async {
     final code = isrc.trim().toUpperCase();
     if (code.isEmpty) return const [];
     // 404 means an unknown ISRC: no retry. With [strict] (credits) a network
     // error or 5xx throws MusicBrainzUnavailable while 404 is just «nothing
     // found», so «nothing found» is never remembered by mistake.
-    final data = await _get('isrc/$code', {'inc': 'artist-credits'}, cancel, retry: false, strict: strict);
+    final data = await _get(
+      'isrc/$code',
+      {'inc': 'artist-credits'},
+      cancel,
+      retry: false,
+      strict: strict,
+    );
     final list = data?['recordings'];
     if (list is! List) return const [];
     // Without a [title] and an [artist] (dirty tags) nothing is filtered out.
@@ -197,24 +230,35 @@ class MusicBrainzClient {
     for (final r in list) {
       if (r is! Map || r['id'] is! String || r['title'] is! String) continue;
       final credit = r['artist-credit'];
-      final a = credit is List && credit.isNotEmpty && credit.first is Map ? (credit.first as Map)['artist'] : null;
+      final a = credit is List && credit.isNotEmpty && credit.first is Map
+          ? (credit.first as Map)['artist']
+          : null;
       if (a is! Map || a['id'] is! String || a['name'] is! String) {
-        AppLog.i('musicbrainz isrc $code: recording ${r['id']} has no artist credit');
+        AppLog.i(
+          'musicbrainz isrc $code: recording ${r['id']} has no artist credit',
+        );
         continue;
       }
-      if (filter && matchKey(r['title'] as String) != wantTitle && matchKey(a['name'] as String) != wantArtist) {
-        AppLog.i('musicbrainz isrc $code: recording ${r['id']} is another song, skipped');
+      if (filter &&
+          matchKey(r['title'] as String) != wantTitle &&
+          matchKey(a['name'] as String) != wantArtist) {
+        AppLog.i(
+          'musicbrainz isrc $code: recording ${r['id']} is another song, skipped',
+        );
         continue;
       }
-      out.add(MbRecording(
-        id: r['id'] as String,
-        title: r['title'] as String,
-        artistId: a['id'] as String,
-        artistName: a['name'] as String,
-        length: r['length'] is num ? (r['length'] as num).toInt() : null,
-      ));
+      out.add(
+        MbRecording(
+          id: r['id'] as String,
+          title: r['title'] as String,
+          artistId: a['id'] as String,
+          artistName: a['name'] as String,
+          length: r['length'] is num ? (r['length'] as num).toInt() : null,
+        ),
+      );
     }
-    int gap(MbRecording r) => r.length == null ? 1 << 40 : (r.length! - durationMs).abs();
+    int gap(MbRecording r) =>
+        r.length == null ? 1 << 40 : (r.length! - durationMs).abs();
     out.sort((a, b) => gap(a).compareTo(gap(b)));
     return out;
   }
@@ -222,20 +266,36 @@ class MusicBrainzClient {
   /// The recording [mbid] with its ISRCs, release years and works; null when
   /// MusicBrainz does not know it. A 503 or no network ends in
   /// [MusicBrainzUnavailable] after the second try.
-  Future<MbRecordingDetail?> recordingById(String mbid, {CancelToken? cancel}) async {
-    final r = await _get('recording/$mbid', {'inc': 'isrcs+artist-credits+releases+work-rels'}, cancel, strict: true);
+  Future<MbRecordingDetail?> recordingById(
+    String mbid, {
+    CancelToken? cancel,
+  }) async {
+    final r = await _get(
+      'recording/$mbid',
+      {'inc': 'isrcs+artist-credits+releases+work-rels'},
+      cancel,
+      strict: true,
+    );
     if (r == null || r['id'] is! String || r['title'] is! String) return null;
     final credit = r['artist-credit'];
     final artist = credit is List
-        ? credit.whereType<Map>().map((c) => '${c['name'] ?? ''}${c['joinphrase'] ?? ''}').join().trim()
+        ? credit
+              .whereType<Map>()
+              .map((c) => '${c['name'] ?? ''}${c['joinphrase'] ?? ''}')
+              .join()
+              .trim()
         : '';
     int? year;
-    for (final rel in r['releases'] is List ? r['releases'] as List : const []) {
-      final y = rel is Map && rel['date'] is String ? int.tryParse((rel['date'] as String).split('-').first) : null;
+    for (final rel
+        in r['releases'] is List ? r['releases'] as List : const []) {
+      final y = rel is Map && rel['date'] is String
+          ? int.tryParse((rel['date'] as String).split('-').first)
+          : null;
       if (y != null && (year == null || y < year)) year = y;
     }
     final works = <MbWorkLink>[];
-    for (final rel in r['relations'] is List ? r['relations'] as List : const []) {
+    for (final rel
+        in r['relations'] is List ? r['relations'] as List : const []) {
       final w = rel is Map ? rel['work'] : null;
       if (w is! Map || w['id'] is! String) continue;
       works.add(MbWorkLink(w['id'] as String, cover: _isCover(rel)));
@@ -245,7 +305,10 @@ class MusicBrainzClient {
       title: r['title'] as String,
       artist: artist,
       length: r['length'] is num ? (r['length'] as num).toInt() : null,
-      isrcs: [for (final i in r['isrcs'] is List ? r['isrcs'] as List : const []) if (i is String) i],
+      isrcs: [
+        for (final i in r['isrcs'] is List ? r['isrcs'] as List : const [])
+          if (i is String) i,
+      ],
       year: year,
       works: works,
     );
@@ -256,22 +319,45 @@ class MusicBrainzClient {
   /// MusicBrainz has none with a date. One browse request (69e.0 point 5);
   /// `work-rels` is there only to read the cover mark of each recording.
   // shortcut: one page of 100 recordings, no paging; a work with more may miss its original, upgrade if one is seen.
-  Future<MbRecording?> workOriginal(String workId, {CancelToken? cancel}) async {
+  Future<MbRecording?> workOriginal(
+    String workId, {
+    CancelToken? cancel,
+  }) async {
     final data = await _get(
-        'recording', {'work': workId, 'inc': 'artist-credits+work-rels', 'limit': '100'}, cancel,
-        strict: true);
+      'recording',
+      {'work': workId, 'inc': 'artist-credits+work-rels', 'limit': '100'},
+      cancel,
+      strict: true,
+    );
     final list = data?['recordings'];
     if (list is! List) return null;
     MbRecording? best;
     String? bestDate;
     for (final r in list) {
-      if (r is! Map || r['id'] is! String || r['title'] is! String || r['first-release-date'] is! String) continue;
+      if (r is! Map ||
+          r['id'] is! String ||
+          r['title'] is! String ||
+          r['first-release-date'] is! String) {
+        continue;
+      }
       final date = r['first-release-date'] as String;
-      if (date.isEmpty || (bestDate != null && date.compareTo(bestDate) >= 0)) continue;
+      if (date.isEmpty || (bestDate != null && date.compareTo(bestDate) >= 0)) {
+        continue;
+      }
       final rels = r['relations'] is List ? r['relations'] as List : const [];
-      if (rels.any((rel) => rel is Map && rel['work'] is Map && (rel['work'] as Map)['id'] == workId && _isCover(rel))) continue;
+      if (rels.any(
+        (rel) =>
+            rel is Map &&
+            rel['work'] is Map &&
+            (rel['work'] as Map)['id'] == workId &&
+            _isCover(rel),
+      )) {
+        continue;
+      }
       final credit = r['artist-credit'];
-      final a = credit is List && credit.isNotEmpty && credit.first is Map ? (credit.first as Map)['artist'] : null;
+      final a = credit is List && credit.isNotEmpty && credit.first is Map
+          ? (credit.first as Map)['artist']
+          : null;
       if (a is! Map || a['id'] is! String || a['name'] is! String) continue;
       bestDate = date;
       best = MbRecording(
@@ -285,25 +371,53 @@ class MusicBrainzClient {
     return best;
   }
 
-  static bool _isCover(Map rel) => rel['attributes'] is List && (rel['attributes'] as List).contains('cover');
+  static bool _isCover(Map rel) =>
+      rel['attributes'] is List &&
+      (rel['attributes'] as List).contains('cover');
 
   /// The genre of a recording of [title] by [artist] that lasts [durationMs]
   /// (within 3 s when MusicBrainz knows its length), null when none is sure.
   /// The recording's own genre counts with 2 votes or more; otherwise the
   /// artist's most voted one stands in. Capitalised like Wikipedia's titles.
   /// With an [isrc] the recording is looked up by it first, by text otherwise.
-  Future<String?> genreFor(String title, String artist, int durationMs,
-      {String? isrc, CancelToken? cancel}) async {
-    bool near(MbRecording r) => r.length == null || (r.length! - durationMs).abs() <= 3000;
+  Future<String?> genreFor(
+    String title,
+    String artist,
+    int durationMs, {
+    String? isrc,
+    CancelToken? cancel,
+  }) async {
+    bool near(MbRecording r) =>
+        r.length == null || (r.length! - durationMs).abs() <= 3000;
     final byIsrc = isrc == null
         ? const <MbRecording>[]
-        : await recordingsByIsrc(isrc, durationMs, title: title, artist: artist, cancel: cancel);
+        : await recordingsByIsrc(
+            isrc,
+            durationMs,
+            title: title,
+            artist: artist,
+            cancel: cancel,
+          );
     // No ISRC match of the right length: the text search decides.
-    final rec = byIsrc.where(near).firstOrNull ??
-        (await recordings(title, artist, studioOnly: true, cancel: cancel)).where(near).firstOrNull;
+    final rec =
+        byIsrc.where(near).firstOrNull ??
+        (await recordings(
+          title,
+          artist,
+          studioOnly: true,
+          cancel: cancel,
+        )).where(near).firstOrNull;
     if (rec == null) return null;
-    final own = _topGenre(await _get('recording/${rec.id}', {'inc': 'genres'}, cancel), 2);
-    final name = own ?? _topGenre(await _get('artist/${rec.artistId}', {'inc': 'genres'}, cancel), 1);
+    final own = _topGenre(
+      await _get('recording/${rec.id}', {'inc': 'genres'}, cancel),
+      2,
+    );
+    final name =
+        own ??
+        _topGenre(
+          await _get('artist/${rec.artistId}', {'inc': 'genres'}, cancel),
+          1,
+        );
     return name == null ? null : WikipediaClient.titleCase(name);
   }
 
@@ -324,11 +438,19 @@ class MusicBrainzClient {
 
   /// The artist called [name], when MusicBrainz is sure (an exact name and a
   /// high score); null otherwise.
-  Future<({String id, String name})?> artist(String name, {CancelToken? cancel}) async {
+  Future<({String id, String name})?> artist(
+    String name, {
+    CancelToken? cancel,
+  }) async {
     final n = name.replaceAll('"', ' ').trim();
     if (n.isEmpty) return null;
-    final a = _artistHit(await _get('artist', {'query': 'artist:"$n"', 'limit': '5'}, cancel), n);
-    return a == null ? null : (id: a['id'] as String, name: a['name'] as String);
+    final a = _artistHit(
+      await _get('artist', {'query': 'artist:"$n"', 'limit': '5'}, cancel),
+      n,
+    );
+    return a == null
+        ? null
+        : (id: a['id'] as String, name: a['name'] as String);
   }
 
   static Map? _artistHit(Map? data, String name) {
@@ -338,7 +460,10 @@ class MusicBrainzClient {
     for (final a in list) {
       if (a is! Map || a['id'] is! String || a['name'] is! String) continue;
       final score = a['score'];
-      if (matchKey(a['name'] as String) == want && (score is! num || score >= 90)) return a;
+      if (matchKey(a['name'] as String) == want &&
+          (score is! num || score >= 90)) {
+        return a;
+      }
     }
     return null;
   }
@@ -347,22 +472,47 @@ class MusicBrainzClient {
   /// (MusicBrainz fills `country` even when the area is a city), else the ISO code of
   /// its area; with neither, the Wikidata item of its links. Null when no artist is sure.
   /// Strict: a 503 or no network throws [MusicBrainzUnavailable], so "not found" is never a guess.
-  Future<MbArtistOrigin?> artistOrigin(String name, {CancelToken? cancel}) async {
+  Future<MbArtistOrigin?> artistOrigin(
+    String name, {
+    CancelToken? cancel,
+  }) async {
     final n = name.replaceAll('"', ' ').trim();
     if (n.isEmpty) return null;
-    final a = _artistHit(await _get('artist', {'query': 'artist:"$n"', 'limit': '5'}, cancel, strict: true), n);
+    final a = _artistHit(
+      await _get(
+        'artist',
+        {'query': 'artist:"$n"', 'limit': '5'},
+        cancel,
+        strict: true,
+      ),
+      n,
+    );
     if (a == null) return null;
     final area = a['area'];
-    final country = _iso(a['country']) ??
-        _iso(area is Map && area['iso-3166-1-codes'] is List ? (area['iso-3166-1-codes'] as List).firstOrNull : null);
+    final country =
+        _iso(a['country']) ??
+        _iso(
+          area is Map && area['iso-3166-1-codes'] is List
+              ? (area['iso-3166-1-codes'] as List).firstOrNull
+              : null,
+        );
     if (country != null) return MbArtistOrigin(country: country);
-    final links = await _get('artist/${a['id']}', {'inc': 'url-rels'}, cancel, strict: true);
+    final links = await _get(
+      'artist/${a['id']}',
+      {'inc': 'url-rels'},
+      cancel,
+      strict: true,
+    );
     return MbArtistOrigin(wikidata: _wikidataOf(links));
   }
 
   // shortcut: every X?? code (XW worldwide, XE Europe...) is dropped, Kosovo (XK) with them; upgrade if one is missed.
   static String? _iso(Object? code) {
-    if (code is! String || !RegExp(r'^[A-Za-z]{2}$').hasMatch(code) || code.toUpperCase().startsWith('X')) return null;
+    if (code is! String ||
+        !RegExp(r'^[A-Za-z]{2}$').hasMatch(code) ||
+        code.toUpperCase().startsWith('X')) {
+      return null;
+    }
     return code.toUpperCase();
   }
 
@@ -374,14 +524,21 @@ class MusicBrainzClient {
 
   /// The Wikidata item of the *song* a recording is a performance of, or null
   /// (many recordings have no work, and many works no page).
-  Future<String?> songWikidata(String recordingId, {CancelToken? cancel}) async {
-    final rec = await _get('recording/$recordingId', {'inc': 'work-rels'}, cancel);
+  Future<String?> songWikidata(
+    String recordingId, {
+    CancelToken? cancel,
+  }) async {
+    final rec = await _get('recording/$recordingId', {
+      'inc': 'work-rels',
+    }, cancel);
     final rels = rec?['relations'];
     if (rels is! List) return null;
     for (final r in rels) {
       final work = r is Map ? r['work'] : null;
       if (work is! Map || work['id'] is! String) continue;
-      final data = await _get('work/${work['id']}', {'inc': 'url-rels'}, cancel);
+      final data = await _get('work/${work['id']}', {
+        'inc': 'url-rels',
+      }, cancel);
       final q = _wikidataOf(data);
       if (q != null) return q;
     }
@@ -393,8 +550,13 @@ class MusicBrainzClient {
   /// The Discogs master id linked from the release-group (the album) a
   /// recording appears on, or null. Two requests; the link sits on the
   /// release-group, not on the release.
-  Future<int?> discogsMasterOf(String recordingId, {CancelToken? cancel}) async {
-    final rec = await _get('recording/$recordingId', {'inc': 'releases+release-groups'}, cancel);
+  Future<int?> discogsMasterOf(
+    String recordingId, {
+    CancelToken? cancel,
+  }) async {
+    final rec = await _get('recording/$recordingId', {
+      'inc': 'releases+release-groups',
+    }, cancel);
     final releases = rec?['releases'];
     if (releases is! List) return null;
     var tried = 0;
@@ -408,7 +570,9 @@ class MusicBrainzClient {
       if (secondary is List && secondary.isNotEmpty) continue;
       if (!seen.add(rg['id'] as String)) continue;
       if (++tried > 3) break;
-      final data = await _get('release-group/${rg['id']}', {'inc': 'url-rels'}, cancel);
+      final data = await _get('release-group/${rg['id']}', {
+        'inc': 'url-rels',
+      }, cancel);
       final rels = data?['relations'];
       if (rels is! List) continue;
       for (final rel in rels) {
@@ -446,8 +610,11 @@ class WikidataClient {
 
   /// For each item in [ids], its page title per language of [langs] (`it` →
   /// «Pink Floyd»); items or languages without a page are absent.
-  Future<Map<String, Map<String, String>>> sitelinks(List<String> ids, List<String> langs,
-      {CancelToken? cancel}) async {
+  Future<Map<String, Map<String, String>>> sitelinks(
+    List<String> ids,
+    List<String> langs, {
+    CancelToken? cancel,
+  }) async {
     if (ids.isEmpty || langs.isEmpty) return const {};
     final data = await _web.getJson(
       'https://www.wikidata.org/w/api.php',
@@ -488,16 +655,28 @@ class WikidataClient {
     final claims = await _claims(countries, cancel);
     for (final c in countries) {
       final list = claims[c]?['P297'];
-      final value = list is List && list.isNotEmpty ? _mainValue(list.first) : null;
-      if (value is String && RegExp(r'^[A-Z]{2}$').hasMatch(value)) return value;
+      final value = list is List && list.isNotEmpty
+          ? _mainValue(list.first)
+          : null;
+      if (value is String && RegExp(r'^[A-Z]{2}$').hasMatch(value)) {
+        return value;
+      }
     }
     return null;
   }
 
-  Future<Map<String, Map>> _claims(List<String> ids, CancelToken? cancel) async {
+  Future<Map<String, Map>> _claims(
+    List<String> ids,
+    CancelToken? cancel,
+  ) async {
     final data = await _web.getJson(
       'https://www.wikidata.org/w/api.php',
-      query: {'action': 'wbgetentities', 'ids': ids.join('|'), 'props': 'claims', 'format': 'json'},
+      query: {
+        'action': 'wbgetentities',
+        'ids': ids.join('|'),
+        'props': 'claims',
+        'format': 'json',
+      },
       cancel: cancel,
       strict: true,
     );
@@ -505,16 +684,17 @@ class WikidataClient {
     if (entities is! Map) return const {};
     return {
       for (final e in entities.entries)
-        if (e.value is Map && (e.value as Map)['claims'] is Map) '${e.key}': (e.value as Map)['claims'] as Map,
+        if (e.value is Map && (e.value as Map)['claims'] is Map)
+          '${e.key}': (e.value as Map)['claims'] as Map,
     };
   }
 
   // shortcut: at most 3 countries are read (the first listed); upgrade if dual citizens come out wrong.
   static List<String> _items(Object? statements) => [
-        if (statements is List)
-          for (final s in statements)
-            if (_mainValue(s) case {'id': final String id}) id,
-      ].take(3).toList();
+    if (statements is List)
+      for (final s in statements)
+        if (_mainValue(s) case {'id': final String id}) id,
+  ].take(3).toList();
 
   static Object? _mainValue(Object? statement) {
     final snak = statement is Map ? statement['mainsnak'] : null;

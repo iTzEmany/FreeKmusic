@@ -4,7 +4,6 @@ import '../import/track_matcher.dart' show libraryTitleKey;
 import 'youtube_service.dart' show YtResult;
 import '../../core/artist_key.dart';
 
-
 /// The library artist that is [name] on YouTube Music: same main artist once
 /// case, accents and «feat.» are ignored («PINK FLOYD» = «Pink Floyd»). With
 /// several (spelled differently in the tags) the one with most tracks.
@@ -24,7 +23,7 @@ ArtistSummary? localArtistFor(String name, List<ArtistSummary> artists) {
 /// there even when they came from a file or from another video.
 class LibraryOverlap {
   LibraryOverlap(Iterable<Track> artistTracks)
-      : _titles = {for (final t in artistTracks) libraryTitleKey(t.title)};
+    : _titles = {for (final t in artistTracks) libraryTitleKey(t.title)};
 
   final Set<String> _titles;
 
@@ -34,4 +33,5 @@ class LibraryOverlap {
 }
 
 /// Whether [r] is one of [artistTracks] (see [LibraryOverlap.owns]).
-bool ownedIn(List<Track> artistTracks, YtResult r) => LibraryOverlap(artistTracks).owns(r);
+bool ownedIn(List<Track> artistTracks, YtResult r) =>
+    LibraryOverlap(artistTracks).owns(r);

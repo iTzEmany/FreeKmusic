@@ -16,7 +16,11 @@ const _neverPlayedWhere =
     'AND NOT EXISTS (SELECT 1 FROM plays WHERE plays.track_id = tracks.id)';
 
 class SizeTotals {
-  const SizeTotals({this.sizeBytes = 0, this.trackCount = 0, this.durationMs = 0});
+  const SizeTotals({
+    this.sizeBytes = 0,
+    this.trackCount = 0,
+    this.durationMs = 0,
+  });
 
   final int sizeBytes, trackCount, durationMs;
 }
@@ -83,10 +87,15 @@ class MemoryBreakdown {
 
 /// Bytes of the text kept by the enrichment, per part.
 class EnrichmentBytes {
-  const EnrichmentBytes({this.lyrics = 0, this.curiosities = 0, this.credits = 0});
+  const EnrichmentBytes({
+    this.lyrics = 0,
+    this.curiosities = 0,
+    this.credits = 0,
+  });
 
   /// Plain and synced lyrics.
   final int lyrics;
+
   /// Track curiosities and artist bios.
   final int curiosities;
 
@@ -200,7 +209,10 @@ class MemoryQueries {
           readsFrom: {_db.playlists, _db.playlistTracks, _db.tracks},
         )
         .get();
-    final covers = {for (final r in coverRows) r.read<int>('pid'): r.read<String?>('auto_cover')};
+    final covers = {
+      for (final r in coverRows)
+        r.read<int>('pid'): r.read<String?>('auto_cover'),
+    };
     final favorites = _totals(
       await _db
           .customSelect(

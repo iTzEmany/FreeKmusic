@@ -4,7 +4,8 @@ import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/smart_search_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/artist_link_resolver.dart';
-import 'package:codecore/services/online/request_budget.dart' show WindowLimiter;
+import 'package:codecore/services/online/request_budget.dart'
+    show WindowLimiter;
 import 'package:codecore/services/online/source_cooldown.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
@@ -23,7 +24,11 @@ class _FakeCatalog implements YtmCatalog {
   int calls = 0;
 
   @override
-  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) {
+  Future<List<YtmArtistRef>> searchArtists(
+    String query,
+    String hl, {
+    CancelToken? cancel,
+  }) {
     calls++;
     return onSearch();
   }
@@ -38,11 +43,18 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    c = ProviderContainer(overrides: [
-      databaseProvider.overrideWithValue(db),
-      artistMergeSearchProvider.overrideWithValue(
-          (name) async => [_a('1', 'Queen'), _a('2', 'QUEEN'), _a('3', 'Queen Latifah')]),
-    ]);
+    c = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        artistMergeSearchProvider.overrideWithValue(
+          (name) async => [
+            _a('1', 'Queen'),
+            _a('2', 'QUEEN'),
+            _a('3', 'Queen Latifah'),
+          ],
+        ),
+      ],
+    );
   });
   tearDown(() async {
     c.dispose();
@@ -51,7 +63,9 @@ void main() {
 
   const me = (id: '1', name: 'Queen');
   Future<YtmArtistRef?> ask(({String id, String name}) who) async {
-    await Future<void>.delayed(const Duration(milliseconds: 50)); // let autoDispose and the alias stream settle
+    await Future<void>.delayed(
+      const Duration(milliseconds: 50),
+    ); // let autoDispose and the alias stream settle
     final sub = c.listen(artistMergeSuggestionProvider(who), (_, _) {});
     final v = await c.read(artistMergeSuggestionProvider(who).future);
     sub.close();
@@ -97,22 +111,32 @@ void main() {
     expect((link as OnlineArtist).artist.id, '2');
   });
 
-  test('a «diversi» pair saved with another member of the group still holds', () async {
-    final repo = c.read(artistAliasRepositoryProvider);
-    await repo.merge('1', '5');
-    await repo.markNotSame('5', '2');
-    expect(await ask(me), isNull);
-  });
+  test(
+    'a «diversi» pair saved with another member of the group still holds',
+    () async {
+      final repo = c.read(artistAliasRepositoryProvider);
+      await repo.merge('1', '5');
+      await repo.markNotSame('5', '2');
+      expect(await ask(me), isNull);
+    },
+  );
 
   group('real search provider', () {
     late ProviderContainer rc;
-    Future<YtmArtistRef?> suggest(_FakeCatalog cat, {bool paused = false, WindowLimiter? limiter}) async {
-      rc = ProviderContainer(overrides: [
-        databaseProvider.overrideWithValue(db),
-        ytmCatalogProvider.overrideWithValue(cat),
-        ytmLanguageProvider.overrideWithValue('en'),
-        if (limiter != null) searchRowsLimiterProvider.overrideWithValue(limiter),
-      ]);
+    Future<YtmArtistRef?> suggest(
+      _FakeCatalog cat, {
+      bool paused = false,
+      WindowLimiter? limiter,
+    }) async {
+      rc = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          ytmCatalogProvider.overrideWithValue(cat),
+          ytmLanguageProvider.overrideWithValue('en'),
+          if (limiter != null)
+            searchRowsLimiterProvider.overrideWithValue(limiter),
+        ],
+      );
       addTearDown(rc.dispose);
       if (paused) rc.read(sourceCooldownProvider).trip(MediaKind.ytmSong);
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -121,10 +145,15 @@ void main() {
     }
 
     test('a 429 gives no suggestion and pauses YouTube Music', () async {
-      final cat = _FakeCatalog(() => Future.error(const YtException(YtErrorKind.rateLimited)));
+      final cat = _FakeCatalog(
+        () => Future.error(const YtException(YtErrorKind.rateLimited)),
+      );
       expect(await suggest(cat), isNull);
       expect(cat.calls, 1);
-      expect(rc.read(sourceCooldownProvider).isPaused(MediaKind.ytmSong), isTrue);
+      expect(
+        rc.read(sourceCooldownProvider).isPaused(MediaKind.ytmSong),
+        isTrue,
+      );
     });
 
     test('already paused: no search, no suggestion', () async {
@@ -142,14 +171,20 @@ void main() {
 
     test('same name searches once; a 429 drops the entry so the next ask searches again', () async {
       var fail = true;
-      final cat = _FakeCatalog(() => fail
-          ? Future.error(const YtException(YtErrorKind.rateLimited))
-          : Future.value([_a('2', 'Queen')]));
-      rc = ProviderContainer(overrides: [
-        ytmCatalogProvider.overrideWithValue(cat),
-        ytmLanguageProvider.overrideWithValue('en'),
-        sourceCooldownProvider.overrideWithValue(SourceCooldown(pause: Duration.zero)), // so a 429 does not block the retry
-      ]);
+      final cat = _FakeCatalog(
+        () => fail
+            ? Future.error(const YtException(YtErrorKind.rateLimited))
+            : Future.value([_a('2', 'Queen')]),
+      );
+      rc = ProviderContainer(
+        overrides: [
+          ytmCatalogProvider.overrideWithValue(cat),
+          ytmLanguageProvider.overrideWithValue('en'),
+          sourceCooldownProvider.overrideWithValue(
+            SourceCooldown(pause: Duration.zero),
+          ), // so a 429 does not block the retry
+        ],
+      );
       addTearDown(rc.dispose);
       final search = rc.read(artistMergeSearchProvider);
       await search('Queen');
@@ -165,11 +200,13 @@ void main() {
       var now = DateTime(2026, 11, 8);
       final limiter = WindowLimiter(perMinute: 1, now: () => now)..tryAcquire();
       final cat = _FakeCatalog(() async => [_a('2', 'Queen')]);
-      rc = ProviderContainer(overrides: [
-        ytmCatalogProvider.overrideWithValue(cat),
-        ytmLanguageProvider.overrideWithValue('en'),
-        searchRowsLimiterProvider.overrideWithValue(limiter),
-      ]);
+      rc = ProviderContainer(
+        overrides: [
+          ytmCatalogProvider.overrideWithValue(cat),
+          ytmLanguageProvider.overrideWithValue('en'),
+          searchRowsLimiterProvider.overrideWithValue(limiter),
+        ],
+      );
       addTearDown(rc.dispose);
       final search = rc.read(artistMergeSearchProvider);
       expect(search('Queen'), isNull);

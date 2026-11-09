@@ -28,8 +28,12 @@ String? lyricsPlainText(Track t) {
 
 /// [t] as shown: with the sync switched off for it (D-472) only the plain text
 /// is left, the synced one stays stored.
-Track lyricsAsShown(Track t, Set<int> unsynced) => unsynced.contains(t.id) && t.lyricsSynced != null
-    ? t.copyWith(lyricsPlain: Value(lyricsPlainText(t)), lyricsSynced: const Value(null))
+Track lyricsAsShown(Track t, Set<int> unsynced) =>
+    unsynced.contains(t.id) && t.lyricsSynced != null
+    ? t.copyWith(
+        lyricsPlain: Value(lyricsPlainText(t)),
+        lyricsSynced: const Value(null),
+      )
     : t;
 
 /// Synchronised lyrics that scroll by themselves (variable-height rows, the
@@ -99,7 +103,8 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     // The list's own extent estimate follows the average built row height.
     final total = pos.maxScrollExtent + pos.viewportDimension;
     // Aim half a viewport short so the row is inside the built range, not just past it.
-    final target = (total * i / _lines.length - pos.viewportDimension / 2).clamp(0.0, pos.maxScrollExtent);
+    final target = (total * i / _lines.length - pos.viewportDimension / 2)
+        .clamp(0.0, pos.maxScrollExtent);
     void retry() {
       if (mounted && i < _keys.length) _reveal(i, attempt + 1);
     }
@@ -109,7 +114,9 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       WidgetsBinding.instance.addPostFrameCallback((_) => retry());
     } else {
       // Try again once the scroll has landed, so the row is built by then.
-      pos.animateTo(target, duration: CcMotion.sheet, curve: CcMotion.curveIn).then((_) => retry());
+      pos
+          .animateTo(target, duration: CcMotion.sheet, curve: CcMotion.curveIn)
+          .then((_) => retry());
     }
   }
 
@@ -134,7 +141,14 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     }
     final result = found;
     // The user asked for this text: the automatic searches never replace it.
-    await ref.read(trackOpsProvider).setLyrics(t.id, plain: result.plain, synced: result.synced, byUser: true);
+    await ref
+        .read(trackOpsProvider)
+        .setLyrics(
+          t.id,
+          plain: result.plain,
+          synced: result.synced,
+          byUser: true,
+        );
   }
 
   @override
@@ -190,9 +204,13 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               plain,
               style: theme.titleLarge?.copyWith(fontWeight: FontWeight.w500),
             ),
-            if (unsynced.contains(track.id) && widget.track.lyricsSynced != null) ...[
+            if (unsynced.contains(track.id) &&
+                widget.track.lyricsSynced != null) ...[
               const SizedBox(height: CcDims.gap16),
-              Text(l.lyricsSyncedKept, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+              Text(
+                l.lyricsSyncedKept,
+                style: theme.bodySmall?.copyWith(color: cc.textMuted),
+              ),
             ],
             if (translated != null && !translated.synced) ...[
               const Divider(height: 32),

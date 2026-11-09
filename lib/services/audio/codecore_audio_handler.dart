@@ -58,26 +58,30 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     StreamPreparer? preparer,
     this.onRadioStart,
     DateTime Function()? clock,
-  })  : _clock = clock ?? DateTime.now,
-        _backend = backend,
-        _window = backend is GaplessCapable
-            ? NextWindow(_queue, backend as GaplessCapable)
-            : null {
+  }) : _clock = clock ?? DateTime.now,
+       _backend = backend,
+       _window = backend is GaplessCapable
+           ? NextWindow(_queue, backend as GaplessCapable)
+           : null {
     _subs
       ..add(_backend.state.listen(_onBackendState))
-      ..add(_backend.position.listen((p) {
-        _onPosition(p);
-        // While a stream loads, the backend still reports the old track.
-        _posOut.add(_waitingStream ? Duration.zero : p);
-      }))
+      ..add(
+        _backend.position.listen((p) {
+          _onPosition(p);
+          // While a stream loads, the backend still reports the old track.
+          _posOut.add(_waitingStream ? Duration.zero : p);
+        }),
+      )
       ..add(_backend.duration.listen(_onBackendDuration))
       ..add(_backend.streamTitle.listen(_onStreamTitle))
       ..add(_queueController.stream.listen((_) => unawaited(_syncPreparer())));
     this.preparer = preparer;
     if (backend is GaplessCapable) {
-      _subs.add((backend as GaplessCapable)
-          .advanced
-          .listen((_) => unawaited(_onAdvanced())));
+      _subs.add(
+        (backend as GaplessCapable).advanced.listen(
+          (_) => unawaited(_onAdvanced()),
+        ),
+      );
     }
   }
 
@@ -126,7 +130,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   // (a download): a library track in the window stays, a cached one is looked up again.
   void _onPhases() {
     final next = _window?.track;
-    if (_current == null || (next != null && !isStreamTrack(next)) || _loadBusy || _waitingStream) return;
+    if (_current == null ||
+        (next != null && !isStreamTrack(next)) ||
+        _loadBusy ||
+        _waitingStream) {
+      return;
+    }
     _window?.invalidate();
     unawaited(_refreshWindow());
   }
@@ -143,7 +152,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _lookupWarned = false;
       return id;
     } on Object catch (e, st) {
-      if (!_lookupWarned) AppLog.w('download lookup failed: online entries stream', e, st);
+      if (!_lookupWarned) {
+        AppLog.w('download lookup failed: online entries stream', e, st);
+      }
       _lookupWarned = true; // one line per failure streak, not per entry
       return null;
     }
@@ -317,6 +328,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       unawaited(setVolume(v));
     }
   }
+
   bool _normalize = false;
   double _gainFactor = 1.0;
 
@@ -334,7 +346,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   bool get isPlaying => _state == BackendState.playing;
   List<int> get queueIds => _queue.items;
   int get currentIndex => _queue.currentIndex;
-  bool get hasNext => _queue.hasNext || (_queueRadio != null && _queue.items.length > 1);
+  bool get hasNext =>
+      _queue.hasNext || (_queueRadio != null && _queue.items.length > 1);
   bool get shuffleEnabled => _queue.shuffle;
   PlayRepeat get repeatMode => _queue.repeat;
 
@@ -343,7 +356,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   List<int>? _source;
 
   /// The list playback was started from, if any.
-  List<int>? get sourceIds => _source == null ? null : List.unmodifiable(_source!);
+  List<int>? get sourceIds =>
+      _source == null ? null : List.unmodifiable(_source!);
 
   Future<void> playQueue(List<int> ids, int index) async {
     _leaveRadioMode();
@@ -383,8 +397,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   MediaBrowseTree? browse;
 
   @override
-  Future<List<MediaItem>> getChildren(String parentMediaId,
-      [Map<String, dynamic>? options]) async {
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) async {
     try {
       return await browse?.children(parentMediaId) ?? const [];
     } on Object catch (e, st) {
@@ -404,8 +420,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<List<MediaItem>> search(String query,
-      [Map<String, dynamic>? extras]) async {
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) async {
     try {
       return await browse?.search(query) ?? const [];
     } on Object catch (e, st) {
@@ -415,8 +433,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> playFromMediaId(String mediaId,
-      [Map<String, dynamic>? extras]) async {
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) async {
     try {
       // A list of the car's menu is not the last one of the app; an id that
       // resolves to nothing leaves the context alone.
@@ -446,7 +466,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// [ended]: when the track before ended by itself (for the gap of the timing line).
-  Future<void> _loadCurrent({required bool play, Duration? startAt, DateTime? ended}) async {
+  Future<void> _loadCurrent({
+    required bool play,
+    Duration? startAt,
+    DateTime? ended,
+  }) async {
     final token = ++_loadToken;
     _waitingStream = false;
     _loadBusy = true;
@@ -468,7 +492,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final libId = entry == null ? null : await _downloadedId(entry.result);
     final libTrack = libId == null ? null : await _tracks.getById(libId);
     if (libTrack != null) entry = null;
-    final track = libTrack ??
+    final track =
+        libTrack ??
         (isOnline ? online?.trackOf(id) : await _tracks.getById(id));
     if (token != _loadToken) return;
     if (track == null) {
@@ -484,23 +509,38 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // Streams have neither a bookmark nor ReplayGain.
     final streamKey = entry != null
         ? entry.result.indexKey
-        : (track.kind == kStreamKind || track.kind == kEpisodeKind ? keyOfStreamPath(track.path) : null);
+        : (track.kind == kStreamKind || track.kind == kEpisodeKind
+              ? keyOfStreamPath(track.path)
+              : null);
     // A podcast episode not downloaded: the feed's address plays as it is (a YouTube Music one has a stream key).
-    final directUrl = streamKey == null && track.kind == kEpisodeKind && isRemoteEpisodePath(track.path);
+    final directUrl =
+        streamKey == null &&
+        track.kind == kEpisodeKind &&
+        isRemoteEpisodePath(track.path);
     final t0 = _clock();
-    _Timing timingOf(String key, String from) =>
-        (token: token, key: key, from: from, t0: t0, pos0: startAt ?? Duration.zero, ended: ended);
+    _Timing timingOf(String key, String from) => (
+      token: token,
+      key: key,
+      from: from,
+      t0: t0,
+      pos0: startAt ?? Duration.zero,
+      ended: ended,
+    );
     // A stream's line is set once its source is known (below).
-    _timing = play && radio == null && streamKey == null ? timingOf('track:${track.id}', 'file') : null;
+    _timing = play && radio == null && streamKey == null
+        ? timingOf('track:${track.id}', 'file')
+        : null;
     // A saved position past the end of the track (a stale one) is not used.
-    final startOk = startAt != null &&
+    final startOk =
+        startAt != null &&
         startAt > Duration.zero &&
         !isPastEnd(startAt, track.durationMs);
     final start = startOk
         ? startAt
-        : ((isOnline && libTrack == null) || (streamKey != null && track.kind != kEpisodeKind)
-            ? null
-            : resumeStartFor(track.resumePositionMs));
+        : ((isOnline && libTrack == null) ||
+                  (streamKey != null && track.kind != kEpisodeKind)
+              ? null
+              : resumeStartFor(track.resumePositionMs));
     // Before the item goes out: «Caricamento…» only while waiting for the file (no awaits up to the stream branch).
     if (streamKey != null) {
       _waitingStream = true;
@@ -533,7 +573,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         final began = await _asStream(streamKey, p.start(streamKey, res));
         if (token != _loadToken) return;
         playNow = _playWhenReady;
-        final fromUrl = await _loadStart(p, began, streamKey, res, entry?.id, token);
+        final fromUrl = await _loadStart(
+          p,
+          began,
+          streamKey,
+          res,
+          entry?.id,
+          token,
+        );
         if (fromUrl == null) return;
         playNow = _playWhenReady;
         if (fromUrl) _url = _UrlSession(streamKey, res, entry?.id);
@@ -587,20 +634,21 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         playNow = _playWhenReady;
       }
       await _failAndSkip(
-          offline
-              ? PlaybackFailureReason.networkUnavailable
-              : ageGated
-              ? PlaybackFailureReason.ageRestricted
-              : track.kind == kEpisodeKind && (streamKey != null || directUrl)
-              ? PlaybackFailureReason.episodeUnavailable
-              : (isOnline && libTrack == null) || streamKey != null || directUrl
-              ? PlaybackFailureReason.onlineUnavailable
-              : e.fileMissing
-                  ? PlaybackFailureReason.fileMissing
-                  : PlaybackFailureReason.unplayable,
-          track,
-          token,
-          play: playNow);
+        offline
+            ? PlaybackFailureReason.networkUnavailable
+            : ageGated
+            ? PlaybackFailureReason.ageRestricted
+            : track.kind == kEpisodeKind && (streamKey != null || directUrl)
+            ? PlaybackFailureReason.episodeUnavailable
+            : (isOnline && libTrack == null) || streamKey != null || directUrl
+            ? PlaybackFailureReason.onlineUnavailable
+            : e.fileMissing
+            ? PlaybackFailureReason.fileMissing
+            : PlaybackFailureReason.unplayable,
+        track,
+        token,
+        play: playNow,
+      );
     } finally {
       if (token == _loadToken) {
         _waitingStream = _loadBusy = false;
@@ -623,8 +671,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Gets [began] loaded: its address (opened, the file follows in the
   /// background) or else the file (waited for). Returns where it plays from
   /// (true: the address, false: the file), or null when a newer load took over.
-  Future<bool?> _loadStart(StreamPreparer p, StreamStart began, String key,
-      YtResult res, int? entryId, int token) async {
+  Future<bool?> _loadStart(
+    StreamPreparer p,
+    StreamStart began,
+    String key,
+    YtResult res,
+    int? entryId,
+    int token,
+  ) async {
     if (token != _loadToken) return null;
     var file = began.file;
     if (file == null) {
@@ -633,13 +687,22 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await _backend.loadUri(began.url!, headers: began.headers);
         if (token != _loadToken) return null;
         // Plays count on the shadow row, which exists once the file does (the same job).
-        unawaited(p.ready(key, res).then((_) => _bindShadow(key, entryId, token),
-            onError: (Object e, StackTrace st) => AppLog.w('stream $key: no file after the address', e, st)));
+        unawaited(
+          p
+              .ready(key, res)
+              .then(
+                (_) => _bindShadow(key, entryId, token),
+                onError: (Object e, StackTrace st) =>
+                    AppLog.w('stream $key: no file after the address', e, st),
+              ),
+        );
         return true;
       } on BackendException catch (e) {
         if (token != _loadToken) return null;
         // No message to the user: the file comes, a little later (R-75).
-        AppLog.i('stream timing key=$key fallback=${e.expired ? 'expired' : 'load-failed'}');
+        AppLog.i(
+          'stream timing key=$key fallback=${e.expired ? 'expired' : 'load-failed'}',
+        );
         _waitingStream = true;
       }
     }
@@ -702,12 +765,19 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   void _scheduleRadioRetry(RadioEntry radio, int token) {
     if (_radioRetries >= radioRetryDelays.length) {
       _radioRetries = 0;
-      onError(PlaybackFailure(radio.station.name, PlaybackFailureReason.radioUnavailable));
+      onError(
+        PlaybackFailure(
+          radio.station.name,
+          PlaybackFailureReason.radioUnavailable,
+        ),
+      );
       unawaited(_goIdle());
       return;
     }
     final delay = radioRetryDelays[_radioRetries++];
-    AppLog.w('radio "${radio.station.name}" down, new attempt in ${delay.inSeconds}s');
+    AppLog.w(
+      'radio "${radio.station.name}" down, new attempt in ${delay.inSeconds}s',
+    );
     _publish(AudioProcessingState.loading);
     _retryTimer?.cancel();
     _retryTimer = Timer(delay, () {
@@ -775,7 +845,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final List<Track> rows;
     try {
       rows = await _tracks.streamRowsAmong(
-          [for (final i in ids) if (!isOnlineId(i)) i].take(_lookupAhead).toList());
+        [
+          for (final i in ids)
+            if (!isOnlineId(i)) i,
+        ].take(_lookupAhead).toList(),
+      );
     } on Object catch (e, st) {
       AppLog.w('could not read the queue for the stream preparer', e, st);
       return;
@@ -787,13 +861,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     for (final id in ids) {
       if (isOnlineId(id)) {
         final r = online?.entryOf(id)?.result;
-        if (r != null && (looked++ >= _lookupAhead || await _downloadedId(r) == null)) {
+        if (r != null &&
+            (looked++ >= _lookupAhead || await _downloadedId(r) == null)) {
           out.add(StreamItem(r.indexKey, r));
         }
         if (token != _syncToken) return;
       } else {
         final row = byId[id];
-        final key = row == null ? null : keyOfStreamPath(row.path); // streamRowsAmong: kind 2 and 1
+        final key = row == null
+            ? null
+            : keyOfStreamPath(row.path); // streamRowsAmong: kind 2 and 1
         if (key != null) out.add(StreamItem(key, streamResultOfRow(key, row!)));
       }
     }
@@ -834,7 +911,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _gainFactor = isStreamTrack(track) ? 1.0 : gainFactor(track.replayGainDb);
     if (_normalize) unawaited(_applyVolume());
     _position = Duration.zero;
-    _duration = track.durationMs > 0 ? Duration(milliseconds: track.durationMs) : null;
+    _duration = track.durationMs > 0
+        ? Duration(milliseconds: track.durationMs)
+        : null;
     _current = track;
     if (_waitingStream) {
       _posOut.add(Duration.zero);
@@ -849,7 +928,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> _failAndSkip(
-      PlaybackFailureReason reason, Track? track, int token, {bool play = true}) async {
+    PlaybackFailureReason reason,
+    Track? track,
+    int token, {
+    bool play = true,
+  }) async {
     _consecutiveErrors++;
     // What the failed track reports from here on (position 0, a seek never reached) is not a place
     // somebody listened to: its bookmark stays as it was until it plays again.
@@ -952,11 +1035,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       final url = _url;
       if (url != null) {
         if (_loadBusy) {
-          _errorWhileLoading = true; // the load is still going: it asks when done
+          _errorWhileLoading =
+              true; // the load is still going: it asks when done
         } else if (!url.recovering) {
           _onUrlError();
         }
-      } else if (!_loadBusy && _current != null && _isRemoteEpisode(_current!)) {
+      } else if (!_loadBusy &&
+          _current != null &&
+          _isRemoteEpisode(_current!)) {
         unawaited(_onStreamCut());
       }
       return;
@@ -991,7 +1077,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       final StreamStart began;
       if (++s.recoveries > 2) {
-        began = StreamStart.file(await _asStream<File>(key, p.ready(key, r))); // no more addresses
+        began = StreamStart.file(
+          await _asStream<File>(key, p.ready(key, r)),
+        ); // no more addresses
       } else {
         began = await _asStream(key, p.restart(key, r));
       }
@@ -1015,14 +1103,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       if (token == _loadToken) {
         _waitingStream = false;
         await _failAndSkip(
-            e is _StreamNotReady && e.offline
-                ? PlaybackFailureReason.networkUnavailable
-                : _current?.kind == kEpisodeKind
-                ? PlaybackFailureReason.episodeUnavailable
-                : PlaybackFailureReason.onlineUnavailable,
-            _current,
-            token,
-            play: _playWhenReady);
+          e is _StreamNotReady && e.offline
+              ? PlaybackFailureReason.networkUnavailable
+              : _current?.kind == kEpisodeKind
+              ? PlaybackFailureReason.episodeUnavailable
+              : PlaybackFailureReason.onlineUnavailable,
+          _current,
+          token,
+          play: _playWhenReady,
+        );
       }
     } finally {
       s.recovering = false;
@@ -1065,7 +1154,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> _failCut(Track t) async {
     AppLog.w('episode "${t.title}" stopped early at $_position');
     _saveResume();
-    await _failAndSkip(PlaybackFailureReason.episodeUnavailable, t, _loadToken, play: _playWhenReady);
+    await _failAndSkip(
+      PlaybackFailureReason.episodeUnavailable,
+      t,
+      _loadToken,
+      play: _playWhenReady,
+    );
   }
 
   /// The player failed on a streamed episode that was already playing.
@@ -1080,14 +1174,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
-  int _lengthOf(Track t) => t.durationMs > 0 ? t.durationMs : (_duration?.inMilliseconds ?? 0);
+  int _lengthOf(Track t) =>
+      t.durationMs > 0 ? t.durationMs : (_duration?.inMilliseconds ?? 0);
 
   /// A track played to its end has no place to come back to.
   void _forgetBookmarkOfFinished() {
     final finished = _current;
     if (finished == null || isStreamTrack(finished)) return;
     if (finished.kind == 1) _markHeard(finished);
-    if (finished.resumePositionMs != null || _savedResume[finished.id] != null) {
+    if (finished.resumePositionMs != null ||
+        _savedResume[finished.id] != null) {
       unawaited(_writeResume(finished, null));
     }
   }
@@ -1124,7 +1220,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _enterTrack(prepared);
     // An online entry joined from its cached file: plays count on its row.
     final entry = online?.entryOf(prepared.id);
-    if (entry != null) unawaited(_bindShadow(entry.result.indexKey, entry.id, _loadToken));
+    if (entry != null) {
+      unawaited(_bindShadow(entry.result.indexKey, entry.id, _loadToken));
+    }
     unawaited(_syncPreparer());
     if (stay) {
       await _backend.pause();
@@ -1136,28 +1234,46 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   double _volumeFor(Track t) =>
-      (_baseVolume * (_normalize && !isStreamTrack(t) ? gainFactor(t.replayGainDb) : 1.0)).clamp(0, 1).toDouble();
+      (_baseVolume *
+              (_normalize && !isStreamTrack(t)
+                  ? gainFactor(t.replayGainDb)
+                  : 1.0))
+          .clamp(0, 1)
+          .toDouble();
 
   /// What the window may prepare for queue id [id]: a track with a file (the
   /// library's, or a streamed one in the cache), else null: a plain load (R-80).
   Future<({Track track, String path})?> _nextFile(int id) async {
     final cur = _current;
-    if (cur != null && cur.id == id && !isStreamTrack(cur) && !_isRemoteEpisode(cur)) return (track: cur, path: cur.path); // repeat one
+    if (cur != null &&
+        cur.id == id &&
+        !isStreamTrack(cur) &&
+        !_isRemoteEpisode(cur)) {
+      return (track: cur, path: cur.path); // repeat one
+    }
     final entry = online?.entryOf(id);
     if (isOnlineId(id) && entry == null) return null; // radio or forgotten
     final libId = entry == null ? null : await _downloadedId(entry.result);
     final lib = libId == null ? null : await _tracks.getById(libId);
     if (lib != null) return (track: lib, path: lib.path);
-    final track = entry == null ? await _tracks.getById(id) : online?.trackOf(id);
+    final track = entry == null
+        ? await _tracks.getById(id)
+        : online?.trackOf(id);
     if (track == null) return null;
-    if (!isStreamTrack(track) && !_isRemoteEpisode(track)) return (track: track, path: track.path);
+    if (!isStreamTrack(track) && !_isRemoteEpisode(track)) {
+      return (track: track, path: track.path);
+    }
     final key = entry?.result.indexKey ?? keyOfStreamPath(track.path);
-    final res = entry?.result ?? (key == null ? null : streamResultOfRow(key, track));
-    final file = key == null || res == null ? null : await preparer?.cachedFile(key, res);
+    final res =
+        entry?.result ?? (key == null ? null : streamResultOfRow(key, track));
+    final file = key == null || res == null
+        ? null
+        : await preparer?.cachedFile(key, res);
     return file == null ? null : (track: track, path: file.path);
   }
 
-  bool _isRemoteEpisode(Track t) => t.kind == kEpisodeKind && isRemoteEpisodePath(t.path);
+  bool _isRemoteEpisode(Track t) =>
+      t.kind == kEpisodeKind && isRemoteEpisodePath(t.path);
 
   Future<void> _refreshWindow() async {
     final window = _window;
@@ -1174,7 +1290,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
             !(_plainInAlbum &&
                 a.albumKey == b.albumKey &&
                 // Online entries have no album key: two of them are not «the same album».
-                (a.albumKey.isNotEmpty || (!isStreamTrack(a) && !isStreamTrack(b)))),
+                (a.albumKey.isNotEmpty ||
+                    (!isStreamTrack(a) && !isStreamTrack(b)))),
         resolve: _nextFile,
       );
     } on Object catch (e, st) {
@@ -1198,8 +1315,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _crossfadeSeconds = crossfadeSeconds;
     final engine = _backend;
     if (engine is CrossfadeEngine) {
-      engine.crossfade =
-          mode == TransitionMode.crossfade ? Duration(seconds: crossfadeSeconds) : null;
+      engine.crossfade = mode == TransitionMode.crossfade
+          ? Duration(seconds: crossfadeSeconds)
+          : null;
     }
     _window?.invalidate();
     await _refreshWindow();
@@ -1226,13 +1344,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   ({int kind, String? name})? get playContext => _context.value;
 
   /// [playContext] as a listenable, for the providers that follow it.
-  ValueListenable<({int kind, String? name})?> get playContextListenable => _context;
+  ValueListenable<({int kind, String? name})?> get playContextListenable =>
+      _context;
 
   /// The track just counted as played: opens its row in the history.
   void _beginListen(Track track, int listenId) {
     final repo = history;
     // Podcast episodes are not music: they stay out of the history and the recap.
-    if (repo == null || !recordHistory || !listenKinds.contains(track.kind)) return;
+    if (repo == null || !recordHistory || !listenKinds.contains(track.kind)) {
+      return;
+    }
     _flushedMs = _playedMs;
     _playRow = repo
         .start(
@@ -1255,11 +1376,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     if (row == null || _playedMs == _flushedMs) return;
     final ms = _playedMs;
     _flushedMs = ms;
-    unawaited(row.then((id) async {
-      if (id != null) await history!.finish(id, ms);
-    }).catchError((Object e, StackTrace st) {
-      AppLog.w('could not update the listen', e, st);
-    }));
+    unawaited(
+      row
+          .then((id) async {
+            if (id != null) await history!.finish(id, ms);
+          })
+          .catchError((Object e, StackTrace st) {
+            AppLog.w('could not update the listen', e, st);
+          }),
+    );
   }
 
   void _endListen() {
@@ -1282,8 +1407,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         final now = _clock();
         final ms = now.difference(timing.t0).inMilliseconds;
         final end = timing.ended;
-        final gap = end == null ? '' : ' gap=${now.difference(end).inMilliseconds}';
-        AppLog.i('stream timing key=${timing.key} play=$ms from=${timing.from}$gap');
+        final gap = end == null
+            ? ''
+            : ' gap=${now.difference(end).inMilliseconds}';
+        AppLog.i(
+          'stream timing key=${timing.key} play=$ms from=${timing.from}$gap',
+        );
       }
     }
     final track = _current;
@@ -1326,28 +1455,30 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _loadingStream = loadingNow;
     final playing = _state == BackendState.playing;
     final live = isRadio;
-    playbackState.add(PlaybackState(
-      processingState: processing,
-      playing: playing,
-      controls: [
-        MediaControl.skipToPrevious,
-        playing ? MediaControl.pause : MediaControl.play,
-        MediaControl.skipToNext,
-      ],
-      androidCompactActionIndices: const [0, 1, 2],
-      systemActions: live ? const {} : const {MediaAction.seek},
-      updatePosition: _position,
-      speed: live ? 1.0 : _speed,
-      queueIndex: _queue.currentIndex < 0 ? null : _queue.currentIndex,
-      shuffleMode: _queue.shuffle
-          ? AudioServiceShuffleMode.all
-          : AudioServiceShuffleMode.none,
-      repeatMode: switch (_queue.repeat) {
-        PlayRepeat.off => AudioServiceRepeatMode.none,
-        PlayRepeat.all => AudioServiceRepeatMode.all,
-        PlayRepeat.one => AudioServiceRepeatMode.one,
-      },
-    ));
+    playbackState.add(
+      PlaybackState(
+        processingState: processing,
+        playing: playing,
+        controls: [
+          MediaControl.skipToPrevious,
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.skipToNext,
+        ],
+        androidCompactActionIndices: const [0, 1, 2],
+        systemActions: live ? const {} : const {MediaAction.seek},
+        updatePosition: _position,
+        speed: live ? 1.0 : _speed,
+        queueIndex: _queue.currentIndex < 0 ? null : _queue.currentIndex,
+        shuffleMode: _queue.shuffle
+            ? AudioServiceShuffleMode.all
+            : AudioServiceShuffleMode.none,
+        repeatMode: switch (_queue.repeat) {
+          PlayRepeat.off => AudioServiceRepeatMode.none,
+          PlayRepeat.all => AudioServiceRepeatMode.all,
+          PlayRepeat.one => AudioServiceRepeatMode.one,
+        },
+      ),
+    );
     if (loadingChanged && cur != null) mediaItem.add(_toMediaItem(cur));
   }
 
@@ -1391,7 +1522,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // Paused on the very end (the backend never said «completed»): ▶ would end
     // the last track again at once and empty the player. Start it over.
     final total = _duration;
-    if (total != null && _position >= total - const Duration(milliseconds: 500)) {
+    if (total != null &&
+        _position >= total - const Duration(milliseconds: 500)) {
       await seek(Duration.zero);
     }
     await _backend.play();
@@ -1416,7 +1548,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> stop() async {
     final remote = _remote;
-    if (remote != null) return remote.pause(); // ending the Jam is its own button
+    if (remote != null) {
+      return remote.pause(); // ending the Jam is its own button
+    }
     await _goIdle();
   }
 
@@ -1424,7 +1558,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> seek(Duration position) async {
     final remote = _remote;
     if (remote != null) return remote.seek(position);
-    if (isRadio || loadingStream) return; // live, or the old file is still loaded
+    if (isRadio || loadingStream) {
+      return; // live, or the old file is still loaded
+    }
     // A remote episode may not get there (no network): no place is saved until the player reports it.
     final before = _position;
     final c = _current;
@@ -1509,7 +1645,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final playing = _state == BackendState.playing;
     // An online entry playing its library file goes with it, or it would reload.
     final qid = _queue.currentId;
-    final gone = currentGone && qid != null && isOnlineId(qid) ? {...ids, qid} : ids;
+    final gone = currentGone && qid != null && isOnlineId(qid)
+        ? {...ids, qid}
+        : ids;
     var removed = false;
     // From the end, so the natural indices still to visit do not shift.
     for (var i = items.length - 1; i >= 0; i--) {
@@ -1622,7 +1760,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _publish(playbackState.value.processingState);
   }
 
-  void setShuffleAndRepeat({required bool shuffle, required PlayRepeat repeat}) {
+  void setShuffleAndRepeat({
+    required bool shuffle,
+    required PlayRepeat repeat,
+  }) {
     _queue.shuffle = shuffle;
     _queue.repeat = repeat;
     unawaited(_refreshWindow());
@@ -1670,8 +1811,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   static double _pow10(double x) => math.exp(x * math.ln10);
 
-  Future<void> _applyVolume() => _backend
-      .setVolume((_baseVolume * (_normalize ? _gainFactor : 1.0)).clamp(0, 1));
+  Future<void> _applyVolume() => _backend.setVolume(
+    (_baseVolume * (_normalize ? _gainFactor : 1.0)).clamp(0, 1),
+  );
 
   /// Hands the system controls to [transport] (a Jam) until it is detached
   /// with null. The local queue and backend are not touched meanwhile.
@@ -1703,28 +1845,33 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   void _showRemote(RemoteStatus s) {
-    mediaItem.add(s.hasItem
-        ? MediaItem(
-            id: 'jam',
-            title: s.title!,
-            artist: s.artist,
-            album: s.album,
-            duration: s.duration,
-          )
-        : null);
-    playbackState.add(PlaybackState(
-      processingState:
-          s.hasItem ? AudioProcessingState.ready : AudioProcessingState.idle,
-      playing: s.playing,
-      controls: [
-        s.playing ? MediaControl.pause : MediaControl.play,
-        if (s.canSkip) MediaControl.skipToNext,
-      ],
-      androidCompactActionIndices: s.canSkip ? const [0, 1] : const [0],
-      systemActions: const {MediaAction.seek},
-      updatePosition: s.position,
-      speed: 1,
-    ));
+    mediaItem.add(
+      s.hasItem
+          ? MediaItem(
+              id: 'jam',
+              title: s.title!,
+              artist: s.artist,
+              album: s.album,
+              duration: s.duration,
+            )
+          : null,
+    );
+    playbackState.add(
+      PlaybackState(
+        processingState: s.hasItem
+            ? AudioProcessingState.ready
+            : AudioProcessingState.idle,
+        playing: s.playing,
+        controls: [
+          s.playing ? MediaControl.pause : MediaControl.play,
+          if (s.canSkip) MediaControl.skipToNext,
+        ],
+        androidCompactActionIndices: s.canSkip ? const [0, 1] : const [0],
+        systemActions: const {MediaAction.seek},
+        updatePosition: s.position,
+        speed: 1,
+      ),
+    );
   }
 
   AudioProcessingState get _publishedProcessing =>
@@ -1733,13 +1880,17 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Stores where the current track is (only if it is long enough to matter).
   void _saveResume() {
     final t = _current;
-    if (t == null || isStreamTrack(t) || t.id == _noSaveId || _seekTo != null) return;
+    if (t == null || isStreamTrack(t) || t.id == _noSaveId || _seekTo != null) {
+      return;
+    }
     final length = _lengthOf(t);
     final episode = t.kind == 1;
     if (episode && episodeHeard(_position, length)) _markHeard(t);
     final ms = resumePointFor(_position, length, episode: episode);
     if (episode && ms != null) _markResumed(t);
-    if (ms == null && t.resumePositionMs == null && _savedResume[t.id] == null) {
+    if (ms == null &&
+        t.resumePositionMs == null &&
+        _savedResume[t.id] == null) {
       return;
     }
     if (_savedResume.containsKey(t.id) && _savedResume[t.id] == ms) return;
@@ -1757,9 +1908,20 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _heard.add(trackId);
     _resumed.remove(trackId);
     if (_current?.id == trackId) _noSaveId = trackId;
-    unawaited(_tracks.setResumePosition(trackId, null).catchError((Object e, StackTrace st) {
-      AppLog.w('could not forget the place of episode $trackId', e, st);
-    }));
+    unawaited(
+      _tracks.setResumePosition(trackId, null).catchError((
+        Object e,
+        StackTrace st,
+      ) {
+        AppLog.w('could not forget the place of episode $trackId', e, st);
+      }),
+    );
+  }
+
+  /// The user took the heard mark off [trackId]: this listen saves its place and ends as heard again.
+  void episodeUnheardByHand(int trackId) {
+    _heard.remove(trackId);
+    if (_noSaveId == trackId) _noSaveId = null;
   }
 
   void _markResumed(Track episode) {
@@ -1769,11 +1931,18 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Calls [callback]; a failure, also an asynchronous one, is logged and never reaches playback.
-  void _tell(FutureOr<void> Function(int)? callback, Track episode, String what) {
+  void _tell(
+    FutureOr<void> Function(int)? callback,
+    Track episode,
+    String what,
+  ) {
     if (callback == null) return;
-    unawaited(Future<void>.sync(() => callback(episode.id)).catchError((Object e, StackTrace st) {
-      AppLog.w('could not $what "${episode.title}"', e, st);
-    }));
+    unawaited(
+      Future<void>.sync(() => callback(episode.id))
+          .catchError((Object e, StackTrace st) {
+            AppLog.w('could not $what "${episode.title}"', e, st);
+          }),
+    );
   }
 
   void _markHeard(Track episode) {
@@ -1812,7 +1981,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 }
 
-typedef _Timing = ({int token, String key, String from, DateTime t0, Duration pos0, DateTime? ended});
+typedef _Timing = ({
+  int token,
+  String key,
+  String from,
+  DateTime t0,
+  Duration pos0,
+  DateTime? ended,
+});
 
 /// The streamed track plays from its address: what a recovery (R-76) needs.
 class _UrlSession {
@@ -1827,9 +2003,9 @@ class _UrlSession {
 /// The stream of a track could not be had; [offline] when the network is why.
 class _StreamNotReady extends BackendException {
   _StreamNotReady(Object cause)
-      : offline = cause is YtException && cause.kind == YtErrorKind.network,
-        ageRestricted = isAgeRestricted(cause),
-        super('stream not ready: $cause');
+    : offline = cause is YtException && cause.kind == YtErrorKind.network,
+      ageRestricted = isAgeRestricted(cause),
+      super('stream not ready: $cause');
   final bool offline;
   final bool ageRestricted;
 }

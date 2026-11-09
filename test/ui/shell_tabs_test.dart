@@ -1,6 +1,9 @@
 import 'package:codecore/providers/library_providers.dart';
-import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
+import 'package:codecore/data/repositories/track_repository.dart'
+    show SortOption;
 import 'package:codecore/providers/nav_providers.dart';
+import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:codecore/ui/screens/settings/theme_editor_screen.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
@@ -19,7 +22,8 @@ import '../support/app_harness.dart';
 // Phase 89.4 (D-392): leaving a dock tab sends it back to its first state.
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    () => Future<void>.delayed(const Duration(milliseconds: 100)),
+  );
   // Tabs sit in a TickerMode: a few pumps after each tap.
   for (var i = 0; i < 3; i++) {
     await tester.pump(const Duration(milliseconds: 300));
@@ -48,8 +52,35 @@ Future<void> _roundTrip(WidgetTester tester, String tab) async {
 }
 
 void main() {
-  testWidgets('a page pushed inside a tab is gone after another tab',
-      (t) async {
+  testWidgets('the playback error snackbar reads «title» then the reason', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(400, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, tracks: 1);
+    await h.pump(
+      t,
+      const AppShell(),
+      extraOverrides: [
+        playerFailuresProvider.overrideWith(
+          (_) => Stream.value(
+            const PlaybackFailure(
+              'Cosa',
+              PlaybackFailureReason.networkUnavailable,
+            ),
+          ),
+        ),
+      ],
+    );
+    await t.pump(const Duration(milliseconds: 500));
+    expect(find.textContaining(RegExp('riprodurre «Cosa»: ')), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('a page pushed inside a tab is gone after another tab', (
+    t,
+  ) async {
     final h = await _open(t, tracks: 4);
     await t.tap(_bar('Libreria'));
     await _settle(t);
@@ -61,7 +92,9 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('the selected Library block is back to Tutti after another tab', (t) async {
+  testWidgets('the selected Library block is back to Tutti after another tab', (
+    t,
+  ) async {
     final h = await _open(t, tracks: 4);
     await t.tap(_bar('Libreria'));
     await _settle(t);
@@ -78,8 +111,8 @@ void main() {
     final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
     NavigatorState nav(NavTab tab) =>
         c.read(tabNavigatorKeysProvider)[tab.index].currentState!;
-    nav(NavTab.memory).push(
-        MaterialPageRoute<void>(builder: (_) => const Text('Marker')));
+    nav(NavTab.memory)
+        .push(MaterialPageRoute<void>(builder: (_) => const Text('Marker')));
     await t.tap(_bar('Libreria'));
     await _settle(t);
     await t.tap(find.text('Tutti i brani'));
@@ -106,10 +139,16 @@ void main() {
   testWidgets('a dirty theme editor survives a tab switch', (t) async {
     final h = await _open(t, tracks: 4);
     final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
-    c.read(tabNavigatorKeysProvider)[NavTab.home.index].currentState!.push(
-        MaterialPageRoute<void>(
+    c
+        .read(tabNavigatorKeysProvider)[NavTab.home.index]
+        .currentState!
+        .push(
+          MaterialPageRoute<void>(
             builder: (_) => const ThemeEditorScreen(
-                initial: CustomTheme(id: 'sea', name: 'Mare'))));
+              initial: CustomTheme(id: 'sea', name: 'Mare'),
+            ),
+          ),
+        );
     await _settle(t);
     await t.enterText(find.byType(TextField).first, 'Mare edit');
     await t.pump();
@@ -127,11 +166,15 @@ void main() {
     await t.tap(_bar('Libreria'));
     await _settle(t);
     final lens = find.descendant(
-        of: find.byType(LibraryScreen), matching: find.byIcon(Icons.search_rounded));
+      of: find.byType(LibraryScreen),
+      matching: find.byIcon(Icons.search_rounded),
+    );
     await t.tap(lens.first);
     await _settle(t);
     final field = find.descendant(
-        of: find.byType(LibraryScreen), matching: find.byType(TextField));
+      of: find.byType(LibraryScreen),
+      matching: find.byType(TextField),
+    );
     await t.enterText(field, 'luc');
     await t.pump();
     await t.tap(_bar('Home'));
@@ -143,14 +186,21 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('selecting the active tab with a dirty editor keeps it',
-      (t) async {
+  testWidgets('selecting the active tab with a dirty editor keeps it', (
+    t,
+  ) async {
     final h = await _open(t, tracks: 4);
     final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
-    c.read(tabNavigatorKeysProvider)[NavTab.home.index].currentState!.push(
-        MaterialPageRoute<void>(
+    c
+        .read(tabNavigatorKeysProvider)[NavTab.home.index]
+        .currentState!
+        .push(
+          MaterialPageRoute<void>(
             builder: (_) => const ThemeEditorScreen(
-                initial: CustomTheme(id: 'sea', name: 'Mare'))));
+              initial: CustomTheme(id: 'sea', name: 'Mare'),
+            ),
+          ),
+        );
     await _settle(t);
     await t.enterText(find.byType(TextField).first, 'Mare edit');
     await t.pump();
@@ -161,12 +211,14 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('leaving Library keeps the Favorites sort, resets All tracks',
-      (t) async {
+  testWidgets('leaving Library keeps the Favorites sort, resets All tracks', (
+    t,
+  ) async {
     final h = await _open(t, tracks: 4);
     final c = ProviderScope.containerOf(t.element(find.byType(AppShell)));
     for (final fav in [true, false]) {
-      c.read(trackQueryProvider(fav).notifier)
+      c
+          .read(trackQueryProvider(fav).notifier)
           .update((q) => q.copyWith(sort: SortOption.title));
     }
     await t.tap(_bar('Libreria'));
@@ -181,8 +233,9 @@ void main() {
   // Pinned because 89.4 rebuilds the shell: hidden tabs must not tick.
   testWidgets('only the shown tab has its tickers on', (t) async {
     final h = await _open(t, tracks: 4);
-    bool ticking(Type page) => TickerMode.valuesOf(
-        t.element(find.byType(page, skipOffstage: false))).enabled;
+    bool ticking(Type page) =>
+        TickerMode.valuesOf(t.element(find.byType(page, skipOffstage: false)))
+            .enabled;
     expect(ticking(HomeScreen), isTrue);
     for (final p in [SearchScreen, LibraryScreen, MemoryScreen]) {
       expect(ticking(p), isFalse, reason: '$p hidden');

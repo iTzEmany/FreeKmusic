@@ -50,15 +50,24 @@ class DaylistScreen extends ConsumerWidget {
       ),
       body: d == null || d.result.tooFew
           ? Center(
-              child: Text(l.daylistEmpty, style: text.bodyLarge?.copyWith(color: cc.textMuted)),
+              child: Text(
+                l.daylistEmpty,
+                style: text.bodyLarge?.copyWith(color: cc.textMuted),
+              ),
             )
           : ListView(
-              padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
+              padding: const EdgeInsets.only(bottom: CcDims.gap24)
+                  .withDock(context),
               children: [
                 _header(context, d),
                 if (d.result.genres.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap12, CcDims.margin, 0),
+                    padding: const EdgeInsets.fromLTRB(
+                      CcDims.margin,
+                      CcDims.gap12,
+                      CcDims.margin,
+                      0,
+                    ),
                     child: Semantics(
                       label: l.daylistGenres,
                       child: Wrap(
@@ -66,13 +75,21 @@ class DaylistScreen extends ConsumerWidget {
                         runSpacing: 6,
                         children: [
                           for (final g in d.result.genres)
-                            Chip(label: Text(genreDisplay(g)), visualDensity: VisualDensity.compact),
+                            Chip(
+                              label: Text(genreDisplay(g)),
+                              visualDensity: VisualDensity.compact,
+                            ),
                         ],
                       ),
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap12, CcDims.margin, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    CcDims.margin,
+                    CcDims.gap12,
+                    CcDims.margin,
+                    0,
+                  ),
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -87,14 +104,26 @@ class DaylistScreen extends ConsumerWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap12, CcDims.margin, CcDims.gap8),
+                  padding: const EdgeInsets.fromLTRB(
+                    CcDims.margin,
+                    CcDims.gap12,
+                    CcDims.margin,
+                    CcDims.gap8,
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.schedule_rounded, size: 20, color: cc.accentSoft),
+                      Icon(
+                        Icons.schedule_rounded,
+                        size: 20,
+                        color: cc.accentSoft,
+                      ),
                       const SizedBox(width: CcDims.gap8),
                       Expanded(
                         child: Text(
-                          l.daylistUpdates(daylistSlotName(l, (d.slotIndex + 1) % 8), daylistHour(d.nextChange.hour)),
+                          l.daylistUpdates(
+                            daylistSlotName(l, (d.slotIndex + 1) % 8),
+                            daylistHour(d.nextChange.hour),
+                          ),
                           style: text.bodySmall?.copyWith(color: cc.textMuted),
                         ),
                       ),
@@ -104,7 +133,10 @@ class DaylistScreen extends ConsumerWidget {
                 for (final (i, item) in d.result.items.indexed)
                   item.track != null
                       ? _OwnRow(item.track!, () => actions.play(startIndex: i))
-                      : _SuggestedRow(item.suggestion!.result, () => actions.play(startIndex: i)),
+                      : _SuggestedRow(
+                          item.suggestion!.result,
+                          () => actions.play(startIndex: i),
+                        ),
               ],
             ),
     );
@@ -117,27 +149,47 @@ class DaylistScreen extends ConsumerWidget {
     final r = d.result;
     final sug = r.items.where((i) => i.suggestion != null).length;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, 0),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap8,
+        CcDims.margin,
+        0,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PlaylistCover(
             size: 112,
             radius: CcDims.rCard,
-            coverKeys: playlistCoverKeys(null, [for (final i in r.items) i.track?.coverKey]),
+            coverKeys: playlistCoverKeys(null, [
+              for (final i in r.items) i.track?.coverKey,
+            ]),
           ),
           const SizedBox(width: CcDims.gap16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(daylistName(l, d.slotIndex, r.genres), style: text.titleLarge),
+                Text(
+                  daylistName(l, d.slotIndex, r.genres),
+                  style: text.titleLarge,
+                ),
                 const SizedBox(height: 6),
-                Text(l.tracksCount(r.items.length), style: text.bodySmall?.copyWith(color: cc.textMuted)),
-                if (sug > 0) Text(l.daylistSuggestedCount(sug), style: text.bodySmall?.copyWith(color: cc.textMuted)),
+                Text(
+                  l.tracksCount(r.items.length),
+                  style: text.bodySmall?.copyWith(color: cc.textMuted),
+                ),
+                if (sug > 0)
+                  Text(
+                    l.daylistSuggestedCount(sug),
+                    style: text.bodySmall?.copyWith(color: cc.textMuted),
+                  ),
                 // D-473: fewer than 50 songs says so under the title.
                 if (r.isShort)
-                  Text(l.daylistShortNote(r.items.length), style: text.bodySmall?.copyWith(color: cc.textMuted)),
+                  Text(
+                    l.daylistShortNote(r.items.length),
+                    style: text.bodySmall?.copyWith(color: cc.textMuted),
+                  ),
               ],
             ),
           ),
@@ -158,7 +210,11 @@ class _OwnRow extends ConsumerWidget {
     context,
     CoverImage(coverKey: track.coverKey, size: 48),
     track.title,
-    Text(track.artist ?? context.l10n.unknownArtist, maxLines: 1, overflow: TextOverflow.ellipsis),
+    Text(
+      track.artist ?? context.l10n.unknownArtist,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
     onPlay,
     () => showTrackActions(context, ref, track),
   );
@@ -175,18 +231,31 @@ class _SuggestedRow extends ConsumerWidget {
     final artist = result.artists.join(', ');
     return _row(
       context,
-      NetThumbnail(url: result.thumbnailUrl, width: 48, height: 48, icon: Icons.music_note_rounded),
+      NetThumbnail(
+        url: result.thumbnailUrl,
+        width: 48,
+        height: 48,
+        icon: Icons.music_note_rounded,
+      ),
       result.title,
       // One label: a separate ', ' would be read as its own item.
       Semantics(
-        label: artist.isEmpty ? context.l10n.suggestedBadge : '${context.l10n.suggestedBadge}, $artist',
+        label: artist.isEmpty
+            ? context.l10n.suggestedBadge
+            : '${context.l10n.suggestedBadge}, $artist',
         excludeSemantics: true,
         child: Row(
           children: [
             const SuggestedMarker(),
             if (artist.isNotEmpty) ...[
               const Text(', '),
-              Flexible(child: Text(artist, maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Flexible(
+                child: Text(
+                  artist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ],
         ),
@@ -197,7 +266,14 @@ class _SuggestedRow extends ConsumerWidget {
   }
 }
 
-Widget _row(BuildContext context, Widget cover, String title, Widget sub, VoidCallback onTap, VoidCallback onMore) {
+Widget _row(
+  BuildContext context,
+  Widget cover,
+  String title,
+  Widget sub,
+  VoidCallback onTap,
+  VoidCallback onMore,
+) {
   final text = Theme.of(context).textTheme;
   final cc = context.cc;
   return Row(
@@ -210,18 +286,32 @@ Widget _row(BuildContext context, Widget cover, String title, Widget sub, VoidCa
               onTap: onTap,
               onLongPress: onMore,
               child: Padding(
-                padding: const EdgeInsets.only(left: CcDims.margin, top: 6, bottom: 6),
+                padding: const EdgeInsets.only(
+                  left: CcDims.margin,
+                  top: 6,
+                  bottom: 6,
+                ),
                 child: Row(
                   children: [
-                    ClipRRect(borderRadius: BorderRadius.circular(CcDims.rList), child: cover),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(CcDims.rList),
+                      child: cover,
+                    ),
                     const SizedBox(width: CcDims.gap12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodyLarge),
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: text.bodyLarge,
+                          ),
                           DefaultTextStyle.merge(
-                            style: text.bodySmall?.copyWith(color: cc.textMuted),
+                            style: text.bodySmall?.copyWith(
+                              color: cc.textMuted,
+                            ),
                             child: sub,
                           ),
                         ],

@@ -1,11 +1,13 @@
 import '../../widgets/cc_sheet.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/artist_merge_providers.dart';
-import '../../../providers/smart_search_providers.dart' show searchRowsLimiterProvider, sourceCooldownProvider;
+import '../../../providers/smart_search_providers.dart'
+    show searchRowsLimiterProvider, sourceCooldownProvider;
 import '../../../services/online/budgeted_call.dart';
 import '../../../providers/ytm_catalog_providers.dart';
 import '../../../services/online/innertube_client.dart';
@@ -40,7 +42,8 @@ Future<YtmArtistRef?> lookupYtmArtist(
   } on Object catch (e) {
     AppLog.w('artist lookup failed ($e)');
     if (!context.mounted) return null;
-    showMsg(context, 
+    showMsg(
+      context,
       e is YtException
           ? ytErrorText(context, e.kind)
           : e is InnerTubeChanged
@@ -103,7 +106,8 @@ Future<void> mergeArtistWith(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (_) => MergePickerSheet(name: head.name, exclude: group, search: search),
+    builder: (_) =>
+        MergePickerSheet(name: head.name, exclude: group, search: search),
   );
   if (chosen == null || !context.mounted) return;
   try {
@@ -117,7 +121,12 @@ Future<void> mergeArtistWith(
 
 /// The sheet of «Unisci con…»: a field (starts as [name]) and what [search] finds.
 class MergePickerSheet extends StatefulWidget {
-  const MergePickerSheet({super.key, required this.name, required this.exclude, required this.search});
+  const MergePickerSheet({
+    super.key,
+    required this.name,
+    required this.exclude,
+    required this.search,
+  });
 
   final String name;
 
@@ -137,7 +146,10 @@ class _MergePickerSheetState extends State<MergePickerSheet> {
     final q = _ctrl.text.trim();
     if (q.isEmpty) return const [];
     final all = await widget.search(q);
-    return likelyFirst(widget.name, [for (final a in all) if (!widget.exclude.contains(a.id)) a]);
+    return likelyFirst(widget.name, [
+      for (final a in all)
+        if (!widget.exclude.contains(a.id)) a,
+    ]);
   }
 
   @override
@@ -152,8 +164,8 @@ class _MergePickerSheetState extends State<MergePickerSheet> {
     return e is YtException
         ? ytErrorText(context, e.kind)
         : e is InnerTubeChanged
-            ? l.ytmPageUnreadable
-            : l.loadFailed;
+        ? l.ytmPageUnreadable
+        : l.loadFailed;
   }
 
   @override
@@ -162,26 +174,46 @@ class _MergePickerSheetState extends State<MergePickerSheet> {
     final cc = context.cc;
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  0,
+                  CcDims.margin,
+                  CcDims.gap8,
+                ),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(l.artistMergePick, style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    l.artistMergePick,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  0,
+                  CcDims.margin,
+                  CcDims.gap8,
+                ),
                 child: TextField(
                   key: const ValueKey('merge-search'),
                   controller: _ctrl,
                   textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: l.artistMergeWith),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    hintText: l.artistMergeWith,
+                  ),
                   onSubmitted: (_) => setState(() {
                     _found = _run();
                   }),
@@ -192,24 +224,32 @@ class _MergePickerSheetState extends State<MergePickerSheet> {
                   future: _found,
                   builder: (context, snap) {
                     if (snap.connectionState != ConnectionState.done) {
-                      return const Padding(padding: EdgeInsets.all(CcDims.gap16), child: CircularProgressIndicator());
+                      return const Padding(
+                        padding: EdgeInsets.all(CcDims.gap16),
+                        child: CircularProgressIndicator(),
+                      );
                     }
                     final text = snap.hasError
                         ? _error(snap.error!)
                         : snap.data!.isEmpty
-                            ? l.ytmArtistNone
-                            : null;
+                        ? l.ytmArtistNone
+                        : null;
                     if (text != null) {
                       return Padding(
                         padding: const EdgeInsets.all(CcDims.margin),
-                        child: Text(text, key: const ValueKey('merge-message'), style: TextStyle(color: cc.textMuted)),
+                        child: Text(
+                          text,
+                          key: const ValueKey('merge-message'),
+                          style: TextStyle(color: cc.textMuted),
+                        ),
                       );
                     }
                     final list = snap.data!;
                     return ListView.builder(
                       shrinkWrap: list.length <= 20,
                       itemCount: list.length,
-                      itemBuilder: (context, i) => ArtistPickTile(artist: list[i]),
+                      itemBuilder: (context, i) =>
+                          ArtistPickTile(artist: list[i]),
                     );
                   },
                 ),
@@ -225,8 +265,15 @@ class _MergePickerSheetState extends State<MergePickerSheet> {
 /// [found] with the profiles named like [name] (accents, case and «feat.» ignored) first.
 List<YtmArtistRef> likelyFirst(String name, List<YtmArtistRef> found) {
   final keys = artistNameKeys(name);
-  final same = [for (final a in found) if (keys.contains(matchKey(a.name))) a];
-  return [...same, for (final a in found) if (!same.contains(a)) a];
+  final same = [
+    for (final a in found)
+      if (keys.contains(matchKey(a.name))) a,
+  ];
+  return [
+    ...same,
+    for (final a in found)
+      if (!same.contains(a)) a,
+  ];
 }
 
 /// The few artists to choose from: photo, name and monthly audience.

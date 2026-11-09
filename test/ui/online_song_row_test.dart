@@ -39,11 +39,13 @@ class _Ctrl implements PlayerController {
     calls.add('play');
     return false;
   }
+
   @override
   Future<void> enqueueOnline(YtResult r) async {
     if (failEnqueue) throw StateError('no');
     calls.add('enqueue');
   }
+
   @override
   Future<void> playOnlineNext(YtResult r) async => calls.add('next');
 
@@ -71,7 +73,11 @@ void main() {
   late _Downloads downloads;
   final askedArtists = <String>[];
 
-  Future<Harness> pumpRow(WidgetTester tester, {bool jam = false, Widget? child}) async {
+  Future<Harness> pumpRow(
+    WidgetTester tester, {
+    bool jam = false,
+    Widget? child,
+  }) async {
     askedArtists.clear();
     ctrl = _Ctrl()..inJam = jam;
     downloads = _Downloads();
@@ -85,19 +91,23 @@ void main() {
       extraOverrides: [
         playerControllerProvider.overrideWithValue(ctrl),
         downloadsProvider.overrideWith(() => downloads),
-        artistLinkResolverProvider.overrideWithValue(ArtistLinkResolver(
-          library: (name) async {
-            askedArtists.add(name);
-            return null;
-          },
-          search: (_) async => [],
-        )),
+        artistLinkResolverProvider.overrideWithValue(
+          ArtistLinkResolver(
+            library: (name) async {
+              askedArtists.add(name);
+              return null;
+            },
+            search: (_) async => [],
+          ),
+        ),
       ],
     );
     return h;
   }
 
-  testWidgets('tap plays and opens the player; the download button is there', (tester) async {
+  testWidgets('tap plays and opens the player; the download button is there', (
+    tester,
+  ) async {
     final h = await pumpRow(tester);
     expect(find.byTooltip('Scarica'), findsOneWidget);
     await tester.tap(find.text('Online song'));
@@ -113,11 +123,13 @@ void main() {
     late WidgetRef ref;
     final h = await pumpRow(
       tester,
-      child: Consumer(builder: (c, r, _) {
-        ctx = c;
-        ref = r;
-        return const Scaffold();
-      }),
+      child: Consumer(
+        builder: (c, r, _) {
+          ctx = c;
+          ref = r;
+          return const Scaffold();
+        },
+      ),
     );
     unawaited(playOnlineAndOpen(ctx, ref, _r));
     await tester.pump();
@@ -133,9 +145,13 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('while picking, tap toggles and there is no swipe or ⋮', (tester) async {
+  testWidgets('while picking, tap toggles and there is no swipe or ⋮', (
+    tester,
+  ) async {
     final h = await pumpRow(tester);
-    final container = ProviderScope.containerOf(tester.element(find.byType(OnlineSongTile)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(OnlineSongTile)),
+    );
     container.read(selectionProvider('k').notifier).toggle(0);
     await tester.pump();
     expect(find.byTooltip('Altre opzioni'), findsNothing);
@@ -148,12 +164,18 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a queueing that fails does not say «Aggiunto in coda»', (tester) async {
+  testWidgets('a queueing that fails does not say «Aggiunto in coda»', (
+    tester,
+  ) async {
     final h = await pumpRow(tester);
     await tester.dragFrom(const Offset(120, 36), const Offset(300, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Aggiunto in coda'), findsOneWidget); // control: it shows when it works
-    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).clearSnackBars();
+    expect(
+      find.text('Aggiunto in coda'),
+      findsOneWidget,
+    ); // control: it shows when it works
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first))
+        .clearSnackBars();
     await tester.pumpAndSettle();
     ctrl.failEnqueue = true;
     await tester.dragFrom(const Offset(120, 36), const Offset(300, 0));
@@ -173,21 +195,29 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('with a Jam on, tap and «Riproduci dopo» queue like a swipe (D-89)', (tester) async {
-    final h = await pumpRow(tester, jam: true);
-    await tester.tap(find.text('Online song'));
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(ctrl.calls, ['enqueue']);
-    expect(find.byType(NowPlayingScreen), findsNothing);
-    await tester.tap(find.byTooltip('Altre opzioni'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Riproduci dopo'));
-    await tester.pumpAndSettle();
-    expect(ctrl.calls, ['enqueue', 'next']); // the controller does the Jam routing (D-89)
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'with a Jam on, tap and «Riproduci dopo» queue like a swipe (D-89)',
+    (tester) async {
+      final h = await pumpRow(tester, jam: true);
+      await tester.tap(find.text('Online song'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(ctrl.calls, ['enqueue']);
+      expect(find.byType(NowPlayingScreen), findsNothing);
+      await tester.tap(find.byTooltip('Altre opzioni'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Riproduci dopo'));
+      await tester.pumpAndSettle();
+      expect(ctrl.calls, [
+        'enqueue',
+        'next',
+      ]); // the controller does the Jam routing (D-89)
+      await h.dispose(tester);
+    },
+  );
 
-  testWidgets('«Scarica» of an instant promotion says it joined the library', (tester) async {
+  testWidgets('«Scarica» of an instant promotion says it joined the library', (
+    tester,
+  ) async {
     final h = await pumpRow(tester);
     downloads.instant = true;
     await tester.tap(find.byTooltip('Altre opzioni'));
@@ -200,15 +230,23 @@ void main() {
 
   testWidgets('the ⋮ menu has the 5 actions and each runs', (tester) async {
     final h = await pumpRow(tester);
-    await tester.runAsync(() => h.db.customStatement(
-        "INSERT INTO playlists (name, created_at, uuid, updated_at) VALUES ('P1', 1, 'u1', 1)"));
+    await tester.runAsync(
+      () => h.db.customStatement(
+        "INSERT INTO playlists (name, created_at, uuid, updated_at) VALUES ('P1', 1, 'u1', 1)",
+      ),
+    );
     Future<void> open() async {
       await tester.tap(find.byTooltip('Altre opzioni'));
       await tester.pumpAndSettle();
     }
 
     await open();
-    for (final t in ['Riproduci dopo', 'Aggiungi in coda', 'Aggiungi a playlist…', 'Scarica']) {
+    for (final t in [
+      'Riproduci dopo',
+      'Aggiungi in coda',
+      'Aggiungi a playlist…',
+      'Scarica',
+    ]) {
       expect(find.text(t), findsOneWidget, reason: t);
     }
     expect(find.text('Vai all’artista'), findsOneWidget);
@@ -227,7 +265,9 @@ void main() {
     await open();
     await tester.tap(find.text('Aggiungi a playlist…'));
     await tester.pumpAndSettle();
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('P1'));
     await tester.pumpAndSettle();
@@ -242,30 +282,45 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a failed promotion shows a localized snackbar, never the raw message', (tester) async {
-    tester.view.physicalSize = const Size(400, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final h = await Harness.create(tester);
-    final errors = StreamController<PromoteError>();
-    addTearDown(errors.close);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [...h.overrides, promoteErrorsProvider.overrideWith((_) => errors.stream)],
-      child: const CodecoreApp(),
-    ));
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump(const Duration(milliseconds: 600));
-    errors.add(PromoteError(noSpace: true));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Spazio insufficiente per scaricare il brano'), findsOneWidget);
-    // The same message again is a second snackbar, queued behind the first.
-    errors.add(PromoteError(noSpace: true));
-    await tester.pump();
-    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).hideCurrentSnackBar();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Spazio insufficiente per scaricare il brano'), findsOneWidget);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'a failed promotion shows a localized snackbar, never the raw message',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester);
+      final errors = StreamController<PromoteError>();
+      addTearDown(errors.close);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...h.overrides,
+            promoteErrorsProvider.overrideWith((_) => errors.stream),
+          ],
+          child: const CodecoreApp(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+      errors.add(PromoteError(noSpace: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.text('Spazio insufficiente per scaricare il brano'),
+        findsOneWidget,
+      );
+      // The same message again is a second snackbar, queued behind the first.
+      errors.add(PromoteError(noSpace: true));
+      await tester.pump();
+      ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first))
+          .hideCurrentSnackBar();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(
+        find.text('Spazio insufficiente per scaricare il brano'),
+        findsOneWidget,
+      );
+      await h.dispose(tester);
+    },
+  );
 }

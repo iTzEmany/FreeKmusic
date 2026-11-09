@@ -7,19 +7,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('unsyncedLyrics ignores values that are not numbers and duplicates', () async {
-    SharedPreferences.setMockInitialValues({'unsyncedLyrics': ['4', 'x', '4', '']});
-    final store = await SettingsStore.open();
-    expect(store.readUnsyncedLyrics(), {4});
-  });
-  test('unsyncedLyrics is empty when absent and read back as track ids', () async {
-    SharedPreferences.setMockInitialValues({});
-    var store = await SettingsStore.open();
-    expect(store.readUnsyncedLyrics(), isEmpty);
-    await store.writeUnsyncedLyrics({7, 3});
-    store = await SettingsStore.open();
-    expect(store.readUnsyncedLyrics(), {3, 7});
-  });
+  test(
+    'unsyncedLyrics ignores values that are not numbers and duplicates',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'unsyncedLyrics': ['4', 'x', '4', ''],
+      });
+      final store = await SettingsStore.open();
+      expect(store.readUnsyncedLyrics(), {4});
+    },
+  );
+  test(
+    'unsyncedLyrics is empty when absent and read back as track ids',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      var store = await SettingsStore.open();
+      expect(store.readUnsyncedLyrics(), isEmpty);
+      await store.writeUnsyncedLyrics({7, 3});
+      store = await SettingsStore.open();
+      expect(store.readUnsyncedLyrics(), {3, 7});
+    },
+  );
   test('deezerMeta is on when absent and a saved false stays false', () async {
     SharedPreferences.setMockInitialValues({});
     var store = await SettingsStore.open();
@@ -41,7 +49,9 @@ void main() {
     var store = await SettingsStore.open();
     expect(store.readSettings().librarySort, 'plays');
     expect(store.readSettings().librarySortAscending, isNull);
-    await store.writeSettings(store.readSettings().copyWith(librarySortAscending: true));
+    await store.writeSettings(
+      store.readSettings().copyWith(librarySortAscending: true),
+    );
     store = await SettingsStore.open();
     expect(store.readSettings().librarySortAscending, true);
   });
@@ -49,16 +59,25 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     var store = await SettingsStore.open();
     expect(store.readSettings().playlistSorts, isEmpty);
-    await store.writeSettings(store.readSettings().copyWith(
-        playlistSorts: {'12': 'title:asc', '7': 'year:desc'}));
+    await store.writeSettings(
+      store.readSettings().copyWith(
+        playlistSorts: {'12': 'title:asc', '7': 'year:desc'},
+      ),
+    );
     store = await SettingsStore.open();
-    expect(store.readSettings().playlistSorts, {'12': 'title:asc', '7': 'year:desc'});
+    expect(store.readSettings().playlistSorts, {
+      '12': 'title:asc',
+      '7': 'year:desc',
+    });
     SharedPreferences.setMockInitialValues({'playlistSorts': '{broken'});
     store = await SettingsStore.open();
     expect(store.readSettings().playlistSorts, isEmpty);
   });
   test('sort keys of the wrong type (a tampered backup) read as the defaults, without throwing', () async {
-    SharedPreferences.setMockInitialValues({'playlistSorts': 5, 'librarySortAscending': 'yes'});
+    SharedPreferences.setMockInitialValues({
+      'playlistSorts': 5,
+      'librarySortAscending': 'yes',
+    });
     final store = await SettingsStore.open();
     expect(store.readSettings().playlistSorts, isEmpty);
     expect(store.readSettings().librarySortAscending, isNull);
@@ -68,14 +87,16 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final store = await SettingsStore.open();
     expect(store.readPlayback().queueIds, isEmpty);
-    await store.writePlayback(const SavedPlayback(
-      queueIds: [3, 1, 2],
-      index: 2,
-      positionMs: 4500,
-      volume: 0.5,
-      shuffle: true,
-      repeat: PlayRepeat.all,
-    ));
+    await store.writePlayback(
+      const SavedPlayback(
+        queueIds: [3, 1, 2],
+        index: 2,
+        positionMs: 4500,
+        volume: 0.5,
+        shuffle: true,
+        repeat: PlayRepeat.all,
+      ),
+    );
     final s = store.readPlayback();
     expect(s.queueIds, [3, 1, 2]);
     expect(s.index, 2);
@@ -90,8 +111,9 @@ void main() {
     final store = await SettingsStore.open();
     expect(store.readSettings().importSureThreshold, 0.80);
     expect(store.readSettings().importReviewThreshold, 0.55);
-    await store.writeSettings(const AppSettings(
-        importSureThreshold: 0.9, importReviewThreshold: 0.6));
+    await store.writeSettings(
+      const AppSettings(importSureThreshold: 0.9, importReviewThreshold: 0.6),
+    );
     expect(store.readSettings().importSureThreshold, 0.9);
     expect(store.readSettings().importReviewThreshold, 0.6);
   });
@@ -129,32 +151,46 @@ void main() {
     expect(s.transition, TransitionMode.normal);
     expect(s.crossfadeSeconds, 6);
     expect(s.crossfadePlainInAlbum, isTrue);
-    await store.writeSettings(const AppSettings(
+    await store.writeSettings(
+      const AppSettings(
         transition: TransitionMode.crossfade,
         crossfadeSeconds: 9,
-        crossfadePlainInAlbum: false));
+        crossfadePlainInAlbum: false,
+      ),
+    );
     s = store.readSettings();
     expect(s.transition, TransitionMode.crossfade);
     expect(s.crossfadeSeconds, 9);
     expect(s.crossfadePlainInAlbum, isFalse);
-    SharedPreferences.setMockInitialValues({'crossfadeSeconds': 99, 'transition': 'gapless'});
+    SharedPreferences.setMockInitialValues({
+      'crossfadeSeconds': 99,
+      'transition': 'gapless',
+    });
     s = (await SettingsStore.open()).readSettings();
     expect(s.crossfadeSeconds, 12);
     expect(s.transition, TransitionMode.gapless);
     SharedPreferences.setMockInitialValues({'transition': 'something-old'});
-    expect((await SettingsStore.open()).readSettings().transition, TransitionMode.normal);
+    expect(
+      (await SettingsStore.open()).readSettings().transition,
+      TransitionMode.normal,
+    );
   });
 
-  test('theme notte and accent violet by default; the light theme name is kept', () async {
-    SharedPreferences.setMockInitialValues({});
-    final store = await SettingsStore.open();
-    expect(store.readSettings().theme, 'notte');
-    expect(store.readSettings().accent, 'viola');
-    await store.writeSettings(const AppSettings(theme: 'chiaro', accent: 'rosa'));
-    final s = store.readSettings();
-    expect(s.theme, 'chiaro');
-    expect(s.accent, 'rosa');
-  });
+  test(
+    'theme notte and accent violet by default; the light theme name is kept',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = await SettingsStore.open();
+      expect(store.readSettings().theme, 'notte');
+      expect(store.readSettings().accent, 'viola');
+      await store.writeSettings(
+        const AppSettings(theme: 'chiaro', accent: 'rosa'),
+      );
+      final s = store.readSettings();
+      expect(s.theme, 'chiaro');
+      expect(s.accent, 'rosa');
+    },
+  );
 
   test('the blurred dock is off by default and the choice is kept', () async {
     SharedPreferences.setMockInitialValues({});
@@ -172,34 +208,50 @@ void main() {
     expect(store.readSettings().spinCover, isTrue);
   });
 
-  test('the listening history is on by default and the choice is kept', () async {
-    SharedPreferences.setMockInitialValues({});
-    final store = await SettingsStore.open();
-    expect(store.readSettings().recordHistory, isTrue);
-    await store.writeSettings(const AppSettings(recordHistory: false));
-    expect(store.readSettings().recordHistory, isFalse);
-  });
+  test(
+    'the listening history is on by default and the choice is kept',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = await SettingsStore.open();
+      expect(store.readSettings().recordHistory, isTrue);
+      await store.writeSettings(const AppSettings(recordHistory: false));
+      expect(store.readSettings().recordHistory, isFalse);
+    },
+  );
 
   test('the old online-source and SoundCloud choices are ignored: nothing breaks, nothing is written back', () async {
-    SharedPreferences.setMockInitialValues({'searchSource': 'soundcloud', 'importSoundCloud': true});
+    SharedPreferences.setMockInitialValues({
+      'searchSource': 'soundcloud',
+      'importSoundCloud': true,
+    });
     final store = await SettingsStore.open();
-    await store.writeSettings(store.readSettings().copyWith(recordHistory: false));
+    await store.writeSettings(
+      store.readSettings().copyWith(recordHistory: false),
+    );
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('searchSource'), 'soundcloud', reason: 'left as it was, never read');
+    expect(
+      prefs.getString('searchSource'),
+      'soundcloud',
+      reason: 'left as it was, never read',
+    );
     expect(store.readSettings().recordHistory, isFalse);
   });
 
-  test('downloads are M4A by default, also for those who had the old MP3 default; a choice is remembered',
-      () async {
+  test('downloads are M4A by default, also for those who had the old MP3 default; a choice is remembered', () async {
     SharedPreferences.setMockInitialValues({'downloadOriginal': false});
     final store = await SettingsStore.open();
     expect(store.readSettings().downloadFormat, DownloadFormat.m4a);
 
     await store.writeSettings(
-        store.readSettings().copyWith(downloadFormat: DownloadFormat.mp3High));
+      store.readSettings().copyWith(downloadFormat: DownloadFormat.mp3High),
+    );
     expect(store.readSettings().downloadFormat, DownloadFormat.mp3High);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.containsKey('downloadOriginal'), isFalse, reason: 'the old switch is gone');
+    expect(
+      prefs.containsKey('downloadOriginal'),
+      isFalse,
+      reason: 'the old switch is gone',
+    );
   });
 
   test('the groups the user said are not duplicates are remembered', () async {
@@ -218,7 +270,12 @@ void main() {
     expect(s.shufflePlusEvery, 4);
     expect(s.shufflePlusUnmeteredOnly, isTrue);
     await store.writeSettings(
-        s.copyWith(shufflePlus: true, shufflePlusEvery: 7, shufflePlusUnmeteredOnly: false));
+      s.copyWith(
+        shufflePlus: true,
+        shufflePlusEvery: 7,
+        shufflePlusUnmeteredOnly: false,
+      ),
+    );
     s = store.readSettings();
     expect(s.shufflePlus, isTrue);
     expect(s.shufflePlusEvery, 7);
@@ -232,24 +289,41 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final store = await SettingsStore.open();
     var s = store.readSettings();
-    expect((s.radioCountry, s.radioRegion, s.radioOnlyCountry), ('', '', false));
-    await store.writeSettings(s.copyWith(radioCountry: 'DE', radioRegion: 'Bayern', radioOnlyCountry: true));
+    expect(
+      (s.radioCountry, s.radioRegion, s.radioOnlyCountry),
+      ('', '', false),
+    );
+    await store.writeSettings(
+      s.copyWith(
+        radioCountry: 'DE',
+        radioRegion: 'Bayern',
+        radioOnlyCountry: true,
+      ),
+    );
     s = store.readSettings();
-    expect((s.radioCountry, s.radioRegion, s.radioOnlyCountry), ('DE', 'Bayern', true));
+    expect(
+      (s.radioCountry, s.radioRegion, s.radioOnlyCountry),
+      ('DE', 'Bayern', true),
+    );
   });
 }
 
 void streamCacheSettingTests() {
-  test('streamCacheMb: default 1024, saved, out-of-range clamped to 256-8192', () async {
-    SharedPreferences.setMockInitialValues({});
-    var store = await SettingsStore.open();
-    expect(store.readSettings().streamCacheMb, 1024);
-    await store.writeSettings(store.readSettings().copyWith(streamCacheMb: 2048));
-    expect(store.readSettings().streamCacheMb, 2048);
-    for (final (raw, want) in [(10, 256), (99999, 8192)]) {
-      SharedPreferences.setMockInitialValues({'streamCacheMb': raw});
-      store = await SettingsStore.open();
-      expect(store.readSettings().streamCacheMb, want);
-    }
-  });
+  test(
+    'streamCacheMb: default 1024, saved, out-of-range clamped to 256-8192',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      var store = await SettingsStore.open();
+      expect(store.readSettings().streamCacheMb, 1024);
+      await store.writeSettings(
+        store.readSettings().copyWith(streamCacheMb: 2048),
+      );
+      expect(store.readSettings().streamCacheMb, 2048);
+      for (final (raw, want) in [(10, 256), (99999, 8192)]) {
+        SharedPreferences.setMockInitialValues({'streamCacheMb': raw});
+        store = await SettingsStore.open();
+        expect(store.readSettings().streamCacheMb, want);
+      }
+    },
+  );
 }

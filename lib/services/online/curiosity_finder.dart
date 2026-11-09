@@ -12,7 +12,13 @@ import '../../core/artist_key.dart';
 /// asked says why in [songError] / [artistError] (usually a
 /// [RateLimitedException]); a part simply not found has neither.
 class CuriosityPair {
-  const CuriosityPair({this.song, this.artist, this.songError, this.artistError, this.recordingId});
+  const CuriosityPair({
+    this.song,
+    this.artist,
+    this.songError,
+    this.artistError,
+    this.recordingId,
+  });
 
   final Curiosity? song, artist;
   final Object? songError, artistError;
@@ -23,8 +29,11 @@ class CuriosityPair {
 
 /// The description of [artist]'s YouTube Music page with the page's address,
 /// null when there is none. May throw (e.g. [RateLimitedException]).
-typedef YtmArtistDescription = Future<({String text, Uri source, String lang})?> Function(
-    String artist, CancelToken? cancel);
+typedef YtmArtistDescription =
+    Future<({String text, Uri source, String lang})?> Function(
+      String artist,
+      CancelToken? cancel,
+    );
 
 /// Shortest text worth showing as a curiosity.
 const _minFallbackText = 80;
@@ -51,8 +60,14 @@ class CuriosityFinder {
   final DiscogsClient? discogs;
   final YtmArtistDescription? ytmArtist;
 
-  Future<CuriosityPair> find(String title, String artist, String lang,
-      {String? isrc, int durationMs = 0, CancelToken? cancel}) async {
+  Future<CuriosityPair> find(
+    String title,
+    String artist,
+    String lang, {
+    String? isrc,
+    int durationMs = 0,
+    CancelToken? cancel,
+  }) async {
     final langs = lang == 'en' ? ['en'] : [lang, 'en'];
     final ids = await _identify(title, artist, langs, cancel, isrc, durationMs);
 
@@ -60,8 +75,11 @@ class CuriosityFinder {
     Curiosity? song, art;
     try {
       // A page named by MusicBrainz is trusted only if it speaks of the song.
-      final key = matchKey(coreTitle(title.split(RegExp(r'\s+[-–—]\s+')).first));
-      song = await _byLinks(ids.song, langs, cancel, mustMention: key) ??
+      final key = matchKey(
+        coreTitle(title.split(RegExp(r'\s+[-–—]\s+')).first),
+      );
+      song =
+          await _byLinks(ids.song, langs, cancel, mustMention: key) ??
           await wikipedia.findSong(title, artist, lang, cancel: cancel) ??
           await _discogsNotes(ids.recordingId, cancel);
     } on DioException catch (e) {
@@ -72,7 +90,9 @@ class CuriosityFinder {
     }
     if (artist.isNotEmpty) {
       try {
-        art = await _byLinks(ids.artist, langs, cancel) ?? await wikipedia.findArtist(artist, lang, cancel: cancel) ??
+        art =
+            await _byLinks(ids.artist, langs, cancel) ??
+            await wikipedia.findArtist(artist, lang, cancel: cancel) ??
             await _ytmDescription(artist, cancel);
       } on DioException catch (e) {
         if (CancelToken.isCancel(e)) rethrow;
@@ -81,31 +101,53 @@ class CuriosityFinder {
         artistError = e;
       }
     }
-    return CuriosityPair(song: song, artist: art, songError: songError, artistError: artistError, recordingId: ids.recordingId);
+    return CuriosityPair(
+      song: song,
+      artist: art,
+      songError: songError,
+      artistError: artistError,
+      recordingId: ids.recordingId,
+    );
   }
 
   /// The notes of the album's Discogs master, as a curiosity about the album.
-  Future<Curiosity?> _discogsNotes(String? recordingId, CancelToken? cancel) async {
+  Future<Curiosity?> _discogsNotes(
+    String? recordingId,
+    CancelToken? cancel,
+  ) async {
     final d = discogs;
     if (d == null || recordingId == null) return null;
     final id = await musicBrainz.discogsMasterOf(recordingId, cancel: cancel);
     if (id == null) return null;
     final notes = await d.master(id, cancel: cancel);
     if (notes == null || notes.length < _minFallbackText) return null;
-    return Curiosity(notes, Uri.parse('https://www.discogs.com/master/$id'), 'en');
+    return Curiosity(
+      notes,
+      Uri.parse('https://www.discogs.com/master/$id'),
+      'en',
+    );
   }
 
   Future<Curiosity?> _ytmDescription(String artist, CancelToken? cancel) async {
     final f = ytmArtist;
     if (f == null) return null;
     final found = await f(artist, cancel);
-    if (found == null || found.text.trim().length < _minFallbackText) return null;
+    if (found == null || found.text.trim().length < _minFallbackText) {
+      return null;
+    }
     return Curiosity(found.text.trim(), found.source, found.lang);
   }
 
   /// The page titles MusicBrainz and Wikidata name for the song and the
   /// artist; empty maps when they cannot say. Never throws: it is a shortcut.
-  Future<({Map<String, String>? song, Map<String, String>? artist, String? recordingId})> _identify(
+  Future<
+    ({
+      Map<String, String>? song,
+      Map<String, String>? artist,
+      String? recordingId,
+    })
+  >
+  _identify(
     String title,
     String artist,
     List<String> langs,
@@ -118,23 +160,38 @@ class CuriosityFinder {
       final main = extractPrimaryArtist(artist);
       final byIsrc = isrc == null
           ? const <MbRecording>[]
-          : await musicBrainz.recordingsByIsrc(isrc, durationMs, title: title, artist: artist, cancel: cancel);
+          : await musicBrainz.recordingsByIsrc(
+              isrc,
+              durationMs,
+              title: title,
+              artist: artist,
+              cancel: cancel,
+            );
       if (main.isNotEmpty || byIsrc.isNotEmpty) {
-        final recs = byIsrc.isNotEmpty ? byIsrc : await musicBrainz.recordings(title, main, cancel: cancel);
+        final recs = byIsrc.isNotEmpty
+            ? byIsrc
+            : await musicBrainz.recordings(title, main, cancel: cancel);
         if (recs.isNotEmpty) {
           recordingId = recs.first.id;
-          artistQ = await musicBrainz.artistWikidata(recs.first.artistId, cancel: cancel);
+          artistQ = await musicBrainz.artistWikidata(
+            recs.first.artistId,
+            cancel: cancel,
+          );
           for (final r in recs.take(2)) {
             songQ = await musicBrainz.songWikidata(r.id, cancel: cancel);
             if (songQ != null) break;
           }
         } else {
           final a = await musicBrainz.artist(main, cancel: cancel);
-          if (a != null) artistQ = await musicBrainz.artistWikidata(a.id, cancel: cancel);
+          if (a != null) {
+            artistQ = await musicBrainz.artistWikidata(a.id, cancel: cancel);
+          }
         }
       }
       final wanted = [?songQ, ?artistQ];
-      if (wanted.isEmpty) return (song: null, artist: null, recordingId: recordingId);
+      if (wanted.isEmpty) {
+        return (song: null, artist: null, recordingId: recordingId);
+      }
       final links = await wikidata.sitelinks(wanted, langs, cancel: cancel);
       return (
         song: songQ == null ? null : links[songQ],
@@ -149,8 +206,12 @@ class CuriosityFinder {
   }
 
   /// The first of [titles] (per language, in order of preference) that reads.
-  Future<Curiosity?> _byLinks(Map<String, String>? titles, List<String> langs, CancelToken? cancel,
-      {String? mustMention}) async {
+  Future<Curiosity?> _byLinks(
+    Map<String, String>? titles,
+    List<String> langs,
+    CancelToken? cancel, {
+    String? mustMention,
+  }) async {
     if (titles == null) return null;
     for (final l in langs) {
       final t = titles[l];
@@ -159,7 +220,9 @@ class CuriosityFinder {
       if (c == null) continue;
       // The title or the lead has to name it: a wrong link is worse than none.
       if (mustMention != null && mustMention.isNotEmpty) {
-        final text = matchKey('$t ${c.text.substring(0, c.text.length.clamp(0, 600))}');
+        final text = matchKey(
+          '$t ${c.text.substring(0, c.text.length.clamp(0, 600))}',
+        );
         if (!text.contains(mustMention)) {
           AppLog.i('page "$t" does not mention the song: left out');
           continue;

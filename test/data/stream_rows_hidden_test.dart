@@ -57,7 +57,9 @@ void main() {
       await (db.update(db.tracks)..where((t) => t.id.equals(other))).write(col);
     }
     // A podcast episode not downloaded (kind 1, an address) is no library row either.
-    await db.into(db.tracks).insert(
+    await db
+        .into(db.tracks)
+        .insert(
           TracksCompanion.insert(
             path: 'https://feed.example/ep.mp3',
             title: 'Shadow',
@@ -108,8 +110,9 @@ void main() {
     expect(row.artist, 'Shadow Artist');
     expect(row.format, 'm4a');
     expect(row.durationMs, 200000);
-    await (db.update(db.tracks)..where((t) => t.id.equals(row.id)))
-        .write(const TracksCompanion(missing: Value(true)));
+    await (db.update(db.tracks)..where((t) => t.id.equals(row.id))).write(
+      const TracksCompanion(missing: Value(true)),
+    );
     final again = await tracks.upsertStreamRow(
       'youtube:abc',
       const YtResult(
@@ -124,7 +127,11 @@ void main() {
     final after = (await tracks.streamRow('youtube:abc'))!;
     expect(after.missing, isFalse);
     expect(after.albumKey, 'stream|youtube:abc');
-    expect(await (db.select(db.tracks)).get(), hasLength(5), reason: 'four shadow rows and the episode row');
+    expect(
+      await (db.select(db.tracks)).get(),
+      hasLength(5),
+      reason: 'four shadow rows and the episode row',
+    );
   });
 
   test('streamRowsAmong returns the kind-2 rows and the `stream:` rows of episodes, not library rows or addresses', () async {
@@ -154,7 +161,12 @@ void main() {
     // Not in the playlist yet: only the kind check can keep it out.
     final fresh = (await tracks.streamRow('youtube:zero'))!.id;
     expect(await pl.addTracks(id, [fresh]), 0);
-    expect(await (db.select(db.playlistTracks)..where((t) => t.trackId.equals(fresh))).get(), isEmpty);
+    expect(
+      await (db.select(
+        db.playlistTracks,
+      )..where((t) => t.trackId.equals(fresh))).get(),
+      isEmpty,
+    );
     // The row seeded in setUp is in the playlist anyway: not counted.
     expect((await pl.watchAll().first).single.trackCount, 0);
   });

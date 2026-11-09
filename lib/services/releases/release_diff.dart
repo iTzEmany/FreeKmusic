@@ -60,7 +60,10 @@ ReleaseKind releaseKind(String subtitle) =>
 
 final _brackets = RegExp(r'[\(\[][^\)\]]*[\)\]]');
 final _afterMark = RegExp(r'[:+].*$');
-final _versionWords = RegExp(r'\b(deluxe|edition|version)\b', caseSensitive: false);
+final _versionWords = RegExp(
+  r'\b(deluxe|edition|version)\b',
+  caseSensitive: false,
+);
 
 /// One key for the variants of a title: no brackets, nothing after «:» or
 /// «+», no «Deluxe», «Edition», «Version». A reissue with a title of its own
@@ -95,22 +98,28 @@ ReleaseDiff diffReleases({
   for (final shelf in fetched) {
     for (final r in shelf.releases) {
       if (!seen.add(r.browseId)) continue;
-      all.add(SeenRelease(
-        release: r,
-        kind: releaseKind(r.subtitle),
-        year: releaseYear(r.subtitle, now: now),
-        groupKey: releaseGroupKey(r.title),
-      ));
+      all.add(
+        SeenRelease(
+          release: r,
+          kind: releaseKind(r.subtitle),
+          year: releaseYear(r.subtitle, now: now),
+          groupKey: releaseGroupKey(r.title),
+        ),
+      );
     }
   }
-  final unknown = [for (final s in all) if (!known.contains(s.release.browseId)) s];
+  final unknown = [
+    for (final s in all)
+      if (!known.contains(s.release.browseId)) s,
+  ];
   if (firstCheck || unknown.isEmpty) return ReleaseDiff(unknown, const []);
 
   // A group already stored (or with a member already stored) is not new.
   final groupsSeenBefore = {
     ...knownGroups,
     for (final s in all)
-      if (known.contains(s.release.browseId)) releaseGroupId(s.kind, s.groupKey),
+      if (known.contains(s.release.browseId))
+        releaseGroupId(s.kind, s.groupKey),
   };
   final groups = <String, List<SeenRelease>>{};
   for (final s in unknown) {
@@ -121,20 +130,23 @@ ReleaseDiff diffReleases({
   for (final e in groups.entries) {
     if (groupsSeenBefore.contains(e.key)) continue;
     // The original title (the shortest) represents the group; latest year wins ties.
-    final members = [...e.value]..sort((a, b) {
+    final members = [...e.value]
+      ..sort((a, b) {
         final byLen = a.release.title.length.compareTo(b.release.title.length);
         return byLen != 0 ? byLen : (b.year ?? 0).compareTo(a.year ?? 0);
       });
     final head = members.first;
     final y = head.year;
     if (y == null || y < year - 1) continue;
-    fresh.add(NewRelease(
-      release: head.release,
-      kind: head.kind,
-      year: y,
-      groupKey: head.groupKey,
-      variants: [for (final m in members.skip(1)) m.release],
-    ));
+    fresh.add(
+      NewRelease(
+        release: head.release,
+        kind: head.kind,
+        year: y,
+        groupKey: head.groupKey,
+        variants: [for (final m in members.skip(1)) m.release],
+      ),
+    );
   }
   fresh.sort((a, b) {
     final byYear = b.year!.compareTo(a.year!);
@@ -145,4 +157,5 @@ ReleaseDiff diffReleases({
 
 /// What groups releases: the kind and the title key (a single with the title
 /// of an album is not a variant of it).
-String releaseGroupId(ReleaseKind kind, String groupKey) => '${kind.index}:$groupKey';
+String releaseGroupId(ReleaseKind kind, String groupKey) =>
+    '${kind.index}:$groupKey';

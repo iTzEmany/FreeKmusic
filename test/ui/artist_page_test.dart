@@ -11,7 +11,8 @@ import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:codecore/ui/screens/online/artist_page_screen.dart';
 import 'package:codecore/ui/screens/online/artist_page_sections.dart';
 import 'package:codecore/ui/screens/releases/follow_button.dart';
-import 'package:codecore/services/online/youtube_service.dart' show YtErrorKind, YtException;
+import 'package:codecore/services/online/youtube_service.dart'
+    show YtErrorKind, YtException;
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/ui/widgets/net_thumbnail.dart';
 import 'package:flutter/material.dart';
@@ -65,7 +66,11 @@ class _SearchCatalog extends FakeCatalog {
   final queries = <String>[];
 
   @override
-  Future<List<YtmArtistRef>> searchArtists(String query, String hl, {CancelToken? cancel}) {
+  Future<List<YtmArtistRef>> searchArtists(
+    String query,
+    String hl, {
+    CancelToken? cancel,
+  }) {
     queries.add(query);
     return onSearch(query);
   }
@@ -89,9 +94,12 @@ class _CountingCatalog extends FakeCatalog {
 class _Ctrl implements PlayerController {
   final calls = <String>[];
   @override
-  Future<void> playMixed(List<MixItem> items,
-          {int? index, PlayContext? context, bool? shuffle}) async =>
-      calls.add('${items.length} index=$index shuffle=$shuffle');
+  Future<void> playMixed(
+    List<MixItem> items, {
+    int? index,
+    PlayContext? context,
+    bool? shuffle,
+  }) async => calls.add('${items.length} index=$index shuffle=$shuffle');
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
@@ -110,9 +118,7 @@ void main() {
     await h.pump(
       tester,
       ArtistPageScreen(artist: artist),
-      extraOverrides: [
-        artistPageProvider.overrideWith((ref, id) => page()),
-      ],
+      extraOverrides: [artistPageProvider.overrideWith((ref, id) => page())],
     );
     await _settle(tester);
     return h;
@@ -429,7 +435,11 @@ void main() {
 
   group('merged profiles (D-402)', () {
     const a = YtmArtistRef(id: 'UCa', name: 'Marco Castello');
-    const b = YtmArtistRef(id: 'UCb', name: 'Marco Castello', audience: '38 mila');
+    const b = YtmArtistRef(
+      id: 'UCb',
+      name: 'Marco Castello',
+      audience: '38 mila',
+    );
     const c = YtmArtistRef(id: 'UCc', name: 'Altro Nome');
 
     YtmArtistPage pageOf(YtmArtistRef ref, List<YtmRelease> albums) =>
@@ -437,7 +447,11 @@ void main() {
 
     final pages = {
       'UCa': pageOf(a, const [
-        YtmRelease(browseId: 'M1', title: 'Contenta Tuttə', subtitle: 'Album • 2021'),
+        YtmRelease(
+          browseId: 'M1',
+          title: 'Contenta Tuttə',
+          subtitle: 'Album • 2021',
+        ),
         YtmRelease(browseId: 'M2', title: 'Pezzi', subtitle: 'Album • 2019'),
       ]),
       'UCb': pageOf(b, const [
@@ -460,7 +474,11 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       h = await Harness.create(tester);
-      if (merged) await tester.runAsync(() => ArtistAliasRepository(h.db).merge('UCa', 'UCb'));
+      if (merged) {
+        await tester.runAsync(
+          () => ArtistAliasRepository(h.db).merge('UCa', 'UCb'),
+        );
+      }
       h.mergeSearch = (_) => Future.value(found);
       catalog = _SearchCatalog(search ?? (_) async => found);
       await h.pump(
@@ -469,15 +487,16 @@ void main() {
         extraOverrides: [
           ytmCatalogProvider.overrideWithValue(catalog),
           artistPageProvider.overrideWith(
-            (ref, id) async => CatalogResult(pages[id]!, DateTime(2026, 10, 22)),
+            (ref, id) async =>
+                CatalogResult(pages[id]!, DateTime(2026, 10, 22)),
           ),
         ],
       );
       await _settle(tester);
     }
 
-    Future<List<String>> aliases(WidgetTester tester) async =>
-        (await tester.runAsync(() => ArtistAliasRepository(h.db).groupOf('UCa')))!;
+    Future<List<String>> aliases(WidgetTester tester) async => (await tester
+        .runAsync(() => ArtistAliasRepository(h.db).groupOf('UCa')))!;
 
     Future<void> menu(WidgetTester tester, String item) async {
       await tester.tap(find.byKey(const ValueKey('artist-menu')));
@@ -487,17 +506,22 @@ void main() {
       await _settle(tester);
     }
 
-    testWidgets('two profiles with a shared album show it once, with the note', (tester) async {
-      await openGroup(tester);
-      expect(find.text('2 profili uniti'), findsOneWidget);
-      expect(find.text('Contenta Tuttə'), findsOneWidget);
-      expect(find.text('CONTENTA tuttə'), findsNothing);
-      expect(find.text('Pezzi'), findsOneWidget);
-      expect(find.text('Nella stanza'), findsOneWidget);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'two profiles with a shared album show it once, with the note',
+      (tester) async {
+        await openGroup(tester);
+        expect(find.text('2 profili uniti'), findsOneWidget);
+        expect(find.text('Contenta Tuttə'), findsOneWidget);
+        expect(find.text('CONTENTA tuttə'), findsNothing);
+        expect(find.text('Pezzi'), findsOneWidget);
+        expect(find.text('Nella stanza'), findsOneWidget);
+        await h.dispose(tester);
+      },
+    );
 
-    testWidgets('opening the alias shows the main profile page', (tester) async {
+    testWidgets('opening the alias shows the main profile page', (
+      tester,
+    ) async {
       await openGroup(tester, from: b);
       expect(find.text('2 profili uniti'), findsOneWidget);
       expect(find.text('Marco Castello'), findsWidgets);
@@ -505,7 +529,9 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('«Separa profili» goes back to the main profile alone', (tester) async {
+    testWidgets('«Separa profili» goes back to the main profile alone', (
+      tester,
+    ) async {
       await openGroup(tester);
       await menu(tester, 'Separa profili');
       expect(await aliases(tester), ['UCa']);
@@ -515,43 +541,70 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('the note lists the profiles; «Separa» splits one, marks it different, and «Annulla» joins it back', (tester) async {
-      await openGroup(tester);
-      await tester.tap(find.byKey(const ValueKey('merged-note')));
-      await _settle(tester);
-      expect(find.byKey(const ValueKey('profile-UCa')), findsOneWidget);
-      expect(find.text('Principale'), findsOneWidget);
-      expect(tester.getSize(find.byKey(const ValueKey('separate-UCb'))).height, greaterThanOrEqualTo(48));
-      expect(find.byKey(const ValueKey('separate-UCa')), findsOneWidget, reason: 'the main one can leave too');
-      await tester.tap(find.byKey(const ValueKey('separate-UCb')));
-      await _settle(tester);
-      final repo = ArtistAliasRepository(h.db);
-      expect(await aliases(tester), ['UCa']);
-      expect(await tester.runAsync(() => repo.isNotSame('UCa', 'UCb')), isTrue);
-      expect(find.text('Profilo separato.'), findsOneWidget);
-      await tester.tap(find.text('Annulla'));
-      await _settle(tester);
-      expect(await aliases(tester), ['UCa', 'UCb']);
-      expect(await tester.runAsync(() => repo.isNotSame('UCa', 'UCb')), isFalse);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'the note lists the profiles; «Separa» splits one, marks it different, and «Annulla» joins it back',
+      (tester) async {
+        await openGroup(tester);
+        await tester.tap(find.byKey(const ValueKey('merged-note')));
+        await _settle(tester);
+        expect(find.byKey(const ValueKey('profile-UCa')), findsOneWidget);
+        expect(find.text('Principale'), findsOneWidget);
+        expect(
+          tester.getSize(find.byKey(const ValueKey('separate-UCb'))).height,
+          greaterThanOrEqualTo(48),
+        );
+        expect(
+          find.byKey(const ValueKey('separate-UCa')),
+          findsOneWidget,
+          reason: 'the main one can leave too',
+        );
+        await tester.tap(find.byKey(const ValueKey('separate-UCb')));
+        await _settle(tester);
+        final repo = ArtistAliasRepository(h.db);
+        expect(await aliases(tester), ['UCa']);
+        expect(
+          await tester.runAsync(() => repo.isNotSame('UCa', 'UCb')),
+          isTrue,
+        );
+        expect(find.text('Profilo separato.'), findsOneWidget);
+        await tester.tap(find.text('Annulla'));
+        await _settle(tester);
+        expect(await aliases(tester), ['UCa', 'UCb']);
+        expect(
+          await tester.runAsync(() => repo.isNotSame('UCa', 'UCb')),
+          isFalse,
+        );
+        await h.dispose(tester);
+      },
+    );
 
-    testWidgets('«Unisci con…» offers the likely profile first and merges the one chosen', (tester) async {
-      await openGroup(tester, merged: false, found: const [c, b]);
-      expect(find.text('Separa profili'), findsNothing);
-      await menu(tester, 'Unisci con…');
-      expect(find.byKey(const ValueKey('pick-UCa')), findsNothing, reason: 'the page itself is not offered');
-      expect(
-        tester.getTopLeft(find.byKey(const ValueKey('pick-UCb'))).dy,
-        lessThan(tester.getTopLeft(find.byKey(const ValueKey('pick-UCc'))).dy),
-      );
-      await tester.tap(find.byKey(const ValueKey('pick-UCc')));
-      await _settle(tester);
-      expect(await aliases(tester), ['UCa', 'UCc']);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      '«Unisci con…» offers the likely profile first and merges the one chosen',
+      (tester) async {
+        await openGroup(tester, merged: false, found: const [c, b]);
+        expect(find.text('Separa profili'), findsNothing);
+        await menu(tester, 'Unisci con…');
+        expect(
+          find.byKey(const ValueKey('pick-UCa')),
+          findsNothing,
+          reason: 'the page itself is not offered',
+        );
+        expect(
+          tester.getTopLeft(find.byKey(const ValueKey('pick-UCb'))).dy,
+          lessThan(
+            tester.getTopLeft(find.byKey(const ValueKey('pick-UCc'))).dy,
+          ),
+        );
+        await tester.tap(find.byKey(const ValueKey('pick-UCc')));
+        await _settle(tester);
+        expect(await aliases(tester), ['UCa', 'UCc']);
+        await h.dispose(tester);
+      },
+    );
 
-    testWidgets('dismissing the «Unisci con…» sheet changes nothing', (tester) async {
+    testWidgets('dismissing the «Unisci con…» sheet changes nothing', (
+      tester,
+    ) async {
       await openGroup(tester, merged: false, found: const [b]);
       await menu(tester, 'Unisci con…');
       expect(find.byKey(const ValueKey('pick-UCb')), findsOneWidget);
@@ -572,70 +625,136 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('«Sono diversi» hides the warning and it does not come back', (tester) async {
+    testWidgets('«Sono diversi» hides the warning and it does not come back', (
+      tester,
+    ) async {
       await openGroup(tester, merged: false, found: const [b]);
       await tester.tap(find.byKey(const ValueKey('merge-different')));
       await _settle(tester);
       expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
       expect(await aliases(tester), ['UCa']);
-      expect(await tester.runAsync(() => ArtistAliasRepository(h.db).isNotSame('UCa', 'UCb')), isTrue);
+      expect(
+        await tester.runAsync(
+          () => ArtistAliasRepository(h.db).isNotSame('UCa', 'UCb'),
+        ),
+        isTrue,
+      );
       await h.dispose(tester);
     });
 
-    testWidgets('no warning for a different name or an already merged profile', (tester) async {
-      await openGroup(tester, merged: false, found: const [c]);
-      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
-      await h.dispose(tester);
-      await openGroup(tester, found: const [b]);
-      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'no warning for a different name or an already merged profile',
+      (tester) async {
+        await openGroup(tester, merged: false, found: const [c]);
+        expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+        await h.dispose(tester);
+        await openGroup(tester, found: const [b]);
+        expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+        await h.dispose(tester);
+      },
+    );
 
-    testWidgets('the «Unisci con…» field starts as the name and searches for a different one', (tester) async {
-      await openGroup(tester, merged: false, search: (q) async => q == 'Marco Castello Official' ? [c] : [b]);
-      await menu(tester, 'Unisci con…');
-      expect(tester.widget<TextField>(find.byKey(const ValueKey('merge-search'))).controller!.text, 'Marco Castello');
-      await tester.enterText(find.byKey(const ValueKey('merge-search')), 'Marco Castello Official');
-      await tester.testTextInput.receiveAction(TextInputAction.search);
-      await _settle(tester);
-      expect(catalog.queries, ['Marco Castello', 'Marco Castello Official']);
-      expect(find.byKey(const ValueKey('pick-UCc')), findsOneWidget);
-      expect(find.byKey(const ValueKey('pick-UCb')), findsNothing);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'the «Unisci con…» field starts as the name and searches for a different one',
+      (tester) async {
+        await openGroup(
+          tester,
+          merged: false,
+          search: (q) async => q == 'Marco Castello Official' ? [c] : [b],
+        );
+        await menu(tester, 'Unisci con…');
+        expect(
+          tester
+              .widget<TextField>(find.byKey(const ValueKey('merge-search')))
+              .controller!
+              .text,
+          'Marco Castello',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('merge-search')),
+          'Marco Castello Official',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await _settle(tester);
+        expect(catalog.queries, ['Marco Castello', 'Marco Castello Official']);
+        expect(find.byKey(const ValueKey('pick-UCc')), findsOneWidget);
+        expect(find.byKey(const ValueKey('pick-UCb')), findsNothing);
+        await h.dispose(tester);
+      },
+    );
 
-    testWidgets('a failed search says why; no result says so apart', (tester) async {
-      await openGroup(tester, merged: false, search: (_) => Future.error(const YtException(YtErrorKind.network)));
+    testWidgets('a failed search says why; no result says so apart', (
+      tester,
+    ) async {
+      await openGroup(
+        tester,
+        merged: false,
+        search: (_) => Future.error(const YtException(YtErrorKind.network)),
+      );
       await menu(tester, 'Unisci con…');
       expect(find.byKey(const ValueKey('merge-message')), findsOneWidget);
-      expect(find.text('Nessun artista trovato su YouTube Music'), findsNothing);
+      expect(
+        find.text('Nessun artista trovato su YouTube Music'),
+        findsNothing,
+      );
       await tester.tapAt(const Offset(300, 20));
       await _settle(tester);
       await h.dispose(tester);
       await openGroup(tester, merged: false, search: (_) async => const []);
       await menu(tester, 'Unisci con…');
-      expect(find.text('Nessun artista trovato su YouTube Music'), findsOneWidget);
+      expect(
+        find.text('Nessun artista trovato su YouTube Music'),
+        findsOneWidget,
+      );
       await h.dispose(tester);
     });
 
-    testWidgets('after «Separa profili» the pair is «diversi»: no warning comes back', (tester) async {
-      await openGroup(tester, found: const [b]);
-      await menu(tester, 'Separa profili');
-      expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
-      expect(await tester.runAsync(() => ArtistAliasRepository(h.db).isNotSame('UCa', 'UCb')), isTrue);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'after «Separa profili» the pair is «diversi»: no warning comes back',
+      (tester) async {
+        await openGroup(tester, found: const [b]);
+        await menu(tester, 'Separa profili');
+        expect(find.byKey(const ValueKey('merge-warning')), findsNothing);
+        expect(
+          await tester.runAsync(
+            () => ArtistAliasRepository(h.db).isNotSame('UCa', 'UCb'),
+          ),
+          isTrue,
+        );
+        await h.dispose(tester);
+      },
+    );
 
-    testWidgets('opened from an alias, the follow button carries no photo of the alias', (tester) async {
-      await openGroup(tester, from: const YtmArtistRef(id: 'UCb', name: 'Marco Castello', thumbnailUrl: 'https://x/b.jpg'));
-      expect(tester.widget<FollowButton>(find.byType(FollowButton)).artist.id, 'UCa');
-      expect(tester.widget<FollowButton>(find.byType(FollowButton)).artist.thumbnailUrl, isNull);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'opened from an alias, the follow button carries no photo of the alias',
+      (tester) async {
+        await openGroup(
+          tester,
+          from: const YtmArtistRef(
+            id: 'UCb',
+            name: 'Marco Castello',
+            thumbnailUrl: 'https://x/b.jpg',
+          ),
+        );
+        expect(
+          tester.widget<FollowButton>(find.byType(FollowButton)).artist.id,
+          'UCa',
+        );
+        expect(
+          tester
+              .widget<FollowButton>(find.byType(FollowButton))
+              .artist
+              .thumbnailUrl,
+          isNull,
+        );
+        await h.dispose(tester);
+      },
+    );
   });
 
-  testWidgets('Play and Shuffle play the list (shuffle false/true)',
-      (tester) async {
+  testWidgets('Play and Shuffle play the list (shuffle false/true)', (
+    tester,
+  ) async {
     final ctrl = _Ctrl();
     tester.view.physicalSize = const Size(600, 2600);
     tester.view.devicePixelRatio = 1;
@@ -646,10 +765,16 @@ void main() {
       const ArtistPageScreen(artist: _ref),
       extraOverrides: [
         artistPageProvider.overrideWith(
-            (ref, id) async => CatalogResult(_full, DateTime(2026, 10, 22))),
-        artistAllSongsProvider.overrideWith((ref, key) async =>
-            (items: [(track: null, online: ytmSong('s1', 'Time'), seedTitle: null)],
-              topMissing: false)),
+          (ref, id) async => CatalogResult(_full, DateTime(2026, 10, 22)),
+        ),
+        artistAllSongsProvider.overrideWith(
+          (ref, key) async => (
+            items: [
+              (track: null, online: ytmSong('s1', 'Time'), seedTitle: null),
+            ],
+            topMissing: false,
+          ),
+        ),
         playerControllerProvider.overrideWithValue(ctrl),
       ],
     );
@@ -660,19 +785,35 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('while the page loads Play and Shuffle are there, off', (tester) async {
+  testWidgets('while the page loads Play and Shuffle are there, off', (
+    tester,
+  ) async {
     final h = await Harness.create(tester);
     await h.pump(
       tester,
       const ArtistPageScreen(artist: _ref),
       extraOverrides: [
-        artistPageProvider.overrideWith((ref, id) => Completer<CatalogResult<YtmArtistPage>>().future),
-        artistAllSongsProvider.overrideWith((ref, key) => Completer<ArtistAllSongs>().future),
+        artistPageProvider.overrideWith(
+          (ref, id) => Completer<CatalogResult<YtmArtistPage>>().future,
+        ),
+        artistAllSongsProvider.overrideWith(
+          (ref, key) => Completer<ArtistAllSongs>().future,
+        ),
       ],
     );
     await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('artist-play'))).onPressed, isNull);
-    expect(tester.widget<OutlinedButton>(find.byKey(const ValueKey('artist-shuffle'))).onPressed, isNull);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const ValueKey('artist-play')))
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.byKey(const ValueKey('artist-shuffle')))
+          .onPressed,
+      isNull,
+    );
     expect(find.text('Carico i brani…'), findsOneWidget);
     await h.dispose(tester);
   });

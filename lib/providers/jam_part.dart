@@ -13,9 +13,17 @@ import '../services/online/download_index.dart';
 import '../services/jam/jam_suggestion.dart';
 
 /// The Jam item of library track [t] owned by [ownId]; null when its format cannot go in a Jam.
-JamItem? jamItemOfTrack(Track t, String ownId,
-    {bool inherited = false, String? partKey, bool suggested = false, String? videoId}) {
-  if (isRemoteEpisodePath(t.path)) return null; // no file on this device to send
+JamItem? jamItemOfTrack(
+  Track t,
+  String ownId, {
+  bool inherited = false,
+  String? partKey,
+  bool suggested = false,
+  String? videoId,
+}) {
+  if (isRemoteEpisodePath(t.path)) {
+    return null; // no file on this device to send
+  }
   final ext = p.extension(t.path).replaceFirst('.', '').toLowerCase();
   if (!jamExts.contains(ext)) return null;
   return JamItem(
@@ -118,7 +126,9 @@ class JamPart {
   Future<JamItem?> _item(String key) async {
     final id = jamPartKeyId(key);
     final t = id == null ? null : await tracks().getById(id);
-    return t == null || t.missing ? null : itemOfTrack(t, partKey: key, rethrowErrors: true);
+    return t == null || t.missing
+        ? null
+        : itemOfTrack(t, partKey: key, rethrowErrors: true);
   }
 
   /// The Jam item of [t]: a video id when [remote] (default: this Jam's mode), else the
@@ -132,21 +142,31 @@ class JamPart {
     bool rethrowErrors = false,
   }) async {
     if (remote ?? _remote) {
-      return remoteItems().of(t, ownId(),
-          partKey: partKey, suggested: suggested, rethrowErrors: rethrowErrors);
-    }
-    return jamItemOfTrack(t, ownId(),
-        inherited: inherited,
+      return remoteItems().of(
+        t,
+        ownId(),
         partKey: partKey,
         suggested: suggested,
-        videoId: (await downloads()).idForPath(t.path));
+        rethrowErrors: rethrowErrors,
+      );
+    }
+    return jamItemOfTrack(
+      t,
+      ownId(),
+      inherited: inherited,
+      partKey: partKey,
+      suggested: suggested,
+      videoId: (await downloads()).idForPath(t.path),
+    );
   }
 
   /// Remembers what [s] has played; called on every state, as the host trims old entries.
   void notePlayed(JamState s) {
     final own = ownId();
     for (final i in s.items.take(s.currentIndex + 1)) {
-      if (i.ownerDeviceId == own) _playedIds.addAll([?int.tryParse(i.ref ?? '')]);
+      if (i.ownerDeviceId == own) {
+        _playedIds.addAll([?int.tryParse(i.ref ?? '')]);
+      }
       _playedKeys.add(suggestionKey(i.title, i.artist));
     }
   }
@@ -163,8 +183,12 @@ class JamPart {
         for (final t in await q.randomTracks(genre: g))
           if (jamItemOfTrack(t, own) != null) t,
       ],
-      isPlayed: (t) => _playedIds.contains(t.id) || _playedKeys.contains(suggestionKey(t.title, t.artist)),
+      isPlayed: (t) =>
+          _playedIds.contains(t.id) ||
+          _playedKeys.contains(suggestionKey(t.title, t.artist)),
     );
-    return t == null ? null : itemOfTrack(t, suggested: true, rethrowErrors: true);
+    return t == null
+        ? null
+        : itemOfTrack(t, suggested: true, rethrowErrors: true);
   }
 }

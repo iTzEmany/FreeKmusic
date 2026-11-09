@@ -27,6 +27,7 @@ void main() {
     expect(streamPathOf('youtube:abc'), 'stream:youtube:abc');
     expect(keyOfStreamPath('stream:youtube:abc'), 'youtube:abc');
     expect(keyOfStreamPath('/music/a.mp3'), isNull);
+    expect(keyOfStreamPath('stream:youtube:abc#cc-ep=7'), 'youtube:abc');
     expect(streamFileName('youtube:abc'), 'youtube_abc');
   });
 

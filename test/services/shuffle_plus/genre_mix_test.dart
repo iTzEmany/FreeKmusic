@@ -209,7 +209,12 @@ void main() {
   test('a suggestion keeps the title of the song it came from', () async {
     final states = await run(6);
     final last = states.last;
-    expect(last.suggested.every((s) => RegExp(r'^Song [1-6]$').hasMatch(s.seedTitle)), isTrue);
+    expect(
+      last.suggested.every(
+        (s) => RegExp(r'^Song [1-6]$').hasMatch(s.seedTitle),
+      ),
+      isTrue,
+    );
   });
 
   test('a 429 trips the shared gate', () async {
@@ -251,12 +256,17 @@ void main() {
     };
     pages = (id, c) => id.startsWith('fix')
         ? page(id)
-        : RadioPage([RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song)]); // no seed song: a clip
+        : RadioPage([
+            RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song),
+          ]); // no seed song: a clip
     final now = DateTime(2026, 11, 4);
     final counting = _CountingGate(() => now);
     gate = counting;
     await run(6);
-    expect(asked.map((id) => id.startsWith('fix')), [false, true], reason: 'the clip, then the song, in one go');
+    expect(asked.map((id) => id.startsWith('fix')), [
+      false,
+      true,
+    ], reason: 'the clip, then the song, in one go');
     expect(counting.count, 2, reason: 'the second request is announced too');
     expect(counting.lastRadio, now);
   });
@@ -265,7 +275,9 @@ void main() {
     var now = DateTime(2026, 11, 4);
     gate = RadioGate(now: () => now);
     search = (q) {
-      final n = RegExp(r'Song (\d+)').firstMatch(q)!.group(1)!; // found if a retry were made
+      final n = RegExp(r'Song (\d+)')
+          .firstMatch(q)!
+          .group(1)!; // found if a retry were made
       return [
         YtResult(
           id: 'fix$n',
@@ -280,26 +292,33 @@ void main() {
     var calls = 0;
     pages = (id, c) {
       if (calls++ == 0) {
-        now = now.add(const Duration(minutes: 2)); // the gap has passed for the second seed
+        now = now.add(
+          const Duration(minutes: 2),
+        ); // the gap has passed for the second seed
         return RadioPage([
           RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
           RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song),
         ]);
       }
-      return RadioPage([RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song)]); // a clip
+      return RadioPage([
+        RadioItem(song('$id-r0', 'Artist $id'), RadioKind.song),
+      ]); // a clip
     };
     await run(6);
     expect(asked, hasLength(2), reason: 'two seeds, one request each');
     expect(asked.any((id) => id.startsWith('fix')), isFalse);
   });
 
-  test('a closed gate: no search for a seed whose page could not be asked', () async {
-    final now = DateTime(2026, 11, 4);
-    gate = RadioGate(now: () => now)..trip();
-    await run(6, from: 100);
-    expect(searches, 0);
-    expect(asked, isEmpty);
-  });
+  test(
+    'a closed gate: no search for a seed whose page could not be asked',
+    () async {
+      final now = DateTime(2026, 11, 4);
+      gate = RadioGate(now: () => now)..trip();
+      await run(6, from: 100);
+      expect(searches, 0);
+      expect(asked, isEmpty);
+    },
+  );
 
   test('the 429 pause holds the first page too: no request', () async {
     final now = DateTime(2026, 11, 4);
@@ -341,35 +360,64 @@ void main() {
     expect(states.last.incoming, 0);
   });
 
-  test('a radio page of 2 songs with a continuation: the second page is followed', () async {
-    pages = (id, c) => RadioPage([
-      RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
-      for (var i = 0; i < 2; i++) RadioItem(song('$id-${c ?? 'p1'}-$i', 'Artist $id ${c ?? 'p1'} $i'), RadioKind.song),
-    ], continuation: c == null ? 'next' : null);
-    final states = await run(6);
-    expect(continuations, contains('next'));
-    expect(asked.first, asked[1], reason: 'the same radio, next page');
-    expect(states.last.suggested, hasLength(3));
-    expect(states.last.suggested.any((s) => s.result.id.contains('-next-')), isTrue);
-  });
+  test(
+    'a radio page of 2 songs with a continuation: the second page is followed',
+    () async {
+      pages = (id, c) => RadioPage([
+        RadioItem(song(id, 'Seed'), RadioKind.song, isSeed: true),
+        for (var i = 0; i < 2; i++)
+          RadioItem(
+            song('$id-${c ?? 'p1'}-$i', 'Artist $id ${c ?? 'p1'} $i'),
+            RadioKind.song,
+          ),
+      ], continuation: c == null ? 'next' : null);
+      final states = await run(6);
+      expect(continuations, contains('next'));
+      expect(asked.first, asked[1], reason: 'the same radio, next page');
+      expect(states.last.suggested, hasLength(3));
+      expect(
+        states.last.suggested.any((s) => s.result.id.contains('-next-')),
+        isTrue,
+      );
+    },
+  );
 
   group('interleave', () {
     MixSuggestion sug(String id) => (result: song(id, 'A'), seedTitle: 's$id');
 
-    test('one slot after every 2 songs: suggestions first, then placeholders', () {
-      final rows = interleave([1, 2, 3, 4, 5], GenreMixState(suggested: [sug('a')], incoming: 1));
-      expect([for (final r in rows) r.track], [1, 2, null, 3, 4, null, 5]);
-      expect(rows[2].suggestion?.result.id, 'a');
-      expect(rows[5].suggestion, isNull); // the placeholder
-    });
+    test(
+      'one slot after every 2 songs: suggestions first, then placeholders',
+      () {
+        final rows = interleave([
+          1,
+          2,
+          3,
+          4,
+          5,
+        ], GenreMixState(suggested: [sug('a')], incoming: 1));
+        expect([for (final r in rows) r.track], [1, 2, null, 3, 4, null, 5]);
+        expect(rows[2].suggestion?.result.id, 'a');
+        expect(rows[5].suggestion, isNull); // the placeholder
+      },
+    );
 
     test('no more slots than suggested plus incoming', () {
-      final rows = interleave([1, 2, 3, 4], GenreMixState(suggested: [sug('a')]));
+      final rows = interleave([
+        1,
+        2,
+        3,
+        4,
+      ], GenreMixState(suggested: [sug('a')]));
       expect([for (final r in rows) r.track], [1, 2, null, 3, 4]);
     });
 
     test('nothing to mix: the tracks as they are', () {
-      expect([for (final r in interleave([1, 2, 3], GenreMixState.none)) r.track], [1, 2, 3]);
+      expect(
+        [
+          for (final r in interleave([1, 2, 3], GenreMixState.none)) r.track,
+        ],
+        [1, 2, 3],
+      );
     });
   });
 }

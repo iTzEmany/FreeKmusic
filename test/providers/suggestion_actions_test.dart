@@ -121,6 +121,37 @@ void main() {
   );
 
   test(
+    'dislikeResult on a song that is not in the queue (the daylist) blocks the '
+    'artist, logs it and takes the artist\'s suggested songs out',
+    () async {
+      const listed = YtResult(
+        id: 'v9',
+        title: 'Listed',
+        channel: 'Chan',
+        duration: null,
+      );
+      log.add(videoId: 'v9', title: 'Listed', artist: 'Chan', seedTitle: 's');
+      final other = online.register(
+        const YtResult(id: 'v2', title: 'B', channel: 'Chan', duration: null),
+        suggested: true,
+      );
+      final stranger = online.register(
+        const YtResult(id: 'v4', title: 'D', channel: 'Else', duration: null),
+        suggested: true,
+      );
+      queue = [other, stranger];
+      final undo = await actions.dislikeResult(listed, artist: true);
+      expect(store.artistBlocked('chan'), isTrue);
+      expect(log.latest('v9')?.outcome, SuggestionOutcome.disliked);
+      expect(queue, [stranger]);
+      await actions.undo(undo);
+      expect(store.artistBlocked('chan'), isFalse);
+      expect(log.latest('v9')?.outcome, SuggestionOutcome.queued);
+      expect(queue.length, 2);
+    },
+  );
+
+  test(
     'undo unblocks, puts the entries back and restarts the playing one',
     () async {
       final other = online.register(
@@ -217,14 +248,20 @@ void main() {
     expect(back.suggested, isTrue);
   });
 
-  test('dislikeArtist on a name with no letters blocks and removes nothing', () async {
-    final bang = online.register(const YtResult(id: 'z', title: 'Z', channel: '!!!', duration: null), suggested: true);
-    queue = [bang, id];
-    final undo = await actions.dislikeArtist(bang);
-    expect(store.artists, isEmpty);
-    expect(queue, [bang, id]);
-    expect(undo.removed, isEmpty);
-  });
+  test(
+    'dislikeArtist on a name with no letters blocks and removes nothing',
+    () async {
+      final bang = online.register(
+        const YtResult(id: 'z', title: 'Z', channel: '!!!', duration: null),
+        suggested: true,
+      );
+      queue = [bang, id];
+      final undo = await actions.dislikeArtist(bang);
+      expect(store.artists, isEmpty);
+      expect(queue, [bang, id]);
+      expect(undo.removed, isEmpty);
+    },
+  );
 
   test('a second undo does nothing', () async {
     final other = reg('v2', 'Chan');

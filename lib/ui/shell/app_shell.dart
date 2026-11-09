@@ -312,7 +312,7 @@ class AppShell extends ConsumerWidget {
         PlaybackFailureReason.networkUnavailable => l.ytErrNetwork,
         PlaybackFailureReason.radioUnavailable => l.reasonRadioUnavailable,
       };
-      showMsg(context, l.playbackError(f.title ?? '', reason));
+      showMsg(context, l.playbackError(reason, f.title ?? ''));
     });
     // Shuffle+ runs while the shell is up; a suggestion downloaded "into a
     // playlist" joins it when the file lands.

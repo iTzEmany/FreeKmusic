@@ -144,7 +144,9 @@ List<DuplicateGroup> findDuplicates(
     if (members.length < 2) continue;
     members.sort(compareKeeper);
     final hs = {for (final m in members) hashOf(m)};
-    out.add(DuplicateGroup(members, exact: hs.length == 1 && !hs.contains(null)));
+    out.add(
+      DuplicateGroup(members, exact: hs.length == 1 && !hs.contains(null)),
+    );
   }
   out.sort((a, b) {
     if (a.exact != b.exact) return a.exact ? -1 : 1;

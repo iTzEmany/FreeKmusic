@@ -46,33 +46,47 @@ void main() {
   });
   tearDown(() => db.close());
 
-  test('totals sum music that exists; episodes and missing files are out', () async {
-    await add('a', 100, durationMs: 2000);
-    await add('b', 50);
-    await add('gone', 999, missing: true);
-    await add('episode', 777, kind: 1);
-    final t = await q.watchTotals().first;
-    expect((t.sizeBytes, t.trackCount, t.durationMs), (150, 2, 3000));
-    expect(await q.podcastBytes(), 777);
-  });
+  test(
+    'totals sum music that exists; episodes and missing files are out',
+    () async {
+      await add('a', 100, durationMs: 2000);
+      await add('b', 50);
+      await add('gone', 999, missing: true);
+      await add('episode', 777, kind: 1);
+      final t = await q.watchTotals().first;
+      expect((t.sizeBytes, t.trackCount, t.durationMs), (150, 2, 3000));
+      expect(await q.podcastBytes(), 777);
+    },
+  );
 
   test('playlists: biggest first, Preferiti included, a shared track counts in both', () async {
     final a = await add('a', 100, favorite: true);
     final b = await add('b', 30);
     final c = await add('c', 500, missing: true);
-    final big = await db.into(db.playlists).insert(
-      PlaylistsCompanion.insert(name: 'Big', createdAt: 1),
-    );
-    final small = await db.into(db.playlists).insert(
-      PlaylistsCompanion.insert(name: 'Small', createdAt: 1),
-    );
-    await db.into(db.playlists).insert(
-      PlaylistsCompanion.insert(name: 'Empty', createdAt: 1),
-    );
-    for (final (pl, tr, pos) in [(big, a, 0), (big, b, 1), (big, c, 2), (small, a, 0)]) {
-      await db.into(db.playlistTracks).insert(
-        PlaylistTracksCompanion.insert(playlistId: pl, trackId: tr, position: pos),
-      );
+    final big = await db
+        .into(db.playlists)
+        .insert(PlaylistsCompanion.insert(name: 'Big', createdAt: 1));
+    final small = await db
+        .into(db.playlists)
+        .insert(PlaylistsCompanion.insert(name: 'Small', createdAt: 1));
+    await db
+        .into(db.playlists)
+        .insert(PlaylistsCompanion.insert(name: 'Empty', createdAt: 1));
+    for (final (pl, tr, pos) in [
+      (big, a, 0),
+      (big, b, 1),
+      (big, c, 2),
+      (small, a, 0),
+    ]) {
+      await db
+          .into(db.playlistTracks)
+          .insert(
+            PlaylistTracksCompanion.insert(
+              playlistId: pl,
+              trackId: tr,
+              position: pos,
+            ),
+          );
     }
     final groups = await q.byPlaylist();
     expect(
@@ -85,39 +99,66 @@ void main() {
     expect(groups[2].totals.sizeBytes, 100);
   });
 
-  test('playlist auto cover is the first track in order that has one', () async {
-    final a = await add('a', 1);
-    final b = await add('b', 1);
-    final c = await add('c', 1);
-    await (db.update(db.tracks)..where((t) => t.id.isIn([b, c])))
-        .write(const TracksCompanion(coverKey: Value('K')));
-    await (db.update(db.tracks)..where((t) => t.id.equals(c)))
-        .write(const TracksCompanion(coverKey: Value('C')));
-    final pl = await db.into(db.playlists).insert(
-      PlaylistsCompanion.insert(name: 'P', createdAt: 1),
-    );
-    await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'None', createdAt: 1));
-    for (final (tr, pos) in [(a, 0), (c, 1), (b, 2)]) {
-      await db.into(db.playlistTracks).insert(
-        PlaylistTracksCompanion.insert(playlistId: pl, trackId: tr, position: pos),
+  test(
+    'playlist auto cover is the first track in order that has one',
+    () async {
+      final a = await add('a', 1);
+      final b = await add('b', 1);
+      final c = await add('c', 1);
+      await (db.update(db.tracks)..where((t) => t.id.isIn([b, c]))).write(
+        const TracksCompanion(coverKey: Value('K')),
       );
-    }
-    final byName = {for (final g in await q.byPlaylist()) g.name: g.autoCoverKey};
-    expect(byName['P'], 'C');
-    expect(byName['None'], isNull);
-  });
+      await (db.update(db.tracks)..where((t) => t.id.equals(c))).write(
+        const TracksCompanion(coverKey: Value('C')),
+      );
+      final pl = await db
+          .into(db.playlists)
+          .insert(PlaylistsCompanion.insert(name: 'P', createdAt: 1));
+      await db
+          .into(db.playlists)
+          .insert(PlaylistsCompanion.insert(name: 'None', createdAt: 1));
+      for (final (tr, pos) in [(a, 0), (c, 1), (b, 2)]) {
+        await db
+            .into(db.playlistTracks)
+            .insert(
+              PlaylistTracksCompanion.insert(
+                playlistId: pl,
+                trackId: tr,
+                position: pos,
+              ),
+            );
+      }
+      final byName = {
+        for (final g in await q.byPlaylist()) g.name: g.autoCoverKey,
+      };
+      expect(byName['P'], 'C');
+      expect(byName['None'], isNull);
+    },
+  );
 
-  test('auto cover also shows when every track of the playlist is missing', () async {
-    final m = await add('m', 1, missing: true);
-    await (db.update(db.tracks)..where((t) => t.id.equals(m)))
-        .write(const TracksCompanion(coverKey: Value('M')));
-    final pl = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Gone', createdAt: 1));
-    await db.into(db.playlistTracks).insert(
-      PlaylistTracksCompanion.insert(playlistId: pl, trackId: m, position: 0),
-    );
-    final g = (await q.byPlaylist()).firstWhere((g) => g.name == 'Gone');
-    expect((g.autoCoverKey, g.totals.trackCount), ('M', 0));
-  });
+  test(
+    'auto cover also shows when every track of the playlist is missing',
+    () async {
+      final m = await add('m', 1, missing: true);
+      await (db.update(db.tracks)..where((t) => t.id.equals(m))).write(
+        const TracksCompanion(coverKey: Value('M')),
+      );
+      final pl = await db
+          .into(db.playlists)
+          .insert(PlaylistsCompanion.insert(name: 'Gone', createdAt: 1));
+      await db
+          .into(db.playlistTracks)
+          .insert(
+            PlaylistTracksCompanion.insert(
+              playlistId: pl,
+              trackId: m,
+              position: 0,
+            ),
+          );
+      final g = (await q.byPlaylist()).firstWhere((g) => g.name == 'Gone');
+      expect((g.autoCoverKey, g.totals.trackCount), ('M', 0));
+    },
+  );
 
   test('formats group by lower-case extension, biggest first', () async {
     await add('a', 10, format: 'MP3');
@@ -129,37 +170,50 @@ void main() {
     expect(g.last.totals.trackCount, 2);
   });
 
-  test('folders: label or last segment, and tracks outside any folder', () async {
-    final f1 = await db.into(db.folders).insert(
-      FoldersCompanion.insert(path: '/storage/Music', addedAt: 1),
-    );
-    final f2 = await db.into(db.folders).insert(
-      FoldersCompanion.insert(path: '/storage/Dl', addedAt: 1, label: const Value('Downloads')),
-    );
-    await add('a', 10, folderId: f1);
-    await add('b', 40, folderId: f2);
-    await add('c', 5);
-    final g = await q.byFolder();
-    expect([for (final x in g) x.name], ['Downloads', 'Music', '']);
-    expect(g.last.path, isNull);
-    expect(g.first.path, '/storage/Dl');
-  });
+  test(
+    'folders: label or last segment, and tracks outside any folder',
+    () async {
+      final f1 = await db
+          .into(db.folders)
+          .insert(FoldersCompanion.insert(path: '/storage/Music', addedAt: 1));
+      final f2 = await db
+          .into(db.folders)
+          .insert(
+            FoldersCompanion.insert(
+              path: '/storage/Dl',
+              addedAt: 1,
+              label: const Value('Downloads'),
+            ),
+          );
+      await add('a', 10, folderId: f1);
+      await add('b', 40, folderId: f2);
+      await add('c', 5);
+      final g = await q.byFolder();
+      expect([for (final x in g) x.name], ['Downloads', 'Music', '']);
+      expect(g.last.path, isNull);
+      expect(g.first.path, '/storage/Dl');
+    },
+  );
 
-  test('never played ignores tracks with a play, a play count or a hidden flag', () async {
-    await add('fresh', 100);
-    await add('counted', 200, playCount: 3);
-    final heard = await add('heard', 300);
-    await db.into(db.plays).insert(
-      PlaysCompanion.insert(trackId: heard, playedAt: 5),
-    );
-    final hidden = await add('hidden', 400);
-    await (db.update(db.tracks)..where((t) => t.id.equals(hidden)))
-        .write(const TracksCompanion(ignored: Value(true)));
-    final n = await q.neverPlayed();
-    expect((n.sizeBytes, n.trackCount), (100, 1));
-    final list = await q.watchNeverPlayed().first;
-    expect([for (final t in list) t.title], ['fresh']);
-  });
+  test(
+    'never played ignores tracks with a play, a play count or a hidden flag',
+    () async {
+      await add('fresh', 100);
+      await add('counted', 200, playCount: 3);
+      final heard = await add('heard', 300);
+      await db
+          .into(db.plays)
+          .insert(PlaysCompanion.insert(trackId: heard, playedAt: 5));
+      final hidden = await add('hidden', 400);
+      await (db.update(db.tracks)..where((t) => t.id.equals(hidden))).write(
+        const TracksCompanion(ignored: Value(true)),
+      );
+      final n = await q.neverPlayed();
+      expect((n.sizeBytes, n.trackCount), (100, 1));
+      final list = await q.watchNeverPlayed().first;
+      expect([for (final t in list) t.title], ['fresh']);
+    },
+  );
 
   test('heaviest tracks and albums are limited and ordered by size', () async {
     for (var i = 0; i < 12; i++) {
@@ -184,27 +238,36 @@ void main() {
       ),
     );
     await add('no-text', 100);
-    await db.into(db.artistInfos).insert(
-      ArtistInfosCompanion.insert(
-        artistKey: 'k',
-        body: 'bio!',
-        sourceUrl: 'u',
-        lang: 'it',
-        fetchedAt: 1,
-      ),
-    );
-    await db.into(db.trackCredits).insert(
-      TrackCreditsCompanion.insert(
-        trackId: id,
-        name: 'Ann',
-        nameKey: 'ann',
-        role: 'writer',
-        source: 'mb',
-      ),
-    );
-    await db.into(db.trackEnrich).insert(
-      TrackEnrichCompanion.insert(trackId: Value(id), details: const Value('12345')),
-    );
+    await db
+        .into(db.artistInfos)
+        .insert(
+          ArtistInfosCompanion.insert(
+            artistKey: 'k',
+            body: 'bio!',
+            sourceUrl: 'u',
+            lang: 'it',
+            fetchedAt: 1,
+          ),
+        );
+    await db
+        .into(db.trackCredits)
+        .insert(
+          TrackCreditsCompanion.insert(
+            trackId: id,
+            name: 'Ann',
+            nameKey: 'ann',
+            role: 'writer',
+            source: 'mb',
+          ),
+        );
+    await db
+        .into(db.trackEnrich)
+        .insert(
+          TrackEnrichCompanion.insert(
+            trackId: Value(id),
+            details: const Value('12345'),
+          ),
+        );
     final e = await q.enrichmentBytes();
     expect(e.lyrics, 6);
     expect(e.curiosities, 3 + 4);

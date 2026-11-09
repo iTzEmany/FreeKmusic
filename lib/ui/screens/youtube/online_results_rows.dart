@@ -121,7 +121,10 @@ class _Shelf extends StatelessWidget {
   Widget build(BuildContext context) {
     // The text under the cover (a title of two lines and [lines] more) grows
     // with the text size.
-    final scale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 2.0);
+    final scale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
+      1.0,
+      2.0,
+    );
     return Column(
       key: shelfKey,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +187,9 @@ class _ShelfTile extends StatelessWidget {
         child: SizedBox(
           width: width,
           child: Column(
-            crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: centered
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               cover,
               const SizedBox(height: 6),

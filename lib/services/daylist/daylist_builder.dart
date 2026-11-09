@@ -12,7 +12,8 @@ import 'dart:math';
 import '../../core/app_log.dart';
 import '../../core/artist_key.dart' show artistKey, matchKey;
 import '../../data/db/app_database.dart' show Track;
-import '../shuffle_plus/suggestion_pool.dart' show SuggestionCandidate, suggestionArtistKey;
+import '../shuffle_plus/suggestion_pool.dart'
+    show SuggestionCandidate, suggestionArtistKey;
 import '../tags/tag_reader.dart' show splitGenres;
 import 'daylist_slots.dart';
 import 'mood_table.dart';
@@ -61,7 +62,8 @@ class DaylistInputs {
 /// One row of the daylist: a library track or a suggested song.
 class DaylistItem {
   const DaylistItem.own(Track this.track) : suggestion = null;
-  const DaylistItem.suggested(SuggestionCandidate this.suggestion) : track = null;
+  const DaylistItem.suggested(SuggestionCandidate this.suggestion)
+    : track = null;
 
   final Track? track;
   final SuggestionCandidate? suggestion;
@@ -127,7 +129,8 @@ class DaylistPlan {
     if (genres.any(avoid.contains)) return false;
     final prefer = {for (final g in slot.prefer) matchKey(g)};
     if (prefer.isEmpty && slot.moods.isEmpty) return true;
-    return genres.any(prefer.contains) || moods.moodsOfAll(genres).any(slot.moods.contains);
+    return genres.any(prefer.contains) ||
+        moods.moodsOfAll(genres).any(slot.moods.contains);
   }
 }
 
@@ -144,7 +147,8 @@ class DaylistBuilder {
       if (matchKey(g).isNotEmpty) matchKey(g),
   ];
 
-  static String _key(String title, String artistKey) => '${matchKey(title)}|$artistKey';
+  static String _key(String title, String artistKey) =>
+      '${matchKey(title)}|$artistKey';
 
   Future<DaylistResult> build(DaylistInputs inp) => finish(
     plan(
@@ -194,8 +198,20 @@ class DaylistBuilder {
   }) {
     final slotIndex = config.slotAt(now);
     final slot = config.slots[slotIndex];
-    if (!slot.enabled) return DaylistPlan._(slotIndex: slotIndex, slot: slot, moods: moods, off: true);
-    final pl = DaylistPlan._(slotIndex: slotIndex, slot: slot, moods: moods, off: false);
+    if (!slot.enabled) {
+      return DaylistPlan._(
+        slotIndex: slotIndex,
+        slot: slot,
+        moods: moods,
+        off: true,
+      );
+    }
+    final pl = DaylistPlan._(
+      slotIndex: slotIndex,
+      slot: slot,
+      moods: moods,
+      off: false,
+    );
 
     final genreOf = {
       for (final t in library)
@@ -208,18 +224,25 @@ class DaylistBuilder {
     final libraryKeys = <String>{};
     final spelled = <String, String>{};
     for (final t in library) {
-      artistGenres.putIfAbsent(artistKey(t.artist), () => {}).addAll(genreOf[t.id]!);
+      artistGenres
+          .putIfAbsent(artistKey(t.artist), () => {})
+          .addAll(genreOf[t.id]!);
       libraryKeys.add(_key(t.title, artistKey(t.artist)));
       for (final g in splitGenres([t.genre])) {
         spelled.putIfAbsent(matchKey(g), () => g);
       }
     }
-    final ok = [for (final t in library) if (pl.passes(genreOf[t.id]!)) t];
+    final ok = [
+      for (final t in library)
+        if (pl.passes(genreOf[t.id]!)) t,
+    ];
 
     // Plays in the slot's hours, per track.
     final inSlot = <int, int>{};
     for (final p in plays) {
-      if (config.slotAt(p.playedAt) == slotIndex) inSlot[p.trackId] = (inSlot[p.trackId] ?? 0) + 1;
+      if (config.slotAt(p.playedAt) == slotIndex) {
+        inSlot[p.trackId] = (inSlot[p.trackId] ?? 0) + 1;
+      }
     }
     final noise = {for (final t in ok) t.id: random.nextDouble()};
     int rank(Track a, Track b, int Function(Track) score) {
@@ -227,8 +250,10 @@ class DaylistBuilder {
       return c != 0 ? c : noise[a.id]!.compareTo(noise[b.id]!);
     }
 
-    final played = [for (final t in ok) if ((inSlot[t.id] ?? 0) > 0) t]
-      ..sort((a, b) => rank(a, b, (t) => inSlot[t.id]!));
+    final played = [
+      for (final t in ok)
+        if ((inSlot[t.id] ?? 0) > 0) t,
+    ]..sort((a, b) => rank(a, b, (t) => inSlot[t.id]!));
     final hasHistory = played.isNotEmpty;
     final overall = [...ok]..sort((a, b) => rank(a, b, (t) => t.playCount));
 
@@ -243,7 +268,8 @@ class DaylistBuilder {
     final related = [
       for (final t in overall)
         if (!playedIds.contains(t.id) &&
-            (seedArtists.contains(artistKey(t.artist)) || genreOf[t.id]!.any(seedGenres.contains)))
+            (seedArtists.contains(artistKey(t.artist)) ||
+                genreOf[t.id]!.any(seedGenres.contains)))
           t,
     ];
     return DaylistPlan._(
@@ -268,21 +294,43 @@ class DaylistBuilder {
     Iterable<String> Function(SuggestionCandidate c)? genresOfSuggestion,
   }) async {
     if (pl.off) {
-      return DaylistResult(slotIndex: pl.slotIndex, items: const [], genres: const [], tooFew: true, off: true);
+      return DaylistResult(
+        slotIndex: pl.slotIndex,
+        items: const [],
+        genres: const [],
+        tooFew: true,
+        off: true,
+      );
     }
     final wantSuggested = (size * pl.slot.sharePercent / 100).round();
-    final suggested = await _suggestions(pl, suggest, genresOfSuggestion, wantSuggested);
-    final own = _pickOwn(pl.candidates, pl.extra, pl.genreOf, size - suggested.length);
+    final suggested = await _suggestions(
+      pl,
+      suggest,
+      genresOfSuggestion,
+      wantSuggested,
+    );
+    final own = _pickOwn(
+      pl.candidates,
+      pl.extra,
+      pl.genreOf,
+      size - suggested.length,
+    );
     final items = _spread(own, suggested);
     if (items.length < minTracks) {
-      return DaylistResult(slotIndex: pl.slotIndex, items: const [], genres: const [], tooFew: true);
+      return DaylistResult(
+        slotIndex: pl.slotIndex,
+        items: const [],
+        genres: const [],
+        tooFew: true,
+      );
     }
     return DaylistResult(
       slotIndex: pl.slotIndex,
       items: items,
       genres: _topGenres([
         for (final t in own) ...pl.genreOf[t.id]!,
-        for (final c in suggested) ..._suggestionGenres(pl, genresOfSuggestion, c).genres,
+        for (final c in suggested)
+          ..._suggestionGenres(pl, genresOfSuggestion, c).genres,
       ], pl.spelled),
       tooFew: false,
     );
@@ -291,7 +339,10 @@ class DaylistBuilder {
   /// [tracks] without a second copy of the same title and artist.
   static List<Track> _distinct(List<Track> tracks) {
     final seen = <String>{};
-    return [for (final t in tracks) if (seen.add(_key(t.title, artistKey(t.artist)))) t];
+    return [
+      for (final t in tracks)
+        if (seen.add(_key(t.title, artistKey(t.artist)))) t,
+    ];
   }
 
   /// Genres of a suggestion: the caller's, else those of the artist's songs in
@@ -302,11 +353,16 @@ class DaylistBuilder {
     Iterable<String> Function(SuggestionCandidate c)? own,
     SuggestionCandidate c,
   ) {
-    if (own != null) return (genres: [for (final g in own(c)) matchKey(g)], inherited: false);
+    if (own != null) {
+      return (genres: [for (final g in own(c)) matchKey(g)], inherited: false);
+    }
     final known = pl.artistGenres[suggestionArtistKey(c.result)];
     if (known != null) return (genres: [...known], inherited: false);
     return (
-      genres: [for (final s in pl.seeds) if (s.title == c.seedTitle) ...pl.genreOf[s.id]!],
+      genres: [
+        for (final s in pl.seeds)
+          if (s.title == c.seedTitle) ...pl.genreOf[s.id]!,
+      ],
       inherited: true,
     );
   }
@@ -321,16 +377,28 @@ class DaylistBuilder {
     final avoid = pl.avoid;
     final taken = <String>{};
     final keys = <String>{};
-    String keyOf(SuggestionCandidate c) => _key(c.result.title, suggestionArtistKey(c.result));
+    String keyOf(SuggestionCandidate c) =>
+        _key(c.result.title, suggestionArtistKey(c.result));
     bool accept(SuggestionCandidate c) {
       final key = keyOf(c);
       if (pl.libraryKeys.contains(key) || keys.contains(key)) return false;
-      final (:genres, :inherited) = _suggestionGenres(pl, genresOfSuggestion, c);
-      final left = [for (final x in genres) if (!avoid.contains(x)) x];
-      if (genres.isNotEmpty && left.isEmpty) return false; // only avoided genres
+      final (:genres, :inherited) = _suggestionGenres(
+        pl,
+        genresOfSuggestion,
+        c,
+      );
+      final left = [
+        for (final x in genres)
+          if (!avoid.contains(x)) x,
+      ];
+      if (genres.isNotEmpty && left.isEmpty) {
+        return false; // only avoided genres
+      }
       // A new artist takes its seed's genres (the seed passed the slot's taste): only avoided
       // ones exclude it. Unknown genres follow a song without genre: only a slot without taste.
-      final ok = inherited && genres.isNotEmpty ? left.length == genres.length : pl.passes(left);
+      final ok = inherited && genres.isNotEmpty
+          ? left.length == genres.length
+          : pl.passes(left);
       if (ok) keys.add(key);
       return ok;
     }
@@ -351,7 +419,12 @@ class DaylistBuilder {
 
   /// [want] songs from [ranked], covering at least [_minGenres] genres when
   /// the candidates have them.
-  List<Track> _pickOwn(List<Track> ranked, List<Track> extra, Map<int, List<String>> genreOf, int want) {
+  List<Track> _pickOwn(
+    List<Track> ranked,
+    List<Track> extra,
+    Map<int, List<String>> genreOf,
+    int want,
+  ) {
     final chosen = <Track>[];
     final used = <int>{};
     final genres = <String>{};
@@ -378,8 +451,12 @@ class DaylistBuilder {
     final items = <DaylistItem>[];
     var o = 0, s = 0;
     for (var i = 0; i < total; i++) {
-      final wantSug = s < sug.length && (o >= own.length || (i + 1) * sug.length >= (s + 1) * total);
-      items.add(wantSug ? DaylistItem.suggested(sug[s++]) : DaylistItem.own(own[o++]));
+      final wantSug =
+          s < sug.length &&
+          (o >= own.length || (i + 1) * sug.length >= (s + 1) * total);
+      items.add(
+        wantSug ? DaylistItem.suggested(sug[s++]) : DaylistItem.own(own[o++]),
+      );
     }
     return items;
   }
@@ -390,7 +467,8 @@ class DaylistBuilder {
     for (final g in all) {
       count[g] = (count[g] ?? 0) + 1;
     }
-    final top = count.keys.toList()..sort((a, b) => count[b]!.compareTo(count[a]!));
+    final top = count.keys.toList()
+      ..sort((a, b) => count[b]!.compareTo(count[a]!));
     return [for (final g in top.take(_maxNameGenres)) spelled[g] ?? g];
   }
 }

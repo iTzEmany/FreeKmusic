@@ -37,16 +37,19 @@ void main() {
     now = DateTime.utc(2026, 1, 1);
   });
 
-  test('a song suggested 10 days ago is recent, 40 days ago it is not', () async {
-    final log = open();
-    await log.load();
-    add(log, 'a');
-    now = now.add(const Duration(days: 10));
-    expect(log.recentlySuggested('a'), isTrue);
-    expect(log.recentlySuggested('b'), isFalse);
-    now = now.add(const Duration(days: 30));
-    expect(log.recentlySuggested('a'), isFalse);
-  });
+  test(
+    'a song suggested 10 days ago is recent, 40 days ago it is not',
+    () async {
+      final log = open();
+      await log.load();
+      add(log, 'a');
+      now = now.add(const Duration(days: 10));
+      expect(log.recentlySuggested('a'), isTrue);
+      expect(log.recentlySuggested('b'), isFalse);
+      now = now.add(const Duration(days: 30));
+      expect(log.recentlySuggested('a'), isFalse);
+    },
+  );
 
   test('outcomes and dislikes are kept, and read back from the file', () async {
     final log = open();

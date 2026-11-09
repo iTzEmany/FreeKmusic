@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/rules/rule_parser.dart';
-import 'package:drift/drift.dart' show ApplyInterceptor, QueryExecutor, QueryInterceptor, Value;
+import 'package:drift/drift.dart'
+    show ApplyInterceptor, QueryExecutor, QueryInterceptor, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -134,9 +135,19 @@ void main() {
   test('a country that arrives (or changes) after the track makes the result follow', () async {
     await add(2, 'Muse');
     await latestIs(['t1']);
-    await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'muse', country: const Value('GB'), checkedAt: 1));
+    await db
+        .into(db.artistCountries)
+        .insert(
+          ArtistCountriesCompanion.insert(
+            artistKey: 'muse',
+            country: const Value('GB'),
+            checkedAt: 1,
+          ),
+        );
     await latestIs(['t1', 't2']);
-    await (db.update(db.artistCountries)..where((c) => c.artistKey.equals('muse'))).write(const ArtistCountriesCompanion(country: Value('FR')));
+    await (db.update(db.artistCountries)
+          ..where((c) => c.artistKey.equals('muse')))
+        .write(const ArtistCountriesCompanion(country: Value('FR')));
     await latestIs(['t1']);
   });
 
@@ -201,36 +212,66 @@ void main() {
   });
 
   test('an artist renamed to another with a known country (same artist count) appears', () async {
-    await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'muse', country: const Value('GB'), checkedAt: 1));
+    await db
+        .into(db.artistCountries)
+        .insert(
+          ArtistCountriesCompanion.insert(
+            artistKey: 'muse',
+            country: const Value('GB'),
+            checkedAt: 1,
+          ),
+        );
     await add(2, 'Zed');
-    await Future<void>.delayed(const Duration(milliseconds: 600)); // let the re-run (and its cache) settle
-    await (db.update(db.tracks)..where((t) => t.id.equals(2))).write(const TracksCompanion(artist: Value('Muse')));
+    await Future<void>.delayed(
+      const Duration(milliseconds: 600),
+    ); // let the re-run (and its cache) settle
+    await (db.update(db.tracks)..where((t) => t.id.equals(2))).write(
+      const TracksCompanion(artist: Value('Muse')),
+    );
     await latestIs(['t1', 't2']);
   });
 
-  test('cancelled while the debounce timer waits: no query runs afterwards', () async {
-    await latestIs(['t1']);
-    final before = spy.mainRuns;
-    await add(2, 'Queen');
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    await sub.cancel();
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    expect(spy.mainRuns, before);
-  });
+  test(
+    'cancelled while the debounce timer waits: no query runs afterwards',
+    () async {
+      await latestIs(['t1']);
+      final before = spy.mainRuns;
+      await add(2, 'Queen');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await sub.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      expect(spy.mainRuns, before);
+    },
+  );
 
-  test('one transaction writing tracks and artist_countries together is followed', () async {
-    await latestIs(['t1']);
-    await db.transaction(() async {
-      await add(2, 'Muse');
-      await db.into(db.artistCountries).insert(ArtistCountriesCompanion.insert(artistKey: 'muse', country: const Value('GB'), checkedAt: 1));
-    });
-    await latestIs(['t1', 't2']);
-    await db.transaction(() async {
-      await (db.update(db.artistCountries)..where((c) => c.artistKey.equals('muse'))).write(const ArtistCountriesCompanion(country: Value('FR')));
-      await (db.update(db.tracks)..where((t) => t.id.equals(1))).write(const TracksCompanion(title: Value('t1b')));
-    });
-    await latestIs(['t1b']);
-  });
+  test(
+    'one transaction writing tracks and artist_countries together is followed',
+    () async {
+      await latestIs(['t1']);
+      await db.transaction(() async {
+        await add(2, 'Muse');
+        await db
+            .into(db.artistCountries)
+            .insert(
+              ArtistCountriesCompanion.insert(
+                artistKey: 'muse',
+                country: const Value('GB'),
+                checkedAt: 1,
+              ),
+            );
+      });
+      await latestIs(['t1', 't2']);
+      await db.transaction(() async {
+        await (db.update(db.artistCountries)
+              ..where((c) => c.artistKey.equals('muse')))
+            .write(const ArtistCountriesCompanion(country: Value('FR')));
+        await (db.update(db.tracks)..where((t) => t.id.equals(1))).write(
+          const TracksCompanion(title: Value('t1b')),
+        );
+      });
+      await latestIs(['t1b']);
+    },
+  );
 
   test('writes spread inside the first 300 ms window run the query once (the timer is not restarted)', () async {
     await latestIs(['t1']);

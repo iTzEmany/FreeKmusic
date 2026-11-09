@@ -10,10 +10,27 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<int> track(String t, {int kind = 0, bool missing = false, bool ignored = false}) =>
-      db.into(db.tracks).insert(TracksCompanion.insert(
-            path: '/$t', title: t, albumKey: t, format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
-            kind: Value(kind), missing: Value(missing), ignored: Value(ignored)));
+  Future<int> track(
+    String t, {
+    int kind = 0,
+    bool missing = false,
+    bool ignored = false,
+  }) => db
+      .into(db.tracks)
+      .insert(
+        TracksCompanion.insert(
+          path: '/$t',
+          title: t,
+          albumKey: t,
+          format: 'mp3',
+          sizeBytes: 1,
+          mtimeMs: 1,
+          addedAt: 1,
+          kind: Value(kind),
+          missing: Value(missing),
+          ignored: Value(ignored),
+        ),
+      );
 
   test('music still in the library, since the date; not episodes, streams, missing or hidden ones', () async {
     final history = PlayHistoryRepository(db);
@@ -34,10 +51,15 @@ void main() {
   });
 
   test('the period is read through the plays_at index, not a scan', () async {
-    final plan = await db.customSelect(
-      'EXPLAIN QUERY PLAN $listensSinceSql',
-      variables: [Variable.withInt(0)],
-    ).get();
-    expect(plan.map((r) => r.read<String>('detail')).join('\n'), contains('plays_at'));
+    final plan = await db
+        .customSelect(
+          'EXPLAIN QUERY PLAN $listensSinceSql',
+          variables: [Variable.withInt(0)],
+        )
+        .get();
+    expect(
+      plan.map((r) => r.read<String>('detail')).join('\n'),
+      contains('plays_at'),
+    );
   });
 }

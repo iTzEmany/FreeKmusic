@@ -90,7 +90,8 @@ class PodcastException implements Exception {
   final YtErrorKind? yt;
 
   @override
-  String toString() => 'PodcastException($kind${detail == null ? '' : ', $detail'})';
+  String toString() =>
+      'PodcastException($kind${detail == null ? '' : ', $detail'})';
 }
 
 /// Downloads a feed's text (http or https, size-limited).
@@ -115,7 +116,11 @@ String? episodeExtension({String? contentType, String? url, String? mime}) {
     final t = (m ?? '').toLowerCase().split(';').first.trim();
     return switch (t) {
       'audio/mpeg' || 'audio/mp3' || 'audio/mpeg3' || 'audio/x-mpeg' => 'mp3',
-      'audio/mp4' || 'audio/x-m4a' || 'audio/m4a' || 'audio/aac' || 'audio/x-aac' => 'm4a',
+      'audio/mp4' ||
+      'audio/x-m4a' ||
+      'audio/m4a' ||
+      'audio/aac' ||
+      'audio/x-aac' => 'm4a',
       'audio/ogg' || 'application/ogg' || 'audio/vorbis' => 'ogg',
       'audio/opus' => 'opus',
       _ => null,

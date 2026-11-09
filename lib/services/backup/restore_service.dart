@@ -13,7 +13,13 @@ import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
 import '../shuffle_plus/dislike_store.dart';
 import 'user_data.dart';
-import '../../data/settings/settings_store.dart' show genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey, unsyncedLyricsKey;
+import '../../data/settings/settings_store.dart'
+    show
+        genreRereadAfterKey,
+        genreRereadDoneKey,
+        recogPassAfterKey,
+        recogPassDoneKey,
+        unsyncedLyricsKey;
 import 'backup_service.dart';
 
 class RestoreException implements Exception {
@@ -63,7 +69,9 @@ Future<RestorePlan> inspectBackup(
     try {
       final entry = ZipDecoder().decodeStream(input).findFile('manifest.json');
       if (entry == null) throw const RestoreException('manifest.json missing');
-      m = jsonDecode(utf8.decode(entry.content as List<int>)) as Map<String, dynamic>;
+      m = jsonDecode(
+        utf8.decode(entry.content as List<int>),
+      ) as Map<String, dynamic>;
     } finally {
       await input.close();
     }
@@ -73,9 +81,13 @@ Future<RestorePlan> inspectBackup(
     throw RestoreException('not a Codecore backup: $e');
   }
   final format = (m['backupFormat'] as num?)?.toInt() ?? 0;
-  if (format < 1 || format > kBackupFormat) throw RestoreException('backupFormat $format not supported');
+  if (format < 1 || format > kBackupFormat) {
+    throw RestoreException('backupFormat $format not supported');
+  }
   final schema = (m['schemaVersion'] as num?)?.toInt() ?? 0;
-  if (schema > schemaVersion) throw RestoreException('backup from a newer app (schema $schema)');
+  if (schema > schemaVersion) {
+    throw RestoreException('backup from a newer app (schema $schema)');
+  }
   final exists = folderExists ?? (f) => Directory(f).existsSync();
   final folders = [for (final f in (m['folders'] as List? ?? const [])) '$f'];
   return RestorePlan(
@@ -85,7 +97,9 @@ Future<RestorePlan> inspectBackup(
     schemaVersion: schema,
     trackCount: (m['trackCount'] as num?)?.toInt() ?? 0,
     playlistCount: (m['playlistCount'] as num?)?.toInt() ?? 0,
-    sameDevice: m['deviceId'] == deviceId || (folders.isNotEmpty && folders.every(exists)),
+    sameDevice:
+        m['deviceId'] == deviceId ||
+        (folders.isNotEmpty && folders.every(exists)),
   );
 }
 
@@ -103,9 +117,13 @@ Future<void> stageFullRestore(File zip, Directory staging) async {
       for (final f in archive.files) {
         if (!f.isFile) continue;
         final String? target;
-        if (f.name == _stagedDb || f.name == 'settings.json' || f.name == _stagedDislikes) {
+        if (f.name == _stagedDb ||
+            f.name == 'settings.json' ||
+            f.name == _stagedDislikes) {
           target = p.join(dest, f.name);
-        } else if (f.name.startsWith('covers/') && p.basename(f.name) == f.name.substring(7) && f.name.length > 7) {
+        } else if (f.name.startsWith('covers/') &&
+            p.basename(f.name) == f.name.substring(7) &&
+            f.name.length > 7) {
           target = p.join(dest, 'covers', p.basename(f.name));
         } else {
           target = null;
@@ -137,9 +155,11 @@ Future<bool> applyPendingRestore({
   required Directory coversDir,
   required int schemaVersion,
   File? dislikesFile,
+  File? daylistFile,
 }) async {
   final stagedDb = File(p.join(staging.path, _stagedDb));
-  if (!File(p.join(staging.path, _readyMarker)).existsSync() || !stagedDb.existsSync()) {
+  if (!File(p.join(staging.path, _readyMarker)).existsSync() ||
+      !stagedDb.existsSync()) {
     if (staging.existsSync()) _quietDelete(staging); // half-extracted leftovers
     return false;
   }
@@ -171,7 +191,10 @@ Future<bool> applyPendingRestore({
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {
-      await applySettingsJson(prefs, jsonDecode(settings.readAsStringSync()) as Map<String, dynamic>);
+      await applySettingsJson(
+        prefs,
+        jsonDecode(settings.readAsStringSync()) as Map<String, dynamic>,
+      );
     }
     // «Non mi piace» choices replace the current ones; a backup without the
     // file (older than fase 101) leaves them as they are, like downloads.json.
@@ -180,6 +203,14 @@ Future<bool> applyPendingRestore({
       dislikesFile.parent.createSync(recursive: true);
       final tmp = dislikes.copySync('${dislikesFile.path}.tmp');
       tmp.renameSync(dislikesFile.path);
+    }
+    // It holds ids of the replaced database's tracks (a wrong list otherwise).
+    if (daylistFile != null && daylistFile.existsSync()) {
+      try {
+        daylistFile.deleteSync();
+      } on FileSystemException catch (e, st) {
+        AppLog.w('daylist file not removed', e, st);
+      }
     }
     final covers = Directory(p.join(staging.path, 'covers'));
     if (covers.existsSync()) {
@@ -194,7 +225,9 @@ Future<bool> applyPendingRestore({
     return true;
   } on Object catch (e, st) {
     AppLog.e('restore failed, keeping the current database', e, st);
-    if (movedOriginal && !dbFile.existsSync() && backup.existsSync()) backup.renameSync(dbFile.path);
+    if (movedOriginal && !dbFile.existsSync() && backup.existsSync()) {
+      backup.renameSync(dbFile.path);
+    }
     _quietDelete(staging);
     return false;
   }
@@ -216,7 +249,9 @@ Future<void> _checkStagedDatabase(File f, int schemaVersion) async {
   } finally {
     raw.close();
   }
-  if (v > schemaVersion) throw RestoreException('the backup database is newer (schema $v)');
+  if (v > schemaVersion) {
+    throw RestoreException('the backup database is newer (schema $v)');
+  }
 }
 
 void _quietDelete(Directory d) {
@@ -243,10 +278,15 @@ Future<MergeReport> mergeBackup(
     final archive = ZipDecoder().decodeStream(input);
     final entry = archive.findFile('user_data.json');
     if (entry == null) throw const RestoreException('user_data.json missing');
-    data = UserData.fromJson(jsonDecode(utf8.decode(entry.content as List<int>)) as Map<String, dynamic>);
+    data = UserData.fromJson(
+      jsonDecode(utf8.decode(entry.content as List<int>))
+          as Map<String, dynamic>,
+    );
     final manifest = archive.findFile('manifest.json');
     if (manifest != null) {
-      final m = jsonDecode(utf8.decode(manifest.content as List<int>)) as Map<String, dynamic>;
+      final m = jsonDecode(
+        utf8.decode(manifest.content as List<int>),
+      ) as Map<String, dynamic>;
       windows = windows || m['platform'] == 'windows';
     }
     // «Non mi piace» blocks are added to the current ones (union).
@@ -256,12 +296,18 @@ Future<MergeReport> mergeBackup(
         await dislikes.load();
         dislikes.mergeJson(jsonDecode(utf8.decode(dl.content as List<int>)));
       } on Object catch (e, st) {
-        AppLog.w('dislikes.json of the backup unreadable, blocks skipped', e, st);
+        AppLog.w(
+          'dislikes.json of the backup unreadable, blocks skipped',
+          e,
+          st,
+        );
       }
     }
     coversDir.createSync(recursive: true);
     for (final f in archive.files) {
-      if (!f.isFile || !f.name.startsWith('covers/') || f.name.length <= 7) continue;
+      if (!f.isFile || !f.name.startsWith('covers/') || f.name.length <= 7) {
+        continue;
+      }
       final target = File(p.join(coversDir.path, p.basename(f.name)));
       if (!target.existsSync()) target.writeAsBytesSync(f.content as List<int>);
     }
@@ -272,6 +318,7 @@ Future<MergeReport> mergeBackup(
   } finally {
     await input.close();
   }
-  final resolver = await PlaylistSyncRepository(db).resolver(caseInsensitive: windows);
+  final resolver = await PlaylistSyncRepository(db)
+      .resolver(caseInsensitive: windows);
   return mergeUserData(db, data, resolver, coversDir: coversDir);
 }

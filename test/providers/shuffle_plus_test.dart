@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import '../support/suggestion_gate_fake.dart';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
@@ -19,7 +20,8 @@ import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_host.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_plus_controller.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
-import 'package:codecore/services/shuffle_plus/suggestion_pool.dart' show suggestionArtistKey;
+import 'package:codecore/services/shuffle_plus/suggestion_pool.dart'
+    show suggestionArtistKey;
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:codecore/providers/stream_providers.dart';
@@ -31,19 +33,27 @@ import 'package:path/path.dart' as p;
 
 import '../support/fake_stream_preparer.dart';
 
-final radioJson =
-    File('test/fixtures/innertube/ytm_radio.json').readAsStringSync();
+final radioJson = File('test/fixtures/innertube/ytm_radio.json')
+    .readAsStringSync();
 
 class _Adapter implements HttpClientAdapter {
   int status = 200;
   final sent = <RequestOptions>[];
 
   @override
-  Future<ResponseBody> fetch(RequestOptions o, Stream<List<int>>? s, Future<void>? c) async {
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<List<int>>? s,
+    Future<void>? c,
+  ) async {
     sent.add(o);
-    return ResponseBody.fromString(status == 200 ? radioJson : '{}', status, headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    });
+    return ResponseBody.fromString(
+      status == 200 ? radioJson : '{}',
+      status,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
   }
 
   @override
@@ -113,36 +123,41 @@ class _Host implements ShuffleHost {
   /// The current song plays to its end and the next one starts.
   void finishAndAdvance({bool toTheEnd = true}) {
     _dur.add(const Duration(minutes: 3));
-    _pos.add(toTheEnd ? const Duration(minutes: 3) : const Duration(seconds: 5));
+    _pos.add(
+      toTheEnd ? const Duration(minutes: 3) : const Duration(seconds: 5),
+    );
     real != null ? real!.next(auto: true) : _index++;
     _changes.add(null);
   }
 
   void change() => _changes.add(null);
-  void fail() => _fail.add(const PlaybackFailure('x', PlaybackFailureReason.onlineUnavailable));
+  void fail() => _fail.add(
+    const PlaybackFailure('x', PlaybackFailureReason.onlineUnavailable),
+  );
 }
 
-Track track(int id) => Track(coverSource: 0, 
-      id: id,
-      path: '/m/$id.mp3',
-      title: 'Song $id',
-      artist: 'Rock Band',
-      genre: 'Rock',
-      albumKey: 'k',
-      durationMs: 200000,
-      format: 'mp3',
-      sizeBytes: 1,
-      mtimeMs: 1,
-      hasCover: false,
-      isFavorite: false,
-      enrichStatus: 0,
-      userEdited: false,
-      missing: false,
-      ignored: false,
-      kind: 0,
-      addedAt: 1,
-      playCount: 0,
-    );
+Track track(int id) => Track(
+  coverSource: 0,
+  id: id,
+  path: '/m/$id.mp3',
+  title: 'Song $id',
+  artist: 'Rock Band',
+  genre: 'Rock',
+  albumKey: 'k',
+  durationMs: 200000,
+  format: 'mp3',
+  sizeBytes: 1,
+  mtimeMs: 1,
+  hasCover: false,
+  isFavorite: false,
+  enrichStatus: 0,
+  userEdited: false,
+  missing: false,
+  ignored: false,
+  kind: 0,
+  addedAt: 1,
+  playCount: 0,
+);
 
 void main() {
   late Directory dir;
@@ -162,7 +177,11 @@ void main() {
   final withins = <Duration>[];
   final prepared = <String>[];
   final enriched = <List<int>>[];
-  late ShufflePlusController Function({Duration? enrichTimeout, RadioGate? gate}) make;
+  late ShufflePlusController Function({
+    Duration? enrichTimeout,
+    RadioGate? gate,
+  })
+  make;
   const library = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
   Future<void> settle() async {
@@ -209,37 +228,44 @@ void main() {
     for (final id in library) {
       await downloads.add('dl$id', '/m/$id.mp3');
     }
-    final client = InnerTubeClient(Dio(BaseOptions(validateStatus: (_) => true))..httpClientAdapter = adapter);
-    make = ({Duration? enrichTimeout, RadioGate? gate}) => ShufflePlusController(
-      host: host,
-      online: online,
-      log: log,
-      filter: filterOverride,
-      resolver: SeedResolver(
-        downloads: downloads,
-        index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),
-        searchSongs: (q) async {
-          searches++;
-          return const [];
-        },
-      ),
-      radio: YtmRadioService(client, _NoMix(), now: () => now),
-      config: () => cfg,
-      jamActive: () => jam,
-      isMetered: () async => metered,
-      toolAvailable: () async => true,
-      loadTracks: (ids) async => [for (final id in ids) track(id)],
-      loadLibrary: () async => LibraryIndex(const []),
-      hasDownload: (_) => false,
-      prepare: (r) => prepareHook(r),
-      enrichSuggested: (ids, within) {
-        withins.add(within);
-        return enrichHook(ids);
-      },
-      enrichTimeout: enrichTimeout ?? ShufflePlusController.blockEnrichTimeout,
-      gate: gate,
-      now: () => now,
+    final client = InnerTubeClient(
+      Dio(BaseOptions(validateStatus: (_) => true))
+        ..httpClientAdapter = adapter,
     );
+    make = ({Duration? enrichTimeout, RadioGate? gate}) =>
+        ShufflePlusController(
+          host: host,
+          online: online,
+          log: log,
+          filter: filterOverride,
+          resolver: SeedResolver(
+            downloads: downloads,
+            index: SeedIndex(
+              file: () async => File(p.join(dir.path, 'seeds.json')),
+            ),
+            searchSongs: (q) async {
+              searches++;
+              return const [];
+            },
+          ),
+          radio: YtmRadioService(client, _NoMix(), now: () => now),
+          config: () => cfg,
+          jamActive: () => jam,
+          isMetered: () async => metered,
+          toolAvailable: () async => true,
+          loadTracks: (ids) async => [for (final id in ids) track(id)],
+          loadLibrary: () async => LibraryIndex(const []),
+          hasDownload: (_) => false,
+          prepare: (r) => prepareHook(r),
+          enrichSuggested: (ids, within) {
+            withins.add(within);
+            return enrichHook(ids);
+          },
+          enrichTimeout:
+              enrichTimeout ?? ShufflePlusController.blockEnrichTimeout,
+          gate: gate,
+          now: () => now,
+        );
     controller = make();
     addTearDown(controller.dispose);
   });
@@ -255,38 +281,44 @@ void main() {
     return seen;
   }
 
-  test('with the option off nothing is asked and nothing is inserted', () async {
-    cfg = const ShufflePlusConfig();
-    controller.start();
-    await settle();
-    expect(adapter.sent, isEmpty);
-    expect(searches, 0);
-    expect(host.queueIds, library);
-  });
+  test(
+    'with the option off nothing is asked and nothing is inserted',
+    () async {
+      cfg = const ShufflePlusConfig();
+      controller.start();
+      await settle();
+      expect(adapter.sent, isEmpty);
+      expect(searches, 0);
+      expect(host.queueIds, library);
+    },
+  );
 
-  test('no request in a Jam, on a metered network, without shuffle, in pause', () async {
-    jam = true;
-    controller.start();
-    await settle();
-    jam = false;
-    metered = true;
-    controller.poke();
-    await settle();
-    metered = false;
-    host.shuffleEnabled = false;
-    controller.poke();
-    await settle();
-    host.shuffleEnabled = true;
-    host.isPlaying = false;
-    controller.poke();
-    await settle();
-    expect(adapter.sent, isEmpty);
-    expect(host.queueIds, library);
-    host.isPlaying = true;
-    controller.poke();
-    await settle();
-    expect(adapter.sent, hasLength(1), reason: 'all conditions met');
-  });
+  test(
+    'no request in a Jam, on a metered network, without shuffle, in pause',
+    () async {
+      jam = true;
+      controller.start();
+      await settle();
+      jam = false;
+      metered = true;
+      controller.poke();
+      await settle();
+      metered = false;
+      host.shuffleEnabled = false;
+      controller.poke();
+      await settle();
+      host.shuffleEnabled = true;
+      host.isPlaying = false;
+      controller.poke();
+      await settle();
+      expect(adapter.sent, isEmpty);
+      expect(host.queueIds, library);
+      host.isPlaying = true;
+      controller.poke();
+      await settle();
+      expect(adapter.sent, hasLength(1), reason: 'all conditions met');
+    },
+  );
 
   test('metered network is fine when «Solo su Wi-Fi» is off', () async {
     metered = true;
@@ -313,11 +345,15 @@ void main() {
     await until(() => host.queueIds.where(isOnlineId).length == 3);
     final at = [
       for (var i = 0; i < host.queueIds.length; i++)
-        if (isOnlineId(host.queueIds[i])) i
+        if (isOnlineId(host.queueIds[i])) i,
     ];
     expect(at, [8, 12, 16], reason: 'no track change needed');
     expect(host.currentIndex, 5);
-    expect(adapter.sent, hasLength(1), reason: 'one radio feeds many suggestions');
+    expect(
+      adapter.sent,
+      hasLength(1),
+      reason: 'one radio feeds many suggestions',
+    );
     host.finishAndAdvance();
     await settle();
     host.finishAndAdvance();
@@ -328,8 +364,11 @@ void main() {
     await settle();
     host.finishAndAdvance();
     await settle();
-    expect(host.queueIds.take(host.currentIndex).where(isOnlineId), isEmpty,
-        reason: 'passed suggestions are taken out');
+    expect(
+      host.queueIds.take(host.currentIndex).where(isOnlineId),
+      isEmpty,
+      reason: 'passed suggestions are taken out',
+    );
   });
 
   test('a blocked artist is never inserted', () async {
@@ -342,7 +381,8 @@ void main() {
     controller.start();
     await until(() => host.queueIds.where(isOnlineId).length == 3);
     final keys = [
-      for (final id in host.queueIds.where(isOnlineId)) suggestionArtistKey(online[id]!.result),
+      for (final id in host.queueIds.where(isOnlineId))
+        suggestionArtistKey(online[id]!.result),
     ];
     controller.dispose();
 
@@ -351,53 +391,69 @@ void main() {
     controller = make()..start();
     await settle();
     await settle();
-    final now = [for (final id in host.queueIds.where(isOnlineId)) suggestionArtistKey(online[id]!.result)];
+    final now = [
+      for (final id in host.queueIds.where(isOnlineId))
+        suggestionArtistKey(online[id]!.result),
+    ];
     expect(now.where(keys.contains), isEmpty);
   });
 
-  test('a block that arrives between the pick and the insertion inserts nothing', () async {
-    prepareHook = (r) async {
-      prepared.add(r.id);
-      filterOverride.store.blockArtist(DislikedArtist(key: suggestionArtistKey(r), name: 'x'));
-    };
-    host.queueIds
-      ..clear()
-      ..addAll([for (var i = 1; i <= 20; i++) i]);
-    host.sourceIds = [...library];
-    host.currentIndex = 5;
-    controller.start();
-    await until(() => prepared.isNotEmpty);
-    await settle();
-    await settle();
-    expect(host.queueIds.where(isOnlineId), isEmpty);
-  });
+  test(
+    'a block that arrives between the pick and the insertion inserts nothing',
+    () async {
+      prepareHook = (r) async {
+        prepared.add(r.id);
+        filterOverride.store.blockArtist(
+          DislikedArtist(key: suggestionArtistKey(r), name: 'x'),
+        );
+      };
+      host.queueIds
+        ..clear()
+        ..addAll([for (var i = 1; i <= 20; i++) i]);
+      host.sourceIds = [...library];
+      host.currentIndex = 5;
+      controller.start();
+      await until(() => prepared.isNotEmpty);
+      await settle();
+      await settle();
+      expect(host.queueIds.where(isOnlineId), isEmpty);
+    },
+  );
 
-  test('an online entry the user picked stays in the queue once passed', () async {
-    cfg = const ShufflePlusConfig();
-    final stations = [-101, -102, -103];
-    host.queueIds
-      ..clear()
-      ..addAll(stations);
-    controller.start();
-    await settle();
-    host.finishAndAdvance();
-    await settle();
-    host.finishAndAdvance();
-    await settle();
-    expect(host.queueIds, stations);
-  });
+  test(
+    'an online entry the user picked stays in the queue once passed',
+    () async {
+      cfg = const ShufflePlusConfig();
+      final stations = [-101, -102, -103];
+      host.queueIds
+        ..clear()
+        ..addAll(stations);
+      controller.start();
+      await settle();
+      host.finishAndAdvance();
+      await settle();
+      host.finishAndAdvance();
+      await settle();
+      expect(host.queueIds, stations);
+    },
+  );
 
-  test('the engine prepares a suggestion through the stream preparer', () async {
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
-    final fake = FakeStreamPreparer(TrackRepository(db), dir);
-    final c = ProviderContainer(overrides: [streamPreparerProvider.overrideWithValue(fake)]);
-    addTearDown(c.dispose);
-    const r = YtResult(id: 'v9', title: 'T', channel: 'C', duration: null);
-    await c.read(shufflePlusPrepareProvider)(r);
-    expect(fake.asked, [r.indexKey]);
-    expect(await TrackRepository(db).streamRow(r.indexKey), isNotNull);
-  });
+  test(
+    'the engine prepares a suggestion through the stream preparer',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final fake = FakeStreamPreparer(TrackRepository(db), dir);
+      final c = ProviderContainer(
+        overrides: [streamPreparerProvider.overrideWithValue(fake)],
+      );
+      addTearDown(c.dispose);
+      const r = YtResult(id: 'v9', title: 'T', channel: 'C', duration: null);
+      await c.read(shufflePlusPrepareProvider)(r);
+      expect(fake.asked, [r.indexKey]);
+      expect(await TrackRepository(db).streamRow(r.indexKey), isNotNull);
+    },
+  );
 
   test('prepare asks for the address only: it returns while the file is still downloading', () async {
     final db = AppDatabase(NativeDatabase.memory());
@@ -406,21 +462,27 @@ void main() {
     const r = YtResult(id: 'v9', title: 'T', channel: 'C', duration: null);
     fake.urls[r.indexKey] = (Uri.parse('https://x/a'), const {});
     fake.gates[r.indexKey] = Completer<void>(); // the file never arrives
-    final c = ProviderContainer(overrides: [streamPreparerProvider.overrideWithValue(fake)]);
+    final c = ProviderContainer(
+      overrides: [streamPreparerProvider.overrideWithValue(fake)],
+    );
     addTearDown(c.dispose);
     var done = false;
     unawaited(c.read(shufflePlusPrepareProvider)(r).then((_) => done = true));
     await pumpEventQueue();
     expect(done, isTrue);
     expect(fake.asked, isEmpty, reason: 'no wait for the whole file');
-    expect(fake.keeps, [false], reason: 'the job goes back to being a prefetch');
+    expect(fake.keeps, [
+      false,
+    ], reason: 'the job goes back to being a prefetch');
   });
 
   test('with the file never arriving, every free slot still fills from the addresses', () async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     final fake = FakeStreamPreparer(TrackRepository(db), dir);
-    final c = ProviderContainer(overrides: [streamPreparerProvider.overrideWithValue(fake)]);
+    final c = ProviderContainer(
+      overrides: [streamPreparerProvider.overrideWithValue(fake)],
+    );
     addTearDown(c.dispose);
     prepareHook = (r) {
       fake.urls[r.indexKey] = (Uri.parse('https://x/${r.id}'), const {});
@@ -521,8 +583,13 @@ void main() {
     prepare.complete();
     await until(() => enriched.isNotEmpty);
     expect(seen.map((v) => v.incoming).toSet(), containsAll([3, 2, 1, 0]));
-    expect([for (final v in seen) v.incoming], orderedEquals([...seen.map((v) => v.incoming)]..sort((a, b) => b.compareTo(a))),
-        reason: 'it only goes down');
+    expect(
+      [for (final v in seen) v.incoming],
+      orderedEquals(
+        [...seen.map((v) => v.incoming)]..sort((a, b) => b.compareTo(a)),
+      ),
+      reason: 'it only goes down',
+    );
     final block = host.queueIds.where(isOnlineId).toSet();
     expect(controller.pending.value, ShufflePlusPending(enriching: block));
     enrich.complete();
@@ -648,38 +715,54 @@ void main() {
     }
     await until(() => host.inserts > 3);
     expect(enriched, hasLength(1));
-    expect(withins.single, ShufflePlusController.entryEnrichLimit,
-        reason: 'entries keep waiting in the background after the block is released');
+    expect(
+      withins.single,
+      ShufflePlusController.entryEnrichLimit,
+      reason:
+          'entries keep waiting in the background after the block is released',
+    );
   });
 
-  test('a suggestion enters the queue only after its address is ready', () async {
-    final gate = Completer<void>();
-    prepareHook = (r) async {
-      prepared.add(r.id);
-      await gate.future;
-    };
-    controller.start();
-    await until(() => prepared.isNotEmpty);
-    expect(prepared, hasLength(1));
-    expect(host.queueIds, library, reason: 'address not ready: nothing queued');
-    expect(log.recent, isEmpty);
-    gate.complete();
-    await until(() => host.queueIds.where(isOnlineId).length == 3);
-  });
+  test(
+    'a suggestion enters the queue only after its address is ready',
+    () async {
+      final gate = Completer<void>();
+      prepareHook = (r) async {
+        prepared.add(r.id);
+        await gate.future;
+      };
+      controller.start();
+      await until(() => prepared.isNotEmpty);
+      expect(prepared, hasLength(1));
+      expect(
+        host.queueIds,
+        library,
+        reason: 'address not ready: nothing queued',
+      );
+      expect(log.recent, isEmpty);
+      gate.complete();
+      await until(() => host.queueIds.where(isOnlineId).length == 3);
+    },
+  );
 
-  test('a failed address tries the next candidate, no entry for the failed one', () async {
-    var calls = 0;
-    prepareHook = (r) async {
-      prepared.add(r.id);
-      if (calls++ == 0) throw TimeoutException('slow');
-    };
-    controller.start();
-    await until(() => host.queueIds.any(isOnlineId));
-    await until(() => host.queueIds.where(isOnlineId).length == 3);
-    expect(prepared, hasLength(4));
-    final queued = host.queueIds.where(isOnlineId).map((id) => online[id]!.result.id);
-    expect(queued, prepared.skip(1));
-  });
+  test(
+    'a failed address tries the next candidate, no entry for the failed one',
+    () async {
+      var calls = 0;
+      prepareHook = (r) async {
+        prepared.add(r.id);
+        if (calls++ == 0) throw TimeoutException('slow');
+      };
+      controller.start();
+      await until(() => host.queueIds.any(isOnlineId));
+      await until(() => host.queueIds.where(isOnlineId).length == 3);
+      expect(prepared, hasLength(4));
+      final queued = host.queueIds
+          .where(isOnlineId)
+          .map((id) => online[id]!.result.id);
+      expect(queued, prepared.skip(1));
+    },
+  );
 
   test('when every candidate fails nothing is queued', () async {
     prepareHook = (r) async {
@@ -704,57 +787,70 @@ void main() {
     host.finishAndAdvance(toTheEnd: false);
     await settle();
     final outcomes = log.recent.map((r) => r.outcome).toList();
-    expect(outcomes.first, SuggestionOutcome.queued, reason: 'the next one is waiting');
+    expect(
+      outcomes.first,
+      SuggestionOutcome.queued,
+      reason: 'the next one is waiting',
+    );
     expect(outcomes.last, SuggestionOutcome.heard);
     expect(log.recent.last.seedTitle, startsWith('Song'));
   });
 
-  test('turning shuffle off takes every suggestion after the current out', () async {
-    host.queueIds
-      ..clear()
-      ..addAll([for (var i = 1; i <= 20; i++) i]);
-    host.currentIndex = 5;
-    controller.start();
-    await until(() => host.queueIds.where(isOnlineId).length == 3);
-    host.shuffleEnabled = false;
-    host.change();
-    await until(() => host.queueIds.every((id) => !isOnlineId(id)));
-    expect(host.queueIds, [for (var i = 1; i <= 20; i++) i]);
-    expect(host.queueIds[host.currentIndex], 6, reason: 'the current stays');
-  });
-
-  for (final seed in [5, 6, 8]) {
-    test('shuffle off removes suggestions even behind the current song (seed $seed)', () async {
-      host.real = PlayQueue(random: Random(seed))
-        ..setItems([for (var i = 1; i <= 20; i++) i])
-        ..shuffle = true;
+  test(
+    'turning shuffle off takes every suggestion after the current out',
+    () async {
+      host.queueIds
+        ..clear()
+        ..addAll([for (var i = 1; i <= 20; i++) i]);
+      host.currentIndex = 5;
       controller.start();
       await until(() => host.queueIds.where(isOnlineId).length == 3);
-      for (var i = 0; i < 6; i++) {
-        host.finishAndAdvance();
-        await settle();
-      }
-      await until(() => host.queueIds.where(isOnlineId).isNotEmpty);
-      host.real!.shuffle = false;
+      host.shuffleEnabled = false;
       host.change();
-      await until(() => host.queueIds.where(isOnlineId).isEmpty);
-    });
+      await until(() => host.queueIds.every((id) => !isOnlineId(id)));
+      expect(host.queueIds, [for (var i = 1; i <= 20; i++) i]);
+      expect(host.queueIds[host.currentIndex], 6, reason: 'the current stays');
+    },
+  );
+
+  for (final seed in [5, 6, 8]) {
+    test(
+      'shuffle off removes suggestions even behind the current song (seed $seed)',
+      () async {
+        host.real = PlayQueue(random: Random(seed))
+          ..setItems([for (var i = 1; i <= 20; i++) i])
+          ..shuffle = true;
+        controller.start();
+        await until(() => host.queueIds.where(isOnlineId).length == 3);
+        for (var i = 0; i < 6; i++) {
+          host.finishAndAdvance();
+          await settle();
+        }
+        await until(() => host.queueIds.where(isOnlineId).isNotEmpty);
+        host.real!.shuffle = false;
+        host.change();
+        await until(() => host.queueIds.where(isOnlineId).isEmpty);
+      },
+    );
   }
 
-  test('a Jam that starts while a suggestion is being prepared inserts nothing', () async {
-    final gate = Completer<void>();
-    prepareHook = (r) async {
-      prepared.add(r.id);
-      await gate.future;
-    };
-    controller.start();
-    await until(() => prepared.isNotEmpty);
-    jam = true;
-    gate.complete();
-    await settle();
-    expect(host.inserts, 0);
-    expect(host.queueIds.where(isOnlineId), isEmpty);
-  });
+  test(
+    'a Jam that starts while a suggestion is being prepared inserts nothing',
+    () async {
+      final gate = Completer<void>();
+      prepareHook = (r) async {
+        prepared.add(r.id);
+        await gate.future;
+      };
+      controller.start();
+      await until(() => prepared.isNotEmpty);
+      jam = true;
+      gate.complete();
+      await settle();
+      expect(host.inserts, 0);
+      expect(host.queueIds.where(isOnlineId), isEmpty);
+    },
+  );
 
   test('Shuffle+ turned off while a suggestion is being prepared inserts nothing more', () async {
     final gate = Completer<void>();
@@ -771,43 +867,53 @@ void main() {
     expect(host.queueIds.where(isOnlineId), isEmpty);
   });
 
-  test('a new list drops the pool: the next suggestion asks for a new radio', () async {
-    controller.start();
-    await settle();
-    expect(adapter.sent, hasLength(1));
-    host.sourceIds = [for (var i = 1; i <= 8; i++) i];
-    now = now.add(const Duration(minutes: 2));
-    // The suggestions are used up: the free slots need new rows.
-    for (final id in host.queueIds.where(isOnlineId).toList()) {
-      await host.removeQueueId(id);
-    }
-    await until(() => adapter.sent.length >= 2);
-    expect(adapter.sent, hasLength(2), reason: 'rows of the old list are not reused');
-  });
+  test(
+    'a new list drops the pool: the next suggestion asks for a new radio',
+    () async {
+      controller.start();
+      await settle();
+      expect(adapter.sent, hasLength(1));
+      host.sourceIds = [for (var i = 1; i <= 8; i++) i];
+      now = now.add(const Duration(minutes: 2));
+      // The suggestions are used up: the free slots need new rows.
+      for (final id in host.queueIds.where(isOnlineId).toList()) {
+        await host.removeQueueId(id);
+      }
+      await until(() => adapter.sent.length >= 2);
+      expect(
+        adapter.sent,
+        hasLength(2),
+        reason: 'rows of the old list are not reused',
+      );
+    },
+  );
 
-  test('a 429 pauses every request for 15 minutes, with a single notice', () async {
-    adapter.status = 429;
-    final notices = <ShufflePlusNotice>[];
-    controller.notices.listen(notices.add);
-    controller.start();
-    await settle();
-    expect(adapter.sent, hasLength(1));
-    expect(notices, [ShufflePlusNotice.rateLimited]);
-    expect(controller.rateLimited, isTrue);
+  test(
+    'a 429 pauses every request for 15 minutes, with a single notice',
+    () async {
+      adapter.status = 429;
+      final notices = <ShufflePlusNotice>[];
+      controller.notices.listen(notices.add);
+      controller.start();
+      await settle();
+      expect(adapter.sent, hasLength(1));
+      expect(notices, [ShufflePlusNotice.rateLimited]);
+      expect(controller.rateLimited, isTrue);
 
-    now = now.add(const Duration(minutes: 14));
-    controller.poke();
-    await settle();
-    expect(adapter.sent, hasLength(1), reason: 'still paused');
-    expect(controller.rateLimited, isTrue);
+      now = now.add(const Duration(minutes: 14));
+      controller.poke();
+      await settle();
+      expect(adapter.sent, hasLength(1), reason: 'still paused');
+      expect(controller.rateLimited, isTrue);
 
-    now = now.add(const Duration(minutes: 2));
-    expect(controller.rateLimited, isFalse);
-    controller.poke();
-    await settle();
-    expect(adapter.sent, hasLength(2));
-    expect(notices, hasLength(1), reason: 'told once');
-  });
+      now = now.add(const Duration(minutes: 2));
+      expect(controller.rateLimited, isFalse);
+      controller.poke();
+      await settle();
+      expect(adapter.sent, hasLength(2));
+      expect(notices, hasLength(1), reason: 'told once');
+    },
+  );
 
   test('radio requests are at least a minute apart', () async {
     adapter.status = 500; // unreadable: falls to the (empty) yt-dlp mix
@@ -846,21 +952,28 @@ void main() {
     expect(controller.rateLimited, isTrue);
   });
 
-  test('three playback failures in a row stop Shuffle+ for the session', () async {
-    final notices = <ShufflePlusNotice>[];
-    controller.notices.listen(notices.add);
-    controller.start();
-    await settle();
-    host
-      ..fail()
-      ..fail()
-      ..fail();
-    await settle();
-    expect(notices, [ShufflePlusNotice.tooManyErrors]);
-    expect(controller.stoppedForSession, isTrue);
-    expect(host.queueIds, library, reason: 'the waiting suggestion is gone');
-    expect(controller.pending.value, ShufflePlusPending.none, reason: 'no placeholder rows once the engine is off');
-  });
+  test(
+    'three playback failures in a row stop Shuffle+ for the session',
+    () async {
+      final notices = <ShufflePlusNotice>[];
+      controller.notices.listen(notices.add);
+      controller.start();
+      await settle();
+      host
+        ..fail()
+        ..fail()
+        ..fail();
+      await settle();
+      expect(notices, [ShufflePlusNotice.tooManyErrors]);
+      expect(controller.stoppedForSession, isTrue);
+      expect(host.queueIds, library, reason: 'the waiting suggestion is gone');
+      expect(
+        controller.pending.value,
+        ShufflePlusPending.none,
+        reason: 'no placeholder rows once the engine is off',
+      );
+    },
+  );
 }
 
 class _NoMix implements YoutubeService {
@@ -869,5 +982,6 @@ class _NoMix implements YoutubeService {
       const PlaylistListing.empty();
 
   @override
-  dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
+  dynamic noSuchMethod(Invocation i) =>
+      throw UnimplementedError('${i.memberName}');
 }

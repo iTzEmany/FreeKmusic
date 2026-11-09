@@ -142,7 +142,10 @@ class EnrichEngine {
       for (final p in parts) p: PartOutcome.skipped,
     });
     if (_inFlight.containsKey(trackId)) return g;
-    _inFlight[trackId] = (owner: g, done: Completer<void>()); // before the first await
+    _inFlight[trackId] = (
+      owner: g,
+      done: Completer<void>(),
+    ); // before the first await
     try {
       await _gather(g, parts, mode, cancel);
     } on Object {
@@ -171,7 +174,8 @@ class EnrichEngine {
     final at = DateTime.fromMillisecondsSinceEpoch(now);
     bool? hasCredits; // read once, only when credits are due-checked
     Future<Set<EnrichPart>> dueUnder(AskMode m) async {
-      bool due(EnrichPart p) => parts.contains(p) && isDue(p, t, enrich, at, mode: m);
+      bool due(EnrichPart p) =>
+          parts.contains(p) && isDue(p, t, enrich, at, mode: m);
       return {
         if (due(EnrichPart.meta)) EnrichPart.meta,
         if (due(EnrichPart.lyrics)) EnrichPart.lyrics,
@@ -186,7 +190,9 @@ class EnrichEngine {
                   enrich,
                   at,
                   mode: m,
-                  hasCredits: hasCredits ??= (await credits!.repo.creditsOf(trackId)).isNotEmpty,
+                  hasCredits: hasCredits ??= (await credits!.repo.creditsOf(
+                    trackId,
+                  )).isNotEmpty,
                 )))
           EnrichPart.credits,
         if (curiosities != null && due(EnrichPart.curio)) EnrichPart.curio,
@@ -200,7 +206,10 @@ class EnrichEngine {
     var known = t.userEdited ? null : decodeRec(enrich?.details, trackId);
     if (known?.v != kRecogVersion) known = null;
     Future<ResolvedMeta?>? probe; // the text search the recognizer made
-    if (recognizer != null && !t.userEdited && known == null && (todo.isNotEmpty || needsRecognition(t, enrich, known))) {
+    if (recognizer != null &&
+        !t.userEdited &&
+        known == null &&
+        (todo.isNotEmpty || needsRecognition(t, enrich, known))) {
       final r = await attemptSource(
         'recognition',
         () => recognizer!.recognize(
@@ -223,13 +232,17 @@ class EnrichEngine {
       final id = known?.identity;
       if (id != null &&
           mode == AskMode.due &&
-          (matchKey(id.title) != matchKey(t.title) || matchKey(id.artist) != matchKey(t.artist ?? ''))) {
+          (matchKey(id.title) != matchKey(t.title) ||
+              matchKey(id.artist) != matchKey(t.artist ?? ''))) {
         todo = await dueUnder(AskMode.retryNone);
       }
     }
-    if (known != null && !known.usable) known = null; // discarded: searches use the tags
+    if (known != null && !known.usable) {
+      known = null; // discarded: searches use the tags
+    }
     final identity = known?.identity;
-    final q = identity?.applyTo(t) ?? t; // only for the searches: writes use [t]
+    final q =
+        identity?.applyTo(t) ?? t; // only for the searches: writes use [t]
     final doMeta = todo.contains(EnrichPart.meta);
     final doLyrics = todo.contains(EnrichPart.lyrics);
     final doSynced = todo.contains(EnrichPart.synced);
@@ -239,11 +252,14 @@ class EnrichEngine {
     void settle(EnrichPart p, PartOutcome o) => g.settle(p, o, now);
 
     final c = cleanSearchQuery(q.title, q.artist ?? '');
-    final Future<({ResolvedMeta? value, bool failed, bool limited})>? metaF = !doMeta
+    final Future<({ResolvedMeta? value, bool failed, bool limited})>? metaF =
+        !doMeta
         ? null
         : attemptSource(
             'metadata',
-            () => probe != null && (identity == null || known?.src == RecogSource.text)
+            () =>
+                probe != null &&
+                    (identity == null || known?.src == RecogSource.text)
                 ? probe! // the same search, not asked twice
                 : resolver.resolve(q, c, cancel, t.genre == null, strict: true),
           );
@@ -305,7 +321,12 @@ class EnrichEngine {
     if (doCredits) {
       final r = await attemptSource(
         'credits',
-        () => credits!.fetch(t, meta?.hit, cancel, knownMbid: known != null && known.sure ? identity?.mbid : null),
+        () => credits!.fetch(
+          t,
+          meta?.hit,
+          cancel,
+          knownMbid: known != null && known.sure ? identity?.mbid : null,
+        ),
         timeout: false,
       );
       final creditsPart = g.credits = r.value;
@@ -322,7 +343,12 @@ class EnrichEngine {
     if (doCurio) {
       final r = await attemptSource(
         'curiosity',
-        () => curiosities!.find(q, language(), cancel: cancel, original: known?.original),
+        () => curiosities!.find(
+          q,
+          language(),
+          cancel: cancel,
+          original: known?.original,
+        ),
         timeout: false,
       );
       final l = g.curio = r.value;

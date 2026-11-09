@@ -22,23 +22,74 @@ void main() {
     // would cost a disk sync per schema statement in every setUp.
     db = AppDatabase(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({
-      'theme': 'oled', 'compactMode': true, 'playbackSpeed': 1.25, 'volume': 3,
-      'notDuplicates': ['a', 'b'], 'unsyncedLyrics': ['2', '5'], 'deviceId': 'dev-1', 'deviceName': 'Telefono', 'trustedDevices': '[]', 'enrichMark': 42, 'playlistSorts': '{"12":"title:asc"}',
+      'theme': 'oled',
+      'compactMode': true,
+      'playbackSpeed': 1.25,
+      'volume': 3,
+      'notDuplicates': ['a', 'b'],
+      'unsyncedLyrics': ['2', '5'],
+      'deviceId': 'dev-1',
+      'deviceName': 'Telefono',
+      'trustedDevices': '[]',
+      'enrichMark': 42,
+      'playlistSorts': '{"12":"title:asc"}',
     });
     prefs = await SharedPreferences.getInstance();
-    final folder = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
+    final folder = await db
+        .into(db.folders)
+        .insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
     for (var i = 0; i < 3; i++) {
-      await db.into(db.tracks).insert(TracksCompanion.insert(
-          path: '/music/$i.mp3', title: 'T$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
-          folderId: Value(folder), isFavorite: Value(i == 0),
-          playCount: Value(i == 0 ? 5 : 0), lastPlayedAt: Value(i == 0 ? 99 : null),
-          lyricsPlain: Value(i == 0 ? 'la la' : null), lyricsSynced: Value(i == 0 ? '[00:01.00]la' : null),
-          curiosities: Value(i == 0 ? 'curious' : null)));
+      await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/music/$i.mp3',
+              title: 'T$i',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+              folderId: Value(folder),
+              isFavorite: Value(i == 0),
+              playCount: Value(i == 0 ? 5 : 0),
+              lastPlayedAt: Value(i == 0 ? 99 : null),
+              lyricsPlain: Value(i == 0 ? 'la la' : null),
+              lyricsSynced: Value(i == 0 ? '[00:01.00]la' : null),
+              curiosities: Value(i == 0 ? 'curious' : null),
+            ),
+          );
     }
-    final pl = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
-    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 1, position: 0));
-    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 3, position: 1));
-    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: pl, trackId: 2, position: 2));
+    final pl = await db
+        .into(db.playlists)
+        .insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
+    await db
+        .into(db.playlistTracks)
+        .insert(
+          PlaylistTracksCompanion.insert(
+            playlistId: pl,
+            trackId: 1,
+            position: 0,
+          ),
+        );
+    await db
+        .into(db.playlistTracks)
+        .insert(
+          PlaylistTracksCompanion.insert(
+            playlistId: pl,
+            trackId: 3,
+            position: 1,
+          ),
+        );
+    await db
+        .into(db.playlistTracks)
+        .insert(
+          PlaylistTracksCompanion.insert(
+            playlistId: pl,
+            trackId: 2,
+            position: 2,
+          ),
+        );
   });
   tearDown(() async {
     await db.close();
@@ -50,18 +101,26 @@ void main() {
     File(p.join(covers.path, 'a.jpg')).writeAsBytesSync(List.filled(500, 7));
     File(p.join(covers.path, 'b.bin')).writeAsBytesSync(List.filled(500, 0));
     return BackupService(
-      db: db, prefs: prefs, coversDir: covers,
+      db: db,
+      prefs: prefs,
+      coversDir: covers,
       downloadsFile: downloads ?? File(p.join(dir.path, 'downloads.json')),
-      deviceId: 'dev-1', platform: 'linux', now: () => DateTime(2026, 10, 19, 12),
+      deviceId: 'dev-1',
+      platform: 'linux',
+      now: () => DateTime(2026, 10, 19, 12),
     );
   }
 
   test('the file name carries the date', () {
-    expect(BackupService.fileName(DateTime(2026, 3, 7)), 'codecore-backup-2026-03-07.zip');
+    expect(
+      BackupService.fileName(DateTime(2026, 3, 7)),
+      'codecore-backup-2026-03-07.zip',
+    );
   });
 
   test('the zip holds manifest, settings, user data, database, covers and downloads', () async {
-    final dl = File(p.join(dir.path, 'downloads.json'))..writeAsStringSync('{"youtube:x":"/a.mp3"}');
+    final dl = File(p.join(dir.path, 'downloads.json'))
+      ..writeAsStringSync('{"youtube:x":"/a.mp3"}');
     final out = p.join(dir.path, 'out.zip');
     final s = await service(downloads: dl).createBackup(out);
     expect(s.tracks, 3);
@@ -70,8 +129,15 @@ void main() {
     expect(s.bytes, File(out).lengthSync());
 
     final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
-    expect(zip.files.map((f) => f.name).toSet(),
-        {'manifest.json', 'settings.json', 'user_data.json', 'codecore.sqlite', 'downloads.json', 'covers/a.jpg', 'covers/b.bin'});
+    expect(zip.files.map((f) => f.name).toSet(), {
+      'manifest.json',
+      'settings.json',
+      'user_data.json',
+      'codecore.sqlite',
+      'downloads.json',
+      'covers/a.jpg',
+      'covers/b.bin',
+    });
     String text(String n) => utf8.decode(zip.findFile(n)!.content as List<int>);
     final manifest = jsonDecode(text('manifest.json')) as Map;
     expect(manifest['backupFormat'], 1);
@@ -81,41 +147,68 @@ void main() {
 
     final settings = jsonDecode(text('settings.json')) as Map;
     expect(settings.containsKey('deviceId'), isFalse);
-    expect(settings.containsKey('enrichMark'), isFalse, reason: 'bound to this device');
+    expect(
+      settings.containsKey('enrichMark'),
+      isFalse,
+      reason: 'bound to this device',
+    );
     expect(settings.containsKey('deviceName'), isFalse);
-    expect(settings.containsKey('trustedDevices'), isFalse, reason: 'bound to this device');
+    expect(
+      settings.containsKey('trustedDevices'),
+      isFalse,
+      reason: 'bound to this device',
+    );
     expect(settings['compactMode'], {'t': 'bool', 'v': true});
     expect(settings['playbackSpeed'], {'t': 'double', 'v': 1.25});
-    expect(settings['notDuplicates'], {'t': 'list', 'v': ['a', 'b']});
+    expect(settings['notDuplicates'], {
+      't': 'list',
+      'v': ['a', 'b'],
+    });
     expect(jsonDecode(text('user_data.json'))['format'], 1);
   });
 
-  test('the copied database opens with the same counts; temporary files are gone', () async {
-    final out = p.join(dir.path, 'out.zip');
-    final tmp = Directory(p.join(dir.path, 'tmp'))..createSync();
-    await IOOverrides.runZoned(() => service().createBackup(out), getSystemTempDirectory: () => tmp);
-    expect(tmp.listSync(), isEmpty, reason: 'the work folder is removed');
-    final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
-    final copy = File(p.join(dir.path, 'copy.sqlite'))..writeAsBytesSync(zip.findFile('codecore.sqlite')!.content as List<int>);
-    final db2 = AppDatabase(NativeDatabase(copy));
-    addTearDown(db2.close);
-    expect((await db2.select(db2.tracks).get()).length, 3);
-    expect((await db2.select(db2.playlists).get()).single.name, 'Mix');
-  });
+  test(
+    'the copied database opens with the same counts; temporary files are gone',
+    () async {
+      final out = p.join(dir.path, 'out.zip');
+      final tmp = Directory(p.join(dir.path, 'tmp'))..createSync();
+      await IOOverrides.runZoned(
+        () => service().createBackup(out),
+        getSystemTempDirectory: () => tmp,
+      );
+      expect(tmp.listSync(), isEmpty, reason: 'the work folder is removed');
+      final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
+      final copy = File(p.join(dir.path, 'copy.sqlite'))
+        ..writeAsBytesSync(
+          zip.findFile('codecore.sqlite')!.content as List<int>,
+        );
+      final db2 = AppDatabase(NativeDatabase(copy));
+      addTearDown(db2.close);
+      expect((await db2.select(db2.tracks).get()).length, 3);
+      expect((await db2.select(db2.playlists).get()).single.name, 'Mix');
+    },
+  );
 
-  test('settings survive a round trip, without the device-bound keys', () async {
-    final json = jsonDecode(jsonEncode(settingsToJson(prefs))) as Map<String, dynamic>;
-    SharedPreferences.setMockInitialValues({'deviceId': 'other'});
-    final fresh = await SharedPreferences.getInstance();
-    await applySettingsJson(fresh, {...json, 'deviceId': {'t': 'string', 'v': 'hacked'}});
-    expect(fresh.getString('theme'), 'oled');
-    expect(fresh.getBool('compactMode'), isTrue);
-    expect(fresh.getDouble('playbackSpeed'), 1.25);
-    expect(fresh.getStringList('notDuplicates'), ['a', 'b']);
-    expect(fresh.getStringList('unsyncedLyrics'), ['2', '5']);
-    expect(fresh.getString('deviceId'), 'other');
-    expect(fresh.getString('playlistSorts'), '{"12":"title:asc"}');
-  });
+  test(
+    'settings survive a round trip, without the device-bound keys',
+    () async {
+      final json =
+          jsonDecode(jsonEncode(settingsToJson(prefs))) as Map<String, dynamic>;
+      SharedPreferences.setMockInitialValues({'deviceId': 'other'});
+      final fresh = await SharedPreferences.getInstance();
+      await applySettingsJson(fresh, {
+        ...json,
+        'deviceId': {'t': 'string', 'v': 'hacked'},
+      });
+      expect(fresh.getString('theme'), 'oled');
+      expect(fresh.getBool('compactMode'), isTrue);
+      expect(fresh.getDouble('playbackSpeed'), 1.25);
+      expect(fresh.getStringList('notDuplicates'), ['a', 'b']);
+      expect(fresh.getStringList('unsyncedLyrics'), ['2', '5']);
+      expect(fresh.getString('deviceId'), 'other');
+      expect(fresh.getString('playlistSorts'), '{"12":"title:asc"}');
+    },
+  );
 
   /// A library with the same three tracks as [db] and none of its user data.
   Future<AppDatabase> freshLibrary() async {
@@ -176,21 +269,32 @@ void main() {
         .where((t) => t.isFavorite)
         .map((t) => t.path);
     expect(favs, ['/music/0.mp3']);
-    final t0 = (await fresh.select(fresh.tracks).get()).firstWhere((t) => t.path == '/music/0.mp3');
+    final t0 = (await fresh.select(fresh.tracks).get()).firstWhere(
+      (t) => t.path == '/music/0.mp3',
+    );
     expect((t0.playCount, t0.lastPlayedAt), (5, 99));
-    expect((t0.lyricsPlain, t0.lyricsSynced, t0.curiosities), ('la la', '[00:01.00]la', 'curious'));
+    expect(
+      (t0.lyricsPlain, t0.lyricsSynced, t0.curiosities),
+      ('la la', '[00:01.00]la', 'curious'),
+    );
     final pl = await fresh.select(fresh.playlists).getSingle();
     expect(pl.name, 'Mix');
     final items = await fresh.select(fresh.playlistTracks).get();
-    expect([for (final i in items) (i.trackId, i.position)], [(1, 0), (3, 1), (2, 2)]);
+    expect(
+      [for (final i in items) (i.trackId, i.position)],
+      [(1, 0), (3, 1), (2, 2)],
+    );
   }
 
   test('a backup in today\'s format restores into a fresh library with the same user data', () async {
     final fresh = await freshLibrary();
-    await restoreInto(fresh, edit: (j) {
-      expect(j['manifest.json']!['playlistCount'], 1);
-      expect(j['manifest.json']!['trackCount'], 3);
-    });
+    await restoreInto(
+      fresh,
+      edit: (j) {
+        expect(j['manifest.json']!['playlistCount'], 1);
+        expect(j['manifest.json']!['trackCount'], 3);
+      },
+    );
     await expectSameUserData(fresh);
   });
 

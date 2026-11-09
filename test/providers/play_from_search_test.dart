@@ -495,28 +495,31 @@ void main() {
     },
   );
 
-  test('an artist blocked while a song is registered: that song is not inserted', () async {
-    final id = online.register(_r('s'));
-    await handler.playQueue([id], 0);
-    var first = true;
-    final s = sessionFor(
-      id,
-      's',
-      hold: () {
-        if (!first) return null;
-        first = false;
-        dislikeGate.store.blockArtist(
-          const DislikedArtist(key: 'artist r1 0', name: 'Artist r1_0'),
-        );
-        return null;
-      },
-    );
-    await s.start();
-    expect(suggested, isNot(contains('r1_0')));
-    expect(suggested, ['r1_1', 'r1_2']);
-    expect(handler.queueIds.length, 3);
-    s.close();
-  });
+  test(
+    'an artist blocked while a song is registered: that song is not inserted',
+    () async {
+      final id = online.register(_r('s'));
+      await handler.playQueue([id], 0);
+      var first = true;
+      final s = sessionFor(
+        id,
+        's',
+        hold: () {
+          if (!first) return null;
+          first = false;
+          dislikeGate.store.blockArtist(
+            const DislikedArtist(key: 'artist r1 0', name: 'Artist r1_0'),
+          );
+          return null;
+        },
+      );
+      await s.start();
+      expect(suggested, isNot(contains('r1_0')));
+      expect(suggested, ['r1_1', 'r1_2']);
+      expect(handler.queueIds.length, 3);
+      s.close();
+    },
+  );
 
   test('inserts during a refill do not start another one', () async {
     final id = online.register(_r('s'));

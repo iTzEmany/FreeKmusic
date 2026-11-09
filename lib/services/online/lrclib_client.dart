@@ -34,21 +34,27 @@ class LrclibClient {
     final attempts = <(String, String)>[(artist, title)];
     if (primary != artist || core != title) attempts.add((primary, core));
     for (final (a, t) in attempts) {
-      final get = await _web.getJson('$_base/get',
-          query: {
-            'artist_name': a,
-            'track_name': t,
-            if (album != null && album.isNotEmpty) 'album_name': album,
-            if (durationSec != null) 'duration': '$durationSec',
-          },
-          cancel: cancel,
-          strict: strict);
+      final get = await _web.getJson(
+        '$_base/get',
+        query: {
+          'artist_name': a,
+          'track_name': t,
+          if (album != null && album.isNotEmpty) 'album_name': album,
+          if (durationSec != null) 'duration': '$durationSec',
+        },
+        cancel: cancel,
+        strict: strict,
+      );
       final direct = _validated(get, artist, durationSec);
       if (direct != null) return direct;
     }
     for (final (a, t) in attempts) {
-      final search = await _web.getJson('$_base/search',
-          query: {'track_name': t, 'artist_name': a}, cancel: cancel, strict: strict);
+      final search = await _web.getJson(
+        '$_base/search',
+        query: {'track_name': t, 'artist_name': a},
+        cancel: cancel,
+        strict: strict,
+      );
       if (search is List) {
         for (final item in search) {
           final ok = _validated(item, artist, durationSec);

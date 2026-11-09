@@ -41,7 +41,11 @@ void main() {
       expect(find.text(s), findsOneWidget, reason: s);
     }
     expect(find.textContaining('Notte'), findsOneWidget);
-    expect(find.text('Dissolvenza'), findsNothing, reason: 'tiles live on the pages');
+    expect(
+      find.text('Dissolvenza'),
+      findsNothing,
+      reason: 'tiles live on the pages',
+    );
     await h.dispose(t);
   });
 
@@ -59,20 +63,25 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('network page without trusted devices: one group, no title, summary is the device name', (t) async {
-    _size(t, 400, 1200);
-    final h = await Harness.create(t);
-    await h.pump(t, const Scaffold(body: SettingsScreen()));
-    final name = _container(t).read(deviceNameProvider);
-    expect(find.text(name), findsOneWidget);
-    await t.tap(find.text('Rete e dispositivi'));
-    await t.pumpAndSettle();
-    expect(find.text('Rete locale'), findsNothing);
-    expect(find.text('Dispositivi fidati'), findsNothing);
-    await h.dispose(t);
-  });
+  testWidgets(
+    'network page without trusted devices: one group, no title, summary is the device name',
+    (t) async {
+      _size(t, 400, 1200);
+      final h = await Harness.create(t);
+      await h.pump(t, const Scaffold(body: SettingsScreen()));
+      final name = _container(t).read(deviceNameProvider);
+      expect(find.text(name), findsOneWidget);
+      await t.tap(find.text('Rete e dispositivi'));
+      await t.pumpAndSettle();
+      expect(find.text('Rete locale'), findsNothing);
+      expect(find.text('Dispositivi fidati'), findsNothing);
+      await h.dispose(t);
+    },
+  );
 
-  testWidgets('network page: unblocking removes the entry without reopening', (t) async {
+  testWidgets('network page: unblocking removes the entry without reopening', (
+    t,
+  ) async {
     _size(t, 400, 1200);
     final h = await Harness.create(t);
     await h.pump(t, const Scaffold(body: SettingsScreen()));
@@ -89,7 +98,10 @@ void main() {
   testWidgets('online page keeps enrich and auto tiles', (t) async {
     _size(t, 400, 1200);
     final h = await Harness.create(t);
-    await h.pump(t, const Scaffold(body: SettingsScreen(initial: SettingsPage.online)));
+    await h.pump(
+      t,
+      const Scaffold(body: SettingsScreen(initial: SettingsPage.online)),
+    );
     expect(find.text('Arricchisci tutta la libreria'), findsOneWidget);
     expect(find.text('Arricchimento automatico'), findsOneWidget);
     expect(find.text('Testi automatici'), findsOneWidget);
@@ -99,13 +111,18 @@ void main() {
   testWidgets('backup page keeps create and restore', (t) async {
     _size(t, 400, 1200);
     final h = await Harness.create(t);
-    await h.pump(t, const Scaffold(body: SettingsScreen(initial: SettingsPage.backup)));
+    await h.pump(
+      t,
+      const Scaffold(body: SettingsScreen(initial: SettingsPage.backup)),
+    );
     expect(find.text('Crea backup'), findsOneWidget);
     expect(find.text('Ripristina da backup'), findsOneWidget);
     await h.dispose(t);
   });
 
-  testWidgets('library summary counts all tracks, not the search result', (t) async {
+  testWidgets('library summary counts all tracks, not the search result', (
+    t,
+  ) async {
     _size(t, 400, 800);
     final h = await Harness.create(t, tracks: 3);
     await h.pump(t, const Scaffold(body: SettingsScreen()));
@@ -121,7 +138,10 @@ void main() {
   testWidgets('a page with several groups keeps their titles', (t) async {
     _size(t, 400, 1200);
     final h = await Harness.create(t);
-    await h.pump(t, const Scaffold(body: SettingsScreen(initial: SettingsPage.appearance)));
+    await h.pump(
+      t,
+      const Scaffold(body: SettingsScreen(initial: SettingsPage.appearance)),
+    );
     expect(find.text('Aspetto'), findsOneWidget);
     expect(find.text('Lingua'), findsOneWidget);
     await h.dispose(t);
@@ -134,16 +154,24 @@ void main() {
       t,
       Builder(
         builder: (c) => MediaQuery(
-          data: MediaQuery.of(c).copyWith(textScaler: const TextScaler.linear(1.5)),
+          data: MediaQuery.of(c)
+              .copyWith(textScaler: const TextScaler.linear(1.5)),
           child: const Scaffold(body: SettingsScreen()),
         ),
       ),
     );
     final c = _container(t);
-    c.read(customThemesProvider.notifier).put(
-          const CustomTheme(id: 'long', name: 'Un tema dal nome molto lungo che non sta in una riga sola'),
+    c
+        .read(customThemesProvider.notifier)
+        .put(
+          const CustomTheme(
+            id: 'long',
+            name: 'Un tema dal nome molto lungo che non sta in una riga sola',
+          ),
         );
-    c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: customThemeSettingValue('long')));
+    c
+        .read(settingsProvider.notifier)
+        .update((s) => s.copyWith(theme: customThemeSettingValue('long')));
     await t.pump(const Duration(milliseconds: 300));
     expect(t.takeException(), isNull);
     final summary = find.textContaining('Un tema dal nome');
@@ -163,7 +191,10 @@ void main() {
     await t.tap(find.text('Backup'));
     await t.pumpAndSettle();
     expect(find.text('Crea backup'), findsOneWidget);
-    expect(t.widget<ListTile>(find.widgetWithText(ListTile, 'Backup')).selected, isTrue);
+    expect(
+      t.widget<ListTile>(find.widgetWithText(ListTile, 'Backup')).selected,
+      isTrue,
+    );
     await h.dispose(t);
   });
 
@@ -180,7 +211,10 @@ void main() {
     t.view.physicalSize = const Size(1280, 800);
     await t.pumpAndSettle();
     expect(t.takeException(), isNull);
-    expect(t.widget<ListTile>(find.widgetWithText(ListTile, 'Backup')).selected, isTrue);
+    expect(
+      t.widget<ListTile>(find.widgetWithText(ListTile, 'Backup')).selected,
+      isTrue,
+    );
     expect(find.text('Crea backup'), findsOneWidget);
     await h.dispose(t);
   });
@@ -190,10 +224,14 @@ void main() {
     final h = await Harness.create(t);
     await h.pump(t, const Scaffold(body: SettingsScreen()));
     final entry = find.widgetWithText(ListTile, 'Riproduzione');
-    bool focused() => t
-        .widgetList<Focus>(find.descendant(of: entry, matching: find.byType(Focus)))
-        .any((f) => f.focusNode?.hasFocus ?? false) ||
-        FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<ListTile>() ==
+    bool focused() =>
+        t
+            .widgetList<Focus>(
+              find.descendant(of: entry, matching: find.byType(Focus)),
+            )
+            .any((f) => f.focusNode?.hasFocus ?? false) ||
+        FocusManager.instance.primaryFocus?.context
+                ?.findAncestorWidgetOfExactType<ListTile>() ==
             t.widget<ListTile>(entry);
     for (var i = 0; i < 20 && !focused(); i++) {
       await t.sendKeyEvent(LogicalKeyboardKey.tab);

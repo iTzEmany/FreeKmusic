@@ -24,7 +24,10 @@ class SettingsNotifier extends Notifier<AppSettings> {
     state = change(state);
     // Tracks passed over while AcoustID was off must be asked again.
     if (!before.acoustId && state.acoustId) {
-      ref.read(settingsStoreProvider).writeRecogPassDone(0).catchError((Object e, StackTrace st) {
+      ref.read(settingsStoreProvider).writeRecogPassDone(0).catchError((
+        Object e,
+        StackTrace st,
+      ) {
         AppLog.w('save settings failed', e, st);
       });
     }
@@ -55,6 +58,7 @@ class UnsyncedLyricsNotifier extends Notifier<Set<int>> {
   }
 }
 
-final unsyncedLyricsProvider = NotifierProvider<UnsyncedLyricsNotifier, Set<int>>(
-  UnsyncedLyricsNotifier.new,
-);
+final unsyncedLyricsProvider =
+    NotifierProvider<UnsyncedLyricsNotifier, Set<int>>(
+      UnsyncedLyricsNotifier.new,
+    );

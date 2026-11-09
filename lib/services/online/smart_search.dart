@@ -102,23 +102,22 @@ class SmartSearchState {
     List<YtmArtistRef>? artists,
     List<YtmAlbumHit>? albums,
     Object? error,
-  }) =>
-      SmartSearchState(
-        query: query,
-        queryKind: queryKind,
-        listingUrl: listingUrl,
-        intent: intent ?? this.intent,
-        intentKnown: intentKnown ?? this.intentKnown,
-        card: card ?? this.card,
-        best: best ?? this.best,
-        others: others ?? this.others,
-        noneSure: noneSure ?? this.noneSure,
-        pending: pending ?? this.pending,
-        notices: notices ?? this.notices,
-        artists: artists ?? this.artists,
-        albums: albums ?? this.albums,
-        error: error ?? this.error,
-      );
+  }) => SmartSearchState(
+    query: query,
+    queryKind: queryKind,
+    listingUrl: listingUrl,
+    intent: intent ?? this.intent,
+    intentKnown: intentKnown ?? this.intentKnown,
+    card: card ?? this.card,
+    best: best ?? this.best,
+    others: others ?? this.others,
+    noneSure: noneSure ?? this.noneSure,
+    pending: pending ?? this.pending,
+    notices: notices ?? this.notices,
+    artists: artists ?? this.artists,
+    albums: albums ?? this.albums,
+    error: error ?? this.error,
+  );
 }
 
 const _resultsPerSource = 10;
@@ -150,9 +149,11 @@ class SmartSearch {
     this.cap = const Duration(milliseconds: 1500),
     this.libraryArtists,
     WindowLimiter? rowsLimiter,
-  })  : _now = now ?? DateTime.now,
-        cooldown = cooldown ?? SourceCooldown(now: now),
-        rowsLimiter = rowsLimiter ?? WindowLimiter(perMinute: kSearchRowsPerMinute, now: now);
+  }) : _now = now ?? DateTime.now,
+       cooldown = cooldown ?? SourceCooldown(now: now),
+       rowsLimiter =
+           rowsLimiter ??
+           WindowLimiter(perMinute: kSearchRowsPerMinute, now: now);
 
   final YoutubeService youtube;
   final YtmCatalog catalog;
@@ -174,7 +175,11 @@ class SmartSearch {
   /// block (when both sources answered, or [cap] after the first), then one
   /// per late answer. Cancelling the subscription drops what is still coming.
   /// [refresh] skips the saved copy.
-  Stream<SmartSearchState> run(String query, String hl, {bool refresh = false}) {
+  Stream<SmartSearchState> run(
+    String query,
+    String hl, {
+    bool refresh = false,
+  }) {
     late final StreamController<SmartSearchState> out;
     final search = _Run(this, query.trim(), hl, refresh);
     out = StreamController<SmartSearchState>(
@@ -194,8 +199,12 @@ class SmartSearch {
     return hit;
   }
 
-  void _store(String key, SmartSearchState state,
-      {bool rowsMissing = false, DateTime? storedAt}) {
+  void _store(
+    String key,
+    SmartSearchState state, {
+    bool rowsMissing = false,
+    DateTime? storedAt,
+  }) {
     _cache.remove(key);
     _cache[key] = _Cached(state, storedAt ?? _now(), rowsMissing: rowsMissing);
     while (_cache.length > _cacheSize) {
@@ -262,8 +271,13 @@ class _Run {
     final kind = classifyQuery(query);
     if (query.isEmpty) return;
     if (kind.kind == QueryKind.listing) {
-      _emit(SmartSearchState(
-          query: query, queryKind: QueryKind.listing, listingUrl: kind.url));
+      _emit(
+        SmartSearchState(
+          query: query,
+          queryKind: QueryKind.listing,
+          listingUrl: kind.url,
+        ),
+      );
       return;
     }
     final isVideoUrl = kind.kind == QueryKind.video;
@@ -287,20 +301,26 @@ class _Run {
       }
     }
     if (_asked.isEmpty) {
-      _emit(SmartSearchState(
+      _emit(
+        SmartSearchState(
           query: query,
           queryKind: kind.kind,
           notices: _notices,
-          error: const YtException(YtErrorKind.rateLimited, 'sources paused')));
+          error: const YtException(YtErrorKind.rateLimited, 'sources paused'),
+        ),
+      );
       return;
     }
     _cardAsked = !isVideoUrl && _asked.contains(MediaKind.ytmSong);
-    _emit(SmartSearchState(
+    _emit(
+      SmartSearchState(
         query: query,
         queryKind: kind.kind,
         intentKnown: false,
         pending: {..._asked},
-        notices: [..._notices]));
+        notices: [..._notices],
+      ),
+    );
 
     final done = Completer<void>(), rowsDone = Completer<void>();
     void settled() {
@@ -318,38 +338,50 @@ class _Run {
     }
 
     if (_asked.contains(MediaKind.ytmSong)) {
-      unawaited(_ask(() => engine.youtube.searchSongs(query, limit: _resultsPerSource),
-              MediaKind.ytmSong)
-          .then((a) {
-        _songs = a;
-        settled();
-      }));
+      unawaited(
+        _ask(
+          () => engine.youtube.searchSongs(query, limit: _resultsPerSource),
+          MediaKind.ytmSong,
+        ).then((a) {
+          _songs = a;
+          settled();
+        }),
+      );
     }
     if (_asked.contains(MediaKind.ytVideo)) {
-      unawaited(_ask(() async {
-        final all = await engine.youtube.search(query);
-        return all.take(_resultsPerSource).toList();
-      }, MediaKind.ytVideo)
-          .then((a) {
-        _videos = a;
-        settled();
-      }));
+      unawaited(
+        _ask(() async {
+          final all = await engine.youtube.search(query);
+          return all.take(_resultsPerSource).toList();
+        }, MediaKind.ytVideo).then((a) {
+          _videos = a;
+          settled();
+        }),
+      );
     }
     if (_cardAsked) {
-      unawaited(_askCard().then((a) {
-        _card = a;
-        settled();
-      }));
+      unawaited(
+        _askCard().then((a) {
+          _card = a;
+          settled();
+        }),
+      );
     }
     // Both rows or none: artists without albums would look like a result.
     if (_cardAsked && engine.rowsLimiter.tryAcquire(2)) {
       _rowsOpen = 2;
-      unawaited(_row(() => engine.catalog.searchArtists(query, hl, cancel: _token),
-              (v) => _artists = v)
-          .then((_) => rowIn()));
-      unawaited(_row(() => engine.catalog.searchAlbums(query, hl, cancel: _token),
-              (v) => _albums = v)
-          .then((_) => rowIn()));
+      unawaited(
+        _row(
+          () => engine.catalog.searchArtists(query, hl, cancel: _token),
+          (v) => _artists = v,
+        ).then((_) => rowIn()),
+      );
+      unawaited(
+        _row(
+          () => engine.catalog.searchAlbums(query, hl, cancel: _token),
+          (v) => _albums = v,
+        ).then((_) => rowIn()),
+      );
     } else {
       if (_cardAsked) {
         AppLog.d('search rows: request budget used up, rows left out');
@@ -373,8 +405,14 @@ class _Run {
     final rows = budgetedYtm(engine.cooldown, engine.rowsLimiter, () {
       _rowsOpen = 2;
       return Future.wait([
-        _row(() => engine.catalog.searchArtists(query, hl, cancel: _token), (v) => _artists = v),
-        _row(() => engine.catalog.searchAlbums(query, hl, cancel: _token), (v) => _albums = v),
+        _row(
+          () => engine.catalog.searchArtists(query, hl, cancel: _token),
+          (v) => _artists = v,
+        ),
+        _row(
+          () => engine.catalog.searchAlbums(query, hl, cancel: _token),
+          (v) => _albums = v,
+        ),
       ]);
     }, cost: 2);
     if (rows == null) return;
@@ -391,7 +429,9 @@ class _Run {
       (!_cardAsked || _card != null);
 
   Future<_Answer<List<YtResult>>> _ask(
-      Future<List<YtResult>> Function() call, MediaKind source) async {
+    Future<List<YtResult>> Function() call,
+    MediaKind source,
+  ) async {
     try {
       return _Answer.ok(await call());
     } on Object catch (e) {
@@ -403,7 +443,9 @@ class _Run {
 
   Future<_Answer<TopCard?>> _askCard() async {
     try {
-      return _Answer.ok(await engine.catalog.topCard(query, hl, cancel: _token));
+      return _Answer.ok(
+        await engine.catalog.topCard(query, hl, cancel: _token),
+      );
     } on Object catch (e) {
       if (_cancelled) return _Answer.failed(e);
       // The card is a bonus: its failure is not shown, but a 429 is remembered.
@@ -417,7 +459,10 @@ class _Run {
 
   /// One row's request. Its failure is not shown (the row is a bonus), but a
   /// 429 is remembered and a failed row keeps the rows out of the saved copy.
-  Future<void> _row<T>(Future<List<T>> Function() call, void Function(List<T>) put) async {
+  Future<void> _row<T>(
+    Future<List<T>> Function() call,
+    void Function(List<T>) put,
+  ) async {
     try {
       put((await call()).take(_rowLimit).toList());
     } on Object catch (e) {
@@ -445,12 +490,12 @@ class _Run {
   }
 
   Set<MediaKind> get _pending => {
-        if (_asked.contains(MediaKind.ytmSong) && _songs == null) MediaKind.ytmSong,
-        if (_asked.contains(MediaKind.ytVideo) && _videos == null) MediaKind.ytVideo,
-      };
+    if (_asked.contains(MediaKind.ytmSong) && _songs == null) MediaKind.ytmSong,
+    if (_asked.contains(MediaKind.ytVideo) && _videos == null)
+      MediaKind.ytVideo,
+  };
 
-  bool get _anyResult =>
-      _songs?.value != null || _videos?.value != null;
+  bool get _anyResult => _songs?.value != null || _videos?.value != null;
 
   /// A source answered (or failed): shows the first block when it is time,
   /// else folds the answer into what is on screen.
@@ -476,13 +521,18 @@ class _Run {
     final songs = _songs?.value ?? const <YtResult>[];
     final videos = _videos?.value ?? const <YtResult>[];
     if (classifyQuery(query).kind == QueryKind.video) {
-      return [for (final (i, r) in videos.indexed) ScoredResult(r, 1, MediaKind.ytVideo, i)];
+      return [
+        for (final (i, r) in videos.indexed)
+          ScoredResult(r, 1, MediaKind.ytVideo, i),
+      ];
     }
-    return scoreAll(query,
-        songs: songs,
-        videos: videos,
-        card: useCard ? _card?.value : null,
-        libraryArtists: engine.libraryArtists?.call() ?? const {});
+    return scoreAll(
+      query,
+      songs: songs,
+      videos: videos,
+      card: useCard ? _card?.value : null,
+      libraryArtists: engine.libraryArtists?.call() ?? const {},
+    );
   }
 
   /// What the phrase is, and whether that is known yet: from the card once it
@@ -499,20 +549,23 @@ class _Run {
   SmartSearchState _base(QueryKind kind) {
     final (intent, known) = _intent();
     return SmartSearchState(
-        query: query,
-        queryKind: kind,
-        card: _card?.value,
-        intent: intent,
-        intentKnown: known,
-        pending: _pending,
-        notices: [..._notices],
-      );
+      query: query,
+      queryKind: kind,
+      card: _card?.value,
+      intent: intent,
+      intentKnown: known,
+      pending: _pending,
+      notices: [..._notices],
+    );
   }
 
   void _showFirst(QueryKind kind) {
     final (intent, known) = _intent();
-    final split = splitBest(mergeResults(_scored(useCard: true)), kBestThreshold,
-        maxBest: _maxBest);
+    final split = splitBest(
+      mergeResults(_scored(useCard: true)),
+      kBestThreshold,
+      maxBest: _maxBest,
+    );
     final state = SmartSearchState(
       query: query,
       queryKind: kind,
@@ -581,7 +634,8 @@ class _Run {
       artists: _artists,
       albums: _albums,
     );
-    final changed = !identical(state.card, prev.card) ||
+    final changed =
+        !identical(state.card, prev.card) ||
         state.intent != prev.intent ||
         state.intentKnown != prev.intentKnown ||
         !_sameRows(state.best, prev.best) ||
@@ -596,9 +650,11 @@ class _Run {
 
   bool _sameRows(List<SmartResult> a, List<SmartResult> b) =>
       a.length == b.length &&
-      Iterable<int>.generate(a.length).every((i) =>
-          a[i].primary.id == b[i].primary.id &&
-          a[i].alternatives.length == b[i].alternatives.length);
+      Iterable<int>.generate(a.length).every(
+        (i) =>
+            a[i].primary.id == b[i].primary.id &&
+            a[i].alternatives.length == b[i].alternatives.length,
+      );
 
   /// The main answers are in: the error at once if every source failed (the
   /// rows are dropped), else the copy kept for ten minutes. False when there is
@@ -607,8 +663,14 @@ class _Run {
     final queryKind = classifyQuery(query).kind;
     if (_shown == null && !_anyResult) {
       // Every source failed.
-      final first = [_songs, _videos].whereType<_Answer>().map((a) => a.error).nonNulls;
-      _emit(_base(queryKind).copyWith(error: first.isEmpty ? 'no answer' : first.first));
+      final first = [
+        _songs,
+        _videos,
+      ].whereType<_Answer>().map((a) => a.error).nonNulls;
+      _emit(
+        _base(queryKind)
+            .copyWith(error: first.isEmpty ? 'no answer' : first.first),
+      );
       cancel();
       return false;
     }

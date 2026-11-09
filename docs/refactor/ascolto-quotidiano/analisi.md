@@ -108,3 +108,20 @@ Widget (solo 3): foglio «brano o artista»; Annulla dopo «Non mi piace» (D-44
 
 ### Comandi mirati
 Elencati in ogni `docs/fase-N-*.md`. Suite completa in locale una sola volta, prima della PR della fase podcast (v19 su `podcasts`, `watchResumable` su `tracks`).
+
+## Stato finale (fase 105, 2026-11-09)
+Fasi 98–104 chiuse (PR #128–#140), la 105 chiude il refactor. Metriche di arrivo misurate sul ramo della 105:
+
+| Metrica | Valore | Esito |
+|---|---|---|
+| Chiave artista unica | 1 (`lib/core/artist_key.dart:19`, dentro `artistKey`) | ok |
+| Logica 429 unica | `budgeted_call.dart`; in più `request_budget.dart` (definizione di `tryAcquire` e la sua attesa) e `smart_search.dart:345` (`rowsLimiter`, limite delle righe della card, non un 429) | ok |
+| Scaffali fuori da `lib/ui` | solo `artist_page_screen.dart` | ok |
+| Giro estratto | 1 in `genre_mix.dart` | ok |
+| Filtro dei «non mi piace» unico | 0 file con `disliked(`: il filtro è `SuggestionGate.allows` sullo store `DislikeStore.trackBlocked/artistBlocked` | ok (la metrica cercava un nome che non è stato usato) |
+| Schema | `kSchemaVersion = 19` | ok |
+| Formato dei 4 file e dei file toccati | 162 dei 208 file toccati dalle fasi 98–104 non erano formattati: commit di sola formattazione nella 105 (larghezza 80, graffe negli `if` che vanno a capo), poi 0 | ok dopo la 105 |
+| Analisi | «No issues found» | ok |
+| Script delle misure | `perf_device.py 0d7ae9df206e --only Album --label fase105` gira da solo in 4 min 35 s (build profile compresa), senza «Tutti i brani»: Album 650 frame, build p50/p90/p99 3,0/5,1/9,8 ms, frame > 16,7 ms 1,5 % | ok |
+
+Review di architettura Opus sul diff 98–104: 4 bug corretti nella 105 (daylist salvata dopo una sostituzione totale del backup, «Non mi piace» dalla daylist senza coda e registro, episodi YouTube Music dello stesso video in due show, segnalibro dopo «Segna come non ascoltato»), 3 voci di debito in `prossimi-lavori.md` §6. Prova sul Mi A3 contro i mockup: vedi gli esiti in `docs/fase-105-chiusura-ascolto.md`.
