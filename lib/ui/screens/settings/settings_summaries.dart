@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_info.dart';
 import '../../../core/constants.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/daylist_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/share_providers.dart';
@@ -44,6 +45,8 @@ String settingsSummary(BuildContext context, WidgetRef ref, SettingsPage p) {
       final tracks = ref.watch(trackCountProvider).value;
       // Nothing until both are known: no "0 cartelle, 0 brani" flash.
       return folders == null || tracks == null ? '' : l.summaryLibrary(folders, tracks);
+    case SettingsPage.daylist:
+      return l.daylistSummaryPage(ref.watch(daylistConfigProvider).slots.where((s) => s.enabled).length);
     case SettingsPage.online:
       return kEnableYoutube
           ? downloadFormatLabel(l, s.downloadFormat)

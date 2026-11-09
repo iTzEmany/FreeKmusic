@@ -7043,4 +7043,291 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lyricsSaveFailed => 'Could not save the lyrics';
+
+  @override
+  String get daylistSlot0 => 'Early morning';
+
+  @override
+  String get daylistSlot1 => 'Late morning';
+
+  @override
+  String get daylistSlot2 => 'Early afternoon';
+
+  @override
+  String get daylistSlot3 => 'Late afternoon';
+
+  @override
+  String get daylistSlot4 => 'Evening';
+
+  @override
+  String get daylistSlot5 => 'Late evening';
+
+  @override
+  String get daylistSlot6 => 'Night';
+
+  @override
+  String get daylistSlot7 => 'Late night';
+
+  @override
+  String get daylistMoodEnergetic => 'Energetic';
+
+  @override
+  String get daylistMoodCheerful => 'Cheerful';
+
+  @override
+  String get daylistMoodCalm => 'Calm';
+
+  @override
+  String get daylistMoodRelaxing => 'Relaxing';
+
+  @override
+  String get daylistMoodMelancholic => 'Melancholic';
+
+  @override
+  String get daylistMoodFocus => 'Focus';
+
+  @override
+  String get daylistTitle => 'Daylist';
+
+  @override
+  String get daylistNow => 'Daylist, now';
+
+  @override
+  String daylistCardMeta(num count, Object time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks',
+      one: '1 track',
+    );
+    return '$_temp0, changes at $time';
+  }
+
+  @override
+  String daylistCardLabel(num count, Object name, Object time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks',
+      one: '1 track',
+    );
+    return 'Daylist: $name. $_temp0. Updates at $time';
+  }
+
+  @override
+  String get daylistPlay => 'Play the daylist';
+
+  @override
+  String daylistUpdates(Object slot, Object time) {
+    return 'Updates at $time with “$slot”';
+  }
+
+  @override
+  String daylistShortNote(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Only $count tracks: the library has few for this part of the day.',
+      one: 'Only 1 track: the library has few for this part of the day.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String daylistSuggestedCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count suggestions',
+      one: '1 suggestion',
+    );
+    return '$_temp0 from YouTube Music';
+  }
+
+  @override
+  String get daylistGenres => 'Genres of the daylist';
+
+  @override
+  String get daylistSettingsOpen => 'Daylist settings';
+
+  @override
+  String get daylistEmpty => 'No daylist for this part of the day';
+
+  @override
+  String get settingsPageDaylist => 'Daylist';
+
+  @override
+  String get daylistIntro =>
+      'A 50-track playlist that changes with every part of the day. Tap a slot to choose its genres and moods.';
+
+  @override
+  String daylistSummaryPage(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count slots on',
+      one: '1 slot on',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String daylistSlotSummary(Object genres, Object percent) {
+    return '$genres, share $percent%';
+  }
+
+  @override
+  String get daylistSlotOff => 'Off';
+
+  @override
+  String get daylistTooFewWarn => 'Fewer than 15 tracks: no daylist is made';
+
+  @override
+  String daylistSlotRowLabel(Object name, Object summary, Object time) {
+    return '$name, $time, $summary';
+  }
+
+  @override
+  String daylistSwitchOn(Object name) {
+    return '$name, on';
+  }
+
+  @override
+  String daylistSwitchOff(Object name) {
+    return '$name, off';
+  }
+
+  @override
+  String get daylistMoodTable => 'Genre and mood';
+
+  @override
+  String get daylistMoodTableSub => 'How each genre maps to moods';
+
+  @override
+  String get daylistResetAll => 'Restore the defaults';
+
+  @override
+  String get daylistResetTitle => 'Restore everything?';
+
+  @override
+  String get daylistResetBody =>
+      'Times, genres, moods and shares of all slots and the genre and mood table go back to the defaults. Daylists already made stay until the next change.';
+
+  @override
+  String get daylistResetGo => 'Restore';
+
+  @override
+  String get daylistSlotSwitch => 'Daylist in this slot';
+
+  @override
+  String daylistRegenAt(Object time) {
+    return 'Rebuilt at $time';
+  }
+
+  @override
+  String get daylistNoCard => 'No card on Home';
+
+  @override
+  String get daylistStartsAt => 'Starts at';
+
+  @override
+  String daylistEndsAt(Object time) {
+    return 'Ends at $time';
+  }
+
+  @override
+  String get daylistEarlier => 'One hour earlier';
+
+  @override
+  String get daylistLater => 'One hour later';
+
+  @override
+  String get daylistPrefer => 'Genres to prefer';
+
+  @override
+  String get daylistAvoid => 'Genres to avoid';
+
+  @override
+  String get daylistAdd => 'Add';
+
+  @override
+  String get daylistAddPrefer => 'Add a genre to prefer';
+
+  @override
+  String get daylistAddAvoid => 'Add a genre to avoid';
+
+  @override
+  String daylistAddNamed(Object genre) {
+    return 'Add $genre';
+  }
+
+  @override
+  String daylistRemovePrefer(Object genre) {
+    return '$genre, preferred, tap to remove';
+  }
+
+  @override
+  String daylistRemoveAvoid(Object genre) {
+    return '$genre, avoided, tap to remove';
+  }
+
+  @override
+  String get daylistMoods => 'Moods';
+
+  @override
+  String get daylistShare => 'Share of online suggestions';
+
+  @override
+  String get daylistShareFrom => 'Suggested by YouTube Music';
+
+  @override
+  String get daylistShareSlider => 'Share of suggestions, percent';
+
+  @override
+  String get daylistShareOwn => '0% only mine';
+
+  @override
+  String daylistShareSplit(Object own, Object suggested) {
+    return '$own of mine + $suggested suggested';
+  }
+
+  @override
+  String get daylistResetSlot => 'Restore this slot to the defaults';
+
+  @override
+  String get daylistMoodHelp =>
+      'The moods of each genre. They help pick tracks for slots with a given mood.';
+
+  @override
+  String get daylistGenreSearch => 'Search a genre';
+
+  @override
+  String daylistGenreCount(Object n, Object total) {
+    return '$n of $total genres';
+  }
+
+  @override
+  String get daylistNoMood => 'no mood';
+
+  @override
+  String daylistMoodCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count moods',
+      one: '1 mood',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String daylistNoGenre(Object query) {
+    return 'No genre matches “$query”. New genres of the library show up here without a mood.';
+  }
+
+  @override
+  String daylistGenreMoodLabel(Object genre, Object mood) {
+    return '$genre, $mood';
+  }
 }

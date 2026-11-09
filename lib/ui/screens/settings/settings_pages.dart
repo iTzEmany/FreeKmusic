@@ -41,6 +41,7 @@ import 'jam_remote_settings.dart';
 import 'trusted_devices_tiles.dart';
 import 'translation_models_tiles.dart';
 import 'update_tiles.dart';
+import 'daylist_settings.dart';
 import 'dislikes_screen.dart';
 import 'shuffle_plus_tiles.dart';
 import 'release_settings_tiles.dart';
@@ -65,6 +66,7 @@ enum SettingsPage {
   appearance,
   playback,
   library,
+  daylist,
   online,
   network,
   backup,
@@ -75,6 +77,7 @@ String settingsPageTitle(AppLocalizations l, SettingsPage p) => switch (p) {
   SettingsPage.appearance => l.settingsPageAppearance,
   SettingsPage.playback => l.settingsPagePlayback,
   SettingsPage.library => l.settingsPageLibrary,
+  SettingsPage.daylist => l.settingsPageDaylist,
   SettingsPage.online => l.settingsPageOnline,
   SettingsPage.network => l.settingsPageNetwork,
   SettingsPage.backup => l.settingsPageBackup,
@@ -104,6 +107,10 @@ class SettingsPageView extends ConsumerWidget {
       SettingsPage.appearance => _appearance(context, ref),
       SettingsPage.playback => _playback(context, ref),
       SettingsPage.library => _library(context, ref),
+      SettingsPage.daylist => const [
+        SettingsGroup(children: [DaylistSlotsTiles()]),
+        SettingsGroup(children: [DaylistExtraTiles()]),
+      ],
       SettingsPage.online => _online(context, ref),
       SettingsPage.network => _network(context, ref),
       SettingsPage.backup => _backup(context, ref),

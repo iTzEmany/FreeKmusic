@@ -11298,6 +11298,420 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Impossibile salvare il testo'**
   String get lyricsSaveFailed;
+
+  /// No description provided for @daylistSlot0.
+  ///
+  /// In it, this message translates to:
+  /// **'Mattina presto'**
+  String get daylistSlot0;
+
+  /// No description provided for @daylistSlot1.
+  ///
+  /// In it, this message translates to:
+  /// **'Tarda mattinata'**
+  String get daylistSlot1;
+
+  /// No description provided for @daylistSlot2.
+  ///
+  /// In it, this message translates to:
+  /// **'Primo pomeriggio'**
+  String get daylistSlot2;
+
+  /// No description provided for @daylistSlot3.
+  ///
+  /// In it, this message translates to:
+  /// **'Tardo pomeriggio'**
+  String get daylistSlot3;
+
+  /// No description provided for @daylistSlot4.
+  ///
+  /// In it, this message translates to:
+  /// **'Sera'**
+  String get daylistSlot4;
+
+  /// No description provided for @daylistSlot5.
+  ///
+  /// In it, this message translates to:
+  /// **'Tarda sera'**
+  String get daylistSlot5;
+
+  /// No description provided for @daylistSlot6.
+  ///
+  /// In it, this message translates to:
+  /// **'Notte'**
+  String get daylistSlot6;
+
+  /// No description provided for @daylistSlot7.
+  ///
+  /// In it, this message translates to:
+  /// **'Tarda notte'**
+  String get daylistSlot7;
+
+  /// No description provided for @daylistMoodEnergetic.
+  ///
+  /// In it, this message translates to:
+  /// **'Energico'**
+  String get daylistMoodEnergetic;
+
+  /// No description provided for @daylistMoodCheerful.
+  ///
+  /// In it, this message translates to:
+  /// **'Allegro'**
+  String get daylistMoodCheerful;
+
+  /// No description provided for @daylistMoodCalm.
+  ///
+  /// In it, this message translates to:
+  /// **'Tranquillo'**
+  String get daylistMoodCalm;
+
+  /// No description provided for @daylistMoodRelaxing.
+  ///
+  /// In it, this message translates to:
+  /// **'Rilassante'**
+  String get daylistMoodRelaxing;
+
+  /// No description provided for @daylistMoodMelancholic.
+  ///
+  /// In it, this message translates to:
+  /// **'Malinconico'**
+  String get daylistMoodMelancholic;
+
+  /// No description provided for @daylistMoodFocus.
+  ///
+  /// In it, this message translates to:
+  /// **'Concentrazione'**
+  String get daylistMoodFocus;
+
+  /// No description provided for @daylistTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Daylist'**
+  String get daylistTitle;
+
+  /// No description provided for @daylistNow.
+  ///
+  /// In it, this message translates to:
+  /// **'Daylist, adesso'**
+  String get daylistNow;
+
+  /// No description provided for @daylistCardMeta.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano} other{{count} brani}}, cambia alle {time}'**
+  String daylistCardMeta(num count, Object time);
+
+  /// No description provided for @daylistCardLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Daylist: {name}. {count, plural, one{1 brano} other{{count} brani}}. Si aggiorna alle {time}'**
+  String daylistCardLabel(num count, Object name, Object time);
+
+  /// No description provided for @daylistPlay.
+  ///
+  /// In it, this message translates to:
+  /// **'Riproduci la daylist'**
+  String get daylistPlay;
+
+  /// No description provided for @daylistUpdates.
+  ///
+  /// In it, this message translates to:
+  /// **'Si aggiorna alle {time} con «{slot}»'**
+  String daylistUpdates(Object slot, Object time);
+
+  /// No description provided for @daylistShortNote.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{Solo 1 brano: la libreria ne ha pochi per questa fascia.} other{Solo {count} brani: la libreria ne ha pochi per questa fascia.}}'**
+  String daylistShortNote(num count);
+
+  /// No description provided for @daylistSuggestedCount.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 suggerito} other{{count} suggeriti}} da YouTube Music'**
+  String daylistSuggestedCount(num count);
+
+  /// No description provided for @daylistGenres.
+  ///
+  /// In it, this message translates to:
+  /// **'Generi della daylist'**
+  String get daylistGenres;
+
+  /// No description provided for @daylistSettingsOpen.
+  ///
+  /// In it, this message translates to:
+  /// **'Impostazioni daylist'**
+  String get daylistSettingsOpen;
+
+  /// No description provided for @daylistEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna daylist in questa fascia'**
+  String get daylistEmpty;
+
+  /// No description provided for @settingsPageDaylist.
+  ///
+  /// In it, this message translates to:
+  /// **'Daylist'**
+  String get settingsPageDaylist;
+
+  /// No description provided for @daylistIntro.
+  ///
+  /// In it, this message translates to:
+  /// **'Una playlist da 50 brani che cambia a ogni fascia del giorno. Tocca una fascia per sceglierne generi e umori.'**
+  String get daylistIntro;
+
+  /// No description provided for @daylistSummaryPage.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 fascia accesa} other{{count} fasce accese}}'**
+  String daylistSummaryPage(num count);
+
+  /// No description provided for @daylistSlotSummary.
+  ///
+  /// In it, this message translates to:
+  /// **'{genres}, quota {percent}%'**
+  String daylistSlotSummary(Object genres, Object percent);
+
+  /// No description provided for @daylistSlotOff.
+  ///
+  /// In it, this message translates to:
+  /// **'Spenta'**
+  String get daylistSlotOff;
+
+  /// No description provided for @daylistTooFewWarn.
+  ///
+  /// In it, this message translates to:
+  /// **'Meno di 15 brani: la daylist non si crea'**
+  String get daylistTooFewWarn;
+
+  /// No description provided for @daylistSlotRowLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'{name}, {time}, {summary}'**
+  String daylistSlotRowLabel(Object name, Object summary, Object time);
+
+  /// No description provided for @daylistSwitchOn.
+  ///
+  /// In it, this message translates to:
+  /// **'{name}, acceso'**
+  String daylistSwitchOn(Object name);
+
+  /// No description provided for @daylistSwitchOff.
+  ///
+  /// In it, this message translates to:
+  /// **'{name}, spento'**
+  String daylistSwitchOff(Object name);
+
+  /// No description provided for @daylistMoodTable.
+  ///
+  /// In it, this message translates to:
+  /// **'Genere e umore'**
+  String get daylistMoodTable;
+
+  /// No description provided for @daylistMoodTableSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Come ogni genere si lega agli umori'**
+  String get daylistMoodTableSub;
+
+  /// No description provided for @daylistResetAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Ripristina i valori di serie'**
+  String get daylistResetAll;
+
+  /// No description provided for @daylistResetTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Ripristinare tutto?'**
+  String get daylistResetTitle;
+
+  /// No description provided for @daylistResetBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Orari, generi, umori e quote di tutte le fasce e la tabella genere e umore tornano ai valori di serie. Le daylist già generate restano fino al prossimo cambio.'**
+  String get daylistResetBody;
+
+  /// No description provided for @daylistResetGo.
+  ///
+  /// In it, this message translates to:
+  /// **'Ripristina'**
+  String get daylistResetGo;
+
+  /// No description provided for @daylistSlotSwitch.
+  ///
+  /// In it, this message translates to:
+  /// **'Daylist in questa fascia'**
+  String get daylistSlotSwitch;
+
+  /// No description provided for @daylistRegenAt.
+  ///
+  /// In it, this message translates to:
+  /// **'Si rigenera alle {time}'**
+  String daylistRegenAt(Object time);
+
+  /// No description provided for @daylistNoCard.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna card in Home'**
+  String get daylistNoCard;
+
+  /// No description provided for @daylistStartsAt.
+  ///
+  /// In it, this message translates to:
+  /// **'Inizia alle'**
+  String get daylistStartsAt;
+
+  /// No description provided for @daylistEndsAt.
+  ///
+  /// In it, this message translates to:
+  /// **'Finisce alle {time}'**
+  String daylistEndsAt(Object time);
+
+  /// No description provided for @daylistEarlier.
+  ///
+  /// In it, this message translates to:
+  /// **'Anticipa di un’ora'**
+  String get daylistEarlier;
+
+  /// No description provided for @daylistLater.
+  ///
+  /// In it, this message translates to:
+  /// **'Posticipa di un’ora'**
+  String get daylistLater;
+
+  /// No description provided for @daylistPrefer.
+  ///
+  /// In it, this message translates to:
+  /// **'Generi da preferire'**
+  String get daylistPrefer;
+
+  /// No description provided for @daylistAvoid.
+  ///
+  /// In it, this message translates to:
+  /// **'Generi da evitare'**
+  String get daylistAvoid;
+
+  /// No description provided for @daylistAdd.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi'**
+  String get daylistAdd;
+
+  /// No description provided for @daylistAddPrefer.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi un genere da preferire'**
+  String get daylistAddPrefer;
+
+  /// No description provided for @daylistAddAvoid.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi un genere da evitare'**
+  String get daylistAddAvoid;
+
+  /// No description provided for @daylistAddNamed.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi {genre}'**
+  String daylistAddNamed(Object genre);
+
+  /// No description provided for @daylistRemovePrefer.
+  ///
+  /// In it, this message translates to:
+  /// **'{genre}, da preferire, tocca per togliere'**
+  String daylistRemovePrefer(Object genre);
+
+  /// No description provided for @daylistRemoveAvoid.
+  ///
+  /// In it, this message translates to:
+  /// **'{genre}, da evitare, tocca per togliere'**
+  String daylistRemoveAvoid(Object genre);
+
+  /// No description provided for @daylistMoods.
+  ///
+  /// In it, this message translates to:
+  /// **'Umori'**
+  String get daylistMoods;
+
+  /// No description provided for @daylistShare.
+  ///
+  /// In it, this message translates to:
+  /// **'Quota di suggeriti online'**
+  String get daylistShare;
+
+  /// No description provided for @daylistShareFrom.
+  ///
+  /// In it, this message translates to:
+  /// **'Suggeriti da YouTube Music'**
+  String get daylistShareFrom;
+
+  /// No description provided for @daylistShareSlider.
+  ///
+  /// In it, this message translates to:
+  /// **'Quota di suggeriti, percento'**
+  String get daylistShareSlider;
+
+  /// No description provided for @daylistShareOwn.
+  ///
+  /// In it, this message translates to:
+  /// **'0% solo miei'**
+  String get daylistShareOwn;
+
+  /// No description provided for @daylistShareSplit.
+  ///
+  /// In it, this message translates to:
+  /// **'{own} brani miei + {suggested} suggeriti'**
+  String daylistShareSplit(Object own, Object suggested);
+
+  /// No description provided for @daylistResetSlot.
+  ///
+  /// In it, this message translates to:
+  /// **'Riporta questa fascia ai valori di serie'**
+  String get daylistResetSlot;
+
+  /// No description provided for @daylistMoodHelp.
+  ///
+  /// In it, this message translates to:
+  /// **'Gli umori di ogni genere. Servono a scegliere i brani delle fasce con un certo umore.'**
+  String get daylistMoodHelp;
+
+  /// No description provided for @daylistGenreSearch.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca un genere'**
+  String get daylistGenreSearch;
+
+  /// No description provided for @daylistGenreCount.
+  ///
+  /// In it, this message translates to:
+  /// **'{n} di {total} generi'**
+  String daylistGenreCount(Object n, Object total);
+
+  /// No description provided for @daylistNoMood.
+  ///
+  /// In it, this message translates to:
+  /// **'nessun umore'**
+  String get daylistNoMood;
+
+  /// No description provided for @daylistMoodCount.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 umore} other{{count} umori}}'**
+  String daylistMoodCount(num count);
+
+  /// No description provided for @daylistNoGenre.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun genere con «{query}». I generi nuovi della libreria compaiono qui senza umore.'**
+  String daylistNoGenre(Object query);
+
+  /// No description provided for @daylistGenreMoodLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'{genre}, {mood}'**
+  String daylistGenreMoodLabel(Object genre, Object mood);
 }
 
 class _AppLocalizationsDelegate
