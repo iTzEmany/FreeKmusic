@@ -1428,10 +1428,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 105.5 Controlli di fase
 
 ## Fase 106 — Testi traslitterati (`fase-106-testi-traslitterati.md`)
-- [ ] 106.1 Scrittura e coreano
-- [ ] 106.2 `romalrc` di NetEase
-- [ ] 106.3 Cache e provider
-- [ ] 106.4 Vista e menu
-- [ ] 106.5 Cinese con il dizionario scaricato
-- [ ] 106.6 Traslitterazione scritta a mano
-- [ ] 106.7 Controlli di fase
+- [x] 106.1 Scrittura e coreano
+- [x] 106.2 `romalrc` di NetEase
+- [x] 106.3 Cache e provider
+- [x] 106.4 Vista e menu
+- [x] 106.5 Cinese con il dizionario scaricato
+- [x] 106.6 Traslitterazione scritta a mano
+- [x] 106.7 Controlli di fase

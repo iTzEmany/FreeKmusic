@@ -39,3 +39,9 @@ Tutti i rilievi affrontati (D-456). Fonte: `romalrc` di NetEase + coreano in cas
 **Comportamento invariato:** con l'interruttore spento la schermata del testo è identica; `lyrics_chain` restituisce gli stessi `plain`/`synced` di oggi (test esistenti verdi senza modifiche).
 Test: unità per `hasCjk`/lingua, `hangul_romanizer` (tabella: 안녕하세요 → annyeonghaseyo, 국물 → gungmul, 신라 → silla, 같이 → gachi, 좋아 → joa), parser LRC tollerante, abbinamento per tempo (scarto di 70 ms, righe mancanti), `romanization_cache` (scrittura, «nessuna» ritentata dopo 30 giorni), client NetEase con risposta finta (con e senza `romalrc`); widget test di `_LyricRow` con traslitterazione e traduzione insieme e del ramo non sincronizzato a coppie.
 **Metriche:** `flutter analyze` pulito; nessun pacchetto nuovo (`git diff origin/master -- pubspec.yaml` vuoto); `kSchemaVersion` invariato; `grep -rn "romalrc" lib` solo nel client NetEase.
+
+## Stato finale (fase 106, 2026-11-09)
+- `flutter analyze` pulito; `git diff origin/master -- pubspec.yaml` vuoto (nessun pacchetto nuovo, `crypto` c'era già); `kSchemaVersion = 19` invariato.
+- `romalrc` come campo si legge solo in `netease_lyrics_client.dart`; la parola compare anche in commenti e log di `romanization_match.dart` e `romanization_resolver.dart`.
+- I tre casi del mockup provati sul Mi A3: giapponese con `romalrc`, coreano calcolato senza rete, cinese senza traslitterazione con il pinyin da CC-CEDICT. Interruttore spento = schermata di prima. Pannello laterale su Linux, nello schermo virtuale, con il download vero del dizionario.
+- Architettura in `docs/02-architettura.md`, sezione «Traslitterazione dei testi»; debito in `docs/prossimi-lavori.md` §6, «fase 106».

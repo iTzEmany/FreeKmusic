@@ -241,7 +241,7 @@ Scritture con debounce 400 ms, mai in un handler di slider a ogni tick.
 - **Punteggio**: `scoreCandidate` (importazione) vale solo per YouTube / YouTube Music; la penalità per le versioni diverse (`otherVersions`) è una sola lista. L'impostazione `importSoundCloud` e `searchSource` non si leggono più (le chiavi vecchie restano nelle preferenze, ignorate).
 - **Playlist e canali**: `youtube_urls.dart` (classificazione e `listingUrl`), `YoutubeService.listPlaylist` → `PlaylistListing`, `PlaylistImportService.startFromResults` (righe già decise, niente ricerca, stesso motore e stesse pause/ripresa/annulla di una CSV). I provider che falliscono vanno gestiti con `retry` esplicito: Riverpod 3 ritenta da solo.
 - **Traduzione dei testi** (22.7): `LyricsTranslator` (`services/online/lyrics_translator.dart`) con `MlKitLyricsTranslator` (`google_mlkit_translation`, solo Android, on-device, nessun testo in rete). `lyricsTranslatorProvider` vale `null` fuori da Android: la UI (pulsante nella schermata testi, gruppo «Modelli di traduzione» in Impostazioni) si nasconde. `translateKeepingLayout` mantiene l'allineamento con i tempi LRC; la traduzione sta in `lyricsTranslationProvider` (memoria, non nel DB) e `LyricsView` la mostra sotto ogni riga. Nei test si sostituisce il provider con un traduttore finto.
-- **Testi a mano** (fase 103, D-471/D-472): `lyricsFromText` (`services/online/lrc_parser.dart`) decide `synced`/`plain` (sincronizzato se almeno 2 righe e più di metà iniziano con un tempo); l'editor salva sempre con `byUser: true`. Salvataggio ed eliminazione stanno in `TrackOps` (`saveLyricsText`, `deleteLyrics` con l'annullamento che rimette testi, flag e segni di prima); `TrackRepository.clearLyrics` toglie testi, `lyricsByUser` e i segni «niente», e la ricerca riparte con `EnrichCompleter.start()` solo se `autoParts` non è vuoto. «Testo sincronizzato» spento = id in `unsyncedLyrics` (`SettingsStore`): `lyricsAsShown` toglie `lyricsSynced` nella vista, nella card del player e nella traduzione; il sincronizzato resta nel DB. Salvare o eliminare riaccende la sincronia e scarta la traduzione in memoria. `settings.json` del backup porta `unsyncedLyrics`; la sostituzione totale la azzera prima di applicare il file (id del DB sostituito), l'unione non applica i settings.
+- **Testi a mano** (fase 103, D-471/D-472): `lyricsFromText` (`services/online/lrc_parser.dart`) decide `synced`/`plain` (sincronizzato se almeno 2 righe e più di metà iniziano con un tempo); l'editor salva sempre con `byUser: true`. Salvataggio ed eliminazione stanno in `TrackOps` (`saveLyricsText`, `deleteLyrics` con l'annullamento che rimette testi, flag e segni di prima); `TrackRepository.clearLyrics` toglie testi, `lyricsByUser` e i segni «niente», e la ricerca riparte con `EnrichCompleter.start()` solo se `autoParts` non è vuoto. «Testo sincronizzato» spento = id in `unsyncedLyrics` (`SettingsStore`): `lyricsAsShown` (`services/lyrics/lyrics_shown.dart`) toglie `lyricsSynced` nella vista, nella card del player e nella traduzione; il sincronizzato resta nel DB. Salvare o eliminare riaccende la sincronia e scarta la traduzione in memoria. `settings.json` del backup porta `unsyncedLyrics`; la sostituzione totale la azzera prima di applicare il file (id del DB sostituito), l'unione non applica i settings.
 
 ## Podcast (fase 23)
 - **Dati**: schema v9, `tracks.kind` (0 musica · 1 episodio) e le tabelle `podcasts` / `podcast_episodes`. Un episodio **scaricato** è una riga di `tracks` con `kind = 1`, `folderId = null` e il file in `<appSupportDir>/podcasts/<podcastId>/`, cartella che non sta in `folders`: la scansione non la vede. Il player, la coda e la notifica funzionano senza modifiche perché lavorano su `Track.id`.
@@ -410,7 +410,7 @@ Dettagli e motivazioni in `docs/refactor/ui-fluida/analisi.md` («Arrivo»), dec
   - Coda finita (D-364): `lastQueueProvider` (ultima coda: quanti brani e il primo) dà sottotitolo e tooltip di ▶; `PlayerController.resumeLastQueue` la rifà partire dal primo brano, col suo contesto e il suo nome, letti dall'handler (`playContext`, la copia che si salva; `playContextProvider` la segue in tempo reale, anche quando `playFromMediaId` la azzera; salvata con la coda da `PlaybackPersistence` e ripristinata con essa: sopravvive a un riavvio; `playFromMediaId` di Android Auto lo azzera). `playShufflePlus` fa partire la libreria da un brano a caso con Shuffle+ dove è permesso. `TrackOps.playWhenEmpty` sceglie tra le due. `playStations` non passa da `_start` (nessuno storico, nessuna statistica) ma imposta lo stesso il contesto.
   - `promptName` (`prompt_name.dart`): dialogo «scegli un nome»: trim, vuoto non accettato, `maxLength` (60; 40 per i tag, D-39).
 - **Selezione:** solo `selectionProvider`, con le chiavi in `SelectionKey`. I menu sono fogli (`showCcActionSheet`, `CcAction` con un valore per voce); `PopupMenuButton`/`showMenu` sono vietati in `lib/ui` (`test/ui/architecture_test.dart`). Il tipo del brano si legge da `track.trackKind` (enum `TrackKind`: locale, episodio, online; `ui/widgets/track_kind.dart`). `Track.kind` è la colonna 0/1 del DB; la radio non si distingue dall'id: serve la coda (`radioOfTrack`).
-- **Ops** (`lib/providers/*_ops.dart`, fase 42): un Ops per dominio (Track, Playlist, Tag, Folder, Follow, Radio, Podcast).
+- **Ops** (`lib/providers/*_ops.dart`, fase 42): un Ops per dominio (Track, Playlist, Tag, Folder, Follow, Radio, Podcast, Romanization).
   - È l'unico punto da cui la UI scrive. Le letture restano live con `StreamProvider`/`FutureProvider`.
   - Tiene la logica (undo, «solo quelli che cambiano»): non è un alias del repository. Le deleghe di una riga sono ammesse finché gli Ops restano il confine della scrittura.
   - I flussi che servono un `WidgetRef` stanno in `providers/folder_actions.dart` (`addFolderAndScan`, D-12; usa `file_picker`).
@@ -462,6 +462,42 @@ Dettagli in `docs/refactor/superfici-e-ricerca/analisi.md` e nelle fasi 88–96.
 - **Ciclo di vita** (D-474): salvata fino a `nextChange` e solo se completa; si rifà al cambio di fascia (timer e controllo al ritorno dell'app), all'avvio se la fascia è cambiata e 2 s dopo un ritocco della fascia corrente o della tabella; una build superata non salva. La coda in riproduzione non si tocca: la nuova parte ripremendo Play. Il «Non mi piace» si controlla alla costruzione e di nuovo al Play.
 - **Rete**: le regole della radio di Shuffle+ (`radioOffReason`, `RadioGate`: una pagina radio per costruzione, 429 → pausa); offline o con il gate chiuso solo brani propri, non salvata.
 - **Interfaccia**: card in Home dopo «Riprendi», schermata `ui/screens/daylist/`, Impostazioni → Daylist (`settings/daylist_settings.dart`).
+
+## Traslitterazione dei testi (fase 106, D-457..D-462, D-475, D-476, D-479, D-482)
+- **Servizi puri** (`services/lyrics/`):
+  - `script_detect`: kana → giapponese, hangul ≥ hanzi → coreano, solo hanzi → cinese («・» e «ー» non contano).
+  - `hangul_romanizer`: romanizzazione riveduta con legamento e assimilazioni.
+  - `romanization_match`: abbina per tempo (±1,5 s), poi per indice; scarta i crediti; sotto metà delle righe abbinate vale «non disponibile». La traslitterazione scritta a mano si abbina per indice alle righe mostrate.
+  - `pinyin_dictionary`: CC-CEDICT letto in un isolate, sceglie la parola più lunga fino a 8 caratteri.
+  - `cedict_download`: scarica dalla release `data-cedict-2026-11-08`, controlla lo sha256, scrive in `.tmp` e poi rinomina.
+  - `romanization_cache`: `romanization_cache.json` con id → LRC oppure «nessuna» (ritentata dopo 30 giorni). Una voce vale solo per lo stesso titolo e artista. Il JSON si legge e si scrive in un isolate, potato sugli id vivi.
+  - `lyrics_shown`: `plainTextOf` e `lyricsAsShown`, spostati qui dalla vista.
+- **Ordine delle fonti** (`RomanizationResolver`):
+  1. scritta a mano;
+  2. coreano calcolato;
+  3. cache;
+  4. `romalrc` di NetEase (`NeteaseLyricsClient.romanized`, `rv=-1`);
+  5. dizionario, per il cinese;
+  6. altrimenti «non disponibile».
+
+  Un testo scritto a mano (segno `handWrittenLyrics`, messo solo dall'editor) salta cache e NetEase; il dizionario resta (D-482).
+- **Rete**: NetEase e il download automatico del dizionario partono solo con `autoLyrics` acceso. Dopo 2 errori in una sessione il download automatico si ferma (`CedictAutoGate`). «Scarica» in Impostazioni è un'azione esplicita e parte sempre.
+- **Provider**:
+  - `romanizationProvider(id)` (`Provider.autoDispose.family<AsyncValue<RomanizationState>>`) sta sopra un provider con chiave a record (testo, impostazioni, segni): una chiave nuova fa un giro nuovo, senza righe vecchie.
+  - `chineseDictionaryProvider` è autoDispose: la mappa vive mentre la usa una vista del testo o la tile, e resta viva durante il download (`keepAlive`).
+- **Scritture**:
+  - `RomanizationOps` salva ed elimina con annullamento su `manualRomanizationProvider`.
+  - `TrackOps` mette il segno `handWrittenLyrics` dall'editor e lo toglie con Cerca ed Elimina. Quando il testo cambia, toglie anche la traslitterazione scritta a mano.
+- **Backup**:
+  - `romanization`, `manualRomanization` e `handWrittenLyrics` viaggiano in `settings.json`.
+  - La sostituzione totale azzera le ultime due prima di applicare il file e cancella la cache.
+  - L'unione aggiunge traslitterazione e segno di `TrackUserData` solo se il testo qui è uguale a quello del backup; vince la traslitterazione locale.
+  - Cache e dizionario restano fuori dal backup.
+- **UI**:
+  - Nel testo, la riga `romanization` sta fra l'originale e la traduzione. Un testo non sincronizzato si mostra a coppie dentro una `SelectionArea`.
+  - Il menu del testo ha l'interruttore (solo se il testo mostrato ha CJK) e «Modifica/Elimina traslitterazione».
+  - Impostazioni ha «Dizionario cinese»; le Informazioni citano CC-CEDICT (CC BY-SA 4.0).
+  - La card del player resta esclusa.
 
 ## Accessibilità e token (fase 40)
 - **Token di forma:** `CcDims` ha la scala `gap` e `r`; fuori dal tema niente `fontSize` né `BorderRadius` letterali.

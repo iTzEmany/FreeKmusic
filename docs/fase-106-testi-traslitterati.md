@@ -2,7 +2,7 @@
 
 **Obiettivo:** sotto ogni riga di un testo giapponese, cinese o coreano, la stessa riga in alfabeto latino. **Funzione nuova** (D-456..D-462).
 
-**Prerequisiti:** fase 103 chiusa (editor e menu del testo). Analisi: `refactor/testi-traslitterati/analisi.md` (F-123..F-128, «Arrivo», «Rete»). Mockup approvato: `refactor/testi-traslitterati/mockup/testo-traslitterato.html`. Aree a rischio: nessuna (niente schema, backup o coda). Nessun pacchetto nuovo.
+**Prerequisiti:** fase 103 chiusa (editor e menu del testo). Analisi: `refactor/testi-traslitterati/analisi.md` (F-123..F-128, «Arrivo», «Rete»). Mockup approvato: `refactor/testi-traslitterati/mockup/testo-traslitterato.html`. Aree a rischio: backup (traslitterazione a mano e segno «scritto a mano» in `settings.json`, D-475), niente schema né coda. Nessun pacchetto nuovo.
 
 **Comando mirato:** `flutter test test/services/lyrics/ test/services/online/netease_lyrics_client_test.dart test/services/online/lyrics_chain_test.dart test/ui/lyrics_view_test.dart`
 
@@ -48,3 +48,16 @@
 - **D-476**: cinese senza `romalrc` dal dizionario CC-CEDICT scaricato alla prima richiesta (task 106.5).
 
 ## Esiti
+- 106.1–106.3 (2026-11-09):
+  - Servizi puri in `lib/services/lyrics/`: `script_detect`, `hangul_romanizer`, `romanization_match`, `romanization_cache`, `romanization_resolver`, `lyrics_shown`.
+  - `NeteaseLyricsClient.romanized` (`rv=-1`). `LyricsChain` è invariata.
+  - `romanizationProvider(id)` con chiave a record: una chiave nuova fa un giro nuovo, mai righe vecchie.
+- 106.4: righe traslitterate fra originale e traduzione. Un testo non sincronizzato si mostra a coppie; avvisi «non disponibile» e «Scarico il dizionario cinese…». Interruttore e «Modifica/Elimina traslitterazione» nel menu, solo con CJK; anche nel pannello laterale.
+- 106.5: `pinyin_dictionary` (CC-CEDICT in un isolate, 198 mila voci in meno di 1 s; preferisce la lettura comune a quella del cognome) e `cedict_download` (release `data-cedict-2026-11-08`, controllo sha256).
+  - Download automatico solo con `autoLyrics`. Dopo un errore si ritenta con una pausa crescente da 5 minuti a 1 ora.
+  - Tile «Dizionario cinese» nelle Impostazioni; citazione CC BY-SA 4.0 nelle Informazioni, con i link come testo (niente `url_launcher`).
+- 106.6: la traslitterazione scritta a mano si abbina per indice alle righe mostrate. Il segno `handWrittenLyrics` lo mette solo l'editor del testo (D-482); un testo scelto con Cerca riceve NetEase come gli altri. Entrambi viaggiano nel backup: la sostituzione totale li rimette, l'unione li aggiunge solo con lo stesso testo.
+- 106.7: `flutter analyze` pulito, test mirati verdi.
+  - Review Opus della parte dati (10 rilievi) e della fase (1 bug, 8 voci di debito), review Sonnet della UI (6 rilievi), scheggia di passo (5 bug, test rinforzati sui mutanti sopravvissuti): tutto corretto con i test, il debito è in `prossimi-lavori.md`.
+  - Scheggia di fase sul Mi A3 e su Linux: i tre casi del mockup vanno; monkey di 1200 eventi senza crash. Corretti dopo la prova: pinyin con la maiuscola del cognome, download automatico mai ritentato, editor coperti dalla tastiera, modifiche scartate senza conferma.
+  - Non provato: il download vero del dizionario sul telefono, perché il Wi-Fi si bloccava a ~400 KB e il file è stato copiato via adb; su Linux il download vero è riuscito.
