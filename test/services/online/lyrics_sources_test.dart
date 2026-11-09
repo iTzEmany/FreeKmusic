@@ -77,6 +77,31 @@ void main() {
   };
 
   group('NetEase', () {
+    test('asks rv=-1 and gives romalrc only when present', () async {
+      Map<String, Object?> lyric(Object? rom) => {
+        'code': 200,
+        'lrc': {'lyric': '[00:01.00]a'},
+        'romalrc': rom,
+      };
+      for (final (rom, want) in [
+        ({'lyric': '[00:01.00]ei'}, '[00:01.00]ei'),
+        ({'lyric': ''}, null),
+        (null, null),
+      ]) {
+        final w = _Web({...ne(), 'song/lyric': () => lyric(rom)});
+        final c = NeteaseLyricsClient(w);
+        expect(
+          await c.romanized(
+              title: 'Get Lucky', artist: 'Daft Punk', durationSec: 370),
+          want,
+        );
+        expect(w.asked.last.$2?['rv'], '-1');
+        final r = await c.find(
+            title: 'Get Lucky', artist: 'Daft Punk', durationSec: 370);
+        expect(r!.synced, '[00:01.00]a');
+      }
+    });
+
     test(
       'Get Lucky: the right song, its synced lyric, strict requests',
       () async {

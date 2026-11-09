@@ -45,6 +45,37 @@ class NeteaseLyricsClient {
     required int? durationSec,
     CancelToken? cancel,
   }) async {
+    final r = await lyric(
+      title: title,
+      artist: artist,
+      durationSec: durationSec,
+      cancel: cancel,
+    );
+    final lrc = r?.lrc;
+    return lrc != null ? LyricsResult(synced: lrc) : null;
+  }
+
+  /// Only the transliterated LRC (`romalrc`) of the song, or null when there is none.
+  Future<String?> romanized({
+    required String title,
+    required String artist,
+    required int? durationSec,
+    CancelToken? cancel,
+  }) async => (await lyric(
+    title: title,
+    artist: artist,
+    durationSec: durationSec,
+    cancel: cancel,
+  ))?.romalrc;
+
+  /// The matched song's `lrc` and `romalrc` (each null when empty); null when
+  /// nothing matches or both are empty. Throws when the service fails.
+  Future<({String? lrc, String? romalrc})?> lyric({
+    required String title,
+    required String artist,
+    required int? durationSec,
+    CancelToken? cancel,
+  }) async {
     if (durationSec == null || artist.trim().isEmpty) return null;
     final search = await _web
         .getJson(
@@ -89,21 +120,23 @@ class NeteaseLyricsClient {
                 .any((x) => wantArtists.contains(normalize(x.name)));
       });
       if (!same) continue;
-      final lyric = await _web
+      final body = await _web
           .getJson(
             '$_base/song/lyric',
-            query: {'id': '${s['id']}', 'lv': '1'},
+            query: {'id': '${s['id']}', 'lv': '1', 'rv': '-1'},
             cancel: cancel,
             strict: true,
           )
           .timeout(timeout);
-      _checkCode(lyric, '$_base/song/lyric');
-      final lrc = lyric is Map && lyric['lrc'] is Map
-          ? (lyric['lrc'] as Map)['lyric']
-          : null;
-      return lrc is String && lrc.trim().isNotEmpty
-          ? LyricsResult(synced: lrc)
-          : null;
+      _checkCode(body, '$_base/song/lyric');
+      String? text(String key) {
+        final m = body is Map ? body[key] : null;
+        final v = m is Map ? m['lyric'] : null;
+        return v is String && v.trim().isNotEmpty ? v : null;
+      }
+
+      final lrc = text('lrc'), rom = text('romalrc');
+      return lrc == null && rom == null ? null : (lrc: lrc, romalrc: rom);
     }
     return null;
   }
