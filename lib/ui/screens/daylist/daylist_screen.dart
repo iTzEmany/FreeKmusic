@@ -59,7 +59,7 @@ class DaylistScreen extends ConsumerWidget {
                         runSpacing: 6,
                         children: [
                           for (final g in d.result.genres)
-                            Chip(label: Text(g), visualDensity: VisualDensity.compact),
+                            Chip(label: Text(genreDisplay(g)), visualDensity: VisualDensity.compact),
                         ],
                       ),
                     ),
@@ -97,9 +97,9 @@ class DaylistScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                for (final item in d.result.items)
-                  item.track != null ? _OwnRow(item.track!.title, item.track!.artist, item.track!.coverKey, () => actions.play())
-                      : _SuggestedRow(item.suggestion!.result.title, item.suggestion!.result.artists.join(', '), item.suggestion!.result.thumbnailUrl, () => actions.play()),
+                for (final (i, item) in d.result.items.indexed)
+                  item.track != null ? _OwnRow(item.track!.title, item.track!.artist, item.track!.coverKey, () => actions.play(startIndex: i))
+                      : _SuggestedRow(item.suggestion!.result.title, item.suggestion!.result.artists.join(', '), item.suggestion!.result.thumbnailUrl, () => actions.play(startIndex: i)),
               ],
             ),
     );

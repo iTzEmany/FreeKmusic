@@ -1,3 +1,4 @@
+import '../../../core/artist_key.dart' show matchKey;
 import '../../../l10n/app_localizations.dart';
 import '../../../services/daylist/mood_table.dart';
 
@@ -27,4 +28,17 @@ String daylistHour(int h) => '${(h % 24).toString().padLeft(2, '0')}:00';
 
 /// The slot name and up to 3 genres, joined by commas (D-440).
 String daylistName(AppLocalizations l, int slotIndex, List<String> genres) =>
-    [daylistSlotName(l, slotIndex), ...genres.take(3)].join(', ');
+    [daylistSlotName(l, slotIndex), ...genres.take(3).map(genreDisplay)].join(', ');
+
+const _genreNames = {
+  'bossa nova': 'Bossa nova',
+  'hip hop': 'Hip hop',
+  'lo fi': 'Lo-Fi',
+  'r and b': 'R&B',
+};
+
+/// Readable genre name for a [matchKey] key or a user spelling.
+String genreDisplay(String g) {
+  final k = matchKey(g);
+  return _genreNames[k] ?? (g == k && g.isNotEmpty ? g[0].toUpperCase() + g.substring(1) : g);
+}

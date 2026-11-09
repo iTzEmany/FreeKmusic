@@ -22,7 +22,7 @@ class _FakeDaylist extends DaylistNotifier {
 class _FakeActions implements DaylistActions {
   final calls = <bool>[];
   @override
-  Future<void> play({bool shuffle = false}) async => calls.add(shuffle);
+  Future<void> play({bool shuffle = false, int? startIndex}) async => calls.add(shuffle);
   @override
   Future<void> regenerate() async {}
 }
@@ -60,7 +60,7 @@ void main() {
   testWidgets('card: shown with the change hour, hidden when off or too few', (tester) async {
     await pump(tester, const Scaffold(body: DaylistCard()), _state);
     expect(find.textContaining('00:00'), findsOneWidget);
-    expect(find.textContaining('Tarda sera, lo-fi, jazz, soul'), findsOneWidget);
+    expect(find.textContaining('Tarda sera, Lo-Fi, Jazz, Soul'), findsOneWidget);
     await tester.tap(find.byTooltip('Riproduci la daylist'));
     expect(actions.calls, [false]);
     await h.dispose(tester);
@@ -76,7 +76,7 @@ void main() {
 
   testWidgets('screen: title, Play and Shuffle call the actions, short note under 50', (tester) async {
     await pump(tester, const DaylistScreen(), _state);
-    expect(find.text('Tarda sera, lo-fi, jazz, soul'), findsOneWidget);
+    expect(find.text('Tarda sera, Lo-Fi, Jazz, Soul'), findsOneWidget);
     expect(find.textContaining('Solo 3 brani'), findsOneWidget);
     await tester.tap(find.text('Riproduci'));
     await tester.tap(find.text('Casuale'));

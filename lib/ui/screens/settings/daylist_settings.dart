@@ -13,7 +13,7 @@ import '../../widgets/confirm.dart';
 import '../daylist/daylist_labels.dart';
 
 String _summary(BuildContext context, DaylistSlot s) => s.enabled
-    ? context.l10n.daylistSlotSummary(s.prefer.take(3).join(', '), s.sharePercent)
+    ? context.l10n.daylistSlotSummary(s.prefer.take(3).map(genreDisplay).join(', '), s.sharePercent)
     : context.l10n.daylistSlotOff;
 
 /// Settings > Daylist: intro and the 8 slots (tap opens the editor, the
@@ -202,11 +202,11 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                   Semantics(
                     button: true,
                     excludeSemantics: true,
-                    label: prefer ? l.daylistRemovePrefer(g) : l.daylistRemoveAvoid(g),
+                    label: prefer ? l.daylistRemovePrefer(genreDisplay(g)) : l.daylistRemoveAvoid(genreDisplay(g)),
                     onTap: () => update({...chosen}..remove(g)),
                     child: ActionChip(
                       key: ValueKey('daylist-$key-$g'),
-                      label: Text(g),
+                      label: Text(genreDisplay(g)),
                       avatar: const Icon(Icons.close_rounded, size: 16),
                       side: prefer ? null : BorderSide(color: cc.error),
                       onPressed: () => update({...chosen}..remove(g)),
@@ -237,14 +237,14 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                       Semantics(
                         button: true,
                         excludeSemantics: true,
-                        label: l.daylistAddNamed(g),
+                        label: l.daylistAddNamed(genreDisplay(g)),
                         onTap: () {
                           update({...chosen, g});
                           setState(() => _picker = null);
                         },
                         child: ActionChip(
                           key: ValueKey('daylist-pick-$g'),
-                          label: Text(g),
+                          label: Text(genreDisplay(g)),
                           onPressed: () {
                             update({...chosen, g});
                             setState(() => _picker = null);
@@ -440,7 +440,7 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
         children: [
           Row(
             children: [
-              Expanded(child: Text(g, style: text.titleSmall)),
+              Expanded(child: Text(genreDisplay(g), style: text.titleSmall)),
               Text(
                 moods.isEmpty ? l.daylistNoMood : l.daylistMoodCount(moods.length),
                 style: text.bodySmall?.copyWith(color: context.cc.textMuted),
@@ -453,7 +453,7 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
             children: [
               for (final m in Mood.values)
                 Semantics(
-                  label: l.daylistGenreMoodLabel(g, daylistMoodName(l, m)),
+                  label: l.daylistGenreMoodLabel(genreDisplay(g), daylistMoodName(l, m)),
                   excludeSemantics: true,
                   child: FilterChip(
                     key: ValueKey('daylist-genre-$g-${m.name}'),

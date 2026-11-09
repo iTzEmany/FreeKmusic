@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+import '../core/app_log.dart';
 import '../core/constants.dart';
 import '../core/paths.dart';
 import '../data/repositories/track_genre_repository.dart';
@@ -14,7 +16,7 @@ import '../services/daylist/daylist_store.dart';
 import '../services/daylist/mood_table.dart';
 import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
 import '../services/shuffle_plus/radio_fill.dart';
-import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed, inLibraryTest;
+import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed, inLibraryTest, suggestionArtistKey;
 import 'dislike_store_provider.dart';
 import 'history_providers.dart' show statsQueriesProvider;
 import 'jam_providers.dart';
@@ -78,17 +80,26 @@ final daylistFileProvider = Provider<Future<File> Function()>(
   (_) => () async => File(p.join(await appSupportDir(), 'daylist.json')),
 );
 
+/// How long a change of the settings waits before the daylist is made again,
+/// so a few taps on a slot make one build, not one each (a test sets zero).
+final daylistSettleProvider = Provider<Duration>((_) => const Duration(seconds: 2));
+
 /// How far back the listens of a slot are looked at.
 const daylistHistory = Duration(days: 90);
 
 /// The suggestions of the daylist, or null when the radio must not be asked
 /// (the same rules as the genre mix: Jam, no yt-dlp, offline, metered with
 /// «Solo su Wi-Fi», a 429 pause). [cancelled] stops the requests when the
-/// daylist is made again meanwhile. A test overrides this.
-final daylistSuggestProvider = Provider<Future<DaylistSuggest?> Function(bool Function() cancelled)>((ref) {
-  return (cancelled) async {
+/// daylist is made again meanwhile. A test overrides this.///
+/// Unless [force] (the user asked for a new daylist) it asks only when the
+/// [RadioGate] allows a request now, so a build set off by the app itself
+/// never goes against the minute between requests.
+final daylistSuggestProvider =
+    Provider<Future<DaylistSuggest?> Function(bool Function() cancelled, {bool force})>((ref) {
+  return (cancelled, {force = false}) async {
     if (!kEnableYoutube) return null;
     final gate = ref.read(radioGateProvider);
+    if (!force && !gate.canAsk) return null;
     final off = await radioOffReason(
       jam: ref.read(jamProvider).active,
       toolVersion: ref.read(ytDlpStatusProvider.future).then((s) => s.version),
@@ -143,48 +154,89 @@ class DaylistState {
   final DateTime nextChange;
 }
 
-/// The current daylist; null when the slot is switched off. It is made off
-/// the UI thread (the database reads run in the DB isolate; the builder only
-/// sorts a library's worth of rows), saved until the slot ends (D-474), made
-/// again when the slot changes (timer, or at start if it changed while the app
-/// was closed) and when the slots or the mood table change. The queue that is
-/// playing is never touched.
+/// The current daylist; null when the slot is switched off. The reads run in
+/// the DB isolate and the ranking in a worker isolate (`planInIsolate`); only
+/// the suggestions and the final pick run here. It is saved until the slot
+/// ends (D-474), made again when the slot changes (timer; on resume if the
+/// timer did not fire while suspended; at start if it changed while the app
+/// was closed) and, after a short wait, when the slots or the mood table
+/// change. The queue that is playing is never touched.
 class DaylistNotifier extends AsyncNotifier<DaylistState?> {
+  bool _force = false;
+  String? _lastKey;
+
+  /// Throws the saved daylist away and makes a new one now (the user asked:
+  /// the radio is asked even inside the minute between requests).
+  Future<void> regenerate() async {
+    await DaylistStore(ref.read(daylistFileProvider)).clear();
+    _force = true;
+    ref.invalidateSelf();
+  }
+
   @override
   Future<DaylistState?> build() async {
-    final config = ref.watch(daylistConfigProvider);
-    final moods = ref.watch(moodTableProvider);
-    final now = ref.read(daylistClockProvider)();
+    // This build's ref: `mounted` turns false when the daylist is made again.
+    final r = ref;
+    final config = r.watch(daylistConfigProvider);
+    final moods = r.watch(moodTableProvider);
+    final clock = r.read(daylistClockProvider);
+    final force = _force;
+    _force = false;
+    final now = clock();
     final index = config.slotAt(now);
     final next = config.nextChange(now);
-    final timer = Timer(next.difference(now), ref.invalidateSelf);
-    ref.onDispose(timer.cancel);
+    final timer = Timer(next.difference(now), r.invalidateSelf);
+    r.onDispose(timer.cancel);
+    // A suspended app may not have run the timer: check at every resume.
+    final life = AppLifecycleListener(onResume: () {
+      if (r.mounted && !clock().isBefore(next)) r.invalidateSelf();
+    });
+    r.onDispose(life.dispose);
     final slot = config.slots[index];
     if (!slot.enabled) return null;
-    DaylistState of(DaylistResult r) =>
-        DaylistState(result: r, slot: slot, slotIndex: index, nextChange: next);
+    DaylistState of(DaylistResult res) =>
+        DaylistState(result: res, slot: slot, slotIndex: index, nextChange: next);
 
-    final store = DaylistStore(ref.read(daylistFileProvider));
-    final tracks = ref.read(trackRepositoryProvider);
     final key = '${config.toJsonString()}|${moods.toJsonString()}';
+    if (_lastKey != null && _lastKey != key) {
+      await Future<void>.delayed(r.read(daylistSettleProvider));
+      if (!r.mounted) return null;
+    }
+    _lastKey = key;
+
+    final store = DaylistStore(r.read(daylistFileProvider));
+    final tracks = r.read(trackRepositoryProvider);
+    final stats = r.read(statsQueriesProvider);
+    final db = r.read(databaseProvider);
     final saved = await store.load(key: key, until: next, tracksOf: tracks.getByIdsLight);
     if (saved != null) return of(saved);
 
-    final library = await tracks.watchTracks().first;
-    final plays = await ref.read(statsQueriesProvider).listensSince(now.subtract(daylistHistory));
-    final genres = await TrackGenreRepository(ref.read(databaseProvider)).allByTrack();
-    final suggest = await ref.read(daylistSuggestProvider)(() => !ref.mounted);
-    final result = await DaylistBuilder().build(DaylistInputs(
+    final library = await tracks.musicLight();
+    final plays = await stats.listensSince(now.subtract(daylistHistory));
+    final genres = await TrackGenreRepository(db).musicGenres();
+    final plan = await DaylistBuilder.planInIsolate(
       config: config,
       moods: moods,
-      now: () => now,
-      random: Random(),
+      now: now,
+      randomSeed: Random().nextInt(1 << 30),
       library: library,
       plays: plays,
       genresOf: genres,
-      suggest: suggest,
-    ));
-    if (ref.mounted && !result.tooFew) await store.save(key: key, until: next, result: result);
+    );
+    DaylistSuggest? suggest;
+    if (r.mounted) {
+      try {
+        suggest = await r.read(daylistSuggestProvider)(() => !r.mounted, force: force);
+      } on Object catch (e, st) {
+        // Never an error for this: the daylist is made of the user's songs.
+        AppLog.w('daylist suggestions not available', e, st);
+      }
+    }
+    final result = await DaylistBuilder().finish(plan, suggest: suggest);
+    // Not saved without the network when suggestions are wanted: the next
+    // start tries again.
+    final partial = suggest == null && slot.sharePercent > 0;
+    if (r.mounted && !result.tooFew && !partial) await store.save(key: key, until: next, result: result);
     return of(result);
   }
 }
@@ -199,27 +251,44 @@ class DaylistActions {
 
   /// Starts the daylist's queue: the user's songs and the suggested ones as
   /// online entries marked «Suggerito», as the genre page does. [shuffle]
-  /// starts from a random song with shuffle on.
-  Future<void> play({bool shuffle = false}) async {
-    final r = _ref.read(daylistProvider).value?.result;
+  /// starts from a random song with shuffle on; [startIndex] (a row of the
+  /// daylist) from that song. Suggested songs blocked since the daylist was
+  /// made (or saved) are left out.
+  Future<void> play({bool shuffle = false, int? startIndex}) async {
+    DaylistState? s;
+    try {
+      // A slot that has just changed but is not made yet is waited for.
+      final cur = _ref.read(daylistProvider).value;
+      if (cur != null && !_ref.read(daylistClockProvider)().isBefore(cur.nextChange)) {
+        _ref.invalidate(daylistProvider);
+      }
+      s = await _ref.read(daylistProvider.future);
+    } on Object catch (e, st) {
+      AppLog.w('daylist not ready to play', e, st);
+      return;
+    }
+    final r = s?.result;
     if (r == null || r.tooFew || r.items.isEmpty) return;
-    final items = <MixItem>[
-      for (final i in r.items)
-        (track: i.track, online: i.suggestion?.result, seedTitle: i.suggestion?.seedTitle),
-    ];
+    final gate = _ref.read(suggestionGateProvider);
+    await gate.load();
+    final items = <MixItem>[];
+    var at = 0;
+    for (var i = 0; i < r.items.length; i++) {
+      final c = r.items[i].suggestion;
+      if (c != null && !gate.allows(c.result.id, suggestionArtistKey(c.result), const [])) continue;
+      if (startIndex != null && i < startIndex) at++;
+      items.add((track: r.items[i].track, online: c?.result, seedTitle: c?.seedTitle));
+    }
+    if (items.isEmpty) return;
     await _ref.read(playerControllerProvider).playMixed(
       items,
-      index: shuffle ? Random().nextInt(items.length) : 0,
+      index: startIndex != null ? at.clamp(0, items.length - 1) : (shuffle ? Random().nextInt(items.length) : 0),
       context: const PlayContext(PlayContextKind.library),
       shuffle: shuffle,
     );
   }
 
-  /// Throws the saved daylist away and makes a new one now.
-  Future<void> regenerate() async {
-    await DaylistStore(_ref.read(daylistFileProvider)).clear();
-    _ref.invalidate(daylistProvider);
-  }
+  Future<void> regenerate() => _ref.read(daylistProvider.notifier).regenerate();
 }
 
 final daylistActionsProvider = Provider<DaylistActions>(DaylistActions.new);

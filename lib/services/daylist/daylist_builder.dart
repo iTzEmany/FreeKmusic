@@ -6,6 +6,7 @@
 // given seed tracks, or null when offline. Optional: [DaylistInputs.genresOf]
 // (track id -> genres, from track_genres) replaces the tag in Track.genre.
 // The builder does no I/O and asks for no suggestions when the slot is off.
+import 'dart:isolate';
 import 'dart:math';
 
 import '../../core/app_log.dart';
@@ -90,6 +91,46 @@ class DaylistResult {
   bool get isShort => !tooFew && items.length < DaylistBuilder.size;
 }
 
+/// What the pure part of the builder works out (ranking, seeds, candidates):
+/// plain data, so it can be made in an isolate (see [DaylistBuilder.planInIsolate])
+/// and finished on the main one, where the suggestions are asked.
+class DaylistPlan {
+  DaylistPlan._({
+    required this.slotIndex,
+    required this.slot,
+    required this.moods,
+    required this.off,
+    this.seeds = const [],
+    this.candidates = const [],
+    this.extra = const [],
+    this.genreOf = const {},
+    this.artistGenres = const {},
+    this.libraryKeys = const {},
+    this.spelled = const {},
+  });
+
+  final int slotIndex;
+  final DaylistSlot slot;
+  final MoodTable moods;
+  final bool off;
+  final List<Track> seeds, candidates, extra;
+  final Map<int, List<String>> genreOf;
+  final Map<String, Set<String>> artistGenres;
+  final Set<String> libraryKeys;
+  final Map<String, String> spelled;
+
+  Set<String> get avoid => {for (final g in slot.avoid) matchKey(g)};
+
+  /// Avoided genre: out. Else the slot's taste: preferred genre or a mood of
+  /// the slot (no taste set = everything). A genre-less song only passes then.
+  bool passes(Iterable<String> genres) {
+    if (genres.any(avoid.contains)) return false;
+    final prefer = {for (final g in slot.prefer) matchKey(g)};
+    if (prefer.isEmpty && slot.moods.isEmpty) return true;
+    return genres.any(prefer.contains) || moods.moodsOfAll(genres).any(slot.moods.contains);
+  }
+}
+
 class DaylistBuilder {
   static const size = 50;
   static const minTracks = 15;
@@ -105,44 +146,82 @@ class DaylistBuilder {
 
   static String _key(String title, String artistKey) => '${matchKey(title)}|$artistKey';
 
-  Future<DaylistResult> build(DaylistInputs inp) async {
-    final slotIndex = inp.config.slotAt(inp.now());
-    final slot = inp.config.slots[slotIndex];
-    if (!slot.enabled) {
-      return DaylistResult(slotIndex: slotIndex, items: const [], genres: const [], tooFew: true, off: true);
-    }
-    final prefer = {for (final g in slot.prefer) matchKey(g)};
-    final avoid = {for (final g in slot.avoid) matchKey(g)};
+  Future<DaylistResult> build(DaylistInputs inp) => finish(
+    plan(
+      config: inp.config,
+      moods: inp.moods,
+      now: inp.now(),
+      random: inp.random,
+      library: inp.library,
+      plays: inp.plays,
+      genresOf: inp.genresOf,
+    ),
+    suggest: inp.suggest,
+    genresOfSuggestion: inp.genresOfSuggestion,
+  );
 
-    // Avoided genre: out. Else the slot's taste: preferred genre or a mood of
-    // the slot (no taste set = everything). A genre-less song only passes then.
-    bool passes(Iterable<String> genres) {
-      if (genres.any(avoid.contains)) return false;
-      if (prefer.isEmpty && slot.moods.isEmpty) return true;
-      return genres.any(prefer.contains) || inp.moods.moodsOfAll(genres).any(slot.moods.contains);
-    }
+  /// [plan] in a worker isolate: the sorting of a whole library stays off the
+  /// UI thread. Only plain data goes in (the arguments are copied).
+  static Future<DaylistPlan> planInIsolate({
+    required DaylistConfig config,
+    required MoodTable moods,
+    required DateTime now,
+    required int randomSeed,
+    required List<Track> library,
+    required List<DaylistPlay> plays,
+    Map<int, List<String>>? genresOf,
+  }) => Isolate.run(
+    () => plan(
+      config: config,
+      moods: moods,
+      now: now,
+      random: Random(randomSeed),
+      library: library,
+      plays: plays,
+      genresOf: genresOf,
+    ),
+  );
+
+  /// The pure part: which songs may be in the slot's daylist and in what order.
+  static DaylistPlan plan({
+    required DaylistConfig config,
+    required MoodTable moods,
+    required DateTime now,
+    required Random random,
+    required List<Track> library,
+    required List<DaylistPlay> plays,
+    Map<int, List<String>>? genresOf,
+  }) {
+    final slotIndex = config.slotAt(now);
+    final slot = config.slots[slotIndex];
+    if (!slot.enabled) return DaylistPlan._(slotIndex: slotIndex, slot: slot, moods: moods, off: true);
+    final pl = DaylistPlan._(slotIndex: slotIndex, slot: slot, moods: moods, off: false);
 
     final genreOf = {
-      for (final t in inp.library)
-        t.id: switch (inp.genresOf?[t.id]) {
+      for (final t in library)
+        t.id: switch (genresOf?[t.id]) {
           final l? when l.isNotEmpty => [for (final g in l) matchKey(g)],
-          _ => genresOf(t.genre),
+          _ => DaylistBuilder.genresOf(t.genre),
         },
     };
     final artistGenres = <String, Set<String>>{};
     final libraryKeys = <String>{};
-    for (final t in inp.library) {
+    final spelled = <String, String>{};
+    for (final t in library) {
       artistGenres.putIfAbsent(artistKey(t.artist), () => {}).addAll(genreOf[t.id]!);
       libraryKeys.add(_key(t.title, artistKey(t.artist)));
+      for (final g in splitGenres([t.genre])) {
+        spelled.putIfAbsent(matchKey(g), () => g);
+      }
     }
-    final ok = [for (final t in inp.library) if (passes(genreOf[t.id]!)) t];
+    final ok = [for (final t in library) if (pl.passes(genreOf[t.id]!)) t];
 
     // Plays in the slot's hours, per track.
     final inSlot = <int, int>{};
-    for (final p in inp.plays) {
-      if (inp.config.slotAt(p.playedAt) == slotIndex) inSlot[p.trackId] = (inSlot[p.trackId] ?? 0) + 1;
+    for (final p in plays) {
+      if (config.slotAt(p.playedAt) == slotIndex) inSlot[p.trackId] = (inSlot[p.trackId] ?? 0) + 1;
     }
-    final noise = {for (final t in ok) t.id: inp.random.nextDouble()};
+    final noise = {for (final t in ok) t.id: random.nextDouble()};
     int rank(Track a, Track b, int Function(Track) score) {
       final c = score(b).compareTo(score(a));
       return c != 0 ? c : noise[a.id]!.compareTo(noise[b.id]!);
@@ -167,62 +246,86 @@ class DaylistBuilder {
             (seedArtists.contains(artistKey(t.artist)) || genreOf[t.id]!.any(seedGenres.contains)))
           t,
     ];
-    final candidates = _distinct(hasHistory ? [...played, ...related] : overall);
+    return DaylistPlan._(
+      slotIndex: slotIndex,
+      slot: slot,
+      moods: moods,
+      off: false,
+      seeds: seeds,
+      candidates: _distinct(hasHistory ? [...played, ...related] : overall),
+      extra: _distinct(overall),
+      genreOf: genreOf,
+      artistGenres: artistGenres,
+      libraryKeys: libraryKeys,
+      spelled: spelled,
+    );
+  }
 
-    final wantSuggested = (size * slot.sharePercent / 100).round();
-    final suggested = await _suggestions(inp, seeds, artistGenres, libraryKeys, wantSuggested, avoid, passes);
-
-    final own = _pickOwn(candidates, _distinct(overall), genreOf, size - suggested.length);
+  /// The suggestions and the final pick, on the isolate that holds [suggest].
+  Future<DaylistResult> finish(
+    DaylistPlan pl, {
+    DaylistSuggest? suggest,
+    Iterable<String> Function(SuggestionCandidate c)? genresOfSuggestion,
+  }) async {
+    if (pl.off) {
+      return DaylistResult(slotIndex: pl.slotIndex, items: const [], genres: const [], tooFew: true, off: true);
+    }
+    final wantSuggested = (size * pl.slot.sharePercent / 100).round();
+    final suggested = await _suggestions(pl, suggest, genresOfSuggestion, wantSuggested);
+    final own = _pickOwn(pl.candidates, pl.extra, pl.genreOf, size - suggested.length);
     final items = _spread(own, suggested);
     if (items.length < minTracks) {
-      return DaylistResult(slotIndex: slotIndex, items: const [], genres: const [], tooFew: true);
+      return DaylistResult(slotIndex: pl.slotIndex, items: const [], genres: const [], tooFew: true);
     }
     return DaylistResult(
-      slotIndex: slotIndex,
+      slotIndex: pl.slotIndex,
       items: items,
-      genres: _topGenres([for (final t in own) ...genreOf[t.id]!, for (final c in suggested) ..._suggestionGenres(inp, c, artistGenres)], inp.library),
+      genres: _topGenres([
+        for (final t in own) ...pl.genreOf[t.id]!,
+        for (final c in suggested) ..._suggestionGenres(genresOfSuggestion, c, pl.artistGenres),
+      ], pl.spelled),
       tooFew: false,
     );
   }
 
   /// [tracks] without a second copy of the same title and artist.
-  List<Track> _distinct(List<Track> tracks) {
+  static List<Track> _distinct(List<Track> tracks) {
     final seen = <String>{};
     return [for (final t in tracks) if (seen.add(_key(t.title, artistKey(t.artist)))) t];
   }
 
   /// Genres of a suggestion: the caller's, else those of the artist's songs
   /// in the library, else none.
-  List<String> _suggestionGenres(DaylistInputs inp, SuggestionCandidate c, Map<String, Set<String>> artistGenres) {
-    final own = inp.genresOfSuggestion;
+  List<String> _suggestionGenres(
+    Iterable<String> Function(SuggestionCandidate c)? own,
+    SuggestionCandidate c,
+    Map<String, Set<String>> artistGenres,
+  ) {
     if (own != null) return [for (final g in own(c)) matchKey(g)];
     return [...?artistGenres[suggestionArtistKey(c.result)]];
   }
 
   Future<List<SuggestionCandidate>> _suggestions(
-    DaylistInputs inp,
-    List<Track> seeds,
-    Map<String, Set<String>> artistGenres,
-    Set<String> libraryKeys,
+    DaylistPlan pl,
+    DaylistSuggest? suggest,
+    Iterable<String> Function(SuggestionCandidate c)? genresOfSuggestion,
     int want,
-    Set<String> avoid,
-    bool Function(Iterable<String>) passes,
   ) async {
-    final suggest = inp.suggest;
-    if (suggest == null || want <= 0 || seeds.isEmpty) return const [];
+    if (suggest == null || want <= 0 || pl.seeds.isEmpty) return const [];
+    final avoid = pl.avoid;
     final taken = <String>{};
     bool accept(SuggestionCandidate c) {
-      if (libraryKeys.contains(_key(c.result.title, suggestionArtistKey(c.result)))) return false;
-      final g = _suggestionGenres(inp, c, artistGenres);
+      if (pl.libraryKeys.contains(_key(c.result.title, suggestionArtistKey(c.result)))) return false;
+      final g = _suggestionGenres(genresOfSuggestion, c, pl.artistGenres);
       final left = [for (final x in g) if (!avoid.contains(x)) x];
       if (g.isNotEmpty && left.isEmpty) return false; // only avoided genres
       // Unknown genres follow the rule of a song without genre: only a slot without taste.
-      return passes(left);
+      return pl.passes(left);
     }
 
     final out = <SuggestionCandidate>[];
     try {
-      await for (final c in suggest(seeds, want, accept, taken.contains)) {
+      await for (final c in suggest(pl.seeds, want, accept, taken.contains)) {
         if (!taken.add(c.result.id)) continue;
         out.add(c);
         if (out.length >= want) break;
@@ -269,17 +372,11 @@ class DaylistBuilder {
     return items;
   }
 
-  /// Up to 3 most present genres, spelled as in the library.
-  List<String> _topGenres(List<String> all, List<Track> library) {
+  /// Up to 3 most present genres, spelled as in the library ([spelled]).
+  List<String> _topGenres(List<String> all, Map<String, String> spelled) {
     final count = <String, int>{};
     for (final g in all) {
       count[g] = (count[g] ?? 0) + 1;
-    }
-    final spelled = <String, String>{};
-    for (final t in library) {
-      for (final g in splitGenres([t.genre])) {
-        spelled.putIfAbsent(matchKey(g), () => g);
-      }
     }
     final top = count.keys.toList()..sort((a, b) => count[b]!.compareTo(count[a]!));
     return [for (final g in top.take(_maxNameGenres)) spelled[g] ?? g];

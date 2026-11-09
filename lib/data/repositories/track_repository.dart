@@ -390,6 +390,14 @@ class TrackRepository {
             ..limit(1))
           .getSingleOrNull();
 
+  /// Every library music track as a list row, in no particular order (the
+  /// daylist sorts them itself): no `ORDER BY`, no long texts.
+  Future<List<Track>> musicLight() => lightSelect(
+    _db,
+    _db.select(_db.tracks)
+      ..where((t) => t.missing.equals(false) & t.ignored.equals(false) & t.kind.equals(kMusicKind)),
+  ).get();
+
   Stream<List<Track>> watchTracks({
     String query = '',
     SortOption sort = SortOption.defaultOrder,
