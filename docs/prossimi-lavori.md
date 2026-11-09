@@ -168,8 +168,14 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - La pagina «Non mi piace» scrive sullo store dalla UI (`dislikes_screen.dart` Togli/Annulla). Rimedio: `unblockTrack`/`unblockArtist` con annullamento in `SuggestionActions` o un `DislikeOps`.
 - Percorso di `dislikes.json` costruito in tre punti (`main.dart`, `backup_providers.dart`, `dislike_store_provider.dart`). Rimedio: `DislikeStore.defaultFile(dir)` come `DownloadIndex.defaultFile`.
 
+### Dalla review di architettura della fase 102
+- Regola «riga remota di episodio» in più forme: tipo e percorso controllati a mano in `codecore_audio_handler.dart`, `episode_downloader.dart`, `track_actions.dart`, `resume_rows.dart`, e due `NOT LIKE 'http%'/'stream:%'` in `podcast_repository.dart`. Rimedio: `isRemoteEpisode(Track)`, un getter `TrackKindX.isRemoteEpisode` per la UI e un'espressione SQL unica.
+- La riga `tracks` di un episodio si costruisce in tre punti (insert e promozione in `playableTrack`, `_register`) con regole della copertina diverse; `setCoverKey` aggiorna solo `podcasts`, quindi `PodcastOps.save` aspetta la copertina (rete) prima del play. Rimedio: un solo costruttore della riga e `setCoverKey` che riempie anche le righe dell'episodio; copertina salvata dopo l'avvio.
+- Il gestore audio conosce la politica dello streaming degli episodi e due callback in `main.dart` (che crea un `PodcastRepository` a ogni chiamata). Rimedio: un'interfaccia `EpisodeMarks { heard; resumed }` costruita una volta.
+- `unfollowPodcast` è un flusso di dominio nella UI (`podcast_preview_screen.dart`, importato dal dettaglio) e `_toggleFollow`/`_play`/`unfollowPodcast` non mostrano errori. Rimedio: `PodcastOps.unfollow(id, deleteDownloads:)`, dialogo in un file a parte, `showMsg` sull'errore.
+
 ### Bassa
-- Scritture dei podcast dalla UI senza Ops: `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`.
+- Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
 - `PlaylistOrder.apply` viene chiamato dentro `build`.
 - La cache di `artistMergeSearchProvider` non ha limite.

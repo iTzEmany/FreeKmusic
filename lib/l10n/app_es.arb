@@ -201,6 +201,7 @@
   "reasonUnplayable": "archivo no reproducible",
   "reasonNotInLibrary": "canción no está en la biblioteca",
   "reasonOnlineUnavailable": "canción en línea no disponible",
+  "reasonEpisodeUnavailable": "episodio no disponible, comprueba la conexión",
   "reasonAgeRestricted": "restringido por edad, no se encontró pista de audio",
   "searchWeb": "Buscar info en la web",
   "enrichPreviewTitle": "Vista previa de información",
@@ -594,6 +595,7 @@
   "homeResumeQueue": "Canción {n} de {m}",
   "homeResumeQueueFrom": "{source}: canción {n} de {m}",
   "homeMinutesLeft": "{count, plural, one{Falta 1 minuto} other{Faltan {count} minutos}}",
+  "homeEpisodeLeft": "{count, plural, one{falta 1 min} other{faltan {count} min}}",
   "homeFanOpen": "Mostrar las canciones añadidas recientemente",
   "showAll": "Todos",
   "recentSearches": "Búsquedas recientes",
@@ -1923,8 +1925,8 @@
       }
     }
   },
-  "podcastUnsubscribe": "Cancelar la suscripción",
-  "podcastUnsubscribeTitle": "¿Cancelar la suscripción?",
+  "podcastUnsubscribe": "Eliminar podcast",
+  "podcastUnsubscribeTitle": "¿Eliminar el podcast?",
   "podcastUnsubscribeBody": "{count, plural, =0{El podcast se eliminará del dispositivo.} one{El podcast y 1 episodio descargado se eliminarán del dispositivo.} other{El podcast y {count} episodios descargados se eliminarán del dispositivo.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
@@ -3526,5 +3528,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "podcastFollow": "Seguir",
+  "podcastFollowing": "Siguiendo",
+  "podcastFollowLabel": "Seguir {name}",
+  "@podcastFollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastUnfollowLabel": "Dejar de seguir {name}",
+  "@podcastUnfollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastPreviewNote": "Vista previa: aún no lo sigues. Los episodios se escuchan en streaming.",
+  "podcastPreviewFollowed": "Ahora está en tus podcasts. El punto de reanudación sigue guardado.",
+  "podcastFollowedMsg": "Añadido a tus podcasts",
+  "podcastUnfollowedMsg": "Ya no lo sigues. Los episodios se siguen pudiendo escuchar",
+  "podcastPlayStream": "Reproducir en streaming: {title}",
+  "@podcastPlayStream": {"placeholders": {"title": {"type": "String"}}},
+  "podcastStreamUnavailable": "Este podcast aún no se puede escuchar en streaming.",
+  "podcastUnfollowTitle": "¿Dejar de seguir?",
+  "podcastUnfollowBody": "{count, plural, one{Tienes 1 episodio descargado. ¿Quieres conservarlo o borrarlo?} other{Tienes {count} episodios descargados. ¿Quieres conservarlos o borrarlos?}}",
+  "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
+  "podcastKeepDownloads": "Conservar",
+  "podcastDeleteDownloads": "Borrar"
 }

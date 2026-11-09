@@ -19,6 +19,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/format_utils.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/speed_button.dart';
+import 'podcast_preview_screen.dart' show unfollowPodcast;
 import 'podcast_texts.dart';
 import '../../widgets/show_msg.dart';
 import '../../../core/app_log.dart';
@@ -45,12 +46,10 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
 
   Future<void> _refresh({bool onlyIfStale = false}) async {
     if (_refreshing) return;
-    final svc = ref.read(podcastServiceProvider);
+    final ops = ref.read(podcastOpsProvider);
     setState(() => _refreshing = true);
     try {
-      final added = onlyIfStale
-          ? await svc.refreshIfStale(widget.podcastId)
-          : await svc.refresh(widget.podcastId);
+      final added = await ops.refresh(widget.podcastId, onlyIfStale: onlyIfStale);
       if (added != null && mounted && !onlyIfStale) {
         showMsg(context, context.l10n.podcastRefreshed(added));
       }
@@ -67,6 +66,12 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   /// The downloaded episodes oldest first, so listening goes forward in time,
   /// starting at the one tapped.
   Future<void> _play(List<EpisodeRow> rows, EpisodeRow tapped, String podcastTitle) async {
+    if (!tapped.downloaded) {
+      // Not downloaded: it streams, and the place is kept like for a file.
+      final ok = await ref.read(podcastOpsProvider).playStreamed(tapped.episode.id);
+      if (!ok && mounted) showMsg(context, context.l10n.podcastStreamUnavailable);
+      return;
+    }
     final downloaded = [
       for (final r in rows)
         if (r.downloaded) r,
@@ -90,9 +95,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
       destructive: true,
     );
     if (!ok) return;
-    final rows = await ref.read(podcastEpisodesProvider(p.id).future);
-    ref.read(podcastDownloadsProvider.notifier).cancelAll([for (final r in rows) r.episode.id]);
-    await ref.read(podcastServiceProvider).unsubscribe(p.id);
+    await ref.read(podcastOpsProvider).unsubscribe(p.id);
     if (mounted) Navigator.of(context).maybePop();
   }
 
@@ -143,7 +146,12 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
               groups: [
                 [
                   CcAction(
-                    icon: Icons.unsubscribe_outlined,
+                    icon: Icons.bookmark_remove_outlined,
+                    label: l.podcastUnfollowLabel(podcast.title),
+                    value: _PodcastAction.unfollow,
+                  ),
+                  CcAction(
+                    icon: Icons.delete_outline_rounded,
                     label: l.podcastUnsubscribe,
                     value: _PodcastAction.unsubscribe,
                     destructive: true,
@@ -151,6 +159,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                 ],
               ],
             );
+            if (v == _PodcastAction.unfollow && context.mounted) await unfollowPodcast(context, ref, podcast.id);
             if (v == _PodcastAction.unsubscribe) _unsubscribe(podcast, downloadedCount);
           },
         ),
@@ -273,7 +282,7 @@ class _EpisodeTile extends ConsumerWidget {
       );
     }
     return InkWell(
-      onTap: row.downloaded && !busy ? onPlay : null,
+      onTap: busy ? null : onPlay,
       child: Padding(
         padding: const EdgeInsets.only(left: CcDims.margin, right: CcDims.gap4),
         child: Row(
@@ -332,8 +341,7 @@ class _EpisodeTile extends ConsumerWidget {
                   case _EpisodeAction.heard:
                     await podcastOps.markPlayed(e.id, !e.played);
                   case _EpisodeAction.delete:
-                    final d = await ref.read(episodeDownloaderProvider.future);
-                    await d.deleteFile(e.id);
+                    await podcastOps.deleteEpisodeFile(e.id);
                   case null:
                     break;
                 }
@@ -346,6 +354,6 @@ class _EpisodeTile extends ConsumerWidget {
   }
 }
 
-enum _PodcastAction { unsubscribe }
+enum _PodcastAction { unfollow, unsubscribe }
 
 enum _EpisodeAction { heard, delete }

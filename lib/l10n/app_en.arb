@@ -201,6 +201,7 @@
   "reasonUnplayable": "file cannot be played",
   "reasonNotInLibrary": "track not in library",
   "reasonOnlineUnavailable": "online track not available",
+  "reasonEpisodeUnavailable": "episode not available, check your connection",
   "reasonAgeRestricted": "age-restricted video, no audio track found",
   "searchWeb": "Search info online",
   "enrichPreviewTitle": "Information preview",
@@ -594,6 +595,7 @@
   "homeResumeQueue": "Track {n} of {m}",
   "homeResumeQueueFrom": "{source}: track {n} of {m}",
   "homeMinutesLeft": "{count, plural, one{1 minute left} other{{count} minutes left}}",
+  "homeEpisodeLeft": "{count, plural, one{1 min left} other{{count} min left}}",
   "homeFanOpen": "Show recently added songs",
   "showAll": "All",
   "recentSearches": "Recent searches",
@@ -1923,8 +1925,8 @@
       }
     }
   },
-  "podcastUnsubscribe": "Unsubscribe",
-  "podcastUnsubscribeTitle": "Unsubscribe?",
+  "podcastUnsubscribe": "Delete podcast",
+  "podcastUnsubscribeTitle": "Delete the podcast?",
   "podcastUnsubscribeBody": "{count, plural, =0{The podcast will be deleted from the device.} one{The podcast and 1 downloaded episode will be deleted from the device.} other{The podcast and {count} downloaded episodes will be deleted from the device.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
@@ -3526,5 +3528,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "podcastFollow": "Follow",
+  "podcastFollowing": "Following",
+  "podcastFollowLabel": "Follow {name}",
+  "@podcastFollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastUnfollowLabel": "Stop following {name}",
+  "@podcastUnfollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastPreviewNote": "Preview: you do not follow it yet. Episodes play as a stream.",
+  "podcastPreviewFollowed": "It is now in your podcasts. Your place is still saved.",
+  "podcastFollowedMsg": "Added to your podcasts",
+  "podcastUnfollowedMsg": "You no longer follow it. Episodes stay playable",
+  "podcastPlayStream": "Play as a stream: {title}",
+  "@podcastPlayStream": {"placeholders": {"title": {"type": "String"}}},
+  "podcastStreamUnavailable": "This podcast cannot be streamed yet.",
+  "podcastUnfollowTitle": "Stop following?",
+  "podcastUnfollowBody": "{count, plural, one{You have 1 downloaded episode. Keep it or delete it?} other{You have {count} downloaded episodes. Keep them or delete them?}}",
+  "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
+  "podcastKeepDownloads": "Keep",
+  "podcastDeleteDownloads": "Delete"
 }

@@ -557,6 +557,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reasonOnlineUnavailable => 'Online-Titel nicht verfügbar';
 
   @override
+  String get reasonEpisodeUnavailable =>
+      'Folge nicht verfügbar, prüfe die Verbindung';
+
+  @override
   String get reasonAgeRestricted =>
       'altersbeschränkt, keine Audiospur gefunden';
 
@@ -1405,6 +1409,17 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: 'Noch $count Minuten',
       one: 'Noch 1 Minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeEpisodeLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'noch $count Min.',
+      one: 'noch 1 Min.',
     );
     return '$_temp0';
   }
@@ -3570,10 +3585,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get podcastUnsubscribe => 'Abo beenden';
+  String get podcastUnsubscribe => 'Podcast löschen';
 
   @override
-  String get podcastUnsubscribeTitle => 'Abo beenden?';
+  String get podcastUnsubscribeTitle => 'Podcast löschen?';
 
   @override
   String podcastUnsubscribeBody(int count) {
@@ -6935,4 +6950,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String dislikesBlockedOn(String date) {
     return 'Ausgeschlossen am $date';
   }
+
+  @override
+  String get podcastFollow => 'Folgen';
+
+  @override
+  String get podcastFollowing => 'Gefolgt';
+
+  @override
+  String podcastFollowLabel(String name) {
+    return '$name folgen';
+  }
+
+  @override
+  String podcastUnfollowLabel(String name) {
+    return '$name nicht mehr folgen';
+  }
+
+  @override
+  String get podcastPreviewNote =>
+      'Vorschau: Du folgst dem Podcast noch nicht. Folgen werden gestreamt.';
+
+  @override
+  String get podcastPreviewFollowed =>
+      'Jetzt in deinen Podcasts. Deine Hörposition bleibt gespeichert.';
+
+  @override
+  String get podcastFollowedMsg => 'Zu deinen Podcasts hinzugefügt';
+
+  @override
+  String get podcastUnfollowedMsg =>
+      'Du folgst dem Podcast nicht mehr. Folgen bleiben abspielbar';
+
+  @override
+  String podcastPlayStream(String title) {
+    return 'Als Stream abspielen: $title';
+  }
+
+  @override
+  String get podcastStreamUnavailable =>
+      'Dieser Podcast lässt sich noch nicht streamen.';
+
+  @override
+  String get podcastUnfollowTitle => 'Nicht mehr folgen?';
+
+  @override
+  String podcastUnfollowBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Du hast $count heruntergeladene Folgen. Behalten oder löschen?',
+      one: 'Du hast 1 heruntergeladene Folge. Behalten oder löschen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get podcastKeepDownloads => 'Behalten';
+
+  @override
+  String get podcastDeleteDownloads => 'Löschen';
 }

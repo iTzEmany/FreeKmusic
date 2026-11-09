@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/podcast_ops.dart';
 import '../../../providers/podcast_providers.dart';
 import '../../../services/podcast/podcast_models.dart';
 import '../../theme/tokens.dart';
@@ -52,7 +53,7 @@ class _PodcastSubscribeSheetState extends ConsumerState<PodcastSubscribeSheet> {
       _error = null;
     });
     try {
-      await ref.read(podcastServiceProvider).subscribeFromUrl(url);
+      await ref.read(podcastOpsProvider).followUrl(url);
       if (!mounted) return;
       showMsg(context, l.podcastSubscribed(name ?? url.trim()));
       Navigator.of(context).pop();

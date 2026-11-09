@@ -514,6 +514,7 @@ void main() {
       );
       await _settle(tester);
       expect(await _open(tester, find.byKey(const ValueKey('podcast-menu'))), [
+        'unfollow',
         'unsubscribe',
       ]);
       await tester.tapAt(const Offset(5, 5));

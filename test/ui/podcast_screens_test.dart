@@ -472,9 +472,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('podcast-menu')));
       await _settle(tester);
-      await tester.tap(find.text('Annulla l’iscrizione'));
+      await tester.tap(find.text('Elimina podcast'));
       await _settle(tester);
-      expect(find.text('Annullare l’iscrizione?'), findsOneWidget);
+      expect(find.text('Eliminare il podcast?'), findsOneWidget);
       expect(find.textContaining('1 episodio scaricato'), findsOneWidget);
       await tester.tap(find.text('Annulla'));
       await _settle(tester);
@@ -482,9 +482,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('podcast-menu')));
       await _settle(tester);
-      await tester.tap(find.text('Annulla l’iscrizione'));
+      await tester.tap(find.text('Elimina podcast'));
       await _settle(tester);
-      await tester.tap(find.widgetWithText(FilledButton, 'Annulla l’iscrizione'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Elimina podcast'));
       for (var i = 0; i < 10 && File(path).existsSync(); i++) {
         await _settle(tester);
       }

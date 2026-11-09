@@ -110,10 +110,10 @@ void main() {
   );
 
   test(
-    'watchResumable: only tracks left in the middle, newest first, limited',
+    'watchResumable: tracks and episodes left in the middle, never kind 2, newest first, limited',
     () async {
       await repo.upsertBatch([
-        for (var i = 0; i < 4; i++) row('/$i.mp3', 'T$i'),
+        for (var i = 0; i < 6; i++) row('/$i.mp3', 'T$i'),
       ]);
       final ids = [for (final t in await db.select(db.tracks).get()) t.id];
       Future<void> set(
@@ -121,22 +121,65 @@ void main() {
         int? resume,
         int? played, {
         bool missing = false,
+        int kind = 0,
       }) => (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
         TracksCompanion(
           resumePositionMs: Value(resume),
           lastPlayedAt: Value(played),
           missing: Value(missing),
+          kind: Value(kind),
         ),
       );
       await set(ids[0], 1000, 10);
       await set(ids[1], 1000, 30);
       await set(ids[2], null, 50); // finished: no bookmark
       await set(ids[3], 1000, 40, missing: true);
+      await set(ids[4], 1000, 20, kind: 1); // an episode, followed or not
+      await set(ids[5], 1000, 60, kind: 2); // a stream shadow row
       final r = await repo.watchResumable().first;
-      expect(r.map((t) => t.title), ['T1', 'T0']);
+      expect(r.map((t) => t.title), ['T1', 'T4', 'T0']);
       expect((await repo.watchResumable(limit: 1).first).single.title, 'T1');
     },
   );
+
+  test('watchResumable: an episode of a podcast that is not followed shows up', () async {
+    final podcastId = await db.into(db.podcasts).insert(PodcastsCompanion.insert(
+        feedUrl: 'https://x/feed', title: 'Show', addedAt: 1, followed: const Value(false)));
+    final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/p/e.mp3', title: 'Ep', albumKey: 'podcast|$podcastId', format: 'mp3', sizeBytes: 1,
+        mtimeMs: 1, addedAt: 1, kind: const Value(1), resumePositionMs: const Value(5000),
+        lastPlayedAt: const Value(9)));
+    await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+        podcastId: podcastId, guid: 'e', title: 'Ep', audioUrl: 'https://x/e.mp3', trackId: Value(trackId)));
+    expect((await repo.watchResumable().first).single.title, 'Ep');
+  });
+
+  test('watchResumable: an episode marked as heard by hand is not offered', () async {
+    final podcastId = await db.into(db.podcasts).insert(
+        PodcastsCompanion.insert(feedUrl: 'https://x/feed', title: 'Show', addedAt: 1));
+    Future<void> episode(String guid, {required bool played}) async {
+      final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: 'https://x/$guid.mp3', title: guid, albumKey: 'podcast|$podcastId', format: 'mp3',
+          sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: const Value(1),
+          resumePositionMs: const Value(5000), lastPlayedAt: const Value(9)));
+      await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+          podcastId: podcastId, guid: guid, title: guid, audioUrl: 'https://x/$guid.mp3',
+          trackId: Value(trackId), played: Value(played)));
+    }
+    await episode('open', played: false);
+    await episode('heard', played: true);
+    expect((await repo.watchResumable().first).map((t) => t.title), ['open']);
+  });
+
+  test('a remote episode row (no folder) is invisible to the scan and never missing', () async {
+    final folderId = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
+    await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: 'https://x/e.mp3', title: 'E', albumKey: 'podcast|1', format: 'mp3', sizeBytes: 0,
+        mtimeMs: 0, addedAt: 1, kind: const Value(1)));
+    expect(await repo.fileIndexForFolder(folderId), isEmpty, reason: 'the scan only marks what is in its index');
+    expect(await repo.missingPathsForFolder(folderId), isEmpty);
+    expect(await repo.watchMissing().first, isEmpty);
+  });
 
   test('setLyrics byUser marks the text as the user\'s; otherwise no mark', () async {
     await repo.upsertBatch([row('/a.mp3', 'A')]);

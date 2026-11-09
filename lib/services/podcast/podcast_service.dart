@@ -82,7 +82,8 @@ class PodcastService {
     return u.toString();
   }
 
-  Future<PodcastFeed> _read(String url) async {
+  /// Reads the feed at [url] in memory: nothing is saved (the preview of a show not followed).
+  Future<PodcastFeed> peek(String url) async {
     final String text;
     try {
       text = await fetch(url);
@@ -108,7 +109,7 @@ class PodcastService {
   /// again to the same address just refreshes it.
   Future<int> subscribeFromUrl(String url) async {
     final feedUrl = normalizeUrl(url);
-    final feed = await _read(feedUrl);
+    final feed = await peek(feedUrl);
     final id = await repo.subscribe(feedUrl, feed, now: _nowMs);
     await storePodcastCover(repo, saveCover, id, feed.imageUrl);
     return id;
@@ -150,7 +151,7 @@ class PodcastService {
       if (sync == null) throw const PodcastException(PodcastErrorKind.network, 'no YouTube Music reader');
       return sync.refresh(podcastId);
     }
-    final feed = await _read(podcast.feedUrl);
+    final feed = await peek(podcast.feedUrl);
     final added = await repo.upsertEpisodes(podcastId, feed.episodes);
     await repo.markChecked(podcastId, _nowMs);
     await storePodcastCover(repo, saveCover, podcastId, feed.imageUrl ?? podcast.imageUrl);
@@ -167,10 +168,10 @@ class PodcastService {
     return refresh(podcastId);
   }
 
-  /// Every podcast, one after the other; a failure does not stop the rest.
+  /// Every followed podcast, one after the other; a failure does not stop the rest.
   Future<RefreshReport> refreshAll() async {
     final report = RefreshReport();
-    for (final p in await repo.all()) {
+    for (final p in await repo.allFollowed()) {
       try {
         report.added[p.id] = await refresh(p.id);
       } on PodcastException catch (e) {

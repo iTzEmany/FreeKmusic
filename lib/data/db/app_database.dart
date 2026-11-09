@@ -8,7 +8,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 18;
+const kSchemaVersion = 19;
 
 @DriftDatabase(
   tables: [
@@ -186,6 +186,15 @@ class AppDatabase extends _$AppDatabase {
         if (cols.isNotEmpty && !cols.contains('source')) {
           await m.addColumn(podcasts, podcasts.source);
           await m.addColumn(podcasts, podcasts.sourceId);
+        }
+      }
+      if (from < 19) {
+        // Existing podcasts stay followed (column default); a table just created above already has it.
+        final cols = {
+          for (final c in await customSelect("PRAGMA table_info('podcasts')").get()) c.read<String>('name'),
+        };
+        if (cols.isNotEmpty && !cols.contains('followed')) {
+          await m.addColumn(podcasts, podcasts.followed);
         }
       }
     },

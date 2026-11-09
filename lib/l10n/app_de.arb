@@ -201,6 +201,7 @@
   "reasonUnplayable": "Datei nicht abspielbar",
   "reasonNotInLibrary": "Titel nicht in der Bibliothek",
   "reasonOnlineUnavailable": "Online-Titel nicht verfügbar",
+  "reasonEpisodeUnavailable": "Folge nicht verfügbar, prüfe die Verbindung",
   "reasonAgeRestricted": "altersbeschränkt, keine Audiospur gefunden",
   "searchWeb": "Infos im Web suchen",
   "enrichPreviewTitle": "Vorschau der Informationen",
@@ -594,6 +595,7 @@
   "homeResumeQueue": "Titel {n} von {m}",
   "homeResumeQueueFrom": "{source}: Titel {n} von {m}",
   "homeMinutesLeft": "{count, plural, one{Noch 1 Minute} other{Noch {count} Minuten}}",
+  "homeEpisodeLeft": "{count, plural, one{noch 1 Min.} other{noch {count} Min.}}",
   "homeFanOpen": "Kürzlich hinzugefügte Titel anzeigen",
   "showAll": "Alle",
   "recentSearches": "Letzte Suchen",
@@ -1923,8 +1925,8 @@
       }
     }
   },
-  "podcastUnsubscribe": "Abo beenden",
-  "podcastUnsubscribeTitle": "Abo beenden?",
+  "podcastUnsubscribe": "Podcast löschen",
+  "podcastUnsubscribeTitle": "Podcast löschen?",
   "podcastUnsubscribeBody": "{count, plural, =0{Der Podcast wird vom Gerät gelöscht.} one{Der Podcast und 1 heruntergeladene Folge werden vom Gerät gelöscht.} other{Der Podcast und {count} heruntergeladene Folgen werden vom Gerät gelöscht.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
@@ -3526,5 +3528,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "podcastFollow": "Folgen",
+  "podcastFollowing": "Gefolgt",
+  "podcastFollowLabel": "{name} folgen",
+  "@podcastFollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastUnfollowLabel": "{name} nicht mehr folgen",
+  "@podcastUnfollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastPreviewNote": "Vorschau: Du folgst dem Podcast noch nicht. Folgen werden gestreamt.",
+  "podcastPreviewFollowed": "Jetzt in deinen Podcasts. Deine Hörposition bleibt gespeichert.",
+  "podcastFollowedMsg": "Zu deinen Podcasts hinzugefügt",
+  "podcastUnfollowedMsg": "Du folgst dem Podcast nicht mehr. Folgen bleiben abspielbar",
+  "podcastPlayStream": "Als Stream abspielen: {title}",
+  "@podcastPlayStream": {"placeholders": {"title": {"type": "String"}}},
+  "podcastStreamUnavailable": "Dieser Podcast lässt sich noch nicht streamen.",
+  "podcastUnfollowTitle": "Nicht mehr folgen?",
+  "podcastUnfollowBody": "{count, plural, one{Du hast 1 heruntergeladene Folge. Behalten oder löschen?} other{Du hast {count} heruntergeladene Folgen. Behalten oder löschen?}}",
+  "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
+  "podcastKeepDownloads": "Behalten",
+  "podcastDeleteDownloads": "Löschen"
 }

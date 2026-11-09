@@ -128,8 +128,10 @@ Future<void> main() async {
           }));
         },
         history: PlayHistoryRepository(db),
-        onEpisodeHeard: (id) => unawaited(PodcastRepository(db)
-            .markPlayedByTrack(id, true, now: DateTime.now().millisecondsSinceEpoch)),
+        onEpisodeHeard: (id) => PodcastRepository(db)
+            .markPlayedByTrack(id, true, now: DateTime.now().millisecondsSinceEpoch),
+        onEpisodeResumed: (id) => PodcastRepository(db)
+            .markPlayedByTrack(id, false, now: DateTime.now().millisecondsSinceEpoch),
         coverPathFor: (t) =>
             t.coverKey == null ? null : covers.fileFor(t.coverKey!)?.path,
       );

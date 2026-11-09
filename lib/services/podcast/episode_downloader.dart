@@ -12,41 +12,14 @@ import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/podcast_repository.dart';
+import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import '../online/http_client.dart';
 import '../online/yt_dlp_args.dart' show downloadExtensions, podcastAudioSelector;
 import '../online/youtube_service.dart';
-import 'ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import '../tags/tag_reader.dart';
 import 'podcast_models.dart';
-
-/// The audio containers an episode may come in, by the extension we save it as.
-const episodeExtensions = {'mp3', 'm4a', 'ogg', 'opus'};
-
-/// `mp3`, `m4a`, `ogg` or `opus` from what the server says, else from the
-/// address, else from what the feed said; null when none of them is known.
-String? episodeExtension({String? contentType, String? url, String? mime}) {
-  String? fromMime(String? m) {
-    final t = (m ?? '').toLowerCase().split(';').first.trim();
-    return switch (t) {
-      'audio/mpeg' || 'audio/mp3' || 'audio/mpeg3' || 'audio/x-mpeg' => 'mp3',
-      'audio/mp4' || 'audio/x-m4a' || 'audio/m4a' || 'audio/aac' || 'audio/x-aac' => 'm4a',
-      'audio/ogg' || 'application/ogg' || 'audio/vorbis' => 'ogg',
-      'audio/opus' => 'opus',
-      _ => null,
-    };
-  }
-
-  String? fromUrl(String? u) {
-    final path = Uri.tryParse(u ?? '')?.path ?? '';
-    final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
-    if (ext == 'mp4') return 'm4a';
-    return episodeExtensions.contains(ext) ? ext : null;
-  }
-
-  return fromMime(contentType) ?? fromUrl(url) ?? fromMime(mime);
-}
 
 /// A file name that is safe on every system and unique per `guid`: the readable
 /// part of the guid, cut short, and a few letters of its hash.
@@ -219,40 +192,60 @@ class EpisodeDownloader {
   /// Makes the saved file [target] a library track and links the episode to it.
   Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
     final info = await _readTags(target);
-    // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
-    if (await repo.episodeById(episode.id) == null) {
-      await _deleteQuietly(File(target));
-      return null;
-    }
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
-    await tracks.upsertBatch([
-      TracksCompanion.insert(
-        path: target,
-        title: episode.title,
-        albumKey: albumKey,
-        format: ext,
-        sizeBytes: st.size,
-        mtimeMs: st.modified.millisecondsSinceEpoch,
-        addedAt: DateTime.now().millisecondsSinceEpoch,
-        artist: Value(podcast.title),
-        albumArtist: Value(podcast.title),
-        album: Value(podcast.title),
-        genre: const Value('Podcast'),
-        durationMs: Value(info.durationMs ?? episode.durationMs ?? 0),
-        bitrateKbps: Value(info.bitrateKbps),
-        sampleRateHz: Value(info.sampleRateHz),
-        hasCover: Value(podcast.coverKey != null),
-        coverKey: Value(podcast.coverKey ?? CoverStore.coverKeyFor(albumKey)),
-        kind: const Value(1),
-      ),
-    ]);
-    final trackId = await tracks.idForPath(target);
-    if (trackId == null) {
-      throw const PodcastException(PodcastErrorKind.network, 'library row missing');
-    }
-    await repo.setTrackId(episode.id, trackId);
-    return trackId;
+    // One transaction: a first play in streaming may be making the episode's row right now.
+    final id = await repo.atomically<int?>(() async {
+      // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
+      final current = await repo.episodeById(episode.id);
+      if (current == null) return null;
+      // Played in streaming before: the same row takes the file, so the bookmark stays.
+      final streamed = current.trackId == null ? null : await tracks.getById(current.trackId!);
+      if (streamed != null && streamed.kind == kEpisodeKind && isRemoteEpisodePath(streamed.path)) {
+        await repo.attachFile(
+          streamed.id,
+          TracksCompanion(
+            path: Value(target),
+            format: Value(ext),
+            sizeBytes: Value(st.size),
+            mtimeMs: Value(st.modified.millisecondsSinceEpoch),
+            durationMs: Value(info.durationMs ?? streamed.durationMs),
+            bitrateKbps: Value(info.bitrateKbps),
+            sampleRateHz: Value(info.sampleRateHz),
+          ),
+        );
+        return streamed.id;
+      }
+      await tracks.upsertBatch([
+        TracksCompanion.insert(
+          path: target,
+          title: episode.title,
+          albumKey: albumKey,
+          format: ext,
+          sizeBytes: st.size,
+          mtimeMs: st.modified.millisecondsSinceEpoch,
+          addedAt: DateTime.now().millisecondsSinceEpoch,
+          artist: Value(podcast.title),
+          albumArtist: Value(podcast.title),
+          album: Value(podcast.title),
+          genre: const Value('Podcast'),
+          durationMs: Value(info.durationMs ?? episode.durationMs ?? 0),
+          bitrateKbps: Value(info.bitrateKbps),
+          sampleRateHz: Value(info.sampleRateHz),
+          hasCover: Value(podcast.coverKey != null),
+          coverKey: Value(podcast.coverKey ?? CoverStore.coverKeyFor(albumKey)),
+          kind: const Value(1),
+        ),
+      ]);
+      final trackId = await tracks.idForPath(target);
+      if (trackId == null) {
+        throw const PodcastException(PodcastErrorKind.network, 'library row missing');
+      }
+      await repo.setTrackId(episode.id, trackId);
+      return trackId;
+    });
+    if (id == null) await _deleteQuietly(File(target));
+    return id;
   }
 
   Future<TagInfo> _readTags(String path) async {
@@ -269,19 +262,22 @@ class EpisodeDownloader {
     }
   }
 
-  /// Deletes the episode's file and its library row; the episode stays listed,
-  /// as «not downloaded». Only a file inside the podcast folder is ever deleted.
+  /// Deletes the episode's file; the episode stays listed, as «not downloaded». Its library row
+  /// goes back to the audio address (bookmark and plays stay) or, with none, is deleted.
+  /// Only a file inside the podcast folder is ever deleted.
   Future<void> deleteFile(int episodeId) async {
     final episode = await repo.episodeById(episodeId);
     final trackId = episode?.trackId;
     if (episode == null || trackId == null) return;
     final track = await tracks.getById(trackId);
     if (track != null && track.kind == 1) {
+      if (isRemoteEpisodePath(track.path)) return; // already streaming: no file to delete
       if (_inside(track.path)) {
         await _deleteQuietly(File(track.path));
       } else {
         AppLog.w('episode file outside the podcast folder, not deleted: ${track.path}');
       }
+      if (await repo.backToRemote(episodeId)) return;
       await tracks.deleteTrack(trackId);
     }
     await repo.setTrackId(episodeId, null);
@@ -345,6 +341,3 @@ class EpisodeDownloader {
     }
   }
 }
-
-/// The albumKey every episode of a podcast shares (its cover hangs on it).
-String podcastAlbumKeyOf(int podcastId) => 'podcast|$podcastId';

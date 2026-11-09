@@ -111,11 +111,16 @@ class TrackRepository {
       : lightSelect(
           _db,
           _db.select(_db.tracks)
-            ..where((t) => t.id.isIn(ids) & t.kind.equals(kStreamKind)),
+            // A streamed YouTube Music episode (kind 1) has the same kind of path.
+            ..where((t) => t.id.isIn(ids) & t.kind.isIn(const [kStreamKind, kEpisodeKind]) & t.path.like('stream:%')),
         ).get();
 
-  /// The shadow row of the streamed track [key], if it has one.
-  Future<Track?> streamRow(String key) => byPath(streamPathOf(key));
+  /// The shadow row (`kind = 2`) of the streamed track [key], if it has one. A podcast episode
+  /// (kind 1) on the same path is not one: promote and merge never touch it.
+  Future<Track?> streamRow(String key) async {
+    final row = await byPath(streamPathOf(key));
+    return row != null && row.kind == kStreamKind ? row : null;
+  }
 
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
   /// in the cache). Rows with plays stay (D-81). Returns how many went.
@@ -183,6 +188,8 @@ class TrackRepository {
     return _db.transaction(() async {
       final existing = await byPath(path);
       if (existing == null) return _db.into(_db.tracks).insert(row);
+      // A podcast episode streamed from the same address: its size and format are its own.
+      if (existing.kind != kStreamKind) return existing.id;
       await (_db.update(_db.tracks)..where((t) => t.id.equals(existing.id)))
           .write(TracksCompanion(
         sizeBytes: row.sizeBytes,
@@ -736,7 +743,8 @@ class TrackRepository {
       ..limit(limit),
   ).watch();
 
-  /// Tracks left in the middle, newest first (the Home «Riprendi» rows).
+  /// Tracks and podcast episodes left in the middle, newest first (the Home
+  /// «Riprendi» rows). Kind 2 (stream shadow rows) stays out.
   Stream<List<Track>> watchResumable({int limit = 3}) =>
       (_db.select(_db.tracks)
             ..where(
@@ -744,7 +752,10 @@ class TrackRepository {
                   t.resumePositionMs.isNotNull() &
                   t.missing.equals(false) &
                   t.ignored.equals(false) &
-                  t.kind.equals(0),
+                  t.kind.isIn(const [0, kEpisodeKind]) &
+                  // Marked as heard by hand: nothing left to resume.
+                  notExistsQuery(_db.select(_db.podcastEpisodes)
+                    ..where((e) => e.trackId.equalsExp(t.id) & e.played.equals(true))),
             )
             ..orderBy([(t) => OrderingTerm.desc(t.lastPlayedAt)])
             ..limit(limit))

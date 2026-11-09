@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../data/db/app_database.dart';
 import '../data/repositories/library_queries.dart';
+import '../data/repositories/track_kinds.dart';
 import '../data/repositories/track_repository.dart';
 import '../services/jam/jam_models.dart';
 import '../services/jam/jam_part_feeder.dart';
@@ -14,6 +15,7 @@ import '../services/jam/jam_suggestion.dart';
 /// The Jam item of library track [t] owned by [ownId]; null when its format cannot go in a Jam.
 JamItem? jamItemOfTrack(Track t, String ownId,
     {bool inherited = false, String? partKey, bool suggested = false, String? videoId}) {
+  if (isRemoteEpisodePath(t.path)) return null; // no file on this device to send
   final ext = p.extension(t.path).replaceFirst('.', '').toLowerCase();
   if (!jamExts.contains(ext)) return null;
   return JamItem(

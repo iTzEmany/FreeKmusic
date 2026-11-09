@@ -20,6 +20,7 @@ import '../../widgets/section_header.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/skeleton.dart';
 import 'podcast_detail_screen.dart';
+import 'podcast_preview_screen.dart';
 import 'podcast_subscribe_sheet.dart';
 import 'podcast_texts.dart';
 
@@ -74,17 +75,10 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
     final l = context.l10n;
     setState(() => _busy.add(item.key));
     try {
-      if (item.origin == PodcastOrigin.ytm) {
-        await ref.read(ytmPodcastSyncProvider).subscribe(item.ytmId!);
-      } else {
-        final service = ref.read(podcastServiceProvider);
-        // A chart row has no feed yet: Apple gives it on request.
-        final feed = item.feedUrl ?? (await service.apple.lookup(item.appleId!))?.feedUrl;
-        if (feed == null) {
-          if (mounted) showMsg(context, l.podcastNoFeed);
-          return;
-        }
-        await service.subscribeFromUrl(feed);
+      final id = await ref.read(podcastOpsProvider).followListing(item);
+      if (id == null) {
+        if (mounted) showMsg(context, l.podcastNoFeed);
+        return;
       }
       if (mounted) showMsg(context, l.podcastSubscribed(item.title));
     } on PodcastException catch (e) {
@@ -105,7 +99,10 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
       subscribed: id != null,
       busy: _busy.contains(item.key),
       onSubscribe: () => _subscribe(item),
-      onOpen: id == null ? null : () => ShellNav.open<void>(context, PodcastDetailScreen(podcastId: id)),
+      onOpen: () => ShellNav.open<void>(
+        context,
+        id == null ? PodcastPreviewScreen(listing: item) : PodcastDetailScreen(podcastId: id),
+      ),
     );
   }
 

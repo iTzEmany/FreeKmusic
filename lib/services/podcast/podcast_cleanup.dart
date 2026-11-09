@@ -32,7 +32,7 @@ class PodcastCleanup {
     final nowMs = _now().millisecondsSinceEpoch;
     final busy = inUse();
     var deleted = 0;
-    for (final podcast in await repo.all()) {
+    for (final podcast in await repo.allFollowed()) {
       final days = podcast.autoDeleteDays;
       if (days == null || days <= 0) continue;
       final limit = days * Duration.millisecondsPerDay;

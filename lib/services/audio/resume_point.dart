@@ -51,3 +51,6 @@ Duration? resumeStartFor(int? savedMs) {
 /// unknown length, <= 0, is never past).
 bool isPastEnd(Duration position, int durationMs) =>
     durationMs > 0 && position.inMilliseconds >= durationMs;
+
+/// A position this close to where a seek asked to go tells the seek arrived.
+const kSeekConfirm = Duration(seconds: 30);

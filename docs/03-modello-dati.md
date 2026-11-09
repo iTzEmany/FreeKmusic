@@ -38,7 +38,7 @@ in `onUpgrade` (mai distruttiva). Esporta lo schema con `drift_dev schema dump` 
 | `userEdited` | bool | default false: se true l'arricchimento **non** sovrascrive titolo/artista/album |
 | `missing` | bool | default false: file non trovato all'ultima scansione |
 | `ignored` | bool | default false (schema v8): doppione unito e **nascosto** dalla pulizia. Sparisce da brani, album, artisti, generi, ricerca, playlist, cronologia e abbinamenti. A differenza di `missing`, la scansione **non lo riattiva**: solo «Brani nascosti → Ripristina» |
-| `kind` | int | default 0 (schema v9): **0 musica · 1 episodio di podcast scaricato**. Ogni vista musicale (brani, album, artisti, generi, ricerca, Home, playlist, abbinamenti) filtra `kind = 0`; gli episodi non compaiono mai in libreria. Indice `tracks_kind` |
+| `kind` | int | default 0 (schema v9): **0 musica · 1 episodio di podcast** (scaricato: file in `podcasts/`; in streaming: percorso remoto, vedi `podcast_episodes`) **· 2 riga ombra di un brano in streaming** (`stream:<key>`, fase 45). Ogni vista musicale (brani, album, artisti, generi, ricerca, Home, playlist, abbinamenti) filtra `kind = 0`; gli episodi non compaiono mai in libreria. Indice `tracks_kind` |
 | `sha256` | text? | calcolato solo su richiesta (fase 21): per i brani con la **stessa dimensione** di un altro, a flusso in un isolate; azzerato dalla scansione se dimensione o data del file cambiano |
 | `addedAt` | int | epoch ms |
 | `playCount` | int | default 0 |
@@ -85,6 +85,9 @@ Una colonna su `tracks` (`kind`, vedi sopra) e due tabelle; la migrazione non ca
 ### `podcast_episodes`
 `id` int PK · `podcastId` int (**CASCADE**: togliere un podcast toglie i suoi episodi) · `guid` text (o l'`enclosure@url` se il feed non ne ha) · `title` text · `publishedAt` int? · `durationMs` int? · `audioUrl` text · `mimeType` text? · `sizeBytes` int? · `description` text? (testo semplice) · `trackId` int? (**SET NULL** verso `tracks`: se la riga del brano sparisce l'episodio resta in elenco come «non scaricato») · `played` bool default false · `playedAt` int?. **UNIQUE (`podcastId`, `guid`)**: un aggiornamento non duplica mai un episodio. Indice `(podcastId, publishedAt)` per l'elenco in ordine di data.
 Un episodio **scaricato** ha una riga in `tracks` con `kind = 1`, `folderId = null` e il file in `<appSupportDir>/podcasts/<podcastId>/`, cartella che non è in `folders` e quindi la scansione non vede.
+Un episodio ascoltato in streaming (fase 102) ha una riga `kind = 1` con `path` = indirizzo `http(s)` (eventualmente `#cc-ep=<id>`) oppure `stream:youtube:<guid>`, `sizeBytes = 0`, `mtimeMs = 0`: un `trackId` non nullo non vuol dire «scaricato» (`isRemoteEpisodePath`).
+
+**Schema v19 (fase 102)**: `podcasts.followed` bool, di serie true; false = salvato solo per ascoltarlo, fuori dalla lista, senza aggiornamenti dei feed né pulizia automatica (D-435, D-470). Un `addColumn` ripetibile (controlla prima `PRAGMA table_info`); nessuna colonna nuova su `tracks`.
 
 ## Curiosità sull'artista (schema v11)
 **Chiave artista** (fase 99): `artistKey` è un formato salvato (`artist_infos`, `artist_lookups`, `artist_countries`, `dislikes.json`, backup): cambiarla richiede una migrazione delle righe esistenti. La protegge `test/services/online/artist_key_test.dart`.
