@@ -90,10 +90,10 @@ void main() {
     expect(online.idsOf(_r('x')), isEmpty);
   });
 
-  test('enqueueOnline appends to the end of the queue', () async {
+  test('enqueueOnline goes right after the current track', () async {
     await player.enqueueOnline(_r('e'));
     final q = handler.queueIds;
-    expect(isOnlineId(q.last), isTrue);
+    expect(isOnlineId(q[1]), isTrue);
     expect(q.length, 3);
     expect(handler.currentIndex, 0);
     expect(q[0], ids[0]);

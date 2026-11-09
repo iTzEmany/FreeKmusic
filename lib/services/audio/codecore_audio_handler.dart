@@ -346,6 +346,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   bool get isPlaying => _state == BackendState.playing;
   List<int> get queueIds => _queue.items;
   int get currentIndex => _queue.currentIndex;
+  int get userAhead => _queue.userAhead;
   bool get hasNext =>
       _queue.hasNext || (_queueRadio != null && _queue.items.length > 1);
   bool get shuffleEnabled => _queue.shuffle;
@@ -1726,7 +1727,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   void addToQueue(int trackId) {
     if (_queue.isEmpty) _source = null;
-    _queue.append(trackId);
+    _queue.enqueue(trackId);
     _queueController.add(null);
     unawaited(_refreshWindow());
   }

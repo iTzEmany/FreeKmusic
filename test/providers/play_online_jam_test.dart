@@ -155,7 +155,7 @@ void main() {
     await player.enqueueOnline(_r('a'));
     expect(toJam, isEmpty);
     expect(onlineToJam, isEmpty);
-    expect(handler.queueIds.sublist(0, 3), [ids[0], ids[1], ids[0]]);
+    expect(handler.queueIds.sublist(0, 2), [ids[0], ids[0]]);
     expect(handler.queueIds.length, 4);
   });
 
