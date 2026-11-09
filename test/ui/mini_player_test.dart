@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/mini_player.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -35,6 +37,22 @@ void main() {
     final h = await _shell(t, textScale: 2);
     expect(t.takeException(), isNull);
     expect(find.byType(MiniPlayer), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  // Changes in 109 (D-486): long titles will scroll.
+  testWidgets('a long title is one line with an ellipsis', (t) async {
+    final longTitle = 'A very long title ' * 20;
+    final h = await Harness.create(t, tracks: 1);
+    await t.runAsync(() => h.db.update(h.db.tracks).write(TracksCompanion(title: Value(longTitle))));
+    final rows = await t.runAsync(() => h.db.select(h.db.tracks).get());
+    await t.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(t, const Scaffold(body: MiniPlayer()));
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await t.pump(const Duration(milliseconds: 300));
+    final title = t.widget<Text>(find.text(longTitle));
+    expect(title.maxLines, 1);
+    expect(title.overflow, TextOverflow.ellipsis);
     await h.dispose(t);
   });
 

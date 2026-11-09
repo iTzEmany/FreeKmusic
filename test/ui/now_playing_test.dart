@@ -91,6 +91,28 @@ void main() {
     await h.dispose(tester);
   });
 
+  // Changes in 109 (D-486): long titles will scroll.
+  testWidgets('a long title is one line with an ellipsis', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final longTitle = 'A very long title ' * 20;
+    final h = await Harness.create(tester, tracks: 1);
+    await tester.runAsync(
+      () => h.db
+          .update(h.db.tracks)
+          .write(TracksCompanion(title: Value(longTitle))),
+    );
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(tester, const NowPlayingScreen());
+    await _settle(tester);
+    final title = tester.widget<Text>(find.text(longTitle));
+    expect(title.maxLines, 1);
+    expect(title.overflow, TextOverflow.ellipsis);
+    await h.dispose(tester);
+  });
+
   testWidgets('play context shows the album name', (tester) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;

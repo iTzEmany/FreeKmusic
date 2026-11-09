@@ -66,6 +66,17 @@ void main() {
     expect(u, isEmpty);
   });
 
+  // Changes in 110.5 (D-500): accents will match.
+  test(
+    'search is accent-sensitive: "e" does not find "Café", "Caf" does',
+    () async {
+      await repo.upsertBatch([row('/c.mp3', 'Café')]);
+      expect(await repo.watchTracks(query: 'e').first, isEmpty);
+      final r = await repo.watchTracks(query: 'Caf').first;
+      expect(r.map((t) => t.title), ['Café']);
+    },
+  );
+
   test('missing excluded, getByIds keeps order', () async {
     await repo.upsertBatch([row('/a.mp3', 'A'), row('/b.mp3', 'B')]);
     await repo.markMissing({'/b.mp3'}, true);
