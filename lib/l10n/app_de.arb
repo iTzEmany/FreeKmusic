@@ -126,7 +126,6 @@
   "noPlaylists": "Keine Playlists. Erstelle eine.",
   "addToPlaylist": "Zu Playlist hinzufügen…",
   "addedToPlaylist": "Zu „{name}“ hinzugefügt",
-  "playNext": "Als Nächstes spielen",
   "addToQueue": "Zur Warteschlange hinzufügen",
   "addedToQueue": "Zur Warteschlange hinzugefügt",
   "favorite": "Favorit",
@@ -464,7 +463,6 @@
   "confirmRestoreBody": "Deine Änderungen an diesem Titel werden durch die Daten der Datei ersetzt.",
   "removedFromPlaylist": "Aus der Playlist entfernt",
   "removedFromQueue": "Aus der Warteschlange entfernt",
-  "playNextDone": "Wird als Nächstes gespielt",
   "ytSearchPrompt": "Titel suchen oder Link einfügen",
   "loadFailed": "Die Daten konnten nicht geladen werden.",
   "artistLoadingSongs": "Songs werden geladen…",
@@ -1250,14 +1248,6 @@
   "selectAll": "Alle auswählen",
   "exitSelection": "Auswahl beenden",
   "bulkActions": "Aktionen",
-  "playNextMany": "{count, plural, one{1 Titel wird als Nächstes gespielt} other{{count} Titel werden als Nächstes gespielt}}",
-  "@playNextMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "addedToQueueMany": "{count, plural, one{1 Titel zur Warteschlange hinzugefügt} other{{count} Titel zur Warteschlange hinzugefügt}}",
   "@addedToQueueMany": {
     "placeholders": {

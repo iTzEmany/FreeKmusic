@@ -237,7 +237,6 @@ const _jamGuestRow = ['Salta qui', 'Vai all’artista'];
 // The context menu has the actions of the sheet, without its header; "Mostra nella cartella" is desktop-only (the test runs on Linux, like the CI).
 const _contextMenu = [
   'Anteprima 20 s',
-  'Riproduci dopo',
   'Aggiungi in coda',
   'Preferito',
   'Aggiungi a playlist…',
@@ -255,7 +254,6 @@ const _contextMenu = [
 ];
 const _selectionMenu = [
   'Riproduci',
-  'Riproduci dopo',
   'Aggiungi in coda',
   'Aggiungi ai preferiti',
   'Aggiungi a playlist…',

@@ -1724,14 +1724,6 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     unawaited(_refreshWindow());
   }
 
-  void playNext(int trackId) {
-    // A queue started from nothing has no list behind it.
-    if (_queue.isEmpty) _source = null;
-    _queue.insertNext(trackId);
-    _queueController.add(null);
-    unawaited(_refreshWindow());
-  }
-
   void addToQueue(int trackId) {
     if (_queue.isEmpty) _source = null;
     _queue.append(trackId);

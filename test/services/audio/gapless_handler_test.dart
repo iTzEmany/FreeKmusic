@@ -72,7 +72,7 @@ void main() {
 
   test('normal mode never touches the backend window', () async {
     await handler.playQueue(ids, 0);
-    handler.playNext(extra);
+    handler.insertAt(handler.currentIndex + 1, extra);
     handler.pauseAtTrackEnd = true;
     await settle();
     expect(backend.nextCalls, isEmpty);
@@ -141,7 +141,7 @@ void main() {
 
   test('«play next» replaces what was prepared', () async {
     await startGapless();
-    handler.playNext(extra);
+    handler.insertAt(handler.currentIndex + 1, extra);
     await settle();
     expect(backend.nextPath, '/m/d.mp3');
     backend.advance();
@@ -151,7 +151,7 @@ void main() {
 
   test('a join the queue no longer expects plays what the queue says', () async {
     await startGapless();
-    handler.playNext(extra);
+    handler.insertAt(handler.currentIndex + 1, extra);
     backend.advance(); // before the window could be refreshed
     await settle();
     expect(handler.currentTrack!.title, 'd');

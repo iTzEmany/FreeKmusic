@@ -147,7 +147,6 @@
       }
     }
   },
-  "playNext": "Reproduzir a seguir",
   "addToQueue": "Adicionar à fila",
   "addedToQueue": "Adicionada à fila",
   "favorite": "Favorito",
@@ -622,7 +621,6 @@
   "confirmRestoreBody": "As suas alterações a esta faixa serão substituídas pelos dados do ficheiro.",
   "removedFromPlaylist": "Removida da playlist",
   "removedFromQueue": "Removida da fila",
-  "playNextDone": "Será reproduzida a seguir",
   "ytSearchPrompt": "Pesquise uma faixa ou cole um link",
   "loadFailed": "Não foi possível carregar os dados.",
   "artistLoadingSongs": "A carregar músicas…",
@@ -1408,14 +1406,6 @@
   "selectAll": "Selecionar tudo",
   "exitSelection": "Sair da seleção",
   "bulkActions": "Ações",
-  "playNextMany": "{count, plural, one{1 faixa será reproduzida a seguir} other{{count} faixas serão reproduzidas a seguir}}",
-  "@playNextMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "addedToQueueMany": "{count, plural, one{1 faixa adicionada à fila} other{{count} faixas adicionadas à fila}}",
   "@addedToQueueMany": {
     "placeholders": {

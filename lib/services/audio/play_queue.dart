@@ -310,21 +310,6 @@ class PlayQueue {
     return true;
   }
 
-  void insertNext(int trackId) {
-    if (_items.isEmpty) {
-      setItems([trackId]);
-      return;
-    }
-    _changed();
-    final key = _newKey();
-    final natural = _natural;
-    if (natural != null) {
-      natural.insert(natural.indexOf(_keys[_pos]) + 1, key);
-    }
-    _items.insert(_pos + 1, trackId);
-    _keys.insert(_pos + 1, key);
-  }
-
   /// Puts [id] at [index] of the play order (past the end = at the end). The
   /// current track keeps playing. With the natural order saved, the new key
   /// goes right after the key of the entry now before it, so shuffle off keeps

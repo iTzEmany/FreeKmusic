@@ -112,19 +112,6 @@ void main() {
     expect(q.currentId, 1);
   });
 
-  test('insertNext plays right after current', () {
-    final q = make([1, 2, 3]);
-    q.insertNext(99);
-    expect(q.next(), 99);
-    expect(q.next(), 2);
-  });
-
-  test('insertNext in shuffle plays next too', () {
-    final q = make([1, 2, 3, 4, 5])..shuffle = true;
-    q.insertNext(99);
-    expect(q.next(), 99);
-  });
-
   test('append goes to the end', () {
     final q = make([1, 2]);
     q.append(7);
@@ -157,7 +144,7 @@ void main() {
 
     test('shuffle off puts the natural order back, additions included', () {
       final q = make([1, 2, 3, 4, 5], start: 1)..shuffle = true;
-      q.insertNext(99);
+      q.insertAt(q.currentIndex + 1, 99);
       q.append(7);
       q.next(); // 99
       q.shuffle = false;
@@ -196,7 +183,7 @@ void main() {
               case 3:
                 if (q.items.length > 1) q.removeAt(ops.nextInt(q.items.length));
               case 4:
-                q.insertNext(nextId++);
+                q.insertAt(q.currentIndex + 1, nextId++);
               case 5:
                 q.append(nextId++);
               case 6:
@@ -289,8 +276,8 @@ void main() {
       expect(q.revision, r, reason: 'same value, no change');
       q.repeat = PlayRepeat.all;
       expectBump('repeat');
-      q.insertNext(9);
-      expectBump('insertNext');
+      q.insertAt(q.currentIndex + 1, 9);
+      expectBump('insertAt');
       q.append(8);
       expectBump('append');
       q.move(0, 1);
@@ -316,7 +303,7 @@ void main() {
     test('in order: from the current track on, manual additions gone', () {
       final q = make(source, start: 1)
         ..append(99)
-        ..insertNext(98);
+        ..insertAt(1 + 1, 98);
       q.rebuildUpcoming(source);
       expect(q.currentId, 2);
       expect(q.items, source);

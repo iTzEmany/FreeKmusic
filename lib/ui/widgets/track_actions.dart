@@ -252,13 +252,6 @@ List<TrackActionGroup> trackActions(
           },
           onStreamRow: true,
         ),
-      TrackAction(Icons.playlist_play_rounded, l.playNext, () async {
-        final inJam = ctrl.inJam;
-        final added = await ctrl.playNext(track.id);
-        if (outer.mounted) {
-          showQueued(outer, added, ok: inJam ? l.addedToQueue : l.playNextDone);
-        }
-      }, onStreamRow: true),
       TrackAction(Icons.queue_rounded, l.addToQueue, () async {
         final added = await ctrl.addToQueue(track.id);
         if (outer.mounted) showQueued(outer, added);
@@ -592,17 +585,6 @@ List<TrackAction> onlineResultActions(
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
   return [
-    TrackAction(Icons.playlist_play_rounded, l.playNext, () async {
-      final full = ctrl.jamQueueFull;
-      await ctrl.playOnlineNext(r);
-      if (outer.mounted) {
-        showQueued(
-          outer,
-          full ? jamFullResult : null,
-          ok: ctrl.inJam ? l.addedToQueue : l.playNextDone,
-        );
-      }
-    }),
     TrackAction(Icons.queue_rounded, l.addToQueue, () async {
       final full = ctrl.jamQueueFull;
       await ctrl.enqueueOnline(r);

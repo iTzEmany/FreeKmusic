@@ -86,7 +86,7 @@ void main() {
       ),
     );
     await _settle(tester);
-    expect(find.text('Riproduci dopo'), findsOneWidget);
+    expect(find.text('Aggiungi in coda'), findsOneWidget);
     expect(find.text('Vai all’album'), findsOneWidget);
     await h.dispose(tester);
   });

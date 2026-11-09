@@ -300,9 +300,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get playNext => 'Reproduzir a seguir';
-
-  @override
   String get addToQueue => 'Adicionar à fila';
 
   @override
@@ -1148,9 +1145,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get removedFromQueue => 'Removida da fila';
-
-  @override
-  String get playNextDone => 'Será reproduzida a seguir';
 
   @override
   String get ytSearchPrompt => 'Pesquise uma faixa ou cole um link';
@@ -2594,17 +2588,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get bulkActions => 'Ações';
-
-  @override
-  String playNextMany(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count faixas serão reproduzidas a seguir',
-      one: '1 faixa será reproduzida a seguir',
-    );
-    return '$_temp0';
-  }
 
   @override
   String addedToQueueMany(int count) {

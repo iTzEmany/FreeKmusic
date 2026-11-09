@@ -126,7 +126,6 @@
   "noPlaylists": "No playlists. Create one.",
   "addToPlaylist": "Add to playlist…",
   "addedToPlaylist": "Added to “{name}”",
-  "playNext": "Play next",
   "addToQueue": "Add to queue",
   "addedToQueue": "Added to queue",
   "favorite": "Favorite",
@@ -464,7 +463,6 @@
   "confirmRestoreBody": "Your edits to this track are replaced with the data in the file.",
   "removedFromPlaylist": "Removed from the playlist",
   "removedFromQueue": "Removed from the queue",
-  "playNextDone": "Will play next",
   "ytSearchPrompt": "Search for a track or paste a link",
   "loadFailed": "Couldn't load the data.",
   "artistLoadingSongs": "Loading songs…",
@@ -1250,14 +1248,6 @@
   "selectAll": "Select all",
   "exitSelection": "Exit selection",
   "bulkActions": "Actions",
-  "playNextMany": "{count, plural, one{1 track will play next} other{{count} tracks will play next}}",
-  "@playNextMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "addedToQueueMany": "{count, plural, one{1 track added to the queue} other{{count} tracks added to the queue}}",
   "@addedToQueueMany": {
     "placeholders": {

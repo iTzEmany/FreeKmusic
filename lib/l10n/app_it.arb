@@ -147,7 +147,6 @@
       }
     }
   },
-  "playNext": "Riproduci dopo",
   "addToQueue": "Aggiungi in coda",
   "addedToQueue": "Aggiunto in coda",
   "favorite": "Preferito",
@@ -646,7 +645,6 @@
   "confirmRestoreBody": "Le tue modifiche a questo brano verranno sostituite con i dati del file.",
   "removedFromPlaylist": "Rimosso dalla playlist",
   "removedFromQueue": "Rimosso dalla coda",
-  "playNextDone": "Verrà riprodotto dopo",
   "ytSearchPrompt": "Cerca un brano o incolla un link",
   "loadFailed": "Non riesco a caricare i dati.",
   "artistLoadingSongs": "Carico i brani…",
@@ -1601,14 +1599,6 @@
   "selectAll": "Seleziona tutto",
   "exitSelection": "Esci dalla selezione",
   "bulkActions": "Azioni",
-  "playNextMany": "{count, plural, one{1 brano verrà riprodotto dopo} other{{count} brani verranno riprodotti dopo}}",
-  "@playNextMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "addedToQueueMany": "{count, plural, one{1 brano aggiunto in coda} other{{count} brani aggiunti in coda}}",
   "@addedToQueueMany": {
     "placeholders": {

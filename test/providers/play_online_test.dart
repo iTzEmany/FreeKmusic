@@ -90,13 +90,11 @@ void main() {
     expect(online.idsOf(_r('x')), isEmpty);
   });
 
-  test('enqueueOnline appends, playOnlineNext goes after the current one', () async {
+  test('enqueueOnline appends to the end of the queue', () async {
     await player.enqueueOnline(_r('e'));
-    expect(isOnlineId(handler.queueIds.last), isTrue);
-    await player.playOnlineNext(_r('n'));
     final q = handler.queueIds;
-    expect(isOnlineId(q[1]), isTrue);
-    expect(q.length, 4);
+    expect(isOnlineId(q.last), isTrue);
+    expect(q.length, 3);
     expect(handler.currentIndex, 0);
     expect(q[0], ids[0]);
   });
@@ -310,11 +308,10 @@ void main() {
     expect(handler.isRadio, isFalse);
   });
 
-  test('playOnline, enqueueOnline and playOnlineNext survive an unreadable download index', () async {
+  test('playOnline and enqueueOnline survive an unreadable download index', () async {
     lookupFails = true;
     await player.playOnline(_r('x'));
     await player.enqueueOnline(_r('x'));
-    await player.playOnlineNext(_r('x'));
     expect(handler.queueIds, ids);
   });
 

@@ -526,12 +526,6 @@ abstract class AppLocalizations {
   /// **'Aggiunto a «{name}»'**
   String addedToPlaylist(String name);
 
-  /// No description provided for @playNext.
-  ///
-  /// In it, this message translates to:
-  /// **'Riproduci dopo'**
-  String get playNext;
-
   /// No description provided for @addToQueue.
   ///
   /// In it, this message translates to:
@@ -2007,12 +2001,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Rimosso dalla coda'**
   String get removedFromQueue;
-
-  /// No description provided for @playNextDone.
-  ///
-  /// In it, this message translates to:
-  /// **'Verrà riprodotto dopo'**
-  String get playNextDone;
 
   /// No description provided for @ytSearchPrompt.
   ///
@@ -4383,12 +4371,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Azioni'**
   String get bulkActions;
-
-  /// No description provided for @playNextMany.
-  ///
-  /// In it, this message translates to:
-  /// **'{count, plural, one{1 brano verrà riprodotto dopo} other{{count} brani verranno riprodotti dopo}}'**
-  String playNextMany(int count);
 
   /// No description provided for @addedToQueueMany.
   ///

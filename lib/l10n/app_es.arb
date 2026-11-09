@@ -126,7 +126,6 @@
   "noPlaylists": "Sin listas. Crea una.",
   "addToPlaylist": "Añadir a lista…",
   "addedToPlaylist": "Añadido a «{name}»",
-  "playNext": "Reproducir después",
   "addToQueue": "Añadir a la cola",
   "addedToQueue": "Añadido a la cola",
   "favorite": "Favorito",
@@ -464,7 +463,6 @@
   "confirmRestoreBody": "Tus cambios en esta canción se sustituyen por los datos del archivo.",
   "removedFromPlaylist": "Quitada de la lista",
   "removedFromQueue": "Quitada de la cola",
-  "playNextDone": "Sonará a continuación",
   "ytSearchPrompt": "Busca una canción o pega un enlace",
   "loadFailed": "No se pudieron cargar los datos.",
   "artistLoadingSongs": "Cargando canciones…",
@@ -1250,14 +1248,6 @@
   "selectAll": "Seleccionar todo",
   "exitSelection": "Salir de la selección",
   "bulkActions": "Acciones",
-  "playNextMany": "{count, plural, one{1 canción sonará a continuación} other{{count} canciones sonarán a continuación}}",
-  "@playNextMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "addedToQueueMany": "{count, plural, one{1 canción añadida a la cola} other{{count} canciones añadidas a la cola}}",
   "@addedToQueueMany": {
     "placeholders": {
