@@ -3732,5 +3732,37 @@
   "podcastUnfollowBody": "{count, plural, one{Tem 1 episódio transferido. Quer manter ou apagar?} other{Tem {count} episódios transferidos. Quer mantê-los ou apagá-los?}}",
   "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
   "podcastKeepDownloads": "Manter",
-  "podcastDeleteDownloads": "Apagar"
+  "podcastDeleteDownloads": "Apagar",
+  "lyricsWrite": "Escrever ou colar",
+  "lyricsWriteA11y": "Escrever ou colar a letra",
+  "lyricsEdit": "Editar letra",
+  "lyricsDelete": "Eliminar letra",
+  "lyricsSyncSwitch": "Letra sincronizada",
+  "lyricsEditorTitle": "Letra da faixa",
+  "lyricsEditorLabel": "Cole ou escreva aqui",
+  "lyricsEditorHint": "Escreva ou cole a letra, uma linha por verso.",
+  "lyricsEditorInfo": "Se as linhas começam com um tempo, como [01:23.45], o texto é reconhecido como sincronizado e acompanha a faixa. Caso contrário, fica como texto simples. Guardá-lo aqui impede que a pesquisa automática o substitua.",
+  "lyricsEditorSaveA11y": "Guardar a letra",
+  "lyricsDetectNone": "Ainda nada para guardar",
+  "lyricsDetectSynced": "Reconhecida como sincronizada: {count} linhas com tempo",
+  "@lyricsDetectSynced": {"placeholders": {"count": {"type": "int"}}},
+  "lyricsDetectPlain": "Texto simples, sem tempos",
+  "lyricsEmptyWarn": "Escreva algo antes de guardar",
+  "lyricsSavedSynced": "Letra guardada, sincronizada",
+  "lyricsSavedPlain": "Letra guardada, texto simples",
+  "lyricsDeleted": "Letra eliminada",
+  "lyricsSyncedKept": "A versão sincronizada fica guardada: volte a ativá-la no menu.",
+  "memoryOpenFolder": "abrir",
+  "memoryOpenFolderLabel": "Abrir a pasta {name} no gestor de ficheiros. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Não consigo abrir a pasta: caminho copiado",
+  "lyricsSyncStateOn": "ativado",
+  "lyricsSyncStateOff": "desativado",
+  "lyricsDeleteFailed": "Não foi possível eliminar a letra",
+  "lyricsSaveFailed": "Não foi possível guardar a letra"
 }

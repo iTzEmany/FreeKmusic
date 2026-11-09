@@ -4248,5 +4248,37 @@
   "podcastUnfollowBody": "{count, plural, one{Hai 1 episodio scaricato. Vuoi tenerlo o cancellarlo?} other{Hai {count} episodi scaricati. Vuoi tenerli o cancellarli?}}",
   "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
   "podcastKeepDownloads": "Tieni",
-  "podcastDeleteDownloads": "Cancella"
+  "podcastDeleteDownloads": "Cancella",
+  "lyricsWrite": "Scrivi o incolla",
+  "lyricsWriteA11y": "Scrivi o incolla il testo",
+  "lyricsEdit": "Modifica testo",
+  "lyricsDelete": "Elimina testo",
+  "lyricsSyncSwitch": "Testo sincronizzato",
+  "lyricsEditorTitle": "Testo del brano",
+  "lyricsEditorLabel": "Incolla o scrivi qui",
+  "lyricsEditorHint": "Scrivi o incolla il testo, una riga per verso.",
+  "lyricsEditorInfo": "Se le righe iniziano con un tempo, come [01:23.45], il testo viene riconosciuto come sincronizzato e scorre con il brano. Altrimenti resta testo semplice. Salvarlo qui impedisce che la ricerca automatica lo sostituisca.",
+  "lyricsEditorSaveA11y": "Salva il testo",
+  "lyricsDetectNone": "Niente da salvare ancora",
+  "lyricsDetectSynced": "Riconosciuto come sincronizzato: {count} righe con tempo",
+  "@lyricsDetectSynced": {"placeholders": {"count": {"type": "int"}}},
+  "lyricsDetectPlain": "Testo semplice, senza tempi",
+  "lyricsEmptyWarn": "Scrivi qualcosa prima di salvare",
+  "lyricsSavedSynced": "Testo salvato, sincronizzato",
+  "lyricsSavedPlain": "Testo salvato, testo semplice",
+  "lyricsDeleted": "Testo eliminato",
+  "lyricsSyncedKept": "La versione sincronizzata è conservata: riattivala dal menu.",
+  "memoryOpenFolder": "apri",
+  "memoryOpenFolderLabel": "Apri la cartella {name} nel file manager. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Non riesco ad aprire la cartella: percorso copiato",
+  "lyricsSyncStateOn": "attivo",
+  "lyricsSyncStateOff": "disattivo",
+  "lyricsDeleteFailed": "Impossibile eliminare il testo",
+  "lyricsSaveFailed": "Impossibile salvare il testo"
 }

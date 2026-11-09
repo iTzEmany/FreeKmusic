@@ -324,6 +324,9 @@ class SavedPlayback {
 }
 
 const enrichMarkKey = 'enrichMark';
+
+/// Tracks whose synced lyrics are switched off (track ids, D-472).
+const unsyncedLyricsKey = 'unsyncedLyrics';
 const recogPassAfterKey = 'recogPassAfter';
 const recogPassDoneKey = 'recogPassDone';
 const genreRereadAfterKey = 'genreRereadAfter';
@@ -641,6 +644,17 @@ class SettingsStore {
 
   Future<void> writeReviewChecked(Set<int> ids) => _prefs.setStringList(
     'reviewChecked',
+    [for (final i in ids.toList()..sort()) '$i'],
+  );
+
+  /// Tracks whose synced lyrics are switched off: the plain text is shown (track ids).
+  Set<int> readUnsyncedLyrics() => (_prefs.getStringList(unsyncedLyricsKey) ?? const [])
+      .map(int.tryParse)
+      .whereType<int>()
+      .toSet();
+
+  Future<void> writeUnsyncedLyrics(Set<int> ids) => _prefs.setStringList(
+    unsyncedLyricsKey,
     [for (final i in ids.toList()..sort()) '$i'],
   );
 

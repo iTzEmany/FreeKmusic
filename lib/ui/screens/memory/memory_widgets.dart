@@ -19,6 +19,8 @@ class WeightRow extends StatelessWidget {
     this.leading,
     this.fraction,
     this.onTap,
+    this.trailing,
+    this.semanticLabel,
   });
 
   final String title;
@@ -28,12 +30,18 @@ class WeightRow extends StatelessWidget {
   final double? fraction;
   final VoidCallback? onTap;
 
+  /// After the size (the «apri» hint of a folder row).
+  final Widget? trailing;
+
+  /// Replaces what a screen reader reads for the whole row.
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     final f = fraction;
-    return InkWell(
+    final row = InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -95,9 +103,20 @@ class WeightRow extends StatelessWidget {
                 style: theme.titleSmall?.copyWith(color: cc.text),
               ),
             ),
+            if (trailing != null) Flexible(child: trailing!),
           ],
         ),
       ),
+    );
+    final label = semanticLabel;
+    if (label == null) return row;
+    final size = formatBytes(bytes, Localizations.localeOf(context).toString());
+    return Semantics(
+      button: true,
+      label: [label, ?subtitle, size].join('. '),
+      excludeSemantics: true,
+      onTap: onTap,
+      child: row,
     );
   }
 }

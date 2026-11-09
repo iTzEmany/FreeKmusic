@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/import_row.dart' show LibraryEntryLite;
 import '../data/db/app_database.dart';
 import '../data/repositories/track_repository.dart';
 import '../core/app_log.dart';
+import '../services/online/lrc_parser.dart' show lyricsFromText;
 import 'database_providers.dart';
+import 'enrich_completer_providers.dart';
+import 'online_providers.dart' show autoParts;
 import 'player_providers.dart';
+import 'settings_providers.dart';
+import 'translation_providers.dart';
 
 /// What the UI does to library tracks: writes that used to be spread over
 /// widgets via the repositories. Streams stay in their own providers.
@@ -51,6 +58,45 @@ class TrackOps {
 
   Future<void> setLyrics(int id, {String? plain, String? synced, bool byUser = false}) =>
       _repo.setLyrics(id, plain: plain, synced: synced, byUser: byUser);
+
+  /// Saves lyrics typed or pasted by the user (F-110): timed lines make them
+  /// synced. Returns null when there is nothing to save, else whether they are synced.
+  Future<bool?> saveLyricsText(int id, String raw) async {
+    final parsed = lyricsFromText(raw);
+    if (parsed.plain == null && parsed.synced == null) return null;
+    await _repo.setLyrics(id, plain: parsed.plain, synced: parsed.synced, byUser: true);
+    // A new text starts with the sync on, and an old translation no longer fits.
+    await _ref.read(unsyncedLyricsProvider.notifier).setSynced(id, true);
+    _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
+    return parsed.synced != null;
+  }
+
+  /// Turns the synced version of one track on or off (D-472); its translation no longer fits.
+  Future<void> setLyricsSynced(int id, bool synced) async {
+    _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
+    await _ref.read(unsyncedLyricsProvider.notifier).setSynced(id, synced);
+  }
+
+  /// Deletes the lyrics of one track (D-471) and, when the enrichment is on,
+  /// lets it look for them again. [undo] puts everything back.
+  Future<Future<void> Function()> deleteLyrics(int id) async {
+    final unsynced = _ref.read(unsyncedLyricsProvider.notifier);
+    final wasUnsynced = _ref.read(unsyncedLyricsProvider).contains(id);
+    final snapshot = await _repo.clearLyrics(id);
+    await unsynced.setSynced(id, true);
+    _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
+    if (autoParts(_ref.read(settingsProvider)).isNotEmpty) {
+      unawaited(_ref.read(enrichCompleterProvider.notifier).start());
+    }
+    return () async {
+      try {
+        await _repo.restoreLyrics(id, snapshot);
+        if (wasUnsynced) await unsynced.setSynced(id, false);
+      } on Object catch (e, st) {
+        AppLog.e('undo delete lyrics failed', e, st);
+      }
+    };
+  }
 
   Future<void> setIgnored(Set<int> ids, bool value) => _repo.setIgnored(ids, value);
 

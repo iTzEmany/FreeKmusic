@@ -603,6 +603,31 @@ void main() {
       ]);
     });
 
+    test('clearLyrics makes the track due again and leaves the other enrichment alone', () async {
+      final id = await track(plain: 'la', synced: '[00:01.00]la', curiosities: 'curious');
+      await r.db.into(r.db.trackEnrich).insert(TrackEnrichCompanion(
+          trackId: Value(id), lyricsByUser: const Value(true), lyricsNoneAt: Value(clock), details: const Value('d'),
+          deezerId: const Value(7), metaNoneAt: const Value(3)));
+      await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(enrichStatus: Value(1)));
+      await r.repo.clearLyrics(id);
+      expect(await r.credits.dueTrackIds(_lyrics, DateTime.now()), contains(id));
+      final t = await (r.db.select(r.db.tracks)..where((t) => t.id.equals(id))).getSingle();
+      final e = (await r.credits.enrichOf(id))!;
+      expect((t.lyricsPlain, t.lyricsSynced, t.curiosities, t.enrichStatus), (null, null, 'curious', 1));
+      expect((e.details, e.deezerId, e.metaNoneAt, e.lyricsByUser, e.lyricsNoneAt), ('d', 7, 3, false, null));
+    });
+
+    test('restoreLyrics puts back the texts, the flag and both marks as they were', () async {
+      final id = await track(plain: 'la', synced: '[00:01.00]la');
+      await r.db.into(r.db.trackEnrich).insert(TrackEnrichCompanion(
+          trackId: Value(id), lyricsNoneAt: const Value(5), syncedNoneAt: const Value(6)));
+      await r.repo.restoreLyrics(id, await r.repo.clearLyrics(id));
+      final t = await (r.db.select(r.db.tracks)..where((t) => t.id.equals(id))).getSingle();
+      final e = (await r.credits.enrichOf(id))!;
+      expect((t.lyricsPlain, t.lyricsSynced), ('la', '[00:01.00]la'));
+      expect((e.lyricsByUser, e.lyricsNoneAt, e.syncedNoneAt), (false, 5, 6));
+    });
+
     test('after: only ids above the bookmark', () async {
       final ids = [for (var n = 0; n < 4; n++) await track()];
       expect(

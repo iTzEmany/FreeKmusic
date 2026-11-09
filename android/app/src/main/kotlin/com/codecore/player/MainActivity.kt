@@ -64,7 +64,7 @@ class MainActivity : AudioServiceActivity() {
         ImportBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         MediaDeleteBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
         SaveFileBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
-        StorageBridge.register(flutterEngine.dartExecutor.binaryMessenger)
+        StorageBridge.register(this, flutterEngine.dartExecutor.binaryMessenger)
         NetworkBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         NotifyBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         LinkBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)

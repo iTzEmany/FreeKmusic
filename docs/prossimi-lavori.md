@@ -174,6 +174,11 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - Il gestore audio conosce la politica dello streaming degli episodi e due callback in `main.dart` (che crea un `PodcastRepository` a ogni chiamata). Rimedio: un'interfaccia `EpisodeMarks { heard; resumed }` costruita una volta.
 - `unfollowPodcast` è un flusso di dominio nella UI (`podcast_preview_screen.dart`, importato dal dettaglio) e `_toggleFollow`/`_play`/`unfollowPodcast` non mostrano errori. Rimedio: `PodcastOps.unfollow(id, deleteDownloads:)`, dialogo in un file a parte, `showMsg` sull'errore.
 
+### Dalla review di architettura della fase 103
+- `lyricsPlainText`/`lyricsAsShown` sono funzioni pure in `lyrics_view.dart` (le importano la card e la schermata; `lyricsAsShown` fabbrica un `Track` con `copyWith`): spostarle accanto a `lrc_parser.dart` o in un `shownLyricsProvider(track)`, meglio nella 106 (la traslitterazione entra nel «come mostrato»).
+- SQL della copertina automatica ripetuto (`memory_queries.dart` e `playlist_repository.dart:84-86`): una costante condivisa.
+- `unsyncedLyrics` non viene mai potato (id AUTOINCREMENT: nessun abbinamento sbagliato, cresce soltanto).
+
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.

@@ -1406,11 +1406,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 102.4 Controlli di fase
 
 ## Fase 103 — Testi a mano, sincronia spegnibile, Memoria (`fase-103-testi-e-memoria.md`)
-- [ ] 103.1 Scrivi o incolla un testo
-- [ ] 103.2 «Testo sincronizzato» per brano
-- [ ] 103.3 Copertine delle playlist in Memoria
-- [ ] 103.4 Aprire una cartella
-- [ ] 103.5 Controlli di fase
+- [x] 103.1 Scrivi o incolla un testo
+- [x] 103.2 «Testo sincronizzato» per brano
+- [x] 103.3 Copertine delle playlist in Memoria
+- [x] 103.4 Aprire una cartella
+- [x] 103.5 Controlli di fase
 
 ## Fase 104 — Daylist (`fase-104-daylist.md`)
 - [ ] 104.1 Fasce e tabella degli umori

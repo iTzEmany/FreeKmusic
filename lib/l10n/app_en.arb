@@ -3546,5 +3546,37 @@
   "podcastUnfollowBody": "{count, plural, one{You have 1 downloaded episode. Keep it or delete it?} other{You have {count} downloaded episodes. Keep them or delete them?}}",
   "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
   "podcastKeepDownloads": "Keep",
-  "podcastDeleteDownloads": "Delete"
+  "podcastDeleteDownloads": "Delete",
+  "lyricsWrite": "Write or paste",
+  "lyricsWriteA11y": "Write or paste the lyrics",
+  "lyricsEdit": "Edit lyrics",
+  "lyricsDelete": "Delete lyrics",
+  "lyricsSyncSwitch": "Synced lyrics",
+  "lyricsEditorTitle": "Track lyrics",
+  "lyricsEditorLabel": "Paste or write here",
+  "lyricsEditorHint": "Write or paste the lyrics, one line per verse.",
+  "lyricsEditorInfo": "If lines start with a time, like [01:23.45], the text is recognised as synced and follows the track. Otherwise it stays plain text. Saving it here stops the automatic search from replacing it.",
+  "lyricsEditorSaveA11y": "Save the lyrics",
+  "lyricsDetectNone": "Nothing to save yet",
+  "lyricsDetectSynced": "Recognised as synced: {count} timed lines",
+  "@lyricsDetectSynced": {"placeholders": {"count": {"type": "int"}}},
+  "lyricsDetectPlain": "Plain text, no timestamps",
+  "lyricsEmptyWarn": "Write something before saving",
+  "lyricsSavedSynced": "Lyrics saved, synced",
+  "lyricsSavedPlain": "Lyrics saved, plain text",
+  "lyricsDeleted": "Lyrics deleted",
+  "lyricsSyncedKept": "The synced version is kept: turn it back on from the menu.",
+  "memoryOpenFolder": "open",
+  "memoryOpenFolderLabel": "Open the folder {name} in the file manager. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Can't open the folder: path copied",
+  "lyricsSyncStateOn": "on",
+  "lyricsSyncStateOff": "off",
+  "lyricsDeleteFailed": "Could not delete the lyrics",
+  "lyricsSaveFailed": "Could not save the lyrics"
 }

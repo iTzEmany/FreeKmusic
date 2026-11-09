@@ -20,6 +20,7 @@ import '../../../services/online/query_cleaner.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/skeleton.dart';
 import '../lyrics/lyrics_screen.dart';
+import '../lyrics/lyrics_view.dart' show lyricsAsShown;
 import '../lyrics/lyrics_translate_flow.dart';
 import 'proposal_card.dart' show CoverLine;
 import 'queue_sheet.dart';
@@ -75,14 +76,15 @@ class LyricsCard extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    final synced = track.lyricsSynced;
+    final shown = lyricsAsShown(track, ref.watch(unsyncedLyricsProvider));
+    final synced = shown.lyricsSynced;
     final lines = synced == null ? const <LrcLine>[] : parseLrc(synced);
     Widget body;
     if (lines.isNotEmpty) {
       body = _SyncedLines(lines: lines);
-    } else if (track.lyricsPlain != null) {
+    } else if (shown.lyricsPlain != null) {
       body = Text(
-        track.lyricsPlain!,
+        shown.lyricsPlain!,
         maxLines: 5,
         overflow: TextOverflow.ellipsis,
         strutStyle: _lyricsStrut(theme),

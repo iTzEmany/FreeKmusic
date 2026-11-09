@@ -11148,6 +11148,156 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Cancella'**
   String get podcastDeleteDownloads;
+
+  /// No description provided for @lyricsWrite.
+  ///
+  /// In it, this message translates to:
+  /// **'Scrivi o incolla'**
+  String get lyricsWrite;
+
+  /// No description provided for @lyricsWriteA11y.
+  ///
+  /// In it, this message translates to:
+  /// **'Scrivi o incolla il testo'**
+  String get lyricsWriteA11y;
+
+  /// No description provided for @lyricsEdit.
+  ///
+  /// In it, this message translates to:
+  /// **'Modifica testo'**
+  String get lyricsEdit;
+
+  /// No description provided for @lyricsDelete.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina testo'**
+  String get lyricsDelete;
+
+  /// No description provided for @lyricsSyncSwitch.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo sincronizzato'**
+  String get lyricsSyncSwitch;
+
+  /// No description provided for @lyricsEditorTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo del brano'**
+  String get lyricsEditorTitle;
+
+  /// No description provided for @lyricsEditorLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Incolla o scrivi qui'**
+  String get lyricsEditorLabel;
+
+  /// No description provided for @lyricsEditorHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Scrivi o incolla il testo, una riga per verso.'**
+  String get lyricsEditorHint;
+
+  /// No description provided for @lyricsEditorInfo.
+  ///
+  /// In it, this message translates to:
+  /// **'Se le righe iniziano con un tempo, come [01:23.45], il testo viene riconosciuto come sincronizzato e scorre con il brano. Altrimenti resta testo semplice. Salvarlo qui impedisce che la ricerca automatica lo sostituisca.'**
+  String get lyricsEditorInfo;
+
+  /// No description provided for @lyricsEditorSaveA11y.
+  ///
+  /// In it, this message translates to:
+  /// **'Salva il testo'**
+  String get lyricsEditorSaveA11y;
+
+  /// No description provided for @lyricsDetectNone.
+  ///
+  /// In it, this message translates to:
+  /// **'Niente da salvare ancora'**
+  String get lyricsDetectNone;
+
+  /// No description provided for @lyricsDetectSynced.
+  ///
+  /// In it, this message translates to:
+  /// **'Riconosciuto come sincronizzato: {count} righe con tempo'**
+  String lyricsDetectSynced(int count);
+
+  /// No description provided for @lyricsDetectPlain.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo semplice, senza tempi'**
+  String get lyricsDetectPlain;
+
+  /// No description provided for @lyricsEmptyWarn.
+  ///
+  /// In it, this message translates to:
+  /// **'Scrivi qualcosa prima di salvare'**
+  String get lyricsEmptyWarn;
+
+  /// No description provided for @lyricsSavedSynced.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo salvato, sincronizzato'**
+  String get lyricsSavedSynced;
+
+  /// No description provided for @lyricsSavedPlain.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo salvato, testo semplice'**
+  String get lyricsSavedPlain;
+
+  /// No description provided for @lyricsDeleted.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo eliminato'**
+  String get lyricsDeleted;
+
+  /// No description provided for @lyricsSyncedKept.
+  ///
+  /// In it, this message translates to:
+  /// **'La versione sincronizzata è conservata: riattivala dal menu.'**
+  String get lyricsSyncedKept;
+
+  /// No description provided for @memoryOpenFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'apri'**
+  String get memoryOpenFolder;
+
+  /// No description provided for @memoryOpenFolderLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri la cartella {name} nel file manager. {path}'**
+  String memoryOpenFolderLabel(String name, String path);
+
+  /// No description provided for @memoryOpenFolderFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non riesco ad aprire la cartella: percorso copiato'**
+  String get memoryOpenFolderFailed;
+
+  /// No description provided for @lyricsSyncStateOn.
+  ///
+  /// In it, this message translates to:
+  /// **'attivo'**
+  String get lyricsSyncStateOn;
+
+  /// No description provided for @lyricsSyncStateOff.
+  ///
+  /// In it, this message translates to:
+  /// **'disattivo'**
+  String get lyricsSyncStateOff;
+
+  /// No description provided for @lyricsDeleteFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile eliminare il testo'**
+  String get lyricsDeleteFailed;
+
+  /// No description provided for @lyricsSaveFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile salvare il testo'**
+  String get lyricsSaveFailed;
 }
 
 class _AppLocalizationsDelegate

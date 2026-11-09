@@ -3546,5 +3546,37 @@
   "podcastUnfollowBody": "{count, plural, one{Du hast 1 heruntergeladene Folge. Behalten oder löschen?} other{Du hast {count} heruntergeladene Folgen. Behalten oder löschen?}}",
   "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
   "podcastKeepDownloads": "Behalten",
-  "podcastDeleteDownloads": "Löschen"
+  "podcastDeleteDownloads": "Löschen",
+  "lyricsWrite": "Schreiben oder einfügen",
+  "lyricsWriteA11y": "Songtext schreiben oder einfügen",
+  "lyricsEdit": "Songtext bearbeiten",
+  "lyricsDelete": "Songtext löschen",
+  "lyricsSyncSwitch": "Synchronisierter Songtext",
+  "lyricsEditorTitle": "Songtext des Titels",
+  "lyricsEditorLabel": "Hier einfügen oder schreiben",
+  "lyricsEditorHint": "Songtext schreiben oder einfügen, eine Zeile pro Vers.",
+  "lyricsEditorInfo": "Beginnen die Zeilen mit einer Zeit, etwa [01:23.45], wird der Text als synchronisiert erkannt und läuft mit dem Titel mit. Sonst bleibt er einfacher Text. Wenn du ihn hier speicherst, ersetzt ihn die automatische Suche nicht.",
+  "lyricsEditorSaveA11y": "Songtext speichern",
+  "lyricsDetectNone": "Noch nichts zu speichern",
+  "lyricsDetectSynced": "Als synchronisiert erkannt: {count} Zeilen mit Zeit",
+  "@lyricsDetectSynced": {"placeholders": {"count": {"type": "int"}}},
+  "lyricsDetectPlain": "Einfacher Text, ohne Zeiten",
+  "lyricsEmptyWarn": "Schreibe etwas, bevor du speicherst",
+  "lyricsSavedSynced": "Songtext gespeichert, synchronisiert",
+  "lyricsSavedPlain": "Songtext gespeichert, einfacher Text",
+  "lyricsDeleted": "Songtext gelöscht",
+  "lyricsSyncedKept": "Die synchronisierte Version bleibt gespeichert: Im Menü wieder einschalten.",
+  "memoryOpenFolder": "öffnen",
+  "memoryOpenFolderLabel": "Ordner {name} im Dateimanager öffnen. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Ordner lässt sich nicht öffnen: Pfad kopiert",
+  "lyricsSyncStateOn": "an",
+  "lyricsSyncStateOff": "aus",
+  "lyricsDeleteFailed": "Songtext konnte nicht gelöscht werden",
+  "lyricsSaveFailed": "Songtext konnte nicht gespeichert werden"
 }

@@ -85,6 +85,40 @@ void main() {
     expect(groups[2].totals.sizeBytes, 100);
   });
 
+  test('playlist auto cover is the first track in order that has one', () async {
+    final a = await add('a', 1);
+    final b = await add('b', 1);
+    final c = await add('c', 1);
+    await (db.update(db.tracks)..where((t) => t.id.isIn([b, c])))
+        .write(const TracksCompanion(coverKey: Value('K')));
+    await (db.update(db.tracks)..where((t) => t.id.equals(c)))
+        .write(const TracksCompanion(coverKey: Value('C')));
+    final pl = await db.into(db.playlists).insert(
+      PlaylistsCompanion.insert(name: 'P', createdAt: 1),
+    );
+    await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'None', createdAt: 1));
+    for (final (tr, pos) in [(a, 0), (c, 1), (b, 2)]) {
+      await db.into(db.playlistTracks).insert(
+        PlaylistTracksCompanion.insert(playlistId: pl, trackId: tr, position: pos),
+      );
+    }
+    final byName = {for (final g in await q.byPlaylist()) g.name: g.autoCoverKey};
+    expect(byName['P'], 'C');
+    expect(byName['None'], isNull);
+  });
+
+  test('auto cover also shows when every track of the playlist is missing', () async {
+    final m = await add('m', 1, missing: true);
+    await (db.update(db.tracks)..where((t) => t.id.equals(m)))
+        .write(const TracksCompanion(coverKey: Value('M')));
+    final pl = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Gone', createdAt: 1));
+    await db.into(db.playlistTracks).insert(
+      PlaylistTracksCompanion.insert(playlistId: pl, trackId: m, position: 0),
+    );
+    final g = (await q.byPlaylist()).firstWhere((g) => g.name == 'Gone');
+    expect((g.autoCoverKey, g.totals.trackCount), ('M', 0));
+  });
+
   test('formats group by lower-case extension, biggest first', () async {
     await add('a', 10, format: 'MP3');
     await add('b', 20, format: 'mp3');

@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/settings_providers.dart';
 import '../../../providers/translation_providers.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cover_backdrop.dart';
 import '../../widgets/cover_image.dart';
+import 'lyrics_menu.dart';
 import 'lyrics_translate_flow.dart';
 import 'lyrics_view.dart';
 import '../../widgets/show_msg.dart';
@@ -74,7 +76,7 @@ class LyricsScreen extends ConsumerWidget {
         ),
         actions: [
           if (plain != null && ref.watch(lyricsTranslatorProvider) != null)
-            _TranslateButton(track: track),
+            _TranslateButton(track: lyricsAsShown(track, ref.watch(unsyncedLyricsProvider))),
           if (plain != null)
             IconButton(
               tooltip: l.copy,
@@ -84,6 +86,7 @@ class LyricsScreen extends ConsumerWidget {
                 if (context.mounted) showMsg(context, l.copied);
               },
             ),
+          LyricsMenuButton(track: track),
         ],
       ),
       extendBodyBehindAppBar: false,

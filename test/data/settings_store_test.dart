@@ -7,6 +7,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('unsyncedLyrics ignores values that are not numbers and duplicates', () async {
+    SharedPreferences.setMockInitialValues({'unsyncedLyrics': ['4', 'x', '4', '']});
+    final store = await SettingsStore.open();
+    expect(store.readUnsyncedLyrics(), {4});
+  });
+  test('unsyncedLyrics is empty when absent and read back as track ids', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readUnsyncedLyrics(), isEmpty);
+    await store.writeUnsyncedLyrics({7, 3});
+    store = await SettingsStore.open();
+    expect(store.readUnsyncedLyrics(), {3, 7});
+  });
   test('deezerMeta is on when absent and a saved false stays false', () async {
     SharedPreferences.setMockInitialValues({});
     var store = await SettingsStore.open();

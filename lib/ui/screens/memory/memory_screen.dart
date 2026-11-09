@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
@@ -6,6 +7,7 @@ import '../../../data/repositories/memory_queries.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/duplicate_providers.dart';
+import '../../../providers/files_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/memory_providers.dart';
 import '../../../providers/nav_providers.dart';
@@ -16,6 +18,7 @@ import '../../widgets/error_state.dart';
 import '../../widgets/format_utils.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/show_msg.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/track_actions.dart';
 import '../cleanup/duplicates_screen.dart';
@@ -200,6 +203,12 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
     ),
   );
 
+  Future<void> _openFolder(BuildContext context, String path) async {
+    if (await ref.read(folderOpenerProvider).open(path)) return;
+    await Clipboard.setData(ClipboardData(text: path));
+    if (context.mounted) showMsg(context, context.l10n.memoryOpenFolderFailed);
+  }
+
   List<Widget> _groups(BuildContext context, MemoryBreakdown b) {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
@@ -237,7 +246,7 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
             leading: PlaylistCover(
               size: 44,
               favorites: g.isFavorites,
-              coverKeys: playlistCoverKeys(g.playlist?.coverKey, const []),
+              coverKeys: playlistCoverKeys(g.playlist?.coverKey, [g.autoCoverKey]),
             ),
             title: g.isFavorites ? l.navFavorites : g.name,
             subtitle: _countAndTime(l, g.totals),
@@ -266,6 +275,30 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
             detail: g.path,
             bytes: g.totals.sizeBytes,
             fraction: shareOf(g.totals.sizeBytes, max),
+            onTap: g.path == null ? null : () => _openFolder(context, g.path!),
+            semanticLabel: g.path == null
+                ? null
+                : l.memoryOpenFolderLabel(folderLabels(b.folders)[g.path] ?? g.name, g.path!),
+            trailing: g.path == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(left: CcDims.gap8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.open_in_new_rounded, size: 18, color: context.cc.accent),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            l.memoryOpenFolder,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.labelMedium?.copyWith(color: context.cc.accent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         },
       if (_group == _Group.playlists && groups.isNotEmpty)

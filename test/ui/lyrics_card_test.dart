@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -75,4 +76,31 @@ void main() {
     expect(heights.length, 6);
     expect(heights.values.toSet().length, 1, reason: '$heights');
   });
+
+  testWidgets('with the sync switched off the card shows the plain text', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    final track = await tester.runAsync(() async {
+      await h.db.update(h.db.tracks).write(
+        const TracksCompanion(lyricsSynced: Value('[00:01.00]Hello\n[00:05.00]World'), lyricsPlain: Value('Plain text here')),
+      );
+      return (await h.db.select(h.db.tracks).get()).single;
+    });
+    await h.pump(
+      tester,
+      Scaffold(body: LyricsCard(track: track!)),
+      extraOverrides: [unsyncedLyricsProvider.overrideWith(_Off.new)],
+    );
+    await tester.pump();
+    expect(find.text('Plain text here'), findsOneWidget);
+    expect(find.text('Hello'), findsNothing);
+    await h.dispose(tester);
+  });
+}
+
+class _Off extends UnsyncedLyricsNotifier {
+  @override
+  Set<int> build() => {1};
 }

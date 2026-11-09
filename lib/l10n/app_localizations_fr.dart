@@ -7040,4 +7040,87 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get podcastDeleteDownloads => 'Supprimer';
+
+  @override
+  String get lyricsWrite => 'Écrire ou coller';
+
+  @override
+  String get lyricsWriteA11y => 'Écrire ou coller les paroles';
+
+  @override
+  String get lyricsEdit => 'Modifier les paroles';
+
+  @override
+  String get lyricsDelete => 'Supprimer les paroles';
+
+  @override
+  String get lyricsSyncSwitch => 'Paroles synchronisées';
+
+  @override
+  String get lyricsEditorTitle => 'Paroles du morceau';
+
+  @override
+  String get lyricsEditorLabel => 'Collez ou écrivez ici';
+
+  @override
+  String get lyricsEditorHint =>
+      'Écrivez ou collez les paroles, une ligne par vers.';
+
+  @override
+  String get lyricsEditorInfo =>
+      'Si les lignes commencent par un temps, comme [01:23.45], le texte est reconnu comme synchronisé et suit le morceau. Sinon il reste du texte simple. L’enregistrer ici empêche la recherche automatique de le remplacer.';
+
+  @override
+  String get lyricsEditorSaveA11y => 'Enregistrer les paroles';
+
+  @override
+  String get lyricsDetectNone => 'Rien à enregistrer pour l’instant';
+
+  @override
+  String lyricsDetectSynced(int count) {
+    return 'Reconnu comme synchronisé : $count lignes avec temps';
+  }
+
+  @override
+  String get lyricsDetectPlain => 'Texte simple, sans temps';
+
+  @override
+  String get lyricsEmptyWarn => 'Écrivez quelque chose avant d’enregistrer';
+
+  @override
+  String get lyricsSavedSynced => 'Paroles enregistrées, synchronisées';
+
+  @override
+  String get lyricsSavedPlain => 'Paroles enregistrées, texte simple';
+
+  @override
+  String get lyricsDeleted => 'Paroles supprimées';
+
+  @override
+  String get lyricsSyncedKept =>
+      'La version synchronisée est conservée : réactivez-la depuis le menu.';
+
+  @override
+  String get memoryOpenFolder => 'ouvrir';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Ouvrir le dossier $name dans le gestionnaire de fichiers. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed =>
+      'Impossible d’ouvrir le dossier : chemin copié';
+
+  @override
+  String get lyricsSyncStateOn => 'activé';
+
+  @override
+  String get lyricsSyncStateOff => 'désactivé';
+
+  @override
+  String get lyricsDeleteFailed => 'Impossible de supprimer les paroles';
+
+  @override
+  String get lyricsSaveFailed => 'Impossible d’enregistrer les paroles';
 }

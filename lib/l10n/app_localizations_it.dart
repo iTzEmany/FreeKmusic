@@ -6979,4 +6979,87 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get podcastDeleteDownloads => 'Cancella';
+
+  @override
+  String get lyricsWrite => 'Scrivi o incolla';
+
+  @override
+  String get lyricsWriteA11y => 'Scrivi o incolla il testo';
+
+  @override
+  String get lyricsEdit => 'Modifica testo';
+
+  @override
+  String get lyricsDelete => 'Elimina testo';
+
+  @override
+  String get lyricsSyncSwitch => 'Testo sincronizzato';
+
+  @override
+  String get lyricsEditorTitle => 'Testo del brano';
+
+  @override
+  String get lyricsEditorLabel => 'Incolla o scrivi qui';
+
+  @override
+  String get lyricsEditorHint =>
+      'Scrivi o incolla il testo, una riga per verso.';
+
+  @override
+  String get lyricsEditorInfo =>
+      'Se le righe iniziano con un tempo, come [01:23.45], il testo viene riconosciuto come sincronizzato e scorre con il brano. Altrimenti resta testo semplice. Salvarlo qui impedisce che la ricerca automatica lo sostituisca.';
+
+  @override
+  String get lyricsEditorSaveA11y => 'Salva il testo';
+
+  @override
+  String get lyricsDetectNone => 'Niente da salvare ancora';
+
+  @override
+  String lyricsDetectSynced(int count) {
+    return 'Riconosciuto come sincronizzato: $count righe con tempo';
+  }
+
+  @override
+  String get lyricsDetectPlain => 'Testo semplice, senza tempi';
+
+  @override
+  String get lyricsEmptyWarn => 'Scrivi qualcosa prima di salvare';
+
+  @override
+  String get lyricsSavedSynced => 'Testo salvato, sincronizzato';
+
+  @override
+  String get lyricsSavedPlain => 'Testo salvato, testo semplice';
+
+  @override
+  String get lyricsDeleted => 'Testo eliminato';
+
+  @override
+  String get lyricsSyncedKept =>
+      'La versione sincronizzata è conservata: riattivala dal menu.';
+
+  @override
+  String get memoryOpenFolder => 'apri';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Apri la cartella $name nel file manager. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed =>
+      'Non riesco ad aprire la cartella: percorso copiato';
+
+  @override
+  String get lyricsSyncStateOn => 'attivo';
+
+  @override
+  String get lyricsSyncStateOff => 'disattivo';
+
+  @override
+  String get lyricsDeleteFailed => 'Impossibile eliminare il testo';
+
+  @override
+  String get lyricsSaveFailed => 'Impossibile salvare il testo';
 }

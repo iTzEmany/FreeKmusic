@@ -3767,5 +3767,37 @@
   "podcastUnfollowBody": "{count, plural, one{Vous avez 1 épisode téléchargé. Le garder ou le supprimer ?} other{Vous avez {count} épisodes téléchargés. Les garder ou les supprimer ?}}",
   "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
   "podcastKeepDownloads": "Garder",
-  "podcastDeleteDownloads": "Supprimer"
+  "podcastDeleteDownloads": "Supprimer",
+  "lyricsWrite": "Écrire ou coller",
+  "lyricsWriteA11y": "Écrire ou coller les paroles",
+  "lyricsEdit": "Modifier les paroles",
+  "lyricsDelete": "Supprimer les paroles",
+  "lyricsSyncSwitch": "Paroles synchronisées",
+  "lyricsEditorTitle": "Paroles du morceau",
+  "lyricsEditorLabel": "Collez ou écrivez ici",
+  "lyricsEditorHint": "Écrivez ou collez les paroles, une ligne par vers.",
+  "lyricsEditorInfo": "Si les lignes commencent par un temps, comme [01:23.45], le texte est reconnu comme synchronisé et suit le morceau. Sinon il reste du texte simple. L’enregistrer ici empêche la recherche automatique de le remplacer.",
+  "lyricsEditorSaveA11y": "Enregistrer les paroles",
+  "lyricsDetectNone": "Rien à enregistrer pour l’instant",
+  "lyricsDetectSynced": "Reconnu comme synchronisé : {count} lignes avec temps",
+  "@lyricsDetectSynced": {"placeholders": {"count": {"type": "int"}}},
+  "lyricsDetectPlain": "Texte simple, sans temps",
+  "lyricsEmptyWarn": "Écrivez quelque chose avant d’enregistrer",
+  "lyricsSavedSynced": "Paroles enregistrées, synchronisées",
+  "lyricsSavedPlain": "Paroles enregistrées, texte simple",
+  "lyricsDeleted": "Paroles supprimées",
+  "lyricsSyncedKept": "La version synchronisée est conservée : réactivez-la depuis le menu.",
+  "memoryOpenFolder": "ouvrir",
+  "memoryOpenFolderLabel": "Ouvrir le dossier {name} dans le gestionnaire de fichiers. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Impossible d’ouvrir le dossier : chemin copié",
+  "lyricsSyncStateOn": "activé",
+  "lyricsSyncStateOff": "désactivé",
+  "lyricsDeleteFailed": "Impossible de supprimer les paroles",
+  "lyricsSaveFailed": "Impossible d’enregistrer les paroles"
 }
