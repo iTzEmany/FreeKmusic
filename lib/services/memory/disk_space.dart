@@ -25,7 +25,9 @@ DiskSpace? parseDf(String output) {
   return DiskSpace(totalBytes: total, freeBytes: free.clamp(0, total));
 }
 
-const _channel = MethodChannel('codecore/storage');
+/// The Android storage channel (also used by `FolderOpener`).
+const storageChannelName = 'codecore/storage';
+const _channel = MethodChannel(storageChannelName);
 
 /// Free and total space where [dir] is. Android: `StatFs` through a channel;
 /// Linux: `df` (`statvfs` is not reachable from Dart); Windows and anything

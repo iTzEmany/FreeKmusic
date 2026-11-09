@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import '../../core/app_log.dart';
+import '../memory/disk_space.dart' show storageChannelName;
 
 typedef ProcessStarter = Future<Process> Function(String exe, List<String> args);
 
@@ -15,7 +16,7 @@ class FolderOpener {
     ProcessStarter? start,
     bool? android,
     bool? windows,
-  }) : _channel = channel ?? const MethodChannel('codecore/storage'),
+  }) : _channel = channel ?? const MethodChannel(storageChannelName),
        _start = start ?? Process.start,
        _android = android ?? Platform.isAndroid,
        _windows = windows ?? Platform.isWindows;
@@ -52,6 +53,8 @@ class FolderOpener {
         if (uri == null) return false;
         return await _channel.invokeMethod<bool>('openFolder', {'uri': uri}) ?? false;
       }
+      // explorer would open Documents for a folder that is gone.
+      if (!await Directory(path).exists()) return false;
       final proc = await _start(_windows ? 'explorer' : 'xdg-open', [path]);
       unawaited(proc.stdout.drain<void>());
       unawaited(proc.stderr.drain<void>());

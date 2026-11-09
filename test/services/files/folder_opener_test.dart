@@ -55,11 +55,12 @@ void main() {
   });
 
   test('xdg-open with a non-zero exit code is a failure, zero is a success', () async {
+    final dir = Directory.systemTemp.path;
     Future<Process> exits(int code) => Process.start('sh', ['-c', 'exit $code']);
-    expect(await FolderOpener(start: (_, _) => exits(3), android: false, windows: false).open('/m'), isFalse);
-    expect(await FolderOpener(start: (_, _) => exits(0), android: false, windows: false).open('/m'), isTrue);
+    expect(await FolderOpener(start: (_, _) => exits(3), android: false, windows: false).open(dir), isFalse);
+    expect(await FolderOpener(start: (_, _) => exits(0), android: false, windows: false).open(dir), isTrue);
     // explorer reports 1 even when it worked.
-    expect(await FolderOpener(start: (_, _) => exits(1), android: false, windows: true).open('/m'), isTrue);
+    expect(await FolderOpener(start: (_, _) => exits(1), android: false, windows: true).open(dir), isTrue);
   });
 
   test('Android sends the URI over the channel; a failing channel or odd path gives false', () async {
@@ -88,14 +89,19 @@ void main() {
       return Process.start('true', []);
     }
 
-    expect(await FolderOpener(start: ok, android: false, windows: false).open('/m/a b'), isTrue);
-    expect(await FolderOpener(start: ok, android: false, windows: true).open(r'C:\m'), isTrue);
-    expect(calls, ['xdg-open /m/a b', r'explorer C:\m']);
+    final dir = Directory.systemTemp.path;
+    expect(await FolderOpener(start: ok, android: false, windows: false).open(dir), isTrue);
+    expect(await FolderOpener(start: ok, android: false, windows: true).open(dir), isTrue);
+    expect(calls, ['xdg-open $dir', 'explorer $dir']);
+    // A folder that is gone never reaches the program.
+    calls.clear();
+    expect(await FolderOpener(start: ok, android: false, windows: true).open('$dir/nope-gone'), isFalse);
+    expect(calls, isEmpty);
     final bad = FolderOpener(
       start: (_, _) => throw const ProcessException('xdg-open', []),
       android: false,
       windows: false,
     );
-    expect(await bad.open('/m'), isFalse);
+    expect(await bad.open(dir), isFalse);
   });
 }
