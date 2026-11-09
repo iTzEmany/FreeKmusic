@@ -5,7 +5,7 @@ class LrcLine {
   final String text;
 }
 
-final _stamp = RegExp(r'\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]');
+final _stamp = RegExp(r'\[(\d{1,3}):([0-5]?\d)(?:[.:](\d{1,3}))?\]');
 final _offsetTag = RegExp(
   r'^\[offset:\s*([-+]?\d+)\s*\]',
   caseSensitive: false,
@@ -43,7 +43,7 @@ List<LrcLine> parseLrc(String raw) {
   return lines;
 }
 
-final _leadStamps = RegExp(r'^(?:\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\]\s*)+');
+final _leadStamps = RegExp(r'^(?:\[\d{1,3}:[0-5]?\d(?:[.:]\d{1,3})?\]\s*)+');
 final _metaTag = RegExp(r'^\[[A-Za-z]+:[^\]]*\]$');
 
 /// Lyrics typed or pasted by hand. They are synced when most of the non-empty

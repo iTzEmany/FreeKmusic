@@ -42,4 +42,10 @@ void main() {
       const Duration(milliseconds: 500),
     );
   });
+
+  test('seconds of 60 or more are not a time; minutes over 59 are', () {
+    expect(lyricsFromText('[00:75.00]a\n[99:99.99]b').synced, isNull);
+    expect(parseLrc('[99:99.99]a'), isEmpty);
+    expect(parseLrc('[75:10.00]long').single.time.inMinutes, 75);
+  });
 }

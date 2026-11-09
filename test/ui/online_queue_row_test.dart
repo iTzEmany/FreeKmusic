@@ -39,6 +39,11 @@ void main() {
       expect(find.byType(OnlineQueueRow), findsOneWidget);
       expect(find.text('Suggerito'), findsOneWidget);
       expect(find.text('Streamed'), findsOneWidget);
+      // One node «Suggerito, Ann»; the ', ' is not read on its own.
+      final handle = tester.ensureSemantics();
+      expect(find.bySemanticsLabel(RegExp('Suggerito, Ann')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^[, \n]+$')), findsNothing);
+      handle.dispose();
 
       await tester.tap(find.byTooltip('Altre opzioni'));
       await tester.pumpAndSettle();
