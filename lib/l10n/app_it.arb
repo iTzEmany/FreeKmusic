@@ -270,6 +270,7 @@
   "reasonUnplayable": "file non riproducibile",
   "reasonNotInLibrary": "brano non presente in libreria",
   "reasonOnlineUnavailable": "brano online non disponibile",
+  "reasonEpisodeUnavailable": "episodio non disponibile, controlla la connessione",
   "reasonAgeRestricted": "vietato ai minori, nessuna traccia audio trovata",
   "searchWeb": "Cerca info sul web",
   "enrichPreviewTitle": "Anteprima informazioni",
@@ -818,6 +819,14 @@
   },
   "homeMinutesLeft": "{count, plural, one{Manca 1 minuto} other{Mancano {count} minuti}}",
   "@homeMinutesLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeEpisodeLeft": "{count, plural, one{manca 1 min} other{mancano {count} min}}",
+  "@homeEpisodeLeft": {
     "placeholders": {
       "count": {
         "type": "int"

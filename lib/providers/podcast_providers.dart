@@ -18,7 +18,7 @@ import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/podcast_service.dart';
 import '../services/online/ytm_podcasts.dart';
-import '../services/podcast/ytm_podcast_sync.dart' show YtmPodcastSync, kPodcastSourceYtm, ytmShowFeedUrl;
+import '../services/podcast/ytm_podcast_sync.dart' show YtmPodcastSync, ytmShowFeedUrl;
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
@@ -84,6 +84,11 @@ final podcastsProvider = StreamProvider<List<PodcastSummary>>(
 
 final podcastProvider = StreamProvider.family<Podcast?, int>(
   (ref, id) => ref.watch(podcastRepositoryProvider).watchById(id),
+);
+
+/// The podcast saved under [feedUrl] (followed or only played from a preview), if any.
+final savedPodcastProvider = StreamProvider.family<Podcast?, String>(
+  (ref, feedUrl) => ref.watch(podcastRepositoryProvider).watchByFeedUrl(feedUrl),
 );
 
 final podcastEpisodesProvider = StreamProvider.family<List<EpisodeRow>, int>(

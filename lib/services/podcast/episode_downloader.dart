@@ -18,36 +18,8 @@ import '../covers/cover_store.dart';
 import '../online/http_client.dart';
 import '../online/yt_dlp_args.dart' show downloadExtensions, podcastAudioSelector;
 import '../online/youtube_service.dart';
-import 'ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import '../tags/tag_reader.dart';
 import 'podcast_models.dart';
-
-/// The audio containers an episode may come in, by the extension we save it as.
-const episodeExtensions = {'mp3', 'm4a', 'ogg', 'opus'};
-
-/// `mp3`, `m4a`, `ogg` or `opus` from what the server says, else from the
-/// address, else from what the feed said; null when none of them is known.
-String? episodeExtension({String? contentType, String? url, String? mime}) {
-  String? fromMime(String? m) {
-    final t = (m ?? '').toLowerCase().split(';').first.trim();
-    return switch (t) {
-      'audio/mpeg' || 'audio/mp3' || 'audio/mpeg3' || 'audio/x-mpeg' => 'mp3',
-      'audio/mp4' || 'audio/x-m4a' || 'audio/m4a' || 'audio/aac' || 'audio/x-aac' => 'm4a',
-      'audio/ogg' || 'application/ogg' || 'audio/vorbis' => 'ogg',
-      'audio/opus' => 'opus',
-      _ => null,
-    };
-  }
-
-  String? fromUrl(String? u) {
-    final path = Uri.tryParse(u ?? '')?.path ?? '';
-    final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
-    if (ext == 'mp4') return 'm4a';
-    return episodeExtensions.contains(ext) ? ext : null;
-  }
-
-  return fromMime(contentType) ?? fromUrl(url) ?? fromMime(mime);
-}
 
 /// A file name that is safe on every system and unique per `guid`: the readable
 /// part of the guid, cut short, and a few letters of its hash.
@@ -369,6 +341,3 @@ class EpisodeDownloader {
     }
   }
 }
-
-/// The albumKey every episode of a podcast shares (its cover hangs on it).
-String podcastAlbumKeyOf(int podcastId) => 'podcast|$podcastId';

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
@@ -20,6 +21,16 @@ class _SpyBackend extends FakeBackend {
   Future<void> loadUri(Uri uri, {Map<String, String> headers = const {}}) {
     playingAtLoadUri = playing;
     return super.loadUri(uri, headers: headers);
+  }
+}
+
+/// A seek that waits for [gate]: a dead network keeps the player from reaching the place.
+class _GatedSeekBackend extends FakeBackend {
+  Completer<void>? gate;
+  @override
+  Future<void> seek(Duration position) async {
+    await gate?.future;
+    await super.seek(position);
   }
 }
 
@@ -189,7 +200,7 @@ void main() {
       handler = CodecoreAudioHandler(backend, PlayQueue(), repo, onError: failures.add);
       await handler.playQueue([remoteId, songId], 0);
       await settle();
-      expect(failures.map((f) => f.reason), contains(PlaybackFailureReason.onlineUnavailable));
+      expect(failures.map((f) => f.reason), contains(PlaybackFailureReason.episodeUnavailable));
     });
 
     Future<int> remote(String name, {int ms = hour}) => db.into(db.tracks).insert(TracksCompanion.insert(
@@ -249,7 +260,7 @@ void main() {
       await at(const Duration(minutes: 5));
       backend.stateC.add(BackendState.completed);
       await settle();
-      expect(failures.map((f) => f.reason), [PlaybackFailureReason.onlineUnavailable]);
+      expect(failures.map((f) => f.reason), [PlaybackFailureReason.episodeUnavailable]);
       expect(heard, isEmpty);
       expect(await saved(remoteId), const Duration(minutes: 5).inMilliseconds);
     });
@@ -273,9 +284,75 @@ void main() {
       await at(const Duration(minutes: 8));
       backend.stateC.add(BackendState.error);
       await settle();
-      expect(failures.map((f) => f.reason), [PlaybackFailureReason.onlineUnavailable]);
+      expect(failures.map((f) => f.reason), [PlaybackFailureReason.episodeUnavailable]);
       expect(await saved(remoteId), const Duration(minutes: 8).inMilliseconds);
       expect(backend.loaded, ['/m/song.mp3']);
+    });
+
+    test('marked as heard by hand while playing: the place is forgotten and not written again', () async {
+      final resumed = <int>[];
+      await fresh(resumed: resumed.add);
+      await handler.playQueue([remoteId], 0);
+      await settle();
+      await at(const Duration(minutes: 5));
+      await handler.pause();
+      await settle();
+      expect(await saved(remoteId), const Duration(minutes: 5).inMilliseconds);
+      resumed.clear();
+      handler.episodeHeardByHand(remoteId);
+      await settle();
+      expect(await saved(remoteId), isNull);
+      await handler.play();
+      await at(const Duration(minutes: 8));
+      await handler.pause();
+      await settle();
+      expect(await saved(remoteId), isNull, reason: 'it would be back in «Riprendi»');
+      expect(resumed, isEmpty, reason: 'and the heard mark would go');
+    });
+
+    group('with the network gone, the last place that was really reached stays', () {
+      const place = 212417; // 3:32
+      setUp(() => (db.update(db.tracks)..where((t) => t.id.equals(remoteId)))
+          .write(const TracksCompanion(resumePositionMs: Value(place))));
+
+      test('an episode that cannot be opened keeps its bookmark and says «episode»', () async {
+        backend.failing.add(url);
+        final failures = await fresh();
+        await handler.playQueue([remoteId], 0);
+        await settle();
+        expect(failures.map((f) => f.reason), [PlaybackFailureReason.episodeUnavailable]);
+        expect(await saved(remoteId), place);
+      });
+
+      test('a seek that never arrives, then the failure: the bookmark is not the seek, nor 0:15', () async {
+        final slow = _GatedSeekBackend();
+        final failures = await fresh(with_: slow);
+        await handler.playQueue([remoteId], 0);
+        await settle();
+        slow.gate = Completer<void>();
+        unawaited(handler.seek(const Duration(minutes: 46, seconds: 8)));
+        await settle();
+        slow.stateC.add(BackendState.playing);
+        await at(const Duration(seconds: 15, milliseconds: 32)); // a dead player's own position
+        await at(const Duration(seconds: 40));
+        expect(await saved(remoteId), place, reason: 'nothing was reached by listening');
+        slow.stateC.add(BackendState.error);
+        await settle();
+        expect(failures.map((f) => f.reason), [PlaybackFailureReason.episodeUnavailable]);
+        expect(await saved(remoteId), place);
+      });
+
+      test('once the player is where the seek asked, the place is saved again', () async {
+        final slow = _GatedSeekBackend();
+        await fresh(with_: slow);
+        await handler.playQueue([remoteId], 0);
+        await settle();
+        await handler.seek(const Duration(minutes: 46, seconds: 8));
+        slow.stateC.add(BackendState.playing);
+        await at(const Duration(minutes: 46, seconds: 9));
+        await at(const Duration(minutes: 46, seconds: 30));
+        expect(await saved(remoteId), const Duration(minutes: 46, seconds: 30).inMilliseconds);
+      });
     });
 
     test('a YouTube Music episode (kind 1, stream:) streams through the preparer and starts at its bookmark', () async {

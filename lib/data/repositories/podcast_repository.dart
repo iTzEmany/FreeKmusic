@@ -1,8 +1,6 @@
 import 'package:drift/drift.dart';
 
-import '../../services/podcast/episode_downloader.dart' show episodeExtension, podcastAlbumKeyOf;
 import '../../services/podcast/podcast_models.dart';
-import '../../services/podcast/ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
 import 'track_kinds.dart';
@@ -188,6 +186,10 @@ class PodcastRepository {
   Future<Podcast?> byFeedUrl(String feedUrl) =>
       (_db.select(_db.podcasts)..where((p) => p.feedUrl.equals(feedUrl))).getSingleOrNull();
 
+  /// The saved podcast of [feedUrl], followed or not, as it changes.
+  Stream<Podcast?> watchByFeedUrl(String feedUrl) =>
+      (_db.select(_db.podcasts)..where((p) => p.feedUrl.equals(feedUrl))).watchSingleOrNull();
+
   Stream<Podcast?> watchById(int id) =>
       (_db.select(_db.podcasts)..where((p) => p.id.equals(id)))
           .watchSingleOrNull();
@@ -302,8 +304,7 @@ class PodcastRepository {
   /// a YouTube Music one; null when there is none (not an http(s) address).
   String? remotePathOf(Podcast podcast, PodcastEpisode e) {
     if (podcast.source == kPodcastSourceYtm) return streamPathOf('youtube:${e.guid}');
-    final ok = e.audioUrl.startsWith('http://') || e.audioUrl.startsWith('https://');
-    return ok ? e.audioUrl : null;
+    return isHttpAddress(e.audioUrl) ? e.audioUrl : null;
   }
 
   Future<Track?> _trackByPath(String path) =>
@@ -386,7 +387,7 @@ class PodcastRepository {
   Future<void> _followAddress(int episodeId, int trackId, String url) async {
     final row = await _trackById(trackId);
     if (row == null || row.kind != kEpisodeKind) return;
-    if (!(row.path.startsWith('http://') || row.path.startsWith('https://'))) return;
+    if (!isHttpAddress(row.path)) return;
     final slot = await _slot(url, episodeId);
     if (slot.row != null || slot.path == row.path) return;
     await (_db.update(_db.tracks)..where((t) => t.id.equals(trackId)))

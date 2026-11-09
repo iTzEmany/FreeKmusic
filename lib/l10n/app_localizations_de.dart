@@ -557,6 +557,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reasonOnlineUnavailable => 'Online-Titel nicht verfügbar';
 
   @override
+  String get reasonEpisodeUnavailable =>
+      'Folge nicht verfügbar, prüfe die Verbindung';
+
+  @override
   String get reasonAgeRestricted =>
       'altersbeschränkt, keine Audiospur gefunden';
 
@@ -1405,6 +1409,17 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: 'Noch $count Minuten',
       one: 'Noch 1 Minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeEpisodeLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'noch $count Min.',
+      one: 'noch 1 Min.',
     );
     return '$_temp0';
   }

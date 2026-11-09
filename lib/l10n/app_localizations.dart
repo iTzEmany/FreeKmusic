@@ -976,6 +976,12 @@ abstract class AppLocalizations {
   /// **'brano online non disponibile'**
   String get reasonOnlineUnavailable;
 
+  /// No description provided for @reasonEpisodeUnavailable.
+  ///
+  /// In it, this message translates to:
+  /// **'episodio non disponibile, controlla la connessione'**
+  String get reasonEpisodeUnavailable;
+
   /// No description provided for @reasonAgeRestricted.
   ///
   /// In it, this message translates to:
@@ -2427,6 +2433,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{count, plural, one{Manca 1 minuto} other{Mancano {count} minuti}}'**
   String homeMinutesLeft(int count);
+
+  /// No description provided for @homeEpisodeLeft.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{manca 1 min} other{mancano {count} min}}'**
+  String homeEpisodeLeft(int count);
 
   /// No description provided for @homeFanOpen.
   ///

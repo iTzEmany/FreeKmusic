@@ -557,6 +557,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reasonOnlineUnavailable => 'online track not available';
 
   @override
+  String get reasonEpisodeUnavailable =>
+      'episode not available, check your connection';
+
+  @override
   String get reasonAgeRestricted =>
       'age-restricted video, no audio track found';
 
@@ -1401,6 +1405,17 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count minutes left',
       one: '1 minute left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeEpisodeLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min left',
+      one: '1 min left',
     );
     return '$_temp0';
   }

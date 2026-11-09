@@ -56,6 +56,26 @@ void main() {
       final other = await tracks.upsertStreamRow('youtube:$n', r, file);
       await (db.update(db.tracks)..where((t) => t.id.equals(other))).write(col);
     }
+    // A podcast episode not downloaded (kind 1, an address) is no library row either.
+    await db.into(db.tracks).insert(
+          TracksCompanion.insert(
+            path: 'https://feed.example/ep.mp3',
+            title: 'Shadow',
+            albumKey: 'stream|youtube:abc',
+            format: 'mp3',
+            sizeBytes: 0,
+            mtimeMs: 0,
+            addedAt: 1,
+            artist: const Value('Shadow Artist'),
+            album: const Value('Shadow Album'),
+            genre: const Value('Pop'),
+            playCount: const Value(5),
+            isFavorite: const Value(true),
+            lastPlayedAt: const Value(1000),
+            enrichStatus: const Value(2),
+            kind: const Value(kEpisodeKind),
+          ),
+        );
     final pl = await db
         .into(db.playlists)
         .insert(
@@ -104,10 +124,10 @@ void main() {
     final after = (await tracks.streamRow('youtube:abc'))!;
     expect(after.missing, isFalse);
     expect(after.albumKey, 'stream|youtube:abc');
-    expect(await (db.select(db.tracks)).get(), hasLength(4));
+    expect(await (db.select(db.tracks)).get(), hasLength(5), reason: 'four shadow rows and the episode row');
   });
 
-  test('streamRowsAmong returns only the kind-2 rows among the ids', () async {
+  test('streamRowsAmong returns the kind-2 rows and the `stream:` rows of episodes, not library rows or addresses', () async {
     final shadow = (await tracks.streamRow('youtube:abc'))!;
     final lib = await db
         .into(db.tracks)
@@ -122,7 +142,8 @@ void main() {
             addedAt: 1,
           ),
         );
-    final got = await tracks.streamRowsAmong([lib, shadow.id, 9999]);
+    final remote = (await tracks.byPath('https://feed.example/ep.mp3'))!.id;
+    final got = await tracks.streamRowsAmong([lib, remote, shadow.id, 9999]);
     expect(got.map((r) => r.id), [shadow.id]);
     expect(await tracks.streamRowsAmong(const []), isEmpty);
   });
@@ -190,7 +211,11 @@ void main() {
     'Memory totals': (d, _) => MemoryQueries(d).watchTotals().first,
     'Memory never played': (d, _) => MemoryQueries(d).neverPlayed(),
     'Memory heaviest': (d, _) => MemoryQueries(d).heaviestTracks(),
-    'user_data.json': (d, _) async => (await collectUserData(d)).tracks,
+    // An episode row is user data like any other (its place and plays); a shadow row is not.
+    'user_data.json': (d, _) async => [
+      for (final t in (await collectUserData(d)).tracks)
+        if (t.ref.folder?.startsWith('stream:') ?? false) t,
+    ],
     'review': (d, _) => ReviewQueries(d).watch().first,
     'review count': (d, _) => ReviewQueries(d).watchCount().first,
   };

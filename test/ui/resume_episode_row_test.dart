@@ -22,6 +22,7 @@ class _Spy implements PlayerController {
 
 void main() {
   testWidgets('an episode row names the podcast, where it was left and plays it', (tester) async {
+    final semantics = tester.ensureSemantics();
     final episode = Track(
       coverSource: 0,
       id: 7,
@@ -64,11 +65,15 @@ void main() {
       ),
     ));
     await tester.pump();
-    expect(find.text('Tienimi Bordone, riprendi da 23:41, Mancano 19 minuti'), findsOneWidget);
+    expect(find.text('Tienimi Bordone, riprendi da 23:41, mancano 19 min'), findsOneWidget);
+    expect(tester.getSemantics(find.byKey(const ValueKey('resume-track-7'))).label,
+        allOf(contains('Seconda parte'), contains('riprendi da 23:41'), contains('mancano 19 min')),
+        reason: 'TalkBack reads where it was left and what is left');
     await tester.tap(find.text('Seconda parte'));
     expect(spy.played, [
       [7],
     ]);
+    semantics.dispose();
   });
 
   testWidgets('a song with a bookmark keeps its usual subtitle (no podcast wording)', (tester) async {

@@ -4,7 +4,6 @@ import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/podcast_ops.dart';
 import 'package:codecore/providers/podcast_providers.dart';
 import 'package:codecore/services/podcast/podcast_models.dart';
-import 'package:codecore/services/podcast/ytm_podcast_sync.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -60,6 +59,38 @@ void main() {
     );
     expect(await ops.saveForPlay(rss, 'e1'), isNull);
     expect(await repo.all(), isEmpty);
+  });
+
+  test('an address in capitals is an address: it plays, and the saved row is on it', () async {
+    const rss = PodcastPreview(
+      feedUrl: 'https://x/feed',
+      feed: PodcastFeed(
+        title: 'Show',
+        episodes: [PodcastEpisodeInfo(guid: 'e1', title: 'One', audioUrl: 'HTTP://x/1.mp3')],
+      ),
+    );
+    final track = await ops.saveForPlay(rss, 'e1');
+    expect(track?.path, 'HTTP://x/1.mp3');
+    expect(await repo.all(), hasLength(1));
+  });
+
+  test('a tap on play writes the feed only when something is missing or new', () async {
+    PodcastPreview feed(List<PodcastEpisodeInfo> eps, {String title = 'Show'}) =>
+        PodcastPreview(feedUrl: 'https://x/feed', feed: PodcastFeed(title: title, episodes: eps));
+    const one = PodcastEpisodeInfo(guid: 'e1', title: 'One', audioUrl: 'https://x/1.mp3');
+    await ops.saveForPlay(feed([one]), 'e1');
+    final id = (await repo.all()).single.id;
+    // Same feed but for a changed show title: nothing is rewritten.
+    await ops.saveForPlay(feed([one], title: 'Renamed'), 'e1');
+    expect((await repo.byId(id))!.title, 'Show');
+    // An episode newer than the last read: the feed is saved again.
+    final fresh = PodcastEpisodeInfo(
+        guid: 'e2', title: 'Two', audioUrl: 'https://x/2.mp3', publishedAt: DateTime.utc(2100));
+    await ops.saveForPlay(feed([one, fresh]), 'e1');
+    expect(await repo.episodeGuids(id), {'e1', 'e2'});
+    // An episode the saved copy has not got: also saved, whatever its date.
+    const old = PodcastEpisodeInfo(guid: 'e0', title: 'Zero', audioUrl: 'https://x/0.mp3');
+    expect((await ops.saveForPlay(feed([one, fresh, old]), 'e0'))?.path, 'https://x/0.mp3');
   });
 
   test('an RSS episode plays from its address: one row, reused, not counted as a download', () async {

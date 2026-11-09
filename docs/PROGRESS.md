@@ -1400,10 +1400,10 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 101.6 Controlli di fase
 
 ## Fase 102 — Podcast senza iscrizione e «Riprendi» con gli episodi (`fase-102-podcast-senza-iscrizione.md`)
-- [ ] 102.1 Schema v19: `podcasts.followed`
-- [ ] 102.2 Anteprima senza iscrizione
-- [ ] 102.3 «Riprendi» con gli episodi
-- [ ] 102.4 Controlli di fase
+- [x] 102.1 Schema v19: `podcasts.followed`
+- [x] 102.2 Anteprima senza iscrizione
+- [x] 102.3 «Riprendi» con gli episodi
+- [x] 102.4 Controlli di fase
 
 ## Fase 103 — Testi a mano, sincronia spegnibile, Memoria (`fase-103-testi-e-memoria.md`)
 - [ ] 103.1 Scrivi o incolla un testo

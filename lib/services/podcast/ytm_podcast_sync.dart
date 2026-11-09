@@ -5,9 +5,6 @@ import '../online/ytm_podcasts.dart';
 import 'podcast_cover.dart';
 import 'podcast_models.dart';
 
-/// `Podcasts.source` of a YouTube Music show (0 is an RSS feed).
-const kPodcastSourceYtm = 1;
-
 /// The address a YouTube Music show is stored under (`feedUrl` is unique).
 String ytmShowFeedUrl(String showId) => 'https://music.youtube.com/browse/$showId';
 

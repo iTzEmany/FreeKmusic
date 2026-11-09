@@ -181,12 +181,11 @@ class ResumeList extends ConsumerWidget {
   /// An episode names its podcast (the artist column) and where it was left.
   String _trackSubtitle(BuildContext context, Track t) {
     final l = context.l10n;
-    final left = l.homeMinutesLeft(_minutesLeft(t));
-    if (t.kind != kEpisodeKind) return left;
+    if (t.kind != kEpisodeKind) return l.homeMinutesLeft(_minutesLeft(t));
     return [
       if (t.artist != null) t.artist!,
       l.resumeFrom(formatDuration(t.resumePositionMs ?? 0)),
-      left,
+      l.homeEpisodeLeft(_minutesLeft(t)),
     ].join(', ');
   }
 

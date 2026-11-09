@@ -116,6 +116,40 @@ void main() {
     await _settle(tester);
   }
 
+  testWidgets('a show saved but not followed: its episodes show where they were left and what was heard', (tester) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    final repo = PodcastRepository(h.db);
+    const feed = PodcastFeed(title: 'Show', episodes: [
+      PodcastEpisodeInfo(guid: 'e1', title: 'One', audioUrl: 'https://x/1.mp3'),
+      PodcastEpisodeInfo(guid: 'e2', title: 'Two', audioUrl: 'https://x/2.mp3'),
+      PodcastEpisodeInfo(guid: 'e3', title: 'Three', audioUrl: 'https://x/3.mp3'),
+    ]);
+    final id = await repo.subscribe('https://x/feed', feed, now: 1, followed: false);
+    final e1 = (await repo.episodeByGuid(id, 'e1'))!;
+    final t = await h.db.into(h.db.tracks).insert(TracksCompanion.insert(
+        path: 'https://x/1.mp3', title: 'One', albumKey: 'podcast|$id', format: 'mp3', sizeBytes: 0, mtimeMs: 0,
+        addedAt: 1, durationMs: const Value(3600000), kind: const Value(1), resumePositionMs: const Value(212417)));
+    await repo.setTrackId(e1.id, t);
+    await repo.markPlayed((await repo.episodeByGuid(id, 'e2'))!.id, true, now: 1);
+    await h.pump(
+        tester,
+        const PodcastPreviewScreen(
+            listing: PodcastListing(origin: PodcastOrigin.apple, title: 'Show', feedUrl: 'https://x/feed')),
+        extraOverrides: [
+          podcastPreviewProvider.overrideWith((ref, key) async =>
+              const PodcastPreview(feedUrl: 'https://x/feed', feed: feed)),
+        ]);
+    await _settle(tester);
+    expect(find.text('riprendi da 3:32'), findsOneWidget);
+    expect(find.text('Ascoltato'), findsOneWidget);
+    expect(find.text('Segui'), findsOneWidget, reason: 'still not followed');
+    await tester.pumpWidget(const SizedBox());
+    await _settle(tester);
+  });
+
   testWidgets('unfollowing with downloads asks; «Tieni» deletes nothing', (tester) async {
     final r = await unfollow(tester, downloaded: true);
     expect(find.text('Smettere di seguire?'), findsOneWidget);

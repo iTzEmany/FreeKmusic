@@ -6,6 +6,7 @@ import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/podcast_discover_providers.dart';
 import '../../../providers/podcast_ops.dart';
+import '../../../data/repositories/podcast_repository.dart' show EpisodeRow;
 import '../../../providers/podcast_providers.dart';
 import '../../../services/podcast/podcast_models.dart';
 import '../../theme/tokens.dart';
@@ -22,31 +23,44 @@ enum _KeepDownloads { keep, delete }
 
 /// Stops following the podcast: episodes and bookmarks stay; with downloads it asks
 /// whether to keep or delete them (D-470), without downloads it does not ask.
-Future<void> unfollowPodcast(BuildContext context, WidgetRef ref, int podcastId) async {
+Future<void> unfollowPodcast(
+  BuildContext context,
+  WidgetRef ref,
+  int podcastId,
+) async {
   final l = context.l10n;
   final ops = ref.read(podcastOpsProvider);
   var keep = _KeepDownloads.keep;
-    final downloaded = await ops.downloadedCount(podcastId);
-    if (downloaded > 0) {
-      if (!context.mounted) return;
-      final choice = await showDialog<_KeepDownloads>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(ctx.l10n.podcastUnfollowTitle),
-          content: Text(ctx.l10n.podcastUnfollowBody(downloaded)),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.cancel)),
-            TextButton(onPressed: () => Navigator.pop(ctx, _KeepDownloads.delete), child: Text(ctx.l10n.podcastDeleteDownloads)),
-            FilledButton(onPressed: () => Navigator.pop(ctx, _KeepDownloads.keep), child: Text(ctx.l10n.podcastKeepDownloads)),
-          ],
-        ),
-      );
-      if (choice == null) return;
-      keep = choice;
-    }
-    await ops.setFollowed(podcastId, false);
-    if (keep == _KeepDownloads.delete) await ops.deleteDownloads(podcastId);
-    if (context.mounted) showMsg(context, l.podcastUnfollowedMsg);
+  final downloaded = await ops.downloadedCount(podcastId);
+  if (downloaded > 0) {
+    if (!context.mounted) return;
+    final choice = await showDialog<_KeepDownloads>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.podcastUnfollowTitle),
+        content: Text(ctx.l10n.podcastUnfollowBody(downloaded)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(ctx.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _KeepDownloads.delete),
+            child: Text(ctx.l10n.podcastDeleteDownloads),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, _KeepDownloads.keep),
+            child: Text(ctx.l10n.podcastKeepDownloads),
+          ),
+        ],
+      ),
+    );
+    if (choice == null) return;
+    keep = choice;
+  }
+  await ops.setFollowed(podcastId, false);
+  if (keep == _KeepDownloads.delete) await ops.deleteDownloads(podcastId);
+  if (context.mounted) showMsg(context, l.podcastUnfollowedMsg);
 }
 
 /// A show that is not followed (D-431): its feed is read in memory, episodes play in
@@ -57,9 +71,18 @@ class PodcastPreviewScreen extends ConsumerWidget {
 
   final PodcastListing listing;
 
-  PodcastPreviewKey get _key => (feedUrl: listing.feedUrl, appleId: listing.appleId, ytmId: listing.ytmId);
+  PodcastPreviewKey get _key => (
+    feedUrl: listing.feedUrl,
+    appleId: listing.appleId,
+    ytmId: listing.ytmId,
+  );
 
-  Future<void> _toggleFollow(BuildContext context, WidgetRef ref, PodcastPreview data, int? followedId) async {
+  Future<void> _toggleFollow(
+    BuildContext context,
+    WidgetRef ref,
+    PodcastPreview data,
+    int? followedId,
+  ) async {
     final l = context.l10n;
     final ops = ref.read(podcastOpsProvider);
     if (followedId == null) {
@@ -70,9 +93,16 @@ class PodcastPreviewScreen extends ConsumerWidget {
     await unfollowPodcast(context, ref, followedId);
   }
 
-  Future<void> _play(BuildContext context, WidgetRef ref, PodcastPreview data, PodcastEpisodeInfo e) async {
+  Future<void> _play(
+    BuildContext context,
+    WidgetRef ref,
+    PodcastPreview data,
+    PodcastEpisodeInfo e,
+  ) async {
     final ok = await ref.read(podcastOpsProvider).playEpisode(data, e.guid);
-    if (!ok && context.mounted) showMsg(context, context.l10n.podcastStreamUnavailable);
+    if (!ok && context.mounted) {
+      showMsg(context, context.l10n.podcastStreamUnavailable);
+    }
   }
 
   @override
@@ -87,7 +117,9 @@ class PodcastPreviewScreen extends ConsumerWidget {
         loading: () => const Skeleton.bigRow(rows: 5),
         error: (e, _) {
           AppLog.w('podcast preview failed', e);
-          final kind = e is PodcastException ? e.kind : PodcastErrorKind.network;
+          final kind = e is PodcastException
+              ? e.kind
+              : PodcastErrorKind.network;
           return ErrorState(
             message: podcastErrorText(l, kind),
             onRetry: () => ref.invalidate(podcastPreviewProvider(_key)),
@@ -95,6 +127,12 @@ class PodcastPreviewScreen extends ConsumerWidget {
         },
         data: (data) {
           final eps = data.feed.episodes;
+          // A show saved before (followed or played from here): where each episode was left.
+          final saved = ref.watch(savedPodcastProvider(data.feedUrl)).value;
+          final saves = saved == null
+              ? const <EpisodeRow>[]
+              : ref.watch(podcastEpisodesProvider(saved.id)).value ?? const [];
+          final byGuid = {for (final r in saves) r.episode.guid: r};
           return ListView.builder(
             padding: EdgeInsets.zero.withDock(context),
             itemCount: eps.length + 1,
@@ -102,9 +140,14 @@ class PodcastPreviewScreen extends ConsumerWidget {
                 ? _Header(
                     data: data,
                     following: followedId != null,
-                    onToggle: () => _toggleFollow(context, ref, data, followedId),
+                    onToggle: () =>
+                        _toggleFollow(context, ref, data, followedId),
                   )
-                : _EpisodeTile(episode: eps[i - 1], onPlay: () => _play(context, ref, data, eps[i - 1])),
+                : _EpisodeTile(
+                    episode: eps[i - 1],
+                    saved: byGuid[eps[i - 1].guid],
+                    onPlay: () => _play(context, ref, data, eps[i - 1]),
+                  ),
           );
         },
       ),
@@ -113,7 +156,11 @@ class PodcastPreviewScreen extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.data, required this.following, required this.onToggle});
+  const _Header({
+    required this.data,
+    required this.following,
+    required this.onToggle,
+  });
 
   final PodcastPreview data;
   final bool following;
@@ -126,38 +173,59 @@ class _Header extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final feed = data.feed;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap8),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap8,
+        CcDims.margin,
+        CcDims.gap8,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NetThumbnail(url: feed.imageUrl, width: 112, height: 112, icon: Icons.podcasts_rounded, radius: CcDims.rGrid),
+              NetThumbnail(
+                url: feed.imageUrl,
+                width: 112,
+                height: 112,
+                icon: Icons.podcasts_rounded,
+                radius: CcDims.rGrid,
+              ),
               const SizedBox(width: CcDims.gap16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(feed.title, style: theme.titleLarge),
-                    if (feed.author != null) Text(feed.author!, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+                    if (feed.author != null)
+                      Text(
+                        feed.author!,
+                        style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                      ),
                     const SizedBox(height: CcDims.gap8),
                     Semantics(
                       button: true,
-                      label: following ? l.podcastUnfollowLabel(feed.title) : l.podcastFollowLabel(feed.title),
+                      label: following
+                          ? l.podcastUnfollowLabel(feed.title)
+                          : l.podcastFollowLabel(feed.title),
                       excludeSemantics: true,
                       onTap: onToggle,
                       child: following
                           ? OutlinedButton.icon(
                               key: const ValueKey('follow'),
-                              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 48),
+                              ),
                               onPressed: onToggle,
                               icon: const Icon(Icons.check_rounded),
                               label: Text(l.podcastFollowing),
                             )
                           : FilledButton.icon(
                               key: const ValueKey('follow'),
-                              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 48),
+                              ),
                               onPressed: onToggle,
                               icon: const Icon(Icons.add_rounded),
                               label: Text(l.podcastFollow),
@@ -171,15 +239,26 @@ class _Header extends StatelessWidget {
           if (feed.description != null && feed.description!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: CcDims.gap8),
-              child: Text(feed.description!, maxLines: 4, overflow: TextOverflow.ellipsis, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
+              child: Text(
+                feed.description!,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: theme.bodyMedium?.copyWith(color: cc.textMuted),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.only(top: CcDims.gap8),
-            child: Text(following ? l.podcastPreviewFollowed : l.podcastPreviewNote, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+            child: Text(
+              following ? l.podcastPreviewFollowed : l.podcastPreviewNote,
+              style: theme.bodySmall?.copyWith(color: cc.textMuted),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(top: CcDims.gap16),
-            child: Text(l.podcastEpisodesCount(feed.episodes.length), style: theme.titleSmall),
+            child: Text(
+              l.podcastEpisodesCount(feed.episodes.length),
+              style: theme.titleSmall,
+            ),
           ),
         ],
       ),
@@ -188,9 +267,12 @@ class _Header extends StatelessWidget {
 }
 
 class _EpisodeTile extends StatelessWidget {
-  const _EpisodeTile({required this.episode, required this.onPlay});
+  const _EpisodeTile({required this.episode, required this.onPlay, this.saved});
 
   final PodcastEpisodeInfo episode;
+
+  /// The saved copy of the episode, with its bookmark and heard mark.
+  final EpisodeRow? saved;
   final VoidCallback onPlay;
 
   @override
@@ -199,8 +281,23 @@ class _EpisodeTile extends StatelessWidget {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toString();
-    final date = episode.publishedAt == null ? null : DateFormat.yMMMd(locale).format(episode.publishedAt!);
-    final meta = [?date, if (episode.duration != null) formatDuration(episode.duration!.inMilliseconds)].join(', ');
+    final date = episode.publishedAt == null
+        ? null
+        : DateFormat.yMMMd(locale).format(episode.publishedAt!);
+    final resume = saved?.track?.resumePositionMs;
+    final state = saved == null
+        ? null
+        : saved!.episode.played
+        ? l.podcastStateHeard
+        : resume != null
+        ? l.resumeFrom(formatDuration(resume))
+        : null;
+    final meta = [
+      ?date,
+      if (episode.duration != null)
+        formatDuration(episode.duration!.inMilliseconds),
+      ?state,
+    ].join(', ');
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 64),
       child: Padding(
@@ -211,8 +308,18 @@ class _EpisodeTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.bodyLarge),
-                  if (meta.isNotEmpty) Text(meta, maxLines: 1, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+                  Text(
+                    episode.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.bodyLarge,
+                  ),
+                  if (meta.isNotEmpty)
+                    Text(
+                      meta,
+                      maxLines: 1,
+                      style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                    ),
                 ],
               ),
             ),

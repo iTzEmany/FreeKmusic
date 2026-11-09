@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/clock.dart';
 import '../data/db/app_database.dart' show Track;
+import '../data/repositories/track_kinds.dart' show isHttpAddress;
 import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_service.dart';
 import 'activity_log_providers.dart';
@@ -9,7 +10,7 @@ import 'activity_providers.dart';
 import 'player_providers.dart';
 import 'podcast_discover_providers.dart';
 import 'podcast_providers.dart';
-import '../services/podcast/ytm_podcast_sync.dart' show kPodcastSourceYtm;
+import '../services/podcast/podcast_models.dart' show kPodcastSourceYtm;
 
 /// Per-podcast and per-episode user choices.
 class PodcastOps {
@@ -106,11 +107,18 @@ class PodcastOps {
   Future<Track?> saveForPlay(PodcastPreview d, String guid) async {
     final info = d.feed.episodes.where((e) => e.guid == guid).firstOrNull;
     if (info == null) return null;
-    final scheme = Uri.tryParse(info.audioUrl)?.scheme;
-    if (d.source != kPodcastSourceYtm && scheme != 'http' && scheme != 'https') return null;
+    if (d.source != kPodcastSourceYtm && !isHttpAddress(info.audioUrl)) return null;
     final repo = _ref.read(podcastRepositoryProvider);
-    final id = await save(d, followed: false);
-    final episode = await repo.episodeByGuid(id, guid);
+    final saved = await repo.byFeedUrl(d.feedUrl);
+    var episode = saved == null ? null : await repo.episodeByGuid(saved.id, guid);
+    // The feed is written only when the show or the episode is missing, or the feed has an
+    // episode newer than the last time it was read: not at every tap.
+    final checked = saved?.lastCheckedAt;
+    final newer = checked == null || d.feed.episodes.any((e) => (e.publishedAt?.millisecondsSinceEpoch ?? 0) > checked);
+    if (saved == null || episode == null || newer) {
+      final id = await save(d, followed: false);
+      episode = await repo.episodeByGuid(id, guid);
+    }
     return episode == null ? null : repo.playableTrack(episode.id);
   }
 
@@ -138,9 +146,13 @@ class PodcastOps {
   Future<void> setAutoDeleteDays(int podcastId, int? days) =>
       _ref.read(podcastRepositoryProvider).setAutoDeleteDays(podcastId, days);
 
-  Future<void> markPlayed(int episodeId, bool played) => _ref
-      .read(podcastRepositoryProvider)
-      .markPlayed(episodeId, played, now: nowMs());
+  Future<void> markPlayed(int episodeId, bool played) async {
+    final repo = _ref.read(podcastRepositoryProvider);
+    await repo.markPlayed(episodeId, played, now: nowMs());
+    // The player may have it open: it must not write the place again.
+    final trackId = played ? (await repo.episodeById(episodeId))?.trackId : null;
+    if (trackId != null) _ref.read(audioHandlerProvider).episodeHeardByHand(trackId);
+  }
 }
 
 final podcastOpsProvider = Provider<PodcastOps>(PodcastOps.new);

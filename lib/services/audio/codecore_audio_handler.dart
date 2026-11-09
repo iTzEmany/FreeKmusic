@@ -31,6 +31,7 @@ enum PlaybackFailureReason {
   unplayable,
   notInLibrary,
   onlineUnavailable,
+  episodeUnavailable,
   ageRestricted,
   networkUnavailable,
   radioUnavailable,
@@ -97,13 +98,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   final PlayHistoryRepository? history;
 
   /// Told once per session when a podcast episode (track kind 1) has been
-  /// listened to from 95 % on, or to its end. The handler knows nothing else
-  /// about podcasts.
-  final void Function(int trackId)? onEpisodeHeard;
+  /// listened to from 95 % on, or to its end. The handler writes nothing about
+  /// podcasts itself (their rows are told through this and [onEpisodeResumed]),
+  /// but it plays the rows of episodes not downloaded, from their address.
+  final FutureOr<void> Function(int trackId)? onEpisodeHeard;
 
   /// Told once per listen when an episode gets a new bookmark: it may have been marked as
   /// heard before, and listening again takes that mark away.
-  final void Function(int trackId)? onEpisodeResumed;
+  final FutureOr<void> Function(int trackId)? onEpisodeResumed;
 
   /// Streamed (not owned) entries of the queue, which have negative ids.
   /// Null: the queue holds only library tracks.
@@ -230,6 +232,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   int _flushedMs = 0;
   Duration? _lastTick;
   Duration _lastResumeSave = Duration.zero;
+
+  /// Where a seek on a remote episode asked to go, until the player is there.
+  Duration? _seekTo;
+
+  /// The track whose load or stream failed: it keeps its old bookmark.
+  int? _noSaveId;
   bool _handlingCompleted = false;
 
   // Live radio: the cleaned «now playing» text, the new attempts after a drop
@@ -470,6 +478,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // The track we are leaving keeps its place (long tracks only).
     _endListen();
     _saveResume();
+    _seekTo = null;
     _lastResumeSave = Duration.zero;
     // An explicit position (restoring a session) wins over the bookmark.
     // Streams have neither a bookmark nor ReplayGain.
@@ -554,6 +563,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         _position = start; // a paused backend emits no position
       }
       _consecutiveErrors = 0;
+      _noSaveId = null;
       // A backend that was playing keeps playing a newly loaded file.
       if (playNow && !_loadPaused) {
         await _backend.play();
@@ -581,6 +591,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
               ? PlaybackFailureReason.networkUnavailable
               : ageGated
               ? PlaybackFailureReason.ageRestricted
+              : track.kind == kEpisodeKind && (streamKey != null || directUrl)
+              ? PlaybackFailureReason.episodeUnavailable
               : (isOnline && libTrack == null) || streamKey != null || directUrl
               ? PlaybackFailureReason.onlineUnavailable
               : e.fileMissing
@@ -813,6 +825,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   /// Makes [track] the current one (state, gain, notification).
   void _enterTrack(Track track) {
+    _seekTo = null;
     _playCounted = false;
     _playedMs = 0;
     _flushedMs = 0;
@@ -838,6 +851,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> _failAndSkip(
       PlaybackFailureReason reason, Track? track, int token, {bool play = true}) async {
     _consecutiveErrors++;
+    // What the failed track reports from here on (position 0, a seek never reached) is not a place
+    // somebody listened to: its bookmark stays as it was until it plays again.
+    _noSaveId = track?.id;
     onError(PlaybackFailure(track?.title, reason));
     if (_consecutiveErrors > maxConsecutiveErrors) {
       await _goIdle();
@@ -1001,6 +1017,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await _failAndSkip(
             e is _StreamNotReady && e.offline
                 ? PlaybackFailureReason.networkUnavailable
+                : _current?.kind == kEpisodeKind
+                ? PlaybackFailureReason.episodeUnavailable
                 : PlaybackFailureReason.onlineUnavailable,
             _current,
             token,
@@ -1047,7 +1065,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> _failCut(Track t) async {
     AppLog.w('episode "${t.title}" stopped early at $_position');
     _saveResume();
-    await _failAndSkip(PlaybackFailureReason.onlineUnavailable, t, _loadToken, play: _playWhenReady);
+    await _failAndSkip(PlaybackFailureReason.episodeUnavailable, t, _loadToken, play: _playWhenReady);
   }
 
   /// The player failed on a streamed episode that was already playing.
@@ -1255,6 +1273,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   void _onPosition(Duration p) {
     if (_waitingStream) return;
     _position = p;
+    final target = _seekTo;
+    if (target != null && (p - target).abs() <= kSeekConfirm) _seekTo = null;
     final timing = _timing;
     if (timing != null && _state == BackendState.playing && p > timing.pos0) {
       _timing = null;
@@ -1405,8 +1425,18 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final remote = _remote;
     if (remote != null) return remote.seek(position);
     if (isRadio || loadingStream) return; // live, or the old file is still loaded
+    // A remote episode may not get there (no network): no place is saved until the player reports it.
+    final before = _position;
+    final c = _current;
+    if (c != null && _isRemoteEpisode(c)) _seekTo = position;
     _position = position;
-    await _backend.seek(position);
+    try {
+      await _backend.seek(position);
+    } on Object {
+      _seekTo = null;
+      _position = before;
+      rethrow;
+    }
     _publish(playbackState.value.processingState);
   }
 
@@ -1703,7 +1733,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Stores where the current track is (only if it is long enough to matter).
   void _saveResume() {
     final t = _current;
-    if (t == null || isStreamTrack(t)) return;
+    if (t == null || isStreamTrack(t) || t.id == _noSaveId || _seekTo != null) return;
     final length = _lengthOf(t);
     final episode = t.kind == 1;
     if (episode && episodeHeard(_position, length)) _markHeard(t);
@@ -1720,24 +1750,36 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   final _resumed = <int>{};
 
+  /// The user marked the episode [trackId] as heard by hand: its place is forgotten, and not
+  /// written again while this listen goes on (it would put the episode back in «Riprendi»).
+  void episodeHeardByHand(int trackId) {
+    _savedResume[trackId] = null;
+    _heard.add(trackId);
+    _resumed.remove(trackId);
+    if (_current?.id == trackId) _noSaveId = trackId;
+    unawaited(_tracks.setResumePosition(trackId, null).catchError((Object e, StackTrace st) {
+      AppLog.w('could not forget the place of episode $trackId', e, st);
+    }));
+  }
+
   void _markResumed(Track episode) {
     if (!_resumed.add(episode.id)) return;
     _heard.remove(episode.id);
-    try {
-      onEpisodeResumed?.call(episode.id);
-    } on Object catch (e, st) {
-      AppLog.w('could not take the heard mark off "${episode.title}"', e, st);
-    }
+    _tell(onEpisodeResumed, episode, 'take the heard mark off');
+  }
+
+  /// Calls [callback]; a failure, also an asynchronous one, is logged and never reaches playback.
+  void _tell(FutureOr<void> Function(int)? callback, Track episode, String what) {
+    if (callback == null) return;
+    unawaited(Future<void>.sync(() => callback(episode.id)).catchError((Object e, StackTrace st) {
+      AppLog.w('could not $what "${episode.title}"', e, st);
+    }));
   }
 
   void _markHeard(Track episode) {
     if (!_heard.add(episode.id)) return;
     _resumed.remove(episode.id);
-    try {
-      onEpisodeHeard?.call(episode.id);
-    } on Object catch (e, st) {
-      AppLog.w('could not mark "${episode.title}" as heard', e, st);
-    }
+    _tell(onEpisodeHeard, episode, 'mark as heard');
   }
 
   /// Last bookmark written per track in this session (avoids repeat writes).
