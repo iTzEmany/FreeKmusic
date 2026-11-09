@@ -122,12 +122,13 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     int queueLength,
     Set<int> enriching,
     bool similar,
+    Widget? above,
   ) {
     final ctrl = ref.read(playerControllerProvider);
     final l = context.l10n;
     final cc = context.cc;
     final t = upcoming[i];
-    return Dismissible(
+    final row = Dismissible(
       key: ValueKey(keys[i]),
       background: const DismissBackground(),
       secondaryBackground: const DismissBackground(alignEnd: true),
@@ -158,6 +159,13 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         ),
       ),
     );
+    // Always a Column, so the item keeps its type when a block appears.
+    return Column(
+      key: ValueKey(keys[i]),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [above ?? const SizedBox.shrink(), row],
+    );
   }
 
   @override
@@ -180,7 +188,10 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     if (queue.isEmpty) {
       return EmptyState(icon: Icons.queue_music_rounded, message: l.emptyQueue);
     }
-    final at = ref.read(audioHandlerProvider).currentIndex;
+    final handler = ref.read(audioHandlerProvider);
+    final at = handler.currentIndex;
+    // Entries right after the current one added with «Aggiungi in coda».
+    final block = handler.userAhead;
     final current = at >= 0 && at < queue.length ? queue[at] : null;
     final liveUp = _Upcoming.of(queue, at);
     final shown = _dragging && _dragSnapshot != null ? _dragSnapshot! : liveUp;
@@ -200,6 +211,19 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         () => ctrl.restoreQueue(before),
       );
     }
+
+    final similarHeader = similar == null
+        ? null
+        : _SimilarHeader(
+            title: similar.title,
+            loading: similar.loading,
+            total: upcoming.length,
+            owned: upcoming.where((t) => !isOnlineId(t.id)).length,
+          );
+    // With a block, the second header sits above the first entry after it.
+    final afterBlock = block > 0 && block < upcoming.length
+        ? similarHeader ?? SectionHeader(l.queueThen)
+        : null;
 
     return Column(
       children: [
@@ -227,13 +251,10 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                     ),
                   ),
                 ],
-                if (similar != null)
-                  _SimilarHeader(
-                    title: similar.title,
-                    loading: similar.loading,
-                    total: upcoming.length,
-                    owned: upcoming.where((t) => !isOnlineId(t.id)).length,
-                  )
+                if (block > 0 && upcoming.isNotEmpty)
+                  SectionHeader(l.queueUpNext)
+                else if (similar != null)
+                  similarHeader!
                 else if (upcoming.isNotEmpty)
                   SectionHeader(l.queueNext),
               ],
@@ -289,6 +310,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
               queue.length,
               pending.enriching,
               similar != null,
+              i == block ? afterBlock : null,
             ),
           ),
         ),

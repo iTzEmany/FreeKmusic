@@ -11856,6 +11856,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Le modifiche non sono state salvate.'**
   String get editorDiscardBody;
+
+  /// No description provided for @queueUpNext.
+  ///
+  /// In it, this message translates to:
+  /// **'Prossimi in coda'**
+  String get queueUpNext;
+
+  /// No description provided for @queueThen.
+  ///
+  /// In it, this message translates to:
+  /// **'Poi'**
+  String get queueThen;
 }
 
 class _AppLocalizationsDelegate

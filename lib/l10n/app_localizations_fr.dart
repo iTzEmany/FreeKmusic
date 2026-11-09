@@ -7486,4 +7486,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get editorDiscardBody =>
       'Les modifications n’ont pas été enregistrées.';
+
+  @override
+  String get queueUpNext => 'Ensuite dans la file';
+
+  @override
+  String get queueThen => 'Puis';
 }

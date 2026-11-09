@@ -7401,4 +7401,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorDiscardBody => 'Your changes have not been saved.';
+
+  @override
+  String get queueUpNext => 'Up next in queue';
+
+  @override
+  String get queueThen => 'Then';
 }

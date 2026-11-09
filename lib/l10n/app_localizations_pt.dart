@@ -7435,4 +7435,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get editorDiscardBody => 'As alterações não foram guardadas.';
+
+  @override
+  String get queueUpNext => 'A seguir na fila';
+
+  @override
+  String get queueThen => 'Depois';
 }

@@ -7454,4 +7454,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get editorDiscardBody => 'Deine Änderungen wurden nicht gespeichert.';
+
+  @override
+  String get queueUpNext => 'Als Nächstes in der Warteschlange';
+
+  @override
+  String get queueThen => 'Danach';
 }

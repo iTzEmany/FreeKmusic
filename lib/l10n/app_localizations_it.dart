@@ -7420,4 +7420,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get editorDiscardBody => 'Le modifiche non sono state salvate.';
+
+  @override
+  String get queueUpNext => 'Prossimi in coda';
+
+  @override
+  String get queueThen => 'Poi';
 }

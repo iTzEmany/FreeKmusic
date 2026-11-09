@@ -1448,9 +1448,9 @@ mobile_scanner — fase 24 — 2026-10-19
 ## Fase 108 — Coda: «Aggiungi in coda» come blocco (`fase-108-coda-blocco-utente.md`)
 - [x] 108.1 Via «Riproduci dopo»
 - [x] 108.2 Blocco in `PlayQueue`
-- [ ] 108.3 Gestore, persistenza, radio, Jam
-- [ ] 108.4 Intestazioni nel foglio della coda
-- [ ] 108.5 Shuffle+ dopo il blocco e correzione dello skip
+- [x] 108.3 Gestore, persistenza, radio, Jam
+- [x] 108.4 Intestazioni nel foglio della coda
+- [x] 108.5 Shuffle+ dopo il blocco e correzione dello skip
 - [ ] 108.6 Controlli di fase
 
 ## Fase 109 — Titoli che scorrono (`fase-109-titoli-che-scorrono.md`)
