@@ -1437,12 +1437,13 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 106.7 Controlli di fase
 
 ## Fase 107 — Rete del refactor «coda-e-libreria» (`fase-107-rete-coda-libreria.md`)
-- [ ] 107.1 Caratterizzazione di `PlayQueue`
-- [ ] 107.2 Salvataggio vecchio senza `lastQueueUser`
-- [ ] 107.3 Ricerca di oggi («e» non trova «é»)
-- [ ] 107.4 Titolo lungo con «…»
-- [ ] 107.5 Misure di partenza sul Mi A3
-- [ ] 107.6 Controlli di fase
+- [x] 107.1 Caratterizzazione di `PlayQueue`
+- [x] 107.2 Salvataggio vecchio senza `lastQueueUser`
+- [x] 107.3 Ricerca di oggi («e» non trova «é»)
+- [x] 107.4 Titolo lungo con «…»
+- [x] 107.5 Misure di partenza sul Mi A3
+- [x] 107.6 Controlli di fase
+- 107 (2026-11-09): caratterizzazione di `PlayQueue` (5 semi × 200 operazioni, impronta incollata) e test di rete verdi sul codice di oggi; `lib/` invariata. Misure di partenza in `refactor/coda-e-libreria/misure.md`: diversi scenari sono già sopra l'1–2 % della fase 90, quindi alla 113 si confronta con «prima-107». `perf_device.py`: `find` riprova per 2 s («Fogli» falliva mentre il foglio si apriva); la libreria di prova va rifatta con `scripts/perf_library.py` se manca.
 
 ## Fase 108 — Coda: «Aggiungi in coda» come blocco (`fase-108-coda-blocco-utente.md`)
 - [ ] 108.1 Via «Riproduci dopo»

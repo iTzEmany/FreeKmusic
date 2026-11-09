@@ -91,4 +91,26 @@ void main() {
       expect(playContextOf(h), isNull);
     }
   });
+
+  // Meant to stay green after 108.3: a missing `lastQueueUser` key means 0
+  // tracks in the user block, so today's saves keep restoring as they are.
+  test('a save without lastQueueUser restores the same queue and current track', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final ids = [
+      for (var i = 0; i < 3; i++)
+        await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$i.mp3', title: 'S$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: i)),
+    ];
+    SharedPreferences.setMockInitialValues({
+      'lastQueueIds': [for (final id in [ids[2], ids[0], ids[1]]) '$id'],
+      'lastIndex': 1,
+      'lastPositionMs': 0,
+    });
+    final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db), onError: (_) {});
+    addTearDown(h.dispose);
+    await PlaybackPersistence(h, SettingsStore(await SharedPreferences.getInstance())).restore();
+    expect(h.queueIds, [ids[2], ids[0], ids[1]]);
+    expect(h.currentTrack?.id, ids[0]);
+  });
 }
