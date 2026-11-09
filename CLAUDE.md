@@ -28,7 +28,7 @@ flutter build linux / windows   # windows solo da una macchina Windows
 ```
 
 ## Lingua
-- Interfaccia e documentazione: **italiano** (con ARB it/en/de/es dalla fase 4).
+- Interfaccia e documentazione: **italiano** (ARB in `lib/l10n/`: it/en/de/es/fr/pt).
 - Codice, nomi di classi/variabili, commenti brevi: **inglese**.
 
 ## Regole d'oro (riassunto)

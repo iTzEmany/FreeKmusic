@@ -9,6 +9,7 @@ tests=(test/l10n/arb_test.dart test/ui/no_separator_literals_test.dart test/ui/a
 if git diff --name-only "$base"...HEAD -- lib/ui | grep -q .; then
   tests+=(test/goldens/)
 fi
+python3 scripts/check_perf_labels.py
 log=build/guardie.log
 sorveglia=~/.claude/skills/obiettivo/scripts/sorveglia.sh
 if [ -x "$sorveglia" ]; then

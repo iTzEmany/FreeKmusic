@@ -34,17 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # On a PR HEAD is the merge commit: HEAD^1 is the base tip.
+          # On a PR HEAD is the merge commit (HEAD^1 is the base tip); on master
+          # commits are squashed (HEAD^1 is the previous master).
           fetch-depth: 2
-      # A PR touching only documentation, agent tooling or dev scripts skips
+      # A PR or a push to master touching only documentation, agent tooling or dev scripts skips
       # the toolchain and the suite.
       # The job always runs (a required check must report); anything unclear
-      # (push, no parent, empty diff) means docs=false, so everything runs.
-      - name: Detect documentation-only PR
+      # (tag, manual run, no parent, empty diff) means docs=false, so everything runs.
+      - name: Detect documentation-only change
         id: scope
         run: |
           docs=false
-          if [ "${{ github.event_name }}" = pull_request ] && files=$(git diff --name-only HEAD^1 HEAD) && [ -n "$files" ]; then
+          if { [ "${{ github.event_name }}" = pull_request ] || [ "${{ github.event_name }}:${{ github.ref }}" = push:refs/heads/master ]; } && files=$(git diff --name-only HEAD^1 HEAD) && [ -n "$files" ]; then
             docs=true
             while IFS= read -r f; do
               # Agent tooling and dev scripts never reach the app or the suite
@@ -74,6 +75,8 @@ jobs:
           git diff --exit-code -- lib/l10n
       - name: Documentation links
         run: python3 scripts/check_docs_links.py
+      - name: Performance script labels
+        run: python3 scripts/check_perf_labels.py
       # Covers lib, test, test/live, test_shots and integration_test.
       - if: steps.scope.outputs.docs != 'true'
         run: flutter analyze
