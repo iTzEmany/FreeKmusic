@@ -11862,6 +11862,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'CC-CEDICT, dizionario cinese di MDBG usato per la traslitterazione. Licenza CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict'**
   String get aboutCedictBody;
+
+  /// No description provided for @chineseDictionaryDeleteFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile eliminare il dizionario cinese'**
+  String get chineseDictionaryDeleteFailed;
 }
 
 class _AppLocalizationsDelegate

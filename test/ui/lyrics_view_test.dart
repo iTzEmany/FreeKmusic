@@ -21,9 +21,16 @@ class _FakeTranslation extends LyricsTranslationNotifier {
 }
 
 class _FakeOps extends RomanizationOps {
-  _FakeOps(super.ref, this.saved);
+  _FakeOps(super.ref, this.saved, this.log);
 
   final List<(int, String)> saved;
+  final List<String> log;
+
+  @override
+  Future<Future<void> Function()?> delete(int id) async {
+    log.add('delete $id');
+    return () async => log.add('undo $id');
+  }
 
   @override
   Future<Future<void> Function()?> save(int id, String raw) async {
@@ -40,6 +47,8 @@ void main() {
     RomanizationState state = RomanizationState.off,
     List<(int, String)>? saved,
     bool translated = false,
+    Map<int, String> manual = const {},
+    List<String>? log,
   }) async {
     tester.view.physicalSize = const Size(500, 1000);
     tester.view.devicePixelRatio = 1;
@@ -58,6 +67,7 @@ void main() {
         (await h.db.select(h.db.tracks).get()).single.id,
       ], 0);
     });
+    await tester.runAsync(() => h.store.writeManualRomanizations(manual));
     h.romanization = state;
     await h.pump(
       tester,
@@ -66,7 +76,7 @@ void main() {
         if (translated)
           lyricsTranslationProvider.overrideWith(_FakeTranslation.new),
         romanizationOpsProvider.overrideWith(
-          (ref) => _FakeOps(ref, saved ?? []),
+          (ref) => _FakeOps(ref, saved ?? [], log ?? []),
         ),
       ],
     );
@@ -201,6 +211,53 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('romanization-save')));
     await tester.pumpAndSettle();
     expect(saved, [(1, 'a\nb')]);
+    await h.dispose(tester);
+  });
+
+  testWidgets('deleting a typed transliteration can be undone', (tester) async {
+    final log = <String>[];
+    final h = await open(
+      tester,
+      synced: _jaSynced,
+      state: ready,
+      manual: {1: 'a\nb'},
+      log: log,
+    );
+    await openMenu(tester);
+    await tester.tap(find.text('Elimina traslitterazione'));
+    await tester.pumpAndSettle();
+    expect(find.text('Traslitterazione eliminata'), findsOneWidget);
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    expect(log, ['delete 1', 'undo 1']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the menu switch writes the setting', (tester) async {
+    final h = await open(tester, synced: _jaSynced, state: ready);
+    expect(h.store.readSettings().romanization, isTrue);
+    await openMenu(tester);
+    await tester.tap(find.text('Traslitterazione'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    expect(h.store.readSettings().romanization, isFalse);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the editor starts with one line per shown line', (tester) async {
+    final h = await open(
+      tester,
+      synced: '[00:01.00]夜\n[00:03.00]♪\n[00:05.00]君',
+      state: const RomanizationState.ready([
+        'yoru',
+        null,
+        'kimi',
+      ], RomanizationSource.found),
+    );
+    await openMenu(tester);
+    await tester.tap(find.text('Modifica traslitterazione'));
+    await tester.pumpAndSettle();
+    expect(find.text('yoru\n\nkimi'), findsOneWidget);
     await h.dispose(tester);
   });
 }

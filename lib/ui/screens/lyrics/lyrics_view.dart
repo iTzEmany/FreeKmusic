@@ -209,10 +209,12 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               : null,
         ),
       );
-      if (notice == null) return list;
+      // Same structure with or without the notice: the list keeps its scroll.
       return Column(
         children: [
-          _RomanizationNotice(notice),
+          notice == null
+              ? const SizedBox.shrink()
+              : _RomanizationNotice(notice),
           Expanded(child: list),
         ],
       );

@@ -3893,5 +3893,6 @@
   "chineseDictionaryDelete": "Supprimer le dictionnaire chinois",
   "chineseDictionaryDeleteTitle": "Supprimer le dictionnaire chinois ?",
   "chineseDictionaryDeleteBody": "Vous pourrez le télécharger de nouveau d’ici.",
-  "aboutCedictBody": "CC-CEDICT, le dictionnaire chinois de MDBG utilisé pour la translittération. Licence CC BY-SA 4.0 : https://creativecommons.org/licenses/by-sa/4.0/ Source : https://www.mdbg.net/chinese/dictionary?page=cedict"
+  "aboutCedictBody": "CC-CEDICT, le dictionnaire chinois de MDBG utilisé pour la translittération. Licence CC BY-SA 4.0 : https://creativecommons.org/licenses/by-sa/4.0/ Source : https://www.mdbg.net/chinese/dictionary?page=cedict",
+  "chineseDictionaryDeleteFailed": "Impossible de supprimer le dictionnaire chinois"
 }

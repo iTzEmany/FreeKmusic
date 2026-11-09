@@ -7430,4 +7430,8 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get aboutCedictBody =>
       'CC-CEDICT, dizionario cinese di MDBG usato per la traslitterazione. Licenza CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict';
+
+  @override
+  String get chineseDictionaryDeleteFailed =>
+      'Impossibile eliminare il dizionario cinese';
 }
