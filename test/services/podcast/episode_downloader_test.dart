@@ -206,6 +206,22 @@ void main() {
     expect((await tracks.getById(id!))!.durationMs, 20 * 60 * 1000);
   });
 
+  test('downloaded after a streamed play: the same row takes the file and keeps the bookmark', () async {
+    final streamed = (await repo.playableTrack(episodeId))!;
+    expect(streamed.path, url('/a.mp3'));
+    await tracks.setResumePosition(streamed.id, 90000);
+    expect((await repo.downloadedEpisodes()), isEmpty, reason: 'a streaming row is not a download');
+
+    final id = await build().download(episodeId);
+    expect(id, streamed.id);
+    final t = (await tracks.getById(id!))!;
+    expect(p.isWithin(base, t.path), isTrue);
+    expect(t.resumePositionMs, 90000);
+    expect(t.durationMs, 1800000);
+    expect(await db.select(db.tracks).get(), hasLength(1));
+    expect((await repo.downloadedEpisodes()).single.track!.id, id);
+  });
+
   test('downloaded already: the same track comes back without another request', () async {
     final dl = build();
     final first = await dl.download(episodeId);

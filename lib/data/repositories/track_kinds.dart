@@ -5,3 +5,9 @@ const kMusicKind = 0;
 const kEpisodeKind = 1;
 const kStreamKind = 2;
 const listenKinds = [kMusicKind, kStreamKind];
+
+/// An episode row (kind 1) with no file yet plays as a stream: its path is the
+/// audio address (`http(s)://`), or `stream:<key>` for a YouTube Music one.
+/// Downloading it later rewrites the path to the local file.
+bool isRemoteEpisodePath(String path) =>
+    path.startsWith('http://') || path.startsWith('https://') || path.startsWith('stream:');

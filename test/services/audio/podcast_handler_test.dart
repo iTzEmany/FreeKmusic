@@ -135,4 +135,47 @@ void main() {
     await settle();
     expect(handler.playbackState.value.playing, isFalse);
   });
+
+  group('an episode that is not downloaded (a remote row)', () {
+    const url = 'https://feed.example/ep.mp3';
+    late int remoteId;
+    const hour = 60 * 60 * 1000;
+
+    setUp(() async {
+      remoteId = await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: url, title: 'Remote', albumKey: 'podcast|1', format: 'mp3', sizeBytes: 0, mtimeMs: 0,
+          addedAt: 1, durationMs: const Value(hour), kind: const Value(1)));
+    });
+
+    test('plays from its address and keeps the bookmark', () async {
+      await handler.playQueue([remoteId], 0);
+      await settle();
+      expect(backend.loadedUris.single.uri, Uri.parse(url));
+      expect(backend.loaded, isEmpty, reason: 'no file to open');
+      await at(const Duration(minutes: 7));
+      await handler.pause();
+      await settle();
+      expect(await saved(remoteId), const Duration(minutes: 7).inMilliseconds);
+    });
+
+    test('starts again 5 seconds before the bookmark, even after music', () async {
+      await (db.update(db.tracks)..where((t) => t.id.equals(remoteId)))
+          .write(const TracksCompanion(resumePositionMs: Value(20 * 60 * 1000)));
+      await handler.playQueue([songId], 0);
+      await settle();
+      await handler.playQueue([remoteId], 0);
+      await settle();
+      expect(backend.seeks.last, const Duration(minutes: 19, seconds: 55));
+    });
+
+    test('with no network the track is skipped with a message and nothing crashes', () async {
+      final failures = <PlaybackFailure>[];
+      await handler.dispose();
+      backend.failing.add(url);
+      handler = CodecoreAudioHandler(backend, PlayQueue(), repo, onError: failures.add);
+      await handler.playQueue([remoteId, songId], 0);
+      await settle();
+      expect(failures.map((f) => f.reason), contains(PlaybackFailureReason.onlineUnavailable));
+    });
+  });
 }

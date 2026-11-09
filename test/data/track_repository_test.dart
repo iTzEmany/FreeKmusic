@@ -154,6 +154,33 @@ void main() {
     expect((await repo.watchResumable().first).single.title, 'Ep');
   });
 
+  test('watchResumable: an episode marked as heard by hand is not offered', () async {
+    final podcastId = await db.into(db.podcasts).insert(
+        PodcastsCompanion.insert(feedUrl: 'https://x/feed', title: 'Show', addedAt: 1));
+    Future<void> episode(String guid, {required bool played}) async {
+      final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: 'https://x/$guid.mp3', title: guid, albumKey: 'podcast|$podcastId', format: 'mp3',
+          sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: const Value(1),
+          resumePositionMs: const Value(5000), lastPlayedAt: const Value(9)));
+      await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+          podcastId: podcastId, guid: guid, title: guid, audioUrl: 'https://x/$guid.mp3',
+          trackId: Value(trackId), played: Value(played)));
+    }
+    await episode('open', played: false);
+    await episode('heard', played: true);
+    expect((await repo.watchResumable().first).map((t) => t.title), ['open']);
+  });
+
+  test('a remote episode row (no folder) is invisible to the scan and never missing', () async {
+    final folderId = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
+    await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: 'https://x/e.mp3', title: 'E', albumKey: 'podcast|1', format: 'mp3', sizeBytes: 0,
+        mtimeMs: 0, addedAt: 1, kind: const Value(1)));
+    expect(await repo.fileIndexForFolder(folderId), isEmpty, reason: 'the scan only marks what is in its index');
+    expect(await repo.missingPathsForFolder(folderId), isEmpty);
+    expect(await repo.watchMissing().first, isEmpty);
+  });
+
   test('setLyrics byUser marks the text as the user\'s; otherwise no mark', () async {
     await repo.upsertBatch([row('/a.mp3', 'A')]);
     final id = (await db.select(db.tracks).getSingle()).id;

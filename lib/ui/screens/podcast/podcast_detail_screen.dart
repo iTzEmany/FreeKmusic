@@ -65,6 +65,12 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   /// The downloaded episodes oldest first, so listening goes forward in time,
   /// starting at the one tapped.
   Future<void> _play(List<EpisodeRow> rows, EpisodeRow tapped, String podcastTitle) async {
+    if (!tapped.downloaded) {
+      // Not downloaded: it streams, and the place is kept like for a file.
+      final ok = await ref.read(podcastOpsProvider).playStreamed(tapped.episode.id);
+      if (!ok && mounted) showMsg(context, context.l10n.podcastStreamUnavailable);
+      return;
+    }
     final downloaded = [
       for (final r in rows)
         if (r.downloaded) r,
@@ -269,7 +275,7 @@ class _EpisodeTile extends ConsumerWidget {
       );
     }
     return InkWell(
-      onTap: row.downloaded && !busy ? onPlay : null,
+      onTap: busy ? null : onPlay,
       child: Padding(
         padding: const EdgeInsets.only(left: CcDims.margin, right: CcDims.gap4),
         child: Row(

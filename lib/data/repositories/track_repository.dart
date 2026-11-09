@@ -111,7 +111,8 @@ class TrackRepository {
       : lightSelect(
           _db,
           _db.select(_db.tracks)
-            ..where((t) => t.id.isIn(ids) & t.kind.equals(kStreamKind)),
+            // A streamed YouTube Music episode (kind 1) has the same kind of path.
+            ..where((t) => t.id.isIn(ids) & t.kind.isIn(const [kStreamKind, kEpisodeKind]) & t.path.like('stream:%')),
         ).get();
 
   /// The shadow row of the streamed track [key], if it has one.
@@ -745,7 +746,10 @@ class TrackRepository {
                   t.resumePositionMs.isNotNull() &
                   t.missing.equals(false) &
                   t.ignored.equals(false) &
-                  t.kind.isIn(const [0, kEpisodeKind]),
+                  t.kind.isIn(const [0, kEpisodeKind]) &
+                  // Marked as heard by hand: nothing left to resume.
+                  notExistsQuery(_db.select(_db.podcastEpisodes)
+                    ..where((e) => e.trackId.equalsExp(t.id) & e.played.equals(true))),
             )
             ..orderBy([(t) => OrderingTerm.desc(t.lastPlayedAt)])
             ..limit(limit))

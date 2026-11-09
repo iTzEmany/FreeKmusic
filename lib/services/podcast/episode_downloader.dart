@@ -12,6 +12,7 @@ import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/podcast_repository.dart';
+import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import '../online/http_client.dart';
@@ -220,12 +221,30 @@ class EpisodeDownloader {
   Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
     final info = await _readTags(target);
     // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
-    if (await repo.episodeById(episode.id) == null) {
+    final current = await repo.episodeById(episode.id);
+    if (current == null) {
       await _deleteQuietly(File(target));
       return null;
     }
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
+    // Played in streaming before: the same row takes the file, so the bookmark stays.
+    final streamed = current.trackId == null ? null : await tracks.getById(current.trackId!);
+    if (streamed != null && streamed.kind == kEpisodeKind && isRemoteEpisodePath(streamed.path)) {
+      await repo.attachFile(
+        streamed.id,
+        TracksCompanion(
+          path: Value(target),
+          format: Value(ext),
+          sizeBytes: Value(st.size),
+          mtimeMs: Value(st.modified.millisecondsSinceEpoch),
+          durationMs: Value(info.durationMs ?? streamed.durationMs),
+          bitrateKbps: Value(info.bitrateKbps),
+          sampleRateHz: Value(info.sampleRateHz),
+        ),
+      );
+      return streamed.id;
+    }
     await tracks.upsertBatch([
       TracksCompanion.insert(
         path: target,

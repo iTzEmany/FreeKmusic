@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/clock.dart';
 import '../data/db/app_database.dart' show Track;
-import '../services/online/youtube_service.dart' show YtResult;
 import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_service.dart';
 import 'activity_log_providers.dart';
@@ -11,15 +10,6 @@ import 'player_providers.dart';
 import 'podcast_discover_providers.dart';
 import 'podcast_providers.dart';
 import '../services/podcast/ytm_podcast_sync.dart' show kPodcastSourceYtm;
-
-/// What plays when an episode is tapped in a preview: a downloaded file or a YouTube Music stream.
-class EpisodePlay {
-  const EpisodePlay({this.track, this.stream, required this.podcastTitle});
-
-  final Track? track;
-  final YtResult? stream;
-  final String podcastTitle;
-}
 
 /// Per-podcast and per-episode user choices.
 class PodcastOps {
@@ -110,47 +100,39 @@ class PodcastOps {
     return id;
   }
 
-  /// What the episode [guid] of a preview plays, saving the podcast (not followed) first so
-  /// the bookmark works without following. Null (and nothing saved) when it cannot play yet.
-  Future<EpisodePlay?> saveForPlay(PodcastPreview d, String guid) async {
-    final repo = _ref.read(podcastRepositoryProvider);
+  /// The track the episode [guid] of a preview plays (its file, else a streaming row), saving
+  /// the podcast (not followed) first so the bookmark works without following. Null (and
+  /// nothing saved) when the episode has no address to stream from.
+  Future<Track?> saveForPlay(PodcastPreview d, String guid) async {
     final info = d.feed.episodes.where((e) => e.guid == guid).firstOrNull;
     if (info == null) return null;
-    final existing = await repo.byFeedUrl(d.feedUrl);
-    Track? file;
-    if (existing != null) {
-      for (final r in await repo.downloadedEpisodes(podcastId: existing.id)) {
-        if (r.episode.guid == guid) file = r.track;
-      }
-    }
-    // shortcut: only YouTube Music episodes stream; an RSS one needs a handler entry, see the phase notes.
-    if (file == null && d.source != kPodcastSourceYtm) return null;
-    await save(d, followed: false);
-    if (file != null) return EpisodePlay(track: file, podcastTitle: d.feed.title);
-    return EpisodePlay(
-      stream: YtResult(
-        id: guid,
-        title: info.title,
-        channel: d.feed.author ?? d.feed.title,
-        duration: info.duration,
-        thumbnailUrl: d.feed.imageUrl,
-      ),
-      podcastTitle: d.feed.title,
-    );
+    final scheme = Uri.tryParse(info.audioUrl)?.scheme;
+    if (d.source != kPodcastSourceYtm && scheme != 'http' && scheme != 'https') return null;
+    final repo = _ref.read(podcastRepositoryProvider);
+    final id = await save(d, followed: false);
+    final episode = await repo.episodeByGuid(id, guid);
+    return episode == null ? null : repo.playableTrack(episode.id);
+  }
+
+  Future<bool> _play(Track? track, String podcastTitle) async {
+    if (track == null) return false;
+    await _ref
+        .read(playerControllerProvider)
+        .playFromList([track], 0, context: PlayContext(PlayContextKind.podcast, podcastTitle));
+    return true;
   }
 
   /// Plays the episode [guid] of a preview; false when it cannot play yet.
-  Future<bool> playEpisode(PodcastPreview d, String guid) async {
-    final play = await saveForPlay(d, guid);
-    if (play == null) return false;
-    final player = _ref.read(playerControllerProvider);
-    final track = play.track;
-    if (track != null) {
-      await player.playFromList([track], 0, context: PlayContext(PlayContextKind.podcast, play.podcastTitle));
-    } else {
-      await player.playOnline(play.stream!);
-    }
-    return true;
+  Future<bool> playEpisode(PodcastPreview d, String guid) async =>
+      _play(await saveForPlay(d, guid), d.feed.title);
+
+  /// Plays a saved episode that is not downloaded, in streaming; false when it cannot.
+  Future<bool> playStreamed(int episodeId) async {
+    final repo = _ref.read(podcastRepositoryProvider);
+    final episode = await repo.episodeById(episodeId);
+    final podcast = episode == null ? null : await repo.byId(episode.podcastId);
+    if (podcast == null) return false;
+    return _play(await repo.playableTrack(episodeId), podcast.title);
   }
 
   Future<void> setAutoDeleteDays(int podcastId, int? days) =>

@@ -42,18 +42,35 @@ void main() {
   });
 
   test('the first play saves the show as not followed, with its episodes, out of the Podcast list', () async {
-    final play = await ops.saveForPlay(_ytm(), 'e1');
-    expect(play?.stream?.id, 'e1');
+    final track = await ops.saveForPlay(_ytm(), 'e1');
+    expect(track?.path, 'stream:youtube:e1');
     final saved = (await repo.all()).single;
     expect(saved.followed, isFalse);
     expect(await repo.episodeGuids(saved.id), {'e1'});
     expect(await repo.watchPodcasts().first, isEmpty);
   });
 
-  test('a show that cannot play yet is not saved', () async {
-    const rss = PodcastPreview(feedUrl: 'https://x/feed', feed: _feed);
+  test('a show whose episode has no http address is not saved', () async {
+    const rss = PodcastPreview(
+      feedUrl: 'https://x/feed',
+      feed: PodcastFeed(
+        title: 'Show',
+        episodes: [PodcastEpisodeInfo(guid: 'e1', title: 'One', audioUrl: 'ftp://x/1.mp3')],
+      ),
+    );
     expect(await ops.saveForPlay(rss, 'e1'), isNull);
     expect(await repo.all(), isEmpty);
+  });
+
+  test('an RSS episode plays from its address: one row, reused, not counted as a download', () async {
+    const rss = PodcastPreview(feedUrl: 'https://x/feed', feed: _feed);
+    final first = await ops.saveForPlay(rss, 'e1');
+    expect([first?.kind, first?.path], [1, 'https://x/1.mp3']);
+    expect((await ops.saveForPlay(rss, 'e1'))?.id, first?.id);
+    final podcast = (await repo.all()).single;
+    expect((await repo.episodeByGuid(podcast.id, 'e1'))!.trackId, first!.id);
+    expect(await repo.downloadedEpisodes(), isEmpty);
+    expect((await repo.watchEpisodes(podcast.id).first).single.downloaded, isFalse);
   });
 
   test('«Segui già» touched again unfollows, and the heard episodes stay', () async {

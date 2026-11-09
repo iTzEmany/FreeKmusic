@@ -1,7 +1,11 @@
 import 'package:drift/drift.dart';
 
+import '../../services/podcast/episode_downloader.dart' show episodeExtension, podcastAlbumKeyOf;
 import '../../services/podcast/podcast_models.dart';
+import '../../services/podcast/ytm_podcast_sync.dart' show kPodcastSourceYtm;
+import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
+import 'track_kinds.dart';
 
 /// A podcast with what the list shows next to it.
 class PodcastSummary {
@@ -14,14 +18,15 @@ class PodcastSummary {
   final int toListen;
 }
 
-/// An episode and, when it is downloaded, its track (with the bookmark).
+/// An episode and its track (with the bookmark): a file when downloaded, else a
+/// streaming row made the first time it was played.
 class EpisodeRow {
   const EpisodeRow(this.episode, this.track);
 
   final PodcastEpisode episode;
   final Track? track;
 
-  bool get downloaded => track != null;
+  bool get downloaded => track != null && !isRemoteEpisodePath(track!.path);
 }
 
 /// Subscriptions and their episodes. Downloaded episodes also live in
@@ -203,9 +208,10 @@ class PodcastRepository {
           '(SELECT COUNT(*) FROM podcast_episodes e WHERE e.podcast_id = p.id) '
           'AS episode_count, '
           '(SELECT COUNT(*) FROM podcast_episodes e WHERE e.podcast_id = p.id '
-          'AND e.track_id IS NOT NULL AND e.played = 0) AS to_listen '
+          'AND e.played = 0 AND EXISTS (SELECT 1 FROM tracks t WHERE t.id = e.track_id '
+          "AND t.path NOT LIKE 'http%' AND t.path NOT LIKE 'stream:%')) AS to_listen "
           'FROM podcasts p WHERE p.followed = 1 ORDER BY lower(p.title), p.id',
-          readsFrom: {_db.podcasts, _db.podcastEpisodes},
+          readsFrom: {_db.podcasts, _db.podcastEpisodes, _db.tracks},
         )
         .watch()
         .map((rows) => [
@@ -262,10 +268,15 @@ class PodcastRepository {
       (_db.update(_db.podcastEpisodes)..where((e) => e.id.equals(episodeId)))
           .write(PodcastEpisodesCompanion(trackId: Value(trackId)));
 
-  /// Every episode that has a downloaded track, with that track.
+  /// Every episode that has a downloaded track (a file, not a streaming row), with that track.
   Future<List<EpisodeRow>> downloadedEpisodes({int? podcastId}) async {
     final q = _db.select(_db.podcastEpisodes).join([
-      innerJoin(_db.tracks, _db.tracks.id.equalsExp(_db.podcastEpisodes.trackId)),
+      innerJoin(
+        _db.tracks,
+        _db.tracks.id.equalsExp(_db.podcastEpisodes.trackId) &
+            _db.tracks.path.like('http%').not() &
+            _db.tracks.path.like('stream:%').not(),
+      ),
     ]);
     if (podcastId != null) {
       q.where(_db.podcastEpisodes.podcastId.equals(podcastId));
@@ -275,6 +286,72 @@ class PodcastRepository {
         EpisodeRow(r.readTable(_db.podcastEpisodes), r.readTable(_db.tracks)),
     ];
   }
+
+  Future<PodcastEpisode?> episodeByGuid(int podcastId, String guid) =>
+      (_db.select(_db.podcastEpisodes)..where((e) => e.podcastId.equals(podcastId) & e.guid.equals(guid)))
+          .getSingleOrNull();
+
+  /// The track the episode plays from: its file when downloaded, else a kind-1 row
+  /// with a remote path, made on first play and kept so the bookmark has a place
+  /// (and the episode shows in «Riprendi»). Null when there is nothing to stream from.
+  Future<Track?> playableTrack(int episodeId) async {
+    final e = await episodeById(episodeId);
+    final podcast = e == null ? null : await byId(e.podcastId);
+    if (e == null || podcast == null) return null;
+    final String path;
+    if (podcast.source == kPodcastSourceYtm) {
+      path = streamPathOf('youtube:${e.guid}');
+    } else if (e.audioUrl.startsWith('http://') || e.audioUrl.startsWith('https://')) {
+      path = e.audioUrl;
+    } else {
+      return null;
+    }
+    return _db.transaction(() async {
+      Future<Track?> byPath(String p) =>
+          (_db.select(_db.tracks)..where((t) => t.path.equals(p))).getSingleOrNull();
+      final linked = e.trackId == null
+          ? null
+          : await (_db.select(_db.tracks)..where((t) => t.id.equals(e.trackId!))).getSingleOrNull();
+      if (linked != null) {
+        // The feed moved the audio: the streaming row follows (a file stays as it is).
+        if (isRemoteEpisodePath(linked.path) && linked.path != path && await byPath(path) == null) {
+          await (_db.update(_db.tracks)..where((t) => t.id.equals(linked.id)))
+              .write(TracksCompanion(path: Value(path)));
+          return linked.copyWith(path: path);
+        }
+        return linked;
+      }
+      var row = await byPath(path);
+      if (row == null) {
+        final albumKey = podcastAlbumKeyOf(podcast.id);
+        final id = await _db.into(_db.tracks).insert(TracksCompanion.insert(
+              path: path,
+              title: e.title,
+              albumKey: albumKey,
+              format: episodeExtension(url: e.audioUrl, mime: e.mimeType) ??
+                  (podcast.source == kPodcastSourceYtm ? 'm4a' : 'mp3'),
+              sizeBytes: 0,
+              mtimeMs: 0,
+              addedAt: DateTime.now().millisecondsSinceEpoch,
+              artist: Value(podcast.title),
+              albumArtist: Value(podcast.title),
+              album: Value(podcast.title),
+              genre: const Value('Podcast'),
+              durationMs: Value(e.durationMs ?? 0),
+              hasCover: Value(podcast.coverKey != null),
+              coverKey: Value(podcast.coverKey),
+              kind: const Value(kEpisodeKind),
+            ));
+        row = await (_db.select(_db.tracks)..where((t) => t.id.equals(id))).getSingle();
+      }
+      await setTrackId(episodeId, row.id);
+      return row;
+    });
+  }
+
+  /// A downloaded file takes the place of the streaming row [trackId] (same row, same bookmark).
+  Future<void> attachFile(int trackId, TracksCompanion file) =>
+      (_db.update(_db.tracks)..where((t) => t.id.equals(trackId))).write(file);
 
   Future<void> setAutoDeleteDays(int podcastId, int? days) =>
       (_db.update(_db.podcasts)..where((p) => p.id.equals(podcastId)))

@@ -470,7 +470,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // Streams have neither a bookmark nor ReplayGain.
     final streamKey = entry != null
         ? entry.result.indexKey
-        : (track.kind == kStreamKind ? keyOfStreamPath(track.path) : null);
+        : (track.kind == kStreamKind || track.kind == kEpisodeKind ? keyOfStreamPath(track.path) : null);
+    // A podcast episode not downloaded: the feed's address plays as it is (a YouTube Music one has a stream key).
+    final directUrl = streamKey == null && track.kind == kEpisodeKind && isRemoteEpisodePath(track.path);
     final t0 = _clock();
     _Timing timingOf(String key, String from) =>
         (token: token, key: key, from: from, t0: t0, pos0: startAt ?? Duration.zero, ended: ended);
@@ -482,7 +484,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         !isPastEnd(startAt, track.durationMs);
     final start = startOk
         ? startAt
-        : ((isOnline && libTrack == null) || streamKey != null ? null : resumeStartFor(track.resumePositionMs));
+        : ((isOnline && libTrack == null) || (streamKey != null && track.kind != kEpisodeKind)
+            ? null
+            : resumeStartFor(track.resumePositionMs));
     // Before the item goes out: «Caricamento…» only while waiting for the file (no awaits up to the stream branch).
     if (streamKey != null) {
       _waitingStream = true;
@@ -520,6 +524,13 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         playNow = _playWhenReady;
         if (fromUrl) _url = _UrlSession(streamKey, res, entry?.id);
         if (play) _timing = timingOf(streamKey, fromUrl ? 'url' : 'cache');
+      } else if (directUrl) {
+        final uri = Uri.tryParse(track.path);
+        if (uri == null) throw const BackendException('bad episode address');
+        // The old track stops now, not when the network answers.
+        if (_state == BackendState.playing) await _backend.pause();
+        if (token != _loadToken) return;
+        await _backend.loadUri(uri);
       } else {
         await _backend.load(track.path);
       }
@@ -564,7 +575,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
               ? PlaybackFailureReason.networkUnavailable
               : ageGated
               ? PlaybackFailureReason.ageRestricted
-              : (isOnline && libTrack == null) || streamKey != null
+              : (isOnline && libTrack == null) || streamKey != null || directUrl
               ? PlaybackFailureReason.onlineUnavailable
               : e.fileMissing
                   ? PlaybackFailureReason.fileMissing
@@ -764,7 +775,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         if (token != _syncToken) return;
       } else {
         final row = byId[id];
-        final key = row == null || row.kind != kStreamKind ? null : keyOfStreamPath(row.path);
+        final key = row == null ? null : keyOfStreamPath(row.path); // streamRowsAmong: kind 2 and 1
         if (key != null) out.add(StreamItem(key, streamResultOfRow(key, row!)));
       }
     }
@@ -1073,7 +1084,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// library's, or a streamed one in the cache), else null: a plain load (R-80).
   Future<({Track track, String path})?> _nextFile(int id) async {
     final cur = _current;
-    if (cur != null && cur.id == id && !isStreamTrack(cur)) return (track: cur, path: cur.path); // repeat one
+    if (cur != null && cur.id == id && !isStreamTrack(cur) && !_isRemoteEpisode(cur)) return (track: cur, path: cur.path); // repeat one
     final entry = online?.entryOf(id);
     if (isOnlineId(id) && entry == null) return null; // radio or forgotten
     final libId = entry == null ? null : await _downloadedId(entry.result);
@@ -1081,12 +1092,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     if (lib != null) return (track: lib, path: lib.path);
     final track = entry == null ? await _tracks.getById(id) : online?.trackOf(id);
     if (track == null) return null;
-    if (!isStreamTrack(track)) return (track: track, path: track.path);
+    if (!isStreamTrack(track) && !_isRemoteEpisode(track)) return (track: track, path: track.path);
     final key = entry?.result.indexKey ?? keyOfStreamPath(track.path);
     final res = entry?.result ?? (key == null ? null : streamResultOfRow(key, track));
     final file = key == null || res == null ? null : await preparer?.cachedFile(key, res);
     return file == null ? null : (track: track, path: file.path);
   }
+
+  bool _isRemoteEpisode(Track t) => t.kind == kEpisodeKind && isRemoteEpisodePath(t.path);
 
   Future<void> _refreshWindow() async {
     final window = _window;
