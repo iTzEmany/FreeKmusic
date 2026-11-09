@@ -22,6 +22,16 @@ class TrackGenreRepository {
     return [for (final r in rows) r.genre];
   }
 
+  /// The genres of every track that has rows, in tag order (the daylist).
+  Future<Map<int, List<String>>> allByTrack() async {
+    final rows = await (_db.select(_db.trackGenres)..orderBy([(g) => OrderingTerm.asc(g.position)])).get();
+    final out = <int, List<String>>{};
+    for (final r in rows) {
+      (out[r.trackId] ??= []).add(r.genre);
+    }
+    return out;
+  }
+
   /// Writes [genres] as the genres of [trackId]; nothing is touched when they are
   /// already there. True when the rows changed.
   Future<bool> replace(int trackId, List<String> genres) => _db.transaction(() async {

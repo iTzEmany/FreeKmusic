@@ -95,6 +95,12 @@ class PeriodStats {
   bool get isEmpty => plays == 0;
 }
 
+/// [StatsQueries.listensSince]. `CROSS JOIN` fixes the order: the period first
+/// through `plays_at`; left to itself the planner starts from `tracks`.
+const listensSinceSql = 'SELECT p.track_id AS id, p.played_at AS at FROM plays p '
+    'CROSS JOIN tracks t ON t.id = p.track_id '
+    'WHERE p.played_at >= ? AND t.kind = $kMusicKind AND t.missing = 0 AND t.ignored = 0';
+
 /// Aggregates over the listening history (`plays`), all in SQL. Artists and
 /// albums are grouped as the library does: by the lower-cased trimmed artist
 /// and by `albumKey`, not by the raw tag text.
@@ -359,6 +365,17 @@ class StatsQueries {
           ? null
           : DateTime.fromMillisecondsSinceEpoch(first.single.read<int>('at')),
     );
+  }
+
+  /// Listens of library music since [from] as (track id, time), for the
+  /// daylist: `plays_at` bounds the read to the period, the join keeps music
+  /// that is still there (not missing, not hidden).
+  Future<List<({int trackId, DateTime playedAt})>> listensSince(DateTime from) async {
+    final rows = await _q(listensSinceSql, [Variable.withInt(from.millisecondsSinceEpoch)]);
+    return [
+      for (final r in rows)
+        (trackId: r.read<int>('id'), playedAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('at'))),
+    ];
   }
 
   /// The [limit] artists listened to most since [from], by main artist
