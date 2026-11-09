@@ -1,0 +1,156 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=1700"><title>Coda e blocco «Prossimi in coda»</title><link rel="stylesheet" href="../../ui-fluida/mockup/tokens.css"><link rel="stylesheet" href="../../ui-uso-quotidiano/mockup/base.css"><style>
+body{min-width:0;padding:32px 40px 80px}.wrap,.pg-h,.nav{max-width:1500px}.row{gap:32px}
+.tg{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap;align-items:center;max-width:760px}
+.tg .lb{font-size:13px;color:#5B5170;margin-right:4px}
+.tg button{min-height:48px;padding:0 18px;border-radius:24px;border:2px solid #5B2BB5;background:#fff;color:#5B2BB5;font:600 14px Figtree,sans-serif;cursor:pointer}
+.tg button[aria-pressed=true]{background:#5B2BB5;color:#fff}
+.tg button:focus-visible,.dev button:focus-visible,.dev a:focus-visible,.dev input:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.tg button:focus-visible{outline-color:#5B2BB5}
+.pcard{width:360px;padding:16px;background:#fff;border:1px solid #D6D0E2;border-radius:12px;font-size:14px;color:#1B1626}.pcard p+p{margin-top:8px}.pcard code{font-size:12px;color:#4A4060}.pcard b{color:#5B2BB5}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+[hidden]{display:none!important}
+.sq{display:block;width:52px;height:52px;border-radius:var(--r-list);flex:none}
+.i.s{width:20px;height:20px}
+.tag{display:inline-block;font:var(--small);color:var(--accent-soft);background:var(--s2);border-radius:var(--r-list);padding:0 6px}
+.dev .hd .btn{color:var(--muted)}
+.dev [role=button]{cursor:pointer}
+.fld{display:flex;align-items:center;gap:8px;height:52px;background:var(--s2);border-radius:26px;padding:0 4px 0 16px;color:var(--muted);margin:4px 16px 0}
+.fld:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.fld input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--text);font:var(--body-l);caret-color:var(--accent)}
+.fld input::placeholder{color:var(--muted);font-weight:500}
+.fld .btn{color:var(--text)}
+.sec2{font:700 15px/1.3 Figtree,sans-serif;padding:16px 16px 0;min-height:48px;display:flex;align-items:center;justify-content:space-between}
+.sec2 h2{font:inherit}
+.empty{padding:40px 24px;text-align:center;color:var(--muted);font:var(--body-l);font-weight:500}.empty .i{width:40px;height:40px;color:var(--faint);margin:0 auto 12px;display:block}.empty small{display:block;font:var(--body);margin-top:8px}
+.shade{position:absolute;inset:28px 0 0;background:rgba(7,5,12,.6);z-index:6;opacity:0;pointer-events:none;transition:opacity var(--t-sheet)}.shade.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--s1);border-radius:var(--r-sheet) var(--r-sheet) 0 0;z-index:7;padding:8px 0 16px;transform:translateY(100%);transition:transform var(--t-sheet) var(--ease-out);display:flex;flex-direction:column}
+.sheet.on{transform:none}.sheet .gr{width:36px;height:4px;border-radius:2px;background:var(--s3);margin:0 auto 4px}
+.sheet h2{font:var(--title);padding:8px 16px}
+.mi2{display:flex;align-items:center;gap:16px;width:100%;min-height:52px;padding:0 16px;font:var(--body-l);text-align:left}
+.mi2 .i{color:var(--muted)}
+.mi2[aria-disabled=true]{color:var(--faint)}.mi2[aria-disabled=true] .i{color:var(--faint)}
+.snack{position:absolute;left:12px;right:12px;bottom:116px;z-index:9;background:var(--s3);border-radius:var(--r-card);padding:0 4px 0 16px;min-height:52px;display:none;align-items:center;gap:8px;font:var(--body-l);font-weight:500}.snack.on{display:flex}.snack span{flex:1}
+.snack button{color:var(--accent-soft);font:var(--body-l);min-height:var(--target);padding:0 12px}
+.li .du{font:var(--small);color:var(--muted)}
+.li.tap{width:100%;text-align:left}.li.tap:active{background:var(--s1)}
+.ck{color:var(--accent-soft);width:48px;height:48px;display:grid;place-items:center;flex:none}
+@media (prefers-reduced-motion:reduce){.sheet,.shade{transition:none}}
+.dev .btnp{background:var(--accent)}
+.qsheet{position:absolute;left:0;right:0;bottom:0;top:96px;background:var(--s1);border-radius:var(--r-sheet) var(--r-sheet) 0 0;display:flex;flex-direction:column;z-index:2}
+.qsheet .gr{width:36px;height:4px;border-radius:2px;background:var(--s3);margin:8px auto 0}
+.qhd{display:flex;align-items:center;padding:0 4px 0 16px;min-height:56px}.qhd h2{font:var(--title);flex:1}.qhd .sub{font:var(--small);color:var(--muted);margin-right:4px}
+.qhd .txtbtn{color:var(--accent-soft)}.qhd .txtbtn[disabled]{color:var(--faint)}
+.qs{flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:16px}.qs::-webkit-scrollbar{display:none}
+.qs .li{min-height:60px;transition:background var(--t-enter)}
+.li.fl{background:var(--s2)}
+.qs .n{font:var(--small);color:var(--accent-soft);width:20px;text-align:center;flex:none}
+.qs .hg{color:var(--muted);width:48px;height:48px;display:grid;place-items:center;flex:none;border-radius:50%}
+.qs .hg:focus-visible{outline:2px solid var(--accent-soft)}
+.sh2{display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 4px;font:700 15px/1.3 Figtree,sans-serif}.sh2 span{font:var(--small);color:var(--muted);font-weight:500}
+.sh2.blk{color:var(--accent-soft)}
+.blkbox{background:var(--s2);margin:0 8px;border-radius:var(--r-card);padding-bottom:4px}.blkbox .sh2{padding-left:8px;padding-right:8px}.blkbox .li{padding-left:8px;padding-right:0}.blkbox .li::after{left:48px;right:8px}
+.emp{padding:12px 16px;font:var(--small);color:var(--muted)}
+.qs .cvs{width:44px;height:44px}
+.ordl{max-width:760px;margin:0 0 20px;font-size:14px;color:#1B1626;background:#fff;border:1px solid #D6D0E2;border-radius:12px;padding:12px 16px}.ordl b{color:#5B2BB5}
+.ordl ol{margin:6px 0 0 20px;font-size:13px;color:#4A4060;columns:2}
+.tg button[disabled]{opacity:.45;cursor:default}
+.bug .qsheet{top:96px}
+.tag.w{color:#FFD8A8;background:#3A2410}
+.mnu{width:360px;padding:8px 0 12px;border-radius:16px;background:var(--s1)}
+.mnu .mh{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;border-bottom:1px solid var(--s2);margin-bottom:4px}.mnu .mh .sq{width:44px;height:44px}.mnu .mh .t{font:var(--body-l)}.mnu .mh .s{font:var(--small);color:var(--muted)}
+.mnu .mi2 small{display:block;font:var(--small);color:var(--muted)}
+.mnu .mi2.gone{text-decoration:line-through;color:var(--faint)}
+.mnu .mi2.gone .i{color:var(--faint)}
+.mnu .mi2 .tag{margin-left:auto}
+.bgd{position:absolute;inset:28px 0 0;background:var(--bg);padding:16px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="lib" viewBox="0 0 24 24"><rect x="8" y="3.5" width="12.5" height="12.5" rx="2"/><path d="M4 8v10a2 2 0 0 0 2 2h10"/><circle cx="12.6" cy="12.6" r="1.4"/><path d="M14 12.6V7.5l3 .8"/></symbol>
+<symbol id="mem" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="10" width="17" height="4.5" rx="1.2"/><rect x="3.5" y="16" width="17" height="4.5" rx="1.2"/></symbol>
+<symbol id="dev" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7H3zM1 18h14M18.5 10h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+<symbol id="prev" viewBox="0 0 24 24"><path d="M6 5v14M19 5.5v13L9 12z"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M18 5v14M5 5.5v13L15 12z"/></symbol>
+<symbol id="mv" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></symbol>
+<symbol id="ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="shuf" viewBox="0 0 24 24"><path d="M3 7h3.5c5 0 6 10 11 10H21M3 17h3.5c1.6 0 2.8-.8 3.8-2M14 8.5C15 7.6 16 7 17.5 7H21M18.5 4.5L21 7l-2.5 2.5M18.5 14.5L21 17l-2.5 2.5"/></symbol>
+<symbol id="rep" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h12M16 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H5M8 21l-3-3 3-3"/></symbol>
+<symbol id="queue" viewBox="0 0 24 24"><path d="M4 7h12M4 12h12M4 17h7M18 13.5v6l4-3z"/></symbol>
+<symbol id="trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M9 8H15a4.5 4.5 0 0 1 0 9H8M9 4L5 8l4 4"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="drag" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M7 4v16M3.5 16.5L7 20l3.5-3.5M17 20V4M13.5 7.5L17 4l3.5 3.5"/></symbol>
+<symbol id="edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+<symbol id="stat" viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></symbol>
+<symbol id="hist" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4M12 8v4.5l3 2"/></symbol>
+<symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></symbol>
+<symbol id="radio" viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="11.5" rx="2"/><path d="M8 8l9-4M8 13.5h.01M12 13.5h5"/></symbol>
+<symbol id="tagi" viewBox="0 0 24 24"><path d="M4 4h7l9 9-7 7-9-9zM8 8h.01"/></symbol>
+<symbol id="rev" viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8.5 12.5l2.5 2.5 4.5-5"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></symbol>
+<symbol id="notes" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 18zM19 16a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 19 16z"/></symbol>
+<symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3 19a6 6 0 0 1 12 0M16 6a3 3 0 0 1 0 6M18 14.5a5 5 0 0 1 3 4.5"/></symbol>
+<symbol id="pladd" viewBox="0 0 24 24"><path d="M4 7h11M4 12h7M4 17h7M17 13v7M13.5 16.5h7"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+</defs></svg>
+<div class="pg-h"><h1>Coda e blocco «Prossimi in coda»</h1><p>Ogni «Aggiungi in coda» va in cima alla coda, in ordine di arrivo; i suggeriti di Shuffle+ vengono dopo. «Riproduci dopo» sparisce. F-129..F-132, D-487, D-488, D-489.</p></div><div class="nav"><a href="indice.html">Indice</a><a href="titoli.html">Titoli che scorrono</a><a href="libreria.html">Libreria e scaricati</a><a href="playlist-ricerca.html">Ricerca in playlist</a><a href="coda.html" aria-current="page">Coda e blocco</a></div>
+<div class="wrap"><div class="row"><div class="col prima"><h2 class="cap">Prima (oggi)</h2><div class="pcard"><p><b>Difetto</b> (F-129): <code>PlayQueue.append</code> (<code>play_queue.dart:372</code>, <code>codecore_audio_handler.dart:1735</code>) fa <code>_items.add(trackId)</code>: il brano messo in coda va dopo tutti i suggeriti già presenti, e i rabbocchi lo scavalcano.</p><p>Dopo uno skip di un suggerito arriva un altro suggerito, perché Shuffle+ conta gli skip come «ascoltati» e avvicina il successivo (F-130, <code>shuffle_plus_controller.dart:~300,317</code>).</p><p>«Riproduci dopo» (<code>track_actions.dart:255,595</code>, <code>play_queue.dart:313</code> <code>insertNext</code>) mette il brano subito dopo il corrente ma al contrario: l'ultimo aggiunto suona per primo (F-131). Shuffle e ripristino non sanno chi ha messo cosa (F-132).</p></div><h2 class="cap" style="margin-top:20px">Coda di oggi</h2><div class="dev phone bug" id="bug" role="group" aria-label="Coda di oggi"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="qsheet"><div class="gr"></div><div class="qhd"><h2>Coda</h2><span class="sub">8 brani</span></div><div class="qs" id="qbug"></div></div></div><p class="note">Aggiunto «Bad Moon Rising»: finisce in fondo, dopo tutti i suggeriti. Con lo skip suona prima un altro suggerito.</p></div>
+<div class="ann"><h2 class="cap">Cosa cambia</h2><ol>
+<li><b>D-487 · F-129 · blocco «Prossimi in coda»</b><span>Ogni aggiunta va subito dopo il corrente e dietro le aggiunte precedenti: ordine di arrivo (i numeri 1, 2, 3). Multiselezione e album si accodano in ordine in fondo al blocco. Le righe hanno la maniglia per riordinare; un brano trascinato fuori dal blocco diventa un brano normale.</span></li>
+<li><b>Dopo il blocco, il resto</b><span>Il resto della coda (brani della libreria e suggeriti di Shuffle+ con il segno «suggerito», come oggi) viene dopo il blocco. Con Shuffle+ e i simili da Cerca i suggeriti si mettono dopo il blocco (D-489).</span></li>
+<li><b>Salta</b><span>Lo skip porta avanti prima i brani del blocco, poi il resto. Dopo lo skip di un suggerito il successivo rispetta la distanza normale fra suggeriti (D-489, F-130).</span></li>
+<li><b>F-132 · Shuffle</b><span>Attivarlo o spegnerlo non mescola il blocco: resta in cima nel suo ordine; si rimescola solo il resto.</span></li>
+<li><b>Svuota e Annulla</b><span>«Svuota» toglie blocco e resto; «Annulla» (avviso in basso) li rimette. Con «Ripeti tutto» il blocco suona una volta sola. Si conserva al riavvio, insieme allo stato di riproduzione (DB invariato). Jam invariata (D-491).</span></li>
+<li><b>D-488 · altro contesto</b><span>Toccare un brano o Play su un album o una playlist con il blocco non vuoto: il blocco resta e suona prima del resto del nuovo contesto. Prova con «Avvia album: Rumours».</span></li>
+<li><b>F-131 · «Riproduci dopo» sparisce</b><span>Via la voce dal menu del brano e dalla selezione multipla, e i metodi <code>playNext</code>, <code>insertNext</code> e le chiavi ARB (vedi i due menu in fondo).</span></li>
+</ol></div></div>
+<div class="row"><div class="col" style="max-width:760px"><h2 class="cap">Dopo: coda con blocco (provala)</h2><div class="tg" role="group" aria-label="Aggiungi in coda"><span class="lb">Aggiungi:</span><button data-add="0" aria-label="Aggiungi in coda: Bad Moon Rising">Bad Moon Rising</button><button data-add="1" aria-label="Aggiungi in coda: Pensieri e parole">Pensieri e parole</button><button data-add="2" aria-label="Aggiungi in coda: Go Your Own Way">Go Your Own Way</button></div><div class="tg"><span class="lb">Azioni:</span><button id="skip">Salta</button><button id="shuf" aria-pressed="false">Shuffle</button><button id="clr">Svuota</button><button id="alb">Avvia album: Rumours</button><button id="rst">Ricomincia</button></div><div class="ordl" aria-live="polite"><b>Ordine di ascolto previsto</b><ol id="ord"></ol></div><div class="dev phone" id="ph" role="group" aria-label="Coda di Shuffle+ con blocco"><div class="sb"><span>14:32</span><span class="r"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20L22 4z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="19" rx="2"/></svg><span>82%</span></span></div><div class="qsheet"><div class="gr"></div><div class="qhd"><h2>Coda</h2><span class="sub" id="sub"></span><button class="txtbtn" id="clr2" aria-label="Svuota la coda">Svuota</button></div><div class="qs" id="qs"></div></div><div class="snack" id="sn" role="status"><span id="snt"></span><button id="snb">Annulla</button></div></div></div>
+<div class="col"><h2 class="cap">Menu del brano · prima</h2><div class="dev mnu" role="group" aria-label="Menu del brano, prima"><div class="mh"><span class="sq cv c1"></span><div><div class="t">Bad Moon Rising</div><div class="s">Creedence Clearwater Revival</div></div></div>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#play"/></svg>Riproduci</button>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#play"/></svg><span>Riproduci dopo<small style="display:block;font:var(--small);color:var(--muted)">subito dopo il corrente (ordine inverso)</small></span></button>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#queue"/></svg><span>Aggiungi in coda</span></button>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#pladd"/></svg>Aggiungi a una playlist</button><button class="mi2"><svg class="i" aria-hidden="true"><use href="#heart"/></svg>Aggiungi ai preferiti</button><button class="mi2"><svg class="i" aria-hidden="true"><use href="#info"/></svg>Informazioni sul brano</button></div><h2 class="cap" style="margin-top:24px">Menu del brano · dopo</h2><div class="dev mnu" role="group" aria-label="Menu del brano, dopo"><div class="mh"><span class="sq cv c1"></span><div><div class="t">Bad Moon Rising</div><div class="s">Creedence Clearwater Revival</div></div></div>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#play"/></svg>Riproduci</button>
+<button class="mi2 gone" aria-hidden="true" tabindex="-1" style="display:none"></button>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#queue"/></svg><span>Aggiungi in coda<small>in cima alla coda, dopo i brani già aggiunti</small></span></button>
+<button class="mi2"><svg class="i" aria-hidden="true"><use href="#pladd"/></svg>Aggiungi a una playlist</button><button class="mi2"><svg class="i" aria-hidden="true"><use href="#heart"/></svg>Aggiungi ai preferiti</button><button class="mi2"><svg class="i" aria-hidden="true"><use href="#info"/></svg>Informazioni sul brano</button></div><p class="note">«Riproduci dopo» non c'è più, né qui né nella selezione multipla. «Aggiungi in coda» è l'unica azione.</p></div></div></div>
+<script>(function(){var $=function(i){return document.getElementById(i)},ic=function(n){return '<svg class="i" aria-hidden="true"><use href="#'+n+'"/></svg>'};
+function T(t,a,c,k){return{id:t,t:t,a:a,c:c,k:k||'lib'}}
+var CAT=[T('Bad Moon Rising','Creedence Clearwater Revival','c1'),T('Pensieri e parole','Lucio Battisti','c3'),T('Go Your Own Way','Fleetwood Mac','c5')];
+var ALB=[T('Second Hand News','Fleetwood Mac','c5'),T('Never Going Back Again','Fleetwood Mac','c5'),T("Don't Stop",'Fleetwood Mac','c5'),T('Songbird','Fleetwood Mac','c5')];
+function init(){return{now:T('Proud Mary','Creedence Clearwater Revival','c1'),blk:[T('Cuore di cane','Marco Castello','c6'),T('Emozioni','Lucio Battisti','c2'),T('Eclissi','Daniela Pes','c7')],nat:[T('Dreams','Fleetwood Mac','c5'),T('Do I Wanna Know?','Arctic Monkeys','c4','sug'),T('Il mio canto libero','Lucio Battisti','c1'),T('Fortunate Son','Creedence Clearwater Revival','c2','sug'),T('Perché no','Lucio Battisti','c3'),T('Everywhere','Fleetwood Mac','c6'),T('Cosa ci dice il cervello','Calcutta','c4','sug')],perm:null,shuf:false,undo:null,flash:null}}
+var S=init(),seed=7,ti;
+function rnd(){seed=(seed*1103515245+12345)%2147483648;return seed/2147483648}
+function rest(){return S.shuf&&S.perm?S.perm:S.nat}
+function rm(x){S.nat=S.nat.filter(function(y){return y!==x});if(S.perm)S.perm=S.perm.filter(function(y){return y!==x})}
+function row(x,n,blk){return '<div class="li'+(S.flash===x?' fl':'')+'" data-i="'+x.id+'">'+(blk?'<span class="n" aria-label="Posizione '+n+' nel blocco">'+n+'</span>':'')+'<span class="sq cv '+x.c+'" style="width:44px;height:44px"></span><div class="tx"><div class="t">'+x.t+'</div><div class="s">'+x.a+(x.k==='sug'?'':'')+'</div></div>'+(x.k==='sug'?'<span class="tag" style="margin-right:8px">suggerito</span>':'')+(blk?'<button class="hg" data-m="'+x.id+'" aria-label="Trascina per riordinare «'+x.t+'», posizione '+n+' di '+S.blk.length+'. Frecce su e giù per spostare">'+ic('drag')+'</button>':'')+'</div>'}
+function draw(el,st,mode){var h='<div class="sh2"><span style="color:var(--text)">In riproduzione</span></div><div class="li now"><span class="sq cv '+st.now.c+'" style="width:44px;height:44px"></span><div class="tx"><div class="t">'+st.now.t+'</div><div class="s">'+st.now.a+'</div></div></div>';
+if(st.blk.length)h+='<div class="blkbox"><div class="sh2 blk"><h3 style="font:inherit">Prossimi in coda</h3><span>'+st.blk.length+(st.blk.length===1?' brano':' brani')+'</span></div>'+st.blk.map(function(x,i){return row(x,i+1,true)}).join('')+'</div>';
+var r=rest();h+='<div class="sh2"><span style="font-weight:700;font-size:15px;color:var(--text)">'+(st.blk.length?'Poi':'Prossimi')+'</span><span>'+r.length+' brani'+(S.shuf?' · Shuffle':'')+'</span></div>'+(r.length?r.map(function(x){return row(x,0,false)}).join(''):(st.blk.length?'':'<div class="emp">La coda è vuota.</div>'));el.innerHTML=h}
+function render(){draw($('qs'),{now:S.now,blk:S.blk},0);var r=rest(),all=S.blk.concat(r);$('sub').textContent=(all.length)+' brani';$('clr2').disabled=!all.length;$('skip').disabled=!all.length;$('clr').disabled=!all.length;
+$('ord').innerHTML=all.slice(0,8).map(function(x,i){return '<li>'+x.t+(S.blk.indexOf(x)>=0?' <b>(blocco)</b>':x.k==='sug'?' (suggerito)':'')+'</li>'}).join('')+(all.length>8?'<li>…</li>':'');
+document.querySelectorAll('[data-m]').forEach(function(b){b.onkeydown=function(e){var i=S.blk.findIndex(function(x){return x.id===b.dataset.m}),j=e.key==='ArrowUp'?i-1:e.key==='ArrowDown'?i+1:-1;if(j<0||j>=S.blk.length)return;e.preventDefault();var t=S.blk[i];S.blk[i]=S.blk[j];S.blk[j]=t;render();var q=document.querySelector('[data-m="'+t.id+'"]');if(q)q.focus()}})}
+function note(t,u){$('snt').textContent=t;$('snb').style.display=u?'':'none';$('sn').classList.add('on');clearTimeout(ti);ti=setTimeout(function(){$('sn').classList.remove('on')},3500)}
+document.querySelectorAll('[data-add]').forEach(function(b){b.onclick=function(){var s=CAT[b.dataset.add],x={id:s.t+'#'+(Math.random()),t:s.t,a:s.a,c:s.c,k:'lib'};S.blk.push(x);S.flash=x;render();var e=document.querySelector('[data-i="'+x.id+'"]');if(e)e.scrollIntoView({block:'nearest'});setTimeout(function(){S.flash=null;render()},1400);note('«'+s.t+'» in coda: n. '+S.blk.length+' del blocco',false)}});
+$('skip').onclick=function(){if(S.blk.length)S.now=S.blk.shift();else{var r=rest();if(!r.length)return;S.now=r[0];rm(r[0])}render()};
+$('shuf').onclick=function(){S.shuf=!S.shuf;$('shuf').setAttribute('aria-pressed',S.shuf);if(S.shuf){var a=S.nat.slice(),i,j,t;for(i=a.length-1;i>0;i--){j=Math.floor(rnd()*(i+1));t=a[i];a[i]=a[j];a[j]=t}S.perm=a}else S.perm=null;render()};
+function clr(){if(!S.blk.length&&!rest().length)return;S.undo={blk:S.blk,nat:S.nat,perm:S.perm};S.blk=[];S.nat=[];S.perm=null;render();note('Coda svuotata',true)}
+$('clr').onclick=$('clr2').onclick=clr;$('snb').onclick=function(){if(S.undo){S.blk=S.undo.blk;S.nat=S.undo.nat;S.perm=S.undo.perm;S.undo=null;render();$('sn').classList.remove('on')}};
+$('alb').onclick=function(){S.now=ALB[0];S.nat=ALB.slice(1);S.perm=null;S.shuf=false;$('shuf').setAttribute('aria-pressed',false);render();note('Blocco invariato: suona prima del resto dell\'album',false)};
+$('rst').onclick=function(){S=init();$('shuf').setAttribute('aria-pressed',false);$('sn').classList.remove('on');render()};
+// "prima": same queue, added song at the very bottom
+var B={now:T('Proud Mary','Creedence Clearwater Revival','c1'),blk:[],nat:[]};var bs=init().nat.slice(0,6).concat([{id:'b',t:'Bad Moon Rising',a:'Creedence Clearwater Revival',c:'c1',k:'lib'}]);
+var sv=S;S={now:B.now,blk:[],nat:bs,perm:null,shuf:false};draw($('qbug'),{now:B.now,blk:[]},0);S=sv;
+$('qbug').querySelectorAll('.li:last-child .t').forEach(function(t){t.parentNode.querySelector('.s').insertAdjacentHTML('afterend','<span class="tag w">aggiunto da te: in fondo</span>')});
+render()})();</script></body></html>
