@@ -254,6 +254,9 @@ class Podcasts extends Table {
 
   /// The show's own id on its source (`MPSPP…` for YouTube Music); null for RSS.
   TextColumn get sourceId => text().nullable()();
+
+  /// false = only listened to (not in the list, no refresh); true = subscribed (D-435).
+  BoolColumn get followed => boolean().withDefault(const Constant(true))();
 }
 
 /// One episode of a feed. Downloaded ones also have a `tracks` row (kind 1),

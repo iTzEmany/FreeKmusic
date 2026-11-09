@@ -793,6 +793,48 @@ void main() {
     await db.close();
   });
 
+  test('a v18 database gets followed=true on its podcasts, episodes intact; the step can run again', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE podcasts (id INTEGER PRIMARY KEY AUTOINCREMENT, feed_url TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, added_at INTEGER NOT NULL, source INTEGER NOT NULL DEFAULT 0, source_id TEXT)',
+          );
+          raw.execute(
+            'CREATE TABLE podcast_episodes (id INTEGER PRIMARY KEY AUTOINCREMENT, podcast_id INTEGER NOT NULL, '
+            'guid TEXT NOT NULL, title TEXT NOT NULL, audio_url TEXT NOT NULL)',
+          );
+          raw.execute("INSERT INTO podcasts (id, feed_url, title, added_at) VALUES (1, 'https://x/feed', 'Old', 5)");
+          raw.execute("INSERT INTO podcast_episodes (podcast_id, guid, title, audio_url) VALUES (1, 'g', 'E', 'u')");
+          raw.userVersion = 18;
+        },
+      ),
+    );
+    expect((await db.select(db.podcasts).getSingle()).followed, isTrue);
+    expect((await db.customSelect('SELECT title FROM podcast_episodes').getSingle()).read<String>('title'), 'E');
+    // Downgrade and back: the column is already there.
+    await db.customStatement('PRAGMA user_version = 18');
+    await db.close();
+  });
+
+  test('the v19 step does not fail when the column already exists', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE podcasts (id INTEGER PRIMARY KEY AUTOINCREMENT, feed_url TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, added_at INTEGER NOT NULL, source INTEGER NOT NULL DEFAULT 0, source_id TEXT, '
+            'followed INTEGER NOT NULL DEFAULT 1)',
+          );
+          raw.userVersion = 18;
+        },
+      ),
+    );
+    expect(await db.select(db.podcasts).get(), isEmpty);
+    await db.close();
+  });
+
   test('the v16 step can run again over an index that already exists (downgrade and back)', () async {
     final db = AppDatabase(
       NativeDatabase.memory(

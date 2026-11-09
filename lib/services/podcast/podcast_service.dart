@@ -167,10 +167,10 @@ class PodcastService {
     return refresh(podcastId);
   }
 
-  /// Every podcast, one after the other; a failure does not stop the rest.
+  /// Every followed podcast, one after the other; a failure does not stop the rest.
   Future<RefreshReport> refreshAll() async {
     final report = RefreshReport();
-    for (final p in await repo.all()) {
+    for (final p in await repo.allFollowed()) {
       try {
         report.added[p.id] = await refresh(p.id);
       } on PodcastException catch (e) {

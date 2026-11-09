@@ -186,4 +186,15 @@ void main() {
     await repo.setAutoDeleteDays(id, null);
     expect((await repo.byId(id))!.autoDeleteDays, isNull);
   });
+
+  test('an unfollowed podcast is not in the list or the followed set; subscribing follows it again', () async {
+    final id = await repo.subscribe(feedUrl, feed([ep('a', 'A')]), now: 1);
+    await repo.subscribe('https://x/other.xml', feed([ep('b', 'B')], title: 'Other'), now: 1);
+    await repo.setFollowed(id, false);
+    expect((await repo.watchPodcasts().first).map((s) => s.podcast.title), ['Other']);
+    expect((await repo.allFollowed()).map((p) => p.title), ['Other']);
+    expect(await repo.byId(id), isNotNull);
+    await repo.subscribe(feedUrl, feed([ep('a', 'A')]), now: 2);
+    expect((await repo.watchPodcasts().first), hasLength(2));
+  });
 }

@@ -5999,6 +5999,21 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _followedMeta = const VerificationMeta(
+    'followed',
+  );
+  @override
+  late final GeneratedColumn<bool> followed = GeneratedColumn<bool>(
+    'followed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("followed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6013,6 +6028,7 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
     addedAt,
     source,
     sourceId,
+    followed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6107,6 +6123,12 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
         sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
       );
     }
+    if (data.containsKey('followed')) {
+      context.handle(
+        _followedMeta,
+        followed.isAcceptableOrUnknown(data['followed']!, _followedMeta),
+      );
+    }
     return context;
   }
 
@@ -6164,6 +6186,10 @@ class $PodcastsTable extends Podcasts with TableInfo<$PodcastsTable, Podcast> {
         DriftSqlType.string,
         data['${effectivePrefix}source_id'],
       ),
+      followed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}followed'],
+      )!,
     );
   }
 
@@ -6198,6 +6224,9 @@ class Podcast extends DataClass implements Insertable<Podcast> {
 
   /// The show's own id on its source (`MPSPP…` for YouTube Music); null for RSS.
   final String? sourceId;
+
+  /// false = only listened to (not in the list, no refresh); true = subscribed (D-435).
+  final bool followed;
   const Podcast({
     required this.id,
     required this.feedUrl,
@@ -6211,6 +6240,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     required this.addedAt,
     required this.source,
     this.sourceId,
+    required this.followed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6241,6 +6271,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     if (!nullToAbsent || sourceId != null) {
       map['source_id'] = Variable<String>(sourceId);
     }
+    map['followed'] = Variable<bool>(followed);
     return map;
   }
 
@@ -6272,6 +6303,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       sourceId: sourceId == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceId),
+      followed: Value(followed),
     );
   }
 
@@ -6293,6 +6325,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       addedAt: serializer.fromJson<int>(json['addedAt']),
       source: serializer.fromJson<int>(json['source']),
       sourceId: serializer.fromJson<String?>(json['sourceId']),
+      followed: serializer.fromJson<bool>(json['followed']),
     );
   }
   @override
@@ -6311,6 +6344,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       'addedAt': serializer.toJson<int>(addedAt),
       'source': serializer.toJson<int>(source),
       'sourceId': serializer.toJson<String?>(sourceId),
+      'followed': serializer.toJson<bool>(followed),
     };
   }
 
@@ -6327,6 +6361,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     int? addedAt,
     int? source,
     Value<String?> sourceId = const Value.absent(),
+    bool? followed,
   }) => Podcast(
     id: id ?? this.id,
     feedUrl: feedUrl ?? this.feedUrl,
@@ -6344,6 +6379,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     addedAt: addedAt ?? this.addedAt,
     source: source ?? this.source,
     sourceId: sourceId.present ? sourceId.value : this.sourceId,
+    followed: followed ?? this.followed,
   );
   Podcast copyWithCompanion(PodcastsCompanion data) {
     return Podcast(
@@ -6363,6 +6399,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
       addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
       source: data.source.present ? data.source.value : this.source,
       sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      followed: data.followed.present ? data.followed.value : this.followed,
     );
   }
 
@@ -6380,7 +6417,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
           ..write('autoDeleteDays: $autoDeleteDays, ')
           ..write('addedAt: $addedAt, ')
           ..write('source: $source, ')
-          ..write('sourceId: $sourceId')
+          ..write('sourceId: $sourceId, ')
+          ..write('followed: $followed')
           ..write(')'))
         .toString();
   }
@@ -6399,6 +6437,7 @@ class Podcast extends DataClass implements Insertable<Podcast> {
     addedAt,
     source,
     sourceId,
+    followed,
   );
   @override
   bool operator ==(Object other) =>
@@ -6415,7 +6454,8 @@ class Podcast extends DataClass implements Insertable<Podcast> {
           other.autoDeleteDays == this.autoDeleteDays &&
           other.addedAt == this.addedAt &&
           other.source == this.source &&
-          other.sourceId == this.sourceId);
+          other.sourceId == this.sourceId &&
+          other.followed == this.followed);
 }
 
 class PodcastsCompanion extends UpdateCompanion<Podcast> {
@@ -6431,6 +6471,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
   final Value<int> addedAt;
   final Value<int> source;
   final Value<String?> sourceId;
+  final Value<bool> followed;
   const PodcastsCompanion({
     this.id = const Value.absent(),
     this.feedUrl = const Value.absent(),
@@ -6444,6 +6485,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     this.addedAt = const Value.absent(),
     this.source = const Value.absent(),
     this.sourceId = const Value.absent(),
+    this.followed = const Value.absent(),
   });
   PodcastsCompanion.insert({
     this.id = const Value.absent(),
@@ -6458,6 +6500,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     required int addedAt,
     this.source = const Value.absent(),
     this.sourceId = const Value.absent(),
+    this.followed = const Value.absent(),
   }) : feedUrl = Value(feedUrl),
        title = Value(title),
        addedAt = Value(addedAt);
@@ -6474,6 +6517,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     Expression<int>? addedAt,
     Expression<int>? source,
     Expression<String>? sourceId,
+    Expression<bool>? followed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6488,6 +6532,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
       if (addedAt != null) 'added_at': addedAt,
       if (source != null) 'source': source,
       if (sourceId != null) 'source_id': sourceId,
+      if (followed != null) 'followed': followed,
     });
   }
 
@@ -6504,6 +6549,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     Value<int>? addedAt,
     Value<int>? source,
     Value<String?>? sourceId,
+    Value<bool>? followed,
   }) {
     return PodcastsCompanion(
       id: id ?? this.id,
@@ -6518,6 +6564,7 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
       addedAt: addedAt ?? this.addedAt,
       source: source ?? this.source,
       sourceId: sourceId ?? this.sourceId,
+      followed: followed ?? this.followed,
     );
   }
 
@@ -6560,6 +6607,9 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
     if (sourceId.present) {
       map['source_id'] = Variable<String>(sourceId.value);
     }
+    if (followed.present) {
+      map['followed'] = Variable<bool>(followed.value);
+    }
     return map;
   }
 
@@ -6577,7 +6627,8 @@ class PodcastsCompanion extends UpdateCompanion<Podcast> {
           ..write('autoDeleteDays: $autoDeleteDays, ')
           ..write('addedAt: $addedAt, ')
           ..write('source: $source, ')
-          ..write('sourceId: $sourceId')
+          ..write('sourceId: $sourceId, ')
+          ..write('followed: $followed')
           ..write(')'))
         .toString();
   }
@@ -18050,6 +18101,7 @@ typedef $$PodcastsTableCreateCompanionBuilder = PodcastsCompanion Function({
   required int addedAt,
   Value<int> source,
   Value<String?> sourceId,
+  Value<bool> followed,
 });
 typedef $$PodcastsTableUpdateCompanionBuilder = PodcastsCompanion Function({
   Value<int> id,
@@ -18064,6 +18116,7 @@ typedef $$PodcastsTableUpdateCompanionBuilder = PodcastsCompanion Function({
   Value<int> addedAt,
   Value<int> source,
   Value<String?> sourceId,
+  Value<bool> followed,
 });
 
 final class $$PodcastsTableReferences
@@ -18157,6 +18210,11 @@ class $$PodcastsTableFilterComposer
 
   ColumnFilters<String> get sourceId => $composableBuilder(
     column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get followed => $composableBuilder(
+    column: $table.followed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18254,6 +18312,11 @@ class $$PodcastsTableOrderingComposer
     column: $table.sourceId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get followed => $composableBuilder(
+    column: $table.followed,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PodcastsTableAnnotationComposer
@@ -18304,6 +18367,9 @@ class $$PodcastsTableAnnotationComposer
 
   GeneratedColumn<String> get sourceId =>
       $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  GeneratedColumn<bool> get followed =>
+      $composableBuilder(column: $table.followed, builder: (column) => column);
 
   Expression<T> podcastEpisodesRefs<T extends Object>(
     Expression<T> Function($$PodcastEpisodesTableAnnotationComposer a) f,
@@ -18371,6 +18437,7 @@ class $$PodcastsTableTableManager
                 Value<int> addedAt = const Value.absent(),
                 Value<int> source = const Value.absent(),
                 Value<String?> sourceId = const Value.absent(),
+                Value<bool> followed = const Value.absent(),
               }) => PodcastsCompanion(
                 id: id,
                 feedUrl: feedUrl,
@@ -18384,6 +18451,7 @@ class $$PodcastsTableTableManager
                 addedAt: addedAt,
                 source: source,
                 sourceId: sourceId,
+                followed: followed,
               ),
           createCompanionCallback:
               ({
@@ -18399,6 +18467,7 @@ class $$PodcastsTableTableManager
                 required int addedAt,
                 Value<int> source = const Value.absent(),
                 Value<String?> sourceId = const Value.absent(),
+                Value<bool> followed = const Value.absent(),
               }) => PodcastsCompanion.insert(
                 id: id,
                 feedUrl: feedUrl,
@@ -18412,6 +18481,7 @@ class $$PodcastsTableTableManager
                 addedAt: addedAt,
                 source: source,
                 sourceId: sourceId,
+                followed: followed,
               ),
           withReferenceMapper: (p0) => p0
               .map(

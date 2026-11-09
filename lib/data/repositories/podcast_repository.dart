@@ -62,6 +62,7 @@ class PodcastRepository {
             imageUrl: Value(feed.imageUrl),
             language: Value(feed.language),
             lastCheckedAt: Value(now),
+            followed: const Value(true),
           ),
         );
       }
@@ -180,6 +181,16 @@ class PodcastRepository {
   Future<List<Podcast>> all() =>
       (_db.select(_db.podcasts)..orderBy([(p) => OrderingTerm.asc(p.id)])).get();
 
+  /// Only the subscribed podcasts: the ones the app refreshes on its own.
+  Future<List<Podcast>> allFollowed() => (_db.select(_db.podcasts)
+        ..where((p) => p.followed.equals(true))
+        ..orderBy([(p) => OrderingTerm.asc(p.id)]))
+      .get();
+
+  Future<void> setFollowed(int podcastId, bool followed) =>
+      (_db.update(_db.podcasts)..where((p) => p.id.equals(podcastId)))
+          .write(PodcastsCompanion(followed: Value(followed)));
+
   Stream<List<PodcastSummary>> watchPodcasts() {
     return _db
         .customSelect(
@@ -188,7 +199,7 @@ class PodcastRepository {
           'AS episode_count, '
           '(SELECT COUNT(*) FROM podcast_episodes e WHERE e.podcast_id = p.id '
           'AND e.track_id IS NOT NULL AND e.played = 0) AS to_listen '
-          'FROM podcasts p ORDER BY lower(p.title), p.id',
+          'FROM podcasts p WHERE p.followed = 1 ORDER BY lower(p.title), p.id',
           readsFrom: {_db.podcasts, _db.podcastEpisodes},
         )
         .watch()
