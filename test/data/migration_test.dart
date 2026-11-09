@@ -793,7 +793,7 @@ void main() {
     await db.close();
   });
 
-  test('a v18 database gets followed=true on its podcasts, episodes intact; the step can run again', () async {
+  test('a v18 database gets followed=true on its podcasts, episodes intact', () async {
     final db = AppDatabase(
       NativeDatabase.memory(
         setup: (raw) {
@@ -813,8 +813,6 @@ void main() {
     );
     expect((await db.select(db.podcasts).getSingle()).followed, isTrue);
     expect((await db.customSelect('SELECT title FROM podcast_episodes').getSingle()).read<String>('title'), 'E');
-    // Downgrade and back: the column is already there.
-    await db.customStatement('PRAGMA user_version = 18');
     await db.close();
   });
 
@@ -827,11 +825,12 @@ void main() {
             'title TEXT NOT NULL, added_at INTEGER NOT NULL, source INTEGER NOT NULL DEFAULT 0, source_id TEXT, '
             'followed INTEGER NOT NULL DEFAULT 1)',
           );
+          raw.execute("INSERT INTO podcasts (id, feed_url, title, added_at, followed) VALUES (1, 'https://x/f', 'Off', 5, 0)");
           raw.userVersion = 18;
         },
       ),
     );
-    expect(await db.select(db.podcasts).get(), isEmpty);
+    expect((await db.select(db.podcasts).getSingle()).followed, isFalse);
     await db.close();
   });
 
