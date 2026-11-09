@@ -139,7 +139,7 @@ void main() {
     expect(backend.nextPath, '/m/c.mp3');
   });
 
-  test('«play next» replaces what was prepared', () async {
+  test('an insert right after the current replaces what was prepared', () async {
     await startGapless();
     handler.insertAt(handler.currentIndex + 1, extra);
     await settle();

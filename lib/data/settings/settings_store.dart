@@ -319,6 +319,7 @@ class SavedPlayback {
     this.repeat = PlayRepeat.off,
     this.contextKind,
     this.contextName,
+    this.userAhead = 0,
   });
 
   final List<int> queueIds;
@@ -328,6 +329,9 @@ class SavedPlayback {
   /// null in what older versions saved.
   final int? contextKind;
   final String? contextName;
+
+  /// Entries of the user block after the current one (absent in older saves = 0).
+  final int userAhead;
   final double volume;
   final bool shuffle;
   final PlayRepeat repeat;
@@ -796,6 +800,7 @@ class SettingsStore {
       repeat: repeat,
       contextKind: _prefs.getInt('lastContextKind'),
       contextName: _prefs.getString('lastContextName'),
+      userAhead: _prefs.getInt('lastQueueUser') ?? 0,
     );
   }
 
@@ -803,6 +808,7 @@ class SettingsStore {
     await _prefs.setStringList('lastQueueIds', [
       for (final id in s.queueIds) '$id',
     ]);
+    await _prefs.setInt('lastQueueUser', s.userAhead);
     await _prefs.setInt('lastIndex', s.index);
     await _prefs.setInt('lastPositionMs', s.positionMs);
     await _prefs.setDouble('volume', s.volume);

@@ -54,7 +54,8 @@ class PlaybackPersistence {
       if (q.queueIds.isNotEmpty) {
         // The copy kept aside is the queue from before the Jam: same context as [s].
         _handler.setPlayContext(s.contextKind, s.contextName);
-        await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs));
+        await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs),
+            userAhead: q.userAhead);
         if (aside != null) {
           _position = Duration(milliseconds: q.positionMs);
           await flush(); // the disk follows the queue now back
@@ -123,8 +124,14 @@ class PlaybackPersistence {
   Future<void> flush() async {
     if (_held) return;
     try {
-      final q = savedQueue(
-          _handler.queueIds, _handler.currentIndex < 0 ? 0 : _handler.currentIndex);
+      final ids = _handler.queueIds, cur = _handler.currentIndex < 0 ? 0 : _handler.currentIndex;
+      final q = savedQueue(ids, cur);
+      // Online entries are dropped from the save, so the block shrinks with them.
+      final ahead = ids
+          .skip(cur + 1)
+          .take(_handler.userAhead)
+          .where((id) => !isOnlineId(id))
+          .length;
       await _store.writePlayback(SavedPlayback(
         queueIds: q.ids,
         index: q.index,
@@ -134,6 +141,7 @@ class PlaybackPersistence {
         repeat: _handler.repeatMode,
         contextKind: _handler.playContext?.kind,
         contextName: _handler.playContext?.name,
+        userAhead: ahead,
       ));
     } on Object catch (e, st) {
       AppLog.w('persist playback failed', e, st);

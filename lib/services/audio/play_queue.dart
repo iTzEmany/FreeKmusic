@@ -174,6 +174,7 @@ class PlayQueue {
     int startIndex = 0,
     bool alreadyShuffled = false,
     bool keepUser = false,
+    int userAhead = 0,
   }) {
     final kept = keepUser
         ? [for (final k in _user) _items[_keys.indexOf(k)]]
@@ -186,6 +187,9 @@ class PlayQueue {
       shuffleNow: _shuffle && !alreadyShuffled,
     );
     if (_pos < 0) return;
+    // A restored session: the [userAhead] entries after the current are the block.
+    final n = userAhead.clamp(0, _items.length - 1 - _pos);
+    _user.addAll(_keys.sublist(_pos + 1, _pos + 1 + n));
     for (final id in kept) {
       _insertUser(_pos + 1 + _user.length, id);
     }

@@ -363,7 +363,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> playQueue(List<int> ids, int index) async {
     _leaveRadioMode();
     _source = List.of(ids);
-    _queue.setItems(ids, startIndex: index);
+    _queue.setItems(ids, startIndex: index, keepUser: true);
     _consecutiveErrors = 0;
     _queueController.add(null);
     await _loadCurrent(play: true);
@@ -458,10 +458,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Loads the queue paused, at [position] (used to resume after a restart).
-  Future<void> restore(List<int> ids, int index, Duration position) async {
+  Future<void> restore(List<int> ids, int index, Duration position, {int userAhead = 0}) async {
     _leaveRadioMode();
     _source = List.of(ids);
-    _queue.setItems(ids, startIndex: index, alreadyShuffled: true);
+    _queue.setItems(ids, startIndex: index, alreadyShuffled: true, userAhead: userAhead);
     _queueController.add(null);
     await _loadCurrent(play: false, startAt: position);
   }

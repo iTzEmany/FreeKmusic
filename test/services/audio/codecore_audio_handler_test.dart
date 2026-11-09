@@ -3,7 +3,9 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:codecore/services/audio/audio_backend.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
+import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/audio/play_queue.dart';
+import 'package:codecore/services/radio/radio_station.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,6 +102,31 @@ void main() {
     expect(handler.currentTrack!.title, 'b');
     handler.restoreQueue(before!);
     expect(handler.queueIds, ids, reason: 'another track plays: no undo');
+  });
+
+  test('a new context keeps the block right after the new current track (D-488)', () async {
+    await handler.playQueue([ids[0], ids[1]], 0);
+    await settle();
+    handler.addToQueue(ids[2]);
+    await handler.playQueue([ids[1], ids[0]], 0);
+    await settle();
+    expect(handler.queueIds, [ids[1], ids[2], ids[0]]);
+    expect(handler.userAhead, 1);
+  });
+
+  test('a radio station empties the block (D-496)', () async {
+    final h = CodecoreAudioHandler(backend, PlayQueue(), repo,
+        onError: errors.add, online: OnlineEntries());
+    addTearDown(h.dispose);
+    await h.playQueue(ids, 0);
+    await settle();
+    h.addToQueue(ids[2]);
+    expect(h.userAhead, 1);
+    await h.playStations(
+        [const RadioStation(id: 'a', name: 'A', streamUrl: 'http://r.test/a')], 0);
+    await settle();
+    expect(h.userAhead, 0);
+    expect(h.queueIds.length, 1);
   });
 
   test('removeTracks drops every occurrence, also from the list «Svuota» uses', () async {

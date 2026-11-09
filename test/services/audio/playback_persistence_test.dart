@@ -113,4 +113,33 @@ void main() {
     expect(h.queueIds, [ids[2], ids[0], ids[1]]);
     expect(h.currentTrack?.id, ids[0]);
   });
+
+  test('lastQueueUser is saved and restored: the entries after the current are the block', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final ids = [
+      for (var i = 0; i < 4; i++)
+        await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$i.mp3', title: 'S$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: i)),
+    ];
+    SharedPreferences.setMockInitialValues({});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    CodecoreAudioHandler open() {
+      final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db), onError: (_) {});
+      addTearDown(h.dispose);
+      return h;
+    }
+
+    final a = open();
+    await a.playQueue(ids, 0);
+    a.addToQueue(ids[3]);
+    a.addToQueue(ids[2]);
+    await PlaybackPersistence(a, store).flush();
+    expect(store.readPlayback().userAhead, 2);
+
+    final b = open();
+    await PlaybackPersistence(b, store).restore();
+    expect(b.queueIds, a.queueIds);
+    expect(b.userAhead, 2);
+  });
 }
