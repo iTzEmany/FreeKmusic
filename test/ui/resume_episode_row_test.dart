@@ -70,4 +70,52 @@ void main() {
       [7],
     ]);
   });
+
+  testWidgets('a song with a bookmark keeps its usual subtitle (no podcast wording)', (tester) async {
+    final song = Track(
+      coverSource: 0,
+      id: 8,
+      path: '/m/8.mp3',
+      title: 'Lunga suite',
+      artist: 'Band',
+      album: 'Live',
+      albumKey: 'k',
+      durationMs: 60 * 60000,
+      format: 'mp3',
+      sizeBytes: 1,
+      mtimeMs: 1,
+      hasCover: false,
+      isFavorite: false,
+      enrichStatus: 0,
+      userEdited: false,
+      missing: false,
+      ignored: false,
+      kind: 0,
+      addedAt: 1,
+      playCount: 0,
+      resumePositionMs: 20 * 60 * 1000,
+    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        resumableTracksProvider.overrideWith((ref) => Stream.value([song])),
+        currentTrackProvider.overrideWith((ref) => Stream.value(null)),
+        queueProvider.overrideWith((ref) => Stream.value(const <Track>[])),
+        playContextProvider.overrideWithValue(null),
+        newReleasesCountProvider.overrideWith((ref) => Stream.value(0)),
+        recentEntriesProvider.overrideWithValue(const []),
+        playerControllerProvider.overrideWithValue(_Spy()),
+      ],
+      child: MaterialApp(
+        locale: const Locale('it'),
+        theme: buildThemeFromColors(CcColors.notte, false),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ResumeList()),
+      ),
+    ));
+    await tester.pump();
+    expect(find.text('Lunga suite'), findsOneWidget);
+    expect(find.text('Mancano 40 minuti'), findsOneWidget, reason: 'only what is left, no artist, no place');
+    expect(find.textContaining('riprendi da'), findsNothing);
+  });
 }

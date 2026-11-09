@@ -52,6 +52,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     this.coverPathFor,
     this.history,
     this.onEpisodeHeard,
+    this.onEpisodeResumed,
     this.online,
     StreamPreparer? preparer,
     this.onRadioStart,
@@ -99,6 +100,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// listened to from 95 % on, or to its end. The handler knows nothing else
   /// about podcasts.
   final void Function(int trackId)? onEpisodeHeard;
+
+  /// Told once per listen when an episode gets a new bookmark: it may have been marked as
+  /// heard before, and listening again takes that mark away.
+  final void Function(int trackId)? onEpisodeResumed;
 
   /// Streamed (not owned) entries of the queue, which have negative ids.
   /// Null: the queue holds only library tracks.
@@ -525,7 +530,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         if (fromUrl) _url = _UrlSession(streamKey, res, entry?.id);
         if (play) _timing = timingOf(streamKey, fromUrl ? 'url' : 'cache');
       } else if (directUrl) {
-        final uri = Uri.tryParse(track.path);
+        // The fragment only tells apart two episodes with one address: the server never sees it.
+        final uri = Uri.tryParse(track.path)?.removeFragment();
         if (uri == null) throw const BackendException('bad episode address');
         // The old track stops now, not when the network answers.
         if (_state == BackendState.playing) await _backend.pause();
@@ -934,6 +940,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         } else if (!url.recovering) {
           _onUrlError();
         }
+      } else if (!_loadBusy && _current != null && _isRemoteEpisode(_current!)) {
+        unawaited(_onStreamCut());
       }
       return;
     }
@@ -1009,6 +1017,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _handlingCompleted = true;
     final ended = _clock();
     try {
+      final cur = _current;
+      if (cur != null && _isRemoteEpisode(cur) && _cutShort(cur)) {
+        await _failCut(cur);
+        return;
+      }
       _forgetBookmarkOfFinished();
       final next = _queue.next(auto: true);
       final stay = _pauseAtTrackEnd;
@@ -1023,6 +1036,33 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _handlingCompleted = false;
     }
   }
+
+  /// A streamed episode stopped well before its end (the network went): it is not heard.
+  bool _cutShort(Track t) {
+    final length = _lengthOf(t);
+    return length > 0 && !episodeHeard(_position, length);
+  }
+
+  /// The place stays, the user is told, and the queue goes on (or stops): never stuck.
+  Future<void> _failCut(Track t) async {
+    AppLog.w('episode "${t.title}" stopped early at $_position');
+    _saveResume();
+    await _failAndSkip(PlaybackFailureReason.onlineUnavailable, t, _loadToken, play: _playWhenReady);
+  }
+
+  /// The player failed on a streamed episode that was already playing.
+  Future<void> _onStreamCut() async {
+    final cur = _current;
+    if (cur == null || _handlingCompleted) return;
+    _handlingCompleted = true;
+    try {
+      await _failCut(cur);
+    } finally {
+      _handlingCompleted = false;
+    }
+  }
+
+  int _lengthOf(Track t) => t.durationMs > 0 ? t.durationMs : (_duration?.inMilliseconds ?? 0);
 
   /// A track played to its end has no place to come back to.
   void _forgetBookmarkOfFinished() {
@@ -1664,10 +1704,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   void _saveResume() {
     final t = _current;
     if (t == null || isStreamTrack(t)) return;
-    final length = t.durationMs > 0 ? t.durationMs : (_duration?.inMilliseconds ?? 0);
+    final length = _lengthOf(t);
     final episode = t.kind == 1;
     if (episode && episodeHeard(_position, length)) _markHeard(t);
     final ms = resumePointFor(_position, length, episode: episode);
+    if (episode && ms != null) _markResumed(t);
     if (ms == null && t.resumePositionMs == null && _savedResume[t.id] == null) {
       return;
     }
@@ -1677,8 +1718,21 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   final _heard = <int>{};
 
+  final _resumed = <int>{};
+
+  void _markResumed(Track episode) {
+    if (!_resumed.add(episode.id)) return;
+    _heard.remove(episode.id);
+    try {
+      onEpisodeResumed?.call(episode.id);
+    } on Object catch (e, st) {
+      AppLog.w('could not take the heard mark off "${episode.title}"', e, st);
+    }
+  }
+
   void _markHeard(Track episode) {
     if (!_heard.add(episode.id)) return;
+    _resumed.remove(episode.id);
     try {
       onEpisodeHeard?.call(episode.id);
     } on Object catch (e, st) {

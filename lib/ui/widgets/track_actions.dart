@@ -238,6 +238,7 @@ List<TrackActionGroup> trackActions(
             await ref.read(trackOpsProvider).setResumePosition(track.id, null);
             await ctrl.playFromList([track], 0);
           },
+          onStreamRow: true,
         ),
       TrackAction(Icons.playlist_play_rounded, l.playNext, () async {
         final inJam = ctrl.inJam;
@@ -353,8 +354,11 @@ List<TrackActionGroup> trackActions(
         }, destructive: true),
     ]),
   ];
-  // A streamed shadow row (kind 2) keeps only queue actions and Details until phase 46.
-  if (track.kind != kStreamKind) return groups;
+  // A streamed shadow row (kind 2) keeps only queue actions and Details until phase 46; so
+  // does a podcast episode not downloaded yet (a row on an address), which has no file to act on.
+  if (track.kind != kStreamKind && !(track.kind == kEpisodeKind && isRemoteEpisodePath(track.path))) {
+    return groups;
+  }
   return [
     for (final g in groups)
       if (g.actions.any((a) => a.onStreamRow))

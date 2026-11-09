@@ -106,6 +106,12 @@ void main() {
     expect(i.selfFetchable, false);
   });
 
+  test('an episode not downloaded (an address or a stream key) cannot go in a Jam', () {
+    expect(jamItemOfTrack(track(1, 'Ep').copyWith(kind: 1, path: 'https://x/e.mp3'), 'me'), isNull);
+    expect(jamItemOfTrack(track(1, 'Ep').copyWith(kind: 1, path: 'stream:youtube:v1.mp3'), 'me'), isNull);
+    expect(jamItemOfTrack(track(1, 'Ep').copyWith(kind: 1, path: '/data/podcasts/1/e.mp3'), 'me'), isNotNull);
+  });
+
   JamPartFeeder remoteFeeder(List<String> sent, {JamRemoteItems? with_}) {
     final tracks = {'1': track(1, 'Time'), '2': track(2, 'Unknown'), '3': track(3, 'Time')};
     return JamPartFeeder(

@@ -118,6 +118,9 @@ class PodcastRepository {
             sizeBytes: Value(info.sizeBytes),
             description: Value(info.description),
           ));
+          if (old.trackId != null && old.audioUrl != info.audioUrl) {
+            await _followAddress(old.id, old.trackId!, info.audioUrl);
+          }
         }
       }
       if (fresh.isNotEmpty) {
@@ -158,7 +161,8 @@ class PodcastRepository {
         final rows = await (_db.select(_db.tracks)
               ..where((t) => t.id.isIn(trackIds) & t.kind.equals(1)))
             .get();
-        paths.addAll(rows.map((t) => t.path));
+        // A streaming row has an address, not a file: nothing to delete.
+        paths.addAll(rows.map((t) => t.path).where((p) => !isRemoteEpisodePath(p)));
         await (_db.delete(_db.tracks)
               ..where((t) => t.id.isIn(trackIds) & t.kind.equals(1)))
             .go();
@@ -291,41 +295,55 @@ class PodcastRepository {
       (_db.select(_db.podcastEpisodes)..where((e) => e.podcastId.equals(podcastId) & e.guid.equals(guid)))
           .getSingleOrNull();
 
+  /// Runs [body] as one transaction (a download and a first play must not interleave).
+  Future<T> atomically<T>(Future<T> Function() body) => _db.transaction(body);
+
+  /// Where a not downloaded episode streams from: the audio address, or the stream key of
+  /// a YouTube Music one; null when there is none (not an http(s) address).
+  String? remotePathOf(Podcast podcast, PodcastEpisode e) {
+    if (podcast.source == kPodcastSourceYtm) return streamPathOf('youtube:${e.guid}');
+    final ok = e.audioUrl.startsWith('http://') || e.audioUrl.startsWith('https://');
+    return ok ? e.audioUrl : null;
+  }
+
+  Future<Track?> _trackByPath(String path) =>
+      (_db.select(_db.tracks)..where((t) => t.path.equals(path))).getSingleOrNull();
+
+  Future<Track?> _trackById(int id) =>
+      (_db.select(_db.tracks)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  /// The path (and the row on it, if any) a streaming row of [episodeId] can have: [base], or when
+  /// another episode has the row on it (two episodes, one address) its own `#cc-ep=<id>` variant.
+  /// The player drops the fragment, so the server never sees it.
+  Future<({String path, Track? row})> _slot(String base, int episodeId) async {
+    final row = await _trackByPath(base);
+    if (row == null) return (path: base, row: null);
+    final others = await (_db.select(_db.podcastEpisodes)
+          ..where((e) => e.trackId.equals(row.id) & e.id.isNotValue(episodeId)))
+        .get();
+    if (others.isEmpty) return (path: base, row: row);
+    final own = '$base#cc-ep=$episodeId';
+    return (path: own, row: await _trackByPath(own));
+  }
+
   /// The track the episode plays from: its file when downloaded, else a kind-1 row
   /// with a remote path, made on first play and kept so the bookmark has a place
   /// (and the episode shows in «Riprendi»). Null when there is nothing to stream from.
-  Future<Track?> playableTrack(int episodeId) async {
-    final e = await episodeById(episodeId);
-    final podcast = e == null ? null : await byId(e.podcastId);
-    if (e == null || podcast == null) return null;
-    final String path;
-    if (podcast.source == kPodcastSourceYtm) {
-      path = streamPathOf('youtube:${e.guid}');
-    } else if (e.audioUrl.startsWith('http://') || e.audioUrl.startsWith('https://')) {
-      path = e.audioUrl;
-    } else {
-      return null;
-    }
+  Future<Track?> playableTrack(int episodeId) {
     return _db.transaction(() async {
-      Future<Track?> byPath(String p) =>
-          (_db.select(_db.tracks)..where((t) => t.path.equals(p))).getSingleOrNull();
-      final linked = e.trackId == null
-          ? null
-          : await (_db.select(_db.tracks)..where((t) => t.id.equals(e.trackId!))).getSingleOrNull();
-      if (linked != null) {
-        // The feed moved the audio: the streaming row follows (a file stays as it is).
-        if (isRemoteEpisodePath(linked.path) && linked.path != path && await byPath(path) == null) {
-          await (_db.update(_db.tracks)..where((t) => t.id.equals(linked.id)))
-              .write(TracksCompanion(path: Value(path)));
-          return linked.copyWith(path: path);
-        }
-        return linked;
-      }
-      var row = await byPath(path);
+      final e = await episodeById(episodeId);
+      final podcast = e == null ? null : await byId(e.podcastId);
+      if (e == null || podcast == null) return null;
+      final linked = e.trackId == null ? null : await _trackById(e.trackId!);
+      if (linked != null) return linked;
+      final base = remotePathOf(podcast, e);
+      if (base == null) return null;
+      final slot = await _slot(base, episodeId);
+      var row = slot.row;
+      final albumKey = podcastAlbumKeyOf(podcast.id);
       if (row == null) {
-        final albumKey = podcastAlbumKeyOf(podcast.id);
         final id = await _db.into(_db.tracks).insert(TracksCompanion.insert(
-              path: path,
+              path: slot.path,
               title: e.title,
               albumKey: albumKey,
               format: episodeExtension(url: e.audioUrl, mime: e.mimeType) ??
@@ -342,10 +360,54 @@ class PodcastRepository {
               coverKey: Value(podcast.coverKey),
               kind: const Value(kEpisodeKind),
             ));
-        row = await (_db.select(_db.tracks)..where((t) => t.id.equals(id))).getSingle();
+        row = await _trackById(id);
+      } else if (row.kind == kStreamKind) {
+        // The shadow row of the same video (a stream played from Search): it becomes the episode's.
+        await (_db.update(_db.tracks)..where((t) => t.id.equals(row!.id))).write(TracksCompanion(
+          kind: const Value(kEpisodeKind),
+          albumKey: Value(albumKey),
+          title: Value(e.title),
+          artist: Value(podcast.title),
+          albumArtist: Value(podcast.title),
+          album: Value(podcast.title),
+          genre: const Value('Podcast'),
+          hasCover: Value(podcast.coverKey != null),
+          coverKey: Value(podcast.coverKey),
+        ));
+        row = await _trackById(row.id);
       }
-      await setTrackId(episodeId, row.id);
+      await setTrackId(episodeId, row!.id);
       return row;
+    });
+  }
+
+  /// A feed that moved the audio of [episodeId]: its streaming row (an address, not a file or
+  /// a stream key) follows, when the new address is free.
+  Future<void> _followAddress(int episodeId, int trackId, String url) async {
+    final row = await _trackById(trackId);
+    if (row == null || row.kind != kEpisodeKind) return;
+    if (!(row.path.startsWith('http://') || row.path.startsWith('https://'))) return;
+    final slot = await _slot(url, episodeId);
+    if (slot.row != null || slot.path == row.path) return;
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(trackId)))
+        .write(TracksCompanion(path: Value(slot.path)));
+  }
+
+  /// A downloaded episode whose file goes (the download is deleted) streams again: its row keeps
+  /// the bookmark and the plays and goes back to the address. False when it has none to go to
+  /// (or it is taken): the caller then drops the row.
+  Future<bool> backToRemote(int episodeId) {
+    return _db.transaction(() async {
+      final e = await episodeById(episodeId);
+      final podcast = e == null ? null : await byId(e.podcastId);
+      final row = e?.trackId == null ? null : await _trackById(e!.trackId!);
+      final base = podcast == null || e == null ? null : remotePathOf(podcast, e);
+      if (row == null || row.kind != kEpisodeKind || base == null) return false;
+      final slot = await _slot(base, episodeId);
+      if (slot.row != null && slot.row!.id != row.id) return false;
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(row.id))).write(
+          TracksCompanion(path: Value(slot.path), sizeBytes: const Value(0), mtimeMs: const Value(0), missing: const Value(false)));
+      return true;
     });
   }
 

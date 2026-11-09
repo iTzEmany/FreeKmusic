@@ -292,6 +292,27 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('an episode not downloaded has the menu of a streamed row: queue, restart and details only', (tester) async {
+    final h = await openSheet(
+        tester, (t) => t.copyWith(kind: 1, path: 'https://x/e.mp3', resumePositionMs: const Value(5000)));
+    expect(find.text('Aggiungi in coda'), findsOneWidget);
+    expect(find.text('Ricomincia dall’inizio'), findsOneWidget);
+    expect(find.text('Dettagli'), findsOneWidget);
+    for (final gone in ['Modifica info', 'Condividi…', 'Anteprima 20 s', 'Aggiungi a playlist…', 'Scarica']) {
+      expect(find.text(gone), findsNothing, reason: gone);
+    }
+    await h.dispose(tester);
+
+    final k = await openSheet(tester, (t) => t.copyWith(kind: 1, path: 'stream:youtube:v1'));
+    expect(find.text('Modifica info'), findsNothing);
+    expect(find.text('Scarica'), findsNothing, reason: 'an episode is downloaded from its page');
+    await k.dispose(tester);
+
+    final local = await openSheet(tester, (t) => t.copyWith(kind: 1, path: '/data/podcasts/1/e.mp3'));
+    expect(find.text('Modifica info'), findsOneWidget, reason: 'a downloaded episode keeps its menu');
+    await local.dispose(tester);
+  });
+
   testWidgets('«Scarica»: in the menu of a streamed track, not of a local one', (tester) async {
     var h = await openSheet(tester, (t) => t);
     expect(find.text('Scarica'), findsNothing);

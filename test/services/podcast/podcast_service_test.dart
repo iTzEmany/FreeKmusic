@@ -226,6 +226,19 @@ void main() {
       expect(r.failed[b]!.kind, PodcastErrorKind.network);
       expect(r.totalAdded, 3);
     });
+
+    test('refreshAll leaves a show that is only listened to (not followed) alone', () async {
+      feeds['https://a.org/f'] = PodcastFeed(title: 'A', episodes: [_ep('1')]);
+      feeds['https://b.org/f'] = PodcastFeed(title: 'B', episodes: [_ep('1')]);
+      final svc = build();
+      await svc.subscribeFromUrl('https://a.org/f');
+      final b = await svc.subscribeFromUrl('https://b.org/f');
+      await repo.setFollowed(b, false);
+      fetched.clear();
+      final r = await svc.refreshAll();
+      expect(fetched, ['https://a.org/f']);
+      expect(r.failed, isEmpty);
+    });
   });
 
   group('YouTube Music shows', () {

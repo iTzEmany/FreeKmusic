@@ -218,8 +218,31 @@ void main() {
     expect(p.isWithin(base, t.path), isTrue);
     expect(t.resumePositionMs, 90000);
     expect(t.durationMs, 1800000);
+    expect([t.format, t.sizeBytes, t.kind], ['mp3', 3000, 1]);
     expect(await db.select(db.tracks).get(), hasLength(1));
     expect((await repo.downloadedEpisodes()).single.track!.id, id);
+  });
+
+  test('a music row linked by mistake is not overwritten by the download', () async {
+    final music = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/m/song.mp3', title: 'Song', albumKey: 'k', format: 'flac', sizeBytes: 7, mtimeMs: 1, addedAt: 1));
+    await repo.setTrackId(episodeId, music);
+    final id = await build().download(episodeId);
+    expect(id, isNot(music));
+    final m = (await tracks.getById(music))!;
+    expect([m.path, m.format, m.sizeBytes, m.kind], ['/m/song.mp3', 'flac', 7, 0]);
+    expect((await repo.episodeById(episodeId))!.trackId, id);
+  });
+
+  test('a first play while it downloads: the file goes into that row, no second row', () async {
+    final tags = _GatedTags();
+    final done = build(tags: tags).download(episodeId);
+    await tags.entered.future;
+    final streamed = (await repo.playableTrack(episodeId))!;
+    tags.gate.complete();
+    expect(await done, streamed.id);
+    expect(await db.select(db.tracks).get(), hasLength(1));
+    expect(p.isWithin(base, (await tracks.getById(streamed.id))!.path), isTrue);
   });
 
   test('downloaded already: the same track comes back without another request', () async {
@@ -293,23 +316,39 @@ void main() {
   });
 
   group('deleting the file', () {
-    test('removes the file and the track, the episode stays listed as not downloaded; it can be downloaded again', () async {
+    test('removes the file; an episode with an address goes back to a streaming row, bookmark and plays kept', () async {
       final dl = build();
       final trackId = (await dl.download(episodeId))!;
       final path = (await tracks.getById(trackId))!.path;
+      await tracks.setResumePosition(trackId, 77000);
+      await tracks.registerPlay(trackId);
 
       await dl.deleteFile(episodeId);
 
       expect(File(path).existsSync(), isFalse);
-      expect(await tracks.getById(trackId), isNull);
+      final t = (await tracks.getById(trackId))!;
+      expect([t.path, t.sizeBytes, t.mtimeMs, t.resumePositionMs], [url('/a.mp3'), 0, 0, 77000]);
+      expect((await repo.episodeById(episodeId))!.trackId, trackId);
       final row = (await repo.watchEpisodes(podcastId).first).firstWhere((e) => e.episode.id == episodeId);
       expect(row.downloaded, isFalse);
       expect(row.episode.title, 'Episode One');
 
-      expect(await dl.download(episodeId), isNotNull, reason: 'downloadable again');
+      expect(await dl.download(episodeId), trackId, reason: 'downloadable again, into the same row');
     });
 
-    test('a file outside the podcast folder is never deleted, but the link is cleaned', () async {
+    test('an episode with no address to stream from loses its row with the file', () async {
+      final dl = build();
+      final id = await addEpisode('guid-ftp', 'ftp://x/a.mp3', mime: 'audio/mpeg');
+      final t = await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: p.join(base, 'f.mp3'), title: 'f', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, kind: const Value(1)));
+      File(p.join(base, 'f.mp3')).createSync(recursive: true);
+      await repo.setTrackId(id, t);
+      await dl.deleteFile(id);
+      expect(await tracks.getById(t), isNull);
+      expect((await repo.episodeById(id))!.trackId, isNull);
+    });
+
+    test('a file outside the podcast folder is never deleted, but the row goes back to the address', () async {
       final outside = File(p.join(dir.path, 'music', 'mine.mp3'))..createSync(recursive: true)..writeAsBytesSync([1, 2, 3]);
       final t = await db.into(db.tracks).insert(TracksCompanion.insert(
           path: outside.path, title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 3, mtimeMs: 1, addedAt: 1, kind: const Value(1)));
@@ -318,7 +357,9 @@ void main() {
       await build().deleteFile(episodeId);
 
       expect(outside.existsSync(), isTrue, reason: 'not ours to delete');
-      expect((await repo.episodeById(episodeId))!.trackId, isNull);
+      final row = (await tracks.getById(t))!;
+      expect(row.path, startsWith('http'), reason: 'streams again, no longer on that file');
+      expect(await repo.downloadedEpisodes(), isEmpty);
     });
 
     test('a music track linked by mistake is left alone', () async {

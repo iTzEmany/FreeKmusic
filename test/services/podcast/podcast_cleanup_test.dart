@@ -80,14 +80,14 @@ void main() {
     expect(File(path).existsSync(), isTrue);
   });
 
-  test('heard longer ago than the limit: file and track go, the episode stays listed', () async {
+  test('heard longer ago than the limit: the file goes, the row streams again, the episode stays listed', () async {
     await repo.setAutoDeleteDays(podcastId, 7);
     final (epId, trackId, path) = await episode('old', played: true, playedDaysAgo: 8);
 
     expect(await build().run(), 1);
 
     expect(File(path).existsSync(), isFalse);
-    expect(await tracks.getById(trackId), isNull);
+    expect((await tracks.getById(trackId))!.path, 'https://x/old.mp3', reason: 'the row streams again, with its history');
     final row = (await repo.watchEpisodes(podcastId).first).single;
     expect(row.episode.id, epId);
     expect(row.downloaded, isFalse);

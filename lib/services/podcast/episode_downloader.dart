@@ -220,58 +220,60 @@ class EpisodeDownloader {
   /// Makes the saved file [target] a library track and links the episode to it.
   Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
     final info = await _readTags(target);
-    // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
-    final current = await repo.episodeById(episode.id);
-    if (current == null) {
-      await _deleteQuietly(File(target));
-      return null;
-    }
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
-    // Played in streaming before: the same row takes the file, so the bookmark stays.
-    final streamed = current.trackId == null ? null : await tracks.getById(current.trackId!);
-    if (streamed != null && streamed.kind == kEpisodeKind && isRemoteEpisodePath(streamed.path)) {
-      await repo.attachFile(
-        streamed.id,
-        TracksCompanion(
-          path: Value(target),
-          format: Value(ext),
-          sizeBytes: Value(st.size),
-          mtimeMs: Value(st.modified.millisecondsSinceEpoch),
-          durationMs: Value(info.durationMs ?? streamed.durationMs),
+    // One transaction: a first play in streaming may be making the episode's row right now.
+    final id = await repo.atomically<int?>(() async {
+      // Unsubscribed while it downloaded: no file and no row may outlive the podcast.
+      final current = await repo.episodeById(episode.id);
+      if (current == null) return null;
+      // Played in streaming before: the same row takes the file, so the bookmark stays.
+      final streamed = current.trackId == null ? null : await tracks.getById(current.trackId!);
+      if (streamed != null && streamed.kind == kEpisodeKind && isRemoteEpisodePath(streamed.path)) {
+        await repo.attachFile(
+          streamed.id,
+          TracksCompanion(
+            path: Value(target),
+            format: Value(ext),
+            sizeBytes: Value(st.size),
+            mtimeMs: Value(st.modified.millisecondsSinceEpoch),
+            durationMs: Value(info.durationMs ?? streamed.durationMs),
+            bitrateKbps: Value(info.bitrateKbps),
+            sampleRateHz: Value(info.sampleRateHz),
+          ),
+        );
+        return streamed.id;
+      }
+      await tracks.upsertBatch([
+        TracksCompanion.insert(
+          path: target,
+          title: episode.title,
+          albumKey: albumKey,
+          format: ext,
+          sizeBytes: st.size,
+          mtimeMs: st.modified.millisecondsSinceEpoch,
+          addedAt: DateTime.now().millisecondsSinceEpoch,
+          artist: Value(podcast.title),
+          albumArtist: Value(podcast.title),
+          album: Value(podcast.title),
+          genre: const Value('Podcast'),
+          durationMs: Value(info.durationMs ?? episode.durationMs ?? 0),
           bitrateKbps: Value(info.bitrateKbps),
           sampleRateHz: Value(info.sampleRateHz),
+          hasCover: Value(podcast.coverKey != null),
+          coverKey: Value(podcast.coverKey ?? CoverStore.coverKeyFor(albumKey)),
+          kind: const Value(1),
         ),
-      );
-      return streamed.id;
-    }
-    await tracks.upsertBatch([
-      TracksCompanion.insert(
-        path: target,
-        title: episode.title,
-        albumKey: albumKey,
-        format: ext,
-        sizeBytes: st.size,
-        mtimeMs: st.modified.millisecondsSinceEpoch,
-        addedAt: DateTime.now().millisecondsSinceEpoch,
-        artist: Value(podcast.title),
-        albumArtist: Value(podcast.title),
-        album: Value(podcast.title),
-        genre: const Value('Podcast'),
-        durationMs: Value(info.durationMs ?? episode.durationMs ?? 0),
-        bitrateKbps: Value(info.bitrateKbps),
-        sampleRateHz: Value(info.sampleRateHz),
-        hasCover: Value(podcast.coverKey != null),
-        coverKey: Value(podcast.coverKey ?? CoverStore.coverKeyFor(albumKey)),
-        kind: const Value(1),
-      ),
-    ]);
-    final trackId = await tracks.idForPath(target);
-    if (trackId == null) {
-      throw const PodcastException(PodcastErrorKind.network, 'library row missing');
-    }
-    await repo.setTrackId(episode.id, trackId);
-    return trackId;
+      ]);
+      final trackId = await tracks.idForPath(target);
+      if (trackId == null) {
+        throw const PodcastException(PodcastErrorKind.network, 'library row missing');
+      }
+      await repo.setTrackId(episode.id, trackId);
+      return trackId;
+    });
+    if (id == null) await _deleteQuietly(File(target));
+    return id;
   }
 
   Future<TagInfo> _readTags(String path) async {
@@ -288,19 +290,22 @@ class EpisodeDownloader {
     }
   }
 
-  /// Deletes the episode's file and its library row; the episode stays listed,
-  /// as «not downloaded». Only a file inside the podcast folder is ever deleted.
+  /// Deletes the episode's file; the episode stays listed, as «not downloaded». Its library row
+  /// goes back to the audio address (bookmark and plays stay) or, with none, is deleted.
+  /// Only a file inside the podcast folder is ever deleted.
   Future<void> deleteFile(int episodeId) async {
     final episode = await repo.episodeById(episodeId);
     final trackId = episode?.trackId;
     if (episode == null || trackId == null) return;
     final track = await tracks.getById(trackId);
     if (track != null && track.kind == 1) {
+      if (isRemoteEpisodePath(track.path)) return; // already streaming: no file to delete
       if (_inside(track.path)) {
         await _deleteQuietly(File(track.path));
       } else {
         AppLog.w('episode file outside the podcast folder, not deleted: ${track.path}');
       }
+      if (await repo.backToRemote(episodeId)) return;
       await tracks.deleteTrack(trackId);
     }
     await repo.setTrackId(episodeId, null);

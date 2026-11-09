@@ -130,6 +130,9 @@ Future<void> main() async {
         history: PlayHistoryRepository(db),
         onEpisodeHeard: (id) => unawaited(PodcastRepository(db)
             .markPlayedByTrack(id, true, now: DateTime.now().millisecondsSinceEpoch)),
+        onEpisodeResumed: (id) => unawaited(PodcastRepository(db)
+            .markPlayedByTrack(id, false, now: DateTime.now().millisecondsSinceEpoch)
+            .catchError((Object e, StackTrace st) => AppLog.w('could not clear the heard mark', e, st))),
         coverPathFor: (t) =>
             t.coverKey == null ? null : covers.fileFor(t.coverKey!)?.path,
       );
