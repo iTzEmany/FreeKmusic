@@ -7038,4 +7038,16 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get lyricsSyncedKept =>
       'La versione sincronizzata è conservata: riattivala dal menu.';
+
+  @override
+  String get memoryOpenFolder => 'apri';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Apri la cartella $name nel file manager. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed =>
+      'Non riesco ad aprire la cartella: percorso copiato';
 }

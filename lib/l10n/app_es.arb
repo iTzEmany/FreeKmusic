@@ -3565,5 +3565,14 @@
   "lyricsSavedSynced": "Letra guardada, sincronizada",
   "lyricsSavedPlain": "Letra guardada, texto simple",
   "lyricsDeleted": "Letra eliminada",
-  "lyricsSyncedKept": "Se conserva la versión sincronizada: vuelve a activarla desde el menú."
+  "lyricsSyncedKept": "Se conserva la versión sincronizada: vuelve a activarla desde el menú.",
+  "memoryOpenFolder": "abrir",
+  "memoryOpenFolderLabel": "Abrir la carpeta {name} en el gestor de archivos. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "No puedo abrir la carpeta: ruta copiada"
 }

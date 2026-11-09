@@ -3565,5 +3565,14 @@
   "lyricsSavedSynced": "Songtext gespeichert, synchronisiert",
   "lyricsSavedPlain": "Songtext gespeichert, einfacher Text",
   "lyricsDeleted": "Songtext gelöscht",
-  "lyricsSyncedKept": "Die synchronisierte Version bleibt gespeichert: Im Menü wieder einschalten."
+  "lyricsSyncedKept": "Die synchronisierte Version bleibt gespeichert: Im Menü wieder einschalten.",
+  "memoryOpenFolder": "öffnen",
+  "memoryOpenFolderLabel": "Ordner {name} im Dateimanager öffnen. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Ordner lässt sich nicht öffnen: Pfad kopiert"
 }

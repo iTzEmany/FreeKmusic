@@ -7020,4 +7020,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lyricsSyncedKept =>
       'The synced version is kept: turn it back on from the menu.';
+
+  @override
+  String get memoryOpenFolder => 'open';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Open the folder $name in the file manager. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed => 'Can\'t open the folder: path copied';
 }

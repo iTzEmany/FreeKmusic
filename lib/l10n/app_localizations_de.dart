@@ -7069,4 +7069,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get lyricsSyncedKept =>
       'Die synchronisierte Version bleibt gespeichert: Im Menü wieder einschalten.';
+
+  @override
+  String get memoryOpenFolder => 'öffnen';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Ordner $name im Dateimanager öffnen. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed =>
+      'Ordner lässt sich nicht öffnen: Pfad kopiert';
 }

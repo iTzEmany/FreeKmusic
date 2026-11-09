@@ -29,6 +29,7 @@ class SizeGroup {
     this.playlist,
     this.path,
     this.isFavorites = false,
+    this.autoCoverKey,
   });
 
   /// The playlist name, the format (`mp3`) or the folder label; empty for
@@ -44,6 +45,10 @@ class SizeGroup {
 
   /// The Preferiti row of the playlist list.
   final bool isFavorites;
+
+  /// A playlist's first track with a cover (the mosaic fallback), like the
+  /// playlist sheet; null when none has one.
+  final String? autoCoverKey;
 }
 
 class AlbumWeight {
@@ -179,13 +184,17 @@ class MemoryQueries {
         .customSelect(
           'SELECT pt.playlist_id AS pid, '
           'COALESCE(SUM(t.size_bytes), 0) AS bytes, COUNT(t.id) AS n, '
-          'COALESCE(SUM(t.duration_ms), 0) AS ms '
+          'COALESCE(SUM(t.duration_ms), 0) AS ms, '
+          '(SELECT c.cover_key FROM playlist_tracks x JOIN tracks c ON c.id = x.track_id '
+          'WHERE x.playlist_id = pt.playlist_id AND c.cover_key IS NOT NULL '
+          'ORDER BY x.position LIMIT 1) AS auto_cover '
           'FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id '
           'AND t.kind = 0 AND t.missing = 0 GROUP BY pt.playlist_id',
           readsFrom: {_db.playlistTracks, _db.tracks},
         )
         .get();
     final sums = {for (final r in rows) r.read<int>('pid'): _totals(r)};
+    final covers = {for (final r in rows) r.read<int>('pid'): r.read<String?>('auto_cover')};
     final favorites = _totals(
       await _db
           .customSelect(
@@ -201,6 +210,7 @@ class MemoryQueries {
           name: pl.name,
           playlist: pl,
           totals: sums[pl.id] ?? const SizeTotals(),
+          autoCoverKey: covers[pl.id],
         ),
     ];
     out.sort((a, b) => b.totals.sizeBytes.compareTo(a.totals.sizeBytes));

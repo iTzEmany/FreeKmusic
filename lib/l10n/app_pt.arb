@@ -3751,5 +3751,14 @@
   "lyricsSavedSynced": "Letra guardada, sincronizada",
   "lyricsSavedPlain": "Letra guardada, texto simples",
   "lyricsDeleted": "Letra eliminada",
-  "lyricsSyncedKept": "A versão sincronizada fica guardada: volte a ativá-la no menu."
+  "lyricsSyncedKept": "A versão sincronizada fica guardada: volte a ativá-la no menu.",
+  "memoryOpenFolder": "abrir",
+  "memoryOpenFolderLabel": "Abrir a pasta {name} no gestor de ficheiros. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Não consigo abrir a pasta: caminho copiado"
 }

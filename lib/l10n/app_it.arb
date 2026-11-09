@@ -4267,5 +4267,14 @@
   "lyricsSavedSynced": "Testo salvato, sincronizzato",
   "lyricsSavedPlain": "Testo salvato, testo semplice",
   "lyricsDeleted": "Testo eliminato",
-  "lyricsSyncedKept": "La versione sincronizzata è conservata: riattivala dal menu."
+  "lyricsSyncedKept": "La versione sincronizzata è conservata: riattivala dal menu.",
+  "memoryOpenFolder": "apri",
+  "memoryOpenFolderLabel": "Apri la cartella {name} nel file manager. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Non riesco ad aprire la cartella: percorso copiato"
 }

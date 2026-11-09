@@ -11256,6 +11256,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'La versione sincronizzata è conservata: riattivala dal menu.'**
   String get lyricsSyncedKept;
+
+  /// No description provided for @memoryOpenFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'apri'**
+  String get memoryOpenFolder;
+
+  /// No description provided for @memoryOpenFolderLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri la cartella {name} nel file manager. {path}'**
+  String memoryOpenFolderLabel(String name, String path);
+
+  /// No description provided for @memoryOpenFolderFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non riesco ad aprire la cartella: percorso copiato'**
+  String get memoryOpenFolderFailed;
 }
 
 class _AppLocalizationsDelegate

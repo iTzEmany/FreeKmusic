@@ -7050,4 +7050,16 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get lyricsSyncedKept =>
       'A versão sincronizada fica guardada: volte a ativá-la no menu.';
+
+  @override
+  String get memoryOpenFolder => 'abrir';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Abrir a pasta $name no gestor de ficheiros. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed =>
+      'Não consigo abrir a pasta: caminho copiado';
 }

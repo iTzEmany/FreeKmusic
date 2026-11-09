@@ -7099,4 +7099,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get lyricsSyncedKept =>
       'La version synchronisée est conservée : réactivez-la depuis le menu.';
+
+  @override
+  String get memoryOpenFolder => 'ouvrir';
+
+  @override
+  String memoryOpenFolderLabel(String name, String path) {
+    return 'Ouvrir le dossier $name dans le gestionnaire de fichiers. $path';
+  }
+
+  @override
+  String get memoryOpenFolderFailed =>
+      'Impossible d’ouvrir le dossier : chemin copié';
 }

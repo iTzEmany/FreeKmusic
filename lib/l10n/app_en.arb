@@ -3565,5 +3565,14 @@
   "lyricsSavedSynced": "Lyrics saved, synced",
   "lyricsSavedPlain": "Lyrics saved, plain text",
   "lyricsDeleted": "Lyrics deleted",
-  "lyricsSyncedKept": "The synced version is kept: turn it back on from the menu."
+  "lyricsSyncedKept": "The synced version is kept: turn it back on from the menu.",
+  "memoryOpenFolder": "open",
+  "memoryOpenFolderLabel": "Open the folder {name} in the file manager. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Can't open the folder: path copied"
 }

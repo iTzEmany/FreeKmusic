@@ -3786,5 +3786,14 @@
   "lyricsSavedSynced": "Paroles enregistrées, synchronisées",
   "lyricsSavedPlain": "Paroles enregistrées, texte simple",
   "lyricsDeleted": "Paroles supprimées",
-  "lyricsSyncedKept": "La version synchronisée est conservée : réactivez-la depuis le menu."
+  "lyricsSyncedKept": "La version synchronisée est conservée : réactivez-la depuis le menu.",
+  "memoryOpenFolder": "ouvrir",
+  "memoryOpenFolderLabel": "Ouvrir le dossier {name} dans le gestionnaire de fichiers. {path}",
+  "@memoryOpenFolderLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "memoryOpenFolderFailed": "Impossible d’ouvrir le dossier : chemin copié"
 }
