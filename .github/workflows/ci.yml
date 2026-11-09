@@ -36,7 +36,8 @@ jobs:
         with:
           # On a PR HEAD is the merge commit: HEAD^1 is the base tip.
           fetch-depth: 2
-      # A PR touching only documentation skips the toolchain and the suite.
+      # A PR touching only documentation, agent tooling or dev scripts skips
+      # the toolchain and the suite.
       # The job always runs (a required check must report); anything unclear
       # (push, no parent, empty diff) means docs=false, so everything runs.
       - name: Detect documentation-only PR
@@ -46,7 +47,9 @@ jobs:
           if [ "${{ github.event_name }}" = pull_request ] && files=$(git diff --name-only HEAD^1 HEAD) && [ -n "$files" ]; then
             docs=true
             while IFS= read -r f; do
-              case "$f" in docs/*|*.md|.claude/obiettivo.md) ;; *) docs=false ;; esac
+              # Agent tooling and dev scripts never reach the app or the suite
+              # (integration_test/perf_test.dart uses scripts/, but only on a manual run).
+              case "$f" in docs/*|*.md|.claude/*|.githooks/*|scripts/*) ;; *) docs=false ;; esac
             done <<< "$files"
           fi
           echo "docs=$docs" >> "$GITHUB_OUTPUT"
