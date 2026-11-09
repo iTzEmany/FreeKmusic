@@ -103,4 +103,57 @@ void main() {
     );
     expect((await c.get(1))!.lrc, 'a');
   });
+
+  test('a key written by one instance is read by another', () async {
+    await open().put(1, 'text', key: 'T\u0000A');
+    expect((await open().get(1, key: 'T\u0000A'))!.lrc, 'text');
+    expect(await open().get(1, key: 'T\u0000B'), isNull);
+  });
+
+  test('a broken entry does not throw away the good ones', () async {
+    file.parent.createSync(recursive: true);
+    final at = now.millisecondsSinceEpoch;
+    file.writeAsStringSync(
+      '{"1":{"lrc":"a","at":$at},"2":5,"x":{"at":1},"3":{"lrc":"c"},'
+      '"4":{"lrc":"d","at":$at}}',
+    );
+    final c = open();
+    expect((await c.get(1))!.lrc, 'a');
+    expect((await c.get(4))!.lrc, 'd');
+    expect(await c.get(2), isNull);
+    expect(await c.get(3), isNull);
+  });
+
+  test('pruning is written to the file', () async {
+    await open().put(1, 'a');
+    await open().put(2, 'b');
+    final c = RomanizationCache(
+      file: () async => file,
+      now: () => now,
+      liveIds: () async => {2},
+    );
+    await c.get(2); // the first load prunes and writes
+    final raw = file.readAsStringSync();
+    expect(raw.contains('"1"'), isFalse);
+    expect(raw.contains('"2"'), isTrue);
+  });
+
+  test('an empty set of live ids prunes nothing', () async {
+    await open().put(1, 'a');
+    final c = RomanizationCache(
+      file: () async => file,
+      now: () => now,
+      liveIds: () async => <int>{},
+    );
+    expect((await c.get(1))!.lrc, 'a');
+  });
+
+  test('an entry stamped in the future counts as expired', () async {
+    final c = open();
+    await c.put(1, 'text');
+    await c.put(2, null);
+    now = now.subtract(const Duration(days: 2));
+    expect(await c.get(1), isNull);
+    expect(await c.get(2), isNull);
+  });
 }

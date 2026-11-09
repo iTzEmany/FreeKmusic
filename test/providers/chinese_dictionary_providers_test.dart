@@ -166,4 +166,67 @@ void main() {
       expect(down.calls, CedictAutoGate.maxAutomatic + 1);
     },
   );
+
+  test(
+    'a valid but empty file is a broken one: deleted, error state',
+    () async {
+      file.parent.createSync(recursive: true);
+      file.writeAsBytesSync(gzip.encode(utf8.encode('# only a comment\n')));
+      final n = c.read(chineseDictionaryProvider.notifier);
+      expect(await n.ensure(download: false), isNull);
+      expect(file.existsSync(), isFalse);
+      expect(
+        c.read(chineseDictionaryProvider).status,
+        ChineseDictionaryStatus.error,
+      );
+    },
+  );
+
+  test(
+    'a run that may not download, then one that may: the download follows',
+    () async {
+      final n = c.read(chineseDictionaryProvider.notifier);
+      final first = n.ensure(download: false);
+      final second = n.ensure(download: true);
+      expect(await first, isNull);
+      expect(await second, isNull);
+      expect(down.calls, 1, reason: 'the second call asked for the download');
+    },
+  );
+
+  test('...unless «Elimina» came in between', () async {
+    final n = c.read(chineseDictionaryProvider.notifier);
+    final first = n.ensure(download: false);
+    final second = n.ensure(download: true);
+    await n.delete();
+    expect(await first, isNull);
+    expect(await second, isNull);
+    expect(down.calls, 0);
+  });
+
+  test('a download goes on when nobody watches any more, and the provider goes after it', () async {
+    down.hang = true;
+    final other = ProviderContainer(
+      overrides: [
+        cedictPathProvider.overrideWith((_) => file.path),
+        cedictDioProvider.overrideWithValue(Dio()..httpClientAdapter = down),
+      ],
+    );
+    addTearDown(other.dispose);
+    final sub = other.listen(chineseDictionaryProvider, (_, _) {});
+    final n = other.read(chineseDictionaryProvider.notifier);
+    final run = n.ensure(download: true);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    sub.close(); // the Settings page is left
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(other.exists(chineseDictionaryProvider), isTrue);
+    expect(
+      other.read(chineseDictionaryProvider).status,
+      ChineseDictionaryStatus.downloading,
+    );
+    await n.delete(); // cancels the hanging request
+    await run;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(other.exists(chineseDictionaryProvider), isFalse);
+  });
 }

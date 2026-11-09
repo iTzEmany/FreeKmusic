@@ -21,4 +21,23 @@ void main() {
     expect(romanizeHangul('사랑해, my love!'), 'saranghae, my love!');
     expect(romanizeHangul(''), '');
   });
+
+  test(
+    'final clusters, liaison of a lone consonant, nasals and palatalisation',
+    () {
+      // The «revised» forms this romanizer gives (documented by the table).
+      const table = {
+        '몫이': 'moksi',
+        '앉아': 'anja',
+        '없어': 'eopseo',
+        '입니다': 'imnida',
+        '국립': 'gungnip',
+        '막혀': 'makyeo',
+        '놓지': 'nochi',
+        '닭이': 'dalgi',
+        '힣': 'hit',
+      };
+      table.forEach((k, v) => expect(romanizeHangul(k), v, reason: k));
+    },
+  );
 }

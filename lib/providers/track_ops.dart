@@ -68,8 +68,10 @@ class TrackOps {
     bool byUser = false,
   }) async {
     await _repo.setLyrics(id, plain: plain, synced: synced, byUser: byUser);
-    // A text from a search is no longer one the user typed.
+    // A text from a search is no longer one the user typed, and a
+    // transliteration typed for the old text no longer fits.
     await _ref.read(handWrittenLyricsProvider.notifier).set(id, false);
+    await _ref.read(manualRomanizationProvider.notifier).setText(id, null);
   }
 
   /// Saves lyrics typed or pasted by the user (F-110): timed lines make them
@@ -86,6 +88,7 @@ class TrackOps {
     // A new text starts with the sync on, and an old translation no longer fits.
     await _ref.read(unsyncedLyricsProvider.notifier).setSynced(id, true);
     await _ref.read(handWrittenLyricsProvider.notifier).set(id, true);
+    await _ref.read(manualRomanizationProvider.notifier).setText(id, null);
     _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
     return parsed.synced != null;
   }
@@ -103,9 +106,12 @@ class TrackOps {
     final wasUnsynced = _ref.read(unsyncedLyricsProvider).contains(id);
     final handWritten = _ref.read(handWrittenLyricsProvider.notifier);
     final wasHandWritten = _ref.read(handWrittenLyricsProvider).contains(id);
+    final manual = _ref.read(manualRomanizationProvider.notifier);
+    final manualBefore = _ref.read(manualRomanizationProvider)[id];
     final snapshot = await _repo.clearLyrics(id);
     await unsynced.setSynced(id, true);
     await handWritten.set(id, false);
+    await manual.setText(id, null);
     _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
     if (autoParts(_ref.read(settingsProvider)).isNotEmpty) {
       unawaited(_ref.read(enrichCompleterProvider.notifier).start());
@@ -115,6 +121,7 @@ class TrackOps {
         await _repo.restoreLyrics(id, snapshot);
         if (wasUnsynced) await unsynced.setSynced(id, false);
         if (wasHandWritten) await handWritten.set(id, true);
+        if (manualBefore != null) await manual.setText(id, manualBefore);
       } on Object catch (e, st) {
         AppLog.e('undo delete lyrics failed', e, st);
       }

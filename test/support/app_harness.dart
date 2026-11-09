@@ -80,7 +80,7 @@ class Harness {
         artistMergeSearchProvider.overrideWithValue(mergeSearch),
         // The real one reads the app support folder (no plugin in tests).
         romanizationProvider.overrideWith(
-          (ref, id) => Stream.value(romanization),
+          (ref, id) => AsyncData(romanization),
         ),
       ];
 

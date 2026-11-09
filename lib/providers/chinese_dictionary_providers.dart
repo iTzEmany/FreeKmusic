@@ -65,6 +65,7 @@ final cedictAutoGateProvider = Provider<CedictAutoGate>(
 class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
   PinyinDictionary? _dict;
   Future<PinyinDictionary?>? _loading;
+  var _loadingMayDownload = false;
   CancelToken? _cancel;
   var _disposed = false;
 
@@ -114,11 +115,22 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     final allow =
         download && (!automatic || gate.failures < CedictAutoGate.maxAutomatic);
     final current = _loading;
-    if (current != null) return current;
+    if (current != null) {
+      if (!allow || _loadingMayDownload) return current;
+      // The run in progress does not download and this one may: if that finds
+      // no file (and «Elimina» did not intervene), go on with the download.
+      final gen = _generation;
+      return current.then(
+        (d) => d != null || gen != _generation
+            ? d
+            : ensure(download: true, automatic: automatic),
+      );
+    }
     late final Future<PinyinDictionary?> run;
     run = _run(allow).whenComplete(() {
       if (identical(_loading, run)) _loading = null;
     });
+    _loadingMayDownload = allow;
     return _loading = run;
   }
 
@@ -127,10 +139,13 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     final gate = ref.read(cedictAutoGateProvider);
     final path = await _path;
     var downloading = false;
+    // The download goes on when the page that asked for it is left.
+    void Function()? closeKeep;
     try {
       if (await cedictInstalledSize(path) == 0) {
         if (!download) return null;
         downloading = true;
+        closeKeep = ref.keepAlive().close;
         await _download(path);
         downloading = false;
         gate.failures = 0;
@@ -138,6 +153,8 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
       final PinyinDictionary d;
       try {
         d = await PinyinDictionary.load(path);
+        // A valid gzip with no entry is as good as a broken file.
+        if (d.length == 0) throw const FormatException('empty dictionary');
       } on Object {
         // Damaged file: out with it, the next run downloads it again.
         if (gen == _generation) await deleteCedict(path);
@@ -159,6 +176,8 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
         state = const ChineseDictionaryState(ChineseDictionaryStatus.error);
       }
       return null;
+    } finally {
+      closeKeep?.call();
     }
   }
 

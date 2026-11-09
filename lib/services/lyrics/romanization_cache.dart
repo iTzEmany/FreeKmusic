@@ -60,7 +60,8 @@ class RomanizationCache {
     }
     try {
       final live = out.isEmpty ? null : await liveIds?.call();
-      if (live != null) {
+      // An empty set is not believed (a library not loaded yet): nothing is pruned.
+      if (live != null && live.isNotEmpty) {
         final before = out.length;
         out.removeWhere((id, _) => !live.contains(id));
         pruned = out.length != before;
@@ -96,7 +97,10 @@ class RomanizationCache {
     final e = (await _load())[trackId];
     if (e == null || e.key != key) return null;
     final age = Duration(milliseconds: _now().millisecondsSinceEpoch - e.at);
-    if (e.lrc == null && age > kRomanizationRetryAfter) return null;
+    // A stamp in the future (clock set back) is as good as expired.
+    if (age.isNegative || (e.lrc == null && age > kRomanizationRetryAfter)) {
+      return null;
+    }
     return CachedRomanization(e.lrc, age);
   }
 

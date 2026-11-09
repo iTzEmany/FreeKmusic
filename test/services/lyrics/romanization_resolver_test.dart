@@ -133,6 +133,27 @@ void main() {
     expect(await cache.get(1, key: _key), isNull);
   });
 
+  test('synced lines are matched by time, not by their index', () async {
+    // The transliteration has an extra line at 3 s: by index it would shift.
+    await cache.put(
+      1,
+      '[00:01.00]a\n[00:03.00]interlude\n[00:05.00]b\n[00:09.00]c',
+      key: _key,
+    );
+    final r = (await run(
+      input(synced: '[00:01.00]あ\n[00:05.00]い\n[00:09.00]う'),
+    )).last;
+    expect(r.lines, ['a', 'b', 'c']);
+  });
+
+  test('Japanese never goes to the Chinese dictionary', () async {
+    installed = true;
+    dict = PinyinDictionary({'銀行': 'yínháng', '银行': 'yínháng'});
+    final r = (await run(input(plain: '銀行です', net: false))).last;
+    expect(r.status, RomanizationStatus.unavailable);
+    expect(downloads, 0);
+  });
+
   test('a failing service is not saved and counts as unavailable', () async {
     online = () async => throw StateError('down');
     expect(
@@ -198,7 +219,11 @@ void main() {
 
   test('a saved text that does not fit is asked again only when old', () async {
     online = () async => _jaRoman;
-    await cache.put(1, '[00:50.00]other\n[00:60.00]more', key: _key);
+    await cache.put(
+      1,
+      '[00:50.00]other\n[01:00.00]more\n[01:10.00]third',
+      key: _key,
+    );
     expect(
       (await run(input(synced: _jaSynced))).last.status,
       RomanizationStatus.unavailable,
@@ -271,6 +296,13 @@ void main() {
         expect(downloads, 1, reason: 'no network, no download');
       },
     );
+
+    test('only characters the dictionary does not know: unavailable', () async {
+      installed = true;
+      dict = d;
+      final r = (await run(input(plain: '龘龘', net: false))).last;
+      expect(r.status, RomanizationStatus.unavailable);
+    });
 
     test(
       'missing and no network, or the download fails: unavailable',

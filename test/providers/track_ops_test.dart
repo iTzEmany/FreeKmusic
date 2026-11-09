@@ -96,6 +96,35 @@ void main() {
       expect((await rows()).first.lyricsPlain, 'again');
     });
 
+    test('undoing a delete of a text not typed by hand does not mark it as typed', () async {
+      final id = (await rows()).first.id;
+      await ops().setLyrics(id, plain: 'from a search', byUser: true);
+      final undo = await ops().deleteLyrics(id);
+      await undo();
+      expect(c.read(handWrittenLyricsProvider).contains(id), isFalse);
+      expect((await rows()).first.lyricsPlain, 'from a search');
+    });
+
+    test('a typed transliteration goes with the old text: new text or delete drops it, the undo brings it back', () async {
+      final id = (await rows()).first.id;
+      final rom = c.read(manualRomanizationProvider.notifier);
+      Map<int, String> typed() => c.read(manualRomanizationProvider);
+      await ops().saveLyricsText(id, 'old');
+      await rom.setText(id, 'old rom');
+      await ops().saveLyricsText(id, 'new');
+      expect(typed(), isEmpty);
+
+      await rom.setText(id, 'rom 2');
+      await ops().setLyrics(id, plain: 'from a search');
+      expect(typed(), isEmpty);
+
+      await rom.setText(id, 'rom 3');
+      final undo = await ops().deleteLyrics(id);
+      expect(typed(), isEmpty);
+      await undo();
+      expect(typed(), {id: 'rom 3'});
+    });
+
     test('FolderOps.paths maps folder id to its root path', () async {
       final a = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/m', addedAt: 1));
       final b = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/n', addedAt: 1));

@@ -23,46 +23,55 @@ final romanizationCacheProvider = Provider<RomanizationCache>(
   ),
 );
 
-/// The transliteration under the lyrics of track [id] (a library row, real id):
-/// off / loading / downloading the dictionary / ready / unavailable. The lines
-/// align with the text as shown (see [RomanizationState.lines]). Reads
-/// `value ?? RomanizationState.loading`.
-///
-/// Network (NetEase, dictionary download) only when the automatic lyrics search
-/// is on: the same opt-in as the lyrics enrichment. A text the user
-/// typed in the editor counts as hand-written (`handWrittenLyricsProvider`).
-final romanizationProvider = StreamProvider.autoDispose
-    .family<RomanizationState, int>((ref, id) async* {
-      final s = ref.watch(
-        settingsProvider.select((s) => (s.romanization, s.autoLyrics)),
-      );
-      final manual = ref.watch(manualRomanizationProvider.select((m) => m[id]));
-      final handWritten = ref.watch(
-        handWrittenLyricsProvider.select((h) => h.contains(id)),
-      );
-      final unsynced = ref.watch(
-        unsyncedLyricsProvider.select((u) => u.contains(id)),
-      );
-      final t = ref.watch(
-        importedTrackProvider(id).select(
-          (a) => a.value == null
-              ? null
-              : (
-                  a.value!.title,
-                  a.value!.artist,
-                  a.value!.durationMs,
-                  a.value!.lyricsPlain,
-                  a.value!.lyricsSynced,
-                ),
-        ),
-      );
+/// Everything the transliteration of one track depends on. A change of any of
+/// it is another key, so another resolver run starts from nothing: the view
+/// never shows the old transliteration under a new text.
+typedef _Key = ({
+  int id,
+  bool enabled,
+  bool online,
+  String? manual,
+  bool handWritten,
+  bool unsynced,
+  String title,
+  String artist,
+  int durationMs,
+  String? plain,
+  String? synced,
+});
+
+final _keyProvider = Provider.autoDispose.family<_Key?, int>((ref, id) {
+  final s = ref.watch(
+    settingsProvider.select((s) => (s.romanization, s.autoLyrics)),
+  );
+  final manual = ref.watch(manualRomanizationProvider.select((m) => m[id]));
+  final handWritten = ref.watch(
+    handWrittenLyricsProvider.select((h) => h.contains(id)),
+  );
+  final unsynced = ref.watch(
+    unsyncedLyricsProvider.select((u) => u.contains(id)),
+  );
+  final t = ref.watch(importedTrackProvider(id)).value;
+  if (t == null) return null;
+  return (
+    id: id,
+    enabled: s.$1,
+    online: s.$2,
+    manual: manual,
+    handWritten: handWritten,
+    unsynced: unsynced,
+    title: t.title,
+    artist: t.artist ?? '',
+    durationMs: t.durationMs,
+    plain: t.lyricsPlain,
+    synced: t.lyricsSynced,
+  );
+});
+
+final _resolvedProvider = StreamProvider.autoDispose
+    .family<RomanizationState, _Key>((ref, k) async* {
       // Keeps the dictionary (and its memory) while this provider lives.
       ref.listen(chineseDictionaryProvider, (_, _) {});
-      if (t == null) {
-        yield RomanizationState.loading;
-        return;
-      }
-      final (title, artist, durationMs, plain, synced) = t;
       final cancel = CancelToken();
       ref.onDispose(cancel.cancel);
       final dict = ref.read(chineseDictionaryProvider.notifier);
@@ -80,20 +89,38 @@ final romanizationProvider = StreamProvider.autoDispose
         dictionary: ({required download}) =>
             dict.ensure(download: download, automatic: true),
       );
-      final off = unsynced && synced != null;
+      final off = k.unsynced && k.synced != null;
       yield* resolver.resolve(
         RomanizationInput(
-          trackId: id,
-          title: title,
-          artist: artist ?? '',
-          durationSec: durationMs > 0 ? (durationMs / 1000).round() : null,
-          plain: off ? plainTextOf(plain, synced) : plain,
-          synced: off ? null : synced,
-          manual: manual,
-          handWritten: handWritten,
-          enabled: s.$1,
-          online: s.$2,
+          trackId: k.id,
+          title: k.title,
+          artist: k.artist,
+          durationSec: k.durationMs > 0 ? (k.durationMs / 1000).round() : null,
+          plain: off ? plainTextOf(k.plain, k.synced) : k.plain,
+          synced: off ? null : k.synced,
+          manual: k.manual,
+          handWritten: k.handWritten,
+          enabled: k.enabled,
+          online: k.online,
         ),
         cancel: cancel,
       );
+    });
+
+/// The transliteration under the lyrics of track [id] (a library row, real id):
+/// off / loading / downloading the dictionary / ready / unavailable. The lines
+/// align with the text as shown (see [RomanizationState.lines]). Reads
+/// `value ?? RomanizationState.loading`.
+///
+/// When the text, the settings or the typed transliteration change, the value
+/// is empty (loading) until the new one is known, never the old one.
+///
+/// Network (NetEase, dictionary download) only when the automatic lyrics search
+/// is on: the same opt-in as the lyrics enrichment. A text the user
+/// typed in the editor counts as hand-written (`handWrittenLyricsProvider`).
+final romanizationProvider = Provider.autoDispose
+    .family<AsyncValue<RomanizationState>, int>((ref, id) {
+      final k = ref.watch(_keyProvider(id));
+      if (k == null) return const AsyncData(RomanizationState.loading);
+      return ref.watch(_resolvedProvider(k));
     });

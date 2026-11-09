@@ -190,6 +190,48 @@ void main() {
   });
 
   test(
+    'the sync switch off, lines at different times: by index, not by stamp',
+    () async {
+      netease.answer = '[00:02.00]a\n[00:20.00]b';
+      await boot();
+      final id = await addTrack(synced: '[00:01.00]こんにちは\n[00:09.00]さようなら');
+      await c.read(unsyncedLyricsProvider.notifier).setSynced(id, false);
+      expect((await settled(id)).lines, ['a', 'b']);
+    },
+  );
+
+  test(
+    'a text change never shows the old transliteration under the new text',
+    () async {
+      await boot();
+      final id = await addTrack(plain: '안녕하세요');
+      expect((await settled(id)).lines, ['annyeonghaseyo']);
+      final seen = <List<String?>>[];
+      c.listen(romanizationProvider(id), (_, n) {
+        final v = n.value;
+        if (v != null) seen.add(v.lines);
+      });
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
+        const TracksCompanion(lyricsPlain: Value('좋아')),
+      );
+      for (var i = 0; i < 100; i++) {
+        if (seen.any((l) => l.contains('joa'))) break;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      expect(seen, isNotEmpty);
+      expect(seen.any((l) => l.contains('annyeonghaseyo')), isFalse);
+      expect(c.read(romanizationProvider(id)).value!.lines, ['joa']);
+    },
+  );
+
+  test('a typed transliteration keeps its leading blank lines', () async {
+    await boot();
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    await c.read(romanizationOpsProvider).save(id, '\nmine');
+    expect(c.read(manualRomanizationProvider), {id: '\nmine'});
+  });
+
+  test(
     'a typed transliteration wins over the lookup and follows save/delete/undo',
     () async {
       netease.answer = '[00:01.00]konnichiwa';

@@ -91,8 +91,15 @@ void main() {
       addTearDown(c.dispose);
       await c.read(backupOpsProvider).merge(File(zip));
       expect(c.read(manualRomanizationProvider), {1: 'mine'});
+      // One already here is never overwritten.
+      await c.read(manualRomanizationProvider.notifier).addMissing({
+        1: 'other',
+        2: 'new',
+      });
+      expect(c.read(manualRomanizationProvider), {1: 'mine', 2: 'new'});
       expect((await SettingsStore.open()).readManualRomanizations(), {
         1: 'mine',
+        2: 'new',
       });
     },
   );

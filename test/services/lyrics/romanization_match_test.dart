@@ -81,9 +81,87 @@ void main() {
       },
     );
 
+    test('one written line per shown line: by index, blank means none', () {
+      final n = matchManualRomanization(['あ', 'い', '', 'う'], '\nii\n\nu');
+      expect(n.lines, [null, 'ii', null, 'u']);
+      expect((n.total, n.matched), (3, 2));
+    });
+
     test('a different number of lines matches nothing', () {
       final m = matchManualRomanization(['あ', 'い'], 'a');
       expect(m.available, isFalse);
     });
+  });
+
+  group('matchRomanization details', () {
+    List<LrcLine> at(List<int> ms) => [
+      for (final t in ms) LrcLine(Duration(milliseconds: t), 'あ$t'),
+    ];
+
+    test('lines with the same stamp are paired in order', () {
+      final m = matchRomanization(
+        parseLrc('[00:10.00]一\n[00:10.00]二\n[00:20.00]三'),
+        '[00:10.00]yi\n[00:10.00]er\n[00:20.00]san',
+      );
+      expect(m.lines, ['yi', 'er', 'san']);
+    });
+
+    test('the tolerance is 1.5 s: 1.4 s matches, 1.6 s does not', () {
+      // Different numbers of lines, so the by-index fallback cannot help.
+      final near = matchRomanization(at([10000]), '[00:11.40]a\n[00:50.00]b');
+      expect(near.lines, ['a']);
+      final far = matchRomanization(at([10000]), '[00:11.60]a\n[00:50.00]b');
+      expect(far.lines, [null]);
+      final edge = matchRomanization(at([10000]), '[00:11.50]a\n[00:50.00]b');
+      expect(edge.lines, ['a'], reason: 'the limit is inclusive');
+    });
+
+    test('a transliterated line is used for one original line only', () {
+      final m = matchRomanization(
+        at([10000, 10500]),
+        '[00:10.20]only\n[00:50.00]far\n[01:00.00]farther',
+      );
+      expect(m.matched, 1);
+    });
+
+    test('exactly half of the lines is available, less is not', () {
+      final half = matchRomanization(
+        at([1000, 2000, 3000, 4000]),
+        '[00:01.00]a\n[00:02.00]b\n[00:40.00]x\n[00:50.00]y\n[01:00.00]z',
+      );
+      expect((half.matched, half.total, half.available), (2, 4, true));
+      final less = matchRomanization(
+        at([1000, 2000, 3000, 4000]),
+        '[00:01.00]a\n[00:40.00]x\n[00:50.00]y\n[01:00.00]z\n[01:10.00]w',
+      );
+      expect((less.matched, less.available), (1, false));
+    });
+
+    test('no line that can carry a transliteration is not available', () {
+      final blank = matchRomanization([
+        const LrcLine(Duration(seconds: 1), ''),
+        const LrcLine(Duration(seconds: 2), '作词 : A'),
+      ], '[00:01.00]x');
+      expect((blank.total, blank.available), (0, false));
+      expect(matchRomanizationByIndex([], '').available, isFalse);
+    });
+
+    test(
+      'Latin credit lines of the romalrc are dropped too, so counts agree',
+      () {
+        final m = matchRomanizationByIndex([
+          '作词 : A',
+          'こんにちは',
+          'さようなら',
+        ], '[00:00.50]zuo ci : A\n[00:01.00]konnichiwa\n[00:05.00]sayonara');
+        expect(m.lines, [null, 'konnichiwa', 'sayonara']);
+        for (final credit in ['zuo qu : B', 'Lyrics by: C', 'Composed by: D']) {
+          final r = matchRomanizationByIndex([
+            'あ',
+          ], '[00:00.50]$credit\n[00:01.00]a');
+          expect(r.lines, ['a'], reason: credit);
+        }
+      },
+    );
   });
 }

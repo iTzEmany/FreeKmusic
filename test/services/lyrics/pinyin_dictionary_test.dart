@@ -22,6 +22,9 @@ void main() {
 女 女 [nv3] /woman/
 綠 绿 [lu:4] /green/
 六 六 [liu4] /six/
+行 行 [hang2] /row/
+狗 狗 [gou3] /dog/
+一帆風順 一帆风顺 [yi1 fan1 feng1 shun4] /smooth sailing/
 的 的 [de5] /of/
 ''';
     File('${dir.path}/c.txt.gz')
@@ -32,7 +35,7 @@ void main() {
   tearDownAll(() => dir.delete(recursive: true));
 
   test('reads words in both scripts, skips comments', () {
-    expect(dict.length, 15);
+    expect(dict.length, 18);
   });
 
   for (final (input, expected) in [
@@ -44,6 +47,9 @@ void main() {
     ('绿', 'lǜ'),
     ('六', 'liù'),
     ('的', 'de'),
+    ('行', 'xíng'), // the first reading listed wins
+    ('狗', 'gǒu'), // the tone mark goes on the o of «ou»
+    ('一帆风顺', 'yīfānfēngshùn'), // a word of more than 3 characters
     ('我 love 你', 'wǒ love nǐ'),
     ('hello 我', 'hello wǒ'),
     ('我x', 'wǒ x'),

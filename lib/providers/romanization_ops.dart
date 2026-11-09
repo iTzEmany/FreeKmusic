@@ -12,11 +12,12 @@ class RomanizationOps {
   ManualRomanizationNotifier get _store =>
       _ref.read(manualRomanizationProvider.notifier);
 
-  /// Saves [raw] (one line per line of the lyrics) for [id]; blank text saves nothing.
+  /// Saves [raw] (one line per shown line, blank where there is none) for [id];
+  /// blank text saves nothing. Leading blank lines are part of the text.
   Future<Future<void> Function()?> save(int id, String raw) async {
     if (raw.trim().isEmpty) return null;
     final before = _ref.read(manualRomanizationProvider)[id];
-    await _store.setText(id, raw.trim());
+    await _store.setText(id, raw);
     return () => _store.setText(id, before);
   }
 

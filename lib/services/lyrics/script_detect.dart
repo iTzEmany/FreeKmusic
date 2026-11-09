@@ -1,8 +1,13 @@
 /// Dominant script of a lyric text, used to pick the transliteration source.
 enum LyricsScript { japanese, korean, chinese }
 
+// Only real hiragana/katakana: the middle dot U+30FB and the long mark U+30FC
+// also appear in Chinese («约翰・列侬»). Half-width katakana count too.
 bool _isKana(int c) =>
-    (c >= 0x3040 && c <= 0x30FF) || (c >= 0x31F0 && c <= 0x31FF);
+    (c >= 0x3041 && c <= 0x3096) ||
+    (c >= 0x30A1 && c <= 0x30FA) ||
+    (c >= 0x31F0 && c <= 0x31FF) ||
+    (c >= 0xFF66 && c <= 0xFF9F);
 
 bool _isHangul(int c) =>
     (c >= 0xAC00 && c <= 0xD7A3) ||
