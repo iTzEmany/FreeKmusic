@@ -1421,11 +1421,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 104.6 Controlli di fase
 
 ## Fase 105 — Chiusura del refactor «ascolto-quotidiano» (`fase-105-chiusura-ascolto.md`)
-- [ ] 105.1 Metriche di arrivo
-- [ ] 105.2 Prova sul Mi A3 contro i mockup
-- [ ] 105.3 Review di architettura
-- [ ] 105.4 Documenti
-- [ ] 105.5 Controlli di fase
+- [x] 105.1 Metriche di arrivo
+- [x] 105.2 Prova sul Mi A3 contro i mockup
+- [x] 105.3 Review di architettura
+- [x] 105.4 Documenti
+- [x] 105.5 Controlli di fase
 
 ## Fase 106 — Testi traslitterati (`fase-106-testi-traslitterati.md`)
 - [ ] 106.1 Scrittura e coreano

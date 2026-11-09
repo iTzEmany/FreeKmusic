@@ -147,7 +147,7 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 
 ### Dalla review di architettura della fase 99
 - Budget e pausa scritti a mano fuori da `budgetedYtm`: `YtmPodcasts._guarded` (con attesa), `_askCard`/`_fail` di `smart_search`, `second_opinion_providers.dart`. Rimedio: una variante con attesa e un `tripIfRateLimited(cooldown, e)`; i podcast prima o insieme alla fase 102.
-- `artistKey`/`matchKey`/`extractPrimaryArtist` stanno in `services/import/track_matcher.dart`, importato da `data/` e `services/backup` per una funzione di testo. Rimedio: spostarle in `lib/core/` all'inizio della fase 101, prima che `DislikeStore` diventi un altro consumatore.
+- [x] (fatto nella 101: `lib/core/artist_key.dart`) `artistKey`/`matchKey`/`extractPrimaryArtist` stavano in `services/import/track_matcher.dart`, importato da `data/` e `services/backup` per una funzione di testo. Rimedio: spostarle in `lib/core/` all'inizio della fase 101, prima che `DislikeStore` diventi un altro consumatore.
 - `mergeArtistWith` (UI) compone cooldown, limiter e catalogo da sé, come `artistMergeSearchProvider`. Rimedio: una ricerca degli artisti con budget in `ArtistMergeOps`, con le due varianti di esito.
 - La cache dei paesi è divisa fra la closure di `watchByRules` e `_watchWithCountries` (versione passata come `int`). Rimedio (basso): una piccola `CountryArtistsCache` in `rule_country.dart`.
 - Nomi paralleli: `artistCountryKey` → `ArtistInfoRepository.keyOf` → `artistKey`; `_artistKey` di `stats_queries.dart` è un'altra chiave (minuscole ASCII come `lower()` di SQLite). Rimedio: rinominarla (`_libraryNameKey`) e togliere gli alias quando si sposta il modulo.
@@ -166,7 +166,7 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - «Artista di un suggerito» calcolato in tre punti (`suggestion_pool.dart:21`, `suggestion_actions.dart:116`, `dislike_sheet.dart:24`), copia di `displayArtist` in `suggestion_actions.dart:94`, e il foglio rifà `artistKey(...).isNotEmpty`. Rimedio: `primaryArtist(YtResult)` accanto a `displayArtist` e `SuggestionActions.artistToBlock(queueId)` (null se la chiave è vuota) usato dal foglio.
 - Tre iscrizioni a `store.changes` (`blockedArtistKeysProvider` senza l'iscrizione prima dell'istantanea, `dislikeListsProvider`, `artistAllSongsProvider` che rifà la query sul DB a ogni blocco anche non suo). Rimedio: un `dislikesProvider` con istantanea immutabile (Set di id e chiavi), `select` per le chiavi, provider dell'artista diviso in parte grezza e filtro.
 - La pagina «Non mi piace» scrive sullo store dalla UI (`dislikes_screen.dart` Togli/Annulla). Rimedio: `unblockTrack`/`unblockArtist` con annullamento in `SuggestionActions` o un `DislikeOps`.
-- Percorso di `dislikes.json` costruito in tre punti (`main.dart`, `backup_providers.dart`, `dislike_store_provider.dart`). Rimedio: `DislikeStore.defaultFile(dir)` come `DownloadIndex.defaultFile`.
+- Percorso di `dislikes.json` costruito in tre punti (per `daylist.json` c'è già `daylistFileName`, fase 105) (`main.dart`, `backup_providers.dart`, `dislike_store_provider.dart`). Rimedio: `DislikeStore.defaultFile(dir)` come `DownloadIndex.defaultFile`.
 
 ### Dalla review di architettura della fase 102
 - Regola «riga remota di episodio» in più forme: tipo e percorso controllati a mano in `codecore_audio_handler.dart`, `episode_downloader.dart`, `track_actions.dart`, `resume_rows.dart`, e due `NOT LIKE 'http%'/'stream:%'` in `podcast_repository.dart`. Rimedio: `isRemoteEpisode(Track)`, un getter `TrackKindX.isRemoteEpisode` per la UI e un'espressione SQL unica.
@@ -181,6 +181,14 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 
 ### Dalla review di architettura della fase 104
 - Costruzione di `RadioFill` con `radioOffReason` → `log.load` → `filter.load` in 3-4 copie (`daylist_providers.dart`, `similarFillProvider`, `genreMixProvider`) e `gate.trip()` sul 429 in `genre_mix.dart` e `similar_queue.dart`. Rimedio: un helper `radioFillFor(ref, seeds, inLibrary)` e `RadioFill.take` che fa il trip da solo.
+
+### Dalla review di architettura della fase 105 (98–104)
+Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup; «Non mi piace» dalla daylist con un solo metodo in `SuggestionActions` (coda e log come dalla coda); episodi YouTube Music dello stesso video in due show; segnalibro dopo «Segna come non ascoltato».
+- La daylist non si salva mai quando la radio è spenta per un motivo permanente (niente yt-dlp su desktop, YouTube spento, Jam, «Solo su Wi-Fi» su rete a consumo) e il seme casuale cambia a ogni build: a ogni avvio nella stessa fascia esce una daylist diversa. Rimedio: salvarla con un flag `partial` e rifarla solo se ora la radio è disponibile, o un seme ricavato da chiave + `until`.
+- L'avviso «Meno di 15 brani» (D-473) compare solo per la fascia in corso (si costruisce solo quella). Rimedio: un `plan` per fascia nell'isolate all'apertura della pagina, o correggere D-473.
+- `musicLight()` porta tutta la libreria (`List<Track>`) nel main isolate e `Isolate.run` la copia a ogni build della daylist: da misurare sul Mi A3 con la fixture 50k; se costa, passare all'isolate solo le colonne che servono.
+- Dalla prova sul Mi A3 della fase 105 (preesistente): dopo un'interruzione di rete il player resta in «Caricamento…» a 0:00 per circa 77 s (`stream url source=ytdlp … ms=77321`): la risoluzione con yt-dlp aspetta a lungo quando NewPipe ha appena fallito per DNS. Rimedio: un timeout più corto per yt-dlp (o rinunciare se la rete è ancora assente) e l'errore «Impossibile riprodurre» al suo posto.
+- Dalla stessa prova, minori di TalkBack: risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
 
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».

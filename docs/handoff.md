@@ -1,3 +1,28 @@
+# Handoff — 2026-11-09 (fasi 101–105 chiuse: refactor «ascolto-quotidiano» finito)
+
+## Stato
+**Fasi 101–105 chiuse** (PR #137–#140 e la PR della 105):
+- «Non mi piace» brano o artista (`DislikeStore`, `SuggestionGate`) e player del suggerito;
+- podcast senza iscrizione con episodi in streaming e in «Riprendi» (schema v19);
+- testi a mano con sincronia spegnibile, Memoria e apertura delle cartelle;
+- daylist a fasce orarie.
+
+La 105 ha chiuso il refactor: metriche rispettate, 162 file formattati, 4 bug della review Opus e 4 della prova sul Mi A3 corretti. Release dati `data-cedict-2026-11-08` pubblicata per la 106.
+
+Prompt di avvio (nuova chat nella cartella del progetto):
+```
+/obiettivo fase 106
+```
+
+## Da sapere per la 106
+- **Formato:** i file toccati dalle fasi 98–105 sono a larghezza 80 (`dart format` di serie). Un file nuovo o toccato si formatta allo stesso modo. Poi `flutter analyze`: andando a capo, un `if` senza graffe dà `curly_braces_in_flow_control_structures`. Non usare `dart fix` sul progetto: aggiunge `fake_async` a `pubspec.yaml`.
+- **CC-CEDICT:** `https://github.com/iTzEmany/codecore-music-player/releases/download/data-cedict-2026-11-08/cedict_1_0_ts_utf-8_mdbg.txt.gz` (3 984 202 byte, sha256 `85a742880b294197546c5c48b716a2811d7790367d98cc3ef814df8095fe991e`). È l'unica release del repo, per ora marcata «Latest»; la release di v1.4.0 prenderà il suo posto.
+- **Menu del testo:** il menu è pubblico (`LyricsMenuButton`) anche nel pannello desktop. Il «come mostrato» del testo (`lyricsAsShown` in `lyrics_view.dart`) è il punto dove entra la traslitterazione (debito della 103).
+- **Debito nuovo:** in `prossimi-lavori.md` §6 «fase 105». Tra le voci: circa 77 s di «Caricamento…» dopo un'interruzione di rete, e la daylist non salvata con la radio spenta per sempre.
+- **Telefono:** sul Mi A3 «Blue In Green» ha un testo di prova («boom / fuori ordine»). Va eliminato e ricercato.
+
+---
+
 # Handoff — 2026-11-08 (fase 100 chiusa: coda di simili da Cerca, Play/Shuffle dell'artista)
 
 ## Stato
