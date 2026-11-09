@@ -675,9 +675,14 @@ class SettingsStore {
 
   /// Slots, quotas and table back to the defaults.
   Future<void> resetDaylist() async {
-    await _prefs.remove(daylistSlotsKey);
-    await _prefs.remove(moodTableKey);
+    await resetDaylistSlots();
+    await resetMoodTable();
   }
+
+  /// Only the slots: the key goes, so the backup does not carry the defaults.
+  Future<void> resetDaylistSlots() => _prefs.remove(daylistSlotsKey);
+
+  Future<void> resetMoodTable() => _prefs.remove(moodTableKey);
 
   SavedPlayback readPlayback() {
     final ids = (_prefs.getStringList('lastQueueIds') ?? const [])

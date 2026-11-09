@@ -311,4 +311,45 @@ void main() {
     await daylist(c);
     expect(suggestAsked, 2);
   });
+
+  test('touching another slot (even a switched-off one) leaves the daylist alone', () async {
+    await addTracks(40);
+    final c = open();
+    c.listen(daylistProvider, (_, _) {});
+    final first = (await daylist(c))!;
+    final other = c.read(daylistConfigProvider).slots[2];
+    await c.read(daylistConfigProvider.notifier).setSlot(2, other.copyWith(sharePercent: 5, enabled: false));
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(suggestAsked, 1);
+    expect(ids((await daylist(c))!), ids(first));
+    // And a restart finds the saved one still good.
+    await daylist(open());
+    expect(suggestAsked, 1);
+  });
+
+  test('reset() takes the keys out of the preferences instead of writing the defaults', () async {
+    final c = open();
+    final cfg = c.read(daylistConfigProvider.notifier);
+    await cfg.setSlot(5, c.read(daylistConfigProvider).slots[5].copyWith(sharePercent: 7));
+    await c.read(moodTableProvider.notifier).setMoods('rock', {});
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.containsKey(daylistSlotsKey), isTrue);
+    expect(prefs.containsKey(moodTableKey), isTrue);
+    await cfg.reset();
+    expect(prefs.containsKey(daylistSlotsKey), isFalse);
+    expect(prefs.containsKey(moodTableKey), isTrue, reason: 'the other one is not touched');
+    expect(c.read(daylistConfigProvider).slots[5].sharePercent, 30);
+    await c.read(moodTableProvider.notifier).reset();
+    expect(prefs.containsKey(moodTableKey), isFalse);
+    expect(c.read(moodTableProvider).moodsOf('rock'), isNotEmpty);
+  });
+
+  test('daylist.json emptied (Memoria, «Svuota cache»): the daylist is made again, no error', () async {
+    await addTracks(40);
+    await daylist(open());
+    File(p.join(dir.path, 'daylist.json')).deleteSync();
+    final s = (await daylist(open()))!;
+    expect(s.result.tooFew, isFalse);
+    expect(suggestAsked, 2);
+  });
 }

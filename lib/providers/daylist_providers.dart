@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -50,7 +51,10 @@ class DaylistConfigNotifier extends Notifier<DaylistConfig> {
     return true;
   }
 
-  Future<void> reset() => _set(DaylistConfig.defaults());
+  Future<void> reset() async {
+    state = DaylistConfig.defaults();
+    await ref.read(settingsStoreProvider).resetDaylistSlots();
+  }
 }
 
 final daylistConfigProvider = NotifierProvider<DaylistConfigNotifier, DaylistConfig>(DaylistConfigNotifier.new);
@@ -67,7 +71,10 @@ class MoodTableNotifier extends Notifier<MoodTable> {
 
   Future<void> setMoods(String genre, Set<Mood> moods) => _set(state.withMoods(genre, moods));
 
-  Future<void> reset() => _set(MoodTable.defaults());
+  Future<void> reset() async {
+    state = MoodTable.defaults();
+    await ref.read(settingsStoreProvider).resetMoodTable();
+  }
 }
 
 final moodTableProvider = NotifierProvider<MoodTableNotifier, MoodTable>(MoodTableNotifier.new);
@@ -154,6 +161,11 @@ class DaylistState {
   final DateTime nextChange;
 }
 
+/// What of the settings makes the daylist of slot [i]: the slot as set (start,
+/// quota, genres, moods) and where it ends.
+String _slotKey(DaylistConfig c, int i) =>
+    '$i|${jsonEncode(c.slots[i].toJson())}|${c.slots[(i + 1) % DaylistConfig.slotCount].startHour}';
+
 /// The current daylist; null when the slot is switched off. The reads run in
 /// the DB isolate and the ranking in a worker isolate (`planInIsolate`); only
 /// the suggestions and the final pick run here. It is saved until the slot
@@ -177,13 +189,16 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
   Future<DaylistState?> build() async {
     // This build's ref: `mounted` turns false when the daylist is made again.
     final r = ref;
-    final config = r.watch(daylistConfigProvider);
-    final moods = r.watch(moodTableProvider);
     final clock = r.read(daylistClockProvider);
     final force = _force;
     _force = false;
     final now = clock();
+    final config = r.read(daylistConfigProvider);
     final index = config.slotAt(now);
+    // Only this slot (and where it ends) rebuilds the daylist: touching
+    // another one leaves it alone.
+    final slotKey = r.watch(daylistConfigProvider.select((c) => _slotKey(c, c.slotAt(now))));
+    final moods = r.watch(moodTableProvider);
     final next = config.nextChange(now);
     final timer = Timer(next.difference(now), r.invalidateSelf);
     r.onDispose(timer.cancel);
@@ -197,7 +212,7 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     DaylistState of(DaylistResult res) =>
         DaylistState(result: res, slot: slot, slotIndex: index, nextChange: next);
 
-    final key = '${config.toJsonString()}|${moods.toJsonString()}';
+    final key = '$slotKey|${moods.toJsonString()}';
     if (_lastKey != null && _lastKey != key) {
       await Future<void>.delayed(r.read(daylistSettleProvider));
       if (!r.mounted) return null;

@@ -9,9 +9,11 @@ import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/memory_queries.dart';
+import '../services/daylist/daylist_store.dart';
 import '../services/memory/app_data.dart';
 import '../services/memory/disk_space.dart';
 import 'database_providers.dart';
+import 'daylist_providers.dart' show daylistFileProvider, daylistProvider;
 import 'import_providers.dart' show searchCacheProvider;
 import 'ytm_catalog_providers.dart' show catalogCacheProvider;
 import 'jam_providers.dart';
@@ -59,6 +61,7 @@ final appDataPathsProvider = FutureProvider<AppDataPaths>((ref) async {
     suggestionFiles: [
       File(p.join(support, 'suggestions.json')),
       File(p.join(support, 'seed_ids.json')),
+      File(p.join(support, 'daylist.json')),
     ],
   );
 });
@@ -118,6 +121,9 @@ class MemoryActions {
       clearSuggestions: () async {
         await _ref.read(suggestionLogProvider).clear();
         await _ref.read(seedIndexProvider).clear();
+        // The daylist is made again (from the library; the radio only if it may be asked).
+        await DaylistStore(_ref.read(daylistFileProvider)).clear();
+        _ref.invalidate(daylistProvider);
       },
       radioDir: paths.radio,
       clearRadioMemory: () => _ref.read(radioCatalogProvider).value?.clearMemory(),

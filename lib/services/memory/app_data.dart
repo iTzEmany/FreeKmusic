@@ -69,7 +69,7 @@ class AppDataPaths {
   final Directory? radio;
   final File database, searchCache, catalogCache, log;
 
-  /// `suggestions.json` and `seed_ids.json` (Shuffle+).
+  /// `suggestions.json` and `seed_ids.json` (Shuffle+), `daylist.json`.
   final List<File> suggestionFiles;
 
   /// SQLite keeps its journal beside the database file.
