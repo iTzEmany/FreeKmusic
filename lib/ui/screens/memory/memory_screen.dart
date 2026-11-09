@@ -288,7 +288,14 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
                       children: [
                         Icon(Icons.open_in_new_rounded, size: 18, color: context.cc.accent),
                         const SizedBox(width: 4),
-                        Text(l.memoryOpenFolder, style: theme.labelMedium?.copyWith(color: context.cc.accent)),
+                        Flexible(
+                          child: Text(
+                            l.memoryOpenFolder,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.labelMedium?.copyWith(color: context.cc.accent),
+                          ),
+                        ),
                       ],
                     ),
                   ),

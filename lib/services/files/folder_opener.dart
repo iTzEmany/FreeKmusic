@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -23,15 +24,24 @@ class FolderOpener {
   final ProcessStarter _start;
   final bool _android, _windows;
 
+  static const _wait = Duration(seconds: 3);
   static const _authority = 'content://com.android.externalstorage.documents';
 
   /// The DocumentsContract URI of an Android storage path (`/storage/emulated/0/Music`
-  /// → `primary:Music`, an SD card keeps its volume id); null for any other path.
+  /// → `primary:Music`, an SD card keeps its volume id); null for any other path,
+  /// for other users' storage, `..` and the app folders DocumentsUI does not open.
   static String? documentUri(String path) {
-    final m = RegExp(r'^/(?:storage/emulated/0|sdcard|storage/([^/]+))(?:/(.*))?$').firstMatch(path);
+    final clean = path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'/$'), '');
+    if (clean.split('/').contains('..')) return null;
+    final m =
+        RegExp(r'^/(?:storage/emulated/0|sdcard|storage/self/primary)(?:/(.*))?$').firstMatch(clean) ??
+        RegExp(r'^/storage/(?!(?:emulated|self)(?:/|$))([^/]+)(?:/(.*))?$').firstMatch(clean);
     if (m == null) return null;
-    final rel = (m.group(2) ?? '').replaceAll(RegExp(r'/+$'), '');
-    return '$_authority/document/${Uri.encodeComponent('${m.group(1) ?? 'primary'}:$rel')}';
+    final primary = m.groupCount == 1;
+    final volume = primary ? 'primary' : m.group(1)!;
+    final rel = (primary ? m.group(1) : m.group(2)) ?? '';
+    if (RegExp(r'^Android/(?:data|obb)(?:/|$)').hasMatch(rel)) return null;
+    return '$_authority/document/${Uri.encodeComponent('$volume:$rel')}';
   }
 
   /// False when nothing could open [path]; the caller then copies it.
@@ -42,9 +52,13 @@ class FolderOpener {
         if (uri == null) return false;
         return await _channel.invokeMethod<bool>('openFolder', {'uri': uri}) ?? false;
       }
-      // explorer exits with 1 even when it worked, so the exit code says nothing.
-      await _start(_windows ? 'explorer' : 'xdg-open', [path]);
-      return true;
+      final proc = await _start(_windows ? 'explorer' : 'xdg-open', [path]);
+      unawaited(proc.stdout.drain<void>());
+      unawaited(proc.stderr.drain<void>());
+      // explorer exits with 1 even when it worked, so only xdg-open's code counts;
+      // a file manager that is still running after the timeout did open.
+      if (_windows) return true;
+      return await proc.exitCode.timeout(_wait, onTimeout: () => 0) == 0;
     } on Object catch (e, st) {
       AppLog.w('opening a folder failed', e, st);
       return false;

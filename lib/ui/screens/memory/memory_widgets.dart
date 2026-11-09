@@ -103,15 +103,21 @@ class WeightRow extends StatelessWidget {
                 style: theme.titleSmall?.copyWith(color: cc.text),
               ),
             ),
-            ?trailing,
+            if (trailing != null) Flexible(child: trailing!),
           ],
         ),
       ),
     );
     final label = semanticLabel;
-    return label == null
-        ? row
-        : Semantics(button: true, label: label, excludeSemantics: true, onTap: onTap, child: row);
+    if (label == null) return row;
+    final size = formatBytes(bytes, Localizations.localeOf(context).toString());
+    return Semantics(
+      button: true,
+      label: [label, ?subtitle, size].join('. '),
+      excludeSemantics: true,
+      onTap: onTap,
+      child: row,
+    );
   }
 }
 

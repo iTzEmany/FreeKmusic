@@ -107,6 +107,18 @@ void main() {
     expect(byName['None'], isNull);
   });
 
+  test('auto cover also shows when every track of the playlist is missing', () async {
+    final m = await add('m', 1, missing: true);
+    await (db.update(db.tracks)..where((t) => t.id.equals(m)))
+        .write(const TracksCompanion(coverKey: Value('M')));
+    final pl = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Gone', createdAt: 1));
+    await db.into(db.playlistTracks).insert(
+      PlaylistTracksCompanion.insert(playlistId: pl, trackId: m, position: 0),
+    );
+    final g = (await q.byPlaylist()).firstWhere((g) => g.name == 'Gone');
+    expect((g.autoCoverKey, g.totals.trackCount), ('M', 0));
+  });
+
   test('formats group by lower-case extension, biggest first', () async {
     await add('a', 10, format: 'MP3');
     await add('b', 20, format: 'mp3');

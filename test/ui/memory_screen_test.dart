@@ -24,13 +24,17 @@ void main() {
     Size size = const Size(400, 5000),
     double textScale = 1,
     String playlistName = 'Gym',
+    Future<void> Function(AppDatabase db)? extraSeed,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     h = await Harness.create(tester);
     actions = FakeMemoryActions();
-    await tester.runAsync(() => seedMemory(h.db, playlistName: playlistName));
+    await tester.runAsync(() => () async {
+      await seedMemory(h.db, playlistName: playlistName);
+      await extraSeed?.call(h.db);
+    }());
     await h.pump(
       tester,
       const MemoryScreen(),
@@ -76,6 +80,34 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('FLAC'), findsOneWidget);
     expect(find.text('Gym'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a folder row reads name, path, count and size, and fits at double text', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await open(
+      tester,
+      disk: memoryDisk,
+      textScale: 2,
+      extraSeed: (db) async {
+        final f = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/m/Rock', addedAt: 1));
+        await (db.update(db.tracks)..where((t) => t.title.equals('Heavy 0')))
+            .write(TracksCompanion(folderId: Value(f)));
+      },
+    );
+    await tester.tap(find.text('Cartelle'));
+    for (var i = 0; i < 4; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(tester.takeException(), isNull);
+    final row = find.bySemanticsLabel(RegExp('Apri la cartella'));
+    expect(row, findsOneWidget);
+    final label = tester.getSemantics(row).label;
+    expect(label, contains('/m/Rock'));
+    expect(label, contains('1 brano'));
+    expect(label, contains('10,0 MB'));
+    semantics.dispose();
     await h.dispose(tester);
   });
 

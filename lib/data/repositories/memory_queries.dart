@@ -184,17 +184,23 @@ class MemoryQueries {
         .customSelect(
           'SELECT pt.playlist_id AS pid, '
           'COALESCE(SUM(t.size_bytes), 0) AS bytes, COUNT(t.id) AS n, '
-          'COALESCE(SUM(t.duration_ms), 0) AS ms, '
-          '(SELECT c.cover_key FROM playlist_tracks x JOIN tracks c ON c.id = x.track_id '
-          'WHERE x.playlist_id = pt.playlist_id AND c.cover_key IS NOT NULL '
-          'ORDER BY x.position LIMIT 1) AS auto_cover '
+          'COALESCE(SUM(t.duration_ms), 0) AS ms '
           'FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id '
           'AND t.kind = 0 AND t.missing = 0 GROUP BY pt.playlist_id',
           readsFrom: {_db.playlistTracks, _db.tracks},
         )
         .get();
     final sums = {for (final r in rows) r.read<int>('pid'): _totals(r)};
-    final covers = {for (final r in rows) r.read<int>('pid'): r.read<String?>('auto_cover')};
+    final coverRows = await _db
+        .customSelect(
+          'SELECT p.id AS pid, (SELECT t.cover_key FROM playlist_tracks x '
+          'JOIN tracks t ON t.id = x.track_id WHERE x.playlist_id = p.id '
+          'AND t.cover_key IS NOT NULL ORDER BY x.position LIMIT 1) AS auto_cover '
+          'FROM playlists p',
+          readsFrom: {_db.playlists, _db.playlistTracks, _db.tracks},
+        )
+        .get();
+    final covers = {for (final r in coverRows) r.read<int>('pid'): r.read<String?>('auto_cover')};
     final favorites = _totals(
       await _db
           .customSelect(
