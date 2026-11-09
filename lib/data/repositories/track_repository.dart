@@ -736,7 +736,8 @@ class TrackRepository {
       ..limit(limit),
   ).watch();
 
-  /// Tracks left in the middle, newest first (the Home «Riprendi» rows).
+  /// Tracks and podcast episodes left in the middle, newest first (the Home
+  /// «Riprendi» rows). Kind 2 (stream shadow rows) stays out.
   Stream<List<Track>> watchResumable({int limit = 3}) =>
       (_db.select(_db.tracks)
             ..where(
@@ -744,7 +745,7 @@ class TrackRepository {
                   t.resumePositionMs.isNotNull() &
                   t.missing.equals(false) &
                   t.ignored.equals(false) &
-                  t.kind.equals(0),
+                  t.kind.isIn(const [0, kEpisodeKind]),
             )
             ..orderBy([(t) => OrderingTerm.desc(t.lastPlayedAt)])
             ..limit(limit))

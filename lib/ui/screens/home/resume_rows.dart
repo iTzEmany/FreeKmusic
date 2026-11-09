@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/library_entries.dart';
+import '../../../data/repositories/track_kinds.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/player_providers.dart';
@@ -11,6 +12,7 @@ import '../../../providers/releases_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cover_image.dart';
+import '../../widgets/format_utils.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/section_header.dart';
 import '../library/album_detail_screen.dart';
@@ -119,7 +121,7 @@ class ResumeList extends ConsumerWidget {
                     radius: CcDims.rList,
                   ),
                   title: r.track.title,
-                  subtitle: l.homeMinutesLeft(_minutesLeft(r.track)),
+                  subtitle: _trackSubtitle(context, r.track),
                   progress: _fraction(
                     r.track.resumePositionMs,
                     r.track.durationMs,
@@ -174,6 +176,18 @@ class ResumeList extends ConsumerWidget {
     return from == null
         ? l.homeResumeQueue(r.index + 1, r.length)
         : l.homeResumeQueueFrom(from, r.index + 1, r.length);
+  }
+
+  /// An episode names its podcast (the artist column) and where it was left.
+  String _trackSubtitle(BuildContext context, Track t) {
+    final l = context.l10n;
+    final left = l.homeMinutesLeft(_minutesLeft(t));
+    if (t.kind != kEpisodeKind) return left;
+    return [
+      if (t.artist != null) t.artist!,
+      l.resumeFrom(formatDuration(t.resumePositionMs ?? 0)),
+      left,
+    ].join(', ');
   }
 
   int _minutesLeft(Track t) {

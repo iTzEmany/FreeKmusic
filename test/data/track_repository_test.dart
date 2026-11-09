@@ -110,10 +110,10 @@ void main() {
   );
 
   test(
-    'watchResumable: only tracks left in the middle, newest first, limited',
+    'watchResumable: tracks and episodes left in the middle, never kind 2, newest first, limited',
     () async {
       await repo.upsertBatch([
-        for (var i = 0; i < 4; i++) row('/$i.mp3', 'T$i'),
+        for (var i = 0; i < 6; i++) row('/$i.mp3', 'T$i'),
       ]);
       final ids = [for (final t in await db.select(db.tracks).get()) t.id];
       Future<void> set(
@@ -121,19 +121,23 @@ void main() {
         int? resume,
         int? played, {
         bool missing = false,
+        int kind = 0,
       }) => (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
         TracksCompanion(
           resumePositionMs: Value(resume),
           lastPlayedAt: Value(played),
           missing: Value(missing),
+          kind: Value(kind),
         ),
       );
       await set(ids[0], 1000, 10);
       await set(ids[1], 1000, 30);
       await set(ids[2], null, 50); // finished: no bookmark
       await set(ids[3], 1000, 40, missing: true);
+      await set(ids[4], 1000, 20, kind: 1); // an episode, followed or not
+      await set(ids[5], 1000, 60, kind: 2); // a stream shadow row
       final r = await repo.watchResumable().first;
-      expect(r.map((t) => t.title), ['T1', 'T0']);
+      expect(r.map((t) => t.title), ['T1', 'T4', 'T0']);
       expect((await repo.watchResumable(limit: 1).first).single.title, 'T1');
     },
   );
