@@ -6,6 +6,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/romanization_ops.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
+import 'lyrics_editor.dart' show UnsavedChangesGuard;
 import '../../widgets/show_msg.dart';
 
 /// Opens the editor of the transliteration typed by hand (D-475).
@@ -81,69 +82,84 @@ class _RomanizationEditorScreenState
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    return Scaffold(
-      backgroundColor: cc.bg,
-      appBar: CcAppBar(
-        title: l.romanizationEditorTitle,
-        actions: [
-          TextButton(
-            key: const ValueKey('romanization-save-bar'),
-            onPressed: _save,
-            child: Semantics(
-              label: l.romanizationSaveA11y,
-              excludeSemantics: true,
-              child: Text(l.save),
-            ),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          CcDims.margin,
-          CcDims.gap8,
-          CcDims.margin,
-          CcDims.gap24,
-        ),
-        children: [
-          Text(
-            l.romanizationEditorLabel,
-            style: theme.bodySmall?.copyWith(color: cc.textMuted),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _ctrl,
-            minLines: 11,
-            maxLines: null,
-            keyboardType: TextInputType.multiline,
-            decoration: InputDecoration(
-              hintText: l.romanizationEditorHint,
-              border: _border(Colors.transparent),
-              enabledBorder: _border(Colors.transparent),
-              focusedBorder: _border(cc.accent),
-            ),
-          ),
-          const SizedBox(height: CcDims.gap8),
-          Text(
-            l.romanizationEditorInfo,
-            style: theme.bodySmall?.copyWith(color: cc.textMuted),
-          ),
-          const SizedBox(height: CcDims.gap16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(l.cancel),
-              ),
-              const SizedBox(width: 4),
-              FilledButton(
-                key: const ValueKey('romanization-save'),
-                onPressed: _save,
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return UnsavedChangesGuard(
+      dirty: _ctrl.text != widget.initial,
+      child: Scaffold(
+        backgroundColor: cc.bg,
+        appBar: CcAppBar(
+          title: l.romanizationEditorTitle,
+          actions: [
+            TextButton(
+              key: const ValueKey('romanization-save-bar'),
+              onPressed: _save,
+              child: Semantics(
+                label: l.romanizationSaveA11y,
+                excludeSemantics: true,
                 child: Text(l.save),
+              ),
+            ),
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CcDims.margin,
+            CcDims.gap8,
+            CcDims.margin,
+            CcDims.gap16,
+          ),
+          // The field takes what the keyboard leaves; the buttons stay below it.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l.romanizationEditorLabel,
+                style: theme.bodySmall?.copyWith(color: cc.textMuted),
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  expands: true,
+                  minLines: null,
+                  maxLines: null,
+                  textAlignVertical: TextAlignVertical.top,
+                  keyboardType: TextInputType.multiline,
+                  decoration: InputDecoration(
+                    hintText: l.romanizationEditorHint,
+                    border: _border(Colors.transparent),
+                    enabledBorder: _border(Colors.transparent),
+                    focusedBorder: _border(cc.accent),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              if (!keyboard) ...[
+                const SizedBox(height: CcDims.gap8),
+                Text(
+                  l.romanizationEditorInfo,
+                  style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                ),
+              ],
+              const SizedBox(height: CcDims.gap8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    child: Text(l.cancel),
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton(
+                    key: const ValueKey('romanization-save'),
+                    onPressed: _save,
+                    child: Text(l.save),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -9,7 +9,40 @@ import '../../../providers/track_ops.dart';
 import '../../../services/online/lrc_parser.dart' show lyricsFromText, parseLrc;
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/confirm.dart';
 import '../../widgets/show_msg.dart';
+
+/// Asks before an editor with unsaved changes ([dirty]) is left by back or
+/// «Annulla»; an explicit `Navigator.pop` (after saving) is not asked.
+class UnsavedChangesGuard extends StatelessWidget {
+  const UnsavedChangesGuard({
+    super.key,
+    required this.dirty,
+    required this.child,
+  });
+
+  final bool dirty;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !dirty,
+    onPopInvokedWithResult: (didPop, _) async {
+      if (didPop) return;
+      final l = context.l10n;
+      final nav = Navigator.of(context);
+      final discard = await showConfirm(
+        context,
+        title: l.themeDiscardTitle,
+        body: l.editorDiscardBody,
+        confirmLabel: l.themeDiscard,
+        destructive: true,
+      );
+      if (discard) nav.pop();
+    },
+    child: child,
+  );
+}
 
 /// Opens the lyrics editor for [track] (F-110).
 Future<void> openLyricsEditor(BuildContext context, Track track) =>
@@ -29,9 +62,9 @@ class LyricsEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
-  late final _ctrl = TextEditingController(
-    text: widget.track.lyricsSynced ?? widget.track.lyricsPlain ?? '',
-  );
+  late final _initial =
+      widget.track.lyricsSynced ?? widget.track.lyricsPlain ?? '';
+  late final _ctrl = TextEditingController(text: _initial);
 
   @override
   void dispose() {
@@ -69,75 +102,89 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    return Scaffold(
-      backgroundColor: cc.bg,
-      appBar: CcAppBar(
-        title: l.lyricsEditorTitle,
-        actions: [
-          TextButton(
-            key: const ValueKey('lyrics-save-bar'),
-            onPressed: _save,
-            child: Semantics(
-              label: l.lyricsEditorSaveA11y,
-              excludeSemantics: true,
-              child: Text(l.save),
-            ),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          CcDims.margin,
-          CcDims.gap8,
-          CcDims.margin,
-          CcDims.gap24,
-        ),
-        children: [
-          Text(
-            l.lyricsEditorLabel,
-            style: theme.bodySmall?.copyWith(color: cc.textMuted),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _ctrl,
-            minLines: 11,
-            maxLines: null,
-            keyboardType: TextInputType.multiline,
-            decoration: InputDecoration(
-              hintText: l.lyricsEditorHint,
-              border: _border(Colors.transparent),
-              enabledBorder: _border(Colors.transparent),
-              focusedBorder: _border(cc.accent),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: CcDims.gap8),
-          Semantics(
-            liveRegion: true,
-            child: Text(_detection(l), style: theme.bodyMedium),
-          ),
-          const SizedBox(height: CcDims.gap8),
-          Text(
-            l.lyricsEditorInfo,
-            style: theme.bodySmall?.copyWith(color: cc.textMuted),
-          ),
-          const SizedBox(height: CcDims.gap16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(l.cancel),
-              ),
-              const SizedBox(width: 4),
-              FilledButton(
-                key: const ValueKey('lyrics-save'),
-                onPressed: _save,
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return UnsavedChangesGuard(
+      dirty: _ctrl.text != _initial,
+      child: Scaffold(
+        backgroundColor: cc.bg,
+        appBar: CcAppBar(
+          title: l.lyricsEditorTitle,
+          actions: [
+            TextButton(
+              key: const ValueKey('lyrics-save-bar'),
+              onPressed: _save,
+              child: Semantics(
+                label: l.lyricsEditorSaveA11y,
+                excludeSemantics: true,
                 child: Text(l.save),
+              ),
+            ),
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CcDims.margin,
+            CcDims.gap8,
+            CcDims.margin,
+            CcDims.gap16,
+          ),
+          // The field takes what the keyboard leaves; the buttons stay below it.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l.lyricsEditorLabel,
+                style: theme.bodySmall?.copyWith(color: cc.textMuted),
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  expands: true,
+                  minLines: null,
+                  maxLines: null,
+                  textAlignVertical: TextAlignVertical.top,
+                  keyboardType: TextInputType.multiline,
+                  decoration: InputDecoration(
+                    hintText: l.lyricsEditorHint,
+                    border: _border(Colors.transparent),
+                    enabledBorder: _border(Colors.transparent),
+                    focusedBorder: _border(cc.accent),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(height: CcDims.gap8),
+              Semantics(
+                liveRegion: true,
+                child: Text(_detection(l), style: theme.bodyMedium),
+              ),
+              if (!keyboard) ...[
+                const SizedBox(height: CcDims.gap8),
+                Text(
+                  l.lyricsEditorInfo,
+                  style: theme.bodySmall?.copyWith(color: cc.textMuted),
+                ),
+              ],
+              const SizedBox(height: CcDims.gap8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    child: Text(l.cancel),
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton(
+                    key: const ValueKey('lyrics-save'),
+                    onPressed: _save,
+                    child: Text(l.save),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -260,4 +260,57 @@ void main() {
     expect(find.text('yoru\n\nkimi'), findsOneWidget);
     await h.dispose(tester);
   });
+
+  testWidgets('the transliteration editor asks before discarding changes', (
+    tester,
+  ) async {
+    final h = await open(tester, synced: _jaSynced, state: ready);
+    await openMenu(tester);
+    await tester.tap(find.text('Modifica traslitterazione'));
+    await tester.pumpAndSettle();
+    // No changes: leaves at once.
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    expect(find.text('Scartare le modifiche?'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    await openMenu(tester);
+    await tester.tap(find.text('Modifica traslitterazione'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'x');
+    await tester.pump();
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    expect(find.text('Scartare le modifiche?'), findsOneWidget);
+    await tester.tap(find.text('Scarta'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the transliteration editor keeps its field above the keyboard', (
+    tester,
+  ) async {
+    final h = await open(tester, synced: _jaSynced, state: ready);
+    await openMenu(tester);
+    await tester.tap(find.text('Modifica traslitterazione'));
+    tester.view.physicalSize = const Size(500, 700);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    final field = tester.getRect(find.byType(TextField));
+    final save = tester.getRect(
+      find.byKey(const ValueKey('romanization-save')),
+    );
+    expect(field.height, greaterThan(100));
+    expect(save.bottom, lessThanOrEqualTo(400));
+    expect(field.bottom, lessThanOrEqualTo(save.top));
+    await h.dispose(tester);
+  });
+
+  testWidgets('the menu names the transliteration once', (tester) async {
+    final h = await open(tester, synced: _jaSynced, state: ready);
+    await openMenu(tester);
+    expect(find.text('Traslitterazione'), findsOneWidget);
+    await h.dispose(tester);
+  });
 }

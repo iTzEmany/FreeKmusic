@@ -11868,6 +11868,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Impossibile eliminare il dizionario cinese'**
   String get chineseDictionaryDeleteFailed;
+
+  /// No description provided for @editorDiscardBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Le modifiche non sono state salvate.'**
+  String get editorDiscardBody;
 }
 
 class _AppLocalizationsDelegate

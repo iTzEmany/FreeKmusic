@@ -7468,4 +7468,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get chineseDictionaryDeleteFailed =>
       'Chinesisches Wörterbuch konnte nicht gelöscht werden';
+
+  @override
+  String get editorDiscardBody => 'Deine Änderungen wurden nicht gespeichert.';
 }

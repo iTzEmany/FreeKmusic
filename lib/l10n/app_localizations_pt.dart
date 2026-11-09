@@ -7449,4 +7449,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get chineseDictionaryDeleteFailed =>
       'Não foi possível eliminar o dicionário chinês';
+
+  @override
+  String get editorDiscardBody => 'As alterações não foram guardadas.';
 }
