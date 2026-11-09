@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Prima del push i test di convenzione che la CI rifiuta. Attivo con: git config core.hooksPath .githooks
+exec "$(git rev-parse --show-toplevel)/scripts/guardie.sh"

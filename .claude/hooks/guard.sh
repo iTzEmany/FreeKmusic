@@ -21,6 +21,7 @@ inside() {
   case $p in
   "$proj" | "$proj"/*) return 0 ;;
   /tmp/claude-*) return 0 ;;
+  "$HOME/.claude/projects/$(sed 's|[/.]|-|g' <<<"$proj")/memory"/*) return 0 ;; # memoria di Claude Code per questo progetto
   esac
   return 1
 }
@@ -40,6 +41,17 @@ Bash)
       grep -Eq '(--force|--force-with-lease|--force-if-includes|[[:space:]]-[a-zA-Z]*f([[:space:]]|$)|--delete|[[:space:]]-d([[:space:]]|$)|--mirror|--prune|[[:space:]]\+[^[:space:]]+|[[:space:]]:[^[:space:]]+)' <<<"$c" && deny "git push forzato, che cancella o in mirror: negato."
   fi
   grep -Eq 'git[[:space:]]+(reset[[:space:]]+--hard|clean|checkout[[:space:]]+(--[[:space:]]+)?\.)' <<<"$c" && deny "comando git distruttivo: usa un'alternativa non distruttiva."
+  grep -Eq '(^|[;&|[:space:]])git[[:space:]]+stash' <<<"$c" && deny "git stash nell'albero condiviso porta via il lavoro degli altri agenti: committa i tuoi file con git commit -- <file>, o usa un worktree."
+  # dart format solo su file .dart elencati (D-434): una cartella riformatterebbe centinaia di file non tuoi
+  if grep -Eq '(^|[;&|[:space:]])dart[[:space:]]+format' <<<"$c"; then
+    args=$(grep -Eo 'dart[[:space:]]+format[^;&|]*' <<<"$c" | head -1 | sed -E 's/^dart[[:space:]]+format//')
+    args=$(tr -d "\"'" <<<"$args")
+    case $args in *'$('* | *'`'*) args="" ;; esac # file da una sostituzione (git diff --name-only): non verificabili qui
+    for tok in $args; do
+      case $tok in -* | *.dart | [0-9]*) ;; *) deny "dart format solo su file .dart elencati, mai su cartelle ($tok, D-434)." ;; esac
+    done
+    [ -z "$args" ] || grep -Eq '\.dart([[:space:]]|$)' <<<"$args" || deny "dart format senza file .dart elencati: indica i file che hai toccato (D-434)."
+  fi
   grep -Eq '(curl|wget)[^|]*\|[[:space:]]*(ba)?sh' <<<"$c" && deny "esecuzione di script scaricati negata."
   grep -Eq '(^|[[:space:]])(mkfs|dd[[:space:]]+if=|shutdown|reboot)' <<<"$c" && deny "comando di sistema negato."
   # rm ricorsivo: ogni argomento deve stare dentro il progetto o nello scratchpad

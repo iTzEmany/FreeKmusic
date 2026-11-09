@@ -47,11 +47,12 @@
 - **Task**: sotto la mezz'ora di lavoro (una sezione di schermata, un gruppo di ricerca, testi ARB) si accorpa al task vicino della stessa ondata. Al massimo 3–4 task per fase.
 - **Scheggia**: in modalità passo con effort `medium`, `high` solo nelle aree a rischio qui sopra. In modalità fase solo se la fase tocca aree a rischio. Per una fase di sola UI la saltiamo: la prova a vista è già nel passo «tuo» (es. 51.9).
 - **Review**: `/code-review high` solo sulle aree a rischio. La review di architettura di fine fase la fa Sonnet con effort high se la fase non tocca schema, backup o protocollo Jam; Opus negli altri casi.
+- **Prima del push** l'hook `.githooks/pre-push` lancia `scripts/guardie.sh` (arb, separatori, architettura, colori; i golden se il ramo tocca `lib/ui`), ~10 s. In un clone nuovo: `git config core.hooksPath .githooks`.
 - **Test mirati di ogni task UI**: aggiungi sempre `test/ui/no_separator_literals_test.dart` e `test/ui/architecture_test.dart`, perché girano in pochi secondi (la CI era rossa in #30 per un `' · '`).
 - **Prompt degli implementer**: dai i simboli esatti da codegraph (file, nome, riga) e i test da scrivere, così l'agente non esplora da solo.
 
 ## Stime misurate
-- `sorveglia.sh`: la stima vuole l'unità (`6m`); un numero nudo vale secondi (2026-10-25). `pr-attendi.sh` invece vuole i minuti come numero nudo (`15`): `15m` stampa l'uso ed esce con 2 (2026-10-26)
+- `sorveglia.sh` vuole l'unità (`6m`) e rifiuta un numero nudo; `pr-attendi.sh` accetta `15m` o `15` (minuti) (2026-11-09)
 - 54.8 (36 file di test mirati, 773 test) ~ 2m20 (2026-10-26)
 - `flutter test test/services/audio/ test/providers/` ~ 1m30 (2026-10-25)
 - Toccando `lib/ui`: lancia sempre anche `test/ui/architecture_test.dart` (la UI non usa repository né `databaseProvider`; CI rossa in #19)
