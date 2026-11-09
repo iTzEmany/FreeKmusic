@@ -289,10 +289,7 @@ void main() {
   test('hand-typed transliterations travel in settings.json and user_data.json; a backup without them stays valid', () async {
     final out = p.join(dir.path, 'rom.zip');
     // Track 3 has no other user data: the transliteration alone must keep it in.
-    await prefs.setString(
-      'manualRomanization',
-      '{"1":"la la","3":"ra ra"}',
-    );
+    await prefs.setString('manualRomanization', '{"1":"la la","3":"ra ra"}');
     await service().createBackup(out);
     final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
     Map<String, dynamic> read(String n) =>
@@ -321,6 +318,32 @@ void main() {
     expect(older.romanizations, isEmpty);
     expect(older.recognized, greaterThan(0));
   });
+
+  test(
+    'the merge brings a transliteration only for the text it matches',
+    () async {
+      final out = p.join(dir.path, 'rom2.zip');
+      await prefs.setString('manualRomanization', '{"1":"la la","3":"ra ra"}');
+      await service().createBackup(out);
+      final fresh = await freshLibrary();
+      // Track 1 has the very same lyrics already; track 3 has another text.
+      await (fresh.update(fresh.tracks)..where((t) => t.id.equals(1))).write(
+        const TracksCompanion(
+          lyricsPlain: Value('la la'),
+          lyricsSynced: Value('[00:01.00]la'),
+        ),
+      );
+      await (fresh.update(fresh.tracks)..where((t) => t.id.equals(3))).write(
+        const TracksCompanion(lyricsPlain: Value('something else')),
+      );
+      final report = await mergeBackup(
+        File(out),
+        fresh,
+        Directory(p.join(dir.path, 'rom2-covers'))..createSync(),
+      );
+      expect(report.romanizations, {1: 'la la'});
+    },
+  );
 
   test('a backup in today\'s format restores into a fresh library with the same user data', () async {
     final fresh = await freshLibrary();

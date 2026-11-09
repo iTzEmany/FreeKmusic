@@ -66,7 +66,11 @@ class TrackOps {
     String? plain,
     String? synced,
     bool byUser = false,
-  }) => _repo.setLyrics(id, plain: plain, synced: synced, byUser: byUser);
+  }) async {
+    await _repo.setLyrics(id, plain: plain, synced: synced, byUser: byUser);
+    // A text from a search is no longer one the user typed.
+    await _ref.read(handWrittenLyricsProvider.notifier).set(id, false);
+  }
 
   /// Saves lyrics typed or pasted by the user (F-110): timed lines make them
   /// synced. Returns null when there is nothing to save, else whether they are synced.
@@ -81,6 +85,7 @@ class TrackOps {
     );
     // A new text starts with the sync on, and an old translation no longer fits.
     await _ref.read(unsyncedLyricsProvider.notifier).setSynced(id, true);
+    await _ref.read(handWrittenLyricsProvider.notifier).set(id, true);
     _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
     return parsed.synced != null;
   }
@@ -96,8 +101,11 @@ class TrackOps {
   Future<Future<void> Function()> deleteLyrics(int id) async {
     final unsynced = _ref.read(unsyncedLyricsProvider.notifier);
     final wasUnsynced = _ref.read(unsyncedLyricsProvider).contains(id);
+    final handWritten = _ref.read(handWrittenLyricsProvider.notifier);
+    final wasHandWritten = _ref.read(handWrittenLyricsProvider).contains(id);
     final snapshot = await _repo.clearLyrics(id);
     await unsynced.setSynced(id, true);
+    await handWritten.set(id, false);
     _ref.read(lyricsTranslationProvider.notifier).clearFor(id);
     if (autoParts(_ref.read(settingsProvider)).isNotEmpty) {
       unawaited(_ref.read(enrichCompleterProvider.notifier).start());
@@ -106,6 +114,7 @@ class TrackOps {
       try {
         await _repo.restoreLyrics(id, snapshot);
         if (wasUnsynced) await unsynced.setSynced(id, false);
+        if (wasHandWritten) await handWritten.set(id, true);
       } on Object catch (e, st) {
         AppLog.e('undo delete lyrics failed', e, st);
       }

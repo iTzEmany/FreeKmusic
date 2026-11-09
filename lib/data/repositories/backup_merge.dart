@@ -25,8 +25,8 @@ class MergeReport {
   int radiosAdded = 0;
   int followedArtistsAdded = 0;
 
-  /// Transliterations typed by hand in the backup, by id of the track here;
-  /// the caller keeps the ones this library has none for.
+  /// Transliterations typed by hand in the backup, by id of the track here, for
+  /// tracks whose lyrics are the backup's; the caller keeps the ones it has none for.
   final Map<int, String> romanizations = {};
 
   /// Titles of the tracks the backup mentions that this library does not have.
@@ -93,7 +93,14 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       if (_blank(t.lyricsPlain) && !_blank(u.lyricsPlain)) upd = upd.copyWith(lyricsPlain: Value(u.lyricsPlain));
       if (_blank(t.lyricsSynced) && !_blank(u.lyricsSynced)) upd = upd.copyWith(lyricsSynced: Value(u.lyricsSynced));
       if (_blank(t.curiosities) && !_blank(u.curiosities)) upd = upd.copyWith(curiosities: Value(u.curiosities));
-      if (!_blank(u.romanization)) report.romanizations[id] = u.romanization!;
+      // Only for the text it was written for: the one here equals the backup's, or came from it just now.
+      final plainHere = upd.lyricsPlain.present ? upd.lyricsPlain.value : t.lyricsPlain;
+      final syncedHere = upd.lyricsSynced.present ? upd.lyricsSynced.value : t.lyricsSynced;
+      if (!_blank(u.romanization) &&
+          (plainHere ?? '') == (u.lyricsPlain ?? '') &&
+          (syncedHere ?? '') == (u.lyricsSynced ?? '')) {
+        report.romanizations[id] = u.romanization!;
+      }
       if (u.playCount > t.playCount) upd = upd.copyWith(playCount: Value(u.playCount));
       final last = u.lastPlayedAt;
       if (last != null && (t.lastPlayedAt == null || last > t.lastPlayedAt!)) {

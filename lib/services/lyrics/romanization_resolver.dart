@@ -61,7 +61,7 @@ class RomanizationInput {
   /// Transliteration typed by the user, if any.
   final String? manual;
 
-  /// The lyrics are the user's (D-475): only Korean is computed, nothing is searched.
+  /// The lyrics are the user's (D-475): nothing is searched online.
   final bool handWritten;
   final bool enabled;
 
@@ -69,8 +69,8 @@ class RomanizationInput {
   final bool online;
 }
 
-/// D-475: manual -> (hand-written text: only Korean) -> Korean computed ->
-/// cache -> NetEase (saved, «none» too) -> Chinese dictionary -> unavailable.
+/// D-475: manual -> Korean computed -> cache -> NetEase (saved, «none» too) ->
+/// Chinese dictionary -> unavailable. A hand-written text skips cache and NetEase.
 /// Under half of the lines matched counts as unavailable.
 class RomanizationResolver {
   RomanizationResolver({
@@ -125,34 +125,43 @@ class RomanizationResolver {
       yield hit;
       return;
     }
-    if (i.handWritten) {
-      yield RomanizationState.unavailable;
-      return;
-    }
-
     RomanizationMatch fit(String lrc) => isSynced
         ? matchRomanization(synced, lrc)
         : matchRomanizationByIndex(original, lrc);
 
-    final cached = await cache.get(i.trackId);
-    var found = cached?.lrc == null
-        ? null
-        : ready(fit(cached!.lrc!), RomanizationSource.found);
-    // A «none» still fresh is believed; a saved text that no longer fits is asked again.
-    if (found == null && i.online && (cached == null || cached.lrc != null)) {
-      try {
-        final lrc = await fetch(i, cancel);
-        await cache.put(i.trackId, lrc);
-        if (lrc != null) found = ready(fit(lrc), RomanizationSource.found);
-      } on Object catch (e, st) {
-        if (!(cancel?.isCancelled ?? false)) {
-          AppLog.w('romalrc lookup failed, not saved', e, st);
+    // Hand-written text: nothing is searched online, the dictionary still counts.
+    RomanizationState? found;
+    if (!i.handWritten) {
+      final key = '${i.title}\u0000${i.artist}';
+      final cached = await cache.get(i.trackId, key: key);
+      found = cached?.lrc == null
+          ? null
+          : ready(fit(cached!.lrc!), RomanizationSource.found);
+      // A «none» still fresh is believed; a saved text that does not fit is
+      // asked again only once it is old. NetEase answers nothing without an
+      // artist and a length: no request, nothing saved.
+      final ask =
+          cached == null ||
+          (cached.lrc != null && cached.age > kRomanizationRetryAfter);
+      if (found == null &&
+          ask &&
+          i.online &&
+          i.artist.trim().isNotEmpty &&
+          i.durationSec != null) {
+        try {
+          final lrc = await fetch(i, cancel);
+          await cache.put(i.trackId, lrc, key: key);
+          if (lrc != null) found = ready(fit(lrc), RomanizationSource.found);
+        } on Object catch (e, st) {
+          if (!(cancel?.isCancelled ?? false)) {
+            AppLog.w('romalrc lookup failed, not saved', e, st);
+          }
         }
       }
-    }
-    if (found != null) {
-      yield found;
-      return;
+      if (found != null) {
+        yield found;
+        return;
+      }
     }
 
     if (script == LyricsScript.chinese) {

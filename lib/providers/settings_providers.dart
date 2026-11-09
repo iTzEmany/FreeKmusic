@@ -63,6 +63,24 @@ final unsyncedLyricsProvider =
       UnsyncedLyricsNotifier.new,
     );
 
+/// Tracks whose lyrics the user typed in the editor (D-475): their
+/// transliteration is never searched online. Kept in the settings (backup).
+class HandWrittenLyricsNotifier extends Notifier<Set<int>> {
+  @override
+  Set<int> build() => ref.read(settingsStoreProvider).readHandWrittenLyrics();
+
+  Future<void> set(int id, bool handWritten) async {
+    if (state.contains(id) == handWritten) return;
+    state = handWritten ? {...state, id} : ({...state}..remove(id));
+    await ref.read(settingsStoreProvider).writeHandWrittenLyrics(state);
+  }
+}
+
+final handWrittenLyricsProvider =
+    NotifierProvider<HandWrittenLyricsNotifier, Set<int>>(
+      HandWrittenLyricsNotifier.new,
+    );
+
 /// Transliterations typed by hand, track id -> text (D-475), kept in the
 /// settings so they travel in the backup like the other user data.
 class ManualRomanizationNotifier extends Notifier<Map<int, String>> {

@@ -1,9 +1,11 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/folder_ops.dart';
 import 'package:codecore/providers/playlist_ops.dart';
 import 'package:codecore/providers/radio_providers.dart';
 import 'package:codecore/providers/radio_ops.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/tag_ops.dart';
 import 'package:codecore/providers/track_ops.dart';
 import 'package:codecore/services/radio/radio_station.dart';
@@ -11,6 +13,7 @@ import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late AppDatabase db;
@@ -22,7 +25,11 @@ void main() {
       await db.into(db.tracks).insert(TracksCompanion.insert(
           path: '/m/t$i.mp3', title: 'T$i', albumKey: 'a', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
     }
-    c = ProviderContainer(overrides: [databaseProvider.overrideWithValue(db)]);
+    SharedPreferences.setMockInitialValues({});
+    c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      settingsStoreProvider.overrideWithValue(await SettingsStore.open()),
+    ]);
   });
   tearDown(() async {
     c.dispose();
@@ -71,6 +78,22 @@ void main() {
       await ops().setLyrics(id, plain: 'only');
       final t = (await rows()).first;
       expect((t.lyricsPlain, t.lyricsSynced), ('only', null));
+    });
+
+    test('the hand-written mark: set by the editor, cleared by a search or a delete, put back by the undo', () async {
+      final id = (await rows()).first.id;
+      bool marked() => c.read(handWrittenLyricsProvider).contains(id);
+      await ops().saveLyricsText(id, 'my own words');
+      expect(marked(), isTrue);
+      expect((await SettingsStore.open()).readHandWrittenLyrics(), {id});
+      await ops().setLyrics(id, plain: 'from a search', byUser: true);
+      expect(marked(), isFalse);
+      await ops().saveLyricsText(id, 'again');
+      final undo = await ops().deleteLyrics(id);
+      expect(marked(), isFalse);
+      await undo();
+      expect(marked(), isTrue);
+      expect((await rows()).first.lyricsPlain, 'again');
     });
 
     test('FolderOps.paths maps folder id to its root path', () async {

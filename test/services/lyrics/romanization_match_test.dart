@@ -58,4 +58,32 @@ void main() {
     expect(m.matched, 0);
     expect(m.available, isFalse);
   });
+
+  group('matchManualRomanization', () {
+    test('45 lines keep their order (no stamp sorting)', () {
+      final original = [for (var i = 0; i < 45; i++) 'line $i あ'];
+      final typed = [for (var i = 0; i < 45; i++) 'rom $i'].join('\n');
+      final m = matchManualRomanization(original, typed);
+      expect(m.lines, [for (var i = 0; i < 45; i++) 'rom $i']);
+      expect(m.available, isTrue);
+    });
+
+    test(
+      'a credit line gets its line too; blank lines are skipped on both sides',
+      () {
+        final m = matchManualRomanization([
+          '作词 : A',
+          '',
+          'こんにちは',
+        ], 'sakushi : A\n\nkonnichiwa\n');
+        expect(m.lines, ['sakushi : A', null, 'konnichiwa']);
+        expect(m.total, 2);
+      },
+    );
+
+    test('a different number of lines matches nothing', () {
+      final m = matchManualRomanization(['あ', 'い'], 'a');
+      expect(m.available, isFalse);
+    });
+  });
 }

@@ -87,11 +87,22 @@ RomanizationMatch matchRomanizationByIndex(
 }
 
 /// Transliteration typed by hand (plain text, one line per original line,
-/// no stamps) against the original lines: by index among the non-empty lines.
+/// no stamps) against the original lines: by index among the non-empty lines
+/// of both sides. Credits are not skipped: the user wrote a line for them too.
 RomanizationMatch matchManualRomanization(List<String> original, String text) {
-  final asLrc = [
+  final typed = [
     for (final l in text.split(RegExp(r'\r?\n')))
-      if (l.trim().isNotEmpty) '[00:00.00]${l.trim()}',
-  ].join('\n');
-  return matchRomanizationByIndex(original, asLrc);
+      if (l.trim().isNotEmpty) l.trim(),
+  ];
+  final idx = [
+    for (var i = 0; i < original.length; i++)
+      if (original[i].trim().isNotEmpty) i,
+  ];
+  final out = List<String?>.filled(original.length, null);
+  if (idx.length == typed.length) {
+    for (var k = 0; k < idx.length; k++) {
+      out[idx[k]] = typed[k];
+    }
+  }
+  return RomanizationMatch(out, idx.length);
 }

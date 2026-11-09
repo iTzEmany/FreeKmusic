@@ -59,4 +59,48 @@ void main() {
       expect((await open().get(1))!.lrc, 'ok');
     },
   );
+
+  test(
+    'an entry asked with another title or artist counts as unknown',
+    () async {
+      final c = open();
+      await c.put(1, 'text', key: 'T\u0000A');
+      expect((await c.get(1, key: 'T\u0000A'))!.lrc, 'text');
+      expect(await c.get(1, key: 'T2\u0000A'), isNull);
+      expect(await c.get(1), isNull);
+    },
+  );
+
+  test('an entry reports its age', () async {
+    final c = open();
+    await c.put(1, 'text');
+    now = now.add(const Duration(days: 40));
+    expect((await c.get(1))!.age, const Duration(days: 40));
+  });
+
+  test('entries of tracks that no longer exist are dropped on the first load, and the file follows', () async {
+    await open().put(1, 'a');
+    await open().put(2, 'b');
+    final c = RomanizationCache(
+      file: () async => file,
+      now: () => now,
+      liveIds: () async => {2},
+    );
+    expect(await c.get(1), isNull);
+    expect((await c.get(2))!.lrc, 'b');
+    await c.put(3, 'c'); // waits for the file to be written
+    final again = open();
+    expect(await again.get(1), isNull);
+    expect((await again.get(2))!.lrc, 'b');
+  });
+
+  test('a failing liveIds keeps everything', () async {
+    await open().put(1, 'a');
+    final c = RomanizationCache(
+      file: () async => file,
+      now: () => now,
+      liveIds: () async => throw StateError('db'),
+    );
+    expect((await c.get(1))!.lrc, 'a');
+  });
 }

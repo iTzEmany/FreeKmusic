@@ -54,6 +54,7 @@ import 'services/backup/restore_service.dart';
 import 'services/daylist/daylist_store.dart' show daylistFileName;
 import 'services/covers/cover_store.dart';
 import 'services/covers/cover_thumbnails.dart';
+import 'services/lyrics/romanization_cache.dart' show romanizationCacheFileName;
 import 'services/perf/perf_probe.dart';
 
 Future<void> main() async {
@@ -93,6 +94,9 @@ Future<void> main() async {
       schemaVersion: kSchemaVersion,
       dislikesFile: File(p.join(await appSupportDir(), 'dislikes.json')),
       daylistFile: File(p.join(await appSupportDir(), daylistFileName)),
+      romanizationCacheFile: File(
+        p.join(await appSupportDir(), romanizationCacheFileName),
+      ),
     );
   } on Object catch (e, st) {
     AppLog.e('pending restore could not run', e, st);

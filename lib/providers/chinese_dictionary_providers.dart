@@ -48,6 +48,17 @@ class ChineseDictionaryState {
   final int sizeBytes;
 }
 
+/// How many times the app tried to download the dictionary by itself and
+/// failed in this session; after [maxAutomatic] it waits for the user.
+class CedictAutoGate {
+  static const maxAutomatic = 2;
+  var failures = 0;
+}
+
+final cedictAutoGateProvider = Provider<CedictAutoGate>(
+  (ref) => CedictAutoGate(),
+);
+
 /// The CC-CEDICT dictionary of the Chinese transliteration (D-476): the file in
 /// the data folder and, while something uses it, the parsed map in memory. The
 /// provider is auto-dispose: nobody watching it frees the memory (the file stays).
@@ -56,6 +67,9 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
   Future<PinyinDictionary?>? _loading;
   CancelToken? _cancel;
   var _disposed = false;
+
+  /// Bumped by [delete]: a run that started before it must not write anything.
+  var _generation = 0;
 
   @override
   ChineseDictionaryState build() {
@@ -88,20 +102,48 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
 
   /// The loaded dictionary: reads the file, downloading it first when missing
   /// and [download] allows (the lyrics enrichment's network rule). Null when it
-  /// fails (state `error`; the next call tries again). Concurrent calls share one run.
-  Future<PinyinDictionary?> ensure({required bool download}) => _dict != null
-      ? Future.value(_dict)
-      : _loading ??= _run(download).whenComplete(() => _loading = null);
+  /// fails (state `error`). Concurrent calls share one run. A damaged file is
+  /// deleted, so it is downloaded again. [automatic] (the lyrics view, not a
+  /// button) stops trying after two failed downloads in a session.
+  Future<PinyinDictionary?> ensure({
+    required bool download,
+    bool automatic = false,
+  }) {
+    if (_dict != null) return Future.value(_dict);
+    final gate = ref.read(cedictAutoGateProvider);
+    final allow =
+        download && (!automatic || gate.failures < CedictAutoGate.maxAutomatic);
+    final current = _loading;
+    if (current != null) return current;
+    late final Future<PinyinDictionary?> run;
+    run = _run(allow).whenComplete(() {
+      if (identical(_loading, run)) _loading = null;
+    });
+    return _loading = run;
+  }
 
   Future<PinyinDictionary?> _run(bool download) async {
+    final gen = _generation;
+    final gate = ref.read(cedictAutoGateProvider);
     final path = await _path;
+    var downloading = false;
     try {
       if (await cedictInstalledSize(path) == 0) {
         if (!download) return null;
+        downloading = true;
         await _download(path);
+        downloading = false;
+        gate.failures = 0;
       }
-      final d = await PinyinDictionary.load(path);
-      if (_disposed) return null;
+      final PinyinDictionary d;
+      try {
+        d = await PinyinDictionary.load(path);
+      } on Object {
+        // Damaged file: out with it, the next run downloads it again.
+        if (gen == _generation) await deleteCedict(path);
+        rethrow;
+      }
+      if (_disposed || gen != _generation) return null;
       _dict = d;
       state = ChineseDictionaryState(
         ChineseDictionaryStatus.ready,
@@ -111,8 +153,9 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     } on Object catch (e, st) {
       if (!(e is DioException && CancelToken.isCancel(e))) {
         AppLog.w('Chinese dictionary not available', e, st);
+        if (downloading) gate.failures++;
       }
-      if (!_disposed) {
+      if (!_disposed && gen == _generation) {
         state = const ChineseDictionaryState(ChineseDictionaryStatus.error);
       }
       return null;
@@ -127,7 +170,7 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
       target: path,
       cancel: cancel,
       onProgress: (got, total) {
-        if (_disposed) return;
+        if (_disposed || cancel.isCancelled) return;
         state = ChineseDictionaryState(
           ChineseDictionaryStatus.downloading,
           progress: total > 0 ? got / total : null,
@@ -136,10 +179,13 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     );
   }
 
-  /// «Elimina»: deletes the file and frees the map.
+  /// «Elimina»: deletes the file and frees the map; a download or a load that
+  /// is running is dropped.
   Future<void> delete() async {
+    _generation++;
     _cancel?.cancel();
     _dict = null;
+    _loading = null;
     await deleteCedict(await _path);
     if (!_disposed) {
       state = const ChineseDictionaryState(

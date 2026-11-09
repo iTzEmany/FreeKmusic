@@ -7,6 +7,7 @@ import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+const _key = 'T\u0000A';
 const _jaSynced = '[00:01.00]こんにちは\n[00:05.00]さようなら';
 const _jaRoman = '[00:01.00]konnichiwa\n[00:05.00]sayounara';
 
@@ -14,6 +15,7 @@ void main() {
   late Directory dir;
   late RomanizationCache cache;
   var fetched = 0;
+  var now = DateTime(2026, 11, 8);
   Future<String?> Function() online = () async => null;
   var installed = false;
   PinyinDictionary? dict;
@@ -39,11 +41,13 @@ void main() {
     bool handWritten = false,
     bool enabled = true,
     bool net = true,
+    String artist = 'A',
+    int? durationSec = 200,
   }) => RomanizationInput(
     trackId: 1,
     title: 'T',
-    artist: 'A',
-    durationSec: 200,
+    artist: artist,
+    durationSec: durationSec,
     plain: plain,
     synced: synced,
     manual: manual,
@@ -59,7 +63,9 @@ void main() {
     dir = Directory.systemTemp.createTempSync('romres');
     cache = RomanizationCache(
       file: () async => File(p.join(dir.path, 'c.json')),
+      now: () => now,
     );
+    now = DateTime(2026, 11, 8);
     fetched = 0;
     downloads = 0;
     online = () async => null;
@@ -88,7 +94,7 @@ void main() {
   });
 
   test('Japanese from the cache, no lookup', () async {
-    await cache.put(1, _jaRoman);
+    await cache.put(1, _jaRoman, key: _key);
     final r = (await run(input(synced: _jaSynced))).last;
     expect(r.status, RomanizationStatus.ready);
     expect(r.source, RomanizationSource.found);
@@ -102,7 +108,7 @@ void main() {
       online = () async => _jaRoman;
       final r = (await run(input(plain: 'こんにちは\nさようなら'))).last;
       expect(r.lines, ['konnichiwa', 'sayounara']);
-      expect((await cache.get(1))!.lrc, _jaRoman);
+      expect((await cache.get(1, key: _key))!.lrc, _jaRoman);
     },
   );
 
@@ -111,7 +117,7 @@ void main() {
       (await run(input(synced: _jaSynced))).last.status,
       RomanizationStatus.unavailable,
     );
-    expect((await cache.get(1))!.lrc, isNull);
+    expect((await cache.get(1, key: _key))!.lrc, isNull);
     expect(fetched, 1);
     await run(input(synced: _jaSynced));
     expect(fetched, 1, reason: 'the fresh «none» is not asked again');
@@ -124,7 +130,7 @@ void main() {
       RomanizationStatus.unavailable,
     );
     expect(fetched, 0);
-    expect(await cache.get(1), isNull);
+    expect(await cache.get(1, key: _key), isNull);
   });
 
   test('a failing service is not saved and counts as unavailable', () async {
@@ -133,7 +139,7 @@ void main() {
       (await run(input(synced: _jaSynced))).last.status,
       RomanizationStatus.unavailable,
     );
-    expect(await cache.get(1), isNull);
+    expect(await cache.get(1, key: _key), isNull);
   });
 
   test('under half of the lines matched is unavailable', () async {
@@ -147,7 +153,7 @@ void main() {
   });
 
   test('the manual transliteration wins over a found one', () async {
-    await cache.put(1, _jaRoman);
+    await cache.put(1, _jaRoman, key: _key);
     final r = (await run(input(synced: _jaSynced, manual: 'mine 1\nmine 2')))
         .last;
     expect(r.source, RomanizationSource.manual);
@@ -155,27 +161,63 @@ void main() {
   });
 
   test('a manual one that does not fit gives way to the others', () async {
-    await cache.put(1, _jaRoman);
+    await cache.put(1, _jaRoman, key: _key);
     final r = (await run(input(synced: _jaSynced, manual: 'only one'))).last;
     expect(r.source, RomanizationSource.found);
   });
 
+  test('a hand-written text: nothing is searched, cache or lookup, but Korean and the manual one count', () async {
+    online = () async => _jaRoman;
+    await cache.put(1, _jaRoman, key: _key);
+    expect(
+      (await run(input(synced: _jaSynced, handWritten: true))).last.status,
+      RomanizationStatus.unavailable,
+    );
+    expect(fetched, 0);
+    final ko = (await run(input(plain: '좋아', handWritten: true))).last;
+    expect(ko.lines, ['joa']);
+    final withManual = (await run(
+      input(plain: 'こんにちは', handWritten: true, manual: 'konnichiwa'),
+    )).last;
+    expect(withManual.source, RomanizationSource.manual);
+  });
+
+  test('no artist or no length: no request and nothing saved', () async {
+    online = () async => _jaRoman;
+    expect(
+      (await run(input(synced: _jaSynced, artist: ' '))).last.status,
+      RomanizationStatus.unavailable,
+    );
+    expect(
+      (await run(input(synced: _jaSynced, durationSec: null))).last.status,
+      RomanizationStatus.unavailable,
+    );
+    expect(fetched, 0);
+    expect(await cache.get(1, key: _key), isNull);
+  });
+
+  test('a saved text that does not fit is asked again only when old', () async {
+    online = () async => _jaRoman;
+    await cache.put(1, '[00:50.00]other\n[00:60.00]more', key: _key);
+    expect(
+      (await run(input(synced: _jaSynced))).last.status,
+      RomanizationStatus.unavailable,
+    );
+    expect(fetched, 0, reason: 'still fresh');
+    now = now.add(kRomanizationRetryAfter + const Duration(days: 1));
+    final r = (await run(input(synced: _jaSynced))).last;
+    expect(fetched, 1);
+    expect(r.lines, ['konnichiwa', 'sayounara']);
+  });
+
   test(
-    'a hand-written text: only Korean is computed, nothing is searched',
+    'a cache entry made for another title or artist is not believed',
     () async {
       online = () async => _jaRoman;
-      await cache.put(1, _jaRoman);
-      expect(
-        (await run(input(synced: _jaSynced, handWritten: true))).last.status,
-        RomanizationStatus.unavailable,
-      );
-      expect(fetched, 0);
-      final ko = (await run(input(plain: '좋아', handWritten: true))).last;
-      expect(ko.lines, ['joa']);
-      final withManual = (await run(
-        input(plain: 'こんにちは', handWritten: true, manual: 'konnichiwa'),
-      )).last;
-      expect(withManual.source, RomanizationSource.manual);
+      await cache.put(1, null, key: 'Other\u0000A');
+      final r = (await run(input(synced: _jaSynced))).last;
+      expect(fetched, 1);
+      expect(r.status, RomanizationStatus.ready);
     },
   );
 
@@ -200,6 +242,35 @@ void main() {
       ]);
       expect(downloads, 1);
     });
+
+    test(
+      'a hand-written text uses the installed dictionary, no lookup',
+      () async {
+        installed = true;
+        dict = d;
+        online = () async => 'x';
+        final r = (await run(input(plain: '银行', handWritten: true))).last;
+        expect(r.source, RomanizationSource.dictionary);
+        expect(r.lines, ['yínháng']);
+        expect(fetched, 0);
+      },
+    );
+
+    test(
+      'a hand-written text may download the dictionary, same rule',
+      () async {
+        dict = d;
+        final states = await run(input(plain: '银行', handWritten: true));
+        expect(states.map((s) => s.status), [
+          RomanizationStatus.loading,
+          RomanizationStatus.downloading,
+          RomanizationStatus.ready,
+        ]);
+        expect(downloads, 1);
+        await run(input(plain: '银行', handWritten: true, net: false));
+        expect(downloads, 1, reason: 'no network, no download');
+      },
+    );
 
     test(
       'missing and no network, or the download fails: unavailable',

@@ -1031,13 +1031,6 @@ class TrackRepository {
     );
   });
 
-  /// True when the user typed or chose the lyrics of [id] (the enrichment never replaces them).
-  Future<bool> lyricsByUser(int id) async =>
-      (await (_db.select(
-        _db.trackEnrich,
-      )..where((e) => e.trackId.equals(id))).getSingleOrNull())?.lyricsByUser ??
-      false;
-
   /// Puts back exactly what [clearLyrics] took away.
   Future<void> restoreLyrics(int id, LyricsSnapshot s) =>
       _db.transaction(() async {
@@ -1110,6 +1103,14 @@ class TrackRepository {
   Stream<Track?> watchById(int id) => (_db.select(
     _db.tracks,
   )..where((t) => t.id.equals(id))).watchSingleOrNull();
+
+  /// Ids of every row of `tracks`, whatever its kind.
+  Future<Set<int>> allIds() async {
+    final rows = await (_db.selectOnly(
+      _db.tracks,
+    )..addColumns([_db.tracks.id])).get();
+    return {for (final r in rows) r.read(_db.tracks.id)!};
+  }
 
   /// How many music tracks there are (podcast episodes are not counted).
   Future<int> countAll() async {

@@ -139,7 +139,7 @@ void main() {
     final s = await settled(id);
     expect(s.source, RomanizationSource.found);
     expect(s.lines, ['konnichiwa']);
-    expect((await cache.get(id))!.lrc, '[00:01.00]konnichiwa');
+    expect((await cache.get(id, key: 'T\u0000A'))!.lrc, '[00:01.00]konnichiwa');
   });
 
   test('the setting off: off, and no lookup', () async {
@@ -156,16 +156,27 @@ void main() {
     expect(netease.calls, 0);
   });
 
+  test('hand-written lyrics: no lookup, Korean still computed', () async {
+    netease.answer = '[00:01.00]konnichiwa';
+    await boot();
+    final ja = await addTrack(synced: '[00:01.00]こんにちは');
+    final ko = await addTrack(plain: '좋아');
+    final marks = c.read(handWrittenLyricsProvider.notifier);
+    await marks.set(ja, true);
+    await marks.set(ko, true);
+    expect((await settled(ja)).status, RomanizationStatus.unavailable);
+    expect((await settled(ko)).lines, ['joa']);
+    expect(netease.calls, 0);
+  });
+
   test(
-    'lyrics of the user (typed or chosen): no lookup, Korean still computed',
+    'lyrics chosen with the search (by user, not typed) get the lookup',
     () async {
       netease.answer = '[00:01.00]konnichiwa';
       await boot();
-      final ja = await addTrack(synced: '[00:01.00]こんにちは', byUser: true);
-      expect((await settled(ja)).status, RomanizationStatus.unavailable);
-      final ko = await addTrack(plain: '좋아', byUser: true);
-      expect((await settled(ko)).lines, ['joa']);
-      expect(netease.calls, 0);
+      final id = await addTrack(synced: '[00:01.00]こんにちは', byUser: true);
+      expect((await settled(id)).lines, ['konnichiwa']);
+      expect(netease.calls, 1);
     },
   );
 

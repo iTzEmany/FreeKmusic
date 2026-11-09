@@ -9,7 +9,7 @@ import '../services/lyrics/lyrics_shown.dart';
 import '../services/lyrics/romanization_cache.dart';
 import '../services/lyrics/romanization_resolver.dart';
 import 'chinese_dictionary_providers.dart';
-import 'database_providers.dart';
+import 'database_providers.dart' show trackRepositoryProvider;
 import 'import_providers.dart' show importedTrackProvider;
 import 'online_providers.dart';
 import 'settings_providers.dart';
@@ -18,7 +18,8 @@ import 'settings_providers.dart';
 final romanizationCacheProvider = Provider<RomanizationCache>(
   (ref) => RomanizationCache(
     file: () async =>
-        File(p.join(await appSupportDir(), 'romanization_cache.json')),
+        File(p.join(await appSupportDir(), romanizationCacheFileName)),
+    liveIds: ref.read(trackRepositoryProvider).allIds,
   ),
 );
 
@@ -28,14 +29,17 @@ final romanizationCacheProvider = Provider<RomanizationCache>(
 /// `value ?? RomanizationState.loading`.
 ///
 /// Network (NetEase, dictionary download) only when the automatic lyrics search
-/// is on: the same opt-in as the lyrics enrichment. A text the user typed or
-/// chose counts as hand-written (`lyricsByUser`).
+/// is on: the same opt-in as the lyrics enrichment. A text the user
+/// typed in the editor counts as hand-written (`handWrittenLyricsProvider`).
 final romanizationProvider = StreamProvider.autoDispose
     .family<RomanizationState, int>((ref, id) async* {
       final s = ref.watch(
         settingsProvider.select((s) => (s.romanization, s.autoLyrics)),
       );
       final manual = ref.watch(manualRomanizationProvider.select((m) => m[id]));
+      final handWritten = ref.watch(
+        handWrittenLyricsProvider.select((h) => h.contains(id)),
+      );
       final unsynced = ref.watch(
         unsyncedLyricsProvider.select((u) => u.contains(id)),
       );
@@ -73,7 +77,8 @@ final romanizationProvider = StreamProvider.autoDispose
               cancel: c,
             ),
         dictionaryInstalled: dict.installed,
-        dictionary: ({required download}) => dict.ensure(download: download),
+        dictionary: ({required download}) =>
+            dict.ensure(download: download, automatic: true),
       );
       final off = unsynced && synced != null;
       yield* resolver.resolve(
@@ -85,7 +90,7 @@ final romanizationProvider = StreamProvider.autoDispose
           plain: off ? plainTextOf(plain, synced) : plain,
           synced: off ? null : synced,
           manual: manual,
-          handWritten: await ref.read(trackRepositoryProvider).lyricsByUser(id),
+          handWritten: handWritten,
           enabled: s.$1,
           online: s.$2,
         ),

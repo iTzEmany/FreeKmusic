@@ -338,6 +338,9 @@ const enrichMarkKey = 'enrichMark';
 /// Tracks whose synced lyrics are switched off (track ids, D-472).
 const unsyncedLyricsKey = 'unsyncedLyrics';
 
+/// Tracks whose lyrics the user typed in the editor (track ids, D-475).
+const handWrittenLyricsKey = 'handWrittenLyrics';
+
 /// Transliterations typed by hand, as JSON `{"trackId": "text"}` (D-475).
 const manualRomanizationKey = 'manualRomanization';
 
@@ -713,11 +716,24 @@ class SettingsStore {
     [for (final i in ids.toList()..sort()) '$i'],
   );
 
+  /// Tracks whose lyrics were typed or pasted in the editor (track ids).
+  Set<int> readHandWrittenLyrics() =>
+      (_prefs.getStringList(handWrittenLyricsKey) ?? const [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toSet();
+
+  Future<void> writeHandWrittenLyrics(Set<int> ids) => ids.isEmpty
+      ? _prefs.remove(handWrittenLyricsKey)
+      : _prefs.setStringList(handWrittenLyricsKey, [
+          for (final i in ids.toList()..sort()) '$i',
+        ]);
+
   /// Transliterations typed by hand: track id -> text, one line per lyrics line.
   Map<int, String> readManualRomanizations() {
-    final raw = _prefs.getString(manualRomanizationKey);
-    if (raw == null) return const {};
     try {
+      final raw = _prefs.getString(manualRomanizationKey);
+      if (raw == null) return const {};
       final m = jsonDecode(raw);
       if (m is Map) {
         return {
@@ -726,7 +742,7 @@ class SettingsStore {
               int.parse('${e.key}'): e.value as String,
         };
       }
-    } on FormatException catch (e, st) {
+    } on Object catch (e, st) {
       AppLog.w('manual transliterations unreadable, starting empty', e, st);
     }
     return const {};
