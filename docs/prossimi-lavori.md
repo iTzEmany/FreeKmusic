@@ -179,6 +179,9 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - SQL della copertina automatica ripetuto (`memory_queries.dart` e `playlist_repository.dart:84-86`): una costante condivisa.
 - `unsyncedLyrics` non viene mai potato (id AUTOINCREMENT: nessun abbinamento sbagliato, cresce soltanto).
 
+### Dalla review di architettura della fase 104
+- Costruzione di `RadioFill` con `radioOffReason` → `log.load` → `filter.load` in 3-4 copie (`daylist_providers.dart`, `similarFillProvider`, `genreMixProvider`) e `gate.trip()` sul 429 in `genre_mix.dart` e `similar_queue.dart`. Rimedio: un helper `radioFillFor(ref, seeds, inLibrary)` e `RadioFill.take` che fa il trip da solo.
+
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
