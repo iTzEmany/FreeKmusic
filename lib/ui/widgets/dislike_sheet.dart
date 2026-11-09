@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_log.dart';
 import '../../core/artist_key.dart';
 import '../../l10n/l10n_ext.dart';
-import '../../providers/daylist_providers.dart';
 import '../../providers/dislike_store_provider.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/suggestion_actions.dart';
@@ -30,19 +29,18 @@ Future<void> showDislikeSheet(
   });
 }
 
-/// The same sheet for a suggested song that is not in the queue (the daylist
-/// list); it is only blocked, and «Annulla» unblocks it.
+/// The same sheet for a suggested song that may not be in the queue (the
+/// daylist list): the same block, log and queue clean-up, and «Annulla».
 Future<void> showDislikeSheetFor(
   BuildContext context,
   WidgetRef ref,
   YtResult r,
 ) {
-  final actions = ref.read(daylistActionsProvider);
-  return _dislikeFlow(
-    context,
-    r,
-    (artist) async => actions.dislike(r, artist: artist),
-  );
+  final actions = ref.read(suggestionActionsProvider);
+  return _dislikeFlow(context, r, (artist) async {
+    final u = await actions.dislikeResult(r, artist: artist);
+    return () => actions.undo(u);
+  });
 }
 
 /// [apply] blocks (the artist or the song) and returns the undo.

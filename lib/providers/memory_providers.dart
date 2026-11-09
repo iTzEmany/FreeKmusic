@@ -62,7 +62,7 @@ final appDataPathsProvider = FutureProvider<AppDataPaths>((ref) async {
     suggestionFiles: [
       File(p.join(support, 'suggestions.json')),
       File(p.join(support, 'seed_ids.json')),
-      File(p.join(support, 'daylist.json')),
+      File(p.join(support, daylistFileName)),
     ],
   );
 });

@@ -8,6 +8,9 @@ import '../online/ytm_radio_parser.dart' show RadioKind;
 import '../shuffle_plus/suggestion_pool.dart' show SuggestionCandidate;
 import 'daylist_builder.dart';
 
+/// Name of the saved daylist in the data folder.
+const daylistFileName = 'daylist.json';
+
 /// The daylist of the current slot on disk (D-474): reopening the app in the
 /// same slot gives the same one, without computing it or asking the network.
 /// [key] says what it was made with (slots and mood table), [until] is when

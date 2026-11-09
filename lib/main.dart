@@ -51,6 +51,7 @@ import 'services/audio/playback_persistence.dart';
 import 'services/android/widget_bridge.dart';
 import 'services/android/widget_sync.dart';
 import 'services/backup/restore_service.dart';
+import 'services/daylist/daylist_store.dart' show daylistFileName;
 import 'services/covers/cover_store.dart';
 import 'services/covers/cover_thumbnails.dart';
 import 'services/perf/perf_probe.dart';
@@ -91,6 +92,7 @@ Future<void> main() async {
       coversDir: Directory(await coversDir()),
       schemaVersion: kSchemaVersion,
       dislikesFile: File(p.join(await appSupportDir(), 'dislikes.json')),
+      daylistFile: File(p.join(await appSupportDir(), daylistFileName)),
     );
   } on Object catch (e, st) {
     AppLog.e('pending restore could not run', e, st);

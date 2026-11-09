@@ -287,6 +287,28 @@ void main() {
     );
 
     test(
+      'a full restore deletes daylist.json (ids of the old database)',
+      () async {
+        final live = File(p.join(dir.path, 'live', 'daylist.json'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('{"items":[{"t":1}]}');
+        await stageFullRestore(await makeBackup(['n1']), staging);
+        expect(
+          await applyPendingRestore(
+            dbFile: dbFile,
+            staging: staging,
+            prefs: prefs,
+            coversDir: covers,
+            schemaVersion: schema,
+            daylistFile: live,
+          ),
+          isTrue,
+        );
+        expect(live.existsSync(), isFalse);
+      },
+    );
+
+    test(
       'a backup without dislikes.json leaves the current choices alone',
       () async {
         final live = File(p.join(dir.path, 'live', 'dislikes.json'))

@@ -15,8 +15,7 @@ import '../services/daylist/daylist_builder.dart';
 import '../services/daylist/daylist_slots.dart';
 import '../services/daylist/daylist_store.dart';
 import '../services/daylist/mood_table.dart';
-import '../services/online/youtube_service.dart'
-    show YtErrorKind, YtException, YtResult;
+import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
 import '../services/shuffle_plus/dislike_store.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/suggestion_pool.dart'
@@ -95,7 +94,7 @@ final daylistClockProvider = Provider<DateTime Function()>((_) => DateTime.now);
 /// `daylist.json` in the data folder (a test points it elsewhere).
 final daylistFileProvider = Provider<Future<File> Function()>(
   (_) =>
-      () async => File(p.join(await appSupportDir(), 'daylist.json')),
+      () async => File(p.join(await appSupportDir(), daylistFileName)),
 );
 
 /// How long a change of the settings waits before the daylist is made again,
@@ -400,29 +399,6 @@ class DaylistActions {
   }
 
   Future<void> regenerate() => _ref.read(daylistProvider.notifier).regenerate();
-
-  /// «Non mi piace» on a suggested song of the list ([artist]: the whole
-  /// artist). Returns what undoes it.
-  Future<void> Function() dislike(YtResult r, {required bool artist}) {
-    final store = _ref.read(dislikeStoreProvider);
-    final name = r.artists.isEmpty ? r.channel : r.artists.first;
-    final key = suggestionArtistKey(r);
-    if (artist) {
-      if (key.isEmpty) return () async {}; // would block every nameless artist
-      final was = store.artistBlocked(key);
-      store.blockArtist(DislikedArtist(key: key, name: name));
-      return () async => was ? null : store.unblockArtist(key);
-    }
-    final was = store.trackBlocked(r.id);
-    store.blockTrack(
-      DislikedTrack(
-        videoId: r.id,
-        title: r.title,
-        artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
-      ),
-    );
-    return () async => was ? null : store.unblockTrack(r.id);
-  }
 }
 
 final daylistActionsProvider = Provider<DaylistActions>(DaylistActions.new);

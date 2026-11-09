@@ -1,5 +1,6 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/daylist_providers.dart';
+import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/services/daylist/daylist_builder.dart';
 import 'package:codecore/services/daylist/daylist_slots.dart';
 import 'package:codecore/services/daylist/mood_table.dart';
@@ -32,12 +33,22 @@ class _FakeActions implements DaylistActions {
       calls.add(shuffle);
   @override
   Future<void> regenerate() async {}
+}
+
+class _FakeSuggest implements SuggestionActions {
   final disliked = <(String, bool)>[];
   @override
-  Future<void> Function() dislike(YtResult r, {required bool artist}) {
+  Future<DislikeUndo> dislikeResult(
+    YtResult r, {
+    required bool artist,
+    int? queueId,
+  }) async {
     disliked.add((r.id, artist));
-    return () async {};
+    return DislikeUndo();
   }
+
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
 DaylistState _state(List<Track> tracks, {bool tooFew = false, int slot = 5}) =>
@@ -56,6 +67,7 @@ DaylistState _state(List<Track> tracks, {bool tooFew = false, int slot = 5}) =>
 void main() {
   late Harness h;
   late _FakeActions actions;
+  late _FakeSuggest suggest;
 
   Future<void> pump(
     WidgetTester tester,
@@ -68,12 +80,14 @@ void main() {
     h = await Harness.create(tester, tracks: 3);
     final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
     actions = _FakeActions();
+    suggest = _FakeSuggest();
     await h.pump(
       tester,
       child,
       extraOverrides: [
         daylistProvider.overrideWith(() => _FakeDaylist(state(rows))),
         daylistActionsProvider.overrideWithValue(actions),
+        suggestionActionsProvider.overrideWithValue(suggest),
       ],
     );
     await tester.pump();
@@ -158,7 +172,7 @@ void main() {
       expect(find.byKey(const ValueKey('dislike-artist')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('dislike-track')));
       await tester.pumpAndSettle();
-      expect(actions.disliked, [('v1', false)]);
+      expect(suggest.disliked, [('v1', false)]);
       handle.dispose();
       await h.dispose(tester);
     },

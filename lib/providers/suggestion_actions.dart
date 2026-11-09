@@ -18,12 +18,16 @@ class DislikeUndo {
   DislikeUndo({
     this.trackId,
     this.artistKey,
+    this.loggedId,
     this.outcomeBefore,
     this.wasBlocked = false,
     this.removed = const [],
   });
 
   final String? trackId, artistKey;
+
+  /// The song whose log outcome was set to disliked (it goes back to [outcomeBefore]).
+  final String? loggedId;
 
   /// Set by the first [SuggestionActions.undo]; a second one does nothing.
   bool used = false;
@@ -79,52 +83,67 @@ class SuggestionActions {
     return download(r, tag: addToPlaylistTag(playlistId));
   }
 
-  /// «Non mi piace» on a song: blocked (SuggestionGate), out of the queue (the
-  /// next song plays if it was the current one).
+  /// «Non mi piace» on the queue entry [queueId]: see [dislikeResult].
   Future<DislikeUndo> dislikeTrack(int queueId) async {
     final r = online?[queueId]?.result;
-    if (r == null) return DislikeUndo();
-    final before = log.latest(r.id)?.outcome;
-    final was = store.trackBlocked(r.id);
-    log.setOutcome(r.id, SuggestionOutcome.disliked);
-    store.blockTrack(
-      DislikedTrack(
-        videoId: r.id,
-        title: r.title,
-        artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
-      ),
-    );
-    return DislikeUndo(
-      trackId: r.id,
-      outcomeBefore: before,
-      wasBlocked: was,
-      removed: await _take({queueId}),
-    );
+    return r == null
+        ? DislikeUndo()
+        : dislikeResult(r, artist: false, queueId: queueId);
   }
 
-  /// «Non mi piace» on the artist: blocked, and the song and every suggested
-  /// song of the same artist leave the queue (D-469); the user's own stay.
   Future<DislikeUndo> dislikeArtist(int queueId) async {
     final r = online?[queueId]?.result;
-    if (r == null) return DislikeUndo();
+    return r == null
+        ? DislikeUndo()
+        : dislikeResult(r, artist: true, queueId: queueId);
+  }
+
+  /// «Non mi piace» on [r] ([artist]: the whole artist): blocked
+  /// (SuggestionGate), logged as disliked, and [queueId] plus every suggested
+  /// song of the same id (or, for the artist, the same artist) leave the queue
+  /// (D-469); the user's own stay. The next song plays if it was the current one.
+  Future<DislikeUndo> dislikeResult(
+    YtResult r, {
+    required bool artist,
+    int? queueId,
+  }) async {
     final key = suggestionArtistKey(r);
-    if (key.isEmpty) return DislikeUndo(); // would block every nameless artist
-    final was = store.artistBlocked(key);
-    store.blockArtist(
-      DislikedArtist(
-        key: key,
-        name: r.artists.isEmpty ? r.channel : r.artists.first,
-      ),
-    );
+    // A nameless artist: blocking it would block every one.
+    if (artist && key.isEmpty) return DislikeUndo();
+    final before = log.latest(r.id)?.outcome;
+    final was = artist ? store.artistBlocked(key) : store.trackBlocked(r.id);
+    log.setOutcome(r.id, SuggestionOutcome.disliked);
+    if (artist) {
+      store.blockArtist(
+        DislikedArtist(
+          key: key,
+          name: r.artists.isEmpty ? r.channel : r.artists.first,
+        ),
+      );
+    } else {
+      store.blockTrack(
+        DislikedTrack(
+          videoId: r.id,
+          title: r.title,
+          artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
+        ),
+      );
+    }
     final ids = {
-      queueId,
+      ?queueId,
       for (final id in queueIds())
         if (online?[id] case final e?
-            when e.suggested && suggestionArtistKey(e.result) == key)
+            when e.suggested &&
+                (artist
+                    ? suggestionArtistKey(e.result) == key
+                    : e.result.id == r.id))
           id,
     };
     return DislikeUndo(
-      artistKey: key,
+      trackId: artist ? null : r.id,
+      artistKey: artist ? key : null,
+      loggedId: r.id,
+      outcomeBefore: before,
       wasBlocked: was,
       removed: await _take(ids),
     );
@@ -137,7 +156,9 @@ class SuggestionActions {
     u.used = true;
     if (u.trackId case final id?) {
       if (!u.wasBlocked) store.unblockTrack(id);
-      if (u.outcomeBefore != null) log.setOutcome(id, u.outcomeBefore!);
+    }
+    if (u.loggedId case final id? when u.outcomeBefore != null) {
+      log.setOutcome(id, u.outcomeBefore!);
     }
     if (u.artistKey case final key? when !u.wasBlocked) {
       store.unblockArtist(key);

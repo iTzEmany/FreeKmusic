@@ -155,6 +155,7 @@ Future<bool> applyPendingRestore({
   required Directory coversDir,
   required int schemaVersion,
   File? dislikesFile,
+  File? daylistFile,
 }) async {
   final stagedDb = File(p.join(staging.path, _stagedDb));
   if (!File(p.join(staging.path, _readyMarker)).existsSync() ||
@@ -202,6 +203,14 @@ Future<bool> applyPendingRestore({
       dislikesFile.parent.createSync(recursive: true);
       final tmp = dislikes.copySync('${dislikesFile.path}.tmp');
       tmp.renameSync(dislikesFile.path);
+    }
+    // It holds ids of the replaced database's tracks (a wrong list otherwise).
+    if (daylistFile != null && daylistFile.existsSync()) {
+      try {
+        daylistFile.deleteSync();
+      } on FileSystemException catch (e, st) {
+        AppLog.w('daylist file not removed', e, st);
+      }
     }
     final covers = Directory(p.join(staging.path, 'covers'));
     if (covers.existsSync()) {
