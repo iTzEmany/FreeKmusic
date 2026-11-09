@@ -13,7 +13,7 @@
 Sono cambi di comportamento voluti (regola 1 di `/refactor`): vanno in `docs/decisioni.md`.
 
 ## Misure di partenza
-Nessuna metrica di prestazione da migliorare. Unico vincolo misurato: la fase 90 ha portato gli scatti nello scroll delle liste all'1–2 % dei frame sul Mi A3 (`docs/fase-90-intestazioni-che-scorrono.md`); il testo che scorre non deve peggiorarlo.
+Nessuna metrica di prestazione da migliorare. Unico vincolo misurato: gli scatti nello scroll e col player aperto sul Mi A3 non devono peggiorare rispetto a «prima-107» (`misure.md`, D-531); il testo che scorre non deve peggiorarli.
 
 ## Sintesi per area
 - **Coda**: la coda è una lista piatta di id (`PlayQueue._items`) che non sa chi ha messo cosa. «Aggiungi in coda» accoda in fondo, dietro tutti i suggeriti: è la causa più probabile del difetto. «Riproduci dopo» inserisce subito dopo il corrente ma al contrario (l'ultimo aggiunto suona per primo).
@@ -113,7 +113,7 @@ Base verde prima di ogni passo: `flutter test test/services/audio/play_queue_tes
 | Invarianti del blocco | 0 violazioni su tutti i semi | test a operazioni casuali di `play_queue_test.dart` |
 | Comportamento della coda senza aggiunte | impronta identica | `play_queue_characterization_test.dart` senza modifiche dopo il passo 2 |
 | Prestazioni delle query (50k brani) | dentro le soglie già presenti | `flutter test test/data/performance_50k_test.dart` con la misura della lista nuova e della ricerca senza accenti |
-| Scatti nello scroll e col player aperto (Mi A3) | ≤ valori della fase 90 (1–2 % dei frame) | `JAVA_HOME=~/.jdks/jbr-17.0.14 PATH=$JAVA_HOME/bin:$PATH python3 scripts/perf_device.py 0d7ae9df206e --label <l> --playback` (prima e dopo) |
+| Scatti nello scroll e col player aperto (Mi A3) | ≤ `prima-107` (`misure.md`, D-531) | `JAVA_HOME=~/.jdks/jbr-17.0.14 PATH=$JAVA_HOME/bin:$PATH python3 scripts/perf_device.py 0d7ae9df206e --label <l> --playback` (prima e dopo) |
 
 ### Comportamento invariato
 - **Jam**: `flutter test test/jam test/providers/jam_*_test.dart test/ui/jam_*_test.dart` verde senza modifiche ai test; `git diff --stat origin/master -- lib/services/jam lib/providers/jam*` vuoto, salvo il titolo che scorre in `jam_player.dart`.
