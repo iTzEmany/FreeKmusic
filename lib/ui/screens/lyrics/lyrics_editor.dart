@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/track_ops.dart';
+import '../../../providers/translation_providers.dart';
 import '../../../services/online/lrc_parser.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -37,21 +39,36 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
     super.dispose();
   }
 
+  bool _saving = false;
+
   Future<void> _save() async {
+    if (_saving) return;
     final l = context.l10n;
     final parsed = lyricsFromText(_ctrl.text);
-    if (parsed.plain == null) {
+    if (parsed.plain == null && parsed.synced == null) {
       showMsg(context, l.lyricsEmptyWarn);
       return;
     }
+    _saving = true;
     final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final ops = ref.read(trackOpsProvider);
+    final unsynced = ref.read(unsyncedLyricsProvider.notifier);
+    final translation = ref.read(lyricsTranslationProvider.notifier);
     final id = widget.track.id;
-    await ref.read(trackOpsProvider).setLyrics(id, plain: parsed.plain, synced: parsed.synced, byUser: true);
-    // A new synced text starts with the sync on.
-    await ref.read(unsyncedLyricsProvider.notifier).setSynced(id, true);
-    if (!mounted) return;
+    try {
+      await ops.setLyrics(id, plain: parsed.plain, synced: parsed.synced, byUser: true);
+      // A new text starts with the sync on, and an old translation no longer fits.
+      await unsynced.setSynced(id, true);
+      translation.clearFor(id);
+    } on Object catch (e, st) {
+      AppLog.e('save lyrics failed', e, st);
+      _saving = false;
+      showMsgOn(messenger, l.lyricsSaveFailed);
+      return;
+    }
     nav.pop();
-    showMsg(nav.context, parsed.synced != null ? l.lyricsSavedSynced : l.lyricsSavedPlain);
+    showMsgOn(messenger, parsed.synced != null ? l.lyricsSavedSynced : l.lyricsSavedPlain);
   }
 
   @override

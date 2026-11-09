@@ -3574,5 +3574,9 @@
       "path": {"type": "String"}
     }
   },
-  "memoryOpenFolderFailed": "Can't open the folder: path copied"
+  "memoryOpenFolderFailed": "Can't open the folder: path copied",
+  "lyricsSyncStateOn": "on",
+  "lyricsSyncStateOff": "off",
+  "lyricsDeleteFailed": "Could not delete the lyrics",
+  "lyricsSaveFailed": "Could not save the lyrics"
 }

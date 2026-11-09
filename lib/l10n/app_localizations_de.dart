@@ -7081,4 +7081,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get memoryOpenFolderFailed =>
       'Ordner lässt sich nicht öffnen: Pfad kopiert';
+
+  @override
+  String get lyricsSyncStateOn => 'an';
+
+  @override
+  String get lyricsSyncStateOff => 'aus';
+
+  @override
+  String get lyricsDeleteFailed => 'Songtext konnte nicht gelöscht werden';
+
+  @override
+  String get lyricsSaveFailed => 'Songtext konnte nicht gespeichert werden';
 }

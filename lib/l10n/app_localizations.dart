@@ -11274,6 +11274,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Non riesco ad aprire la cartella: percorso copiato'**
   String get memoryOpenFolderFailed;
+
+  /// No description provided for @lyricsSyncStateOn.
+  ///
+  /// In it, this message translates to:
+  /// **'attivo'**
+  String get lyricsSyncStateOn;
+
+  /// No description provided for @lyricsSyncStateOff.
+  ///
+  /// In it, this message translates to:
+  /// **'disattivo'**
+  String get lyricsSyncStateOff;
+
+  /// No description provided for @lyricsDeleteFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile eliminare il testo'**
+  String get lyricsDeleteFailed;
+
+  /// No description provided for @lyricsSaveFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile salvare il testo'**
+  String get lyricsSaveFailed;
 }
 
 class _AppLocalizationsDelegate

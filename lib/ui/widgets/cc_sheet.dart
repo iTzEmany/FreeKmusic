@@ -40,6 +40,7 @@ class CcAction<T> {
     this.onTap,
     this.selected = false,
     this.destructive = false,
+    this.semanticsLabel,
   });
 
   final IconData icon;
@@ -52,6 +53,9 @@ class CcAction<T> {
 
   /// Drawn in `cc.error` and moved to the end of the sheet.
   final bool destructive;
+
+  /// What a screen reader says instead of [label] (e.g. to add the state of a switch).
+  final String? semanticsLabel;
 }
 
 /// Action sheet: optional [header] (or [title]/[subtitle]), [groups] of 59 dp rows
@@ -125,6 +129,7 @@ Future<T?> showCcActionSheet<T>({
                               ),
                               title: Text(
                                 a.label,
+                                semanticsLabel: a.semanticsLabel,
                                 style: a.destructive
                                     ? TextStyle(color: cc.error)
                                     : null,

@@ -62,6 +62,11 @@ class LyricsTranslationNotifier extends Notifier<LyricsTranslation?> {
   }
 
   void clear() => state = null;
+
+  /// Drops the translation when it belongs to [trackId] (its text just changed).
+  void clearFor(int trackId) {
+    if (state?.trackId == trackId) state = null;
+  }
 }
 
 final lyricsTranslationProvider =

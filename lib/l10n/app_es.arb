@@ -3574,5 +3574,9 @@
       "path": {"type": "String"}
     }
   },
-  "memoryOpenFolderFailed": "No puedo abrir la carpeta: ruta copiada"
+  "memoryOpenFolderFailed": "No puedo abrir la carpeta: ruta copiada",
+  "lyricsSyncStateOn": "activado",
+  "lyricsSyncStateOff": "desactivado",
+  "lyricsDeleteFailed": "No se pudo eliminar la letra",
+  "lyricsSaveFailed": "No se pudo guardar la letra"
 }

@@ -7062,4 +7062,16 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get memoryOpenFolderFailed =>
       'Não consigo abrir a pasta: caminho copiado';
+
+  @override
+  String get lyricsSyncStateOn => 'ativado';
+
+  @override
+  String get lyricsSyncStateOff => 'desativado';
+
+  @override
+  String get lyricsDeleteFailed => 'Não foi possível eliminar a letra';
+
+  @override
+  String get lyricsSaveFailed => 'Não foi possível guardar a letra';
 }

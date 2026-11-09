@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../core/app_log.dart';
+import '../../../providers/enrich_completer_providers.dart';
+import '../../../providers/online_providers.dart' show autoParts;
 import '../../../providers/player_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/track_ops.dart';
@@ -79,7 +84,7 @@ class LyricsScreen extends ConsumerWidget {
         ),
         actions: [
           if (plain != null && ref.watch(lyricsTranslatorProvider) != null)
-            _TranslateButton(track: track),
+            _TranslateButton(track: lyricsAsShown(track, ref.watch(unsyncedLyricsProvider))),
           if (plain != null)
             IconButton(
               tooltip: l.copy,
@@ -156,6 +161,7 @@ class _LyricsMenu extends ConsumerWidget {
               CcAction(
                 icon: Icons.timer_rounded,
                 label: l.lyricsSyncSwitch,
+                semanticsLabel: '${l.lyricsSyncSwitch}, ${syncOn ? l.lyricsSyncStateOn : l.lyricsSyncStateOff}',
                 selected: syncOn,
                 onTap: () => unsynced.setSynced(track.id, !syncOn),
               ),
@@ -164,14 +170,45 @@ class _LyricsMenu extends ConsumerWidget {
                 icon: Icons.delete_outline_rounded,
                 label: l.lyricsDelete,
                 destructive: true,
-                onTap: () async {
-                  await ref.read(trackOpsProvider).clearLyrics(track.id);
-                  await unsynced.setSynced(track.id, true);
-                  if (context.mounted) showMsg(context, l.lyricsDeleted);
-                },
+                onTap: () => _delete(context, ref),
               ),
           ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final ops = ref.read(trackOpsProvider);
+    final unsynced = ref.read(unsyncedLyricsProvider.notifier);
+    final wasUnsynced = ref.read(unsyncedLyricsProvider).contains(track.id);
+    final translation = ref.read(lyricsTranslationProvider.notifier);
+    final completer = ref.read(enrichCompleterProvider.notifier);
+    final enrichOn = autoParts(ref.read(settingsProvider)).isNotEmpty;
+    final (plain, synced) = (track.lyricsPlain, track.lyricsSynced);
+    final id = track.id;
+    try {
+      await ops.clearLyrics(id);
+    } on Object catch (e, st) {
+      AppLog.e('delete lyrics failed', e, st);
+      showMsgOn(messenger, l.lyricsDeleteFailed);
+      return;
+    }
+    await unsynced.setSynced(id, true);
+    translation.clearFor(id);
+    // The automatic search tries again now, only if the enrichment is on.
+    if (enrichOn) unawaited(completer.start());
+    showMsgOn(
+      messenger,
+      l.lyricsDeleted,
+      action: SnackBarAction(
+        label: l.undo,
+        onPressed: () async {
+          await ops.setLyrics(id, plain: plain, synced: synced, byUser: true);
+          if (wasUnsynced) await unsynced.setSynced(id, false);
+        },
       ),
     );
   }

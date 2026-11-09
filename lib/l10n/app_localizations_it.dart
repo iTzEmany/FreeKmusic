@@ -7050,4 +7050,16 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get memoryOpenFolderFailed =>
       'Non riesco ad aprire la cartella: percorso copiato';
+
+  @override
+  String get lyricsSyncStateOn => 'attivo';
+
+  @override
+  String get lyricsSyncStateOff => 'disattivo';
+
+  @override
+  String get lyricsDeleteFailed => 'Impossibile eliminare il testo';
+
+  @override
+  String get lyricsSaveFailed => 'Impossibile salvare il testo';
 }

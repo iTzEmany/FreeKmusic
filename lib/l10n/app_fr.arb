@@ -3795,5 +3795,9 @@
       "path": {"type": "String"}
     }
   },
-  "memoryOpenFolderFailed": "Impossible d’ouvrir le dossier : chemin copié"
+  "memoryOpenFolderFailed": "Impossible d’ouvrir le dossier : chemin copié",
+  "lyricsSyncStateOn": "activé",
+  "lyricsSyncStateOff": "désactivé",
+  "lyricsDeleteFailed": "Impossible de supprimer les paroles",
+  "lyricsSaveFailed": "Impossible d’enregistrer les paroles"
 }

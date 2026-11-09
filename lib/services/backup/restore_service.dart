@@ -166,6 +166,8 @@ Future<bool> applyPendingRestore({
     // Playlist ids belong to the replaced database: an older backup without
     // the key must not leave sorts pointing at other playlists (D-424).
     await prefs.remove('playlistSorts');
+    // Track ids too: the set belongs to the replaced database (D-472).
+    await prefs.remove('unsyncedLyrics');
 
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {

@@ -4276,5 +4276,9 @@
       "path": {"type": "String"}
     }
   },
-  "memoryOpenFolderFailed": "Non riesco ad aprire la cartella: percorso copiato"
+  "memoryOpenFolderFailed": "Non riesco ad aprire la cartella: percorso copiato",
+  "lyricsSyncStateOn": "attivo",
+  "lyricsSyncStateOff": "disattivo",
+  "lyricsDeleteFailed": "Impossibile eliminare il testo",
+  "lyricsSaveFailed": "Impossibile salvare il testo"
 }

@@ -7074,4 +7074,16 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get memoryOpenFolderFailed =>
       'No puedo abrir la carpeta: ruta copiada';
+
+  @override
+  String get lyricsSyncStateOn => 'activado';
+
+  @override
+  String get lyricsSyncStateOff => 'desactivado';
+
+  @override
+  String get lyricsDeleteFailed => 'No se pudo eliminar la letra';
+
+  @override
+  String get lyricsSaveFailed => 'No se pudo guardar la letra';
 }

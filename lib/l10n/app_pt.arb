@@ -3760,5 +3760,9 @@
       "path": {"type": "String"}
     }
   },
-  "memoryOpenFolderFailed": "Não consigo abrir a pasta: caminho copiado"
+  "memoryOpenFolderFailed": "Não consigo abrir a pasta: caminho copiado",
+  "lyricsSyncStateOn": "ativado",
+  "lyricsSyncStateOff": "desativado",
+  "lyricsDeleteFailed": "Não foi possível eliminar a letra",
+  "lyricsSaveFailed": "Não foi possível guardar a letra"
 }

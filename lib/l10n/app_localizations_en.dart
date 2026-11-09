@@ -7031,4 +7031,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryOpenFolderFailed => 'Can\'t open the folder: path copied';
+
+  @override
+  String get lyricsSyncStateOn => 'on';
+
+  @override
+  String get lyricsSyncStateOff => 'off';
+
+  @override
+  String get lyricsDeleteFailed => 'Could not delete the lyrics';
+
+  @override
+  String get lyricsSaveFailed => 'Could not save the lyrics';
 }

@@ -3574,5 +3574,9 @@
       "path": {"type": "String"}
     }
   },
-  "memoryOpenFolderFailed": "Ordner lässt sich nicht öffnen: Pfad kopiert"
+  "memoryOpenFolderFailed": "Ordner lässt sich nicht öffnen: Pfad kopiert",
+  "lyricsSyncStateOn": "an",
+  "lyricsSyncStateOff": "aus",
+  "lyricsDeleteFailed": "Songtext konnte nicht gelöscht werden",
+  "lyricsSaveFailed": "Songtext konnte nicht gespeichert werden"
 }

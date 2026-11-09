@@ -7111,4 +7111,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get memoryOpenFolderFailed =>
       'Impossible d’ouvrir le dossier : chemin copié';
+
+  @override
+  String get lyricsSyncStateOn => 'activé';
+
+  @override
+  String get lyricsSyncStateOff => 'désactivé';
+
+  @override
+  String get lyricsDeleteFailed => 'Impossible de supprimer les paroles';
+
+  @override
+  String get lyricsSaveFailed => 'Impossible d’enregistrer les paroles';
 }

@@ -6,7 +6,7 @@ class LrcLine {
 }
 
 final _stamp = RegExp(r'\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]');
-final _offsetTag = RegExp(r'^\[offset:\s*(-?\d+)\s*\]', caseSensitive: false);
+final _offsetTag = RegExp(r'^\[offset:\s*([-+]?\d+)\s*\]', caseSensitive: false);
 
 List<LrcLine> parseLrc(String raw) {
   final lines = <LrcLine>[];
@@ -40,13 +40,22 @@ List<LrcLine> parseLrc(String raw) {
   return lines;
 }
 
-/// Lyrics typed or pasted by hand: two or more timed lines make them synced
-/// (the plain version is the text without the stamps), otherwise plain only.
+final _leadStamps = RegExp(r'^(?:\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\]\s*)+');
+final _metaTag = RegExp(r'^\[[A-Za-z]+:[^\]]*\]$');
+
+/// Lyrics typed or pasted by hand. They are synced when most of the non-empty
+/// lines (metadata tags like `[ar:X]` aside) start with a time stamp and at
+/// least two do; the plain version is then every line without its leading
+/// stamps. Anything else stays plain, kept whole.
 ({String? plain, String? synced}) lyricsFromText(String raw) {
   final text = raw.trim();
-  final lines = parseLrc(text);
-  if (lines.length < 2) return (plain: text.isEmpty ? null : text, synced: null);
-  return (plain: lines.map((e) => e.text).join('\n'), synced: text);
+  if (text.isEmpty) return (plain: null, synced: null);
+  final lines = text.split(RegExp(r'\r?\n')).map((l) => l.trim()).where((l) => !_metaTag.hasMatch(l));
+  final body = lines.where((l) => l.isNotEmpty).toList();
+  final timed = body.where(_leadStamps.hasMatch).length;
+  if (timed < 2 || timed * 2 <= body.length) return (plain: text, synced: null);
+  final plain = lines.map((l) => l.replaceFirst(_leadStamps, '')).join('\n').trim();
+  return (plain: plain.isEmpty ? null : plain, synced: text);
 }
 
 /// Index of the line playing at [position], or -1 before the first one.

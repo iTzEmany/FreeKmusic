@@ -27,7 +27,7 @@ void main() {
   /// A real backup of a database with [titles] as tracks and [folders] as
   /// music folders.
   Future<File> makeBackup(List<String> titles,
-      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed, File? dislikes}) async {
+      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed, File? dislikes, Map<String, Object> extraPrefs = const {}}) async {
     final db = AppDatabase(NativeDatabase.memory());
     for (final f in folders) {
       await db.into(db.folders).insert(FoldersCompanion.insert(path: f, addedAt: 1));
@@ -38,7 +38,7 @@ void main() {
     }
     await seed?.call(db);
     SharedPreferences.setMockInitialValues(
-        {'theme': 'oled', 'deviceId': deviceId, 'genreRereadAfter': 7, 'genreRereadDone': 1});
+        {'theme': 'oled', 'deviceId': deviceId, 'genreRereadAfter': 7, 'genreRereadDone': 1, ...extraPrefs});
     final prefs = await SharedPreferences.getInstance();
     final covers = Directory(p.join(dir.path, 'src-covers'))..createSync();
     File(p.join(covers.path, 'new.jpg')).writeAsBytesSync([1, 2, 3]);
@@ -127,6 +127,17 @@ void main() {
       expect(File(p.join(covers.path, 'new.jpg')).existsSync(), isTrue);
       expect(File(p.join(covers.path, 'both.jpg')).readAsBytesSync(), [5], reason: 'the existing cover wins');
       expect(staging.existsSync(), isFalse);
+    });
+
+    test('unsyncedLyrics is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
+      await prefs.setStringList('unsyncedLyrics', ['9']);
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect(prefs.containsKey('unsyncedLyrics'), isFalse);
+      await prefs.setStringList('unsyncedLyrics', ['9']);
+      await stageFullRestore(await makeBackup(['n1', 'n2'], extraPrefs: {'unsyncedLyrics': ['2']}), staging);
+      expect(await apply(), isTrue);
+      expect(prefs.getStringList('unsyncedLyrics'), ['2']);
     });
 
     test('dislikes.json travels in the backup and replaces the current one', () async {

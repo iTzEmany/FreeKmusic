@@ -142,7 +142,8 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    final track = lyricsAsShown(widget.track, ref.watch(unsyncedLyricsProvider));
+    final unsynced = ref.watch(unsyncedLyricsProvider);
+    final track = lyricsAsShown(widget.track, unsynced);
     ref.listen(positionProvider, (_, next) {
       final p = next.value;
       if (p != null) _onPosition(p);
@@ -189,6 +190,10 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               plain,
               style: theme.titleLarge?.copyWith(fontWeight: FontWeight.w500),
             ),
+            if (unsynced.contains(track.id) && widget.track.lyricsSynced != null) ...[
+              const SizedBox(height: CcDims.gap16),
+              Text(l.lyricsSyncedKept, style: theme.bodySmall?.copyWith(color: cc.textMuted)),
+            ],
             if (translated != null && !translated.synced) ...[
               const Divider(height: 32),
               SelectableText(

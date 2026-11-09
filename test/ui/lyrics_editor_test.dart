@@ -10,7 +10,7 @@ import '../support/app_harness.dart';
 const _lrc = '[00:01.00]Hello\n[00:05.00]World';
 
 void main() {
-  Future<Harness> open(WidgetTester tester, {String? plain, String? synced}) async {
+  Future<Harness> open(WidgetTester tester, {String? plain, String? synced, Set<int> unsynced = const {}}) async {
     tester.view.physicalSize = const Size(500, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -19,6 +19,7 @@ void main() {
       await h.db.update(h.db.tracks).write(TracksCompanion(lyricsPlain: Value(plain), lyricsSynced: Value(synced)));
       await h.handler.playQueue([(await h.db.select(h.db.tracks).get()).single.id], 0);
     });
+    await tester.runAsync(() => h.store.writeUnsyncedLyrics(unsynced));
     await h.pump(tester, const LyricsScreen());
     await tester.pump(const Duration(milliseconds: 200));
     return h;
@@ -112,6 +113,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Testo sincronizzato'), findsNothing);
     expect(find.text('Elimina testo'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('saving a text turns the sync back on for the track', (tester) async {
+    final h = await open(tester, plain: 'Hello\nWorld', synced: _lrc, unsynced: {1});
+    await menu(tester, 'Modifica testo');
+    await tester.tap(find.byKey(const ValueKey('lyrics-save')));
+    await tester.pumpAndSettle();
+    expect(h.store.readUnsyncedLyrics(), isEmpty);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Elimina testo» drops the track from the unsynced set and Annulla puts the text back', (tester) async {
+    final h = await open(tester, plain: 'Hello\nWorld', synced: _lrc, unsynced: {1});
+    await menu(tester, 'Elimina testo');
+    expect(h.store.readUnsyncedLyrics(), isEmpty);
+    expect((await stored(tester, h)).$1.lyricsSynced, isNull);
+    await tester.tap(find.text('Annulla'));
+    await tester.pumpAndSettle();
+    final (t, e) = await stored(tester, h);
+    expect((t.lyricsPlain, t.lyricsSynced), ('Hello\nWorld', _lrc));
+    expect(e?.lyricsByUser, isTrue);
+    expect(h.store.readUnsyncedLyrics(), {1});
+    await h.dispose(tester);
+  });
+
+  testWidgets('with the sync off the view shows the plain text and the «kept» hint, not the timed lines', (tester) async {
+    final h = await open(tester, plain: 'Hello\nWorld', synced: _lrc, unsynced: {1});
+    expect(find.textContaining('Hello'), findsOneWidget);
+    expect(find.textContaining('La versione sincronizzata è conservata'), findsOneWidget);
     await h.dispose(tester);
   });
 }
