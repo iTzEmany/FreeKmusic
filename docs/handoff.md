@@ -1,3 +1,21 @@
+# Handoff — 2026-11-09 (fase 107 chiusa: rete del refactor coda-e-libreria)
+
+## Prossimo
+- Prompt: `/obiettivo fase 108` (poi 109..113, una PR per fase). Il resto delle indicazioni è nella voce qui sotto, sempre valida.
+
+## Stato
+**Fase 107 chiusa** (PR #145, solo test e documenti, `lib/` invariata):
+- `test/services/audio/play_queue_characterization_test.dart`: impronta della coda senza aggiunte. **Non si tocca nelle fasi 108–112**: se diventa rossa, il blocco ha cambiato la coda di oggi.
+- Test che cambiano più avanti: ricerca con accenti (110.5), titolo con «…» (109). Il salvataggio senza `lastQueueUser` deve restare verde dopo 108.3.
+- Misure di partenza: `docs/refactor/coda-e-libreria/misure.md`, colonna «prima-107». Diversi scenari stanno già sopra l'1–2 % della fase 90: alla 113 si confronta con questa colonna.
+
+## Da sapere
+- `perf_device.py` vuole `build/perf_library/`: se manca, rifalla con `python3 scripts/perf_library.py` (circa 60 MB, pochi minuti). Con l'APK già compilato: `--no-build --apk build/app/outputs/flutter-apk/app-profile.apk`.
+- La misura sul telefono va lanciata **dopo** i test mirati dell'ondata: prende il turno dei comandi pesanti per 15–25 minuti.
+- Sul Mi A3 l'app `.perf` è stata disinstallata; l'app vera è intatta.
+
+---
+
 # Handoff — 2026-11-09 (fase 106 chiusa: testi traslitterati; fasi 101–106 finite)
 
 ## Prossimo: refactor coda-e-libreria
