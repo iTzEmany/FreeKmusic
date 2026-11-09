@@ -41,6 +41,7 @@ import 'jam_remote_settings.dart';
 import 'trusted_devices_tiles.dart';
 import 'translation_models_tiles.dart';
 import 'update_tiles.dart';
+import 'dislikes_screen.dart';
 import 'shuffle_plus_tiles.dart';
 import 'release_settings_tiles.dart';
 import 'merged_artists_screen.dart';
@@ -220,6 +221,14 @@ List<SettingsGroup> _playback(BuildContext context, WidgetRef ref) {
           ),
         const TransitionSettingsTiles(),
         const ShufflePlusTiles(),
+        ListTile(
+          key: const ValueKey('dislikes-tile'),
+          leading: const Icon(Icons.thumb_down_outlined),
+          title: Text(l.dislikesTitle),
+          subtitle: Text(l.dislikesTileHint),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => ShellNav.open<void>(context, const DislikesScreen()),
+        ),
         SwitchListTile(
           title: Text(l.settingsRecordHistory),
           subtitle: Text(l.settingsRecordHistoryHint),

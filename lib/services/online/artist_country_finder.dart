@@ -4,7 +4,7 @@ import '../../data/repositories/artist_country_repository.dart';
 import '../../data/repositories/artist_info_repository.dart' show ArtistInfoRepository;
 import 'http_client.dart';
 import 'musicbrainz_client.dart';
-import 'query_cleaner.dart' show extractPrimaryArtist;
+import '../../core/artist_key.dart';
 
 /// The key of `artist_countries`: `matchKey` of the main artist's name, the one every artist table uses.
 String artistCountryKey(String artist) => ArtistInfoRepository.keyOf(artist);

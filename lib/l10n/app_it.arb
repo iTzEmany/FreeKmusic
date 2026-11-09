@@ -2973,6 +2973,46 @@
       }
     }
   },
+  "dislikesTitle": "Non mi piace",
+  "dislikesHint": "Cosa non vuoi tra i suggeriti. I brani possono tornare solo se molto vicini a ciò che ascolti; gli artisti mai più.",
+  "dislikesTracksTab": "Brani {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Artisti {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "Nessun brano escluso",
+  "dislikesEmptyArtists": "Nessun artista escluso",
+  "dislikesEmptyHint": "Quando tocchi «Non mi piace» su un suggerito, lo trovi qui e puoi toglierlo.",
+  "dislikesRemove": "Togli",
+  "dislikesRemoveLabel": "Togli «{name}» dai non mi piace",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "«{name}» tolto dai non mi piace",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Brani e artisti esclusi dai suggeriti",
+  "dislikePlayerLabel": "Non mi piace: brano o artista",
   "suggestionDislike": "Non mi piace",
   "suggestionDisliked": "Non te lo suggerirò più",
   "removeFromQueueAction": "Rimuovi dalla coda",
@@ -4138,5 +4178,48 @@
   "queueSimilarCount": "{total, plural, one{1 brano} other{{total} brani}}, {owned} già in libreria",
   "@queueSimilarCount": {"description": "Count line of the queue header after a Search pick: songs that follow, and how many are already in the library.", "placeholders": {"total": {"type": "int"}, "owned": {"type": "int"}}},
   "queueSimilarSearching": "Cerco i brani simili…",
-  "@queueSimilarSearching": {"description": "Line of the queue header while the first similar songs are being asked."}
+  "@queueSimilarSearching": {"description": "Line of the queue header while the first similar songs are being asked."},
+  "dislikeSheetTitle": "Non ti piace il brano o l’artista?",
+  "dislikeSheetTrack": "Solo questo brano",
+  "dislikeSheetTrackHint": "«{title}» non torna, salvo che sia molto vicino a ciò che ascolti.",
+  "@dislikeSheetTrackHint": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtist": "Tutto {artist}",
+  "@dislikeSheetArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtistHint": "Nessun brano di {artist} ti verrà più suggerito.",
+  "@dislikeSheetArtistHint": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeArtistDone": "{artist} non ti verrà più suggerito",
+  "@dislikeArtistDone": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "artistBlockedLabel": "Artista bloccato",
+  "dislikesBlockedOn": "Escluso il {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

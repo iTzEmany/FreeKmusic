@@ -1,10 +1,9 @@
 import 'package:path/path.dart' as p;
 
 import '../../core/import_row.dart';
-import '../../core/text_utils.dart';
-import '../online/query_cleaner.dart';
 import '../online/youtube_service.dart';
 import 'playlist_paths.dart';
+import '../../core/artist_key.dart';
 
 final _remasterTail = RegExp(
     r'\s+[-–]\s+(\d{4}\s+)?(digital\s+)?remaster(ed)?\b.*$',
@@ -51,24 +50,6 @@ bool _isEdition(String inner) {
 
 String _dropEdition(String s, RegExp re) =>
     s.replaceAllMapped(re, (m) => _isEdition(m[1]!) ? ' ' : m[0]!);
-
-final _nonWord = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
-
-/// Apostrophe-like marks that Unicode files as letters (the Hawaiian ʻokina of
-/// «Kamakawiwoʻole», the modifier apostrophe ʼ): they count as punctuation,
-/// like the plain ' they stand for.
-final _letterApostrophes = RegExp('[\u02B9-\u02BF]');
-
-/// Lower-case, no accents, no punctuation. Used to compare two spellings of
-/// the same name.
-String matchKey(String s) => normalize(s.replaceAll('&', ' and '))
-    .replaceAll(_letterApostrophes, ' ')
-    .replaceAll(_nonWord, ' ')
-    .trim();
-
-/// Single artist key: [matchKey] of the primary artist (null -> '').
-// Persistent format (artist_countries, artist_infos, artist_lookups, backup): changing it needs a data migration.
-String artistKey(String? artist) => matchKey(extractPrimaryArtist(artist ?? ''));
 
 /// [matchKey] of a title without the qualifiers that do not change the
 /// recording (remaster year, feat., radio edit). `live`, `remix`... are kept.

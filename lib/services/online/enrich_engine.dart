@@ -7,7 +7,6 @@ import '../../core/clock.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/credits_repository.dart' show decodeRec;
 import '../../data/repositories/track_repository.dart';
-import '../import/track_matcher.dart' show matchKey;
 import 'cover_fetcher.dart';
 import 'credits_enricher.dart';
 import 'curiosity_service.dart';
@@ -22,6 +21,7 @@ import 'query_cleaner.dart';
 import '../recognition/channel_detector.dart' show tagsDubious;
 import '../recognition/track_identity.dart';
 import '../recognition/track_recognizer.dart';
+import '../../core/artist_key.dart';
 
 export 'enrich_gather.dart' show CommitResult, EnrichGather, GatherSignal;
 

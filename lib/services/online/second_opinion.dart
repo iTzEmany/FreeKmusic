@@ -14,6 +14,7 @@ import 'musicbrainz_client.dart';
 import 'youtube_service.dart';
 import 'ytm_song_parser.dart' show ytmMatches;
 import 'ytm_catalog.dart';
+import '../../core/artist_key.dart';
 
 enum SecondOpinionKind {
   /// YouTube Music answered and nothing in it is sure to be this song.

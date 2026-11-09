@@ -4,6 +4,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../services/online/google_thumb.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/net_thumbnail.dart';
 
 /// The artist on top of the online results: round photo, name and «Artista ·
@@ -53,10 +54,17 @@ class ArtistCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(artist.name,
-                          maxLines: large ? 2 : 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: large ? theme.headlineSmall : theme.titleMedium),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(artist.name,
+                                maxLines: large ? 2 : 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: large ? theme.headlineSmall : theme.titleMedium),
+                          ),
+                          BlockedArtistMark(artist.name),
+                        ],
+                      ),
                       Text(
                         audience == null || audience.isEmpty
                             ? l.kindArtist

@@ -4629,7 +4629,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String suggestedSimilarTo(String seed) {
-    return 'Suggéré : proche de « $seed »';
+    return 'Suggéré: proche de « $seed »';
   }
 
   @override
@@ -4639,6 +4639,52 @@ class AppLocalizationsFr extends AppLocalizations {
   String suggestionAddWhenDownloaded(String name) {
     return 'Je le télécharge et l’ajoute à « $name »';
   }
+
+  @override
+  String get dislikesTitle => 'Je n’aime pas';
+
+  @override
+  String get dislikesHint =>
+      'Ce que tu ne veux pas dans les suggestions. Les titres ne reviennent que s’ils sont très proches de ce que tu écoutes ; les artistes, jamais.';
+
+  @override
+  String dislikesTracksTab(int count) {
+    return 'Titres $count';
+  }
+
+  @override
+  String dislikesArtistsTab(int count) {
+    return 'Artistes $count';
+  }
+
+  @override
+  String get dislikesEmptyTracks => 'Aucun titre exclu';
+
+  @override
+  String get dislikesEmptyArtists => 'Aucun artiste exclu';
+
+  @override
+  String get dislikesEmptyHint =>
+      'Quand tu touches « Je n’aime pas » sur une suggestion, elle apparaît ici et tu peux la retirer.';
+
+  @override
+  String get dislikesRemove => 'Retirer';
+
+  @override
+  String dislikesRemoveLabel(String name) {
+    return 'Retirer « $name » de Je n’aime pas';
+  }
+
+  @override
+  String dislikesRemoved(String name) {
+    return '« $name » retiré de Je n’aime pas';
+  }
+
+  @override
+  String get dislikesTileHint => 'Titres et artistes exclus des suggestions';
+
+  @override
+  String get dislikePlayerLabel => 'Je n’aime pas : titre ou artiste';
 
   @override
   String get suggestionDislike => 'Je n’aime pas';
@@ -6884,4 +6930,38 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queueSimilarSearching => 'Recherche de morceaux similaires…';
+
+  @override
+  String get dislikeSheetTitle => 'Vous n’aimez pas le titre ou l’artiste ?';
+
+  @override
+  String get dislikeSheetTrack => 'Seulement ce titre';
+
+  @override
+  String dislikeSheetTrackHint(String title) {
+    return '« $title » ne reviendra pas, sauf s’il est très proche de ce que vous écoutez.';
+  }
+
+  @override
+  String dislikeSheetArtist(String artist) {
+    return 'Tout $artist';
+  }
+
+  @override
+  String dislikeSheetArtistHint(String artist) {
+    return 'Aucun titre de $artist ne vous sera plus suggéré.';
+  }
+
+  @override
+  String dislikeArtistDone(String artist) {
+    return '$artist ne vous sera plus suggéré';
+  }
+
+  @override
+  String get artistBlockedLabel => 'Artiste bloqué';
+
+  @override
+  String dislikesBlockedOn(String date) {
+    return 'Exclu le $date';
+  }
 }

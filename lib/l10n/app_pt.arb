@@ -2760,6 +2760,33 @@
       }
     }
   },
+  "dislikesTitle": "Não gosto",
+  "dislikesHint": "O que não queres entre as sugestões. As músicas só voltam se forem muito parecidas com o que ouves; os artistas, nunca.",
+  "dislikesTracksTab": "Músicas {count}",
+  "@dislikesTracksTab": {"placeholders": {"count": {"type": "int"}}},
+  "dislikesArtistsTab": "Artistas {count}",
+  "@dislikesArtistsTab": {"placeholders": {"count": {"type": "int"}}},
+  "dislikesEmptyTracks": "Nenhuma música excluída",
+  "dislikesEmptyArtists": "Nenhum artista excluído",
+  "dislikesEmptyHint": "Quando tocas em «Não gosto» numa sugestão, ela aparece aqui e podes retirá-la.",
+  "dislikesRemove": "Remover",
+  "dislikesRemoveLabel": "Remover «{name}» de Não gosto",
+  "@dislikesRemoveLabel": {"placeholders": {"name": {"type": "String"}}},
+  "dislikesRemoved": "«{name}» removido de Não gosto",
+  "@dislikesRemoved": {"placeholders": {"name": {"type": "String"}}},
+  "dislikesTileHint": "Músicas e artistas excluídos das sugestões",
+  "dislikePlayerLabel": "Não gosto: música ou artista",
+  "dislikeSheetTitle": "Não gostas da música ou do artista?",
+  "dislikeSheetTrack": "Só esta música",
+  "dislikeSheetTrackHint": "«{title}» não volta, a menos que seja muito parecida com o que ouves.",
+  "@dislikeSheetTrackHint": {"placeholders": {"title": {"type": "String"}}},
+  "dislikeSheetArtist": "Tudo de {artist}",
+  "@dislikeSheetArtist": {"placeholders": {"artist": {"type": "String"}}},
+  "dislikeSheetArtistHint": "Nenhuma música de {artist} voltará a ser sugerida.",
+  "@dislikeSheetArtistHint": {"placeholders": {"artist": {"type": "String"}}},
+  "dislikeArtistDone": "{artist} não voltará a ser sugerido",
+  "@dislikeArtistDone": {"placeholders": {"artist": {"type": "String"}}},
+  "artistBlockedLabel": "Artista bloqueado",
   "suggestionDislike": "Não gosto",
   "suggestionDisliked": "Não voltará a ser sugerido",
   "removeFromQueueAction": "Remover da fila",
@@ -3677,5 +3704,13 @@
   "queueSimilarTo": "Semelhantes a «{title}»",
   "queueSimilarTag": "rádio do YouTube Music",
   "queueSimilarCount": "{total, plural, one{1 música} other{{total} músicas}}, {owned} já na biblioteca",
-  "queueSimilarSearching": "A procurar músicas semelhantes…"
+  "queueSimilarSearching": "A procurar músicas semelhantes…",
+  "dislikesBlockedOn": "Excluído em {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

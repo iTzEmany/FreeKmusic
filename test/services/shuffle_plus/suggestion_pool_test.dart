@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import '../../support/suggestion_gate_fake.dart';
+
 import 'package:codecore/core/import_row.dart';
 import 'package:codecore/services/import/track_matcher.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -31,13 +33,16 @@ void main() {
   late SuggestionPool pool;
   var libraryIds = <String>{};
   var queued = <String>{};
+  var blockedTracks = <String>[];
+  var blockedArtists = <String>[];
 
   SuggestionCandidate? take({List<String> last = const []}) => pool.take(
-        inLibrary: (r) => libraryIds.contains(r.id) || r.title == 'Owned',
-        inQueue: queued.contains,
-        log: log,
-        lastArtists: last,
-      );
+    inLibrary: (r) => libraryIds.contains(r.id) || r.title == 'Owned',
+    inQueue: queued.contains,
+    log: log,
+    filter: testGate(tracks: blockedTracks, artists: blockedArtists),
+    lastArtists: last,
+  );
 
   List<String> takeAll() {
     final out = <String>[];
@@ -58,6 +63,8 @@ void main() {
     pool = SuggestionPool();
     libraryIds = {};
     queued = {};
+    blockedTracks = [];
+    blockedArtists = [];
   });
 
   test('skips what is in the library by id and by title', () {
@@ -77,12 +84,33 @@ void main() {
     expect(takeAll(), ['old', 'new']);
   });
 
-  test('skips «non mi piace» even long after', () {
-    log.add(videoId: 'bad', title: 't', artist: 'a', seedTitle: 's');
-    log.setOutcome('bad', SuggestionOutcome.disliked);
-    now = now.add(const Duration(days: 400));
-    pool.addPage('s', 'Seed', page([item('bad'), item('ok', artist: 'B')]));
+  test('a blocked song needs two seeds with it in their first 10 rows', () {
+    blockedTracks = ['bad'];
+    pool.addPage('s1', 'One', page([item('bad'), item('ok', artist: 'B')]));
     expect(takeAll(), ['ok']);
+    pool.addPage('s2', 'Two', page([item('bad')]));
+    expect(takeAll(), ['bad']);
+  });
+
+  test('rows are counted across the pages of a seed: row 10 counts, row 11 does not', () {
+    blockedTracks = ['bad'];
+    List<RadioItem> fillers(String p) => [for (var i = 0; i < 10; i++) item('$p$i', artist: 'A$p$i')];
+    // s1 has it at row 10 of its first page; s2 only at row 11 (second page).
+    pool.addPage('s1', 'One', page([...fillers('x').take(9), item('bad')]));
+    pool.addPage('s2', 'Two', RadioPage(fillers('y'), continuation: 'next'));
+    pool.addPage('s2', 'Two', page([item('bad')]));
+    expect(pool.positionsOf('bad'), [10, 11]);
+    expect(takeAll(), isNot(contains('bad')));
+    // a third seed with it at row 1 makes two seeds in the top 10
+    pool.addPage('s3', 'Three', page([item('bad')]));
+    expect(takeAll(), ['bad']);
+  });
+
+  test('a blocked artist is never taken', () {
+    blockedArtists = ['b'];
+    pool.addPage('s1', 'One', page([item('ok', artist: 'B')]));
+    pool.addPage('s2', 'Two', page([item('ok', artist: 'B')]));
+    expect(takeAll(), isEmpty);
   });
 
   test('skips what is already in the queue, and takes it once it is gone', () {
@@ -173,5 +201,19 @@ void main() {
       expect(owned(result(seconds: 204)), isTrue);
       expect(owned(result(seconds: 310)), isTrue);
     });
+  });
+
+  test('clear forgets the positions', () {
+    pool.addPage('s', 'Seed', page([item('a')]));
+    expect(pool.positionsOf('a'), [1]);
+    pool.clear();
+    expect(pool.positionsOf('a'), isEmpty);
+  });
+
+  test('the same id on two pages of one seed keeps its first position', () {
+    pool.addPage('s', 'Seed', RadioPage([item('a'), item('b')], continuation: 'n'));
+    pool.addPage('s', 'Seed', page([item('c'), item('a')]));
+    expect(pool.positionsOf('a'), [1]);
+    expect(pool.positionsOf('c'), [3]);
   });
 }

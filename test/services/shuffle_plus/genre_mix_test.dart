@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import '../../support/suggestion_gate_fake.dart';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -128,6 +130,7 @@ void main() {
       return pages?.call(id, continuation) ?? page(id);
     },
     log: log,
+    filter: testGate(),
     gate: gate,
     loadInLibrary: () async =>
         (r) => allInLibrary || inLibrary.contains(r.id),

@@ -1,4 +1,5 @@
 import '../../core/text_utils.dart';
+import '../../core/artist_key.dart';
 
 class CleanQuery {
   const CleanQuery(this.title, this.artist, {this.tagged});
@@ -162,9 +163,6 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   return (a, b);
 }
 
-/// Splits a credit line like «A, B feat. C» into its artists.
-final artistSplit =
-    RegExp(r'\s*(?:,|&|/)\s*|\s+(?:feat|ft)\.?\s+', caseSensitive: false);
 
 /// The names of [artist] in order, each with the separator text that follows it
 /// ('' for the last); empty pieces are dropped.
@@ -185,10 +183,6 @@ List<({String name, String sep})> splitArtists(String artist) {
   return out;
 }
 
-String extractPrimaryArtist(String artist) {
-  final first = artist.split(artistSplit).first.trim();
-  return first.isEmpty ? artist : first;
-}
 
 final _coreNoise = RegExp(
     r'[\(\[\{][^\)\]\}]*(live|unplugged|acoustic|version|session|edit|from the series)[^\)\]\}]*[\)\]\}]',

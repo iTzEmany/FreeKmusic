@@ -3,6 +3,7 @@ import '../import/track_matcher.dart';
 import 'query_cleaner.dart';
 import 'youtube_service.dart';
 import 'ytm_artist.dart';
+import '../../core/artist_key.dart';
 
 /// Where a result of the online search comes from.
 enum MediaKind { ytmSong, ytVideo }

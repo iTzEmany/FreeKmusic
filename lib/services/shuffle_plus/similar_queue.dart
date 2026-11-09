@@ -5,6 +5,7 @@ import '../audio/codecore_audio_handler.dart';
 import '../audio/online_entries.dart' show isOnlineId;
 import '../online/youtube_service.dart';
 import 'radio_fill.dart';
+import 'suggestion_pool.dart' show suggestionArtistKey;
 
 /// Songs similar to the one picked in Search, added at the end of the queue
 /// after it: a first block, then another whenever few songs are left after
@@ -152,6 +153,16 @@ class SimilarQueue {
         }
         if (id == null) continue;
         _seen.add(c.result.id);
+        // A «Non mi piace» may have come in during [register]; a library track is never filtered.
+        if (isOnlineId(id) &&
+            !fill.filter.allows(
+              c.result.id,
+              suggestionArtistKey(c.result),
+              fill.pool.positionsOf(c.result.id),
+            )) {
+          handler.online?.forget(id);
+          continue;
+        }
         // Two videos can match the same library track.
         if (!isOnlineId(id) && _ids.contains(id)) continue;
         _ids.add(id);

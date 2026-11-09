@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:dio/dio.dart' show CancelToken;
 
 import '../../core/app_log.dart';
-import '../import/track_matcher.dart' show matchKey;
 import 'budgeted_call.dart';
 import 'merge_results.dart';
 import 'query_intent.dart';
@@ -14,6 +13,7 @@ import 'youtube_service.dart';
 import 'ytm_album_search.dart' show YtmAlbumHit;
 import 'ytm_artist.dart';
 import 'ytm_catalog.dart';
+import '../../core/artist_key.dart';
 
 enum NoticeKind { rateLimited, offline, failed }
 

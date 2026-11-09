@@ -1,6 +1,6 @@
-import '../import/track_matcher.dart' show matchKey;
 import 'radio_station.dart';
 import 'regions.dart';
+import '../../core/artist_key.dart';
 
 /// True when [station]'s hand-typed `state` names [region] (or one of its
 /// provincial capitals) as whole words, ignoring case, accents and punctuation.

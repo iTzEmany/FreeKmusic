@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/import/track_matcher.dart' show matchKey;
 import '../services/online/ytm_artist.dart';
 import 'ytm_catalog_providers.dart' show artistPageProvider;
+import '../core/artist_key.dart';
 
 final _year = RegExp(r'\b(?:19|20)\d{2}\b');
 

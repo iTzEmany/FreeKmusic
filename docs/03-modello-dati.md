@@ -87,9 +87,9 @@ Una colonna su `tracks` (`kind`, vedi sopra) e due tabelle; la migrazione non ca
 Un episodio **scaricato** ha una riga in `tracks` con `kind = 1`, `folderId = null` e il file in `<appSupportDir>/podcasts/<podcastId>/`, cartella che non è in `folders` e quindi la scansione non vede.
 
 ## Curiosità sull'artista (schema v11)
-**Chiave artista** (fase 99): `artistKey` è un formato salvato (`artist_infos`, `artist_lookups`, `artist_countries`, backup): cambiarla richiede una migrazione delle righe esistenti. La protegge `test/services/online/artist_key_test.dart`.
+**Chiave artista** (fase 99): `artistKey` è un formato salvato (`artist_infos`, `artist_lookups`, `artist_countries`, `dislikes.json`, backup): cambiarla richiede una migrazione delle righe esistenti. La protegge `test/services/online/artist_key_test.dart`.
 
-`artist_infos`: `artistKey` text **PK** (`artistKey(nome)` in `track_matcher.dart`: «Queen feat. X» e «queen» sono lo stesso) · `body` text · `sourceUrl` text · `lang` text · `fetchedAt` int (epoch ms). Una riga per artista, non per brano: tutti i brani dello stesso artista la mostrano senza altre richieste. È una cache: non entra nei dati utente portabili del backup (il file `.sqlite` del backup però la contiene).
+`artist_infos`: `artistKey` text **PK** (`artistKey(nome)` in `lib/core/artist_key.dart`: «Queen feat. X» e «queen» sono lo stesso) · `body` text · `sourceUrl` text · `lang` text · `fetchedAt` int (epoch ms). Una riga per artista, non per brano: tutti i brani dello stesso artista la mostrano senza altre richieste. È una cache: non entra nei dati utente portabili del backup (il file `.sqlite` del backup però la contiene).
 
 ## Radio (schema v12, fase 33)
 Una tabella nuova, nessuna esistente toccata.

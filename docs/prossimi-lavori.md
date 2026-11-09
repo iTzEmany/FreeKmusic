@@ -161,6 +161,13 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - Dalla prova sul Mi A3 della fase 100: un brano della libreria senza abbinamento sicuro su YouTube Music (`SeedResolver`, esito negativo salvato in `SeedIndex`) dà «Nessun brano simile» anche con la rete; si potrebbe ripiegare su un seme dal primo risultato della ricerca o dire «Brano non trovato su YouTube Music».
 - Preesistente, visto sul Mi A3: Cerca senza rete mostra tre volte «Rete non disponibile» e nessuna sezione «Nella tua libreria»; tornata la rete, la stessa query resta in errore per più di un minuto (cache dell'errore?).
 
+### Dalla review di architettura della fase 101
+- `SuggestionGate` non è l'unico filtro: `artistAllSongsProvider` rifà le regole sullo store (`trackBlocked`, artista della pagina, artista della riga) e `suggestionArtistKey` vive in `suggestion_pool.dart` ma la importano azioni e provider. Rimedio: spostarla in `suggestion_gate.dart` e un `SuggestionGate.blocks(r, pageArtist:)` senza soglia per il Play dell'artista.
+- «Artista di un suggerito» calcolato in tre punti (`suggestion_pool.dart:21`, `suggestion_actions.dart:116`, `dislike_sheet.dart:24`), copia di `displayArtist` in `suggestion_actions.dart:94`, e il foglio rifà `artistKey(...).isNotEmpty`. Rimedio: `primaryArtist(YtResult)` accanto a `displayArtist` e `SuggestionActions.artistToBlock(queueId)` (null se la chiave è vuota) usato dal foglio.
+- Tre iscrizioni a `store.changes` (`blockedArtistKeysProvider` senza l'iscrizione prima dell'istantanea, `dislikeListsProvider`, `artistAllSongsProvider` che rifà la query sul DB a ogni blocco anche non suo). Rimedio: un `dislikesProvider` con istantanea immutabile (Set di id e chiavi), `select` per le chiavi, provider dell'artista diviso in parte grezza e filtro.
+- La pagina «Non mi piace» scrive sullo store dalla UI (`dislikes_screen.dart` Togli/Annulla). Rimedio: `unblockTrack`/`unblockArtist` con annullamento in `SuggestionActions` o un `DislikeOps`.
+- Percorso di `dislikes.json` costruito in tre punti (`main.dart`, `backup_providers.dart`, `dislike_store_provider.dart`). Rimedio: `DislikeStore.defaultFile(dir)` come `DownloadIndex.defaultFile`.
+
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`.
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.

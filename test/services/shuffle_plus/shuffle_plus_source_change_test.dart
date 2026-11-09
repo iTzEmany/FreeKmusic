@@ -1,4 +1,7 @@
 import 'dart:async';
+
+import '../../support/suggestion_gate_fake.dart';
+
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
@@ -139,6 +142,7 @@ void main() {
         now: () => now,
         writeDelay: const Duration(days: 1),
       ),
+      filter: testGate(),
       resolver: SeedResolver(
         downloads: downloads,
         index: SeedIndex(file: () async => File(p.join(dir.path, 'seeds.json'))),

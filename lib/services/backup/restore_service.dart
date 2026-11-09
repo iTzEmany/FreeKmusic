@@ -11,6 +11,7 @@ import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
+import '../shuffle_plus/dislike_store.dart';
 import 'user_data.dart';
 import '../../data/settings/settings_store.dart' show genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey;
 import 'backup_service.dart';
@@ -45,6 +46,7 @@ class RestorePlan {
 }
 
 const _stagedDb = 'codecore.sqlite';
+const _stagedDislikes = 'dislikes.json';
 const _readyMarker = 'ready';
 
 /// Reads `manifest.json` of [zip] and judges it. Refuses a `backupFormat` this
@@ -87,7 +89,7 @@ Future<RestorePlan> inspectBackup(
   );
 }
 
-/// Extracts only the three things a full restore needs into [staging]; the
+/// Extracts only the things a full restore needs into [staging]; the
 /// `ready` marker is written last so a half-extracted folder is never applied.
 /// Entry names are checked: nothing can leave [staging].
 Future<void> stageFullRestore(File zip, Directory staging) async {
@@ -101,7 +103,7 @@ Future<void> stageFullRestore(File zip, Directory staging) async {
       for (final f in archive.files) {
         if (!f.isFile) continue;
         final String? target;
-        if (f.name == _stagedDb || f.name == 'settings.json') {
+        if (f.name == _stagedDb || f.name == 'settings.json' || f.name == _stagedDislikes) {
           target = p.join(dest, f.name);
         } else if (f.name.startsWith('covers/') && p.basename(f.name) == f.name.substring(7) && f.name.length > 7) {
           target = p.join(dest, 'covers', p.basename(f.name));
@@ -134,6 +136,7 @@ Future<bool> applyPendingRestore({
   required SharedPreferences prefs,
   required Directory coversDir,
   required int schemaVersion,
+  File? dislikesFile,
 }) async {
   final stagedDb = File(p.join(staging.path, _stagedDb));
   if (!File(p.join(staging.path, _readyMarker)).existsSync() || !stagedDb.existsSync()) {
@@ -167,6 +170,14 @@ Future<bool> applyPendingRestore({
     final settings = File(p.join(staging.path, 'settings.json'));
     if (settings.existsSync()) {
       await applySettingsJson(prefs, jsonDecode(settings.readAsStringSync()) as Map<String, dynamic>);
+    }
+    // «Non mi piace» choices replace the current ones; a backup without the
+    // file (older than fase 101) leaves them as they are, like downloads.json.
+    final dislikes = File(p.join(staging.path, _stagedDislikes));
+    if (dislikesFile != null && dislikes.existsSync()) {
+      dislikesFile.parent.createSync(recursive: true);
+      final tmp = dislikes.copySync('${dislikesFile.path}.tmp');
+      tmp.renameSync(dislikesFile.path);
     }
     final covers = Directory(p.join(staging.path, 'covers'));
     if (covers.existsSync()) {
@@ -217,7 +228,12 @@ void _quietDelete(Directory d) {
 /// «Unisci a questa libreria»: merges the user data of [zip] into [db] (see
 /// [mergeUserData]) and copies its covers into [coversDir] without
 /// overwriting any. The database file of the backup is not used.
-Future<MergeReport> mergeBackup(File zip, AppDatabase db, Directory coversDir) async {
+Future<MergeReport> mergeBackup(
+  File zip,
+  AppDatabase db,
+  Directory coversDir, {
+  DislikeStore? dislikes,
+}) async {
   final input = InputFileStream(zip.path);
   late final UserData data;
   var windows = Platform.isWindows;
@@ -230,6 +246,16 @@ Future<MergeReport> mergeBackup(File zip, AppDatabase db, Directory coversDir) a
     if (manifest != null) {
       final m = jsonDecode(utf8.decode(manifest.content as List<int>)) as Map<String, dynamic>;
       windows = windows || m['platform'] == 'windows';
+    }
+    // «Non mi piace» blocks are added to the current ones (union).
+    final dl = archive.findFile(_stagedDislikes);
+    if (dislikes != null && dl != null) {
+      try {
+        await dislikes.load();
+        dislikes.mergeJson(jsonDecode(utf8.decode(dl.content as List<int>)));
+      } on Object catch (e, st) {
+        AppLog.w('dislikes.json of the backup unreadable, blocks skipped', e, st);
+      }
     }
     coversDir.createSync(recursive: true);
     for (final f in archive.files) {

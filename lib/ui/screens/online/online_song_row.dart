@@ -13,6 +13,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/track_actions.dart' show showOnlineActions;
 import '../../widgets/track_row.dart' show SwipeToQueue;
 import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
+import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/format_utils.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/track_row_selection.dart';
@@ -413,6 +414,7 @@ class _SongText extends StatelessWidget {
                   ),
                 ),
               ),
+            if (artist.isNotEmpty) BlockedArtistMark(artist),
             if (meta.isNotEmpty && linked) const SizedBox(width: 8),
             if (meta.isNotEmpty)
               Flexible(

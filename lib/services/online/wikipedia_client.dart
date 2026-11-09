@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
-import '../import/track_matcher.dart';
 import 'http_client.dart';
 import 'query_cleaner.dart';
+import '../../core/artist_key.dart';
 
 class Curiosity {
   const Curiosity(this.text, this.source, this.lang);

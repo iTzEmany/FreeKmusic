@@ -19,6 +19,7 @@ import 'providers/activity_log_providers.dart';
 import 'providers/import_notification_providers.dart';
 import 'l10n/l10n_ext.dart';
 import 'ui/screens/onboarding/onboarding_gate.dart';
+import 'providers/dislike_store_provider.dart' show dislikeStoreProvider;
 import 'providers/releases_providers.dart' show releaseCheckControllerProvider;
 import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_icon_sync.dart';
@@ -42,6 +43,8 @@ class CodecoreApp extends ConsumerWidget {
     ref.watch(importNotificationProvider);
     // Checks for new releases of followed artists (starts once settled).
     ref.watch(releaseCheckControllerProvider);
+    // Opens dislikes.json and imports the old «disliked» records before any SuggestionLog.clear.
+    ref.read(dislikeStoreProvider);
     // Completes the library in the background (starts once settled).
     ref.watch(enrichCompleterStartProvider);
     // Corrects once the lengths of mp3 files read wrong before (starts once settled).

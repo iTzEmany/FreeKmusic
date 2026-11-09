@@ -1,5 +1,5 @@
-import '../import/track_matcher.dart' show matchKey;
 import '../online/ytm_artist.dart';
+import '../../core/artist_key.dart';
 
 /// What a release is, from how YouTube writes its subtitle.
 enum ReleaseKind { album, single }

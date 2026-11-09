@@ -9,6 +9,7 @@ import '../online/ytm_radio_parser.dart';
 import 'radio_fill.dart';
 import 'radio_gate.dart';
 import 'seed_resolver.dart';
+import 'suggestion_gate.dart';
 import 'suggestion_log.dart';
 import 'suggestion_pool.dart';
 
@@ -70,6 +71,7 @@ Stream<GenreMixState> genreMix({
   required SeedResolver resolver,
   required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
   required SuggestionLog log,
+  required SuggestionGate filter,
   required RadioGate gate,
   required Future<bool Function(YtResult r)> Function() loadInLibrary,
   bool Function()? cancelled,
@@ -88,11 +90,13 @@ Stream<GenreMixState> genreMix({
   GenreMixOff? stopped;
   try {
     await log.load();
+    await filter.load();
     final fill = RadioFill(
       seeds: [for (final t in chooseSeeds(tracks, random: random)) RadioSeed(t)],
       resolver: resolver,
       radioPage: radioPage,
       log: log,
+      filter: filter,
       gate: gate,
       inLibrary: await loadInLibrary(),
       pool: pool,
@@ -127,6 +131,7 @@ Stream<GenreMixState> genreMixOf({
   required Future<DownloadIndex> downloads,
   required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
   required SuggestionLog log,
+  required SuggestionGate filter,
   required RadioGate gate,
   required Future<GenreMixOff?> Function() offReason,
   required Future<LibraryIndex> Function() library,
@@ -140,6 +145,7 @@ Stream<GenreMixState> genreMixOf({
     resolver: await resolver,
     radioPage: radioPage,
     log: log,
+    filter: filter,
     gate: gate,
     cancelled: cancelled,
     offReason: offReason,

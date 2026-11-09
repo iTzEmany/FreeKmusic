@@ -4,6 +4,7 @@ import '../online/youtube_service.dart';
 import '../online/ytm_radio_parser.dart';
 import 'radio_gate.dart';
 import 'seed_resolver.dart';
+import 'suggestion_gate.dart';
 import 'suggestion_log.dart';
 import 'suggestion_pool.dart';
 
@@ -17,6 +18,7 @@ class RadioFill {
     required this.resolver,
     required this.radioPage,
     required this.log,
+    required this.filter,
     required this.gate,
     required this.inLibrary,
     SuggestionPool? pool,
@@ -27,6 +29,7 @@ class RadioFill {
   final Future<RadioPage> Function(String videoId, {String? continuation})
   radioPage;
   final SuggestionLog log;
+  final SuggestionGate filter;
   final RadioGate gate;
   final bool Function(YtResult r) inLibrary;
   final SuggestionPool pool;
@@ -49,6 +52,7 @@ class RadioFill {
         inLibrary: inLibrary,
         inQueue: inQueue,
         log: log,
+        filter: filter,
         lastArtists: _lastArtists,
       );
       if (c != null) {

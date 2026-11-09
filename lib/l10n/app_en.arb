@@ -2533,6 +2533,46 @@
   "suggestedSimilarTo": "Suggested: similar to “{seed}”",
   "suggestionDownloadStarted": "Download started",
   "suggestionAddWhenDownloaded": "Downloading it and adding it to “{name}”",
+  "dislikesTitle": "Dislikes",
+  "dislikesHint": "What you don't want among suggestions. Songs can come back only if very close to what you listen to; artists never.",
+  "dislikesTracksTab": "Songs {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Artists {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "No songs excluded",
+  "dislikesEmptyArtists": "No artists excluded",
+  "dislikesEmptyHint": "When you tap “Dislike” on a suggestion, it shows up here and you can take it off.",
+  "dislikesRemove": "Remove",
+  "dislikesRemoveLabel": "Remove “{name}” from dislikes",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "“{name}” removed from dislikes",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Songs and artists excluded from suggestions",
+  "dislikePlayerLabel": "Dislike: song or artist",
   "suggestionDislike": "Don’t like it",
   "suggestionDisliked": "It won’t be suggested again",
   "removeFromQueueAction": "Remove from queue",
@@ -3443,5 +3483,48 @@
   "queueSimilarTo": "Similar to «{title}»",
   "queueSimilarTag": "YouTube Music radio",
   "queueSimilarCount": "{total, plural, one{1 song} other{{total} songs}}, {owned} already in the library",
-  "queueSimilarSearching": "Looking for similar songs…"
+  "queueSimilarSearching": "Looking for similar songs…",
+  "dislikeSheetTitle": "Don’t like the song or the artist?",
+  "dislikeSheetTrack": "Just this song",
+  "dislikeSheetTrackHint": "“{title}” won’t come back, unless it is very close to what you listen to.",
+  "@dislikeSheetTrackHint": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtist": "All of {artist}",
+  "@dislikeSheetArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtistHint": "No song by {artist} will be suggested to you again.",
+  "@dislikeSheetArtistHint": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeArtistDone": "{artist} won’t be suggested to you again",
+  "@dislikeArtistDone": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "artistBlockedLabel": "Artist blocked",
+  "dislikesBlockedOn": "Excluded on {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

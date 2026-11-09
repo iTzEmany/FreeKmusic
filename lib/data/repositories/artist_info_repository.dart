@@ -1,6 +1,6 @@
 import '../../core/clock.dart';
-import '../../services/import/track_matcher.dart';
 import '../db/app_database.dart';
+import '../../core/artist_key.dart';
 
 /// What Wikipedia says about an artist, one row per artist.
 class ArtistInfoRepository {

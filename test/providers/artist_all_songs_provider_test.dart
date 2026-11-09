@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/artist_all_songs_provider.dart';
 import 'package:codecore/providers/artist_shelves_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/dislike_store_provider.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -24,9 +28,13 @@ final _top = [
 
 void main() {
   late AppDatabase db;
+  late DislikeStore store;
   var n = 0;
 
-  setUp(() => db = AppDatabase(NativeDatabase.memory()));
+  setUp(() {
+    db = AppDatabase(NativeDatabase.memory());
+    store = DislikeStore(file: () async => File('/nonexistent/dislikes.json'));
+  });
   tearDown(() => db.close());
 
   Future<void> add(
@@ -65,6 +73,7 @@ void main() {
     final c = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
+        dislikeStoreProvider.overrideWithValue(store),
         groupShelvesProvider.overrideWith(
           (ref, ids) => noPage
               ? null
@@ -184,5 +193,48 @@ void main() {
       ],
     );
     expect(titles(r), ['Time', 'Money']);
+  });
+
+  test('a blocked online song is skipped, the downloaded one is not', () async {
+    await add('Money', 'Pink Floyd');
+    store.blockTrack(const DislikedTrack(videoId: 'a', title: 'Time', artist: 'Pink Floyd'));
+    store.blockTrack(const DislikedTrack(videoId: 'b', title: 'Money', artist: 'Pink Floyd'));
+    final r = await read();
+    expect(titles(r), ['Us and Them', 'Money']);
+    expect(r.items.last.track, isA<Track>(), reason: 'own songs are never filtered');
+  });
+
+  test('a blocked artist: only the downloaded songs play (D-468)', () async {
+    await add('Echoes', 'Pink Floyd');
+    store.blockArtist(const DislikedArtist(key: 'pink floyd', name: 'Pink Floyd'));
+    final r = await read();
+    expect(titles(r), ['Echoes']);
+  });
+
+  test('a row by a blocked artist is skipped even on another artist page', () async {
+    store.blockArtist(const DislikedArtist(key: 'guest', name: 'Guest'));
+    final r = await read(top: [ytmSong('a', 'Time'), ytmSong('g', 'Duet', artist: 'Guest')]);
+    expect(titles(r), ['Time']);
+  });
+
+  test('the page artist blocked: a row by another artist is skipped too', () async {
+    store.blockArtist(const DislikedArtist(key: 'pink floyd', name: 'Pink Floyd'));
+    final r = await read(top: [ytmSong('g', 'Duet', artist: 'Guest')]);
+    expect(titles(r), isEmpty);
+  });
+
+  test('a block made later refreshes the list', () async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      dislikeStoreProvider.overrideWithValue(store),
+      groupShelvesProvider.overrideWith((ref, ids) => [YtmSongShelf('Top', _top, allSongs: null)]),
+    ]);
+    addTearDown(c.dispose);
+    final sub = c.listen(artistAllSongsProvider(_key), (_, _) {});
+    addTearDown(sub.close);
+    expect(titles(await c.read(artistAllSongsProvider(_key).future)), ['Time', 'Money', 'Us and Them']);
+    store.blockTrack(const DislikedTrack(videoId: 'a', title: 'Time', artist: 'Pink Floyd'));
+    await Future<void>.delayed(Duration.zero);
+    expect(titles(await c.read(artistAllSongsProvider(_key).future)), ['Money', 'Us and Them']);
   });
 }

@@ -1,5 +1,6 @@
 import 'package:codecore/services/online/query_cleaner.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:codecore/core/artist_key.dart';
 
 void main() {
   const table = [

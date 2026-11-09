@@ -1,7 +1,8 @@
 import '../../data/db/app_database.dart' show Track;
 import '../../data/repositories/library_queries.dart' show ArtistSummary;
-import '../import/track_matcher.dart' show artistKey, libraryTitleKey;
+import '../import/track_matcher.dart' show libraryTitleKey;
 import 'youtube_service.dart' show YtResult;
+import '../../core/artist_key.dart';
 
 
 /// The library artist that is [name] on YouTube Music: same main artist once

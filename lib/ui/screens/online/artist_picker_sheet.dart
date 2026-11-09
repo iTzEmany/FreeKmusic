@@ -8,7 +8,6 @@ import '../../../providers/artist_merge_providers.dart';
 import '../../../providers/smart_search_providers.dart' show searchRowsLimiterProvider, sourceCooldownProvider;
 import '../../../services/online/budgeted_call.dart';
 import '../../../providers/ytm_catalog_providers.dart';
-import '../../../services/import/track_matcher.dart' show matchKey;
 import '../../../services/online/innertube_client.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../services/online/ytm_artist.dart';
@@ -19,6 +18,7 @@ import '../youtube/online_results.dart' show ytErrorText;
 import 'artist_page_screen.dart';
 import 'artist_page_sections.dart' show thumbAt;
 import '../../widgets/show_msg.dart';
+import '../../../core/artist_key.dart';
 
 /// Looks the artist [name] up among YouTube Music's artists: a single exact
 /// name is the answer, otherwise the first few are offered in a sheet. Null

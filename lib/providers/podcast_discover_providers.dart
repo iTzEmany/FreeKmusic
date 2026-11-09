@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_log.dart';
 import '../core/constants.dart' show kEnableYoutube;
 import '../data/repositories/podcast_repository.dart';
-import '../services/import/track_matcher.dart' show matchKey;
 import '../services/podcast/apple_podcasts.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/ytm_podcast_sync.dart' show kPodcastSourceYtm;
 import 'podcast_providers.dart';
+import '../core/artist_key.dart';
 
 enum PodcastOrigin { apple, ytm }
 

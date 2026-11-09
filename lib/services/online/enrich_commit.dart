@@ -3,7 +3,6 @@ import 'package:drift/drift.dart';
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/credits_repository.dart' show CreditsRepository, decodeRec, mergeDetails;
-import '../import/track_matcher.dart' show matchKey;
 import '../recognition/track_identity.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
@@ -16,6 +15,7 @@ import 'enrich_writer.dart';
 import 'enrichment_proposal.dart';
 import 'lrclib_client.dart' show LyricsResult;
 import 'query_cleaner.dart' show isGenericArtist;
+import '../../core/artist_key.dart';
 
 /// One track's commit in flight: the row and `track_enrich` read once, and
 /// what the parts decided on the way.

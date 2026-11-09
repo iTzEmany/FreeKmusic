@@ -6,7 +6,10 @@ import '../services/import/track_matcher.dart' show libraryTitleKey;
 import '../services/online/ytm_artist.dart' show YtmSongShelf;
 import 'artist_shelves_providers.dart';
 import '../services/online/youtube_service.dart' show YtResult;
+import '../core/artist_key.dart';
+import '../services/shuffle_plus/suggestion_pool.dart' show suggestionArtistKey;
 import 'database_providers.dart';
+import 'dislike_store_provider.dart';
 import 'player_providers.dart' show MixItem;
 import 'ytm_catalog_providers.dart';
 
@@ -26,6 +29,10 @@ MixItem _item({Track? track, YtResult? online}) =>
 /// uses the songs of its shelves.
 final artistAllSongsProvider = FutureProvider.autoDispose
     .family<ArtistAllSongs, ArtistAllSongsKey>((ref, key) async {
+      // A new block or an unblock: the list is worked out again.
+      final store = ref.read(dislikeStoreProvider);
+      final changes = store.changes.listen((_) => ref.invalidateSelf());
+      ref.onDispose(changes.cancel);
       final local = await ref
           .read(trackRepositoryProvider)
           .tracksOfArtist(key.name);
@@ -51,6 +58,17 @@ final artistAllSongsProvider = FutureProvider.autoDispose
           }
         }
       }
+      // Blocked online songs (and all of a blocked artist's) are not played;
+      // the user's own downloaded ones always are (D-468).
+      await store.load();
+      final pageArtist = artistKey(key.name);
+      top = [
+        for (final r in top)
+          if (!store.trackBlocked(r.id) &&
+              !store.artistBlocked(pageArtist) &&
+              !store.artistBlocked(suggestionArtistKey(r)))
+            r,
+      ];
       final byTitle = <String, Track>{};
       for (final t in local.reversed) {
         byTitle[libraryTitleKey(t.title)] = t; // first of the list wins

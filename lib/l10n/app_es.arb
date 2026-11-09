@@ -2533,6 +2533,46 @@
   "suggestedSimilarTo": "Sugerido: parecido a «{seed}»",
   "suggestionDownloadStarted": "Descarga iniciada",
   "suggestionAddWhenDownloaded": "Lo descargo y lo añado a «{name}»",
+  "dislikesTitle": "No me gusta",
+  "dislikesHint": "Lo que no quieres entre las sugerencias. Las canciones solo vuelven si se parecen mucho a lo que escuchas; los artistas, nunca.",
+  "dislikesTracksTab": "Canciones {count}",
+  "@dislikesTracksTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesArtistsTab": "Artistas {count}",
+  "@dislikesArtistsTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dislikesEmptyTracks": "Ninguna canción excluida",
+  "dislikesEmptyArtists": "Ningún artista excluido",
+  "dislikesEmptyHint": "Cuando tocas «No me gusta» en una sugerencia, aparece aquí y puedes quitarla.",
+  "dislikesRemove": "Quitar",
+  "dislikesRemoveLabel": "Quitar «{name}» de No me gusta",
+  "@dislikesRemoveLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesRemoved": "«{name}» quitado de No me gusta",
+  "@dislikesRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikesTileHint": "Canciones y artistas excluidos de las sugerencias",
+  "dislikePlayerLabel": "No me gusta: canción o artista",
   "suggestionDislike": "No me gusta",
   "suggestionDisliked": "No te lo sugeriré más",
   "removeFromQueueAction": "Quitar de la cola",
@@ -3443,5 +3483,48 @@
   "queueSimilarTo": "Similares a «{title}»",
   "queueSimilarTag": "radio de YouTube Music",
   "queueSimilarCount": "{total, plural, one{1 canción} other{{total} canciones}}, {owned} ya en la biblioteca",
-  "queueSimilarSearching": "Buscando canciones similares…"
+  "queueSimilarSearching": "Buscando canciones similares…",
+  "dislikeSheetTitle": "¿No te gusta la canción o el artista?",
+  "dislikeSheetTrack": "Solo esta canción",
+  "dislikeSheetTrackHint": "«{title}» no vuelve, salvo que se parezca mucho a lo que escuchas.",
+  "@dislikeSheetTrackHint": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtist": "Todo {artist}",
+  "@dislikeSheetArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeSheetArtistHint": "Ninguna canción de {artist} se te sugerirá más.",
+  "@dislikeSheetArtistHint": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "dislikeArtistDone": "{artist} no se te sugerirá más",
+  "@dislikeArtistDone": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "artistBlockedLabel": "Artista bloqueado",
+  "dislikesBlockedOn": "Excluido el {date}",
+  "@dislikesBlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

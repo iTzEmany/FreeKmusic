@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
 import '../data/repositories/artist_alias_repository.dart' show ArtistAliasRepository;
-import '../services/import/track_matcher.dart' show matchKey;
 import '../services/online/budgeted_call.dart';
 import '../services/online/ytm_artist.dart';
 import '../services/online/ytm_artist_resolver.dart' show YtmArtistPick, artistNameKeys, pickYtmArtistWithAliases;
@@ -12,6 +11,7 @@ import 'database_providers.dart';
 import 'releases_providers.dart' show followRepositoryProvider;
 import 'smart_search_providers.dart';
 import 'ytm_catalog_providers.dart';
+import '../core/artist_key.dart';
 
 export 'database_providers.dart' show artistAliasRepositoryProvider;
 

@@ -5,6 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/backup/backup_service.dart';
 import 'package:codecore/services/backup/restore_service.dart';
+import 'package:codecore/services/shuffle_plus/dislike_store.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +27,7 @@ void main() {
   /// A real backup of a database with [titles] as tracks and [folders] as
   /// music folders.
   Future<File> makeBackup(List<String> titles,
-      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed}) async {
+      {String deviceId = 'dev-A', List<String> folders = const [], Future<void> Function(AppDatabase)? seed, File? dislikes}) async {
     final db = AppDatabase(NativeDatabase.memory());
     for (final f in folders) {
       await db.into(db.folders).insert(FoldersCompanion.insert(path: f, addedAt: 1));
@@ -44,7 +45,7 @@ void main() {
     File(p.join(covers.path, 'both.jpg')).writeAsBytesSync([9, 9]);
     final out = File(p.join(dir.path, 'b-${titles.length}.zip'));
     await BackupService(
-      db: db, prefs: prefs, coversDir: covers, downloadsFile: File(p.join(dir.path, 'none.json')), deviceId: deviceId,
+      db: db, prefs: prefs, coversDir: covers, downloadsFile: File(p.join(dir.path, 'none.json')), dislikesFile: dislikes, deviceId: deviceId,
     ).createBackup(out.path);
     await db.close();
     return out;
@@ -126,6 +127,56 @@ void main() {
       expect(File(p.join(covers.path, 'new.jpg')).existsSync(), isTrue);
       expect(File(p.join(covers.path, 'both.jpg')).readAsBytesSync(), [5], reason: 'the existing cover wins');
       expect(staging.existsSync(), isFalse);
+    });
+
+    test('dislikes.json travels in the backup and replaces the current one', () async {
+      final src = File(p.join(dir.path, 'src-dislikes.json'))..writeAsStringSync('{"tracks":[{"id":"x"}]}');
+      final live = File(p.join(dir.path, 'live', 'dislikes.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"tracks":[]}');
+      await stageFullRestore(await makeBackup(['n1'], dislikes: src), staging);
+      expect(await applyPendingRestore(
+          dbFile: dbFile, staging: staging, prefs: prefs, coversDir: covers, schemaVersion: schema, dislikesFile: live),
+          isTrue);
+      expect(live.readAsStringSync(), '{"tracks":[{"id":"x"}]}');
+    });
+
+    test('a backup without dislikes.json leaves the current choices alone', () async {
+      final live = File(p.join(dir.path, 'live', 'dislikes.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('keep');
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await applyPendingRestore(
+          dbFile: dbFile, staging: staging, prefs: prefs, coversDir: covers, schemaVersion: schema, dislikesFile: live),
+          isTrue);
+      expect(live.readAsStringSync(), 'keep');
+    });
+
+    test('merging adds the blocks of dislikes.json to the current ones', () async {
+      final src = File(p.join(dir.path, 'src-dislikes.json'))
+        ..writeAsStringSync(
+          '{"tracks":[{"id":"b","title":"B","artist":"x"}],"artists":[{"key":"k","name":"K"}]}',
+        );
+      final zip = await makeBackup(['n1'], dislikes: src);
+      final live = File(p.join(dir.path, 'live-dislikes.json'));
+      final store = DislikeStore(file: () async => live, writeDelay: Duration.zero);
+      await store.load();
+      store.blockTrack(const DislikedTrack(videoId: 'a', title: 'A', artist: 'x'));
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeBackup(zip, here, Directory(p.join(dir.path, 'm-covers')), dislikes: store);
+      expect([for (final t in store.tracks) t.videoId], unorderedEquals(['a', 'b']));
+      expect(store.artistBlocked('k'), isTrue);
+    });
+
+    test('an unreadable dislikes.json in the zip does not fail the merge', () async {
+      final src = File(p.join(dir.path, 'src-bad.json'))..writeAsStringSync('{nope');
+      final zip = await makeBackup(['n1'], dislikes: src);
+      final store = DislikeStore(file: () async => File(p.join(dir.path, 'l2.json')), writeDelay: Duration.zero);
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeBackup(zip, here, Directory(p.join(dir.path, 'm-covers2')), dislikes: store);
+      expect(store.tracks, isEmpty);
     });
 
     test('the recognition pass bookmarks are cleared: the restored rows may be older', () async {

@@ -1392,12 +1392,12 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 100.4 Controlli di fase
 
 ## Fase 101 — «Non mi piace» brano o artista, player del suggerito (`fase-101-non-mi-piace.md`)
-- [ ] 101.1 `DislikeStore`
-- [ ] 101.2 `SuggestionGate`
-- [ ] 101.3 Foglio «brano o artista» con Annulla
-- [ ] 101.4 Impostazioni → «Non mi piace»
-- [ ] 101.5 Player di un suggerito
-- [ ] 101.6 Controlli di fase
+- [x] 101.1 `DislikeStore`
+- [x] 101.2 `SuggestionGate`
+- [x] 101.3 Foglio «brano o artista» con Annulla
+- [x] 101.4 Impostazioni → «Non mi piace»
+- [x] 101.5 Player di un suggerito
+- [x] 101.6 Controlli di fase
 
 ## Fase 102 — Podcast senza iscrizione e «Riprendi» con gli episodi (`fase-102-podcast-senza-iscrizione.md`)
 - [ ] 102.1 Schema v19: `podcasts.followed`

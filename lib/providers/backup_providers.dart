@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/paths.dart';
@@ -17,6 +18,7 @@ final backupServiceProvider = FutureProvider<BackupService>((ref) async {
     prefs: await SharedPreferences.getInstance(),
     coversDir: Directory(await coversDir()),
     downloadsFile: DownloadIndex.defaultFile(support),
+    dislikesFile: File(p.join(support, 'dislikes.json')),
     deviceId: await ref.watch(settingsStoreProvider).deviceId(),
   );
 }, retry: (_, _) => null);

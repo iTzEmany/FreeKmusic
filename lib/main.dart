@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, Licens
 import 'package:flutter/services.dart' show DeviceOrientation, MethodChannel, SystemChrome, rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
@@ -81,6 +82,7 @@ Future<void> main() async {
       prefs: await SharedPreferences.getInstance(),
       coversDir: Directory(await coversDir()),
       schemaVersion: kSchemaVersion,
+      dislikesFile: File(p.join(await appSupportDir(), 'dislikes.json')),
     );
   } on Object catch (e, st) {
     AppLog.e('pending restore could not run', e, st);

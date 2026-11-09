@@ -1,6 +1,6 @@
 import '../../data/repositories/artist_alias_repository.dart' show ArtistAliasRepository;
-import '../import/track_matcher.dart' show artistKey, matchKey;
 import 'ytm_artist.dart';
+import '../../core/artist_key.dart';
 
 /// How many artists the choice sheet offers.
 const _choices = 3;

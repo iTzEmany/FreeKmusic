@@ -15,6 +15,7 @@ import 'insertion_plan.dart';
 import 'radio_gate.dart';
 import 'seed_resolver.dart';
 import 'shuffle_host.dart';
+import 'suggestion_gate.dart';
 import 'suggestion_log.dart';
 import 'suggestion_pool.dart';
 
@@ -63,6 +64,7 @@ class ShufflePlusController {
     required this.host,
     required this.online,
     required this.log,
+    required this.filter,
     required this.resolver,
     required this.radio,
     required this.config,
@@ -104,6 +106,7 @@ class ShufflePlusController {
   final ShuffleHost host;
   final OnlineEntries online;
   final SuggestionLog log;
+  final SuggestionGate filter;
   final SuggestionPool pool;
   final SeedResolver resolver;
   final YtmRadioService radio;
@@ -427,6 +430,12 @@ class ShufflePlusController {
     if (plan.isEmpty) return false;
     final at = plan.first;
     final r = candidate.result;
+    // A «Non mi piace» may have come in while the address was prepared: drop
+    // this one (the pool already used it up) and look again for another.
+    if (!filter.allows(r.id, suggestionArtistKey(r), pool.positionsOf(r.id))) {
+      poke();
+      return false;
+    }
     final id = online.register(r, seedTitle: candidate.seedTitle, suggested: true);
     _mine.add(id);
     log.addSuggestion(r, candidate.seedTitle);
@@ -486,6 +495,7 @@ class ShufflePlusController {
 
   Future<SuggestionCandidate?> _take() async {
     await log.load();
+    await filter.load();
     final queued = {
       for (final id in host.queueIds)
         if (isOnlineId(id)) ?online[id]?.result.id,
@@ -494,6 +504,7 @@ class ShufflePlusController {
       inLibrary: inLibraryTest(hasDownload: hasDownload, library: _library),
       inQueue: queued.contains,
       log: log,
+      filter: filter,
       lastArtists: _lastArtists,
     );
   }

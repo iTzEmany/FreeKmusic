@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../core/app_log.dart';
-import '../import/track_matcher.dart' show artistKey, matchTitleKey;
+import '../import/track_matcher.dart' show matchTitleKey;
+import '../../core/artist_key.dart';
 
 /// What is known about the YouTube Music id of one library song.
 class SeedEntry {
