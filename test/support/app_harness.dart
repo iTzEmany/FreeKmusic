@@ -1,3 +1,5 @@
+import 'package:codecore/providers/romanization_providers.dart';
+import 'package:codecore/services/lyrics/romanization_resolver.dart';
 import 'package:codecore/providers/artist_merge_providers.dart';
 import 'package:codecore/services/online/ytm_artist.dart' show YtmArtistRef;
 import 'dart:io';
@@ -61,6 +63,9 @@ class Harness {
     return Harness._(db, handler, backend, store);
   }
 
+  /// What the lyrics view shows under the lines; set before `pump`.
+  RomanizationState romanization = RomanizationState.off;
+
   /// What the artist-merge search answers (nothing by default); set before `pump`.
   Future<List<YtmArtistRef>>? Function(String) mergeSearch = (_) => Future.value(const <YtmArtistRef>[]);
 
@@ -73,6 +78,10 @@ class Harness {
         startupSettledProvider.overrideWith((ref) async {}),
         // Never a real search for the artist-merge suggestion.
         artistMergeSearchProvider.overrideWithValue(mergeSearch),
+        // The real one reads the app support folder (no plugin in tests).
+        romanizationProvider.overrideWith(
+          (ref, id) => Stream.value(romanization),
+        ),
       ];
 
   Future<void> pump(WidgetTester tester, Widget child,
