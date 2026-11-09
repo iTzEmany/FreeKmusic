@@ -213,10 +213,12 @@ void main() {
 
   test('the slot changes while the app runs: the daylist is made again at the change', () async {
     await addTracks(40);
-    final sw = Stopwatch()..start();
-    clock = () => DateTime(2026, 11, 9, 21, 59, 59).add(sw.elapsed);
+    // The clock stands still until the first build is done, so a slow build under
+    // load cannot cross the slot edge by itself; then it jumps past it.
+    clock = () => DateTime(2026, 11, 9, 21, 59, 59);
     final c = open();
     expect((await daylist(c))!.slotIndex, 4);
+    clock = () => DateTime(2026, 11, 9, 22, 0, 1);
     final end = DateTime.now().add(const Duration(seconds: 10));
     while (c.read(daylistProvider).value?.slotIndex != 5 &&
         DateTime.now().isBefore(end)) {
