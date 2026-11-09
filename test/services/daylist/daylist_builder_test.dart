@@ -230,4 +230,78 @@ void main() {
     expect(r.tooFew, isTrue);
     expect(r.items, isEmpty);
   });
+
+  test('a new artist takes the genres of its seed: it passes in a slot with taste', () async {
+    final got = <String>[];
+    // track 1 (jazz) is the seed; «Song 1» is its title
+    await builder.build(inputs(lib, plays: playsOf([1]), suggest: (s, w, accept, q) async* {
+      for (final c in [
+        SuggestionCandidate(cand('n1', 'Newcomer').result, 'Song 1', RadioKind.song),
+        SuggestionCandidate(cand('n2', 'Newcomer 2').result, 'Nobody', RadioKind.song), // unknown seed: no genres
+      ]) {
+        if (accept(c)) {
+          got.add(c.result.id);
+          yield c;
+        }
+      }
+    }));
+    expect(got, ['n1']);
+  });
+
+  test('15 identical suggestions with different ids make one row', () async {
+    final r = await builder.build(inputs(lib, plays: playsOf([1]), suggest: (s, w, accept, q) async* {
+      for (var i = 0; i < 15; i++) {
+        final c = cand('dup$i', 'Band 1', title: 'Same Song');
+        if (accept(c)) yield c;
+      }
+    }));
+    expect(r.items.where((i) => i.suggestion != null).length, 1);
+  });
+
+  test('a suggestion with only avoided genres is out even in a slot without taste', () async {
+    final c = DaylistConfig.defaults();
+    final open = c.withSlot(slot, c.slots[slot].copyWith(prefer: {}, avoid: {'metal'}, moods: {}));
+    var accepted = true;
+    await builder.build(inputs(lib, plays: playsOf([1]), config: open, suggest: (s, w, accept, q) async* {
+      accepted = accept(cand('m', 'Whoever'));
+    }, genresOfSuggestion: (_) => ['Metal']));
+    expect(accepted, isFalse);
+  });
+
+  test('no seeds: suggestions are not asked', () async {
+    var asked = false;
+    await builder.build(inputs([for (var i = 1; i <= 20; i++) track(i, 'metal')], suggest: (s, w, a, q) {
+      asked = true;
+      return const Stream.empty();
+    }));
+    expect(asked, isFalse);
+  });
+
+  test('more suggestions than wanted are cut, a repeated id is dropped', () async {
+    final r = await builder.build(inputs(lib, plays: playsOf([1]), suggest: (s, w, accept, q) async* {
+      yield cand('same', 'Band 1', title: 'One');
+      yield cand('same', 'Band 1', title: 'Two');
+      for (var i = 0; i < 40; i++) {
+        yield cand('x$i', 'Band 1', title: 'Title $i');
+      }
+    }));
+    final ids = [for (final i in r.items) if (i.suggestion != null) i.suggestion!.result.id];
+    expect(ids.length, 15);
+    expect(ids.where((i) => i == 'same').length, 1);
+  });
+
+  test('exactly 15 songs make a daylist, 14 do not', () async {
+    final l = [for (var i = 1; i <= 15; i++) track(i, 'jazz')];
+    expect((await builder.build(inputs(l, plays: playsOf([1])))).tooFew, isFalse);
+    expect((await builder.build(inputs(l.take(14).toList(), plays: playsOf([1])))).tooFew, isTrue);
+  });
+
+  test('a song with a preferred and an avoided genre is out; a played song is not listed twice', () async {
+    final l = [for (var i = 1; i <= 20; i++) track(i, 'jazz'), track(99, 'jazz;punk')];
+    final r = await builder.build(inputs(l, plays: playsOf([1, 2, 99])));
+    final ids = [for (final i in r.items) i.track!.id];
+    expect(ids, isNot(contains(99)));
+    expect(ids.toSet().length, ids.length);
+    expect(ids.length, 20);
+  });
 }

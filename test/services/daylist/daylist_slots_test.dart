@@ -70,6 +70,23 @@ void main() {
     await store.resetDaylist();
     expect(store.readDaylistConfig().slots[1].startHour, 9);
   });
+  test('exactly at the start of a slot the next change is the following start', () {
+    expect(c.nextChange(at(22)), DateTime(2026, 11, 10, 0));
+    expect(c.nextChange(at(5)), at(9));
+  });
+
+  test('share is clamped to 0-100 and a start of 24 or 30 means the default hour', () {
+    String slotJson(int i, int start, int share) =>
+        '{"start": $start, "on": true, "share": $share, "prefer": [], "avoid": [], "moods": []}';
+    final starts = [5, 24, 13, 30, 19, 22, 0, 3];
+    final shares = [150, -5, 30, 30, 30, 30, 20, 20];
+    final back = DaylistConfig.fromJsonString('[${[for (var i = 0; i < 8; i++) slotJson(i, starts[i], shares[i])].join(',')}]');
+    expect(back.slots[0].sharePercent, 100);
+    expect(back.slots[1].sharePercent, 0);
+    expect(back.slots[1].startHour, 9);
+    expect(back.slots[3].startHour, 16);
+  });
+
   test('a slot moved across midnight: tarda sera 22 to 2', () {
     final m = c.withStart(6, 2)!; // notte now starts at 02:00
     expect(m.slotAt(at(23)), 5);

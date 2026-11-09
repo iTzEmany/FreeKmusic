@@ -282,7 +282,7 @@ class DaylistBuilder {
       items: items,
       genres: _topGenres([
         for (final t in own) ...pl.genreOf[t.id]!,
-        for (final c in suggested) ..._suggestionGenres(genresOfSuggestion, c, pl.artistGenres),
+        for (final c in suggested) ..._suggestionGenres(pl, genresOfSuggestion, c).genres,
       ], pl.spelled),
       tooFew: false,
     );
@@ -294,15 +294,21 @@ class DaylistBuilder {
     return [for (final t in tracks) if (seen.add(_key(t.title, artistKey(t.artist)))) t];
   }
 
-  /// Genres of a suggestion: the caller's, else those of the artist's songs
-  /// in the library, else none.
-  List<String> _suggestionGenres(
+  /// Genres of a suggestion: the caller's, else those of the artist's songs in
+  /// the library, else (new artist) those of the seed it came from; empty when
+  /// all are unknown. [inherited] tells which of the last two it was.
+  ({List<String> genres, bool inherited}) _suggestionGenres(
+    DaylistPlan pl,
     Iterable<String> Function(SuggestionCandidate c)? own,
     SuggestionCandidate c,
-    Map<String, Set<String>> artistGenres,
   ) {
-    if (own != null) return [for (final g in own(c)) matchKey(g)];
-    return [...?artistGenres[suggestionArtistKey(c.result)]];
+    if (own != null) return (genres: [for (final g in own(c)) matchKey(g)], inherited: false);
+    final known = pl.artistGenres[suggestionArtistKey(c.result)];
+    if (known != null) return (genres: [...known], inherited: false);
+    return (
+      genres: [for (final s in pl.seeds) if (s.title == c.seedTitle) ...pl.genreOf[s.id]!],
+      inherited: true,
+    );
   }
 
   Future<List<SuggestionCandidate>> _suggestions(
@@ -314,13 +320,19 @@ class DaylistBuilder {
     if (suggest == null || want <= 0 || pl.seeds.isEmpty) return const [];
     final avoid = pl.avoid;
     final taken = <String>{};
+    final keys = <String>{};
+    String keyOf(SuggestionCandidate c) => _key(c.result.title, suggestionArtistKey(c.result));
     bool accept(SuggestionCandidate c) {
-      if (pl.libraryKeys.contains(_key(c.result.title, suggestionArtistKey(c.result)))) return false;
-      final g = _suggestionGenres(genresOfSuggestion, c, pl.artistGenres);
-      final left = [for (final x in g) if (!avoid.contains(x)) x];
-      if (g.isNotEmpty && left.isEmpty) return false; // only avoided genres
-      // Unknown genres follow the rule of a song without genre: only a slot without taste.
-      return pl.passes(left);
+      final key = keyOf(c);
+      if (pl.libraryKeys.contains(key) || keys.contains(key)) return false;
+      final (:genres, :inherited) = _suggestionGenres(pl, genresOfSuggestion, c);
+      final left = [for (final x in genres) if (!avoid.contains(x)) x];
+      if (genres.isNotEmpty && left.isEmpty) return false; // only avoided genres
+      // A new artist takes its seed's genres (the seed passed the slot's taste): only avoided
+      // ones exclude it. Unknown genres follow a song without genre: only a slot without taste.
+      final ok = inherited && genres.isNotEmpty ? left.length == genres.length : pl.passes(left);
+      if (ok) keys.add(key);
+      return ok;
     }
 
     final out = <SuggestionCandidate>[];
