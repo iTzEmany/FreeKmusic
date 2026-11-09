@@ -127,11 +127,14 @@ class PlaybackPersistence {
       final ids = _handler.queueIds, cur = _handler.currentIndex < 0 ? 0 : _handler.currentIndex;
       final q = savedQueue(ids, cur);
       // Online entries are dropped from the save, so the block shrinks with them.
-      final ahead = ids
+      var ahead = ids
           .skip(cur + 1)
           .take(_handler.userAhead)
           .where((id) => !isOnlineId(id))
           .length;
+      // An online current is dropped too: the restored current is the first
+      // library entry after it, which the count above included.
+      if (ahead > 0 && isOnlineId(ids[cur])) ahead--;
       await _store.writePlayback(SavedPlayback(
         queueIds: q.ids,
         index: q.index,

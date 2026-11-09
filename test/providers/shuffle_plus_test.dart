@@ -82,8 +82,9 @@ class _Host implements ShuffleHost {
   @override
   bool isPlaying = true;
   @override
-  int get userAhead => real?.userAhead ?? ahead;
-  int ahead = 0;
+  int get userAhead => real?.userAhead ?? 0;
+  @override
+  bool get currentFromUser => real?.currentFromUser ?? false;
   int inserts = 0;
   bool insertFails = false;
 
@@ -304,26 +305,75 @@ void main() {
 
   test('a library song skipped before its last 3 s does not bring the '
       'suggestion closer', () async {
-    final at = await replanAfter(() {
+    final at = await replanAfter(() async {
       for (var i = 0; i < 5; i++) {
         host.finishAndAdvance(toTheEnd: false);
+        await settle();
       }
     });
     expect(at, 14);
   });
 
-  test('a song of the queue block does not count as a listen', () async {
-    final at = await replanAfter(() async {
-      host.ahead = 2; // the controller sees the block before it is played
+  /// A real queue [1..11] in this order with shuffle on; [block] is enqueued
+  /// first. Returns once Shuffle+ has put its first suggestion in.
+  Future<void> startReal({List<int> block = const []}) async {
+    cfg = const ShufflePlusConfig(enabled: true, every: 10);
+    host.real = PlayQueue()
+      ..shuffle = true
+      ..setItems([for (var i = 1; i <= 11; i++) i], alreadyShuffled: true);
+    for (final id in block) {
+      host.real!.enqueue(id);
+    }
+    controller.start();
+    await until(() => host.queueIds.any(isOnlineId));
+  }
+
+  /// Takes the suggestion out, lengthens the queue and returns how far from
+  /// the current song the new suggestion lands (it tells the songs counted).
+  Future<int> replanDistance() async {
+    await host.removeQueueId(host.queueIds.firstWhere(isOnlineId));
+    for (var i = 12; i <= 40; i++) {
+      host.real!.insertAt(host.queueIds.length, i);
+    }
+    host.change();
+    await until(() => host.queueIds.any(isOnlineId));
+    return host.queueIds.indexWhere(isOnlineId) - host.currentIndex;
+  }
+
+  test('a song of the queue block does not count as a listen, even if '
+      'another one is enqueued before the controller looks', () async {
+    await startReal(block: [50, 51]);
+    host.real!.next(auto: true); // 50 becomes current, controller not told yet
+    host.real!.enqueue(52); // the block is 2 long again
+    host.change();
+    await settle();
+    expect(host.real!.currentFromUser, isTrue);
+    expect(await replanDistance(), 12);
+  });
+
+  test('the suggestion is planned after the queue block', () async {
+    await startReal(block: [50, 51]);
+    expect(host.queueIds.indexWhere(isOnlineId), 11);
+  });
+
+  test('a block entry skipped early gives no refund', () async {
+    await startReal(block: [50]);
+    host.finishAndAdvance(); // 50 from the block, not counted
+    await settle();
+    host.finishAndAdvance(toTheEnd: false); // 50 left early: no refund
+    await settle();
+    expect(await replanDistance(), 8);
+  });
+
+  test('a library song skipped before the backend gave its duration still '
+      'gives its count back', () async {
+    await startReal();
+    for (var i = 0; i < 3; i++) {
+      host.real!.next(auto: true); // no duration, no position reported
       host.change();
       await settle();
-      host.ahead = 1;
-      host.finishAndAdvance();
-      await settle();
-      host.ahead = 0;
-      host.finishAndAdvance();
-    });
-    expect(at, 11);
+    }
+    expect(await replanDistance(), 9);
   });
 
   test(

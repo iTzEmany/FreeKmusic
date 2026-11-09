@@ -158,7 +158,6 @@ class ShufflePlusController {
 
   int? _curId;
   int _played = 0;
-  int _ahead = 0;
   bool _curFromBlock = false;
   final _maxPos = <int, Duration>{};
   final _duration = <int, Duration>{};
@@ -291,21 +290,19 @@ class ShufflePlusController {
   /// Counts songs passed and closes the suggestion that was playing.
   Future<void> _followCurrent() async {
     final cur = _current;
-    final ahead = _ahead;
-    _ahead = host.userAhead;
+    final fromBlock = host.currentFromUser;
     if (cur == _curId) return;
     final prev = _curId;
     final prevFromBlock = _curFromBlock;
     _curId = cur;
-    // The block shrinks when its first entry becomes the current song.
-    _curFromBlock = _ahead < ahead;
+    _curFromBlock = fromBlock;
     // Only our own suggestions leave the queue: a radio station or a stream
     // the user picked stays, so next and previous can come back to it.
     if (prev != null && _mine.contains(prev)) {
       await _finish(prev);
     } else if (prev != null) {
       final pos = _maxPos.remove(prev) ?? Duration.zero;
-      final length = _duration.remove(prev);
+      final length = _duration.remove(prev) ?? _libraryLength(prev);
       // A library song left before its last 3 s is a skip: it gives its
       // count back (D-489, D-497). Block entries never counted.
       if (!prevFromBlock &&
@@ -316,6 +313,17 @@ class ShufflePlusController {
     }
     if (cur != null && !_mine.contains(cur) && !_curFromBlock) _played++;
     if (cur != null && _mine.contains(cur)) _played = 0;
+  }
+
+  /// The duration the library knows, for a song left before the backend
+  /// reported one.
+  Duration? _libraryLength(int id) {
+    for (final t in _sourceTracks) {
+      if (t.id == id && t.durationMs > 0) {
+        return Duration(milliseconds: t.durationMs);
+      }
+    }
+    return null;
   }
 
   Future<void> _finish(int id) async {

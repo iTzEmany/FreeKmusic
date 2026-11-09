@@ -249,6 +249,14 @@ void main() {
     );
   });
 
+  test('jumpTo the current entry keeps currentFromUser', () {
+    final q = make([1, 2, 3])..enqueue(9);
+    q.next();
+    expect(q.currentFromUser, isTrue);
+    q.jumpTo(q.currentIndex);
+    expect(q.currentFromUser, isTrue);
+  });
+
   test('move keeps current track', () {
     final q = make([1, 2, 3, 4], start: 1);
     q.move(0, 3);
@@ -283,7 +291,18 @@ void main() {
       q.next(); // 99
       q.shuffle = false;
       expect(q.currentId, 99);
-      expect(q.items, [1, 2, 99, 3, 4, 5, 7]); // 7 played: a normal entry now
+      expect(q.items, [1, 2, 7, 99, 3, 4, 5]); // 7 played: a normal entry now
+    });
+
+    test('shuffle off after a block entry keeps the queue playable', () {
+      final q = make([1, 2, 3, 4, 5, 6], start: 1)..shuffle = true;
+      q.enqueue(9);
+      q.next(); // 9, now playing
+      q.shuffle = false;
+      expect(q.currentId, 9);
+      expect(q.items.indexOf(9), lessThan(q.items.length - 1));
+      expect(q.next(), isNotNull);
+      expect(q.invariantError, isNull);
     });
 
     test(
@@ -308,17 +327,7 @@ void main() {
           q.setItems(ids, startIndex: ops.nextInt(ids.length));
           var nextId = 500;
           for (var step = 0; step < 60; step++) {
-            // I1/I2 are checked through what the public API shows.
-            if (q.isEmpty) {
-              expect(q.userAhead, 0);
-            } else {
-              expect(
-                q.userAhead,
-                inInclusiveRange(0, q.items.length - 1 - q.currentIndex),
-                reason: 'seed $seed step $step',
-              );
-            }
-            switch (ops.nextInt(11)) {
+            switch (ops.nextInt(16)) {
               case 0:
                 q.shuffle = !q.shuffle;
               case 1:
@@ -346,6 +355,31 @@ void main() {
                 q.previous();
               case 8:
                 q.next();
+              case 9:
+                q.setItems(
+                  List.generate(1 + ops.nextInt(5), (i) => nextId++),
+                  keepUser: ops.nextBool(),
+                  startIndex: ops.nextInt(3),
+                  userAhead: ops.nextInt(3),
+                );
+              case 10:
+                final saved = q.saveState();
+                q.rebuildUpcoming(
+                  ops.nextBool()
+                      ? null
+                      : [for (var i = 0; i < 4; i++) nextId++],
+                );
+                if (ops.nextBool()) q.restoreState(saved);
+              case 11:
+                if (q.items.isNotEmpty) {
+                  q.removeId(q.items[ops.nextInt(q.items.length)]);
+                }
+              case 12:
+                q.insertAt(ops.nextInt(q.items.length + 2), nextId++);
+              case 13:
+                if (q.items.isNotEmpty) {
+                  q.enqueue(q.items[ops.nextInt(q.items.length)]); // duplicate
+                }
               default:
                 final announced = q.peekNext();
                 final again = q.peekNext();
@@ -360,6 +394,7 @@ void main() {
                   reason: 'seed $seed step $step',
                 );
             }
+            expect(q.invariantError, isNull, reason: 'seed $seed step $step');
           }
         }
       },

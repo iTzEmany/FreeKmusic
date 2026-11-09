@@ -347,6 +347,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   List<int> get queueIds => _queue.items;
   int get currentIndex => _queue.currentIndex;
   int get userAhead => _queue.userAhead;
+  bool get currentFromUser => _queue.currentFromUser;
   bool get hasNext =>
       _queue.hasNext || (_queueRadio != null && _queue.items.length > 1);
   bool get shuffleEnabled => _queue.shuffle;
