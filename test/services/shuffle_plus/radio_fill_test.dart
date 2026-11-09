@@ -204,5 +204,21 @@ void main() {
       expect(searches, 1);
       expect(asked, ['v1']);
     });
+
+    test('a row accept refuses does not count and costs no extra request', () async {
+      final f = fill([RadioSeed.online('s', 'S')], (id) {
+        return RadioPage([
+          RadioItem(song('s'), RadioKind.song, isSeed: true),
+          for (final r in [('a', 'A'), ('b', 'B'), ('c', 'C'), ('d', 'D')])
+            RadioItem(by(r.$1, r.$2), RadioKind.song),
+        ]);
+      });
+      final got = await f
+          .take(2, inQueue: (_) => false, maxRequests: 1, accept: (c) => c.result.id != 'a' && c.result.id != 'b')
+          .map((c) => c.result.id)
+          .toList();
+      expect(got, ['c', 'd']); // two refused rows burned no budget and no slot
+      expect(asked, ['s']);
+    });
   });
 }

@@ -142,16 +142,17 @@ class SuggestionPool {
   /// its threshold is dropped too, as its positions are kept for when another
   /// seed's page brings it back) are dropped; rows that may
   /// qualify later (in the queue now, same artist as one of [lastArtists])
-  /// stay.
+  /// stay. A row [accept] refuses is dropped too.
   SuggestionCandidate? take({
     required bool Function(YtResult r) inLibrary,
     required bool Function(String videoId) inQueue,
     required SuggestionLog log,
     required SuggestionGate filter,
     List<String> lastArtists = const [],
+    bool Function(SuggestionCandidate c)? accept,
   }) {
     for (final kind in [RadioKind.song, RadioKind.artistVideo]) {
-      final c = _takeKind(kind, inLibrary, inQueue, log, filter, lastArtists);
+      final c = _takeKind(kind, inLibrary, inQueue, log, filter, lastArtists, accept);
       if (c != null) return c;
     }
     return null;
@@ -164,6 +165,7 @@ class SuggestionPool {
     SuggestionLog log,
     SuggestionGate filter,
     List<String> lastArtists,
+    bool Function(SuggestionCandidate c)? accept,
   ) {
     final keys = _queues.keys.toList();
     for (var n = 0; n < keys.length; n++) {
@@ -190,8 +192,10 @@ class SuggestionPool {
         }
         queue.removeAt(i);
         _used.add(r.id);
+        final c = SuggestionCandidate(r, _titles[seed] ?? '', item.kind);
+        if (accept != null && !accept(c)) continue; // refused: dropped, never counted
         _turn = (_turn + n + 1) % keys.length;
-        return SuggestionCandidate(r, _titles[seed] ?? '', item.kind);
+        return c;
       }
     }
     return null;

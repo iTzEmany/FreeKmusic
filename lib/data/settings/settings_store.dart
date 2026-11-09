@@ -7,6 +7,8 @@ import '../../core/app_log.dart';
 import '../../services/audio/audio_backend.dart' show TransitionMode;
 import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
+import '../../services/daylist/daylist_slots.dart';
+import '../../services/daylist/mood_table.dart';
 import '../../services/online/youtube_service.dart' show DownloadFormat;
 import '../../services/recognition/track_identity.dart' show kRecogVersion;
 
@@ -327,6 +329,11 @@ const enrichMarkKey = 'enrichMark';
 
 /// Tracks whose synced lyrics are switched off (track ids, D-472).
 const unsyncedLyricsKey = 'unsyncedLyrics';
+
+/// Daylist slots and the user's changes to the genre -> mood table. Not
+/// device-bound: they travel in the backup's settings.json.
+const daylistSlotsKey = 'daylistSlots';
+const moodTableKey = 'daylistMoodTable';
 const recogPassAfterKey = 'recogPassAfter';
 const recogPassDoneKey = 'recogPassDone';
 const genreRereadAfterKey = 'genreRereadAfter';
@@ -657,6 +664,20 @@ class SettingsStore {
     unsyncedLyricsKey,
     [for (final i in ids.toList()..sort()) '$i'],
   );
+
+  DaylistConfig readDaylistConfig() => DaylistConfig.fromJsonString(_prefs.getString(daylistSlotsKey));
+
+  Future<void> writeDaylistConfig(DaylistConfig c) => _prefs.setString(daylistSlotsKey, c.toJsonString());
+
+  MoodTable readMoodTable() => MoodTable.fromJsonString(_prefs.getString(moodTableKey));
+
+  Future<void> writeMoodTable(MoodTable t) => _prefs.setString(moodTableKey, t.toJsonString());
+
+  /// Slots, quotas and table back to the defaults.
+  Future<void> resetDaylist() async {
+    await _prefs.remove(daylistSlotsKey);
+    await _prefs.remove(moodTableKey);
+  }
 
   SavedPlayback readPlayback() {
     final ids = (_prefs.getStringList('lastQueueIds') ?? const [])
