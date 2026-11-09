@@ -285,9 +285,13 @@ def main():
 
     def find(pattern, cls=None, last=False):
         rx = re.compile(pattern)
-        for label, c, x, y in (reversed(dev.nodes()) if last else dev.nodes()):
-            if rx.search(label) and (cls is None or cls in c):
-                return x, y
+        # A sheet still opening is not in the tree yet («Fogli» failed on «Etichette», 107.5).
+        for attempt in range(4):
+            if attempt:
+                time.sleep(0.5)
+            for label, c, x, y in (reversed(dev.nodes()) if last else dev.nodes()):
+                if rx.search(label) and (cls is None or cls in c):
+                    return x, y
         raise RuntimeError(f'nothing on screen matches {pattern!r}')
 
     pos = {}  # screen positions resolved in the setups, never inside a measured span
