@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../widgets/cc_sheet.dart';
 
 import 'package:flutter/foundation.dart' show listEquals;
@@ -112,6 +114,22 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
   /// suggestion) and the list must not be rebuilt with other items then.
   _Upcoming? _dragSnapshot;
   bool _dragging = false;
+
+  /// Back to the live list. Only once the drop has finished: the dragged row's
+  /// key lives in the overlay until then and must not also sit in the list.
+  void _endDrag() {
+    _endTimer?.cancel();
+    if (mounted && _dragging) setState(() => _dragging = false);
+  }
+
+  Timer? _endTimer;
+
+  @override
+  void dispose() {
+    _endTimer?.cancel();
+    super.dispose();
+  }
+
   List<Track> _lastQueue = const [];
 
   Widget _queueItem(
@@ -275,13 +293,18 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                 : null,
             itemCount: upcoming.length,
             onReorderStart: (_) => setState(() {
+              _endTimer?.cancel();
               _dragSnapshot = liveUp;
               _dragging = true;
             }),
-            onReorderEnd: (_) {
-              if (mounted) setState(() => _dragging = false);
-            },
+            // A drop that moves nothing never calls onReorderItem: fall back
+            // to a timer longer than the drop animation.
+            onReorderEnd: (_) => _endTimer = Timer(
+              const Duration(milliseconds: 400),
+              _endDrag,
+            ),
             onReorderItem: (from, to) {
+              _endDrag();
               final snap = _dragSnapshot;
               if (snap == null || from < 0 || from >= snap.keys.length) return;
               final dropped = [...snap.keys];

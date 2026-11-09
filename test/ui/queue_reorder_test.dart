@@ -40,7 +40,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // An import adds a track and another one is removed, mid-drag.
-    h.handler.insertAt(6, ids.first); // an import lands at the end
+    h.handler.addToQueue(ids.first);
     await tester.runAsync(() => h.handler.removeFromQueue(4));
     await _settle(tester);
     await g.moveBy(const Offset(0, 80));
@@ -103,6 +103,34 @@ void main() {
     expect(h.handler.queueIds.first, before.first);
     expect(h.handler.queueIds[1], before[1], reason: 'the block entry stays put');
     expect(h.handler.queueIds.indexOf(before[2]), greaterThan(2));
+    await h.dispose(tester);
+  });
+
+  testWidgets('dragging an entry of the block (with «Poi» above the next) drops where expected', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(4).toList(), 0));
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    h.handler.addToQueue(ids[4]);
+    await _settle(tester);
+    expect(find.text('Poi'), findsOneWidget);
+
+    final before = h.handler.queueIds;
+    final g = await tester.startGesture(tester.getCenter(find.byIcon(Icons.drag_handle_rounded).at(0)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(0, 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(0, 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.up();
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(h.handler.queueIds.first, before.first);
+    expect(h.handler.queueIds.indexOf(before[1]), greaterThan(1), reason: 'the block entry moved down');
     await h.dispose(tester);
   });
 
