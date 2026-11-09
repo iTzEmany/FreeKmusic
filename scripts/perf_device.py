@@ -208,7 +208,8 @@ def main():
     dev = Device(args.device)
     lib = os.path.join(ROOT, 'build/perf_library')
     if not args.no_push and not os.path.isdir(lib):
-        sys.exit('manca la libreria di prova: scripts/perf_library.py')
+        print('manca la libreria di prova: la creo con scripts/perf_library.py')
+        subprocess.run([sys.executable, os.path.join(ROOT, 'scripts/perf_library.py')], cwd=ROOT, check=True)
 
     if args.apk:
         apk = os.path.abspath(args.apk)

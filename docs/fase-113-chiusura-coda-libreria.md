@@ -19,7 +19,7 @@ Tutte le soglie di `refactor/coda-e-libreria/analisi.md` «Metriche di arrivo»,
 | Invarianti del blocco | 0 violazioni su tutti i semi | test a operazioni casuali di `play_queue_test.dart` |
 | Comportamento della coda senza aggiunte | impronta identica | `play_queue_characterization_test.dart` senza modifiche dopo la 107 (`git log --follow` sul file: solo il commit della 107) |
 | Prestazioni delle query (50k brani) | dentro le soglie già presenti | `flutter test test/data/performance_50k_test.dart` con la lista nuova e la ricerca senza accenti |
-| Scatti nello scroll e col player aperto (Mi A3) | ≤ valori della fase 90 (1–2 % dei frame) e ≤ `prima-107` | `JAVA_HOME=~/.jdks/jbr-17.0.14 PATH=$JAVA_HOME/bin:$PATH python3 scripts/perf_device.py 0d7ae9df206e --label dopo-113 --playback` |
+| Scatti nello scroll e col player aperto (Mi A3) | ≤ `prima-107` (`refactor/coda-e-libreria/misure.md`, D-531) | `JAVA_HOME=~/.jdks/jbr-17.0.14 PATH=$JAVA_HOME/bin:$PATH python3 scripts/perf_device.py 0d7ae9df206e --label dopo-113 --playback` |
 
 - Comportamento invariato (analisi): Jam `flutter test test/jam test/providers/jam_*_test.dart test/ui/jam_*_test.dart` verde senza modifiche ai test e `git diff --stat origin/master -- lib/services/jam lib/providers/jam*` vuoto salvo il titolo in `jam_player.dart`; DB e backup `git diff origin/master -- lib/data/db/tables.dart lib/services/backup` vuoto, `schemaVersion` invariato; Statistiche (schermata, `stats_queries`, blocco in Home) invariate.
 - Perf: `--label dopo-113` confrontato con `prima-107` (e `marquee-109`) in `misure.md`; con `sorveglia.sh --pesante 40m`.

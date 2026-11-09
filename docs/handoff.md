@@ -10,7 +10,7 @@
 - Misure di partenza: `docs/refactor/coda-e-libreria/misure.md`, colonna «prima-107». Diversi scenari stanno già sopra l'1–2 % della fase 90: alla 113 si confronta con questa colonna.
 
 ## Da sapere
-- `perf_device.py` vuole `build/perf_library/`: se manca, rifalla con `python3 scripts/perf_library.py` (circa 60 MB, pochi minuti). Con l'APK già compilato: `--no-build --apk build/app/outputs/flutter-apk/app-profile.apk`.
+- `perf_device.py` rifà da solo `build/perf_library/` se manca (pochi minuti). Con l'APK già compilato: `--no-build --apk build/app/outputs/flutter-apk/app-profile.apk`.
 - La misura sul telefono va lanciata **dopo** i test mirati dell'ondata: prende il turno dei comandi pesanti per 15–25 minuti.
 - Sul Mi A3 l'app `.perf` è stata disinstallata; l'app vera è intatta.
 
