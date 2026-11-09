@@ -34,4 +34,10 @@ void main() {
   test('unreadable data means the shipped table', () {
     expect(MoodTable.fromJsonString('{{').moodsOf('rock'), isNotEmpty);
   });
+
+  test('an entry with only unknown mood names is skipped, an empty list stays «no mood»', () {
+    final t = MoodTable.fromJsonString('{"rock": ["nope"], "jazz": []}');
+    expect(t.moodsOf('rock'), MoodTable.defaults().moodsOf('rock'));
+    expect(t.moodsOf('jazz'), isEmpty);
+  });
 }

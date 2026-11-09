@@ -191,9 +191,11 @@ class SuggestionPool {
           continue;
         }
         queue.removeAt(i);
-        _used.add(r.id);
         final c = SuggestionCandidate(r, _titles[seed] ?? '', item.kind);
-        if (accept != null && !accept(c)) continue; // refused: dropped, never counted
+        // Refused: dropped from the queue (it must not block the next page), never counted,
+        // and not marked used, so another taker of this pool may still get it.
+        if (accept != null && !accept(c)) continue;
+        _used.add(r.id);
         _turn = (_turn + n + 1) % keys.length;
         return c;
       }

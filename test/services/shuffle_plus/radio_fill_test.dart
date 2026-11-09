@@ -219,6 +219,9 @@ void main() {
           .toList();
       expect(got, ['c', 'd']); // two refused rows burned no budget and no slot
       expect(asked, ['s']);
+      // not marked used: another taker of the pool still gets 'a' when it comes back
+      f.pool.addPage('s', 'S', RadioPage([RadioItem(by('a', 'A'), RadioKind.song)]));
+      expect(await ids(f, 1), ['a']);
     });
   });
 }

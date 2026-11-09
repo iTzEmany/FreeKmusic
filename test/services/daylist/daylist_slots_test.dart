@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/services/daylist/daylist_slots.dart';
 import 'package:codecore/services/daylist/mood_table.dart';
@@ -67,5 +69,47 @@ void main() {
     expect(store.readDaylistConfig().slots.length, 8);
     await store.resetDaylist();
     expect(store.readDaylistConfig().slots[1].startHour, 9);
+  });
+  test('a slot moved across midnight: tarda sera 22 to 2', () {
+    final m = c.withStart(6, 2)!; // notte now starts at 02:00
+    expect(m.slotAt(at(23)), 5);
+    expect(m.slotAt(at(1, 30)), 5);
+    expect(m.slotAt(at(2)), 6);
+    expect(m.lengthOf(5), 4);
+    expect(m.nextChange(at(23, 30)), DateTime(2026, 11, 10, 2));
+    expect(m.nextChange(at(1)), at(2));
+  });
+
+  group('start hours that do not make a day take the default hours, other fields stay', () {
+    String json(List<Object?> starts) => jsonEncode([
+      for (var i = 0; i < 8; i++) {'start': starts[i], 'on': true, 'share': 40 + i, 'prefer': ['x'], 'avoid': [], 'moods': ['calm']},
+    ]);
+    void check(List<Object?> starts) {
+      final back = DaylistConfig.fromJsonString(json(starts));
+      expect([for (final s in back.slots) s.startHour], [5, 9, 13, 16, 19, 22, 0, 3], reason: '$starts');
+      expect(back.slots[2].sharePercent, 42);
+    }
+
+    test('duplicates', () => check([5, 5, 13, 16, 19, 22, 0, 3]));
+    test('not monotonic', () => check([5, 13, 9, 16, 19, 22, 0, 3]));
+    test('out of range falls back to the field default', () => check([5, 9, 13, 16, 19, 22, 0, 30]));
+    test('wrong type falls back to the field default', () => check([5, 9, 13, 16, 19, 22, 0, 'x']));
+  });
+
+  test('a wrong field takes its own default, not the whole configuration', () {
+    final back = DaylistConfig.fromJsonString(
+      jsonEncode([
+        {'start': 6, 'on': 'yes', 'share': 'many', 'prefer': 3, 'avoid': ['a'], 'moods': ['zzz']},
+        ...[for (var i = 1; i < 8; i++) 'junk'],
+      ]),
+    );
+    final d = DaylistConfig.defaults();
+    expect(back.slots[0].startHour, 6);
+    expect(back.slots[0].enabled, d.slots[0].enabled);
+    expect(back.slots[0].sharePercent, 25);
+    expect(back.slots[0].prefer, d.slots[0].prefer);
+    expect(back.slots[0].avoid, {'a'});
+    expect(back.slots[0].moods, isEmpty);
+    expect(back.slots[3].startHour, 16); // a junk slot is the default one
   });
 }

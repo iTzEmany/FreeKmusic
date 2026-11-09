@@ -75,11 +75,13 @@ class MoodTable {
       for (final e in m.entries) {
         final names = e.value;
         if (names is! List) continue;
-        t._entries[matchKey('${e.key}')] = Set.unmodifiable({
+        final moods = {
           for (final n in names)
             for (final mood in Mood.values)
               if (mood.name == n) mood,
-        });
+        };
+        if (names.isNotEmpty && moods.isEmpty) continue; // only unknown names: not «no mood»
+        t._entries[matchKey('${e.key}')] = Set.unmodifiable(moods);
       }
     } on FormatException catch (e) {
       AppLog.w('mood table unreadable, back to the defaults', e);

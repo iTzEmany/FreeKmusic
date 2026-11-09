@@ -139,37 +139,46 @@ class DaylistConfig {
 
   String toJsonString() => jsonEncode([for (final s in slots) s.toJson()]);
 
-  /// Unreadable or inconsistent data means the defaults.
+  /// A wrong or missing field of a slot takes that field's default; start hours
+  /// that do not make a valid day take the default starts. Data that is not a
+  /// list of 8 means all defaults.
   factory DaylistConfig.fromJsonString(String? raw) {
+    final base = DaylistConfig.defaults().slots;
     if (raw == null) return DaylistConfig.defaults();
     try {
       final list = jsonDecode(raw);
       if (list is! List || list.length != slotCount) throw const FormatException('need 8 slots');
-      final c = DaylistConfig([for (final j in list) _slotFrom(j)]);
-      if (!c._startsValid) throw const FormatException('bad start hours');
-      return c;
+      final c = DaylistConfig([for (var i = 0; i < slotCount; i++) _slotFrom(list[i], base[i])]);
+      if (c._startsValid) return c;
+      AppLog.w('daylist start hours invalid, back to the default hours');
+      return DaylistConfig([for (var i = 0; i < slotCount; i++) c.slots[i].copyWith(startHour: base[i].startHour)]);
     } on FormatException catch (e) {
       AppLog.w('daylist slots unreadable, back to the defaults', e);
       return DaylistConfig.defaults();
     }
   }
 
-  static DaylistSlot _slotFrom(Object? j) {
-    if (j is! Map) throw const FormatException('slot is not a map');
-    Set<String> strs(Object? v) => v is List ? {for (final s in v) '$s'} : const {};
+  static DaylistSlot _slotFrom(Object? j, DaylistSlot d) {
+    if (j is! Map) {
+      AppLog.w('daylist slot is not a map, using its default');
+      return d;
+    }
+    Set<String>? strs(Object? v) => v is List ? {for (final s in v) '$s'} : null;
     final start = j['start'], on = j['on'], share = j['share'];
-    if (start is! int || on is! bool || share is! int) throw const FormatException('bad slot field');
+    final moods = strs(j['moods']);
     return DaylistSlot(
-      startHour: start,
-      enabled: on,
-      sharePercent: share.clamp(0, 100),
-      prefer: strs(j['prefer']),
-      avoid: strs(j['avoid']),
-      moods: {
-        for (final n in strs(j['moods']))
-          for (final m in Mood.values)
-            if (m.name == n) m,
-      },
+      startHour: start is int && start >= 0 && start <= 23 ? start : d.startHour,
+      enabled: on is bool ? on : d.enabled,
+      sharePercent: share is int ? share.clamp(0, 100) : d.sharePercent,
+      prefer: strs(j['prefer']) ?? d.prefer,
+      avoid: strs(j['avoid']) ?? d.avoid,
+      moods: moods == null
+          ? d.moods
+          : {
+              for (final n in moods)
+                for (final m in Mood.values)
+                  if (m.name == n) m,
+            },
     );
   }
 }
