@@ -23,15 +23,21 @@ String settingsSummary(BuildContext context, WidgetRef ref, SettingsPage p) {
   switch (p) {
     case SettingsPage.appearance:
       final customId = customThemeIdOf(s.theme);
-      final custom = customId == null ? null : ref.watch(customThemesProvider).byId(customId);
-      final theme = custom?.name ??
+      final custom = customId == null
+          ? null
+          : ref.watch(customThemesProvider).byId(customId);
+      final theme =
+          custom?.name ??
           switch (appThemeIdFromName(s.theme)) {
             AppThemeId.notte => l.themeNotte,
             AppThemeId.oled => l.themeOled,
             AppThemeId.chiaro => l.themeChiaro,
           };
-      return [theme, accentLabel(l, accentFromName(s.accent)), languageName(s.language)]
-          .join(', ');
+      return [
+        theme,
+        accentLabel(l, accentFromName(s.accent)),
+        languageName(s.language),
+      ].join(', ');
     case SettingsPage.playback:
       final t = transitionLabel(l, s.transition);
       return [
@@ -44,9 +50,13 @@ String settingsSummary(BuildContext context, WidgetRef ref, SettingsPage p) {
       final folders = ref.watch(foldersProvider).value?.length;
       final tracks = ref.watch(trackCountProvider).value;
       // Nothing until both are known: no "0 cartelle, 0 brani" flash.
-      return folders == null || tracks == null ? '' : l.summaryLibrary(folders, tracks);
+      return folders == null || tracks == null
+          ? ''
+          : l.summaryLibrary(folders, tracks);
     case SettingsPage.daylist:
-      return l.daylistSummaryPage(ref.watch(daylistConfigProvider).slots.where((s) => s.enabled).length);
+      return l.daylistSummaryPage(
+        ref.watch(daylistConfigProvider).slots.where((s) => s.enabled).length,
+      );
     case SettingsPage.online:
       return kEnableYoutube
           ? downloadFormatLabel(l, s.downloadFormat)

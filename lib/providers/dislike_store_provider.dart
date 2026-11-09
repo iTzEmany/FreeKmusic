@@ -13,7 +13,9 @@ import 'suggestion_log_provider.dart';
 /// Readers `await store.load()`; that also waits for the one-time import of
 /// the old `disliked` records of the suggestion log.
 final dislikeStoreProvider = Provider<DislikeStore>((ref) {
-  final store = DislikeStore(file: () async => File(p.join(await appSupportDir(), 'dislikes.json')));
+  final store = DislikeStore(
+    file: () async => File(p.join(await appSupportDir(), 'dislikes.json')),
+  );
   unawaited(store.migrateFrom(ref.read(suggestionLogProvider)));
   ref.onDispose(() => unawaited(store.flush()));
   return store;

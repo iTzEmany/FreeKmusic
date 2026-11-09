@@ -6,20 +6,26 @@ import 'playlist_paths.dart';
 import '../../core/artist_key.dart';
 
 final _remasterTail = RegExp(
-    r'\s+[-–]\s+(\d{4}\s+)?(digital\s+)?remaster(ed)?\b.*$',
-    caseSensitive: false);
-final _remasterGroup = RegExp(r'[\(\[][^\)\]]*remaster[^\)\]]*[\)\]]',
-    caseSensitive: false);
+  r'\s+[-–]\s+(\d{4}\s+)?(digital\s+)?remaster(ed)?\b.*$',
+  caseSensitive: false,
+);
+final _remasterGroup = RegExp(
+  r'[\(\[][^\)\]]*remaster[^\)\]]*[\)\]]',
+  caseSensitive: false,
+);
 final _featGroup = RegExp(
-    r'[\(\[]\s*(feat|ft|featuring|with)\b[^\)\]]*[\)\]]',
-    caseSensitive: false);
+  r'[\(\[]\s*(feat|ft|featuring|with)\b[^\)\]]*[\)\]]',
+  caseSensitive: false,
+);
 final _featTail = RegExp(r'\s+[-–]\s+(feat|ft)\b.*$', caseSensitive: false);
 final _editGroup = RegExp(
-    r'[\(\[]\s*(radio edit|single version|album version|mono|stereo|explicit|remastered)\s*[\)\]]',
-    caseSensitive: false);
+  r'[\(\[]\s*(radio edit|single version|album version|mono|stereo|explicit|remastered)\s*[\)\]]',
+  caseSensitive: false,
+);
 final _editTail = RegExp(
-    r'\s+[-–]\s+(radio edit|single version|album version|mono|stereo|mono version|stereo version)\s*$',
-    caseSensitive: false);
+  r'\s+[-–]\s+(radio edit|single version|album version|mono|stereo|mono version|stereo version)\s*$',
+  caseSensitive: false,
+);
 // Edition wrappers of the same recording («Deluxe Edition», «40th Anniversary»,
 // «Album Version»): stripped only when every word of the group is an edition
 // word, so «Spanish Edition», «Taylor's Version» or «Piano Version» stay.
@@ -28,12 +34,21 @@ final _editionTail = RegExp(r'\s+[-–]\s+([^-–]*)$');
 final _wordSplit = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
 final _numberWord = RegExp(r'^\d+(st|nd|rd|th)?$');
 const _editionOnly = {
-  'deluxe', 'expanded', 'anniversary', 'remaster', 'remastered', 'edition',
-  'special', 'bonus',
+  'deluxe',
+  'expanded',
+  'anniversary',
+  'remaster',
+  'remastered',
+  'edition',
+  'special',
+  'bonus',
 };
 
 bool _isEdition(String inner) {
-  final w = [for (final x in inner.toLowerCase().split(_wordSplit)) if (x.isNotEmpty) x];
+  final w = [
+    for (final x in inner.toLowerCase().split(_wordSplit))
+      if (x.isNotEmpty) x,
+  ];
   var real = false;
   for (var i = 0; i < w.length; i++) {
     if (_editionOnly.contains(w[i])) {
@@ -53,23 +68,26 @@ String _dropEdition(String s, RegExp re) =>
 
 /// [matchKey] of a title without the qualifiers that do not change the
 /// recording (remaster year, feat., radio edit). `live`, `remix`... are kept.
-String matchTitleKey(String title) => matchKey(title
-    .replaceAll(_remasterGroup, ' ')
-    .replaceAll(_featGroup, ' ')
-    .replaceAll(_editGroup, ' ')
-    .replaceAll(_remasterTail, '')
-    .replaceAll(_featTail, '')
-    .replaceAll(_editTail, ''));
+String matchTitleKey(String title) => matchKey(
+  title
+      .replaceAll(_remasterGroup, ' ')
+      .replaceAll(_featGroup, ' ')
+      .replaceAll(_editGroup, ' ')
+      .replaceAll(_remasterTail, '')
+      .replaceAll(_featTail, '')
+      .replaceAll(_editTail, ''),
+);
 
 /// [matchTitleKey] without edition wrappers too (deluxe, anniversary...): the
 /// key for «do I already own this song», not for ranking search results.
 String libraryTitleKey(String title) {
   // The cap keeps the regexes cheap on an unclosed «(» in a huge title.
   final t = title.length > 500 ? title.substring(0, 500) : title;
-  final key = matchTitleKey(_dropEdition(_dropEdition(t, _editionGroup), _editionTail));
+  final key = matchTitleKey(
+    _dropEdition(_dropEdition(t, _editionGroup), _editionTail),
+  );
   return key.isEmpty ? t.trim().toLowerCase() : key;
 }
-
 
 const _artistStop = {'and', 'feat', 'ft', 'featuring', 'with'};
 
@@ -77,10 +95,12 @@ const _artistStop = {'and', 'feat', 'ft', 'featuring', 'with'};
 Set<String> _artistWords(String artist) {
   final words = {
     for (final w in matchKey(artist).split(' '))
-      if (w.isNotEmpty && !_artistStop.contains(w)) w
+      if (w.isNotEmpty && !_artistStop.contains(w)) w,
   };
   // A name made of symbols only («!!!», «+») is its own word.
-  if (words.isEmpty && artist.trim().isNotEmpty) words.add(artist.trim().toLowerCase());
+  if (words.isEmpty && artist.trim().isNotEmpty) {
+    words.add(artist.trim().toLowerCase());
+  }
   return words;
 }
 
@@ -97,9 +117,10 @@ bool _nested(Set<String> a, Set<String> b) =>
 class LibraryIndex {
   LibraryIndex(Iterable<LibraryEntryLite> tracks) {
     for (final t in tracks) {
-      _byTitle
-          .putIfAbsent(libraryTitleKey(t.title), () => [])
-          .add((_artistWords(t.artist ?? ''), t));
+      _byTitle.putIfAbsent(libraryTitleKey(t.title), () => []).add((
+        _artistWords(t.artist ?? ''),
+        t,
+      ));
       final path = t.path;
       if (path != null) {
         final key = pathKey(path);
@@ -126,7 +147,8 @@ class LibraryIndex {
     }
     if (baseDir != null) {
       final joined = p.posix.normalize(
-          '${baseDir.replaceAll(r'\', '/')}/${local.replaceAll(r'\', '/')}');
+        '${baseDir.replaceAll(r'\', '/')}/${local.replaceAll(r'\', '/')}',
+      );
       final hit = _byPath[joined.toLowerCase()];
       if (hit != null) return hit;
     }
@@ -138,16 +160,24 @@ class LibraryIndex {
     return _bySuffix(clean, minSegments: 1, maxSegments: 4);
   }
 
-  LibraryEntryLite? _bySuffix(String key,
-      {required int minSegments, required int maxSegments}) {
+  LibraryEntryLite? _bySuffix(
+    String key, {
+    required int minSegments,
+    required int maxSegments,
+  }) {
     final candidates = _byBase[basenameOf(key)];
     if (candidates == null) return null;
     final parts = key.split('/').where((s) => s.isNotEmpty).toList();
-    for (var n = parts.length < maxSegments ? parts.length : maxSegments;
-        n >= minSegments && n >= 1;
-        n--) {
+    for (
+      var n = parts.length < maxSegments ? parts.length : maxSegments;
+      n >= minSegments && n >= 1;
+      n--
+    ) {
       final suffix = '/${parts.sublist(parts.length - n).join('/')}';
-      final hits = [for (final c in candidates) if (c.$1.endsWith(suffix)) c.$2];
+      final hits = [
+        for (final c in candidates)
+          if (c.$1.endsWith(suffix)) c.$2,
+      ];
       if (hits.length == 1) return hits.single;
       if (hits.length > 1) return null;
     }
@@ -174,8 +204,8 @@ class LibraryIndex {
     int gap(LibraryEntryLite t) => want <= 0
         ? 0
         : t.durationMs > 0
-            ? (t.durationMs - want).abs()
-            : 1 << 30;
+        ? (t.durationMs - want).abs()
+        : 1 << 30;
     LibraryEntryLite? best;
     LibraryEntryLite? near;
     for (final (words, t) in c) {
@@ -317,7 +347,10 @@ double scoreCandidate(ImportRow r, YtResult c) {
 /// The two cut-offs the user may move in the advanced settings; [review] must
 /// stay at least [minGap] under [sure].
 class MatchThresholds {
-  const MatchThresholds({this.sure = sureThreshold, this.review = reviewThreshold});
+  const MatchThresholds({
+    this.sure = sureThreshold,
+    this.review = reviewThreshold,
+  });
 
   static const minGap = 0.05;
   static const limits = (min: 0.30, max: 0.98);
@@ -332,8 +365,11 @@ class MatchThresholds {
   }
 }
 
-MatchDecision decide(ImportRow r, List<YtResult> candidates,
-    {MatchThresholds thresholds = const MatchThresholds()}) {
+MatchDecision decide(
+  ImportRow r,
+  List<YtResult> candidates, {
+  MatchThresholds thresholds = const MatchThresholds(),
+}) {
   final scored = [
     for (final c in candidates) ScoredCandidate(c, scoreCandidate(r, c)),
   ]..sort((a, b) => b.score.compareTo(a.score));

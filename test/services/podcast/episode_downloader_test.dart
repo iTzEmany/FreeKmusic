@@ -44,7 +44,8 @@ class _PlainTags implements TagReader {
   const _PlainTags();
 
   @override
-  Future<TagInfo> read(String path, {bool withCover = true}) async => const TagInfo(durationMs: 4242);
+  Future<TagInfo> read(String path, {bool withCover = true}) async =>
+      const TagInfo(durationMs: 4242);
 }
 
 void main() {
@@ -60,21 +61,36 @@ void main() {
   final audio = List<int>.generate(3000, (i) => i % 251);
   var slowOpen = Completer<void>();
 
-  String url(String path) => 'http://${server.address.host}:${server.port}$path';
+  String url(String path) =>
+      'http://${server.address.host}:${server.port}$path';
 
   EpisodeDownloader build({TagReader? tags}) => EpisodeDownloader(
-        repo: repo,
-        tracks: tracks,
-        tags: tags ?? _Tags(),
-        baseDir: base,
-        readTagsInIsolate: false,
-      );
+    repo: repo,
+    tracks: tracks,
+    tags: tags ?? _Tags(),
+    baseDir: base,
+    readTagsInIsolate: false,
+  );
 
-  Future<int> addEpisode(String guid, String audioUrl, {String? mime, String title = 'Episode One'}) async {
+  Future<int> addEpisode(
+    String guid,
+    String audioUrl, {
+    String? mime,
+    String title = 'Episode One',
+  }) async {
     await repo.upsertEpisodes(podcastId, [
-      PodcastEpisodeInfo(guid: guid, title: title, audioUrl: audioUrl, mimeType: mime, duration: const Duration(minutes: 20)),
+      PodcastEpisodeInfo(
+        guid: guid,
+        title: title,
+        audioUrl: audioUrl,
+        mimeType: mime,
+        duration: const Duration(minutes: 20),
+      ),
     ]);
-    return (await repo.watchEpisodes(podcastId).first).firstWhere((e) => e.episode.guid == guid).episode.id;
+    return (await repo.watchEpisodes(podcastId).first)
+        .firstWhere((e) => e.episode.guid == guid)
+        .episode
+        .id;
   }
 
   setUp(() async {
@@ -109,7 +125,9 @@ void main() {
           res.add(audio);
           await res.flush();
           slowOpen.complete();
-          await Future<void>.delayed(const Duration(seconds: 10)); // the client gives up first
+          await Future<void>.delayed(
+            const Duration(seconds: 10),
+          ); // the client gives up first
         case '/empty.mp3':
           res.headers.contentType = ContentType('audio', 'mpeg');
         default:
@@ -136,59 +154,92 @@ void main() {
     dir.deleteSync(recursive: true);
   });
 
-  test('downloads into the podcast folder and makes the episode a track of kind 1', () async {
-    final progress = <(int, int)>[];
-    final trackId = await build().download(episodeId, onProgress: (r, t) => progress.add((r, t)));
+  test(
+    'downloads into the podcast folder and makes the episode a track of kind 1',
+    () async {
+      final progress = <(int, int)>[];
+      final trackId = await build().download(
+        episodeId,
+        onProgress: (r, t) => progress.add((r, t)),
+      );
 
-    final t = (await tracks.getById(trackId!))!;
-    expect(t.kind, 1);
-    expect(t.folderId, isNull);
-    expect(t.title, 'Episode One');
-    expect(t.artist, 'My Show');
-    expect(t.album, 'My Show');
-    expect(t.genre, 'Podcast');
-    expect(t.format, 'mp3');
-    expect(t.durationMs, 1800000, reason: 'from the tags');
-    expect(t.coverKey, 'showcover');
-    expect(t.hasCover, isTrue);
-    expect(t.albumKey, 'podcast|$podcastId');
-    expect(p.isWithin(base, t.path), isTrue);
-    expect(p.dirname(t.path), p.join(base, '$podcastId'));
-    expect(File(t.path).readAsBytesSync(), audio);
-    expect(File('${t.path}.part').existsSync(), isFalse);
-    expect((await repo.episodeById(episodeId))!.trackId, trackId);
-    expect(progress.last, (3000, 3000));
-  });
+      final t = (await tracks.getById(trackId!))!;
+      expect(t.kind, 1);
+      expect(t.folderId, isNull);
+      expect(t.title, 'Episode One');
+      expect(t.artist, 'My Show');
+      expect(t.album, 'My Show');
+      expect(t.genre, 'Podcast');
+      expect(t.format, 'mp3');
+      expect(t.durationMs, 1800000, reason: 'from the tags');
+      expect(t.coverKey, 'showcover');
+      expect(t.hasCover, isTrue);
+      expect(t.albumKey, 'podcast|$podcastId');
+      expect(p.isWithin(base, t.path), isTrue);
+      expect(p.dirname(t.path), p.join(base, '$podcastId'));
+      expect(File(t.path).readAsBytesSync(), audio);
+      expect(File('${t.path}.part').existsSync(), isFalse);
+      expect((await repo.episodeById(episodeId))!.trackId, trackId);
+      expect(progress.last, (3000, 3000));
+    },
+  );
 
-  test('unsubscribing during the download leaves no file, no row and returns null', () async {
-    final tags = _GatedTags();
-    final pending = build(tags: tags).download(episodeId);
-    await tags.entered.future;
-    final paths = await repo.unsubscribe(podcastId);
-    expect(paths, isEmpty);
-    tags.gate.complete();
-    expect(await pending, isNull);
-    final files = Directory(base).listSync(recursive: true).whereType<File>().toList();
-    expect(files, isEmpty);
-    expect(await db.select(db.tracks).get(), isEmpty);
-  });
+  test(
+    'unsubscribing during the download leaves no file, no row and returns null',
+    () async {
+      final tags = _GatedTags();
+      final pending = build(tags: tags).download(episodeId);
+      await tags.entered.future;
+      final paths = await repo.unsubscribe(podcastId);
+      expect(paths, isEmpty);
+      tags.gate.complete();
+      expect(await pending, isNull);
+      final files = Directory(base)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .toList();
+      expect(files, isEmpty);
+      expect(await db.select(db.tracks).get(), isEmpty);
+    },
+  );
 
-  test('the tags are read in an isolate without taking the downloader along', () async {
-    final dl = EpisodeDownloader(repo: repo, tracks: tracks, tags: const _PlainTags(), baseDir: base);
-    final id = await dl.download(episodeId);
-    expect((await tracks.getById(id!))!.durationMs, 4242);
-  });
+  test(
+    'the tags are read in an isolate without taking the downloader along',
+    () async {
+      final dl = EpisodeDownloader(
+        repo: repo,
+        tracks: tracks,
+        tags: const _PlainTags(),
+        baseDir: base,
+      );
+      final id = await dl.download(episodeId);
+      expect((await tracks.getById(id!))!.durationMs, 4242);
+    },
+  );
 
   group('orphans', () {
-    Future<int> orphanRow(String path) => db.into(db.tracks).insert(TracksCompanion.insert(
-        path: path, title: 't', albumKey: 'podcast|9', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
-        kind: const Value(1)));
+    Future<int> orphanRow(String path) => db
+        .into(db.tracks)
+        .insert(
+          TracksCompanion.insert(
+            path: path,
+            title: 't',
+            albumKey: 'podcast|9',
+            format: 'mp3',
+            sizeBytes: 1,
+            mtimeMs: 1,
+            addedAt: 1,
+            kind: const Value(1),
+          ),
+        );
 
     test('removes a kind 1 row with no episode and the folder of a podcast that is gone', () async {
       final keep = (await build().download(episodeId))!;
-      final lost = File(p.join(base, '9', 'x.mp3'))..createSync(recursive: true);
+      final lost = File(p.join(base, '9', 'x.mp3'))
+        ..createSync(recursive: true);
       final lostId = await orphanRow(lost.path);
-      final other = File(p.join(base, 'notes', 'keep.txt'))..createSync(recursive: true);
+      final other = File(p.join(base, 'notes', 'keep.txt'))
+        ..createSync(recursive: true);
 
       expect(await build().removeOrphans(), 2);
 
@@ -197,20 +248,31 @@ void main() {
       expect(await tracks.getById(lostId), isNull);
       expect(await tracks.getById(keep), isNotNull);
       expect(File((await tracks.getById(keep))!.path).existsSync(), isTrue);
-      expect(other.existsSync(), isTrue, reason: 'only numbered folders are ours');
+      expect(
+        other.existsSync(),
+        isTrue,
+        reason: 'only numbered folders are ours',
+      );
     });
   });
 
-  test('unreadable tags do not stop it: the feed\'s length stands in', () async {
-    final id = await build(tags: _Tags(fail: true)).download(episodeId);
-    expect((await tracks.getById(id!))!.durationMs, 20 * 60 * 1000);
-  });
+  test(
+    'unreadable tags do not stop it: the feed\'s length stands in',
+    () async {
+      final id = await build(tags: _Tags(fail: true)).download(episodeId);
+      expect((await tracks.getById(id!))!.durationMs, 20 * 60 * 1000);
+    },
+  );
 
   test('downloaded after a streamed play: the same row takes the file and keeps the bookmark', () async {
     final streamed = (await repo.playableTrack(episodeId))!;
     expect(streamed.path, url('/a.mp3'));
     await tracks.setResumePosition(streamed.id, 90000);
-    expect((await repo.downloadedEpisodes()), isEmpty, reason: 'a streaming row is not a download');
+    expect(
+      (await repo.downloadedEpisodes()),
+      isEmpty,
+      reason: 'a streaming row is not a download',
+    );
 
     final id = await build().download(episodeId);
     expect(id, streamed.id);
@@ -223,16 +285,33 @@ void main() {
     expect((await repo.downloadedEpisodes()).single.track!.id, id);
   });
 
-  test('a music row linked by mistake is not overwritten by the download', () async {
-    final music = await db.into(db.tracks).insert(TracksCompanion.insert(
-        path: '/m/song.mp3', title: 'Song', albumKey: 'k', format: 'flac', sizeBytes: 7, mtimeMs: 1, addedAt: 1));
-    await repo.setTrackId(episodeId, music);
-    final id = await build().download(episodeId);
-    expect(id, isNot(music));
-    final m = (await tracks.getById(music))!;
-    expect([m.path, m.format, m.sizeBytes, m.kind], ['/m/song.mp3', 'flac', 7, 0]);
-    expect((await repo.episodeById(episodeId))!.trackId, id);
-  });
+  test(
+    'a music row linked by mistake is not overwritten by the download',
+    () async {
+      final music = await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/m/song.mp3',
+              title: 'Song',
+              albumKey: 'k',
+              format: 'flac',
+              sizeBytes: 7,
+              mtimeMs: 1,
+              addedAt: 1,
+            ),
+          );
+      await repo.setTrackId(episodeId, music);
+      final id = await build().download(episodeId);
+      expect(id, isNot(music));
+      final m = (await tracks.getById(music))!;
+      expect(
+        [m.path, m.format, m.sizeBytes, m.kind],
+        ['/m/song.mp3', 'flac', 7, 0],
+      );
+      expect((await repo.episodeById(episodeId))!.trackId, id);
+    },
+  );
 
   test('a first play while it downloads: the file goes into that row, no second row', () async {
     final tags = _GatedTags();
@@ -245,37 +324,76 @@ void main() {
     expect(p.isWithin(base, (await tracks.getById(streamed.id))!.path), isTrue);
   });
 
-  test('downloaded already: the same track comes back without another request', () async {
-    final dl = build();
-    final first = await dl.download(episodeId);
-    requests.clear();
-    expect(await dl.download(episodeId), first);
-    expect(requests, isEmpty);
-  });
+  test(
+    'downloaded already: the same track comes back without another request',
+    () async {
+      final dl = build();
+      final first = await dl.download(episodeId);
+      requests.clear();
+      expect(await dl.download(episodeId), first);
+      expect(requests, isEmpty);
+    },
+  );
 
   group('the format', () {
-    test('the server\'s content type decides, then the address, then the feed', () {
-      expect(episodeExtension(contentType: 'audio/mpeg', url: 'https://x/a.m4a'), 'mp3');
-      expect(episodeExtension(contentType: 'audio/mp4; charset=x'), 'm4a');
-      expect(episodeExtension(contentType: 'audio/x-m4a'), 'm4a');
-      expect(episodeExtension(contentType: 'audio/ogg'), 'ogg');
-      expect(episodeExtension(contentType: 'audio/opus'), 'opus');
-      expect(episodeExtension(contentType: 'application/octet-stream', url: 'https://x/e.mp3?token=1'), 'mp3');
-      expect(episodeExtension(contentType: 'binary/octet-stream', url: 'https://x/download/42', mime: 'audio/mpeg'), 'mp3');
-      expect(episodeExtension(url: 'https://x/e.MP4'), 'm4a');
-      expect(episodeExtension(contentType: 'video/mp4', url: 'https://x/e.mkv'), isNull);
-      expect(episodeExtension(), isNull);
-    });
+    test(
+      'the server\'s content type decides, then the address, then the feed',
+      () {
+        expect(
+          episodeExtension(contentType: 'audio/mpeg', url: 'https://x/a.m4a'),
+          'mp3',
+        );
+        expect(episodeExtension(contentType: 'audio/mp4; charset=x'), 'm4a');
+        expect(episodeExtension(contentType: 'audio/x-m4a'), 'm4a');
+        expect(episodeExtension(contentType: 'audio/ogg'), 'ogg');
+        expect(episodeExtension(contentType: 'audio/opus'), 'opus');
+        expect(
+          episodeExtension(
+            contentType: 'application/octet-stream',
+            url: 'https://x/e.mp3?token=1',
+          ),
+          'mp3',
+        );
+        expect(
+          episodeExtension(
+            contentType: 'binary/octet-stream',
+            url: 'https://x/download/42',
+            mime: 'audio/mpeg',
+          ),
+          'mp3',
+        );
+        expect(episodeExtension(url: 'https://x/e.MP4'), 'm4a');
+        expect(
+          episodeExtension(contentType: 'video/mp4', url: 'https://x/e.mkv'),
+          isNull,
+        );
+        expect(episodeExtension(), isNull);
+      },
+    );
 
-    test('an episode without a known audio format is refused and leaves nothing', () async {
-      final id = await addEpisode('guid-v', url('/video'));
-      await expectLater(
-        build().download(id),
-        throwsA(isA<PodcastException>().having((e) => e.kind, 'kind', PodcastErrorKind.unsupportedFormat)),
-      );
-      expect(Directory(base).existsSync() ? Directory(base).listSync(recursive: true).whereType<File>() : <File>[], isEmpty);
-      expect((await repo.episodeById(id))!.trackId, isNull);
-    });
+    test(
+      'an episode without a known audio format is refused and leaves nothing',
+      () async {
+        final id = await addEpisode('guid-v', url('/video'));
+        await expectLater(
+          build().download(id),
+          throwsA(
+            isA<PodcastException>().having(
+              (e) => e.kind,
+              'kind',
+              PodcastErrorKind.unsupportedFormat,
+            ),
+          ),
+        );
+        expect(
+          Directory(base).existsSync()
+              ? Directory(base).listSync(recursive: true).whereType<File>()
+              : <File>[],
+          isEmpty,
+        );
+        expect((await repo.episodeById(id))!.trackId, isNull);
+      },
+    );
 
     test('octet-stream with the feed saying audio/mpeg is an mp3', () async {
       final id = await addEpisode('guid-o', url('/octet'), mime: 'audio/mpeg');
@@ -284,36 +402,58 @@ void main() {
     });
   });
 
-  test('a server error and an empty answer are network errors with no file left', () async {
-    final bad = await addEpisode('guid-404', url('/missing.mp3'));
-    await expectLater(
-      build().download(bad),
-      throwsA(isA<PodcastException>().having((e) => e.kind, 'kind', PodcastErrorKind.network)),
-    );
-    final empty = await addEpisode('guid-empty', url('/empty.mp3'));
-    await expectLater(
-      build().download(empty),
-      throwsA(isA<PodcastException>().having((e) => e.kind, 'kind', PodcastErrorKind.network)),
-    );
-    final files = Directory(base).existsSync() ? Directory(base).listSync(recursive: true).whereType<File>().toList() : <File>[];
-    expect(files, isEmpty);
-    expect(await db.select(db.tracks).get(), isEmpty);
-  });
+  test(
+    'a server error and an empty answer are network errors with no file left',
+    () async {
+      final bad = await addEpisode('guid-404', url('/missing.mp3'));
+      await expectLater(
+        build().download(bad),
+        throwsA(
+          isA<PodcastException>().having(
+            (e) => e.kind,
+            'kind',
+            PodcastErrorKind.network,
+          ),
+        ),
+      );
+      final empty = await addEpisode('guid-empty', url('/empty.mp3'));
+      await expectLater(
+        build().download(empty),
+        throwsA(
+          isA<PodcastException>().having(
+            (e) => e.kind,
+            'kind',
+            PodcastErrorKind.network,
+          ),
+        ),
+      );
+      final files = Directory(base).existsSync()
+          ? Directory(base).listSync(recursive: true).whereType<File>().toList()
+          : <File>[];
+      expect(files, isEmpty);
+      expect(await db.select(db.tracks).get(), isEmpty);
+    },
+  );
 
-  test('cancelling half way ends without a path and leaves no file behind', () async {
-    final id = await addEpisode('guid-slow', url('/slow.mp3'));
-    final cancel = CancelToken();
-    final done = build().download(id, cancel: cancel, onProgress: (r, t) {});
-    await slowOpen.future;
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    cancel.cancel();
+  test(
+    'cancelling half way ends without a path and leaves no file behind',
+    () async {
+      final id = await addEpisode('guid-slow', url('/slow.mp3'));
+      final cancel = CancelToken();
+      final done = build().download(id, cancel: cancel, onProgress: (r, t) {});
+      await slowOpen.future;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      cancel.cancel();
 
-    expect(await done, isNull);
-    final files = Directory(base).existsSync() ? Directory(base).listSync(recursive: true).whereType<File>().toList() : <File>[];
-    expect(files, isEmpty, reason: 'no .part, no half episode');
-    expect((await repo.episodeById(id))!.trackId, isNull);
-    expect(await db.select(db.tracks).get(), isEmpty);
-  });
+      expect(await done, isNull);
+      final files = Directory(base).existsSync()
+          ? Directory(base).listSync(recursive: true).whereType<File>().toList()
+          : <File>[];
+      expect(files, isEmpty, reason: 'no .part, no half episode');
+      expect((await repo.episodeById(id))!.trackId, isNull);
+      expect(await db.select(db.tracks).get(), isEmpty);
+    },
+  );
 
   group('deleting the file', () {
     test('removes the file; an episode with an address goes back to a streaming row, bookmark and plays kept', () async {
@@ -327,45 +467,102 @@ void main() {
 
       expect(File(path).existsSync(), isFalse);
       final t = (await tracks.getById(trackId))!;
-      expect([t.path, t.sizeBytes, t.mtimeMs, t.resumePositionMs], [url('/a.mp3'), 0, 0, 77000]);
+      expect(
+        [t.path, t.sizeBytes, t.mtimeMs, t.resumePositionMs],
+        [url('/a.mp3'), 0, 0, 77000],
+      );
       expect((await repo.episodeById(episodeId))!.trackId, trackId);
-      final row = (await repo.watchEpisodes(podcastId).first).firstWhere((e) => e.episode.id == episodeId);
+      final row = (await repo.watchEpisodes(podcastId).first).firstWhere(
+        (e) => e.episode.id == episodeId,
+      );
       expect(row.downloaded, isFalse);
       expect(row.episode.title, 'Episode One');
 
-      expect(await dl.download(episodeId), trackId, reason: 'downloadable again, into the same row');
+      expect(
+        await dl.download(episodeId),
+        trackId,
+        reason: 'downloadable again, into the same row',
+      );
     });
 
-    test('an episode with no address to stream from loses its row with the file', () async {
-      final dl = build();
-      final id = await addEpisode('guid-ftp', 'ftp://x/a.mp3', mime: 'audio/mpeg');
-      final t = await db.into(db.tracks).insert(TracksCompanion.insert(
-          path: p.join(base, 'f.mp3'), title: 'f', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, kind: const Value(1)));
-      File(p.join(base, 'f.mp3')).createSync(recursive: true);
-      await repo.setTrackId(id, t);
-      await dl.deleteFile(id);
-      expect(await tracks.getById(t), isNull);
-      expect((await repo.episodeById(id))!.trackId, isNull);
-    });
+    test(
+      'an episode with no address to stream from loses its row with the file',
+      () async {
+        final dl = build();
+        final id = await addEpisode(
+          'guid-ftp',
+          'ftp://x/a.mp3',
+          mime: 'audio/mpeg',
+        );
+        final t = await db
+            .into(db.tracks)
+            .insert(
+              TracksCompanion.insert(
+                path: p.join(base, 'f.mp3'),
+                title: 'f',
+                albumKey: 'k',
+                format: 'mp3',
+                sizeBytes: 1,
+                mtimeMs: 1,
+                addedAt: 1,
+                kind: const Value(1),
+              ),
+            );
+        File(p.join(base, 'f.mp3')).createSync(recursive: true);
+        await repo.setTrackId(id, t);
+        await dl.deleteFile(id);
+        expect(await tracks.getById(t), isNull);
+        expect((await repo.episodeById(id))!.trackId, isNull);
+      },
+    );
 
     test('a file outside the podcast folder is never deleted, but the row goes back to the address', () async {
-      final outside = File(p.join(dir.path, 'music', 'mine.mp3'))..createSync(recursive: true)..writeAsBytesSync([1, 2, 3]);
-      final t = await db.into(db.tracks).insert(TracksCompanion.insert(
-          path: outside.path, title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 3, mtimeMs: 1, addedAt: 1, kind: const Value(1)));
+      final outside = File(p.join(dir.path, 'music', 'mine.mp3'))
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([1, 2, 3]);
+      final t = await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: outside.path,
+              title: 'x',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 3,
+              mtimeMs: 1,
+              addedAt: 1,
+              kind: const Value(1),
+            ),
+          );
       await repo.setTrackId(episodeId, t);
 
       await build().deleteFile(episodeId);
 
       expect(outside.existsSync(), isTrue, reason: 'not ours to delete');
       final row = (await tracks.getById(t))!;
-      expect(row.path, startsWith('http'), reason: 'streams again, no longer on that file');
+      expect(
+        row.path,
+        startsWith('http'),
+        reason: 'streams again, no longer on that file',
+      );
       expect(await repo.downloadedEpisodes(), isEmpty);
     });
 
     test('a music track linked by mistake is left alone', () async {
       final music = File(p.join(base, 'm.mp3'))..createSync(recursive: true);
-      final t = await db.into(db.tracks).insert(TracksCompanion.insert(
-          path: music.path, title: 'music', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+      final t = await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: music.path,
+              title: 'music',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+            ),
+          );
       await repo.setTrackId(episodeId, t);
       await build().deleteFile(episodeId);
       expect(music.existsSync(), isTrue);
@@ -379,9 +576,12 @@ void main() {
   });
 
   test('orphan .part files are removed, nothing else', () async {
-    final keep = File(p.join(base, '1', 'done.mp3'))..createSync(recursive: true);
-    final orphan = File(p.join(base, '1', 'half.mp3.part'))..createSync(recursive: true);
-    final orphan2 = File(p.join(base, '2', 'x.m4a.part'))..createSync(recursive: true);
+    final keep = File(p.join(base, '1', 'done.mp3'))
+      ..createSync(recursive: true);
+    final orphan = File(p.join(base, '1', 'half.mp3.part'))
+      ..createSync(recursive: true);
+    final orphan2 = File(p.join(base, '2', 'x.m4a.part'))
+      ..createSync(recursive: true);
     final outside = File(p.join(dir.path, 'other.part'))..createSync();
 
     expect(await build().removeOrphanParts(), 2);

@@ -22,7 +22,13 @@ import 'track_kinds.dart';
 enum SortOption { defaultOrder, title, artist, album, year, addedAt, duration }
 
 /// The lyrics of a track and its enrichment marks, as [TrackRepository.clearLyrics] found them.
-typedef LyricsSnapshot = ({String? plain, String? synced, bool byUser, int? noneAt, int? syncedNoneAt});
+typedef LyricsSnapshot = ({
+  String? plain,
+  String? synced,
+  bool byUser,
+  int? noneAt,
+  int? syncedNoneAt,
+});
 
 class TrackRepository {
   TrackRepository(this._db);
@@ -32,7 +38,10 @@ class TrackRepository {
   /// Inserts new rows; for existing paths only file-derived fields change, so
   /// favourites, lyrics, counters and user edits survive a rescan. [genresByPath]
   /// are the genres read for a path; they replace its `track_genres` rows.
-  Future<void> upsertBatch(List<TracksCompanion> rows, {Map<String, List<String>> genresByPath = const {}}) async {
+  Future<void> upsertBatch(
+    List<TracksCompanion> rows, {
+    Map<String, List<String>> genresByPath = const {},
+  }) async {
     if (rows.isEmpty) return;
     final genres = TrackGenreRepository(_db);
     await _db.transaction(() async {
@@ -54,7 +63,8 @@ class TrackRepository {
         }
         final keepText = existing.userEdited;
         // A row moved to another album leaves the album's hand-picked cover behind.
-        final moved = existing.coverSource == 1 &&
+        final moved =
+            existing.coverSource == 1 &&
             !keepText &&
             row.albumKey.present &&
             row.albumKey.value != existing.albumKey;
@@ -115,7 +125,12 @@ class TrackRepository {
           _db,
           _db.select(_db.tracks)
             // A streamed YouTube Music episode (kind 1) has the same kind of path.
-            ..where((t) => t.id.isIn(ids) & t.kind.isIn(const [kStreamKind, kEpisodeKind]) & t.path.like('stream:%')),
+            ..where(
+              (t) =>
+                  t.id.isIn(ids) &
+                  t.kind.isIn(const [kStreamKind, kEpisodeKind]) &
+                  t.path.like('stream:%'),
+            ),
         ).get();
 
   /// The shadow row (`kind = 2`) of the streamed track [key], if it has one. A podcast episode
@@ -128,31 +143,49 @@ class TrackRepository {
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
   /// in the cache). Rows with plays stay (D-81). Returns how many went.
   Future<int> deleteUnplayedStreamRows({Set<String> keepKeys = const {}}) =>
-      (_db.delete(_db.tracks)..where((t) =>
-              t.kind.equals(kStreamKind) &
-              t.path.isNotIn([for (final k in keepKeys) streamPathOf(k)]) &
-              notExistsQuery(_db.select(_db.plays)..where((pl) => pl.trackId.equalsExp(t.id)))))
+      (_db.delete(_db.tracks)..where(
+            (t) =>
+                t.kind.equals(kStreamKind) &
+                t.path.isNotIn([for (final k in keepKeys) streamPathOf(k)]) &
+                notExistsQuery(
+                  _db.select(_db.plays)
+                    ..where((pl) => pl.trackId.equalsExp(t.id)),
+                ),
+          ))
           .go();
 
   /// Turns the shadow row of [key] into a library track at [path] (R-10): `kind = 0`,
   /// real path and [folderId] (so the scan finds it by path and skips it), and the
   /// `albumKey` a scanned file there would get. Plays, text and cover stay.
   /// Returns the updated row, or null when there is no shadow row.
-  Future<Track?> promoteStreamRow(String key, String path, int folderId, File file) async {
+  Future<Track?> promoteStreamRow(
+    String key,
+    String path,
+    int folderId,
+    File file,
+  ) async {
     final row = await streamRow(key);
     if (row == null) return null;
     final stat = await file.stat();
-    await (_db.update(_db.tracks)..where((t) => t.id.equals(row.id))).write(TracksCompanion(
-      path: Value(path),
-      kind: const Value(kMusicKind),
-      folderId: Value(folderId),
-      format: Value(p.extension(path).replaceFirst('.', '').toLowerCase()),
-      sizeBytes: Value(stat.size),
-      mtimeMs: Value(stat.modified.millisecondsSinceEpoch),
-      albumKey: Value(computeAlbumKey(
-          albumArtist: row.albumArtist, artist: row.artist, album: row.album, directory: p.dirname(path))),
-      missing: const Value(false),
-    ));
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(row.id))).write(
+      TracksCompanion(
+        path: Value(path),
+        kind: const Value(kMusicKind),
+        folderId: Value(folderId),
+        format: Value(p.extension(path).replaceFirst('.', '').toLowerCase()),
+        sizeBytes: Value(stat.size),
+        mtimeMs: Value(stat.modified.millisecondsSinceEpoch),
+        albumKey: Value(
+          computeAlbumKey(
+            albumArtist: row.albumArtist,
+            artist: row.artist,
+            album: row.album,
+            directory: p.dirname(path),
+          ),
+        ),
+        missing: const Value(false),
+      ),
+    );
     return getById(row.id);
   }
 
@@ -193,19 +226,23 @@ class TrackRepository {
       if (existing == null) return _db.into(_db.tracks).insert(row);
       // A podcast episode streamed from the same address: its size and format are its own.
       if (existing.kind != kStreamKind) return existing.id;
-      await (_db.update(_db.tracks)..where((t) => t.id.equals(existing.id)))
-          .write(TracksCompanion(
-        sizeBytes: row.sizeBytes,
-        mtimeMs: row.mtimeMs,
-        format: row.format,
-        missing: const Value(false),
-      ));
+      await (_db.update(
+        _db.tracks,
+      )..where((t) => t.id.equals(existing.id))).write(
+        TracksCompanion(
+          sizeBytes: row.sizeBytes,
+          mtimeMs: row.mtimeMs,
+          format: row.format,
+          missing: const Value(false),
+        ),
+      );
       return existing.id;
     });
   }
 
-  Future<Track?> byPath(String path) =>
-      (_db.select(_db.tracks)..where((t) => t.path.equals(path))).getSingleOrNull();
+  Future<Track?> byPath(String path) => (_db.select(
+    _db.tracks,
+  )..where((t) => t.path.equals(path))).getSingleOrNull();
 
   /// Writes the non-null fields of a received [TrackMeta] over the row (the
   /// sender's package wins over the local tags), recomputes `albumKey` and
@@ -215,7 +252,9 @@ class TrackRepository {
   /// changes outside Codecore; fixed by writing tags (37.4).
   /// Returns the new `albumKey`, or null when the row does not exist.
   Future<String?> applyReceivedMeta(int trackId, TrackMeta m) async {
-    final t = await (_db.select(_db.tracks)..where((r) => r.id.equals(trackId))).getSingleOrNull();
+    final t = await (_db.select(
+      _db.tracks,
+    )..where((r) => r.id.equals(trackId))).getSingleOrNull();
     if (t == null) return null;
     final albumArtist = m.albumArtist ?? t.albumArtist;
     final artist = m.artist ?? t.artist;
@@ -284,11 +323,11 @@ class TrackRepository {
     bool hasCover,
     String? coverKey,
   ) async {
-    await (_db.update(
-      _db.tracks,
-    )..where((t) => t.albumKey.equals(albumKey) & t.coverSource.equals(0))).write(
-      TracksCompanion(hasCover: Value(hasCover), coverKey: Value(coverKey)),
-    );
+    await (_db.update(_db.tracks)
+          ..where((t) => t.albumKey.equals(albumKey) & t.coverSource.equals(0)))
+        .write(
+          TracksCompanion(hasCover: Value(hasCover), coverKey: Value(coverKey)),
+        );
   }
 
   /// A hand-picked cover for one track (`cover_source = 2`).
@@ -303,43 +342,63 @@ class TrackRepository {
 
   /// A hand-picked cover for an album (`cover_source = 1`); tracks with their own stay.
   Future<void> setManualAlbumCover(String albumKey, String coverKey) =>
-      (_db.update(_db.tracks)
-            ..where((t) => t.albumKey.equals(albumKey) & t.coverSource.isNotValue(2)))
+      (_db.update(_db.tracks)..where(
+            (t) => t.albumKey.equals(albumKey) & t.coverSource.isNotValue(2),
+          ))
           .write(
-        TracksCompanion(
-          hasCover: const Value(true),
-          coverKey: Value(coverKey),
-          coverSource: const Value(1),
-        ),
-      );
+            TracksCompanion(
+              hasCover: const Value(true),
+              coverKey: Value(coverKey),
+              coverSource: const Value(1),
+            ),
+          );
 
   /// Back to the automatic cover [coverKey] (null = none) for track [trackId], or,
   /// with [albumKey], for the rows of that album whose cover was picked for the album.
-  Future<void> restoreCover({int? trackId, String? albumKey, required String? coverKey}) {
+  Future<void> restoreCover({
+    int? trackId,
+    String? albumKey,
+    required String? coverKey,
+  }) {
     assert((trackId == null) != (albumKey == null));
     final q = _db.update(_db.tracks)
-      ..where((t) => trackId != null
-          ? t.id.equals(trackId) & t.coverSource.isBiggerThanValue(0)
-          : t.albumKey.equals(albumKey!) & t.coverSource.equals(1));
-    return q.write(TracksCompanion(
-      hasCover: Value(coverKey != null),
-      coverKey: Value(coverKey),
-      coverSource: const Value(0),
-    ));
+      ..where(
+        (t) => trackId != null
+            ? t.id.equals(trackId) & t.coverSource.isBiggerThanValue(0)
+            : t.albumKey.equals(albumKey!) & t.coverSource.equals(1),
+      );
+    return q.write(
+      TracksCompanion(
+        hasCover: Value(coverKey != null),
+        coverKey: Value(coverKey),
+        coverSource: const Value(0),
+      ),
+    );
   }
 
   /// [row] with the hand-picked cover its album has now (automatic when it has none).
   Future<TracksCompanion> _freshAlbumCover(TracksCompanion row) async {
     final album = row.albumKey.value;
     final manual = await albumManualRow(album);
-    if (manual?.coverKey != null) return row.copyWith(coverKey: Value(manual!.coverKey));
+    if (manual?.coverKey != null) {
+      return row.copyWith(coverKey: Value(manual!.coverKey));
+    }
     final auto = await _autoCoverOf(album);
-    return row.copyWith(hasCover: Value(auto != null), coverKey: Value(auto), coverSource: const Value(0));
+    return row.copyWith(
+      hasCover: Value(auto != null),
+      coverKey: Value(auto),
+      coverSource: const Value(0),
+    );
   }
 
   Future<String?> _autoCoverOf(String albumKey) async =>
       (await (_db.select(_db.tracks)
-                ..where((t) => t.albumKey.equals(albumKey) & t.coverSource.equals(0) & t.coverKey.isNotNull())
+                ..where(
+                  (t) =>
+                      t.albumKey.equals(albumKey) &
+                      t.coverSource.equals(0) &
+                      t.coverKey.isNotNull(),
+                )
                 ..limit(1))
               .getSingleOrNull())
           ?.coverKey;
@@ -350,26 +409,36 @@ class TrackRepository {
     if (before.coverSource != 1 || before.albumKey == newKey) return;
     final manual = await albumManualRow(newKey, exceptId: before.id);
     final key = manual?.coverKey ?? await _autoCoverOf(newKey);
-    await (_db.update(_db.tracks)..where((t) => t.id.equals(before.id))).write(TracksCompanion(
-      hasCover: Value(key != null),
-      coverKey: Value(key),
-      coverSource: Value(manual?.coverKey != null ? 1 : 0),
-    ));
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(before.id))).write(
+      TracksCompanion(
+        hasCover: Value(key != null),
+        coverKey: Value(key),
+        coverSource: Value(manual?.coverKey != null ? 1 : 0),
+      ),
+    );
   }
 
   /// Every cover key a hand-picked cover (track or album) points at.
   Future<Set<String>> handPickedCoverKeys() async {
-    final rows = await (_db.select(_db.tracks)
-          ..where((t) => t.coverSource.isBiggerThanValue(0) & t.coverKey.isNotNull()))
-        .get();
+    final rows =
+        await (_db.select(_db.tracks)..where(
+              (t) =>
+                  t.coverSource.isBiggerThanValue(0) & t.coverKey.isNotNull(),
+            ))
+            .get();
     return {for (final r in rows) r.coverKey!};
   }
 
   /// The distinct keys of the hand-picked covers of the album's rows.
   Future<Set<String>> albumManualKeys(String albumKey) async {
-    final rows = await (_db.select(_db.tracks)
-          ..where((t) => t.albumKey.equals(albumKey) & t.coverSource.equals(1) & t.coverKey.isNotNull()))
-        .get();
+    final rows =
+        await (_db.select(_db.tracks)..where(
+              (t) =>
+                  t.albumKey.equals(albumKey) &
+                  t.coverSource.equals(1) &
+                  t.coverKey.isNotNull(),
+            ))
+            .get();
     return {for (final r in rows) r.coverKey!};
   }
 
@@ -385,8 +454,12 @@ class TrackRepository {
   /// A row of the album whose cover was picked for the album, if any.
   Future<Track?> albumManualRow(String albumKey, {int? exceptId}) =>
       (_db.select(_db.tracks)
-            ..where((t) =>
-                t.albumKey.equals(albumKey) & t.coverSource.equals(1) & t.id.equals(exceptId ?? -1).not())
+            ..where(
+              (t) =>
+                  t.albumKey.equals(albumKey) &
+                  t.coverSource.equals(1) &
+                  t.id.equals(exceptId ?? -1).not(),
+            )
             ..limit(1))
           .getSingleOrNull();
 
@@ -394,8 +467,12 @@ class TrackRepository {
   /// daylist sorts them itself): no `ORDER BY`, no long texts.
   Future<List<Track>> musicLight() => lightSelect(
     _db,
-    _db.select(_db.tracks)
-      ..where((t) => t.missing.equals(false) & t.ignored.equals(false) & t.kind.equals(kMusicKind)),
+    _db.select(_db.tracks)..where(
+      (t) =>
+          t.missing.equals(false) &
+          t.ignored.equals(false) &
+          t.kind.equals(kMusicKind),
+    ),
   ).get();
 
   Stream<List<Track>> watchTracks({
@@ -526,7 +603,8 @@ class TrackRepository {
       _db.tracks,
       if (f.contains(RuleField.tag)) ...[_db.trackTags, _db.userTags],
       if (f.contains(RuleField.genre)) _db.trackGenres,
-      if (f.contains(RuleField.bpm) || f.contains(RuleField.recordLabel)) _db.trackEnrich,
+      if (f.contains(RuleField.bpm) || f.contains(RuleField.recordLabel))
+        _db.trackEnrich,
       if (f.contains(RuleField.country)) _db.artistCountries,
     };
   }
@@ -544,7 +622,15 @@ class TrackRepository {
   }) {
     final nowMs = (now ?? DateTime.now()).millisecondsSinceEpoch;
     Stream<List<Track>> query(Map<String, List<String>> ca) {
-      final q = _byRules(rules, sort, limit, randomSeed, nowMs, ca, mostPlayed: mostPlayed);
+      final q = _byRules(
+        rules,
+        sort,
+        limit,
+        randomSeed,
+        nowMs,
+        ca,
+        mostPlayed: mostPlayed,
+      );
       return _db
           .customSelect(q.sql, variables: q.vars, readsFrom: _ruleTables(rules))
           .watch()
@@ -560,18 +646,31 @@ class TrackRepository {
     return _watchWithCountries(rules, (version) async {
       final artists = await distinctArtists(_db);
       final c = cache;
-      if (c == null || c.version != version || !c.artists.containsAll(artists)) {
+      if (c == null ||
+          c.version != version ||
+          !c.artists.containsAll(artists)) {
         final map = await countryArtistsOf(_db, rules, artists: artists);
         cache = (version: version, artists: artists, map: map);
       }
       final ca = cache!.map;
-      final q = _byRules(rules, sort, limit, randomSeed, nowMs, ca, mostPlayed: mostPlayed);
+      final q = _byRules(
+        rules,
+        sort,
+        limit,
+        randomSeed,
+        nowMs,
+        ca,
+        mostPlayed: mostPlayed,
+      );
       final rows = await _db.customSelect(q.sql, variables: q.vars).get();
       return [for (final r in rows) _db.tracks.map(r.data)];
     });
   }
 
-  Stream<List<Track>> _watchWithCountries(RuleExpr rules, Future<List<Track>> Function(int countriesVersion) run) {
+  Stream<List<Track>> _watchWithCountries(
+    RuleExpr rules,
+    Future<List<Track>> Function(int countriesVersion) run,
+  ) {
     late final StreamController<List<Track>> c;
     StreamSubscription<Set<TableUpdate>>? sub;
     Timer? debounce;
@@ -581,7 +680,9 @@ class TrackRepository {
       final mine = ++gen;
       try {
         final r = await run(countriesVersion);
-        if (mine == gen && !c.isClosed) c.add(r); // only the latest answer counts
+        if (mine == gen && !c.isClosed) {
+          c.add(r); // only the latest answer counts
+        }
       } catch (e, st) {
         if (!c.isClosed) c.addError(e, st);
       }
@@ -590,14 +691,20 @@ class TrackRepository {
     c = StreamController<List<Track>>(
       onListen: () {
         refresh();
-        sub = _db.tableUpdates(TableUpdateQuery.onAllTables(_ruleTables(rules))).listen((u) {
-          if (u.any((t) => t.table == _db.artistCountries.actualTableName)) countriesVersion++;
-          // not restarted by later events: a steady stream of writes still re-runs every 300 ms
-          debounce ??= Timer(const Duration(milliseconds: 300), () {
-            debounce = null;
-            refresh();
-          });
-        });
+        sub = _db
+            .tableUpdates(TableUpdateQuery.onAllTables(_ruleTables(rules)))
+            .listen((u) {
+              if (u.any(
+                (t) => t.table == _db.artistCountries.actualTableName,
+              )) {
+                countriesVersion++;
+              }
+              // not restarted by later events: a steady stream of writes still re-runs every 300 ms
+              debounce ??= Timer(const Duration(milliseconds: 300), () {
+                debounce = null;
+                refresh();
+              });
+            });
       },
       onCancel: () async {
         gen++;
@@ -703,26 +810,41 @@ class TrackRepository {
 
   /// Local mp3 music files that are there (no episodes: the player corrects their length; no
   /// stream shadow rows), for the one-off length fix.
-  Future<List<({int id, String path, int durationMs, int? bitrateKbps})>> mp3LengthRows() async {
-    final rows = await (_db.select(_db.tracks)
-          ..where((t) => t.format.equals('mp3') & t.kind.equals(kMusicKind) & t.missing.equals(false)))
-        .get();
+  Future<List<({int id, String path, int durationMs, int? bitrateKbps})>>
+  mp3LengthRows() async {
+    final rows =
+        await (_db.select(_db.tracks)..where(
+              (t) =>
+                  t.format.equals('mp3') &
+                  t.kind.equals(kMusicKind) &
+                  t.missing.equals(false),
+            ))
+            .get();
     return [
       for (final r in rows)
         if (!r.path.startsWith('stream:'))
-          (id: r.id, path: r.path, durationMs: r.durationMs, bitrateKbps: r.bitrateKbps),
+          (
+            id: r.id,
+            path: r.path,
+            durationMs: r.durationMs,
+            bitrateKbps: r.bitrateKbps,
+          ),
     ];
   }
 
   /// Only the length and the bitrate: titles, artists and the rest stay as they are.
-  Future<void> setLengths(List<({int id, int durationMs, int bitrateKbps})> rows) =>
-      _db.transaction(() async {
-        for (final r in rows) {
-          await (_db.update(_db.tracks)..where((t) => t.id.equals(r.id))).write(
-            TracksCompanion(durationMs: Value(r.durationMs), bitrateKbps: Value(r.bitrateKbps)),
-          );
-        }
-      });
+  Future<void> setLengths(
+    List<({int id, int durationMs, int bitrateKbps})> rows,
+  ) => _db.transaction(() async {
+    for (final r in rows) {
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(r.id))).write(
+        TracksCompanion(
+          durationMs: Value(r.durationMs),
+          bitrateKbps: Value(r.bitrateKbps),
+        ),
+      );
+    }
+  });
 
   /// Hides or shows tracks (the duplicates a merge leaves behind). The
   /// scanner never touches the flag, so a hidden file stays hidden.
@@ -739,7 +861,9 @@ class TrackRepository {
 
   Stream<List<Track>> watchIgnored() =>
       (_db.select(_db.tracks)
-            ..where((t) => t.ignored.equals(true) & t.kind.isNotValue(kStreamKind))
+            ..where(
+              (t) => t.ignored.equals(true) & t.kind.isNotValue(kStreamKind),
+            )
             ..orderBy([
               (t) => OrderingTerm(expression: t.title.collate(Collate.noCase)),
             ]))
@@ -749,8 +873,16 @@ class TrackRepository {
   Stream<List<Track>> watchRecentlyAdded({int limit = 24}) => lightSelect(
     _db,
     _db.select(_db.tracks)
-      ..where((t) => t.missing.equals(false) & t.ignored.equals(false) & t.kind.equals(0))
-      ..orderBy([(t) => OrderingTerm.desc(t.addedAt), (t) => OrderingTerm.desc(t.id)])
+      ..where(
+        (t) =>
+            t.missing.equals(false) &
+            t.ignored.equals(false) &
+            t.kind.equals(0),
+      )
+      ..orderBy([
+        (t) => OrderingTerm.desc(t.addedAt),
+        (t) => OrderingTerm.desc(t.id),
+      ])
       ..limit(limit),
   ).watch();
 
@@ -765,8 +897,11 @@ class TrackRepository {
                   t.ignored.equals(false) &
                   t.kind.isIn(const [0, kEpisodeKind]) &
                   // Marked as heard by hand: nothing left to resume.
-                  notExistsQuery(_db.select(_db.podcastEpisodes)
-                    ..where((e) => e.trackId.equalsExp(t.id) & e.played.equals(true))),
+                  notExistsQuery(
+                    _db.select(_db.podcastEpisodes)..where(
+                      (e) => e.trackId.equalsExp(t.id) & e.played.equals(true),
+                    ),
+                  ),
             )
             ..orderBy([(t) => OrderingTerm.desc(t.lastPlayedAt)])
             ..limit(limit))
@@ -774,10 +909,12 @@ class TrackRepository {
 
   Stream<List<Track>> watchMissing() =>
       (_db.select(_db.tracks)
-            ..where((t) =>
-                t.missing.equals(true) &
-                t.ignored.equals(false) &
-                t.kind.isNotValue(kStreamKind))
+            ..where(
+              (t) =>
+                  t.missing.equals(true) &
+                  t.ignored.equals(false) &
+                  t.kind.isNotValue(kStreamKind),
+            )
             ..orderBy([(t) => OrderingTerm.asc(t.path)]))
           .watch();
 
@@ -786,9 +923,12 @@ class TrackRepository {
 
   /// Forgets cover info (not the hand-picked ones) and forces the next scan to re-read every file.
   Future<void> resetCovers() async {
-    await (_db.update(_db.tracks)..where((t) => t.coverSource.equals(0)))
-        .write(const TracksCompanion(hasCover: Value(false), coverKey: Value(null)));
-    await _db.update(_db.tracks).write(const TracksCompanion(mtimeMs: Value(0)));
+    await (_db.update(_db.tracks)..where((t) => t.coverSource.equals(0))).write(
+      const TracksCompanion(hasCover: Value(false), coverKey: Value(null)),
+    );
+    await _db
+        .update(_db.tracks)
+        .write(const TracksCompanion(mtimeMs: Value(0)));
   }
 
   /// Id, title, artist and length of every available track, for matching an
@@ -836,42 +976,79 @@ class TrackRepository {
 
   /// Stores the lyrics of one track; a missing synced version clears the column.
   /// [byUser]: the user chose or wrote them, so the enrichment never replaces them.
-  Future<void> setLyrics(int id, {String? plain, String? synced, bool byUser = false}) =>
-      _db.transaction(() async {
-        await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
-          TracksCompanion(lyricsPlain: Value(plain), lyricsSynced: Value(synced)),
-        );
-        if (byUser) {
-          await _db.into(_db.trackEnrich).insertOnConflictUpdate(
-              TrackEnrichCompanion(trackId: Value(id), lyricsByUser: const Value(true)));
-        }
-      });
+  Future<void> setLyrics(
+    int id, {
+    String? plain,
+    String? synced,
+    bool byUser = false,
+  }) => _db.transaction(() async {
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(lyricsPlain: Value(plain), lyricsSynced: Value(synced)),
+    );
+    if (byUser) {
+      await _db
+          .into(_db.trackEnrich)
+          .insertOnConflictUpdate(
+            TrackEnrichCompanion(
+              trackId: Value(id),
+              lyricsByUser: const Value(true),
+            ),
+          );
+    }
+  });
 
   /// Removes the lyrics of one track and lets the automatic search try again:
   /// the «by user» flag and the «nothing found» marks go too (D-471). Returns
   /// what was there, for [restoreLyrics].
   Future<LyricsSnapshot> clearLyrics(int id) => _db.transaction(() async {
-        final t = await (_db.select(_db.tracks)..where((t) => t.id.equals(id))).getSingle();
-        final e = await (_db.select(_db.trackEnrich)..where((e) => e.trackId.equals(id))).getSingleOrNull();
-        await (_db.update(_db.tracks)..where((t) => t.id.equals(id)))
-            .write(const TracksCompanion(lyricsPlain: Value(null), lyricsSynced: Value(null)));
-        await (_db.update(_db.trackEnrich)..where((e) => e.trackId.equals(id))).write(const TrackEnrichCompanion(
-            lyricsByUser: Value(false), lyricsNoneAt: Value(null), syncedNoneAt: Value(null)));
-        return (
-          plain: t.lyricsPlain,
-          synced: t.lyricsSynced,
-          byUser: e?.lyricsByUser ?? false,
-          noneAt: e?.lyricsNoneAt,
-          syncedNoneAt: e?.syncedNoneAt,
-        );
-      });
+    final t = await (_db.select(
+      _db.tracks,
+    )..where((t) => t.id.equals(id))).getSingle();
+    final e = await (_db.select(
+      _db.trackEnrich,
+    )..where((e) => e.trackId.equals(id))).getSingleOrNull();
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      const TracksCompanion(
+        lyricsPlain: Value(null),
+        lyricsSynced: Value(null),
+      ),
+    );
+    await (_db.update(
+      _db.trackEnrich,
+    )..where((e) => e.trackId.equals(id))).write(
+      const TrackEnrichCompanion(
+        lyricsByUser: Value(false),
+        lyricsNoneAt: Value(null),
+        syncedNoneAt: Value(null),
+      ),
+    );
+    return (
+      plain: t.lyricsPlain,
+      synced: t.lyricsSynced,
+      byUser: e?.lyricsByUser ?? false,
+      noneAt: e?.lyricsNoneAt,
+      syncedNoneAt: e?.syncedNoneAt,
+    );
+  });
 
   /// Puts back exactly what [clearLyrics] took away.
-  Future<void> restoreLyrics(int id, LyricsSnapshot s) => _db.transaction(() async {
-        await (_db.update(_db.tracks)..where((t) => t.id.equals(id)))
-            .write(TracksCompanion(lyricsPlain: Value(s.plain), lyricsSynced: Value(s.synced)));
-        await (_db.update(_db.trackEnrich)..where((e) => e.trackId.equals(id))).write(TrackEnrichCompanion(
-            lyricsByUser: Value(s.byUser), lyricsNoneAt: Value(s.noneAt), syncedNoneAt: Value(s.syncedNoneAt)));
+  Future<void> restoreLyrics(int id, LyricsSnapshot s) =>
+      _db.transaction(() async {
+        await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+          TracksCompanion(
+            lyricsPlain: Value(s.plain),
+            lyricsSynced: Value(s.synced),
+          ),
+        );
+        await (_db.update(
+          _db.trackEnrich,
+        )..where((e) => e.trackId.equals(id))).write(
+          TrackEnrichCompanion(
+            lyricsByUser: Value(s.byUser),
+            lyricsNoneAt: Value(s.noneAt),
+            syncedNoneAt: Value(s.syncedNoneAt),
+          ),
+        );
       });
 
   /// Stores the «curiosities» text of one track (null clears it).

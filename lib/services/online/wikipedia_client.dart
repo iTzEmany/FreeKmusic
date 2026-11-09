@@ -31,8 +31,12 @@ class WikipediaClient {
   /// is looked up by its likely titles first («Title», «Title (Artist song)»,
   /// «Title (singolo)»…), all in one request per language; only when none of
   /// them exists is the title searched for in words.
-  Future<Curiosity?> findSong(String title, String artist, String lang,
-      {CancelToken? cancel}) async {
+  Future<Curiosity?> findSong(
+    String title,
+    String artist,
+    String lang, {
+    CancelToken? cancel,
+  }) async {
     // The title as it is, without a «- Remastered 2011» tail, and without a
     // «(Radio Edit)» / «(Live)» group: the article has the plain name.
     final head = title.split(RegExp(r'\s+[-–—]\s+')).first.trim();
@@ -48,7 +52,9 @@ class WikipediaClient {
 
     bool accept(String page, String extract) {
       final pageName = matchKey(_withoutQualifier(page));
-      if (pageName == by && !keys.contains(pageName)) return false; // the artist's page
+      if (pageName == by && !keys.contains(pageName)) {
+        return false; // the artist's page
+      }
       final lead = matchKey(extract.substring(0, extract.length.clamp(0, 600)));
       // The same name as the song: it has to be about music too (a page
       // «Fade to Black» can be about a film term), i.e. name the artist or
@@ -86,7 +92,8 @@ class WikipediaClient {
               '(canzone)',
             ];
       return [
-        for (final n in names.take(2)) for (final f in forms) '$n $f',
+        for (final n in names.take(2))
+          for (final f in forms) '$n $f',
         ...names,
       ].take(_maxTitles).toList();
     }
@@ -97,7 +104,9 @@ class WikipediaClient {
       titlesFor: titlesFor,
       searches: (l) {
         // OR groups: every word of an AND list would have to be on the page.
-        final words = l == 'en' ? '(song OR single)' : '(canzone OR singolo OR brano OR song)';
+        final words = l == 'en'
+            ? '(song OR single)'
+            : '(canzone OR singolo OR brano OR song)';
         return ['"${names.first}" $artist $words'];
       },
       accept: accept,
@@ -106,8 +115,11 @@ class WikipediaClient {
 
   /// The article about the artist or band, found by its name («Bob Dylan»,
   /// «Bob Dylan (cantante)», «Sticky Fingers (gruppo musicale)»…).
-  Future<Curiosity?> findArtist(String artist, String lang,
-      {CancelToken? cancel}) async {
+  Future<Curiosity?> findArtist(
+    String artist,
+    String lang, {
+    CancelToken? cancel,
+  }) async {
     final name = extractPrimaryArtist(artist).trim();
     final key = matchKey(name);
     if (key.isEmpty) return null;
@@ -115,10 +127,19 @@ class WikipediaClient {
     List<String> titlesFor(String l) {
       final forms = l == 'en'
           ? ['(musician)', '(band)', '(singer)', '(rapper)', '(group)']
-          : ['(cantante)', '(gruppo musicale)', '(musicista)', '(cantautore)', '(rapper)', '(band)', '(duo musicale)'];
+          : [
+              '(cantante)',
+              '(gruppo musicale)',
+              '(musicista)',
+              '(cantautore)',
+              '(rapper)',
+              '(band)',
+              '(duo musicale)',
+            ];
       return [
         ...spellings,
-        for (final n in spellings) for (final f in forms) '$n $f',
+        for (final n in spellings)
+          for (final f in forms) '$n $f',
       ].take(_maxTitles).toList();
     }
 
@@ -126,8 +147,12 @@ class WikipediaClient {
       lang,
       cancel,
       titlesFor: titlesFor,
-      searches: (l) => ['"$name" (cantante OR gruppo OR band OR singer OR musician OR rapper)'],
-      accept: (page, extract) => matchKey(_withoutQualifier(page)) == key && _musicWords.hasMatch(_music(extract)),
+      searches: (l) => [
+        '"$name" (cantante OR gruppo OR band OR singer OR musician OR rapper)',
+      ],
+      accept: (page, extract) =>
+          matchKey(_withoutQualifier(page)) == key &&
+          _musicWords.hasMatch(_music(extract)),
     );
   }
 
@@ -137,9 +162,12 @@ class WikipediaClient {
       _byTitles(lang, [title], (_, _) => true, cancel);
 
   /// Kept for the callers that want the song's article.
-  Future<Curiosity?> find(String title, String artist, String lang,
-          {CancelToken? cancel}) =>
-      findSong(title, artist, lang, cancel: cancel);
+  Future<Curiosity?> find(
+    String title,
+    String artist,
+    String lang, {
+    CancelToken? cancel,
+  }) => findSong(title, artist, lang, cancel: cancel);
 
   /// The api takes at most 20 extracts per request.
   static const _maxTitles = 20;
@@ -182,22 +210,28 @@ class WikipediaClient {
 
   /// The pages with exactly these [titles] (redirects followed), in the order
   /// of [titles]; a title that does not exist is simply absent. One request.
-  Future<Curiosity?> _byTitles(String lang, List<String> titles,
-      bool Function(String page, String extract) accept, CancelToken? cancel) async {
+  Future<Curiosity?> _byTitles(
+    String lang,
+    List<String> titles,
+    bool Function(String page, String extract) accept,
+    CancelToken? cancel,
+  ) async {
     if (titles.isEmpty) return null;
     final api = 'https://$lang.wikipedia.org/w/api.php';
-    final found = await _web.getJson(api,
-        query: {
-          'action': 'query',
-          'titles': titles.join('|'),
-          'prop': 'extracts',
-          'exintro': '1',
-          'explaintext': '1',
-          'exlimit': 'max',
-          'redirects': '1',
-          'format': 'json',
-        },
-        cancel: cancel);
+    final found = await _web.getJson(
+      api,
+      query: {
+        'action': 'query',
+        'titles': titles.join('|'),
+        'prop': 'extracts',
+        'exintro': '1',
+        'explaintext': '1',
+        'exlimit': 'max',
+        'redirects': '1',
+        'format': 'json',
+      },
+      cancel: cancel,
+    );
     final q = found is Map ? found['query'] : null;
     final pages = q is Map ? q['pages'] : null;
     if (pages is! Map) return null;
@@ -221,15 +255,21 @@ class WikipediaClient {
       }
       rank.putIfAbsent(t, () => i);
     }
-    final ranked = [
-      for (final v in pages.values)
-        if (v is Map && v['title'] is String) v,
-    ]..sort((x, y) => (rank[x['title']] ?? 99).compareTo(rank[y['title']] ?? 99));
+    final ranked =
+        [
+          for (final v in pages.values)
+            if (v is Map && v['title'] is String) v,
+        ]..sort(
+          (x, y) => (rank[x['title']] ?? 99).compareTo(rank[y['title']] ?? 99),
+        );
     return _firstAccepted(lang, ranked, accept);
   }
 
-  Curiosity? _firstAccepted(String lang, List<Map> ranked,
-      bool Function(String page, String extract) accept) {
+  Curiosity? _firstAccepted(
+    String lang,
+    List<Map> ranked,
+    bool Function(String page, String extract) accept,
+  ) {
     for (final h in ranked) {
       final page = h['title'] as String;
       final extract = h['extract'] as String?;
@@ -242,7 +282,9 @@ class WikipediaClient {
       }
       if (!accept(page, extract)) continue;
       final url = Uri.https(
-          '$lang.wikipedia.org', '/wiki/${page.replaceAll(' ', '_')}');
+        '$lang.wikipedia.org',
+        '/wiki/${page.replaceAll(' ', '_')}',
+      );
       return Curiosity(_truncate(extract.trim()), url, lang);
     }
     return null;
@@ -251,32 +293,42 @@ class WikipediaClient {
   /// One request per language: the search and the intro of every hit come back
   /// together (`generator=search` + `prop=extracts`); Wikipedia answers bursts
   /// with HTTP 429.
-  Future<Curiosity?> _findIn(String lang, String search,
-      bool Function(String page, String extract) accept, CancelToken? cancel) async {
+  Future<Curiosity?> _findIn(
+    String lang,
+    String search,
+    bool Function(String page, String extract) accept,
+    CancelToken? cancel,
+  ) async {
     final api = 'https://$lang.wikipedia.org/w/api.php';
-    final found = await _web.getJson(api,
-        query: {
-          'action': 'query',
-          'generator': 'search',
-          'gsrsearch': search,
-          'gsrlimit': '5',
-          'prop': 'extracts',
-          'exintro': '1',
-          'explaintext': '1',
-          'exlimit': '5',
-          'redirects': '1',
-          'format': 'json',
-        },
-        cancel: cancel);
+    final found = await _web.getJson(
+      api,
+      query: {
+        'action': 'query',
+        'generator': 'search',
+        'gsrsearch': search,
+        'gsrlimit': '5',
+        'prop': 'extracts',
+        'exintro': '1',
+        'explaintext': '1',
+        'exlimit': '5',
+        'redirects': '1',
+        'format': 'json',
+      },
+      cancel: cancel,
+    );
     final pages = (found is Map ? found['query'] : null) is Map
         ? ((found as Map)['query'] as Map)['pages']
         : null;
     if (pages is! Map) return null;
     // Back in the order of the search ranking.
-    final ranked = [
-      for (final v in pages.values)
-        if (v is Map && v['title'] is String) v,
-    ]..sort((x, y) => ((x['index'] as num?) ?? 0).compareTo((y['index'] as num?) ?? 0));
+    final ranked =
+        [
+          for (final v in pages.values)
+            if (v is Map && v['title'] is String) v,
+        ]..sort(
+          (x, y) =>
+              ((x['index'] as num?) ?? 0).compareTo((y['index'] as num?) ?? 0),
+        );
     return _firstAccepted(lang, ranked, accept);
   }
 

@@ -17,8 +17,9 @@ class StatsPeriod {
       StatsPeriod._(DateTime(year), DateTime(year + 1), true);
 
   /// The month or the year [now] falls in.
-  factory StatsPeriod.containing(DateTime now, {required bool year}) =>
-      year ? StatsPeriod.year(now.year) : StatsPeriod.month(now.year, now.month);
+  factory StatsPeriod.containing(DateTime now, {required bool year}) => year
+      ? StatsPeriod.year(now.year)
+      : StatsPeriod.month(now.year, now.month);
 
   final DateTime start, end;
   final bool isYear;
@@ -39,7 +40,11 @@ class StatsPeriod {
   List<DateTime> get bucketStarts => isYear
       ? [for (var m = 1; m <= 12; m++) DateTime(start.year, m)]
       : [
-          for (var d = 1; DateTime(start.year, start.month, d).isBefore(end); d++)
+          for (
+            var d = 1;
+            DateTime(start.year, start.month, d).isBefore(end);
+            d++
+          )
             DateTime(start.year, start.month, d),
         ];
 }
@@ -97,7 +102,8 @@ class PeriodStats {
 
 /// [StatsQueries.listensSince]. `CROSS JOIN` fixes the order: the period first
 /// through `plays_at`; left to itself the planner starts from `tracks`.
-const listensSinceSql = 'SELECT p.track_id AS id, p.played_at AS at FROM plays p '
+const listensSinceSql =
+    'SELECT p.track_id AS id, p.played_at AS at FROM plays p '
     'CROSS JOIN tracks t ON t.id = p.track_id '
     'WHERE p.played_at >= ? AND t.kind = $kMusicKind AND t.missing = 0 AND t.ignored = 0';
 
@@ -110,19 +116,24 @@ class StatsQueries {
   final AppDatabase _db;
 
   Future<List<QueryRow>> _q(String sql, List<Variable> vars) => _db
-      .customSelect(sql, variables: vars, readsFrom: {_db.plays, _db.tracks}).get();
+      .customSelect(sql, variables: vars, readsFrom: {_db.plays, _db.tracks})
+      .get();
 
   /// The stats of [p], computed again whenever the history changes.
   Stream<PeriodStats> watchPeriod(StatsPeriod p) async* {
     yield await period(p);
-    await for (final _ in _db.tableUpdates(TableUpdateQuery.onTable(_db.plays))) {
+    await for (final _ in _db.tableUpdates(
+      TableUpdateQuery.onTable(_db.plays),
+    )) {
       yield await period(p);
     }
   }
 
   Stream<int> watchPlaysIn(StatsPeriod p) async* {
     yield await playsIn(p);
-    await for (final _ in _db.tableUpdates(TableUpdateQuery.onTable(_db.plays))) {
+    await for (final _ in _db.tableUpdates(
+      TableUpdateQuery.onTable(_db.plays),
+    )) {
       yield await playsIn(p);
     }
   }
@@ -166,7 +177,8 @@ class StatsQueries {
     }
 
     final artistGroups = <String, ({int n, int ms, String? name})>{};
-    final albumGroups = <String, ({int n, int ms, String? name, String? artist})>{};
+    final albumGroups =
+        <String, ({int n, int ms, String? name, String? artist})>{};
     for (final r in perTrack) {
       final d = r.data;
       final n = d['n']! as int;
@@ -241,11 +253,19 @@ class StatsQueries {
     ];
 
     // Artists and albums were grouped above, as the library groups them.
-    final artistEntries = (artistGroups.entries.toList()
-          ..sort((a, b) => _byCount(a.value.n, a.value.ms, a.key, b.value.n,
-              b.value.ms, b.key)))
-        .take(top)
-        .toList();
+    final artistEntries =
+        (artistGroups.entries.toList()..sort(
+              (a, b) => _byCount(
+                a.value.n,
+                a.value.ms,
+                a.key,
+                b.value.n,
+                b.value.ms,
+                b.key,
+              ),
+            ))
+            .take(top)
+            .toList();
     // The artist's cover is the library's: the one most present among the
     // artist's tracks (ties by key).
     final artistCover = <String, ({String cover, int n})>{};
@@ -273,12 +293,19 @@ class StatsQueries {
           coverKey: artistCover[e.key]?.cover,
         ),
     ];
-    final albumEntries = (albumGroups.entries.toList()
-          ..sort((a, b) => _byCount(
-              a.value.n, a.value.ms, (a.value.name ?? '').toLowerCase(),
-              b.value.n, b.value.ms, (b.value.name ?? '').toLowerCase())))
-        .take(top)
-        .toList();
+    final albumEntries =
+        (albumGroups.entries.toList()..sort(
+              (a, b) => _byCount(
+                a.value.n,
+                a.value.ms,
+                (a.value.name ?? '').toLowerCase(),
+                b.value.n,
+                b.value.ms,
+                (b.value.name ?? '').toLowerCase(),
+              ),
+            ))
+            .take(top)
+            .toList();
     final covers = albumEntries.isEmpty
         ? const <String, String?>{}
         : {
@@ -304,23 +331,23 @@ class StatsQueries {
     // The bars: one range sum per day or month, bounded by the local midnights
     // (exact, and the clock changes cannot misplace a listen). Each is an
     // index range, so all together they read the period once.
-    final bounds = [...p.bucketStarts.map((d) => d.millisecondsSinceEpoch), p.endMs];
+    final bounds = [
+      ...p.bucketStarts.map((d) => d.millisecondsSinceEpoch),
+      p.endMs,
+    ];
     final sums = [
       for (var i = 0; i + 1 < bounds.length; i++)
         '(SELECT SUM(ms_played) FROM plays WHERE played_at >= ? AND played_at < ?) AS b$i',
     ];
-    final bucketRow = (await _q(
-      'SELECT ${sums.join(', ')}',
-      [
-        for (var i = 0; i + 1 < bounds.length; i++) ...[
-          Variable.withInt(bounds[i]),
-          Variable.withInt(bounds[i + 1]),
-        ],
+    final bucketRow = (await _q('SELECT ${sums.join(', ')}', [
+      for (var i = 0; i + 1 < bounds.length; i++) ...[
+        Variable.withInt(bounds[i]),
+        Variable.withInt(bounds[i + 1]),
       ],
-    ))
-        .single;
+    ])).single;
     final perBucket = [
-      for (var i = 0; i + 1 < bounds.length; i++) bucketRow.read<int?>('b$i') ?? 0,
+      for (var i = 0; i + 1 < bounds.length; i++)
+        bucketRow.read<int?>('b$i') ?? 0,
     ];
 
     // The hour of the day: listens grouped by hour since the epoch in SQL (at
@@ -335,7 +362,9 @@ class StatsQueries {
     );
     final perHour = List.filled(24, 0);
     for (final r in hours) {
-      final at = DateTime.fromMillisecondsSinceEpoch(r.read<int>('h') * 3600000);
+      final at = DateTime.fromMillisecondsSinceEpoch(
+        r.read<int>('h') * 3600000,
+      );
       perHour[at.hour] += r.read<int>('n');
     }
     var favouriteHour = 0;
@@ -370,11 +399,18 @@ class StatsQueries {
   /// Listens of library music since [from] as (track id, time), for the
   /// daylist: `plays_at` bounds the read to the period, the join keeps music
   /// that is still there (not missing, not hidden).
-  Future<List<({int trackId, DateTime playedAt})>> listensSince(DateTime from) async {
-    final rows = await _q(listensSinceSql, [Variable.withInt(from.millisecondsSinceEpoch)]);
+  Future<List<({int trackId, DateTime playedAt})>> listensSince(
+    DateTime from,
+  ) async {
+    final rows = await _q(listensSinceSql, [
+      Variable.withInt(from.millisecondsSinceEpoch),
+    ]);
     return [
       for (final r in rows)
-        (trackId: r.read<int>('id'), playedAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('at'))),
+        (
+          trackId: r.read<int>('id'),
+          playedAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('at')),
+        ),
     ];
   }
 
@@ -382,19 +418,27 @@ class StatsQueries {
   /// (`artistKey`, as the library names them). The
   /// measure is the time really played (listens break ties); a history that
   /// has no listens at all falls back to the sum of `play_count`.
-  Future<List<ListenedArtist>> topArtistsSince(DateTime from, {int limit = 15}) async {
-    final hasHistory = (await _q('SELECT 1 AS x FROM plays LIMIT 1', const [])).isNotEmpty;
+  Future<List<ListenedArtist>> topArtistsSince(
+    DateTime from, {
+    int limit = 15,
+  }) async {
+    final hasHistory = (await _q(
+      'SELECT 1 AS x FROM plays LIMIT 1',
+      const [],
+    )).isNotEmpty;
     final rows = hasHistory
         ? await _q(
             'SELECT t.artist AS artist, COUNT(*) AS n, SUM(p.ms_played) AS ms '
             'FROM plays p JOIN tracks t ON t.id = p.track_id '
             'WHERE p.played_at >= ? AND t.kind IN ($_listenKinds) AND t.artist IS NOT NULL '
             'GROUP BY t.artist',
-            [Variable.withInt(from.millisecondsSinceEpoch)])
+            [Variable.withInt(from.millisecondsSinceEpoch)],
+          )
         : await _q(
             'SELECT artist, SUM(play_count) AS n, 0 AS ms FROM tracks '
             'WHERE kind IN ($_listenKinds) AND artist IS NOT NULL AND play_count > 0 GROUP BY artist',
-            const []);
+            const [],
+          );
     final groups = <String, ({String name, int n, int ms, int best})>{};
     for (final r in rows) {
       final artist = (r.data['artist']! as String).trim();
@@ -412,15 +456,16 @@ class StatsQueries {
         best: better ? n : cur.best,
       );
     }
-    final out = [
-      for (final e in groups.entries)
-        ListenedArtist(e.key, e.value.name, e.value.n, e.value.ms),
-    ]..sort((a, b) {
-        final c = b.playedMs.compareTo(a.playedMs);
-        if (c != 0) return c;
-        final n = b.plays.compareTo(a.plays);
-        return n != 0 ? n : a.key.compareTo(b.key);
-      });
+    final out =
+        [
+          for (final e in groups.entries)
+            ListenedArtist(e.key, e.value.name, e.value.n, e.value.ms),
+        ]..sort((a, b) {
+          final c = b.playedMs.compareTo(a.playedMs);
+          if (c != 0) return c;
+          final n = b.plays.compareTo(a.plays);
+          return n != 0 ? n : a.key.compareTo(b.key);
+        });
     return out.take(limit).toList();
   }
 }
@@ -460,4 +505,3 @@ int _byCount(int an, int ams, String asort, int bn, int bms, String bsort) {
   final m = bms.compareTo(ams);
   return m != 0 ? m : asort.compareTo(bsort);
 }
-

@@ -203,15 +203,19 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   List<Widget> _cards(bool online, Track track) {
     if (!_cardsReady) return const [SizedBox(height: _cardsPlaceholderHeight)];
     // A streamed track gets the cards of its shadow row (real id); a radio none.
-    final radio = online && ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true;
-    final row = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
+    final radio =
+        online && ref.watch(onlineEntriesProvider)?.isRadioId(track.id) == true;
+    final row = isOnlineId(track.id)
+        ? ref.watch(currentShadowRowProvider)
+        : track;
     final wait = !radio && row == null;
     return [
       RiseIn(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (wait) StreamCardsWait(key: ValueKey(track.id), trackId: track.id),
+            if (wait)
+              StreamCardsWait(key: ValueKey(track.id), trackId: track.id),
             if (row != null) ...[
               LyricsCard(track: row),
               const SizedBox(height: 12),

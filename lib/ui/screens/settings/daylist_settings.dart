@@ -13,7 +13,10 @@ import '../../widgets/confirm.dart';
 import '../daylist/daylist_labels.dart';
 
 String _summary(BuildContext context, DaylistSlot s) => s.enabled
-    ? context.l10n.daylistSlotSummary(s.prefer.take(3).map(genreDisplay).join(', '), s.sharePercent)
+    ? context.l10n.daylistSlotSummary(
+        s.prefer.take(3).map(genreDisplay).join(', '),
+        s.sharePercent,
+      )
     : context.l10n.daylistSlotOff;
 
 /// Settings > Daylist: intro and the 8 slots (tap opens the editor, the
@@ -31,15 +34,30 @@ class DaylistSlotsTiles extends ConsumerWidget {
     return Column(
       children: [
         ListTile(
-          title: Text(l.daylistIntro, style: text.bodyMedium?.copyWith(color: cc.textMuted)),
+          title: Text(
+            l.daylistIntro,
+            style: text.bodyMedium?.copyWith(color: cc.textMuted),
+          ),
         ),
         for (var i = 0; i < DaylistConfig.slotCount; i++)
-          _slotRow(context, ref, cfg, i, warn: now != null && now.slotIndex == i && now.result.tooFew),
+          _slotRow(
+            context,
+            ref,
+            cfg,
+            i,
+            warn: now != null && now.slotIndex == i && now.result.tooFew,
+          ),
       ],
     );
   }
 
-  Widget _slotRow(BuildContext context, WidgetRef ref, DaylistConfig cfg, int i, {required bool warn}) {
+  Widget _slotRow(
+    BuildContext context,
+    WidgetRef ref,
+    DaylistConfig cfg,
+    int i, {
+    required bool warn,
+  }) {
     final l = context.l10n;
     final cc = context.cc;
     final text = Theme.of(context).textTheme;
@@ -63,12 +81,20 @@ class DaylistSlotsTiles extends ConsumerWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 64),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: CcDims.margin,
+                    vertical: CcDims.gap8,
+                  ),
                   child: Row(
                     children: [
                       SizedBox(
                         width: 56,
-                        child: Text(time, style: text.titleSmall?.copyWith(color: cc.accentSoft)),
+                        child: Text(
+                          time,
+                          style: text.titleSmall?.copyWith(
+                            color: cc.accentSoft,
+                          ),
+                        ),
                       ),
                       Expanded(
                         child: Column(
@@ -79,10 +105,18 @@ class DaylistSlotsTiles extends ConsumerWidget {
                               _summary(context, s),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: text.bodySmall?.copyWith(color: cc.textMuted),
+                              style: text.bodySmall?.copyWith(
+                                color: cc.textMuted,
+                              ),
                             ),
                             // D-473: the slot of the moment, when it has too few songs.
-                            if (short) Text(l.daylistTooFewWarn, style: text.bodySmall?.copyWith(color: cc.error)),
+                            if (short)
+                              Text(
+                                l.daylistTooFewWarn,
+                                style: text.bodySmall?.copyWith(
+                                  color: cc.error,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -96,11 +130,15 @@ class DaylistSlotsTiles extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(right: CcDims.gap12),
           child: Semantics(
-            label: s.enabled ? l.daylistSwitchOn(name) : l.daylistSwitchOff(name),
+            label: s.enabled
+                ? l.daylistSwitchOn(name)
+                : l.daylistSwitchOff(name),
             child: Switch(
               key: ValueKey('daylist-switch-$i'),
               value: s.enabled,
-              onChanged: (v) => ref.read(daylistConfigProvider.notifier).setSlot(i, s.copyWith(enabled: v)),
+              onChanged: (v) => ref
+                  .read(daylistConfigProvider.notifier)
+                  .setSlot(i, s.copyWith(enabled: v)),
             ),
           ),
         ),
@@ -123,7 +161,8 @@ class DaylistExtraTiles extends ConsumerWidget {
           title: Text(l.daylistMoodTable),
           subtitle: Text(l.daylistMoodTableSub),
           trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: () => ShellNav.open<void>(context, const DaylistMoodTableScreen()),
+          onTap: () =>
+              ShellNav.open<void>(context, const DaylistMoodTableScreen()),
         ),
         ListTile(
           leading: Icon(Icons.restart_alt_rounded, color: cc.error),
@@ -166,7 +205,8 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
 
   int get _i => widget.index;
 
-  void _set(DaylistSlot s) => ref.read(daylistConfigProvider.notifier).setSlot(_i, s);
+  void _set(DaylistSlot s) =>
+      ref.read(daylistConfigProvider.notifier).setSlot(_i, s);
 
   @override
   Widget build(BuildContext context) {
@@ -181,11 +221,18 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
     final suggested = (50 * share / 100).round();
     void move(int by) {
       final h = (s.startHour + by + 24) % 24;
-      if (cfg.canStart(_i, h)) ref.read(daylistConfigProvider.notifier).setStart(_i, h);
+      if (cfg.canStart(_i, h)) {
+        ref.read(daylistConfigProvider.notifier).setStart(_i, h);
+      }
     }
 
     Widget group(String title) => Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, 20, CcDims.margin, CcDims.gap8),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        20,
+        CcDims.margin,
+        CcDims.gap8,
+      ),
       child: Text(title, style: text.titleMedium),
     );
 
@@ -199,7 +246,8 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
         for (final g in table.genres)
           if (!taken.contains(matchKey(g))) g,
       ];
-      void update(Set<String> v) => _set(prefer ? s.copyWith(prefer: v) : s.copyWith(avoid: v));
+      void update(Set<String> v) =>
+          _set(prefer ? s.copyWith(prefer: v) : s.copyWith(avoid: v));
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
         child: Column(
@@ -213,7 +261,9 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                   Semantics(
                     button: true,
                     excludeSemantics: true,
-                    label: prefer ? l.daylistRemovePrefer(genreDisplay(g)) : l.daylistRemoveAvoid(genreDisplay(g)),
+                    label: prefer
+                        ? l.daylistRemovePrefer(genreDisplay(g))
+                        : l.daylistRemoveAvoid(genreDisplay(g)),
                     onTap: () => update({...chosen}..remove(g)),
                     child: ActionChip(
                       key: ValueKey('daylist-$key-$g'),
@@ -227,12 +277,14 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                   button: true,
                   excludeSemantics: true,
                   label: prefer ? l.daylistAddPrefer : l.daylistAddAvoid,
-                  onTap: () => setState(() => _picker = _picker == key ? null : key),
+                  onTap: () =>
+                      setState(() => _picker = _picker == key ? null : key),
                   child: ActionChip(
                     key: ValueKey('daylist-add-$key'),
                     label: Text(l.daylistAdd),
                     avatar: const Icon(Icons.add_rounded, size: 16),
-                    onPressed: () => setState(() => _picker = _picker == key ? null : key),
+                    onPressed: () =>
+                        setState(() => _picker = _picker == key ? null : key),
                   ),
                 ),
               ],
@@ -278,7 +330,11 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
           SwitchListTile(
             key: const ValueKey('daylist-editor-switch'),
             title: Text(l.daylistSlotSwitch),
-            subtitle: Text(s.enabled ? l.daylistRegenAt(daylistHour(s.startHour)) : l.daylistNoCard),
+            subtitle: Text(
+              s.enabled
+                  ? l.daylistRegenAt(daylistHour(s.startHour))
+                  : l.daylistNoCard,
+            ),
             value: s.enabled,
             onChanged: (v) => _set(s.copyWith(enabled: v)),
           ),
@@ -292,14 +348,24 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                   key: const ValueKey('daylist-earlier'),
                   tooltip: l.daylistEarlier,
                   icon: const Icon(Icons.remove_rounded),
-                  onPressed: cfg.canStart(_i, (s.startHour + 23) % 24) ? () => move(-1) : null,
+                  onPressed: cfg.canStart(_i, (s.startHour + 23) % 24)
+                      ? () => move(-1)
+                      : null,
                 ),
-                Semantics(liveRegion: true, child: Text(daylistHour(s.startHour), style: text.titleMedium)),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    daylistHour(s.startHour),
+                    style: text.titleMedium,
+                  ),
+                ),
                 IconButton(
                   key: const ValueKey('daylist-later'),
                   tooltip: l.daylistLater,
                   icon: const Icon(Icons.add_rounded),
-                  onPressed: cfg.canStart(_i, (s.startHour + 1) % 24) ? () => move(1) : null,
+                  onPressed: cfg.canStart(_i, (s.startHour + 1) % 24)
+                      ? () => move(1)
+                      : null,
                 ),
               ],
             ),
@@ -320,7 +386,11 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                     key: ValueKey('daylist-mood-${m.name}'),
                     label: Text(daylistMoodName(l, m)),
                     selected: s.moods.contains(m),
-                    onSelected: (v) => _set(s.copyWith(moods: v ? {...s.moods, m} : ({...s.moods}..remove(m)))),
+                    onSelected: (v) => _set(
+                      s.copyWith(
+                        moods: v ? {...s.moods, m} : ({...s.moods}..remove(m)),
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -368,7 +438,13 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                 key: const ValueKey('daylist-reset-slot'),
                 onPressed: () {
                   final d = DaylistConfig.defaults().slots[_i];
-                  _set(d.copyWith(startHour: cfg.canStart(_i, d.startHour) ? d.startHour : s.startHour));
+                  _set(
+                    d.copyWith(
+                      startHour: cfg.canStart(_i, d.startHour)
+                          ? d.startHour
+                          : s.startHour,
+                    ),
+                  );
                 },
                 child: Text(l.daylistResetSlot),
               ),
@@ -385,10 +461,12 @@ class DaylistMoodTableScreen extends ConsumerStatefulWidget {
   const DaylistMoodTableScreen({super.key});
 
   @override
-  ConsumerState<DaylistMoodTableScreen> createState() => _DaylistMoodTableScreenState();
+  ConsumerState<DaylistMoodTableScreen> createState() =>
+      _DaylistMoodTableScreenState();
 }
 
-class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen> {
+class _DaylistMoodTableScreenState
+    extends ConsumerState<DaylistMoodTableScreen> {
   String _q = '';
 
   @override
@@ -410,18 +488,29 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
         children: [
           Padding(
             padding: const EdgeInsets.all(CcDims.margin),
-            child: Text(l.daylistMoodHelp, style: text.bodyMedium?.copyWith(color: cc.textMuted)),
+            child: Text(
+              l.daylistMoodHelp,
+              style: text.bodyMedium?.copyWith(color: cc.textMuted),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
             child: TextField(
               key: const ValueKey('daylist-genre-search'),
-              decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: l.daylistGenreSearch),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: l.daylistGenreSearch,
+              ),
               onChanged: (v) => setState(() => _q = v),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap4),
+            padding: const EdgeInsets.fromLTRB(
+              CcDims.margin,
+              CcDims.gap8,
+              CcDims.margin,
+              CcDims.gap4,
+            ),
             child: Text(
               l.daylistGenreCount(shown.length, all.length),
               style: text.bodySmall?.copyWith(color: cc.textMuted),
@@ -430,7 +519,10 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
           if (shown.isEmpty)
             Padding(
               padding: const EdgeInsets.all(CcDims.margin),
-              child: Text(l.daylistNoGenre(_q.trim()), style: text.bodyMedium?.copyWith(color: cc.textMuted)),
+              child: Text(
+                l.daylistNoGenre(_q.trim()),
+                style: text.bodyMedium?.copyWith(color: cc.textMuted),
+              ),
             ),
           for (final g in shown) _genreBox(context, g, table.moodsOf(g)),
         ],
@@ -442,7 +534,10 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
     final l = context.l10n;
     final text = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CcDims.margin,
+        vertical: CcDims.gap8,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -450,7 +545,9 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
             children: [
               Expanded(child: Text(genreDisplay(g), style: text.titleSmall)),
               Text(
-                moods.isEmpty ? l.daylistNoMood : l.daylistMoodCount(moods.length),
+                moods.isEmpty
+                    ? l.daylistNoMood
+                    : l.daylistMoodCount(moods.length),
                 style: text.bodySmall?.copyWith(color: context.cc.textMuted),
               ),
             ],
@@ -461,14 +558,21 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
             children: [
               for (final m in Mood.values)
                 Semantics(
-                  label: l.daylistGenreMoodLabel(genreDisplay(g), daylistMoodName(l, m)),
+                  label: l.daylistGenreMoodLabel(
+                    genreDisplay(g),
+                    daylistMoodName(l, m),
+                  ),
                   excludeSemantics: true,
                   child: FilterChip(
                     key: ValueKey('daylist-genre-$g-${m.name}'),
                     label: Text(daylistMoodName(l, m)),
                     selected: moods.contains(m),
-                    onSelected: (v) =>
-                        ref.read(moodTableProvider.notifier).setMoods(g, v ? {...moods, m} : ({...moods}..remove(m))),
+                    onSelected: (v) => ref
+                        .read(moodTableProvider.notifier)
+                        .setMoods(
+                          g,
+                          v ? {...moods, m} : ({...moods}..remove(m)),
+                        ),
                   ),
                 ),
             ],

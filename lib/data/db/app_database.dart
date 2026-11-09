@@ -147,9 +147,12 @@ class AppDatabase extends _$AppDatabase {
         // Old test fixtures have a bare tracks table.
         final cols = await customSelect('PRAGMA table_info(tracks)').get();
         final names = cols.map((c) => c.read<String>('name')).toSet();
-        if (names.containsAll(
-          ['enrich_status', 'user_edited', 'lyrics_plain', 'lyrics_synced'],
-        )) {
+        if (names.containsAll([
+          'enrich_status',
+          'user_edited',
+          'lyrics_plain',
+          'lyrics_synced',
+        ])) {
           // "Not found" (status 2) becomes a dated mark (D-103).
           const noLyrics =
               "COALESCE(lyrics_plain, '') = '' AND COALESCE(lyrics_synced, '') = ''";
@@ -170,7 +173,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 16) {
         await m.createTable(trackGenres);
-        await customStatement('CREATE INDEX IF NOT EXISTS track_genres_genre ON track_genres (genre)');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS track_genres_genre ON track_genres (genre)',
+        );
         await m.createTable(artistCountries);
       }
       if (from < 17) {
@@ -181,7 +186,10 @@ class AppDatabase extends _$AppDatabase {
         // Existing podcasts keep source 0 (RSS) through the column default.
         // A table made by the step for < 9 above already has them (created from today's definition).
         final cols = {
-          for (final c in await customSelect("PRAGMA table_info('podcasts')").get()) c.read<String>('name'),
+          for (final c in await customSelect(
+            "PRAGMA table_info('podcasts')",
+          ).get())
+            c.read<String>('name'),
         };
         if (cols.isNotEmpty && !cols.contains('source')) {
           await m.addColumn(podcasts, podcasts.source);
@@ -191,7 +199,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 19) {
         // Existing podcasts stay followed (column default); a table just created above already has it.
         final cols = {
-          for (final c in await customSelect("PRAGMA table_info('podcasts')").get()) c.read<String>('name'),
+          for (final c in await customSelect(
+            "PRAGMA table_info('podcasts')",
+          ).get())
+            c.read<String>('name'),
         };
         if (cols.isNotEmpty && !cols.contains('followed')) {
           await m.addColumn(podcasts, podcasts.followed);

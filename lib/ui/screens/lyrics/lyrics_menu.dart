@@ -23,7 +23,8 @@ class LyricsMenuButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final hasLyrics = lyricsPlainText(track) != null;
-    final hasSynced = track.lyricsSynced != null && parseLrc(track.lyricsSynced!).isNotEmpty;
+    final hasSynced =
+        track.lyricsSynced != null && parseLrc(track.lyricsSynced!).isNotEmpty;
     final syncOn = !ref.watch(unsyncedLyricsProvider).contains(track.id);
     final ops = ref.read(trackOpsProvider);
     return IconButton(
@@ -42,7 +43,8 @@ class LyricsMenuButton extends ConsumerWidget {
               CcAction(
                 icon: Icons.timer_rounded,
                 label: l.lyricsSyncSwitch,
-                semanticsLabel: '${l.lyricsSyncSwitch}, ${syncOn ? l.lyricsSyncStateOn : l.lyricsSyncStateOff}',
+                semanticsLabel:
+                    '${l.lyricsSyncSwitch}, ${syncOn ? l.lyricsSyncStateOn : l.lyricsSyncStateOff}',
                 selected: syncOn,
                 onTap: () => ops.setLyricsSynced(track.id, !syncOn),
               ),
@@ -64,7 +66,11 @@ class LyricsMenuButton extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final undo = await ops.deleteLyrics(track.id);
-      showMsgOn(messenger, l.lyricsDeleted, action: SnackBarAction(label: l.undo, onPressed: undo));
+      showMsgOn(
+        messenger,
+        l.lyricsDeleted,
+        action: SnackBarAction(label: l.undo, onPressed: undo),
+      );
     } on Object catch (e, st) {
       AppLog.e('delete lyrics failed', e, st);
       showMsgOn(messenger, l.lyricsDeleteFailed);

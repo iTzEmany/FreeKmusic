@@ -27,10 +27,17 @@ String daylistMoodName(AppLocalizations l, Mood m) => switch (m) {
 String daylistHour(int h) => '${(h % 24).toString().padLeft(2, '0')}:00';
 
 /// The slot name and up to 3 genres, joined by commas (D-440).
-String daylistName(AppLocalizations l, int slotIndex, List<String> genres) =>
-    [daylistSlotName(l, slotIndex), ...genres.take(3).map(genreDisplay)].join(', ');
+String daylistName(AppLocalizations l, int slotIndex, List<String> genres) => [
+  daylistSlotName(l, slotIndex),
+  ...genres.take(3).map(genreDisplay),
+].join(', ');
 
-const _genreNames = {'bossa nova': 'Bossa nova', 'hip hop': 'Hip hop', 'lo fi': 'Lo-Fi', 'r and b': 'R&B'};
+const _genreNames = {
+  'bossa nova': 'Bossa nova',
+  'hip hop': 'Hip hop',
+  'lo fi': 'Lo-Fi',
+  'r and b': 'R&B',
+};
 
 /// [_genreNames] words that may be part of a longer key («r and b soul»).
 const _genreParts = {'r and b': 'R&B', 'lo fi': 'Lo-Fi'};
@@ -43,7 +50,10 @@ String genreDisplay(String g) {
   if (g != k || g.isEmpty) return g;
   var out = k;
   for (final e in _genreParts.entries) {
-    out = out.replaceAllMapped(RegExp('(^| )${e.key}(?= |\$)'), (m) => '${m[1]}${e.value}');
+    out = out.replaceAllMapped(
+      RegExp('(^| )${e.key}(?= |\$)'),
+      (m) => '${m[1]}${e.value}',
+    );
   }
   return out[0].toUpperCase() + out.substring(1);
 }

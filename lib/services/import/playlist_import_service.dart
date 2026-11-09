@@ -25,8 +25,8 @@ export '../../data/repositories/hidden_playlists.dart' show ytmAlbumSourceKind;
 
 const _tagPrefix = 'import:';
 
-
-String importTag(int importId, int rowIndex) => '$_tagPrefix$importId:$rowIndex';
+String importTag(int importId, int rowIndex) =>
+    '$_tagPrefix$importId:$rowIndex';
 
 /// `(importId, rowIndex)` of a download tag made by [importTag], else null.
 (int, int)? parseImportTag(String? tag) {
@@ -191,13 +191,17 @@ class PlaylistImportService {
 
   /// Starts the next wait for [reason]; false when the waits are used up.
   bool _waitBeforeRetry(ImportEventKind reason) {
-    final steps = reason == ImportEventKind.rateLimited ? rateLimitBackoff : networkBackoff;
+    final steps = reason == ImportEventKind.rateLimited
+        ? rateLimitBackoff
+        : networkBackoff;
     if (_retries >= steps.length) {
       _retries = 0;
       return false;
     }
     final d = steps[_retries++];
-    AppLog.i('import: waiting ${d.inSeconds} s (${reason.name}), try $_retries/${steps.length}');
+    AppLog.i(
+      'import: waiting ${d.inSeconds} s (${reason.name}), try $_retries/${steps.length}',
+    );
     _setWait((reason: reason, until: DateTime.now().add(d)));
     return true;
   }
@@ -252,15 +256,18 @@ class PlaylistImportService {
     int? first, previous;
     for (var n = 0; n < blocks.length; n++) {
       final id = await imports.create(
-          playlistId: playlistId,
-          sourceName: blocks.length == 1 ? label : '$label (${n + 1}/${blocks.length})',
-          rows: blocks[n],
-          sourceKind: csv.kind,
-          folderPath: options.folderPath,
-          numberFiles: options.numberFiles,
-          linkOnly: options.linkOnly,
-          planFirst: options.planFirst,
-          fetchCovers: options.fetchCovers);
+        playlistId: playlistId,
+        sourceName: blocks.length == 1
+            ? label
+            : '$label (${n + 1}/${blocks.length})',
+        rows: blocks[n],
+        sourceKind: csv.kind,
+        folderPath: options.folderPath,
+        numberFiles: options.numberFiles,
+        linkOnly: options.linkOnly,
+        planFirst: options.planFirst,
+        fetchCovers: options.fetchCovers,
+      );
       first ??= id;
       if (previous != null) {
         // Waits for the block before it: the playlist order stays right.
@@ -291,7 +298,9 @@ class PlaylistImportService {
   }) async {
     final label = name.trim().isEmpty ? 'YouTube' : name.trim();
     final playlistId = await playlists.create(label);
-    final rows = [for (var i = 0; i < results.length; i++) rowFromResult(i, results[i])];
+    final rows = [
+      for (var i = 0; i < results.length; i++) rowFromResult(i, results[i]),
+    ];
     final id = await imports.create(
       playlistId: playlistId,
       sourceName: label,
@@ -324,7 +333,9 @@ class PlaylistImportService {
   /// with the channel as the artist when the title does not say.
   static ImportRow rowFromResult(int index, YtResult r) {
     final c = cleanSearchQuery(r.title, r.channel);
-    final artist = r.artists.isNotEmpty ? r.artists : [if (c.artist.isNotEmpty) c.artist];
+    final artist = r.artists.isNotEmpty
+        ? r.artists
+        : [if (c.artist.isNotEmpty) c.artist];
     return ImportRow(
       index: index,
       title: c.title.isEmpty ? r.title : c.title,
@@ -336,7 +347,8 @@ class PlaylistImportService {
 
   final _etas = <int, EtaEstimator>{};
 
-  EtaEstimator _eta(int importId) => _etas.putIfAbsent(importId, EtaEstimator.new);
+  EtaEstimator _eta(int importId) =>
+      _etas.putIfAbsent(importId, EtaEstimator.new);
 
   /// Time left for [left] more rows of an import; null until it has a pace.
   Duration? etaFor(int importId, int left) => _etas[importId]?.remaining(left);
@@ -350,15 +362,18 @@ class PlaylistImportService {
   /// The tracks of [playlistId] that an earlier import put there, one item per
   /// track (the latest import wins), in their old row order.
   Future<List<PlaylistImportItem>> _trackedItems(int playlistId) async {
-    final inPlaylist =
-        (await playlists.watchTracks(playlistId).first).map((t) => t.id).toSet();
+    final inPlaylist = (await playlists.watchTracks(playlistId).first)
+        .map((t) => t.id)
+        .toSet();
     final all = await imports.forPlaylist(playlistId)
       ..sort((a, b) => a.id.compareTo(b.id));
     final latest = <int, PlaylistImportItem>{};
     for (final imp in all) {
       for (final it in await imports.items(imp.id)) {
         final t = it.trackId;
-        if (t != null && inPlaylist.contains(t) && it.state != ImportItemStatus.removed) {
+        if (t != null &&
+            inPlaylist.contains(t) &&
+            it.state != ImportItemStatus.removed) {
           latest[t] = it;
         }
       }
@@ -375,7 +390,8 @@ class PlaylistImportService {
     final latest = <String, PlaylistImportItem>{};
     for (final imp in all) {
       for (final it in await imports.items(imp.id)) {
-        final key = '${matchTitleKey(it.title)}|${matchKey(it.toRow().primaryArtist)}';
+        final key =
+            '${matchTitleKey(it.title)}|${matchKey(it.toRow().primaryArtist)}';
         if (it.state == ImportItemStatus.notFound ||
             it.state == ImportItemStatus.skipped) {
           latest[key] = it;
@@ -388,8 +404,11 @@ class PlaylistImportService {
   }
 
   Future<ImportDiff> _diffFor(ImportedPlaylist csv, int playlistId) async =>
-      diffImport(await _trackedItems(playlistId), _withAbsoluteLocations(csv),
-          parked: await _parkedItems(playlistId));
+      diffImport(
+        await _trackedItems(playlistId),
+        _withAbsoluteLocations(csv),
+        parked: await _parkedItems(playlistId),
+      );
 
   /// What a sync of [csv] into [playlistId] would add and take out.
   Future<ImportDiff> previewSync(ImportedPlaylist csv, int playlistId) =>
@@ -407,38 +426,49 @@ class PlaylistImportService {
     final diff = await _diffFor(csv, playlistId);
     for (final gone in diff.removed) {
       await playlists.removeTrack(playlistId, gone.trackId!);
-      await imports.setItem(gone.importId, gone.rowIndex,
-          status: ImportItemStatus.removed);
+      await imports.setItem(
+        gone.importId,
+        gone.rowIndex,
+        status: ImportItemStatus.removed,
+      );
     }
     final label = await playlists.nameOf(playlistId) ?? csv.name;
     // The new import holds the whole file: the rows kept from before are
     // already linked, so a new row lands next to its neighbours in the file.
     final id = await imports.create(
-        playlistId: playlistId,
-        sourceName: label,
-        rows: rows,
-        sourceKind: csv.kind,
-        folderPath: options.folderPath,
-        numberFiles: options.numberFiles,
-        linkOnly: options.linkOnly,
-        planFirst: options.planFirst,
-        fetchCovers: options.fetchCovers);
+      playlistId: playlistId,
+      sourceName: label,
+      rows: rows,
+      sourceKind: csv.kind,
+      folderPath: options.folderPath,
+      numberFiles: options.numberFiles,
+      linkOnly: options.linkOnly,
+      planFirst: options.planFirst,
+      fetchCovers: options.fetchCovers,
+    );
     for (final k in diff.kept) {
-      await imports.setItem(id, k.fresh.index,
-          status: ImportItemStatus.linked,
-          trackId: Value(k.old.trackId),
-          note: const Value(ImportNote.unchanged));
+      await imports.setItem(
+        id,
+        k.fresh.index,
+        status: ImportItemStatus.linked,
+        trackId: Value(k.old.trackId),
+        note: const Value(ImportNote.unchanged),
+      );
     }
     for (final k in diff.parked) {
-      await imports.setItem(id, k.fresh.index,
-          status: k.old.state,
-          videoId: Value(k.old.videoId),
-          candidates: Value(k.old.candidates),
-          score: Value(k.old.score),
-          note: Value(k.old.note));
+      await imports.setItem(
+        id,
+        k.fresh.index,
+        status: k.old.state,
+        videoId: Value(k.old.videoId),
+        candidates: Value(k.old.candidates),
+        score: Value(k.old.score),
+        note: Value(k.old.note),
+      );
     }
-    await playlists.reorderBy(
-        playlistId, {for (final k in diff.kept) k.old.trackId!: k.fresh.index});
+    await playlists.reorderBy(playlistId, {
+      for (final k in diff.kept) k.old.trackId!: k.fresh.index,
+    });
     _eta(id).start();
     if (diff.added.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
@@ -457,16 +487,22 @@ class PlaylistImportService {
     return [
       for (final r in list.rows)
         r.location != null && !isAbsoluteLocalPath(r.location!)
-            ? r.withLocation(p.posix.normalize(
-                '${base.replaceAll(r'\', '/')}/${r.location}'))
+            ? r.withLocation(
+                p.posix.normalize(
+                  '${base.replaceAll(r'\', '/')}/${r.location}',
+                ),
+              )
             : r,
     ];
   }
 
   Future<List<ImportRow>> _withoutAlreadyImported(
-      int playlistId, List<ImportRow> rows) async {
-    final inPlaylist =
-        (await playlists.watchTracks(playlistId).first).map((t) => t.id).toSet();
+    int playlistId,
+    List<ImportRow> rows,
+  ) async {
+    final inPlaylist = (await playlists.watchTracks(playlistId).first)
+        .map((t) => t.id)
+        .toSet();
     final isrcs = <String>{}, keys = <String>{};
     for (final imp in await imports.forPlaylist(playlistId)) {
       for (final it in await imports.items(imp.id)) {
@@ -519,15 +555,20 @@ class PlaylistImportService {
 
   /// "Retry all": rows not found or failed are searched again.
   Future<void> retry(int importId) async {
-    await imports.resetItems(
-        importId, {ImportItemStatus.notFound, ImportItemStatus.failed});
+    await imports.resetItems(importId, {
+      ImportItemStatus.notFound,
+      ImportItemStatus.failed,
+    });
     await imports.setStatus(importId, ImportStatus.running);
     _kick();
   }
 
   Future<void> skip(int importId, int rowIndex) => imports.setItem(
-      importId, rowIndex,
-      status: ImportItemStatus.skipped, candidates: const Value(null));
+    importId,
+    rowIndex,
+    status: ImportItemStatus.skipped,
+    candidates: const Value(null),
+  );
 
   /// Download [result] for a row (a candidate picked by the user, or one found
   /// with the normal search).
@@ -589,7 +630,11 @@ class PlaylistImportService {
           } on Object catch (e, st) {
             // One row that goes wrong must not stop the whole import.
             AppLog.e('import: row ${item.rowIndex} of ${imp.id} failed', e, st);
-            await imports.setItem(imp.id, item.rowIndex, status: ImportItemStatus.failed);
+            await imports.setItem(
+              imp.id,
+              item.rowIndex,
+              status: ImportItemStatus.failed,
+            );
           }
           worked = true;
           break;
@@ -613,11 +658,17 @@ class PlaylistImportService {
 
   Future<List<PlaylistImport>> _runningImports() async {
     final all = await imports.watchUnfinished().first;
-    return [for (final i in all) if (i.state == ImportStatus.running) i];
+    return [
+      for (final i in all)
+        if (i.state == ImportStatus.running) i,
+    ];
   }
 
   Future<void> _process(
-      int importId, PlaylistImportItem item, LibraryIndex library) async {
+    int importId,
+    PlaylistImportItem item,
+    LibraryIndex library,
+  ) async {
     final row = item.toRow();
     final hit = library.find(row);
     if (hit != null) {
@@ -626,16 +677,25 @@ class PlaylistImportService {
     }
     final imp = await imports.get(importId);
     if (!youtubeEnabled || (imp?.linkOnly ?? false)) {
-      await imports.setItem(importId, row.index,
-          status: ImportItemStatus.notFound,
-          note: Value(youtubeEnabled ? ImportNote.linkOnly : ImportNote.youtubeOff));
+      await imports.setItem(
+        importId,
+        row.index,
+        status: ImportItemStatus.notFound,
+        note: Value(
+          youtubeEnabled ? ImportNote.linkOnly : ImportNote.youtubeOff,
+        ),
+      );
       return;
     }
     // Approved in the plan screen: the choice is already made, no search.
     final approved = _approvedChoice(item);
     if (approved != null) {
-      await _queueDownload(row, importId, approved.toYtResult(),
-          score: item.score);
+      await _queueDownload(
+        row,
+        importId,
+        approved.toYtResult(),
+        score: item.score,
+      );
       return;
     }
     try {
@@ -646,7 +706,8 @@ class PlaylistImportService {
         // from one album are then looked up on the album page, one search for
         // all of them; only a sure match counts there, the rest goes the
         // usual way.
-        decision = await _byIsrc(row) ??
+        decision =
+            await _byIsrc(row) ??
             await _fromAlbum(importId, row) ??
             await _find(row);
       } finally {
@@ -657,26 +718,39 @@ class PlaylistImportService {
       switch (decision.kind) {
         case MatchKind.sure when imp?.planFirst ?? false:
           _eta(importId).rowDone();
-          await imports.setItem(importId, row.index,
-              status: ImportItemStatus.planned,
-              videoId: Value(decision.best!.result.id),
-              candidates: Value(encodeCandidates(decision.top)),
-              score: Value(decision.best!.score));
+          await imports.setItem(
+            importId,
+            row.index,
+            status: ImportItemStatus.planned,
+            videoId: Value(decision.best!.result.id),
+            candidates: Value(encodeCandidates(decision.top)),
+            score: Value(decision.best!.score),
+          );
         case MatchKind.sure:
-          await _queueDownload(row, importId, decision.best!.result,
-              score: decision.best!.score);
+          await _queueDownload(
+            row,
+            importId,
+            decision.best!.result,
+            score: decision.best!.score,
+          );
         case MatchKind.review:
           _eta(importId).rowDone();
-          await imports.setItem(importId, row.index,
-              status: ImportItemStatus.review,
-              candidates: Value(encodeCandidates(decision.top)),
-              score: Value(decision.best!.score),
-              note: const Value(ImportNote.lowScore));
+          await imports.setItem(
+            importId,
+            row.index,
+            status: ImportItemStatus.review,
+            candidates: Value(encodeCandidates(decision.top)),
+            score: Value(decision.best!.score),
+            note: const Value(ImportNote.lowScore),
+          );
         case MatchKind.notFound:
           _eta(importId).rowDone();
-          await imports.setItem(importId, row.index,
-              status: ImportItemStatus.notFound,
-              note: const Value(ImportNote.noResults));
+          await imports.setItem(
+            importId,
+            row.index,
+            status: ImportItemStatus.notFound,
+            note: const Value(ImportNote.noResults),
+          );
       }
     } on YtException catch (e, st) {
       AppLog.w('import search failed for "${row.title}"', e, st);
@@ -712,19 +786,18 @@ class PlaylistImportService {
     final counts = _albumCounts[importId] ??= await _countAlbums(importId);
     if ((counts[key] ?? 0) < albumMinRows) return null;
     final id = '$importId|$key';
-    final tracks = await (_albumTracks[id] ??= _loadAlbum(row).catchError(
-      (Object e) {
-        // A rate limit must be retried after the wait, not remembered.
-        if (e is YtException && e.kind == YtErrorKind.rateLimited) {
-          _albumTracks.remove(id);
-          throw e;
-        }
-        // The album page is only a shortcut: without it each song is looked
-        // up on its own (a page that took too long used to pause the import).
-        AppLog.w('import: album page for "${row.album}" not read', e);
-        return const <YtResult>[];
-      },
-    ));
+    final tracks = await (_albumTracks[id] ??= _loadAlbum(row)
+        .catchError((Object e) {
+          // A rate limit must be retried after the wait, not remembered.
+          if (e is YtException && e.kind == YtErrorKind.rateLimited) {
+            _albumTracks.remove(id);
+            throw e;
+          }
+          // The album page is only a shortcut: without it each song is looked
+          // up on its own (a page that took too long used to pause the import).
+          AppLog.w('import: album page for "${row.album}" not read', e);
+          return const <YtResult>[];
+        }));
     // On an album page the song is the one with the same title; a similar
     // title (the next track) must not win on artist and length alone.
     final want = matchTitleKey(row.title);
@@ -741,13 +814,18 @@ class PlaylistImportService {
   /// found is not the one named in the file.
   Future<List<YtResult>> _loadAlbum(ImportRow row) async {
     final album = row.album!;
-    final hits = await youtube.searchAlbums('${row.primaryArtist} $album', limit: 3);
+    final hits = await youtube.searchAlbums(
+      '${row.primaryArtist} $album',
+      limit: 3,
+    );
     if (hits.isEmpty) return const [];
     await Future<void>.delayed(searchGap);
     final tracks = await youtube.albumTracks(hits.first.id);
     final name = matchKey(tracks.isEmpty ? '' : tracks.first.album ?? '');
     final want = matchKey(album);
-    final same = name.isNotEmpty && (name == want || name.contains(want) || want.contains(name));
+    final same =
+        name.isNotEmpty &&
+        (name == want || name.contains(want) || want.contains(name));
     await Future<void>.delayed(searchGap);
     return same ? tracks : const [];
   }
@@ -768,11 +846,16 @@ class PlaylistImportService {
 
   /// The user picked another of the planned candidates for a row.
   Future<void> choosePlanned(
-      int importId, int rowIndex, ImportCandidate choice) =>
-      imports.setItem(importId, rowIndex,
-          status: ImportItemStatus.planned,
-          videoId: Value(choice.id),
-          score: Value(choice.score));
+    int importId,
+    int rowIndex,
+    ImportCandidate choice,
+  ) => imports.setItem(
+    importId,
+    rowIndex,
+    status: ImportItemStatus.planned,
+    videoId: Value(choice.id),
+    score: Value(choice.score),
+  );
 
   /// «Scarica N brani»: every planned row goes back to the engine as already
   /// decided, so the usual throttling and pausing apply. Returns how many.
@@ -780,8 +863,11 @@ class PlaylistImportService {
     var n = 0;
     for (final it in await imports.items(importId)) {
       if (it.state != ImportItemStatus.planned) continue;
-      await imports.setItem(importId, it.rowIndex,
-          status: ImportItemStatus.pending);
+      await imports.setItem(
+        importId,
+        it.rowIndex,
+        status: ImportItemStatus.pending,
+      );
       n++;
     }
     await imports.setStatus(importId, ImportStatus.running);
@@ -792,18 +878,21 @@ class PlaylistImportService {
 
   /// The three searches made for [row]: ISRC, `artist title`, `artist - title`.
   static List<String> searchQueries(ImportRow row) => [
-        row.isrc ?? '',
-        '${matchKey(row.primaryArtist)} ${matchTitleKey(row.title)}'.trim(),
-        '${row.primaryArtist} - ${row.title}',
-      ];
+    row.isrc ?? '',
+    '${matchKey(row.primaryArtist)} ${matchTitleKey(row.title)}'.trim(),
+    '${row.primaryArtist} - ${row.title}',
+  ];
 
   /// The ISRC identifies the recording: a sure match ends the search. Any
   /// other answer is dropped, so a wrong code cannot lift a candidate's score.
   Future<MatchDecision?> _byIsrc(ImportRow row) async {
     final isrc = row.isrc;
     if (isrc == null || isrc.isEmpty) return null;
-    final d = decide(row, await youtube.searchSongs(isrc, limit: 3),
-        thresholds: _cutoffs);
+    final d = decide(
+      row,
+      await youtube.searchSongs(isrc, limit: 3),
+      thresholds: _cutoffs,
+    );
     if (d.kind == MatchKind.sure) return d;
     await Future<void>.delayed(searchGap);
     return null;
@@ -818,19 +907,19 @@ class PlaylistImportService {
     await Future<void>.delayed(searchGap);
     final plain = await youtube.search(queries[2]);
     final seen = {for (final s in songs) s.id};
-    decision = decide(
-        row,
-        [
-          ...songs,
-          for (final p in plain.take(5))
-            if (seen.add(p.id)) p,
-        ],
-        thresholds: _cutoffs);
+    decision = decide(row, [
+      ...songs,
+      for (final p in plain.take(5))
+        if (seen.add(p.id)) p,
+    ], thresholds: _cutoffs);
     return decision;
   }
 
   Future<void> _onSearchError(
-      int importId, ImportRow row, YtException e) async {
+    int importId,
+    ImportRow row,
+    YtException e,
+  ) async {
     ImportEventKind? stop;
     switch (e.kind) {
       // The row stays to do: the engine waits and searches it again.
@@ -847,8 +936,11 @@ class PlaylistImportService {
       case YtErrorKind.unavailable:
       case YtErrorKind.changed:
         _failStreak++;
-        await imports.setItem(importId, row.index,
-            status: ImportItemStatus.failed);
+        await imports.setItem(
+          importId,
+          row.index,
+          status: ImportItemStatus.failed,
+        );
         if (_failStreak >= 3) {
           _failStreak = 0;
           stop = ImportEventKind.failing;
@@ -863,16 +955,29 @@ class PlaylistImportService {
 
   Future<void> _link(int importId, ImportRow row, int trackId) async {
     _eta(importId).rowDone(linked: true);
-    await imports.setItem(importId, row.index,
-        status: ImportItemStatus.linked, trackId: Value(trackId));
+    await imports.setItem(
+      importId,
+      row.index,
+      status: ImportItemStatus.linked,
+      trackId: Value(trackId),
+    );
     final imp = await imports.get(importId);
     if (imp != null) {
-      await playlists.placeImported(imp.playlistId, importId, row.index, trackId);
+      await playlists.placeImported(
+        imp.playlistId,
+        importId,
+        row.index,
+        trackId,
+      );
     }
   }
 
-  Future<void> _queueDownload(ImportRow row, int importId, YtResult r,
-      {double? score}) async {
+  Future<void> _queueDownload(
+    ImportRow row,
+    int importId,
+    YtResult r, {
+    double? score,
+  }) async {
     final existing = await pathForVideo(r);
     if (existing != null) {
       final id = await trackIdForPath(existing);
@@ -885,11 +990,14 @@ class PlaylistImportService {
     final total = imp == null || !imp.numberFiles
         ? 0
         : await imports.maxRowIndexForPlaylist(imp.playlistId) + 1;
-    await imports.setItem(importId, row.index,
-        status: ImportItemStatus.queued,
-        videoId: Value(r.id),
-        candidates: const Value(null),
-        score: Value(score));
+    await imports.setItem(
+      importId,
+      row.index,
+      status: ImportItemStatus.queued,
+      videoId: Value(r.id),
+      candidates: const Value(null),
+      score: Value(score),
+    );
     enqueue(
       YtResult(
         id: r.id,
@@ -901,8 +1009,11 @@ class PlaylistImportService {
         album: r.album,
         source: r.source,
         webpageUrl: r.webpageUrl,
-        downloadName: importDownloadName(row,
-            number: imp?.numberFiles ?? false, total: total),
+        downloadName: importDownloadName(
+          row,
+          number: imp?.numberFiles ?? false,
+          total: total,
+        ),
         subdir: imp?.folderPath,
       ),
       importTag(importId, row.index),
@@ -927,12 +1038,19 @@ class PlaylistImportService {
             when item.error == YtErrorKind.rateLimited &&
                 _waitBeforeRetry(ImportEventKind.rateLimited):
           // YouTube asked to slow down: the song is done again after the wait.
-          await imports.setItem(importId, rowIndex, status: ImportItemStatus.pending);
+          await imports.setItem(
+            importId,
+            rowIndex,
+            status: ImportItemStatus.pending,
+          );
         case DownloadStatus.failed:
           _eta(importId).rowDone();
-          await imports.setItem(importId, rowIndex,
-              status: ImportItemStatus.failed,
-              note: const Value(ImportNote.downloadFailed));
+          await imports.setItem(
+            importId,
+            rowIndex,
+            status: ImportItemStatus.failed,
+            note: const Value(ImportNote.downloadFailed),
+          );
           if (item.error == YtErrorKind.unavailable) {
             forgetSearches?.call(searchQueries(it.toRow()));
           }
@@ -942,8 +1060,11 @@ class PlaylistImportService {
             _emit(ImportEvent(ImportEventKind.rateLimited, importId));
           }
         case DownloadStatus.cancelled:
-          await imports.setItem(importId, rowIndex,
-              status: ImportItemStatus.failed);
+          await imports.setItem(
+            importId,
+            rowIndex,
+            status: ImportItemStatus.failed,
+          );
         case DownloadStatus.queued:
         case DownloadStatus.downloading:
         case DownloadStatus.waitingRetry:
@@ -957,11 +1078,17 @@ class PlaylistImportService {
   }
 
   Future<void> _finishDownload(
-      PlaylistImport imp, PlaylistImportItem it, String? path) async {
+    PlaylistImport imp,
+    PlaylistImportItem it,
+    String? path,
+  ) async {
     final trackId = path == null ? null : await trackIdForPath(path);
     if (trackId == null) {
-      await imports.setItem(imp.id, it.rowIndex,
-          status: ImportItemStatus.failed);
+      await imports.setItem(
+        imp.id,
+        it.rowIndex,
+        status: ImportItemStatus.failed,
+      );
       return;
     }
     _setStep(imp.id, it.rowIndex, ImportStepKind.enriching);
@@ -974,14 +1101,19 @@ class PlaylistImportService {
   }
 
   /// The CSV tags, the place in the playlist, the length check and the cover.
-  Future<void> _tagAndPlace(PlaylistImport imp, PlaylistImportItem it, int trackId) async {
+  Future<void> _tagAndPlace(
+    PlaylistImport imp,
+    PlaylistImportItem it,
+    int trackId,
+  ) async {
     try {
       // The rows of an album import are in the album's order: that is the track number.
       await applyTags(
-          trackId,
-          imp.sourceKind == ytmAlbumSourceKind
-              ? it.toRow().withTrackNumber(it.rowIndex + 1)
-              : it.toRow());
+        trackId,
+        imp.sourceKind == ytmAlbumSourceKind
+            ? it.toRow().withTrackNumber(it.rowIndex + 1)
+            : it.toRow(),
+      );
     } on Object catch (e, st) {
       AppLog.w('import: could not apply CSV tags to track $trackId', e, st);
     }
@@ -989,10 +1121,13 @@ class PlaylistImportService {
     // The file stays and the track stays in the playlist; a very different
     // length just asks the user to confirm it was the right version.
     final off = await _lengthIsOff(it, trackId);
-    await imports.setItem(imp.id, it.rowIndex,
-        status: off ? ImportItemStatus.review : ImportItemStatus.downloaded,
-        trackId: Value(trackId),
-        note: off ? const Value(ImportNote.lengthOff) : const Value.absent());
+    await imports.setItem(
+      imp.id,
+      it.rowIndex,
+      status: off ? ImportItemStatus.review : ImportItemStatus.downloaded,
+      trackId: Value(trackId),
+      note: off ? const Value(ImportNote.lengthOff) : const Value.absent(),
+    );
     final row = it.toRow();
     if (imp.fetchCovers && fetchCover != null && row.album != null) {
       try {
@@ -1061,7 +1196,10 @@ class PlaylistImportService {
     final imp = await imports.get(importId);
     if (imp == null) return const [];
     final chains = groupImportChains(await imports.forPlaylist(imp.playlistId));
-    return chains.firstWhere((c) => c.any((i) => i.id == importId), orElse: () => [imp]);
+    return chains.firstWhere(
+      (c) => c.any((i) => i.id == importId),
+      orElse: () => [imp],
+    );
   }
 
   /// Pause for the whole import: the block that runs stops, the next ones wait.
@@ -1084,7 +1222,9 @@ class PlaylistImportService {
   /// Cancels every block not finished yet; what was downloaded stays.
   Future<void> cancelChain(int importId) async {
     for (final b in await chainOf(importId)) {
-      if (b.state == ImportStatus.running || b.state == ImportStatus.paused) await cancel(b.id);
+      if (b.state == ImportStatus.running || b.state == ImportStatus.paused) {
+        await cancel(b.id);
+      }
     }
   }
 

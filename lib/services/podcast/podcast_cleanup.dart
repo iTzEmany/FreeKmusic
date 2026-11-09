@@ -43,7 +43,9 @@ class PodcastCleanup {
         if (!e.played || heardAt == null || nowMs - heardAt < limit) continue;
         if (busy.contains(t.id)) continue;
         if (t.kind != 1 || !p.isWithin(baseDir, t.path)) {
-          AppLog.w('podcast cleanup skipped ${t.path}: not an episode file of ours');
+          AppLog.w(
+            'podcast cleanup skipped ${t.path}: not an episode file of ours',
+          );
           continue;
         }
         await downloader.deleteFile(e.id);

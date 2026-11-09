@@ -39,7 +39,12 @@ bool _better(RadioStation a, RadioStation b) {
 
 /// The stations of [region], without repeats, the most listened first.
 List<RadioStation> nearYou(List<RadioStation> stations, RadioRegion region) =>
-    byClicks(dedupe([for (final s in stations) if (matchesRegion(s, region)) s]));
+    byClicks(
+      dedupe([
+        for (final s in stations)
+          if (matchesRegion(s, region)) s,
+      ]),
+    );
 
 /// Most listened first; equal counts keep their order.
 List<RadioStation> byClicks(List<RadioStation> stations) {

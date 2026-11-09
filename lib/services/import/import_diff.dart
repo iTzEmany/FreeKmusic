@@ -1,6 +1,7 @@
 import '../../core/import_row.dart';
 import '../../data/db/app_database.dart';
-import '../../data/repositories/import_repository.dart' show PlaylistImportItemX;
+import '../../data/repositories/import_repository.dart'
+    show PlaylistImportItemX;
 import 'track_matcher.dart';
 import '../../core/artist_key.dart';
 
@@ -58,7 +59,8 @@ ImportDiff diffImport(
     if (matched.containsKey(r.index)) continue;
     final key = _titleArtistKey(r.title, r.primaryArtist);
     final hit = take(
-        (o) => _titleArtistKey(o.title, o.toRow().primaryArtist) == key);
+      (o) => _titleArtistKey(o.title, o.toRow().primaryArtist) == key,
+    );
     if (hit != null) matched[r.index] = hit;
   }
   // Whatever is still unmatched may be a row parked by an earlier import.
@@ -68,9 +70,11 @@ ImportDiff diffImport(
     if (matched.containsKey(r.index)) continue;
     final isrc = r.isrc;
     final key = _titleArtistKey(r.title, r.primaryArtist);
-    final i = freeParked.indexWhere((o) =>
-        (isrc != null && isrc.isNotEmpty && o.isrc == isrc) ||
-        _titleArtistKey(o.title, o.toRow().primaryArtist) == key);
+    final i = freeParked.indexWhere(
+      (o) =>
+          (isrc != null && isrc.isNotEmpty && o.isrc == isrc) ||
+          _titleArtistKey(o.title, o.toRow().primaryArtist) == key,
+    );
     if (i >= 0) parkedHit[r.index] = freeParked.removeAt(i);
   }
   return ImportDiff(
@@ -80,7 +84,8 @@ ImportDiff diffImport(
     ],
     parked: [
       for (final r in fresh)
-        if (parkedHit.containsKey(r.index)) (old: parkedHit[r.index]!, fresh: r),
+        if (parkedHit.containsKey(r.index))
+          (old: parkedHit[r.index]!, fresh: r),
     ],
     removed: freeOld,
     kept: [

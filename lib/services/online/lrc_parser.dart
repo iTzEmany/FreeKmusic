@@ -6,7 +6,10 @@ class LrcLine {
 }
 
 final _stamp = RegExp(r'\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]');
-final _offsetTag = RegExp(r'^\[offset:\s*([-+]?\d+)\s*\]', caseSensitive: false);
+final _offsetTag = RegExp(
+  r'^\[offset:\s*([-+]?\d+)\s*\]',
+  caseSensitive: false,
+);
 
 List<LrcLine> parseLrc(String raw) {
   final lines = <LrcLine>[];
@@ -50,11 +53,17 @@ final _metaTag = RegExp(r'^\[[A-Za-z]+:[^\]]*\]$');
 ({String? plain, String? synced}) lyricsFromText(String raw) {
   final text = raw.trim();
   if (text.isEmpty) return (plain: null, synced: null);
-  final lines = text.split(RegExp(r'\r?\n')).map((l) => l.trim()).where((l) => !_metaTag.hasMatch(l));
+  final lines = text
+      .split(RegExp(r'\r?\n'))
+      .map((l) => l.trim())
+      .where((l) => !_metaTag.hasMatch(l));
   final body = lines.where((l) => l.isNotEmpty).toList();
   final timed = body.where(_leadStamps.hasMatch).length;
   if (timed < 2 || timed * 2 <= body.length) return (plain: text, synced: null);
-  final plain = lines.map((l) => l.replaceFirst(_leadStamps, '')).join('\n').trim();
+  final plain = lines
+      .map((l) => l.replaceFirst(_leadStamps, ''))
+      .join('\n')
+      .trim();
   return (plain: plain.isEmpty ? null : plain, synced: text);
 }
 

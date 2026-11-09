@@ -17,7 +17,9 @@ void main() {
   });
 
   test('user changes are saved and read back, only the differences', () async {
-    final t = MoodTable.defaults().withMoods('Zouk', {Mood.cheerful}).withMoods('metal', {});
+    final t = MoodTable.defaults()
+        .withMoods('Zouk', {Mood.cheerful})
+        .withMoods('metal', {});
     expect(t.moodsOf('zouk'), {Mood.cheerful});
     expect(t.moodsOf('metal'), isEmpty);
     SharedPreferences.setMockInitialValues({});

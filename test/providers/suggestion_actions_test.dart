@@ -217,14 +217,20 @@ void main() {
     expect(back.suggested, isTrue);
   });
 
-  test('dislikeArtist on a name with no letters blocks and removes nothing', () async {
-    final bang = online.register(const YtResult(id: 'z', title: 'Z', channel: '!!!', duration: null), suggested: true);
-    queue = [bang, id];
-    final undo = await actions.dislikeArtist(bang);
-    expect(store.artists, isEmpty);
-    expect(queue, [bang, id]);
-    expect(undo.removed, isEmpty);
-  });
+  test(
+    'dislikeArtist on a name with no letters blocks and removes nothing',
+    () async {
+      final bang = online.register(
+        const YtResult(id: 'z', title: 'Z', channel: '!!!', duration: null),
+        suggested: true,
+      );
+      queue = [bang, id];
+      final undo = await actions.dislikeArtist(bang);
+      expect(store.artists, isEmpty);
+      expect(queue, [bang, id]);
+      expect(undo.removed, isEmpty);
+    },
+  );
 
   test('a second undo does nothing', () async {
     final other = reg('v2', 'Chan');

@@ -19,7 +19,8 @@ import 'ytm_catalog_providers.dart' show catalogCacheProvider;
 import 'jam_providers.dart';
 import 'library_providers.dart';
 import 'radio_providers.dart' show radioCatalogProvider;
-import 'shuffle_plus_providers.dart' show seedIndexProvider, suggestionLogProvider;
+import 'shuffle_plus_providers.dart'
+    show seedIndexProvider, suggestionLogProvider;
 
 final memoryQueriesProvider = Provider<MemoryQueries>(
   (ref) => MemoryQueries(ref.watch(databaseProvider)),
@@ -126,7 +127,8 @@ class MemoryActions {
         _ref.invalidate(daylistProvider);
       },
       radioDir: paths.radio,
-      clearRadioMemory: () => _ref.read(radioCatalogProvider).value?.clearMemory(),
+      clearRadioMemory: () =>
+          _ref.read(radioCatalogProvider).value?.clearMemory(),
       pickerTempDir: await pickerTempDirectory(),
       jamActive: () {
         final phase = _ref.read(jamProvider).phase;

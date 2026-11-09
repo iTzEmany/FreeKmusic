@@ -122,7 +122,8 @@ class SettingsPageView extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
         child: ListView(
-          padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
+          padding: const EdgeInsets.only(bottom: CcDims.gap24)
+              .withDock(context),
           children: [
             for (final g in groups)
               single ? SettingsGroup(children: g.children) : g,
@@ -147,7 +148,8 @@ List<SettingsGroup> _appearance(BuildContext context, WidgetRef ref) {
           title: Text(l.blurredChrome),
           subtitle: Text(l.blurredChromeHint),
           value: s.blurredChrome,
-          onChanged: (v) => notifier.update((c) => c.copyWith(blurredChrome: v)),
+          onChanged: (v) =>
+              notifier.update((c) => c.copyWith(blurredChrome: v)),
         ),
         const IconFollowTile(),
         ListTile(
@@ -360,7 +362,8 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
           subtitle: Text('${l.creditsDetailsHint}\n${l.creditsDetailsNote}'),
           isThreeLine: true,
           value: s.creditsDetails,
-          onChanged: (v) => notifier.update((c) => c.copyWith(creditsDetails: v)),
+          onChanged: (v) =>
+              notifier.update((c) => c.copyWith(creditsDetails: v)),
         ),
       ],
     ),
@@ -388,7 +391,8 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
             title: Text(l.settingsMergedArtists),
             subtitle: Text(l.settingsMergedArtistsHint),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => ShellNav.open<void>(context, const MergedArtistsScreen()),
+            onTap: () =>
+                ShellNav.open<void>(context, const MergedArtistsScreen()),
           ),
         ],
       ),
@@ -565,7 +569,12 @@ List<SettingsGroup> _trustedGroup(BuildContext context, WidgetRef ref) {
 /// «Jam sulla cassa»: Android only (the Bluetooth outputs come from the native side).
 List<SettingsGroup> _speakerGroup(BuildContext context) {
   if (!isAndroid) return const [];
-  return [SettingsGroup(title: context.l10n.speakerJamSection, children: const [SpeakerJamTiles()])];
+  return [
+    SettingsGroup(
+      title: context.l10n.speakerJamSection,
+      children: const [SpeakerJamTiles()],
+    ),
+  ];
 }
 
 /// A (optionally titled) group of settings on a rounded surface.

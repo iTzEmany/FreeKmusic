@@ -65,25 +65,65 @@ class DaylistConfig {
 
   /// Slots as shipped (D-443; genres and moods from the mockup).
   factory DaylistConfig.defaults() => DaylistConfig(const [
-    DaylistSlot(startHour: 5, enabled: true, sharePercent: 25,
-        prefer: {'folk', 'cantautorato', 'jazz'}, avoid: {'metal', 'punk'},
-        moods: {Mood.calm, Mood.relaxing}),
-    DaylistSlot(startHour: 9, enabled: true, sharePercent: 30,
-        prefer: {'indie', 'pop', 'funk'}, moods: {Mood.cheerful, Mood.energetic}),
-    DaylistSlot(startHour: 13, enabled: true, sharePercent: 30,
-        prefer: {'rock', 'blues', 'soul'}, moods: {Mood.energetic, Mood.focus}),
-    DaylistSlot(startHour: 16, enabled: true, sharePercent: 30,
-        prefer: {'cantautorato', 'pop', 'folk'}, avoid: {'metal'},
-        moods: {Mood.cheerful, Mood.calm}),
-    DaylistSlot(startHour: 19, enabled: true, sharePercent: 30,
-        prefer: {'funk', 'soul', 'indie'}, moods: {Mood.cheerful, Mood.relaxing}),
-    DaylistSlot(startHour: 22, enabled: true, sharePercent: 30,
-        prefer: {'lo-fi', 'jazz', 'soul'}, avoid: {'metal', 'punk'},
-        moods: {Mood.relaxing, Mood.calm, Mood.focus}),
-    DaylistSlot(startHour: 0, enabled: false, sharePercent: 20,
-        prefer: {'ambient', 'elettronica'}, moods: {Mood.relaxing, Mood.calm}),
-    DaylistSlot(startHour: 3, enabled: false, sharePercent: 20,
-        prefer: {'classica', 'ambient'}, moods: {Mood.calm, Mood.relaxing}),
+    DaylistSlot(
+      startHour: 5,
+      enabled: true,
+      sharePercent: 25,
+      prefer: {'folk', 'cantautorato', 'jazz'},
+      avoid: {'metal', 'punk'},
+      moods: {Mood.calm, Mood.relaxing},
+    ),
+    DaylistSlot(
+      startHour: 9,
+      enabled: true,
+      sharePercent: 30,
+      prefer: {'indie', 'pop', 'funk'},
+      moods: {Mood.cheerful, Mood.energetic},
+    ),
+    DaylistSlot(
+      startHour: 13,
+      enabled: true,
+      sharePercent: 30,
+      prefer: {'rock', 'blues', 'soul'},
+      moods: {Mood.energetic, Mood.focus},
+    ),
+    DaylistSlot(
+      startHour: 16,
+      enabled: true,
+      sharePercent: 30,
+      prefer: {'cantautorato', 'pop', 'folk'},
+      avoid: {'metal'},
+      moods: {Mood.cheerful, Mood.calm},
+    ),
+    DaylistSlot(
+      startHour: 19,
+      enabled: true,
+      sharePercent: 30,
+      prefer: {'funk', 'soul', 'indie'},
+      moods: {Mood.cheerful, Mood.relaxing},
+    ),
+    DaylistSlot(
+      startHour: 22,
+      enabled: true,
+      sharePercent: 30,
+      prefer: {'lo-fi', 'jazz', 'soul'},
+      avoid: {'metal', 'punk'},
+      moods: {Mood.relaxing, Mood.calm, Mood.focus},
+    ),
+    DaylistSlot(
+      startHour: 0,
+      enabled: false,
+      sharePercent: 20,
+      prefer: {'ambient', 'elettronica'},
+      moods: {Mood.relaxing, Mood.calm},
+    ),
+    DaylistSlot(
+      startHour: 3,
+      enabled: false,
+      sharePercent: 20,
+      prefer: {'classica', 'ambient'},
+      moods: {Mood.calm, Mood.relaxing},
+    ),
   ]);
 
   final List<DaylistSlot> slots;
@@ -117,13 +157,17 @@ class DaylistConfig {
   bool canStart(int i, int hour) {
     if (hour < 0 || hour > 23) return false;
     final from = slots[_prev(i)].startHour;
-    return _span(from, hour) >= 1 && _span(from, hour) <= _span(from, slots[_next(i)].startHour) - 1;
+    return _span(from, hour) >= 1 &&
+        _span(from, hour) <= _span(from, slots[_next(i)].startHour) - 1;
   }
 
   /// A copy with slot [i] starting at [hour]; null when that is not allowed.
-  DaylistConfig? withStart(int i, int hour) => canStart(i, hour) ? withSlot(i, slots[i].copyWith(startHour: hour)) : null;
+  DaylistConfig? withStart(int i, int hour) => canStart(i, hour)
+      ? withSlot(i, slots[i].copyWith(startHour: hour))
+      : null;
 
-  DaylistConfig withSlot(int i, DaylistSlot s) => DaylistConfig([...slots]..[i] = s);
+  DaylistConfig withSlot(int i, DaylistSlot s) =>
+      DaylistConfig([...slots]..[i] = s);
 
   static int _span(int from, int to) => (to - from + 24) % 24;
 
@@ -131,7 +175,9 @@ class DaylistConfig {
     var total = 0;
     for (var i = 0; i < slotCount; i++) {
       final l = lengthOf(i);
-      if (l < 1 || slots[i].startHour < 0 || slots[i].startHour > 23) return false;
+      if (l < 1 || slots[i].startHour < 0 || slots[i].startHour > 23) {
+        return false;
+      }
       total += l;
     }
     return total == 24;
@@ -147,11 +193,18 @@ class DaylistConfig {
     if (raw == null) return DaylistConfig.defaults();
     try {
       final list = jsonDecode(raw);
-      if (list is! List || list.length != slotCount) throw const FormatException('need 8 slots');
-      final c = DaylistConfig([for (var i = 0; i < slotCount; i++) _slotFrom(list[i], base[i])]);
+      if (list is! List || list.length != slotCount) {
+        throw const FormatException('need 8 slots');
+      }
+      final c = DaylistConfig([
+        for (var i = 0; i < slotCount; i++) _slotFrom(list[i], base[i]),
+      ]);
       if (c._startsValid) return c;
       AppLog.w('daylist start hours invalid, back to the default hours');
-      return DaylistConfig([for (var i = 0; i < slotCount; i++) c.slots[i].copyWith(startHour: base[i].startHour)]);
+      return DaylistConfig([
+        for (var i = 0; i < slotCount; i++)
+          c.slots[i].copyWith(startHour: base[i].startHour),
+      ]);
     } on FormatException catch (e) {
       AppLog.w('daylist slots unreadable, back to the defaults', e);
       return DaylistConfig.defaults();
@@ -163,11 +216,14 @@ class DaylistConfig {
       AppLog.w('daylist slot is not a map, using its default');
       return d;
     }
-    Set<String>? strs(Object? v) => v is List ? {for (final s in v) '$s'} : null;
+    Set<String>? strs(Object? v) =>
+        v is List ? {for (final s in v) '$s'} : null;
     final start = j['start'], on = j['on'], share = j['share'];
     final moods = strs(j['moods']);
     return DaylistSlot(
-      startHour: start is int && start >= 0 && start <= 23 ? start : d.startHour,
+      startHour: start is int && start >= 0 && start <= 23
+          ? start
+          : d.startHour,
       enabled: on is bool ? on : d.enabled,
       sharePercent: share is int ? share.clamp(0, 100) : d.sharePercent,
       prefer: strs(j['prefer']) ?? d.prefer,

@@ -94,12 +94,17 @@ class AppSettings {
   /// One of the eight accent names (`CcAccent`); unknown ones mean violet.
   final String accent;
   final double fontScale;
+
   /// The now-playing cover turns while music plays; off by default.
   final bool spinCover;
 
   /// Dock and headers semi-transparent with a blur; off by default (slow on weak phones, D-406).
   final bool blurredChrome;
-  final bool compactMode, reducedMotion, autoEnrich, autoLyrics, showUndoSnackbar;
+  final bool compactMode,
+      reducedMotion,
+      autoEnrich,
+      autoLyrics,
+      showUndoSnackbar;
 
   /// Deezer as a metadata source (data only); on unless the user turned it off.
   final bool deezerMeta, acoustId, creditsDetails, autoCuriosities;
@@ -242,63 +247,60 @@ class AppSettings {
     String? radioRegion,
     bool? radioOnlyCountry,
     IconFollow? iconFollow,
-  }) =>
-      AppSettings(
-        theme: theme ?? this.theme,
-        accent: accent ?? this.accent,
-        fontScale: fontScale ?? this.fontScale,
-        compactMode: compactMode ?? this.compactMode,
-        reducedMotion: reducedMotion ?? this.reducedMotion,
-        spinCover: spinCover ?? this.spinCover,
-        blurredChrome: blurredChrome ?? this.blurredChrome,
-        language: language ?? this.language,
-        autoEnrich: autoEnrich ?? this.autoEnrich,
-        autoLyrics: autoLyrics ?? this.autoLyrics,
-        deezerMeta: deezerMeta ?? this.deezerMeta,
-        acoustId: acoustId ?? this.acoustId,
-        creditsDetails: creditsDetails ?? this.creditsDetails,
-        autoCuriosities: autoCuriosities ?? this.autoCuriosities,
-        showUndoSnackbar: showUndoSnackbar ?? this.showUndoSnackbar,
-        deviceName: deviceName ?? this.deviceName,
-        jamLatencyMs: jamLatencyMs ?? this.jamLatencyMs,
-        normalizeVolume: normalizeVolume ?? this.normalizeVolume,
-        receiveFromLan: receiveFromLan ?? this.receiveFromLan,
-        librarySort: librarySort ?? this.librarySort,
-        librarySortAscending: librarySortAscending ?? this.librarySortAscending,
-        playlistSorts: playlistSorts ?? this.playlistSorts,
-        libraryGrid: libraryGrid ?? this.libraryGrid,
-        recentSearches: recentSearches ?? this.recentSearches,
-        ytNoticeSeen: ytNoticeSeen ?? this.ytNoticeSeen,
-        onboardingDone: onboardingDone ?? this.onboardingDone,
-        recordHistory: recordHistory ?? this.recordHistory,
-        downloadParallel: downloadParallel ?? this.downloadParallel,
-        downloadRateLimitKBps:
-            downloadRateLimitKBps ?? this.downloadRateLimitKBps,
-        downloadFormat: downloadFormat ?? this.downloadFormat,
-        streamCacheMb: streamCacheMb ?? this.streamCacheMb,
-        importSureThreshold: importSureThreshold ?? this.importSureThreshold,
-        importReviewThreshold:
-            importReviewThreshold ?? this.importReviewThreshold,
-        playbackSpeed: playbackSpeed ?? this.playbackSpeed,
-        eqEnabled: eqEnabled ?? this.eqEnabled,
-        eqSpeaker: eqSpeaker ?? this.eqSpeaker,
-        eqHeadphones: eqHeadphones ?? this.eqHeadphones,
-        transition: transition ?? this.transition,
-        crossfadeSeconds: crossfadeSeconds ?? this.crossfadeSeconds,
-        crossfadePlainInAlbum:
-            crossfadePlainInAlbum ?? this.crossfadePlainInAlbum,
-        writeTagsToFiles: writeTagsToFiles ?? this.writeTagsToFiles,
-        tagsAlsoInFile: tagsAlsoInFile ?? this.tagsAlsoInFile,
-        writeTagsAfterDownload: writeTagsAfterDownload ?? this.writeTagsAfterDownload,
-        shufflePlus: shufflePlus ?? this.shufflePlus,
-        shufflePlusEvery: shufflePlusEvery ?? this.shufflePlusEvery,
-        shufflePlusUnmeteredOnly:
-            shufflePlusUnmeteredOnly ?? this.shufflePlusUnmeteredOnly,
-        radioCountry: radioCountry ?? this.radioCountry,
-        radioRegion: radioRegion ?? this.radioRegion,
-        radioOnlyCountry: radioOnlyCountry ?? this.radioOnlyCountry,
-        iconFollow: iconFollow ?? this.iconFollow,
-      );
+  }) => AppSettings(
+    theme: theme ?? this.theme,
+    accent: accent ?? this.accent,
+    fontScale: fontScale ?? this.fontScale,
+    compactMode: compactMode ?? this.compactMode,
+    reducedMotion: reducedMotion ?? this.reducedMotion,
+    spinCover: spinCover ?? this.spinCover,
+    blurredChrome: blurredChrome ?? this.blurredChrome,
+    language: language ?? this.language,
+    autoEnrich: autoEnrich ?? this.autoEnrich,
+    autoLyrics: autoLyrics ?? this.autoLyrics,
+    deezerMeta: deezerMeta ?? this.deezerMeta,
+    acoustId: acoustId ?? this.acoustId,
+    creditsDetails: creditsDetails ?? this.creditsDetails,
+    autoCuriosities: autoCuriosities ?? this.autoCuriosities,
+    showUndoSnackbar: showUndoSnackbar ?? this.showUndoSnackbar,
+    deviceName: deviceName ?? this.deviceName,
+    jamLatencyMs: jamLatencyMs ?? this.jamLatencyMs,
+    normalizeVolume: normalizeVolume ?? this.normalizeVolume,
+    receiveFromLan: receiveFromLan ?? this.receiveFromLan,
+    librarySort: librarySort ?? this.librarySort,
+    librarySortAscending: librarySortAscending ?? this.librarySortAscending,
+    playlistSorts: playlistSorts ?? this.playlistSorts,
+    libraryGrid: libraryGrid ?? this.libraryGrid,
+    recentSearches: recentSearches ?? this.recentSearches,
+    ytNoticeSeen: ytNoticeSeen ?? this.ytNoticeSeen,
+    onboardingDone: onboardingDone ?? this.onboardingDone,
+    recordHistory: recordHistory ?? this.recordHistory,
+    downloadParallel: downloadParallel ?? this.downloadParallel,
+    downloadRateLimitKBps: downloadRateLimitKBps ?? this.downloadRateLimitKBps,
+    downloadFormat: downloadFormat ?? this.downloadFormat,
+    streamCacheMb: streamCacheMb ?? this.streamCacheMb,
+    importSureThreshold: importSureThreshold ?? this.importSureThreshold,
+    importReviewThreshold: importReviewThreshold ?? this.importReviewThreshold,
+    playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+    eqEnabled: eqEnabled ?? this.eqEnabled,
+    eqSpeaker: eqSpeaker ?? this.eqSpeaker,
+    eqHeadphones: eqHeadphones ?? this.eqHeadphones,
+    transition: transition ?? this.transition,
+    crossfadeSeconds: crossfadeSeconds ?? this.crossfadeSeconds,
+    crossfadePlainInAlbum: crossfadePlainInAlbum ?? this.crossfadePlainInAlbum,
+    writeTagsToFiles: writeTagsToFiles ?? this.writeTagsToFiles,
+    tagsAlsoInFile: tagsAlsoInFile ?? this.tagsAlsoInFile,
+    writeTagsAfterDownload:
+        writeTagsAfterDownload ?? this.writeTagsAfterDownload,
+    shufflePlus: shufflePlus ?? this.shufflePlus,
+    shufflePlusEvery: shufflePlusEvery ?? this.shufflePlusEvery,
+    shufflePlusUnmeteredOnly:
+        shufflePlusUnmeteredOnly ?? this.shufflePlusUnmeteredOnly,
+    radioCountry: radioCountry ?? this.radioCountry,
+    radioRegion: radioRegion ?? this.radioRegion,
+    radioOnlyCountry: radioOnlyCountry ?? this.radioOnlyCountry,
+    iconFollow: iconFollow ?? this.iconFollow,
+  );
 }
 
 class SavedPlayback {
@@ -351,12 +353,16 @@ class SettingsStore {
     final raw = _prefs.get('playlistSorts');
     if (raw == null) return const {};
     if (raw is! String) {
-      AppLog.w('playlistSorts has type ${raw.runtimeType}, back to personal order');
+      AppLog.w(
+        'playlistSorts has type ${raw.runtimeType}, back to personal order',
+      );
       return const {};
     }
     try {
       final m = jsonDecode(raw);
-      if (m is Map) return {for (final e in m.entries) '${e.key}': '${e.value}'};
+      if (m is Map) {
+        return {for (final e in m.entries) '${e.key}': '${e.value}'};
+      }
     } on FormatException catch (e) {
       AppLog.w('playlistSorts unreadable, back to personal order', e);
     }
@@ -366,91 +372,93 @@ class SettingsStore {
   bool? _readSortAscending() {
     final v = _prefs.get('librarySortAscending');
     if (v is bool?) return v;
-    AppLog.w('librarySortAscending has type ${v.runtimeType}, using the default');
+    AppLog.w(
+      'librarySortAscending has type ${v.runtimeType}, using the default',
+    );
     return null;
   }
 
   AppSettings readSettings() => AppSettings(
-        theme: _prefs.getString('theme') ?? 'notte',
-        accent: _prefs.getString('accent') ?? 'viola',
-        fontScale: _prefs.getDouble('fontScale') ?? 1.0,
-        compactMode: _prefs.getBool('compactMode') ?? false,
-        reducedMotion: _prefs.getBool('reducedMotion') ?? false,
-        spinCover: _prefs.getBool('spinCover') ?? false,
-        blurredChrome: _prefs.getBool('blurredChrome') ?? false,
-        language: _prefs.getString('language') ?? 'it',
-        autoEnrich: _prefs.getBool('autoEnrich') ?? false,
-        autoLyrics: _prefs.getBool('autoLyrics') ?? false,
-        deezerMeta: _prefs.getBool('deezerMeta') ?? true,
-        acoustId: _prefs.getBool('acoustId') ?? true,
-        creditsDetails: _prefs.getBool('creditsDetails') ?? false,
-        autoCuriosities: _prefs.getBool('autoCuriosities') ?? false,
-        showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,
-        deviceName: _prefs.getString('deviceName'),
-        normalizeVolume: _prefs.getBool('normalizeVolume') ?? false,
-        receiveFromLan: _prefs.getBool('receiveFromLan') ?? false,
-        jamLatencyMs: _prefs.getInt('jamLatencyMs') ?? 0,
-        librarySort: _prefs.getString('librarySort') ?? 'recent',
-        librarySortAscending: _readSortAscending(),
-        playlistSorts: _readPlaylistSorts(),
-        libraryGrid: _prefs.getBool('libraryGrid') ?? false,
-        recentSearches: _prefs.getStringList('recentSearches') ?? const [],
-        ytNoticeSeen: _prefs.getBool('ytNoticeSeen') ?? false,
-        onboardingDone: _prefs.getBool('onboardingDone') ?? false,
-        recordHistory: _prefs.getBool('recordHistory') ?? true,
-        downloadParallel:
-            (_prefs.getInt('downloadParallel') ?? 2).clamp(1, 3),
-        downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
-        streamCacheMb: (_prefs.getInt('streamCacheMb') ?? 1024).clamp(256, 8192),
-        // The old «downloadOriginal» switch is not read: MP3 was only ever the
-        // default, so everyone moves to M4A.
-        downloadFormat: DownloadFormat.values.firstWhere(
-          (f) => f.name == _prefs.getString('downloadFormat'),
-          orElse: () => DownloadFormat.m4a,
-        ),
-        importSureThreshold: _prefs.getDouble('importSureThreshold') ?? 0.80,
-        importReviewThreshold: _prefs.getDouble('importReviewThreshold') ?? 0.55,
-        playbackSpeed:
-            (_prefs.getDouble('playbackSpeed') ?? 1.0).clamp(0.5, 2.0),
-        eqEnabled: _prefs.getBool('eqEnabled') ?? false,
-        eqSpeaker: _readEq('speaker'),
-        eqHeadphones: _readEq('headphones'),
-        transition: TransitionMode.values.firstWhere(
-          (m) => m.name == _prefs.getString('transition'),
-          orElse: () => TransitionMode.normal,
-        ),
-        crossfadeSeconds: (_prefs.getInt('crossfadeSeconds') ?? 6).clamp(2, 12),
-        crossfadePlainInAlbum: _prefs.getBool('crossfadePlainInAlbum') ?? true,
-        writeTagsToFiles: _prefs.getBool('writeTagsToFiles') ?? false,
-        tagsAlsoInFile: _prefs.getBool('tagsAlsoInFile') ?? true,
-        writeTagsAfterDownload: _prefs.getBool('writeTagsAfterDownload') ?? true,
-        shufflePlus: _prefs.getBool('shufflePlus') ?? false,
-        shufflePlusEvery: (_prefs.getInt('shufflePlusEvery') ?? 4).clamp(3, 10),
-        shufflePlusUnmeteredOnly: _prefs.getBool('shufflePlusUnmeteredOnly') ?? true,
-        radioCountry: _prefs.getString('radioCountry') ?? '',
-        radioRegion: _prefs.getString('radioRegion') ?? '',
-        radioOnlyCountry: _prefs.getBool('radioOnlyCountry') ?? false,
-        iconFollow: IconFollow.values.firstWhere(
-          (f) => f.name == _prefs.getString('iconFollow'),
-          orElse: () => IconFollow.ask,
-        ),
-      );
+    theme: _prefs.getString('theme') ?? 'notte',
+    accent: _prefs.getString('accent') ?? 'viola',
+    fontScale: _prefs.getDouble('fontScale') ?? 1.0,
+    compactMode: _prefs.getBool('compactMode') ?? false,
+    reducedMotion: _prefs.getBool('reducedMotion') ?? false,
+    spinCover: _prefs.getBool('spinCover') ?? false,
+    blurredChrome: _prefs.getBool('blurredChrome') ?? false,
+    language: _prefs.getString('language') ?? 'it',
+    autoEnrich: _prefs.getBool('autoEnrich') ?? false,
+    autoLyrics: _prefs.getBool('autoLyrics') ?? false,
+    deezerMeta: _prefs.getBool('deezerMeta') ?? true,
+    acoustId: _prefs.getBool('acoustId') ?? true,
+    creditsDetails: _prefs.getBool('creditsDetails') ?? false,
+    autoCuriosities: _prefs.getBool('autoCuriosities') ?? false,
+    showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,
+    deviceName: _prefs.getString('deviceName'),
+    normalizeVolume: _prefs.getBool('normalizeVolume') ?? false,
+    receiveFromLan: _prefs.getBool('receiveFromLan') ?? false,
+    jamLatencyMs: _prefs.getInt('jamLatencyMs') ?? 0,
+    librarySort: _prefs.getString('librarySort') ?? 'recent',
+    librarySortAscending: _readSortAscending(),
+    playlistSorts: _readPlaylistSorts(),
+    libraryGrid: _prefs.getBool('libraryGrid') ?? false,
+    recentSearches: _prefs.getStringList('recentSearches') ?? const [],
+    ytNoticeSeen: _prefs.getBool('ytNoticeSeen') ?? false,
+    onboardingDone: _prefs.getBool('onboardingDone') ?? false,
+    recordHistory: _prefs.getBool('recordHistory') ?? true,
+    downloadParallel: (_prefs.getInt('downloadParallel') ?? 2).clamp(1, 3),
+    downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
+    streamCacheMb: (_prefs.getInt('streamCacheMb') ?? 1024).clamp(256, 8192),
+    // The old «downloadOriginal» switch is not read: MP3 was only ever the
+    // default, so everyone moves to M4A.
+    downloadFormat: DownloadFormat.values.firstWhere(
+      (f) => f.name == _prefs.getString('downloadFormat'),
+      orElse: () => DownloadFormat.m4a,
+    ),
+    importSureThreshold: _prefs.getDouble('importSureThreshold') ?? 0.80,
+    importReviewThreshold: _prefs.getDouble('importReviewThreshold') ?? 0.55,
+    playbackSpeed: (_prefs.getDouble('playbackSpeed') ?? 1.0).clamp(0.5, 2.0),
+    eqEnabled: _prefs.getBool('eqEnabled') ?? false,
+    eqSpeaker: _readEq('speaker'),
+    eqHeadphones: _readEq('headphones'),
+    transition: TransitionMode.values.firstWhere(
+      (m) => m.name == _prefs.getString('transition'),
+      orElse: () => TransitionMode.normal,
+    ),
+    crossfadeSeconds: (_prefs.getInt('crossfadeSeconds') ?? 6).clamp(2, 12),
+    crossfadePlainInAlbum: _prefs.getBool('crossfadePlainInAlbum') ?? true,
+    writeTagsToFiles: _prefs.getBool('writeTagsToFiles') ?? false,
+    tagsAlsoInFile: _prefs.getBool('tagsAlsoInFile') ?? true,
+    writeTagsAfterDownload: _prefs.getBool('writeTagsAfterDownload') ?? true,
+    shufflePlus: _prefs.getBool('shufflePlus') ?? false,
+    shufflePlusEvery: (_prefs.getInt('shufflePlusEvery') ?? 4).clamp(3, 10),
+    shufflePlusUnmeteredOnly:
+        _prefs.getBool('shufflePlusUnmeteredOnly') ?? true,
+    radioCountry: _prefs.getString('radioCountry') ?? '',
+    radioRegion: _prefs.getString('radioRegion') ?? '',
+    radioOnlyCountry: _prefs.getBool('radioOnlyCountry') ?? false,
+    iconFollow: IconFollow.values.firstWhere(
+      (f) => f.name == _prefs.getString('iconFollow'),
+      orElse: () => IconFollow.ask,
+    ),
+  );
 
   EqProfile _readEq(String profile) => EqProfile(
-        preset: EqPreset.values.firstWhere(
-          (p) => p.name == _prefs.getString('eqPreset.$profile'),
-          orElse: () => EqPreset.flat,
-        ),
-        custom: [
-          for (final g in _prefs.getStringList('eqGains.$profile') ?? const [])
-            ?double.tryParse(g),
-        ],
-      );
+    preset: EqPreset.values.firstWhere(
+      (p) => p.name == _prefs.getString('eqPreset.$profile'),
+      orElse: () => EqPreset.flat,
+    ),
+    custom: [
+      for (final g in _prefs.getStringList('eqGains.$profile') ?? const [])
+        ?double.tryParse(g),
+    ],
+  );
 
   Future<void> _writeEq(String profile, EqProfile p) async {
     await _prefs.setString('eqPreset.$profile', p.preset.name);
-    await _prefs.setStringList(
-        'eqGains.$profile', [for (final g in p.custom) '$g']);
+    await _prefs.setStringList('eqGains.$profile', [
+      for (final g in p.custom) '$g',
+    ]);
   }
 
   Future<void> writeSettings(AppSettings s) async {
@@ -504,7 +512,10 @@ class SettingsStore {
     await _prefs.setBool('writeTagsAfterDownload', s.writeTagsAfterDownload);
     await _prefs.setBool('shufflePlus', s.shufflePlus);
     await _prefs.setInt('shufflePlusEvery', s.shufflePlusEvery);
-    await _prefs.setBool('shufflePlusUnmeteredOnly', s.shufflePlusUnmeteredOnly);
+    await _prefs.setBool(
+      'shufflePlusUnmeteredOnly',
+      s.shufflePlusUnmeteredOnly,
+    );
     await _prefs.setString('radioCountry', s.radioCountry);
     await _prefs.setString('radioRegion', s.radioRegion);
     await _prefs.setBool('radioOnlyCountry', s.radioOnlyCountry);
@@ -522,9 +533,10 @@ class SettingsStore {
     final existing = _prefs.getString('deviceId');
     if (existing != null && existing.length >= 16) return existing;
     final r = Random.secure();
-    final id = List.generate(16, (_) => r.nextInt(256))
-        .map((v) => v.toRadixString(16).padLeft(2, '0'))
-        .join();
+    final id = List.generate(
+      16,
+      (_) => r.nextInt(256),
+    ).map((v) => v.toRadixString(16).padLeft(2, '0')).join();
     await _prefs.setString('deviceId', id);
     return id;
   }
@@ -538,13 +550,16 @@ class SettingsStore {
   /// Remote Jam brokers, JSON `[{host, port, tls}]` (null = the defaults).
   String? readJamBrokersRaw() => _prefs.getString('jamBrokers');
 
-  Future<void> writeJamBrokersRaw(String? raw) =>
-      raw == null ? _prefs.remove('jamBrokers') : _prefs.setString('jamBrokers', raw);
+  Future<void> writeJamBrokersRaw(String? raw) => raw == null
+      ? _prefs.remove('jamBrokers')
+      : _prefs.setString('jamBrokers', raw);
 
   /// «Accetta gli amici senza chiedere» of the remote Jam: off unless turned on (R-145).
-  bool readJamAutoAcceptFriends() => _prefs.getBool('jamAutoAcceptFriends') ?? false;
+  bool readJamAutoAcceptFriends() =>
+      _prefs.getBool('jamAutoAcceptFriends') ?? false;
 
-  Future<void> writeJamAutoAcceptFriends(bool v) => _prefs.setBool('jamAutoAcceptFriends', v);
+  Future<void> writeJamAutoAcceptFriends(bool v) =>
+      _prefs.setBool('jamAutoAcceptFriends', v);
 
   /// «Cerca Jam vicine» (Bluetooth): on, false after a refused permission (R-138).
   bool readJamNearbyScan() => _prefs.getBool('jamNearbyScan') ?? true;
@@ -554,22 +569,27 @@ class SettingsStore {
   /// The Bluetooth permission sheet has been shown once.
   bool readJamBlePermAsked() => _prefs.getBool('jamBlePermAsked') ?? false;
 
-  Future<void> writeJamBlePermAsked(bool v) => _prefs.setBool('jamBlePermAsked', v);
+  Future<void> writeJamBlePermAsked(bool v) =>
+      _prefs.setBool('jamBlePermAsked', v);
 
   /// The user's own themes, as written by `CustomThemes.encode`.
   String? readCustomThemesRaw() => _prefs.getString('customThemes');
 
-  Future<void> writeCustomThemesRaw(String raw) => _prefs.setString('customThemes', raw);
+  Future<void> writeCustomThemesRaw(String raw) =>
+      _prefs.setString('customThemes', raw);
 
   /// «Controlla all'avvio» for new versions: off unless the user turns it on.
-  bool readCheckUpdatesOnStart() => _prefs.getBool('checkUpdatesOnStart') ?? false;
+  bool readCheckUpdatesOnStart() =>
+      _prefs.getBool('checkUpdatesOnStart') ?? false;
 
-  Future<void> writeCheckUpdatesOnStart(bool on) => _prefs.setBool('checkUpdatesOnStart', on);
+  Future<void> writeCheckUpdatesOnStart(bool on) =>
+      _prefs.setBool('checkUpdatesOnStart', on);
 
   /// Day (days since the epoch) of the last check made at start-up.
   int readLastUpdateCheckDay() => _prefs.getInt('lastUpdateCheckDay') ?? 0;
 
-  Future<void> writeLastUpdateCheckDay(int day) => _prefs.setInt('lastUpdateCheckDay', day);
+  Future<void> writeLastUpdateCheckDay(int day) =>
+      _prefs.setInt('lastUpdateCheckDay', day);
 
   /// Background enrichment bookmark: id of the last track tried (0 = none).
   /// Device-bound, never in a backup.
@@ -581,37 +601,48 @@ class SettingsStore {
   /// Device-bound, never in a backup.
   int get recogPassAfter {
     final parts = (_prefs.getString(recogPassAfterKey) ?? '').split(':');
-    return parts.length == 2 && int.tryParse(parts[0]) == kRecogVersion ? int.tryParse(parts[1]) ?? 0 : 0;
+    return parts.length == 2 && int.tryParse(parts[0]) == kRecogVersion
+        ? int.tryParse(parts[1]) ?? 0
+        : 0;
   }
 
-  Future<void> writeRecogPassAfter(int id) => _prefs.setString(recogPassAfterKey, '$kRecogVersion:$id');
+  Future<void> writeRecogPassAfter(int id) =>
+      _prefs.setString(recogPassAfterKey, '$kRecogVersion:$id');
   int get recogPassDone => _prefs.getInt(recogPassDoneKey) ?? 0;
   Future<void> writeRecogPassDone(int v) => _prefs.setInt(recogPassDoneKey, v);
 
   /// Genre re-read of the existing library (D-390): the last track done, and the
   /// `kGenreRereadVersion` it finished for. Device-bound (track ids), never in a backup.
   int get genreRereadAfter => _prefs.getInt(genreRereadAfterKey) ?? 0;
-  Future<void> writeGenreRereadAfter(int id) => _prefs.setInt(genreRereadAfterKey, id);
+  Future<void> writeGenreRereadAfter(int id) =>
+      _prefs.setInt(genreRereadAfterKey, id);
   int get genreRereadDone => _prefs.getInt(genreRereadDoneKey) ?? 0;
-  Future<void> writeGenreRereadDone(int v) => _prefs.setInt(genreRereadDoneKey, v);
+  Future<void> writeGenreRereadDone(int v) =>
+      _prefs.setInt(genreRereadDoneKey, v);
 
   // New releases of followed artists (phase 34).
 
   /// «Più ascoltati»: follow the most listened artists automatically (off).
   bool get releasesTopArtists => _prefs.getBool('releasesTopArtists') ?? false;
-  Future<void> writeReleasesTopArtists(bool on) => _prefs.setBool('releasesTopArtists', on);
+  Future<void> writeReleasesTopArtists(bool on) =>
+      _prefs.setBool('releasesTopArtists', on);
 
   /// A notification for new releases (Android).
   bool get releasesNotify => _prefs.getBool('releasesNotify') ?? true;
-  Future<void> writeReleasesNotify(bool on) => _prefs.setBool('releasesNotify', on);
+  Future<void> writeReleasesNotify(bool on) =>
+      _prefs.setBool('releasesNotify', on);
 
   /// Check only on a network that is not metered (off).
-  bool get releasesUnmeteredOnly => _prefs.getBool('releasesUnmeteredOnly') ?? false;
-  Future<void> writeReleasesUnmeteredOnly(bool on) => _prefs.setBool('releasesUnmeteredOnly', on);
+  bool get releasesUnmeteredOnly =>
+      _prefs.getBool('releasesUnmeteredOnly') ?? false;
+  Future<void> writeReleasesUnmeteredOnly(bool on) =>
+      _prefs.setBool('releasesUnmeteredOnly', on);
 
   /// The Home card about «Più ascoltati» was answered (either way).
-  bool get releasesTopCardSeen => _prefs.getBool('releasesTopCardSeen') ?? false;
-  Future<void> writeReleasesTopCardSeen(bool seen) => _prefs.setBool('releasesTopCardSeen', seen);
+  bool get releasesTopCardSeen =>
+      _prefs.getBool('releasesTopCardSeen') ?? false;
+  Future<void> writeReleasesTopCardSeen(bool seen) =>
+      _prefs.setBool('releasesTopCardSeen', seen);
 
   /// Start of the last round, and the earliest time for another after a 429
   /// (epoch ms; null = none).
@@ -619,10 +650,13 @@ class SettingsStore {
   int? get releasesRetryAt => _prefs.getInt('releasesRetryAt');
   int? get releasesLastNotifiedAt => _prefs.getInt('releasesLastNotifiedAt');
 
-  Future<void> writeReleasesLastRunAt(int ms) => _prefs.setInt('releasesLastRunAt', ms);
-  Future<void> writeReleasesLastNotifiedAt(int ms) => _prefs.setInt('releasesLastNotifiedAt', ms);
-  Future<void> writeReleasesRetryAt(int? ms) =>
-      ms == null ? _prefs.remove('releasesRetryAt') : _prefs.setInt('releasesRetryAt', ms);
+  Future<void> writeReleasesLastRunAt(int ms) =>
+      _prefs.setInt('releasesLastRunAt', ms);
+  Future<void> writeReleasesLastNotifiedAt(int ms) =>
+      _prefs.setInt('releasesLastNotifiedAt', ms);
+  Future<void> writeReleasesRetryAt(int? ms) => ms == null
+      ? _prefs.remove('releasesRetryAt')
+      : _prefs.setInt('releasesRetryAt', ms);
 
   /// Duplicate groups the user marked «not duplicates» (`DuplicateGroup.key`).
   Set<String> readNotDuplicates() =>
@@ -632,10 +666,11 @@ class SettingsStore {
       _prefs.setStringList('notDuplicates', keys.toList()..sort());
 
   /// Tracks the user marked «va bene così» in «Da revisionare» (track ids).
-  Set<int> readReviewDismissed() => (_prefs.getStringList('reviewDismissed') ?? const [])
-      .map(int.tryParse)
-      .whereType<int>()
-      .toSet();
+  Set<int> readReviewDismissed() =>
+      (_prefs.getStringList('reviewDismissed') ?? const [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toSet();
 
   Future<void> writeReviewDismissed(Set<int> ids) => _prefs.setStringList(
     'reviewDismissed',
@@ -644,10 +679,11 @@ class SettingsStore {
 
   /// Tracks the second opinion of YouTube Music already looked at, so opening
   /// «Da revisionare» does not ask again (track ids).
-  Set<int> readReviewChecked() => (_prefs.getStringList('reviewChecked') ?? const [])
-      .map(int.tryParse)
-      .whereType<int>()
-      .toSet();
+  Set<int> readReviewChecked() =>
+      (_prefs.getStringList('reviewChecked') ?? const [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toSet();
 
   Future<void> writeReviewChecked(Set<int> ids) => _prefs.setStringList(
     'reviewChecked',
@@ -655,23 +691,28 @@ class SettingsStore {
   );
 
   /// Tracks whose synced lyrics are switched off: the plain text is shown (track ids).
-  Set<int> readUnsyncedLyrics() => (_prefs.getStringList(unsyncedLyricsKey) ?? const [])
-      .map(int.tryParse)
-      .whereType<int>()
-      .toSet();
+  Set<int> readUnsyncedLyrics() =>
+      (_prefs.getStringList(unsyncedLyricsKey) ?? const [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toSet();
 
   Future<void> writeUnsyncedLyrics(Set<int> ids) => _prefs.setStringList(
     unsyncedLyricsKey,
     [for (final i in ids.toList()..sort()) '$i'],
   );
 
-  DaylistConfig readDaylistConfig() => DaylistConfig.fromJsonString(_prefs.getString(daylistSlotsKey));
+  DaylistConfig readDaylistConfig() =>
+      DaylistConfig.fromJsonString(_prefs.getString(daylistSlotsKey));
 
-  Future<void> writeDaylistConfig(DaylistConfig c) => _prefs.setString(daylistSlotsKey, c.toJsonString());
+  Future<void> writeDaylistConfig(DaylistConfig c) =>
+      _prefs.setString(daylistSlotsKey, c.toJsonString());
 
-  MoodTable readMoodTable() => MoodTable.fromJsonString(_prefs.getString(moodTableKey));
+  MoodTable readMoodTable() =>
+      MoodTable.fromJsonString(_prefs.getString(moodTableKey));
 
-  Future<void> writeMoodTable(MoodTable t) => _prefs.setString(moodTableKey, t.toJsonString());
+  Future<void> writeMoodTable(MoodTable t) =>
+      _prefs.setString(moodTableKey, t.toJsonString());
 
   /// Slots, quotas and table back to the defaults.
   Future<void> resetDaylist() async {
@@ -706,16 +747,21 @@ class SettingsStore {
   }
 
   Future<void> writePlayback(SavedPlayback s) async {
-    await _prefs.setStringList(
-        'lastQueueIds', [for (final id in s.queueIds) '$id']);
+    await _prefs.setStringList('lastQueueIds', [
+      for (final id in s.queueIds) '$id',
+    ]);
     await _prefs.setInt('lastIndex', s.index);
     await _prefs.setInt('lastPositionMs', s.positionMs);
     await _prefs.setDouble('volume', s.volume);
     await _prefs.setBool('shuffle', s.shuffle);
     await _prefs.setString('repeat', s.repeat.name);
     final kind = s.contextKind, name = s.contextName;
-    await (kind == null ? _prefs.remove('lastContextKind') : _prefs.setInt('lastContextKind', kind));
-    await (name == null ? _prefs.remove('lastContextName') : _prefs.setString('lastContextName', name));
+    await (kind == null
+        ? _prefs.remove('lastContextKind')
+        : _prefs.setInt('lastContextKind', kind));
+    await (name == null
+        ? _prefs.remove('lastContextName')
+        : _prefs.setString('lastContextName', name));
   }
 
   /// The queue and shuffle mode a restart in the middle of a Jam must find (D-341);
@@ -735,16 +781,17 @@ class SettingsStore {
     );
   }
 
-  Future<void> writeJamAside(SavedPlayback q, {required bool plus}) => _prefs.setString(
-    'jamAside',
-    jsonEncode({
-      'ids': q.queueIds,
-      'index': q.index,
-      'ms': q.positionMs,
-      'shuffle': q.shuffle,
-      'plus': plus,
-    }),
-  );
+  Future<void> writeJamAside(SavedPlayback q, {required bool plus}) =>
+      _prefs.setString(
+        'jamAside',
+        jsonEncode({
+          'ids': q.queueIds,
+          'index': q.index,
+          'ms': q.positionMs,
+          'shuffle': q.shuffle,
+          'plus': plus,
+        }),
+      );
 
   Future<void> clearJamAside() => _prefs.remove('jamAside');
 

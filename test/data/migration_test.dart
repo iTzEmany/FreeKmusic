@@ -655,15 +655,22 @@ void main() {
       ),
     );
     final rows = await db.customSelect('SELECT title, isrc FROM tracks').get();
-    String? isrcOf(String title) =>
-        rows.firstWhere((r) => r.read<String>('title') == title).read<String?>('isrc');
+    String? isrcOf(String title) => rows
+        .firstWhere((r) => r.read<String>('title') == title)
+        .read<String?>('isrc');
     expect(isrcOf('A'), 'NEW');
     expect(isrcOf('B'), isNull);
-    final cols = await db.customSelect('PRAGMA table_info(playlist_import_items)').get();
+    final cols = await db
+        .customSelect('PRAGMA table_info(playlist_import_items)')
+        .get();
     expect(cols.map((c) => c.read<String>('name')), contains('year'));
     final idx = await db.customSelect('PRAGMA index_list(tracks)').get();
     expect(idx.map((c) => c.read<String>('name')), contains('tracks_isrc'));
-    final tmp = await db.customSelect("SELECT name FROM sqlite_master WHERE name = 'tmp_items_track'").get();
+    final tmp = await db
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE name = 'tmp_items_track'",
+        )
+        .get();
     expect(tmp, isEmpty);
     await db.close();
   });
@@ -691,18 +698,36 @@ void main() {
         },
       ),
     );
-    final names = (await db.customSelect("SELECT name FROM sqlite_master").get())
-        .map((r) => r.read<String>('name'))
-        .toSet();
-    expect(names, containsAll(['track_credits', 'track_enrich', 'activity_log', 'track_credits_name_key', 'activity_log_at']));
+    final names =
+        (await db.customSelect("SELECT name FROM sqlite_master").get())
+            .map((r) => r.read<String>('name'))
+            .toSet();
+    expect(
+      names,
+      containsAll([
+        'track_credits',
+        'track_enrich',
+        'activity_log',
+        'track_credits_name_key',
+        'activity_log_at',
+      ]),
+    );
     final cols = await db.customSelect('PRAGMA table_info(tracks)').get();
     expect(cols.map((c) => c.read<String>('name')), contains('cover_source'));
 
-    final rows = await db.customSelect('SELECT * FROM track_enrich ORDER BY track_id').get();
-    Map<int, Map<String, Object?>> byId = {for (final r in rows) r.read<int>('track_id'): r.data};
+    final rows = await db
+        .customSelect('SELECT * FROM track_enrich ORDER BY track_id')
+        .get();
+    Map<int, Map<String, Object?>> byId = {
+      for (final r in rows) r.read<int>('track_id'): r.data,
+    };
     expect(byId.keys, [1, 2, 3, 5]);
     expect(byId[1]!['meta_none_at'] as int, greaterThanOrEqualTo(before));
-    expect(byId[1]!['lyrics_none_at'], byId[1]!['meta_none_at'], reason: 'no lyrics: also marked');
+    expect(
+      byId[1]!['lyrics_none_at'],
+      byId[1]!['meta_none_at'],
+      reason: 'no lyrics: also marked',
+    );
     expect(byId[1]!['lyrics_by_user'], 0);
     expect(byId[2]!['meta_none_at'], isNotNull);
     expect(byId[2]!['lyrics_none_at'], isNull);
@@ -711,12 +736,21 @@ void main() {
     expect(byId[5]!['meta_none_at'], isNotNull);
     expect(byId[5]!['lyrics_by_user'], 1, reason: 'upsert into the same row');
 
-    final t = await db.customSelect(
-      'SELECT id, path, title, lyrics_plain, lyrics_synced, enrich_status, user_edited, cover_source FROM tracks ORDER BY id',
-    ).get();
+    final t = await db
+        .customSelect(
+          'SELECT id, path, title, lyrics_plain, lyrics_synced, enrich_status, user_edited, cover_source FROM tracks ORDER BY id',
+        )
+        .get();
     expect(t.map((r) => r.read<int>('enrich_status')), [2, 2, 0, 0, 2, 0]);
     expect(t.map((r) => r.read<int>('cover_source')), everyElement(0));
-    expect(t.map((r) => r.read<String?>('lyrics_plain')), [null, 'words', null, '', 'w', null]);
+    expect(t.map((r) => r.read<String?>('lyrics_plain')), [
+      null,
+      'words',
+      null,
+      '',
+      'w',
+      null,
+    ]);
     await db.close();
   });
   test('a v15 database gets the genre and artist-country tables, empty, and keeps its tracks', () async {
@@ -727,21 +761,37 @@ void main() {
             'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, '
             'title TEXT NOT NULL, genre TEXT)',
           );
-          raw.execute("INSERT INTO tracks (id, path, title, genre) VALUES (1, '/1', 'one', 'Rock'), (2, '/2', 'two', NULL)");
+          raw.execute(
+            "INSERT INTO tracks (id, path, title, genre) VALUES (1, '/1', 'one', 'Rock'), (2, '/2', 'two', NULL)",
+          );
           raw.userVersion = 15;
         },
       ),
     );
-    final names = (await db.customSelect('SELECT name FROM sqlite_master').get()).map((r) => r.read<String>('name')).toSet();
-    expect(names, containsAll(['track_genres', 'artist_countries', 'track_genres_genre']));
+    final names =
+        (await db.customSelect('SELECT name FROM sqlite_master').get())
+            .map((r) => r.read<String>('name'))
+            .toSet();
+    expect(
+      names,
+      containsAll(['track_genres', 'artist_countries', 'track_genres_genre']),
+    );
     expect(await db.select(db.trackGenres).get(), isEmpty);
     expect(await db.select(db.artistCountries).get(), isEmpty);
-    final t = await db.customSelect('SELECT id, title, genre FROM tracks ORDER BY id').get();
+    final t = await db
+        .customSelect('SELECT id, title, genre FROM tracks ORDER BY id')
+        .get();
     expect(t.map((r) => r.read<String?>('genre')), ['Rock', null]);
 
     // The genre matches ignoring case, and deleting a track takes its genres.
-    await db.into(db.trackGenres).insert(TrackGenresCompanion.insert(trackId: 1, genre: 'Rock', position: 0));
-    final hit = await db.customSelect("SELECT track_id FROM track_genres WHERE genre = 'rock'").get();
+    await db
+        .into(db.trackGenres)
+        .insert(
+          TrackGenresCompanion.insert(trackId: 1, genre: 'Rock', position: 0),
+        );
+    final hit = await db
+        .customSelect("SELECT track_id FROM track_genres WHERE genre = 'rock'")
+        .get();
     expect(hit, hasLength(1));
     await db.customStatement('PRAGMA foreign_keys = ON');
     await db.customStatement('DELETE FROM tracks WHERE id = 1');
@@ -755,18 +805,32 @@ void main() {
           raw.execute(
             'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, title TEXT NOT NULL)',
           );
-          raw.execute("INSERT INTO tracks (id, path, title) VALUES (1, '/1', 'one')");
-          raw.execute('CREATE TABLE followed_artists (yt_m_id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL)');
-          raw.execute("INSERT INTO followed_artists (yt_m_id, name) VALUES ('UC1', 'One')");
+          raw.execute(
+            "INSERT INTO tracks (id, path, title) VALUES (1, '/1', 'one')",
+          );
+          raw.execute(
+            'CREATE TABLE followed_artists (yt_m_id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL)',
+          );
+          raw.execute(
+            "INSERT INTO followed_artists (yt_m_id, name) VALUES ('UC1', 'One')",
+          );
           raw.userVersion = 16;
         },
       ),
     );
     expect(await db.select(db.artistAliases).get(), isEmpty);
     expect(await db.select(db.artistNotSame).get(), isEmpty);
-    expect((await db.customSelect('SELECT title FROM tracks').getSingle()).read<String>('title'), 'one');
-    await db.into(db.artistAliases).insert(ArtistAliasesCompanion.insert(aliasId: 'UC2', mainId: 'UC1'));
-    await db.into(db.artistNotSame).insert(ArtistNotSameCompanion.insert(a: 'UC1', b: 'UC3'));
+    expect(
+      (await db.customSelect('SELECT title FROM tracks').getSingle())
+          .read<String>('title'),
+      'one',
+    );
+    await db
+        .into(db.artistAliases)
+        .insert(ArtistAliasesCompanion.insert(aliasId: 'UC2', mainId: 'UC1'));
+    await db
+        .into(db.artistNotSame)
+        .insert(ArtistNotSameCompanion.insert(a: 'UC1', b: 'UC3'));
     expect(await db.select(db.artistAliases).get(), hasLength(1));
     expect(await db.select(db.artistNotSame).get(), hasLength(1));
     await db.close();
@@ -779,16 +843,26 @@ void main() {
             'CREATE TABLE podcasts (id INTEGER PRIMARY KEY AUTOINCREMENT, feed_url TEXT NOT NULL UNIQUE, '
             'title TEXT NOT NULL, added_at INTEGER NOT NULL)',
           );
-          raw.execute("INSERT INTO podcasts (id, feed_url, title, added_at) VALUES (1, 'https://x/feed', 'Old', 5)");
+          raw.execute(
+            "INSERT INTO podcasts (id, feed_url, title, added_at) VALUES (1, 'https://x/feed', 'Old', 5)",
+          );
           raw.userVersion = 17;
         },
       ),
     );
     final old = await db.select(db.podcasts).getSingle();
     expect((old.title, old.source, old.sourceId), ('Old', 0, null));
-    await db.into(db.podcasts).insert(
-      PodcastsCompanion.insert(feedUrl: 'ytm:1', title: 'New', addedAt: 6, source: const Value(1), sourceId: const Value('MPSPPx')),
-    );
+    await db
+        .into(db.podcasts)
+        .insert(
+          PodcastsCompanion.insert(
+            feedUrl: 'ytm:1',
+            title: 'New',
+            addedAt: 6,
+            source: const Value(1),
+            sourceId: const Value('MPSPPx'),
+          ),
+        );
     expect((await db.select(db.podcasts).get()).map((p) => p.source), [0, 1]);
     await db.close();
   });
@@ -805,14 +879,22 @@ void main() {
             'CREATE TABLE podcast_episodes (id INTEGER PRIMARY KEY AUTOINCREMENT, podcast_id INTEGER NOT NULL, '
             'guid TEXT NOT NULL, title TEXT NOT NULL, audio_url TEXT NOT NULL)',
           );
-          raw.execute("INSERT INTO podcasts (id, feed_url, title, added_at) VALUES (1, 'https://x/feed', 'Old', 5)");
-          raw.execute("INSERT INTO podcast_episodes (podcast_id, guid, title, audio_url) VALUES (1, 'g', 'E', 'u')");
+          raw.execute(
+            "INSERT INTO podcasts (id, feed_url, title, added_at) VALUES (1, 'https://x/feed', 'Old', 5)",
+          );
+          raw.execute(
+            "INSERT INTO podcast_episodes (podcast_id, guid, title, audio_url) VALUES (1, 'g', 'E', 'u')",
+          );
           raw.userVersion = 18;
         },
       ),
     );
     expect((await db.select(db.podcasts).getSingle()).followed, isTrue);
-    expect((await db.customSelect('SELECT title FROM podcast_episodes').getSingle()).read<String>('title'), 'E');
+    expect(
+      (await db.customSelect('SELECT title FROM podcast_episodes').getSingle())
+          .read<String>('title'),
+      'E',
+    );
     await db.close();
   });
 
@@ -825,7 +907,9 @@ void main() {
             'title TEXT NOT NULL, added_at INTEGER NOT NULL, source INTEGER NOT NULL DEFAULT 0, source_id TEXT, '
             'followed INTEGER NOT NULL DEFAULT 1)',
           );
-          raw.execute("INSERT INTO podcasts (id, feed_url, title, added_at, followed) VALUES (1, 'https://x/f', 'Off', 5, 0)");
+          raw.execute(
+            "INSERT INTO podcasts (id, feed_url, title, added_at, followed) VALUES (1, 'https://x/f', 'Off', 5, 0)",
+          );
           raw.userVersion = 18;
         },
       ),
@@ -838,14 +922,24 @@ void main() {
     final db = AppDatabase(
       NativeDatabase.memory(
         setup: (raw) {
-          raw.execute('CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, title TEXT NOT NULL)');
-          raw.execute('CREATE TABLE track_genres (track_id INTEGER NOT NULL, genre TEXT NOT NULL, position INTEGER NOT NULL)');
-          raw.execute('CREATE INDEX track_genres_genre ON track_genres (genre)');
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL, title TEXT NOT NULL)',
+          );
+          raw.execute(
+            'CREATE TABLE track_genres (track_id INTEGER NOT NULL, genre TEXT NOT NULL, position INTEGER NOT NULL)',
+          );
+          raw.execute(
+            'CREATE INDEX track_genres_genre ON track_genres (genre)',
+          );
           raw.userVersion = 15;
         },
       ),
     );
-    final idx = await db.customSelect("SELECT name FROM sqlite_master WHERE name = 'track_genres_genre'").get();
+    final idx = await db
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE name = 'track_genres_genre'",
+        )
+        .get();
     expect(idx, hasLength(1));
     await db.close();
   });

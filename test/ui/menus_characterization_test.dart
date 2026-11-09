@@ -123,7 +123,8 @@ class _Web implements WebClient {
   Future<Object?> getJson(
     String url, {
     Map<String, String>? query,
-    CancelToken? cancel, bool strict = false,
+    CancelToken? cancel,
+    bool strict = false,
   }) async => null;
   @override
   Future<List<int>?> getBytes(
@@ -145,7 +146,6 @@ class _FakeStore extends TagBackupStore {
   @override
   Future<List<TagBackup>> list() async => List.of(items);
 }
-
 
 const _selKey = 'menus-sel';
 
@@ -223,7 +223,13 @@ JamUiState _jam({required bool host}) => JamUiState(
 const _sleepIdle = ['15', '30', '45', '60', '-1'];
 const _sleepActive = ['15', '30', '45', '60', '-1', '0'];
 const _favoritesSort = [
-  'defaultOrder', 'title', 'artist', 'album', 'year', 'addedAt', 'duration',
+  'defaultOrder',
+  'title',
+  'artist',
+  'album',
+  'year',
+  'addedAt',
+  'duration',
 ];
 const _queueMenu = ['Suggeriti di recente'];
 const _jamHostRow = ['Salta qui', 'Vai all’artista', 'Rimuovi'];
@@ -285,25 +291,24 @@ void main() {
     },
   );
 
-  testWidgets(
-    'library «+» opens the same sheet; «Crea» makes the playlist',
-    (tester) async {
-      _phone(tester);
-      final h = await Harness.create(tester);
-      await h.pump(tester, const Scaffold(body: LibraryScreen()));
-      await _settle(tester);
-      await tester.tap(find.byTooltip('Nuova playlist'));
-      await _settle(tester);
-      expect(find.text('Nuova playlist intelligente'), findsOneWidget);
-      expect(find.text('Importa da Exportify (CSV)'), findsOneWidget);
-      await tester.enterText(find.byType(TextField), 'Dalla libreria');
-      await tester.pump();
-      await tester.tap(find.text('Crea'));
-      await _settle(tester);
-      expect(await _playlistNames(tester, h), ['Dalla libreria']);
-      await h.dispose(tester);
-    },
-  );
+  testWidgets('library «+» opens the same sheet; «Crea» makes the playlist', (
+    tester,
+  ) async {
+    _phone(tester);
+    final h = await Harness.create(tester);
+    await h.pump(tester, const Scaffold(body: LibraryScreen()));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Nuova playlist'));
+    await _settle(tester);
+    expect(find.text('Nuova playlist intelligente'), findsOneWidget);
+    expect(find.text('Importa da Exportify (CSV)'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Dalla libreria');
+    await tester.pump();
+    await tester.tap(find.text('Crea'));
+    await _settle(tester);
+    expect(await _playlistNames(tester, h), ['Dalla libreria']);
+    await h.dispose(tester);
+  });
 
   testWidgets(
     'library «more»: folders, scan, share, exportAll; «folders» opens the sheet',
@@ -417,13 +422,7 @@ void main() {
       await h.pump(tester, const MissingTracksScreen());
       await _settle(tester);
       expect(find.text('Song 0'), findsOneWidget);
-      expect(
-        await _open(
-          tester,
-          menuButton(),
-        ),
-        ['ignore', 'remove'],
-      );
+      expect(await _open(tester, menuButton()), ['ignore', 'remove']);
       await tester.tap(find.text('Ignora'));
       await _settle(tester);
       expect(find.text('Song 0'), findsNothing);
@@ -555,32 +554,34 @@ void main() {
       ],
     );
     await _settle(tester);
-    expect(
-      await _open(tester, menuButton()),
-      ['restore', 'delete'],
-    );
+    expect(await _open(tester, menuButton()), ['restore', 'delete']);
     await h.dispose(tester);
   });
 
-  testWidgets('sleep timer (moon): 15/30/45/60/end of track; «15» starts it, then «cancel» appears', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 2);
-    final rows = await _tracks(tester, h);
-    await tester.runAsync(() => h.handler.playQueue([rows.first.id], 0));
-    await h.pump(tester, const NowPlayingScreen(desktop: false));
-    await _settle(tester);
-    final chip = find.byKey(const Key('np-sleep-chip'));
-    expect(await _open(tester, chip), _sleepIdle);
-    await _choose(tester, '15 minuti');
-    final c = ProviderScope.containerOf(tester.element(chip));
-    expect(c.read(sleepTimerProvider).endsAt, isNotNull);
-    expect(await _open(tester, chip), _sleepActive);
-    await _choose(tester, 'Annulla timer');
-    expect(c.read(sleepTimerProvider).active, isFalse);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'sleep timer (moon): 15/30/45/60/end of track; «15» starts it, then «cancel» appears',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 2);
+      final rows = await _tracks(tester, h);
+      await tester.runAsync(() => h.handler.playQueue([rows.first.id], 0));
+      await h.pump(tester, const NowPlayingScreen(desktop: false));
+      await _settle(tester);
+      final chip = find.byKey(const Key('np-sleep-chip'));
+      expect(await _open(tester, chip), _sleepIdle);
+      await _choose(tester, '15 minuti');
+      final c = ProviderScope.containerOf(tester.element(chip));
+      expect(c.read(sleepTimerProvider).endsAt, isNotNull);
+      expect(await _open(tester, chip), _sleepActive);
+      await _choose(tester, 'Annulla timer');
+      expect(c.read(sleepTimerProvider).active, isFalse);
+      await h.dispose(tester);
+    },
+  );
 
-  testWidgets('library sort: «Titolo A–Z» becomes the shown order', (tester) async {
+  testWidgets('library sort: «Titolo A–Z» becomes the shown order', (
+    tester,
+  ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
@@ -598,7 +599,9 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('library sort: the current order is marked in the sheet', (tester) async {
+  testWidgets('library sort: the current order is marked in the sheet', (
+    tester,
+  ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const Scaffold(body: LibraryScreen()));
@@ -617,93 +620,111 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('favourites sort: seven orders; «Titolo» sets the query sort', (tester) async {
+  testWidgets('favourites sort: seven orders; «Titolo» sets the query sort', (
+    tester,
+  ) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 2);
     await h.pump(tester, const FavoritesScreen());
     await _settle(tester);
     expect(await _open(tester, find.byTooltip('Ordina per')), _favoritesSort);
     await _choose(tester, 'Titolo');
-    final c = ProviderScope.containerOf(tester.element(find.byType(FavoritesScreen)));
+    final c = ProviderScope.containerOf(
+      tester.element(find.byType(FavoritesScreen)),
+    );
     expect(c.read(trackQueryProvider(true)).sort, SortOption.title);
     await h.dispose(tester);
   });
 
-  testWidgets('desktop right click on a row (showTrackContextMenu): same actions as the sheet; first one is driven', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 2);
-    final rows = await _tracks(tester, h);
-    await h.pump(tester, _SelPage(rows));
-    await _settle(tester);
-    final labels = await _openContext(tester, find.text('Song 0'));
-    expect(labels, _contextMenu);
-    await _choose(tester, 'Aggiungi in coda');
-    expect(h.handler.queueIds, [rows[0].id]);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'desktop right click on a row (showTrackContextMenu): same actions as the sheet; first one is driven',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 2);
+      final rows = await _tracks(tester, h);
+      await h.pump(tester, _SelPage(rows));
+      await _settle(tester);
+      final labels = await _openContext(tester, find.text('Song 0'));
+      expect(labels, _contextMenu);
+      await _choose(tester, 'Aggiungi in coda');
+      expect(h.handler.queueIds, [rows[0].id]);
+      await h.dispose(tester);
+    },
+  );
 
-  testWidgets('selection bar ⋮: the bulk actions of the picked rows; «Aggiungi in coda» queues them', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 4);
-    final rows = await _tracks(tester, h);
-    await h.pump(tester, _SelPage(rows));
-    await _settle(tester);
-    await tester.longPress(find.text('Song 0'));
-    await _settle(tester);
-    await tester.tap(find.text('Song 2'));
-    await _settle(tester);
-    expect(find.text('2 selezionati'), findsOneWidget);
-    expect(await _open(tester, find.byTooltip('Azioni')), _selectionMenu);
-    await _choose(tester, 'Aggiungi in coda');
-    expect(h.handler.queueIds, [rows[0].id, rows[2].id]);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'selection bar ⋮: the bulk actions of the picked rows; «Aggiungi in coda» queues them',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 4);
+      final rows = await _tracks(tester, h);
+      await h.pump(tester, _SelPage(rows));
+      await _settle(tester);
+      await tester.longPress(find.text('Song 0'));
+      await _settle(tester);
+      await tester.tap(find.text('Song 2'));
+      await _settle(tester);
+      expect(find.text('2 selezionati'), findsOneWidget);
+      expect(await _open(tester, find.byTooltip('Azioni')), _selectionMenu);
+      await _choose(tester, 'Aggiungi in coda');
+      expect(h.handler.queueIds, [rows[0].id, rows[2].id]);
+      await h.dispose(tester);
+    },
+  );
 
-  testWidgets('queue sheet: direct button «Suggeriti di recente» (no menu), opens the suggestions page', (tester) async {
-    _phone(tester);
-    final h = await Harness.create(tester, tracks: 3);
-    final rows = await _tracks(tester, h);
-    await tester.runAsync(() => h.handler.playQueue([for (final t in rows) t.id], 0));
-    final sc = ScrollController();
-    addTearDown(sc.dispose);
-    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: sc)));
-    await _settle(tester);
-    expect(find.byType(PopupMenuButton), findsNothing);
-    expect(
-      find.widgetWithText(TextButton, _queueMenu.single),
-      findsOneWidget,
-    );
-    await _choose(tester, _queueMenu.single);
-    expect(find.byType(SuggestionsScreen), findsOneWidget);
-    await h.dispose(tester);
-  });
+  testWidgets(
+    'queue sheet: direct button «Suggeriti di recente» (no menu), opens the suggestions page',
+    (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 3);
+      final rows = await _tracks(tester, h);
+      await tester.runAsync(
+        () => h.handler.playQueue([for (final t in rows) t.id], 0),
+      );
+      final sc = ScrollController();
+      addTearDown(sc.dispose);
+      await h.pump(tester, Scaffold(body: QueueSheet(scrollController: sc)));
+      await _settle(tester);
+      expect(find.byType(PopupMenuButton), findsNothing);
+      expect(
+        find.widgetWithText(TextButton, _queueMenu.single),
+        findsOneWidget,
+      );
+      await _choose(tester, _queueMenu.single);
+      expect(find.byType(SuggestionsScreen), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
 
   for (final host in [true, false]) {
-    testWidgets('jam queue row ⋮ as ${host ? 'host' : 'guest'}: ${host ? 'jump, artist, remove' : 'jump, artist'}; «Salta qui» sends jump', (tester) async {
-      tester.view.physicalSize = const Size(500, 1000);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final h = await Harness.create(tester);
-      final fake = _FakeJam(_jam(host: host));
-      await h.pump(
-        tester,
-        const JamScreen(),
-        extraOverrides: [
-          jamProvider.overrideWith(() => fake),
-          jamTrackCoverProvider.overrideWith((ref, id) async => null),
-        ],
-      );
-      // The shared queue opens from «Coda».
-      await tester.tap(find.text('Coda'));
-      await _settle(tester);
-      expect(
-        await _open(tester, find.byTooltip('Altre azioni').last),
-        host ? _jamHostRow : _jamGuestRow,
-      );
-      await _choose(tester, 'Salta qui');
-      expect(fake.sent.single.type, JamCommandType.jump);
-      expect(fake.sent.single.itemId, 2);
-      await h.dispose(tester);
-    });
+    testWidgets(
+      'jam queue row ⋮ as ${host ? 'host' : 'guest'}: ${host ? 'jump, artist, remove' : 'jump, artist'}; «Salta qui» sends jump',
+      (tester) async {
+        tester.view.physicalSize = const Size(500, 1000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final h = await Harness.create(tester);
+        final fake = _FakeJam(_jam(host: host));
+        await h.pump(
+          tester,
+          const JamScreen(),
+          extraOverrides: [
+            jamProvider.overrideWith(() => fake),
+            jamTrackCoverProvider.overrideWith((ref, id) async => null),
+          ],
+        );
+        // The shared queue opens from «Coda».
+        await tester.tap(find.text('Coda'));
+        await _settle(tester);
+        expect(
+          await _open(tester, find.byTooltip('Altre azioni').last),
+          host ? _jamHostRow : _jamGuestRow,
+        );
+        await _choose(tester, 'Salta qui');
+        expect(fake.sent.single.type, JamCommandType.jump);
+        expect(fake.sent.single.itemId, 2);
+        await h.dispose(tester);
+      },
+    );
   }
 }

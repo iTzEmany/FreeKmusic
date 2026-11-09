@@ -145,7 +145,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.block), findsNothing);
     store.blockArtist(const DislikedArtist(key: 'calcutta', name: 'Calcutta'));

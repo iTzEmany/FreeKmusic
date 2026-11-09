@@ -15,7 +15,8 @@ import '../services/daylist/daylist_builder.dart';
 import '../services/daylist/daylist_slots.dart';
 import '../services/daylist/daylist_store.dart';
 import '../services/daylist/mood_table.dart';
-import '../services/online/youtube_service.dart' show YtErrorKind, YtException, YtResult;
+import '../services/online/youtube_service.dart'
+    show YtErrorKind, YtException, YtResult;
 import '../services/shuffle_plus/dislike_store.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/suggestion_pool.dart'
@@ -42,7 +43,8 @@ class DaylistConfigNotifier extends Notifier<DaylistConfig> {
     await ref.read(settingsStoreProvider).writeDaylistConfig(c);
   }
 
-  Future<void> setSlot(int i, DaylistSlot slot) => _set(state.withSlot(i, slot));
+  Future<void> setSlot(int i, DaylistSlot slot) =>
+      _set(state.withSlot(i, slot));
 
   /// Moves the start of slot [i]; false (nothing changes) when [hour] would
   /// leave a slot shorter than 1 h.
@@ -59,7 +61,10 @@ class DaylistConfigNotifier extends Notifier<DaylistConfig> {
   }
 }
 
-final daylistConfigProvider = NotifierProvider<DaylistConfigNotifier, DaylistConfig>(DaylistConfigNotifier.new);
+final daylistConfigProvider =
+    NotifierProvider<DaylistConfigNotifier, DaylistConfig>(
+      DaylistConfigNotifier.new,
+    );
 
 /// The genre -> mood table with the user's changes (D-439).
 class MoodTableNotifier extends Notifier<MoodTable> {
@@ -71,7 +76,8 @@ class MoodTableNotifier extends Notifier<MoodTable> {
     await ref.read(settingsStoreProvider).writeMoodTable(t);
   }
 
-  Future<void> setMoods(String genre, Set<Mood> moods) => _set(state.withMoods(genre, moods));
+  Future<void> setMoods(String genre, Set<Mood> moods) =>
+      _set(state.withMoods(genre, moods));
 
   Future<void> reset() async {
     state = MoodTable.defaults();
@@ -79,7 +85,9 @@ class MoodTableNotifier extends Notifier<MoodTable> {
   }
 }
 
-final moodTableProvider = NotifierProvider<MoodTableNotifier, MoodTable>(MoodTableNotifier.new);
+final moodTableProvider = NotifierProvider<MoodTableNotifier, MoodTable>(
+  MoodTableNotifier.new,
+);
 
 /// The clock of the daylist (a test sets it).
 final daylistClockProvider = Provider<DateTime Function()>((_) => DateTime.now);
@@ -92,7 +100,9 @@ final daylistFileProvider = Provider<Future<File> Function()>(
 
 /// How long a change of the settings waits before the daylist is made again,
 /// so a few taps on a slot make one build, not one each (a test sets zero).
-final daylistSettleProvider = Provider<Duration>((_) => const Duration(seconds: 2));
+final daylistSettleProvider = Provider<Duration>(
+  (_) => const Duration(seconds: 2),
+);
 
 /// How far back the listens of a slot are looked at.
 const daylistHistory = Duration(days: 90);
@@ -104,52 +114,68 @@ const daylistHistory = Duration(days: 90);
 /// Unless [force] (the user asked for a new daylist) it asks only when the
 /// [RadioGate] allows a request now, so a build set off by the app itself
 /// never goes against the minute between requests.
-final daylistSuggestProvider = Provider<Future<DaylistSuggest?> Function(bool Function() cancelled, {bool force})>((
-  ref,
-) {
-  return (cancelled, {force = false}) async {
-    if (!kEnableYoutube) return null;
-    final gate = ref.read(radioGateProvider);
-    if (!force && !gate.canAsk) return null;
-    final off = await radioOffReason(
-      jam: ref.read(jamProvider).active,
-      toolVersion: ref.read(ytDlpStatusProvider.future).then((s) => s.version),
-      probe: ref.read(networkProbeProvider),
-      unmeteredOnly: ref.read(shufflePlusConfigProvider).unmeteredOnly,
-      gate: gate,
-    );
-    if (off != null) return null;
-    final log = ref.read(suggestionLogProvider);
-    final filter = ref.read(suggestionGateProvider);
-    final radio = ref.read(ytmRadioServiceProvider);
-    await log.load();
-    await filter.load();
-    final resolver = await ref.read(seedResolverProvider.future);
-    final downloads = await ref.read(downloadIndexProvider.future);
-    final library = await ref.read(libraryIndexProvider.future);
-    return (seeds, want, accept, inQueue) async* {
-      final fill = RadioFill(
-        seeds: [for (final s in seeds) RadioSeed(s)],
-        resolver: resolver,
-        radioPage: radio.page,
-        log: log,
-        filter: filter,
-        gate: gate,
-        inLibrary: inLibraryTest(hasDownload: downloads.contains, library: library),
-      );
-      try {
-        yield* fill.take(want, inQueue: inQueue, accept: accept, cancelled: cancelled);
-      } on YtException catch (e) {
-        if (e.kind == YtErrorKind.rateLimited) gate.trip();
-        rethrow; // the builder logs it and keeps what it has
-      }
-    };
-  };
-});
+final daylistSuggestProvider =
+    Provider<
+      Future<DaylistSuggest?> Function(bool Function() cancelled, {bool force})
+    >((ref) {
+      return (cancelled, {force = false}) async {
+        if (!kEnableYoutube) return null;
+        final gate = ref.read(radioGateProvider);
+        if (!force && !gate.canAsk) return null;
+        final off = await radioOffReason(
+          jam: ref.read(jamProvider).active,
+          toolVersion: ref
+              .read(ytDlpStatusProvider.future)
+              .then((s) => s.version),
+          probe: ref.read(networkProbeProvider),
+          unmeteredOnly: ref.read(shufflePlusConfigProvider).unmeteredOnly,
+          gate: gate,
+        );
+        if (off != null) return null;
+        final log = ref.read(suggestionLogProvider);
+        final filter = ref.read(suggestionGateProvider);
+        final radio = ref.read(ytmRadioServiceProvider);
+        await log.load();
+        await filter.load();
+        final resolver = await ref.read(seedResolverProvider.future);
+        final downloads = await ref.read(downloadIndexProvider.future);
+        final library = await ref.read(libraryIndexProvider.future);
+        return (seeds, want, accept, inQueue) async* {
+          final fill = RadioFill(
+            seeds: [for (final s in seeds) RadioSeed(s)],
+            resolver: resolver,
+            radioPage: radio.page,
+            log: log,
+            filter: filter,
+            gate: gate,
+            inLibrary: inLibraryTest(
+              hasDownload: downloads.contains,
+              library: library,
+            ),
+          );
+          try {
+            yield* fill.take(
+              want,
+              inQueue: inQueue,
+              accept: accept,
+              cancelled: cancelled,
+            );
+          } on YtException catch (e) {
+            if (e.kind == YtErrorKind.rateLimited) gate.trip();
+            rethrow; // the builder logs it and keeps what it has
+          }
+        };
+      };
+    });
 
 /// The daylist of the slot the clock is in (D-433).
 class DaylistState {
-  const DaylistState({required this.result, required this.slot, required this.slotIndex, required this.nextChange});
+  const DaylistState({
+    required this.result,
+    required this.slot,
+    required this.slotIndex,
+    required this.nextChange,
+  });
 
   /// [DaylistResult.tooFew]: no card, no daylist (D-473).
   final DaylistResult result;
@@ -196,7 +222,9 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     final index = config.slotAt(now);
     // Only this slot (and where it ends) rebuilds the daylist: touching
     // another one leaves it alone.
-    final slotKey = r.watch(daylistConfigProvider.select((c) => _slotKey(c, c.slotAt(now))));
+    final slotKey = r.watch(
+      daylistConfigProvider.select((c) => _slotKey(c, c.slotAt(now))),
+    );
     final moods = r.watch(moodTableProvider);
     final next = config.nextChange(now);
     final timer = Timer(next.difference(now), r.invalidateSelf);
@@ -210,7 +238,12 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     r.onDispose(life.dispose);
     final slot = config.slots[index];
     if (!slot.enabled) return null;
-    DaylistState of(DaylistResult res) => DaylistState(result: res, slot: slot, slotIndex: index, nextChange: next);
+    DaylistState of(DaylistResult res) => DaylistState(
+      result: res,
+      slot: slot,
+      slotIndex: index,
+      nextChange: next,
+    );
 
     final key = '$slotKey|${moods.toJsonString()}';
     if (_lastKey != null && _lastKey != key) {
@@ -223,7 +256,11 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     final tracks = r.read(trackRepositoryProvider);
     final stats = r.read(statsQueriesProvider);
     final db = r.read(databaseProvider);
-    final saved = await store.load(key: key, until: next, tracksOf: tracks.getByIdsLight);
+    final saved = await store.load(
+      key: key,
+      until: next,
+      tracksOf: tracks.getByIdsLight,
+    );
     if (saved != null) return of(saved);
 
     final library = await tracks.musicLight();
@@ -241,7 +278,10 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     DaylistSuggest? suggest;
     if (r.mounted) {
       try {
-        suggest = await r.read(daylistSuggestProvider)(() => !r.mounted, force: force);
+        suggest = await r.read(daylistSuggestProvider)(
+          () => !r.mounted,
+          force: force,
+        );
       } on Object catch (e, st) {
         // Never an error for this: the daylist is made of the user's songs.
         AppLog.w('daylist suggestions not available', e, st);
@@ -251,12 +291,16 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     // Not saved without the network when suggestions are wanted: the next
     // start tries again.
     final partial = suggest == null && slot.sharePercent > 0;
-    if (r.mounted && !result.tooFew && !partial) await store.save(key: key, until: next, result: result);
+    if (r.mounted && !result.tooFew && !partial) {
+      await store.save(key: key, until: next, result: result);
+    }
     return of(result);
   }
 }
 
-final daylistProvider = AsyncNotifierProvider<DaylistNotifier, DaylistState?>(DaylistNotifier.new);
+final daylistProvider = AsyncNotifierProvider<DaylistNotifier, DaylistState?>(
+  DaylistNotifier.new,
+);
 
 /// Ticks at every change of the «Non mi piace» lists, once they are loaded.
 final _dislikeTickProvider = StreamProvider<int>((ref) async* {
@@ -274,7 +318,8 @@ final _dislikeTickProvider = StreamProvider<int>((ref) async* {
 /// rows, count and indexes agree; the saved daylist itself is not touched.
 DaylistState withoutBlocked(DaylistState d, DislikeStore store) {
   bool blocked(SuggestionCandidate c) =>
-      store.trackBlocked(c.result.id) || store.artistBlocked(suggestionArtistKey(c.result));
+      store.trackBlocked(c.result.id) ||
+      store.artistBlocked(suggestionArtistKey(c.result));
   final items = [
     for (final i in d.result.items)
       if (i.suggestion == null || !blocked(i.suggestion!)) i,
@@ -282,7 +327,13 @@ DaylistState withoutBlocked(DaylistState d, DislikeStore store) {
   if (items.length == d.result.items.length) return d;
   final r = d.result;
   return DaylistState(
-    result: DaylistResult(slotIndex: r.slotIndex, items: items, genres: r.genres, tooFew: r.tooFew, off: r.off),
+    result: DaylistResult(
+      slotIndex: r.slotIndex,
+      items: items,
+      genres: r.genres,
+      tooFew: r.tooFew,
+      off: r.off,
+    ),
     slot: d.slot,
     slotIndex: d.slotIndex,
     nextChange: d.nextChange,
@@ -312,7 +363,8 @@ class DaylistActions {
     try {
       // A slot that has just changed but is not made yet is waited for.
       final cur = _ref.read(daylistProvider).value;
-      if (cur != null && !_ref.read(daylistClockProvider)().isBefore(cur.nextChange)) {
+      if (cur != null &&
+          !_ref.read(daylistClockProvider)().isBefore(cur.nextChange)) {
         _ref.invalidate(daylistProvider);
       }
       s = await _ref.read(daylistProvider.future);
@@ -327,7 +379,11 @@ class DaylistActions {
     // [startIndex] is a row of the visible list, the same one built here.
     final items = [
       for (final i in withoutBlocked(s!, store).result.items)
-        (track: i.track, online: i.suggestion?.result, seedTitle: i.suggestion?.seedTitle),
+        (
+          track: i.track,
+          online: i.suggestion?.result,
+          seedTitle: i.suggestion?.seedTitle,
+        ),
     ];
     if (items.isEmpty) return;
     final at = startIndex ?? 0;
@@ -335,7 +391,9 @@ class DaylistActions {
         .read(playerControllerProvider)
         .playMixed(
           items,
-          index: startIndex != null ? at.clamp(0, items.length - 1) : (shuffle ? Random().nextInt(items.length) : 0),
+          index: startIndex != null
+              ? at.clamp(0, items.length - 1)
+              : (shuffle ? Random().nextInt(items.length) : 0),
           context: const PlayContext(PlayContextKind.library),
           shuffle: shuffle,
         );
@@ -357,7 +415,11 @@ class DaylistActions {
     }
     final was = store.trackBlocked(r.id);
     store.blockTrack(
-      DislikedTrack(videoId: r.id, title: r.title, artist: r.artists.isEmpty ? r.channel : r.artists.join(', ')),
+      DislikedTrack(
+        videoId: r.id,
+        title: r.title,
+        artist: r.artists.isEmpty ? r.channel : r.artists.join(', '),
+      ),
     );
     return () async => was ? null : store.unblockTrack(r.id);
   }

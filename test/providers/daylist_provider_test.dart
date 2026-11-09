@@ -27,14 +27,20 @@ class _Player implements PlayerController {
   int? index;
 
   @override
-  Future<void> playMixed(List<MixItem> items, {int? index, PlayContext? context, bool? shuffle}) async {
+  Future<void> playMixed(
+    List<MixItem> items, {
+    int? index,
+    PlayContext? context,
+    bool? shuffle,
+  }) async {
     this.items = items;
     this.shuffle = shuffle;
     this.index = index;
   }
 
   @override
-  dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
+  dynamic noSuchMethod(Invocation i) =>
+      throw UnimplementedError('${i.memberName}');
 }
 
 // Default slots: 4 is 19-22 (funk, soul, indie), 5 is 22-24 (lo-fi, jazz, soul), 6 is 0-3 and off.
@@ -83,11 +89,16 @@ void main() {
         settingsStoreProvider.overrideWithValue(store),
         databaseProvider.overrideWithValue(db),
         daylistClockProvider.overrideWithValue(() => clock()),
-        daylistFileProvider.overrideWithValue(() async => File(p.join(dir.path, 'daylist.json'))),
+        daylistFileProvider.overrideWithValue(
+          () async => File(p.join(dir.path, 'daylist.json')),
+        ),
         playerControllerProvider.overrideWithValue(player),
         daylistSettleProvider.overrideWithValue(settle),
         dislikeStoreProvider.overrideWithValue(dislikes),
-        daylistSuggestProvider.overrideWithValue((cancelled, {force = false}) async {
+        daylistSuggestProvider.overrideWithValue((
+          cancelled, {
+          force = false,
+        }) async {
           final n = ++suggestAsked;
           forced.add(force);
           if (n == 1) await holdFirst?.future;
@@ -113,9 +124,12 @@ void main() {
     return c;
   }
 
-  List<Object?> ids(DaylistState s) => [for (final i in s.result.items) i.track?.id ?? i.suggestion!.result.id];
+  List<Object?> ids(DaylistState s) => [
+    for (final i in s.result.items) i.track?.id ?? i.suggestion!.result.id,
+  ];
 
-  Future<DaylistState?> daylist(ProviderContainer c) => c.read(daylistProvider.future);
+  Future<DaylistState?> daylist(ProviderContainer c) =>
+      c.read(daylistProvider.future);
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -128,7 +142,10 @@ void main() {
     suggestAsked = 0;
     offline = false;
     player = _Player();
-    dislikes = DislikeStore(file: () async => File(p.join(dir.path, 'dislikes.json')), writeDelay: Duration.zero);
+    dislikes = DislikeStore(
+      file: () async => File(p.join(dir.path, 'dislikes.json')),
+      writeDelay: Duration.zero,
+    );
     forced = [];
     holdFirst = null;
     settle = Duration.zero;
@@ -147,7 +164,10 @@ void main() {
     expect(s.slotIndex, 5);
     expect(s.nextChange, DateTime(2026, 11, 10, 0));
     expect(s.result.tooFew, isFalse);
-    expect(s.result.items.where((i) => i.suggestion != null), hasLength(15)); // 30 % of 50
+    expect(
+      s.result.items.where((i) => i.suggestion != null),
+      hasLength(15),
+    ); // 30 % of 50
     expect(s.result.items, hasLength(DaylistBuilder.size));
   });
 
@@ -168,15 +188,18 @@ void main() {
     expect(File(p.join(dir.path, 'daylist.json')).existsSync(), isFalse);
   });
 
-  test('the same slot after a restart: the saved daylist, no new work', () async {
-    await addTracks(40);
-    final first = (await daylist(open()))!;
-    expect(suggestAsked, 1);
-    final again = (await daylist(open()))!;
-    expect(suggestAsked, 1, reason: 'no suggestions asked again');
-    expect(ids(again), ids(first));
-    expect(again.result.genres, first.result.genres);
-  });
+  test(
+    'the same slot after a restart: the saved daylist, no new work',
+    () async {
+      await addTracks(40);
+      final first = (await daylist(open()))!;
+      expect(suggestAsked, 1);
+      final again = (await daylist(open()))!;
+      expect(suggestAsked, 1, reason: 'no suggestions asked again');
+      expect(ids(again), ids(first));
+      expect(again.result.genres, first.result.genres);
+    },
+  );
 
   test('a restart after the slot changed: a new daylist', () async {
     await addTracks(40);
@@ -195,27 +218,33 @@ void main() {
     final c = open();
     expect((await daylist(c))!.slotIndex, 4);
     final end = DateTime.now().add(const Duration(seconds: 10));
-    while (c.read(daylistProvider).value?.slotIndex != 5 && DateTime.now().isBefore(end)) {
+    while (c.read(daylistProvider).value?.slotIndex != 5 &&
+        DateTime.now().isBefore(end)) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     expect(c.read(daylistProvider).value?.slotIndex, 5);
   });
 
-  test('changing a slot makes the daylist again; so does regenerate()', () async {
-    await addTracks(40);
-    final c = open();
-    await daylist(c);
-    expect(suggestAsked, 1);
-    final slot = c.read(daylistConfigProvider).slots[5];
-    await c.read(daylistConfigProvider.notifier).setSlot(5, slot.copyWith(sharePercent: 10));
-    final s = (await daylist(c))!;
-    expect(suggestAsked, 2);
-    expect(s.result.items.where((i) => i.suggestion != null), hasLength(5));
-    expect(store.readDaylistConfig().slots[5].sharePercent, 10);
-    await c.read(daylistActionsProvider).regenerate();
-    await daylist(c);
-    expect(suggestAsked, 3);
-  });
+  test(
+    'changing a slot makes the daylist again; so does regenerate()',
+    () async {
+      await addTracks(40);
+      final c = open();
+      await daylist(c);
+      expect(suggestAsked, 1);
+      final slot = c.read(daylistConfigProvider).slots[5];
+      await c
+          .read(daylistConfigProvider.notifier)
+          .setSlot(5, slot.copyWith(sharePercent: 10));
+      final s = (await daylist(c))!;
+      expect(suggestAsked, 2);
+      expect(s.result.items.where((i) => i.suggestion != null), hasLength(5));
+      expect(store.readDaylistConfig().slots[5].sharePercent, 10);
+      await c.read(daylistActionsProvider).regenerate();
+      await daylist(c);
+      expect(suggestAsked, 3);
+    },
+  );
 
   test('play: own songs and suggested ones as «suggerito» entries', () async {
     await addTracks(40);
@@ -233,7 +262,9 @@ void main() {
     await addTracks(40);
     holdFirst = Completer<void>();
     final c = open();
-    unawaited(c.read(daylistProvider.future).then((_) {}, onError: (Object _) {}));
+    unawaited(
+      c.read(daylistProvider.future).then((_) {}, onError: (Object _) {}),
+    );
     while (suggestAsked == 0) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
     }
@@ -242,9 +273,18 @@ void main() {
     expect(forced, [false, true], reason: 'the user asked for the second one');
     holdFirst!.complete();
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    expect(ids(fresh).whereType<String>().every((id) => id.startsWith('s2_')), isTrue);
-    expect(File(p.join(dir.path, 'daylist.json')).readAsStringSync(), contains('s2_'));
-    expect(File(p.join(dir.path, 'daylist.json')).readAsStringSync(), isNot(contains('s1_')));
+    expect(
+      ids(fresh).whereType<String>().every((id) => id.startsWith('s2_')),
+      isTrue,
+    );
+    expect(
+      File(p.join(dir.path, 'daylist.json')).readAsStringSync(),
+      contains('s2_'),
+    );
+    expect(
+      File(p.join(dir.path, 'daylist.json')).readAsStringSync(),
+      isNot(contains('s1_')),
+    );
     expect(ids((await daylist(c))!), ids(fresh));
   });
 
@@ -266,7 +306,8 @@ void main() {
       b.handleAppLifecycleStateChanged(st);
     }
     final end = DateTime.now().add(const Duration(seconds: 10));
-    while (c.read(daylistProvider).value?.slotIndex != 5 && DateTime.now().isBefore(end)) {
+    while (c.read(daylistProvider).value?.slotIndex != 5 &&
+        DateTime.now().isBefore(end)) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     expect(c.read(daylistProvider).value?.slotIndex, 5);
@@ -280,21 +321,34 @@ void main() {
     clock = () => lateEvening;
     await c.read(daylistActionsProvider).play();
     expect(suggestAsked, 2);
-    expect(player.items!.where((i) => i.online != null).every((i) => i.online!.id.startsWith('s2_')), isTrue);
+    expect(
+      player.items!
+          .where((i) => i.online != null)
+          .every((i) => i.online!.id.startsWith('s2_')),
+      isTrue,
+    );
   });
 
   test('play() leaves out suggested songs blocked since the daylist was saved; startIndex counts the rest', () async {
     await addTracks(40);
     final c = open();
     final s = (await daylist(c))!;
-    final firstSuggested = s.result.items.indexWhere((i) => i.suggestion != null);
+    final firstSuggested = s.result.items.indexWhere(
+      (i) => i.suggestion != null,
+    );
     final blocked = s.result.items[firstSuggested].suggestion!.result;
-    dislikes.blockTrack(DislikedTrack(videoId: blocked.id, title: blocked.title, artist: 'x'));
+    dislikes.blockTrack(
+      DislikedTrack(videoId: blocked.id, title: blocked.title, artist: 'x'),
+    );
     // The row after the removed one, counted in the list the user sees.
     await c.read(daylistActionsProvider).play(startIndex: firstSuggested);
     expect(player.items, hasLength(DaylistBuilder.size - 1));
     expect(player.items!.any((i) => i.online?.id == blocked.id), isFalse);
-    expect(player.index, firstSuggested, reason: 'the row after the removed one');
+    expect(
+      player.index,
+      firstSuggested,
+      reason: 'the row after the removed one',
+    );
   });
 
   test('the visible daylist drops suggested songs of a blocked song or artist at once, saved one untouched', () async {
@@ -304,20 +358,37 @@ void main() {
     c.listen(daylistVisibleProvider, (_, _) {});
     await c.read(daylistProvider.future);
     await dislikes.load();
-    await Future<void>.delayed(const Duration(milliseconds: 50)); // the store listener is up
-    expect(c.read(daylistVisibleProvider)!.result.items, hasLength(s.result.items.length));
+    await Future<void>.delayed(
+      const Duration(milliseconds: 50),
+    ); // the store listener is up
+    expect(
+      c.read(daylistVisibleProvider)!.result.items,
+      hasLength(s.result.items.length),
+    );
     final sug = [
       for (final i in s.result.items)
         if (i.suggestion != null) i.suggestion!.result,
     ];
-    dislikes.blockTrack(DislikedTrack(videoId: sug[0].id, title: sug[0].title, artist: 'x'));
+    dislikes.blockTrack(
+      DislikedTrack(videoId: sug[0].id, title: sug[0].title, artist: 'x'),
+    );
     await Future<void>.delayed(Duration.zero);
-    expect(c.read(daylistVisibleProvider)!.result.items, hasLength(s.result.items.length - 1));
+    expect(
+      c.read(daylistVisibleProvider)!.result.items,
+      hasLength(s.result.items.length - 1),
+    );
     final key = suggestionArtistKey(sug[1]);
     dislikes.blockArtist(DislikedArtist(key: key, name: sug[1].artists.first));
     await Future<void>.delayed(Duration.zero);
     final left = c.read(daylistVisibleProvider)!.result.items;
-    expect(left.where((i) => i.suggestion != null && suggestionArtistKey(i.suggestion!.result) == key), isEmpty);
+    expect(
+      left.where(
+        (i) =>
+            i.suggestion != null &&
+            suggestionArtistKey(i.suggestion!.result) == key,
+      ),
+      isEmpty,
+    );
     expect(left.length, lessThan(s.result.items.length - 1));
     expect((await daylist(c))!.result.items, hasLength(s.result.items.length));
   });
@@ -336,9 +407,12 @@ void main() {
         settingsStoreProvider.overrideWithValue(store),
         databaseProvider.overrideWithValue(db),
         daylistClockProvider.overrideWithValue(() => clock()),
-        daylistFileProvider.overrideWithValue(() async => File(p.join(dir.path, 'daylist.json'))),
+        daylistFileProvider.overrideWithValue(
+          () async => File(p.join(dir.path, 'daylist.json')),
+        ),
         daylistSuggestProvider.overrideWithValue(
-          (cancelled, {force = false}) async => throw StateError('log unreadable'),
+          (cancelled, {force = false}) async =>
+              throw StateError('log unreadable'),
         ),
       ],
     );
@@ -347,47 +421,68 @@ void main() {
     expect(s.result.items, hasLength(20));
   });
 
-  test('a change of the settings waits and makes one build for a few taps', () async {
-    await addTracks(40);
-    settle = const Duration(milliseconds: 500);
-    final c = open();
-    c.listen(daylistProvider, (_, _) {}); // listened: every change rebuilds at once
-    await daylist(c);
-    expect(suggestAsked, 1);
-    final n = c.read(daylistConfigProvider.notifier);
-    for (final share in [10, 20, 40]) {
-      await n.setSlot(5, c.read(daylistConfigProvider).slots[5].copyWith(sharePercent: share));
-    }
-    await daylist(c);
-    expect(suggestAsked, 2);
-  });
+  test(
+    'a change of the settings waits and makes one build for a few taps',
+    () async {
+      await addTracks(40);
+      settle = const Duration(milliseconds: 500);
+      final c = open();
+      c.listen(
+        daylistProvider,
+        (_, _) {},
+      ); // listened: every change rebuilds at once
+      await daylist(c);
+      expect(suggestAsked, 1);
+      final n = c.read(daylistConfigProvider.notifier);
+      for (final share in [10, 20, 40]) {
+        await n.setSlot(
+          5,
+          c.read(daylistConfigProvider).slots[5].copyWith(sharePercent: share),
+        );
+      }
+      await daylist(c);
+      expect(suggestAsked, 2);
+    },
+  );
 
-  test('touching another slot (even a switched-off one) leaves the daylist alone', () async {
-    await addTracks(40);
-    final c = open();
-    c.listen(daylistProvider, (_, _) {});
-    final first = (await daylist(c))!;
-    final other = c.read(daylistConfigProvider).slots[2];
-    await c.read(daylistConfigProvider.notifier).setSlot(2, other.copyWith(sharePercent: 5, enabled: false));
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    expect(suggestAsked, 1);
-    expect(ids((await daylist(c))!), ids(first));
-    // And a restart finds the saved one still good.
-    await daylist(open());
-    expect(suggestAsked, 1);
-  });
+  test(
+    'touching another slot (even a switched-off one) leaves the daylist alone',
+    () async {
+      await addTracks(40);
+      final c = open();
+      c.listen(daylistProvider, (_, _) {});
+      final first = (await daylist(c))!;
+      final other = c.read(daylistConfigProvider).slots[2];
+      await c
+          .read(daylistConfigProvider.notifier)
+          .setSlot(2, other.copyWith(sharePercent: 5, enabled: false));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(suggestAsked, 1);
+      expect(ids((await daylist(c))!), ids(first));
+      // And a restart finds the saved one still good.
+      await daylist(open());
+      expect(suggestAsked, 1);
+    },
+  );
 
   test('reset() takes the keys out of the preferences instead of writing the defaults', () async {
     final c = open();
     final cfg = c.read(daylistConfigProvider.notifier);
-    await cfg.setSlot(5, c.read(daylistConfigProvider).slots[5].copyWith(sharePercent: 7));
+    await cfg.setSlot(
+      5,
+      c.read(daylistConfigProvider).slots[5].copyWith(sharePercent: 7),
+    );
     await c.read(moodTableProvider.notifier).setMoods('rock', {});
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.containsKey(daylistSlotsKey), isTrue);
     expect(prefs.containsKey(moodTableKey), isTrue);
     await cfg.reset();
     expect(prefs.containsKey(daylistSlotsKey), isFalse);
-    expect(prefs.containsKey(moodTableKey), isTrue, reason: 'the other one is not touched');
+    expect(
+      prefs.containsKey(moodTableKey),
+      isTrue,
+      reason: 'the other one is not touched',
+    );
     expect(c.read(daylistConfigProvider).slots[5].sharePercent, 30);
     await c.read(moodTableProvider.notifier).reset();
     expect(prefs.containsKey(moodTableKey), isFalse);

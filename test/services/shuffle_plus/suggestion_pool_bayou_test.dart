@@ -18,21 +18,31 @@ Future<SuggestionCandidate?> suggest(int ms) async {
   );
   await log.load();
   final library = LibraryIndex(const [
-    LibraryEntryLite(id: 1, title: 'Born On The Bayou', artist: 'Creedence Clearwater Revival', durationMs: 315222),
+    LibraryEntryLite(
+      id: 1,
+      title: 'Born On The Bayou',
+      artist: 'Creedence Clearwater Revival',
+      durationMs: 315222,
+    ),
   ]);
   final pool = SuggestionPool()
-    ..addPage('s', 'Seed', RadioPage([
-      RadioItem(
-        YtResult(
+    ..addPage(
+      's',
+      'Seed',
+      RadioPage([
+        RadioItem(
+          YtResult(
             id: 'bayou',
             title: 'Born On The Bayou',
             channel: 'Creedence Clearwater Revival',
             duration: Duration(milliseconds: ms),
             artists: const ['Creedence Clearwater Revival'],
-            album: 'Bayou Country'),
-        RadioKind.song,
-      ),
-    ]));
+            album: 'Bayou Country',
+          ),
+          RadioKind.song,
+        ),
+      ]),
+    );
   return pool.take(
     inLibrary: inLibraryTest(hasDownload: (_) => false, library: library),
     inQueue: (_) => false,

@@ -20,8 +20,9 @@ class TrackResolver {
       }
       final sha = sha256ById[t.id];
       if (sha != null) (_bySha[sha] ??= []).add(t.id);
-      (_byTitle['${matchTitleKey(t.title)}|${artistKey(t.artist)}'] ??= [])
-          .add(t);
+      (_byTitle['${matchTitleKey(t.title)}|${artistKey(t.artist)}'] ??= []).add(
+        t,
+      );
     }
   }
 
@@ -38,7 +39,6 @@ class TrackResolver {
     final s = p.replaceAll(r'\', '/');
     return caseInsensitive ? s.toLowerCase() : s;
   }
-
 
   int? resolve(TrackRef r) {
     final byPath = r.relPath == null ? null : _byRelPath[_pathKey(r.relPath!)];

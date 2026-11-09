@@ -340,7 +340,9 @@ class _SimilarHeader extends StatelessWidget {
             ],
           ),
           Text(
-            loading ? l.queueSimilarSearching : l.queueSimilarCount(total, owned),
+            loading
+                ? l.queueSimilarSearching
+                : l.queueSimilarCount(total, owned),
             style: theme.bodySmall?.copyWith(color: cc.textMuted),
           ),
         ],

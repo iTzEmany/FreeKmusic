@@ -14,19 +14,29 @@ class ArtistInfoRepository {
   Stream<ArtistInfo?> watch(String artist) {
     final key = keyOf(artist);
     if (key.isEmpty) return Stream.value(null);
-    return (_db.select(_db.artistInfos)..where((r) => r.artistKey.equals(key)))
-        .watchSingleOrNull();
+    return (_db.select(
+      _db.artistInfos,
+    )..where((r) => r.artistKey.equals(key))).watchSingleOrNull();
   }
 
-  Future<void> save(String artist, {required String body, required Uri source, required String lang}) async {
+  Future<void> save(
+    String artist, {
+    required String body,
+    required Uri source,
+    required String lang,
+  }) async {
     final key = keyOf(artist);
     if (key.isEmpty) return;
-    await _db.into(_db.artistInfos).insertOnConflictUpdate(ArtistInfosCompanion.insert(
-          artistKey: key,
-          body: body,
-          sourceUrl: source.toString(),
-          lang: lang,
-          fetchedAt: nowMs(),
-        ));
+    await _db
+        .into(_db.artistInfos)
+        .insertOnConflictUpdate(
+          ArtistInfosCompanion.insert(
+            artistKey: key,
+            body: body,
+            sourceUrl: source.toString(),
+            lang: lang,
+            fetchedAt: nowMs(),
+          ),
+        );
   }
 }

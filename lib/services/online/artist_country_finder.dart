@@ -1,7 +1,8 @@
 import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../data/repositories/artist_country_repository.dart';
-import '../../data/repositories/artist_info_repository.dart' show ArtistInfoRepository;
+import '../../data/repositories/artist_info_repository.dart'
+    show ArtistInfoRepository;
 import 'http_client.dart';
 import 'musicbrainz_client.dart';
 import '../../core/artist_key.dart';
@@ -22,7 +23,11 @@ Future<bool> artistCountryAllowed({
 
 /// What one [ArtistCountryFinder.run] did.
 class ArtistCountryReport {
-  const ArtistCountryReport({this.checked = 0, this.found = 0, this.stopped = false});
+  const ArtistCountryReport({
+    this.checked = 0,
+    this.found = 0,
+    this.stopped = false,
+  });
 
   /// Artists asked about, and those with a country.
   final int checked, found;
@@ -68,16 +73,28 @@ class ArtistCountryFinder {
     for (var i = 0; i < due.length; i += batch) {
       await waitIdle();
       for (final e in due.skip(i).take(batch)) {
-        if (cancelled() || !await allowed()) return ArtistCountryReport(checked: checked, found: found, stopped: true);
+        if (cancelled() || !await allowed()) {
+          return ArtistCountryReport(
+            checked: checked,
+            found: found,
+            stopped: true,
+          );
+        }
         try {
           final country = await _lookup(e.key, e.value);
           checked++;
           if (country != null) found++;
         } on Object catch (err, st) {
           // 429/403, 503 or no network: do not hammer the service, nothing is recorded for this one.
-          if (err is RateLimitedException || err is MusicBrainzUnavailable || err is WebUnavailableException) {
+          if (err is RateLimitedException ||
+              err is MusicBrainzUnavailable ||
+              err is WebUnavailableException) {
             AppLog.w('artist countries: service refused, stopping', err, st);
-            return ArtistCountryReport(checked: checked, found: found, stopped: true);
+            return ArtistCountryReport(
+              checked: checked,
+              found: found,
+              stopped: true,
+            );
           }
           AppLog.w('artist countries: ${e.value} failed', err, st);
         }
@@ -115,7 +132,12 @@ class ArtistCountryFinder {
       country = await wikidata.countryOf(q);
       source = 'wikidata';
     }
-    await repo.upsert(key, country: country, source: country == null ? null : source, checkedAtMs: _now());
+    await repo.upsert(
+      key,
+      country: country,
+      source: country == null ? null : source,
+      checkedAtMs: _now(),
+    );
     return country;
   }
 }

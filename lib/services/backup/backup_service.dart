@@ -12,7 +12,13 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_queries.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/settings/jam_secret_store.dart';
-import '../../data/settings/settings_store.dart' show enrichMarkKey, genreRereadAfterKey, genreRereadDoneKey, recogPassAfterKey, recogPassDoneKey;
+import '../../data/settings/settings_store.dart'
+    show
+        enrichMarkKey,
+        genreRereadAfterKey,
+        genreRereadDoneKey,
+        recogPassAfterKey,
+        recogPassDoneKey;
 
 const kBackupFormat = 1;
 
@@ -48,20 +54,23 @@ class BackupSummary {
 /// `settings.json`: every preference but the device-bound ones, with its type
 /// kept (`{"key": {"t": "bool", "v": true}}`).
 Map<String, Object?> settingsToJson(SharedPreferences prefs) => {
-      for (final k in prefs.getKeys())
-        if (!kDeviceBoundKeys.contains(k))
-          k: switch (prefs.get(k)) {
-            final bool v => {'t': 'bool', 'v': v},
-            final int v => {'t': 'int', 'v': v},
-            final double v => {'t': 'double', 'v': v},
-            final String v => {'t': 'string', 'v': v},
-            final List<String> v => {'t': 'list', 'v': v},
-            _ => null,
-          },
-    }..removeWhere((_, v) => v == null);
+  for (final k in prefs.getKeys())
+    if (!kDeviceBoundKeys.contains(k))
+      k: switch (prefs.get(k)) {
+        final bool v => {'t': 'bool', 'v': v},
+        final int v => {'t': 'int', 'v': v},
+        final double v => {'t': 'double', 'v': v},
+        final String v => {'t': 'string', 'v': v},
+        final List<String> v => {'t': 'list', 'v': v},
+        _ => null,
+      },
+}..removeWhere((_, v) => v == null);
 
 /// Writes back what [settingsToJson] wrote; device-bound keys are never set.
-Future<void> applySettingsJson(SharedPreferences prefs, Map<String, dynamic> json) async {
+Future<void> applySettingsJson(
+  SharedPreferences prefs,
+  Map<String, dynamic> json,
+) async {
   for (final e in json.entries) {
     final v = e.value;
     if (kDeviceBoundKeys.contains(e.key) || v is! Map) continue;
@@ -94,8 +103,8 @@ class BackupService {
     required this.deviceId,
     String? platform,
     DateTime Function()? now,
-  })  : platform = platform ?? Platform.operatingSystem,
-        _now = now ?? DateTime.now;
+  }) : platform = platform ?? Platform.operatingSystem,
+       _now = now ?? DateTime.now;
 
   final AppDatabase db;
   final SharedPreferences prefs;
@@ -110,15 +119,22 @@ class BackupService {
   static String fileName(DateTime d) =>
       'codecore-backup-${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}.zip';
 
-  Future<BackupSummary> createBackup(String outPath, {void Function(double)? onProgress}) async {
+  Future<BackupSummary> createBackup(
+    String outPath, {
+    void Function(double)? onProgress,
+  }) async {
     final tmp = await Directory.systemTemp.createTemp('codecore-backup');
     try {
       final dbCopy = p.join(tmp.path, 'codecore.sqlite');
       await db.customStatement('VACUUM INTO ?', [dbCopy]);
 
       final data = await collectUserData(db);
-      final trackCount = (await (db.select(db.tracks)..where((t) => t.kind.isNotValue(kStreamKind))).get()).length;
-      final folders = [for (final f in await db.select(db.folders).get()) f.path];
+      final trackCount = (await (db.select(
+        db.tracks,
+      )..where((t) => t.kind.isNotValue(kStreamKind))).get()).length;
+      final folders = [
+        for (final f in await db.select(db.folders).get()) f.path,
+      ];
       final manifest = {
         'backupFormat': kBackupFormat,
         'schemaVersion': db.schemaVersion,
@@ -130,17 +146,24 @@ class BackupService {
         'trackCount': trackCount,
         'playlistCount': data.playlists.length,
       };
-      File(p.join(tmp.path, 'manifest.json')).writeAsStringSync(jsonEncode(manifest));
-      File(p.join(tmp.path, 'settings.json')).writeAsStringSync(jsonEncode(settingsToJson(prefs)));
-      File(p.join(tmp.path, 'user_data.json')).writeAsStringSync(jsonEncode(data.toJson()));
+      File(p.join(tmp.path, 'manifest.json'))
+          .writeAsStringSync(jsonEncode(manifest));
+      File(p.join(tmp.path, 'settings.json'))
+          .writeAsStringSync(jsonEncode(settingsToJson(prefs)));
+      File(p.join(tmp.path, 'user_data.json'))
+          .writeAsStringSync(jsonEncode(data.toJson()));
 
       final covers = coversDir.existsSync()
           ? [for (final f in coversDir.listSync().whereType<File>()) f.path]
           : <String>[];
       final downloads = downloadsFile.existsSync() ? downloadsFile.path : null;
-      final dislikes = (dislikesFile?.existsSync() ?? false) ? dislikesFile!.path : null;
+      final dislikes = (dislikesFile?.existsSync() ?? false)
+          ? dislikesFile!.path
+          : null;
       final tmpPath = tmp.path;
-      await Isolate.run(() => _zip(outPath, tmpPath, covers, downloads, dislikes));
+      await Isolate.run(
+        () => _zip(outPath, tmpPath, covers, downloads, dislikes),
+      );
       onProgress?.call(1);
       return BackupSummary(
         path: outPath,
@@ -161,7 +184,13 @@ class BackupService {
 
 const _alreadyCompressed = {'.jpg', '.jpeg', '.png', '.webp'};
 
-void _zip(String outPath, String tmp, List<String> covers, String? downloads, String? dislikes) {
+void _zip(
+  String outPath,
+  String tmp,
+  List<String> covers,
+  String? downloads,
+  String? dislikes,
+) {
   final enc = ZipFileEncoder()..create(outPath);
   for (final name in ['manifest.json', 'settings.json', 'user_data.json']) {
     enc.addFileSync(File(p.join(tmp, name)), name);

@@ -26,7 +26,8 @@ const kOnlineRowHeight = 72.0;
 /// The row grows with the text scale so its three text lines never overflow;
 /// lists that fix the row extent must use this too.
 double onlineRowExtentOf(BuildContext context) =>
-    kOnlineRowHeight * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 2.0);
+    kOnlineRowHeight *
+    (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 2.0);
 
 /// Starts a download for each of [picked] (in this order) that is not already
 /// in the library or on its way, and says how many started and how many not.
@@ -67,13 +68,19 @@ void startOnlineDownloads(
 /// Tap on an online row: streams it and opens the player; the controller
 /// sends it to the shared queue instead when a Jam is on (D-89), then no player opens.
 void tapOnline(BuildContext context, WidgetRef ref, YtResult r) {
-  unawaited(ref.read(playerControllerProvider).inJam
-      ? queueOnline(context, ref, r)
-      : playFromSearchAndOpen(context, ref, r));
+  unawaited(
+    ref.read(playerControllerProvider).inJam
+        ? queueOnline(context, ref, r)
+        : playFromSearchAndOpen(context, ref, r),
+  );
 }
 
 /// Swipe or «In coda» on an online row; says so only when it worked.
-Future<void> queueOnline(BuildContext context, WidgetRef ref, YtResult r) async {
+Future<void> queueOnline(
+  BuildContext context,
+  WidgetRef ref,
+  YtResult r,
+) async {
   final ctrl = ref.read(playerControllerProvider);
   final full = ctrl.jamQueueFull;
   try {

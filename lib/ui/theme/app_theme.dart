@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/platform.dart';
 
 import 'custom_theme.dart';
@@ -53,7 +54,11 @@ CcColors resolveColors(String theme, String accent, CustomThemes customs) {
 /// Icon buttons stay dense with a desktop mouse; a phone keeps the 48 dp default.
 VisualDensity? get ccIconDensity => isDesktop ? VisualDensity.compact : null;
 
-ThemeData buildThemeFromColors(CcColors c, bool compact, {bool pageBackdrop = false}) {
+ThemeData buildThemeFromColors(
+  CcColors c,
+  bool compact, {
+  bool pageBackdrop = false,
+}) {
   final brightness = c.isLight ? Brightness.light : Brightness.dark;
   final scheme = ColorScheme(
     brightness: brightness,
@@ -117,7 +122,9 @@ ThemeData buildThemeFromColors(CcColors c, bool compact, {bool pageBackdrop = fa
       },
     ),
     // Dense targets only for a desktop mouse; a phone keeps 48 dp (D-15).
-    visualDensity: compact && isDesktop ? VisualDensity.compact : VisualDensity.standard,
+    visualDensity: compact && isDesktop
+        ? VisualDensity.compact
+        : VisualDensity.standard,
     extensions: [c],
     appBarTheme: AppBarTheme(
       backgroundColor: pageBackdrop ? Colors.transparent : c.bg,
@@ -159,7 +166,10 @@ ThemeData buildThemeFromColors(CcColors c, bool compact, {bool pageBackdrop = fa
       filled: true,
       fillColor: c.surface2,
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: CcDims.gap16, vertical: CcDims.gap12),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: CcDims.gap16,
+        vertical: CcDims.gap12,
+      ),
       border: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(999)),
         borderSide: BorderSide.none,

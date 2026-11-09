@@ -93,43 +93,56 @@ class _ArtistPlayRowState extends State<ArtistPlayRow> {
     final on = !busy && widget.canPlay;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          CcDims.margin, CcDims.gap4, CcDims.margin, CcDims.gap4),
-      child: Column(children: [
-        Row(children: [
-          Expanded(
-            child: FilledButton.icon(
-              key: const ValueKey('artist-play'),
-              onPressed: on ? () => _start(widget.onPlay) : null,
-              icon: busy
-                  ? SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, semanticsLabel: l.playerLoading))
-                  : const Icon(Icons.play_arrow_rounded),
-              label: Text(busy ? l.artistLoadingSongs : l.play),
-            ),
+        CcDims.margin,
+        CcDims.gap4,
+        CcDims.margin,
+        CcDims.gap4,
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  key: const ValueKey('artist-play'),
+                  onPressed: on ? () => _start(widget.onPlay) : null,
+                  icon: busy
+                      ? SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            semanticsLabel: l.playerLoading,
+                          ),
+                        )
+                      : const Icon(Icons.play_arrow_rounded),
+                  label: Text(busy ? l.artistLoadingSongs : l.play),
+                ),
+              ),
+              const SizedBox(width: CcDims.gap8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('artist-shuffle'),
+                  onPressed: on ? () => _start(widget.onShuffle) : null,
+                  icon: const Icon(Icons.shuffle_rounded),
+                  label: Text(l.shuffle),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: CcDims.gap8),
-          Expanded(
-            child: OutlinedButton.icon(
-              key: const ValueKey('artist-shuffle'),
-              onPressed: on ? () => _start(widget.onShuffle) : null,
-              icon: const Icon(Icons.shuffle_rounded),
-              label: Text(l.shuffle),
-            ),
-          ),
-        ]),
-        if (widget.topMissing && !widget.busy)
-          Padding(
-            padding: const EdgeInsets.only(top: CcDims.gap4),
-            child: Semantics(
-              liveRegion: true,
-              child: Text(l.artistTopMissing,
+          if (widget.topMissing && !widget.busy)
+            Padding(
+              padding: const EdgeInsets.only(top: CcDims.gap4),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  l.artistTopMissing,
                   key: const ValueKey('artist-top-missing'),
-                  style: Theme.of(context).textTheme.bodySmall),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             ),
-          ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -145,10 +158,18 @@ class OfflineNotice extends StatelessWidget {
     final cc = context.cc;
     final date = MaterialLocalizations.of(context).formatShortDate(fetchedAt);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.margin, CcDims.gap4),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap4,
+        CcDims.margin,
+        CcDims.gap4,
+      ),
       child: Container(
         key: const ValueKey('offline-notice'),
-        padding: const EdgeInsets.symmetric(horizontal: CcDims.gap12, vertical: CcDims.gap8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: CcDims.gap12,
+          vertical: CcDims.gap8,
+        ),
         decoration: BoxDecoration(
           color: cc.surface1,
           borderRadius: BorderRadius.circular(CcDims.rCard),
@@ -392,7 +413,9 @@ class _AboutSectionState extends State<AboutSection> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CcDims.margin - CcDims.gap8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CcDims.margin - CcDims.gap8,
+          ),
           child: TextButton(
             key: const ValueKey('about-toggle'),
             onPressed: () => setState(() => _open = !_open),
@@ -406,41 +429,51 @@ class _AboutSectionState extends State<AboutSection> {
 
 /// «2 profili uniti» under the header of a merged page; a tap lists them.
 class MergedProfilesNote extends StatelessWidget {
-  const MergedProfilesNote({super.key, required this.count, required this.onTap});
+  const MergedProfilesNote({
+    super.key,
+    required this.count,
+    required this.onTap,
+  });
 
   final int count;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Align(
-        alignment: Alignment.centerLeft,
-        child: Semantics(
-          button: true,
-          child: InkWell(
-            key: const ValueKey('merged-note'),
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: 1,
-                  child: Text(
-                    context.l10n.artistMergedNote(count),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
-                  ),
-                ),
+    alignment: Alignment.centerLeft,
+    child: Semantics(
+      button: true,
+      child: InkWell(
+        key: const ValueKey('merged-note'),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              widthFactor: 1,
+              child: Text(
+                context.l10n.artistMergedNote(count),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: context.cc.textMuted),
               ),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// «Sembra lo stesso artista…»: merge the two profiles or say they are different.
 class MergeWarning extends StatelessWidget {
-  const MergeWarning({super.key, required this.other, required this.onMerge, required this.onDifferent});
+  const MergeWarning({
+    super.key,
+    required this.other,
+    required this.onMerge,
+    required this.onDifferent,
+  });
 
   /// What names the other profile («Marco Castello · 38 mila iscritti»).
   final String other;
@@ -452,28 +485,48 @@ class MergeWarning extends StatelessWidget {
     final cc = context.cc;
     return Container(
       key: const ValueKey('merge-warning'),
-      margin: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, 0),
-      padding: const EdgeInsets.fromLTRB(CcDims.gap12, CcDims.gap12, CcDims.gap8, CcDims.gap4),
-      decoration: BoxDecoration(color: cc.surface2, borderRadius: BorderRadius.circular(CcDims.rCard)),
+      margin: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap8,
+        CcDims.margin,
+        0,
+      ),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.gap12,
+        CcDims.gap12,
+        CcDims.gap8,
+        CcDims.gap4,
+      ),
+      decoration: BoxDecoration(
+        color: cc.surface2,
+        borderRadius: BorderRadius.circular(CcDims.rCard),
+      ),
       child: Semantics(
         liveRegion: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l.artistSameWarn(other), style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              l.artistSameWarn(other),
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
             Align(
               alignment: Alignment.centerRight,
               child: Wrap(
                 children: [
                   TextButton(
                     key: const ValueKey('merge-different'),
-                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                    ),
                     onPressed: onDifferent,
                     child: Text(l.artistNotSame),
                   ),
                   TextButton(
                     key: const ValueKey('merge-yes'),
-                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                    ),
                     onPressed: onMerge,
                     child: Text(l.artistMergeYes),
                   ),

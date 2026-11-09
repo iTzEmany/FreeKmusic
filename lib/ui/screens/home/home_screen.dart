@@ -60,7 +60,8 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             tooltip: l.activityLog,
             icon: const Icon(Icons.receipt_long_rounded),
-            onPressed: () => ShellNav.open<void>(context, const ActivityLogScreen()),
+            onPressed: () =>
+                ShellNav.open<void>(context, const ActivityLogScreen()),
           ),
           IconButton(
             tooltip: l.navSettings,
@@ -131,7 +132,9 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           SizedBox(width: 48),
                           Expanded(
-                            child: Column(children: [ResumeList(), DaylistCard()]),
+                            child: Column(
+                              children: [ResumeList(), DaylistCard()],
+                            ),
                           ),
                         ],
                       ),

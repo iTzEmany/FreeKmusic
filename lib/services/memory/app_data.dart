@@ -205,7 +205,9 @@ class CacheCleaner {
     freed += math.max(0, catalogBefore - await fileSize(catalogCacheFile.path));
     final clearSuggestions = this.clearSuggestions;
     if (clearSuggestions != null) {
-      final before = await _filesSize([for (final f in suggestionFiles) f.path]);
+      final before = await _filesSize([
+        for (final f in suggestionFiles) f.path,
+      ]);
       await clearSuggestions();
       final after = await _filesSize([for (final f in suggestionFiles) f.path]);
       freed += math.max(0, before - after);

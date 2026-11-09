@@ -197,44 +197,80 @@ void main() {
 
   test('a blocked online song is skipped, the downloaded one is not', () async {
     await add('Money', 'Pink Floyd');
-    store.blockTrack(const DislikedTrack(videoId: 'a', title: 'Time', artist: 'Pink Floyd'));
-    store.blockTrack(const DislikedTrack(videoId: 'b', title: 'Money', artist: 'Pink Floyd'));
+    store.blockTrack(
+      const DislikedTrack(videoId: 'a', title: 'Time', artist: 'Pink Floyd'),
+    );
+    store.blockTrack(
+      const DislikedTrack(videoId: 'b', title: 'Money', artist: 'Pink Floyd'),
+    );
     final r = await read();
     expect(titles(r), ['Us and Them', 'Money']);
-    expect(r.items.last.track, isA<Track>(), reason: 'own songs are never filtered');
+    expect(
+      r.items.last.track,
+      isA<Track>(),
+      reason: 'own songs are never filtered',
+    );
   });
 
   test('a blocked artist: only the downloaded songs play (D-468)', () async {
     await add('Echoes', 'Pink Floyd');
-    store.blockArtist(const DislikedArtist(key: 'pink floyd', name: 'Pink Floyd'));
+    store.blockArtist(
+      const DislikedArtist(key: 'pink floyd', name: 'Pink Floyd'),
+    );
     final r = await read();
     expect(titles(r), ['Echoes']);
   });
 
-  test('a row by a blocked artist is skipped even on another artist page', () async {
-    store.blockArtist(const DislikedArtist(key: 'guest', name: 'Guest'));
-    final r = await read(top: [ytmSong('a', 'Time'), ytmSong('g', 'Duet', artist: 'Guest')]);
-    expect(titles(r), ['Time']);
-  });
+  test(
+    'a row by a blocked artist is skipped even on another artist page',
+    () async {
+      store.blockArtist(const DislikedArtist(key: 'guest', name: 'Guest'));
+      final r = await read(
+        top: [
+          ytmSong('a', 'Time'),
+          ytmSong('g', 'Duet', artist: 'Guest'),
+        ],
+      );
+      expect(titles(r), ['Time']);
+    },
+  );
 
-  test('the page artist blocked: a row by another artist is skipped too', () async {
-    store.blockArtist(const DislikedArtist(key: 'pink floyd', name: 'Pink Floyd'));
-    final r = await read(top: [ytmSong('g', 'Duet', artist: 'Guest')]);
-    expect(titles(r), isEmpty);
-  });
+  test(
+    'the page artist blocked: a row by another artist is skipped too',
+    () async {
+      store.blockArtist(
+        const DislikedArtist(key: 'pink floyd', name: 'Pink Floyd'),
+      );
+      final r = await read(top: [ytmSong('g', 'Duet', artist: 'Guest')]);
+      expect(titles(r), isEmpty);
+    },
+  );
 
   test('a block made later refreshes the list', () async {
-    final c = ProviderContainer(overrides: [
-      databaseProvider.overrideWithValue(db),
-      dislikeStoreProvider.overrideWithValue(store),
-      groupShelvesProvider.overrideWith((ref, ids) => [YtmSongShelf('Top', _top, allSongs: null)]),
-    ]);
+    final c = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        dislikeStoreProvider.overrideWithValue(store),
+        groupShelvesProvider.overrideWith(
+          (ref, ids) => [YtmSongShelf('Top', _top, allSongs: null)],
+        ),
+      ],
+    );
     addTearDown(c.dispose);
     final sub = c.listen(artistAllSongsProvider(_key), (_, _) {});
     addTearDown(sub.close);
-    expect(titles(await c.read(artistAllSongsProvider(_key).future)), ['Time', 'Money', 'Us and Them']);
-    store.blockTrack(const DislikedTrack(videoId: 'a', title: 'Time', artist: 'Pink Floyd'));
+    expect(titles(await c.read(artistAllSongsProvider(_key).future)), [
+      'Time',
+      'Money',
+      'Us and Them',
+    ]);
+    store.blockTrack(
+      const DislikedTrack(videoId: 'a', title: 'Time', artist: 'Pink Floyd'),
+    );
     await Future<void>.delayed(Duration.zero);
-    expect(titles(await c.read(artistAllSongsProvider(_key).future)), ['Money', 'Us and Them']);
+    expect(titles(await c.read(artistAllSongsProvider(_key).future)), [
+      'Money',
+      'Us and Them',
+    ]);
   });
 }

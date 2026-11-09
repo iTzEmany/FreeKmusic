@@ -109,110 +109,211 @@ void main() {
     },
   );
 
+  test('watchResumable: tracks and episodes left in the middle, never kind 2, newest first, limited', () async {
+    await repo.upsertBatch([for (var i = 0; i < 6; i++) row('/$i.mp3', 'T$i')]);
+    final ids = [for (final t in await db.select(db.tracks).get()) t.id];
+    Future<void> set(
+      int id,
+      int? resume,
+      int? played, {
+      bool missing = false,
+      int kind = 0,
+    }) => (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(
+        resumePositionMs: Value(resume),
+        lastPlayedAt: Value(played),
+        missing: Value(missing),
+        kind: Value(kind),
+      ),
+    );
+    await set(ids[0], 1000, 10);
+    await set(ids[1], 1000, 30);
+    await set(ids[2], null, 50); // finished: no bookmark
+    await set(ids[3], 1000, 40, missing: true);
+    await set(ids[4], 1000, 20, kind: 1); // an episode, followed or not
+    await set(ids[5], 1000, 60, kind: 2); // a stream shadow row
+    final r = await repo.watchResumable().first;
+    expect(r.map((t) => t.title), ['T1', 'T4', 'T0']);
+    expect((await repo.watchResumable(limit: 1).first).single.title, 'T1');
+  });
+
   test(
-    'watchResumable: tracks and episodes left in the middle, never kind 2, newest first, limited',
+    'watchResumable: an episode of a podcast that is not followed shows up',
     () async {
-      await repo.upsertBatch([
-        for (var i = 0; i < 6; i++) row('/$i.mp3', 'T$i'),
-      ]);
-      final ids = [for (final t in await db.select(db.tracks).get()) t.id];
-      Future<void> set(
-        int id,
-        int? resume,
-        int? played, {
-        bool missing = false,
-        int kind = 0,
-      }) => (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
-        TracksCompanion(
-          resumePositionMs: Value(resume),
-          lastPlayedAt: Value(played),
-          missing: Value(missing),
-          kind: Value(kind),
-        ),
-      );
-      await set(ids[0], 1000, 10);
-      await set(ids[1], 1000, 30);
-      await set(ids[2], null, 50); // finished: no bookmark
-      await set(ids[3], 1000, 40, missing: true);
-      await set(ids[4], 1000, 20, kind: 1); // an episode, followed or not
-      await set(ids[5], 1000, 60, kind: 2); // a stream shadow row
-      final r = await repo.watchResumable().first;
-      expect(r.map((t) => t.title), ['T1', 'T4', 'T0']);
-      expect((await repo.watchResumable(limit: 1).first).single.title, 'T1');
+      final podcastId = await db
+          .into(db.podcasts)
+          .insert(
+            PodcastsCompanion.insert(
+              feedUrl: 'https://x/feed',
+              title: 'Show',
+              addedAt: 1,
+              followed: const Value(false),
+            ),
+          );
+      final trackId = await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/p/e.mp3',
+              title: 'Ep',
+              albumKey: 'podcast|$podcastId',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+              kind: const Value(1),
+              resumePositionMs: const Value(5000),
+              lastPlayedAt: const Value(9),
+            ),
+          );
+      await db
+          .into(db.podcastEpisodes)
+          .insert(
+            PodcastEpisodesCompanion.insert(
+              podcastId: podcastId,
+              guid: 'e',
+              title: 'Ep',
+              audioUrl: 'https://x/e.mp3',
+              trackId: Value(trackId),
+            ),
+          );
+      expect((await repo.watchResumable().first).single.title, 'Ep');
     },
   );
 
-  test('watchResumable: an episode of a podcast that is not followed shows up', () async {
-    final podcastId = await db.into(db.podcasts).insert(PodcastsCompanion.insert(
-        feedUrl: 'https://x/feed', title: 'Show', addedAt: 1, followed: const Value(false)));
-    final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
-        path: '/p/e.mp3', title: 'Ep', albumKey: 'podcast|$podcastId', format: 'mp3', sizeBytes: 1,
-        mtimeMs: 1, addedAt: 1, kind: const Value(1), resumePositionMs: const Value(5000),
-        lastPlayedAt: const Value(9)));
-    await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
-        podcastId: podcastId, guid: 'e', title: 'Ep', audioUrl: 'https://x/e.mp3', trackId: Value(trackId)));
-    expect((await repo.watchResumable().first).single.title, 'Ep');
-  });
+  test(
+    'watchResumable: an episode marked as heard by hand is not offered',
+    () async {
+      final podcastId = await db
+          .into(db.podcasts)
+          .insert(
+            PodcastsCompanion.insert(
+              feedUrl: 'https://x/feed',
+              title: 'Show',
+              addedAt: 1,
+            ),
+          );
+      Future<void> episode(String guid, {required bool played}) async {
+        final trackId = await db
+            .into(db.tracks)
+            .insert(
+              TracksCompanion.insert(
+                path: 'https://x/$guid.mp3',
+                title: guid,
+                albumKey: 'podcast|$podcastId',
+                format: 'mp3',
+                sizeBytes: 0,
+                mtimeMs: 0,
+                addedAt: 1,
+                kind: const Value(1),
+                resumePositionMs: const Value(5000),
+                lastPlayedAt: const Value(9),
+              ),
+            );
+        await db
+            .into(db.podcastEpisodes)
+            .insert(
+              PodcastEpisodesCompanion.insert(
+                podcastId: podcastId,
+                guid: guid,
+                title: guid,
+                audioUrl: 'https://x/$guid.mp3',
+                trackId: Value(trackId),
+                played: Value(played),
+              ),
+            );
+      }
 
-  test('watchResumable: an episode marked as heard by hand is not offered', () async {
-    final podcastId = await db.into(db.podcasts).insert(
-        PodcastsCompanion.insert(feedUrl: 'https://x/feed', title: 'Show', addedAt: 1));
-    Future<void> episode(String guid, {required bool played}) async {
-      final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
-          path: 'https://x/$guid.mp3', title: guid, albumKey: 'podcast|$podcastId', format: 'mp3',
-          sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: const Value(1),
-          resumePositionMs: const Value(5000), lastPlayedAt: const Value(9)));
-      await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
-          podcastId: podcastId, guid: guid, title: guid, audioUrl: 'https://x/$guid.mp3',
-          trackId: Value(trackId), played: Value(played)));
-    }
-    await episode('open', played: false);
-    await episode('heard', played: true);
-    expect((await repo.watchResumable().first).map((t) => t.title), ['open']);
-  });
+      await episode('open', played: false);
+      await episode('heard', played: true);
+      expect((await repo.watchResumable().first).map((t) => t.title), ['open']);
+    },
+  );
 
   test('a remote episode row (no folder) is invisible to the scan and never missing', () async {
-    final folderId = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
-    await db.into(db.tracks).insert(TracksCompanion.insert(
-        path: 'https://x/e.mp3', title: 'E', albumKey: 'podcast|1', format: 'mp3', sizeBytes: 0,
-        mtimeMs: 0, addedAt: 1, kind: const Value(1)));
-    expect(await repo.fileIndexForFolder(folderId), isEmpty, reason: 'the scan only marks what is in its index');
+    final folderId = await db
+        .into(db.folders)
+        .insert(FoldersCompanion.insert(path: '/music', addedAt: 1));
+    await db
+        .into(db.tracks)
+        .insert(
+          TracksCompanion.insert(
+            path: 'https://x/e.mp3',
+            title: 'E',
+            albumKey: 'podcast|1',
+            format: 'mp3',
+            sizeBytes: 0,
+            mtimeMs: 0,
+            addedAt: 1,
+            kind: const Value(1),
+          ),
+        );
+    expect(
+      await repo.fileIndexForFolder(folderId),
+      isEmpty,
+      reason: 'the scan only marks what is in its index',
+    );
     expect(await repo.missingPathsForFolder(folderId), isEmpty);
     expect(await repo.watchMissing().first, isEmpty);
   });
 
-  test('setLyrics byUser marks the text as the user\'s; otherwise no mark', () async {
-    await repo.upsertBatch([row('/a.mp3', 'A')]);
-    final id = (await db.select(db.tracks).getSingle()).id;
-    await repo.setLyrics(id, plain: 'x');
-    expect(await db.select(db.trackEnrich).get(), isEmpty);
-    await db.into(db.trackEnrich).insert(
-        TrackEnrichCompanion.insert(trackId: Value(id), creditsNoneAt: const Value(7)));
-    await repo.setLyrics(id, plain: 'y', byUser: true);
-    expect((await db.select(db.trackEnrich).getSingle()).creditsNoneAt, 7);
-    expect((await db.select(db.trackEnrich).getSingle()).lyricsByUser, true);
-    expect((await db.select(db.tracks).getSingle()).lyricsPlain, 'y');
-    await repo.setLyrics(id, plain: 'z');
-    expect((await db.select(db.trackEnrich).getSingle()).lyricsByUser, true);
-  });
+  test(
+    'setLyrics byUser marks the text as the user\'s; otherwise no mark',
+    () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await repo.setLyrics(id, plain: 'x');
+      expect(await db.select(db.trackEnrich).get(), isEmpty);
+      await db
+          .into(db.trackEnrich)
+          .insert(
+            TrackEnrichCompanion.insert(
+              trackId: Value(id),
+              creditsNoneAt: const Value(7),
+            ),
+          );
+      await repo.setLyrics(id, plain: 'y', byUser: true);
+      expect((await db.select(db.trackEnrich).getSingle()).creditsNoneAt, 7);
+      expect((await db.select(db.trackEnrich).getSingle()).lyricsByUser, true);
+      expect((await db.select(db.tracks).getSingle()).lyricsPlain, 'y');
+      await repo.setLyrics(id, plain: 'z');
+      expect((await db.select(db.trackEnrich).getSingle()).lyricsByUser, true);
+    },
+  );
 
-  test('a rescan with a new mtime and another cover keeps a track pick', () async {
-    await repo.upsertBatch([row('/a.mp3', 'A')]);
-    final id = (await repo.byPath('/a.mp3'))!.id;
-    await repo.setManualCover(id, 'mine');
-    await repo.upsertBatch([
-      row('/a.mp3', 'A', mtime: 9).copyWith(coverKey: const Value('auto2'), hasCover: const Value(true)),
-    ]);
-    final t = (await repo.byPath('/a.mp3'))!;
-    expect([t.coverKey, t.coverSource, t.mtimeMs], ['mine', 2, 9]);
-  });
+  test(
+    'a rescan with a new mtime and another cover keeps a track pick',
+    () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await repo.byPath('/a.mp3'))!.id;
+      await repo.setManualCover(id, 'mine');
+      await repo.upsertBatch([
+        row(
+          '/a.mp3',
+          'A',
+          mtime: 9,
+        ).copyWith(coverKey: const Value('auto2'), hasCover: const Value(true)),
+      ]);
+      final t = (await repo.byPath('/a.mp3'))!;
+      expect([t.coverKey, t.coverSource, t.mtimeMs], ['mine', 2, 9]);
+    },
+  );
 
   test('a row that enters an album with a hand-picked cover takes its key and source', () async {
     await repo.upsertBatch([row('/a.mp3', 'A'), row('/b.mp3', 'B')]);
     await repo.setManualAlbumCover('k', 'pick');
-    final entering = row('/b.mp3', 'B', mtime: 9)
-        .copyWith(coverKey: const Value('pick'), hasCover: const Value(true), coverSource: const Value(1));
-    await repo.upsertBatch([entering, row('/c.mp3', 'C').copyWith(coverKey: const Value('pick'), coverSource: const Value(1))]);
+    final entering = row('/b.mp3', 'B', mtime: 9).copyWith(
+      coverKey: const Value('pick'),
+      hasCover: const Value(true),
+      coverSource: const Value(1),
+    );
+    await repo.upsertBatch([
+      entering,
+      row(
+        '/c.mp3',
+        'C',
+      ).copyWith(coverKey: const Value('pick'), coverSource: const Value(1)),
+    ]);
     for (final p in ['/b.mp3', '/c.mp3']) {
       final t = (await repo.byPath(p))!;
       expect([t.coverKey, t.coverSource], ['pick', 1], reason: p);

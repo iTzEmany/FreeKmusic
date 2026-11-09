@@ -71,7 +71,12 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
     if (selected) _opened = true;
     final header = Padding(
       // Same frame as the Library header (whose row is 48 high).
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap12, CcDims.gap4, 0),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        CcDims.gap12,
+        CcDims.gap4,
+        0,
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 48),
         child: Align(
@@ -150,10 +155,7 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
     );
     final never = _neverPlayed(context, b);
     final tools = _tools(context);
-    final main = [
-      ..._groups(context, b),
-      ..._heaviest(context, b),
-    ];
+    final main = [..._groups(context, b), ..._heaviest(context, b)];
     final pad = EdgeInsets.only(bottom: CcDims.gap32 + context.dockInset);
     if (MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint) {
       return Row(
@@ -161,16 +163,17 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
         children: [
           SizedBox(
             width: 330,
-            child: ListView(
-              padding: pad,
-              children: [ring, ...never, ...tools],
-            ),
+            child: ListView(padding: pad, children: [ring, ...never, ...tools]),
           ),
           Expanded(
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: pad,
-              children: [...main, const MemoryAppDataSection(), const _EnrichmentRow()],
+              children: [
+                ...main,
+                const MemoryAppDataSection(),
+                const _EnrichmentRow(),
+              ],
             ),
           ),
         ],
@@ -195,7 +198,12 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
     T selected,
     ValueChanged<T> onChanged,
   ) => Padding(
-    padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap8),
+    padding: const EdgeInsets.fromLTRB(
+      CcDims.margin,
+      CcDims.gap8,
+      CcDims.margin,
+      CcDims.gap8,
+    ),
     child: SegmentedBlocks<T>(
       items: items,
       selected: selected,
@@ -246,7 +254,9 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
             leading: PlaylistCover(
               size: 44,
               favorites: g.isFavorites,
-              coverKeys: playlistCoverKeys(g.playlist?.coverKey, [g.autoCoverKey]),
+              coverKeys: playlistCoverKeys(g.playlist?.coverKey, [
+                g.autoCoverKey,
+              ]),
             ),
             title: g.isFavorites ? l.navFavorites : g.name,
             subtitle: _countAndTime(l, g.totals),
@@ -278,7 +288,10 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
             onTap: g.path == null ? null : () => _openFolder(context, g.path!),
             semanticLabel: g.path == null
                 ? null
-                : l.memoryOpenFolderLabel(folderLabels(b.folders)[g.path] ?? g.name, g.path!),
+                : l.memoryOpenFolderLabel(
+                    folderLabels(b.folders)[g.path] ?? g.name,
+                    g.path!,
+                  ),
             trailing: g.path == null
                 ? null
                 : Padding(
@@ -286,14 +299,20 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.open_in_new_rounded, size: 18, color: context.cc.accent),
+                        Icon(
+                          Icons.open_in_new_rounded,
+                          size: 18,
+                          color: context.cc.accent,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             l.memoryOpenFolder,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.labelMedium?.copyWith(color: context.cc.accent),
+                            style: theme.labelMedium?.copyWith(
+                              color: context.cc.accent,
+                            ),
                           ),
                         ),
                       ],
@@ -366,10 +385,8 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
                 : a.album.artist,
             bytes: a.sizeBytes,
             fraction: shareOf(a.sizeBytes, b.heaviestAlbums.first.sizeBytes),
-            onTap: () => ShellNav.open<void>(
-              context,
-              AlbumDetailScreen(album: a.album),
-            ),
+            onTap: () =>
+                ShellNav.open<void>(context, AlbumDetailScreen(album: a.album)),
           ),
     ];
   }
@@ -387,7 +404,12 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
     const radius = BorderRadius.all(Radius.circular(CcDims.rSheet));
     return [
       Padding(
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, 0),
+        padding: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          CcDims.gap16,
+          CcDims.margin,
+          0,
+        ),
         child: Material(
           color: cc.surface1,
           borderRadius: radius,
@@ -408,9 +430,7 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
                         Text(l.memoryNeverPlayed, style: theme.labelLarge),
                         Text(
                           meta,
-                          style: theme.bodySmall?.copyWith(
-                            color: cc.textMuted,
-                          ),
+                          style: theme.bodySmall?.copyWith(color: cc.textMuted),
                         ),
                       ],
                     ),
@@ -443,8 +463,7 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
                 ? l.memoryDuplicateGroups(dup.groups.length)
                 : null,
             keepWhenZero: true,
-            onTap: () =>
-                ShellNav.open<void>(context, const DuplicatesScreen()),
+            onTap: () => ShellNav.open<void>(context, const DuplicatesScreen()),
           ),
           LibraryShortcut(
             label: l.missingTracksTitle,

@@ -1,26 +1,32 @@
-
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/artist_info_repository.dart';
 import 'rule_ast.dart';
 
 /// Country codes (upper case) a rule asks for with `nazionalita`.
 Set<String> countriesOf(RuleExpr e) => switch (e) {
-      RuleAnd(:final terms) => {for (final t in terms) ...countriesOf(t)},
-      RuleOr(:final left, :final right) => {...countriesOf(left), ...countriesOf(right)},
-      RuleNot(:final inner) => countriesOf(inner),
-      RuleContains(:final field, :final value) when field == RuleField.country => {value.toUpperCase()},
-      RuleIn(:final field, :final values) when field == RuleField.country => {
-          for (final v in values) v.toUpperCase(),
-        },
-      _ => const {},
-    };
+  RuleAnd(:final terms) => {for (final t in terms) ...countriesOf(t)},
+  RuleOr(:final left, :final right) => {
+    ...countriesOf(left),
+    ...countriesOf(right),
+  },
+  RuleNot(:final inner) => countriesOf(inner),
+  RuleContains(:final field, :final value) when field == RuleField.country => {
+    value.toUpperCase(),
+  },
+  RuleIn(:final field, :final values) when field == RuleField.country => {
+    for (final v in values) v.toUpperCase(),
+  },
+  _ => const {},
+};
 
 /// The distinct non-empty `tracks.artist` spellings, in query order.
 Future<Set<String>> distinctArtists(AppDatabase db) async {
-  final rows = await db.customSelect(
-    "SELECT DISTINCT artist FROM tracks WHERE artist IS NOT NULL AND artist <> ''",
-    readsFrom: {db.tracks},
-  ).get();
+  final rows = await db
+      .customSelect(
+        "SELECT DISTINCT artist FROM tracks WHERE artist IS NOT NULL AND artist <> ''",
+        readsFrom: {db.tracks},
+      )
+      .get();
   return {for (final r in rows) r.read<String>('artist')};
 }
 
@@ -51,7 +57,12 @@ Future<Map<String, List<String>>> countryArtistsOf(
   final wanted = countriesOf(e);
   if (wanted.isEmpty) return const {};
   final byKey = <String, String>{};
-  for (final r in await db.customSelect('SELECT artist_key AS k, upper(country) AS c FROM artist_countries WHERE country IS NOT NULL').get()) {
+  for (final r
+      in await db
+          .customSelect(
+            'SELECT artist_key AS k, upper(country) AS c FROM artist_countries WHERE country IS NOT NULL',
+          )
+          .get()) {
     final c = r.read<String>('c');
     if (wanted.contains(c)) byKey[r.read<String>('k')] = c;
   }
@@ -66,9 +77,11 @@ Future<Map<String, List<String>>> countryArtistsOf(
 
 /// The fields a rule reads, to know which tables it depends on.
 Set<RuleField> fieldsOf(RuleExpr e) => switch (e) {
-      RuleAnd(:final terms) => {for (final t in terms) ...fieldsOf(t)},
-      RuleOr(:final left, :final right) => {...fieldsOf(left), ...fieldsOf(right)},
-      RuleNot(:final inner) => fieldsOf(inner),
-      RuleContains(:final field) || RuleIn(:final field) || RuleNumber(:final field) => {field},
-      _ => const {},
-    };
+  RuleAnd(:final terms) => {for (final t in terms) ...fieldsOf(t)},
+  RuleOr(:final left, :final right) => {...fieldsOf(left), ...fieldsOf(right)},
+  RuleNot(:final inner) => fieldsOf(inner),
+  RuleContains(:final field) ||
+  RuleIn(:final field) ||
+  RuleNumber(:final field) => {field},
+  _ => const {},
+};

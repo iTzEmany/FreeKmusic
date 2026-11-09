@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import '../core/app_log.dart';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +27,8 @@ import '../services/shuffle_plus/plus_allowed.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/similar_queue.dart';
 import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed;
-import 'shuffle_plus_providers.dart' show libraryMatchIdProvider, similarFillProvider;
+import 'shuffle_plus_providers.dart'
+    show libraryMatchIdProvider, similarFillProvider;
 import 'suggestion_log_provider.dart';
 
 /// Overridden in `main` once the handler has been created (and, on Android,
@@ -50,7 +52,16 @@ final playerErrorsProvider = Provider<Stream<PlaybackFailure>>(
 
 /// Where the current queue came from, shown as «In riproduzione da».
 // .index is stored (prefs lastContextKind, DB plays.context): only append values, never reorder.
-enum PlayContextKind { album, artist, playlist, favorites, library, search, podcast, radio }
+enum PlayContextKind {
+  album,
+  artist,
+  playlist,
+  favorites,
+  library,
+  search,
+  podcast,
+  radio,
+}
 
 class PlayContext {
   const PlayContext(this.kind, [this.name]);
@@ -121,6 +132,7 @@ class PlayerController {
   /// With a Jam active queueing goes to the shared queue (D-89): library ids
   /// to [addToJam], online results to [addOnlineToJam] (true = accepted).
   final bool Function()? jamActive;
+
   /// Returns how many of the ids got in (a full Jam refuses).
   final Future<JamAddResult> Function(List<int>)? addToJam;
 
@@ -248,7 +260,9 @@ class PlayerController {
     bool? shuffle,
   }) async {
     if (items.isEmpty) return;
-    final at = (index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0)).clamp(0, items.length - 1);
+    final at =
+        (index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0))
+            .clamp(0, items.length - 1);
     if (inJam) {
       final t = items[at].track, r = items[at].online;
       if (t != null) await addToJam?.call([t.id]);
@@ -259,10 +273,13 @@ class PlayerController {
     final suggested = <(YtResult, String)>[];
     try {
       for (final i in items) {
-        final id = i.track?.id ?? (await _idOf(i.online!, seedTitle: i.seedTitle))!;
+        final id =
+            i.track?.id ?? (await _idOf(i.online!, seedTitle: i.seedTitle))!;
         ids.add(id);
         final seed = i.seedTitle;
-        if (i.track == null && seed != null && isOnlineId(id)) suggested.add((i.online!, seed));
+        if (i.track == null && seed != null && isOnlineId(id)) {
+          suggested.add((i.online!, seed));
+        }
       }
     } on Object catch (e, st) {
       AppLog.w('mixed list not played', e, st);
@@ -286,7 +303,13 @@ class PlayerController {
   Future<void> playShufflePlus(List<int> ids, {PlayContext? context}) async {
     if (ids.isEmpty || inJam) return;
     final block = await plusBlock?.call(ids);
-    await _start(ids, _random.nextInt(ids.length), context, plus: block == null, shuffle: true);
+    await _start(
+      ids,
+      _random.nextInt(ids.length),
+      context,
+      plus: block == null,
+      shuffle: true,
+    );
   }
 
   /// Plays the queue that ended again, from its first song, with its context;
@@ -297,9 +320,15 @@ class PlayerController {
     if (ids.isEmpty) return false;
     if (inJam) return true; // the Jam queue is shared (D-89)
     try {
-      final stations = [for (final i in ids) _handler.online?.radioOf(i)?.station];
+      final stations = [
+        for (final i in ids) _handler.online?.radioOf(i)?.station,
+      ];
       if (stations.every((s) => s != null)) {
-        await playStations([for (final s in stations) s!], 0, context: _context);
+        await playStations(
+          [for (final s in stations) s!],
+          0,
+          context: _context,
+        );
       } else {
         await _start(ids, 0, _context);
       }
@@ -345,6 +374,7 @@ class PlayerController {
     _stopSimilar(); // the user emptied what follows: no refill
     return _handler.rebuildUpcoming();
   }
+
   bool get hasQueueSource => _handler.hasSource;
   void restoreQueue(QueueState state) => _handler.restoreQueue(state);
 
@@ -367,7 +397,11 @@ class PlayerController {
   Future<int?> _idOf(YtResult r, {String? seedTitle}) async {
     final lib = await libraryIdOf?.call(r);
     if (lib != null) return lib;
-    return _handler.online?.register(r, seedTitle: seedTitle, suggested: seedTitle != null);
+    return _handler.online?.register(
+      r,
+      seedTitle: seedTitle,
+      suggested: seedTitle != null,
+    );
   }
 
   /// Plays [id] alone, with the search context (empty queue, or radio: no stations to insert among).
@@ -414,10 +448,20 @@ class PlayerController {
     final id = track?.id ?? await _idOrLog(online!);
     if (id == null) return null;
     // Not awaited: a stream may take minutes to load and the radio need not wait.
-    unawaited(_start([id], 0, const PlayContext(PlayContextKind.search), shuffle: false)
-        .catchError((Object e, StackTrace st) => AppLog.w('search pick not played', e, st)));
+    unawaited(
+      _start(
+        [id],
+        0,
+        const PlayContext(PlayContextKind.search),
+        shuffle: false,
+      ).catchError(
+        (Object e, StackTrace st) => AppLog.w('search pick not played', e, st),
+      ),
+    );
     final epoch = _epoch; // after _start, which ended the old session
-    final seed = track != null ? RadioSeed(track) : RadioSeed.online(online!.id, online.title);
+    final seed = track != null
+        ? RadioSeed(track)
+        : RadioSeed.online(online!.id, online.title);
     _setSimilar(seed.title, loading: true);
     try {
       final fill = await similarFill?.call(seed);
@@ -459,12 +503,15 @@ class PlayerController {
   /// same song by title and artist), else a new online entry.
   Future<int?> _similarId(YtResult r, String seedTitle) async {
     final lib = await libraryIdOf?.call(r) ?? await libraryMatchIdOf?.call(r);
-    return lib ?? _handler.online?.register(r, seedTitle: seedTitle, suggested: true);
+    return lib ??
+        _handler.online?.register(r, seedTitle: seedTitle, suggested: true);
   }
 
   /// In a Jam: before any id lookup (library and negative ids mean nothing to guests); returns once accepted.
   void _onlineToJam(YtResult r) {
-    if (addOnlineToJam?.call(r) != true) AppLog.w('jam: ${r.indexKey} not accepted');
+    if (addOnlineToJam?.call(r) != true) {
+      AppLog.w('jam: ${r.indexKey} not accepted');
+    }
   }
 
   Future<void> enqueueOnline(YtResult r) async {
@@ -484,7 +531,10 @@ class PlayerController {
   }
 
   /// Plays [list] in order; [shuffle] turns plain shuffle on (else off), never Shuffle+ (R-18).
-  Future<void> playOnlineList(List<YtResult> list, {bool shuffle = false}) async {
+  Future<void> playOnlineList(
+    List<YtResult> list, {
+    bool shuffle = false,
+  }) async {
     if (list.isEmpty) return;
     if (inJam) return list.forEach(_onlineToJam);
     await playMixed(
@@ -513,9 +563,12 @@ class PlayerController {
   Future<ShufflePlusBlock?> cycleShuffle({List<int>? ids}) {
     // Serialized: a second tap reads the state the first one left.
     final run = _cycle.then((_) => _cycleShuffle(ids));
-    _cycle = run.then<void>((_) {}, onError: (Object e) {
-      AppLog.w('shuffle cycle failed', e);
-    });
+    _cycle = run.then<void>(
+      (_) {},
+      onError: (Object e) {
+        AppLog.w('shuffle cycle failed', e);
+      },
+    );
     return run;
   }
 
@@ -553,9 +606,14 @@ class PlayerController {
     if (_askedNotifications || !isAndroid) return;
     _askedNotifications = true;
     // No activity (the player was started by a widget or a key): no dialog.
-    unawaited(Permission.notification.request().then<void>((_) {}, onError: (Object e) {
-      AppLog.d('notification permission not asked', e);
-    }));
+    unawaited(
+      Permission.notification.request().then<void>(
+        (_) {},
+        onError: (Object e) {
+          AppLog.d('notification permission not asked', e);
+        },
+      ),
+    );
   }
 }
 
@@ -572,7 +630,9 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
       queueIds: ids ?? h.queueIds,
       jam: ref.read(jamProvider).active,
       // A list of its own is not the radio queue, whatever the context says.
-      radio: ids == null && ref.read(playContextProvider)?.kind == PlayContextKind.radio,
+      radio:
+          ids == null &&
+          ref.read(playContextProvider)?.kind == PlayContextKind.radio,
       localCount: local.where((t) => !t.missing && t.kind == 0).length,
     );
   } on Object catch (e, st) {
@@ -592,7 +652,10 @@ const shadowWaitCap = Duration(seconds: 40);
 /// Whether the cards of the streamed queue [id] still wait for their row: emits
 /// now and on each phase change; unavailable once the job failed, is unknown,
 /// or [shadowWaitCap] passed since first watched (autoDispose: it restarts then).
-final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, int>((ref, id) {
+final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, int>((
+  ref,
+  id,
+) {
   final h = ref.watch(audioHandlerProvider);
   final phases = h.preparer?.phases;
   final key = h.online?.entryOf(id)?.result.indexKey;
@@ -600,7 +663,11 @@ final shadowWaitProvider = StreamProvider.autoDispose.family<ShadowWait, int>((r
   var capped = false;
   void emit() {
     final phase = phases?.value[key];
-    c.add(capped || phase == null || phase == StreamPhase.failed ? ShadowWait.unavailable : ShadowWait.waiting);
+    c.add(
+      capped || phase == null || phase == StreamPhase.failed
+          ? ShadowWait.unavailable
+          : ShadowWait.waiting,
+    );
   }
 
   phases?.addListener(emit);
@@ -630,13 +697,16 @@ final playerControllerProvider = Provider<PlayerController>((ref) {
     jamQueueFullNow: () => ref.read(jamProvider.notifier).queueFull,
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
-    onSuggested: (r, seed) => ref.read(suggestionLogProvider).addSuggestion(r, seed),
+    onSuggested: (r, seed) =>
+        ref.read(suggestionLogProvider).addSuggestion(r, seed),
     similarFill: ref.read(similarFillProvider),
     libraryMatchIdOf: ref.read(libraryMatchIdProvider),
     libraryIdOf: (r) async {
       final path = (await ref.read(downloadIndexProvider.future))
           .pathFor(r.id, source: r.source);
-      return path == null ? null : ref.read(trackRepositoryProvider).idForPath(path);
+      return path == null
+          ? null
+          : ref.read(trackRepositoryProvider).idForPath(path);
     },
   );
   ref.onDispose(c.dispose);
@@ -665,7 +735,11 @@ final lastQueueProvider = FutureProvider.autoDispose<LastQueue?>((ref) async {
   final h = ref.watch(audioHandlerProvider);
   final ids = h.queueIds;
   if (ids.isEmpty) return null;
-  final first = await queueTracks([ids.first], ref.watch(trackRepositoryProvider), h.online);
+  final first = await queueTracks(
+    [ids.first],
+    ref.watch(trackRepositoryProvider),
+    h.online,
+  );
   return first.isEmpty ? null : (count: ids.length, first: first.first);
 });
 
@@ -783,7 +857,9 @@ final _shadowRowId = StreamProvider<int?>((ref) async* {
   }
   // Listen before the first yield: a bind in between must not be lost.
   final out = StreamController<int?>()..add(entries.entryOf(id)?.trackId);
-  final sub = entries.bound.where((i) => i == id).listen((_) => out.add(entries.entryOf(id)?.trackId));
+  final sub = entries.bound
+      .where((i) => i == id)
+      .listen((_) => out.add(entries.entryOf(id)?.trackId));
   ref.onDispose(() {
     sub.cancel();
     out.close();
@@ -807,7 +883,9 @@ final _shadowRowStream = StreamProvider<Track?>((ref) async* {
 final currentShadowRowProvider = Provider<Track?>((ref) {
   final id = ref.watch(currentTrackProvider.select((t) => t.value?.id));
   final row = ref.watch(_shadowRowStream).value;
-  final rowId = id == null ? null : ref.watch(onlineEntriesProvider)?.entryOf(id)?.trackId;
+  final rowId = id == null
+      ? null
+      : ref.watch(onlineEntriesProvider)?.entryOf(id)?.trackId;
   return row != null && row.id == rowId ? row : null;
 });
 

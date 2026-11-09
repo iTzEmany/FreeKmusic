@@ -73,10 +73,15 @@ Future<T?> showCcActionSheet<T>({
   List<List<CcAction<T>>> layout(List<List<CcAction<T>>> gs) {
     final normal = [
       for (final g in gs)
-        [for (final a in g) if (!a.destructive) a],
+        [
+          for (final a in g)
+            if (!a.destructive) a,
+        ],
     ].where((g) => g.isNotEmpty).toList();
     final destructive = [
-      for (final g in gs) for (final a in g) if (a.destructive) a,
+      for (final g in gs)
+        for (final a in g)
+          if (a.destructive) a,
     ];
     return [...normal, if (destructive.isNotEmpty) destructive];
   }
@@ -143,7 +148,11 @@ Future<T?> showCcActionSheet<T>({
                                 try {
                                   await a.onTap?.call();
                                 } on Object catch (e, st) {
-                                  AppLog.w('sheet action failed: ${a.label}', e, st);
+                                  AppLog.w(
+                                    'sheet action failed: ${a.label}',
+                                    e,
+                                    st,
+                                  );
                                 }
                               },
                             ),

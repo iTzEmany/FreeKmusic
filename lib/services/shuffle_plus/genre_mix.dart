@@ -44,7 +44,10 @@ List<MixRow<T>> interleave<T>(List<T> tracks, GenreMixState mix) {
   for (var i = 0; i < tracks.length; i++) {
     rows.add((track: tracks[i], suggestion: null));
     if ((i + 1) % genreMixEvery == 0 && k < slots) {
-      rows.add((track: null, suggestion: k < mix.suggested.length ? mix.suggested[k] : null));
+      rows.add((
+        track: null,
+        suggestion: k < mix.suggested.length ? mix.suggested[k] : null,
+      ));
       k++;
     }
   }
@@ -69,7 +72,8 @@ Stream<GenreMixState> genreMix({
   required List<Track> tracks,
   required Future<GenreMixOff?> Function() offReason,
   required SeedResolver resolver,
-  required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
+  required Future<RadioPage> Function(String videoId, {String? continuation})
+  radioPage,
   required SuggestionLog log,
   required SuggestionGate filter,
   required RadioGate gate,
@@ -92,7 +96,9 @@ Stream<GenreMixState> genreMix({
     await log.load();
     await filter.load();
     final fill = RadioFill(
-      seeds: [for (final t in chooseSeeds(tracks, random: random)) RadioSeed(t)],
+      seeds: [
+        for (final t in chooseSeeds(tracks, random: random)) RadioSeed(t),
+      ],
       resolver: resolver,
       radioPage: radioPage,
       log: log,
@@ -108,7 +114,10 @@ Stream<GenreMixState> genreMix({
       maxRequests: _maxRequests,
     )) {
       found.add((result: c.result, seedTitle: c.seedTitle));
-      yield GenreMixState(suggested: List.of(found), incoming: want - found.length);
+      yield GenreMixState(
+        suggested: List.of(found),
+        incoming: want - found.length,
+      );
     }
   } on YtException catch (e, st) {
     AppLog.w('genre mix stopped', e, st);
@@ -129,7 +138,8 @@ Stream<GenreMixState> genreMixOf({
   required Future<List<Track>> tracks,
   required Future<SeedResolver> resolver,
   required Future<DownloadIndex> downloads,
-  required Future<RadioPage> Function(String videoId, {String? continuation}) radioPage,
+  required Future<RadioPage> Function(String videoId, {String? continuation})
+  radioPage,
   required SuggestionLog log,
   required SuggestionGate filter,
   required RadioGate gate,

@@ -11,7 +11,9 @@ typedef DislikeLists = ({
 });
 
 /// The blocked songs and artists, newest first, refreshed on every change of the store.
-final dislikeListsProvider = StreamProvider.autoDispose<DislikeLists>((ref) async* {
+final dislikeListsProvider = StreamProvider.autoDispose<DislikeLists>((
+  ref,
+) async* {
   final store = ref.watch(dislikeStoreProvider);
   DislikeLists snapshot() => (tracks: store.tracks, artists: store.artists);
   // Listen before the first snapshot so no change is lost; the stream is cancelled with the provider.

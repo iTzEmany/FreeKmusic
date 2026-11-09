@@ -106,23 +106,51 @@ void main() {
     expect(i.selfFetchable, false);
   });
 
-  test('an episode not downloaded (an address or a stream key) cannot go in a Jam', () {
-    expect(jamItemOfTrack(track(1, 'Ep').copyWith(kind: 1, path: 'https://x/e.mp3'), 'me'), isNull);
-    expect(jamItemOfTrack(track(1, 'Ep').copyWith(kind: 1, path: 'stream:youtube:v1.mp3'), 'me'), isNull);
-    expect(jamItemOfTrack(track(1, 'Ep').copyWith(kind: 1, path: '/data/podcasts/1/e.mp3'), 'me'), isNotNull);
-  });
+  test(
+    'an episode not downloaded (an address or a stream key) cannot go in a Jam',
+    () {
+      expect(
+        jamItemOfTrack(
+          track(1, 'Ep').copyWith(kind: 1, path: 'https://x/e.mp3'),
+          'me',
+        ),
+        isNull,
+      );
+      expect(
+        jamItemOfTrack(
+          track(1, 'Ep').copyWith(kind: 1, path: 'stream:youtube:v1.mp3'),
+          'me',
+        ),
+        isNull,
+      );
+      expect(
+        jamItemOfTrack(
+          track(1, 'Ep').copyWith(kind: 1, path: '/data/podcasts/1/e.mp3'),
+          'me',
+        ),
+        isNotNull,
+      );
+    },
+  );
 
   JamPartFeeder remoteFeeder(List<String> sent, {JamRemoteItems? with_}) {
-    final tracks = {'1': track(1, 'Time'), '2': track(2, 'Unknown'), '3': track(3, 'Time')};
+    final tracks = {
+      '1': track(1, 'Time'),
+      '2': track(2, 'Unknown'),
+      '3': track(3, 'Time'),
+    };
     return JamPartFeeder(
       ownId: 'g',
       part: ['1', '2', '3'],
       keepUnavailable: true,
       send: (c) async {
         sent.add(c.item!.partKey!);
-        return JamResult.ok(const JamState(version: 9, hostDeviceId: 'h', outputDeviceId: 'h'));
+        return JamResult.ok(
+          const JamState(version: 9, hostDeviceId: 'h', outputDeviceId: 'h'),
+        );
       },
-      itemOf: (k) => (with_ ?? items).of(tracks[k]!, 'g', partKey: k, rethrowErrors: true),
+      itemOf: (k) =>
+          (with_ ?? items).of(tracks[k]!, 'g', partKey: k, rethrowErrors: true),
       suggest: (_) async => null,
     );
   }
@@ -130,40 +158,75 @@ void main() {
   test('a track not found stays in the part for the exit, in its place, and is never sent', () async {
     final sent = <String>[];
     final f = remoteFeeder(sent);
-    const s = JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together);
+    const s = JamState(
+      version: 1,
+      hostDeviceId: 'h',
+      outputDeviceId: 'h',
+      mode: JamMode.together,
+    );
     await f.update(s);
     expect(sent, ['1', '3']);
     JamItem yt(String k) => JamItem(
-        id: int.parse(k), ownerDeviceId: 'g', title: k, ext: 'webm', ref: 'yt:youtube:x$k', partKey: k);
+      id: int.parse(k),
+      ownerDeviceId: 'g',
+      title: k,
+      ext: 'webm',
+      ref: 'yt:youtube:x$k',
+      partKey: k,
+    );
     // 1 is playing, 3 waits in the Jam: what is left is the skipped 2 and 3 (from its part key), in part order.
-    final after = s.copyWith(version: 10, items: [yt('1'), yt('3')], currentIndex: 0);
+    final after = s.copyWith(
+      version: 10,
+      items: [yt('1'), yt('3')],
+      currentIndex: 0,
+    );
     await f.update(after);
     expect(f.remaining(after), [2, 3]);
   });
 
-  test('a network error on the lookup puts the track back instead of dropping it', () async {
-    final sent = <String>[];
-    final f = remoteFeeder(sent, with_: JamRemoteItems((_) async => throw StateError('offline')));
-    await f.update(const JamState(
-        version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
-    expect(sent, isEmpty);
-    expect(f.unsent, ['1', '2', '3']);
-  });
+  test(
+    'a network error on the lookup puts the track back instead of dropping it',
+    () async {
+      final sent = <String>[];
+      final f = remoteFeeder(
+        sent,
+        with_: JamRemoteItems((_) async => throw StateError('offline')),
+      );
+      await f.update(
+        const JamState(
+          version: 1,
+          hostDeviceId: 'h',
+          outputDeviceId: 'h',
+          mode: JamMode.together,
+        ),
+      );
+      expect(sent, isEmpty);
+      expect(f.unsent, ['1', '2', '3']);
+    },
+  );
 
   test('an id that does not look like a video id is not found', () async {
     final bad = JamRemoteItems((_) async => 'a b/../c');
     expect(await bad.of(track(1, 'Time'), 'g'), isNull);
   });
 
-  test('forgetting a skipped track takes it out of unsent and remaining', () async {
-    final f = remoteFeeder(<String>[]);
-    const s = JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together);
-    await f.update(s);
-    expect(f.unsent, contains('2'));
-    f.forget('2');
-    expect(f.unsent, isNot(contains('2')));
-    expect(f.remaining(s), isNot(contains(2)));
-  });
+  test(
+    'forgetting a skipped track takes it out of unsent and remaining',
+    () async {
+      final f = remoteFeeder(<String>[]);
+      const s = JamState(
+        version: 1,
+        hostDeviceId: 'h',
+        outputDeviceId: 'h',
+        mode: JamMode.together,
+      );
+      await f.update(s);
+      expect(f.unsent, contains('2'));
+      f.forget('2');
+      expect(f.unsent, isNot(contains('2')));
+      expect(f.remaining(s), isNot(contains(2)));
+    },
+  );
 
   test('a lookup failing three times in a row is skipped, so the part is not blocked', () async {
     final sent = <String>[];
@@ -173,7 +236,12 @@ void main() {
       return 'dQw4w9WgXcQ';
     });
     final f = remoteFeeder(sent, with_: flaky);
-    const s = JamState(version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together);
+    const s = JamState(
+      version: 1,
+      hostDeviceId: 'h',
+      outputDeviceId: 'h',
+      mode: JamMode.together,
+    );
     for (var i = 0; i < 4; i++) {
       await f.update(s.copyWith(version: i + 1));
     }
@@ -191,8 +259,14 @@ void main() {
       itemOf: (k) => items.of(track(1, 'Time'), 'g', partKey: k),
       suggest: (_) async => null,
     );
-    await f.update(const JamState(
-        version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
+    await f.update(
+      const JamState(
+        version: 1,
+        hostDeviceId: 'h',
+        outputDeviceId: 'h',
+        mode: JamMode.together,
+      ),
+    );
     expect(f.unsent, ['1']);
   });
 
@@ -213,8 +287,14 @@ void main() {
       },
       suggest: (_) async => null,
     );
-    final run = f.update(const JamState(
-        version: 1, hostDeviceId: 'h', outputDeviceId: 'h', mode: JamMode.together));
+    final run = f.update(
+      const JamState(
+        version: 1,
+        hostDeviceId: 'h',
+        outputDeviceId: 'h',
+        mode: JamMode.together,
+      ),
+    );
     f.dispose();
     gate.complete();
     await run;

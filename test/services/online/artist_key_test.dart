@@ -18,6 +18,9 @@ void main() {
     null: '',
   };
   cases.forEach((input, expected) {
-    test('key(${input == null ? 'null' : "'$input'"}) is \'$expected\'', () => expect(key(input), expected));
+    test(
+      'key(${input == null ? 'null' : "'$input'"}) is \'$expected\'',
+      () => expect(key(input), expected),
+    );
   });
 }

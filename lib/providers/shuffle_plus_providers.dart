@@ -42,25 +42,30 @@ class ShufflePlusConfigNotifier extends Notifier<ShufflePlusConfig> {
     // Shuffle turned off from anywhere (notification, MPRIS, the button)
     // takes the «+» with it.
     ref.listen(shuffleProvider, (prev, next) {
-      if (prev?.value == true && next.value == false && ref.read(settingsProvider).shufflePlus) {
-        ref.read(settingsProvider.notifier).update((c) => c.copyWith(shufflePlus: false));
+      if (prev?.value == true &&
+          next.value == false &&
+          ref.read(settingsProvider).shufflePlus) {
+        ref
+            .read(settingsProvider.notifier)
+            .update((c) => c.copyWith(shufflePlus: false));
       }
     });
     return _of(ref.read(settingsProvider));
   }
 
   static ShufflePlusConfig _of(AppSettings s) => ShufflePlusConfig(
-        enabled: s.shufflePlus,
-        every: s.shufflePlusEvery,
-        unmeteredOnly: s.shufflePlusUnmeteredOnly,
-      );
+    enabled: s.shufflePlus,
+    every: s.shufflePlusEvery,
+    unmeteredOnly: s.shufflePlusUnmeteredOnly,
+  );
 
   void set(ShufflePlusConfig c) => state = c;
 }
 
 final shufflePlusConfigProvider =
     NotifierProvider<ShufflePlusConfigNotifier, ShufflePlusConfig>(
-        ShufflePlusConfigNotifier.new);
+      ShufflePlusConfigNotifier.new,
+    );
 
 /// The Android `codecore/net` channel (desktop: never metered, always online).
 final networkProbeProvider = Provider<NetworkProbe>((ref) {
@@ -78,10 +83,12 @@ final shufflePlusMeteredProvider = Provider<Future<bool> Function()>((ref) {
   };
 });
 
-final ytmRadioServiceProvider = Provider<YtmRadioService>((ref) => YtmRadioService(
-      ref.watch(innerTubeClientProvider),
-      ref.watch(ytDlpServiceProvider),
-    ));
+final ytmRadioServiceProvider = Provider<YtmRadioService>(
+  (ref) => YtmRadioService(
+    ref.watch(innerTubeClientProvider),
+    ref.watch(ytDlpServiceProvider),
+  ),
+);
 
 /// One request gap and one 429 pause for every radio user: Shuffle+ and the
 /// genre mix.
@@ -112,10 +119,12 @@ class HandlerShuffleHost implements ShuffleHost {
       subs
         ..add(_h.queueChanges.listen((_) => c.add(null)))
         ..add(_h.currentTrackStream.listen((_) => c.add(null)))
-        ..add(_h.playbackState
-            .map((s) => (s.playing, s.shuffleMode))
-            .distinct()
-            .listen((_) => c.add(null)));
+        ..add(
+          _h.playbackState
+              .map((s) => (s.playing, s.shuffleMode))
+              .distinct()
+              .listen((_) => c.add(null)),
+        );
     };
     c.onCancel = () {
       for (final s in subs) {
@@ -147,62 +156,77 @@ class HandlerShuffleHost implements ShuffleHost {
 /// A suggestion is queued as soon as its stream address is known (D-352);
 /// the preparer goes on with the file in the background.
 final shufflePlusPrepareProvider = Provider<Future<void> Function(YtResult)>(
-    (ref) => (r) => ref.read(streamPreparerProvider).start(r.indexKey, r, keep: false));
+  (ref) =>
+      (r) => ref.read(streamPreparerProvider).start(r.indexKey, r, keep: false),
+);
 
 /// Enriches queued suggestions (D-353): each one as soon as its file has made
 /// the shadow row (nothing binds the row to the entry before the entry loads,
 /// so it is read by key). Entries forgotten meanwhile and downloads that
 /// failed are skipped; no entry waits longer than the given time. The wait
 /// outlives the block's own time limit, so a slow file is still enriched.
-final shufflePlusEnrichProvider = Provider<Future<void> Function(List<int>, Duration)>((ref) {
-  Future<void> one(int id, Duration within) async {
-    final online = ref.read(onlineEntriesProvider);
-    final preparer = ref.read(streamPreparerProvider);
-    final tracks = ref.read(trackRepositoryProvider);
-    final end = DateTime.now().add(within);
-    for (var e = online?.entryOf(id); e != null; e = online?.entryOf(id)) {
-      final key = e.result.indexKey;
-      final row = await tracks.streamRow(key);
-      if (row != null) {
-        AppLog.i('shuffle+ enrich of $id row=${row.id}');
-        return ref.read(streamEnrichRowProvider)(row.id);
-      }
-      if (preparer.phases.value[key] == StreamPhase.failed) {
-        AppLog.w('shuffle+ enrich of $id: the download failed');
-        return;
-      }
-      if (!DateTime.now().isBefore(end)) {
-        AppLog.w('shuffle+ enrich of $id: no file in time');
-        return;
-      }
-      final next = Completer<void>();
-      void wake() {
-        if (!next.isCompleted) next.complete();
-      }
-      try {
-        preparer.phases.addListener(wake);
-      } on Object catch (err) {
-        AppLog.w('shuffle+ enrich of $id: the preparer is gone', err); // a rebuilt preparer
-        return;
-      }
-      try {
-        // Re-check after listening: the row may have landed meanwhile.
-        if (await tracks.streamRow(key) == null) {
-          // A short wake-up too: a forgotten entry changes no phase.
-          final left = end.difference(DateTime.now());
-          await next.future.timeout(left < const Duration(seconds: 1) ? left : const Duration(seconds: 1), onTimeout: () {});
-        }
-      } finally {
-        preparer.phases.removeListener(wake);
-      }
-    }
-  }
+final shufflePlusEnrichProvider =
+    Provider<Future<void> Function(List<int>, Duration)>((ref) {
+      Future<void> one(int id, Duration within) async {
+        final online = ref.read(onlineEntriesProvider);
+        final preparer = ref.read(streamPreparerProvider);
+        final tracks = ref.read(trackRepositoryProvider);
+        final end = DateTime.now().add(within);
+        for (var e = online?.entryOf(id); e != null; e = online?.entryOf(id)) {
+          final key = e.result.indexKey;
+          final row = await tracks.streamRow(key);
+          if (row != null) {
+            AppLog.i('shuffle+ enrich of $id row=${row.id}');
+            return ref.read(streamEnrichRowProvider)(row.id);
+          }
+          if (preparer.phases.value[key] == StreamPhase.failed) {
+            AppLog.w('shuffle+ enrich of $id: the download failed');
+            return;
+          }
+          if (!DateTime.now().isBefore(end)) {
+            AppLog.w('shuffle+ enrich of $id: no file in time');
+            return;
+          }
+          final next = Completer<void>();
+          void wake() {
+            if (!next.isCompleted) next.complete();
+          }
 
-  return (ids, within) => Future.wait([
+          try {
+            preparer.phases.addListener(wake);
+          } on Object catch (err) {
+            AppLog.w(
+              'shuffle+ enrich of $id: the preparer is gone',
+              err,
+            ); // a rebuilt preparer
+            return;
+          }
+          try {
+            // Re-check after listening: the row may have landed meanwhile.
+            if (await tracks.streamRow(key) == null) {
+              // A short wake-up too: a forgotten entry changes no phase.
+              final left = end.difference(DateTime.now());
+              await next.future.timeout(
+                left < const Duration(seconds: 1)
+                    ? left
+                    : const Duration(seconds: 1),
+                onTimeout: () {},
+              );
+            }
+          } finally {
+            preparer.phases.removeListener(wake);
+          }
+        }
+      }
+
+      return (ids, within) => Future.wait([
         for (final id in ids)
-          one(id, within).catchError((Object e, StackTrace st) => AppLog.w('shuffle+ enrich of $id failed', e, st)),
+          one(id, within).catchError(
+            (Object e, StackTrace st) =>
+                AppLog.w('shuffle+ enrich of $id failed', e, st),
+          ),
       ]);
-});
+    });
 
 /// The Shuffle+ engine, started the first time it is read (the shell reads it
 /// in 31.12). Null when the player has no online registry (tests).
@@ -235,7 +259,10 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
   );
   ref.listen(shufflePlusConfigProvider, (_, _) => controller.poke());
   ref.listen(jamProvider, (_, _) => controller.poke());
-  final net = ref.watch(networkProbeProvider).changes.listen((_) => controller.poke());
+  final net = ref
+      .watch(networkProbeProvider)
+      .changes
+      .listen((_) => controller.poke());
   ref.onDispose(net.cancel);
   ref.onDispose(controller.dispose);
   controller.start();
@@ -244,8 +271,10 @@ final shufflePlusProvider = FutureProvider<ShufflePlusController?>((ref) async {
 
 /// Suggestions still on their way and the block being enriched (F-53), for
 /// the screens that show a placeholder row meanwhile.
-final shufflePlusPendingProvider = NotifierProvider<ShufflePlusPendingNotifier, ShufflePlusPending>(
-    ShufflePlusPendingNotifier.new);
+final shufflePlusPendingProvider =
+    NotifierProvider<ShufflePlusPendingNotifier, ShufflePlusPending>(
+      ShufflePlusPendingNotifier.new,
+    );
 
 class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
   @override
@@ -253,9 +282,10 @@ class ShufflePlusPendingNotifier extends Notifier<ShufflePlusPending> {
     // Same rule as the engine (`plusOn`), applied at once; the engine clears `pending` for its other stops.
     final mode = ref.watch(shuffleModeProvider);
     if (!plusOn(
-        enabled: mode == ShuffleMode.plus,
-        shuffle: mode != ShuffleMode.off,
-        jam: ref.watch(jamProvider.select((j) => j.active)))) {
+      enabled: mode == ShuffleMode.plus,
+      shuffle: mode != ShuffleMode.off,
+      jam: ref.watch(jamProvider.select((j) => j.active)),
+    )) {
       return ShufflePlusPending.none;
     }
     final c = ref.watch(shufflePlusProvider).value;
@@ -289,39 +319,45 @@ Future<GenreMixOff?> radioOffReason({
 
 /// The library track an online song already is by title and artist, for the
 /// similar songs of a Search pick (null: none, or the index is not ready).
-final libraryMatchIdProvider = Provider<Future<int?> Function(YtResult r)>((ref) {
-  return (r) async => libraryMatchOf(r, await ref.read(libraryIndexProvider.future))?.id;
+final libraryMatchIdProvider = Provider<Future<int?> Function(YtResult r)>((
+  ref,
+) {
+  return (r) async =>
+      libraryMatchOf(r, await ref.read(libraryIndexProvider.future))?.id;
 });
 
 /// The radio of a Search pick (D-429, D-467): null when [radioOffReason] says
 /// so. The library is not left out: its songs and the online ones mix.
-final similarFillProvider = Provider<Future<RadioFill?> Function(RadioSeed seed)>((ref) {
-  return (seed) async {
-    if (!kEnableYoutube) return null;
-    final gate = ref.read(radioGateProvider);
-    final off = await radioOffReason(
-      jam: ref.read(jamProvider).active,
-      toolVersion: ref.read(ytDlpStatusProvider.future).then((s) => s.version),
-      probe: ref.read(networkProbeProvider),
-      unmeteredOnly: ref.read(shufflePlusConfigProvider).unmeteredOnly,
-      gate: gate,
-    );
-    if (off != null) return null;
-    final log = ref.read(suggestionLogProvider);
-    await log.load();
-    final filter = ref.read(suggestionGateProvider);
-    await filter.load();
-    return RadioFill(
-      seeds: [seed],
-      resolver: await ref.read(seedResolverProvider.future),
-      radioPage: ref.read(ytmRadioServiceProvider).page,
-      log: log,
-      filter: filter,
-      gate: gate,
-      inLibrary: (_) => false,
-    );
-  };
-});
+final similarFillProvider =
+    Provider<Future<RadioFill?> Function(RadioSeed seed)>((ref) {
+      return (seed) async {
+        if (!kEnableYoutube) return null;
+        final gate = ref.read(radioGateProvider);
+        final off = await radioOffReason(
+          jam: ref.read(jamProvider).active,
+          toolVersion: ref
+              .read(ytDlpStatusProvider.future)
+              .then((s) => s.version),
+          probe: ref.read(networkProbeProvider),
+          unmeteredOnly: ref.read(shufflePlusConfigProvider).unmeteredOnly,
+          gate: gate,
+        );
+        if (off != null) return null;
+        final log = ref.read(suggestionLogProvider);
+        await log.load();
+        final filter = ref.read(suggestionGateProvider);
+        await filter.load();
+        return RadioFill(
+          seeds: [seed],
+          resolver: await ref.read(seedResolverProvider.future),
+          radioPage: ref.read(ytmRadioServiceProvider).page,
+          log: log,
+          filter: filter,
+          gate: gate,
+          inLibrary: (_) => false,
+        );
+      };
+    });
 
 /// The online songs of a genre page (D-356): the library songs of the genre
 /// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,
@@ -330,49 +366,54 @@ final similarFillProvider = Provider<Future<RadioFill?> Function(RadioSeed seed)
 /// library index, read when the radio is about to be asked, apart), so a
 /// download or a promotion does not restart it. It stays for 5 minutes after
 /// the page is left, so opening the genre again does not repeat the requests.
-final genreMixProvider = StreamProvider.autoDispose.family<GenreMixState, String>((ref, genre) {
-  if (!kEnableYoutube) return const Stream.empty();
-  final link = ref.keepAlive();
-  Timer? timer;
-  ref.onCancel(() => timer = Timer(const Duration(minutes: 5), link.close));
-  ref.onResume(() => timer?.cancel());
-  ref.onDispose(() => timer?.cancel());
-  // Listened (not restarting): an unlistened stream provider stays paused.
-  ref.listen(genreTracksProvider(genre), (_, _) {});
-  final tracks = ref.read(genreTracksProvider(genre).future);
-  final resolver = ref.read(seedResolverProvider.future);
-  final downloads = ref.read(downloadIndexProvider.future);
-  final tool = ref.read(ytDlpStatusProvider.future);
-  final probe = ref.read(networkProbeProvider);
-  final radio = ref.read(ytmRadioServiceProvider);
-  final log = ref.read(suggestionLogProvider);
-  final filter = ref.read(suggestionGateProvider);
-  final jam = ref.read(jamProvider).active;
-  final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
-  final gate = ref.read(radioGateProvider);
-  return genreMixOf(
-    tracks: tracks,
-    resolver: resolver,
-    downloads: downloads,
-    radioPage: radio.page,
-    log: log,
-    filter: filter,
-    gate: gate,
-    offReason: () => radioOffReason(
-      jam: jam,
-      toolVersion: tool.then((s) => s.version),
-      probe: probe,
-      unmeteredOnly: unmeteredOnly,
-      gate: gate,
-    ),
-    // Read after awaits: a disposed ref cannot read, and the mix is cancelled anyway.
-    library: () async => ref.mounted ? ref.read(libraryIndexProvider.future) : LibraryIndex(const []),
-    cancelled: () => !ref.mounted,
-  );
-});
+final genreMixProvider = StreamProvider.autoDispose
+    .family<GenreMixState, String>((ref, genre) {
+      if (!kEnableYoutube) return const Stream.empty();
+      final link = ref.keepAlive();
+      Timer? timer;
+      ref.onCancel(() => timer = Timer(const Duration(minutes: 5), link.close));
+      ref.onResume(() => timer?.cancel());
+      ref.onDispose(() => timer?.cancel());
+      // Listened (not restarting): an unlistened stream provider stays paused.
+      ref.listen(genreTracksProvider(genre), (_, _) {});
+      final tracks = ref.read(genreTracksProvider(genre).future);
+      final resolver = ref.read(seedResolverProvider.future);
+      final downloads = ref.read(downloadIndexProvider.future);
+      final tool = ref.read(ytDlpStatusProvider.future);
+      final probe = ref.read(networkProbeProvider);
+      final radio = ref.read(ytmRadioServiceProvider);
+      final log = ref.read(suggestionLogProvider);
+      final filter = ref.read(suggestionGateProvider);
+      final jam = ref.read(jamProvider).active;
+      final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
+      final gate = ref.read(radioGateProvider);
+      return genreMixOf(
+        tracks: tracks,
+        resolver: resolver,
+        downloads: downloads,
+        radioPage: radio.page,
+        log: log,
+        filter: filter,
+        gate: gate,
+        offReason: () => radioOffReason(
+          jam: jam,
+          toolVersion: tool.then((s) => s.version),
+          probe: probe,
+          unmeteredOnly: unmeteredOnly,
+          gate: gate,
+        ),
+        // Read after awaits: a disposed ref cannot read, and the mix is cancelled anyway.
+        library: () async => ref.mounted
+            ? ref.read(libraryIndexProvider.future)
+            : LibraryIndex(const []),
+        cancelled: () => !ref.mounted,
+      );
+    });
 
 /// Told to the user once (rate limit, too many errors): the shell shows them.
-final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((ref) async* {
+final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((
+  ref,
+) async* {
   final c = await ref.watch(shufflePlusProvider.future);
   if (c != null) yield* c.notices;
 });
@@ -383,7 +424,9 @@ enum ShuffleMode { off, shuffle, plus }
 final shuffleModeProvider = Provider<ShuffleMode>((ref) {
   final on = ref.watch(shuffleProvider).value ?? false;
   final plus = ref.watch(settingsProvider.select((s) => s.shufflePlus));
-  return !on ? ShuffleMode.off : (plus ? ShuffleMode.plus : ShuffleMode.shuffle);
+  return !on
+      ? ShuffleMode.off
+      : (plus ? ShuffleMode.plus : ShuffleMode.shuffle);
 });
 
 /// The first reason in the order the sheet reports them.
@@ -403,7 +446,9 @@ ShufflePlusBlock? shufflePlusBlock({
 
 /// Read by the Shuffle+ sheet; recomputed when the song, the Jam or the
 /// settings change.
-final shufflePlusBlockProvider = FutureProvider.autoDispose<ShufflePlusBlock?>((ref) async {
+final shufflePlusBlockProvider = FutureProvider.autoDispose<ShufflePlusBlock?>((
+  ref,
+) async {
   final cfg = ref.watch(shufflePlusConfigProvider);
   ref.watch(currentTrackProvider);
   final jam = ref.watch(jamProvider).active;

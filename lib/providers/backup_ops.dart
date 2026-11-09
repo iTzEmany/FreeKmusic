@@ -27,13 +27,14 @@ class BackupOps {
 
   /// What the zip holds and how it fits this device; throws [RestoreException] if it is no backup.
   Future<RestorePlan> inspect(File zip) async => inspectBackup(
-        zip,
-        deviceId: await _ref.read(settingsStoreProvider).deviceId(),
-        schemaVersion: _ref.read(schemaVersionProvider),
-      );
+    zip,
+    deviceId: await _ref.read(settingsStoreProvider).deviceId(),
+    schemaVersion: _ref.read(schemaVersionProvider),
+  );
 
   /// Unpacks the zip for the full restore that runs at the next start.
-  Future<void> stageReplace(File zip) async => stageFullRestore(zip, await restoreStagingDir());
+  Future<void> stageReplace(File zip) async =>
+      stageFullRestore(zip, await restoreStagingDir());
 
   /// Merges the zip into the live library.
   Future<MergeReport> merge(File zip) async => mergeBackup(

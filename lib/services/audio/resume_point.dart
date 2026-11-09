@@ -31,7 +31,9 @@ bool episodeHeard(Duration position, int durationMs) =>
 int? resumePointFor(Duration position, int durationMs, {bool episode = false}) {
   if (durationMs <= 0) return null;
   if (episode) {
-    if (position < kEpisodeEdge || episodeHeard(position, durationMs)) return null;
+    if (position < kEpisodeEdge || episodeHeard(position, durationMs)) {
+      return null;
+    }
     return position.inMilliseconds;
   }
   final duration = Duration(milliseconds: durationMs);

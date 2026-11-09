@@ -21,15 +21,20 @@ class ItunesMatch {
 }
 
 class ItunesAlbum {
-  const ItunesAlbum({required this.name, required this.artist, this.artworkUrl});
+  const ItunesAlbum({
+    required this.name,
+    required this.artist,
+    this.artworkUrl,
+  });
 
   final String name, artist;
   final String? artworkUrl;
 }
 
 final _albumNoise = RegExp(
-    r'\s*[\(\[][^\)\]]*(deluxe|bonus|remastered|expanded|anniversary)[^\)\]]*[\)\]]',
-    caseSensitive: false);
+  r'\s*[\(\[][^\)\]]*(deluxe|bonus|remastered|expanded|anniversary)[^\)\]]*[\)\]]',
+  caseSensitive: false,
+);
 
 /// Music videos have intros and outros, so this is looser than Deezer's 3 s.
 const _maxDurationGapMs = 20000;
@@ -71,19 +76,26 @@ class ItunesClient {
 
   /// [strict]: a network error throws [WebUnavailableException] instead of
   /// looking like «no match» (the completion must not remember that as «nothing»).
-  Future<ItunesMatch?> search(String title, String artist,
-      {CancelToken? cancel, bool strict = false, int? durationMs}) async {
+  Future<ItunesMatch?> search(
+    String title,
+    String artist, {
+    CancelToken? cancel,
+    bool strict = false,
+    int? durationMs,
+  }) async {
     for (final q in buildQueries(title, artist)) {
-      final data = await _web.getJson(_endpoint,
-          query: {
-            'term': q,
-            'media': 'music',
-            'entity': 'song',
-            'limit': '8',
-            ..._store(),
-          },
-          cancel: cancel,
-          strict: strict);
+      final data = await _web.getJson(
+        _endpoint,
+        query: {
+          'term': q,
+          'media': 'music',
+          'entity': 'song',
+          'limit': '8',
+          ..._store(),
+        },
+        cancel: cancel,
+        strict: strict,
+      );
       final results = data is Map ? data['results'] : null;
       if (results is! List) continue;
       final best = _pickBest(results, title, artist, durationMs);
@@ -94,30 +106,39 @@ class ItunesClient {
 
   /// The album an `Album Name` + artist of a playlist file points to. The
   /// artist must match: a cover of the wrong record is worse than none.
-  Future<ItunesAlbum?> searchAlbum(String album, String artist,
-      {CancelToken? cancel}) async {
+  Future<ItunesAlbum?> searchAlbum(
+    String album,
+    String artist, {
+    CancelToken? cancel,
+  }) async {
     final wantAlbum = _lc(album.replaceAll(_albumNoise, ''));
     final wantArtist = _lc(extractPrimaryArtist(artist));
     if (wantAlbum.isEmpty) return null;
-    final data = await _web.getJson(_endpoint,
-        query: {
-          'term': '$artist $album'.trim(),
-          'media': 'music',
-          'entity': 'album',
-          'limit': '6',
-          ..._store(),
-        },
-        cancel: cancel);
+    final data = await _web.getJson(
+      _endpoint,
+      query: {
+        'term': '$artist $album'.trim(),
+        'media': 'music',
+        'entity': 'album',
+        'limit': '6',
+        ..._store(),
+      },
+      cancel: cancel,
+    );
     final results = data is Map ? data['results'] : null;
     if (results is! List) return null;
     ItunesAlbum? best;
     var bestScore = 0;
     for (final r in results) {
       if (r is! Map) continue;
-      final name = _lc('${r['collectionName'] ?? ''}'.replaceAll(_albumNoise, ''));
+      final name = _lc(
+        '${r['collectionName'] ?? ''}'.replaceAll(_albumNoise, ''),
+      );
       final by = _lc('${r['artistName'] ?? ''}');
       final albumScore = _score(name, wantAlbum, 12, 7);
-      final artistScore = wantArtist.isEmpty ? 5 : _score(by, wantArtist, 10, 5);
+      final artistScore = wantArtist.isEmpty
+          ? 5
+          : _score(by, wantArtist, 10, 5);
       if (albumScore == 0 || artistScore == 0) continue;
       final art = r['artworkUrl100'] as String?;
       if (albumScore + artistScore > bestScore && art != null) {
@@ -133,17 +154,22 @@ class ItunesClient {
   }
 
   /// Several editions of an album, for the cover picker: `(title, big cover url)`.
-  Future<List<({String title, String url})>> albumCovers(String album, String artist,
-      {CancelToken? cancel}) async {
-    final data = await _web.getJson(_endpoint,
-        query: {
-          'term': '$artist $album'.trim(),
-          'media': 'music',
-          'entity': 'album',
-          'limit': '8',
-          ..._store(),
-        },
-        cancel: cancel);
+  Future<List<({String title, String url})>> albumCovers(
+    String album,
+    String artist, {
+    CancelToken? cancel,
+  }) async {
+    final data = await _web.getJson(
+      _endpoint,
+      query: {
+        'term': '$artist $album'.trim(),
+        'media': 'music',
+        'entity': 'album',
+        'limit': '8',
+        ..._store(),
+      },
+      cancel: cancel,
+    );
     final results = data is Map ? data['results'] : null;
     return [
       if (results is List)
@@ -151,13 +177,20 @@ class ItunesClient {
           if (r is Map && r['artworkUrl100'] is String)
             (
               title: '${r['collectionName'] ?? ''}',
-              url: (r['artworkUrl100'] as String).replaceFirst('100x100bb', '600x600bb'),
+              url: (r['artworkUrl100'] as String).replaceFirst(
+                '100x100bb',
+                '600x600bb',
+              ),
             ),
     ];
   }
 
   ItunesMatch? _pickBest(
-      List<dynamic> results, String title, String artist, int? durationMs) {
+    List<dynamic> results,
+    String title,
+    String artist,
+    int? durationMs,
+  ) {
     final wantTitle = _lc(title), wantTitleCore = _lc(coreTitle(title));
     final wantArtist = _lc(artist);
     final artistKnown = wantArtist.isNotEmpty;
@@ -183,7 +216,9 @@ class ItunesClient {
       if (durationMs != null && theirs is num) {
         final gap = (theirs - durationMs).abs();
         if (gap > _maxDurationGapMs) continue;
-        total += gap <= _closeGapMs ? _closeBonus : (gap <= _nearGapMs ? _nearBonus : 0);
+        total += gap <= _closeGapMs
+            ? _closeBonus
+            : (gap <= _nearGapMs ? _nearBonus : 0);
       }
       if (total > bestScore) {
         bestScore = total;

@@ -1,5 +1,6 @@
 import '../../widgets/cc_sheet.dart';
 import '../../../providers/podcast_ops.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +33,8 @@ class PodcastDetailScreen extends ConsumerStatefulWidget {
   final int podcastId;
 
   @override
-  ConsumerState<PodcastDetailScreen> createState() => _PodcastDetailScreenState();
+  ConsumerState<PodcastDetailScreen> createState() =>
+      _PodcastDetailScreenState();
 }
 
 class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
@@ -49,14 +51,20 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
     final ops = ref.read(podcastOpsProvider);
     setState(() => _refreshing = true);
     try {
-      final added = await ops.refresh(widget.podcastId, onlyIfStale: onlyIfStale);
+      final added = await ops.refresh(
+        widget.podcastId,
+        onlyIfStale: onlyIfStale,
+      );
       if (added != null && mounted && !onlyIfStale) {
         showMsg(context, context.l10n.podcastRefreshed(added));
       }
     } on PodcastException catch (e) {
       AppLog.w('podcast refresh failed', e);
       if (mounted) {
-        showMsg(context, podcastFailureText(context, context.l10n, e.kind, e.yt));
+        showMsg(
+          context,
+          podcastFailureText(context, context.l10n, e.kind, e.yt),
+        );
       }
     } finally {
       if (mounted) setState(() => _refreshing = false);
@@ -65,20 +73,37 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
 
   /// The downloaded episodes oldest first, so listening goes forward in time,
   /// starting at the one tapped.
-  Future<void> _play(List<EpisodeRow> rows, EpisodeRow tapped, String podcastTitle) async {
+  Future<void> _play(
+    List<EpisodeRow> rows,
+    EpisodeRow tapped,
+    String podcastTitle,
+  ) async {
     if (!tapped.downloaded) {
       // Not downloaded: it streams, and the place is kept like for a file.
-      final ok = await ref.read(podcastOpsProvider).playStreamed(tapped.episode.id);
-      if (!ok && mounted) showMsg(context, context.l10n.podcastStreamUnavailable);
+      final ok = await ref
+          .read(podcastOpsProvider)
+          .playStreamed(tapped.episode.id);
+      if (!ok && mounted) {
+        showMsg(context, context.l10n.podcastStreamUnavailable);
+      }
       return;
     }
-    final downloaded = [
-      for (final r in rows)
-        if (r.downloaded) r,
-    ]..sort((a, b) => (a.episode.publishedAt ?? 0).compareTo(b.episode.publishedAt ?? 0));
-    final index = downloaded.indexWhere((r) => r.episode.id == tapped.episode.id);
+    final downloaded =
+        [
+          for (final r in rows)
+            if (r.downloaded) r,
+        ]..sort(
+          (a, b) => (a.episode.publishedAt ?? 0).compareTo(
+            b.episode.publishedAt ?? 0,
+          ),
+        );
+    final index = downloaded.indexWhere(
+      (r) => r.episode.id == tapped.episode.id,
+    );
     if (index < 0) return;
-    await ref.read(playerControllerProvider).playFromList(
+    await ref
+        .read(playerControllerProvider)
+        .playFromList(
           [for (final r in downloaded) r.track!],
           index,
           context: PlayContext(PlayContextKind.podcast, podcastTitle),
@@ -103,8 +128,12 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final podcast = ref.watch(podcastProvider(widget.podcastId)).value;
-    final rows = ref.watch(podcastEpisodesProvider(widget.podcastId)).value ?? const <EpisodeRow>[];
-    final running = {for (final d in ref.watch(podcastDownloadsProvider)) d.episodeId: d};
+    final rows =
+        ref.watch(podcastEpisodesProvider(widget.podcastId)).value ??
+        const <EpisodeRow>[];
+    final running = {
+      for (final d in ref.watch(podcastDownloadsProvider)) d.episodeId: d,
+    };
     if (podcast == null) return const Scaffold();
     final downloadedCount = rows.where((r) => r.downloaded).length;
     final checked = podcast.lastCheckedAt;
@@ -118,7 +147,11 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
     return CollectionScaffold(
       title: podcast.title,
       name: podcast.title,
-      cover: (size) => CoverImage(coverKey: podcast.coverKey, size: size, radius: CcDims.rGrid),
+      cover: (size) => CoverImage(
+        coverKey: podcast.coverKey,
+        size: size,
+        radius: CcDims.rGrid,
+      ),
       subtitle: podcast.author == null ? null : Text(podcast.author!),
       meta: when,
       menu: const SpeedButton(),
@@ -126,7 +159,11 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
         if (_refreshing)
           const Padding(
             padding: EdgeInsets.all(14),
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           )
         else
           IconButton(
@@ -159,15 +196,24 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                 ],
               ],
             );
-            if (v == _PodcastAction.unfollow && context.mounted) await unfollowPodcast(context, ref, podcast.id);
-            if (v == _PodcastAction.unsubscribe) _unsubscribe(podcast, downloadedCount);
+            if (v == _PodcastAction.unfollow && context.mounted) {
+              await unfollowPodcast(context, ref, podcast.id);
+            }
+            if (v == _PodcastAction.unsubscribe) {
+              _unsubscribe(podcast, downloadedCount);
+            }
           },
         ),
       ],
       slivers: [
         SliverToBoxAdapter(child: _AutoDelete(podcast: podcast)),
         if (rows.isEmpty)
-          SliverToBoxAdapter(child: EmptyState(icon: Icons.podcasts_rounded, message: l.podcastNoEpisodes))
+          SliverToBoxAdapter(
+            child: EmptyState(
+              icon: Icons.podcasts_rounded,
+              message: l.podcastNoEpisodes,
+            ),
+          )
         else
           SliverFixedExtentList.builder(
             itemExtent: 84,
@@ -192,22 +238,41 @@ class _AutoDelete extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final days = const [1, 7, 30].contains(podcast.autoDeleteDays) ? podcast.autoDeleteDays : null;
+    final days = const [1, 7, 30].contains(podcast.autoDeleteDays)
+        ? podcast.autoDeleteDays
+        : null;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        0,
+        CcDims.margin,
+        CcDims.gap8,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l.podcastAutoDelete, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            l.podcastAutoDelete,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           const SizedBox(height: 8),
           SegmentedBlocks<int?>(
             key: const ValueKey('auto-delete'),
             selected: days,
-            onChanged: (d) => ref.read(podcastOpsProvider).setAutoDeleteDays(podcast.id, d),
+            onChanged: (d) =>
+                ref.read(podcastOpsProvider).setAutoDeleteDays(podcast.id, d),
             items: [
-              BlockItem(value: null, icon: Icons.block_rounded, label: l.podcastAutoDeleteNever),
+              BlockItem(
+                value: null,
+                icon: Icons.block_rounded,
+                label: l.podcastAutoDeleteNever,
+              ),
               for (final d in const [1, 7, 30])
-                BlockItem(value: d, icon: Icons.auto_delete_outlined, label: l.podcastAutoDeleteAfter(d)),
+                BlockItem(
+                  value: d,
+                  icon: Icons.auto_delete_outlined,
+                  label: l.podcastAutoDeleteAfter(d),
+                ),
             ],
           ),
         ],
@@ -217,7 +282,11 @@ class _AutoDelete extends ConsumerWidget {
 }
 
 class _EpisodeTile extends ConsumerWidget {
-  const _EpisodeTile({required this.row, required this.download, required this.onPlay});
+  const _EpisodeTile({
+    required this.row,
+    required this.download,
+    required this.onPlay,
+  });
 
   final EpisodeRow row;
   final EpisodeDownload? download;
@@ -228,14 +297,18 @@ class _EpisodeTile extends ConsumerWidget {
     if (d != null && d.active) {
       return l.podcastStateDownloading(((d.progress ?? 0) * 100).round());
     }
-    if (d != null && d.status == EpisodeDownloadStatus.failed && d.error != null) {
+    if (d != null &&
+        d.status == EpisodeDownloadStatus.failed &&
+        d.error != null) {
       return podcastFailureText(context, l, d.error!, d.ytError);
     }
     if (row.episode.played) return l.podcastStateHeard;
     final t = row.track;
     final resume = t?.resumePositionMs;
     if (t != null && resume != null && t.durationMs > resume) {
-      return l.podcastStateRemaining(etaLabel(l, Duration(milliseconds: t.durationMs - resume)));
+      return l.podcastStateRemaining(
+        etaLabel(l, Duration(milliseconds: t.durationMs - resume)),
+      );
     }
     return row.downloaded ? l.podcastStateDownloaded : '';
   }
@@ -249,11 +322,14 @@ class _EpisodeTile extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toString();
     final date = e.publishedAt == null
         ? null
-        : DateFormat.yMMMd(locale).format(DateTime.fromMillisecondsSinceEpoch(e.publishedAt!));
+        : DateFormat.yMMMd(locale)
+              .format(DateTime.fromMillisecondsSinceEpoch(e.publishedAt!));
     final status = _status(context, l);
     final podcastOps = ref.read(podcastOpsProvider);
     final busy = download?.active ?? false;
-    final failedYt = download?.status == EpisodeDownloadStatus.failed && download?.ytError != null;
+    final failedYt =
+        download?.status == EpisodeDownloadStatus.failed &&
+        download?.ytError != null;
     final Widget action;
     if (busy) {
       action = IconButton(
@@ -262,9 +338,13 @@ class _EpisodeTile extends ConsumerWidget {
         icon: SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2.5, value: download?.progress),
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            value: download?.progress,
+          ),
         ),
-        onPressed: () => ref.read(podcastDownloadsProvider.notifier).cancel(e.id),
+        onPressed: () =>
+            ref.read(podcastDownloadsProvider.notifier).cancel(e.id),
       );
     } else if (row.downloaded) {
       action = IconButton(
@@ -278,7 +358,11 @@ class _EpisodeTile extends ConsumerWidget {
         key: ValueKey('download-${e.id}'),
         tooltip: failedYt ? l.retry : l.ytDownload,
         icon: const Icon(Icons.download_rounded),
-        onPressed: failedYt && !podcastCanRetry(download?.ytError) ? null : () => ref.read(podcastDownloadsProvider.notifier).add(e.id, e.title),
+        onPressed: failedYt && !podcastCanRetry(download?.ytError)
+            ? null
+            : () => ref
+                  .read(podcastDownloadsProvider.notifier)
+                  .add(e.id, e.title),
       );
     }
     return InkWell(
@@ -296,7 +380,9 @@ class _EpisodeTile extends ConsumerWidget {
                     e.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.bodyLarge?.copyWith(color: e.played ? cc.textMuted : null),
+                    style: theme.bodyLarge?.copyWith(
+                      color: e.played ? cc.textMuted : null,
+                    ),
                   ),
                   Text(
                     [
@@ -323,8 +409,12 @@ class _EpisodeTile extends ConsumerWidget {
                   groups: [
                     [
                       CcAction(
-                        icon: e.played ? Icons.radio_button_unchecked_rounded : Icons.check_circle_outline_rounded,
-                        label: e.played ? l.podcastMarkNotHeard : l.podcastMarkHeard,
+                        icon: e.played
+                            ? Icons.radio_button_unchecked_rounded
+                            : Icons.check_circle_outline_rounded,
+                        label: e.played
+                            ? l.podcastMarkNotHeard
+                            : l.podcastMarkHeard,
                         value: _EpisodeAction.heard,
                       ),
                       if (row.downloaded)

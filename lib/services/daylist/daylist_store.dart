@@ -33,7 +33,11 @@ class DaylistStore {
           if (i.track != null)
             {'t': i.track!.id}
           else
-            {'r': ytResultToJson(i.suggestion!.result), 's': i.suggestion!.seedTitle, 'k': i.suggestion!.kind.index},
+            {
+              'r': ytResultToJson(i.suggestion!.result),
+              's': i.suggestion!.seedTitle,
+              'k': i.suggestion!.kind.index,
+            },
       ],
     });
     try {
@@ -58,10 +62,19 @@ class DaylistStore {
       final f = await file();
       if (!await f.exists()) return null;
       final j = jsonDecode(await f.readAsString());
-      if (j is! Map || j['key'] != key || j['until'] != until.millisecondsSinceEpoch) return null;
+      if (j is! Map ||
+          j['key'] != key ||
+          j['until'] != until.millisecondsSinceEpoch) {
+        return null;
+      }
       final slot = j['slot'], rawItems = j['items'];
-      if (slot is! int || rawItems is! List) throw const FormatException('bad daylist file');
-      final ids = [for (final i in rawItems) if (i is Map && i['t'] is int) i['t'] as int];
+      if (slot is! int || rawItems is! List) {
+        throw const FormatException('bad daylist file');
+      }
+      final ids = [
+        for (final i in rawItems)
+          if (i is Map && i['t'] is int) i['t'] as int,
+      ];
       final byId = {
         for (final t in await tracksOf(ids))
           if (t.kind == 0 && !t.missing && !t.ignored) t.id: t,
@@ -73,15 +86,31 @@ class DaylistStore {
         final r = ytResultFromJson(i['r']);
         if (track != null) {
           items.add(DaylistItem.own(track));
-        } else if (r != null && i['s'] is String && i['k'] is int && i['k'] >= 0 && i['k'] < RadioKind.values.length) {
-          items.add(DaylistItem.suggested(SuggestionCandidate(r, i['s'] as String, RadioKind.values[i['k'] as int])));
+        } else if (r != null &&
+            i['s'] is String &&
+            i['k'] is int &&
+            i['k'] >= 0 &&
+            i['k'] < RadioKind.values.length) {
+          items.add(
+            DaylistItem.suggested(
+              SuggestionCandidate(
+                r,
+                i['s'] as String,
+                RadioKind.values[i['k'] as int],
+              ),
+            ),
+          );
         }
       }
       if (items.length < DaylistBuilder.minTracks) return null;
       return DaylistResult(
         slotIndex: slot,
         items: items,
-        genres: [for (final g in (j['genres'] is List ? j['genres'] as List : const [])) '$g'],
+        genres: [
+          for (final g
+              in (j['genres'] is List ? j['genres'] as List : const []))
+            '$g',
+        ],
         tooFew: false,
       );
     } on Object catch (e, st) {

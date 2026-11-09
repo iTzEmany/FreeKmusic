@@ -73,7 +73,8 @@ class SeedIndex {
     final m = await _load();
     final e = m[key];
     if (e == null) return null;
-    if (!e.found && _now().millisecondsSinceEpoch - e.at > notFoundTtl.inMilliseconds) {
+    if (!e.found &&
+        _now().millisecondsSinceEpoch - e.at > notFoundTtl.inMilliseconds) {
       m.remove(key);
       _scheduleWrite();
       return null;
@@ -119,9 +120,12 @@ class SeedIndex {
     try {
       final f = await file();
       await f.parent.create(recursive: true);
-      await f.writeAsString(jsonEncode({
-        for (final e in m.entries) e.key: {'id': e.value.id, 'at': e.value.at},
-      }));
+      await f.writeAsString(
+        jsonEncode({
+          for (final e in m.entries)
+            e.key: {'id': e.value.id, 'at': e.value.at},
+        }),
+      );
     } on Object catch (e, st) {
       AppLog.w('seed index write failed', e, st);
     }

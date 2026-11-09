@@ -26,16 +26,22 @@ class SuggestionRecord {
   final SuggestionOutcome outcome;
 
   SuggestionRecord withOutcome(SuggestionOutcome o) => SuggestionRecord(
-      videoId: videoId, title: title, artist: artist, seedTitle: seedTitle, at: at, outcome: o);
+    videoId: videoId,
+    title: title,
+    artist: artist,
+    seedTitle: seedTitle,
+    at: at,
+    outcome: o,
+  );
 
   Map<String, Object?> toJson() => {
-        'id': videoId,
-        'title': title,
-        'artist': artist,
-        'seed': seedTitle,
-        'at': at.millisecondsSinceEpoch,
-        'out': outcome.name,
-      };
+    'id': videoId,
+    'title': title,
+    'artist': artist,
+    'seed': seedTitle,
+    'at': at.millisecondsSinceEpoch,
+    'out': outcome.name,
+  };
 
   static SuggestionRecord? fromJson(Object? j) {
     if (j is! Map || j['id'] is! String || j['at'] is! int) return null;
@@ -83,7 +89,9 @@ class SuggestionLog {
       if (await f.exists()) {
         final raw = jsonDecode(await f.readAsString());
         if (raw is List) {
-          _records.insertAll(0, [for (final j in raw) ?SuggestionRecord.fromJson(j)]);
+          _records.insertAll(0, [
+            for (final j in raw) ?SuggestionRecord.fromJson(j),
+          ]);
         }
       }
     } on Object catch (e, st) {
@@ -109,17 +117,21 @@ class SuggestionLog {
     required String artist,
     required String seedTitle,
   }) {
-    _records.add(SuggestionRecord(
-      videoId: videoId,
-      title: title,
-      artist: artist,
-      seedTitle: seedTitle,
-      at: _now(),
-      outcome: SuggestionOutcome.queued,
-    ));
+    _records.add(
+      SuggestionRecord(
+        videoId: videoId,
+        title: title,
+        artist: artist,
+        seedTitle: seedTitle,
+        at: _now(),
+        outcome: SuggestionOutcome.queued,
+      ),
+    );
     while (_records.length > max) {
       // A «Non mi piace» goes last: it must outlive the 30 days.
-      final i = _records.indexWhere((r) => r.outcome != SuggestionOutcome.disliked);
+      final i = _records.indexWhere(
+        (r) => r.outcome != SuggestionOutcome.disliked,
+      );
       _records.removeAt(i < 0 ? 0 : i);
     }
     _scheduleWrite();

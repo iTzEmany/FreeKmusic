@@ -16,7 +16,8 @@ import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
 import '../online/http_client.dart';
-import '../online/yt_dlp_args.dart' show downloadExtensions, podcastAudioSelector;
+import '../online/yt_dlp_args.dart'
+    show downloadExtensions, podcastAudioSelector;
 import '../online/youtube_service.dart';
 import '../tags/tag_reader.dart';
 import 'podcast_models.dart';
@@ -41,13 +42,16 @@ class EpisodeDownloader {
     Dio? dio,
     this.readTagsInIsolate = true,
     this.youtube,
-  }) : _dio = dio ??
-            Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 60),
-              headers: {'User-Agent': DioWebClient.userAgent},
-              validateStatus: (_) => true,
-            ));
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: const Duration(seconds: 15),
+               receiveTimeout: const Duration(seconds: 60),
+               headers: {'User-Agent': DioWebClient.userAgent},
+               validateStatus: (_) => true,
+             ),
+           );
 
   final PodcastRepository repo;
   final TrackRepository tracks;
@@ -73,12 +77,21 @@ class EpisodeDownloader {
   }) async {
     final episode = await repo.episodeById(episodeId);
     if (episode == null) return null;
-    final existing = episode.trackId == null ? null : await tracks.getById(episode.trackId!);
-    if (existing != null && File(existing.path).existsSync()) return existing.id;
+    final existing = episode.trackId == null
+        ? null
+        : await tracks.getById(episode.trackId!);
+    if (existing != null && File(existing.path).existsSync()) {
+      return existing.id;
+    }
     final podcast = await repo.byId(episode.podcastId);
     if (podcast == null) return null;
     if (podcast.source == kPodcastSourceYtm) {
-      return _downloadYtm(episode, podcast, cancel: cancel, onProgress: onProgress);
+      return _downloadYtm(
+        episode,
+        podcast,
+        cancel: cancel,
+        onProgress: onProgress,
+      );
     }
 
     final Response<ResponseBody> res;
@@ -86,7 +99,10 @@ class EpisodeDownloader {
       res = await _dio.get<ResponseBody>(
         episode.audioUrl,
         cancelToken: cancel,
-        options: Options(responseType: ResponseType.stream, followRedirects: true),
+        options: Options(
+          responseType: ResponseType.stream,
+          followRedirects: true,
+        ),
       );
     } on DioException catch (e, st) {
       if (CancelToken.isCancel(e)) return null;
@@ -99,16 +115,26 @@ class EpisodeDownloader {
       throw PodcastException(PodcastErrorKind.network, 'HTTP $code');
     }
     final type = res.headers.value('content-type');
-    final ext = episodeExtension(contentType: type, url: episode.audioUrl, mime: episode.mimeType);
+    final ext = episodeExtension(
+      contentType: type,
+      url: episode.audioUrl,
+      mime: episode.mimeType,
+    );
     if (ext == null) {
-      throw PodcastException(PodcastErrorKind.unsupportedFormat, type ?? episode.audioUrl);
+      throw PodcastException(
+        PodcastErrorKind.unsupportedFormat,
+        type ?? episode.audioUrl,
+      );
     }
 
     final dir = Directory(p.join(baseDir, '${podcast.id}'));
     await dir.create(recursive: true);
     final target = p.join(dir.path, '${episodeFileStem(episode.guid)}.$ext');
     final part = File('$target.part');
-    final total = int.tryParse(res.headers.value('content-length') ?? '') ?? episode.sizeBytes ?? -1;
+    final total =
+        int.tryParse(res.headers.value('content-length') ?? '') ??
+        episode.sizeBytes ??
+        -1;
     var received = 0;
     final sink = part.openWrite();
     try {
@@ -146,11 +172,18 @@ class EpisodeDownloader {
 
   /// Only the audio of the episode, with yt-dlp (the WEB_REMIX player says
   /// UNPLAYABLE, so nothing else is tried). The file stays as served (m4a or opus).
-  Future<int?> _downloadYtm(PodcastEpisode episode, Podcast podcast,
-      {CancelToken? cancel, void Function(int received, int total)? onProgress}) async {
+  Future<int?> _downloadYtm(
+    PodcastEpisode episode,
+    Podcast podcast, {
+    CancelToken? cancel,
+    void Function(int received, int total)? onProgress,
+  }) async {
     final yt = youtube;
     if (yt == null) {
-      throw const PodcastException(PodcastErrorKind.unsupportedFormat, 'no yt-dlp');
+      throw const PodcastException(
+        PodcastErrorKind.unsupportedFormat,
+        'no yt-dlp',
+      );
     }
     final dir = Directory(p.join(baseDir, '${podcast.id}'));
     final stem = p.join(dir.path, episodeFileStem(episode.guid));
@@ -190,7 +223,12 @@ class EpisodeDownloader {
   }
 
   /// Makes the saved file [target] a library track and links the episode to it.
-  Future<int?> _register(PodcastEpisode episode, Podcast podcast, String target, String ext) async {
+  Future<int?> _register(
+    PodcastEpisode episode,
+    Podcast podcast,
+    String target,
+    String ext,
+  ) async {
     final info = await _readTags(target);
     final st = await File(target).stat();
     final albumKey = podcastAlbumKeyOf(podcast.id);
@@ -200,8 +238,12 @@ class EpisodeDownloader {
       final current = await repo.episodeById(episode.id);
       if (current == null) return null;
       // Played in streaming before: the same row takes the file, so the bookmark stays.
-      final streamed = current.trackId == null ? null : await tracks.getById(current.trackId!);
-      if (streamed != null && streamed.kind == kEpisodeKind && isRemoteEpisodePath(streamed.path)) {
+      final streamed = current.trackId == null
+          ? null
+          : await tracks.getById(current.trackId!);
+      if (streamed != null &&
+          streamed.kind == kEpisodeKind &&
+          isRemoteEpisodePath(streamed.path)) {
         await repo.attachFile(
           streamed.id,
           TracksCompanion(
@@ -239,7 +281,10 @@ class EpisodeDownloader {
       ]);
       final trackId = await tracks.idForPath(target);
       if (trackId == null) {
-        throw const PodcastException(PodcastErrorKind.network, 'library row missing');
+        throw const PodcastException(
+          PodcastErrorKind.network,
+          'library row missing',
+        );
       }
       await repo.setTrackId(episode.id, trackId);
       return trackId;
@@ -271,11 +316,15 @@ class EpisodeDownloader {
     if (episode == null || trackId == null) return;
     final track = await tracks.getById(trackId);
     if (track != null && track.kind == 1) {
-      if (isRemoteEpisodePath(track.path)) return; // already streaming: no file to delete
+      if (isRemoteEpisodePath(track.path)) {
+        return; // already streaming: no file to delete
+      }
       if (_inside(track.path)) {
         await _deleteQuietly(File(track.path));
       } else {
-        AppLog.w('episode file outside the podcast folder, not deleted: ${track.path}');
+        AppLog.w(
+          'episode file outside the podcast folder, not deleted: ${track.path}',
+        );
       }
       if (await repo.backToRemote(episodeId)) return;
       await tracks.deleteTrack(trackId);
