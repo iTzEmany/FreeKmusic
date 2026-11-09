@@ -3552,10 +3552,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get podcastUnsubscribe => 'Unsubscribe';
+  String get podcastUnsubscribe => 'Delete podcast';
 
   @override
-  String get podcastUnsubscribeTitle => 'Unsubscribe?';
+  String get podcastUnsubscribeTitle => 'Delete the podcast?';
 
   @override
   String podcastUnsubscribeBody(int count) {

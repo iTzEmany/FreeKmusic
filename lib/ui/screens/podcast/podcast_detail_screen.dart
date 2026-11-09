@@ -19,6 +19,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/format_utils.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/speed_button.dart';
+import 'podcast_preview_screen.dart' show unfollowPodcast;
 import 'podcast_texts.dart';
 import '../../widgets/show_msg.dart';
 import '../../../core/app_log.dart';
@@ -145,7 +146,12 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
               groups: [
                 [
                   CcAction(
-                    icon: Icons.unsubscribe_outlined,
+                    icon: Icons.bookmark_remove_outlined,
+                    label: l.podcastUnfollowLabel(podcast.title),
+                    value: _PodcastAction.unfollow,
+                  ),
+                  CcAction(
+                    icon: Icons.delete_outline_rounded,
                     label: l.podcastUnsubscribe,
                     value: _PodcastAction.unsubscribe,
                     destructive: true,
@@ -153,6 +159,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                 ],
               ],
             );
+            if (v == _PodcastAction.unfollow && context.mounted) await unfollowPodcast(context, ref, podcast.id);
             if (v == _PodcastAction.unsubscribe) _unsubscribe(podcast, downloadedCount);
           },
         ),
@@ -347,6 +354,6 @@ class _EpisodeTile extends ConsumerWidget {
   }
 }
 
-enum _PodcastAction { unsubscribe }
+enum _PodcastAction { unfollow, unsubscribe }
 
 enum _EpisodeAction { heard, delete }

@@ -20,6 +20,35 @@ import 'podcast_texts.dart';
 /// What to do with the downloads of a show the user stops following (D-470).
 enum _KeepDownloads { keep, delete }
 
+/// Stops following the podcast: episodes and bookmarks stay; with downloads it asks
+/// whether to keep or delete them (D-470), without downloads it does not ask.
+Future<void> unfollowPodcast(BuildContext context, WidgetRef ref, int podcastId) async {
+  final l = context.l10n;
+  final ops = ref.read(podcastOpsProvider);
+  var keep = _KeepDownloads.keep;
+    final downloaded = await ops.downloadedCount(podcastId);
+    if (downloaded > 0) {
+      if (!context.mounted) return;
+      final choice = await showDialog<_KeepDownloads>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(ctx.l10n.podcastUnfollowTitle),
+          content: Text(ctx.l10n.podcastUnfollowBody(downloaded)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.cancel)),
+            TextButton(onPressed: () => Navigator.pop(ctx, _KeepDownloads.delete), child: Text(ctx.l10n.podcastDeleteDownloads)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, _KeepDownloads.keep), child: Text(ctx.l10n.podcastKeepDownloads)),
+          ],
+        ),
+      );
+      if (choice == null) return;
+      keep = choice;
+    }
+    await ops.setFollowed(podcastId, false);
+    if (keep == _KeepDownloads.delete) await ops.deleteDownloads(podcastId);
+    if (context.mounted) showMsg(context, l.podcastUnfollowedMsg);
+}
+
 /// A show that is not followed (D-431): its feed is read in memory, episodes play in
 /// streaming (nothing is downloaded here), and «Segui» / «Segui già» is the only write
 /// until the first play, which saves the show as not followed so the bookmark works.
@@ -38,28 +67,7 @@ class PodcastPreviewScreen extends ConsumerWidget {
       if (context.mounted) showMsg(context, l.podcastFollowedMsg);
       return;
     }
-    var keep = _KeepDownloads.keep;
-    final downloaded = await ops.downloadedCount(followedId);
-    if (downloaded > 0) {
-      if (!context.mounted) return;
-      final choice = await showDialog<_KeepDownloads>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(ctx.l10n.podcastUnfollowTitle),
-          content: Text(ctx.l10n.podcastUnfollowBody(downloaded)),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.cancel)),
-            TextButton(onPressed: () => Navigator.pop(ctx, _KeepDownloads.delete), child: Text(ctx.l10n.podcastDeleteDownloads)),
-            FilledButton(onPressed: () => Navigator.pop(ctx, _KeepDownloads.keep), child: Text(ctx.l10n.podcastKeepDownloads)),
-          ],
-        ),
-      );
-      if (choice == null) return;
-      keep = choice;
-    }
-    await ops.setFollowed(followedId, false);
-    if (keep == _KeepDownloads.delete) await ops.deleteDownloads(followedId);
-    if (context.mounted) showMsg(context, l.podcastUnfollowedMsg);
+    await unfollowPodcast(context, ref, followedId);
   }
 
   Future<void> _play(BuildContext context, WidgetRef ref, PodcastPreview data, PodcastEpisodeInfo e) async {

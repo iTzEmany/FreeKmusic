@@ -5623,13 +5623,13 @@ abstract class AppLocalizations {
   /// No description provided for @podcastUnsubscribe.
   ///
   /// In it, this message translates to:
-  /// **'Annulla l’iscrizione'**
+  /// **'Elimina podcast'**
   String get podcastUnsubscribe;
 
   /// No description provided for @podcastUnsubscribeTitle.
   ///
   /// In it, this message translates to:
-  /// **'Annullare l’iscrizione?'**
+  /// **'Eliminare il podcast?'**
   String get podcastUnsubscribeTitle;
 
   /// No description provided for @podcastUnsubscribeBody.

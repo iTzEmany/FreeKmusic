@@ -2277,8 +2277,8 @@
       }
     }
   },
-  "podcastUnsubscribe": "Annulla l’iscrizione",
-  "podcastUnsubscribeTitle": "Annullare l’iscrizione?",
+  "podcastUnsubscribe": "Elimina podcast",
+  "podcastUnsubscribeTitle": "Eliminare il podcast?",
   "podcastUnsubscribeBody": "{count, plural, =0{Il podcast verrà eliminato dal dispositivo.} one{Il podcast e 1 episodio scaricato verranno eliminati dal dispositivo.} other{Il podcast e {count} episodi scaricati verranno eliminati dal dispositivo.}}",
   "@podcastUnsubscribeBody": {
     "placeholders": {
