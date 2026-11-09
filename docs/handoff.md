@@ -7,6 +7,8 @@
 - Telefoni: Mi A3 `0d7ae9df206e` (di test, mai i file musicali); Redmi Note 9 Pro `8bbad1cd` solo per l'app (D-502): mai toccare i file già presenti, a fine prova togliere ciò che si è messo.
 - Playlist di prova: `~/Downloads/Liked_Songs.csv` (2253 brani, D-503), da importare sui telefoni e togliere a fine prova.
 - Fase 111 (pausa a volume zero): `VOLUME_CHANGED_ACTION` è `@hide`, da provare sui due telefoni.
+- Dopo la 113 vengono le fasi 114–116 (link Spotify e Deezer, Salva in Libreria e Condividi, brani da Shazam): feature `docs/feature-link-e-shazam.md`, decisioni D-515..D-529, fasi `docs/fase-114-*.md` .. `fase-116-*.md`. La 112 nasce già col modello comune della pagina (D-527).
+- La 116 ha bisogno di un testo vero condiviso da Shazam (R-210): chiederlo all'utente prima, altrimenti la fase si ferma in «Tocca a te».
 
 ## Stato
 **Fasi 101–106 chiuse** (PR #137–#141 e la PR della 106). Ultima fase documentata in `docs/PROGRESS.md`: la 106, testi traslitterati.
