@@ -3,14 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/daylist_providers.dart';
+import '../../../data/db/app_database.dart' show Track;
+import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../shell/shell_nav.dart';
+import '../../theme/app_theme.dart' show ccIconDensity;
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cover_image.dart';
+import '../../widgets/dislike_sheet.dart' show showDislikeSheetFor;
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/online_queue_row.dart' show SuggestedMarker;
 import '../../widgets/play_buttons.dart';
 import '../../widgets/playlist_cover.dart';
+import '../../widgets/track_actions.dart' show showTrackActions;
 import '../settings/settings_screen.dart';
 import 'daylist_labels.dart';
 
@@ -24,7 +29,7 @@ class DaylistScreen extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final text = Theme.of(context).textTheme;
-    final d = ref.watch(daylistProvider).value;
+    final d = ref.watch(daylistVisibleProvider);
     final actions = ref.read(daylistActionsProvider);
     return Scaffold(
       appBar: CcAppBar(
@@ -44,7 +49,9 @@ class DaylistScreen extends ConsumerWidget {
         ],
       ),
       body: d == null || d.result.tooFew
-          ? Center(child: Text(l.daylistEmpty, style: text.bodyLarge?.copyWith(color: cc.textMuted)))
+          ? Center(
+              child: Text(l.daylistEmpty, style: text.bodyLarge?.copyWith(color: cc.textMuted)),
+            )
           : ListView(
               padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
               children: [
@@ -87,10 +94,7 @@ class DaylistScreen extends ConsumerWidget {
                       const SizedBox(width: CcDims.gap8),
                       Expanded(
                         child: Text(
-                          l.daylistUpdates(
-                            daylistSlotName(l, (d.slotIndex + 1) % 8),
-                            daylistHour(d.nextChange.hour),
-                          ),
+                          l.daylistUpdates(daylistSlotName(l, (d.slotIndex + 1) % 8), daylistHour(d.nextChange.hour)),
                           style: text.bodySmall?.copyWith(color: cc.textMuted),
                         ),
                       ),
@@ -98,8 +102,9 @@ class DaylistScreen extends ConsumerWidget {
                   ),
                 ),
                 for (final (i, item) in d.result.items.indexed)
-                  item.track != null ? _OwnRow(item.track!.title, item.track!.artist, item.track!.coverKey, () => actions.play(startIndex: i))
-                      : _SuggestedRow(item.suggestion!.result.title, item.suggestion!.result.artists.join(', '), item.suggestion!.result.thumbnailUrl, () => actions.play(startIndex: i)),
+                  item.track != null
+                      ? _OwnRow(item.track!, () => actions.play(startIndex: i))
+                      : _SuggestedRow(item.suggestion!.result, () => actions.play(startIndex: i)),
               ],
             ),
     );
@@ -128,21 +133,11 @@ class DaylistScreen extends ConsumerWidget {
               children: [
                 Text(daylistName(l, d.slotIndex, r.genres), style: text.titleLarge),
                 const SizedBox(height: 6),
-                Text(
-                  l.tracksCount(r.items.length),
-                  style: text.bodySmall?.copyWith(color: cc.textMuted),
-                ),
-                if (sug > 0)
-                  Text(
-                    l.daylistSuggestedCount(sug),
-                    style: text.bodySmall?.copyWith(color: cc.textMuted),
-                  ),
+                Text(l.tracksCount(r.items.length), style: text.bodySmall?.copyWith(color: cc.textMuted)),
+                if (sug > 0) Text(l.daylistSuggestedCount(sug), style: text.bodySmall?.copyWith(color: cc.textMuted)),
                 // D-473: fewer than 50 songs says so under the title.
                 if (r.isShort)
-                  Text(
-                    l.daylistShortNote(r.items.length),
-                    style: text.bodySmall?.copyWith(color: cc.textMuted),
-                  ),
+                  Text(l.daylistShortNote(r.items.length), style: text.bodySmall?.copyWith(color: cc.textMuted)),
               ],
             ),
           ),
@@ -152,76 +147,100 @@ class DaylistScreen extends ConsumerWidget {
   }
 }
 
-class _OwnRow extends StatelessWidget {
-  const _OwnRow(this.title, this.artist, this.coverKey, this.onPlay);
+class _OwnRow extends ConsumerWidget {
+  const _OwnRow(this.track, this.onPlay);
 
-  final String title;
-  final String? artist;
-  final String? coverKey;
+  final Track track;
   final VoidCallback onPlay;
 
   @override
-  Widget build(BuildContext context) => _row(
+  Widget build(BuildContext context, WidgetRef ref) => _row(
     context,
-    CoverImage(coverKey: coverKey, size: 48),
-    title,
-    Text(artist ?? context.l10n.unknownArtist, maxLines: 1, overflow: TextOverflow.ellipsis),
+    CoverImage(coverKey: track.coverKey, size: 48),
+    track.title,
+    Text(track.artist ?? context.l10n.unknownArtist, maxLines: 1, overflow: TextOverflow.ellipsis),
     onPlay,
+    () => showTrackActions(context, ref, track),
   );
 }
 
-class _SuggestedRow extends StatelessWidget {
-  const _SuggestedRow(this.title, this.artist, this.thumb, this.onPlay);
+class _SuggestedRow extends ConsumerWidget {
+  const _SuggestedRow(this.result, this.onPlay);
 
-  final String title, artist;
-  final String? thumb;
+  final YtResult result;
   final VoidCallback onPlay;
 
   @override
-  Widget build(BuildContext context) => _row(
-    context,
-    NetThumbnail(url: thumb, width: 48, height: 48, icon: Icons.music_note_rounded),
-    title,
-    Row(
-      children: [
-        const SuggestedMarker(),
-        if (artist.isNotEmpty) ...[
-          const Text(', '),
-          Flexible(child: Text(artist, maxLines: 1, overflow: TextOverflow.ellipsis)),
-        ],
-      ],
-    ),
-    onPlay,
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final artist = result.artists.join(', ');
+    return _row(
+      context,
+      NetThumbnail(url: result.thumbnailUrl, width: 48, height: 48, icon: Icons.music_note_rounded),
+      result.title,
+      // One label: a separate ', ' would be read as its own item.
+      Semantics(
+        label: artist.isEmpty ? context.l10n.suggestedBadge : '${context.l10n.suggestedBadge}, $artist',
+        excludeSemantics: true,
+        child: Row(
+          children: [
+            const SuggestedMarker(),
+            if (artist.isNotEmpty) ...[
+              const Text(', '),
+              Flexible(child: Text(artist, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ],
+        ),
+      ),
+      onPlay,
+      () => showDislikeSheetFor(context, ref, result),
+    );
+  }
 }
 
-Widget _row(BuildContext context, Widget cover, String title, Widget sub, VoidCallback onTap) {
+Widget _row(BuildContext context, Widget cover, String title, Widget sub, VoidCallback onTap, VoidCallback onMore) {
   final text = Theme.of(context).textTheme;
   final cc = context.cc;
-  return MergeSemantics(
-    child: Semantics(
-      button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: 6),
-          child: Row(
-            children: [
-              ClipRRect(borderRadius: BorderRadius.circular(CcDims.rList), child: cover),
-              const SizedBox(width: CcDims.gap12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+  return Row(
+    children: [
+      Expanded(
+        child: MergeSemantics(
+          child: Semantics(
+            button: true,
+            child: InkWell(
+              onTap: onTap,
+              onLongPress: onMore,
+              child: Padding(
+                padding: const EdgeInsets.only(left: CcDims.margin, top: 6, bottom: 6),
+                child: Row(
                   children: [
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodyLarge),
-                    DefaultTextStyle.merge(style: text.bodySmall?.copyWith(color: cc.textMuted), child: sub),
+                    ClipRRect(borderRadius: BorderRadius.circular(CcDims.rList), child: cover),
+                    const SizedBox(width: CcDims.gap12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodyLarge),
+                          DefaultTextStyle.merge(
+                            style: text.bodySmall?.copyWith(color: cc.textMuted),
+                            child: sub,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
+      IconButton(
+        tooltip: context.l10n.moreOptions,
+        visualDensity: ccIconDensity,
+        onPressed: onMore,
+        icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
+      ),
+      const SizedBox(width: CcDims.gap8),
+    ],
   );
 }

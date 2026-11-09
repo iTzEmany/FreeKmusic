@@ -58,37 +58,57 @@ void main() {
 
   Future<void> addTracks(int n, {String genre = 'Soul'}) async {
     for (var i = 1; i <= n; i++) {
-      await db.into(db.tracks).insert(TracksCompanion.insert(
-            path: '/m/$i.mp3', title: 'Song $i', albumKey: 'k$i', format: 'mp3', sizeBytes: 1,
-            mtimeMs: 1, addedAt: 1, artist: Value('Band $i'), genre: Value(genre)));
+      await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/m/$i.mp3',
+              title: 'Song $i',
+              albumKey: 'k$i',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+              artist: Value('Band $i'),
+              genre: Value(genre),
+            ),
+          );
     }
   }
 
   /// A container on the same database, settings and `daylist.json`: a new one is an app restart.
   ProviderContainer open() {
-    final c = ProviderContainer(overrides: [
-      settingsStoreProvider.overrideWithValue(store),
-      databaseProvider.overrideWithValue(db),
-      daylistClockProvider.overrideWithValue(() => clock()),
-      daylistFileProvider.overrideWithValue(() async => File(p.join(dir.path, 'daylist.json'))),
-      playerControllerProvider.overrideWithValue(player),
-      daylistSettleProvider.overrideWithValue(settle),
-      dislikeStoreProvider.overrideWithValue(dislikes),
-      daylistSuggestProvider.overrideWithValue((cancelled, {force = false}) async {
-        final n = ++suggestAsked;
-        forced.add(force);
-        if (n == 1) await holdFirst?.future;
-        if (offline) return null;
-        return (seeds, want, accept, inQueue) => Stream.fromIterable([
-              for (var i = 0; i < want; i++)
-                SuggestionCandidate(
-                  YtResult(id: 's${n}_$i', title: 'Online $i', channel: 'Ch', artists: ['Band ${i + 1}'], duration: const Duration(seconds: 200)),
-                  seeds.first.title,
-                  RadioKind.song,
+    final c = ProviderContainer(
+      overrides: [
+        settingsStoreProvider.overrideWithValue(store),
+        databaseProvider.overrideWithValue(db),
+        daylistClockProvider.overrideWithValue(() => clock()),
+        daylistFileProvider.overrideWithValue(() async => File(p.join(dir.path, 'daylist.json'))),
+        playerControllerProvider.overrideWithValue(player),
+        daylistSettleProvider.overrideWithValue(settle),
+        dislikeStoreProvider.overrideWithValue(dislikes),
+        daylistSuggestProvider.overrideWithValue((cancelled, {force = false}) async {
+          final n = ++suggestAsked;
+          forced.add(force);
+          if (n == 1) await holdFirst?.future;
+          if (offline) return null;
+          return (seeds, want, accept, inQueue) => Stream.fromIterable([
+            for (var i = 0; i < want; i++)
+              SuggestionCandidate(
+                YtResult(
+                  id: 's${n}_$i',
+                  title: 'Online $i',
+                  channel: 'Ch',
+                  artists: ['Band ${i + 1}'],
+                  duration: const Duration(seconds: 200),
                 ),
-            ]).where(accept);
-      }),
-    ]);
+                seeds.first.title,
+                RadioKind.song,
+              ),
+          ]).where(accept);
+        }),
+      ],
+    );
     addTearDown(c.dispose);
     return c;
   }
@@ -270,10 +290,36 @@ void main() {
     final firstSuggested = s.result.items.indexWhere((i) => i.suggestion != null);
     final blocked = s.result.items[firstSuggested].suggestion!.result;
     dislikes.blockTrack(DislikedTrack(videoId: blocked.id, title: blocked.title, artist: 'x'));
-    await c.read(daylistActionsProvider).play(startIndex: firstSuggested + 1);
+    // The row after the removed one, counted in the list the user sees.
+    await c.read(daylistActionsProvider).play(startIndex: firstSuggested);
     expect(player.items, hasLength(DaylistBuilder.size - 1));
     expect(player.items!.any((i) => i.online?.id == blocked.id), isFalse);
     expect(player.index, firstSuggested, reason: 'the row after the removed one');
+  });
+
+  test('the visible daylist drops suggested songs of a blocked song or artist at once, saved one untouched', () async {
+    await addTracks(40);
+    final c = open();
+    final s = (await daylist(c))!;
+    c.listen(daylistVisibleProvider, (_, _) {});
+    await c.read(daylistProvider.future);
+    await dislikes.load();
+    await Future<void>.delayed(const Duration(milliseconds: 50)); // the store listener is up
+    expect(c.read(daylistVisibleProvider)!.result.items, hasLength(s.result.items.length));
+    final sug = [
+      for (final i in s.result.items)
+        if (i.suggestion != null) i.suggestion!.result,
+    ];
+    dislikes.blockTrack(DislikedTrack(videoId: sug[0].id, title: sug[0].title, artist: 'x'));
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(daylistVisibleProvider)!.result.items, hasLength(s.result.items.length - 1));
+    final key = suggestionArtistKey(sug[1]);
+    dislikes.blockArtist(DislikedArtist(key: key, name: sug[1].artists.first));
+    await Future<void>.delayed(Duration.zero);
+    final left = c.read(daylistVisibleProvider)!.result.items;
+    expect(left.where((i) => i.suggestion != null && suggestionArtistKey(i.suggestion!.result) == key), isEmpty);
+    expect(left.length, lessThan(s.result.items.length - 1));
+    expect((await daylist(c))!.result.items, hasLength(s.result.items.length));
   });
 
   test('without the network and with suggestions wanted, nothing is saved: the next start tries again', () async {
@@ -285,13 +331,17 @@ void main() {
 
   test('a suggestion source that throws: own songs only, no error', () async {
     await addTracks(20);
-    final c = ProviderContainer(overrides: [
-      settingsStoreProvider.overrideWithValue(store),
-      databaseProvider.overrideWithValue(db),
-      daylistClockProvider.overrideWithValue(() => clock()),
-      daylistFileProvider.overrideWithValue(() async => File(p.join(dir.path, 'daylist.json'))),
-      daylistSuggestProvider.overrideWithValue((cancelled, {force = false}) async => throw StateError('log unreadable')),
-    ]);
+    final c = ProviderContainer(
+      overrides: [
+        settingsStoreProvider.overrideWithValue(store),
+        databaseProvider.overrideWithValue(db),
+        daylistClockProvider.overrideWithValue(() => clock()),
+        daylistFileProvider.overrideWithValue(() async => File(p.join(dir.path, 'daylist.json'))),
+        daylistSuggestProvider.overrideWithValue(
+          (cancelled, {force = false}) async => throw StateError('log unreadable'),
+        ),
+      ],
+    );
     addTearDown(c.dispose);
     final s = (await daylist(c))!;
     expect(s.result.items, hasLength(20));

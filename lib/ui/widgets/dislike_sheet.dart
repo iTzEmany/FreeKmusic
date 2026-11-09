@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_log.dart';
 import '../../core/artist_key.dart';
 import '../../l10n/l10n_ext.dart';
+import '../../providers/daylist_providers.dart';
 import '../../providers/dislike_store_provider.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/suggestion_actions.dart';
+import '../../services/online/youtube_service.dart' show YtResult;
 import 'cc_sheet.dart';
 import 'show_msg.dart';
 
@@ -19,6 +21,36 @@ Future<void> showDislikeSheet(
 ) async {
   final r = ref.read(onlineEntriesProvider)?[queueId]?.result;
   if (r == null) return;
+  final actions = ref.read(suggestionActionsProvider);
+  return _dislikeFlow(context, r, (artist) async {
+    final u = await (artist
+        ? actions.dislikeArtist(queueId)
+        : actions.dislikeTrack(queueId));
+    return () => actions.undo(u);
+  });
+}
+
+/// The same sheet for a suggested song that is not in the queue (the daylist
+/// list); it is only blocked, and «Annulla» unblocks it.
+Future<void> showDislikeSheetFor(
+  BuildContext context,
+  WidgetRef ref,
+  YtResult r,
+) {
+  final actions = ref.read(daylistActionsProvider);
+  return _dislikeFlow(
+    context,
+    r,
+    (artist) async => actions.dislike(r, artist: artist),
+  );
+}
+
+/// [apply] blocks (the artist or the song) and returns the undo.
+Future<void> _dislikeFlow(
+  BuildContext context,
+  YtResult r,
+  Future<Future<void> Function()> Function(bool artist) apply,
+) async {
   final l = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
   final artist = r.artists.isEmpty ? r.channel : r.artists.first;
@@ -86,13 +118,10 @@ Future<void> showDislikeSheet(
     },
   );
   if (artistChoice == null || !context.mounted) return;
-  final actions = ref.read(suggestionActionsProvider);
   // The notice shows at once; the action (the next song may load) runs meanwhile.
   final done = () async {
     try {
-      return await (artistChoice
-          ? actions.dislikeArtist(queueId)
-          : actions.dislikeTrack(queueId));
+      return await apply(artistChoice);
     } on Object catch (e, st) {
       AppLog.w('dislike failed', e, st);
       return null;
@@ -105,8 +134,8 @@ Future<void> showDislikeSheet(
       label: l.undo,
       onPressed: () async {
         try {
-          final u = await done;
-          if (u != null) await actions.undo(u);
+          final undo = await done;
+          if (undo != null) await undo();
         } on Object catch (e, st) {
           AppLog.w('dislike undo failed', e, st);
         }

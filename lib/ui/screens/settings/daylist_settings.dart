@@ -30,7 +30,9 @@ class DaylistSlotsTiles extends ConsumerWidget {
     final now = ref.watch(daylistProvider).value;
     return Column(
       children: [
-        ListTile(title: Text(l.daylistIntro, style: text.bodyMedium?.copyWith(color: cc.textMuted))),
+        ListTile(
+          title: Text(l.daylistIntro, style: text.bodyMedium?.copyWith(color: cc.textMuted)),
+        ),
         for (var i = 0; i < DaylistConfig.slotCount; i++)
           _slotRow(context, ref, cfg, i, warn: now != null && now.slotIndex == i && now.result.tooFew),
       ],
@@ -45,13 +47,15 @@ class DaylistSlotsTiles extends ConsumerWidget {
     final name = daylistSlotName(l, i);
     final time = daylistHour(s.startHour);
     void open() => ShellNav.open<void>(context, DaylistSlotEditor(i));
+    final short = warn && s.enabled;
+    final label = l.daylistSlotRowLabel(name, _summary(context, s), time);
     return Row(
       children: [
         Expanded(
           child: Semantics(
             button: true,
             excludeSemantics: true,
-            label: l.daylistSlotRowLabel(name, _summary(context, s), time),
+            label: short ? '$label, ${l.daylistTooFewWarn}' : label,
             onTap: open,
             child: InkWell(
               key: ValueKey('daylist-slot-$i'),
@@ -62,7 +66,10 @@ class DaylistSlotsTiles extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: CcDims.gap8),
                   child: Row(
                     children: [
-                      SizedBox(width: 56, child: Text(time, style: text.titleSmall?.copyWith(color: cc.accentSoft))),
+                      SizedBox(
+                        width: 56,
+                        child: Text(time, style: text.titleSmall?.copyWith(color: cc.accentSoft)),
+                      ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,8 +82,7 @@ class DaylistSlotsTiles extends ConsumerWidget {
                               style: text.bodySmall?.copyWith(color: cc.textMuted),
                             ),
                             // D-473: the slot of the moment, when it has too few songs.
-                            if (warn && s.enabled)
-                              Text(l.daylistTooFewWarn, style: text.bodySmall?.copyWith(color: cc.error)),
+                            if (short) Text(l.daylistTooFewWarn, style: text.bodySmall?.copyWith(color: cc.error)),
                           ],
                         ),
                       ),
@@ -186,8 +192,13 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
     Widget genres({required bool prefer}) {
       final chosen = prefer ? s.prefer : s.avoid;
       final key = prefer ? 'prefer' : 'avoid';
-      final taken = {for (final g in {...s.prefer, ...s.avoid}) matchKey(g)};
-      final pool = [for (final g in table.genres) if (!taken.contains(matchKey(g))) g];
+      final taken = {
+        for (final g in {...s.prefer, ...s.avoid}) matchKey(g),
+      };
+      final pool = [
+        for (final g in table.genres)
+          if (!taken.contains(matchKey(g))) g,
+      ];
       void update(Set<String> v) => _set(prefer ? s.copyWith(prefer: v) : s.copyWith(avoid: v));
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
@@ -283,10 +294,7 @@ class _DaylistSlotEditorState extends ConsumerState<DaylistSlotEditor> {
                   icon: const Icon(Icons.remove_rounded),
                   onPressed: cfg.canStart(_i, (s.startHour + 23) % 24) ? () => move(-1) : null,
                 ),
-                Semantics(
-                  liveRegion: true,
-                  child: Text(daylistHour(s.startHour), style: text.titleMedium),
-                ),
+                Semantics(liveRegion: true, child: Text(daylistHour(s.startHour), style: text.titleMedium)),
                 IconButton(
                   key: const ValueKey('daylist-later'),
                   tooltip: l.daylistLater,
@@ -391,7 +399,10 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
     final table = ref.watch(moodTableProvider);
     final all = table.genres;
     final q = matchKey(_q);
-    final shown = [for (final g in all) if (g.contains(q)) g];
+    final shown = [
+      for (final g in all)
+        if (g.contains(q)) g,
+    ];
     return Scaffold(
       appBar: CcAppBar(title: l.daylistMoodTable),
       body: ListView(
@@ -405,10 +416,7 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
             padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
             child: TextField(
               key: const ValueKey('daylist-genre-search'),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search_rounded),
-                hintText: l.daylistGenreSearch,
-              ),
+              decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: l.daylistGenreSearch),
               onChanged: (v) => setState(() => _q = v),
             ),
           ),
@@ -459,9 +467,8 @@ class _DaylistMoodTableScreenState extends ConsumerState<DaylistMoodTableScreen>
                     key: ValueKey('daylist-genre-$g-${m.name}'),
                     label: Text(daylistMoodName(l, m)),
                     selected: moods.contains(m),
-                    onSelected: (v) => ref
-                        .read(moodTableProvider.notifier)
-                        .setMoods(g, v ? {...moods, m} : ({...moods}..remove(m))),
+                    onSelected: (v) =>
+                        ref.read(moodTableProvider.notifier).setMoods(g, v ? {...moods, m} : ({...moods}..remove(m))),
                   ),
                 ),
             ],

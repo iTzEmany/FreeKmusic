@@ -3,6 +3,10 @@ import 'package:codecore/providers/daylist_providers.dart';
 import 'package:codecore/services/daylist/daylist_builder.dart';
 import 'package:codecore/services/daylist/daylist_slots.dart';
 import 'package:codecore/services/daylist/mood_table.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/services/shuffle_plus/suggestion_pool.dart' show SuggestionCandidate;
+import 'package:codecore/services/online/ytm_radio_parser.dart' show RadioKind;
+import 'package:codecore/ui/screens/daylist/daylist_labels.dart' show genreDisplay;
 import 'package:codecore/ui/screens/daylist/daylist_card.dart';
 import 'package:codecore/ui/screens/daylist/daylist_screen.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
@@ -25,6 +29,12 @@ class _FakeActions implements DaylistActions {
   Future<void> play({bool shuffle = false, int? startIndex}) async => calls.add(shuffle);
   @override
   Future<void> regenerate() async {}
+  final disliked = <(String, bool)>[];
+  @override
+  Future<void> Function() dislike(YtResult r, {required bool artist}) {
+    disliked.add((r.id, artist));
+    return () async {};
+  }
 }
 
 DaylistState _state(List<Track> tracks, {bool tooFew = false, int slot = 5}) => DaylistState(
@@ -50,10 +60,14 @@ void main() {
     h = await Harness.create(tester, tracks: 3);
     final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
     actions = _FakeActions();
-    await h.pump(tester, child, extraOverrides: [
-      daylistProvider.overrideWith(() => _FakeDaylist(state(rows))),
-      daylistActionsProvider.overrideWithValue(actions),
-    ]);
+    await h.pump(
+      tester,
+      child,
+      extraOverrides: [
+        daylistProvider.overrideWith(() => _FakeDaylist(state(rows))),
+        daylistActionsProvider.overrideWithValue(actions),
+      ],
+    );
     await tester.pump();
   }
 
@@ -85,11 +99,60 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('screen: a suggested row has a clean label and a menu with Non mi piace', (tester) async {
+    const yt = YtResult(id: 'v1', title: 'Online', channel: 'Ch', artists: ['Band'], duration: Duration(seconds: 90));
+    final handle = tester.ensureSemantics();
+    await pump(tester, const DaylistScreen(), (rows) {
+      final d = _state(rows);
+      return DaylistState(
+        result: DaylistResult(
+          slotIndex: 5,
+          items: [DaylistItem.suggested(const SuggestionCandidate(yt, 's', RadioKind.song)), ...d.result.items],
+          genres: d.result.genres,
+          tooFew: false,
+        ),
+        slot: d.slot,
+        slotIndex: 5,
+        nextChange: d.nextChange,
+      );
+    });
+    expect(find.bySemanticsLabel(RegExp(r'^Online\nSuggerito, Band$')), findsOneWidget);
+    await tester.tap(find.byTooltip('Altre opzioni').first);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('dislike-artist')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('dislike-track')));
+    await tester.pumpAndSettle();
+    expect(actions.disliked, [('v1', false)]);
+    handle.dispose();
+    await h.dispose(tester);
+  });
+
+  test('genreDisplay uses the readable names inside longer keys', () {
+    expect(genreDisplay('r and b soul'), 'R&B soul');
+    expect(genreDisplay('lo fi beats'), 'Lo-Fi beats');
+    expect(genreDisplay('hip hop soul'), 'Hip hop soul');
+    expect(genreDisplay('r and b'), 'R&B');
+    expect(genreDisplay('jazz'), 'Jazz');
+  });
+
   group('settings', () {
     Future<void> open(WidgetTester tester) async {
       await pump(tester, const Scaffold(body: SettingsScreen(initial: SettingsPage.daylist)), (_) => null);
       await tester.pumpAndSettle();
     }
+
+    testWidgets('the slot row label says when it has too few songs', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        const Scaffold(body: SettingsScreen(initial: SettingsPage.daylist)),
+        (_) => _state(const [], tooFew: true),
+      );
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel(RegExp(r'Tarda sera.*Meno di 15 brani')), findsOneWidget);
+      handle.dispose();
+      await h.dispose(tester);
+    });
 
     testWidgets('switch turns a slot off; the start hour keeps the neighbours', (tester) async {
       await open(tester);

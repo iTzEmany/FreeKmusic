@@ -30,15 +30,20 @@ String daylistHour(int h) => '${(h % 24).toString().padLeft(2, '0')}:00';
 String daylistName(AppLocalizations l, int slotIndex, List<String> genres) =>
     [daylistSlotName(l, slotIndex), ...genres.take(3).map(genreDisplay)].join(', ');
 
-const _genreNames = {
-  'bossa nova': 'Bossa nova',
-  'hip hop': 'Hip hop',
-  'lo fi': 'Lo-Fi',
-  'r and b': 'R&B',
-};
+const _genreNames = {'bossa nova': 'Bossa nova', 'hip hop': 'Hip hop', 'lo fi': 'Lo-Fi', 'r and b': 'R&B'};
+
+/// [_genreNames] words that may be part of a longer key («r and b soul»).
+const _genreParts = {'r and b': 'R&B', 'lo fi': 'Lo-Fi'};
 
 /// Readable genre name for a [matchKey] key or a user spelling.
 String genreDisplay(String g) {
   final k = matchKey(g);
-  return _genreNames[k] ?? (g == k && g.isNotEmpty ? g[0].toUpperCase() + g.substring(1) : g);
+  final named = _genreNames[k];
+  if (named != null) return named;
+  if (g != k || g.isEmpty) return g;
+  var out = k;
+  for (final e in _genreParts.entries) {
+    out = out.replaceAllMapped(RegExp('(^| )${e.key}(?= |\$)'), (m) => '${m[1]}${e.value}');
+  }
+  return out[0].toUpperCase() + out.substring(1);
 }

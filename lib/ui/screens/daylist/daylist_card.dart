@@ -17,7 +17,7 @@ class DaylistCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final d = ref.watch(daylistProvider).value;
+    final d = ref.watch(daylistVisibleProvider);
     if (d == null || d.result.tooFew) return const SizedBox.shrink();
     final l = context.l10n;
     final cc = context.cc;
@@ -25,9 +25,7 @@ class DaylistCard extends ConsumerWidget {
     final name = daylistName(l, d.slotIndex, d.result.genres);
     final time = daylistHour(d.nextChange.hour);
     final count = d.result.items.length;
-    final covers = playlistCoverKeys(null, [
-      for (final i in d.result.items) i.track?.coverKey,
-    ]);
+    final covers = playlistCoverKeys(null, [for (final i in d.result.items) i.track?.coverKey]);
     return Padding(
       padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, 0),
       child: Material(
@@ -55,10 +53,7 @@ class DaylistCard extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                l.daylistNow,
-                                style: text.bodySmall?.copyWith(color: cc.accentSoft),
-                              ),
+                              Text(l.daylistNow, style: text.bodySmall?.copyWith(color: cc.accentSoft)),
                               Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: text.bodyLarge),
                               Text(
                                 l.daylistCardMeta(count, time),

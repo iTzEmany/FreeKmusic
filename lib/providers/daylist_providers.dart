@@ -15,9 +15,11 @@ import '../services/daylist/daylist_builder.dart';
 import '../services/daylist/daylist_slots.dart';
 import '../services/daylist/daylist_store.dart';
 import '../services/daylist/mood_table.dart';
-import '../services/online/youtube_service.dart' show YtErrorKind, YtException;
+import '../services/online/youtube_service.dart' show YtErrorKind, YtException, YtResult;
+import '../services/shuffle_plus/dislike_store.dart';
 import '../services/shuffle_plus/radio_fill.dart';
-import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed, inLibraryTest, suggestionArtistKey;
+import '../services/shuffle_plus/suggestion_pool.dart'
+    show RadioSeed, SuggestionCandidate, inLibraryTest, suggestionArtistKey;
 import 'dislike_store_provider.dart';
 import 'history_providers.dart' show statsQueriesProvider;
 import 'jam_providers.dart';
@@ -84,7 +86,8 @@ final daylistClockProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
 /// `daylist.json` in the data folder (a test points it elsewhere).
 final daylistFileProvider = Provider<Future<File> Function()>(
-  (_) => () async => File(p.join(await appSupportDir(), 'daylist.json')),
+  (_) =>
+      () async => File(p.join(await appSupportDir(), 'daylist.json')),
 );
 
 /// How long a change of the settings waits before the daylist is made again,
@@ -101,8 +104,9 @@ const daylistHistory = Duration(days: 90);
 /// Unless [force] (the user asked for a new daylist) it asks only when the
 /// [RadioGate] allows a request now, so a build set off by the app itself
 /// never goes against the minute between requests.
-final daylistSuggestProvider =
-    Provider<Future<DaylistSuggest?> Function(bool Function() cancelled, {bool force})>((ref) {
+final daylistSuggestProvider = Provider<Future<DaylistSuggest?> Function(bool Function() cancelled, {bool force})>((
+  ref,
+) {
   return (cancelled, {force = false}) async {
     if (!kEnableYoutube) return null;
     final gate = ref.read(radioGateProvider);
@@ -145,12 +149,7 @@ final daylistSuggestProvider =
 
 /// The daylist of the slot the clock is in (D-433).
 class DaylistState {
-  const DaylistState({
-    required this.result,
-    required this.slot,
-    required this.slotIndex,
-    required this.nextChange,
-  });
+  const DaylistState({required this.result, required this.slot, required this.slotIndex, required this.nextChange});
 
   /// [DaylistResult.tooFew]: no card, no daylist (D-473).
   final DaylistResult result;
@@ -203,14 +202,15 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
     final timer = Timer(next.difference(now), r.invalidateSelf);
     r.onDispose(timer.cancel);
     // A suspended app may not have run the timer: check at every resume.
-    final life = AppLifecycleListener(onResume: () {
-      if (r.mounted && !clock().isBefore(next)) r.invalidateSelf();
-    });
+    final life = AppLifecycleListener(
+      onResume: () {
+        if (r.mounted && !clock().isBefore(next)) r.invalidateSelf();
+      },
+    );
     r.onDispose(life.dispose);
     final slot = config.slots[index];
     if (!slot.enabled) return null;
-    DaylistState of(DaylistResult res) =>
-        DaylistState(result: res, slot: slot, slotIndex: index, nextChange: next);
+    DaylistState of(DaylistResult res) => DaylistState(result: res, slot: slot, slotIndex: index, nextChange: next);
 
     final key = '$slotKey|${moods.toJsonString()}';
     if (_lastKey != null && _lastKey != key) {
@@ -258,6 +258,44 @@ class DaylistNotifier extends AsyncNotifier<DaylistState?> {
 
 final daylistProvider = AsyncNotifierProvider<DaylistNotifier, DaylistState?>(DaylistNotifier.new);
 
+/// Ticks at every change of the «Non mi piace» lists, once they are loaded.
+final _dislikeTickProvider = StreamProvider<int>((ref) async* {
+  final store = ref.watch(dislikeStoreProvider);
+  await store.load();
+  var n = 0;
+  yield n;
+  await for (final _ in store.changes) {
+    yield ++n;
+  }
+});
+
+/// [d] without the suggested songs blocked now (a «Non mi piace» after it was
+/// made or saved). The one list the screen, the card and Play all use, so
+/// rows, count and indexes agree; the saved daylist itself is not touched.
+DaylistState withoutBlocked(DaylistState d, DislikeStore store) {
+  bool blocked(SuggestionCandidate c) =>
+      store.trackBlocked(c.result.id) || store.artistBlocked(suggestionArtistKey(c.result));
+  final items = [
+    for (final i in d.result.items)
+      if (i.suggestion == null || !blocked(i.suggestion!)) i,
+  ];
+  if (items.length == d.result.items.length) return d;
+  final r = d.result;
+  return DaylistState(
+    result: DaylistResult(slotIndex: r.slotIndex, items: items, genres: r.genres, tooFew: r.tooFew, off: r.off),
+    slot: d.slot,
+    slotIndex: d.slotIndex,
+    nextChange: d.nextChange,
+  );
+}
+
+/// The daylist to show and play: [daylistProvider] minus the blocked songs.
+final daylistVisibleProvider = Provider<DaylistState?>((ref) {
+  final d = ref.watch(daylistProvider).value;
+  ref.watch(_dislikeTickProvider);
+  return d == null ? null : withoutBlocked(d, ref.watch(dislikeStoreProvider));
+});
+
 /// What the card and the daylist screen do.
 class DaylistActions {
   DaylistActions(this._ref);
@@ -284,26 +322,45 @@ class DaylistActions {
     }
     final r = s?.result;
     if (r == null || r.tooFew || r.items.isEmpty) return;
-    final gate = _ref.read(suggestionGateProvider);
-    await gate.load();
-    final items = <MixItem>[];
-    var at = 0;
-    for (var i = 0; i < r.items.length; i++) {
-      final c = r.items[i].suggestion;
-      if (c != null && !gate.allows(c.result.id, suggestionArtistKey(c.result), const [])) continue;
-      if (startIndex != null && i < startIndex) at++;
-      items.add((track: r.items[i].track, online: c?.result, seedTitle: c?.seedTitle));
-    }
+    final store = _ref.read(dislikeStoreProvider);
+    await store.load();
+    // [startIndex] is a row of the visible list, the same one built here.
+    final items = [
+      for (final i in withoutBlocked(s!, store).result.items)
+        (track: i.track, online: i.suggestion?.result, seedTitle: i.suggestion?.seedTitle),
+    ];
     if (items.isEmpty) return;
-    await _ref.read(playerControllerProvider).playMixed(
-      items,
-      index: startIndex != null ? at.clamp(0, items.length - 1) : (shuffle ? Random().nextInt(items.length) : 0),
-      context: const PlayContext(PlayContextKind.library),
-      shuffle: shuffle,
-    );
+    final at = startIndex ?? 0;
+    await _ref
+        .read(playerControllerProvider)
+        .playMixed(
+          items,
+          index: startIndex != null ? at.clamp(0, items.length - 1) : (shuffle ? Random().nextInt(items.length) : 0),
+          context: const PlayContext(PlayContextKind.library),
+          shuffle: shuffle,
+        );
   }
 
   Future<void> regenerate() => _ref.read(daylistProvider.notifier).regenerate();
+
+  /// «Non mi piace» on a suggested song of the list ([artist]: the whole
+  /// artist). Returns what undoes it.
+  Future<void> Function() dislike(YtResult r, {required bool artist}) {
+    final store = _ref.read(dislikeStoreProvider);
+    final name = r.artists.isEmpty ? r.channel : r.artists.first;
+    final key = suggestionArtistKey(r);
+    if (artist) {
+      if (key.isEmpty) return () async {}; // would block every nameless artist
+      final was = store.artistBlocked(key);
+      store.blockArtist(DislikedArtist(key: key, name: name));
+      return () async => was ? null : store.unblockArtist(key);
+    }
+    final was = store.trackBlocked(r.id);
+    store.blockTrack(
+      DislikedTrack(videoId: r.id, title: r.title, artist: r.artists.isEmpty ? r.channel : r.artists.join(', ')),
+    );
+    return () async => was ? null : store.unblockTrack(r.id);
+  }
 }
 
 final daylistActionsProvider = Provider<DaylistActions>(DaylistActions.new);
