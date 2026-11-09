@@ -48,11 +48,32 @@ class ChineseDictionaryState {
   final int sizeBytes;
 }
 
-/// How many times the app tried to download the dictionary by itself and
-/// failed in this session; after [maxAutomatic] it waits for the user.
+/// When the app may try to download the dictionary by itself again: after a
+/// failed automatic try it waits [firstPause], doubling up to [maxPause] with
+/// every further failure; a success (or a manual download that works) clears it.
 class CedictAutoGate {
-  static const maxAutomatic = 2;
+  CedictAutoGate({DateTime Function()? now}) : _now = now ?? DateTime.now;
+
+  static const firstPause = Duration(minutes: 5);
+  static const maxPause = Duration(hours: 1);
+
+  final DateTime Function() _now;
   var failures = 0;
+  DateTime? _retryAt;
+
+  bool get allowed => _retryAt == null || !_now().isBefore(_retryAt!);
+
+  void failed() {
+    failures++;
+    final shift = failures - 1 > 4 ? 4 : failures - 1;
+    final pause = firstPause * (1 << shift);
+    _retryAt = _now().add(pause > maxPause ? maxPause : pause);
+  }
+
+  void succeeded() {
+    failures = 0;
+    _retryAt = null;
+  }
 }
 
 final cedictAutoGateProvider = Provider<CedictAutoGate>(
@@ -105,15 +126,14 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
   /// and [download] allows (the lyrics enrichment's network rule). Null when it
   /// fails (state `error`). Concurrent calls share one run. A damaged file is
   /// deleted, so it is downloaded again. [automatic] (the lyrics view, not a
-  /// button) stops trying after two failed downloads in a session.
+  /// button) waits after a failed download, see [CedictAutoGate].
   Future<PinyinDictionary?> ensure({
     required bool download,
     bool automatic = false,
   }) {
     if (_dict != null) return Future.value(_dict);
     final gate = ref.read(cedictAutoGateProvider);
-    final allow =
-        download && (!automatic || gate.failures < CedictAutoGate.maxAutomatic);
+    final allow = download && (!automatic || gate.allowed);
     final current = _loading;
     if (current != null) {
       if (!allow || _loadingMayDownload) return current;
@@ -127,14 +147,14 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
       );
     }
     late final Future<PinyinDictionary?> run;
-    run = _run(allow).whenComplete(() {
+    run = _run(allow, automatic).whenComplete(() {
       if (identical(_loading, run)) _loading = null;
     });
     _loadingMayDownload = allow;
     return _loading = run;
   }
 
-  Future<PinyinDictionary?> _run(bool download) async {
+  Future<PinyinDictionary?> _run(bool download, bool automatic) async {
     final gen = _generation;
     final gate = ref.read(cedictAutoGateProvider);
     final path = await _path;
@@ -148,7 +168,7 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
         closeKeep = ref.keepAlive().close;
         await _download(path);
         downloading = false;
-        gate.failures = 0;
+        gate.succeeded();
       }
       final PinyinDictionary d;
       try {
@@ -170,7 +190,7 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     } on Object catch (e, st) {
       if (!(e is DioException && CancelToken.isCancel(e))) {
         AppLog.w('Chinese dictionary not available', e, st);
-        if (downloading) gate.failures++;
+        if (downloading && automatic) gate.failed();
       }
       if (!_disposed && gen == _generation) {
         state = const ChineseDictionaryState(ChineseDictionaryStatus.error);

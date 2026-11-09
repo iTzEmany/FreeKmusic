@@ -12,6 +12,7 @@ import 'track_kinds.dart';
 Future<UserData> collectUserData(
   AppDatabase db, {
   Map<int, String> romanizations = const {},
+  Set<int> handWritten = const {},
 }) {
   return db.transaction(() async {
     final folders = {
@@ -64,6 +65,7 @@ Future<UserData> collectUserData(
           lyricsSynced: t.lyricsSynced,
           curiosities: t.curiosities,
           romanization: romanizations[t.id],
+          handWritten: handWritten.contains(t.id),
           playCount: t.playCount,
           lastPlayedAt: t.lastPlayedAt,
           credits: portable[t.id]!.credits,

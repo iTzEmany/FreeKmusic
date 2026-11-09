@@ -47,6 +47,9 @@ class BackupOps {
     await _ref
         .read(manualRomanizationProvider.notifier)
         .addMissing(report.romanizations);
+    await _ref
+        .read(handWrittenLyricsProvider.notifier)
+        .addAll(report.handWritten);
     return report;
   }
 }

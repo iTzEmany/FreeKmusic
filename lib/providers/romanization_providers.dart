@@ -4,10 +4,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../services/lyrics/lyrics_shown.dart';
 import '../services/lyrics/romanization_cache.dart';
 import '../services/lyrics/romanization_resolver.dart';
+import '../services/lyrics/script_detect.dart';
 import 'chinese_dictionary_providers.dart';
 import 'database_providers.dart' show trackRepositoryProvider;
 import 'import_providers.dart' show importedTrackProvider;
@@ -68,13 +70,19 @@ final _keyProvider = Provider.autoDispose.family<_Key?, int>((ref, id) {
   );
 });
 
+// No automatic retry: a failure shows as «unavailable» (see [romanizationProvider]).
 final _resolvedProvider = StreamProvider.autoDispose
-    .family<RomanizationState, _Key>((ref, k) async* {
-      // Keeps the dictionary (and its memory) while this provider lives.
-      ref.listen(chineseDictionaryProvider, (_, _) {});
+    .family<RomanizationState, _Key>(retry: (_, _) => null, (ref, k) async* {
+      // Chinese text only: keeps the dictionary (and its ~200k words in
+      // memory) while this provider lives; other scripts never load it.
+      if (detectScript('${k.plain ?? ''}\n${k.synced ?? ''}') ==
+          LyricsScript.chinese) {
+        ref.listen(chineseDictionaryProvider, (_, _) {});
+      }
       final cancel = CancelToken();
       ref.onDispose(cancel.cancel);
-      final dict = ref.read(chineseDictionaryProvider.notifier);
+      ChineseDictionaryNotifier dict() =>
+          ref.read(chineseDictionaryProvider.notifier);
       final resolver = RomanizationResolver(
         cache: ref.read(romanizationCacheProvider),
         fetch: (i, c) => ref
@@ -85,9 +93,9 @@ final _resolvedProvider = StreamProvider.autoDispose
               durationSec: i.durationSec,
               cancel: c,
             ),
-        dictionaryInstalled: dict.installed,
+        dictionaryInstalled: () => dict().installed(),
         dictionary: ({required download}) =>
-            dict.ensure(download: download, automatic: true),
+            dict().ensure(download: download, automatic: true),
       );
       final off = k.unsynced && k.synced != null;
       yield* resolver.resolve(
@@ -122,5 +130,10 @@ final romanizationProvider = Provider.autoDispose
     .family<AsyncValue<RomanizationState>, int>((ref, id) {
       final k = ref.watch(_keyProvider(id));
       if (k == null) return const AsyncData(RomanizationState.loading);
-      return ref.watch(_resolvedProvider(k));
+      final r = ref.watch(_resolvedProvider(k));
+      if (r is AsyncError<RomanizationState>) {
+        AppLog.w('transliteration failed', r.error, r.stackTrace);
+        return const AsyncData(RomanizationState.unavailable);
+      }
+      return r;
     });

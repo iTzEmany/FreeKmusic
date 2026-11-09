@@ -39,14 +39,19 @@ void main() {
   late File file;
   late ProviderContainer c;
   late _Down down;
+  var clock = DateTime(2026, 11, 9, 12);
 
   setUp(() {
     dir = Directory.systemTemp.createTempSync('cedict');
     file = File(p.join(dir.path, 'sub', 'cedict.gz'));
     down = _Down();
+    clock = DateTime(2026, 11, 9, 12);
     c = ProviderContainer(
       overrides: [
         cedictPathProvider.overrideWith((_) => file.path),
+        cedictAutoGateProvider.overrideWithValue(
+          CedictAutoGate(now: () => clock),
+        ),
         cedictDioProvider.overrideWithValue(Dio()..httpClientAdapter = down),
       ],
     );
@@ -154,18 +159,41 @@ void main() {
     );
   });
 
-  test(
-    'automatic downloads stop after two failures; the button still tries',
-    () async {
-      final n = c.read(chineseDictionaryProvider.notifier);
-      for (var i = 0; i < 4; i++) {
-        expect(await n.ensure(download: true, automatic: true), isNull);
-      }
-      expect(down.calls, CedictAutoGate.maxAutomatic);
-      expect(await n.ensure(download: true), isNull);
-      expect(down.calls, CedictAutoGate.maxAutomatic + 1);
-    },
-  );
+  test('after a failed automatic download the next one waits, doubling; the button always tries', () async {
+    final n = c.read(chineseDictionaryProvider.notifier);
+    Future<void> auto() => n.ensure(download: true, automatic: true);
+    await auto();
+    await auto();
+    expect(down.calls, 1, reason: 'no new try right after a failure');
+    clock = clock.add(CedictAutoGate.firstPause + const Duration(seconds: 1));
+    await auto();
+    expect(down.calls, 2);
+    clock = clock.add(CedictAutoGate.firstPause);
+    await auto();
+    expect(down.calls, 2, reason: 'the second pause is twice as long');
+    clock = clock.add(CedictAutoGate.firstPause);
+    await auto();
+    expect(down.calls, 3);
+    await n.ensure(download: true);
+    expect(down.calls, 4, reason: 'the button ignores the pause');
+  });
+
+  test('the pause is capped at an hour and a success clears it', () {
+    var t = DateTime(2026, 11, 9);
+    final gate = CedictAutoGate(now: () => t);
+    expect(gate.allowed, isTrue);
+    for (var i = 0; i < 10; i++) {
+      gate.failed();
+    }
+    t = t.add(CedictAutoGate.maxPause - const Duration(seconds: 1));
+    expect(gate.allowed, isFalse);
+    t = t.add(const Duration(seconds: 2));
+    expect(gate.allowed, isTrue);
+    gate.failed();
+    expect(gate.allowed, isFalse);
+    gate.succeeded();
+    expect((gate.allowed, gate.failures), (true, 0));
+  });
 
   test(
     'a valid but empty file is a broken one: deleted, error state',

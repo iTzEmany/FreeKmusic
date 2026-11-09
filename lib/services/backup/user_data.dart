@@ -93,6 +93,7 @@ class TrackUserData {
     this.lyricsSynced,
     this.curiosities,
     this.romanization,
+    this.handWritten = false,
     this.playCount = 0,
     this.lastPlayedAt,
     this.credits = const [],
@@ -109,6 +110,9 @@ class TrackUserData {
 
   /// Transliteration typed by hand (absent in older backups).
   final String? romanization;
+
+  /// The lyrics were typed by the user (absent in older backups = false).
+  final bool handWritten;
   final int playCount;
   final int? lastPlayedAt;
 
@@ -132,6 +136,7 @@ class TrackUserData {
         'lyricsSynced': lyricsSynced,
         'curiosities': curiosities,
         'romanization': romanization,
+        'handWritten': handWritten ? true : null,
         'playCount': playCount == 0 ? null : playCount,
         'lastPlayedAt': lastPlayedAt,
         'credits': credits.isEmpty ? null : [for (final c in credits) c.toJson()],
@@ -151,6 +156,7 @@ class TrackUserData {
         lyricsSynced: j['lyricsSynced'] as String?,
         curiosities: j['curiosities'] as String?,
         romanization: j['romanization'] as String?,
+        handWritten: j['handWritten'] as bool? ?? false,
         playCount: (j['playCount'] as num?)?.toInt() ?? 0,
         lastPlayedAt: (j['lastPlayedAt'] as num?)?.toInt(),
         credits: parseCreditList(j['credits'], max: 2000),

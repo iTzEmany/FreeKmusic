@@ -74,6 +74,13 @@ class HandWrittenLyricsNotifier extends Notifier<Set<int>> {
     state = handWritten ? {...state, id} : ({...state}..remove(id));
     await ref.read(settingsStoreProvider).writeHandWrittenLyrics(state);
   }
+
+  /// Marks [ids] (the backup merge); the ones already marked stay.
+  Future<void> addAll(Set<int> ids) async {
+    if (state.containsAll(ids)) return;
+    state = {...state, ...ids};
+    await ref.read(settingsStoreProvider).writeHandWrittenLyrics(state);
+  }
 }
 
 final handWrittenLyricsProvider =

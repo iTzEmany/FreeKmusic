@@ -21,6 +21,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _BrokenCache extends RomanizationCache {
+  _BrokenCache() : super(file: () async => File('/nonexistent/c.json'));
+
+  @override
+  Future<CachedRomanization?> get(int trackId, {String? key}) =>
+      throw StateError('boom');
+}
+
 class _Netease implements NeteaseLyricsClient {
   String? answer;
   var calls = 0;
@@ -47,14 +55,17 @@ void main() {
   late RomanizationCache cache;
   late ProviderContainer c;
 
-  Future<void> boot([Map<String, Object> prefs = const {}]) async {
+  Future<void> boot([
+    Map<String, Object> prefs = const {},
+    RomanizationCache? useCache,
+  ]) async {
     SharedPreferences.setMockInitialValues({'autoLyrics': true, ...prefs});
     c = ProviderContainer(
       overrides: [
         settingsStoreProvider.overrideWithValue(await SettingsStore.open()),
         databaseProvider.overrideWithValue(db),
         neteaseLyricsClientProvider.overrideWithValue(netease),
-        romanizationCacheProvider.overrideWithValue(cache),
+        romanizationCacheProvider.overrideWithValue(useCache ?? cache),
         cedictPathProvider.overrideWith((_) => p.join(dir.path, 'cedict.gz')),
       ],
     );
@@ -272,4 +283,33 @@ void main() {
       expect(dict.sizeBytes, greaterThan(0));
     },
   );
+
+  test('the dictionary is kept in memory only for Chinese text', () async {
+    await boot();
+    final ko = await addTrack(plain: '안녕하세요');
+    await settled(ko);
+    final ja = await addTrack(synced: '[00:01.00]こんにちは');
+    await settled(ja);
+    expect(c.exists(chineseDictionaryProvider), isFalse);
+    File(
+      p.join(dir.path, 'cedict.gz'),
+    ).writeAsBytesSync(gzip.encode(utf8.encode('銀行 银行 [yin2 hang2] /bank/\n')));
+    final zh = await addTrack(plain: '银行');
+    await settled(zh);
+    expect(c.exists(chineseDictionaryProvider), isTrue);
+  });
+
+  test('a failure inside the resolver shows as unavailable, not as loading forever', () async {
+    await boot({}, _BrokenCache());
+    final id = await addTrack(synced: '[00:01.00]こんにちは');
+    expect((await settled(id)).status, RomanizationStatus.unavailable);
+  });
+
+  test('a ready transliteration says which text it was computed for', () async {
+    await boot();
+    final id = await addTrack(plain: '안녕하세요\n\n좋아');
+    final s = await settled(id);
+    expect(s.forText, '안녕하세요\n\n좋아');
+    expect(s.lines.length, 3);
+  });
 }

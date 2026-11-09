@@ -60,6 +60,7 @@ void main() {
       // The backup of a library whose track has a typed transliteration.
       SharedPreferences.setMockInitialValues({
         'manualRomanization': '{"1":"mine"}',
+        'handWrittenLyrics': ['1'],
       });
       final source = await library();
       final covers = Directory(p.join(dir.path, 'src-covers'))..createSync();
@@ -91,6 +92,8 @@ void main() {
       addTearDown(c.dispose);
       await c.read(backupOpsProvider).merge(File(zip));
       expect(c.read(manualRomanizationProvider), {1: 'mine'});
+      expect(c.read(handWrittenLyricsProvider), {1});
+      expect((await SettingsStore.open()).readHandWrittenLyrics(), {1});
       // One already here is never overwritten.
       await c.read(manualRomanizationProvider.notifier).addMissing({
         1: 'other',

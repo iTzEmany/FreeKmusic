@@ -132,6 +132,7 @@ class BackupService {
       final data = await collectUserData(
         db,
         romanizations: SettingsStore(prefs).readManualRomanizations(),
+        handWritten: SettingsStore(prefs).readHandWrittenLyrics(),
       );
       final trackCount = (await (db.select(
         db.tracks,

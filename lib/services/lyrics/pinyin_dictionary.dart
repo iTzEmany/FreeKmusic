@@ -27,12 +27,23 @@ class PinyinDictionary {
     await for (final line in lines) {
       final e = parseCedictLine(line);
       if (e == null) continue;
-      // The first reading listed wins.
-      map.putIfAbsent(e.$1, () => e.$3);
-      map.putIfAbsent(e.$2, () => e.$3);
+      _put(map, e.$1, e.$3);
+      _put(map, e.$2, e.$3);
     }
     return map;
   }
+
+  /// The first reading listed wins, but a capitalised one (a surname: `[Ye3]`
+  /// before `[ye3]`) gives way to a lowercase one that comes later.
+  static void _put(Map<String, String> map, String word, String pinyin) {
+    final old = map[word];
+    if (old == null || (_capitalised(old) && !_capitalised(pinyin))) {
+      map[word] = pinyin;
+    }
+  }
+
+  static bool _capitalised(String s) =>
+      s.isNotEmpty && s[0] != s[0].toLowerCase();
 
   /// `傳統 传统 [chuan2 tong3] /tradition/` -> (traditional, simplified, pinyin).
   static (String, String, String)? parseCedictLine(String line) {

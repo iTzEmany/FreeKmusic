@@ -15,9 +15,14 @@ enum RomanizationSource { manual, computed, found, dictionary }
 
 /// What a lyrics view shows under the original lines.
 class RomanizationState {
-  const RomanizationState(this.status, {this.lines = const [], this.source});
+  const RomanizationState(
+    this.status, {
+    this.lines = const [],
+    this.source,
+    this.forText,
+  });
 
-  const RomanizationState.ready(this.lines, this.source)
+  const RomanizationState.ready(this.lines, this.source, {this.forText})
     : status = RomanizationStatus.ready;
 
   static const off = RomanizationState(RomanizationStatus.off);
@@ -31,6 +36,11 @@ class RomanizationState {
   /// plain: [plainLines]), null where a line has none (blank, credit, no CJK).
   final List<String?> lines;
   final RomanizationSource? source;
+
+  /// When ready: the lines of the text these [lines] were computed for, joined
+  /// with `\n` (synced: `parseLrc` order; plain: [plainLines]). A view whose
+  /// own text differs must not show them.
+  final String? forText;
 }
 
 /// The lines of an unsynchronised text, as the transliteration is aligned to them.
@@ -100,7 +110,8 @@ class RomanizationResolver {
     final original = isSynced
         ? [for (final l in synced) l.text]
         : plainLines(i.plain ?? '');
-    final script = detectScript(original.join('\n'));
+    final text = original.join('\n');
+    final script = detectScript(text);
     if (!i.enabled || script == null) {
       yield RomanizationState.off;
       return;
@@ -108,7 +119,7 @@ class RomanizationResolver {
     yield RomanizationState.loading;
 
     RomanizationState? ready(RomanizationMatch m, RomanizationSource s) =>
-        m.available ? RomanizationState.ready(m.lines, s) : null;
+        m.available ? RomanizationState.ready(m.lines, s, forText: text) : null;
 
     final manual = i.manual;
     final hit =
@@ -171,7 +182,11 @@ class RomanizationResolver {
         final d = await dictionary(download: i.online);
         final m = d == null ? null : _pinyin(original, d);
         if (m != null && m.available) {
-          yield RomanizationState.ready(m.lines, RomanizationSource.dictionary);
+          yield RomanizationState.ready(
+            m.lines,
+            RomanizationSource.dictionary,
+            forText: text,
+          );
           return;
         }
       }

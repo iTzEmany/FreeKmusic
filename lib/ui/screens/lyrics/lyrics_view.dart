@@ -173,7 +173,12 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     final rom =
         ref.watch(romanizationProvider(track.id)).value ??
         RomanizationState.loading;
-    final romLines = rom.status == RomanizationStatus.ready
+    // Lines worked out for another text (the stream lags a frame) are not shown.
+    final shownCount = _lines.isNotEmpty
+        ? _lines.length
+        : plainLines(track.lyricsPlain ?? '').length;
+    final romLines =
+        rom.status == RomanizationStatus.ready && rom.lines.length == shownCount
         ? rom.lines
         : const <String?>[];
     final notice = switch (rom.status) {

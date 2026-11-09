@@ -146,6 +146,14 @@ void main() {
     expect(r.lines, ['a', 'b', 'c']);
   });
 
+  test('a ready state carries the text its lines were computed for', () async {
+    await cache.put(1, _jaRoman, key: _key);
+    final synced = (await run(input(synced: _jaSynced))).last;
+    expect(synced.forText, 'こんにちは\nさようなら');
+    final plain = (await run(input(plain: '좋아\n\nhello'))).last;
+    expect(plain.forText, '좋아\n\nhello');
+  });
+
   test('Japanese never goes to the Chinese dictionary', () async {
     installed = true;
     dict = PinyinDictionary({'銀行': 'yínháng', '银行': 'yínháng'});
