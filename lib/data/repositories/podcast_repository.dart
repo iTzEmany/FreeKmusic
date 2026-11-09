@@ -33,9 +33,9 @@ class PodcastRepository {
 
   /// Saves a podcast (or refreshes the one with the same address) and its
   /// episodes. Returns the podcast's id. [source] and [sourceId] say where it
-  /// comes from (see [Podcasts.source]); a podcast already there keeps its own.
+  /// comes from (see [Podcasts.source]); a podcast already there keeps its own. [followed] false saves it for listening only.
   Future<int> subscribe(String feedUrl, PodcastFeed feed,
-      {required int now, int source = 0, String? sourceId}) {
+      {required int now, int source = 0, String? sourceId, bool followed = true}) {
     return _db.transaction(() async {
       final existing = await (_db.select(_db.podcasts)
             ..where((p) => p.feedUrl.equals(feedUrl)))
@@ -52,6 +52,7 @@ class PodcastRepository {
               lastCheckedAt: Value(now),
               source: Value(source),
               sourceId: Value(sourceId),
+              followed: Value(followed),
             ));
       } else {
         id = existing.id;
@@ -62,7 +63,8 @@ class PodcastRepository {
             imageUrl: Value(feed.imageUrl),
             language: Value(feed.language),
             lastCheckedAt: Value(now),
-            followed: const Value(true),
+            // Saving without following never unfollows or follows an existing podcast.
+            followed: followed ? const Value(true) : const Value.absent(),
           ),
         );
       }
@@ -173,6 +175,9 @@ class PodcastRepository {
 
   Future<Podcast?> byId(int id) =>
       (_db.select(_db.podcasts)..where((p) => p.id.equals(id))).getSingleOrNull();
+
+  Future<Podcast?> byFeedUrl(String feedUrl) =>
+      (_db.select(_db.podcasts)..where((p) => p.feedUrl.equals(feedUrl))).getSingleOrNull();
 
   Stream<Podcast?> watchById(int id) =>
       (_db.select(_db.podcasts)..where((p) => p.id.equals(id)))

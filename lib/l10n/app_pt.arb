@@ -3712,5 +3712,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "podcastFollow": "Seguir",
+  "podcastFollowing": "A seguir",
+  "podcastFollowLabel": "Seguir {name}",
+  "@podcastFollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastUnfollowLabel": "Deixar de seguir {name}",
+  "@podcastUnfollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastPreviewNote": "Pré-visualização: ainda não o segue. Os episódios ouvem-se em streaming.",
+  "podcastPreviewFollowed": "Agora está nos seus podcasts. O ponto de retoma continua guardado.",
+  "podcastFollowedMsg": "Adicionado aos seus podcasts",
+  "podcastUnfollowedMsg": "Já não o segue. Os episódios continuam disponíveis",
+  "podcastPlayStream": "Reproduzir em streaming: {title}",
+  "@podcastPlayStream": {"placeholders": {"title": {"type": "String"}}},
+  "podcastStreamUnavailable": "Este podcast ainda não pode ser ouvido em streaming.",
+  "podcastUnfollowTitle": "Deixar de seguir?",
+  "podcastUnfollowBody": "{count, plural, one{Tem 1 episódio transferido. Quer manter ou apagar?} other{Tem {count} episódios transferidos. Quer mantê-los ou apagá-los?}}",
+  "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
+  "podcastKeepDownloads": "Manter",
+  "podcastDeleteDownloads": "Apagar"
 }

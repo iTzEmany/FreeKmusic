@@ -11052,6 +11052,90 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Escluso il {date}'**
   String dislikesBlockedOn(String date);
+
+  /// No description provided for @podcastFollow.
+  ///
+  /// In it, this message translates to:
+  /// **'Segui'**
+  String get podcastFollow;
+
+  /// No description provided for @podcastFollowing.
+  ///
+  /// In it, this message translates to:
+  /// **'Segui già'**
+  String get podcastFollowing;
+
+  /// No description provided for @podcastFollowLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Segui {name}'**
+  String podcastFollowLabel(String name);
+
+  /// No description provided for @podcastUnfollowLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Smetti di seguire {name}'**
+  String podcastUnfollowLabel(String name);
+
+  /// No description provided for @podcastPreviewNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Anteprima: non lo segui ancora. Gli episodi si ascoltano in streaming.'**
+  String get podcastPreviewNote;
+
+  /// No description provided for @podcastPreviewFollowed.
+  ///
+  /// In it, this message translates to:
+  /// **'Ora è nei tuoi podcast. Il punto di ripresa resta salvato.'**
+  String get podcastPreviewFollowed;
+
+  /// No description provided for @podcastFollowedMsg.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiunto ai tuoi podcast'**
+  String get podcastFollowedMsg;
+
+  /// No description provided for @podcastUnfollowedMsg.
+  ///
+  /// In it, this message translates to:
+  /// **'Non lo segui più. Gli episodi restano ascoltabili'**
+  String get podcastUnfollowedMsg;
+
+  /// No description provided for @podcastPlayStream.
+  ///
+  /// In it, this message translates to:
+  /// **'Riproduci in streaming: {title}'**
+  String podcastPlayStream(String title);
+
+  /// No description provided for @podcastStreamUnavailable.
+  ///
+  /// In it, this message translates to:
+  /// **'Questo podcast non si ascolta ancora in streaming.'**
+  String get podcastStreamUnavailable;
+
+  /// No description provided for @podcastUnfollowTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Smettere di seguire?'**
+  String get podcastUnfollowTitle;
+
+  /// No description provided for @podcastUnfollowBody.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{Hai 1 episodio scaricato. Vuoi tenerlo o cancellarlo?} other{Hai {count} episodi scaricati. Vuoi tenerli o cancellarli?}}'**
+  String podcastUnfollowBody(int count);
+
+  /// No description provided for @podcastKeepDownloads.
+  ///
+  /// In it, this message translates to:
+  /// **'Tieni'**
+  String get podcastKeepDownloads;
+
+  /// No description provided for @podcastDeleteDownloads.
+  ///
+  /// In it, this message translates to:
+  /// **'Cancella'**
+  String get podcastDeleteDownloads;
 }
 
 class _AppLocalizationsDelegate

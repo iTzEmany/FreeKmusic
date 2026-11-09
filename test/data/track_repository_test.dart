@@ -142,6 +142,18 @@ void main() {
     },
   );
 
+  test('watchResumable: an episode of a podcast that is not followed shows up', () async {
+    final podcastId = await db.into(db.podcasts).insert(PodcastsCompanion.insert(
+        feedUrl: 'https://x/feed', title: 'Show', addedAt: 1, followed: const Value(false)));
+    final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/p/e.mp3', title: 'Ep', albumKey: 'podcast|$podcastId', format: 'mp3', sizeBytes: 1,
+        mtimeMs: 1, addedAt: 1, kind: const Value(1), resumePositionMs: const Value(5000),
+        lastPlayedAt: const Value(9)));
+    await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+        podcastId: podcastId, guid: 'e', title: 'Ep', audioUrl: 'https://x/e.mp3', trackId: Value(trackId)));
+    expect((await repo.watchResumable().first).single.title, 'Ep');
+  });
+
   test('setLyrics byUser marks the text as the user\'s; otherwise no mark', () async {
     await repo.upsertBatch([row('/a.mp3', 'A')]);
     final id = (await db.select(db.tracks).getSingle()).id;

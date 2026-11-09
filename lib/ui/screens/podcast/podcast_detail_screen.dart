@@ -45,12 +45,10 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
 
   Future<void> _refresh({bool onlyIfStale = false}) async {
     if (_refreshing) return;
-    final svc = ref.read(podcastServiceProvider);
+    final ops = ref.read(podcastOpsProvider);
     setState(() => _refreshing = true);
     try {
-      final added = onlyIfStale
-          ? await svc.refreshIfStale(widget.podcastId)
-          : await svc.refresh(widget.podcastId);
+      final added = await ops.refresh(widget.podcastId, onlyIfStale: onlyIfStale);
       if (added != null && mounted && !onlyIfStale) {
         showMsg(context, context.l10n.podcastRefreshed(added));
       }
@@ -90,9 +88,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
       destructive: true,
     );
     if (!ok) return;
-    final rows = await ref.read(podcastEpisodesProvider(p.id).future);
-    ref.read(podcastDownloadsProvider.notifier).cancelAll([for (final r in rows) r.episode.id]);
-    await ref.read(podcastServiceProvider).unsubscribe(p.id);
+    await ref.read(podcastOpsProvider).unsubscribe(p.id);
     if (mounted) Navigator.of(context).maybePop();
   }
 
@@ -332,8 +328,7 @@ class _EpisodeTile extends ConsumerWidget {
                   case _EpisodeAction.heard:
                     await podcastOps.markPlayed(e.id, !e.played);
                   case _EpisodeAction.delete:
-                    final d = await ref.read(episodeDownloaderProvider.future);
-                    await d.deleteFile(e.id);
+                    await podcastOps.deleteEpisodeFile(e.id);
                   case null:
                     break;
                 }

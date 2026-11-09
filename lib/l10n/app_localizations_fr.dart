@@ -6964,4 +6964,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String dislikesBlockedOn(String date) {
     return 'Exclu le $date';
   }
+
+  @override
+  String get podcastFollow => 'Suivre';
+
+  @override
+  String get podcastFollowing => 'Suivi';
+
+  @override
+  String podcastFollowLabel(String name) {
+    return 'Suivre $name';
+  }
+
+  @override
+  String podcastUnfollowLabel(String name) {
+    return 'Ne plus suivre $name';
+  }
+
+  @override
+  String get podcastPreviewNote =>
+      'Aperçu : vous ne le suivez pas encore. Les épisodes se lisent en streaming.';
+
+  @override
+  String get podcastPreviewFollowed =>
+      'Il est maintenant dans vos podcasts. Votre position de reprise reste enregistrée.';
+
+  @override
+  String get podcastFollowedMsg => 'Ajouté à vos podcasts';
+
+  @override
+  String get podcastUnfollowedMsg =>
+      'Vous ne le suivez plus. Les épisodes restent lisibles';
+
+  @override
+  String podcastPlayStream(String title) {
+    return 'Lire en streaming : $title';
+  }
+
+  @override
+  String get podcastStreamUnavailable =>
+      'Ce podcast ne peut pas encore être lu en streaming.';
+
+  @override
+  String get podcastUnfollowTitle => 'Ne plus suivre ?';
+
+  @override
+  String podcastUnfollowBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Vous avez $count épisodes téléchargés. Les garder ou les supprimer ?',
+      one: 'Vous avez 1 épisode téléchargé. Le garder ou le supprimer ?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get podcastKeepDownloads => 'Garder';
+
+  @override
+  String get podcastDeleteDownloads => 'Supprimer';
 }

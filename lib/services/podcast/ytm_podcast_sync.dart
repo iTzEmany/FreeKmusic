@@ -60,6 +60,9 @@ class YtmPodcastSync {
         ],
       );
 
+  /// The show as a feed, read in memory: nothing is saved (the preview of a show not followed).
+  Future<PodcastFeed> peek(String showId) async => _feed(await _read(showId));
+
   /// Subscribes to the show [showId]; again to the same one just refreshes it.
   Future<int> subscribe(String showId) async {
     final page = await _read(showId);

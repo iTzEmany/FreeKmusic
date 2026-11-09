@@ -18,7 +18,7 @@ import '../services/podcast/podcast_cover.dart';
 import '../services/podcast/podcast_models.dart';
 import '../services/podcast/podcast_service.dart';
 import '../services/online/ytm_podcasts.dart';
-import '../services/podcast/ytm_podcast_sync.dart';
+import '../services/podcast/ytm_podcast_sync.dart' show YtmPodcastSync, kPodcastSourceYtm, ytmShowFeedUrl;
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'player_providers.dart';
@@ -89,6 +89,34 @@ final podcastProvider = StreamProvider.family<Podcast?, int>(
 final podcastEpisodesProvider = StreamProvider.family<List<EpisodeRow>, int>(
   (ref, id) => ref.watch(podcastRepositoryProvider).watchEpisodes(id),
 );
+
+/// A show read in memory, not saved: where it comes from and what its feed says.
+class PodcastPreview {
+  const PodcastPreview({required this.feedUrl, required this.feed, this.source = 0, this.sourceId});
+
+  final String feedUrl;
+  final PodcastFeed feed;
+
+  /// See `Podcasts.source`; [sourceId] is the YouTube Music show id.
+  final int source;
+  final String? sourceId;
+}
+
+/// Which show to preview: a feed (Apple search), an Apple id (chart: the feed comes on request) or a YouTube Music id.
+typedef PodcastPreviewKey = ({String? feedUrl, String? appleId, String? ytmId});
+
+/// The feed of a show not followed, kept in memory while its preview is open.
+final podcastPreviewProvider = FutureProvider.autoDispose.family<PodcastPreview, PodcastPreviewKey>((ref, key) async {
+  final ytmId = key.ytmId;
+  if (ytmId != null) {
+    final feed = await ref.read(ytmPodcastSyncProvider).peek(ytmId);
+    return PodcastPreview(feedUrl: ytmShowFeedUrl(ytmId), feed: feed, source: kPodcastSourceYtm, sourceId: ytmId);
+  }
+  final service = ref.read(podcastServiceProvider);
+  final url = key.feedUrl ?? (await service.apple.lookup(key.appleId!))?.feedUrl;
+  if (url == null) throw const PodcastException(PodcastErrorKind.notFeed);
+  return PodcastPreview(feedUrl: url, feed: await service.peek(url));
+}, retry: (_, _) => null);
 
 /// `<appSupportDir>/podcasts`: where episodes live, outside every music folder.
 final podcastsDirProvider = FutureProvider<String>(

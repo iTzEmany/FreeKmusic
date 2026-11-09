@@ -3526,5 +3526,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "podcastFollow": "Follow",
+  "podcastFollowing": "Following",
+  "podcastFollowLabel": "Follow {name}",
+  "@podcastFollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastUnfollowLabel": "Stop following {name}",
+  "@podcastUnfollowLabel": {"placeholders": {"name": {"type": "String"}}},
+  "podcastPreviewNote": "Preview: you do not follow it yet. Episodes play as a stream.",
+  "podcastPreviewFollowed": "It is now in your podcasts. Your place is still saved.",
+  "podcastFollowedMsg": "Added to your podcasts",
+  "podcastUnfollowedMsg": "You no longer follow it. Episodes stay playable",
+  "podcastPlayStream": "Play as a stream: {title}",
+  "@podcastPlayStream": {"placeholders": {"title": {"type": "String"}}},
+  "podcastStreamUnavailable": "This podcast cannot be streamed yet.",
+  "podcastUnfollowTitle": "Stop following?",
+  "podcastUnfollowBody": "{count, plural, one{You have 1 downloaded episode. Keep it or delete it?} other{You have {count} downloaded episodes. Keep them or delete them?}}",
+  "@podcastUnfollowBody": {"placeholders": {"count": {"type": "int"}}},
+  "podcastKeepDownloads": "Keep",
+  "podcastDeleteDownloads": "Delete"
 }

@@ -169,7 +169,7 @@ Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti s
 - Percorso di `dislikes.json` costruito in tre punti (`main.dart`, `backup_providers.dart`, `dislike_store_provider.dart`). Rimedio: `DislikeStore.defaultFile(dir)` come `DownloadIndex.defaultFile`.
 
 ### Bassa
-- Scritture dei podcast dalla UI senza Ops: `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`.
+- Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
 - `PlaylistOrder.apply` viene chiamato dentro `build`.
 - La cache di `artistMergeSearchProvider` non ha limite.

@@ -94,6 +94,14 @@ void main() {
     expect(row.episode.played, isTrue, reason: 'it is still marked as heard');
   });
 
+  test('a podcast that is not followed is never cleaned (D-470)', () async {
+    await repo.setAutoDeleteDays(podcastId, 7);
+    await repo.setFollowed(podcastId, false);
+    final (_, _, path) = await episode('old', played: true, playedDaysAgo: 30);
+    expect(await build().run(), 0);
+    expect(File(path).existsSync(), isTrue);
+  });
+
   test('not heard, heard recently, or never downloaded: untouched', () async {
     await repo.setAutoDeleteDays(podcastId, 7);
     final (_, _, unplayed) = await episode('unplayed');
