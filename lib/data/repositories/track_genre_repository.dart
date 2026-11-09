@@ -22,6 +22,22 @@ class TrackGenreRepository {
     return [for (final r in rows) r.genre];
   }
 
+  /// The genres of every library music track that has rows (not missing, not
+  /// hidden), in tag order: what the daylist ranks with.
+  Future<Map<int, List<String>>> musicGenres() async {
+    final q = _db.select(_db.trackGenres).join([
+      innerJoin(_db.tracks, _db.tracks.id.equalsExp(_db.trackGenres.trackId)),
+    ])
+      ..where(_db.tracks.kind.equals(kMusicKind) & _db.tracks.missing.equals(false) & _db.tracks.ignored.equals(false))
+      ..orderBy([OrderingTerm.asc(_db.trackGenres.position)]);
+    final out = <int, List<String>>{};
+    for (final row in await q.get()) {
+      final g = row.readTable(_db.trackGenres);
+      (out[g.trackId] ??= []).add(g.genre);
+    }
+    return out;
+  }
+
   /// Writes [genres] as the genres of [trackId]; nothing is touched when they are
   /// already there. True when the rows changed.
   Future<bool> replace(int trackId, List<String> genres) => _db.transaction(() async {

@@ -38,12 +38,14 @@ class RadioFill {
   bool _radioAsked = false;
 
   /// Up to [want] suggestions, each as soon as it is found, within
-  /// [maxRequests] radio and search requests of this call.
+  /// [maxRequests] radio and search requests of this call. [accept] refuses a
+  /// row before it counts as found.
   Stream<SuggestionCandidate> take(
     int want, {
     required bool Function(String videoId) inQueue,
     bool Function()? cancelled,
     int maxRequests = 4,
+    bool Function(SuggestionCandidate c)? accept,
   }) async* {
     var found = 0;
     var requests = 0;
@@ -54,6 +56,7 @@ class RadioFill {
         log: log,
         filter: filter,
         lastArtists: _lastArtists,
+        accept: accept,
       );
       if (c != null) {
         found++;

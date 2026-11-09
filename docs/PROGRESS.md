@@ -1413,12 +1413,12 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 103.5 Controlli di fase
 
 ## Fase 104 — Daylist (`fase-104-daylist.md`)
-- [ ] 104.1 Fasce e tabella degli umori
-- [ ] 104.2 `DaylistBuilder`
-- [ ] 104.3 Provider e rigenerazione
-- [ ] 104.4 Card in Home e schermata
-- [ ] 104.5 Impostazioni → Daylist
-- [ ] 104.6 Controlli di fase
+- [x] 104.1 Fasce e tabella degli umori
+- [x] 104.2 `DaylistBuilder`
+- [x] 104.3 Provider e rigenerazione
+- [x] 104.4 Card in Home e schermata
+- [x] 104.5 Impostazioni → Daylist
+- [x] 104.6 Controlli di fase
 
 ## Fase 105 — Chiusura del refactor «ascolto-quotidiano» (`fase-105-chiusura-ascolto.md`)
 - [ ] 105.1 Metriche di arrivo

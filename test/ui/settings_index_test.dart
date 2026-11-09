@@ -16,6 +16,7 @@ const _titles = [
   'Aspetto e lingua',
   'Riproduzione',
   'Libreria',
+  'Daylist',
   'Online e download',
   'Rete e dispositivi',
   'Backup',
@@ -32,7 +33,7 @@ ProviderContainer _container(WidgetTester t) =>
     ProviderScope.containerOf(t.element(find.byType(SettingsScreen)));
 
 void main() {
-  testWidgets('phone index shows 7 entries with summaries', (t) async {
+  testWidgets('phone index shows 8 entries with summaries', (t) async {
     _size(t, 400, 800);
     final h = await Harness.create(t);
     await h.pump(t, const Scaffold(body: SettingsScreen()));
@@ -148,7 +149,7 @@ void main() {
     final summary = find.textContaining('Un tema dal nome');
     expect(summary, findsOneWidget);
     expect(t.widget<Text>(summary).maxLines, 1);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(7));
+    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(8));
     await h.dispose(t);
   });
 

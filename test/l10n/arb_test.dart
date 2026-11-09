@@ -27,6 +27,7 @@ const _sameAsItalian = {
   'radioGenreHipHop', 'radioGenreLoFi', 'radioGenreChillout', 'radioGenreOldies',
   'radioGenreMetal', 'radioGenreReggae', 'radioGenreLatin', 'radioGenreSoul',
   'radioGenreSports', 'reportKindIdea', 'sortAToZ',
+  'daylistTitle', 'settingsPageDaylist', 'daylistSlotRowLabel', 'daylistGenreMoodLabel',
   'recogIdent', 'recogCover', 'jamBrokerPort', 'coverSourceOnline', 'coverSizePx', 'creditRolePiano', 'creditRoleMastering', 'creditsBpm', 'creditsKindEp',
 };
 

@@ -12,6 +12,7 @@ import '../../widgets/empty_state.dart';
 import '../../../providers/folder_actions.dart';
 import '../activity/activity_log_screen.dart';
 import '../settings/settings_screen.dart';
+import '../daylist/daylist_card.dart';
 import 'exportify_card.dart';
 import 'home_blocks.dart';
 import 'home_bottom_rows.dart';
@@ -129,12 +130,15 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                           SizedBox(width: 48),
-                          Expanded(child: ResumeList()),
+                          Expanded(
+                            child: Column(children: [ResumeList(), DaylistCard()]),
+                          ),
                         ],
                       ),
                     ] else ...[
                       ...lead,
                       const ResumeList(),
+                      const DaylistCard(),
                       const AddedLately(),
                     ],
                     HomeBottomRows(wide: wide),
