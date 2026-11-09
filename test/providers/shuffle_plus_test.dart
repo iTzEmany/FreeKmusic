@@ -81,6 +81,9 @@ class _Host implements ShuffleHost {
   set shuffleEnabled(bool v) => _shuffle = v;
   @override
   bool isPlaying = true;
+  @override
+  int get userAhead => real?.userAhead ?? ahead;
+  int ahead = 0;
   int inserts = 0;
   bool insertFails = false;
 
@@ -280,6 +283,48 @@ void main() {
     }
     return seen;
   }
+
+  /// Plays with [play], then replaces the one suggestion with a fresh plan;
+  /// returns where the new suggestion lands.
+  Future<int> replanAfter(FutureOr<void> Function() play) async {
+    cfg = const ShufflePlusConfig(enabled: true, every: 10);
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 11; i++) i]);
+    controller.start();
+    await until(() => host.queueIds.any(isOnlineId));
+    await play();
+    await settle();
+    await host.removeQueueId(host.queueIds.firstWhere(isOnlineId));
+    host.queueIds.addAll([for (var i = 12; i <= 40; i++) i]);
+    host.change();
+    await until(() => host.queueIds.any(isOnlineId));
+    return host.queueIds.indexWhere(isOnlineId);
+  }
+
+  test('a library song skipped before its last 3 s does not bring the '
+      'suggestion closer', () async {
+    final at = await replanAfter(() {
+      for (var i = 0; i < 5; i++) {
+        host.finishAndAdvance(toTheEnd: false);
+      }
+    });
+    expect(at, 14);
+  });
+
+  test('a song of the queue block does not count as a listen', () async {
+    final at = await replanAfter(() async {
+      host.ahead = 2; // the controller sees the block before it is played
+      host.change();
+      await settle();
+      host.ahead = 1;
+      host.finishAndAdvance();
+      await settle();
+      host.ahead = 0;
+      host.finishAndAdvance();
+    });
+    expect(at, 11);
+  });
 
   test(
     'with the option off nothing is asked and nothing is inserted',

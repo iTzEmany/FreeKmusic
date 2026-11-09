@@ -34,6 +34,8 @@ class _Host implements ShuffleHost {
   bool shuffleEnabled = true;
   @override
   bool isPlaying = true;
+  @override
+  int userAhead = 0;
   final changesC = StreamController<void>.broadcast(sync: true);
 
   @override

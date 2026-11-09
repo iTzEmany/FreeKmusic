@@ -158,6 +158,8 @@ class ShufflePlusController {
 
   int? _curId;
   int _played = 0;
+  int _ahead = 0;
+  bool _curFromBlock = false;
   final _maxPos = <int, Duration>{};
   final _duration = <int, Duration>{};
   final _mine = <int>{};
@@ -289,18 +291,31 @@ class ShufflePlusController {
   /// Counts songs passed and closes the suggestion that was playing.
   Future<void> _followCurrent() async {
     final cur = _current;
+    final ahead = _ahead;
+    _ahead = host.userAhead;
     if (cur == _curId) return;
     final prev = _curId;
+    final prevFromBlock = _curFromBlock;
     _curId = cur;
+    // The block shrinks when its first entry becomes the current song.
+    _curFromBlock = _ahead < ahead;
     // Only our own suggestions leave the queue: a radio station or a stream
     // the user picked stays, so next and previous can come back to it.
     if (prev != null && _mine.contains(prev)) {
       await _finish(prev);
     } else if (prev != null) {
-      _maxPos.remove(prev);
-      _duration.remove(prev);
+      final pos = _maxPos.remove(prev) ?? Duration.zero;
+      final length = _duration.remove(prev);
+      // A library song left before its last 3 s is a skip: it gives its
+      // count back (D-489, D-497). Block entries never counted.
+      if (!prevFromBlock &&
+          length != null &&
+          pos < length - const Duration(seconds: 3)) {
+        _played = max(0, _played - 1);
+      }
     }
-    if (cur != null) _played = _mine.contains(cur) ? 0 : _played + 1;
+    if (cur != null && !_mine.contains(cur) && !_curFromBlock) _played++;
+    if (cur != null && _mine.contains(cur)) _played = 0;
   }
 
   Future<void> _finish(int id) async {
@@ -418,6 +433,7 @@ class ShufflePlusController {
     config().every.clamp(3, 10),
     playedSinceLast: _played,
     max: maxAhead,
+    skip: host.userAhead,
   );
 
   /// True when one more was inserted (the plan may have more slots).
@@ -461,6 +477,7 @@ class ShufflePlusController {
       }
     }
     // The queue may have changed while the radio was asked for.
+    await _followCurrent();
     final plan = _plan();
     if (plan.isEmpty) return false;
     final at = plan.first;

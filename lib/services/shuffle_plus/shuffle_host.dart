@@ -14,6 +14,9 @@ abstract interface class ShuffleHost {
   bool get shuffleEnabled;
   bool get isPlaying;
 
+  /// How many entries right after the current one are the user's queue block.
+  int get userAhead;
+
   /// Fires when the queue, the current song, shuffle or play/pause change.
   Stream<void> get changes;
   Stream<Duration> get positionStream;

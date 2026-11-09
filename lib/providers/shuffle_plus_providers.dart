@@ -110,6 +110,8 @@ class HandlerShuffleHost implements ShuffleHost {
   bool get shuffleEnabled => _h.shuffleEnabled;
   @override
   bool get isPlaying => _h.isPlaying;
+  @override
+  int get userAhead => _h.userAhead;
 
   @override
   Stream<void> get changes {

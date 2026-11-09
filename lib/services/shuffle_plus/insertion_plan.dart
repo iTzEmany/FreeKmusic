@@ -7,18 +7,20 @@ import '../audio/online_entries.dart' show isOnlineId;
 /// last suggestion, the current one included; a suggestion comes after
 /// [every] − 1 of them (every 4: three of yours, then one suggested). Online
 /// ids already after the current song are filled slots and count towards
-/// [max]. A slot is never past the end: a suggestion is never the last thing.
+/// [max]. [skip] entries right after the current song (the user's queue
+/// block) are passed over: slots start after them. A slot is never past the end: a suggestion is never the last thing.
 List<int> plusPlan(
   List<int> items,
   int currentIndex,
   int every, {
   int playedSinceLast = 1,
   int max = 3,
+  int skip = 0,
 }) {
   final plan = <int>[];
   if (currentIndex < 0 || currentIndex >= items.length) return plan;
-  var count = playedSinceLast, filled = 0, pos = currentIndex;
-  for (var i = currentIndex + 1; i < items.length && filled < max; i++) {
+  var count = playedSinceLast, filled = 0, pos = currentIndex + skip;
+  for (var i = currentIndex + 1 + skip; i < items.length && filled < max; i++) {
     pos++;
     if (isOnlineId(items[i])) {
       count = 0;
