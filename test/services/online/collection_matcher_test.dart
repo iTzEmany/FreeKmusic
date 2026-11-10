@@ -225,4 +225,32 @@ void main() {
     expect(await budgetedYtm<int>(cooldown, cerca, () async => 1), 1);
     expect(cerca.recent, 1);
   });
+
+  test('a network failure is a transient not-found', () async {
+    youtube.onSearch = (_) => throw const YtException(YtErrorKind.network);
+    final r = await run(build(), [time]);
+    expect((r.single.$2 as TrackNotFound).transient, isTrue);
+  });
+
+  test('closing the page during a wait: no further search, nothing yielded', () async {
+    for (var i = 0; i < kLinkMatchPerMinute; i++) {
+      limiter.tryAcquire(); // budget used up: the matcher waits
+    }
+    late CollectionMatcher m;
+    m = CollectionMatcher(
+      youtube: youtube,
+      cooldown: cooldown,
+      limiter: limiter,
+      library: () => null,
+      trackById: (id) async => libTrack(id),
+      thresholds: () => throw StateError('Ref disposed'),
+      gap: Duration.zero,
+      wait: (d) async {
+        m.cancel();
+        clock = clock.add(d);
+      },
+    );
+    expect(await run(m, [time, other]), isEmpty);
+    expect(youtube.calls, isEmpty);
+  });
 }

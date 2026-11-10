@@ -92,11 +92,11 @@ final externalReaderProvider = Provider.family<ExternalReader, ExternalService>(
   },
 );
 
-/// What each external page has already matched (by row index), for the whole
+/// What each external page has already matched (by [ExternalTrack.fingerprint]), for the whole
 /// session: a page left and reopened goes on from there (D-525, D-530). Not
 /// autoDispose on purpose; never written to disk.
 final resolvedMatchesProvider =
-    Provider.family<Map<int, TrackMatch>, OnlineCollectionRef>((ref, r) => {});
+    Provider.family<Map<String, TrackMatch>, OnlineCollectionRef>((ref, r) => {});
 
 final onlineCollectionProvider =
     FutureProvider.autoDispose.family<CollectionPage, OnlineCollectionRef>(
@@ -121,7 +121,7 @@ Future<CollectionPage> _readExternal(Ref ref, ExternalRef r) async {
   final c = await ref.read(externalReaderProvider(link.service)).read(link, cancelToken: cancel);
   final done = ref.read(resolvedMatchesProvider(r));
   return CollectionPage(c, [
-    for (var i = 0; i < c.tracks.length; i++) done[i] ?? const TrackPending(),
+    for (var i = 0; i < c.tracks.length; i++) done[c.tracks[i].fingerprint] ?? const TrackPending(),
   ]);
 }
 
@@ -130,17 +130,20 @@ Future<CollectionPage> _readExternal(Ref ref, ExternalRef r) async {
 final onlineMatchesProvider =
     StreamProvider.autoDispose.family<List<TrackMatch>, OnlineCollectionRef>((ref, r) async* {
   final page = await ref.watch(onlineCollectionProvider(r).future);
-  final matches = List.of(page.matches);
+  final done = ref.read(resolvedMatchesProvider(r));
+  final matches = [
+    for (var i = 0; i < page.matches.length; i++)
+      done[page.collection.tracks[i].fingerprint] ?? page.matches[i],
+  ];
   yield List.of(matches);
   final todo = [
     for (var i = 0; i < matches.length; i++)
       if (matches[i] is TrackPending) i,
   ];
   if (todo.isEmpty) return;
-  final done = ref.read(resolvedMatchesProvider(r));
   final matcher = ref.watch(collectionMatcherProvider(r));
   await for (final (j, m) in matcher.match([for (final i in todo) page.collection.tracks[i]])) {
-    done[todo[j]] = m;
+    if (!(m is TrackNotFound && m.transient)) done[page.collection.tracks[todo[j]].fingerprint] = m;
     matches[todo[j]] = m;
     yield List.of(matches);
   }
@@ -155,8 +158,8 @@ Future<bool> refreshOnlineCollection(WidgetRef ref, OnlineCollectionRef r) async
         final _ = await ref.refresh(playlistListingProvider(url).future);
       case ExternalRef():
         // Matches already made are kept: only the unresolved rows are asked again.
-        ref.invalidate(onlineCollectionProvider(r));
-        ref.invalidate(onlineMatchesProvider(r));
+        // The matches provider rebuilds by itself from the new page.
+        final _ = await ref.refresh(onlineCollectionProvider(r).future);
     }
     return true;
   } on Object catch (e, st) {

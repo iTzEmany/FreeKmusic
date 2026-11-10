@@ -173,13 +173,18 @@ class DeezerClient {
   Future<Map<dynamic, dynamic>> _getPaged(String url, {CancelToken? cancel}) async {
     for (var attempt = 0;; attempt++) {
       await _limiter.wait();
-      final body = await _web.getJson(url, cancel: cancel);
+      final Object? body;
+      try {
+        body = await _web.getJson(url, cancel: cancel);
+      } on RateLimitedException {
+        throw DeezerNetworkException(url);
+      }
       // Null is the network (Deezer never answers a bare 404).
       if (body is! Map) throw DeezerNetworkException(url);
       final err = body['error'];
       if (err is! Map) return body;
       final code = err['code'];
-      if (code == 800 || code == 403) throw const CollectionNotFound();
+      if (code == 800 || code == 403 || code == 200 || code == 300) throw const CollectionNotFound();
       if (code == 4 && attempt < 3) {
         AppLog.w('Deezer quota exceeded while reading a link: retry in 5 s');
         await _pause(const Duration(seconds: 5));

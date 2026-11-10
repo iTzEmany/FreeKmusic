@@ -75,11 +75,11 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
 
   /// Rows matched after Play go to the end of the queue while it still comes from this page (D-525).
   void _extendQueue(List<TrackMatch>? matches) {
-    final queued = _queued, c = ref.read(onlineCollectionProvider(widget.source)).value?.collection;
+    final c = ref.read(onlineCollectionProvider(widget.source)).value?.collection;
+    final queued = _queued, ctrl = ref.read(playerControllerProvider);
     if (queued == null || matches == null || c == null) return;
-    final now = ref.read(playContextProvider), mine = _contextOf(c);
-    if (now?.kind != mine.kind || now?.name != mine.name) return;
-    final ctrl = ref.read(playerControllerProvider);
+    // A library playlist with the same name is another list: the keyed Play tells them apart.
+    if (!ctrl.isPlayingList('online-collection:${c.sourceUrl}')) return;
     for (var i = 0; i < matches.length; i++) {
       final m = matches[i];
       if (m is! TrackReady || !queued.add(i)) continue;
@@ -143,8 +143,13 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
         songs.add(m.result);
       }
     }
-    final anyReady = data?.matches.any((m) => m is TrackReady) ?? false;
+    // In a Jam only online songs can be sent (playOrQueueOnline).
+    final anyReady = _external && ref.read(playerControllerProvider).inJam
+        ? songs.isNotEmpty
+        : data?.matches.any((m) => m is TrackReady) ?? false;
     final l = context.l10n;
+    // Exportify only helps with Spotify; a short link's service is not known yet.
+    final exportify = source is ExternalRef && source.link?.service == ExternalService.spotify;
     return OnlinePageFrame(
       title: c?.title ?? '',
       selectionKey: listKey,
@@ -193,8 +198,8 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
             child: CatalogErrorView(
               error: page.error!,
               onRetry: () => retryOnlineCollection(ref, source),
-              onSearch: _external ? () => unawaited(startCsvImport(context, ref)) : null,
-              searchLabel: _external ? l.extExportifyFull : null,
+              onSearch: exportify ? () => unawaited(startCsvImport(context, ref)) : null,
+              searchLabel: exportify ? l.extExportifyFull : null,
             ),
           )
         else

@@ -95,6 +95,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
   }
 
   void _search({bool refresh = false}) {
+    _linkSerial++; // a newer search drops a link still being resolved
     final q = widget.query.trim();
     if (q.isEmpty) return;
     final external = classifyQuery(q);
@@ -166,11 +167,14 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         : OnlineCollectionRef.shortLink(q.url!);
     try {
       if (link == null) {
-        link = parseExternalLink(await ref.read(shortLinkResolverProvider).resolve(q.url!));
+        final resolved = await ref.read(shortLinkResolverProvider).resolve(q.url!);
+        if (!mounted) return;
+        link = parseExternalLink(resolved);
         if (link != null) page = OnlineCollectionRef.external(link);
       }
       if (link != null && link.kind == ExternalLinkKind.track) {
         final c = await ref.read(externalReaderProvider(link.service)).read(link);
+        if (!mounted) return;
         final key = Object();
         final sub = ref.listenManual(collectionMatcherProvider(key), (_, _) {});
         TrackMatch? m;
@@ -193,7 +197,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
             return;
           case _:
             // The page shows this one row as not found without matching it again.
-            if (m != null) ref.read(resolvedMatchesProvider(page))[0] = m;
+            if (m != null) ref.read(resolvedMatchesProvider(page))[c.tracks.first.fingerprint] = m;
         }
       }
     } on Object catch (e, st) {

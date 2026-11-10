@@ -56,8 +56,13 @@ class CollectionMatcher {
       } on _Cancelled {
         return;
       } on Object catch (e, st) {
+        // The page was closed while the search ran: the Ref may be gone too.
+        if (_cancelled) return;
         AppLog.e('link match failed for ${tracks[i].title}', e, st);
-        yield (i, const TrackNotFound());
+        // Offline or no yt-dlp: not final, a reopened page asks again.
+        final transient = e is YtException &&
+            (e.kind == YtErrorKind.network || e.kind == YtErrorKind.toolMissing);
+        yield (i, TrackNotFound(transient: transient));
       }
     }
   }

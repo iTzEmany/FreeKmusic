@@ -26,7 +26,12 @@ class ShortLinkResolver {
     final seen = <String>{};
     var current = url;
     for (var hop = 0; hop <= _maxHops; hop++) {
-      final uri = Uri.parse(current);
+      final Uri uri;
+      try {
+        uri = Uri.parse(current);
+      } on FormatException catch (e) {
+        throw CollectionUnreadable(e);
+      }
       if (!seen.add(uri.host)) throw const CollectionNotFound();
       final Response<dynamic> r;
       try {
@@ -39,15 +44,22 @@ class ShortLinkResolver {
       if (code >= 300 && code < 400) {
         final loc = r.headers.value('location');
         if (loc == null) throw const CollectionNotFound();
-        final next = uri.resolve(loc).toString();
+        final String next;
+        try {
+          next = uri.resolve(loc).toString();
+        } on FormatException catch (e) {
+          throw CollectionUnreadable(e);
+        }
         // A redirect already on its final page host ends the chain.
         if (parseExternalLink(next) != null) return next;
         current = next;
         continue;
       }
+      if (code == 429 || code >= 500) throw CollectionUnreadable('HTTP $code');
       if (code == 200) {
-        final m = _spotifyInBody.firstMatch('${r.data}');
-        if (m != null) return m.group(0)!;
+        for (final m in _spotifyInBody.allMatches('${r.data}')) {
+          if (parseExternalLink(m.group(0)!) != null) return m.group(0)!;
+        }
       }
       throw const CollectionNotFound();
     }

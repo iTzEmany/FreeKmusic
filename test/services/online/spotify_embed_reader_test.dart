@@ -93,4 +93,27 @@ void main() {
     expect(c.tracks.length, SpotifyEmbedReader.embedLimit);
     expect(c.truncated, isTrue);
   });
+
+  test('a comma without a no-break space stays inside an artist name', () async {
+    const json = '{"props":{"pageProps":{"state":{"data":{"entity":{"title":"P","trackList":['
+        '{"title":"S","subtitle":"Tyler, The Creator","uri":"u1","duration":1000},'
+        '{"title":"T","subtitle":"A,\u00A0B","uri":"u2","duration":1000}]}}}}}}';
+    final c = await read('<script id="__NEXT_DATA__" type="application/json">$json</script>',
+        ExternalLinkKind.playlist);
+    expect(c.tracks[0].artists, ['Tyler, The Creator']);
+    expect(c.tracks[1].artists, ['A', 'B']);
+  });
+
+  test('a 403 or 429 is an unavailable page', () async {
+    await expectLater(
+        SpotifyEmbedReader(_Limited()).read(_link(ExternalLinkKind.playlist)),
+        throwsA(isA<WebUnavailableException>()));
+  });
+}
+
+class _Limited extends _Web {
+  _Limited() : super(null);
+  @override
+  Future<List<int>?> getBytes(String url, {int maxBytes = 0, CancelToken? cancel}) async =>
+      throw const RateLimitedException(429);
 }

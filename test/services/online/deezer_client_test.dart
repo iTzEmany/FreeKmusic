@@ -246,6 +246,38 @@ void main() {
       expect(one.tracks.length, 1);
     });
   });
+
+  group('link reading errors', () {
+    const base = 'https://api.deezer.com';
+    DeezerClient client(WebClient web) =>
+        DeezerClient(web, limiter: RateLimiter(minGap: Duration.zero), pause: (_) async {});
+    Object err(int code) => {'error': {'type': 'x', 'message': 'm', 'code': code}};
+
+    test('codes 200 and 300 are a private or missing collection', () async {
+      for (final code in [200, 300]) {
+        await expectLater(client(_Web(err(code))).playlist(1), throwsA(isA<CollectionNotFound>()));
+      }
+    });
+
+    test('codes 100 and 700 are a network error', () async {
+      for (final code in [100, 700]) {
+        await expectLater(client(_Web(err(code))).playlist(1), throwsA(isA<DeezerNetworkException>()));
+      }
+    });
+
+    test('a 403 from the web client is a network error', () async {
+      await expectLater(client(_Throwing()).playlist(1), throwsA(isA<DeezerNetworkException>()));
+    });
+
+    test('a `next` on another host is not followed', () async {
+      final web = _Web(null, byUrl: {
+        '$base/album/1': {'title': 'A'},
+        '$base/album/1/tracks?limit=100': {'data': [], 'next': 'https://evil.test/x'},
+      });
+      await client(web).albumTracks(1);
+      expect(web.urls, isNot(contains('https://evil.test/x')));
+    });
+  });
 }
 
 /// Serves [answers] one per request.
@@ -264,4 +296,12 @@ class _Seq extends _Web {
     calls++;
     return queue.removeAt(0);
   }
+}
+
+class _Throwing extends _Web {
+  _Throwing() : super(null);
+  @override
+  Future<Object?> getJson(String url,
+          {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async =>
+      throw const RateLimitedException(403);
 }

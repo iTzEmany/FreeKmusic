@@ -65,10 +65,14 @@ PlaylistListing _listing({bool truncated = false}) => PlaylistListing(
 class _MixCtrl extends _Ctrl {
   final mixed = <List<String>>[];
   final enqueued = <String>[];
+  bool playing = false;
+  @override
+  bool isPlayingList(Object key) => playing;
   @override
   Future<void> playMixed(List<MixItem> items,
       {int? index, PlayContext? context, bool? shuffle, Object? listKey}) async {
     mixed.add([for (final i in items) i.online!.id]);
+    playing = true;
   }
 
   @override
@@ -116,14 +120,14 @@ void externalTests() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-  Future<void> showExt(WidgetTester tester, ExternalCollection c, {Object? error}) async {
+  Future<void> showExt(WidgetTester tester, ExternalCollection c, {Object? error, ExternalService service = ExternalService.deezer}) async {
     tester.view.physicalSize = const Size(500, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     ctrl = _MixCtrl();
     matcher = _Matcher();
     h = await Harness.create(tester);
-    await h.pump(tester, const OnlinePlaylistScreen(OnlineCollectionRef.external(link)),
+    await h.pump(tester, OnlinePlaylistScreen(OnlineCollectionRef.external(ExternalLink(service, link.kind, link.id))),
         extraOverrides: [
           externalReaderProvider.overrideWith((ref, s) => _Reader(c, error: error)),
           collectionMatcherProvider.overrideWith((ref, page) => matcher),
@@ -178,9 +182,20 @@ void externalTests() {
     expect(ctrl.mixed, [
       ['y0']
     ]);
-    h.handler.setPlayContext(PlayContextKind.playlist.index, 'Mix');
     await emit(tester, 2, TrackReady.online(ytmSong('y2', 'Three found')));
     expect(ctrl.enqueued, ['y2']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('another list with the same name started later gets no rows', (tester) async {
+    await showExt(tester, _ext());
+    await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
+    await tester.tap(find.byKey(const ValueKey('playlist-play')));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    ctrl.playing = false; // a library playlist with the same name started since
+    await emit(tester, 2, TrackReady.online(ytmSong('y2', 'Three found')));
+    expect(ctrl.enqueued, isEmpty);
     await h.dispose(tester);
   });
 
@@ -213,11 +228,15 @@ void externalTests() {
     await h.dispose(tester);
   });
 
-  testWidgets('no network offers «Riprova»; an unreadable page offers Exportify', (tester) async {
+  testWidgets('no network offers «Riprova»; an unreadable Spotify page offers Exportify, a Deezer one not',
+      (tester) async {
     await showExt(tester, _ext(), error: const DeezerNetworkException('u'));
     expect(find.byKey(const ValueKey('error-retry')), findsOneWidget);
     await h.dispose(tester);
     await showExt(tester, _ext(), error: const CollectionUnreadable());
+    expect(find.byKey(const ValueKey('error-search')), findsNothing);
+    await h.dispose(tester);
+    await showExt(tester, _ext(), error: const CollectionUnreadable(), service: ExternalService.spotify);
     expect(find.byKey(const ValueKey('error-search')), findsOneWidget);
     await h.dispose(tester);
   });

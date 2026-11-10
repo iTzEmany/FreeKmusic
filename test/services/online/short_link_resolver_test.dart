@@ -64,4 +64,25 @@ void main() {
     });
     expect(await r.resolve('https://spotify.link/x'), 'https://open.spotify.com/playlist/p1');
   });
+
+  test('a relative Location is resolved against the current page', () async {
+    final r = _resolver({
+      'spotify.link': _to('/playlist/abc'),
+      'open.spotify.com': _to('https://open.spotify.com/playlist/abc'),
+    });
+    expect(await r.resolve('https://open.spotify.com/x'), 'https://open.spotify.com/playlist/abc');
+  });
+
+  test('a link in the body that is not a page is skipped', () async {
+    final r = _resolver({
+      'spotify.link': () => ResponseBody.fromString(
+          '<a href="https://open.spotify.com/user/u1">x</a> https://open.spotify.com/album/a1', 200),
+    });
+    expect(await r.resolve('https://spotify.link/x'), 'https://open.spotify.com/album/a1');
+  });
+
+  test('429 is unreadable, not not-found', () async {
+    final r = _resolver({'spotify.link': () => ResponseBody.fromString('', 429)});
+    await expectLater(r.resolve('https://spotify.link/x'), throwsA(isA<CollectionUnreadable>()));
+  });
 }

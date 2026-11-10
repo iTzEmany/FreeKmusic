@@ -51,6 +51,9 @@ class ExternalTrack {
   /// Stable id of the song inside its collection.
   final String key;
 
+  /// Identifies the song across two reads of the same page (the order may change).
+  String get fingerprint => '$title\u0000${artists.join(',')}\u0000$durationMs';
+
   ImportRow toImportRow(int index) => ImportRow(
         index: index,
         title: title,
@@ -106,5 +109,8 @@ class TrackReadyLibrary extends TrackReady {
 }
 
 class TrackNotFound extends TrackMatch {
-  const TrackNotFound();
+  const TrackNotFound({this.transient = false});
+
+  /// Failed for a passing reason (offline): not kept by the session cache.
+  final bool transient;
 }

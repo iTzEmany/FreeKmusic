@@ -31,6 +31,8 @@ class SpotifyEmbedReader implements ExternalReader {
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) rethrow;
       throw WebUnavailableException(url, e.response?.statusCode);
+    } on RateLimitedException catch (e) {
+      throw WebUnavailableException(url, e.statusCode);
     }
     if (bytes == null) throw const CollectionNotFound();
     final json = _nextData.firstMatch(utf8.decode(bytes, allowMalformed: true))?.group(1);
@@ -99,8 +101,9 @@ class SpotifyEmbedReader implements ExternalReader {
   }
 
   /// The subtitle joins artists with a comma and a no-break space.
+  /// Without the no-break space the comma belongs to a name («Tyler, The Creator»).
   static List<String> _artists(String subtitle) => [
-    for (final a in subtitle.split(',')) if (a.trim().isNotEmpty) a.trim(),
+    for (final a in subtitle.split(',\u00A0')) if (a.trim().isNotEmpty) a.trim(),
   ];
 
   static int? _ms(Object? v) => v is num && v > 0 ? v.toInt() : null;

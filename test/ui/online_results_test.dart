@@ -1,3 +1,9 @@
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
+import 'package:codecore/services/online/external_links.dart';
+import 'package:codecore/services/online/external_collection.dart';
+import 'package:codecore/services/online/collection_matcher.dart';
+import 'package:codecore/providers/online_collection_providers.dart';
 import 'package:codecore/data/db/app_database.dart' show Track;
 import 'dart:async';
 
@@ -486,6 +492,38 @@ void main() {
     },
   );
 
+  testWidgets('a link that resolves after a newer search plays and opens nothing', (tester) async {
+    final spy = _PlaySpy();
+    final gate = Completer<ExternalCollection>();
+    final query = ValueNotifier('https://www.deezer.com/track/1');
+    final h = await open(
+      tester,
+      page: Scaffold(
+        body: ValueListenableBuilder<String>(
+          valueListenable: query,
+          builder: (_, q, _) => OnlineResults(query: q, submitted: q.startsWith('http') ? 1 : 2),
+        ),
+      ),
+      more: [
+        playerControllerProvider.overrideWithValue(spy),
+        externalReaderProvider.overrideWith((ref, s) => _GateReader(gate.future)),
+        collectionMatcherProvider.overrideWith((ref, p) => _OneShotMatcher(ytmSong('late', 'Late'))),
+      ],
+    );
+    query.value = 'pink floyd';
+    await _settle(tester);
+    gate.complete(const ExternalCollection(
+      title: 'T',
+      kind: CollectionKind.playlist,
+      sourceUrl: 'https://www.deezer.com/track/1',
+      tracks: [ExternalTrack(title: 'Late', artists: ['A'], key: 'k')],
+    ));
+    await _settle(tester);
+    expect(spy.played, isEmpty);
+    expect(find.byType(OnlinePlaylistScreen), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets('a YouTube Music album link opens the album page', (tester) async {
     final h = await open(
       tester,
@@ -513,3 +551,22 @@ Finder _filter(String label) => find.descendant(
   of: find.byType(SegmentedBlocks<MediaKind?>),
   matching: find.text(label),
 );
+
+class _GateReader implements ExternalReader {
+  _GateReader(this.result);
+  final Future<ExternalCollection> result;
+  @override
+  Future<ExternalCollection> read(ExternalLink link, {CancelToken? cancelToken}) => result;
+}
+
+class _OneShotMatcher implements CollectionMatcher {
+  _OneShotMatcher(this.song);
+  final YtResult song;
+  @override
+  Stream<(int, TrackMatch)> match(List<ExternalTrack> tracks) =>
+      Stream.value((0, TrackReady.online(song)));
+  @override
+  void cancel() {}
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
