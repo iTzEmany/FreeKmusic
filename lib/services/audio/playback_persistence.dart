@@ -7,18 +7,31 @@ import 'online_entries.dart';
 
 /// The queue as saved: online entries do not survive a restart, so they are
 /// dropped. [index] points to the current library track, or, when the current
-/// one is online, to the library track that followed it.
-({List<int> ids, int index}) savedQueue(List<int> ids, int index) {
+/// one is online, to the library track that followed it. [userAhead] is the
+/// block length after the current entry; it comes back without the online
+/// entries, and without the online current (the restored current is the first
+/// library entry after it, which the count included).
+({List<int> ids, int index, int userAhead}) savedQueue(
+  List<int> ids,
+  int index, {
+  int userAhead = 0,
+}) {
   final kept = [
     for (final id in ids)
       if (!isOnlineId(id)) id,
   ];
-  if (kept.isEmpty) return (ids: kept, index: 0);
+  if (kept.isEmpty) return (ids: kept, index: 0, userAhead: 0);
   var at = 0;
   for (var i = 0; i < ids.length && i < index; i++) {
     if (!isOnlineId(ids[i])) at++;
   }
-  return (ids: kept, index: at.clamp(0, kept.length - 1));
+  var ahead = ids
+      .skip(index + 1)
+      .take(userAhead)
+      .where((id) => !isOnlineId(id))
+      .length;
+  if (ahead > 0 && index < ids.length && isOnlineId(ids[index])) ahead--;
+  return (ids: kept, index: at.clamp(0, kept.length - 1), userAhead: ahead);
 }
 
 /// Debounced (2 s) save of queue/position/volume so playback can resume.
@@ -125,16 +138,7 @@ class PlaybackPersistence {
     if (_held) return;
     try {
       final ids = _handler.queueIds, cur = _handler.currentIndex < 0 ? 0 : _handler.currentIndex;
-      final q = savedQueue(ids, cur);
-      // Online entries are dropped from the save, so the block shrinks with them.
-      var ahead = ids
-          .skip(cur + 1)
-          .take(_handler.userAhead)
-          .where((id) => !isOnlineId(id))
-          .length;
-      // An online current is dropped too: the restored current is the first
-      // library entry after it, which the count above included.
-      if (ahead > 0 && isOnlineId(ids[cur])) ahead--;
+      final q = savedQueue(ids, cur, userAhead: _handler.userAhead);
       await _store.writePlayback(SavedPlayback(
         queueIds: q.ids,
         index: q.index,
@@ -144,7 +148,7 @@ class PlaybackPersistence {
         repeat: _handler.repeatMode,
         contextKind: _handler.playContext?.kind,
         contextName: _handler.playContext?.name,
-        userAhead: ahead,
+        userAhead: q.userAhead,
       ));
     } on Object catch (e, st) {
       AppLog.w('persist playback failed', e, st);

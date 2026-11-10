@@ -22,6 +22,9 @@ import 'suggestion_log.dart';
 import 'suggestion_pool.dart';
 
 /// The user's choices (settings, phase 31.12).
+/// A track counts as heard once it played to within this much of its end (D-497).
+const _heardTail = Duration(seconds: 3);
+
 class ShufflePlusConfig {
   const ShufflePlusConfig({
     this.enabled = false,
@@ -305,11 +308,11 @@ class ShufflePlusController {
     } else if (prev != null) {
       final pos = _maxPos.remove(prev) ?? Duration.zero;
       final length = _duration.remove(prev) ?? _libraryLength(prev);
-      // A library song left before its last 3 s is a skip: it gives its
+      // A library song left before its last 3 s (_heardTail) is a skip: it gives its
       // count back (D-489, D-497). Block entries never counted.
       if (!prevFromBlock &&
           length != null &&
-          pos < length - const Duration(seconds: 3)) {
+          pos < length - _heardTail) {
         _played = max(0, _played - 1);
       }
     }
@@ -334,7 +337,7 @@ class ShufflePlusController {
     final length = _duration.remove(id);
     if (entry != null) {
       final heard =
-          length != null && pos >= length - const Duration(seconds: 3);
+          length != null && pos >= length - _heardTail;
       if (pos >= const Duration(seconds: 10)) _errors = 0;
       if (log.latest(entry.result.id)?.outcome == SuggestionOutcome.queued) {
         log.setOutcome(

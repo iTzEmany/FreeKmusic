@@ -43,8 +43,10 @@ class OnlineQueueRow extends ConsumerWidget {
     required this.track,
     required this.onTap,
     this.reorderIndex,
+    this.current,
   });
 
+  final bool? current;
   final Track track;
   final VoidCallback onTap;
   final int? reorderIndex;
@@ -54,11 +56,12 @@ class OnlineQueueRow extends ConsumerWidget {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     final l = context.l10n;
-    final isCurrent = ref.watch(
+    final byId = ref.watch(
       currentTrackProvider.select(
         (_) => ref.read(audioHandlerProvider).currentQueueId == track.id,
       ),
     );
+    final isCurrent = current ?? byId;
     final i = reorderIndex;
     final radio = radioOfTrack(ref, track);
     final suggested =

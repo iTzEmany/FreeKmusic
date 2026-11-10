@@ -11,7 +11,7 @@
 ### 108.1 — Via «Riproduci dopo» (F-131, D-487; analisi «Arrivo» passo 1, Rete riga A)
 - UI: `widgets/track_actions.dart:255-261,595-605`, `widgets/bulk_actions.dart:111-125`. Backend: `PlayerController.playNext`/`playOnlineNext` (`player_providers.dart:382-386,525-531`), `CodecoreAudioHandler.playNext` (`:1727-1733`), `PlayQueue.insertNext` (`play_queue.dart:313`). ARB: `playNext`, `playNextDone`, `playNextMany` in it, en, de, es, fr, pt (`lib/l10n/`; poi `flutter gen-l10n`).
 - Test: togliere `play_queue_test.dart:115,122`; sostituire `insertNext`/`playNext` con `append`/`insertAt` in `play_queue_test.dart:160,199,292,319`, `gapless_handler_test.dart:75,144,154`, `play_online_test.dart:93-96,313,317`, `play_online_jam_test.dart:98,100,158`; fake di `online_song_row_test.dart:50`; menu in `track_actions_test.dart:253`, `menus_characterization_test.dart`, `all_tracks_screen_test.dart:89`, `selection_bar_test.dart:181`.
-- Controllo: `grep -rniE "playNext|playOnlineNext|insertNext" lib test` = 0 righe. Android Auto, MPRIS, SMTC non lo espongono (verificato in analisi).
+- Controllo: `grep -rniE "playNext|playOnlineNext|insertNext" --exclude=play_queue_characterization_test.dart lib test` = 0 righe. Android Auto, MPRIS, SMTC non lo espongono (verificato in analisi).
 - Comando: `flutter test test/services/audio/play_queue_test.dart test/services/audio/gapless_handler_test.dart test/providers/play_online_test.dart test/providers/play_online_jam_test.dart test/ui/online_song_row_test.dart test/ui/track_actions_test.dart test/ui/menus_characterization_test.dart test/ui/all_tracks_screen_test.dart test/ui/selection_bar_test.dart`
 
 ### 108.2 — Blocco in `PlayQueue`, senza UI (F-129, F-132, D-487, D-492, D-493, D-494)
@@ -30,10 +30,10 @@
 - Comando: `flutter test test/services/audio/play_queue_test.dart test/services/audio/play_queue_characterization_test.dart`
 
 ### 108.3 — Gestore, persistenza, radio, Jam (F-132, D-488, D-496)
-- Handler (`codecore_audio_handler.dart`): `enqueue` al posto di `append` (`:1735`); getter `userAhead`; `playQueue` (`:365`, `:452`) usa `keepUser: true`; il giro della radio (`:1587`) e `playStations` (`:382`) svuotano il blocco (D-496); `restore` (`:460`) legge il blocco.
+- Handler (`codecore_audio_handler.dart`): `enqueue` al posto di `append` (`:1735`); getter `userAhead`; `playQueue` (`:365`, `:452`) usa `keepUser: true`; `playStations` (`:382`) svuota il blocco (D-496); il giro della radio (`:1587`) lo tiene, come dice l'analisi; `restore` (`:460`) legge il blocco.
 - Persistenza: chiave prefs nuova `lastQueueUser` (quante voci del blocco dopo il corrente ripristinato; assente = 0) in `playback_persistence.dart:11` e `settings_store.dart:306,728,749`. DB e formato del backup invariati (`backup_service.dart:56` copia già tutte le prefs).
 - Jam: nessun cambio di codice (`player_providers.dart:383,389`, handler `:1818`, `jam_local_queue.dart:44,89`); un ospite che esce ritrova i brani del blocco nello stesso ordine come brani normali (D-496).
-- Test: handler `keepUser` (D-488) e radio che svuota (D-496) in `codecore_audio_handler_test.dart`; `jam_exit_restore_test.dart`: ospite ritrova l'ordine; `playback_persistence_test.dart`: `lastQueueUser` salvato e ripristinato, e il vecchio salvataggio senza chiave resta come oggi (test di 107.2 verde senza modifiche).
+- Test: handler `keepUser` (D-488) e `playStations` che svuota (D-496) in `codecore_audio_handler_test.dart`; `jam_exit_restore_test.dart`: ospite ritrova l'ordine; `playback_persistence_test.dart`: `lastQueueUser` salvato e ripristinato, e il vecchio salvataggio senza chiave resta come oggi (test di 107.2 verde senza modifiche).
 - Comando: `flutter test test/services/audio/codecore_audio_handler_test.dart test/services/audio/playback_persistence_test.dart test/providers/queue_provider_test.dart test/providers/jam_exit_restore_test.dart test/providers/play_online_jam_test.dart`
 
 ### 108.4 — Intestazioni nel foglio della coda (D-495)

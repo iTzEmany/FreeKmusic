@@ -26,11 +26,18 @@ import 'suggestions_screen.dart';
 Future<void> showQueueSheet(BuildContext context) => showCcSheet<void>(
   context: context,
   isScrollControlled: true,
+  // Own messenger: the root one sits under the sheet, so «Annulla» would
+  // only show once it closes.
   builder: (_) => DraggableScrollableSheet(
     expand: false,
     initialChildSize: 0.7,
     maxChildSize: 0.95,
-    builder: (_, sc) => QueueSheet(scrollController: sc),
+    builder: (_, sc) => ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: QueueSheet(scrollController: sc),
+      ),
+    ),
   ),
 );
 
@@ -55,21 +62,32 @@ class QueueSheet extends ConsumerStatefulWidget {
 /// The part of the queue a list shows: the entries after the current one and
 /// a key per entry (the same track may sit twice, so id + occurrence).
 class _Upcoming {
-  _Upcoming(this.first, this.tracks, this.keys);
+  _Upcoming(this.first, this.tracks, this.keys, this.block);
 
-  factory _Upcoming.of(List<Track> queue, int at) {
+  factory _Upcoming.of(List<Track> queue, int at, int block) {
     final first = at >= 0 && at < queue.length ? at + 1 : 0;
     final tracks = queue.sublist(first);
     final seen = <int, int>{};
     return _Upcoming(first, tracks, [
       for (final t in tracks)
         'q-${t.id}-${seen[t.id] = (seen[t.id] ?? -1) + 1}',
-    ]);
+    ], block);
   }
 
   final int first;
   final List<Track> tracks;
   final List<String> keys;
+
+  /// Entries right after the current one added with «Aggiungi in coda».
+  final int block;
+}
+
+/// Set around the drag proxy: the section header above a row stays behind.
+class _InProxy extends InheritedWidget {
+  const _InProxy({required super.child});
+
+  @override
+  bool updateShouldNotify(_InProxy old) => false;
 }
 
 /// Where the entry [key] must go in [live] so that it sits where the user
@@ -114,6 +132,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
   /// suggestion) and the list must not be rebuilt with other items then.
   _Upcoming? _dragSnapshot;
   bool _dragging = false;
+  int _dragStart = -1;
 
   /// Back to the live list. Only once the drop has finished: the dragged row's
   /// key lives in the overlay until then and must not also sit in the list.
@@ -169,6 +188,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
             child: LiveTrackRow(
               track: t,
               variant: TrackRowVariant.queue,
+              current: false, // the playing entry is the header's, not a row
               reorderIndex: i,
               inLibrary: similar && !isOnlineId(t.id),
               onTap: () => ctrl.jumpToQueueIndex(first + i),
@@ -182,7 +202,21 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       key: ValueKey(keys[i]),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [above ?? const SizedBox.shrink(), row],
+      children: [
+        Builder(
+          builder: (c) =>
+              c.getInheritedWidgetOfExactType<_InProxy>() != null
+              ? Visibility(
+                  visible: false,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: above ?? const SizedBox.shrink(),
+                )
+              : above ?? const SizedBox.shrink(),
+        ),
+        row,
+      ],
     );
   }
 
@@ -209,11 +243,11 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     final handler = ref.read(audioHandlerProvider);
     final at = handler.currentIndex;
     // Entries right after the current one added with «Aggiungi in coda».
-    final block = handler.userAhead;
     final current = at >= 0 && at < queue.length ? queue[at] : null;
-    final liveUp = _Upcoming.of(queue, at);
+    final liveUp = _Upcoming.of(queue, at, handler.userAhead);
     final shown = _dragging && _dragSnapshot != null ? _dragSnapshot! : liveUp;
     final first = shown.first;
+    final block = shown.block;
     final upcoming = shown.tracks;
     final keys = shown.keys;
 
@@ -255,7 +289,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
             scrollController: scrollController,
             buildDefaultDragHandles: false,
             proxyDecorator: (child, _, anim) =>
-                ccDragProxy(context, child, anim),
+                ccDragProxy(context, _InProxy(child: child), anim),
             header: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -292,17 +326,20 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                   )
                 : null,
             itemCount: upcoming.length,
-            onReorderStart: (_) => setState(() {
+            onReorderStart: (i) => setState(() {
               _endTimer?.cancel();
+              _dragStart = i;
               _dragSnapshot = liveUp;
               _dragging = true;
             }),
             // A drop that moves nothing never calls onReorderItem: fall back
             // to a timer longer than the drop animation.
-            onReorderEnd: (_) => _endTimer = Timer(
-              const Duration(milliseconds: 400),
-              _endDrag,
-            ),
+            onReorderEnd: (i) {
+              // Flutter counts the dragged row itself: its own slot is start or start + 1.
+              if (i == _dragStart || i == _dragStart + 1) {
+                _endTimer = Timer(CcTiming.dropSettle, _endDrag);
+              }
+            },
             onReorderItem: (from, to) {
               _endDrag();
               final snap = _dragSnapshot;
@@ -316,6 +353,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
               final liveNow = _Upcoming.of(
                 ref.read(queueProvider).value ?? const <Track>[],
                 ref.read(audioHandlerProvider).currentIndex,
+                ref.read(audioHandlerProvider).userAhead,
               );
               final move = mapDrop(
                 key: snap.keys[from],

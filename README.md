@@ -66,7 +66,7 @@ senza il file la build release usa la chiave di debug.
 - Le ricerche dell'importazione da CSV sono ricordate 30 giorni (**Svuota cache ricerche**); un file di durata molto diversa dal CSV finisce in «Da verificare».
 
 ## Interfaccia (fase 19)
-- **Selezione multipla:** pressione lunga su un brano (telefono) o Ctrl/Maiusc+clic (PC), poi Riproduci / Riproduci dopo / In coda / Aggiungi a playlist / Preferiti / Rimuovi dalla playlist; sui risultati di YouTube «Scarica». Nessuna azione tocca i tuoi file.
+- **Selezione multipla:** pressione lunga su un brano (telefono) o Ctrl/Maiusc+clic (PC), poi Riproduci / In coda / Aggiungi a playlist / Preferiti / Rimuovi dalla playlist; sui risultati di YouTube «Scarica». Nessuna azione tocca i tuoi file.
 - **Trascinamento (PC):** trascina uno o più brani sulle playlist o sui Preferiti della barra laterale.
 - **Aspetto:** tema Chiaro e 8 colori d'accento; su schermi larghi (≥ 1200 px) la coda si apre da sola a destra.
 - **Lingue:** italiano, inglese, tedesco, spagnolo, francese e portoghese.

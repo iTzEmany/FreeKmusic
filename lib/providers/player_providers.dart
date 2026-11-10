@@ -484,9 +484,8 @@ class PlayerController {
     if (id == null) return;
     if (_handler.queueIds.isEmpty || _handler.isRadio) return _playAlone(id);
     _requestNotificationPermissionOnce();
-    // Past the user block (insertAt would move it there anyway); the jump then keeps the block right after it.
-    final at = _handler.currentIndex + 1 + _handler.userAhead;
-    _handler.insertAt(at, id);
+    // insertAt puts it past the user block; the jump then keeps the block right after it.
+    final at = _handler.insertAt(_handler.currentIndex + 1, id);
     await _handler.skipToQueueItem(at);
   }
 
