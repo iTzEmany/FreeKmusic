@@ -990,7 +990,7 @@ class Track extends DataClass implements Insertable<Track> {
   final bool ignored;
 
   /// 0 music · 1 a downloaded podcast episode. Every music view filters
-  /// `kind = 0`: episodes never show up in the library.
+  /// `kind = 0`: episodes never show up in the library. Playlists hold kind 0 and 2 (shadow rows).
   final int kind;
   final String? sha256;
   final int addedAt;

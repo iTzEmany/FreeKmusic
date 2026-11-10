@@ -1,7 +1,8 @@
-import 'package:drift/drift.dart' show OrderingTerm;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, OrderingTerm;
 import 'package:path/path.dart' as p;
 
 import '../../services/backup/user_data.dart';
+import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
 import 'credits_repository.dart';
 import 'hidden_playlists.dart';
@@ -75,6 +76,19 @@ Future<UserData> collectUserData(
           coverKey: t.coverSource > 0 ? t.coverKey : null,
         ),
       );
+    }
+
+    // Shadow rows are no user data of their own, but a playlist that holds one keeps it (D-524).
+    final inPlaylists = await (db.select(db.tracks)..where(
+          (t) =>
+              t.kind.equals(kStreamKind) &
+              t.id.isInQuery(
+                db.selectOnly(db.playlistTracks)..addColumns([db.playlistTracks.trackId]),
+              ),
+        ))
+        .get();
+    for (final t in inPlaylists) {
+      refs[t.id] = trackRefFor(t, folders);
     }
 
     final playlists = await db.visiblePlaylists();
@@ -196,6 +210,10 @@ Future<UserData> collectUserData(
 
 /// Portable reference to [t]; [folders] maps folder id to root path.
 TrackRef trackRefFor(Track t, Map<int, String> folders) {
+  final streamKey = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
+  if (streamKey != null) {
+    return TrackRef(streamKey: streamKey, title: t.title, artist: t.artist, durationMs: t.durationMs);
+  }
   final root = t.folderId == null ? null : folders[t.folderId];
   final inside = root != null && p.isWithin(root, t.path);
   return TrackRef(

@@ -65,6 +65,16 @@ void main() {
       ]);
     });
 
+    test('a shadow row (kind 2) has no file: left out of both renderings', () {
+      final all = [...tracks, t(3, 'stream:youtube:v1', 'Streamed', 'Band', 1000).copyWith(kind: 2)];
+      final abs = toM3u8('Mix', all);
+      expect(abs, isNot(contains('Streamed')));
+      expect(abs, isNot(contains('stream:')));
+      final rel = renderPlaylist(ExportFormat.m3u8, name: 'Mix', createdAt: 1, tracks: all, relativePaths: true);
+      expect(rel, isNot(contains('stream:')));
+      expect(rel, contains('one.mp3'));
+    });
+
     test('paths relative to the playlist folder', () {
       final m = toM3u8('Mix', tracks, relativeTo: '/music/lists');
       expect(m, contains('\n../a/one.mp3\n'));

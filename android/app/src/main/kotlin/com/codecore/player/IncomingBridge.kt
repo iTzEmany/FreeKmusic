@@ -26,6 +26,9 @@ object IncomingBridge {
     @Volatile
     private var pendingPath: String? = null
 
+    @Volatile
+    private var pendingText: String? = null
+
     fun detach() {
         channel = null
     }
@@ -39,6 +42,10 @@ object IncomingBridge {
                     result.success(pendingPath)
                     pendingPath = null
                 }
+                "takeIncomingText" -> {
+                    result.success(pendingText)
+                    pendingText = null
+                }
                 else -> result.notImplemented()
             }
         }
@@ -47,11 +54,25 @@ object IncomingBridge {
     @Suppress("DEPRECATION")
     fun handleIntent(ctx: Context, intent: Intent?) {
         if (intent == null) return
-        val uri: Uri = when (intent.action) {
+        val stream = if (intent.action == Intent.ACTION_SEND) {
+            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+        } else null
+        // A stream always takes today's path; shared text only when it is not a ZIP/CSV.
+        val uri: Uri? = when (intent.action) {
             Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            Intent.ACTION_SEND -> stream?.takeIf { isZipOrCsv(ctx, it, intent.type) }
             else -> null
-        } ?: return
+        }
+        if (uri == null) {
+            if (intent.action != Intent.ACTION_SEND || stream != null) return
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
+                ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)?.takeIf { it.isNotBlank() }
+                ?: return
+            intent.action = null
+            pendingText = text
+            channel?.invokeMethod("incomingText", null)
+            return
+        }
         // Handled once, even if the activity is recreated with the same intent.
         intent.action = null
         copier.execute {
@@ -63,6 +84,13 @@ object IncomingBridge {
                 }
             }
         }
+    }
+
+    private fun isZipOrCsv(ctx: Context, uri: Uri, type: String?): Boolean {
+        val t = (type ?: ctx.contentResolver.getType(uri) ?: "").lowercase()
+        if (t.contains("zip") || t.contains("csv") || t == "text/comma-separated-values") return true
+        val n = displayName(ctx, uri).lowercase()
+        return n.endsWith(".zip") || n.endsWith(".csv")
     }
 
     private fun displayName(ctx: Context, uri: Uri): String {

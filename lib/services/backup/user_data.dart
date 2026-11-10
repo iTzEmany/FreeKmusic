@@ -15,6 +15,7 @@ class TrackRef {
     this.artist,
     this.durationMs = 0,
     this.sha256,
+    this.streamKey,
   });
 
   /// Root folder the track was found under. For a track outside every folder
@@ -28,7 +29,13 @@ class TrackRef {
   final int durationMs;
   final String? sha256;
 
+  /// `<source>:<id>` of a streamed track kept in a playlist (its shadow row, D-524);
+  /// then [folder] and [relPath] are null. Absent in older backups, and an older app
+  /// ignores it and finds the track by title and artist.
+  final String? streamKey;
+
   Map<String, Object?> toJson() => _nonNull({
+        'streamKey': streamKey,
         'folder': folder,
         'relPath': relPath,
         'title': title,
@@ -44,6 +51,7 @@ class TrackRef {
         artist: j['artist'] as String?,
         durationMs: (j['durationMs'] as num?)?.toInt() ?? 0,
         sha256: j['sha256'] as String?,
+        streamKey: j['streamKey'] as String?,
       );
 }
 

@@ -155,10 +155,9 @@ void main() {
     expect(await tracks.streamRowsAmong(const []), isEmpty);
   });
 
-  test('a playlist refuses a shadow row and counts only music', () async {
+  test('addTracks refuses a shadow row, addStreamTracks takes it (D-524)', () async {
     final pl = PlaylistRepository(db);
     final id = (await db.select(db.playlists).getSingle()).id;
-    // Not in the playlist yet: only the kind check can keep it out.
     final fresh = (await tracks.streamRow('youtube:zero'))!.id;
     expect(await pl.addTracks(id, [fresh]), 0);
     expect(
@@ -167,12 +166,20 @@ void main() {
       )..where((t) => t.trackId.equals(fresh))).get(),
       isEmpty,
     );
-    // The row seeded in setUp is in the playlist anyway: not counted.
-    expect((await pl.watchAll().first).single.trackCount, 0);
+    expect(await pl.addStreamTracks(id, [fresh]), 1);
   });
 
-  test('user_data.json playlists do not list a shadow row', () async {
-    expect((await collectUserData(db)).playlists.single.items, isEmpty);
+  test('a shadow row is shown, counted and timed in its playlist only', () async {
+    final pl = PlaylistRepository(db);
+    final summary = (await pl.watchAll().first).single;
+    expect((summary.trackCount, summary.durationMs), (1, 200000));
+    final id = summary.playlist.id;
+    expect((await pl.watchTracks(id).first).map((t) => t.kind), [kStreamKind]);
+  });
+
+  test('user_data.json playlists keep a shadow row as its stream key, tracks do not list it', () async {
+    final items = (await collectUserData(db)).playlists.single.items;
+    expect(items.map((i) => (i.streamKey, i.title, i.relPath, i.folder)), [('youtube:abc', 'Shadow', null, null)]);
   });
 
   test('missing paths of a folder are the library rows only', () async {
@@ -213,7 +220,6 @@ void main() {
     'Home resume': (_, t) => t.watchResumable().first,
     'tracksOfAlbums': (_, t) => t.tracksOfAlbums(['stream|youtube:abc']),
     'smart playlist': (_, t) => t.watchByRules(const RuleText('Shadow')).first,
-    'playlist': (d, _) => _playlistTracks(d),
     'duplicates': (d, _) => DuplicateRepository(d).entries(),
     'hidden tracks': (_, t) => t.watchIgnored().first,
     'missing tracks': (_, t) => t.watchMissing().first,
@@ -238,9 +244,4 @@ void main() {
       expect(v, v is int ? 0 : isEmpty);
     });
   }
-}
-
-Future<List<Track>> _playlistTracks(AppDatabase db) async {
-  final id = (await db.select(db.playlists).getSingle()).id;
-  return (await PlaylistRepository(db).watchTracks(id).first);
 }

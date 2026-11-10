@@ -3,10 +3,13 @@ import 'package:codecore/services/online/source_cooldown.dart';
 import 'package:codecore/services/online/request_budget.dart';
 import 'package:codecore/services/import/track_matcher.dart' show LibraryIndex;
 import 'package:codecore/data/repositories/track_repository.dart';
-import 'package:codecore/data/db/app_database.dart' show Track;
+import 'package:codecore/data/db/app_database.dart' show AppDatabase, Track, TracksCompanion;
+import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:drift/drift.dart' show Value, Variable;
+import 'package:drift/native.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/library_providers.dart' show libraryIndexProvider;
-import 'package:codecore/providers/database_providers.dart' show trackRepositoryProvider;
+import 'package:codecore/providers/database_providers.dart' show databaseProvider, trackRepositoryProvider;
 import 'package:codecore/providers/online_collection_providers.dart';
 import 'package:codecore/providers/smart_search_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
@@ -25,10 +28,11 @@ import '../support/fake_ytm.dart';
 
 class _Matcher implements CollectionMatcher {
   final asked = <List<String>>[];
-  final out = StreamController<(int, TrackMatch)>();
+  var out = StreamController<(int, TrackMatch)>();
   bool cancelled = false;
   @override
   Stream<(int, TrackMatch)> match(List<ExternalTrack> tracks) {
+    if (asked.isNotEmpty) out = StreamController(); // one per read, like the real matcher
     asked.add([for (final t in tracks) t.title]);
     return out.stream;
   }
@@ -223,6 +227,109 @@ void main() {
     expect(ok, isTrue);
     expect(r.reads, 2);
     expect(w.read(onlineCollectionProvider(const OnlineCollectionRef.external(link))).value?.collection.tracks.single.title, 'Z');
+  });
+
+  group('save and refresh', () {
+    late AppDatabase db;
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: '/m/lib.mp3', title: 'Lib', albumKey: 'a|b', format: 'mp3', sizeBytes: 1,
+          mtimeMs: 1, addedAt: 1, durationMs: const Value(1000)));
+    });
+    tearDown(() => db.close());
+
+    Future<List<String>> titlesOf(int id) async {
+      final rows = await db.customSelect(
+          'SELECT t.title FROM playlist_tracks p JOIN tracks t ON t.id = p.track_id '
+          'WHERE p.playlist_id = ? ORDER BY p.position',
+          variables: [Variable<int>(id)]).get();
+      return [for (final r in rows) r.read<String>('title')];
+    }
+
+    testWidgets('saves the ready rows in page order, library and online mixed', (tester) async {
+      late WidgetRef w;
+      await tester.pumpWidget(ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(db)],
+        child: Consumer(builder: (_, ref, _) {
+          w = ref;
+          return const SizedBox();
+        }),
+      ));
+      Track? lib;
+      await tester.runAsync(() async => lib = await db.select(db.tracks).getSingle());
+      String? name, second;
+      await tester.runAsync(() async {
+        await PlaylistRepository(db).create('Mix');
+        final matches = [
+          TrackReady.online(ytmSong('y1', 'Online one')),
+          const TrackNotFound(),
+          TrackReady.library(lib!),
+          const TrackPending(),
+          TrackReady.online(ytmSong('y2', 'Online two')),
+        ];
+        name = await saveToLibrary(w, ' Mix ', matches);
+        second = await saveToLibrary(w, 'Mix', const [TrackNotFound()]);
+      });
+      expect(name, 'Mix (2)');
+      expect(second, isNull);
+      List<String>? titles;
+      await tester.runAsync(() async {
+        final lists = await db.select(db.playlists).get();
+        titles = await titlesOf(lists.singleWhere((p) => p.name == 'Mix (2)').id);
+      });
+      expect(titles, ['Online one', 'Lib', 'Online two']);
+    });
+
+    testWidgets('a blank page title gives the fallback name; a failure midway leaves no playlist', (tester) async {
+      late WidgetRef w;
+      await tester.pumpWidget(ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(db)],
+        child: Consumer(builder: (_, ref, _) {
+          w = ref;
+          return const SizedBox();
+        }),
+      ));
+      Track? lib;
+      String? name;
+      Object? failure;
+      await tester.runAsync(() async {
+        lib = await db.select(db.tracks).getSingle();
+        name = await saveToLibrary(w, '   ', [TrackReady.online(ytmSong('y1', 'One'))], fallback: 'Nuova');
+        try {
+          // A library row that does not exist: the playlist insert fails after the playlist was created.
+          await saveToLibrary(w, 'Broken', [TrackReady.library(lib!.copyWith(id: 9999))]);
+        } catch (e) {
+          failure = e;
+        }
+      });
+      expect(name, 'Nuova');
+      expect(failure, isNotNull);
+      await tester.runAsync(() async {
+        expect([for (final p in await db.select(db.playlists).get()) p.name], ['Nuova']);
+      });
+    });
+
+    test('Aggiorna with one extra track asks for that one only; gone rows leave the page', () async {
+      final c = externalContainer();
+      const ref = OnlineCollectionRef.external(link);
+      final sub = c.listen(onlineMatchesProvider(ref), (_, _) {});
+      await turn();
+      matcher.out.add((0, TrackReady.online(ytmSong('a', 'One'))));
+      matcher.out.add((1, TrackReady.online(ytmSong('b', 'Two'))));
+      matcher.out.add((2, TrackReady.online(ytmSong('c', 'Three'))));
+      await turn();
+      reader.order = ['One', 'Three', 'Four'];
+      await c.refresh(onlineCollectionProvider(ref).future);
+      await turn();
+      expect(matcher.asked, [
+        ['One', 'Two', 'Three'],
+        ['Four']
+      ]);
+      final rows = c.read(onlineMatchesProvider(ref)).value!;
+      expect(rows.map((m) => m.runtimeType), [TrackReadyOnline, TrackReadyOnline, TrackPending]);
+      sub.close();
+    });
   });
 
   test('the matcher of a page uses the link-match limiter and the shared cooldown', () async {

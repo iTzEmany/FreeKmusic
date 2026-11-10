@@ -11964,6 +11964,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{count, plural, one{1 risultato} other{{count} risultati}}'**
   String resultsCount(int count);
+
+  /// No description provided for @extSaveToLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Salva in Libreria'**
+  String get extSaveToLibrary;
+
+  /// No description provided for @extSavedAs.
+  ///
+  /// In it, this message translates to:
+  /// **'Salvata come «{name}»'**
+  String extSavedAs(String name);
+
+  /// No description provided for @extSaveNothing.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun brano pronto da salvare'**
+  String get extSaveNothing;
+
+  /// No description provided for @extRefresh.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiorna'**
+  String get extRefresh;
 }
 
 class _AppLocalizationsDelegate

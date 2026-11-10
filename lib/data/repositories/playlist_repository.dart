@@ -85,7 +85,7 @@ class PlaylistRepository {
           'WHERE x.playlist_id = p.id AND t.cover_key IS NOT NULL '
           'ORDER BY x.position LIMIT 1) AS auto_cover, '
           '(SELECT COUNT(*) FROM playlist_tracks x JOIN tracks t ON t.id = x.track_id '
-          'WHERE x.playlist_id = p.id AND t.kind = 0) AS n, '
+          'WHERE x.playlist_id = p.id AND t.kind IN (0, 2)) AS n, '
           '(SELECT MAX(t.last_played_at) FROM playlist_tracks x JOIN tracks t '
           'ON t.id = x.track_id WHERE x.playlist_id = p.id) AS last_played, '
           '(SELECT MAX(t.added_at) FROM playlist_tracks x JOIN tracks t '
@@ -95,7 +95,7 @@ class PlaylistRepository {
           // One pass for plays and duration; a song added twice counts once.
           'LEFT JOIN (SELECT d.playlist_id, SUM(t.play_count) AS plays, SUM(t.duration_ms) AS dur '
           'FROM (SELECT DISTINCT playlist_id, track_id FROM playlist_tracks) d '
-          'JOIN tracks t ON t.id = d.track_id WHERE t.kind = 0 GROUP BY d.playlist_id) agg '
+          'JOIN tracks t ON t.id = d.track_id WHERE t.kind IN (0, 2) GROUP BY d.playlist_id) agg '
           'ON agg.playlist_id = p.id '
           // The technical playlist of «Scarica album» (see ytmAlbumSourceKind).
           'WHERE ${visiblePlaylistSql('p')} '
@@ -124,14 +124,16 @@ class PlaylistRepository {
             ]);
   }
 
-  /// The playlist's tracks in order, as list rows (see [lightTrackColumns]).
+  /// The playlist's tracks in order, as list rows (see [lightTrackColumns]). A shadow
+  /// row (`kind = 2`, a streamed track saved in it, D-524) counts as one; no other
+  /// list shows those.
   Stream<List<Track>> watchTracks(int playlistId) {
     final entries = _db.playlistTracks.actualTableName;
     return _db
         .customSelect(
           'SELECT ${lightTrackColumns(_db, alias: 't')} FROM $entries e '
           'JOIN tracks t ON t.id = e.track_id '
-          'WHERE e.playlist_id = ? AND t.missing = 0 AND t.ignored = 0 AND t.kind = 0 '
+          'WHERE e.playlist_id = ? AND t.missing = 0 AND t.ignored = 0 AND t.kind IN (0, 2) '
           'ORDER BY e.position',
           variables: [Variable<int>(playlistId)],
           readsFrom: {_db.playlistTracks, _db.tracks},
@@ -142,16 +144,24 @@ class PlaylistRepository {
 
   /// Returns how many tracks were actually added (duplicates are ignored, and
   /// so is anything that is not music: episodes and shadow rows).
-  Future<int> addTracks(int playlistId, List<int> trackIds) {
+  Future<int> addTracks(int playlistId, List<int> trackIds) =>
+      _addOfKinds(playlistId, trackIds, const [kMusicKind]);
+
+  /// [addTracks] that also takes shadow rows (`kind = 2`, from `ensureStreamRow`): a
+  /// page saved as a playlist keeps its streamed tracks (D-524). Episodes are still refused.
+  Future<int> addStreamTracks(int playlistId, List<int> trackIds) =>
+      _addOfKinds(playlistId, trackIds, const [kMusicKind, kStreamKind]);
+
+  Future<int> _addOfKinds(int playlistId, List<int> trackIds, List<int> kinds) {
     return _db.transaction(() async {
-      final notMusic = (await (_db.selectOnly(_db.tracks)
+      final refused = (await (_db.selectOnly(_db.tracks)
                 ..addColumns([_db.tracks.id])
-                ..where(_db.tracks.id.isIn(trackIds) & _db.tracks.kind.isNotValue(kMusicKind)))
+                ..where(_db.tracks.id.isIn(trackIds) & _db.tracks.kind.isNotIn(kinds)))
               .map((r) => r.read(_db.tracks.id)!)
               .get())
           .toSet();
-      if (notMusic.isNotEmpty) {
-        AppLog.i('playlist: ${notMusic.length} non-music tracks not added');
+      if (refused.isNotEmpty) {
+        AppLog.i('playlist: ${refused.length} tracks of a kind not allowed here, not added');
       }
       final existing = await (_db.select(_db.playlistTracks)
             ..where((t) => t.playlistId.equals(playlistId)))
@@ -162,13 +172,41 @@ class PlaylistRepository {
           : existing.map((e) => e.position).reduce((a, b) => a > b ? a : b) + 1;
       var added = 0;
       for (final id in trackIds) {
-        if (notMusic.contains(id) || !have.add(id)) continue;
+        if (refused.contains(id) || !have.add(id)) continue;
         await _db.into(_db.playlistTracks).insert(PlaylistTracksCompanion.insert(
             playlistId: playlistId, trackId: id, position: next++));
         added++;
       }
       if (added > 0) await _touch(playlistId);
       return added;
+    });
+  }
+
+  /// Puts [trackId] (music or a shadow row) at position 0 and moves the rest down, in
+  /// one transaction. Returns false, changing nothing, when it is already in the
+  /// playlist or is of another kind.
+  Future<bool> addAtTop(int playlistId, int trackId) {
+    return _db.transaction(() async {
+      final allowed = await (_db.selectOnly(_db.tracks)
+            ..addColumns([_db.tracks.id])
+            ..where(_db.tracks.id.equals(trackId) & _db.tracks.kind.isIn(const [kMusicKind, kStreamKind])))
+          .getSingleOrNull();
+      if (allowed == null) {
+        AppLog.i('playlist: track $trackId of a kind not allowed here, not added');
+        return false;
+      }
+      final ids = [
+        for (final r in await (_db.select(_db.playlistTracks)
+              ..where((t) => t.playlistId.equals(playlistId))
+              ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+            .get())
+          r.trackId,
+      ];
+      if (ids.contains(trackId)) return false;
+      await _db.into(_db.playlistTracks).insert(PlaylistTracksCompanion.insert(
+          playlistId: playlistId, trackId: trackId, position: ids.length));
+      await _writeOrder(playlistId, [trackId, ...ids]);
+      return true;
     });
   }
 
@@ -292,6 +330,14 @@ class PlaylistRepository {
             ..where((p) => p.id.equals(playlistId)))
           .getSingleOrNull())
       ?.name;
+
+  /// True when a playlist is already called [name] (trimmed, any letter case).
+  Future<bool> nameTaken(String name) async {
+    // Compared in Dart: SQLite's NOCASE folds only ASCII letters.
+    final want = name.trim().toLowerCase();
+    final all = await _db.visiblePlaylists(); // the technical «Scarica album» ones are never seen
+    return all.any((p) => p.name.trim().toLowerCase() == want);
+  }
 
   Future<void> _renumber(int playlistId) async {
     final rows = await (_db.select(_db.playlistTracks)

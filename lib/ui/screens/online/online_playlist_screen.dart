@@ -95,7 +95,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
     ShellNav.showSearch(context, ref);
   }
 
-  Future<void> _openMenu(ExternalCollection c, List<YtResult> songs) {
+  Future<void> _openMenu(ExternalCollection c, List<YtResult> songs, List<TrackMatch> matches) {
     final l = context.l10n;
     return showCcActionSheet<String>(
       context: context,
@@ -119,6 +119,25 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
               if (mounted) showMsg(context, l.copied);
             },
           ),
+          CcAction<String>(
+            icon: Icons.library_add_rounded,
+            label: l.extSaveToLibrary,
+            value: 'playlist-menu-save',
+            onTap: () async {
+              final name = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
+              if (mounted) showMsg(context, name == null ? l.extSaveNothing : l.extSavedAs(name));
+            },
+          ),
+          if (_external)
+            CcAction<String>(
+              icon: Icons.refresh_rounded,
+              label: l.extRefresh,
+              value: 'playlist-menu-refresh',
+              onTap: () async {
+                final ok = await refreshOnlineCollection(ref, widget.source);
+                if (!ok && mounted) showMsg(context, l.loadFailed);
+              },
+            ),
         ],
       ],
     );
@@ -169,7 +188,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
                   : _external
                       ? () => _playExternal(data!, songs, listKey)
                       : () => playOrQueueOnline(context, ref, songs, listKey: listKey),
-              onMore: () => _openMenu(c, songs),
+              onMore: () => _openMenu(c, songs, data?.matches ?? const []),
             ),
           ),
         if (data != null && data.matches.isEmpty)

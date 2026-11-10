@@ -38,7 +38,7 @@ in `onUpgrade` (mai distruttiva). Esporta lo schema con `drift_dev schema dump` 
 | `userEdited` | bool | default false: se true l'arricchimento **non** sovrascrive titolo/artista/album |
 | `missing` | bool | default false: file non trovato all'ultima scansione |
 | `ignored` | bool | default false (schema v8): doppione unito e **nascosto** dalla pulizia. Sparisce da brani, album, artisti, generi, ricerca, playlist, cronologia e abbinamenti. A differenza di `missing`, la scansione **non lo riattiva**: solo «Brani nascosti → Ripristina» |
-| `kind` | int | default 0 (schema v9): **0 musica · 1 episodio di podcast** (scaricato: file in `podcasts/`; in streaming: percorso remoto, vedi `podcast_episodes`) **· 2 riga ombra di un brano in streaming** (`stream:<key>`, fase 45). Ogni vista musicale (brani, album, artisti, generi, ricerca, Home, playlist, abbinamenti) filtra `kind = 0`; gli episodi non compaiono mai in libreria. Indice `tracks_kind` |
+| `kind` | int | default 0 (schema v9): **0 musica · 1 episodio di podcast** (scaricato: file in `podcasts/`; in streaming: percorso remoto, vedi `podcast_episodes`) **· 2 riga ombra di un brano in streaming** (`stream:<key>`, fase 45). Ogni vista musicale (brani, album, artisti, generi, ricerca, Home, abbinamenti) filtra `kind = 0`; le **playlist** contengono righe `kind` 0 e 2; gli episodi non compaiono mai in libreria. Indice `tracks_kind` |
 | `sha256` | text? | calcolato solo su richiesta (fase 21): per i brani con la **stessa dimensione** di un altro, a flusso in un isolate; azzerato dalla scansione se dimensione o data del file cambiano |
 | `addedAt` | int | epoch ms |
 | `playCount` | int | default 0 |

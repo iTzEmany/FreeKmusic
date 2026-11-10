@@ -3689,5 +3689,16 @@
   "queueCountShuffle": "{count, plural, one{1 track, Shuffle} other{{count} tracks, Shuffle}}",
   "queueBlockPosition": "Position {n} of {total}",
   "queueReorderHandle": "Drag to reorder",
-  "resultsCount": "{count, plural, one{1 result} other{{count} results}}"
+  "resultsCount": "{count, plural, one{1 result} other{{count} results}}",
+  "extSaveToLibrary": "Save to Library",
+  "extSavedAs": "Saved as «{name}»",
+  "@extSavedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extSaveNothing": "No song ready to save",
+  "extRefresh": "Refresh"
 }

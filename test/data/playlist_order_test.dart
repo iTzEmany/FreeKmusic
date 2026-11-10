@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/playlist_ops.dart';
 import 'package:codecore/services/backup/backup_service.dart';
@@ -98,5 +100,15 @@ void main() {
     final restored = AppDatabase(NativeDatabase(dbFile));
     addTearDown(restored.close);
     expect(await order(restored, pl), 'bcdea');
+  });
+
+  test('undo of removing a shadow row puts it back where it was', () async {
+    final s = await TrackRepository(db).ensureStreamRow(YtResult(id: 'v1', title: 'S', channel: 'Ch', duration: Duration.zero));
+    await repo.addStreamTracks(pl, [s]);
+    await repo.reorder(pl, 5, 1); // a S b c d e
+    final undo = await ops.removeTrack(pl, s, index: 1, length: 6);
+    expect(await order(db, pl), 'abcde');
+    await undo();
+    expect(await order(db, pl), 'aSbcde');
   });
 }

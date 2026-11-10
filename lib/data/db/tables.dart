@@ -46,7 +46,7 @@ class Tracks extends Table {
   BoolColumn get ignored => boolean().withDefault(const Constant(false))();
 
   /// 0 music · 1 a downloaded podcast episode. Every music view filters
-  /// `kind = 0`: episodes never show up in the library.
+  /// `kind = 0`: episodes never show up in the library. Playlists hold kind 0 and 2 (shadow rows).
   IntColumn get kind => integer().withDefault(const Constant(0))();
   TextColumn get sha256 => text().nullable()();
   IntColumn get addedAt => integer()();

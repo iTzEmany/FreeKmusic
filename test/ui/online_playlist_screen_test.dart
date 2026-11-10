@@ -211,6 +211,21 @@ void externalTests() {
     await h.dispose(tester);
   });
 
+  testWidgets('the menu of an external page has «Salva in Libreria» and «Aggiorna»; saving makes a playlist',
+      (tester) async {
+    await showExt(tester, _ext());
+    await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
+    await tester.tap(find.byKey(const ValueKey('playlist-more')));
+    await settle(tester);
+    expect(find.text('Aggiorna'), findsOneWidget);
+    await tester.tap(find.text('Salva in Libreria'));
+    await settle(tester);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    expect(find.text('Salvata come «Mix»'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('a Spotify list cut short offers the full import with Exportify', (tester) async {
     await showExt(tester, _ext(truncated: true, url: 'https://open.spotify.com/playlist/abc'));
     expect(find.text('Mostro i primi 3 brani.'), findsOneWidget);
@@ -268,6 +283,15 @@ void main() {
     expect(find.text('First song'), findsOneWidget);
     expect(find.text('Second song'), findsOneWidget);
     expect(find.byKey(const ValueKey('playlist-truncated')), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the menu of a YouTube page saves but has no «Aggiorna»', (tester) async {
+    final h = await show(tester, _Yt(_listing()));
+    await tester.tap(find.byKey(const ValueKey('playlist-more')));
+    await tester.pumpAndSettle();
+    expect(find.text('Salva in Libreria'), findsOneWidget);
+    expect(find.text('Aggiorna'), findsNothing);
     await h.dispose(tester);
   });
 

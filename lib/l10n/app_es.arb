@@ -3689,5 +3689,16 @@
   "queueCountShuffle": "{count, plural, one{1 canción, Aleatorio} other{{count} canciones, Aleatorio}}",
   "queueBlockPosition": "Posición {n} de {total}",
   "queueReorderHandle": "Arrastra para reordenar",
-  "resultsCount": "{count, plural, one{1 resultado} other{{count} resultados}}"
+  "resultsCount": "{count, plural, one{1 resultado} other{{count} resultados}}",
+  "extSaveToLibrary": "Guardar en la biblioteca",
+  "extSavedAs": "Guardada como «{name}»",
+  "@extSavedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extSaveNothing": "Ninguna canción lista para guardar",
+  "extRefresh": "Actualizar"
 }

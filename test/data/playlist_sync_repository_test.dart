@@ -2,7 +2,9 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
+import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart' show Value, Variable, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -143,5 +145,42 @@ void main() {
     ]);
     await expectLater(pc.sync.apply(plan), throwsA(anything));
     expect(await pc.db.select(pc.db.playlists).get(), isEmpty, reason: 'not even the first one stays');
+  });
+
+  group('streamed tracks in a playlist (D-524)', () {
+    late int shadow;
+    late List<String> log;
+    late DebugPrintCallback oldPrint;
+
+    setUp(() async {
+      log = [];
+      oldPrint = debugPrint;
+      debugPrint = (m, {wrapWidth}) => log.add(m ?? '');
+      shadow = await TrackRepository(phone.db).ensureStreamRow(const YtResult(id: 'v1', title: 'Streamed', channel: 'Ch', duration: null));
+      await phone.playlists.addStreamTracks((await phone.sync.local()).single.id, [shadow]);
+      await phone.setStamp('Road', 1000);
+    });
+    tearDown(() => debugPrint = oldPrint);
+
+    test('export and local view skip them, with a log', () async {
+      expect((await phone.sync.export()).single.items.map((t) => t.title), ['a', 'b', 'c']);
+      expect((await phone.sync.local()).single.trackIds, isNot(contains(shadow)));
+      expect(log.where((l) => l.contains('streamed tracks in playlists not synced')), isNotEmpty);
+    });
+
+    test('a replacement from the other device keeps them, after the synced tracks', () async {
+      await pc.sync.apply(await pc.planFrom(phone));
+      final list = (await pc.sync.local()).single.id;
+      final pcShadow = await TrackRepository(pc.db).ensureStreamRow(const YtResult(id: 'v9', title: 'PC stream', channel: 'Ch', duration: null));
+      await pc.playlists.addStreamTracks(list, [pcShadow]);
+      await pc.playlists.reorder(list, 1, 0); // b, a, shadow
+      await pc.setStamp('Road', 1000);
+      await phone.setStamp('Road', 2000); // the phone's a, b, c is now the newer one
+
+      final plan = await pc.planFrom(phone);
+      expect(plan.toReplace, hasLength(1));
+      await pc.sync.apply(plan);
+      expect(await pc.titlesOf('Road'), ['a', 'b', 'PC stream']);
+    });
   });
 }

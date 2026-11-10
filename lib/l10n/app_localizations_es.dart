@@ -7525,4 +7525,18 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get extSaveToLibrary => 'Guardar en la biblioteca';
+
+  @override
+  String extSavedAs(String name) {
+    return 'Guardada como «$name»';
+  }
+
+  @override
+  String get extSaveNothing => 'Ninguna canción lista para guardar';
+
+  @override
+  String get extRefresh => 'Actualizar';
 }

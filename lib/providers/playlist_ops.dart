@@ -42,8 +42,8 @@ class PlaylistOps {
   Future<Future<void> Function()> removeTrack(int playlistId, int trackId, {required int index, required int length}) async {
     await _repo.removeTrack(playlistId, trackId);
     return () async {
-      await _repo.addTracks(playlistId, [trackId]);
-      await _repo.reorder(playlistId, length - 1, index);
+      // addStreamTracks: the row may be a shadow row (addTracks refuses kind 2).
+      if (await _repo.addStreamTracks(playlistId, [trackId]) == 1) await _repo.reorder(playlistId, length - 1, index);
     };
   }
 

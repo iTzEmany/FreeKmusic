@@ -23,4 +23,13 @@ void main() {
   test('streamResultOfRow without artist', () {
     expect(streamResultOfRow('youtube:z', _row(artist: null)).artists, isEmpty);
   });
+
+  test('isStreamKey takes <known source>:<id> only', () {
+    for (final ok in ['youtube:abc', 'soundcloud:1:2']) {
+      expect(isStreamKey(ok), isTrue, reason: ok);
+    }
+    for (final bad in ['', 'nocolon', ':abc', 'youtube:', 'spotify:abc', 'YouTube:abc']) {
+      expect(isStreamKey(bad), isFalse, reason: bad);
+    }
+  });
 }

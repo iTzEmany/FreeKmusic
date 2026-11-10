@@ -6,6 +6,7 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/track_ops.dart';
+import 'package:codecore/services/online/youtube_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -475,6 +476,37 @@ void main() {
       c.invalidate(downloadFolderIdProvider);
       expect(await c.read(downloadFolderIdProvider.future), equals(null));
       expect(await FolderRepository(db).getAll(), isEmpty);
+    });
+  });
+
+  group('shadow rows and playlists (D-524)', () {
+    YtResult yt(String id) => YtResult(id: id, title: 'S$id', channel: 'Ch', duration: null);
+
+    test('cache cleanup keeps a shadow row in a playlist, drops the unplayed ones outside', () async {
+      final inList = await repo.ensureStreamRow(yt('in'));
+      final outside = await repo.ensureStreamRow(yt('out'));
+      final played = await repo.ensureStreamRow(yt('played'));
+      await db.into(db.plays).insert(PlaysCompanion.insert(trackId: played, playedAt: 1));
+      final pl = PlaylistRepository(db);
+      final p = await pl.create('Mix');
+      await pl.addStreamTracks(p, [inList]);
+      expect(await repo.deleteUnplayedStreamRows(), 1);
+      expect(await repo.getById(outside), equals(null));
+      expect((await repo.getById(inList))?.id, inList);
+      expect((await repo.getById(played))?.id, played);
+      expect((await pl.watchTracks(p).first).map((t) => t.id), [inList]);
+    });
+
+    test('downloading a streamed track keeps its place in the playlist', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A'), row('/c.mp3', 'C'), row('/b.mp3', 'B')]);
+      final lib = {for (final t in await db.select(db.tracks).get()) t.title: t.id};
+      final shadow = await repo.ensureStreamRow(yt('b'));
+      final pl = PlaylistRepository(db);
+      final p = await pl.create('Mix');
+      await pl.addStreamTracks(p, [lib['A']!, shadow, lib['C']!]);
+      await repo.mergeStreamRow('youtube:b', lib['B']!);
+      expect((await pl.watchTracks(p).first).map((t) => t.id), [lib['A'], lib['B'], lib['C']]);
+      expect(await repo.streamRow('youtube:b'), equals(null));
     });
   });
 

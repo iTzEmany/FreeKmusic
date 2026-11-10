@@ -7565,4 +7565,18 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get extSaveToLibrary => 'Enregistrer dans la bibliothèque';
+
+  @override
+  String extSavedAs(String name) {
+    return 'Enregistrée sous «$name»';
+  }
+
+  @override
+  String get extSaveNothing => 'Aucun titre prêt à enregistrer';
+
+  @override
+  String get extRefresh => 'Actualiser';
 }

@@ -142,7 +142,8 @@ class TrackRepository {
   }
 
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
-  /// in the cache). Rows with plays stay (D-81). Returns how many went.
+  /// in the cache). Rows with plays stay (D-81), and so do the ones in a playlist
+  /// (D-524). Returns how many went.
   Future<int> deleteUnplayedStreamRows({Set<String> keepKeys = const {}}) =>
       (_db.delete(_db.tracks)..where(
             (t) =>
@@ -151,6 +152,11 @@ class TrackRepository {
                 notExistsQuery(
                   _db.select(_db.plays)
                     ..where((pl) => pl.trackId.equalsExp(t.id)),
+                ) &
+                // A row in a playlist is the playlist's track: deleting it would cascade (D-524).
+                notExistsQuery(
+                  _db.select(_db.playlistTracks)
+                    ..where((pt) => pt.trackId.equalsExp(t.id)),
                 ),
           ))
           .go();
@@ -206,21 +212,13 @@ class TrackRepository {
   /// [key] whose cached [file] is ready; one row per key. Returns its id.
   Future<int> upsertStreamRow(String key, YtResult r, File file) async {
     final stat = await file.stat();
-    final artist = displayArtist(r);
     final path = streamPathOf(key);
-    final row = TracksCompanion.insert(
-      path: path,
-      title: r.title,
-      // Own key per stream: never shares (or overwrites) a library album's cover.
-      albumKey: 'stream|$key',
+    final row = _streamRow(
+      key,
+      r,
       format: p.extension(file.path).replaceFirst('.', '').toLowerCase(),
       sizeBytes: stat.size,
       mtimeMs: stat.modified.millisecondsSinceEpoch,
-      addedAt: DateTime.now().millisecondsSinceEpoch,
-      artist: Value(artist),
-      album: Value(r.album),
-      durationMs: Value(r.duration?.inMilliseconds ?? 0),
-      kind: const Value(kStreamKind),
     );
     return _db.transaction(() async {
       final existing = await byPath(path);
@@ -240,6 +238,38 @@ class TrackRepository {
       return existing.id;
     });
   }
+
+  /// The shadow row (`kind = 2`) of [r], created with no cached file when it has none
+  /// (a playlist saved from a page, D-524); [upsertStreamRow] fills the file fields
+  /// once the track is cached. Returns the row id.
+  Future<int> ensureStreamRow(YtResult r) => _db.transaction(() async {
+    final existing = await byPath(streamPathOf(r.indexKey));
+    if (existing != null) return existing.id;
+    return _db.into(_db.tracks).insert(
+      _streamRow(r.indexKey, r, format: '', sizeBytes: 0, mtimeMs: 0),
+    );
+  });
+
+  TracksCompanion _streamRow(
+    String key,
+    YtResult r, {
+    required String format,
+    required int sizeBytes,
+    required int mtimeMs,
+  }) => TracksCompanion.insert(
+    path: streamPathOf(key),
+    title: r.title,
+    // Own key per stream: never shares (or overwrites) a library album's cover.
+    albumKey: 'stream|$key',
+    format: format,
+    sizeBytes: sizeBytes,
+    mtimeMs: mtimeMs,
+    addedAt: DateTime.now().millisecondsSinceEpoch,
+    artist: Value(displayArtist(r)),
+    album: Value(r.album),
+    durationMs: Value(r.duration?.inMilliseconds ?? 0),
+    kind: const Value(kStreamKind),
+  );
 
   Future<Track?> byPath(String path) => (_db.select(
     _db.tracks,

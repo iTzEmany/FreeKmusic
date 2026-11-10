@@ -1,9 +1,11 @@
 import 'package:audio_service/audio_service.dart';
 
+import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/library_queries.dart';
 import '../../data/repositories/playlist_repository.dart';
 import '../../data/repositories/radio_repository.dart';
+import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
 import '../radio/radio_station.dart';
 
@@ -175,7 +177,8 @@ class MediaBrowseTree {
         return [
           for (final p in (await _src.playlists()).take(kBrowseLimit))
             _folder('playlist:${p.playlist.id}', p.playlist.name,
-                subtitle: '${p.trackCount}',
+                // Only what the folder lists: streamed rows are left out of it.
+                subtitle: '${(await _src.playlistTracks(p.playlist.id)).where((t) => t.kind != kStreamKind).length}',
                 art: p.coverKey == null ? null : coverUri?.call(p.coverKey!)),
         ];
       case 'albums':
@@ -204,7 +207,12 @@ class MediaBrowseTree {
     } else if (folderId.startsWith('playlist:')) {
       final id = int.tryParse(folderId.substring(9));
       if (id == null) return null;
-      all = await _src.playlistTracks(id);
+      // A streamed track kept in a playlist (D-524) has no file the car can play.
+      final inList = await _src.playlistTracks(id);
+      all = [for (final t in inList) if (t.kind != kStreamKind) t];
+      if (all.length != inList.length) {
+        AppLog.i('browse: ${inList.length - all.length} streamed tracks of playlist $id not listed');
+      }
     } else if (folderId.startsWith('album:')) {
       all = await _src.albumTracks(folderId.substring(6));
     } else if (folderId.startsWith('search:')) {

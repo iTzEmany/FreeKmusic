@@ -1526,10 +1526,21 @@ mobile_scanner — fase 24 — 2026-10-19
   - Non provati sul telefono: «Cerca a mano» su un non trovato vero (tutti i brani sono stati abbinati), un link breve Deezer vero, una playlist privata vera.
 
 ## Fase 115 — Salva in Libreria e «Condividi verso Codecore» (`fase-115-salva-e-condividi.md`)
-- [ ] 115.1 Righe in streaming nelle playlist
-- [ ] 115.2 «Salva in Libreria» e «Aggiorna»
-- [ ] 115.3 Testo condiviso e «Condividi verso Codecore»
-- [ ] 115.4 Controlli di fase
+- [x] 115.1 Righe in streaming nelle playlist
+  - Il metodo `ensureStreamRow` crea o ritrova la riga in streaming (`kind = 2`); `addStreamTracks`, `addAtTop` e `nameTaken` sono nuovi. Le playlist, e solo loro, mostrano le righe `kind IN (0, 2)`; tutte le altre viste restano a `kind = 0`.
+  - La pulizia della cache salva le righe che stanno in una playlist. Il backup portabile le porta con `TrackRef.streamKey`, e «Unisci» le ricrea.
+  - Export M3U, sync fra dispositivi e Android Auto le saltano con un log. Nel sync, quando l'altro dispositivo sostituisce una playlist, le righe in streaming locali vengono tenute (D-537).
+  - Review Opus e scheggia di passo high, con un giro di correzioni: l'«Annulla» della rimozione e la selezione multipla erano rotti sulle righe in streaming; ora le chiavi stream sono validate, c'è un nome di ripiego e i nomi si confrontano senza maiuscole anche con le lettere accentate.
+- [x] 115.2 «Salva in Libreria» e «Aggiorna»
+  - `saveToLibrary` lavora in una sola transazione e prende i brani pronti nell'ordine della pagina; se il nome è già preso aggiunge un suffisso. «Aggiorna» usa la cache per impronta, quindi abbina solo i brani nuovi.
+- [x] 115.3 Testo condiviso e «Condividi verso Codecore»
+  - `IncomingBridge` passa al percorso di oggi se il contenuto è ZIP/CSV, altrimenti al testo. Il filtro `text/plain` è separato. `routeSharedText` riconosce un link, che si apre come se fosse incollato, oppure del testo semplice, che va in Cerca (in primo piano anche sopra una pagina aperta).
+- [x] 115.4 Controlli di fase
+  - Prova sul Redmi a volume 0. Il Mi A3 è senza rete.
+  - Condivisione di link Spotify, Deezer e YouTube e di testo semplice, con l'app chiusa e aperta. Lo ZIP Exportify apre l'anteprima come oggi.
+  - «Salva in Libreria» (18 brani nell'ordine della pagina) e poi Play in streaming. Dopo «Svuota» la playlist è ancora intera.
+  - «Annulla» di una rimozione e selezione multipla funzionano. Backup e «Unisci» non creano duplicati e ricreano la playlist. «Aggiorna» non dà errori.
+  - Non provato sul telefono: un brano scaricato dalla playlist che resta in posizione (è coperto da un test).
 
 ## Fase 116 — Brani da Shazam (`fase-116-brani-da-shazam.md`)
 - [ ] 116.1 Lettore del testo e «Da Shazam»

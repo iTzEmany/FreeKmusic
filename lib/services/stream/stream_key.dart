@@ -25,22 +25,40 @@ String displayArtist(YtResult r) =>
 /// The download request of a shadow row, rebuilt from its [key] and the row;
 /// the inverse of [YtResult.indexKey].
 /// shortcut: the row keeps no artist ids, thumbnail or page address (a SoundCloud row can't be re-downloaded), fix with the first SoundCloud stream.
-YtResult streamResultOfRow(String key, Track row) {
+YtResult streamResultOfRow(String key, Track row) => streamResultOf(
+  key,
+  title: row.title,
+  artist: row.artist,
+  album: row.album,
+  durationMs: row.durationMs,
+);
+
+/// [streamResultOfRow] from the plain fields a row (or a backup reference) keeps.
+YtResult streamResultOf(
+  String key, {
+  required String title,
+  String? artist,
+  String? album,
+  int durationMs = 0,
+}) {
   final sep = key.indexOf(':');
   final source = MediaSource.values.firstWhere(
     (m) => m.name == key.substring(0, sep),
     orElse: () => MediaSource.youtube,
   );
-  final artist = row.artist;
   return YtResult(
     id: key.substring(sep + 1),
-    title: row.title,
+    title: title,
     channel: artist ?? '',
     artists: artist == null ? const [] : [artist],
-    album: row.album,
-    duration: row.durationMs > 0
-        ? Duration(milliseconds: row.durationMs)
-        : null,
+    album: album,
+    duration: durationMs > 0 ? Duration(milliseconds: durationMs) : null,
     source: source,
   );
+}
+
+/// True for a well-formed `<source>:<id>` stream key (what [streamResultOf] needs).
+bool isStreamKey(String key) {
+  final sep = key.indexOf(':');
+  return sep > 0 && sep < key.length - 1 && MediaSource.values.any((m) => m.name == key.substring(0, sep));
 }

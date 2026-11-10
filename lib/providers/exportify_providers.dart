@@ -89,6 +89,13 @@ final incomingPathProvider = StreamProvider<String>(
       : const Stream<String>.empty(),
 );
 
+/// Text (a link, usually) other apps share with Codecore (Android only).
+final incomingTextProvider = StreamProvider<String>(
+  (ref) => isAndroid
+      ? ref.watch(incomingFilesProvider).texts()
+      : const Stream<String>.empty(),
+);
+
 /// Days between sync reminders: 0 = off, else 7, 14 or 30.
 class ExportifyRemindDays extends Notifier<int> {
   @override
