@@ -115,6 +115,14 @@ class _PlaySpy implements PlayerController {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
+class _FailingYoutube extends FakeYoutube {
+  @override
+  Future<List<YtResult>> search(String query) async {
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    throw const YtException(YtErrorKind.network, 'timed out');
+  }
+}
+
 const _pink = YtmArtistRef(
   id: 'UCpf',
   name: 'Pink Floyd',
@@ -393,6 +401,34 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('online-retry')));
       await tester.pump();
       expect(requests.last, (query: 'pink floyd', refresh: true, serial: 2));
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets(
+    'a pasted video link whose search fails shows the error with «Riprova»',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester);
+      await h.pump(
+        tester,
+        const Scaffold(
+          body: OnlineResults(
+            query: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            submitted: 1,
+          ),
+        ),
+        extraOverrides: [
+          youtubeServiceProvider.overrideWithValue(_FailingYoutube()),
+          ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+        ],
+      );
+      await _settle(tester);
+      expect(find.text('Rete non disponibile'), findsWidgets);
+      expect(find.byKey(const ValueKey('online-retry')), findsOneWidget);
+      expect(find.text('Nessun risultato'), findsNothing);
       await h.dispose(tester);
     },
   );
