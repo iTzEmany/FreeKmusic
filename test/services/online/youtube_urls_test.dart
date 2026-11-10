@@ -53,6 +53,7 @@ void main() {
       'https://www.youtube.com/playlist?list=': (YoutubeLinkKind.other, null),
       'https://music.youtube.com/browse/MPREb_abc-123': (YoutubeLinkKind.album, null),
       'https://music.youtube.com/browse/MPREb_abc-123?si=xyz': (YoutubeLinkKind.album, null),
+      'https://music.youtube.com/browse/MPREb_abc-123/': (YoutubeLinkKind.album, null),
       'https://music.youtube.com/browse/UCabc': (YoutubeLinkKind.other, null),
       'https://music.youtube.com/watch?v=VID': (YoutubeLinkKind.other, null),
       'https://www.youtube.com/': (YoutubeLinkKind.other, null),

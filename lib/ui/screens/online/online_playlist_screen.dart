@@ -8,6 +8,7 @@ import '../../../services/online/external_collection.dart';
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../theme/tokens.dart';
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/shuffle_button.dart' show ShufflePill;
@@ -60,13 +61,16 @@ class OnlinePlaylistScreen extends ConsumerWidget {
     final listKey = 'online-collection:${c?.sourceUrl ?? source.hashCode}';
     final songs = <YtResult>[
       for (final m in data?.matches ?? const <TrackMatch>[])
-        if (m is TrackReady) m.result,
+        if (m is TrackReadyOnline) m.result,
     ];
     return OnlinePageFrame(
       title: c?.title ?? '',
       selectionKey: listKey,
       pickable: songs,
-      onRefresh: () async => retryOnlineCollection(ref, source),
+      onRefresh: () async {
+        final ok = await refreshOnlineCollection(ref, source);
+        if (!ok && context.mounted) showMsg(context, context.l10n.loadFailed);
+      },
       slivers: [
         if (c != null)
           SliverToBoxAdapter(
@@ -79,15 +83,22 @@ class OnlinePlaylistScreen extends ConsumerWidget {
               onMore: () => _openMenu(context, c),
             ),
           ),
-        if (data != null)
+        if (data != null && data.matches.isEmpty)
+          SliverToBoxAdapter(
+            child: EmptyState(
+              icon: Icons.queue_music_rounded,
+              message: context.l10n.playlistSourceEmpty,
+            ),
+          )
+        else if (data != null)
           SliverList.builder(
             itemCount: data.matches.length,
             itemBuilder: (_, i) => switch (data.matches[i]) {
               // shortcut: index = row, true while every row is ready; 114 maps rows to `songs`.
-              TrackReady(:final result) =>
+              TrackReadyOnline(:final result) =>
                 OnlineSongTile(result: result, index: i, selectionKey: listKey),
-              // Drawn by phase 114 (matching in progress / no match found).
-              TrackPending() || TrackNotFound() => const SizedBox.shrink(),
+              // Drawn by phase 114 (a library song, matching in progress, no match).
+              TrackReadyLibrary() || TrackPending() || TrackNotFound() => const SizedBox.shrink(),
             },
           )
         else if (page.hasError)

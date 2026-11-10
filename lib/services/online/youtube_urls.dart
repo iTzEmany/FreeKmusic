@@ -45,7 +45,7 @@ Uri? _parse(String input) {
   return u;
 }
 
-final _albumPath = RegExp(r'^/browse/(MPREb_[\w-]+)$');
+final _albumPath = RegExp(r'^/browse/(MPREb_[\w-]+)/?$');
 
 /// `MPREb_…` of a `music.youtube.com/browse/…` album link (query parameters
 /// are ignored), else null.

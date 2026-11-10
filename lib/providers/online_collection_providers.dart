@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/app_log.dart';
 import '../services/online/external_collection.dart';
 import '../services/online/youtube_service.dart' show PlaylistListing;
 import 'youtube_providers.dart';
@@ -51,7 +52,7 @@ CollectionPage _fromListing(String url, PlaylistListing l) => CollectionPage(
         ],
       ),
       // Every YouTube row is already a playable result: no matching, no network.
-      [for (final r in l.entries) TrackReady(r)],
+      [for (final r in l.entries) TrackReady.online(r)],
     );
 
 final onlineCollectionProvider =
@@ -63,6 +64,21 @@ final onlineCollectionProvider =
   // A failure is shown with its own «Riprova».
   retry: (_, _) => null,
 );
+
+/// Pull to refresh: waits for the new read; on failure the old rows stay, it is
+/// logged and false is returned.
+Future<bool> refreshOnlineCollection(WidgetRef ref, OnlineCollectionRef r) async {
+  try {
+    switch (r) {
+      case YoutubeListingRef(:final url):
+        final _ = await ref.refresh(playlistListingProvider(url).future);
+    }
+    return true;
+  } on Object catch (e, st) {
+    AppLog.w('online collection: refresh failed', e, st);
+    return false;
+  }
+}
 
 /// «Riprova»: asks the source again (invalidating the page alone would reuse its error).
 void retryOnlineCollection(WidgetRef ref, OnlineCollectionRef r) => switch (r) {

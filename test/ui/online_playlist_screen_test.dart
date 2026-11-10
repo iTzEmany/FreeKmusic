@@ -119,6 +119,12 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('an empty list says so', (tester) async {
+    final h = await show(tester, _Yt(const PlaylistListing(title: 'Empty', entries: [])));
+    expect(find.text('Non ci sono video da scaricare qui.'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('a truncated list says so at the bottom', (tester) async {
     final h = await show(tester, _Yt(_listing(truncated: true)));
     expect(find.byKey(const ValueKey('playlist-truncated')), findsOneWidget);

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/player_providers.dart' show playerControllerProvider;
 import '../../../providers/online_collection_providers.dart' show OnlineCollectionRef;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
@@ -25,6 +24,7 @@ import '../../widgets/yt_dlp_outdated_banner.dart';
 import '../online/album_card.dart';
 import '../online/artist_card.dart';
 import '../online/artist_page_screen.dart';
+import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
 import '../online/online_album_screen.dart';
 import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
@@ -207,7 +207,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         _autoPlayId = null;
         // After the frame: playing changes providers that this build reads.
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) unawaited(ref.read(playerControllerProvider).playFromSearch(online: hit));
+          if (mounted) unawaited(playFromSearchAndOpen(context, ref, hit));
         });
         break;
       }

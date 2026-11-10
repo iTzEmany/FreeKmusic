@@ -25,7 +25,7 @@ void main() {
     expect(page.collection.owner, 'Chan');
     expect(page.collection.truncated, isTrue);
     expect(page.collection.tracks.map((t) => t.key), ['a', 'b']);
-    expect(page.matches.every((m) => m is TrackReady), isTrue);
-    expect([for (final m in page.matches) (m as TrackReady).result.id], ['a', 'b']);
+    expect(page.matches.every((m) => m is TrackReadyOnline), isTrue);
+    expect([for (final m in page.matches) (m as TrackReadyOnline).result.id], ['a', 'b']);
   });
 }

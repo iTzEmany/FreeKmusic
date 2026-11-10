@@ -444,7 +444,8 @@ void main() {
       await emit(tester, _state(best: [_video('vid1', 'The clip')]));
       await emit(tester, _state(best: [_video('vid1', 'The clip'), _video('x', 'More')]));
       expect(spy.played, ['vid1']);
-      expect(find.text('The clip'), findsOneWidget);
+      // The player opened over the page, like a tap on the row.
+      expect(find.text('The clip', skipOffstage: false), findsOneWidget);
       await h.dispose(tester);
     },
   );

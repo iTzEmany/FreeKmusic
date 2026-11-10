@@ -1,3 +1,4 @@
+import '../../data/db/app_database.dart' show Track;
 import 'youtube_service.dart' show YtResult;
 
 enum CollectionKind { playlist, album }
@@ -56,9 +57,21 @@ class TrackPending extends TrackMatch {
   const TrackPending();
 }
 
-class TrackReady extends TrackMatch {
-  const TrackReady(this.result);
+/// Found: a song to stream ([TrackReady.online]) or one already in the library.
+sealed class TrackReady extends TrackMatch {
+  const TrackReady();
+  const factory TrackReady.online(YtResult result) = TrackReadyOnline;
+  const factory TrackReady.library(Track track) = TrackReadyLibrary;
+}
+
+class TrackReadyOnline extends TrackReady {
+  const TrackReadyOnline(this.result);
   final YtResult result;
+}
+
+class TrackReadyLibrary extends TrackReady {
+  const TrackReadyLibrary(this.track);
+  final Track track;
 }
 
 class TrackNotFound extends TrackMatch {
