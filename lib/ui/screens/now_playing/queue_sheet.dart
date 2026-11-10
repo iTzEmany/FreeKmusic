@@ -28,14 +28,14 @@ Future<void> showQueueSheet(BuildContext context) => showCcSheet<void>(
   isScrollControlled: true,
   // Own messenger: the root one sits under the sheet, so «Annulla» would
   // only show once it closes.
-  builder: (_) => ScaffoldMessenger(
-    child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.7,
-        maxChildSize: 0.95,
-        builder: (_, sc) => QueueSheet(scrollController: sc),
+  builder: (_) => DraggableScrollableSheet(
+    expand: false,
+    initialChildSize: 0.7,
+    maxChildSize: 0.95,
+    builder: (_, sc) => ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: QueueSheet(scrollController: sc),
       ),
     ),
   ),
@@ -206,7 +206,13 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         Builder(
           builder: (c) =>
               c.getInheritedWidgetOfExactType<_InProxy>() != null
-              ? const SizedBox.shrink()
+              ? Visibility(
+                  visible: false,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: above ?? const SizedBox.shrink(),
+                )
               : above ?? const SizedBox.shrink(),
         ),
         row,
@@ -329,7 +335,8 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
             // A drop that moves nothing never calls onReorderItem: fall back
             // to a timer longer than the drop animation.
             onReorderEnd: (i) {
-              if (i == _dragStart) {
+              // Flutter counts the dragged row itself: its own slot is start or start + 1.
+              if (i == _dragStart || i == _dragStart + 1) {
                 _endTimer = Timer(CcTiming.dropSettle, _endDrag);
               }
             },

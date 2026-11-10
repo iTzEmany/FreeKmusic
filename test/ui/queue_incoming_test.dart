@@ -122,4 +122,22 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await h.dispose(tester);
   });
+
+  testWidgets('the queue sheet opens below the top of the screen, with its scrim', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    h = await Harness.create(tester, tracks: 4);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    await tester.runAsync(() => h.handler.playQueue([for (final t in rows) t.id], 0));
+    await h.pump(
+      tester,
+      Builder(builder: (c) => Scaffold(body: TextButton(onPressed: () => showQueueSheet(c), child: const Text('open')))),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.getTopLeft(find.byType(QueueSheet)).dy, greaterThan(900 * 0.2));
+    await h.dispose(tester);
+  });
 }
