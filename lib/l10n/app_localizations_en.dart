@@ -7414,4 +7414,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get downloadedNoPlaylistEmpty =>
       'Every downloaded track is already in a playlist';
+
+  @override
+  String get pauseOnZeroVolume => 'Pause when the volume is at zero';
+
+  @override
+  String get pauseOnZeroVolumeHelp =>
+      'Raising the volume again resumes the music, only if this feature paused it.';
 }

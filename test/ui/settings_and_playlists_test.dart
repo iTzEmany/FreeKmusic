@@ -47,6 +47,20 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('the pause-on-zero-volume switch is off by default and a tap is remembered', (tester) async {
+    tester.view.physicalSize = const Size(500, 3400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    await h.pump(tester, const Scaffold(body: SettingsScreen(initial: SettingsPage.playback)));
+    expect(h.store.readSettings().pauseOnZeroVolume, isFalse);
+    await tester.tap(find.byKey(const ValueKey('pause-on-zero-volume')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(h.store.readSettings().pauseOnZeroVolume, isTrue);
+    await h.dispose(tester);
+  });
+
   testWidgets('settings has «Pulizia libreria»: duplicates open their screen, hidden tracks are counted',
       (tester) async {
     tester.view.physicalSize = const Size(500, 2400);
