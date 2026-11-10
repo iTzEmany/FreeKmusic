@@ -8,6 +8,7 @@ import 'shuffle_plus_text.dart';
 import '../screens/now_playing/shuffle_plus_sheet.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
+import 'show_msg.dart' show CcSnackContent;
 
 /// The «why no Shuffle+» message was shown (once per session, in memory; D-87).
 bool _explained = false;
@@ -46,7 +47,9 @@ Future<void> _cycleWithNotice(
   if (block == null || _explained || !context.mounted) return;
   _explained = true;
   messenger.showSnackBar(
-    SnackBar(content: Text(shufflePlusBlockText(l, block))),
+    SnackBar(
+      content: CcSnackContent(shufflePlusBlockText(l, block), CcTiming.msg),
+    ),
   );
 }
 
@@ -168,8 +171,13 @@ class ShufflePill extends ConsumerWidget {
     final key = listKey ?? listKeyOf(ids);
     final mode = _modeOf(ref, key);
     final color = mode == ShuffleMode.off ? cc.text : cc.accent;
-    void cycle() =>
-        _cycleWithNotice(context, ref, () async => ids, listKey: key, plus: plus);
+    void cycle() => _cycleWithNotice(
+      context,
+      ref,
+      () async => ids,
+      listKey: key,
+      plus: plus,
+    );
     // One node: the state is the name (the button's own «Casuale» would be a second).
     return Semantics(
       button: true,

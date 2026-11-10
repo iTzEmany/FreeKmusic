@@ -166,7 +166,8 @@ void main() {
   ) async {
     final h = await pumpRow(tester);
     await tester.dragFrom(const Offset(120, 36), const Offset(300, 0));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(
       find.text('Aggiunto in coda'),
       findsOneWidget,
@@ -212,7 +213,8 @@ void main() {
     await tester.tap(find.byTooltip('Altre opzioni'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Scarica'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(find.text('Aggiunto alla libreria'), findsOneWidget);
     await h.dispose(tester);
   });

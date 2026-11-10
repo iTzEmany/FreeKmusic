@@ -103,7 +103,8 @@ void main() {
       await tester.tap(find.text('apri'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('dislike-artist')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
       await tester.tap(find.text('Annulla'));
       await tester.pumpAndSettle();
       expect(actions.calls.last, 'undo x');

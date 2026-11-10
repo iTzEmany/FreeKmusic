@@ -27,6 +27,10 @@ import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_icon_sync.dart';
 import 'ui/widgets/user_activity_scope.dart';
 import 'ui/theme/app_theme.dart';
+import 'ui/theme/tokens.dart' show CcTiming;
+import 'ui/widgets/show_msg.dart' show CcSnackContent;
+
+const _updateSnack = Duration(seconds: 8);
 
 final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -63,9 +67,12 @@ class CodecoreApp extends ConsumerWidget {
       if (info == null) return;
       _messengerKey.currentState?.showSnackBar(
         SnackBar(
-          duration: const Duration(seconds: 8),
+          duration: _updateSnack,
           content: Builder(
-            builder: (c) => Text(c.l10n.updateAvailable(info.version)),
+            builder: (c) => CcSnackContent(
+              c.l10n.updateAvailable(info.version),
+              _updateSnack,
+            ),
           ),
         ),
       );
@@ -76,8 +83,9 @@ class CodecoreApp extends ConsumerWidget {
         _messengerKey.currentState?.showSnackBar(
           SnackBar(
             content: Builder(
-              builder: (c) => Text(
+              builder: (c) => CcSnackContent(
                 e.noSpace ? c.l10n.promoteNoSpace : c.l10n.promoteFailed,
+                CcTiming.msg,
               ),
             ),
           ),
@@ -90,7 +98,8 @@ class CodecoreApp extends ConsumerWidget {
         _messengerKey.currentState?.showSnackBar(
           SnackBar(
             content: Builder(
-              builder: (c) => Text(c.l10n.jamOnlineFailed(r.title)),
+              builder: (c) =>
+                  CcSnackContent(c.l10n.jamOnlineFailed(r.title), CcTiming.msg),
             ),
           ),
         );

@@ -55,7 +55,8 @@ void main() {
     await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(item));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
   }
 
   testWidgets(
@@ -87,7 +88,8 @@ void main() {
     await tester.tap(find.text('Scrivi o incolla'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('lyrics-save')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(find.text('Scrivi qualcosa prima di salvare'), findsOneWidget);
     expect((await stored(tester, h)).$1.lyricsPlain, isNull);
     await tester.enterText(find.byType(TextField), 'just words');

@@ -225,7 +225,8 @@ void main() {
     );
     await openMenu(tester);
     await tester.tap(find.text('Elimina traslitterazione'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(find.text('Traslitterazione eliminata'), findsOneWidget);
     await tester.tap(find.text('Annulla'));
     await tester.pumpAndSettle();
