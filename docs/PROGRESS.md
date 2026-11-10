@@ -1455,8 +1455,8 @@ mobile_scanner — fase 24 — 2026-10-19
 - Deviazioni 108: `move` con blocco vuoto non crea un blocco; `currentFromUser` non si salva (al riavvio il corrente ripristinato non conta come del blocco); un risultato online toccato in Cerca suona e il blocco lo segue; il giro della radio tiene il blocco (come dice l'analisi; solo `playStations` lo svuota).
 
 ## Fase 109 — Titoli che scorrono (`fase-109-titoli-che-scorrono.md`)
-- [ ] 109.1 `MarqueeText`
-- [ ] 109.2 Dove si usa
+- [x] 109.1 `MarqueeText`
+- [x] 109.2 Dove si usa
 - [ ] 109.3 Prestazioni
 - [ ] 109.4 Controlli di fase
 

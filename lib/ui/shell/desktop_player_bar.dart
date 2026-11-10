@@ -32,6 +32,7 @@ import '../widgets/seek_bar.dart';
 import '../widgets/smooth_position.dart';
 import '../../providers/radio_providers.dart' show onAirProvider;
 import '../widgets/shuffle_button.dart';
+import '../widgets/marquee_text.dart';
 
 /// The 80 px player of the desktop layout (replaces the mini-player).
 class DesktopPlayerBar extends ConsumerWidget {
@@ -104,12 +105,7 @@ class _EmptyInfo extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l.playerEmptyTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.bodyLarge?.copyWith(color: cc.textMuted),
-                ),
+                MarqueeText(l.playerEmptyTitle, style: theme.bodyLarge?.copyWith(color: cc.textMuted)),
                 Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.bodyMedium),
               ],
             ),
@@ -166,12 +162,7 @@ class _TrackInfo extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                texts?.title ?? track.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.bodyLarge,
-              ),
+              MarqueeText(texts?.title ?? track.title, style: theme.bodyLarge),
               if (radio == null)
                 ArtistLinks(track, style: theme.bodyMedium, minHeight: 0)
               else
@@ -235,12 +226,7 @@ class _JamInfo extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  cur?.title ?? l.jamNothingPlaying,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.bodyLarge,
-                ),
+                MarqueeText(cur?.title ?? l.jamNothingPlaying, style: theme.bodyLarge),
                 Row(
                   children: [
                     Icon(Icons.circle, size: 8, color: cc.accent),

@@ -17,6 +17,7 @@ import 'package:codecore/ui/widgets/speed_button.dart';
 import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:codecore/providers/theme_providers.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:codecore/ui/widgets/marquee_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,8 +92,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  // Changes in 109 (D-486): long titles will scroll.
-  testWidgets('a long title is one line with an ellipsis', (tester) async {
+  testWidgets('a long title scrolls on one line (D-486)', (tester) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -107,9 +107,8 @@ void main() {
     await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
     await h.pump(tester, const NowPlayingScreen());
     await _settle(tester);
-    final title = tester.widget<Text>(find.text(longTitle));
-    expect(title.maxLines, 1);
-    expect(title.overflow, TextOverflow.ellipsis);
+    expect(find.widgetWithText(MarqueeText, longTitle), findsOneWidget);
+    expect(tester.widget<Text>(find.text(longTitle)).softWrap, isFalse);
     await h.dispose(tester);
   });
 
