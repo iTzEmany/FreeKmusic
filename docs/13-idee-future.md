@@ -1,7 +1,7 @@
 # Idee future per FreeKmusic
 
 Raccolta ragionata di ciò che si potrebbe aggiungere **dopo la fase 12**. Non è un piano: ogni voce, quando la si
-vuole fare, diventa un documento di fase (`fase-N-*.md`) con task e verifiche, come le altre.
+vuole fare, diventa un documento di fase (`docs/fasi/fase-N-*.md`) con task e verifiche, come le altre.
 
 Scritta il 2026-10-16, a base completata (fasi 0–12). Punto di partenza: app standalone Flutter per Android,
 Linux e Windows; libreria locale, player con coda, playlist, testi, arricchimento web, download da YouTube con
@@ -202,6 +202,6 @@ CI ──► Test d'integrazione su telefono ──► Pacchetti/installer
 ```
 
 ## Come trasformare un'idea in una fase
-1. Scrivere `docs/fase-N-<nome>.md` come le altre: obiettivo, prerequisiti, decisioni, task con **File / Passi / Verifica**, rischi, Definition of Done.
-2. Aggiungerla a `docs/00-INDICE.md` e i task a `docs/PROGRESS.md`.
+1. Scrivere `docs/fasi/fase-N-<nome>.md` come le altre: obiettivo, prerequisiti, decisioni, task con **File / Passi / Verifica**, rischi, Definition of Done.
+2. Aggiungerla alla tabella di `docs/00-INDICE.md` (se serve) e spuntare i task nel suo file; a fase chiusa va in `docs/storico/fasi/`.
 3. Per le funzioni di rete, aggiungere una prova «dal vivo» opzionale in `test/live/` (come `import_live_test.dart`) e annotare nel documento quali parti **non** si possono automatizzare (selettore file di sistema, schermata di blocco…).

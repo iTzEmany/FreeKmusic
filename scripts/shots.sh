@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Scatti delle schermate (golden fuori da `flutter test`): scripts/shots.sh [filtro sul nome]
-# I PNG finiscono in test_shots/goldens/ (ignorata da git); aprili e confrontali con i token di docs/fase-11.
+# I PNG finiscono in test_shots/goldens/ (ignorata da git); aprili e confrontali con i token di docs/storico/fasi/fase-11-interfaccia-nuova.md.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 args=(test test_shots --update-goldens)

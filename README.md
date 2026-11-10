@@ -3,7 +3,7 @@
 Lettore musicale personale, standalone (nessun backend), per **Android, Linux e Windows**.
 Italiano, English, Deutsch, Español.
 
-- Piano di lavoro: [`docs/00-INDICE.md`](docs/00-INDICE.md) · avanzamento: [`docs/PROGRESS.md`](docs/PROGRESS.md)
+- Piano di lavoro: [`docs/00-INDICE.md`](docs/00-INDICE.md) · fasi chiuse: [`docs/storico/`](docs/storico/README.md)
 
 ## Schermate
 - **Home** (saluto, «Riprendi», ascoltati/aggiunti di recente, più ascoltati, da riscoprire) · **Cerca** (libreria
@@ -23,7 +23,7 @@ Italiano, English, Deutsch, Español.
 - **Online (solo su azione tua o opzioni attive)**: info e copertine da iTunes, testi sincronizzati da LRCLIB,
   curiosità da Wikipedia, ricerca e download da YouTube, YouTube Music e SoundCloud con yt-dlp.
 - **Condivisione LAN** telefono ↔ PC senza server esterni: scoperta automatica dei dispositivi, richiesta con accettazione (anche da notifica su Android, anche in background), collegamento manuale con PIN e QR.
-- **Jam sulla rete locale**: coda condivisa tra fino a 5 dispositivi (anche un ospite può accettare nuovi arrivati), ognuno aggiunge brani dalla propria libreria (streaming dal proprietario, precarico del successivo), uscita audio selezionabile; l'ospite non può cambiare brano. Più dispositivi possono suonare **insieme, sincronizzati** (orologio condiviso e correzione della deriva). Schermata Condivisione → «Avvia Jam con …». Piano in [`docs/fase-8-jam.md`](docs/fase-8-jam.md).
+- **Jam sulla rete locale**: coda condivisa tra fino a 5 dispositivi (anche un ospite può accettare nuovi arrivati), ognuno aggiunge brani dalla propria libreria (streaming dal proprietario, precarico del successivo), uscita audio selezionabile; l'ospite non può cambiare brano. Più dispositivi possono suonare **insieme, sincronizzati** (orologio condiviso e correzione della deriva). Schermata Condivisione → «Avvia Jam con …». Piano in [`docs/storico/fasi/fase-8-jam.md`](docs/storico/fasi/fase-8-jam.md).
 - **Importa playlist di Spotify da CSV**: scarica il file da **exportify.net** (accedi con Spotify ed esporta la
   playlist), poi in Libreria tocca «+» → «Importa da Exportify (CSV)». I brani già in libreria vengono collegati, gli
   altri cercati su YouTube Music e scaricati, nello stesso ordine; i dubbi finiscono in «Rivedi». Serve `yt-dlp`
@@ -36,7 +36,7 @@ Italiano, English, Deutsch, Español.
 - **Linux**: `flutter build linux --release`, poi eseguire `build/linux/x64/release/bundle/freekmusic`.
   Servono `libmpv` (`sudo apt install libmpv-dev mpv`). Per YouTube: `yt-dlp` e `ffmpeg` nel PATH (`pip install -U yt-dlp`)
   e un runtime JavaScript (`node`, `deno` o `quickjs`).
-- **Linux, pacchetto .deb**: `flutter build linux --release && scripts/package-linux.sh --deb` produce `build/freekmusic_<versione>_amd64.deb` (dipende da `libmpv2`); lo zip resta in `build/freekmusic-linux-x64.zip`. AppImage, Flatpak e l'installer Windows aspettano l'approvazione degli strumenti di build (vedi `docs/PROGRESS.md`, fase 26).
+- **Linux, pacchetto .deb**: `flutter build linux --release && scripts/package-linux.sh --deb` produce `build/freekmusic_<versione>_amd64.deb` (dipende da `libmpv2`); lo zip resta in `build/freekmusic-linux-x64.zip`. AppImage, Flatpak e l'installer Windows aspettano l'approvazione degli strumenti di build (vedi `docs/storico/PROGRESS.md`, fase 26).
 - **Android più leggero**: `flutter build apk --release --split-per-abi` (arm64 ≈ 67 MB) oppure la variante senza YouTube: `CODECORE_LITE=1 flutter build apk --release --split-per-abi --dart-define=CODECORE_YOUTUBE=false` (arm64 ≈ 13 MB).
 - **Guida**: [`docs/guida/`](docs/guida/README.md).
 - **macOS**: scarica `FreeKmusic-<versione>-macos.zip` dalla release e decomprimilo. L'app non è firmata: al primo avvio apri con tasto destro → Apri, oppure `xattr -dr com.apple.quarantine freekmusic.app`. Le build release di Flutter per macOS sono universali (Apple Silicon e Intel). Non include yt-dlp/ffmpeg.
@@ -88,7 +88,7 @@ senza il file la build release usa la chiave di debug.
 - **Cerca online:** tre chip sopra i risultati — **YouTube · YouTube Music · SoundCloud** (si ricorda la scelta). SoundCloud mostra solo brani interi: le anteprime da 30 s e i brani con DRM non si scaricano.
 - **Importazione:** Impostazioni → Download → «Cerca anche su SoundCloud se un brano non si trova» (spento di serie): una ricerca in più per le righe che YouTube non trova.
 - **Playlist e canali YouTube:** incolla l'indirizzo in Cerca → foglio con i video (tutti spuntati), un nome e «Scarica in una playlist»; i brani arrivano nell'ordine della playlist, con pausa, ripresa e annulla.
-- **Traduzione dei testi:** non ancora (aspetta l'approvazione di un pacchetto, vedi `docs/PROGRESS.md`).
+- **Traduzione dei testi:** non ancora (aspetta l'approvazione di un pacchetto, vedi `docs/storico/PROGRESS.md`).
 
 ## Podcast (fase 23)
 - **Libreria → Podcast:** iscriviti incollando l'indirizzo del feed RSS o cercando per nome (elenco pubblico di iTunes); la pagina del podcast elenca gli episodi dal più recente. **Niente aggiornamenti o download da soli**: «Aggiorna» (o aprire un podcast controllato più di 6 ore fa) e «Scarica» partono solo da te.
@@ -100,7 +100,7 @@ senza il file la build release usa la chiave di debug.
 
 ## Dispositivi fidati e sincronia (fase 24, in parte)
 - Impostazioni → «Rete locale» → **Dispositivi fidati**: per ogni dispositivo abbinato si vede l'impronta, si può attivare «Accetta automaticamente» e **revocare** (con conferma). Il gruppo compare solo quando c'è almeno un abbinato.
-- Le playlist hanno un'identità (`uuid`) e una data di ultima modifica; il confronto tra due dispositivi (la più recente vince, con anteprima e conferma, mai cancellazioni) è pronto e provato nei test. **L'abbinamento con PIN/QR, l'HTTPS con impronta e il pulsante «Sincronizza playlist» non ci sono ancora**: aspettano l'approvazione dei pacchetti dei certificati e dello scanner (vedi `docs/PROGRESS.md`). La Jam resta su HTTP con token.
+- Le playlist hanno un'identità (`uuid`) e una data di ultima modifica; il confronto tra due dispositivi (la più recente vince, con anteprima e conferma, mai cancellazioni) è pronto e provato nei test. **L'abbinamento con PIN/QR, l'HTTPS con impronta e il pulsante «Sincronizza playlist» non ci sono ancora**: aspettano l'approvazione dei pacchetti dei certificati e dello scanner (vedi `docs/storico/PROGRESS.md`). La Jam resta su HTTP con token.
 
 ## Widget, tile, Android Auto (fase 25, Android)
 - **Widget** «In riproduzione» 4×1 e 2×2 per la home (copertina, titolo, ⏮ ⏯ ⏭) e **tile** play/pausa nelle impostazioni rapide: anche con l'app chiusa (il primo tocco la riavvia e fa partire il brano dopo ~3 s).

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants.dart' show kInputDebounce;
 
-/// Visual tokens of docs/fase-11 («Sistema visivo»). Widgets read them through
+/// Visual tokens of docs/storico/fasi/fase-11 («Sistema visivo»). Widgets read them through
 /// `context.cc`; no hex literals outside this file.
 @immutable
 class CcColors extends ThemeExtension<CcColors> {

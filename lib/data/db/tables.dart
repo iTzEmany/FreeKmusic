@@ -103,7 +103,7 @@ class PlaylistTracks extends Table {
   Set<Column> get primaryKey => {playlistId, trackId};
 }
 
-/// One CSV import (Exportify) into a playlist. See `docs/fase-12-import-csv.md`.
+/// One CSV import (Exportify) into a playlist. See `docs/storico/fasi/fase-12-import-csv.md`.
 class PlaylistImports extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get playlistId =>

@@ -3,8 +3,8 @@
 > Letto da `/obiettivo` all'avvio. Ricavato il 2026-10-25 da CLAUDE.md, ci.yml, memorie e git log.
 
 ## Documenti da leggere all'avvio
-- `CLAUDE.md`, `docs/01-regole-di-lavoro.md`, `docs/PROGRESS.md`, `docs/decisioni.md`, `docs/handoff.md`, `docs/gotchas.md`
-- Feature in corso: `docs/feature-riconoscimento.md` (fasi 69c–69e, prima della 70), poi `docs/feature-jam-distanza.md` (fasi 70–73) e solo il `docs/fase-N-*.md` corrente; `docs/feature-streaming-veloce.md`, `docs/feature-streaming.md` e `docs/feature-arricchimento.md` solo se servono
+- `CLAUDE.md`, `docs/01-regole-di-lavoro.md`, `docs/00-INDICE.md`, `docs/architettura/00-panoramica.md` e il documento d'area toccato (le «Trappole» sono lì), `docs/decisioni.md` (indice per area in cima), `docs/prossimi-lavori.md`
+- Solo il file della fase corrente in `docs/fasi/fase-N-*.md`; l'avanzamento si spunta nel file stesso (niente PROGRESS globale) e a fase chiusa si sposta con `git mv` in `docs/storico/fasi/` aggiungendo la riga a `docs/storico/README.md`. Le specifiche di feature (`docs/storico/feature/feature-*.md`) solo se la fase le cita
 
 ## Modalità
 - **PR**: ramo da `origin/master` → PR → `gh pr merge --auto --squash`. **Una PR per fase, un commit per task** (memoria).
@@ -44,7 +44,7 @@
 - Motorola edge 40 (`ZY22HKD85K`, libreria vera) nelle fasi 50–54 e 55–57 (D-125, D-126, D-146): APK debug e prove con i brani presenti; prima chiedi all'utente un backup completo dall'app; firma diversa → fermati, backup confermato, poi `uninstall -k` e ripristino; mai cancellare file musicali
 
 ## Risparmio di token (dalla fase 51: 27,7M, metà nella chat principale)
-- **Chat principale**: fuori dalle aree a rischio leggi solo `git diff --stat` e l'esito del reviewer, mai il diff intero. Niente log lunghi in chat: la CI rossa va subito a `github-ci` con il numero della PR. Raggruppa i controlli in una sola chiamata Bash. A fine fase aggiorna `docs/handoff.md` e chiudi l'obiettivo, invece di proseguire fino alla compattazione.
+- **Chat principale**: fuori dalle aree a rischio leggi solo `git diff --stat` e l'esito del reviewer, mai il diff intero. Niente log lunghi in chat: la CI rossa va subito a `github-ci` con il numero della PR. Raggruppa i controlli in una sola chiamata Bash. A fine fase aggiorna il documento d'area in `docs/architettura/` (non c'è più `handoff.md`) e chiudi l'obiettivo, invece di proseguire fino alla compattazione.
 - **Task**: sotto la mezz'ora di lavoro (una sezione di schermata, un gruppo di ricerca, testi ARB) si accorpa al task vicino della stessa ondata. Al massimo 3–4 task per fase.
 - **Scheggia**: in modalità passo con effort `medium`, `high` solo nelle aree a rischio qui sopra. In modalità fase solo se la fase tocca aree a rischio. Per una fase di sola UI la saltiamo: la prova a vista è già nel passo «tuo» (es. 51.9).
 - **Review**: `/code-review high` solo sulle aree a rischio. La review di architettura di fine fase la fa Sonnet con effort high se la fase non tocca schema, backup o protocollo Jam; Opus negli altri casi.
