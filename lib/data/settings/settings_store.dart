@@ -37,6 +37,7 @@ class AppSettings {
     this.compactMode = false,
     this.reducedMotion = false,
     this.spinCover = false,
+    this.pauseOnZeroVolume = false,
     this.blurredChrome = false,
     this.language = 'it',
     this.autoEnrich = false,
@@ -98,6 +99,9 @@ class AppSettings {
 
   /// The now-playing cover turns while music plays; off by default.
   final bool spinCover;
+
+  /// Volume at zero pauses local playback, raising it resumes (off).
+  final bool pauseOnZeroVolume;
 
   /// Dock and headers semi-transparent with a blur; off by default (slow on weak phones, D-406).
   final bool blurredChrome;
@@ -207,6 +211,7 @@ class AppSettings {
     bool? compactMode,
     bool? reducedMotion,
     bool? spinCover,
+    bool? pauseOnZeroVolume,
     bool? blurredChrome,
     String? language,
     bool? autoEnrich,
@@ -259,6 +264,7 @@ class AppSettings {
     compactMode: compactMode ?? this.compactMode,
     reducedMotion: reducedMotion ?? this.reducedMotion,
     spinCover: spinCover ?? this.spinCover,
+    pauseOnZeroVolume: pauseOnZeroVolume ?? this.pauseOnZeroVolume,
     blurredChrome: blurredChrome ?? this.blurredChrome,
     language: language ?? this.language,
     autoEnrich: autoEnrich ?? this.autoEnrich,
@@ -401,6 +407,7 @@ class SettingsStore {
     compactMode: _prefs.getBool('compactMode') ?? false,
     reducedMotion: _prefs.getBool('reducedMotion') ?? false,
     spinCover: _prefs.getBool('spinCover') ?? false,
+    pauseOnZeroVolume: _prefs.getBool('pauseOnZeroVolume') ?? false,
     blurredChrome: _prefs.getBool('blurredChrome') ?? false,
     language: _prefs.getString('language') ?? 'it',
     autoEnrich: _prefs.getBool('autoEnrich') ?? false,
@@ -485,6 +492,7 @@ class SettingsStore {
     await _prefs.setBool('compactMode', s.compactMode);
     await _prefs.setBool('reducedMotion', s.reducedMotion);
     await _prefs.setBool('spinCover', s.spinCover);
+    await _prefs.setBool('pauseOnZeroVolume', s.pauseOnZeroVolume);
     await _prefs.setBool('blurredChrome', s.blurredChrome);
     await _prefs.setString('language', s.language);
     await _prefs.setBool('autoEnrich', s.autoEnrich);

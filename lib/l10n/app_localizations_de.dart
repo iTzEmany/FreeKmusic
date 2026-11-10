@@ -7467,4 +7467,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get downloadedNoPlaylistEmpty =>
       'Jeder heruntergeladene Titel ist schon in einer Playlist';
+
+  @override
+  String get pauseOnZeroVolume => 'Pausieren, wenn die Lautstärke auf null ist';
+
+  @override
+  String get pauseOnZeroVolumeHelp =>
+      'Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat.';
 }

@@ -7433,4 +7433,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get downloadedNoPlaylistEmpty =>
       'Tutti i brani scaricati stanno già in una playlist';
+
+  @override
+  String get pauseOnZeroVolume => 'Metti in pausa quando il volume è a zero';
+
+  @override
+  String get pauseOnZeroVolumeHelp =>
+      'Alzando di nuovo il volume la musica riparte da sola, solo se l\'ha fermata questa funzione.';
 }

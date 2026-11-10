@@ -7448,4 +7448,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get downloadedNoPlaylistEmpty =>
       'Todas as faixas transferidas já estão numa playlist';
+
+  @override
+  String get pauseOnZeroVolume => 'Pausar quando o volume está em zero';
+
+  @override
+  String get pauseOnZeroVolumeHelp =>
+      'Ao subir o volume de novo a música continua, só se esta função a pausou.';
 }

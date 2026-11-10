@@ -3854,5 +3854,7 @@
   "queueUpNext": "A seguir na fila",
   "queueThen": "Depois",
   "downloadedNoPlaylist": "Transferidas sem playlist",
-  "downloadedNoPlaylistEmpty": "Todas as faixas transferidas já estão numa playlist"
+  "downloadedNoPlaylistEmpty": "Todas as faixas transferidas já estão numa playlist",
+  "pauseOnZeroVolume": "Pausar quando o volume está em zero",
+  "pauseOnZeroVolumeHelp": "Ao subir o volume de novo a música continua, só se esta função a pausou."
 }

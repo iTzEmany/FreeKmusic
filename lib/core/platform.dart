@@ -2,7 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
-bool get isAndroid => Platform.isAndroid;
+/// Tests set it to true to exercise the Android path on a Linux host.
+@visibleForTesting
+bool? debugIsAndroidOverride;
+
+bool get isAndroid => debugIsAndroidOverride ?? Platform.isAndroid;
 /// Tests set it to false to see the phone layout on a Linux host.
 @visibleForTesting
 bool? debugIsDesktopOverride;
