@@ -1,5 +1,5 @@
 /// What a pasted YouTube address points to.
-enum YoutubeLinkKind { video, playlist, channel, other }
+enum YoutubeLinkKind { video, playlist, channel, album, other }
 
 const _hosts = {'youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'};
 
@@ -45,11 +45,22 @@ Uri? _parse(String input) {
   return u;
 }
 
+final _albumPath = RegExp(r'^/browse/(MPREb_[\w-]+)$');
+
+/// `MPREb_…` of a `music.youtube.com/browse/…` album link (query parameters
+/// are ignored), else null.
+String? ytmAlbumBrowseId(String link) {
+  final u = _parse(link);
+  if (u == null || u.host != 'music.youtube.com') return null;
+  return _albumPath.firstMatch(u.path)?.group(1);
+}
+
 YoutubeLinkKind classifyYoutubeUrl(String input) {
   final u = _parse(input);
   if (u == null) return YoutubeLinkKind.other;
   if (_listId(u) != null) return YoutubeLinkKind.playlist;
-  // music.youtube.com is only understood for its playlists.
+  if (ytmAlbumBrowseId(input) != null) return YoutubeLinkKind.album;
+  // music.youtube.com is only understood for its playlists and albums.
   if (u.host == 'music.youtube.com') return YoutubeLinkKind.other;
   if (u.host == 'youtu.be') {
     return _segments(u).isEmpty ? YoutubeLinkKind.other : YoutubeLinkKind.video;
@@ -75,6 +86,7 @@ String? listingUrl(String input) {
     case YoutubeLinkKind.channel:
       return 'https://www.youtube.com/${_channelBase(u)}/videos';
     case YoutubeLinkKind.video:
+    case YoutubeLinkKind.album:
     case YoutubeLinkKind.other:
       return null;
   }

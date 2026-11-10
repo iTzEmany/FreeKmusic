@@ -51,6 +51,9 @@ void main() {
       'https://www.youtube.com/shorts/VID': (YoutubeLinkKind.video, null),
       'https://www.youtube.com/playlist?list=LL': (YoutubeLinkKind.other, null),
       'https://www.youtube.com/playlist?list=': (YoutubeLinkKind.other, null),
+      'https://music.youtube.com/browse/MPREb_abc-123': (YoutubeLinkKind.album, null),
+      'https://music.youtube.com/browse/MPREb_abc-123?si=xyz': (YoutubeLinkKind.album, null),
+      'https://music.youtube.com/browse/UCabc': (YoutubeLinkKind.other, null),
       'https://music.youtube.com/watch?v=VID': (YoutubeLinkKind.other, null),
       'https://www.youtube.com/': (YoutubeLinkKind.other, null),
       'https://www.youtube.com/@': (YoutubeLinkKind.other, null),
@@ -65,6 +68,11 @@ void main() {
         expect(listingUrl(e.key), e.value.$2);
       });
     }
+  });
+
+  test('ytmAlbumBrowseId gives the browse id, params dropped', () {
+    expect(ytmAlbumBrowseId('https://music.youtube.com/browse/MPREb_abc-123?si=x'), 'MPREb_abc-123');
+    expect(ytmAlbumBrowseId('https://www.youtube.com/browse/MPREb_abc'), isNull);
   });
 
   group('htmlUnescape', () {
