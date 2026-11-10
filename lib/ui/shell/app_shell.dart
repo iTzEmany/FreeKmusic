@@ -33,9 +33,10 @@ import '../../providers/speaker_providers.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/releases/new_releases_screen.dart';
-import '../../providers/exportify_providers.dart' show incomingPathProvider;
+import '../../providers/exportify_providers.dart' show incomingPathProvider, incomingTextProvider;
 import '../../providers/releases_providers.dart' show launchTargetProvider;
 import '../screens/import/import_flow.dart' show openImportFile;
+import '../../services/online/shared_text.dart';
 import 'shell_nav.dart';
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
@@ -342,6 +343,21 @@ class AppShell extends ConsumerWidget {
       if (path == null) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) openImportFile(context, ref, path);
+      });
+    });
+    // Text shared from another app: a link opens like a pasted one in Cerca.
+    ref.listen(incomingTextProvider, (_, next) {
+      final text = next.value;
+      if (text == null) return;
+      final query = switch (routeSharedText(text)) {
+        SharedLink(:final url) => url,
+        PlainShare(text: final t) => t,
+      };
+      if (query.isEmpty) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(searchPrefillProvider.notifier).set(query);
+        ShellNav.showSearch(context, ref);
       });
     });
     ref.listen(shareOffersProvider, (_, next) {

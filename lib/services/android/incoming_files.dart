@@ -12,6 +12,7 @@ class IncomingFiles {
 
   final MethodChannel _channel;
   final _pushed = StreamController<void>.broadcast();
+  final _pushedText = StreamController<void>.broadcast();
   bool _listening = false;
 
   Future<String?> takeIncoming() async {
@@ -23,14 +24,38 @@ class IncomingFiles {
     }
   }
 
+  Future<String?> takeIncomingText() async {
+    try {
+      return await _channel.invokeMethod<String>('takeIncomingText');
+    } on PlatformException catch (e, st) {
+      AppLog.w('incoming text not readable', e, st);
+      return null;
+    }
+  }
+
+  void _listen() {
+    if (_listening) return;
+    _listening = true;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'incoming') _pushed.add(null);
+      if (call.method == 'incomingText') _pushedText.add(null);
+    });
+  }
+
+  /// The text that started the app, then every later one while it lives.
+  Stream<String> texts() async* {
+    _listen();
+    final first = await takeIncomingText();
+    if (first != null) yield first;
+    await for (final _ in _pushedText.stream) {
+      final t = await takeIncomingText();
+      if (t != null) yield t;
+    }
+  }
+
   /// The file that started the app, then every later one while it lives.
   Stream<String> paths() async* {
-    if (!_listening) {
-      _listening = true;
-      _channel.setMethodCallHandler((call) async {
-        if (call.method == 'incoming') _pushed.add(null);
-      });
-    }
+    _listen();
     final first = await takeIncoming();
     if (first != null) yield first;
     await for (final _ in _pushed.stream) {
