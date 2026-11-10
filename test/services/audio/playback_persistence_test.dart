@@ -168,4 +168,24 @@ void main() {
     await PlaybackPersistence(b, store).restore();
     expect(b.userAhead, 0);
   });
+
+  test('an online entry inside the block is dropped from the saved block count', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final q = PlayQueue()..setItems([5, 6, -1, 7, 8], userAhead: 3);
+    await PlaybackPersistence(CodecoreAudioHandler(FakeBackend(), q, TrackRepository(db), onError: (_) {}), store).flush();
+    expect(store.readPlayback().userAhead, 2);
+  });
+
+  test('current online with an empty block saves 0', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final q = PlayQueue()..setItems([5, -1, 6], startIndex: 1);
+    await PlaybackPersistence(CodecoreAudioHandler(FakeBackend(), q, TrackRepository(db), onError: (_) {}), store).flush();
+    expect(store.readPlayback().userAhead, 0);
+  });
 }

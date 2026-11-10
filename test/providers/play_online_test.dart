@@ -82,6 +82,16 @@ void main() {
     expect(handler.currentIndex, 1);
   });
 
+  test('playOnline con un blocco suona il risultato online', () async {
+    final c = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/m/c.mp3', title: 'Song c', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    handler.addToQueue(c);
+    await player.playOnline(_r('x'));
+    expect(isOnlineId(handler.queueIds[handler.currentIndex]), isTrue);
+    expect(handler.queueIds[handler.currentIndex + 1], c, reason: 'the block stays right after');
+    expect(handler.userAhead, 1);
+  });
+
   test('a result already downloaded plays the library track, no online entry', () async {
     downloaded = ids[1];
     await player.playOnline(_r('x'));

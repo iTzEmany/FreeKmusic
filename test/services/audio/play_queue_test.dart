@@ -249,6 +249,61 @@ void main() {
     );
   });
 
+  group('currentFromUser survives and clears', () {
+    PlayQueue onBlockEntry() {
+      final q = make([1, 2, 3])..enqueue(9);
+      q.next();
+      expect(q.currentFromUser, isTrue);
+      return q;
+    }
+
+    test('a shuffle toggle keeps it', () {
+      final q = onBlockEntry()..shuffle = true;
+      expect(q.currentFromUser, isTrue);
+      q.shuffle = false;
+      expect(q.currentFromUser, isTrue);
+    });
+
+    test('a move keeps it', () {
+      final q = onBlockEntry();
+      q.move(q.items.length - 1, q.currentIndex + 1);
+      expect(q.currentFromUser, isTrue);
+    });
+
+    test('repeat-all wrap from a block entry clears it', () {
+      final q = make([1])
+        ..repeat = PlayRepeat.all
+        ..enqueue(9);
+      q.next();
+      expect(q.currentFromUser, isTrue);
+      q.next(auto: true);
+      expect(q.currentFromUser, isFalse);
+    });
+
+    test('a new context clears it', () {
+      final q = onBlockEntry()..setItems([4, 5]);
+      expect(q.currentFromUser, isFalse);
+    });
+
+    test('Svuota keeps it and Annulla restores it', () {
+      final q = onBlockEntry();
+      final saved = q.saveState();
+      q.rebuildUpcoming(null);
+      expect(q.currentFromUser, isTrue);
+      q.jumpTo(0); // here the block entry is the only one
+      q.restoreState(saved);
+      expect(q.currentFromUser, isTrue);
+      expect(q.items, [1, 9, 2, 3]);
+    });
+  });
+
+  test('move to pos+1+userAhead joins the block (D-487)', () {
+    final q = make([1, 2, 3, 4])..enqueue(9);
+    q.move(4, 2); // 4 right after the block
+    expect(q.items, [1, 9, 4, 2, 3]);
+    expect(q.userAhead, 2);
+  });
+
   test('jumpTo the current entry keeps currentFromUser', () {
     final q = make([1, 2, 3])..enqueue(9);
     q.next();

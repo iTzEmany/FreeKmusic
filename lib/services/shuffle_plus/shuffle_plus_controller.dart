@@ -291,7 +291,9 @@ class ShufflePlusController {
   Future<void> _followCurrent() async {
     final cur = _current;
     final fromBlock = host.currentFromUser;
-    if (cur == _curId) return;
+    // Same id but the block copy took over from the original: still an arrival.
+    // shortcut: two copies of one id in a row on the same side are not told apart.
+    if (cur == _curId && fromBlock == _curFromBlock) return;
     final prev = _curId;
     final prevFromBlock = _curFromBlock;
     _curId = cur;

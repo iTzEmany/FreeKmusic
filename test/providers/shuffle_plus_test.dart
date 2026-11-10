@@ -31,6 +31,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+import '../support/fake_backend.dart';
 import '../support/fake_stream_preparer.dart';
 
 final radioJson = File('test/fixtures/innertube/ytm_radio.json')
@@ -1069,6 +1070,56 @@ void main() {
       );
     },
   );
+
+  /// Distance of the replanned suggestion after the original is skipped early
+  /// and the block copy (id [copyOf], or 50) plays to the end.
+  Future<int> copyScenario(int? copyOf) async {
+    cfg = const ShufflePlusConfig(enabled: true, every: 10);
+    host.real = PlayQueue()
+      ..shuffle = true
+      ..setItems([for (var i = 1; i <= 11; i++) i], alreadyShuffled: true);
+    host.real!.enqueue(copyOf ?? 50);
+    controller.start();
+    await until(() => host.queueIds.any(isOnlineId));
+    host.finishAndAdvance(toTheEnd: false);
+    await settle();
+    host.finishAndAdvance();
+    await settle();
+    return replanDistance();
+  }
+
+  test('a block copy of the playing song counts like any other block entry', () async {
+    final control = await copyScenario(null);
+    host = _Host([...library], [...library]);
+    controller.dispose();
+    controller = make();
+    expect(await copyScenario(1), control);
+  });
+
+  test('HandlerShuffleHost reads the block from the real handler', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = TrackRepository(db);
+    final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), repo,
+        onError: (_) {},
+        online: OnlineEntries(),
+        preparer: FakeStreamPreparer(repo, Directory.systemTemp.createTempSync('hsh')));
+    addTearDown(h.dispose);
+    final ids = [
+      for (var i = 0; i < 3; i++)
+        await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$i.mp3', title: 'S$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: i)),
+    ];
+    final plusHost = HandlerShuffleHost(h);
+    await h.playQueue([ids[0], ids[1]], 0);
+    expect(plusHost.userAhead, 0);
+    h.addToQueue(ids[2]);
+    expect(plusHost.userAhead, 1);
+    expect(plusHost.currentFromUser, isFalse);
+    await h.skipToNext();
+    expect(plusHost.currentFromUser, isTrue);
+    expect(plusHost.userAhead, 0);
+  });
 }
 
 class _NoMix implements YoutubeService {
