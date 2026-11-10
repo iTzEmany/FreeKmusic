@@ -6,6 +6,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, listKeyOf;
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
@@ -149,6 +150,78 @@ void main() {
     final ref = c.read(_refProvider);
     expect(await plusAllowedNow(ref), ShufflePlusBlock.radio);
     expect(await plusAllowedNow(ref, ids: const []), isNull);
+  });
+
+  group('a list page\'s «Casuale» (D-534)', () {
+    late Map<Object, ShuffleMode> modes;
+    late PlayerController lists;
+    setUp(() {
+      modes = {};
+      lists = PlayerController(
+        handler,
+        null,
+        shufflePlus: () => plus,
+        setShufflePlus: (on) => plus = on,
+        listMode: (k) => modes[k] ?? ShuffleMode.off,
+        setListMode: (k, m) => modes[k] = m,
+        random: _LastPick(),
+      );
+    });
+
+    test('on a list that is not playing it only changes the list\'s mode', () async {
+      await lists.playAll(tracks); // another list plays, shuffle off
+      await pumpEventQueue();
+      expect(await lists.cycleListShuffle('k'), isNull);
+      expect(modes['k'], ShuffleMode.shuffle);
+      await lists.cycleListShuffle('k');
+      expect(modes['k'], ShuffleMode.plus);
+      await lists.cycleListShuffle('k');
+      expect(modes['k'], ShuffleMode.off);
+      expect(handler.shuffleEnabled, isFalse);
+      expect(plus, isTrue, reason: 'the stored Shuffle+ of the queue is untouched');
+      expect(handler.queueIds, [for (final t in tracks) t.id]);
+    });
+
+    test('on the list that is playing it changes the real queue', () async {
+      await lists.playAll(tracks, listKey: 'k');
+      await pumpEventQueue();
+      expect(lists.isPlayingList('k'), isTrue);
+      await lists.cycleListShuffle('k');
+      expect(handler.shuffleEnabled, isTrue);
+      expect(modes, isEmpty);
+    });
+
+    test('a row tap on a list also makes it the playing one (ids as key)', () async {
+      final ids = [for (final t in tracks) t.id];
+      await lists.playFromList(tracks, 1);
+      await pumpEventQueue();
+      expect(lists.isPlayingList(listKeyOf(ids)), isTrue);
+      expect(lists.isPlayingList(listKeyOf(ids.reversed.toList())), isFalse);
+    });
+
+    test('Play applies the list\'s mode: in order, shuffle, Shuffle+', () async {
+      await lists.playAll(tracks, listKey: 'k');
+      await pumpEventQueue();
+      expect(handler.currentTrack!.id, tracks.first.id);
+      expect(handler.shuffleEnabled, isFalse);
+
+      modes['k'] = ShuffleMode.shuffle;
+      plus = true;
+      await lists.playAll(tracks, listKey: 'k');
+      await pumpEventQueue();
+      expect(handler.currentTrack!.id, tracks.last.id, reason: 'random start');
+      expect(handler.shuffleEnabled, isTrue);
+      expect(plus, isFalse);
+
+      modes['k'] = ShuffleMode.plus;
+      await lists.playAll(tracks, listKey: 'k');
+      expect(handler.shuffleEnabled, isTrue);
+      expect(plus, isTrue);
+
+      modes['k'] = ShuffleMode.off;
+      await lists.playAll(tracks, listKey: 'k');
+      expect(handler.shuffleEnabled, isFalse);
+    });
   });
 
   test('a replayed suggestion is logged once', () async {

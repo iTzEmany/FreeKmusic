@@ -24,6 +24,7 @@ import '../../widgets/track_row_selection.dart';
 import '../online/artist_picker_sheet.dart';
 import '../releases/follow_button.dart';
 import 'album_detail_screen.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// An artist: Play / Shuffle over all their tracks, the five most played and
 /// the albums (rows if few, grid if many).
@@ -82,7 +83,11 @@ class ArtistDetailScreen extends ConsumerWidget {
             : null,
         onPlay: list.isEmpty
             ? null
-            : () => ctrl.playAll(list, context: playCtx),
+            : () => ctrl.playAll(
+                list,
+                context: playCtx,
+                listKey: listKeyOf([for (final t in list) t.id]),
+              ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         slivers: [
           if (tracks.hasError || albums.hasError)

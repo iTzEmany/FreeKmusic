@@ -4,7 +4,7 @@ import 'dart:math';
 import '../core/app_log.dart';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -28,7 +28,12 @@ import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/similar_queue.dart';
 import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed;
 import 'shuffle_plus_providers.dart'
-    show libraryMatchIdProvider, similarFillProvider;
+    show
+        ShuffleMode,
+        libraryMatchIdProvider,
+        listKeyOf,
+        listShuffleProvider,
+        similarFillProvider;
 import 'suggestion_log_provider.dart';
 
 /// Overridden in `main` once the handler has been created (and, on Android,
@@ -111,6 +116,8 @@ class PlayerController {
     this.jamQueueFullNow,
     this.addOnlineToJam,
     this.plusBlock,
+    this.listMode,
+    this.setListMode,
     this.onSuggested,
     this.similarFill,
     this.libraryMatchIdOf,
@@ -144,6 +151,25 @@ class PlayerController {
   /// Why Shuffle+ is out of the cycle for [ids] (the list the button plays) or,
   /// without ids, for the current queue (null: it is in).
   final Future<ShufflePlusBlock?> Function(List<int>? ids)? plusBlock;
+
+  /// The mode chosen on the page of the list [key] for its own next Play, and
+  /// a way to change it (D-534); without them every list is «off».
+  final ShuffleMode Function(Object key)? listMode;
+  final void Function(Object key, ShuffleMode mode)? setListMode;
+
+  /// The list started last through a keyed Play and the queue it made.
+  Object? _listKey;
+  List<int>? _listKeySource;
+
+  /// Is the list [key] the one playing? A key is the page's own (a Play that
+  /// passed it) or the hash of the list's ids ([listKeyOf]), so a row tap
+  /// counts too (D-534).
+  bool isPlayingList(Object key) {
+    final src = _handler.sourceIds;
+    if (src == null) return false;
+    return (_listKey == key && listEquals(src, _listKeySource)) ||
+        listKeyOf(src) == key;
+  }
 
   /// A suggested song entered the queue (it goes to the suggestions log).
   final void Function(YtResult r, String seedTitle)? onSuggested;
@@ -213,11 +239,14 @@ class PlayerController {
     PlayContext? context, {
     bool? plus,
     bool? shuffle,
+    Object? listKey,
   }) async {
     _stopSimilar();
     _handler.setPlayContext(context?.kind.index, context?.name);
     _requestNotificationPermissionOnce();
     final load = _handler.playQueue(ids, at);
+    _listKey = listKey;
+    _listKeySource = _handler.sourceIds;
     if (plus != null) setShufflePlus?.call(plus);
     if (shuffle != null) await setShuffle(shuffle);
     await load;
@@ -237,8 +266,19 @@ class PlayerController {
 
   /// The list's Play button: from a random track when shuffle is on (the
   /// queue keeps it first and shuffles the rest), else from the first.
-  Future<void> playAll(List<Track> snapshot, {PlayContext? context}) =>
-      playFromList(
+  /// [listKey]: the Play of a list page, which applies the mode chosen on its
+  /// control instead of the player's (D-534).
+  Future<void> playAll(
+    List<Track> snapshot, {
+    PlayContext? context,
+    Object? listKey,
+  }) => listKey != null
+      ? playMixed(
+          [for (final t in snapshot) (track: t, online: null, seedTitle: null)],
+          context: context,
+          listKey: listKey,
+        )
+      : playFromList(
         snapshot,
         _handler.shuffleEnabled && snapshot.isNotEmpty
             ? _random.nextInt(snapshot.length)
@@ -258,10 +298,19 @@ class PlayerController {
     int? index,
     PlayContext? context,
     bool? shuffle,
+    Object? listKey,
   }) async {
     if (items.isEmpty) return;
+    // An explicit [shuffle] (a row tap) wins over the page's mode.
+    final mode = listKey == null || shuffle != null
+        ? null
+        : (listMode?.call(listKey) ?? ShuffleMode.off);
+    if (mode != null) shuffle = mode != ShuffleMode.off;
     final at =
-        (index ?? (_handler.shuffleEnabled ? _random.nextInt(items.length) : 0))
+        (index ??
+                ((shuffle ?? _handler.shuffleEnabled)
+                    ? _random.nextInt(items.length)
+                    : 0))
             .clamp(0, items.length - 1);
     if (inJam) {
       final t = items[at].track, r = items[at].online;
@@ -285,12 +334,18 @@ class PlayerController {
       AppLog.w('mixed list not played', e, st);
       return;
     }
+    final online = items.any((i) => i.online != null);
     await _start(
       ids,
       at,
       context,
-      plus: items.any((i) => i.online != null) ? false : null,
+      plus: online
+          ? false
+          : mode == null
+          ? null
+          : mode == ShuffleMode.plus && await plusBlock?.call(ids) == null,
       shuffle: shuffle,
+      listKey: listKey,
     );
     // Logged once the list plays: a failed lookup must not spend the 30-day memory.
     for (final (r, seed) in suggested) {
@@ -300,7 +355,11 @@ class PlayerController {
 
   /// «Shuffle+ della libreria»: [ids] from a random one, shuffle on and
   /// Shuffle+ with it where the list allows it (D-137).
-  Future<void> playShufflePlus(List<int> ids, {PlayContext? context}) async {
+  Future<void> playShufflePlus(
+    List<int> ids, {
+    PlayContext? context,
+    Object? listKey,
+  }) async {
     if (ids.isEmpty || inJam) return;
     final block = await plusBlock?.call(ids);
     await _start(
@@ -309,6 +368,7 @@ class PlayerController {
       context,
       plus: block == null,
       shuffle: true,
+      listKey: listKey,
     );
   }
 
@@ -517,17 +577,20 @@ class PlayerController {
   }
 
   /// Plays [list] in order; [shuffle] turns plain shuffle on (else off), never Shuffle+ (R-18).
+  /// [listKey]: the page's own mode decides instead (D-534).
   Future<void> playOnlineList(
     List<YtResult> list, {
     bool shuffle = false,
+    Object? listKey,
   }) async {
     if (list.isEmpty) return;
     if (inJam) return list.forEach(_onlineToJam);
     await playMixed(
       [for (final r in list) (track: null, online: r, seedTitle: null)],
-      index: shuffle ? _random.nextInt(list.length) : 0,
+      index: listKey == null ? (shuffle ? _random.nextInt(list.length) : 0) : null,
       context: const PlayContext(PlayContextKind.search),
-      shuffle: shuffle,
+      shuffle: listKey == null ? shuffle : null,
+      listKey: listKey,
     );
   }
 
@@ -541,6 +604,33 @@ class PlayerController {
     final on = !_handler.shuffleEnabled;
     if (!on) setShufflePlus?.call(false);
     return setShuffle(on);
+  }
+
+  /// The «Casuale» control of the list page [key] (D-534): the list playing
+  /// takes it like the player's button; any other list only changes the mode
+  /// its next Play applies. [plus] false: off and shuffle only (online lists).
+  Future<ShufflePlusBlock?> cycleListShuffle(
+    Object key, {
+    List<int>? ids,
+    bool plus = true,
+  }) async {
+    if (isPlayingList(key)) {
+      if (plus) return cycleShuffle(ids: ids);
+      await toggleShuffle();
+      return null;
+    }
+    final mode = listMode?.call(key) ?? ShuffleMode.off;
+    ShufflePlusBlock? block;
+    final next = switch (mode) {
+      ShuffleMode.off => ShuffleMode.shuffle,
+      ShuffleMode.shuffle when plus =>
+        (block = await plusBlock?.call(ids)) == null
+            ? ShuffleMode.plus
+            : ShuffleMode.off,
+      _ => ShuffleMode.off,
+    };
+    setListMode?.call(key, next);
+    return block;
   }
 
   /// The shuffle button: off, shuffle, Shuffle+, off. Returns why it skipped
@@ -683,6 +773,8 @@ final playerControllerProvider = Provider<PlayerController>((ref) {
     jamQueueFullNow: () => ref.read(jamProvider.notifier).queueFull,
     addOnlineToJam: (r) => ref.read(jamProvider.notifier).addOnline(r),
     plusBlock: (ids) => plusAllowedNow(ref, ids: ids),
+    listMode: (key) => ref.read(listShuffleProvider(key)),
+    setListMode: (key, m) => ref.read(listShuffleProvider(key).notifier).set(m),
     onSuggested: (r, seed) =>
         ref.read(suggestionLogProvider).addSuggestion(r, seed),
     similarFill: ref.read(similarFillProvider),

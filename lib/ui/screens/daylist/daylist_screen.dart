@@ -15,6 +15,7 @@ import '../../widgets/net_thumbnail.dart';
 import '../../widgets/online_queue_row.dart' show SuggestedMarker;
 import '../../widgets/play_buttons.dart';
 import '../../widgets/playlist_cover.dart';
+import '../../widgets/shuffle_button.dart' show ShufflePill;
 import '../../widgets/track_actions.dart' show showTrackActions;
 import '../settings/settings_screen.dart';
 import 'daylist_labels.dart';
@@ -95,11 +96,7 @@ class DaylistScreen extends ConsumerWidget {
                     runSpacing: 8,
                     children: [
                       PlayPill(onPressed: () => actions.play()),
-                      OutlinedButton.icon(
-                        onPressed: () => actions.play(shuffle: true),
-                        icon: const Icon(Icons.shuffle_rounded),
-                        label: Text(l.shuffle),
-                      ),
+                      const ShufflePill(listKey: daylistListKey, plus: false),
                     ],
                   ),
                 ),

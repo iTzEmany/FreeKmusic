@@ -25,6 +25,7 @@ import '../../widgets/shrinking_header.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 String _sortLabel(BuildContext context, SortOption o) {
   final l = context.l10n;
@@ -97,6 +98,7 @@ class _AllTracksHeader extends StatelessWidget {
               size: 24,
               dot: false,
               listIds: () async => [for (final t in shown) t.id],
+              listKey: listKeyOf([for (final t in shown) t.id]),
             ),
           ],
         ],
@@ -208,7 +210,11 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
               loaded: tracks.hasValue,
               shown: shown,
               wide: wide,
-              onPlay: () => ctrl.playAll(shown, context: ctx),
+              onPlay: () => ctrl.playAll(
+                shown,
+                context: ctx,
+                listKey: listKeyOf([for (final t in shown) t.id]),
+              ),
             ),
             Expanded(child: _scrollView(query, tracks, shown, compact, ctrl, ctx)),
           ],

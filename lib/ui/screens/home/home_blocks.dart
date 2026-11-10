@@ -21,6 +21,7 @@ import '../playlists/playlists_screen.dart';
 import '../radio/radio_screen.dart';
 import 'cover_fan.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../../providers/shuffle_plus_providers.dart' show libraryListKey;
 
 /// «Casuale su tutto»: Play for the whole library (random start if shuffle is
 /// on) next to the three-state shuffle button, which only changes the mode.
@@ -75,6 +76,7 @@ class ShuffleHero extends ConsumerWidget {
               ShuffleModeButton(
                 // What Play plays: the whole library, not the queue of before (D-137).
                 listIds: ref.read(trackOpsProvider).libraryIds,
+                listKey: libraryListKey,
               ),
             ],
           ),

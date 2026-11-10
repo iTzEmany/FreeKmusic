@@ -27,7 +27,9 @@ void main() {
     'ShufflePill: accent when on, badge with Shuffle+, long press opens the sheet',
     (tester) async {
       final h = await Harness.create(tester, tracks: 2);
-      await h.pump(tester, Scaffold(body: ShufflePill(ids: const [])));
+      // The pill's own list is the one playing: it shows the player's mode.
+      await tester.runAsync(() => h.handler.playQueue([1, 2], 0));
+      await h.pump(tester, const Scaffold(body: ShufflePill(ids: [1, 2])));
       final c = ProviderScope.containerOf(
         tester.element(find.byType(ShufflePill)),
       );
@@ -148,6 +150,7 @@ void main() {
     ProviderContainer c,
     int taps, {
     Finder? button,
+    ShuffleMode Function()? read,
   }) async {
     final modes = <ShuffleMode>[];
     for (var i = 0; i < taps; i++) {
@@ -157,7 +160,7 @@ void main() {
       });
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
-      modes.add(c.read(shuffleModeProvider));
+      modes.add(read?.call() ?? c.read(shuffleModeProvider));
     }
     return modes;
   }
@@ -266,10 +269,18 @@ void main() {
         ShufflePill(ids: all),
         all.take(3).toList(),
       );
+      // The 3 playing tracks are another list: the pill cycles its own mode.
       expect(
-        await cycle(tester, c, 3, button: find.byType(OutlinedButton)),
+        await cycle(
+          tester,
+          c,
+          3,
+          button: find.byType(OutlinedButton),
+          read: () => c.read(listShuffleProvider(listKeyOf(all))),
+        ),
         full,
       );
+      expect(h.handler.shuffleEnabled, isFalse);
       await h.dispose(tester);
     },
   );
@@ -286,7 +297,13 @@ void main() {
         all,
       );
       expect(
-        await cycle(tester, c, 3, button: find.byType(OutlinedButton)),
+        await cycle(
+          tester,
+          c,
+          3,
+          button: find.byType(OutlinedButton),
+          read: () => c.read(listShuffleProvider(listKeyOf(all.take(4).toList()))),
+        ),
         blocked,
       );
       await h.dispose(tester);

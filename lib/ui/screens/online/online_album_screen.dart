@@ -33,6 +33,7 @@ import 'catalog_error_view.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
 import '../../widgets/show_msg.dart';
+import '../../widgets/shuffle_button.dart' show ShufflePill;
 
 /// An album, single or EP of YouTube Music: cover, numbered songs with
 /// «Scarica», Play, Shuffle and a ⋮ menu (with «Scarica album»). [release] is what the page
@@ -92,11 +93,11 @@ class OnlineAlbumScreen extends ConsumerWidget {
 
   /// Play / Shuffle: opens the player in loading; the controller queues the album
   /// in the Jam instead when one is on (D-89), then no player opens.
-  void _play(BuildContext context, WidgetRef ref, List<YtResult> songs, {bool shuffle = false}) {
+  void _play(BuildContext context, WidgetRef ref, List<YtResult> songs) {
     if (songs.isEmpty) return;
     unawaited(ref.read(playerControllerProvider).inJam
         ? _queueAlbum(context, ref, songs)
-        : playOnlineListAndOpen(context, ref, songs, shuffle: shuffle));
+        : playOnlineListAndOpen(context, ref, songs, listKey: _listKey));
   }
 
   Future<void> _queueAlbum(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
@@ -182,7 +183,7 @@ class OnlineAlbumScreen extends ConsumerWidget {
             album: album,
             release: release,
             onPlay: songs.isEmpty ? null : () => _play(context, ref, songs),
-            onShuffle: songs.isEmpty ? null : () => _play(context, ref, songs, shuffle: true),
+            listKey: _listKey,
             onMore: album == null ? null : () => _openMenu(context, ref, album, songs),
           ),
         ),
@@ -214,11 +215,12 @@ class OnlineAlbumScreen extends ConsumerWidget {
 }
 
 class _AlbumHeader extends StatelessWidget {
-  const _AlbumHeader({required this.album, required this.release, required this.onPlay, required this.onShuffle, required this.onMore});
+  const _AlbumHeader({required this.album, required this.release, required this.onPlay, required this.listKey, required this.onMore});
 
   final YtmAlbum? album;
   final YtmRelease? release;
-  final VoidCallback? onPlay, onShuffle, onMore;
+  final VoidCallback? onPlay, onMore;
+  final Object listKey;
 
   static const _cover = 144.0;
 
@@ -300,11 +302,10 @@ class _AlbumHeader extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: OutlinedButton.icon(
+              child: ShufflePill(
                 key: const ValueKey('album-shuffle'),
-                onPressed: onShuffle,
-                icon: const Icon(Icons.shuffle_rounded),
-                label: Text(l.shuffle),
+                listKey: listKey,
+                plus: false,
               ),
             ),
             IconButton(

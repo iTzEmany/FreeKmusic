@@ -433,6 +433,37 @@ final shuffleModeProvider = Provider<ShuffleMode>((ref) {
       : (plus ? ShuffleMode.plus : ShuffleMode.shuffle);
 });
 
+/// The mode a list page's «Casuale» control holds for the list's own next Play
+/// (D-534); in memory, off by default.
+class ListShuffle extends Notifier<ShuffleMode> {
+  ListShuffle(this.key);
+  final Object key;
+  @override
+  ShuffleMode build() => ShuffleMode.off;
+  void set(ShuffleMode m) => state = m;
+}
+
+final listShuffleProvider =
+    NotifierProvider.family<ListShuffle, ShuffleMode, Object>(ListShuffle.new);
+
+/// The key of a list identified by its ids (a collection page).
+int listKeyOf(List<int> ids) => Object.hashAll(ids);
+
+/// The key of the whole library's list (Home, «Riproduci tutta la libreria»).
+const libraryListKey = 'library';
+
+/// Is the list [key] the one playing now?
+final listPlayingProvider = StreamProvider.autoDispose.family<bool, Object>((
+  ref,
+  key,
+) async* {
+  final c = ref.watch(playerControllerProvider);
+  yield c.isPlayingList(key);
+  await for (final _ in ref.watch(audioHandlerProvider).queueChanges) {
+    yield c.isPlayingList(key);
+  }
+});
+
 /// The first reason in the order the sheet reports them.
 ShufflePlusBlock? shufflePlusBlock({
   required bool jam,

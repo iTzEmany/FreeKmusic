@@ -22,6 +22,7 @@ import '../../widgets/track_row_selection.dart';
 import 'album_detail_screen.dart' show collectionMeta;
 import 'all_tracks_screen.dart';
 import '../../widgets/motion.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// The favourites as a collection page (pinned in the Library).
 class FavoritesScreen extends ConsumerStatefulWidget {
@@ -107,7 +108,11 @@ SliverToBoxAdapter(
         meta: collectionMeta(l, tracks: list.length, durationMs: durationMs),
         onPlay: list.isEmpty
             ? null
-            : () => ctrl.playAll(list, context: playCtx),
+            : () => ctrl.playAll(
+                list,
+                context: playCtx,
+                listKey: listKeyOf([for (final t in list) t.id]),
+              ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         menu: IconButton(
           tooltip: l.sortBy,

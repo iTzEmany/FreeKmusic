@@ -39,6 +39,41 @@ void main() {
     expect(collectionMeta(l, tracks: 0, durationMs: 0), 'Nessun brano');
   });
 
+  testWidgets('album page: «Casuale» leaves the playing queue alone, the next Play is shuffled (D-534)',
+      (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 4);
+    await tester.runAsync(() => h.handler.playQueue([3, 4], 0)); // another list
+    await h.pump(
+        tester,
+        const AlbumDetailScreen(
+            album: AlbumSummary(
+          albumKey: 'artist|album 0',
+          title: 'Album 0',
+          artist: 'Artist',
+          variousArtists: false,
+          trackCount: 2,
+          durationMs: 370000,
+          year: 2019,
+          coverKey: null,
+        )));
+    await _settle(tester);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Casuale'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(h.handler.shuffleEnabled, isFalse);
+    expect(h.handler.queueIds, [3, 4]);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Riproduci'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    expect(h.handler.shuffleEnabled, isTrue);
+    expect(h.handler.sourceIds, isNot([3, 4]));
+    await h.dispose(tester);
+  });
+
   testWidgets('album page: header, Play, disc-less rows, artist link',
       (tester) async {
     _phone(tester);

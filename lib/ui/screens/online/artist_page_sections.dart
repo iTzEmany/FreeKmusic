@@ -9,6 +9,7 @@ import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/motion.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/shuffle_button.dart' show ShufflePill;
 import '../../widgets/skeleton.dart';
 
 /// A picture of [url] at [size] dp, asked of Google at the right step.
@@ -64,11 +65,14 @@ class ArtistPlayRow extends StatefulWidget {
     required this.canPlay,
     required this.topMissing,
     required this.onPlay,
-    required this.onShuffle,
+    required this.listKey,
   });
 
   final bool busy, canPlay, topMissing;
-  final Future<void> Function() onPlay, onShuffle;
+  final Future<void> Function() onPlay;
+
+  /// The page's list for the «Casuale» toggle (D-534).
+  final Object listKey;
 
   @override
   State<ArtistPlayRow> createState() => _ArtistPlayRowState();
@@ -120,11 +124,10 @@ class _ArtistPlayRowState extends State<ArtistPlayRow> {
               ),
               const SizedBox(width: CcDims.gap8),
               Expanded(
-                child: OutlinedButton.icon(
+                child: ShufflePill(
                   key: const ValueKey('artist-shuffle'),
-                  onPressed: on ? () => _start(widget.onShuffle) : null,
-                  icon: const Icon(Icons.shuffle_rounded),
-                  label: Text(l.shuffle),
+                  listKey: widget.listKey,
+                  plus: false,
                 ),
               ),
             ],

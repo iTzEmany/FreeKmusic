@@ -29,6 +29,7 @@ import '../playlists/playlist_dialogs.dart';
 import 'artist_screen.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/show_msg.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// «1 ora e 52 minuti»; never «0 minuti» (under a minute rounds up).
 String durationWords(AppLocalizations l, int ms) {
@@ -148,7 +149,11 @@ EntranceScope(
         meta: meta,
         onPlay: list.isEmpty
             ? null
-            : () => ctrl.playAll(list, context: playCtx),
+            : () => ctrl.playAll(
+                list,
+                context: playCtx,
+                listKey: listKeyOf([for (final t in list) t.id]),
+              ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [

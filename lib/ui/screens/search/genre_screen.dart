@@ -88,7 +88,11 @@ class GenreScreen extends ConsumerWidget {
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
         // The list as shown: the suggested songs that have arrived, in place.
-        onPlay: () => ctrl.playMixed(items, context: ctx),
+        onPlay: () => ctrl.playMixed(
+          items,
+          context: ctx,
+          listKey: listKeyOf([for (final i in items) ?i.track?.id]),
+        ),
         // The ids of the list ▶ plays: the songs shown (a suggested one has no id yet).
         shuffleIds: [for (final i in items) ?i.track?.id],
         slivers: [

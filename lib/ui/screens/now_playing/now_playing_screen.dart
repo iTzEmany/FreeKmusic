@@ -134,10 +134,10 @@ Future<void> playOnlineListAndOpen(
   BuildContext context,
   WidgetRef ref,
   List<YtResult> list, {
-  bool shuffle = false,
+  Object? listKey,
 }) => _playAndOpen(
   context,
-  ref.read(playerControllerProvider).playOnlineList(list, shuffle: shuffle),
+  ref.read(playerControllerProvider).playOnlineList(list, listKey: listKey),
 );
 
 Future<void> _playAndOpen(BuildContext context, Future<void> playing) {

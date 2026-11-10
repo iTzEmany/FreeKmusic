@@ -16,18 +16,33 @@ bool _explained = false;
 @visibleForTesting
 void resetShuffleExplained() => _explained = false;
 
+/// What a shuffle control shows: the player's mode, or for a list page's
+/// control [key] its own mode unless that list is the one playing (D-534).
+ShuffleMode _modeOf(WidgetRef ref, Object? key) {
+  final real = ref.watch(shuffleModeProvider);
+  if (key == null) return real;
+  final own = ref.watch(listShuffleProvider(key));
+  return (ref.watch(listPlayingProvider(key)).value ?? false) ? real : own;
+}
+
 /// A tap of a shuffle control: the next state for the list it plays ([ids],
 /// null: the current queue; D-137), with the once-per-session «why not» note.
+/// [listKey]: a list page's control, which leaves the playing queue alone
+/// unless its list is the one playing (D-534).
 Future<void> _cycleWithNotice(
   BuildContext context,
   WidgetRef ref,
-  Future<List<int>> Function()? ids,
-) async {
+  Future<List<int>> Function()? ids, {
+  Object? listKey,
+  bool plus = true,
+}) async {
   final l = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
-  final block = await ref
-      .read(playerControllerProvider)
-      .cycleShuffle(ids: await ids?.call());
+  final c = ref.read(playerControllerProvider);
+  final list = await ids?.call();
+  final block = listKey == null
+      ? await c.cycleShuffle(ids: list)
+      : await c.cycleListShuffle(listKey, ids: list, plus: plus);
   if (block == null || _explained || !context.mounted) return;
   _explained = true;
   messenger.showSnackBar(
@@ -44,6 +59,7 @@ class ShuffleModeButton extends ConsumerWidget {
     this.size = 28,
     this.dot = true,
     this.listIds,
+    this.listKey,
   });
 
   final double size;
@@ -54,11 +70,15 @@ class ShuffleModeButton extends ConsumerWidget {
   /// The ids of the list the button's Play plays (Home); null: the queue.
   final Future<List<int>> Function()? listIds;
 
+  /// The page's key for [listIds] (see [listKeyOf]): the button then keeps the
+  /// mode of that list's next Play, not the player's (D-534).
+  final Object? listKey;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
     final l = context.l10n;
-    final mode = ref.watch(shuffleModeProvider);
+    final mode = _modeOf(ref, listKey);
     final on = mode != ShuffleMode.off;
     final color = on ? cc.accent : cc.textMuted;
     final icon = Icon(Icons.shuffle_rounded, size: size, color: color);
@@ -78,7 +98,8 @@ class ShuffleModeButton extends ConsumerWidget {
         excludeFromSemantics: true, // the icon below already speaks the state
         message: message,
         child: IconButton(
-          onPressed: () => _cycleWithNotice(context, ref, listIds),
+          onPressed: () =>
+              _cycleWithNotice(context, ref, listIds, listKey: listKey),
           // The tooltip is hover-only, so the button needs its own label.
           icon: Semantics(
             label: message,
@@ -124,20 +145,31 @@ class ShuffleModeButton extends ConsumerWidget {
   }
 }
 
-/// «Casuale» word button of the collection headers: tap cycles the mode for
-/// the list [ids] (it never starts playback), accent while shuffle is on, with
-/// the «+» badge in Shuffle+; long press opens the Shuffle+ sheet.
+/// «Casuale» word button of the list pages: tap cycles the mode of the list
+/// [ids] (or [listKey]) for its next Play, never starting playback nor touching
+/// the playing queue unless this list plays (D-534); accent while shuffle is
+/// on, with the «+» badge in Shuffle+; long press opens the Shuffle+ sheet.
+/// [plus] false: off and shuffle only (online lists).
 class ShufflePill extends ConsumerWidget {
-  const ShufflePill({super.key, required this.ids});
+  const ShufflePill({
+    super.key,
+    this.ids = const [],
+    this.listKey,
+    this.plus = true,
+  });
 
   final List<int> ids;
+  final Object? listKey;
+  final bool plus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
-    final mode = ref.watch(shuffleModeProvider);
+    final key = listKey ?? listKeyOf(ids);
+    final mode = _modeOf(ref, key);
     final color = mode == ShuffleMode.off ? cc.text : cc.accent;
-    void cycle() => _cycleWithNotice(context, ref, () async => ids);
+    void cycle() =>
+        _cycleWithNotice(context, ref, () async => ids, listKey: key, plus: plus);
     // One node: the state is the name (the button's own «Casuale» would be a second).
     return Semantics(
       button: true,

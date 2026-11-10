@@ -19,6 +19,7 @@ import '../library/album_detail_screen.dart' show collectionMeta;
 import 'tags_sheet.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../theme/tokens.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// The user's tags with how many tracks each one has; a tap opens its tracks.
 class TagsScreen extends ConsumerWidget {
@@ -103,7 +104,11 @@ class TagTracksScreen extends ConsumerWidget {
         meta: collectionMeta(l, tracks: tracks.length, durationMs: durationMs),
         onPlay: tracks.isEmpty
             ? null
-            : () => ctrl.playAll(tracks, context: ctx),
+            : () => ctrl.playAll(
+                tracks,
+                context: ctx,
+                listKey: listKeyOf([for (final t in tracks) t.id]),
+              ),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         slivers: [
           if (tracks.isEmpty)

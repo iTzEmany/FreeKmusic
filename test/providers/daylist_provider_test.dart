@@ -25,6 +25,7 @@ class _Player implements PlayerController {
   List<MixItem>? items;
   bool? shuffle;
   int? index;
+  Object? listKey;
 
   @override
   Future<void> playMixed(
@@ -32,7 +33,9 @@ class _Player implements PlayerController {
     int? index,
     PlayContext? context,
     bool? shuffle,
+    Object? listKey,
   }) async {
+    this.listKey = listKey;
     this.items = items;
     this.shuffle = shuffle;
     this.index = index;
@@ -252,9 +255,11 @@ void main() {
     await addTracks(40);
     final c = open();
     await daylist(c);
-    await c.read(daylistActionsProvider).play(shuffle: true);
+    await c.read(daylistActionsProvider).play();
     expect(player.items, hasLength(DaylistBuilder.size));
-    expect(player.shuffle, isTrue);
+    // The page's mode decides (D-534), not the Play itself.
+    expect(player.listKey, daylistListKey);
+    expect(player.shuffle, isNull);
     final online = player.items!.where((i) => i.online != null);
     expect(online, hasLength(15));
     expect(online.every((i) => i.track == null && i.seedTitle != null), isTrue);

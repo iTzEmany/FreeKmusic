@@ -33,6 +33,7 @@ import 'export_dialog.dart';
 import 'playlist_order.dart';
 import '../../widgets/sort_sheet.dart';
 import '../../widgets/motion.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({super.key, required this.playlist});
@@ -322,7 +323,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         meta: collectionMeta(l, tracks: tracks.length, durationMs: durationMs),
         onPlay: tracks.isEmpty
             ? null
-            : () => ctrl.playAll(tracks, context: playCtx),
+            : () => ctrl.playAll(
+                tracks,
+                context: playCtx,
+                listKey: listKeyOf([for (final t in tracks) t.id]),
+              ),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         menu: IconButton(
           tooltip: l.moreActions,
