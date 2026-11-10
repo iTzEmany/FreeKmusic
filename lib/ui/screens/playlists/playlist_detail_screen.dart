@@ -1,5 +1,7 @@
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../../core/app_log.dart';
+import '../../../providers/library_providers.dart';
 import '../../../core/text_utils.dart';
 import '../../widgets/cover_picker_sheet.dart';
 
@@ -52,6 +54,27 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   bool _editing = false;
   final _search = TextEditingController();
   String _query = '';
+  // The sorted list is kept while its inputs are the same, so the search
+  // cache (per list instance) survives the keystrokes.
+  List<Track> _sorted = const [];
+  List<Track>? _from;
+  String? _sortRaw;
+
+  Future<void> _onQuery(String v) async {
+    // A big list gets its search texts made off the UI thread, like the Library.
+    if (v.isNotEmpty && _sorted.length > 2000) {
+      try {
+        await primeHaystacks(_sorted, trackSearchFields);
+      } on Object catch (e, st) {
+        AppLog.w('search prime failed', e, st);
+      }
+      if (!mounted) return;
+    }
+    setState(() {
+      _query = v;
+      if (v.isNotEmpty) _editing = false; // «Fine modifica» hides while searching
+    });
+  }
 
   @override
   void dispose() {
@@ -226,16 +249,22 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final id = widget.playlist.id;
     final stored =
         ref.watch(playlistTracksProvider(id)).value ?? const <Track>[];
-    final order = PlaylistOrder.parse(
-      ref.watch(settingsProvider.select((s) => s.playlistSorts))['$id'],
-    );
+    final sortRaw = ref.watch(
+      settingsProvider.select((s) => s.playlistSorts),
+    )['$id'];
+    final order = PlaylistOrder.parse(sortRaw);
     final personal = order.sort == PlaylistSort.personal;
-    final tracks = order.apply(stored);
+    if (!identical(stored, _from) || sortRaw != _sortRaw) {
+      _from = stored;
+      _sortRaw = sortRaw;
+      _sorted = order.apply(stored);
+    }
+    final tracks = _sorted;
     final searching = _query.isNotEmpty;
     final shown = filterByText(
       tracks,
       _query,
-      (t) => [t.title, t.artist, t.album],
+      trackSearchFields,
     );
     // Rows of a search keep the place they have in the whole list.
     int whole(Track t) => tracks.indexWhere((x) => x.id == t.id);
@@ -382,10 +411,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 child: CcSearchField(
                   controller: _search,
                   hint: l.searchHint,
-                  onQuery: (v) => setState(() {
-                    _query = v;
-                    if (v.isNotEmpty) _editing = false; // «Fine modifica» hides while searching
-                  }),
+                  onQuery: _onQuery,
                 ),
               ),
             ),
