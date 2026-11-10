@@ -117,6 +117,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Nuovo widget o tile**: un `AppWidgetProvider` o `TileService` che legge solo `WidgetStore`; i dati li scrive `widget_sync.dart`.
 - **Nuovo pacchetto Linux/Windows**: nuovo script in `scripts/` o `packaging/`, poi un job in `release.yml` (vedi `qualita-e-rilascio.md`).
 - **Nuovo identificativo di app**: mai a caso; è una decisione (D-539), perché cambia la cartella dei dati.
+- **Database desktop fuori dalla cartella dell'app**: su Windows e Linux `databaseFile()` è `<Documenti>/codecore.sqlite` (`getApplicationDocumentsDirectory`), che non dipende dall'identificativo: Codecore e FreeKmusic desktop usano lo stesso database. Su Android la cartella documenti è per app.
 
 ## Trappole
 - **`flutter build apk` vuole il JDK 17 di JetBrains**: `JAVA_HOME=~/.jdks/jbr-17.0.14 PATH=~/.jdks/jbr-17.0.14/bin:$PATH flutter build apk --debug`. Con il Java di sistema Gradle fallisce.
