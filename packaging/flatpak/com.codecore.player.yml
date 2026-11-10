@@ -15,6 +15,23 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
   - --own-name=org.mpris.MediaPlayer2.codecore   # media keys and the desktop's player widget
 modules:
+  # mpv 0.38 needs libplacebo >= 6.338.2, which the 24.08 runtime does not ship.
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Ddemos=false
+      - -Dtests=false
+      - -Dvulkan=disabled
+      - -Dd3d11=disabled
+      - -Dlcms=disabled
+      - -Dshaderc=disabled
+      - -Dglslang=disabled
+    sources:
+      - type: git
+        url: https://code.videolan.org/videolan/libplacebo.git
+        tag: v6.338.2
+        commit: 64c1954570f1cd57f8570a57e51fb0249b57bb90
+
   - name: libmpv
     buildsystem: meson
     config-opts:
