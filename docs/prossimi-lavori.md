@@ -227,3 +227,9 @@ Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup;
 
 ## 7. Link Spotify e Deezer, brani da Shazam (9 nov, D-529)
 Pianificato: vedi `feature-link-e-shazam.md` e le fasi 114–116 (`fase-114-link-spotify-deezer.md`, `fase-115-salva-e-condividi.md`, `fase-116-brani-da-shazam.md`).
+
+Rilievi della scheggia di fase 116 (10 nov, Redmi), fuori dal perimetro della fase:
+- `KEYCODE_MEDIA_PAUSE` (127) a musica già in pausa la fa ripartire (2 volte su 2): il tasto pausa del media session fa da interruttore. Da verificare in `audio_handler` e correggere (pausa = sempre pausa).
+- Testo Shazam in arabo («ليلى di فيروز») abbinato a un video con titolo diverso: soglie del `CollectionMatcher` larghe su titoli non latini. Da guardare con una fixture.
+- Dopo «Elimina dal dispositivo» `files/downloads.json` tiene la voce del brano cancellato: capire se si pulisce da sola più tardi, altrimenti toglierla alla cancellazione.
+- Solo testi Shazam it-IT riconosciuti (R-210): un'altra lingua o versione apre Cerca. Si aggiunge una riga per ogni testo vero raccolto.
