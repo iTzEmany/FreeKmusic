@@ -1474,7 +1474,9 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 111.3 Android: osservare il volume multimediale
   - Verifica `audio_service`: il motore è in cache (`AudioServicePlugin.java:71,111`, `provideFlutterEngine` in `AudioServiceActivity.java:12`) e `disposeFlutterEngine` (`:116-129`) lo distrugge solo quando nessuna Activity è legata; sopravvive alla distruzione dell'Activity, quindi `VolumeBridge` non si stacca in `cleanUpFlutterEngine` (registrato in `configureFlutterEngine`, che ripunta il canale a ogni nuova Activity); l'osservatore lo ferma solo `stop` da Dart. Prova su telefono in 111.5.
 - [x] 111.4 Desktop: cursore del volume dell'app
-- [ ] 111.5 Controlli di fase
+- [x] 111.5 Controlli di fase
+  - Review Opus high + scheggia di passo: 11 rilievi corretti (guardia SDK<28 su `getStreamMinVolume`, cambio d'uscita audio e fine del timer azzerano il flag, decisione su `wantsPlay` invece di `isPlaying`, errori di pause/play registrati, NaN ignorato, ramo Android testato con `debugIsAndroidOverride`). 71 test mirati verdi, APK debug compilato.
+  - Prova sui telefoni NON fatta: l'utente tiene il volume a zero su tutti i dispositivi (D-535); va rifatta quando lo permette (in «Tocca a te» dell'obiettivo).
 
 ## Fase 112 — Link in Cerca (`fase-112-link-in-cerca.md`)
 - [ ] 112.1 Riconoscere i link
