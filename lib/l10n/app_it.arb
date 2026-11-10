@@ -4372,5 +4372,13 @@
   "downloadedNoPlaylist": "Scaricati senza playlist",
   "downloadedNoPlaylistEmpty": "Tutti i brani scaricati stanno già in una playlist",
   "pauseOnZeroVolume": "Metti in pausa quando il volume è a zero",
-  "pauseOnZeroVolumeHelp": "Alzando di nuovo il volume la musica riparte da sola, solo se l'ha fermata questa funzione."
+  "pauseOnZeroVolumeHelp": "Alzando di nuovo il volume la musica riparte da sola, solo se l’ha fermata questa funzione.",
+  "queueCountShuffle": "{count, plural, one{1 brano, Casuale} other{{count} brani, Casuale}}",
+  "@queueCountShuffle": {"description": "Count at the end of the queue's «Poi» / «Prossimi» header while shuffle is on.", "placeholders": {"count": {"type": "int"}}},
+  "queueBlockPosition": "Posizione {n} di {total}",
+  "@queueBlockPosition": {"description": "Spoken for a row of the queue block: its place among the entries added by the user.", "placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "queueReorderHandle": "Trascina per riordinare «{title}»",
+  "@queueReorderHandle": {"description": "Name of the drag handle of a queue row, for TalkBack.", "placeholders": {"title": {"type": "String"}}},
+  "resultsCount": "{count, plural, one{1 risultato} other{{count} risultati}}",
+  "@resultsCount": {"description": "Number of rows a search in a list found.", "placeholders": {"count": {"type": "int"}}}
 }

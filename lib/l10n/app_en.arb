@@ -3670,5 +3670,9 @@
   "downloadedNoPlaylist": "Downloaded, not in a playlist",
   "downloadedNoPlaylistEmpty": "Every downloaded track is already in a playlist",
   "pauseOnZeroVolume": "Pause when the volume is at zero",
-  "pauseOnZeroVolumeHelp": "Raising the volume again resumes the music, only if this feature paused it."
+  "pauseOnZeroVolumeHelp": "Raising the volume again resumes the music, only if this feature paused it.",
+  "queueCountShuffle": "{count, plural, one{1 track, Shuffle} other{{count} tracks, Shuffle}}",
+  "queueBlockPosition": "Position {n} of {total}",
+  "queueReorderHandle": "Drag to reorder “{title}”",
+  "resultsCount": "{count, plural, one{1 result} other{{count} results}}"
 }

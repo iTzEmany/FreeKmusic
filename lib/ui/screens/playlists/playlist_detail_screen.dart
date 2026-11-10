@@ -409,10 +409,27 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                   CcDims.margin,
                   CcDims.gap8,
                 ),
-                child: CcSearchField(
-                  controller: _search,
-                  hint: l.searchHint,
-                  onQuery: _onQuery,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CcSearchField(
+                      controller: _search,
+                      hint: l.searchHint,
+                      onQuery: _onQuery,
+                    ),
+                    if (searching)
+                      Semantics(
+                        liveRegion: true,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: CcDims.gap8),
+                          child: Text(
+                            l.resultsCount(shown.length),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: context.cc.textMuted),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),

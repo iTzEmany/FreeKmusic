@@ -296,8 +296,11 @@ class _TrackRowState extends State<TrackRow> {
       case TrackRowVariant.queue:
         final i = widget.reorderIndex;
         final handle = Icon(Icons.drag_handle_rounded, color: cc.textMuted);
-        // Hidden from TalkBack: the list already offers move actions on the row.
-        final grip = ExcludeSemantics(
+        // Named for TalkBack; the move actions themselves sit on the list item.
+        final grip = Semantics(
+          container: true,
+          label: l.queueReorderHandle(widget.track.title),
+          excludeSemantics: true,
           child: Padding(
             padding: const EdgeInsets.only(left: CcDims.gap8),
             child: i == null

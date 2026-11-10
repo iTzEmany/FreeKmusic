@@ -107,6 +107,66 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('counts in the headers, numbers on the block rows, named drag handles', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(4).toList(), 0));
+    final sem = tester.ensureSemantics();
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    h.handler.addToQueue(ids[4]);
+    h.handler.addToQueue(ids[5]);
+    await _settle(tester);
+    expect(find.textContaining('5 brani', findRichText: true), findsOneWidget, reason: 'sheet header: everything after the current');
+    expect(find.text('2 brani'), findsOneWidget, reason: 'block');
+    expect(find.text('3 brani'), findsOneWidget, reason: '«Poi»');
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Posizione 2 di 2')), findsOneWidget);
+    expect(find.bySemanticsLabel('Trascina per riordinare «Song 4»'), findsOneWidget);
+    expect(find.bySemanticsLabel('Trascina per riordinare «Song 1»'), findsOneWidget, reason: '«Poi» rows too');
+    sem.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('tapping a row plays that row: inside the block and past it (D-494)', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(3).toList(), 0));
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    h.handler.addToQueue(ids[3]);
+    h.handler.addToQueue(ids[4]);
+    h.handler.addToQueue(ids[5]);
+    await _settle(tester);
+    expect(h.handler.userAhead, 3);
+
+    await tester.tap(find.text('Song 4')); // the 2nd of the block (titles are 0-based)
+    await _settle(tester);
+    expect(h.handler.currentTrack!.title, 'Song 4');
+    expect(h.handler.queueIds.sublist(2), [ids[3], ids[5], ids[1], ids[2]]);
+    // The jump moved the block after the entry: the list shows the new order
+    // (the entry itself only in the header), so the next tap hits the right row.
+    expect(find.text('Song 4'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Song 3')).dy, lessThan(tester.getTopLeft(find.text('Song 5')).dy));
+    await tester.tap(find.text('Song 3')); // now the head of the block
+    await _settle(tester);
+    expect(h.handler.currentTrack!.title, 'Song 3');
+    expect(h.handler.queueIds.sublist(h.handler.currentIndex + 1), [ids[5], ids[1], ids[2]]);
+
+    await tester.tap(find.text('Song 1')); // past the block
+    await _settle(tester);
+    expect(h.handler.currentTrack!.title, 'Song 1');
+    expect(h.handler.queueIds.sublist(h.handler.currentIndex + 1), [ids[5], ids[2]]);
+    await h.dispose(tester);
+  });
+
   for (final similar in [false, true]) {
     testWidgets(similar
         ? 'with the similar-songs header, it sits above the first entry after the block instead of «Poi»'

@@ -7421,4 +7421,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pauseOnZeroVolumeHelp =>
       'Raising the volume again resumes the music, only if this feature paused it.';
+
+  @override
+  String queueCountShuffle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks, Shuffle',
+      one: '1 track, Shuffle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueBlockPosition(int n, int total) {
+    return 'Position $n of $total';
+  }
+
+  @override
+  String queueReorderHandle(String title) {
+    return 'Drag to reorder “$title”';
+  }
+
+  @override
+  String resultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
 }
