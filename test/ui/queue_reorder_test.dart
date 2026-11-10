@@ -126,13 +126,15 @@ void main() {
     expect(find.text('1'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Posizione 2 di 2')), findsOneWidget);
-    // One merged node per row: title and handle text together, with the move actions.
+    // One node per row: the title as label, the handle text as hint, with the move actions.
     for (final title in ['Song 4', 'Song 1']) {
-      final node = find.bySemanticsLabel(RegExp('$title[\\s\\S]*Trascina per riordinare'));
+      final node = find.bySemanticsLabel(RegExp(title));
       expect(node, findsOneWidget, reason: title);
-      expect(tester.getSemantics(node).getSemanticsData().customSemanticsActionIds, isNotEmpty, reason: '$title keeps the move actions');
+      final data = tester.getSemantics(node).getSemanticsData();
+      expect(data.hint, 'Trascina per riordinare', reason: title);
+      expect(data.customSemanticsActionIds, isNotEmpty, reason: '$title keeps the move actions');
     }
-    expect(find.bySemanticsLabel(RegExp('Trascina per riordinare')), findsNWidgets(5), reason: 'block and «Poi» rows, never a separate stop');
+    expect(find.bySemanticsLabel(RegExp('Trascina per riordinare')), findsNothing, reason: 'never a separate stop');
     sem.dispose();
     await h.dispose(tester);
   });
