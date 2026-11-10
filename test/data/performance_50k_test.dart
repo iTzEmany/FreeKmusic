@@ -12,7 +12,7 @@ import 'package:path/path.dart' as p;
 
 /// Synthetic 50 000-track library (2 000 albums, 800 artists, a dozen genres):
 /// the queries behind the main screens stay interactive. Budgets are the ones
-/// of docs/fase-16-ci-test.md; on a shared CI runner they get a ×2 margin.
+/// of docs/storico/fasi/fase-16-ci-test.md; on a shared CI runner they get a ×2 margin.
 /// It also covers the 20 000-track budgets of phase 7.5 (the same queries on
 /// fewer rows), which had their own test before.
 const _tracks = 50000;

@@ -29,7 +29,7 @@ class JamSyncAction {
       'JamSyncAction(play: $play, seek: $seekToMs, speed: $speed, in: $playInMs)';
 }
 
-/// Thresholds of the drift controller (see docs/fase-10-jam-sincronia.md).
+/// Thresholds of the drift controller (see docs/storico/fasi/fase-10-jam-sincronia.md).
 class JamSyncTuning {
   const JamSyncTuning({
     this.ignoreMs = 25,

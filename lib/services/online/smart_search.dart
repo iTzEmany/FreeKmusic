@@ -139,7 +139,7 @@ class _Cached {
 
 /// The online search: YouTube Music songs, YouTube videos and the top card
 /// asked together, scored, merged and shown as one stable list. See
-/// `docs/fase-32-ricerca-intelligente.md`.
+/// `docs/storico/fasi/fase-32-ricerca-intelligente.md`.
 class SmartSearch {
   SmartSearch({
     required this.youtube,

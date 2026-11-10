@@ -6,14 +6,17 @@ cartella padre (`../codecore/`), usata solo come riferimento di logica.
 
 ## Prima di fare qualsiasi cosa
 1. Leggi `docs/01-regole-di-lavoro.md` (regole obbligatorie).
-2. Leggi `docs/PROGRESS.md` per sapere a che punto siamo.
-3. Leggi **solo** il documento della fase corrente (`docs/fase-N-*.md`) più, se serve,
-   `docs/02-architettura.md`, `docs/03-modello-dati.md`, `docs/04-specifiche-da-python.md`.
+2. Leggi `docs/00-INDICE.md`, poi `docs/architettura/00-panoramica.md` e il documento d'area che tocchi
+   (`docs/architettura/<area>.md`: libreria-e-dati, riproduzione-e-coda, online, sync-backup-jam, piattaforme,
+   ui-e-design, qualita-e-rilascio).
+3. Leggi **solo** il file della fase corrente in `docs/fasi/` (`fase-N-*.md`); l'avanzamento si spunta lì dentro.
+   Le fasi chiuse, le feature, i refactor e il vecchio PROGRESS stanno in `docs/storico/` (non si aggiorna più).
 
 ## Stack (non cambiarlo senza chiedere)
 Flutter 3.47 / Dart · `flutter_riverpod` (stato) · `drift` + SQLite (DB) · `just_audio` +
 `just_audio_media_kit` (audio) · `audio_service` (notifica Android) · `audio_metadata_reader`
-(tag, solo lettura) · `dio` (HTTP) · `youtube_explode_dart` (download) · `shared_preferences` ·
+(tag, lettura) · `metadata_god` (`third_party/`, scrittura dei tag solo via `SafeTagWriter`) · `dio` (HTTP) ·
+yt-dlp (download e flusso, flavor `full`; su Android anche NewPipeExtractor; catalogo da InnerTube) · `shared_preferences` ·
 `mqtt_client` + `sodium` (Jam a distanza, D-251/D-252).
 
 ## Comandi
@@ -24,7 +27,7 @@ flutter analyze
 flutter test
 flutter run -d linux            # sviluppo desktop (il più veloce)
 flutter build apk --debug       # Android
-flutter build linux / windows   # windows solo da una macchina Windows
+flutter build linux / windows   # windows solo da una macchina Windows (macOS: zip non firmato dalla CI)
 ```
 
 ## Lingua
@@ -32,7 +35,7 @@ flutter build linux / windows   # windows solo da una macchina Windows
 - Codice, nomi di classi/variabili, commenti brevi: **inglese**.
 
 ## Regole d'oro (riassunto)
-- Un task alla volta, dal documento di fase, nell'ordine. Spunta `docs/PROGRESS.md` a fine task.
+- Un task alla volta, dal documento di fase, nell'ordine. Spunta il task nel file della fase (`docs/fasi/`) a fine task.
 - Dopo ogni task: `flutter analyze` pulito + test mirati verdi (la suite completa la esegue la CI). Se fallisce, correggi prima di proseguire.
 - Non aggiungere pacchetti non elencati. Non inventare API: se un pacchetto non corrisponde a
   quanto scritto nei documenti, leggi il suo sorgente in `~/.pub-cache` e adatta.

@@ -1,5 +1,5 @@
 // TalkBack double tap runs the tap action of the focused node: a node flagged
-// as button without that action is dead (docs/gotchas.md). Sweeps the main
+// as button without that action is dead (docs/architettura/ui-e-design.md). Sweeps the main
 // screens for such nodes.
 import 'dart:ui' show SemanticsAction, Tristate;
 

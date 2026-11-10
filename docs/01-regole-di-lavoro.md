@@ -10,7 +10,7 @@ Scritte per un agente che lavora a task piccoli e precisi. Seguile alla lettera.
    `dart run build_runner build --delete-conflicting-outputs` (solo se toccate tabelle drift) →
    `flutter analyze` → i test mirati del cambiamento (`flutter test <file…>`). Devono essere puliti.
    La suite completa (`flutter test`) la esegue la CI.
-5. Spunta il task in `docs/PROGRESS.md` e scrivi **una riga** di nota se hai deviato dal piano.
+5. Spunta il task nel file della fase (`docs/fasi/fase-N-*.md`) e scrivi **una riga** di nota se hai deviato dal piano.
 6. Se un criterio di verifica non è raggiungibile, **fermati e riportalo**: non aggirarlo.
 
 ## 2. Quando fermarti e chiedere all'utente

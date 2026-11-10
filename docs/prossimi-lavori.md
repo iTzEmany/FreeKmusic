@@ -1,239 +1,63 @@
-# Prossimi lavori (27 ott 2026)
+# Prossimi lavori (backlog, riordinato il 10 nov 2026)
 
-Ogni comando va lanciato in una sessione nuova aperta in questa cartella; i blocchi si incollano così come sono.
+Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
-## Stato al 27 ott
-- Release `v1.3.0`: il tag non è ancora su `origin` (`git push origin v1.3.0`, oppure aspettare).
-- Soglie di velocità della fase 38: rimisurate nella 57.5 (28/10, D-175), chiuso. Le stesse voci restano fuori come in D-57.
-- Crossfade sul Mi A3 (Android 11): dopo alcuni cambi `AudioEffect: set/get parameter error` e il cambio ripiega sul caricamento normale (gap ~530 ms). Da capire con un log del player (fase 57, «Note»).
-- Kickoff già fatti: streaming e coda online (#16), arricchimento completo (#26), streaming veloce (#36, fasi 55-59). Refactor ui Jam/Ricerca pianificato (#38, fasi 63-64). I piani stanno in `docs/`.
+## Libreria e dati
+- **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
+- **`m.createIndex` prima della v15 senza IF NOT EXISTS** (6 nov): dopo un ritorno a una build più vecchia e un nuovo aggiornamento l'avvio fallisce. Rimedio: un helper unico per gli indici con IF NOT EXISTS.
+- **Una sola chiave per «stesso brano»** (6 nov): `LibraryIndex` e `LibraryOverlap` usano `libraryTitleKey` più le parole dell'artista; `TrackResolver`, `SeedIndex.keyOf`, `import_diff` e `playlist_import_service` usano `matchTitleKey` più l'artista principale. Unificarle evita che la sincronizzazione delle playlist riaggiunga un brano già collegato.
+- **Credito annidato troppo largo** (6 nov): «Prince» contro «Prince Royce», stesso titolo e durata entro 5 s, risulta posseduto (raro). Rimedio: l'artista più corto deve essere prefisso dell'altro e avere almeno 2 parole non comuni.
+- **Remaster con live** (6 nov): «Song (Remastered Live)» e «Song - 2011 Remaster - Live» coincidono con «Song» perché `_remasterGroup`/`_remasterTail` in `matchTitleKey` tolgono anche «Live».
+- **Parentesi non chiuse** (6 nov): «Song (Deluxe Edition» non viene ripulito (falso negativo, innocuo).
+- **Cache dei paesi divisa** fra la closure di `watchByRules` e `_watchWithCountries` (6 nov, bassa). Rimedio: una `CountryArtistsCache` in `rule_country.dart`.
+- **Nomi paralleli della chiave artista** (6 nov): `artistCountryKey` → `ArtistInfoRepository.keyOf` → `artistKey`; `_artistKey` di `stats_queries.dart` è un'altra chiave (minuscole ASCII come `lower()`). Rimedio: rinominarla `_libraryNameKey` e togliere gli alias.
+- **`spellingsOf`** fa `SELECT DISTINCT artist` su tutta la tabella a ogni apertura della pagina artista e vive in `services/library/rules` ma lo usa il repository (6 nov). Rimedio: spostarlo in `data/repositories` con una cache come `libraryIndexProvider`; `artistAllSongsProvider` legge i brani locali una volta sola.
+- **SQL della copertina automatica ripetuto** in `memory_queries.dart` e `playlist_repository.dart` (7 nov, fase 103): una costante condivisa.
+- **`FollowRepository.watchNames`** ricostruisce tutta la mappa nomi a ogni scrittura su `artist_lookups`/`followed_artists` (Artisti uniti si ridisegna durante l'arricchimento). Rimedio: limitarla agli ID uniti o «diversi», o `.distinct`.
+- **Rilettura dei generi ferma mentre suona** (D-390): per chi ascolta quasi sempre può non finire mai. Rimedio: dopo N giorni leggere a basso ritmo anche durante la riproduzione.
+- **Dopo «Elimina dal dispositivo»** `files/downloads.json` tiene la voce del brano cancellato (10 nov, scheggia 116): capire se si pulisce da sola, altrimenti toglierla alla cancellazione.
+- **Orfani di testi** (7 nov): `unsyncedLyrics`, `manualRomanization`, `handWrittenLyrics` non vengono mai potati (solo crescono); l'unione dei doppioni (`duplicate_repository._mergeTrackFields`) sposta il testo senza traslitterazione a mano né segni.
 
-## 2. Idea: Jam a distanza (da discutere, dopo il refactor della Jam)
+## Riproduzione e coda
+- **Crossfade sul Mi A3 (Android 11)** (27 ott): dopo alcuni cambi `AudioEffect: set/get parameter error` e il cambio ripiega sul caricamento normale (gap ~530 ms). Da capire con un log del player (fase 57, «Note»).
+- **Pausa a volume zero in secondo piano** (10 nov): il tasto «volume su» la fa ripartire solo entro circa 2 s, poi Android lo manda alla suoneria. Valutare se tenere attiva la sessione multimediale più a lungo, o scriverlo nella descrizione dell'impostazione.
+- **`KEYCODE_MEDIA_PAUSE` (127) a musica già in pausa la fa ripartire** (10 nov, 2 volte su 2): il tasto pausa del media session fa da interruttore. Da verificare in `audio_handler` (pausa = sempre pausa).
+- **Caricamento lungo dopo un'interruzione di rete** (8 nov, prova fase 105): il player resta in «Caricamento…» a 0:00 per circa 77 s (la risoluzione con yt-dlp aspetta quando NewPipe ha appena fallito per DNS). Rimedio: timeout più corto per yt-dlp (o rinunciare se manca la rete) e «Impossibile riprodurre».
+- **Scatti dopo la fase 113** (`refactor/coda-e-libreria/misure.md`, «Dopo la 113»): «Apri album» 11 → 17 %, «In riproduzione» 2,4 → 5–6 %, «Pallino schede» 7 → 9–10 % rispetto a prima-107. Profilare (`flutter run --profile`, DevTools) il titolo che scorre in Now Playing, i listener nuovi della radice e la pagina album.
+- **`queueProvider`** combina indice, chiavi e `userAhead` letti dal vivo con una lista asincrona: per qualche ms può non combaciare; `queueTracks` scarta gli id che non trova e sfasa l'indice. Più robusto: uno snapshot `(tracks, keys, currentIndex, userAhead)`.
+- **`_settle`** ricostruisce una mappa e due liste grandi quanto la coda a ogni next/jumpTo/move/previous mentre il blocco non è vuoto. Rimedio: via veloce se `_user` sta già subito dopo il corrente.
+- **Shuffle+**: arrivo per (id, `currentFromUser`) non distingue due copie dello stesso id di fila (chiave della voce da `ShuffleHost`); `currentFromUser` non è salvato (dopo un riavvio un corrente nato dal blocco conta una volta); il controller ha ancora il suo giro radio (`_take`/`_fill`), non passa da `RadioFill`.
+- **Blocco «in coda»**: `playQueue(keepUser)` suona due volte un brano toccato che sta anche nel blocco; in `move` una voce del blocco non si può lasciare come prima sotto «Poi».
+- **`listPlayingProvider`** copia `sourceIds`, fa `listEquals` e calcola gli hash dell'intera sorgente per ogni pill visibile a ogni evento della coda. Rimedio: tenere l'hash della sorgente nel controller. **`listKeyOf`** usa il contenuto: aggiungere un brano a una playlist azzera la sua modalità Casuale (le chiavi non sono salvate); `_modeOf` in `shuffle_button.dart` → `listShuffleModeProvider(key)`.
+- **`player_providers.dart`** (1039 righe) ha un ciclo d'import con `shuffle_plus_providers`. Rimedio: estrarre `SimilarSession` in `services/shuffle_plus/`, spostare `similarFillProvider`/`libraryMatchIdProvider` in `similar_providers.dart`, `playFromSearchNotice`/`playFromSearchAndOpen` in un file di Cerca. Doppia logica «id locale»: `_idOf` e `_similarId` (un parametro su `_idOf`).
+- **File da spezzare** (rinviato, rischio medio senza guadagno di comportamento): `play_queue.dart`, `queue_sheet.dart`, `shuffle_plus_controller.dart`.
+- **Simili da Cerca**: un brano della libreria senza abbinamento sicuro su YouTube Music (`SeedResolver`, esito negativo in `SeedIndex`) dà «Nessun brano simile» anche con la rete; ripiego su un seme dal primo risultato o «Brano non trovato su YouTube Music».
+- **Brani dell'artista in libreria da due fonti**: scaffale «Dai tuoi» e `LibraryOverlap` per una sola grafia (`watchArtistTracks`), Play/Shuffle per tutte (`tracksOfArtist`); `artistAllSongsProvider` rifà la mappa titolo → brano. Rimedio: `watchArtistTracks` per chiave con `spellingsOf` e `LibraryOverlap.trackFor(r)`.
 
-### Il problema
-Oggi la Jam funziona solo sulla stessa rete: la scoperta è un broadcast UDP in LAN (`lib/services/share/discovery.dart`) e l'host fa da server HTTP (`JamHost.buildRouter`) che gli ospiti interrogano di continuo (`JamGuest._loop`). Su reti diverse (un amico col 4G, l'host sul Wi-Fi di casa) l'host non è raggiungibile: NAT del router e, sul 4G, NAT dell'operatore (CGNAT). La Jam in LAN resta com'è.
+## Online (arricchimento, testi, riconoscimento, link, podcast, radio)
+- **Budget e pausa 429 scritti a mano** fuori da `budgetedYtm` (6 nov): `YtmPodcasts._guarded` (con attesa), `_askCard`/`_fail` di `smart_search`, `second_opinion_providers.dart`. Rimedio: variante con attesa e `tripIfRateLimited(cooldown, e)`. Restano aperte di proposito le pagine degli alias fuori dal budget (D-465) e la chiave propria di `mergeArtistShelves`. `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
+- **`mergeArtistWith`** (UI) compone cooldown, limiter e catalogo da sé, come `artistMergeSearchProvider` (la cui cache non ha limite). Rimedio: una ricerca degli artisti con budget in `ArtistMergeOps`.
+- **Cerca senza rete** (8 nov, Mi A3): tre volte «Rete non disponibile» e nessuna sezione «Nella tua libreria»; tornata la rete la stessa query resta in errore per più di un minuto (cache dell'errore?).
+- **«Non mi piace»** (7 nov): `SuggestionGate` non è l'unico filtro (`artistAllSongsProvider` rifà le regole; `suggestionArtistKey` vive in `suggestion_pool.dart`); «artista di un suggerito» calcolato in tre punti (`primaryArtist(YtResult)` e `SuggestionActions.artistToBlock(queueId)`); tre iscrizioni a `store.changes` (un `dislikesProvider` con istantanea immutabile); `dislikes_screen.dart` scrive sullo store dalla UI (`unblockTrack`/`unblockArtist` in `SuggestionActions`); percorso di `dislikes.json` in tre punti (`DislikeStore.defaultFile(dir)`).
+- **Radio**: costruzione di `RadioFill` con `radioOffReason` → `log.load` → `filter.load` in 3-4 copie (`daylist_providers.dart`, `similarFillProvider`, `genreMixProvider`) e `gate.trip()` sul 429 in `genre_mix.dart`/`similar_queue.dart`. Rimedio: `radioFillFor(ref, seeds, inLibrary)` e `RadioFill.take` che fa il trip da solo.
+- **Daylist** (8 nov): non si salva mai quando la radio è spenta per un motivo permanente e il seme casuale cambia a ogni build (a ogni avvio nella stessa fascia esce una daylist diversa): salvarla con un flag `partial` o un seme da chiave + `until`. L'avviso «Meno di 15 brani» (D-473) compare solo per la fascia in corso. `musicLight()` porta tutta la libreria nel main isolate e `Isolate.run` la copia a ogni build: da misurare sul Mi A3 con la fixture 50k.
+- **Podcast** (7 nov): regola «riga remota di episodio» in più forme (`isRemoteEpisode(Track)`, `TrackKindX.isRemoteEpisode`, un'espressione SQL unica); la riga `tracks` di un episodio si costruisce in tre punti con regole della copertina diverse (`setCoverKey` aggiorna solo `podcasts`, `PodcastOps.save` aspetta la copertina in rete prima del play); il gestore audio conosce la politica dello streaming degli episodi (interfaccia `EpisodeMarks`); `unfollowPodcast` è un flusso di dominio nella UI (`PodcastOps.unfollow(id, deleteDownloads:)`, `showMsg` sull'errore); resta solo la ricerca del foglio «Aggiungi podcast» fuori da `PodcastOps`.
+- **Testi traslitterati** (8 nov, fase 106): due giri su NetEase per lo stesso brano (con fonte `netease` salvare `romalrc` in `RomanizationCache`); le «righe come mostrate» si calcolano in 4-5 punti, con un testo CRLF la traduzione tiene un `\r` (`shownLines(plain, synced)` in `lyrics_shown.dart`); `romanization_cache.json` e `cedict/` non compaiono in Memoria né in «Svuota cache» (`AppDataPaths` e pulitore); download verificato duplicato fra `cedict_download` e `yt_dlp_updater` (`downloadVerified(...)`, `downloadDioProvider`); la tile «Scarica» del dizionario carica tutta la mappa solo per verificarla (basta lo sha256).
+- **Link e Shazam** (9–10 nov): con il casuale della pagina link acceso, i brani pronti dopo Play vanno comunque in fondo; il timeout della ricerca di un link video sul telefono ha lasciato Cerca vuota (non riprodotto) e il messaggio «non disponibile» riusato per le playlist dice «video»; testo Shazam in arabo («ليلى di فيروز») abbinato a un video con titolo diverso (soglie del `CollectionMatcher` larghe su titoli non latini, da guardare con una fixture); solo testi Shazam it-IT riconosciuti (R-210): si aggiunge una riga per ogni testo vero raccolto.
 
-### Cosa fa Spotify
-Due pezzi separati:
-1. **Scoperta per vicinanza**: Bluetooth Low Energy (il telefono dell'host «annuncia» la Jam, quelli vicini la vedono). Serve solo a dire «qui c'è una Jam, ecco il codice».
-2. **Ponte**: i server di Spotify. Tutti parlano col server, non tra loro. E suona **solo il dispositivo dell'host** (quello collegato alla cassa): gli ospiti fanno da telecomando e mettono in coda.
+## Sync, backup e Jam
+- Nessun lavoro aperto in backlog. Le prove a mano rimaste di Jam e broker sono nelle fasi archiviate (`storico/fasi/fase-84-broker-e-debito-jam.md`); su UniBA la scoperta con la maschera vera va riprovata (vedi le Trappole di [`sync-backup-jam.md`](architettura/sync-backup-jam.md)).
 
-Il punto 2 è quello che manca a noi: senza un ponte su internet la vicinanza da sola non basta.
+## Piattaforme
+- **Runtime Flatpak `org.freedesktop.Platform/ffmpeg-full` 24.08 a fine vita**: passare a 25.08.
+- **Accessibilità TalkBack, minori** (8 nov, prova fase 105): risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
 
-### Opzioni per il ponte (senza un nostro backend vero)
-| Ponte | Come | Pro | Contro |
-|---|---|---|---|
-| **Broker MQTT pubblico** (HiveMQ, EMQX, Mosquitto pubblici) | host e ospiti si iscrivono a un canale casuale, si scambiano comandi e stato in JSON | gratis, nessun server nostro, passa da qualsiasi NAT, traffico minimo | nessuna garanzia di servizio; è pubblico → serve cifratura end-to-end con la chiave passata tramite codice/QR/BLE; messaggi piccoli (niente file audio) |
-| **ntfy.sh** | uguale, via HTTP/SSE | idem, semplicissimo | limiti di frequenza, stessi contro |
-| **WebRTC P2P** (STUN pubblico di Google) | collegamento diretto tra i dispositivi | anche audio, latenza bassa | ~20-30% dei casi fallisce col CGNAT senza un server TURN (che costa); pacchetto pesante |
-| **Worker Cloudflare** (piano gratis, WebSocket) | piccolo relay nostro | affidabile, controllato da noi | è un backend da mantenere: va contro «standalone» |
-| **Nearby Connections** (Google) | Wi-Fi Direct/Bluetooth tra telefoni vicini, senza internet | niente rete comune né internet | solo Android, niente PC |
+## UI e design
+- **`libraryEntriesProvider`** tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto. Rimedio: tenere viva solo l'ultima combinazione per scheda.
+- **`PlaylistOrder.apply`** viene chiamato dentro `build`.
+- **`app_fr.arb` con chiavi duplicate** (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.
 
-**Consiglio**: broker MQTT pubblico con cifratura end-to-end, indirizzo del broker cambiabile nelle impostazioni (se uno smette di funzionare se ne mette un altro, o in futuro un Worker nostro senza cambiare l'app). Il protocollo attuale (`JamCommand`, `JamState` con `version`) è già fatto di messaggi piccoli: si tratta di sostituire il trasporto HTTP con pubblica/iscriviti, non di riscrivere la Jam.
-
-### Cosa cambia nella «Jam a distanza»
-- **Suona solo l'host** (scenario cassa Bluetooth). Più uscite sincronizzate e orologio comune (fase 10) restano solo in LAN.
-- **I file non passano dal ponte.** Un brano dell'ospite (dalla sua libreria o da una ricerca online) arriva all'host come video id YouTube e l'host lo scarica da sé: è già il meccanismo `selfFetchable` (D-93) usato per i brani online. Per i brani locali senza video id: ricerca per titolo + artista lato host (o lato ospite prima di mandarlo).
-- Scheda del brano, testo e curiosità per l'ospite: le ricava da sé dal video id/metadati, come già previsto per la Jam come player (fase 63).
-
-### Come funziona il broker pubblico
-Un broker MQTT è una bacheca su internet divisa in canali (topic, per esempio `codecore/jam/k7f3q9x2…`). Chi è iscritto a un canale riceve subito ogni messaggio che qualcuno ci pubblica. Host e ospiti non si parlano direttamente: ognuno apre **in uscita** una connessione al broker (come aprire una pagina web), quindi NAT e 4G non sono un problema. L'host pubblica lo stato (`JamState`), gli ospiti pubblicano i comandi (`JamCommand`). Chiunque conosca il nome del canale può leggere e scrivere, per questo: nome lungo e casuale + messaggi cifrati con una chiave che il broker non vede; senza chiave un estraneo legge solo byte senza senso e i suoi messaggi vengono scartati.
-
-### Scoperta automatica, senza QR
-Il QR/codice serve solo come riserva (PC, Bluetooth spento). Decisione: **si entra solo da vicini**, anche gli amici.
-- **Bluetooth (come Spotify, chi è vicino)**: l'host annuncia via BLE canale e chiave; chi apre l'app vicino vede «Unisciti alla Jam di X», tocca e parte la richiesta, che l'host accetta come oggi (`JamHost.accept`). La vicinanza fisica fa da prova di fiducia. Solo Android (permessi `BLUETOOTH_ADVERTISE`/`BLUETOOTH_SCAN`); su Linux/Windows l'annuncio BLE è poco supportato da Flutter.
-- **Amici memorizzati (solo vicini)**: dopo la prima Jam insieme i due dispositivi si salvano a vicenda. Non vedono la Jam da lontano: servono solo a riconoscersi quando sono vicini via Bluetooth (nome giusto, in cima alla lista, eventualmente ingresso senza conferma se l'host lo attiva). Niente canali personali sul broker.
-- Il broker non sa nulla di distanze: la Jam la vede solo chi ha canale e chiave. Con il Bluetooth li riceve solo chi è a portata (~10-30 m); anche per gli amici. Un estraneo lontano può arrivarci solo se qualcuno gli gira il codice.
-
-### Sicurezza in più con il Bluetooth
-- **La chiave passa solo via Bluetooth**, mai dal broker. L'annuncio BLE classico ha 31 byte, troppo pochi per canale + chiave: l'annuncio porta un id corto e la chiave si legge con una connessione BLE breve (caratteristica GATT), o con l'annuncio esteso del Bluetooth 5.
-- **Gettone che ruota**: l'host cambia il gettone annunciato ogni ~30 s e una richiesta di ingresso vale solo con un gettone recente. Un codice girato in chat o fotografato scade subito.
-- **Modalità «solo vicini»** (opzionale, impostazione dell'host): l'host continua a cercare via BLE i telefoni degli ospiti; chi non si sente da qualche minuto viene messo in pausa (non può più mettere in coda) finché non torna a portata. Costa batteria, solo Android, ed entrambi devono avere il Bluetooth acceso.
-- **Resta l'ultima parola all'host**: ogni ingresso va accettato, come oggi.
-- Limite noto: con un'antenna potente o un «ripetitore» vicino all'host qualcuno può allungare la portata; per un'app musicale tra amici è un rischio accettabile (Spotify non fa di più).
-- Scartato: scoperta per posizione (canale ricavato dalla zona GPS) — sul broker pubblico chiunque nella zona vedrebbe la Jam, serve il permesso di posizione e sui PC non funziona.
-
-### Pacchetti nuovi (da approvare, non sono nello stack)
-`mqtt_client` (ponte), `cryptography` (AES-GCM end-to-end), uno scanner QR (`mobile_scanner`), e per il BLE `flutter_blue_plus` (scansione) + `flutter_ble_peripheral` (annuncio).
-
-### Decisioni (27 ott)
-- Broker MQTT pubblico, con indirizzo cambiabile nelle impostazioni.
-- Ospiti a distanza = solo telecomando: suona solo l'host.
-- Si entra solo da vicini (Bluetooth), amici compresi; codice/QR come riserva.
-
-### Richieste ripetute (anti-spam)
-Oggi in LAN (`jam_host.dart`, `POST /request`): al massimo 5 richieste al minuto per indirizzo IP, una sola richiesta in attesa alla volta, scadenza dopo `jamRequestTtl`. Dopo un rifiuto però si può richiedere subito. Sul broker l'IP non si vede, quindi:
-- **Massimo 2 richieste al minuto** per dispositivo (id del mittente, non più per IP). Nessuna pausa automatica dopo un rifiuto.
-- Sulla richiesta, oltre ad «Accetta» e «Rifiuta», l'host può:
-  - **Sospendi**: le richieste di quel dispositivo vengono scartate in silenzio per un tempo a scelta, con lo stesso selettore del timer di spegnimento (`_SleepChip` in `lib/ui/screens/now_playing/now_playing_controls.dart`, minuti a scelta).
-  - **Blocca**: blocco permanente del dispositivo (lista nelle impostazioni per sbloccare).
-- Valgono anche in LAN (oggi il limite è 5 al minuto per IP e mancano Sospendi e Blocca).
-- Limite: l'id del dispositivo lo dichiara il mittente, quindi uno smanettone può cambiarlo; serve comunque la chiave, che arriva solo via Bluetooth e ruota ogni ~30 s, quindi deve restare vicino. Per gli amici normali basta.
-
-### Cassa Bluetooth e modalità della coda (28 ott, idea dell'utente)
-**Due casi.**
-- Telefono con una **cassa** Bluetooth collegata (non cuffie né auricolari): annuncia la Jam via BLE e chi è vicino con l'app vede «Unisciti alla Jam di X». Suona solo lui, sulla cassa; gli altri fanno da telecomando e mettono in coda.
-- Senza cassa: non annuncia niente, cerca soltanto. Un dispositivo qualsiasi vicino non fa apparire nessuna notifica di Jam; la Jam si avvia a mano da «Dispositivi», come oggi.
-
-**Riconoscere la cassa**: la classe del dispositivo A2DP collegato (Android `BluetoothClass`: altoparlante, cuffie, auricolare, auto) non basta da sola, perché molte casse si presentano come auricolare o senza classe. Proposta: prima stima dalla classe, poi alla prima connessione di un dispositivo nuovo la domanda «È una cassa?», ricordata per quel dispositivo e modificabile nelle impostazioni. Serve un canale nativo Android (`BLUETOOTH_CONNECT`); solo Android, sul PC resta la Jam in LAN.
-
-**Ruoli**: resta come oggi e come Spotify: chi tocca «Jam» chiede di unirsi alla musica dell'altro, chi accetta è l'host e porta la sua coda (`JamController.request`/`acceptRequest`, `jamSeedTracks`). Con la cassa l'host è chi ha la cassa. Da cambiare la scritta sulla scheda del dispositivo: «Unisciti a X» o «Ascolta con X» invece di «Jam».
-
-**Due modalità della coda**
-- «Coda dell'host»: la coda è dell'host, gli ospiti aggiungono (oggi, e la modalità della cassa).
-- «Coda insieme»: la coda si compone a turno (uno dell'host, uno dell'ospite…) dalle due code, e anche le aggiunte dopo vanno a turno per persona.
-
-**Dove si sceglie** (consiglio): impostazione della Jam decisa dall'host e cambiabile mentre suona (interruttore «Coda insieme» nel foglio della Coda o nell'intestazione), di serie «Coda dell'host». Motivi: chi entra dalla notifica BLE non ha dove scegliere; la voglia di mischiare spesso viene dopo; nessun passaggio in più; la coda è dell'host.
-Alternativa: al tocco su «Jam» un foglio con due righe («Ascolta con X», «Coda insieme»); la scelta si vede nella richiesta e l'host la può cambiare dopo.
-
-**Domande aperte per il kickoff**
-- Dove si sceglie la modalità: nella Jam (host) o nella richiesta?
-- Code di lunghezza diversa: finita una, si continua con l'altra o coi «suggeriti»?
-- Conta la coda locale dell'ospite cambiata durante la Jam, o solo quella all'ingresso?
-- Con più di due persone il turno vale per tutti?
-- Il riordino a mano dell'host rompe il turno?
-- In «Coda insieme» senza cassa suonano tutti i telefoni (come oggi) o solo l'host?
-- «Sei vicino a una cassa?»: la domanda alla prima connessione va bene, o solo un'impostazione?
-
-### Bozza del comando (quando si decide)
-```
-/kickoff feature Jam a distanza:
-- Oltre alla Jam in LAN (che resta), una Jam che funziona anche su reti diverse: ponte su broker MQTT pubblico con cifratura end-to-end, indirizzo del broker nelle impostazioni.
-- Solo telecomando: suona solo l'host.
-- Scoperta automatica via Bluetooth per chi è vicino (Android), con gettone che ruota; amici memorizzati riconosciuti quando sono vicini. Codice o QR solo come riserva.
-- Anti-spam: massimo 2 richieste al minuto per dispositivo; sulla richiesta «Sospendi» per un tempo a scelta (selettore come il timer di spegnimento) e «Blocca» permanente; anche in LAN.
-- Suona solo l'host. Gli ospiti mettono in coda dalla propria libreria o dalla ricerca: all'host arriva il video id e scarica da sé (selfFetchable); se manca, ricerca per titolo e artista.
-- Riusare JamCommand/JamState: cambiare il trasporto, non la logica.
-- Casi: richieste ripetute, sospensione scaduta, broker irraggiungibile, host in sottofondo, ospite che perde la rete, codice sbagliato o scaduto, messaggi di estranei sul canale.
-```
-
-## 3. Build per macOS (29 ott) — FATTO (D-543)
-Fatto in D-543: job `macos` nella Release, artefatto nella CI manuale, README. Sotto, il piano originale.
-Un APK è solo per Android: per il Mac serve la `.app`. Il Mac non è tra le piattaforme del progetto e da Linux non si compila.
-- In CI c'è già il job «macOS / iOS (trial)» (`.github/workflows/ci.yml`, `build-apple`): parte solo a mano (`workflow_dispatch`), fa `flutter build macos --debug` ma non carica il file.
-- Da fare: una piccola PR che aggiunge al job il caricamento della `.app` (zip di `build/macos/Build/Products/Debug/*.app` con `actions/upload-artifact`), poi `gh workflow run ci.yml --ref master` e scaricare l'artefatto dalla run.
-- La build è di debug e non firmata: al primo avvio macOS la blocca, si apre con tasto destro → Apri (o `xattr -dr com.apple.quarantine <app>`).
-- Prompt: «Leggi docs/prossimi-lavori.md §3 e fammi la build per macOS».
-
-## 4. Animazioni e superfici flottanti (4 nov, richiesta dell'utente)
-Stile voluto: niente tagli netti né slide laterali; ogni schermata nuova entra a schermo intero con una dissolvenza (ease-in) e i contenuti compaiono appena caricati (skeleton); lo slide resta solo per il player. Solo trasformazioni e opacità (costo a riposo zero), durate dai token, zero con riduci movimento.
-
-| # | Cosa | Oggi | Come | Costo |
-|---|---|---|---|---|
-| 1 | Ricerca in Libreria che si apre come nel mockup `libreria-ricerca.html` | sembra un cambio di schermata (`AnimatedSwitcher`) | la lente resta lo stesso widget e scivola (`AnimatedAlign`), il campo si allarga attorno a lei, titolo e icone escono con opacità e spostamento, la lista sotto sfuma come strato unico | ~1 h, **già nella fase 83** |
-| 2 | Transizione fra schermate (Impostazioni e sottoimpostazioni, e tutte le altre) | slide da sinistra, fluido all'inizio e poi scatta | un `PageTransitionsTheme` unico con dissolvenza ease-in per tutte le route, tranne il player che tiene il suo slide dal basso | ~30 min, un punto solo |
-| 3 | Dock (navbar) flottante — **chiuso nella fase 89** | lo sfondo della pagina si taglia di netto dove tocca il dock | `extendBody` nella shell: il contenuto scorre sotto il dock ed è visibile dove il dock non copre; le liste ricevono in fondo un margine pari all'altezza del dock (una costante nella shell, non a mano per schermata) | ~1–2 h, tocca tutte le liste lunghe |
-| 4 | Intestazione della Libreria flottante — **chiuso nella fase 90** (isola e `ShrinkingHeader`) | intestazione piena sopra la lista | gli elementi scorrono sotto l'intestazione e restano visibili fuori dalle parti fisse (titolo, schede); va d'accordo con la striscia A–Z | ~1–2 h |
-| 5 | Chiusura del player | la copertina passa da tonda a quadrata e poi torna tonda nel mini player | la copertina «in volo» resta tonda per tutta l'animazione (`flightShuttleBuilder` dell'`Hero` con lo stesso ritaglio tondo, o il raggio che interpola da tondo a tondo) | ~30–45 min |
-
-Consiglio: 2 e 5 costano poco e si possono aggiungere alla fase 83 insieme alla 1; 3 e 4 sono un passo a sé (toccano la shell e tutte le liste), da misurare sul Mi A3 dopo (scenario «Libreria Tutto→Playlist→Album→Artisti» e scroll di Tutti i brani).
-
-## 5. Rilievi rinviati dalla fase 88 (6 nov, review Opus e scheggia)
-Fuori dal perimetro della fase. Da valutare in una fase futura.
-- **Database più nuovo dell'app all'avvio normale**: se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`. Al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro invece del crash. Il ripristino è già protetto (88.5b).
-- **Una sola chiave per «stesso brano»**: `LibraryIndex` e `LibraryOverlap` usano `libraryTitleKey` più l'insieme delle parole dell'artista, mentre `TrackResolver`, `SeedIndex.keyOf`, `import_diff` e `playlist_import_service` usano ancora `matchTitleKey` più l'artista principale. Unificarle eviterebbe che la sincronizzazione delle playlist riaggiunga un brano già collegato.
-- **Credito annidato troppo largo**: «Prince» contro «Prince Royce», con lo stesso titolo e una durata entro 5 s, risulta posseduto. È raro (serve un titolo generico identico). Rimedio possibile: l'artista più corto deve essere il prefisso dell'altro e avere almeno 2 parole non comuni.
-- **Remaster con live**: «Song (Remastered Live)» e «Song - 2011 Remaster - Live» coincidono con «Song», perché `_remasterGroup` e `_remasterTail` in `matchTitleKey` tolgono anche «Live» (comportamento precedente alla fase 88).
-- **Parentesi non chiuse**: «Song (Deluxe Edition» e «Song - Deluxe Edition - Remix» non vengono ripuliti, quindi lo stesso brano non viene riconosciuto (falso negativo, innocuo).
-
-## 6. Debito dalla review di architettura delle fasi 88–96 (6 nov, fase 97)
-Rilievi della review (97.3) rinviati, per priorità. I bug sono stati corretti subito, qui c'è solo il debito.
-
-### Media
-(Fatte nella fase 99, refactor «ascolto-quotidiano», D-454.)
-- [x] `countryArtistsOf` ricalcolato a ogni scrittura su `tracks` → timer di 300 ms che non si riavvia e cache della mappa per insieme di artisti (99.4).
-- [x] «Budget + pausa 429» scritto tre volte → `budgetedYtm` in `lib/services/online/budgeted_call.dart` (99.1).
-- [x] `mergeArtistShelves`/`groupShelvesProvider` in `lib/ui` → `lib/providers/artist_shelves_providers.dart` (99.3). Restano aperte, di proposito: la chiave propria (quella di `release_diff` unirebbe edizioni diverse) e le pagine degli alias fuori dal budget (D-465: il blocco va nel fetch di `_cached`, cambio di comportamento).
-- [x] Chiave artista ripetuta → `artistKey` accanto a `matchKey` (99.2).
-
-### Dalla review di architettura della fase 99
-- Budget e pausa scritti a mano fuori da `budgetedYtm`: `YtmPodcasts._guarded` (con attesa), `_askCard`/`_fail` di `smart_search`, `second_opinion_providers.dart`. Rimedio: una variante con attesa e un `tripIfRateLimited(cooldown, e)`; i podcast prima o insieme alla fase 102.
-- [x] (fatto nella 101: `lib/core/artist_key.dart`) `artistKey`/`matchKey`/`extractPrimaryArtist` stavano in `services/import/track_matcher.dart`, importato da `data/` e `services/backup` per una funzione di testo. Rimedio: spostarle in `lib/core/` all'inizio della fase 101, prima che `DislikeStore` diventi un altro consumatore.
-- `mergeArtistWith` (UI) compone cooldown, limiter e catalogo da sé, come `artistMergeSearchProvider`. Rimedio: una ricerca degli artisti con budget in `ArtistMergeOps`, con le due varianti di esito.
-- La cache dei paesi è divisa fra la closure di `watchByRules` e `_watchWithCountries` (versione passata come `int`). Rimedio (basso): una piccola `CountryArtistsCache` in `rule_country.dart`.
-- Nomi paralleli: `artistCountryKey` → `ArtistInfoRepository.keyOf` → `artistKey`; `_artistKey` di `stats_queries.dart` è un'altra chiave (minuscole ASCII come `lower()` di SQLite). Rimedio: rinominarla (`_libraryNameKey`) e togliere gli alias quando si sposta il modulo.
-
-### Dalla review di architettura della fase 100
-- Il controller Shuffle+ ha ancora il suo giro radio (`shuffle_plus_controller.dart` `_take`/`_fill`), non passa da `RadioFill`. Rimedio: unificarlo solo quando la sua semantica (`_changedSince`, `searchOnly`, richiesta rimandata) entra in `RadioFill`.
-- Doppia logica «id locale»: `_idOf` (solo download) e `_similarId` (download poi titolo+artista) in `player_providers.dart`. Rimedio: un parametro su `_idOf` e via `_similarId`.
-- «Brani dell'artista in libreria» da due fonti: scaffale «Dai tuoi» e `LibraryOverlap` per una sola grafia (`watchArtistTracks`), Play/Shuffle per tutte (`tracksOfArtist`); in più `artistAllSongsProvider` rifà a mano la mappa titolo → brano di `LibraryOverlap`. Rimedio: `watchArtistTracks` per chiave con `spellingsOf` e un `LibraryOverlap.trackFor(r)`.
-- `spellingsOf` fa `SELECT DISTINCT artist` su tutta la tabella a ogni apertura della pagina artista e sta in `services/library/rules` ma lo usa il repository. Rimedio: spostarlo in `data/repositories` con una cache come `libraryIndexProvider`. `artistAllSongsProvider` legge i brani locali una volta (un download finito a pagina aperta non la aggiorna).
-- `player_providers.dart` ha 830 righe e un ciclo d'import con `shuffle_plus_providers`. Rimedio: estrarre `SimilarSession` (epoch, titolo, caricamento, `playFromSearch`) in `services/shuffle_plus/`, con `similarSeedProvider` come `Notifier`; spostare `similarFillProvider`/`libraryMatchIdProvider` in un `similar_providers.dart`; `playFromSearchNotice`/`playFromSearchAndOpen` da `now_playing_screen.dart` a un file di Cerca.
-- Dalla prova sul Mi A3 della fase 100: un brano della libreria senza abbinamento sicuro su YouTube Music (`SeedResolver`, esito negativo salvato in `SeedIndex`) dà «Nessun brano simile» anche con la rete; si potrebbe ripiegare su un seme dal primo risultato della ricerca o dire «Brano non trovato su YouTube Music».
-- Preesistente, visto sul Mi A3: Cerca senza rete mostra tre volte «Rete non disponibile» e nessuna sezione «Nella tua libreria»; tornata la rete, la stessa query resta in errore per più di un minuto (cache dell'errore?).
-
-### Dalla review di architettura della fase 101
-- `SuggestionGate` non è l'unico filtro: `artistAllSongsProvider` rifà le regole sullo store (`trackBlocked`, artista della pagina, artista della riga) e `suggestionArtistKey` vive in `suggestion_pool.dart` ma la importano azioni e provider. Rimedio: spostarla in `suggestion_gate.dart` e un `SuggestionGate.blocks(r, pageArtist:)` senza soglia per il Play dell'artista.
-- «Artista di un suggerito» calcolato in tre punti (`suggestion_pool.dart:21`, `suggestion_actions.dart:116`, `dislike_sheet.dart:24`), copia di `displayArtist` in `suggestion_actions.dart:94`, e il foglio rifà `artistKey(...).isNotEmpty`. Rimedio: `primaryArtist(YtResult)` accanto a `displayArtist` e `SuggestionActions.artistToBlock(queueId)` (null se la chiave è vuota) usato dal foglio.
-- Tre iscrizioni a `store.changes` (`blockedArtistKeysProvider` senza l'iscrizione prima dell'istantanea, `dislikeListsProvider`, `artistAllSongsProvider` che rifà la query sul DB a ogni blocco anche non suo). Rimedio: un `dislikesProvider` con istantanea immutabile (Set di id e chiavi), `select` per le chiavi, provider dell'artista diviso in parte grezza e filtro.
-- La pagina «Non mi piace» scrive sullo store dalla UI (`dislikes_screen.dart` Togli/Annulla). Rimedio: `unblockTrack`/`unblockArtist` con annullamento in `SuggestionActions` o un `DislikeOps`.
-- Percorso di `dislikes.json` costruito in tre punti (per `daylist.json` c'è già `daylistFileName`, fase 105) (`main.dart`, `backup_providers.dart`, `dislike_store_provider.dart`). Rimedio: `DislikeStore.defaultFile(dir)` come `DownloadIndex.defaultFile`.
-
-### Dalla review di architettura della fase 102
-- Regola «riga remota di episodio» in più forme: tipo e percorso controllati a mano in `codecore_audio_handler.dart`, `episode_downloader.dart`, `track_actions.dart`, `resume_rows.dart`, e due `NOT LIKE 'http%'/'stream:%'` in `podcast_repository.dart`. Rimedio: `isRemoteEpisode(Track)`, un getter `TrackKindX.isRemoteEpisode` per la UI e un'espressione SQL unica.
-- La riga `tracks` di un episodio si costruisce in tre punti (insert e promozione in `playableTrack`, `_register`) con regole della copertina diverse; `setCoverKey` aggiorna solo `podcasts`, quindi `PodcastOps.save` aspetta la copertina (rete) prima del play. Rimedio: un solo costruttore della riga e `setCoverKey` che riempie anche le righe dell'episodio; copertina salvata dopo l'avvio.
-- Il gestore audio conosce la politica dello streaming degli episodi e due callback in `main.dart` (che crea un `PodcastRepository` a ogni chiamata). Rimedio: un'interfaccia `EpisodeMarks { heard; resumed }` costruita una volta.
-- `unfollowPodcast` è un flusso di dominio nella UI (`podcast_preview_screen.dart`, importato dal dettaglio) e `_toggleFollow`/`_play`/`unfollowPodcast` non mostrano errori. Rimedio: `PodcastOps.unfollow(id, deleteDownloads:)`, dialogo in un file a parte, `showMsg` sull'errore.
-
-### Dalla review di architettura della fase 103
-- SQL della copertina automatica ripetuto (`memory_queries.dart` e `playlist_repository.dart:84-86`): una costante condivisa.
-- `unsyncedLyrics`, `manualRomanization` e `handWrittenLyrics` non vengono mai potati (id AUTOINCREMENT: nessun abbinamento sbagliato, crescono soltanto); l'unione dei doppioni (`duplicate_repository._mergeTrackFields`) sposta il testo senza traslitterazione a mano né segni.
-
-### Dalla review di architettura della fase 104
-- Costruzione di `RadioFill` con `radioOffReason` → `log.load` → `filter.load` in 3-4 copie (`daylist_providers.dart`, `similarFillProvider`, `genreMixProvider`) e `gate.trip()` sul 429 in `genre_mix.dart` e `similar_queue.dart`. Rimedio: un helper `radioFillFor(ref, seeds, inLibrary)` e `RadioFill.take` che fa il trip da solo.
-
-### Dalla review di architettura della fase 105 (98–104)
-Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup; «Non mi piace» dalla daylist con un solo metodo in `SuggestionActions` (coda e log come dalla coda); episodi YouTube Music dello stesso video in due show; segnalibro dopo «Segna come non ascoltato».
-- La daylist non si salva mai quando la radio è spenta per un motivo permanente (niente yt-dlp su desktop, YouTube spento, Jam, «Solo su Wi-Fi» su rete a consumo) e il seme casuale cambia a ogni build: a ogni avvio nella stessa fascia esce una daylist diversa. Rimedio: salvarla con un flag `partial` e rifarla solo se ora la radio è disponibile, o un seme ricavato da chiave + `until`.
-- L'avviso «Meno di 15 brani» (D-473) compare solo per la fascia in corso (si costruisce solo quella). Rimedio: un `plan` per fascia nell'isolate all'apertura della pagina, o correggere D-473.
-- `musicLight()` porta tutta la libreria (`List<Track>`) nel main isolate e `Isolate.run` la copia a ogni build della daylist: da misurare sul Mi A3 con la fixture 50k; se costa, passare all'isolate solo le colonne che servono.
-- Dalla prova sul Mi A3 della fase 105 (preesistente): dopo un'interruzione di rete il player resta in «Caricamento…» a 0:00 per circa 77 s (`stream url source=ytdlp … ms=77321`): la risoluzione con yt-dlp aspetta a lungo quando NewPipe ha appena fallito per DNS. Rimedio: un timeout più corto per yt-dlp (o rinunciare se la rete è ancora assente) e l'errore «Impossibile riprodurre» al suo posto.
-- Dalla stessa prova, minori di TalkBack: risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
-
-### Dalla review di architettura della fase 106
-- Due giri su NetEase per lo stesso brano: la catena dei testi riceve già `romalrc` (`rv=-1`) e lo scarta, poi il resolver rifà ricerca e lyric. Rimedio: con fonte `netease` l'arricchimento salva `romalrc` in `RomanizationCache`.
-- Le «righe come mostrate» si calcolano in 4-5 punti (`lyricsLinesOf` con `split('\n')`, resolver con `\r?\n`, provider, vista, menu): con un testo CRLF la traduzione tiene un `\r`. Rimedio: una `shownLines(plain, synced)` in `lyrics_shown.dart` usata da tutti.
-- `romanization_cache.json` e `cedict/` non compaiono in Memoria e la cache non si svuota con «Svuota cache». Rimedio: aggiungerli ad `AppDataPaths` e al pulitore.
-- Download verificato duplicato (`cedict_download` e `yt_dlp_updater`: `.tmp`, sha256, rename; stesso `Dio` con 8/15 s e User-Agent in due provider). Rimedio: un `downloadVerified(...)` e un `downloadDioProvider`.
-- La tile «Scarica» del dizionario carica tutta la mappa dopo il download solo per verificarla (lo sha256 basta).
-
-### link-e-shazam (fase 114)
-- `lib/l10n/app_fr.arb` ha chiavi duplicate (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.
-- Pagina dei link esterni: con il casuale della pagina acceso, i brani pronti dopo Play vanno comunque in fondo, non mescolati.
-
-### coda-e-libreria (review di architettura della fase 113)
-- Pausa a volume zero in secondo piano: il tasto «volume su» la fa ripartire solo entro circa 2 s, poi Android lo manda alla suoneria (`gotchas.md`). Valutare se tenere attiva la sessione multimediale più a lungo, oppure scriverlo nella descrizione dell'impostazione.
-- `queueProvider` combina indice, chiavi e `userAhead` letti dal vivo con una lista che arriva in modo asincrono, quindi per qualche millisecondo può non combaciare. Più robusto: uno snapshot `(tracks, keys, currentIndex, userAhead)` letto in un colpo solo. In più, `queueTracks` scarta gli id che non trova e sfasa l'indice.
-- Scatti dopo la 113 (`refactor/coda-e-libreria/misure.md`, «Dopo la 113»): «Apri album» 11 → 17 %, «In riproduzione» 2,4 → 5–6 %, «Pallino schede» 7 → 9–10 % rispetto a prima-107, in due ripetute. Profilare (`flutter run --profile` e DevTools) il titolo che scorre in Now Playing, i listener nuovi della radice e la pagina album.
-- `_settle` ricostruisce una mappa e due liste grandi quanto la coda a ogni next/jumpTo/move/previous mentre il blocco non è vuoto. Rimedio: via veloce se `_user` sta già subito dopo il corrente.
-- L'arrivo in Shuffle+ per (id, `currentFromUser`) non distingue due copie dello stesso id di fila. Rimedio: chiave della voce da `ShuffleHost` (richiede che `rebuildUpcoming`/`setItems` mantengano la chiave del corrente).
-- `currentFromUser` non è salvato: dopo un riavvio un corrente nato dal blocco conta una volta in Shuffle+.
-- `playQueue(keepUser)`: toccare in una lista un brano che sta anche nel blocco lo suona due volte.
-- `move`: una voce del blocco non si può lasciare come prima sotto «Poi» (lo slot subito dopo il blocco la fa entrare).
-- `listPlayingProvider` copia `sourceIds`, fa `listEquals` e calcola gli hash dell'intera sorgente per ogni pill visibile a ogni evento della coda. Rimedio: tenere l'hash della sorgente nel controller.
-- `listKeyOf` usa il contenuto: aggiungere un brano a una playlist azzera la sua modalità Casuale; le chiavi non sono salvate.
-- `_modeOf` in `shuffle_button.dart` → un provider `listShuffleModeProvider(key)`.
-- Spezzare `play_queue.dart` (510 righe: `placeAfter` puro, aiuto per l'ordine casuale), `queue_sheet.dart` (488: widget della lista trascinabile), `shuffle_plus_controller.dart` (666): rinviato, rischio medio senza guadagno di comportamento.
-- Fase 112: il timeout della ricerca di un link video sul telefono ha lasciato Cerca vuota (non riprodotto nei test); il messaggio «non disponibile» riusato per le playlist dice «video».
-
-### Bassa
-- Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».
-- `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.
-- `PlaylistOrder.apply` viene chiamato dentro `build`.
-- La cache di `artistMergeSearchProvider` non ha limite.
-- Test di poco valore in `settings_store_test` («blurred dock off by default and kept»): da togliere.- `libraryEntriesProvider` tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto (niente nuovo ordinamento tornando su una scheda). Rimedio: tenere viva solo l'ultima combinazione per scheda.
-- `m.createIndex` nelle migrazioni prima della v15 non usa IF NOT EXISTS: dopo un ritorno a una build più vecchia della v15 e un nuovo aggiornamento l'avvio fallisce. Rimedio: un helper unico per gli indici con IF NOT EXISTS.
-- `FollowRepository.watchNames` ricostruisce tutta la mappa nomi a ogni scrittura su `artist_lookups`/`followed_artists` (Impostazioni → Artisti uniti si ridisegna durante l'arricchimento). Rimedio: limitarla agli ID uniti o «diversi», o `.distinct`.
-- La rilettura dei generi si ferma mentre la musica suona (D-390): per chi ascolta quasi sempre può non finire mai, e le regole di genere restano sulla colonna vecchia per i brani non riletti. Rimedio: se dopo N giorni non è finita, leggere a basso ritmo anche durante la riproduzione.
-
-## 7. Link Spotify e Deezer, brani da Shazam (9 nov, D-529)
-Pianificato: vedi `feature-link-e-shazam.md` e le fasi 114–116 (`fase-114-link-spotify-deezer.md`, `fase-115-salva-e-condividi.md`, `fase-116-brani-da-shazam.md`).
-
-Rilievi della scheggia di fase 116 (10 nov, Redmi), fuori dal perimetro della fase:
-- `KEYCODE_MEDIA_PAUSE` (127) a musica già in pausa la fa ripartire (2 volte su 2): il tasto pausa del media session fa da interruttore. Da verificare in `audio_handler` e correggere (pausa = sempre pausa).
-- Testo Shazam in arabo («ليلى di فيروز») abbinato a un video con titolo diverso: soglie del `CollectionMatcher` larghe su titoli non latini. Da guardare con una fixture.
-- Dopo «Elimina dal dispositivo» `files/downloads.json` tiene la voce del brano cancellato: capire se si pulisce da sola più tardi, altrimenti toglierla alla cancellazione.
-- Solo testi Shazam it-IT riconosciuti (R-210): un'altra lingua o versione apre Cerca. Si aggiunge una riga per ogni testo vero raccolto.
-
-## Backlog release
-- Runtime Flatpak `org.freedesktop.Platform/ffmpeg-full` 24.08 a fine vita: passare a 25.08.
+## Qualità e rilascio
+- **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.
+- **`ci.yml`**: il commento dice 4 test di integrazione, `scripts/integration.sh` ne esegue 5.
+- **Test di poco valore** in `settings_store_test` («blurred dock off by default and kept»): da togliere.
