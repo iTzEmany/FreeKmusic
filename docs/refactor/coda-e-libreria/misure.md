@@ -66,3 +66,34 @@ Scansione di 3000 brani in 16,8 s. Avvio a freddo: mediana 3124 ms su 5 (2721–
 | Apertura player | 3,0 % | 2,2 % |
 
 Scroll e player aperto non peggiorano. Lo swipe del mini player sale a 1,8 % (il titolo lungo ora scorre lì, con `RepaintBoundary`), dentro la soglia della fase 90 (1–2 %). Memoria +30 MB rispetto a prima-107, con in mezzo anche la fase 108.
+
+## Dopo la 113 (`dopo-113`, `dopo-113b`)
+
+Data: 2026-11-10. Stesso dispositivo e comando, con `--label dopo-113` e poi `--label dopo-113b` (ripetuta per misurare il rumore). Ramo della 113 con master dopo #156 (fasi 108–113). File grezzi: `build/perf/dopo-113.md` e `build/perf/dopo-113b.md`. Scansione di 3000 brani in 18,1 s. Avvio a freddo: mediana 2788 ms e 2912 ms. Memoria (PSS) 251 MB. Volume a zero (D-535).
+
+| Scenario | > 16,7 ms prima-107 (frame) | dopo-113 | dopo-113b |
+|---|---|---|---|
+| Pallino schede | 7,4 % (81) | 10,3 % (87) | 8,9 % (79) |
+| Tutti i brani | 1,6 % | 1,7 % | 3,2 % |
+| Album | 3,9 % | 0,6 % | 1,3 % |
+| Libreria Tutto→Playlist→Album→Artisti | 4,6 % | 4,6 % | 3,7 % |
+| Ricerca «notte» | 0,0 % | 0,0 % | 2,2 % (1 frame su 45) |
+| Scroll Libreria | 0,9 % | 1,1 % | 0,7 % |
+| Lente Libreria | 5,2 % | 5,4 % | 5,0 % |
+| Scroll Tutti i brani | 0,3 % | 1,8 % | 0,8 % |
+| Cambio scheda | 6,3 % | 6,3 % | 6,5 % |
+| Apri album | 11,1 % (63) | 17,4 % (69) | 17,1 % (70) |
+| In riproduzione | 2,4 % (164) | 4,8 % (147) | 5,8 % (154) |
+| Lettore dal dock | 3,1 % | 4,3 % | 2,6 % |
+| Swipe mini player | 0,6 % | 3,2 % | 0,7 % |
+| Fogli | 4,1 % | 1,7 % | 3,1 % |
+| Apertura player | 3,0 % | 3,4 % | 2,2 % |
+
+**Esito: la soglia «≤ prima-107» non è rispettata del tutto.**
+- **Scroll di Libreria, Tutti i brani, Album e Fogli:** restano dentro la soglia o migliorano. Lo scarto fra le due ripetute è dello stesso ordine delle differenze (Swipe mini player 3,2 % e 0,7 %, Scroll Tutti i brani 1,8 % e 0,8 %).
+- **Peggiorano in entrambe le ripetute:**
+  - «Apri album» (+4 frame lenti su circa 65);
+  - «In riproduzione» (da +4 a +5 frame su circa 150);
+  - «Pallino schede» (+1 o 2 frame su circa 80).
+- **Confronto con `marquee-109`:** non si può fare. Lì quegli scenari contavano 5 volte più frame (383–426), quindi la misura non è omogenea.
+- **Seguito:** cercare la causa è un seguito in `prossimi-lavori.md`, «coda-e-libreria». I sospetti: il titolo che scorre in «In riproduzione», e i listener nuovi della radice (pausa a volume zero) e della pagina album (D-534).

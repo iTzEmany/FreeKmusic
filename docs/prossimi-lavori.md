@@ -197,6 +197,7 @@ Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup;
 - La tile «Scarica» del dizionario carica tutta la mappa dopo il download solo per verificarla (lo sha256 basta).
 
 ### coda-e-libreria (review di architettura della fase 113)
+- Scatti dopo la 113 (`refactor/coda-e-libreria/misure.md`, «Dopo la 113»): «Apri album» 11 → 17 %, «In riproduzione» 2,4 → 5–6 %, «Pallino schede» 7 → 9–10 % rispetto a prima-107, in due ripetute. Profilare (`flutter run --profile` e DevTools) il titolo che scorre in Now Playing, i listener nuovi della radice e la pagina album.
 - `_settle` ricostruisce una mappa e due liste grandi quanto la coda a ogni next/jumpTo/move/previous mentre il blocco non è vuoto. Rimedio: via veloce se `_user` sta già subito dopo il corrente.
 - L'arrivo in Shuffle+ per (id, `currentFromUser`) non distingue due copie dello stesso id di fila. Rimedio: chiave della voce da `ShuffleHost` (richiede che `rebuildUpcoming`/`setItems` mantengano la chiave del corrente).
 - `currentFromUser` non è salvato: dopo un riavvio un corrente nato dal blocco conta una volta in Shuffle+.

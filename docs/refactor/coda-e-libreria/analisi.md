@@ -135,6 +135,6 @@ Fasi 107–113 chiuse (PR #145–#156 più la 113). Metriche di arrivo:
 | DB e backup | diff vuoto | ok |
 | Jam | solo il campo `userAhead: 0` in `jam_local_queue.dart` (imposto dal tipo) | ok |
 | Invarianti del blocco | test a operazioni casuali di `play_queue_test.dart` | ok |
-| Prestazioni 50k e scatti sul Mi A3 | vedi `misure.md` (da completare con la misura dopo-113) | da completare |
+| Prestazioni 50k e scatti sul Mi A3 | query 50k dentro le soglie (`performance_50k_test` verde); scatti: `misure.md`, «Dopo la 113» | 50k sì; scatti in parte: «Apri album», «In riproduzione» e «Pallino schede» peggiorano di pochi frame in entrambe le ripetute (seguito in `prossimi-lavori.md`) |
 
 Aperto: la prova sul telefono della 111 è rimandata (D-535, volume a zero); il debito sta in `prossimi-lavori.md` (sezione «coda-e-libreria»).
