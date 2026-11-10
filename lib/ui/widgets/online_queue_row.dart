@@ -146,9 +146,7 @@ class OnlineQueueRow extends ConsumerWidget {
             ),
             if (i != null)
               Semantics(
-                container: true,
-                label: l.queueReorderHandle(track.title),
-                excludeSemantics: true,
+                label: l.queueReorderHandle,
                 child: ReorderableDragStartListener(
                   index: i,
                   child: Icon(Icons.drag_handle_rounded, color: cc.textMuted),

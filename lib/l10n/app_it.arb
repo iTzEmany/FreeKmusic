@@ -4377,8 +4377,8 @@
   "@queueCountShuffle": {"description": "Count at the end of the queue's «Poi» / «Prossimi» header while shuffle is on.", "placeholders": {"count": {"type": "int"}}},
   "queueBlockPosition": "Posizione {n} di {total}",
   "@queueBlockPosition": {"description": "Spoken for a row of the queue block: its place among the entries added by the user.", "placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
-  "queueReorderHandle": "Trascina per riordinare «{title}»",
-  "@queueReorderHandle": {"description": "Name of the drag handle of a queue row, for TalkBack.", "placeholders": {"title": {"type": "String"}}},
+  "queueReorderHandle": "Trascina per riordinare",
+  "@queueReorderHandle": {"description": "Name of the drag handle of a queue row, for TalkBack."},
   "resultsCount": "{count, plural, one{1 risultato} other{{count} risultati}}",
   "@resultsCount": {"description": "Number of rows a search in a list found.", "placeholders": {"count": {"type": "int"}}}
 }

@@ -3894,6 +3894,6 @@
   "pauseOnZeroVolumeHelp": "En remontant le volume, la musique reprend, seulement si cette fonction l’a mise en pause.",
   "queueCountShuffle": "{count, plural, one{1 titre, Aléatoire} other{{count} titres, Aléatoire}}",
   "queueBlockPosition": "Position {n} sur {total}",
-  "queueReorderHandle": "Faites glisser pour réorganiser «{title}»",
+  "queueReorderHandle": "Faites glisser pour réorganiser",
   "resultsCount": "{count, plural, =0{0 résultat} one{1 résultat} other{{count} résultats}}"
 }

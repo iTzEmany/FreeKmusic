@@ -7486,9 +7486,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String queueReorderHandle(String title) {
-    return 'Arrastra para reordenar «$title»';
-  }
+  String get queueReorderHandle => 'Arrastra para reordenar';
 
   @override
   String resultsCount(int count) {

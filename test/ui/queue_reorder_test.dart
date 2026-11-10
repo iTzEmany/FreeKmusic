@@ -126,8 +126,13 @@ void main() {
     expect(find.text('1'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Posizione 2 di 2')), findsOneWidget);
-    expect(find.bySemanticsLabel('Trascina per riordinare «Song 4»'), findsOneWidget);
-    expect(find.bySemanticsLabel('Trascina per riordinare «Song 1»'), findsOneWidget, reason: '«Poi» rows too');
+    // One merged node per row: title and handle text together, with the move actions.
+    for (final title in ['Song 4', 'Song 1']) {
+      final node = find.bySemanticsLabel(RegExp('$title[\\s\\S]*Trascina per riordinare'));
+      expect(node, findsOneWidget, reason: title);
+      expect(tester.getSemantics(node).getSemanticsData().customSemanticsActionIds, isNotEmpty, reason: '$title keeps the move actions');
+    }
+    expect(find.bySemanticsLabel(RegExp('Trascina per riordinare')), findsNWidgets(5), reason: 'block and «Poi» rows, never a separate stop');
     sem.dispose();
     await h.dispose(tester);
   });

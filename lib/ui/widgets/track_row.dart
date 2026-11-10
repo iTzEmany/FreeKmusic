@@ -298,9 +298,7 @@ class _TrackRowState extends State<TrackRow> {
         final handle = Icon(Icons.drag_handle_rounded, color: cc.textMuted);
         // Named for TalkBack; the move actions themselves sit on the list item.
         final grip = Semantics(
-          container: true,
-          label: l.queueReorderHandle(widget.track.title),
-          excludeSemantics: true,
+          label: l.queueReorderHandle,
           child: Padding(
             padding: const EdgeInsets.only(left: CcDims.gap8),
             child: i == null

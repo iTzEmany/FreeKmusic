@@ -151,6 +151,49 @@ void main() {
     expect(handler.queueIds.sublist(handler.currentIndex + 1, handler.currentIndex + 3), [all[3], all[5]]);
   });
 
+  test('a shuffled repeat-all lap restarting tells the lists, by skip and by itself', () async {
+    await handler.setRepeatMode(AudioServiceRepeatMode.all);
+    await handler.setShuffleMode(AudioServiceShuffleMode.all);
+    await handler.playQueue(ids, 0);
+    await settle();
+    var changes = 0;
+    final sub = handler.queueChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    await handler.skipToNext();
+    await handler.skipToNext();
+    await settle();
+    expect(changes, 0, reason: 'mid-lap the order stays');
+    await handler.skipToNext(); // last one: a new lap, reshuffled
+    await settle();
+    expect(changes, 1);
+    expect(handler.currentIndex, 0);
+    await handler.skipToNext();
+    await handler.skipToNext();
+    changes = 0;
+    backend.stateC.add(BackendState.completed); // the last one ends by itself
+    await settle();
+    expect(changes, 1);
+    expect(handler.currentIndex, 0);
+  });
+
+  test('previous between stations moves the block and tells the lists', () async {
+    final h = CodecoreAudioHandler(backend, PlayQueue(), repo,
+        onError: errors.add, online: OnlineEntries());
+    addTearDown(h.dispose);
+    await h.playStations([
+      const RadioStation(id: 'a', name: 'A', streamUrl: 'http://r.test/a'),
+      const RadioStation(id: 'b', name: 'B', streamUrl: 'http://r.test/b'),
+    ], 0);
+    await settle();
+    h.addToQueue(ids[2]);
+    var changes = 0;
+    final sub = h.queueChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    await h.skipToPrevious();
+    await settle();
+    expect(changes, greaterThan(0));
+  });
+
   test('a radio station empties the block (D-496)', () async {
     final h = CodecoreAudioHandler(backend, PlayQueue(), repo,
         onError: errors.add, online: OnlineEntries());

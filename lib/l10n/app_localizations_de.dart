@@ -7492,9 +7492,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String queueReorderHandle(String title) {
-    return 'Zum Sortieren ziehen: „$title“';
-  }
+  String get queueReorderHandle => 'Zum Sortieren ziehen';
 
   @override
   String resultsCount(int count) {

@@ -11908,8 +11908,8 @@ abstract class AppLocalizations {
   /// Name of the drag handle of a queue row, for TalkBack.
   ///
   /// In it, this message translates to:
-  /// **'Trascina per riordinare «{title}»'**
-  String queueReorderHandle(String title);
+  /// **'Trascina per riordinare'**
+  String get queueReorderHandle;
 
   /// Number of rows a search in a list found.
   ///

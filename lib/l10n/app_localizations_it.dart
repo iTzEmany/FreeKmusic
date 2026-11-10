@@ -7458,9 +7458,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String queueReorderHandle(String title) {
-    return 'Trascina per riordinare «$title»';
-  }
+  String get queueReorderHandle => 'Trascina per riordinare';
 
   @override
   String resultsCount(int count) {
