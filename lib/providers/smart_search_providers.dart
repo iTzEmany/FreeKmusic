@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart' show Track;
+import '../services/import/track_matcher.dart' show MatchThresholds;
+import '../services/online/collection_matcher.dart';
 import '../services/online/merge_results.dart';
 import '../services/online/request_budget.dart';
 import '../services/online/query_match.dart' show libraryArtistKey;
@@ -8,6 +10,7 @@ import '../services/online/smart_search.dart';
 import '../services/online/source_cooldown.dart';
 import 'database_providers.dart' show trackRepositoryProvider;
 import 'library_providers.dart' show artistsProvider, libraryIndexProvider;
+import 'settings_providers.dart' show settingsProvider;
 import 'youtube_providers.dart';
 import 'ytm_catalog_providers.dart';
 
@@ -17,6 +20,30 @@ final sourceCooldownProvider = Provider<SourceCooldown>((ref) => SourceCooldown(
 /// The 20-per-minute budget of the artist/album rows, shared with the merge suggestions (D-425).
 final searchRowsLimiterProvider =
     Provider<WindowLimiter>((ref) => WindowLimiter(perMinute: kSearchRowsPerMinute));
+
+/// The 40-per-minute budget of the link-page matching: its own, so a long
+/// collection never uses up Cerca's (D-526). Only the 429 pause is shared.
+final linkMatchLimiterProvider =
+    Provider<WindowLimiter>((ref) => WindowLimiter(perMinute: kLinkMatchPerMinute));
+
+/// Matches the songs of a link page; cancelled when the provider is dropped.
+final collectionMatcherProvider = Provider.autoDispose<CollectionMatcher>((ref) {
+  final tracks = ref.watch(trackRepositoryProvider);
+  final matcher = CollectionMatcher(
+    youtube: ref.watch(youtubeServiceProvider),
+    cooldown: ref.watch(sourceCooldownProvider),
+    limiter: ref.watch(linkMatchLimiterProvider),
+    library: () => ref.read(libraryIndexProvider).value,
+    trackById: tracks.getById,
+    thresholds: () {
+      final s = ref.read(settingsProvider);
+      return MatchThresholds(sure: s.importSureThreshold, review: s.importReviewThreshold)
+          .clamped();
+    },
+  );
+  ref.onDispose(matcher.cancel);
+  return matcher;
+});
 
 /// Keys of the artists in the library, rebuilt only when the library's artists
 /// change; the online search favours their results for a phrase with no artist.

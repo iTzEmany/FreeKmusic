@@ -22,6 +22,10 @@ const kWikimediaIdentifiedPerMinute = 150;
 /// past it the rows are left out instead of waiting.
 const kSearchRowsPerMinute = 20;
 
+/// Matching the songs of a link page (D-526): a collection has dozens of songs,
+/// so it gets its own window, apart from Cerca's `kSearchRowsPerMinute`.
+const kLinkMatchPerMinute = 40;
+
 /// True when the User-Agent this app sends carries a way to reach its author
 /// (`kApiContact`), which is what moves it from the 10 / min tier to 200 / min.
 bool get apiIdentified => kApiContact.trim().isNotEmpty;
@@ -90,6 +94,15 @@ class WindowLimiter {
       granted.removeAt(0);
     }
     return true;
+  }
+
+  /// How long until [tryAcquire] can succeed (zero when a slot is free now);
+  /// lets a caller wait without taking a slot.
+  Duration get untilFree {
+    final now = _now();
+    _stamps.removeWhere((s) => !s.isAfter(now.subtract(window)));
+    if (_stamps.length < perMinute) return Duration.zero;
+    return _stamps.first.add(window).difference(now);
   }
 
   Future<void> _take() async {
