@@ -310,9 +310,7 @@ class ShufflePlusController {
       final length = _duration.remove(prev) ?? _libraryLength(prev);
       // A library song left before its last 3 s (_heardTail) is a skip: it gives its
       // count back (D-489, D-497). Block entries never counted.
-      if (!prevFromBlock &&
-          length != null &&
-          pos < length - _heardTail) {
+      if (!prevFromBlock && length != null && pos < length - _heardTail) {
         _played = max(0, _played - 1);
       }
     }
@@ -336,8 +334,7 @@ class ShufflePlusController {
     final pos = _maxPos.remove(id) ?? Duration.zero;
     final length = _duration.remove(id);
     if (entry != null) {
-      final heard =
-          length != null && pos >= length - _heardTail;
+      final heard = length != null && pos >= length - _heardTail;
       if (pos >= const Duration(seconds: 10)) _errors = 0;
       if (log.latest(entry.result.id)?.outcome == SuggestionOutcome.queued) {
         log.setOutcome(
@@ -453,15 +450,29 @@ class ShufflePlusController {
   Future<bool> _suggestOne() async {
     await _followCurrent();
     _publish(coming: true);
-    if (_enriching != null || _plan().isEmpty) return false;
+    if (_enriching != null || _plan().isEmpty) {
+      AppLog.i(
+        'DIAG suggestOne: enriching=${_enriching != null} plan=${_plan()} q=${host.queueIds} cur=${host.currentIndex}',
+      );
+      return false;
+    }
     final src = _source;
     var candidate = await _take();
     if (candidate == null) {
+      AppLog.i('DIAG suggestOne: take null -> fill (seeds=${_seeds.length})');
       await _fill();
-      if (_changedSince(src)) return false;
+      if (_changedSince(src)) {
+        AppLog.i('DIAG suggestOne: changedSince after fill');
+        return false;
+      }
       candidate = await _take();
     }
-    if (candidate == null || _changedSince(src)) return false;
+    if (candidate == null || _changedSince(src)) {
+      AppLog.i(
+        'DIAG suggestOne: false cand=${candidate?.result.id} changed=${_changedSince(src)}',
+      );
+      return false;
+    }
     final prep = prepare;
     if (prep != null) {
       // A failed address is not a playback failure: the next candidate.
@@ -571,6 +582,9 @@ class ShufflePlusController {
       for (final id in host.queueIds)
         if (isOnlineId(id)) ?online[id]?.result.id,
     };
+    AppLog.i(
+      'DIAG take: queue=${host.queueIds.length} lastArtists=$_lastArtists',
+    );
     return pool.take(
       inLibrary: inLibraryTest(hasDownload: hasDownload, library: _library),
       inQueue: queued.contains,
@@ -585,6 +599,9 @@ class ShufflePlusController {
   Future<void> _fill() async {
     final src = _source;
     final next = gate.nextAsk;
+    AppLog.i(
+      'DIAG fill: nextAsk=$next now=${_now()} seeds=${_seeds.length} sugWith=$_suggestedWithSeeds',
+    );
     if (next != null) {
       _retryAt = next;
       _wakeAt(next);
@@ -597,6 +614,9 @@ class ShufflePlusController {
       if (_seeds.isEmpty || _suggestedWithSeeds >= seedsLifetime) _newSeeds();
       var searches = 0;
       for (final seed in _seeds) {
+        AppLog.i(
+          'DIAG fill seed ${seed.key} dead=${seed.dead} needsPage=${seed.needsPage(pool)} vid=${seed.videoId}',
+        );
         if (seed.dead) continue;
         if (!seed.needsPage(pool)) continue;
         if (seed.videoId == null) {
@@ -632,9 +652,11 @@ class ShufflePlusController {
         }
         seed.fetched = true;
         pool.addPage(seed.key, seed.track.title, page);
+        AppLog.i('DIAG fill: page added items=${page.items.length}');
         return;
       }
       // Every seed is dry or unknown: other seeds next time.
+      AppLog.i('DIAG fill: every seed dry/unknown');
       _seeds = [];
       _retryAt = _now().add(retryAfterError);
       _wakeAt(_retryAt!);

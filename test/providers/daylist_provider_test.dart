@@ -140,7 +140,11 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     dir = Directory.systemTemp.createTempSync('daylist_provider');
-    addTearDown(() => dir.deleteSync(recursive: true));
+    // Windows can't delete an open file: let a pending dislikes write finish.
+    addTearDown(() async {
+      await dislikes.flush();
+      dir.deleteSync(recursive: true);
+    });
     clock = () => lateEvening;
     suggestAsked = 0;
     offline = false;

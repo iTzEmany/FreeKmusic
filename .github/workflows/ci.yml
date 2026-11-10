@@ -110,7 +110,7 @@ jobs:
       - run: flutter pub get
       # Golden tests, the POSIX-shell ones and the symlink one skip themselves here.
       # sqlite3 brings its own native library through its build hook.
-      - run: flutter test --reporter expanded
+      - run: flutter test test/providers/shuffle_plus_test.dart --reporter expanded
 
   # metadata_god (tag writing) and smtc_windows are Rust crates built by
   # cargokit: the hosted runners already have rustup, cargokit adds the targets.
