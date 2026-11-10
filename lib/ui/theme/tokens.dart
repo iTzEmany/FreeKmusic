@@ -168,6 +168,9 @@ abstract final class CcTiming {
   static const avatarPulse = Duration(milliseconds: 1200);
   static const coverSpin = Duration(seconds: 30);
 
+  /// Queue drag: wait before going back to the live list (> 250 ms Flutter drop animation).
+  static const dropSettle = Duration(milliseconds: 400);
+
   /// Snackbar: Material default for plain text; shorter with an action (a
   /// snackbar with an action would otherwise never time out).
   static const msg = Duration(seconds: 4);

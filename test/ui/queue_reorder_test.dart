@@ -162,6 +162,38 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('a row from after «Poi» dropped between two block entries lands there', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 9);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(5).toList(), 0));
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    for (final id in ids.skip(5)) {
+      h.handler.addToQueue(id);
+    }
+    await _settle(tester);
+    expect(h.handler.userAhead, 4);
+    final before = h.handler.queueIds; // [cur, b1..b4, r1..r4]
+    // The first row after «Poi» goes between block entries 1 and 2.
+    final handles = find.byIcon(Icons.drag_handle_rounded);
+    final from = tester.getCenter(handles.at(4));
+    final g = await tester.startGesture(from);
+    await tester.pump(const Duration(milliseconds: 100));
+    final target = tester.getCenter(handles.at(0)).dy - 20;
+    await g.moveTo(Offset(from.dx, (from.dy + target) / 2));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveTo(Offset(from.dx, target));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.up();
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(h.handler.queueIds.indexOf(before[5]), 2, reason: 'second in the block');
+    await h.dispose(tester);
+  });
+
   testWidgets('queue sheet still scrolls at 150 % on 360x640', (tester) async {
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1;

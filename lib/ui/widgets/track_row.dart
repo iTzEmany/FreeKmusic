@@ -552,7 +552,12 @@ class LiveTrackRow extends ConsumerWidget {
     this.subtitleSuffix,
     this.albumAsSubtitle = false,
     this.inLibrary = false,
+    this.current,
   });
+
+  /// Decides «is the playing one» when the list knows better than the id
+  /// (a queue row is never the current entry); null: by id.
+  final bool? current;
 
   final Track track;
   final VoidCallback onTap;
@@ -582,11 +587,13 @@ class LiveTrackRow extends ConsumerWidget {
         track: track,
         onTap: onTap,
         reorderIndex: reorderIndex,
+        current: current,
       );
     }
-    final isCurrent = ref.watch(
+    final byId = ref.watch(
       currentTrackProvider.select((t) => t.value?.id == track.id),
     );
+    final isCurrent = current ?? byId;
     final playing = isCurrent && (ref.watch(isPlayingProvider).value ?? false);
     void actions() => showTrackActions(context, ref, track, lead: lead);
     final sel = selection;

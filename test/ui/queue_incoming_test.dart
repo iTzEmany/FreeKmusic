@@ -3,6 +3,7 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/shuffle_plus/shuffle_plus_controller.dart' show ShufflePlusPending;
 import 'package:codecore/ui/screens/now_playing/queue_sheet.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
+import 'package:codecore/ui/widgets/track_row.dart' show TrackRow;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -84,6 +85,41 @@ void main() {
     pending.set(ShufflePlusPending.none);
     await tester.pump(const Duration(milliseconds: 50));
     expect(opacity(), 1);
+    await h.dispose(tester);
+  });
+
+  testWidgets('con un blocco che contiene l\'id del corrente, una sola riga è marcata come corrente', (tester) async {
+    await open(tester);
+    h.handler.addToQueue(h.handler.queueIds.first);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(h.handler.userAhead, 1);
+    expect(find.byWidgetPredicate((w) => w is TrackRow && w.isCurrent), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Svuota» shows «Annulla» inside the open sheet and it restores the queue', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    h = await Harness.create(tester, tracks: 4);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids, 0));
+    await h.pump(
+      tester,
+      Builder(builder: (c) => Scaffold(body: TextButton(onPressed: () => showQueueSheet(c), child: const Text('open')))),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Svuota'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Annulla'), findsOneWidget);
+    await tester.tap(find.text('Annulla'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(h.handler.queueIds, ids);
+    await tester.pump(const Duration(seconds: 5));
     await h.dispose(tester);
   });
 }
