@@ -59,6 +59,11 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **`app_fr.arb` con chiavi duplicate** (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.
 
 ## Qualità e rilascio
+- (10/11) **«Test (Windows)» rosso da giorni** (non è un check obbligatorio, quindi le PR passano; la build «Windows» della CI dipende da lui e viene saltata; l'installer della Release invece si costruisce). 21 test: 19 in `test/providers/shuffle_plus_test.dart`, uno in `shuffle_plus_source_change_test.dart`, uno in `daylist_provider_test.dart`. Diagnosi (run 42869153465, 42877133055, 42881818927):
+  - si riproduce anche col solo file `shuffle_plus_test.dart` su Windows, non dipende dalla concorrenza della suite; il primo test che si blocca cambia da run a run, poi falliscono a catena tutti quelli che aspettano un suggerimento (helper `until`);
+  - nel test bloccato `_suggestOne` torna `false` in ~4 ms senza inserire né chiedere la radio, e il controller si risveglia solo con un `Timer` reale (`_wakeAt(_retryAt)`, attesa `retryAfterError`) mentre il `now` finto dei test è fermo: sospetti `_take()` nullo con un ramo muto di `_fill()` (`gate.nextAsk`, seed morti, `_changedSince`, riserva senza candidati) o stato che resta fra un test e l'altro (un `until` rimasto vivo dal test scaduto);
+  - `daylist_provider_test.dart:143`: `deleteSync(recursive: true)` nel teardown dà `PathAccessException errno 32` perché un file è ancora aperto (su Windows non si cancella un file aperto): chiudere lo store prima di cancellare.
+  - Prossimo passo: diagnostica con `AppLog.i` (non `print`, che rompe `flutter analyze`), solo quel file su Windows, senza `continue-on-error`. Il ramo `fix/test-windows` su GitHub ha solo commit di diagnostica: non va fuso, si può cancellare.
 - **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.
 - **`ci.yml`**: il commento dice 4 test di integrazione, `scripts/integration.sh` ne esegue 5.
 - **Test di poco valore** in `settings_store_test` («blurred dock off by default and kept»): da togliere.
