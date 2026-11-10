@@ -65,6 +65,8 @@ class GenreScreen extends ConsumerWidget {
     final compact = ref.watch(settingsProvider).compactMode;
     final ctx = PlayContext(PlayContextKind.playlist, genre);
     final key = SelectionKey.genreOf(genre);
+    final shuffleIds = [for (final i in items) ?i.track?.id];
+    final shuffleKey = listKeyOf(shuffleIds);
     final selection = RowSelection(
       listKey: key,
       visibleIds: [for (final t in tracks) t.id],
@@ -88,9 +90,12 @@ class GenreScreen extends ConsumerWidget {
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
         // The list as shown: the suggested songs that have arrived, in place.
-        onPlay: () => ctrl.playMixed(items, context: ctx),
+        onPlay: () => ctrl.playMixed(items, context: ctx, listKey: shuffleKey),
         // The ids of the list ▶ plays: the songs shown (a suggested one has no id yet).
-        shuffleIds: [for (final i in items) ?i.track?.id],
+        shuffleIds: shuffleIds,
+        shuffleKey: shuffleKey,
+        // Suggested songs in the list: Shuffle+ would go off anyway (R-18).
+        shufflePlus: !items.any((i) => i.online != null),
         slivers: [
           if (mix.off != null)
             SliverToBoxAdapter(
@@ -120,7 +125,12 @@ class GenreScreen extends ConsumerWidget {
                   track: t,
                   compact: compact,
                   selection: selection,
-                  onTap: () => ctrl.playMixed(items, index: itemAt[i], context: ctx),
+                  onTap: () => ctrl.playMixed(
+                    items,
+                    index: itemAt[i],
+                    context: ctx,
+                    listKey: shuffleKey,
+                  ),
                 );
               }
               final r = row.suggestion;

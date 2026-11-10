@@ -11,6 +11,7 @@ import 'database_providers.dart';
 import 'enrich_completer_providers.dart';
 import 'online_providers.dart' show autoParts;
 import 'player_providers.dart';
+import 'shuffle_plus_providers.dart' show libraryListKey;
 import 'settings_providers.dart';
 import 'translation_providers.dart';
 
@@ -159,7 +160,11 @@ class TrackOps {
       if (tracks.isEmpty) return;
       await _ref
           .read(playerControllerProvider)
-          .playAll(tracks, context: const PlayContext(PlayContextKind.library));
+          .playAll(
+            tracks,
+            context: const PlayContext(PlayContextKind.library),
+            listKey: libraryListKey,
+          );
     } on Object catch (e, st) {
       AppLog.e('play everything failed', e, st);
     }
@@ -174,6 +179,7 @@ class TrackOps {
           .playShufflePlus(
             await libraryIds(),
             context: const PlayContext(PlayContextKind.library),
+            listKey: libraryListKey,
           );
     } on Object catch (e, st) {
       AppLog.e('shuffle+ of the library failed', e, st);

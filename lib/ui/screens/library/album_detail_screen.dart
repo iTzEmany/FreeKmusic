@@ -29,6 +29,7 @@ import '../playlists/playlist_dialogs.dart';
 import 'artist_screen.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/show_msg.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// «1 ora e 52 minuti»; never «0 minuti» (under a minute rounds up).
 String durationWords(AppLocalizations l, int ms) {
@@ -134,6 +135,10 @@ EntranceScope(
             ),
             );
 
+    // One key for the pill and Play: they must be the same list (D-534).
+
+    final shuffleKey = listKeyOf([for (final t in list) t.id]);
+
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -148,8 +153,13 @@ EntranceScope(
         meta: meta,
         onPlay: list.isEmpty
             ? null
-            : () => ctrl.playAll(list, context: playCtx),
+            : () => ctrl.playAll(
+                list,
+                context: playCtx,
+                listKey: shuffleKey,
+              ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
+        shuffleKey: shuffleKey,
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [
           SliverAsyncBody(

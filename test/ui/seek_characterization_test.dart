@@ -28,6 +28,10 @@ class _Spy implements PlayerController {
   @override
   Future<void> seek(Duration position) async => seeks.add(position);
 
+  // Home's shuffle button asks it (D-534); a null would not be a bool.
+  @override
+  bool isPlayingList(Object key) => false;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }

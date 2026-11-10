@@ -4,6 +4,7 @@ import 'package:codecore/core/constants.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/providers/artist_all_songs_provider.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -99,7 +100,20 @@ class _Ctrl implements PlayerController {
     int? index,
     PlayContext? context,
     bool? shuffle,
-  }) async => calls.add('${items.length} index=$index shuffle=$shuffle');
+    Object? listKey,
+  }) async => calls.add('${items.length} index=$index key=$listKey');
+  @override
+  Future<ShufflePlusBlock?> cycleListShuffle(
+    Object key, {
+    List<int>? ids,
+    bool plus = true,
+  }) async {
+    calls.add('toggle $key plus=$plus');
+    return null;
+  }
+
+  @override
+  bool isPlayingList(Object key) => false;
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
@@ -752,7 +766,7 @@ void main() {
     );
   });
 
-  testWidgets('Play and Shuffle play the list (shuffle false/true)', (
+  testWidgets('Play plays the list with the page\'s key; Shuffle only toggles it (D-534)', (
     tester,
   ) async {
     final ctrl = _Ctrl();
@@ -781,11 +795,14 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('artist-play')));
     await tester.tap(find.byKey(const ValueKey('artist-shuffle')));
-    expect(ctrl.calls, ['1 index=0 shuffle=false', '1 index=0 shuffle=true']);
+    expect(ctrl.calls, [
+      '1 index=null key=artist:Pink Floyd',
+      'toggle artist:Pink Floyd plus=false',
+    ]);
     await h.dispose(tester);
   });
 
-  testWidgets('while the page loads Play and Shuffle are there, off', (
+  testWidgets('while the page loads Play is there, off (the Shuffle toggle needs no list)', (
     tester,
   ) async {
     final h = await Harness.create(tester);
@@ -805,12 +822,6 @@ void main() {
     expect(
       tester
           .widget<FilledButton>(find.byKey(const ValueKey('artist-play')))
-          .onPressed,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<OutlinedButton>(find.byKey(const ValueKey('artist-shuffle')))
           .onPressed,
       isNull,
     );

@@ -433,6 +433,43 @@ final shuffleModeProvider = Provider<ShuffleMode>((ref) {
       : (plus ? ShuffleMode.plus : ShuffleMode.shuffle);
 });
 
+/// The mode a list page's «Casuale» control holds for the list's own next Play
+/// (D-534); in memory, off by default.
+class ListShuffle extends Notifier<ShuffleMode> {
+  ListShuffle(this.key);
+  final Object key;
+  @override
+  ShuffleMode build() => ShuffleMode.off;
+  void set(ShuffleMode m) => state = m;
+}
+
+final listShuffleProvider =
+    NotifierProvider.family<ListShuffle, ShuffleMode, Object>(ListShuffle.new);
+
+/// The key of a list identified by its ids (a collection page).
+int listKeyOf(List<int> ids) => Object.hashAll(ids);
+
+/// The key of the whole library's list (Home, «Riproduci tutta la libreria»).
+const libraryListKey = 'library';
+
+/// Is the list [key] the one playing now?
+// shortcut: after a restart the playing list is not recognised (source and key
+// are not persisted), and the whole library played from «Tutti i brani», a row
+// tap or Android Auto is not seen by Home's [libraryListKey]; upgrade: persist
+// the source ids and the key.
+final listPlayingProvider = Provider.autoDispose.family<bool, Object>((
+  ref,
+  key,
+) {
+  final c = ref.watch(playerControllerProvider);
+  final sub = ref
+      .watch(audioHandlerProvider)
+      .queueChanges
+      .listen((_) => ref.invalidateSelf());
+  ref.onDispose(sub.cancel);
+  return c.isPlayingList(key);
+});
+
 /// The first reason in the order the sheet reports them.
 ShufflePlusBlock? shufflePlusBlock({
   required bool jam,

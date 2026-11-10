@@ -25,6 +25,7 @@ import '../../widgets/shrinking_header.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 String _sortLabel(BuildContext context, SortOption o) {
   final l = context.l10n;
@@ -43,12 +44,14 @@ class _AllTracksHeader extends StatelessWidget {
   const _AllTracksHeader({
     required this.loaded,
     required this.shown,
+    required this.shuffleKey,
     required this.wide,
     required this.onPlay,
   });
 
   final bool loaded;
   final List<Track> shown;
+  final Object shuffleKey;
   final bool wide;
   final VoidCallback onPlay;
 
@@ -97,6 +100,7 @@ class _AllTracksHeader extends StatelessWidget {
               size: 24,
               dot: false,
               listIds: () async => [for (final t in shown) t.id],
+              listKey: shuffleKey,
             ),
           ],
         ],
@@ -191,6 +195,8 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
           : PlayContextKind.search,
     );
     final shown = tracks.value ?? const <Track>[];
+    // One key for the pill and Play: they must be the same list (D-534).
+    final shuffleKey = listKeyOf([for (final t in shown) t.id]);
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     return SelectionScope(
       listKey: _selectionKey,
@@ -207,8 +213,13 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
             _AllTracksHeader(
               loaded: tracks.hasValue,
               shown: shown,
+              shuffleKey: shuffleKey,
               wide: wide,
-              onPlay: () => ctrl.playAll(shown, context: ctx),
+              onPlay: () => ctrl.playAll(
+                shown,
+                context: ctx,
+                listKey: shuffleKey,
+              ),
             ),
             Expanded(child: _scrollView(query, tracks, shown, compact, ctrl, ctx)),
           ],

@@ -1,5 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/daylist_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, listShuffleProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/services/daylist/daylist_builder.dart';
 import 'package:codecore/services/daylist/daylist_slots.dart';
@@ -27,10 +29,9 @@ class _FakeDaylist extends DaylistNotifier {
 }
 
 class _FakeActions implements DaylistActions {
-  final calls = <bool>[];
+  final calls = <int?>[];
   @override
-  Future<void> play({bool shuffle = false, int? startIndex}) async =>
-      calls.add(shuffle);
+  Future<void> play({int? startIndex}) async => calls.add(startIndex);
   @override
   Future<void> regenerate() async {}
 }
@@ -103,7 +104,7 @@ void main() {
       findsOneWidget,
     );
     await tester.tap(find.byTooltip('Riproduci la daylist'));
-    expect(actions.calls, [false]);
+    expect(actions.calls, [null]);
     await h.dispose(tester);
 
     await pump(tester, const Scaffold(body: DaylistCard()), (_) => null);
@@ -120,14 +121,24 @@ void main() {
   });
 
   testWidgets(
-    'screen: title, Play and Shuffle call the actions, short note under 50',
+    'screen: title and Play call the actions; Casuale only toggles the daylist mode, starts nothing (D-534)',
     (tester) async {
       await pump(tester, const DaylistScreen(), _state);
       expect(find.text('Tarda sera, Lo-Fi, Jazz, Soul'), findsOneWidget);
       expect(find.textContaining('Solo 3 brani'), findsOneWidget);
       await tester.tap(find.text('Riproduci'));
-      await tester.tap(find.text('Casuale'));
-      expect(actions.calls, [false, true]);
+      final c = ProviderScope.containerOf(
+        tester.element(find.byType(DaylistScreen)),
+      );
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Casuale'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(actions.calls, [null]);
+      expect(c.read(listShuffleProvider(daylistListKey)), ShuffleMode.shuffle);
+      expect(h.handler.shuffleEnabled, isFalse, reason: 'the playing queue is untouched');
+      expect(h.handler.isPlaying, isFalse);
       expect(find.textContaining('Si aggiorna alle 00:00'), findsOneWidget);
       await h.dispose(tester);
     },

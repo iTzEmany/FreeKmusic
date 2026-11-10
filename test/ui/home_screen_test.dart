@@ -5,6 +5,7 @@ import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -105,8 +106,22 @@ void main() {
     );
     await tester.tap(find.byIcon(Icons.shuffle_rounded));
     await _settle(tester);
-    expect(h.handler.shuffleEnabled, isTrue);
+    expect(
+      h.handler.shuffleEnabled,
+      isFalse,
+      reason: 'the library is not playing: only its own mode changes (D-534)',
+    );
     expect(h.handler.queueIds, isEmpty, reason: 'nothing starts');
+    final c = ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
+    expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await _settle(tester);
+    expect(h.handler.shuffleEnabled, isTrue, reason: 'Play applies the mode');
+    // Now the library plays: the button changes the real queue.
+    await tester.tap(find.byIcon(Icons.shuffle_rounded));
+    await _settle(tester);
+    // 4 tracks are too few for Shuffle+: shuffle goes straight to off.
+    expect(h.handler.shuffleEnabled, isFalse);
     await h.dispose(tester);
   });
 
@@ -117,14 +132,18 @@ void main() {
       final ids = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!
           .map((t) => t.id)
           .toList();
+      // Only 2 tracks are in the queue, but the button works on the library.
       await tester.runAsync(() => h.handler.playQueue(ids.take(2).toList(), 0));
+      final c = ProviderScope.containerOf(
+        tester.element(find.byType(HomeScreen)),
+      );
       for (var i = 0; i < 2; i++) {
         await tester.tap(find.byIcon(Icons.shuffle_rounded));
         await _settle(tester);
       }
-      final c = ProviderScope.containerOf(
-        tester.element(find.byType(HomeScreen)),
-      );
+      expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.plus);
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+      await _settle(tester);
       expect(c.read(settingsProvider).shufflePlus, isTrue);
       await h.dispose(tester);
     },

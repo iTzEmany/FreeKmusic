@@ -1,4 +1,6 @@
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/selection_providers.dart' show SelectionKey;
+import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/download_queue.dart';
@@ -30,8 +32,15 @@ class _Ctrl implements PlayerController {
   bool inJam = false;
 
   @override
-  Future<void> playOnlineList(List<YtResult> list, {bool shuffle = false}) async =>
-      calls.add('list ${list.map((r) => r.id).join(',')} shuffle=$shuffle');
+  Future<void> playOnlineList(List<YtResult> list, {bool shuffle = false, Object? listKey}) async =>
+      calls.add('list ${list.map((r) => r.id).join(',')} key=$listKey');
+  @override
+  Future<ShufflePlusBlock?> cycleListShuffle(Object key, {List<int>? ids, bool plus = true}) async {
+    calls.add('toggle $key plus=$plus');
+    return null;
+  }
+  @override
+  bool isPlayingList(Object key) => false;
   @override
   Future<void> enqueueOnline(YtResult r) async => calls.add('enqueue ${r.id}');
 
@@ -88,16 +97,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('album-play')));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(ctrl.calls, ['list a,b shuffle=false']);
+    expect(ctrl.calls, ['list a,b key=${SelectionKey.ytmAlbumOf('MPREb_wall')}']);
     expect(find.byType(NowPlayingScreen), findsOneWidget);
     await h.dispose(tester);
   });
 
-  testWidgets('Shuffle asks for a shuffled list', (tester) async {
+  testWidgets('Shuffle is a toggle of the album: it starts nothing (D-534)', (tester) async {
     final h = await show(tester);
     await tester.tap(find.byKey(const ValueKey('album-shuffle')));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(ctrl.calls, ['list a,b shuffle=true']);
+    expect(ctrl.calls, ['toggle ${SelectionKey.ytmAlbumOf('MPREb_wall')} plus=false']);
+    expect(find.byType(NowPlayingScreen), findsNothing);
     await h.dispose(tester);
   });
 

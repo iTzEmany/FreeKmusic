@@ -353,11 +353,11 @@ class DaylistActions {
   final Ref _ref;
 
   /// Starts the daylist's queue: the user's songs and the suggested ones as
-  /// online entries marked «Suggerito», as the genre page does. [shuffle]
-  /// starts from a random song with shuffle on; [startIndex] (a row of the
-  /// daylist) from that song. Suggested songs blocked since the daylist was
+  /// online entries marked «Suggerito», as the genre page does. The mode
+  /// chosen on the page's «Casuale» (D-534) starts from a random song with
+  /// shuffle on; [startIndex] (a row of the daylist) from that song, shuffle off. Suggested songs blocked since the daylist was
   /// made (or saved) are left out.
-  Future<void> play({bool shuffle = false, int? startIndex}) async {
+  Future<void> play({int? startIndex}) async {
     DaylistState? s;
     try {
       // A slot that has just changed but is not made yet is waited for.
@@ -390,15 +390,17 @@ class DaylistActions {
         .read(playerControllerProvider)
         .playMixed(
           items,
-          index: startIndex != null
-              ? at.clamp(0, items.length - 1)
-              : (shuffle ? Random().nextInt(items.length) : 0),
+          index: startIndex == null ? null : at.clamp(0, items.length - 1),
           context: const PlayContext(PlayContextKind.library),
-          shuffle: shuffle,
+          shuffle: startIndex == null ? null : false,
+          listKey: daylistListKey,
         );
   }
 
   Future<void> regenerate() => _ref.read(daylistProvider.notifier).regenerate();
 }
+
+/// The daylist's list for its «Casuale» toggle (D-534).
+const daylistListKey = 'daylist';
 
 final daylistActionsProvider = Provider<DaylistActions>(DaylistActions.new);

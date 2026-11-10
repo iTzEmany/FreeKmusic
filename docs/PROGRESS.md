@@ -1504,3 +1504,6 @@ mobile_scanner — fase 24 — 2026-10-19
 ## Fase 116 — Brani da Shazam (`fase-116-brani-da-shazam.md`)
 - [ ] 116.1 Lettore del testo e «Da Shazam»
 - [ ] 116.2 Controlli di fase
+
+## Correzioni fuori fase
+- [x] Pulsanti «Casuale» delle liste come interruttori (D-534)

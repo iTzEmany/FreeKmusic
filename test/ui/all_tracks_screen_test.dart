@@ -56,14 +56,19 @@ void main() {
     },
   );
 
-  testWidgets('the shuffle icon only turns the mode on: nothing starts', (
+  testWidgets('the shuffle icon turns the list mode on: nothing starts (D-534)', (
     tester,
   ) async {
     final h = await _open(tester);
     await tester.tap(find.byTooltip('Casuale: spenta'));
     await _settle(tester);
-    expect(h.handler.shuffleEnabled, isTrue);
+    expect(find.byTooltip('Casuale: attiva'), findsOneWidget);
     expect(h.handler.queueIds, isEmpty);
+    expect(h.handler.shuffleEnabled, isFalse, reason: 'not the playing queue');
+    // The list's next Play applies its own mode.
+    await tester.tap(find.byType(PlayCircleButton));
+    await _settle(tester);
+    expect(h.handler.shuffleEnabled, isTrue);
     await h.dispose(tester);
   });
 

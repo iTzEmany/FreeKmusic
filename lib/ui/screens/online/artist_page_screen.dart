@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' show Random;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -295,24 +294,17 @@ class ArtistPageScreen extends ConsumerWidget {
     }
     final data = all.value;
     final ctx = PlayContext(PlayContextKind.artist, head.name);
-    Future<void> play({required bool shuffle}) {
-      final items = data!.items;
-      return ref
-          .read(playerControllerProvider)
-          .playMixed(
-            items,
-            index: shuffle ? Random().nextInt(items.length) : 0,
-            context: ctx,
-            shuffle: shuffle,
-          );
-    }
+    final key = 'artist:${head.name}';
+    Future<void> play() => ref
+        .read(playerControllerProvider)
+        .playMixed(data!.items, context: ctx, listKey: key);
 
     return ArtistPlayRow(
       busy: all.isLoading || loading,
       canPlay: data != null && data.items.isNotEmpty,
       topMissing: data?.topMissing ?? false,
-      onPlay: () => play(shuffle: false),
-      onShuffle: () => play(shuffle: true),
+      onPlay: play,
+      listKey: key,
     );
   }
 

@@ -33,6 +33,7 @@ import 'export_dialog.dart';
 import 'playlist_order.dart';
 import '../../widgets/sort_sheet.dart';
 import '../../widgets/motion.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({super.key, required this.playlist});
@@ -305,6 +306,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       );
     }
 
+    // One key for the pill and Play: they must be the same list (D-534).
+
+    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
+
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -322,8 +327,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         meta: collectionMeta(l, tracks: tracks.length, durationMs: durationMs),
         onPlay: tracks.isEmpty
             ? null
-            : () => ctrl.playAll(tracks, context: playCtx),
+            : () => ctrl.playAll(
+                tracks,
+                context: playCtx,
+                listKey: shuffleKey,
+              ),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        shuffleKey: shuffleKey,
         menu: IconButton(
           tooltip: l.moreActions,
           icon: const Icon(Icons.more_vert_rounded),

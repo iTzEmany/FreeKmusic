@@ -19,6 +19,7 @@ import '../library/album_detail_screen.dart' show collectionMeta;
 import 'tags_sheet.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../theme/tokens.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// The user's tags with how many tracks each one has; a tap opens its tracks.
 class TagsScreen extends ConsumerWidget {
@@ -93,6 +94,8 @@ class TagTracksScreen extends ConsumerWidget {
     final ctx = PlayContext(PlayContextKind.playlist, name);
     final l = context.l10n;
     final durationMs = tracks.fold<int>(0, (a, t) => a + t.durationMs);
+    // One key for the pill and Play: they must be the same list (D-534).
+    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -103,8 +106,13 @@ class TagTracksScreen extends ConsumerWidget {
         meta: collectionMeta(l, tracks: tracks.length, durationMs: durationMs),
         onPlay: tracks.isEmpty
             ? null
-            : () => ctrl.playAll(tracks, context: ctx),
+            : () => ctrl.playAll(
+                tracks,
+                context: ctx,
+                listKey: shuffleKey,
+              ),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        shuffleKey: shuffleKey,
         slivers: [
           if (tracks.isEmpty)
             SliverToBoxAdapter(

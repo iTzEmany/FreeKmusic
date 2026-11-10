@@ -22,6 +22,7 @@ import '../../widgets/track_row_selection.dart';
 import 'album_detail_screen.dart' show collectionMeta;
 import 'all_tracks_screen.dart';
 import '../../widgets/motion.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// The favourites as a collection page (pinned in the Library).
 class FavoritesScreen extends ConsumerStatefulWidget {
@@ -95,6 +96,10 @@ SliverToBoxAdapter(
               ),
             );
 
+    // One key for the pill and Play: they must be the same list (D-534).
+
+    final shuffleKey = listKeyOf([for (final t in list) t.id]);
+
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -107,8 +112,13 @@ SliverToBoxAdapter(
         meta: collectionMeta(l, tracks: list.length, durationMs: durationMs),
         onPlay: list.isEmpty
             ? null
-            : () => ctrl.playAll(list, context: playCtx),
+            : () => ctrl.playAll(
+                list,
+                context: playCtx,
+                listKey: shuffleKey,
+              ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
+        shuffleKey: shuffleKey,
         menu: IconButton(
           tooltip: l.sortBy,
           icon: const Icon(Icons.sort_rounded),

@@ -24,6 +24,7 @@ import '../../widgets/track_row_selection.dart';
 import '../online/artist_picker_sheet.dart';
 import '../releases/follow_button.dart';
 import 'album_detail_screen.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// An artist: Play / Shuffle over all their tracks, the five most played and
 /// the albums (rows if few, grid if many).
@@ -63,6 +64,8 @@ class ArtistDetailScreen extends ConsumerWidget {
       listKey: key,
       visibleIds: [for (final t in top) t.id],
     );
+    // One key for the pill and Play: they must be the same list (D-534).
+    final shuffleKey = listKeyOf([for (final t in list) t.id]);
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -82,8 +85,13 @@ class ArtistDetailScreen extends ConsumerWidget {
             : null,
         onPlay: list.isEmpty
             ? null
-            : () => ctrl.playAll(list, context: playCtx),
+            : () => ctrl.playAll(
+                list,
+                context: playCtx,
+                listKey: shuffleKey,
+              ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
+        shuffleKey: shuffleKey,
         slivers: [
           if (tracks.hasError || albums.hasError)
             SliverToBoxAdapter(
