@@ -327,7 +327,7 @@ class PlaylistRepository {
       });
 
   Future<int?> idByUuid(String uuid) async => (await (_db.select(_db.playlists)
-            ..where((p) => p.uuid.equals(uuid)))
+            ..where((p) => p.uuid.equals(uuid) & _db.isPlaylistVisible(p)))
           .getSingleOrNull())
       ?.id;
 

@@ -66,14 +66,23 @@ class ShazamInbox {
     }
   }
 
-  Future<ShazamResult> _put(TrackReady m) async {
+  /// The writes of two overlapping adds run one after the other: otherwise both
+  /// would create the playlist, or both miss the other's row.
+  Future<void> _tail = Future.value();
+
+  Future<ShazamResult> _put(TrackReady m) {
+    final run = _tail.then((_) => _write(m));
+    _tail = run.then((_) {}, onError: (Object _) {}); // an error never poisons the chain
+    return run;
+  }
+
+  Future<ShazamResult> _write(TrackReady m) async {
     final tracks = _ref.read(trackRepositoryProvider);
     final playlists = _ref.read(playlistRepositoryProvider);
     final store = _ref.read(settingsStoreProvider);
-    final (id, title, artist, online, lib) = switch (m) {
-      TrackReadyLibrary(:final track) => (track.id, track.title, track.artist ?? '', null, track),
-      TrackReadyOnline(:final result) =>
-        (await tracks.ensureStreamRow(result), result.title, displayArtist(result), result, null),
+    final (title, artist, online, lib) = switch (m) {
+      TrackReadyLibrary(:final track) => (track.title, track.artist ?? '', null, track),
+      TrackReadyOnline(:final result) => (result.title, displayArtist(result), result, null),
     };
     final uuid = store.readShazamPlaylistUuid();
     var pid = uuid == null ? null : await playlists.idByUuid(uuid);
@@ -83,9 +92,12 @@ class ShazamInbox {
     }
     final key = '${libraryTitleKey(title)}|${matchKey(artist)}';
     final rows = await playlists.watchTracks(pid).first;
-    final dup = rows.any((t) =>
-        t.id == id || '${libraryTitleKey(t.title)}|${matchKey(t.artist ?? '')}' == key);
-    if (dup || !await playlists.addAtTop(pid, id)) return ShazamDuplicate(title);
+    // Before ensureStreamRow: a duplicate leaves no unused shadow row.
+    if (rows.any((t) => '${libraryTitleKey(t.title)}|${matchKey(t.artist ?? '')}' == key)) {
+      return ShazamDuplicate(title);
+    }
+    final id = lib?.id ?? await tracks.ensureStreamRow(online!);
+    if (!await playlists.addAtTop(pid, id)) return ShazamDuplicate(title); // same id
     if (online != null && store.readShazamAutoDownload()) {
       await _ref.read(downloadsProvider.notifier).add(online).catchError((Object e, StackTrace st) {
         AppLog.w('shazam: download not started', e, st);

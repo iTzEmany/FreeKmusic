@@ -42,7 +42,9 @@ final _shazamTemplates = [
 ShazamShare? _parseShazam(String body) {
   for (final t in _shazamTemplates) {
     final m = t.firstMatch(body);
-    if (m != null) return ShazamShare(m[1]!.trim(), m[2]!.trim(), m[3]);
+    if (m == null) continue;
+    final (title, artist) = (m[1]!.trim(), m[2]!.trim());
+    if (title.isNotEmpty && artist.isNotEmpty) return ShazamShare(title, artist, m[3]);
   }
   return null; // a shazam.com link alone says nothing: slug is not enough (R-209)
 }

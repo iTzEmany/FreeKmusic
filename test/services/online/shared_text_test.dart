@@ -23,6 +23,19 @@ void main() {
     expect((r.title, r.artist), ('Il mare di notte', 'Tizio'));
   });
 
+  for (final text in const [
+    'Siren di   https://www.shazam.com/track/1/x', // blank artist
+    ' di Deko https://www.shazam.com/track/1/x', // blank title
+    'Siren di Deko http://www.shazam.com/track/1/x', // only https is a proven link
+  ]) {
+    test('"$text" is a plain share', () => expect(routeSharedText(text), isA<PlainShare>()));
+  }
+
+  test('extra spaces around « di » are trimmed away', () {
+    final r = routeSharedText('Siren  di  Deko https://www.shazam.com/track/1/x') as ShazamShare;
+    expect((r.title, r.artist), ('Siren', 'Deko'));
+  });
+
   test('a shazam link without the known phrase is a plain share, never guessed from the slug', () {
     final r = routeSharedText('Guarda https://www.shazam.com/track/444241914/siren');
     expect(r, isA<PlainShare>());
