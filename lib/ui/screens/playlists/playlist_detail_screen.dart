@@ -339,7 +339,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       child: CollectionScaffold(
         selectionBar: SelectionBarSlot(
           listKey: key,
-          tracks: tracks,
+          tracks: shown, // «select all» takes what the search shows
           bulk: BulkContext(playlistId: id),
         ),
         title: _name,
@@ -382,7 +382,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 child: CcSearchField(
                   controller: _search,
                   hint: l.searchHint,
-                  onQuery: (v) => setState(() => _query = v),
+                  onQuery: (v) => setState(() {
+                    _query = v;
+                    if (v.isNotEmpty) _editing = false; // «Fine modifica» hides while searching
+                  }),
                 ),
               ),
             ),

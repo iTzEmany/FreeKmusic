@@ -96,7 +96,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
       listKey: key,
       visibleIds: selection.visibleIds,
       child: CollectionScaffold(
-        selectionBar: SelectionBarSlot(listKey: key, tracks: tracks),
+        selectionBar: SelectionBarSlot(listKey: key, tracks: shown),
         title: p.name,
         name: p.name,
         cover: (s) => SmartCover(size: s, radius: CcDims.rGrid),

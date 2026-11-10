@@ -71,6 +71,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await _settle(tester);
     expect(find.byType(TrackRow), findsNothing);
+    expect(find.text('Nessun risultato'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('downloadedNoPlaylist with nothing to list says every download is in a playlist', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 2);
+    await h.pump(tester, const AllTracksScreen(downloadedNoPlaylist: true));
+    await _settle(tester);
+    expect(find.text('Tutti i brani scaricati stanno già in una playlist'), findsOneWidget);
     await h.dispose(tester);
   });
 

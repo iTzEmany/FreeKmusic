@@ -209,6 +209,22 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('desktop: Statistiche opens in the right pane, not a route', (t) async {
+    _size(t, 1280, 800);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    await t.tap(find.text('Statistiche'));
+    await t.pumpAndSettle();
+    expect(find.byType(StatsScreen), findsOneWidget);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.byType(SettingsPageView), findsNothing);
+    expect(
+      t.widget<ListTile>(find.widgetWithText(ListTile, 'Statistiche')).selected,
+      isTrue,
+    );
+    await h.dispose(t);
+  });
+
   testWidgets('resize across the breakpoint keeps the page', (t) async {
     _size(t, 1280, 800);
     final h = await Harness.create(t);
