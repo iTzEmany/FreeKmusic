@@ -18,6 +18,9 @@ void openSearchWith(BuildContext context, WidgetRef ref, String query) {
   ShellNav.showSearch(context, ref);
 }
 
+// A shared title is arbitrary text: keep the snackbar small.
+String _short(String t) => t.length <= 80 ? t : '${t.substring(0, 80)}…';
+
 /// A song shared from Shazam: adds it to «Da Shazam» and tells what happened.
 Future<void> handleShazamShare(BuildContext context, WidgetRef ref, ShazamShare s) async {
   final messenger = ScaffoldMessenger.of(context);
@@ -28,7 +31,7 @@ Future<void> handleShazamShare(BuildContext context, WidgetRef ref, ShazamShare 
     case ShazamAdded(:final title, :final online, :final track):
       showMsgOn(
         messenger,
-        l.shazamAdded(title),
+        l.shazamAdded(_short(title)),
         action: SnackBarAction(
           label: l.listenAction,
           onPressed: () => ref.read(playerControllerProvider).playFromSearch(online: online, track: track),
@@ -36,11 +39,11 @@ Future<void> handleShazamShare(BuildContext context, WidgetRef ref, ShazamShare 
         persist: true,
       );
     case ShazamDuplicate(:final title):
-      showMsgOn(messenger, l.shazamDuplicate(title));
+      showMsgOn(messenger, l.shazamDuplicate(_short(title)));
     case ShazamNotFound():
       showMsgOn(
         messenger,
-        l.shazamNotFound(s.title),
+        l.shazamNotFound(_short(s.title)),
         action: SnackBarAction(
           label: l.searchHint,
           onPressed: () => openSearchWith(context, ref, '${s.title} ${s.artist}'),

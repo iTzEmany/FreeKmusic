@@ -39,7 +39,7 @@ const _share = ShazamShare('Siren', 'The Chainsmokers');
 void main() {
   final song = ytmSong('y1', 'Siren');
 
-  Future<(_Inbox, _Ctrl, ProviderContainer)> pump(WidgetTester tester, List<ShazamResult> results) async {
+  Future<(_Inbox, _Ctrl, ProviderContainer)> pump(WidgetTester tester, List<ShazamResult> results, {ShazamShare share = _share}) async {
     final inbox = _Inbox(results);
     final ctrl = _Ctrl();
     final c = ProviderContainer(overrides: [
@@ -56,7 +56,7 @@ void main() {
         home: Scaffold(
           body: Consumer(
             builder: (context, ref, _) => TextButton(
-              onPressed: () => handleShazamShare(context, ref, _share),
+              onPressed: () => handleShazamShare(context, ref, share),
               child: const Text('go'),
             ),
           ),
@@ -81,6 +81,14 @@ void main() {
     expect(find.text('Non trovato su YouTube Music: Siren'), findsOneWidget);
     await tester.tap(find.text('Cerca'));
     expect(c.read(searchPrefillProvider), 'Siren The Chainsmokers');
+  });
+
+  testWidgets('long title is shortened in the message, Cerca keeps it whole', (tester) async {
+    final long = 'A' * 3000;
+    final (_, _, c) = await pump(tester, [const ShazamNotFound()], share: ShazamShare(long, 'X'));
+    expect(find.text('Non trovato su YouTube Music: ${'A' * 80}…'), findsOneWidget);
+    await tester.tap(find.text('Cerca'));
+    expect(c.read(searchPrefillProvider), '$long X');
   });
 
   testWidgets('offline: Riprova runs add again', (tester) async {
