@@ -464,13 +464,17 @@ class ShufflePlusController {
   Future<bool> _suggestOne() async {
     await _followCurrent();
     _publish(coming: true);
+    print('DBG so enriching=${_enriching != null} plan=${_plan()} q=${host.queueIds.length} cur=${host.currentIndex} played=$_played');
     if (_enriching != null || _plan().isEmpty) return false;
     final src = _source;
     var candidate = await _take();
+    print('DBG take1=${candidate?.result.id} seeds=${_seeds.length} retryAt=$_retryAt nextAsk=${gate.nextAsk}');
     if (candidate == null) {
       await _fill();
+      print('DBG filled changed=${_changedSince(src)} seeds=${[for (final s in _seeds) '${s.videoId}/${s.dead}/${s.fetched}/${s.searchOnly}']} retryAt=$_retryAt');
       if (_changedSince(src)) return false;
       candidate = await _take();
+      print('DBG take2=${candidate?.result.id}');
     }
     if (candidate == null || _changedSince(src)) return false;
     final prep = prepare;
