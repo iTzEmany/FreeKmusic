@@ -78,7 +78,8 @@ void main() {
     await _pump(tester, const [ArtistName('Alfa')],
         search: (_) async => throw const YtException(YtErrorKind.network));
     await tester.tap(find.text('go'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     final ctx = tester.element(find.text('go'));
     expect(find.text(ctx.l10n.ytErrNetwork), findsOneWidget);
   });

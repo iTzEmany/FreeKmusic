@@ -175,6 +175,9 @@ abstract final class CcTiming {
   /// snackbar with an action would otherwise never time out).
   static const msg = Duration(seconds: 4);
   static const msgAction = Duration(seconds: 3);
+
+  /// [persist] snackbars (undo, «Ascolta»…): longer, but every snackbar closes by itself (D-541).
+  static const msgLong = Duration(seconds: 5);
 }
 
 Duration ccDuration(BuildContext context, Duration d) =>

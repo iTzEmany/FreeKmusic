@@ -119,14 +119,16 @@ void main() {
     final link = FakeMqttLink();
     var h = await open(t, link: link);
     await t.tap(find.byTooltip('Prova connessione').first);
-    await t.pumpAndSettle();
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(find.textContaining('connessione riuscita'), findsOneWidget);
     expect(link.disconnected, isTrue);
     await h.dispose(t);
 
     h = await open(t, failLink: true);
     await t.tap(find.byTooltip('Prova connessione').first);
-    await t.pumpAndSettle();
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(find.textContaining('non riesco a collegarmi'), findsOneWidget);
     await h.dispose(t);
   });

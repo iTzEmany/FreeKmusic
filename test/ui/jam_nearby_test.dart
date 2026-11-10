@@ -335,7 +335,8 @@ void main() {
       expect(find.textContaining('non legge dove sei'), findsOneWidget);
       expect(find.textContaining('Dispositivi vicini'), findsNothing);
       await t.tap(find.text('Consenti'));
-      await t.pumpAndSettle();
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
       expect(find.textContaining('Accendi la posizione'), findsOneWidget);
       await h.dispose(t);
     });

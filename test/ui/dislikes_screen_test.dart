@@ -65,7 +65,8 @@ void main() {
     expect(find.text('Despacito'), findsNothing);
 
     await tester.tap(find.text('Togli'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(store.artistBlocked('shakira'), isFalse);
     expect(find.byKey(const ValueKey('dislikes-empty')), findsOneWidget);
 
@@ -79,7 +80,8 @@ void main() {
   testWidgets('Togli and Annulla on a song put the block back', (tester) async {
     final store = await open(tester);
     await tester.tap(find.text('Togli'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(store.trackBlocked('v1'), isFalse);
     await tester.tap(find.text('Annulla'));
     await tester.pumpAndSettle();

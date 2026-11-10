@@ -90,3 +90,6 @@ Con l'app in secondo piano e la musica messa in pausa dalla funzione, il tasto �
 
 ## Test instabili visti nelle fasi 108–113
 `online_playback_test` («the next track still downl…»), `smart_playlists_test` e `daylist_provider_test`. In CI un rilancio è passato. Con `uiautomator dump` mentre il player anima, il comando si blocca: prima metti in pausa con `input keyevent 127`.
+
+## Test e snackbar (D-541)
+Ogni snackbar ha l'anello del conto alla rovescia, che si anima per tutta la sua durata: `tester.pumpAndSettle()` dopo un avviso aspetta che si chiuda (3–8 s) e un `expect` sul suo testo fallisce. Dopo un avviso usare `await tester.pump(); await tester.pump(const Duration(milliseconds: 600));`.
