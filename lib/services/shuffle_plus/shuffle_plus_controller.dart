@@ -216,6 +216,7 @@ class ShufflePlusController {
 
   /// Looks again at everything (an event, a setting or the clock changed).
   void poke() {
+    print('DBG poke disposed=$_disposed running=$_running');
     if (_disposed) return;
     if (_running) {
       _again = true;
@@ -225,12 +226,15 @@ class ShufflePlusController {
   }
 
   Future<void> _run() async {
+    print('DBG run start');
     _running = true;
     try {
       await log.load();
       do {
         _again = false;
+        print('DBG step start');
         await _step();
+        print('DBG step end again=$_again');
       } while (_again && !_disposed);
     } on Object catch (e, st) {
       AppLog.w('shuffle+ step failed', e, st);
@@ -239,6 +243,7 @@ class ShufflePlusController {
       _wakeAt(_retryAt!);
     } finally {
       _running = false;
+      print('DBG run end');
     }
   }
 
@@ -279,7 +284,10 @@ class ShufflePlusController {
   Future<void> _step() async {
     await _followCurrent();
     await _forgetGone();
-    switch (await _gate()) {
+    print('DBG before gate');
+    final g = await _gate();
+    print('DBG gate=$g');
+    switch (g) {
       case _Gate.off:
         await _removePending();
         _publish();
@@ -426,7 +434,10 @@ class ShufflePlusController {
 
   /// Fills every free slot of the plan, one suggestion after the other.
   Future<void> _suggest() async {
-    while (!_disposed && await _suggestOne()) {}
+    while (!_disposed && await _suggestOne()) {
+      print('DBG suggestOne true');
+    }
+    print('DBG suggest done');
     // Still coming only while the enrichment of a block holds the next one.
     _publish(coming: _enriching != null);
   }

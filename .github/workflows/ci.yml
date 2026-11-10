@@ -96,8 +96,6 @@ jobs:
   # spend Windows minutes (they count double on a private repository).
   test-windows:
     name: Test (Windows)
-    needs: check
-    if: needs.check.outputs.docs != 'true'
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -110,8 +108,6 @@ jobs:
       - run: flutter pub get
       # Golden tests, the POSIX-shell ones and the symlink one skip themselves here.
       # sqlite3 brings its own native library through its build hook.
-      - run: flutter test --reporter expanded test/providers/shuffle_plus_test.dart --plain-name "off then on during"
-        continue-on-error: true
       - run: flutter test --reporter expanded test/providers/shuffle_plus_test.dart
         continue-on-error: true
 

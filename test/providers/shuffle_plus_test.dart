@@ -203,6 +203,9 @@ void main() {
     while (!done() && DateTime.now().isBefore(end)) {
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
+    if (!done()) {
+      print('DBG until failed queue=${host.queueIds} cur=${host.currentIndex} enriched=$enriched cfg=${cfg.enabled} pending=${controller.pending.value} log=${log.length}');
+    }
     expect(done(), isTrue, reason: 'the condition was never reached');
     await settle();
   }
