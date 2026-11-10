@@ -3668,5 +3668,7 @@
   "queueUpNext": "Als Nächstes in der Warteschlange",
   "queueThen": "Danach",
   "downloadedNoPlaylist": "Heruntergeladen, ohne Playlist",
-  "downloadedNoPlaylistEmpty": "Jeder heruntergeladene Titel ist schon in einer Playlist"
+  "downloadedNoPlaylistEmpty": "Jeder heruntergeladene Titel ist schon in einer Playlist",
+  "pauseOnZeroVolume": "Pausieren, wenn die Lautstärke auf null ist",
+  "pauseOnZeroVolumeHelp": "Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat."
 }

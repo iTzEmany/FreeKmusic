@@ -11880,6 +11880,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Tutti i brani scaricati stanno già in una playlist'**
   String get downloadedNoPlaylistEmpty;
+
+  /// No description provided for @pauseOnZeroVolume.
+  ///
+  /// In it, this message translates to:
+  /// **'Metti in pausa quando il volume è a zero'**
+  String get pauseOnZeroVolume;
+
+  /// No description provided for @pauseOnZeroVolumeHelp.
+  ///
+  /// In it, this message translates to:
+  /// **'Alzando di nuovo il volume la musica riparte da sola, solo se l\'ha fermata questa funzione.'**
+  String get pauseOnZeroVolumeHelp;
 }
 
 class _AppLocalizationsDelegate

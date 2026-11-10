@@ -5,6 +5,7 @@ import 'l10n/app_localizations.dart';
 import 'providers/equalizer_providers.dart';
 import 'providers/jam_providers.dart' show jamOnlineFailuresProvider;
 import 'providers/player_providers.dart';
+import 'providers/volume_zero_pause_provider.dart';
 import 'providers/podcast_providers.dart' show podcastOrphansStartProvider;
 import 'providers/settings_providers.dart';
 import 'providers/share_hub.dart';
@@ -41,6 +42,7 @@ class CodecoreApp extends ConsumerWidget {
     // Enriches a streamed track as soon as it has its row (D-351).
     ref.listen(streamEnrichTriggerProvider, (_, _) {});
     ref.watch(outputRouteSyncProvider);
+    ref.watch(volumeZeroPauseProvider);
     ref.watch(importNotificationProvider);
     // Checks for new releases of followed artists (starts once settled).
     ref.watch(releaseCheckControllerProvider);

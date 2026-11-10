@@ -3668,5 +3668,7 @@
   "queueUpNext": "A continuación en la cola",
   "queueThen": "Después",
   "downloadedNoPlaylist": "Descargadas sin lista",
-  "downloadedNoPlaylistEmpty": "Todas las canciones descargadas ya están en una lista"
+  "downloadedNoPlaylistEmpty": "Todas las canciones descargadas ya están en una lista",
+  "pauseOnZeroVolume": "Pausar cuando el volumen está a cero",
+  "pauseOnZeroVolumeHelp": "Al subir de nuevo el volumen la música continúa, solo si la pausó esta función."
 }

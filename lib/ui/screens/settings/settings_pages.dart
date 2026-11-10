@@ -253,6 +253,14 @@ List<SettingsGroup> _playback(BuildContext context, WidgetRef ref) {
           onChanged: (v) =>
               notifier.update((c) => c.copyWith(normalizeVolume: v)),
         ),
+        SwitchListTile(
+          key: const ValueKey('pause-on-zero-volume'),
+          title: Text(l.pauseOnZeroVolume),
+          subtitle: Text(l.pauseOnZeroVolumeHelp),
+          value: s.pauseOnZeroVolume,
+          onChanged: (v) =>
+              notifier.update((c) => c.copyWith(pauseOnZeroVolume: v)),
+        ),
       ],
     ),
   ];

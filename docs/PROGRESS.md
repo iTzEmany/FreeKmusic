@@ -1469,10 +1469,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 110.6 Controlli di fase
 
 ## Fase 111 — Pausa a volume zero (`fase-111-pausa-volume-zero.md`)
-- [ ] 111.1 Impostazione
-- [ ] 111.2 Logica unica in Dart
-- [ ] 111.3 Android: osservare il volume multimediale
-- [ ] 111.4 Desktop: cursore del volume dell'app
+- [x] 111.1 Impostazione
+- [x] 111.2 Logica unica in Dart
+- [x] 111.3 Android: osservare il volume multimediale
+  - Verifica `audio_service`: il motore è in cache (`AudioServicePlugin.java:71,111`, `provideFlutterEngine` in `AudioServiceActivity.java:12`) e `disposeFlutterEngine` (`:116-129`) lo distrugge solo quando nessuna Activity è legata; sopravvive alla distruzione dell'Activity, quindi `VolumeBridge` non si stacca in `cleanUpFlutterEngine` (registrato in `configureFlutterEngine`, che ripunta il canale a ogni nuova Activity); l'osservatore lo ferma solo `stop` da Dart. Prova su telefono in 111.5.
+- [x] 111.4 Desktop: cursore del volume dell'app
 - [ ] 111.5 Controlli di fase
 
 ## Fase 112 — Link in Cerca (`fase-112-link-in-cerca.md`)

@@ -3889,5 +3889,7 @@
   "queueUpNext": "Ensuite dans la file",
   "queueThen": "Puis",
   "downloadedNoPlaylist": "Téléchargés hors playlist",
-  "downloadedNoPlaylistEmpty": "Tous les titres téléchargés sont déjà dans une playlist"
+  "downloadedNoPlaylistEmpty": "Tous les titres téléchargés sont déjà dans une playlist",
+  "pauseOnZeroVolume": "Mettre en pause quand le volume est à zéro",
+  "pauseOnZeroVolumeHelp": "En remontant le volume, la musique reprend, seulement si cette fonction l’a mise en pause."
 }

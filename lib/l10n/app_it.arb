@@ -4370,5 +4370,7 @@
   "queueUpNext": "Prossimi in coda",
   "queueThen": "Poi",
   "downloadedNoPlaylist": "Scaricati senza playlist",
-  "downloadedNoPlaylistEmpty": "Tutti i brani scaricati stanno già in una playlist"
+  "downloadedNoPlaylistEmpty": "Tutti i brani scaricati stanno già in una playlist",
+  "pauseOnZeroVolume": "Metti in pausa quando il volume è a zero",
+  "pauseOnZeroVolumeHelp": "Alzando di nuovo il volume la musica riparte da sola, solo se l'ha fermata questa funzione."
 }
