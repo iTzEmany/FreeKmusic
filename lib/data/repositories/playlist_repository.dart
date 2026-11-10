@@ -326,6 +326,16 @@ class PlaylistRepository {
         await _writeOrder(playlistId, reorderForSync(ids, newIndexByTrack));
       });
 
+  Future<int?> idByUuid(String uuid) async => (await (_db.select(_db.playlists)
+            ..where((p) => p.uuid.equals(uuid)))
+          .getSingleOrNull())
+      ?.id;
+
+  Future<String?> uuidOf(int playlistId) async => (await (_db.select(_db.playlists)
+            ..where((p) => p.id.equals(playlistId)))
+          .getSingleOrNull())
+      ?.uuid;
+
   Future<String?> nameOf(int playlistId) async => (await (_db.select(_db.playlists)
             ..where((p) => p.id.equals(playlistId)))
           .getSingleOrNull())

@@ -118,3 +118,17 @@ final manualRomanizationProvider =
     NotifierProvider<ManualRomanizationNotifier, Map<int, String>>(
       ManualRomanizationNotifier.new,
     );
+
+/// «Scarica i brani da Shazam» (off by default).
+class ShazamAutoDownloadNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.read(settingsStoreProvider).readShazamAutoDownload();
+
+  Future<void> set(bool on) async {
+    state = on;
+    await ref.read(settingsStoreProvider).writeShazamAutoDownload(on);
+  }
+}
+
+final shazamAutoDownloadProvider =
+    NotifierProvider<ShazamAutoDownloadNotifier, bool>(ShazamAutoDownloadNotifier.new);

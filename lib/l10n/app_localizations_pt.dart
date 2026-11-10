@@ -7525,4 +7525,30 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get extRefresh => 'Atualizar';
+
+  @override
+  String get shazamAutoDownload => 'Baixar músicas do Shazam';
+
+  @override
+  String get shazamAutoDownloadHint =>
+      'Cada música adicionada a «Da Shazam» também é baixada.';
+
+  @override
+  String shazamAdded(String title) {
+    return 'Adicionada a Da Shazam: $title';
+  }
+
+  @override
+  String shazamDuplicate(String title) {
+    return 'Já está em Da Shazam: $title';
+  }
+
+  @override
+  String shazamNotFound(String title) {
+    return 'Não encontrada no YouTube Music: $title';
+  }
+
+  @override
+  String get shazamOffline =>
+      'Sem conexão: a música do Shazam não foi adicionada.';
 }

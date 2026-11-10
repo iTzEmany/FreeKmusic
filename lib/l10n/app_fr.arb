@@ -3921,5 +3921,11 @@
     }
   },
   "extSaveNothing": "Aucun titre prêt à enregistrer",
-  "extRefresh": "Actualiser"
+  "extRefresh": "Actualiser",
+  "shazamAutoDownload": "Télécharger les titres de Shazam",
+  "shazamAutoDownloadHint": "Chaque titre ajouté à «Da Shazam» est aussi téléchargé.",
+  "shazamAdded": "Ajouté à Da Shazam : {title}",
+  "shazamDuplicate": "Déjà dans Da Shazam : {title}",
+  "shazamNotFound": "Introuvable sur YouTube Music : {title}",
+  "shazamOffline": "Pas de connexion : le titre de Shazam n’a pas été ajouté."
 }
