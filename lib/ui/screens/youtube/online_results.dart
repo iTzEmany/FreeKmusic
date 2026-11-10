@@ -100,7 +100,12 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     if (q.isEmpty) return;
     final external = classifyQuery(q);
     if (external.kind == QueryKind.external) {
-      unawaited(_openExternal(external));
+      // After the frame: this can run while the page is building, and a page
+      // cannot be pushed nor a provider changed then.
+      final serial = _linkSerial;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && serial == _linkSerial) unawaited(_openExternal(external));
+      });
       return;
     }
     // A playlist or channel address is not a search: it opens its video list.

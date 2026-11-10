@@ -524,6 +524,32 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('a Deezer playlist link typed into a live page opens it without a build error', (tester) async {
+    final query = ValueNotifier('');
+    final submitted = ValueNotifier(0);
+    final h = await open(
+      tester,
+      page: Scaffold(
+        body: ListenableBuilder(
+          listenable: Listenable.merge([query, submitted]),
+          builder: (_, _) => OnlineResults(query: query.value, submitted: submitted.value),
+        ),
+      ),
+      more: [
+        externalReaderProvider.overrideWith(
+          (ref, s) => _GateReader(Completer<ExternalCollection>().future),
+        ),
+      ],
+    );
+    query.value = 'https://www.deezer.com/playlist/123';
+    submitted.value = 1;
+    await _settle(tester);
+    await tester.pump(const Duration(seconds: 1)); // the route transition
+    expect(tester.takeException(), isNull);
+    expect(find.byType(OnlinePlaylistScreen), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('a YouTube Music album link opens the album page', (tester) async {
     final h = await open(
       tester,

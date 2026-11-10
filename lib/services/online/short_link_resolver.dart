@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'external_collection.dart';
+import 'http_client.dart';
 import 'external_links.dart';
 
 const _maxHops = 5;
@@ -21,7 +22,7 @@ class ShortLinkResolver {
   final Dio _dio;
 
   /// The page the short link leads to. A loop, more than five hops or a dead
-  /// end is [CollectionNotFound].
+  /// end is [CollectionNotFound]; network errors, 429 and 5xx are [WebUnavailableException].
   Future<String> resolve(String url, {CancelToken? cancelToken}) async {
     final seen = <String>{};
     var current = url;
@@ -38,7 +39,8 @@ class ShortLinkResolver {
         r = await _dio.getUri(uri, cancelToken: cancelToken);
       } on DioException catch (e) {
         if (CancelToken.isCancel(e)) rethrow;
-        throw CollectionUnreadable(e);
+        // Offline or timed out: the page shows the network message with «Riprova».
+        throw WebUnavailableException(current, e.response?.statusCode);
       }
       final code = r.statusCode ?? 0;
       if (code >= 300 && code < 400) {
@@ -55,7 +57,7 @@ class ShortLinkResolver {
         current = next;
         continue;
       }
-      if (code == 429 || code >= 500) throw CollectionUnreadable('HTTP $code');
+      if (code == 429 || code >= 500) throw WebUnavailableException(current, code);
       if (code == 200) {
         for (final m in _spotifyInBody.allMatches('${r.data}')) {
           if (parseExternalLink(m.group(0)!) != null) return m.group(0)!;

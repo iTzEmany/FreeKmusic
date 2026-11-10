@@ -1,4 +1,5 @@
 import 'package:codecore/services/online/external_collection.dart';
+import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/short_link_resolver.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,8 +82,16 @@ void main() {
     expect(await r.resolve('https://spotify.link/x'), 'https://open.spotify.com/album/a1');
   });
 
-  test('429 is unreadable, not not-found', () async {
+  test('429 is a network error, not not-found', () async {
     final r = _resolver({'spotify.link': () => ResponseBody.fromString('', 429)});
-    await expectLater(r.resolve('https://spotify.link/x'), throwsA(isA<CollectionUnreadable>()));
+    await expectLater(r.resolve('https://spotify.link/x'), throwsA(isA<WebUnavailableException>()));
+  });
+
+  test('a connection error is a network error', () async {
+    final r = _resolver({
+      'spotify.link': () => throw DioException.connectionError(
+          requestOptions: RequestOptions(path: ''), reason: 'offline'),
+    });
+    await expectLater(r.resolve('https://spotify.link/x'), throwsA(isA<WebUnavailableException>()));
   });
 }
