@@ -352,7 +352,14 @@ void main() {
       ]);
       await tester.tap(find.text('Rinomina'));
       await _settle(tester);
-      await tester.enterText(find.byType(TextField), 'Giorno');
+      // The page now has its own search field: target the dialog's.
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'Giorno',
+      );
       await tester.tap(find.text('Salva'));
       await _settle(tester);
       expect(await _playlistNames(tester, h), ['Giorno']);
