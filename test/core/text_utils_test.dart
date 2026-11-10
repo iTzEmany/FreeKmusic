@@ -70,7 +70,11 @@ void main() {
       expect(hits(['CAFÉ'], 'café'), hasLength(1));
       expect(hits(['Café'], 'CAFE'), hasLength(1));
     });
-    test('Vietnamese letters', () => expect(hits(['Việt Nam'], 'viet'), hasLength(1)));
+    test('Vietnamese letters', () {
+      expect(hits(['Việt Nam'], 'viet'), hasLength(1));
+      expect(hits(['Hương'], 'huong'), hasLength(1));
+      expect(hits(['Sơn Tùng'], 'son tung'), hasLength(1));
+    });
     test('a query never matches across two fields', () {
       expect(filterByText([('Foo', 'Bar')], 'foo bar', (r) => [r.$1, r.$2]), isEmpty);
     });
@@ -78,6 +82,17 @@ void main() {
       final items = ['Café del Mar', 'Zzz'];
       await primeHaystacks(items, (s) => [s]);
       expect(filterByText(items, 'CAFE', (s) => [s]), ['Café del Mar']);
+    });
+  });
+
+  group('album keys stay as they were (not search folding)', () {
+    String key(String album) => computeAlbumKey(artist: 'A', album: album, directory: '/m');
+    test('NFD and Vietnamese names keep their old key', () {
+      // Old normalize: no NFD marks skipped, no Vietnamese letters folded.
+      expect(key('Cafe\u0301'), 'a|cafe\u0301');
+      expect(key('Việt'), 'a|việt');
+      expect(key('Hương'), 'a|hương');
+      expect(key('Café'), 'a|cafe');
     });
   });
 }

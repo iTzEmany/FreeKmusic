@@ -4,7 +4,7 @@ import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
-import 'package:codecore/providers/library_providers.dart' show trackSearchFields;
+import 'package:codecore/providers/library_providers.dart' show searchTracks, trackSearchFields;
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,19 +73,10 @@ void main() {
       // D-500: the Library list search is a Dart filter, accents ignored, on the
       // list already loaded (the load itself is `allTracks` below).
       List<Track> find(List<Track> l, String q) => filterByText(l, q, trackSearchFields);
-      // Cold: a list that has just arrived. The UI isolate only collects the
-      // strings (the sync part of the prime) and filters; the normalising runs
-      // in another isolate.
+      // Cold: the first key on a list that has just arrived, the whole path
+      // the user waits for (the isolate normalises, then the filter runs).
       final fresh = await repo.watchTracks().first;
-      final sw = Stopwatch()..start();
-      final primed = primeHaystacks(fresh, trackSearchFields);
-      final uiPrime = sw.elapsedMilliseconds;
-      await primed;
-      sw
-        ..reset()
-        ..start();
-      find(fresh, 'SÓNG 4999');
-      final accentCold = uiPrime + sw.elapsedMilliseconds;
+      final accentCold = await _ms(() => searchTracks(fresh, 'SÓNG 4999'));
       final accentWarm = await _ms(() async => find(fresh, 'SÓNG 4'));
       // Downloaded without a playlist: every row in folder 1, a few thousand in
       // a playlist.
@@ -109,7 +100,7 @@ void main() {
           'allTracks=$firstPage byArtist=$sorted liteEntries=$lite genres=$genres');
       expect(search, lessThan(80 * margin), reason: 'text search');
       expect(accentWarm, lessThan(80 * margin), reason: 'text search, accents ignored');
-      expect(accentCold, lessThan(160 * margin), reason: 'text search, first key, UI isolate');
+      expect(accentCold, lessThan(400 * margin), reason: 'text search, first key, whole path');
       expect(noPlaylistCount, lessThan(150 * margin), reason: 'downloaded without playlist, count');
       expect(albums, lessThan(150 * margin), reason: 'albums');
       expect(artists, lessThan(150 * margin), reason: 'artists');

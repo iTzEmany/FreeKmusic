@@ -4,21 +4,33 @@ const _diacritics = <String, String>{
   'àáâãäåāăą': 'a', 'ç': 'c', 'ćčĉċ': 'c', 'ďđ': 'd', 'èéêëēėęěĕ': 'e',
   'ĝğġ': 'g', 'ìíîïīĩįı': 'i', 'ñńňņ': 'n', 'òóôõöøōőŏ': 'o', 'ŕřŗ': 'r',
   'śšşŝș': 's', 'ťţț': 't', 'ùúûüūůűŭũų': 'u', 'ýÿŷ': 'y', 'źżž': 'z',
-  'ạảấầẩẫậắằẳẵặ': 'a', 'ẹẻẽếềểễệ': 'e', 'ỉị': 'i', 'ọỏốồổỗộớờởỡợ': 'o',
-  'ụủứừửữự': 'u', 'ỳỵỷỹ': 'y', 'ß': 'ss', 'æ': 'ae', 'œ': 'oe', 'ł': 'l',
+  'ß': 'ss', 'æ': 'ae', 'œ': 'oe', 'ł': 'l',
 };
 
-final Map<int, String> _diacriticMap = {
-  for (final e in _diacritics.entries)
-    for (final r in e.key.runes) r: e.value,
+// Only for search (searchFold): Vietnamese letters. Not in `normalize`, which
+// builds persisted keys (album_key) and must not change.
+const _searchOnly = <String, String>{
+  'ạảấầẩẫậắằẳẵặ': 'a', 'ẹẻẽếềểễệ': 'e', 'ỉị': 'i', 'ọỏốồổỗộơớờởỡợ': 'o',
+  'ụủứừửữựư': 'u', 'ỳỵỷỹ': 'y',
 };
 
-String stripDiacritics(String s) {
+Map<int, String> _mapOf(Iterable<Map<String, String>> tables) => {
+      for (final t in tables)
+        for (final e in t.entries)
+          for (final r in e.key.runes) r: e.value,
+    };
+
+final Map<int, String> _diacriticMap = _mapOf([_diacritics]);
+final Map<int, String> _searchMap = _mapOf([_diacritics, _searchOnly]);
+
+String stripDiacritics(String s) => _strip(s, _diacriticMap, false);
+
+String _strip(String s, Map<int, String> map, bool skipCombining) {
   final out = StringBuffer();
   for (final r in s.runes) {
-    if (r >= 0x300 && r <= 0x36F) continue; // combining marks (NFD text)
+    if (skipCombining && r >= 0x300 && r <= 0x36F) continue; // NFD marks
     final lower = String.fromCharCode(r).toLowerCase().runes.first;
-    final rep = _diacriticMap[lower];
+    final rep = map[lower];
     if (rep == null) {
       out.writeCharCode(r);
     } else {
@@ -31,8 +43,13 @@ String stripDiacritics(String s) {
 
 final _spaces = RegExp(r'\s+');
 
+/// Stable key text (album keys, matching): do not change what it returns.
 String normalize(String s) =>
     stripDiacritics(s).toLowerCase().trim().replaceAll(_spaces, ' ');
+
+/// Folding for search only: like [normalize] plus NFD marks and Vietnamese.
+String searchFold(String s) =>
+    _strip(s, _searchMap, true).toLowerCase().trim().replaceAll(_spaces, ' ');
 
 // The normalised fields of each list, made once per list, not at every key
 // typed (D-500). shortcut: keyed on the list only, so every caller of one list
@@ -40,21 +57,26 @@ String normalize(String s) =>
 final _haystacks = Expando<List<String>>();
 
 String _haystack<T>(T i, Iterable<String?> Function(T) fields) =>
-    fields(i).map((f) => normalize(f ?? '')).join('\n');
+    fields(i).map((f) => searchFold(f ?? '')).join('\n');
 
 List<String> _normaliseAll(List<String> raw) =>
-    [for (final r in raw) r.split('\n').map(normalize).join('\n')];
+    [for (final r in raw) r.split('\n').map(searchFold).join('\n')];
+
+final _priming = Expando<Future<void>>();
 
 /// Makes the haystacks of a big [items] in another isolate, so the search does
 /// not do it on the UI thread at the first key. Without it [filterByText]
-/// makes them on the spot (fine for small lists).
+/// makes them on the spot (fine for small lists). Calls on one list share
+/// the same work.
 Future<void> primeHaystacks<T>(
   List<T> items,
   Iterable<String?> Function(T) fields,
-) async {
-  if (_haystacks[items] != null) return;
-  final raw = [for (final i in items) fields(i).map((f) => f ?? '').join('\n')];
-  _haystacks[items] ??= await Isolate.run(() => _normaliseAll(raw));
+) {
+  if (_haystacks[items] != null) return Future.value();
+  return _priming[items] ??= () async {
+    final raw = [for (final i in items) fields(i).map((f) => f ?? '').join('\n')];
+    _haystacks[items] ??= await Isolate.run(() => _normaliseAll(raw));
+  }();
 }
 
 /// [items] whose [fields] contain [query] (case and accents ignored); all of
@@ -64,7 +86,7 @@ List<T> filterByText<T>(
   String query,
   Iterable<String?> Function(T) fields,
 ) {
-  final needle = normalize(query);
+  final needle = searchFold(query);
   if (needle.isEmpty) return items;
   final hay = _haystacks[items] ??= [for (final i in items) _haystack(i, fields)];
   return [

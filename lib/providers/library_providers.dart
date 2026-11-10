@@ -109,15 +109,18 @@ final trackQueryProvider =
 
 Iterable<String?> trackSearchFields(Track t) => [t.title, t.artist, t.album];
 
-/// A list as it comes from the database. A big one gets its search texts made
-/// in another isolate now, so the first key does not (D-500).
-List<Track> primedForSearch(List<Track> l) {
-  if (l.length > 2000) {
-    primeHaystacks(l, trackSearchFields).catchError(
-      (Object e, StackTrace st) => AppLog.w('search prime failed', e, st),
-    );
+/// [all] filtered by [text] (accents ignored, D-500). A big list gets its
+/// search texts made in another isolate at the first key, not on the UI thread.
+Future<List<Track>> searchTracks(List<Track> all, String text) async {
+  if (text.trim().isEmpty) return all;
+  if (all.length > 2000) {
+    try {
+      await primeHaystacks(all, trackSearchFields);
+    } on Object catch (e, st) {
+      AppLog.w('search prime failed', e, st);
+    }
   }
-  return l;
+  return filterByText(all, text, trackSearchFields);
 }
 
 final _failedPlain = Expando<Set<Object>>();
@@ -144,24 +147,28 @@ Future<List<Track>> readPlainList(
 final _plainTracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>(
   (ref, q) => ref
       .watch(trackRepositoryProvider)
-      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly)
-      .map(primedForSearch),
+      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly),
 );
 
 final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
   final all = await readPlainList(ref, _plainTracksProvider(q.copyWith(text: '')));
-  yield filterByText(all, q.text, trackSearchFields);
+  yield await searchTracks(all, q.text);
 });
 
 /// Id of the download folder (null when there is none); tests override it.
 /// Read only: it never adds a folder, and follows the folders list.
 final downloadFolderIdProvider = FutureProvider<int?>((ref) async {
-  final folders = await ref.watch(foldersProvider.future);
-  if (!isAndroid) return folders.firstOrNull?.id;
+  // Watch the derived id only: a folders emission that leaves it unchanged
+  // (each download touches folders) must not restart the downloaded list.
+  if (!isAndroid) {
+    return ref.watch(foldersProvider.selectAsync((f) => f.firstOrNull?.id));
+  }
   final ext = await getExternalStorageDirectory();
   if (ext == null) return null;
   final path = p.join(ext.path, 'Music');
-  return folders.where((f) => f.path == path).firstOrNull?.id;
+  return ref.watch(
+    foldersProvider.selectAsync((f) => f.where((x) => x.path == path).firstOrNull?.id),
+  );
 });
 
 final _plainDownloadedProvider =
@@ -173,15 +180,14 @@ final _plainDownloadedProvider =
   }
   yield* ref
       .watch(trackRepositoryProvider)
-      .watchDownloadedWithoutPlaylist(folderId: folderId, sort: q.sort)
-      .map(primedForSearch);
+      .watchDownloadedWithoutPlaylist(folderId: folderId, sort: q.sort);
 });
 
 /// Downloaded tracks that are in no playlist (D-485).
 final downloadedNoPlaylistProvider =
     StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
   final all = await readPlainList(ref, _plainDownloadedProvider(q.copyWith(text: '')));
-  yield filterByText(all, q.text, trackSearchFields);
+  yield await searchTracks(all, q.text);
 });
 
 /// How many [downloadedNoPlaylistProvider] lists, counted by the database.
