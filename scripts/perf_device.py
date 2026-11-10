@@ -35,7 +35,7 @@ import time
 import xml.etree.ElementTree as ET
 
 PKG = 'com.freekmusic.player.perf'
-ACTIVITY = f'{PKG}/com.freekmusic.player.MainActivity'
+ACTIVITY = f'{PKG}/com.codecore.player.MainActivity'
 REMOTE = f'/sdcard/Android/data/{PKG}/files'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRAME_60HZ = 1000 / 60
@@ -186,7 +186,7 @@ def main():
     global PKG, ACTIVITY, REMOTE
     if args.real:
         PKG = REAL_PKG
-        ACTIVITY = f'{PKG}/com.freekmusic.player.MainActivity'
+        ACTIVITY = f'{PKG}/com.codecore.player.MainActivity'
         REMOTE = f'/sdcard/Android/data/{PKG}/files'
         args.no_push = True
         if args.no_build:
