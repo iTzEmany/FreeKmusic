@@ -68,7 +68,7 @@ void main() {
     await _openMenu(tester, 'Song 1');
     await _settle(tester);
     // Grouped menu under the track header.
-    expect(find.text('Riproduci dopo'), findsOneWidget);
+    expect(find.text('Aggiungi in coda'), findsOneWidget);
     expect(find.text('Vai all’album'), findsOneWidget);
     expect(find.text('Vai all’artista'), findsOneWidget);
     // No bookmark: no restart entry and no «riprendi da».
@@ -162,7 +162,7 @@ void main() {
     expect(previews, hasLength(1), reason: 'the hold started a preview');
     expect(previews.single.loaded, hasLength(1));
     expect(
-      find.text('Riproduci dopo'),
+      find.text('Aggiungi in coda'),
       findsNothing,
       reason: 'the track menu belongs to the rest of the row',
     );

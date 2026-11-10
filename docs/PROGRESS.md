@@ -1446,11 +1446,11 @@ mobile_scanner — fase 24 — 2026-10-19
 - 107 (2026-11-09): caratterizzazione di `PlayQueue` (5 semi × 200 operazioni, impronta incollata) e test di rete verdi sul codice di oggi; `lib/` invariata. Misure di partenza in `refactor/coda-e-libreria/misure.md`: diversi scenari sono già sopra l'1–2 % della fase 90, quindi alla 113 si confronta con «prima-107». `perf_device.py`: `find` riprova per 2 s («Fogli» falliva mentre il foglio si apriva); la libreria di prova va rifatta con `scripts/perf_library.py` se manca.
 
 ## Fase 108 — Coda: «Aggiungi in coda» come blocco (`fase-108-coda-blocco-utente.md`)
-- [ ] 108.1 Via «Riproduci dopo»
-- [ ] 108.2 Blocco in `PlayQueue`
-- [ ] 108.3 Gestore, persistenza, radio, Jam
-- [ ] 108.4 Intestazioni nel foglio della coda
-- [ ] 108.5 Shuffle+ dopo il blocco e correzione dello skip
+- [x] 108.1 Via «Riproduci dopo»
+- [x] 108.2 Blocco in `PlayQueue`
+- [x] 108.3 Gestore, persistenza, radio, Jam
+- [x] 108.4 Intestazioni nel foglio della coda
+- [x] 108.5 Shuffle+ dopo il blocco e correzione dello skip
 - [ ] 108.6 Controlli di fase
 
 ## Fase 109 — Titoli che scorrono (`fase-109-titoli-che-scorrono.md`)

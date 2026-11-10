@@ -178,19 +178,6 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('«Riproduci dopo» follows the order of the taps, not of the list', (tester) async {
-    await open(tester);
-    await tester.runAsync(() => h.handler.playQueue([tracks[0].id], 0));
-    await pick(tester, [3, 1]); // tapped 3 first, then 1
-    await tester.tap(find.byTooltip('Azioni'));
-    await settle(tester);
-    await tester.tap(find.text('Riproduci dopo'));
-    await settle(tester);
-    expect(h.handler.queueIds, [tracks[0].id, tracks[3].id, tracks[1].id]);
-    expect(find.text('2 brani verranno riprodotti dopo'), findsOneWidget);
-    await h.dispose(tester);
-  });
-
   testWidgets('«Aggiungi in coda» also follows the order of the taps', (tester) async {
     await open(tester);
     await tester.runAsync(() => h.handler.playQueue([tracks[0].id], 0));

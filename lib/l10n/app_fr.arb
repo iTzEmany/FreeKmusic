@@ -147,7 +147,6 @@
       }
     }
   },
-  "playNext": "Lire ensuite",
   "addToQueue": "Ajouter à la file d’attente",
   "addedToQueue": "Ajouté à la file d’attente",
   "favorite": "Favori",
@@ -622,7 +621,6 @@
   "confirmRestoreBody": "Vos modifications de ce titre seront remplacées par les données du fichier.",
   "removedFromPlaylist": "Retiré de la playlist",
   "removedFromQueue": "Retiré de la file d’attente",
-  "playNextDone": "Sera lu ensuite",
   "ytSearchPrompt": "Recherchez un titre ou collez un lien",
   "loadFailed": "Impossible de charger les données.",
   "artistLoadingSongs": "Chargement des titres…",
@@ -1408,14 +1406,6 @@
   "selectAll": "Tout sélectionner",
   "exitSelection": "Quitter la sélection",
   "bulkActions": "Actions",
-  "playNextMany": "{count, plural, =0{0 titre sera lu ensuite} one{1 titre sera lu ensuite} other{{count} titres seront lus ensuite}}",
-  "@playNextMany": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "addedToQueueMany": "{count, plural, =0{0 titre ajouté à la file d’attente} one{1 titre ajouté à la file d’attente} other{{count} titres ajoutés à la file d’attente}}",
   "@addedToQueueMany": {
     "placeholders": {
@@ -3895,5 +3885,7 @@
   "chineseDictionaryDeleteBody": "Vous pourrez le télécharger de nouveau d’ici.",
   "aboutCedictBody": "CC-CEDICT, le dictionnaire chinois de MDBG utilisé pour la translittération. Licence CC BY-SA 4.0 : https://creativecommons.org/licenses/by-sa/4.0/ Source : https://www.mdbg.net/chinese/dictionary?page=cedict",
   "chineseDictionaryDeleteFailed": "Impossible de supprimer le dictionnaire chinois",
-  "editorDiscardBody": "Les modifications n’ont pas été enregistrées."
+  "editorDiscardBody": "Les modifications n’ont pas été enregistrées.",
+  "queueUpNext": "Ensuite dans la file",
+  "queueThen": "Puis"
 }

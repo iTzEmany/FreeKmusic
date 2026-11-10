@@ -300,9 +300,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get playNext => 'Play next';
-
-  @override
   String get addToQueue => 'Add to queue';
 
   @override
@@ -1143,9 +1140,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removedFromQueue => 'Removed from the queue';
-
-  @override
-  String get playNextDone => 'Will play next';
 
   @override
   String get ytSearchPrompt => 'Search for a track or paste a link';
@@ -2584,17 +2578,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bulkActions => 'Actions';
-
-  @override
-  String playNextMany(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tracks will play next',
-      one: '1 track will play next',
-    );
-    return '$_temp0';
-  }
 
   @override
   String addedToQueueMany(int count) {
@@ -7418,4 +7401,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorDiscardBody => 'Your changes have not been saved.';
+
+  @override
+  String get queueUpNext => 'Up next in queue';
+
+  @override
+  String get queueThen => 'Then';
 }

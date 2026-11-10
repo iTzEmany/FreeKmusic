@@ -82,6 +82,16 @@ void main() {
     expect(handler.currentIndex, 1);
   });
 
+  test('playOnline con un blocco suona il risultato online', () async {
+    final c = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/m/c.mp3', title: 'Song c', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    handler.addToQueue(c);
+    await player.playOnline(_r('x'));
+    expect(isOnlineId(handler.queueIds[handler.currentIndex]), isTrue);
+    expect(handler.queueIds[handler.currentIndex + 1], c, reason: 'the block stays right after');
+    expect(handler.userAhead, 1);
+  });
+
   test('a result already downloaded plays the library track, no online entry', () async {
     downloaded = ids[1];
     await player.playOnline(_r('x'));
@@ -90,13 +100,11 @@ void main() {
     expect(online.idsOf(_r('x')), isEmpty);
   });
 
-  test('enqueueOnline appends, playOnlineNext goes after the current one', () async {
+  test('enqueueOnline goes right after the current track', () async {
     await player.enqueueOnline(_r('e'));
-    expect(isOnlineId(handler.queueIds.last), isTrue);
-    await player.playOnlineNext(_r('n'));
     final q = handler.queueIds;
     expect(isOnlineId(q[1]), isTrue);
-    expect(q.length, 4);
+    expect(q.length, 3);
     expect(handler.currentIndex, 0);
     expect(q[0], ids[0]);
   });
@@ -310,11 +318,10 @@ void main() {
     expect(handler.isRadio, isFalse);
   });
 
-  test('playOnline, enqueueOnline and playOnlineNext survive an unreadable download index', () async {
+  test('playOnline and enqueueOnline survive an unreadable download index', () async {
     lookupFails = true;
     await player.playOnline(_r('x'));
     await player.enqueueOnline(_r('x'));
-    await player.playOnlineNext(_r('x'));
     expect(handler.queueIds, ids);
   });
 

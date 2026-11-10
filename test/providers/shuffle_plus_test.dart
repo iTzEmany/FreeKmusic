@@ -31,6 +31,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+import '../support/fake_backend.dart';
 import '../support/fake_stream_preparer.dart';
 
 final radioJson = File('test/fixtures/innertube/ytm_radio.json')
@@ -81,6 +82,10 @@ class _Host implements ShuffleHost {
   set shuffleEnabled(bool v) => _shuffle = v;
   @override
   bool isPlaying = true;
+  @override
+  int get userAhead => real?.userAhead ?? 0;
+  @override
+  bool get currentFromUser => real?.currentFromUser ?? false;
   int inserts = 0;
   bool insertFails = false;
 
@@ -280,6 +285,97 @@ void main() {
     }
     return seen;
   }
+
+  /// Plays with [play], then replaces the one suggestion with a fresh plan;
+  /// returns where the new suggestion lands.
+  Future<int> replanAfter(FutureOr<void> Function() play) async {
+    cfg = const ShufflePlusConfig(enabled: true, every: 10);
+    host.queueIds
+      ..clear()
+      ..addAll([for (var i = 1; i <= 11; i++) i]);
+    controller.start();
+    await until(() => host.queueIds.any(isOnlineId));
+    await play();
+    await settle();
+    await host.removeQueueId(host.queueIds.firstWhere(isOnlineId));
+    host.queueIds.addAll([for (var i = 12; i <= 40; i++) i]);
+    host.change();
+    await until(() => host.queueIds.any(isOnlineId));
+    return host.queueIds.indexWhere(isOnlineId);
+  }
+
+  test('a library song skipped before its last 3 s does not bring the '
+      'suggestion closer', () async {
+    final at = await replanAfter(() async {
+      for (var i = 0; i < 5; i++) {
+        host.finishAndAdvance(toTheEnd: false);
+        await settle();
+      }
+    });
+    expect(at, 14);
+  });
+
+  /// A real queue [1..11] in this order with shuffle on; [block] is enqueued
+  /// first. Returns once Shuffle+ has put its first suggestion in.
+  Future<void> startReal({List<int> block = const []}) async {
+    cfg = const ShufflePlusConfig(enabled: true, every: 10);
+    host.real = PlayQueue()
+      ..shuffle = true
+      ..setItems([for (var i = 1; i <= 11; i++) i], alreadyShuffled: true);
+    for (final id in block) {
+      host.real!.enqueue(id);
+    }
+    controller.start();
+    await until(() => host.queueIds.any(isOnlineId));
+  }
+
+  /// Takes the suggestion out, lengthens the queue and returns how far from
+  /// the current song the new suggestion lands (it tells the songs counted).
+  Future<int> replanDistance() async {
+    await host.removeQueueId(host.queueIds.firstWhere(isOnlineId));
+    for (var i = 12; i <= 40; i++) {
+      host.real!.insertAt(host.queueIds.length, i);
+    }
+    host.change();
+    await until(() => host.queueIds.any(isOnlineId));
+    return host.queueIds.indexWhere(isOnlineId) - host.currentIndex;
+  }
+
+  test('a song of the queue block does not count as a listen, even if '
+      'another one is enqueued before the controller looks', () async {
+    await startReal(block: [50, 51]);
+    host.real!.next(auto: true); // 50 becomes current, controller not told yet
+    host.real!.enqueue(52); // the block is 2 long again
+    host.change();
+    await settle();
+    expect(host.real!.currentFromUser, isTrue);
+    expect(await replanDistance(), 12);
+  });
+
+  test('the suggestion is planned after the queue block', () async {
+    await startReal(block: [50, 51]);
+    expect(host.queueIds.indexWhere(isOnlineId), 11);
+  });
+
+  test('a block entry skipped early gives no refund', () async {
+    await startReal(block: [50]);
+    host.finishAndAdvance(); // 50 from the block, not counted
+    await settle();
+    host.finishAndAdvance(toTheEnd: false); // 50 left early: no refund
+    await settle();
+    expect(await replanDistance(), 8);
+  });
+
+  test('a library song skipped before the backend gave its duration still '
+      'gives its count back', () async {
+    await startReal();
+    for (var i = 0; i < 3; i++) {
+      host.real!.next(auto: true); // no duration, no position reported
+      host.change();
+      await settle();
+    }
+    expect(await replanDistance(), 9);
+  });
 
   test(
     'with the option off nothing is asked and nothing is inserted',
@@ -974,6 +1070,56 @@ void main() {
       );
     },
   );
+
+  /// Distance of the replanned suggestion after the original is skipped early
+  /// and the block copy (id [copyOf], or 50) plays to the end.
+  Future<int> copyScenario(int? copyOf) async {
+    cfg = const ShufflePlusConfig(enabled: true, every: 10);
+    host.real = PlayQueue()
+      ..shuffle = true
+      ..setItems([for (var i = 1; i <= 11; i++) i], alreadyShuffled: true);
+    host.real!.enqueue(copyOf ?? 50);
+    controller.start();
+    await until(() => host.queueIds.any(isOnlineId));
+    host.finishAndAdvance(toTheEnd: false);
+    await settle();
+    host.finishAndAdvance();
+    await settle();
+    return replanDistance();
+  }
+
+  test('a block copy of the playing song counts like any other block entry', () async {
+    final control = await copyScenario(null);
+    host = _Host([...library], [...library]);
+    controller.dispose();
+    controller = make();
+    expect(await copyScenario(1), control);
+  });
+
+  test('HandlerShuffleHost reads the block from the real handler', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = TrackRepository(db);
+    final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), repo,
+        onError: (_) {},
+        online: OnlineEntries(),
+        preparer: FakeStreamPreparer(repo, Directory.systemTemp.createTempSync('hsh')));
+    addTearDown(h.dispose);
+    final ids = [
+      for (var i = 0; i < 3; i++)
+        await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$i.mp3', title: 'S$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: i)),
+    ];
+    final plusHost = HandlerShuffleHost(h);
+    await h.playQueue([ids[0], ids[1]], 0);
+    expect(plusHost.userAhead, 0);
+    h.addToQueue(ids[2]);
+    expect(plusHost.userAhead, 1);
+    expect(plusHost.currentFromUser, isFalse);
+    await h.skipToNext();
+    expect(plusHost.currentFromUser, isTrue);
+    expect(plusHost.userAhead, 0);
+  });
 }
 
 class _NoMix implements YoutubeService {

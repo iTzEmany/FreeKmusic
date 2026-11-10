@@ -1,3 +1,4 @@
+import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/ui/screens/now_playing/queue_sheet.dart';
 import 'package:codecore/ui/widgets/empty_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,6 +67,98 @@ void main() {
     await _settle(tester);
     expect(tester.takeException(), isNull);
     expect(h.handler.queueIds.length, before.length - 1);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a user block gets two headers, none keeps «Prossimi»; reorder stays right', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(4).toList(), 0));
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    await _settle(tester);
+    expect(find.text('Prossimi'), findsOneWidget);
+    expect(find.text('Prossimi in coda'), findsNothing);
+
+    h.handler.addToQueue(ids[4]);
+    await _settle(tester);
+    expect(h.handler.userAhead, 1);
+    expect(find.text('Prossimi in coda'), findsOneWidget);
+    expect(find.text('Poi'), findsOneWidget);
+    expect(find.text('Prossimi'), findsNothing);
+
+    // Drag the first entry after the block down: indices still right.
+    final before = h.handler.queueIds;
+    final g = await tester.startGesture(tester.getCenter(find.byIcon(Icons.drag_handle_rounded).at(1)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(0, 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(0, 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.up();
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(h.handler.queueIds.first, before.first);
+    expect(h.handler.queueIds[1], before[1], reason: 'the block entry stays put');
+    expect(h.handler.queueIds.indexOf(before[2]), greaterThan(2));
+    await h.dispose(tester);
+  });
+
+  for (final similar in [false, true]) {
+    testWidgets(similar
+        ? 'with the similar-songs header, it sits above the first entry after the block instead of «Poi»'
+        : '«Poi» sits above the first entry after the block', (tester) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester, tracks: 6);
+      final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+      final ids = [for (final t in rows) t.id];
+      await tester.runAsync(() => h.handler.playQueue(ids.take(4).toList(), 0));
+      await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())),
+          extraOverrides: [
+            if (similar) similarSeedProvider.overrideWith((_) => (title: 'Seed', loading: false)),
+          ]);
+      h.handler.addToQueue(ids[4]);
+      await _settle(tester);
+      final header = find.text(similar ? 'Simili a «Seed»' : 'Poi');
+      expect(header, findsOneWidget);
+      expect(find.text('Poi'), similar ? findsNothing : findsOneWidget);
+      final y = tester.getTopLeft(header).dy;
+      expect(tester.getTopLeft(find.text('Song 4')).dy, lessThan(y));
+      expect(tester.getTopLeft(find.text('Song 1')).dy, greaterThan(y));
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('dragging an entry of the block (with «Poi» above the next) drops where expected', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(4).toList(), 0));
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    h.handler.addToQueue(ids[4]);
+    await _settle(tester);
+    expect(find.text('Poi'), findsOneWidget);
+
+    final before = h.handler.queueIds;
+    final g = await tester.startGesture(tester.getCenter(find.byIcon(Icons.drag_handle_rounded).at(0)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(0, 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(0, 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.up();
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(h.handler.queueIds.first, before.first);
+    expect(h.handler.queueIds.indexOf(before[1]), greaterThan(1), reason: 'the block entry moved down');
     await h.dispose(tester);
   });
 

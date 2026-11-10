@@ -47,9 +47,6 @@ class _Ctrl implements PlayerController {
   }
 
   @override
-  Future<void> playOnlineNext(YtResult r) async => calls.add('next');
-
-  @override
   bool get jamQueueFull => false;
 
   @override
@@ -196,21 +193,13 @@ void main() {
   });
 
   testWidgets(
-    'with a Jam on, tap and «Riproduci dopo» queue like a swipe (D-89)',
+    'with a Jam on, tap queues like a swipe (D-89)',
     (tester) async {
       final h = await pumpRow(tester, jam: true);
       await tester.tap(find.text('Online song'));
       await tester.pump(const Duration(milliseconds: 400));
       expect(ctrl.calls, ['enqueue']);
       expect(find.byType(NowPlayingScreen), findsNothing);
-      await tester.tap(find.byTooltip('Altre opzioni'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Riproduci dopo'));
-      await tester.pumpAndSettle();
-      expect(ctrl.calls, [
-        'enqueue',
-        'next',
-      ]); // the controller does the Jam routing (D-89)
       await h.dispose(tester);
     },
   );
@@ -242,7 +231,6 @@ void main() {
 
     await open();
     for (final t in [
-      'Riproduci dopo',
       'Aggiungi in coda',
       'Aggiungi a playlist…',
       'Scarica',
@@ -250,12 +238,9 @@ void main() {
       expect(find.text(t), findsOneWidget, reason: t);
     }
     expect(find.text('Vai all’artista'), findsOneWidget);
-    await tester.tap(find.text('Riproduci dopo'));
-    await tester.pumpAndSettle();
-    await open();
     await tester.tap(find.text('Aggiungi in coda'));
     await tester.pumpAndSettle();
-    expect(ctrl.calls, ['next', 'enqueue']);
+    expect(ctrl.calls, ['enqueue']);
 
     await open();
     await tester.tap(find.text('Scarica'));

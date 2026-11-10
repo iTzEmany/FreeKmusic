@@ -158,6 +158,22 @@ void main() {
     });
   }
 
+  test('a guest who leaves finds the block\'s tracks in the same order, as normal entries', () async {
+    await startIn(ShuffleMode.off);
+    handler.addToQueue(ids[3]);
+    handler.addToQueue(ids[0]);
+    await c.read(playbackPersistenceProvider)!.flush();
+    before = List.of(handler.queueIds);
+    final jam = c.read(jamProvider.notifier);
+    await jam.debugBegin(JamRole.guest, jamState);
+    await handler.playQueue([ids[2]], 0);
+    await pumpEventQueue();
+    await jam.end();
+    await pumpEventQueue();
+    expect(handler.queueIds, before);
+    expect(handler.userAhead, 0);
+  });
+
   Future<CodecoreAudioHandler> reopen() async {
     backend = FakeBackend();
     handler = newHandler();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../widgets/cc_sheet.dart';
 
 import 'package:flutter/foundation.dart' show listEquals;
@@ -112,6 +114,22 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
   /// suggestion) and the list must not be rebuilt with other items then.
   _Upcoming? _dragSnapshot;
   bool _dragging = false;
+
+  /// Back to the live list. Only once the drop has finished: the dragged row's
+  /// key lives in the overlay until then and must not also sit in the list.
+  void _endDrag() {
+    _endTimer?.cancel();
+    if (mounted && _dragging) setState(() => _dragging = false);
+  }
+
+  Timer? _endTimer;
+
+  @override
+  void dispose() {
+    _endTimer?.cancel();
+    super.dispose();
+  }
+
   List<Track> _lastQueue = const [];
 
   Widget _queueItem(
@@ -122,12 +140,13 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     int queueLength,
     Set<int> enriching,
     bool similar,
+    Widget? above,
   ) {
     final ctrl = ref.read(playerControllerProvider);
     final l = context.l10n;
     final cc = context.cc;
     final t = upcoming[i];
-    return Dismissible(
+    final row = Dismissible(
       key: ValueKey(keys[i]),
       background: const DismissBackground(),
       secondaryBackground: const DismissBackground(alignEnd: true),
@@ -158,6 +177,13 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         ),
       ),
     );
+    // Always a Column, so the item keeps its type when a block appears.
+    return Column(
+      key: ValueKey(keys[i]),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [above ?? const SizedBox.shrink(), row],
+    );
   }
 
   @override
@@ -180,7 +206,10 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     if (queue.isEmpty) {
       return EmptyState(icon: Icons.queue_music_rounded, message: l.emptyQueue);
     }
-    final at = ref.read(audioHandlerProvider).currentIndex;
+    final handler = ref.read(audioHandlerProvider);
+    final at = handler.currentIndex;
+    // Entries right after the current one added with «Aggiungi in coda».
+    final block = handler.userAhead;
     final current = at >= 0 && at < queue.length ? queue[at] : null;
     final liveUp = _Upcoming.of(queue, at);
     final shown = _dragging && _dragSnapshot != null ? _dragSnapshot! : liveUp;
@@ -200,6 +229,19 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         () => ctrl.restoreQueue(before),
       );
     }
+
+    final similarHeader = similar == null
+        ? null
+        : _SimilarHeader(
+            title: similar.title,
+            loading: similar.loading,
+            total: upcoming.length,
+            owned: upcoming.where((t) => !isOnlineId(t.id)).length,
+          );
+    // With a block, the second header sits above the first entry after it.
+    final afterBlock = block > 0 && block < upcoming.length
+        ? similarHeader ?? SectionHeader(l.queueThen)
+        : null;
 
     return Column(
       children: [
@@ -227,13 +269,10 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                     ),
                   ),
                 ],
-                if (similar != null)
-                  _SimilarHeader(
-                    title: similar.title,
-                    loading: similar.loading,
-                    total: upcoming.length,
-                    owned: upcoming.where((t) => !isOnlineId(t.id)).length,
-                  )
+                if (block > 0 && upcoming.isNotEmpty)
+                  SectionHeader(l.queueUpNext)
+                else if (similar != null)
+                  similarHeader!
                 else if (upcoming.isNotEmpty)
                   SectionHeader(l.queueNext),
               ],
@@ -254,13 +293,18 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                 : null,
             itemCount: upcoming.length,
             onReorderStart: (_) => setState(() {
+              _endTimer?.cancel();
               _dragSnapshot = liveUp;
               _dragging = true;
             }),
-            onReorderEnd: (_) {
-              if (mounted) setState(() => _dragging = false);
-            },
+            // A drop that moves nothing never calls onReorderItem: fall back
+            // to a timer longer than the drop animation.
+            onReorderEnd: (_) => _endTimer = Timer(
+              const Duration(milliseconds: 400),
+              _endDrag,
+            ),
             onReorderItem: (from, to) {
+              _endDrag();
               final snap = _dragSnapshot;
               if (snap == null || from < 0 || from >= snap.keys.length) return;
               final dropped = [...snap.keys];
@@ -289,6 +333,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
               queue.length,
               pending.enriching,
               similar != null,
+              i == block ? afterBlock : null,
             ),
           ),
         ),

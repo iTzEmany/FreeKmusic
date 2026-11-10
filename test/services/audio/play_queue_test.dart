@@ -112,25 +112,204 @@ void main() {
     expect(q.currentId, 1);
   });
 
-  test('insertNext plays right after current', () {
-    final q = make([1, 2, 3]);
-    q.insertNext(99);
-    expect(q.next(), 99);
-    expect(q.next(), 2);
+  group('user block (enqueue)', () {
+    test('FIFO: after the current track, behind earlier additions', () {
+      final q = make([1, 2, 3]);
+      q.enqueue(7);
+      q.enqueue(8);
+      expect(q.items, [1, 7, 8, 2, 3]);
+      expect(q.userAhead, 2);
+      expect(q.next(), 7);
+      expect(q.currentFromUser, isTrue);
+      expect(q.userAhead, 1);
+      expect(q.next(), 8);
+      expect(q.next(), 2);
+      expect(q.currentFromUser, isFalse);
+    });
+
+    test('several tracks go in order to the end of the block', () {
+      final q = make([1, 2]);
+      q.enqueue(7);
+      [8, 9].forEach(q.enqueue);
+      expect(q.items, [1, 7, 8, 9, 2]);
+    });
+
+    test('empty queue: the track just plays', () {
+      final q = PlayQueue()..enqueue(5);
+      expect(q.items, [5]);
+      expect(q.userAhead, 0);
+    });
+
+    test('shuffle on and off do not shuffle the block', () {
+      final q = make(List.generate(10, (i) => i))
+        ..enqueue(90)
+        ..enqueue(91)
+        ..shuffle = true;
+      expect(q.items.sublist(1, 3), [90, 91]);
+      expect(q.userAhead, 2);
+      q.shuffle = false;
+      expect(q.items.sublist(q.currentIndex + 1, q.currentIndex + 3), [90, 91]);
+    });
+
+    test('previous: the block stays right after the new current (D-493)', () {
+      final q = make([1, 2, 3], start: 1);
+      q.next(); // 3
+      q.enqueue(7);
+      expect(q.previous(), 2);
+      expect(q.items, [1, 2, 7, 3]);
+      expect(q.userAhead, 1);
+      expect(q.next(), 7);
+    });
+
+    test(
+      'jumpTo past the block: the block follows the touched track (D-494)',
+      () {
+        final q = make([1, 2, 3, 4])..enqueue(7);
+        q.jumpTo(4); // 4
+        expect(q.items, [1, 2, 3, 4, 7]);
+        expect(q.userAhead, 1);
+      },
+    );
+
+    test('jumpTo into the block takes that entry out of it', () {
+      final q = make([1, 2])
+        ..enqueue(7)
+        ..enqueue(8);
+      q.jumpTo(2); // 8
+      expect(q.currentFromUser, isTrue);
+      expect(q.items, [1, 8, 7, 2]);
+      expect(q.userAhead, 1);
+    });
+
+    test(
+      'move: landing in the block joins it, outside it is normal (D-487)',
+      () {
+        final q = make([1, 2, 3, 4])..enqueue(7);
+        q.move(4, 1); // 4 lands right after the current track
+        expect(q.items, [1, 4, 7, 2, 3]);
+        expect(q.userAhead, 2);
+        q.move(1, 4); // out of the block
+        expect(q.items, [1, 7, 2, 3, 4]);
+        expect(q.userAhead, 1);
+        q.move(1, 4); // the block entry itself leaves it
+        expect(q.userAhead, 0);
+      },
+    );
+
+    test('removeAt takes the entry out of the block', () {
+      final q = make([1, 2])
+        ..enqueue(7)
+        ..enqueue(8);
+      q.removeAt(1);
+      expect(q.items, [1, 8, 2]);
+      expect(q.userAhead, 1);
+    });
+
+    test('insertAt inside the block goes right after it', () {
+      final q = make([1, 2])
+        ..enqueue(7)
+        ..enqueue(8);
+      q.insertAt(1, 9);
+      expect(q.items, [1, 7, 8, 9, 2]);
+      expect(q.userAhead, 2);
+    });
+
+    test('Svuota clears the block and Annulla puts it back', () {
+      final q = make([1, 2, 3])..enqueue(7);
+      final saved = q.saveState();
+      q.rebuildUpcoming(const [1, 2, 3]);
+      expect(q.userAhead, 0);
+      expect(q.items, [1, 2, 3]);
+      expect(q.restoreState(saved), isTrue);
+      expect(q.userAhead, 1);
+      expect(q.items, [1, 7, 2, 3]);
+    });
+
+    test(
+      'Ripeti tutto: a played block entry comes back in the next lap (D-492)',
+      () {
+        final q = make([1, 2])
+          ..repeat = PlayRepeat.all
+          ..enqueue(7);
+        expect([q.next(), q.next(), q.next(), q.next()], [7, 2, 1, 7]);
+        expect(q.userAhead, 0);
+      },
+    );
+
+    test(
+      'setItems keepUser puts the block after the new current track (D-488)',
+      () {
+        final q = make([1, 2])..enqueue(7);
+        q.setItems([5, 6, 8], startIndex: 1, keepUser: true);
+        expect(q.items, [5, 6, 7, 8]);
+        expect(q.userAhead, 1);
+        q.setItems([5, 6]);
+        expect(q.userAhead, 0);
+      },
+    );
   });
 
-  test('insertNext in shuffle plays next too', () {
-    final q = make([1, 2, 3, 4, 5])..shuffle = true;
-    q.insertNext(99);
-    expect(q.next(), 99);
+  group('currentFromUser survives and clears', () {
+    PlayQueue onBlockEntry() {
+      final q = make([1, 2, 3])..enqueue(9);
+      q.next();
+      expect(q.currentFromUser, isTrue);
+      return q;
+    }
+
+    test('a shuffle toggle keeps it', () {
+      final q = onBlockEntry()..shuffle = true;
+      expect(q.currentFromUser, isTrue);
+      q.shuffle = false;
+      expect(q.currentFromUser, isTrue);
+    });
+
+    test('a move keeps it', () {
+      final q = onBlockEntry();
+      q.move(q.items.length - 1, q.currentIndex + 1);
+      expect(q.currentFromUser, isTrue);
+    });
+
+    test('repeat-all wrap from a block entry clears it', () {
+      final q = make([1])
+        ..repeat = PlayRepeat.all
+        ..enqueue(9);
+      q.next();
+      expect(q.currentFromUser, isTrue);
+      q.next(auto: true);
+      expect(q.currentFromUser, isFalse);
+    });
+
+    test('a new context clears it', () {
+      final q = onBlockEntry()..setItems([4, 5]);
+      expect(q.currentFromUser, isFalse);
+    });
+
+    test('Svuota keeps it and Annulla restores it', () {
+      final q = onBlockEntry();
+      final saved = q.saveState();
+      q.rebuildUpcoming(null);
+      expect(q.currentFromUser, isTrue);
+      q.jumpTo(0); // here the block entry is the only one
+      q.restoreState(saved);
+      expect(q.currentFromUser, isTrue);
+      expect(q.items, [1, 9, 2, 3]);
+    });
   });
 
-  test('append goes to the end', () {
-    final q = make([1, 2]);
-    q.append(7);
-    expect(q.items, [1, 2, 7]);
+  test('move to pos+1+userAhead joins the block (D-487)', () {
+    final q = make([1, 2, 3, 4])..enqueue(9);
+    q.move(4, 2); // 4 right after the block
+    expect(q.items, [1, 9, 4, 2, 3]);
+    expect(q.userAhead, 2);
+  });
+
+  test('jumpTo the current entry keeps currentFromUser', () {
+    final q = make([1, 2, 3])..enqueue(9);
     q.next();
-    expect(q.next(), 7);
+    expect(q.currentFromUser, isTrue);
+    q.jumpTo(q.currentIndex);
+    expect(q.currentFromUser, isTrue);
   });
 
   test('move keeps current track', () {
@@ -150,27 +329,46 @@ void main() {
       final listed = q.items;
       expect(listed[q.currentIndex], 3);
       for (var i = q.currentIndex + 1; i < listed.length; i++) {
-        expect(q.next(), listed[i], reason: 'next is what the queue shows next');
+        expect(
+          q.next(),
+          listed[i],
+          reason: 'next is what the queue shows next',
+        );
       }
       expect(q.items, listed, reason: 'walking does not reshuffle');
     });
 
     test('shuffle off puts the natural order back, additions included', () {
       final q = make([1, 2, 3, 4, 5], start: 1)..shuffle = true;
-      q.insertNext(99);
-      q.append(7);
+      q.insertAt(q.currentIndex + 1, 99);
+      q.enqueue(7);
+      q.next(); // 7
       q.next(); // 99
       q.shuffle = false;
       expect(q.currentId, 99);
-      expect(q.items, [1, 2, 99, 3, 4, 5, 7]);
+      expect(q.items, [1, 2, 7, 99, 3, 4, 5]); // 7 played: a normal entry now
     });
 
-    test('a restored session plays in the saved order even with shuffle on', () {
-      final q = PlayQueue(random: Random(1))..shuffle = true;
-      q.setItems([5, 3, 9, 1], startIndex: 1, alreadyShuffled: true);
-      expect(q.items, [5, 3, 9, 1]);
-      expect(q.next(), 9);
+    test('shuffle off after a block entry keeps the queue playable', () {
+      final q = make([1, 2, 3, 4, 5, 6], start: 1)..shuffle = true;
+      q.enqueue(9);
+      q.next(); // 9, now playing
+      q.shuffle = false;
+      expect(q.currentId, 9);
+      expect(q.items.indexOf(9), lessThan(q.items.length - 1));
+      expect(q.next(), isNotNull);
+      expect(q.invariantError, isNull);
     });
+
+    test(
+      'a restored session plays in the saved order even with shuffle on',
+      () {
+        final q = PlayQueue(random: Random(1))..shuffle = true;
+        q.setItems([5, 3, 9, 1], startIndex: 1, alreadyShuffled: true);
+        expect(q.items, [5, 3, 9, 1]);
+        expect(q.next(), 9);
+      },
+    );
   });
 
   group('peekNext / revision', () {
@@ -184,27 +382,59 @@ void main() {
           q.setItems(ids, startIndex: ops.nextInt(ids.length));
           var nextId = 500;
           for (var step = 0; step < 60; step++) {
-            switch (ops.nextInt(11)) {
+            switch (ops.nextInt(16)) {
               case 0:
                 q.shuffle = !q.shuffle;
               case 1:
                 q.repeat = PlayRepeat.values[ops.nextInt(3)];
               case 2:
                 if (q.items.length > 1) {
-                  q.move(ops.nextInt(q.items.length), ops.nextInt(q.items.length));
+                  q.move(
+                    ops.nextInt(q.items.length),
+                    ops.nextInt(q.items.length),
+                  );
                 }
               case 3:
                 if (q.items.length > 1) q.removeAt(ops.nextInt(q.items.length));
               case 4:
-                q.insertNext(nextId++);
+                q.insertAt(q.currentIndex + 1, nextId++);
               case 5:
-                q.append(nextId++);
+                final id = nextId++;
+                q.enqueue(id);
+                if (q.items.length > 1) {
+                  expect(q.items[q.currentIndex + q.userAhead], id);
+                }
               case 6:
                 if (q.items.isNotEmpty) q.jumpTo(ops.nextInt(q.items.length));
               case 7:
                 q.previous();
               case 8:
                 q.next();
+              case 9:
+                q.setItems(
+                  List.generate(1 + ops.nextInt(5), (i) => nextId++),
+                  keepUser: ops.nextBool(),
+                  startIndex: ops.nextInt(3),
+                  userAhead: ops.nextInt(3),
+                );
+              case 10:
+                final saved = q.saveState();
+                q.rebuildUpcoming(
+                  ops.nextBool()
+                      ? null
+                      : [for (var i = 0; i < 4; i++) nextId++],
+                );
+                if (ops.nextBool()) q.restoreState(saved);
+              case 11:
+                if (q.items.isNotEmpty) {
+                  q.removeId(q.items[ops.nextInt(q.items.length)]);
+                }
+              case 12:
+                q.insertAt(ops.nextInt(q.items.length + 2), nextId++);
+              case 13:
+                if (q.items.isNotEmpty) {
+                  q.enqueue(q.items[ops.nextInt(q.items.length)]); // duplicate
+                }
               default:
                 final announced = q.peekNext();
                 final again = q.peekNext();
@@ -219,6 +449,7 @@ void main() {
                   reason: 'seed $seed step $step',
                 );
             }
+            expect(q.invariantError, isNull, reason: 'seed $seed step $step');
           }
         }
       },
@@ -231,10 +462,20 @@ void main() {
           ..setItems([1, 2, 3], startIndex: 2)
           ..shuffle = true
           ..repeat = PlayRepeat.all;
-        final before = [q.currentId, q.currentIndex, q.revision, ...q.playOrder];
+        final before = [
+          q.currentId,
+          q.currentIndex,
+          q.revision,
+          ...q.playOrder,
+        ];
         q.peekNext();
         q.peekNext(auto: false);
-        expect([q.currentId, q.currentIndex, q.revision, ...q.playOrder], before);
+        expect([
+          q.currentId,
+          q.currentIndex,
+          q.revision,
+          ...q.playOrder,
+        ], before);
         q.previous(); // the history was not touched by the peeks: nothing to go back to
         expect(q.currentId, isNotNull);
       },
@@ -289,10 +530,10 @@ void main() {
       expect(q.revision, r, reason: 'same value, no change');
       q.repeat = PlayRepeat.all;
       expectBump('repeat');
-      q.insertNext(9);
-      expectBump('insertNext');
-      q.append(8);
-      expectBump('append');
+      q.insertAt(q.currentIndex + 1, 9);
+      expectBump('insertAt');
+      q.enqueue(8);
+      expectBump('enqueue');
       q.move(0, 1);
       expectBump('move');
       q.removeAt(0);
@@ -310,51 +551,58 @@ void main() {
     });
   });
 
-  group('«Svuota» builds what follows again from the list playback came from', () {
-    const source = [1, 2, 3, 4, 5];
+  group(
+    '«Svuota» builds what follows again from the list playback came from',
+    () {
+      const source = [1, 2, 3, 4, 5];
 
-    test('in order: from the current track on, manual additions gone', () {
-      final q = make(source, start: 1)
-        ..append(99)
-        ..insertNext(98);
-      q.rebuildUpcoming(source);
-      expect(q.currentId, 2);
-      expect(q.items, source);
-      expect([q.next(), q.next(), q.next(), q.next()], [3, 4, 5, null]);
-    });
+      test('in order: from the current track on, manual additions gone', () {
+        final q = make(source, start: 1)
+          ..enqueue(99)
+          ..insertAt(1 + 1, 98);
+        q.rebuildUpcoming(source);
+        expect(q.currentId, 2);
+        expect(q.items, source);
+        expect([q.next(), q.next(), q.next(), q.next()], [3, 4, 5, null]);
+      });
 
-    test('shuffle: a new order of the whole list, shown as it will play', () {
-      final q = make(List.generate(20, (i) => i), start: 2)..shuffle = true;
-      final source = List.generate(20, (i) => i);
-      final before = q.playOrder;
-      q.rebuildUpcoming(source);
-      expect(q.currentId, 2);
-      expect(q.items, q.playOrder, reason: 'the queue lists what will play');
-      expect(q.items.first, 2);
-      expect(q.items.toSet(), source.toSet());
-      expect(q.items, hasLength(20));
-      expect(q.items, isNot(before), reason: 'a new shuffle');
-    });
+      test('shuffle: a new order of the whole list, shown as it will play', () {
+        final q = make(List.generate(20, (i) => i), start: 2)..shuffle = true;
+        final source = List.generate(20, (i) => i);
+        final before = q.playOrder;
+        q.rebuildUpcoming(source);
+        expect(q.currentId, 2);
+        expect(q.items, q.playOrder, reason: 'the queue lists what will play');
+        expect(q.items.first, 2);
+        expect(q.items.toSet(), source.toSet());
+        expect(q.items, hasLength(20));
+        expect(q.items, isNot(before), reason: 'a new shuffle');
+      });
 
-    test('a current track outside the list plays first, then the list', () {
-      final q = make([42]);
-      q.rebuildUpcoming(source);
-      expect(q.items, [42, ...source]);
-      expect(q.currentId, 42);
-    });
+      test('a current track outside the list plays first, then the list', () {
+        final q = make([42]);
+        q.rebuildUpcoming(source);
+        expect(q.items, [42, ...source]);
+        expect(q.currentId, 42);
+      });
 
-    test('no list: just dropped; undo puts everything back', () {
-      final q = make([7, 8, 9]);
-      final saved = q.saveState();
-      q.rebuildUpcoming(null);
-      expect(q.items, [7]);
-      expect(q.hasNext, isFalse);
-      expect(q.restoreState(saved), isTrue);
-      expect(q.items, [7, 8, 9]);
-      expect(q.next(), 8);
-      expect(q.restoreState(saved), isFalse, reason: 'another track plays now');
-    });
-  });
+      test('no list: just dropped; undo puts everything back', () {
+        final q = make([7, 8, 9]);
+        final saved = q.saveState();
+        q.rebuildUpcoming(null);
+        expect(q.items, [7]);
+        expect(q.hasNext, isFalse);
+        expect(q.restoreState(saved), isTrue);
+        expect(q.items, [7, 8, 9]);
+        expect(q.next(), 8);
+        expect(
+          q.restoreState(saved),
+          isFalse,
+          reason: 'another track plays now',
+        );
+      });
+    },
+  );
 
   group('insertAt / removeId', () {
     test('before, at and after the current track: the current one stays', () {

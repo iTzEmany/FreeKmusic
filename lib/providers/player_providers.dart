@@ -378,13 +378,6 @@ class PlayerController {
   bool get hasQueueSource => _handler.hasSource;
   void restoreQueue(QueueState state) => _handler.restoreQueue(state);
 
-  /// Null outside a Jam; in one, how many tracks the shared queue took (0 or 1).
-  Future<JamAddResult?> playNext(int trackId) async {
-    if (inJam) return addToJam?.call([trackId]);
-    _handler.playNext(trackId);
-    return null;
-  }
-
   Future<JamAddResult?> addToQueue(int trackId) async {
     if (inJam) return addToJam?.call([trackId]);
     _handler.addToQueue(trackId);
@@ -428,7 +421,8 @@ class PlayerController {
     if (id == null) return;
     if (_handler.queueIds.isEmpty || _handler.isRadio) return _playAlone(id);
     _requestNotificationPermissionOnce();
-    final at = _handler.currentIndex + 1;
+    // Past the user block (insertAt would move it there anyway); the jump then keeps the block right after it.
+    final at = _handler.currentIndex + 1 + _handler.userAhead;
     _handler.insertAt(at, id);
     await _handler.skipToQueueItem(at);
   }
@@ -520,14 +514,6 @@ class PlayerController {
     if (id == null) return;
     if (_handler.isRadio) return _playAlone(id);
     _handler.addToQueue(id);
-  }
-
-  Future<void> playOnlineNext(YtResult r) async {
-    if (inJam) return _onlineToJam(r);
-    final id = await _idOrLog(r);
-    if (id == null) return;
-    if (_handler.isRadio) return _playAlone(id);
-    _handler.playNext(id);
   }
 
   /// Plays [list] in order; [shuffle] turns plain shuffle on (else off), never Shuffle+ (R-18).

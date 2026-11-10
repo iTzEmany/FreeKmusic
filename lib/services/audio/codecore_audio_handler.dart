@@ -346,6 +346,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   bool get isPlaying => _state == BackendState.playing;
   List<int> get queueIds => _queue.items;
   int get currentIndex => _queue.currentIndex;
+  int get userAhead => _queue.userAhead;
+  bool get currentFromUser => _queue.currentFromUser;
   bool get hasNext =>
       _queue.hasNext || (_queueRadio != null && _queue.items.length > 1);
   bool get shuffleEnabled => _queue.shuffle;
@@ -362,7 +364,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> playQueue(List<int> ids, int index) async {
     _leaveRadioMode();
     _source = List.of(ids);
-    _queue.setItems(ids, startIndex: index);
+    _queue.setItems(ids, startIndex: index, keepUser: true);
     _consecutiveErrors = 0;
     _queueController.add(null);
     await _loadCurrent(play: true);
@@ -457,10 +459,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Loads the queue paused, at [position] (used to resume after a restart).
-  Future<void> restore(List<int> ids, int index, Duration position) async {
+  Future<void> restore(List<int> ids, int index, Duration position, {int userAhead = 0}) async {
     _leaveRadioMode();
     _source = List.of(ids);
-    _queue.setItems(ids, startIndex: index, alreadyShuffled: true);
+    _queue.setItems(ids, startIndex: index, alreadyShuffled: true, userAhead: userAhead);
     _queueController.add(null);
     await _loadCurrent(play: false, startAt: position);
   }
@@ -1724,17 +1726,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     unawaited(_refreshWindow());
   }
 
-  void playNext(int trackId) {
-    // A queue started from nothing has no list behind it.
-    if (_queue.isEmpty) _source = null;
-    _queue.insertNext(trackId);
-    _queueController.add(null);
-    unawaited(_refreshWindow());
-  }
-
   void addToQueue(int trackId) {
     if (_queue.isEmpty) _source = null;
-    _queue.append(trackId);
+    _queue.enqueue(trackId);
     _queueController.add(null);
     unawaited(_refreshWindow());
   }

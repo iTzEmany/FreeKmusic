@@ -1,15 +1,25 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 enum PlayRepeat { off, all, one }
 
 /// The queue as it was, to put it back (the undo of «Svuota»).
 class QueueState {
   const QueueState._(
-      this._items, this._keys, this._natural, this._pos, this._history);
+    this._items,
+    this._keys,
+    this._natural,
+    this._pos,
+    this._history,
+    this._user,
+    this._currentFromUser,
+  );
 
-  final List<int> _items, _keys, _history;
+  final List<int> _items, _keys, _history, _user;
   final List<int>? _natural;
   final int _pos;
+  final bool _currentFromUser;
 
   int? get currentId => _pos < 0 ? null : _items[_pos];
 }
@@ -30,6 +40,11 @@ class PlayQueue {
   final List<int> _history = []; // keys, most recent last
   int _serial = 0;
   int _pos = -1;
+  // Keys of the entries the user added and that did not play yet, in arrival
+  // order. I1: they sit at _pos+1.._pos+userAhead in this order. I2: the
+  // current entry is never in it. [_settle] restores both.
+  final List<int> _user = [];
+  bool _currentFromUser = false;
   bool _shuffle = false;
   PlayRepeat _repeat = PlayRepeat.off;
   int _revision = 0;
@@ -59,11 +74,71 @@ class PlayQueue {
   int? get currentId => _pos < 0 ? null : _items[_pos];
   bool get isEmpty => _items.isEmpty;
   bool get shuffle => _shuffle;
+  int get userAhead => _user.length;
+
+  /// The first broken invariant, or null (tests only).
+  @visibleForTesting
+  String? get invariantError {
+    if (_items.length != _keys.length) return 'items/keys length';
+    if (_keys.toSet().length != _keys.length) return 'duplicate keys';
+    if (_items.isEmpty) {
+      return _pos == -1 && _user.isEmpty ? null : 'empty queue state';
+    }
+    if (_pos < 0 || _pos >= _keys.length) return 'pos out of range';
+    if (_user.contains(_keys[_pos])) return 'I2: current in block';
+    for (var i = 0; i < _user.length; i++) {
+      if (_pos + 1 + i >= _keys.length || _keys[_pos + 1 + i] != _user[i]) {
+        return 'I1: block not after current at $i';
+      }
+    }
+    final n = _natural;
+    if (n != null &&
+        !(n.length == _keys.length && n.toSet().containsAll(_keys))) {
+      return 'natural is not a permutation of keys';
+    }
+    return null;
+  }
+
+  bool get currentFromUser => _currentFromUser;
 
   /// Ids in the order they will be played (the same as [items]).
   List<int> get playOrder => items;
 
   int _newKey() => _serial++;
+
+  /// Restores I1/I2 after something moved [_pos] or reordered. [arrived]: the
+  /// current entry just changed, so it may have come out of the block.
+  void _settle({bool arrived = false, int? before}) {
+    if (_pos < 0) {
+      _user.clear();
+      return;
+    }
+    final cur = _keys[_pos];
+    final left = _user.remove(cur);
+    if (arrived && cur != before) _currentFromUser = left;
+    if (_user.isEmpty) return;
+    final id = {for (var i = 0; i < _keys.length; i++) _keys[i]: _items[i]};
+    final inBlock = _user.toSet();
+    final items = <int>[], keys = <int>[];
+    for (final k in _keys) {
+      if (inBlock.contains(k)) continue;
+      keys.add(k);
+      items.add(id[k]!);
+      if (k == cur) {
+        for (final u in _user) {
+          keys.add(u);
+          items.add(id[u]!);
+        }
+      }
+    }
+    _items
+      ..clear()
+      ..addAll(items);
+    _keys
+      ..clear()
+      ..addAll(keys);
+    _pos = _keys.indexOf(cur);
+  }
 
   set shuffle(bool value) {
     if (value == _shuffle) return;
@@ -76,6 +151,7 @@ class PlayQueue {
       } else {
         _restoreNaturalOrder();
       }
+      _settle();
     }
     _changed();
   }
@@ -119,12 +195,40 @@ class PlayQueue {
 
   /// [alreadyShuffled]: [trackIds] is an order to play as it is (a restored
   /// session), even with shuffle on.
-  void setItems(List<int> trackIds,
-      {int startIndex = 0, bool alreadyShuffled = false}) {
+  void setItems(
+    List<int> trackIds, {
+    int startIndex = 0,
+    bool alreadyShuffled = false,
+    bool keepUser = false,
+    int userAhead = 0,
+  }) {
+    final kept = keepUser
+        ? [for (final k in _user) _items[_keys.indexOf(k)]]
+        : const <int>[];
     _history.clear();
     _changed();
-    _load(trackIds, trackIds.isEmpty ? 0 : startIndex.clamp(0, trackIds.length - 1),
-        shuffleNow: _shuffle && !alreadyShuffled);
+    _load(
+      trackIds,
+      trackIds.isEmpty ? 0 : startIndex.clamp(0, trackIds.length - 1),
+      shuffleNow: _shuffle && !alreadyShuffled,
+    );
+    if (_pos < 0) return;
+    // A restored session: the [userAhead] entries after the current are the block.
+    final n = userAhead.clamp(0, _items.length - 1 - _pos);
+    _user.addAll(_keys.sublist(_pos + 1, _pos + 1 + n));
+    for (final id in kept) {
+      _insertUser(_pos + 1 + _user.length, id);
+    }
+  }
+
+  /// A new user entry at [at] (it joins the block and the natural order).
+  void _insertUser(int at, int id) {
+    final key = _newKey();
+    final n = _natural;
+    if (n != null) n.insert(n.indexOf(_keys[at - 1]) + 1, key);
+    _items.insert(at, id);
+    _keys.insert(at, key);
+    _user.add(key);
   }
 
   void _load(List<int> ids, int start, {required bool shuffleNow}) {
@@ -135,6 +239,8 @@ class PlayQueue {
       ..clear()
       ..addAll(List.generate(ids.length, (_) => _newKey()));
     _natural = null;
+    _user.clear();
+    _currentFromUser = false;
     if (_items.isEmpty) {
       _pos = -1;
       return;
@@ -193,10 +299,12 @@ class PlayQueue {
   /// `auto` is true when a track ended by itself.
   int? next({bool auto = false}) {
     if (_pos < 0) return null;
+    final before = _keys[_pos];
     if (auto && repeat == PlayRepeat.one) return currentId;
     if (_pos + 1 < _items.length) {
       _pushHistory();
       _pos++;
+      _settle(arrived: true, before: before);
       _changed();
       return currentId;
     }
@@ -204,6 +312,7 @@ class PlayQueue {
     _pushHistory();
     if (_shuffle) _applyOrder(_pendingOrder ?? _newLapOrder());
     _pos = 0;
+    _settle(arrived: true, before: before);
     _changed();
     return currentId;
   }
@@ -211,10 +320,12 @@ class PlayQueue {
   /// Returns the id to play, or null only for an empty queue.
   int? previous() {
     if (_pos < 0) return null;
+    final before = _keys[_pos];
     _changed();
     if (_history.isNotEmpty) {
       final p = _keys.indexOf(_history.removeLast());
       if (p >= 0) _pos = p;
+      _settle(arrived: true, before: before);
       return currentId;
     }
     if (_pos > 0) {
@@ -222,13 +333,16 @@ class PlayQueue {
     } else if (repeat == PlayRepeat.all) {
       _pos = _items.length - 1;
     }
+    _settle(arrived: true, before: before);
     return currentId;
   }
 
   void jumpTo(int index) {
     if (index < 0 || index >= _items.length) return;
+    final before = _pos < 0 ? null : _keys[_pos];
     if (_pos >= 0 && _pos != index) _pushHistory();
     _pos = index;
+    _settle(arrived: true, before: before);
     _changed();
   }
 
@@ -243,6 +357,7 @@ class PlayQueue {
     _keys.removeAt(index);
     _natural?.remove(key);
     _history.removeWhere((k) => k == key);
+    _user.remove(key);
     if (_items.isEmpty) {
       _pos = -1;
     } else if (index < _pos) {
@@ -250,18 +365,31 @@ class PlayQueue {
     } else if (_pos >= _items.length) {
       _pos = _items.length - 1;
     }
+    if (wasCurrent) _settle(arrived: true, before: key);
     return wasCurrent;
   }
 
   /// Moves an item, keeping the current track playing.
   void move(int from, int to) {
-    if (from < 0 || from >= _items.length || to < 0 || to >= _items.length) return;
+    if (from < 0 || from >= _items.length || to < 0 || to >= _items.length) {
+      return;
+    }
     if (from == to) return;
     _changed();
     final currentKey = _pos >= 0 ? _keys[_pos] : null;
+    final moved = _keys[from];
+    _user.remove(moved);
     _items.insert(to, _items.removeAt(from));
     _keys.insert(to, _keys.removeAt(from));
     if (currentKey != null) _pos = _keys.indexOf(currentKey);
+    // Landing inside the block (or right after it) joins it, elsewhere it is normal.
+    if (_user.isNotEmpty &&
+        moved != currentKey &&
+        to > _pos &&
+        to <= _pos + _user.length + 1) {
+      _user.insert(to - _pos - 1, moved);
+    }
+    _settle();
   }
 
   /// What follows the current track, built again from [source] (the list
@@ -286,11 +414,20 @@ class PlayQueue {
     }
     _history.clear();
     _changed();
+    final fromUser = _currentFromUser;
     _load(ids, start, shuffleNow: _shuffle);
+    _currentFromUser = fromUser;
   }
 
-  QueueState saveState() => QueueState._(List.of(_items), List.of(_keys),
-      _natural == null ? null : List.of(_natural!), _pos, List.of(_history));
+  QueueState saveState() => QueueState._(
+    List.of(_items),
+    List.of(_keys),
+    _natural == null ? null : List.of(_natural!),
+    _pos,
+    List.of(_history),
+    List.of(_user),
+    _currentFromUser,
+  );
 
   /// Puts [state] back, only while the same track plays; false otherwise.
   bool restoreState(QueueState state) {
@@ -303,26 +440,15 @@ class PlayQueue {
       ..addAll(state._keys);
     _natural = state._natural == null ? null : List.of(state._natural!);
     _pos = state._pos;
+    _user
+      ..clear()
+      ..addAll(state._user);
+    _currentFromUser = state._currentFromUser;
     _history
       ..clear()
       ..addAll(state._history);
     _changed();
     return true;
-  }
-
-  void insertNext(int trackId) {
-    if (_items.isEmpty) {
-      setItems([trackId]);
-      return;
-    }
-    _changed();
-    final key = _newKey();
-    final natural = _natural;
-    if (natural != null) {
-      natural.insert(natural.indexOf(_keys[_pos]) + 1, key);
-    }
-    _items.insert(_pos + 1, trackId);
-    _keys.insert(_pos + 1, key);
   }
 
   /// Puts [id] at [index] of the play order (past the end = at the end). The
@@ -335,7 +461,8 @@ class PlayQueue {
       return;
     }
     _changed();
-    final at = index.clamp(0, _items.length);
+    var at = index.clamp(0, _items.length);
+    if (at > _pos && at <= _pos + _user.length) at = _pos + 1 + _user.length;
     final key = _newKey();
     final natural = _natural;
     if (natural != null) {
@@ -369,15 +496,13 @@ class PlayQueue {
     return n;
   }
 
-  void append(int trackId) {
+  /// «Add to queue»: after the current track and the user entries before it.
+  void enqueue(int trackId) {
     if (_items.isEmpty) {
       setItems([trackId]);
       return;
     }
     _changed();
-    final key = _newKey();
-    _natural?.add(key);
-    _items.add(trackId);
-    _keys.add(key);
+    _insertUser(_pos + 1 + _user.length, trackId);
   }
 }

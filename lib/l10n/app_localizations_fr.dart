@@ -303,9 +303,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get playNext => 'Lire ensuite';
-
-  @override
   String get addToQueue => 'Ajouter à la file d’attente';
 
   @override
@@ -1153,9 +1150,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get removedFromQueue => 'Retiré de la file d’attente';
-
-  @override
-  String get playNextDone => 'Sera lu ensuite';
 
   @override
   String get ytSearchPrompt => 'Recherchez un titre ou collez un lien';
@@ -2608,18 +2602,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get bulkActions => 'Actions';
-
-  @override
-  String playNextMany(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count titres seront lus ensuite',
-      one: '1 titre sera lu ensuite',
-      zero: '0 titre sera lu ensuite',
-    );
-    return '$_temp0';
-  }
 
   @override
   String addedToQueueMany(int count) {
@@ -7504,4 +7486,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get editorDiscardBody =>
       'Les modifications n’ont pas été enregistrées.';
+
+  @override
+  String get queueUpNext => 'Ensuite dans la file';
+
+  @override
+  String get queueThen => 'Puis';
 }

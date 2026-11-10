@@ -95,9 +95,7 @@ void main() {
 
   test('with a Jam active every queueing path goes to the shared queue, not the local one', () async {
     player.addToQueue(ids[0]);
-    player.playNext(ids[1]);
     await player.enqueueOnline(_r('a'));
-    await player.playOnlineNext(_r('b'));
     await player.playOnline(_r('c'));
     await player.playOnlineList([_r('d'), _r('e')]);
     final rows = await db.select(db.tracks).get();
@@ -105,9 +103,8 @@ void main() {
     expect(toJam, [
       [ids[0]],
       [ids[1]],
-      [ids[1]],
     ]);
-    expect(onlineToJam, ['a', 'b', 'c', 'd', 'e']);
+    expect(onlineToJam, ['a', 'c', 'd', 'e']);
     expect(handler.queueIds, ids);
   });
 
@@ -155,13 +152,11 @@ void main() {
   test('without a Jam the same calls stay local', () async {
     jam = false;
     player.addToQueue(ids[0]);
-    player.playNext(ids[1]);
     await player.enqueueOnline(_r('a'));
     expect(toJam, isEmpty);
     expect(onlineToJam, isEmpty);
-    // «Riproduci dopo» right after the current track, «In coda» at the end.
-    expect(handler.queueIds.sublist(0, 4), [ids[0], ids[1], ids[1], ids[0]]);
-    expect(handler.queueIds.length, 5);
+    expect(handler.queueIds.sublist(0, 2), [ids[0], ids[0]]);
+    expect(handler.queueIds.length, 4);
   });
 
   test('in a Jam a stream shadow row goes as an online track, a file as a track', () async {

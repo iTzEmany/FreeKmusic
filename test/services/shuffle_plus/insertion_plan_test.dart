@@ -35,7 +35,16 @@ void main() {
     expect(plusPlan(const [], -1, 4), isEmpty);
   });
 
-  test('after many skips the first slot is right after the current song', () {
-    expect(plusPlan([1, 2, 3, 4, 5, 6], 2, 4, playedSinceLast: 9), [3]);
+  test(
+    'a long run of songs heard: the first slot follows the current song',
+    () {
+      expect(plusPlan([1, 2, 3, 4, 5, 6], 2, 4, playedSinceLast: 9), [3]);
+    },
+  );
+
+  test('skip passes over the queue block', () {
+    expect(plusPlan([1, 2, 3, 4, 5, 6], 2, 4, playedSinceLast: 9, skip: 2), [
+      5,
+    ]);
   });
 }
