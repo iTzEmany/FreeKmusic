@@ -135,6 +135,10 @@ EntranceScope(
             ),
             );
 
+    // One key for the pill and Play: they must be the same list (D-534).
+
+    final shuffleKey = listKeyOf([for (final t in list) t.id]);
+
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -152,9 +156,10 @@ EntranceScope(
             : () => ctrl.playAll(
                 list,
                 context: playCtx,
-                listKey: listKeyOf([for (final t in list) t.id]),
+                listKey: shuffleKey,
               ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
+        shuffleKey: shuffleKey,
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [
           SliverAsyncBody(

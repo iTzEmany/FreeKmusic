@@ -301,9 +301,12 @@ class PlayerController {
     Object? listKey,
   }) async {
     if (items.isEmpty) return;
-    // An explicit [shuffle] (a row tap) wins over the page's mode.
-    final mode = listKey == null || shuffle != null
+    // An explicit [shuffle] or a row tap keeps the player's shuffle; the list
+    // that plays keeps what is really applied, not an older stored mode.
+    final mode = listKey == null || shuffle != null || index != null
         ? null
+        : isPlayingList(listKey)
+        ? _realMode
         : (listMode?.call(listKey) ?? ShuffleMode.off);
     if (mode != null) shuffle = mode != ShuffleMode.off;
     final at =
@@ -613,11 +616,38 @@ class PlayerController {
     Object key, {
     List<int>? ids,
     bool plus = true,
-  }) async {
+  }) {
+    // Serialized like [cycleShuffle]: a second tap reads what the first left.
+    final run = _cycle.then((_) => _cycleList(key, ids, plus));
+    _cycle = run.then<void>(
+      (_) {},
+      onError: (Object e) {
+        AppLog.w('list shuffle cycle failed', e);
+      },
+    );
+    return run;
+  }
+
+  ShuffleMode get _realMode => !_handler.shuffleEnabled
+      ? ShuffleMode.off
+      : (shufflePlus?.call() ?? false)
+      ? ShuffleMode.plus
+      : ShuffleMode.shuffle;
+
+  Future<ShufflePlusBlock?> _cycleList(
+    Object key,
+    List<int>? ids,
+    bool plus,
+  ) async {
     if (isPlayingList(key)) {
-      if (plus) return cycleShuffle(ids: ids);
-      await toggleShuffle();
-      return null;
+      ShufflePlusBlock? block;
+      if (plus) {
+        block = await _cycleShuffle(ids);
+      } else {
+        await toggleShuffle();
+      }
+      setListMode?.call(key, _realMode);
+      return block;
     }
     final mode = listMode?.call(key) ?? ShuffleMode.off;
     ShufflePlusBlock? block;

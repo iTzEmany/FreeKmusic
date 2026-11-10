@@ -21,6 +21,8 @@ class CollectionScaffold extends StatefulWidget {
     this.menu,
     this.onPlay,
     this.shuffleIds,
+    this.shuffleKey,
+    this.shufflePlus = true,
     this.barActions = const [],
     this.selectionBar,
   });
@@ -44,6 +46,12 @@ class CollectionScaffold extends StatefulWidget {
 
   /// The ids the «Casuale» pill cycles Shuffle+ for; null: no pill.
   final List<int>? shuffleIds;
+
+  /// The list's key for the pill (D-534), the one its Play passes; default: the ids'.
+  final Object? shuffleKey;
+
+  /// False: the list has online songs, so no Shuffle+ (R-18).
+  final bool shufflePlus;
   final List<Widget> barActions;
 
   /// Laid over the pinned bar while tracks are picked (a `SelectionBarSlot`).
@@ -77,7 +85,12 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
     final cc = context.cc;
     final actions = [
       if (widget.onPlay != null) PlayPill(onPressed: widget.onPlay),
-      if (widget.shuffleIds != null) ShufflePill(ids: widget.shuffleIds!),
+      if (widget.shuffleIds != null)
+        ShufflePill(
+          ids: widget.shuffleIds!,
+          listKey: widget.shuffleKey,
+          plus: widget.shufflePlus,
+        ),
       ?widget.menu,
     ];
     return Scaffold(

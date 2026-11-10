@@ -188,7 +188,35 @@ void main() {
       expect(lists.isPlayingList('k'), isTrue);
       await lists.cycleListShuffle('k');
       expect(handler.shuffleEnabled, isTrue);
-      expect(modes, isEmpty);
+      expect(modes['k'], ShuffleMode.shuffle, reason: 'stored = what is applied');
+    });
+
+    test('toggling the playing list, then Play on it, keeps the mode (no stale restart)', () async {
+      await lists.playAll(tracks, listKey: 'k'); // in order
+      await pumpEventQueue();
+      await lists.cycleListShuffle('k'); // real shuffle on
+      await lists.playAll(tracks, listKey: 'k');
+      await pumpEventQueue();
+      expect(handler.shuffleEnabled, isTrue);
+      expect(handler.currentTrack!.id, tracks.last.id, reason: 'random start, not in order');
+    });
+
+    test('after another list starts, the first list\'s stored mode is what was really applied', () async {
+      await lists.playAll(tracks, listKey: 'a');
+      await pumpEventQueue();
+      await lists.cycleListShuffle('a'); // shuffle on
+      await lists.cycleListShuffle('a'); // Shuffle+
+      await lists.playAll(tracks.take(2).toList(), listKey: 'b'); // b: off
+      await pumpEventQueue();
+      expect(handler.shuffleEnabled, isFalse);
+      expect(modes['a'], ShuffleMode.plus);
+    });
+
+    test('two quick taps on a non-playing list read one after the other', () async {
+      final a = lists.cycleListShuffle('k');
+      final b = lists.cycleListShuffle('k');
+      await Future.wait([a, b]);
+      expect(modes['k'], ShuffleMode.plus);
     });
 
     test('a row tap on a list also makes it the playing one (ids as key)', () async {
@@ -207,6 +235,7 @@ void main() {
 
       modes['k'] = ShuffleMode.shuffle;
       plus = true;
+      await lists.playAll(tracks.take(2).toList(), listKey: 'other');
       await lists.playAll(tracks, listKey: 'k');
       await pumpEventQueue();
       expect(handler.currentTrack!.id, tracks.last.id, reason: 'random start');
@@ -214,11 +243,13 @@ void main() {
       expect(plus, isFalse);
 
       modes['k'] = ShuffleMode.plus;
+      await lists.playAll(tracks.take(2).toList(), listKey: 'other');
       await lists.playAll(tracks, listKey: 'k');
       expect(handler.shuffleEnabled, isTrue);
       expect(plus, isTrue);
 
       modes['k'] = ShuffleMode.off;
+      await lists.playAll(tracks.take(2).toList(), listKey: 'other');
       await lists.playAll(tracks, listKey: 'k');
       expect(handler.shuffleEnabled, isFalse);
     });

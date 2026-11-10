@@ -134,6 +134,7 @@ void main() {
         await tester.tap(find.text('Casuale'));
         await Future<void>.delayed(const Duration(milliseconds: 50));
       });
+      await tester.pump(const Duration(milliseconds: 100));
       expect(actions.calls, [null]);
       expect(c.read(listShuffleProvider(daylistListKey)), ShuffleMode.shuffle);
       expect(h.handler.shuffleEnabled, isFalse, reason: 'the playing queue is untouched');

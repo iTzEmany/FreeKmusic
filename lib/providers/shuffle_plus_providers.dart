@@ -453,15 +453,21 @@ int listKeyOf(List<int> ids) => Object.hashAll(ids);
 const libraryListKey = 'library';
 
 /// Is the list [key] the one playing now?
-final listPlayingProvider = StreamProvider.autoDispose.family<bool, Object>((
+// shortcut: after a restart the playing list is not recognised (source and key
+// are not persisted), and the whole library played from «Tutti i brani», a row
+// tap or Android Auto is not seen by Home's [libraryListKey]; upgrade: persist
+// the source ids and the key.
+final listPlayingProvider = Provider.autoDispose.family<bool, Object>((
   ref,
   key,
-) async* {
+) {
   final c = ref.watch(playerControllerProvider);
-  yield c.isPlayingList(key);
-  await for (final _ in ref.watch(audioHandlerProvider).queueChanges) {
-    yield c.isPlayingList(key);
-  }
+  final sub = ref
+      .watch(audioHandlerProvider)
+      .queueChanges
+      .listen((_) => ref.invalidateSelf());
+  ref.onDispose(sub.cancel);
+  return c.isPlayingList(key);
 });
 
 /// The first reason in the order the sheet reports them.

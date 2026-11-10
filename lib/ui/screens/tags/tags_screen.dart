@@ -94,6 +94,8 @@ class TagTracksScreen extends ConsumerWidget {
     final ctx = PlayContext(PlayContextKind.playlist, name);
     final l = context.l10n;
     final durationMs = tracks.fold<int>(0, (a, t) => a + t.durationMs);
+    // One key for the pill and Play: they must be the same list (D-534).
+    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -107,9 +109,10 @@ class TagTracksScreen extends ConsumerWidget {
             : () => ctrl.playAll(
                 tracks,
                 context: ctx,
-                listKey: listKeyOf([for (final t in tracks) t.id]),
+                listKey: shuffleKey,
               ),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        shuffleKey: shuffleKey,
         slivers: [
           if (tracks.isEmpty)
             SliverToBoxAdapter(

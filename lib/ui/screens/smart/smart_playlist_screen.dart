@@ -71,6 +71,8 @@ class SmartPlaylistScreen extends ConsumerWidget {
       listKey: key,
       visibleIds: [for (final t in tracks) t.id],
     );
+    // One key for the pill and Play: they must be the same list (D-534).
+    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -93,9 +95,10 @@ class SmartPlaylistScreen extends ConsumerWidget {
             : () => ctrl.playAll(
                 tracks,
                 context: playCtx,
-                listKey: listKeyOf([for (final t in tracks) t.id]),
+                listKey: shuffleKey,
               ),
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        shuffleKey: shuffleKey,
         menu: IconButton(
           tooltip: l.moreActions,
           icon: const Icon(Icons.more_vert_rounded),

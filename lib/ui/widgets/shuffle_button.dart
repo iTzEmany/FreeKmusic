@@ -22,7 +22,7 @@ ShuffleMode _modeOf(WidgetRef ref, Object? key) {
   final real = ref.watch(shuffleModeProvider);
   if (key == null) return real;
   final own = ref.watch(listShuffleProvider(key));
-  return (ref.watch(listPlayingProvider(key)).value ?? false) ? real : own;
+  return (ref.watch(listPlayingProvider(key))) ? real : own;
 }
 
 /// A tap of a shuffle control: the next state for the list it plays ([ids],

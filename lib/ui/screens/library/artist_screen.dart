@@ -64,6 +64,8 @@ class ArtistDetailScreen extends ConsumerWidget {
       listKey: key,
       visibleIds: [for (final t in top) t.id],
     );
+    // One key for the pill and Play: they must be the same list (D-534).
+    final shuffleKey = listKeyOf([for (final t in list) t.id]);
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -86,9 +88,10 @@ class ArtistDetailScreen extends ConsumerWidget {
             : () => ctrl.playAll(
                 list,
                 context: playCtx,
-                listKey: listKeyOf([for (final t in list) t.id]),
+                listKey: shuffleKey,
               ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
+        shuffleKey: shuffleKey,
         slivers: [
           if (tracks.hasError || albums.hasError)
             SliverToBoxAdapter(

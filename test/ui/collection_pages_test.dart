@@ -194,6 +194,35 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('playlist page: the pill and Play share one key (toggle, then Play starts shuffled)',
+      (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 4);
+    final id = await tester.runAsync(() async {
+      final repo = PlaylistRepository(h.db);
+      final id = await repo.create('Notte');
+      final rows = await h.db.select(h.db.tracks).get();
+      await repo.addTracks(id, [for (final t in rows) t.id]);
+      return id;
+    });
+    await h.pump(
+        tester,
+        PlaylistDetailScreen(
+            playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
+    await _settle(tester);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Casuale'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    expect(h.handler.shuffleEnabled, isFalse);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Riproduci'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    expect(h.handler.shuffleEnabled, isTrue);
+    await h.dispose(tester);
+  });
+
   testWidgets('favourites page: empty state and Play', (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 2);
