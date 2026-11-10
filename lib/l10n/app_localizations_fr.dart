@@ -7504,6 +7504,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pauseOnZeroVolume => 'Mettre en pause quand le volume est à zéro';
 
   @override
+  String get extMatching => 'association en cours';
+
+  @override
+  String get extFindByHand => 'Chercher à la main';
+
+  @override
+  String get extNotFoundLabel => 'introuvable, chercher à la main';
+
+  @override
+  String get extDownloadAll => 'Tout télécharger';
+
+  @override
+  String get extNotPublic =>
+      'Cette playlist n’est pas publique ou n’existe pas';
+
+  @override
+  String get extUnreadable =>
+      'Impossible de lire cette playlist (la page a changé)';
+
+  @override
+  String get extExportifyFull => 'Importer la playlist complète avec Exportify';
+
+  @override
+  String extTruncated(int count) {
+    return 'Je montre les $count premiers titres.';
+  }
+
+  @override
   String get pauseOnZeroVolumeHelp =>
       'En remontant le volume, la musique reprend, seulement si cette fonction l’a mise en pause.';
 

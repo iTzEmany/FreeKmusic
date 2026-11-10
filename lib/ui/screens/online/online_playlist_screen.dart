@@ -1,32 +1,101 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/online_collection_providers.dart';
+import '../../../providers/player_providers.dart';
+import '../../../providers/ui_providers.dart' show searchPrefillProvider;
 import '../../../services/online/external_collection.dart';
+import '../../../services/online/external_links.dart';
 import '../../../services/online/youtube_service.dart' show YtResult;
+import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/track_row.dart' show TrackRow;
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/shuffle_button.dart' show ShufflePill;
+import '../import/import_flow.dart' show startCsvImport;
+import '../now_playing/now_playing_screen.dart' show playFromSearchNotice, playMixedAndOpen;
 import '../youtube/playlist_source_sheet.dart';
 import 'artist_page_sections.dart' show PageSkeleton, thumbAt;
 import 'catalog_error_view.dart';
 import 'online_list_play.dart';
+import 'online_collection_rows.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
 
-/// A playlist or channel read from a link: cover, songs streamed on tap, Play,
-/// Shuffle and a ⋮ menu with «Scarica» and «Copia link».
-class OnlinePlaylistScreen extends ConsumerWidget {
+/// A playlist, album or channel read from a link: cover, songs streamed on tap,
+/// Play, Shuffle and a ⋮ menu with «Scarica» and «Copia link». A Deezer or
+/// Spotify page opens at once with its rows pending; each turns playable (or
+/// «non trovato») as it is matched (R-195, R-196).
+class OnlinePlaylistScreen extends ConsumerStatefulWidget {
   const OnlinePlaylistScreen(this.source, {super.key});
 
   final OnlineCollectionRef source;
 
-  Future<void> _openMenu(BuildContext context, ExternalCollection c) {
+  @override
+  ConsumerState<OnlinePlaylistScreen> createState() => _OnlinePlaylistScreenState();
+}
+
+class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
+  /// Rows a Play of this page already sent to the queue; null until Play.
+  Set<int>? _queued;
+
+  bool get _external => widget.source is ExternalRef;
+
+  PlayContext _contextOf(ExternalCollection c) => PlayContext(
+      c.kind == CollectionKind.album ? PlayContextKind.album : PlayContextKind.playlist, c.title);
+
+  MixItem _mix(TrackMatch m) => switch (m) {
+        TrackReadyOnline(:final result) => (track: null, online: result, seedTitle: null),
+        TrackReadyLibrary(:final track) => (track: track, online: null, seedTitle: null),
+        _ => throw StateError('only ready rows are played'),
+      };
+
+  /// Play of an external page: the rows ready now; the others join the queue as they arrive.
+  void _playExternal(CollectionPage page, List<YtResult> songs, String listKey) {
+    final ready = [
+      for (var i = 0; i < page.matches.length; i++)
+        if (page.matches[i] is TrackReady) i,
+    ];
+    if (ready.isEmpty) return;
+    if (ref.read(playerControllerProvider).inJam) {
+      playOrQueueOnline(context, ref, songs, listKey: listKey);
+      return;
+    }
+    _queued = ready.toSet();
+    unawaited(playMixedAndOpen(context, ref, [for (final i in ready) _mix(page.matches[i])],
+        playContext: _contextOf(page.collection), listKey: listKey));
+  }
+
+  /// Rows matched after Play go to the end of the queue while it still comes from this page (D-525).
+  void _extendQueue(List<TrackMatch>? matches) {
+    final c = ref.read(onlineCollectionProvider(widget.source)).value?.collection;
+    final queued = _queued, ctrl = ref.read(playerControllerProvider);
+    if (queued == null || matches == null || c == null) return;
+    // A library playlist with the same name is another list: the keyed Play tells them apart.
+    if (!ctrl.isPlayingList('online-collection:${c.sourceUrl}')) return;
+    for (var i = 0; i < matches.length; i++) {
+      final m = matches[i];
+      if (m is! TrackReady || !queued.add(i)) continue;
+      unawaited(switch (m) {
+        TrackReadyOnline(:final result) => ctrl.appendOnline(result),
+        TrackReadyLibrary(:final track) => ctrl.appendTrack(track.id),
+      });
+    }
+  }
+
+  void _searchByHand(ExternalTrack t) {
+    ref.read(searchPrefillProvider.notifier).set([t.title, ?t.artists.firstOrNull].join(' '));
+    ShellNav.showSearch(context, ref);
+  }
+
+  Future<void> _openMenu(ExternalCollection c, List<YtResult> songs) {
     final l = context.l10n;
     return showCcActionSheet<String>(
       context: context,
@@ -35,9 +104,11 @@ class OnlinePlaylistScreen extends ConsumerWidget {
         [
           CcAction<String>(
             icon: Icons.download_rounded,
-            label: l.ytDownload,
+            label: _external ? l.extDownloadAll : l.ytDownload,
             value: 'playlist-menu-download',
-            onTap: () => PlaylistSourceSheet.show(context, c.sourceUrl),
+            onTap: () => _external
+                ? startOnlineDownloads(context, ref, songs)
+                : PlaylistSourceSheet.show(context, c.sourceUrl),
           ),
           CcAction<String>(
             icon: Icons.link_rounded,
@@ -45,7 +116,7 @@ class OnlinePlaylistScreen extends ConsumerWidget {
             value: 'playlist-menu-copy',
             onTap: () async {
               await Clipboard.setData(ClipboardData(text: c.sourceUrl));
-              if (context.mounted) showMsg(context, l.copied);
+              if (mounted) showMsg(context, l.copied);
             },
           ),
         ],
@@ -54,22 +125,38 @@ class OnlinePlaylistScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final source = widget.source;
+    if (_external) ref.listen(onlineMatchesProvider(source), (_, next) => _extendQueue(next.value));
     final page = ref.watch(onlineCollectionProvider(source));
-    final data = page.value;
+    final live = _external ? ref.watch(onlineMatchesProvider(source)).value : null;
+    final first = page.value;
+    final data = first == null || live == null ? first : CollectionPage(first.collection, live);
     final c = data?.collection;
     final listKey = 'online-collection:${c?.sourceUrl ?? source.hashCode}';
-    final songs = <YtResult>[
-      for (final m in data?.matches ?? const <TrackMatch>[])
-        if (m is TrackReadyOnline) m.result,
-    ];
+    // Selection ids are places in [songs]; rows still pending or unmatched have none.
+    final songs = <YtResult>[];
+    final slot = <int, int>{};
+    for (final (i, m) in (data?.matches ?? const <TrackMatch>[]).indexed) {
+      if (m is TrackReadyOnline) {
+        slot[i] = songs.length;
+        songs.add(m.result);
+      }
+    }
+    // In a Jam only online songs can be sent (playOrQueueOnline).
+    final anyReady = _external && ref.read(playerControllerProvider).inJam
+        ? songs.isNotEmpty
+        : data?.matches.any((m) => m is TrackReady) ?? false;
+    final l = context.l10n;
+    // Exportify only helps with Spotify; a short link's service is not known yet.
+    final exportify = source is ExternalRef && source.link?.service == ExternalService.spotify;
     return OnlinePageFrame(
       title: c?.title ?? '',
       selectionKey: listKey,
       pickable: songs,
       onRefresh: () async {
         final ok = await refreshOnlineCollection(ref, source);
-        if (!ok && context.mounted) showMsg(context, context.l10n.loadFailed);
+        if (!ok && context.mounted) showMsg(context, l.loadFailed);
       },
       slivers: [
         if (c != null)
@@ -77,28 +164,33 @@ class OnlinePlaylistScreen extends ConsumerWidget {
             child: _Header(
               collection: c,
               listKey: listKey,
-              onPlay: songs.isEmpty
+              onPlay: !(_external ? anyReady : songs.isNotEmpty)
                   ? null
-                  : () => playOrQueueOnline(context, ref, songs, listKey: listKey),
-              onMore: () => _openMenu(context, c),
+                  : _external
+                      ? () => _playExternal(data!, songs, listKey)
+                      : () => playOrQueueOnline(context, ref, songs, listKey: listKey),
+              onMore: () => _openMenu(c, songs),
             ),
           ),
         if (data != null && data.matches.isEmpty)
           SliverToBoxAdapter(
             child: EmptyState(
               icon: Icons.queue_music_rounded,
-              message: context.l10n.playlistSourceEmpty,
+              message: l.playlistSourceEmpty,
             ),
           )
         else if (data != null)
           SliverList.builder(
             itemCount: data.matches.length,
             itemBuilder: (_, i) => switch (data.matches[i]) {
-              // shortcut: index = row, true while every row is ready; 114 maps rows to `songs`.
               TrackReadyOnline(:final result) =>
-                OnlineSongTile(result: result, index: i, selectionKey: listKey),
-              // Drawn by phase 114 (a library song, matching in progress, no match).
-              TrackReadyLibrary() || TrackPending() || TrackNotFound() => const SizedBox.shrink(),
+                OnlineSongTile(result: result, index: slot[i]!, selectionKey: listKey),
+              TrackReadyLibrary(:final track) => TrackRow(
+                  track: track,
+                  onTap: () => unawaited(playFromSearchNotice(context, ref, track: track)),
+                ),
+              TrackPending() => PendingRow(c!.tracks[i], i),
+              TrackNotFound() => NotFoundRow(c!.tracks[i], i, onSearch: () => _searchByHand(c.tracks[i])),
             },
           )
         else if (page.hasError)
@@ -106,6 +198,8 @@ class OnlinePlaylistScreen extends ConsumerWidget {
             child: CatalogErrorView(
               error: page.error!,
               onRetry: () => retryOnlineCollection(ref, source),
+              onSearch: exportify ? () => unawaited(startCsvImport(context, ref)) : null,
+              searchLabel: exportify ? l.extExportifyFull : null,
             ),
           )
         else
@@ -114,10 +208,24 @@ class OnlinePlaylistScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(CcDims.margin),
-              child: Text(
-                context.l10n.playlistSourceTruncated(c.tracks.length),
-                key: const ValueKey('playlist-truncated'),
-                style: TextStyle(color: context.cc.textMuted),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _external
+                        ? l.extTruncated(c.tracks.length)
+                        : l.playlistSourceTruncated(c.tracks.length),
+                    key: const ValueKey('playlist-truncated'),
+                    style: TextStyle(color: context.cc.textMuted),
+                  ),
+                  // Spotify's public page stops at 100 songs: the full list comes from Exportify (R-208).
+                  if (parseExternalLink(c.sourceUrl)?.service == ExternalService.spotify)
+                    TextButton(
+                      key: const ValueKey('playlist-exportify'),
+                      onPressed: () => unawaited(startCsvImport(context, ref)),
+                      child: Text(l.extExportifyFull),
+                    ),
+                ],
               ),
             ),
           ),

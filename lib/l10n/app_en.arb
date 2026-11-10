@@ -3671,6 +3671,21 @@
   "downloadedNoPlaylistEmpty": "Every downloaded track is already in a playlist",
   "pauseOnZeroVolume": "Pause when the volume is at zero",
   "pauseOnZeroVolumeHelp": "Raising the volume again resumes the music, only if this feature paused it.",
+  "extMatching": "matching",
+  "extFindByHand": "Search by hand",
+  "extNotFoundLabel": "not found, search by hand",
+  "extDownloadAll": "Download all",
+  "extNotPublic": "This playlist is not public or does not exist",
+  "extUnreadable": "I can't read this playlist (the page has changed)",
+  "extExportifyFull": "Import the full playlist with Exportify",
+  "extTruncated": "Showing the first {count} songs.",
+  "@extTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "queueCountShuffle": "{count, plural, one{1 track, Shuffle} other{{count} tracks, Shuffle}}",
   "queueBlockPosition": "Position {n} of {total}",
   "queueReorderHandle": "Drag to reorder",

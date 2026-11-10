@@ -196,6 +196,10 @@ Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup;
 - Download verificato duplicato (`cedict_download` e `yt_dlp_updater`: `.tmp`, sha256, rename; stesso `Dio` con 8/15 s e User-Agent in due provider). Rimedio: un `downloadVerified(...)` e un `downloadDioProvider`.
 - La tile «Scarica» del dizionario carica tutta la mappa dopo il download solo per verificarla (lo sha256 basta).
 
+### link-e-shazam (fase 114)
+- `lib/l10n/app_fr.arb` ha chiavi duplicate (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.
+- Pagina dei link esterni: con il casuale della pagina acceso, i brani pronti dopo Play vanno comunque in fondo, non mescolati.
+
 ### coda-e-libreria (review di architettura della fase 113)
 - Pausa a volume zero in secondo piano: il tasto «volume su» la fa ripartire solo entro circa 2 s, poi Android lo manda alla suoneria (`gotchas.md`). Valutare se tenere attiva la sessione multimediale più a lungo, oppure scriverlo nella descrizione dell'impostazione.
 - `queueProvider` combina indice, chiavi e `userAhead` letti dal vivo con una lista che arriva in modo asincrono, quindi per qualche millisecondo può non combaciare. Più robusto: uno snapshot `(tracks, keys, currentIndex, userAhead)` letto in un colpo solo. In più, `queueTracks` scarta gli id che non trova e sfasa l'indice.

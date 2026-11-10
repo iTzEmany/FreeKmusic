@@ -1510,11 +1510,20 @@ mobile_scanner — fase 24 — 2026-10-19
   - `flutter analyze` pulito. Comando mirato verde (1135 test, più 566 dopo le correzioni). Review Opus e scheggia di passo su ogni correzione. Scheggia di fase sui telefoni.
 
 ## Fase 114 — Link Spotify e Deezer in Cerca (`fase-114-link-spotify-deezer.md`)
-- [ ] 114.1 Link, link brevi, lettori
-- [ ] 114.2a Estrarre l'abbinamento dell'import
-- [ ] 114.2b Matcher progressivo
-- [ ] 114.3 Fonti nella pagina comune e brano singolo
-- [ ] 114.4 Controlli di fase
+- [x] 114.1 Link, link brevi, lettori
+  - Deezer passa dal client di arricchimento esteso (`_getPaged` a 10 richieste/s; codice 4 = pausa di 5 s, senza il riposo di 10 min). Spotify passa dall'embed (`props.pageProps.state.data.entity`), che dà al massimo 100 brani e nessun totale dichiarato, quindi la riga Exportify usa `truncated`.
+  - Fixture vere salvate una volta. Un HTTP 200 con `pageProps.status` 404 vale come «non trovata».
+- [x] 114.2a Estrarre l'abbinamento dell'import
+  - `searchRow` in `row_search.dart`. La review Opus conferma che è uno spostamento puro, e i test dell'import non sono stati toccati.
+- [x] 114.2b Matcher progressivo
+  - Budget proprio di 40 al minuto. Un 429 attiva la pausa condivisa, senza consumare il budget di Cerca. Un errore di rete dà un «non trovato» transitorio, che non resta in cache.
+- [x] 114.3 Fonti nella pagina comune e brano singolo
+  - Un matcher per pagina. La cache di sessione è per impronta del brano, non per indice di riga. I brani pronti dopo Play vanno in fondo alla coda, in ordine di pagina (`appendOnline`/`appendTrack`), non nel blocco dell'utente.
+  - La pagina si apre dopo il frame. «Riproduci» e il riempimento della coda riconoscono la pagina con `isPlayingList`.
+- [x] 114.4 Controlli di fase
+  - Review Sonnet high sui commit, più Opus su 114.2a. Due giri di correzioni (lettori e matcher, pagina).
+  - Prova sul Redmi (il Mi A3 è senza rete), a volume 0: playlist Deezer da 180 brani con più pagine, album, artista; playlist, album e brano Spotify; riga Exportify; R-207; ripresa dopo l'uscita; Cerca usabile durante l'abbinamento senza 429; link YouTube come nella 112. Corretti i 3 bug emersi: coda, Spotify inesistente, lingua maiuscola.
+  - Non provati sul telefono: «Cerca a mano» su un non trovato vero (tutti i brani sono stati abbinati), un link breve Deezer vero, una playlist privata vera.
 
 ## Fase 115 — Salva in Libreria e «Condividi verso Codecore» (`fase-115-salva-e-condividi.md`)
 - [ ] 115.1 Righe in streaming nelle playlist

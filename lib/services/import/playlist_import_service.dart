@@ -18,6 +18,7 @@ import 'import_diff.dart';
 import 'eta_estimator.dart';
 import 'import_options.dart';
 import 'playlist_paths.dart';
+import 'row_search.dart';
 import 'track_matcher.dart';
 import '../../core/artist_key.dart';
 
@@ -706,10 +707,13 @@ class PlaylistImportService {
         // from one album are then looked up on the album page, one search for
         // all of them; only a sure match counts there, the rest goes the
         // usual way.
-        decision =
-            await _byIsrc(row) ??
-            await _fromAlbum(importId, row) ??
-            await _find(row);
+        decision = await searchRow(
+          row,
+          youtube,
+          thresholds: () => _cutoffs,
+          gap: searchGap,
+          afterIsrc: () => _fromAlbum(importId, row),
+        );
       } finally {
         _setStep(importId, row.index, null);
       }
@@ -874,45 +878,6 @@ class PlaylistImportService {
     _eta(importId).start();
     _kick();
     return n;
-  }
-
-  /// The three searches made for [row]: ISRC, `artist title`, `artist - title`.
-  static List<String> searchQueries(ImportRow row) => [
-    row.isrc ?? '',
-    '${matchKey(row.primaryArtist)} ${matchTitleKey(row.title)}'.trim(),
-    '${row.primaryArtist} - ${row.title}',
-  ];
-
-  /// The ISRC identifies the recording: a sure match ends the search. Any
-  /// other answer is dropped, so a wrong code cannot lift a candidate's score.
-  Future<MatchDecision?> _byIsrc(ImportRow row) async {
-    final isrc = row.isrc;
-    if (isrc == null || isrc.isEmpty) return null;
-    final d = decide(
-      row,
-      await youtube.searchSongs(isrc, limit: 3),
-      thresholds: _cutoffs,
-    );
-    if (d.kind == MatchKind.sure) return d;
-    await Future<void>.delayed(searchGap);
-    return null;
-  }
-
-  Future<MatchDecision> _find(ImportRow row) async {
-    final queries = searchQueries(row);
-    final query = queries[1];
-    final songs = await youtube.searchSongs(query, limit: 5);
-    var decision = decide(row, songs, thresholds: _cutoffs);
-    if (decision.kind == MatchKind.sure) return decision;
-    await Future<void>.delayed(searchGap);
-    final plain = await youtube.search(queries[2]);
-    final seen = {for (final s in songs) s.id};
-    decision = decide(row, [
-      ...songs,
-      for (final p in plain.take(5))
-        if (seen.add(p.id)) p,
-    ], thresholds: _cutoffs);
-    return decision;
   }
 
   Future<void> _onSearchError(

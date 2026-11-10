@@ -3671,6 +3671,21 @@
   "downloadedNoPlaylistEmpty": "Todas las canciones descargadas ya están en una lista",
   "pauseOnZeroVolume": "Pausar cuando el volumen está a cero",
   "pauseOnZeroVolumeHelp": "Al subir de nuevo el volumen la música continúa, solo si la pausó esta función.",
+  "extMatching": "buscando coincidencia",
+  "extFindByHand": "Buscar a mano",
+  "extNotFoundLabel": "no encontrado, buscar a mano",
+  "extDownloadAll": "Descargar todo",
+  "extNotPublic": "Esta lista no es pública o no existe",
+  "extUnreadable": "No puedo leer esta lista (la página ha cambiado)",
+  "extExportifyFull": "Importar la lista completa con Exportify",
+  "extTruncated": "Muestro las primeras {count} canciones.",
+  "@extTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "queueCountShuffle": "{count, plural, one{1 canción, Aleatorio} other{{count} canciones, Aleatorio}}",
   "queueBlockPosition": "Posición {n} de {total}",
   "queueReorderHandle": "Arrastra para reordenar",

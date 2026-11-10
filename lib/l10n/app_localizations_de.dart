@@ -7472,6 +7472,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pauseOnZeroVolume => 'Pausieren, wenn die Lautstärke auf null ist';
 
   @override
+  String get extMatching => 'wird zugeordnet';
+
+  @override
+  String get extFindByHand => 'Von Hand suchen';
+
+  @override
+  String get extNotFoundLabel => 'nicht gefunden, von Hand suchen';
+
+  @override
+  String get extDownloadAll => 'Alle herunterladen';
+
+  @override
+  String get extNotPublic =>
+      'Diese Playlist ist nicht öffentlich oder existiert nicht';
+
+  @override
+  String get extUnreadable =>
+      'Ich kann diese Playlist nicht lesen (die Seite hat sich geändert)';
+
+  @override
+  String get extExportifyFull => 'Komplette Playlist mit Exportify importieren';
+
+  @override
+  String extTruncated(int count) {
+    return 'Ich zeige die ersten $count Titel.';
+  }
+
+  @override
   String get pauseOnZeroVolumeHelp =>
       'Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat.';
 

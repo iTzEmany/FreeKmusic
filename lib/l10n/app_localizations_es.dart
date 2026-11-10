@@ -7466,6 +7466,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pauseOnZeroVolume => 'Pausar cuando el volumen está a cero';
 
   @override
+  String get extMatching => 'buscando coincidencia';
+
+  @override
+  String get extFindByHand => 'Buscar a mano';
+
+  @override
+  String get extNotFoundLabel => 'no encontrado, buscar a mano';
+
+  @override
+  String get extDownloadAll => 'Descargar todo';
+
+  @override
+  String get extNotPublic => 'Esta lista no es pública o no existe';
+
+  @override
+  String get extUnreadable =>
+      'No puedo leer esta lista (la página ha cambiado)';
+
+  @override
+  String get extExportifyFull => 'Importar la lista completa con Exportify';
+
+  @override
+  String extTruncated(int count) {
+    return 'Muestro las primeras $count canciones.';
+  }
+
+  @override
   String get pauseOnZeroVolumeHelp =>
       'Al subir de nuevo el volumen la música continúa, solo si la pausó esta función.';
 

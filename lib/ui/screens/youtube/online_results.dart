@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/online_collection_providers.dart' show OnlineCollectionRef;
+import '../../../core/app_log.dart';
+import '../../../providers/online_collection_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
 import '../../../services/online/merge_results.dart';
-import '../../../services/online/query_intent.dart' show SearchIntent;
+import '../../../services/online/external_collection.dart';
+import '../../../services/online/external_links.dart';
+import '../../../services/online/query_intent.dart' show ClassifiedQuery, QueryKind, SearchIntent, classifyQuery;
 import '../../../services/online/query_match.dart' show MediaKind;
 import '../../../services/online/smart_search.dart';
 import '../../../services/online/youtube_service.dart';
@@ -24,7 +27,7 @@ import '../../widgets/yt_dlp_outdated_banner.dart';
 import '../online/album_card.dart';
 import '../online/artist_card.dart';
 import '../online/artist_page_screen.dart';
-import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
+import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen, playFromSearchNotice;
 import '../online/online_album_screen.dart';
 import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
@@ -92,8 +95,19 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
   }
 
   void _search({bool refresh = false}) {
+    _linkSerial++; // a newer search drops a link still being resolved
     final q = widget.query.trim();
     if (q.isEmpty) return;
+    final external = classifyQuery(q);
+    if (external.kind == QueryKind.external) {
+      // After the frame: this can run while the page is building, and a page
+      // cannot be pushed nor a provider changed then.
+      final serial = _linkSerial;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && serial == _linkSerial) unawaited(_openExternal(external));
+      });
+      return;
+    }
     // A playlist or channel address is not a search: it opens its video list.
     final listing = listingUrl(q);
     if (listing != null) {
@@ -139,6 +153,62 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
         }
       });
     }
+  }
+
+  int _linkSerial = 0;
+
+  void _openPage(OnlineCollectionRef page) {
+    if (mounted) ShellNav.open<void>(context, OnlinePlaylistScreen(page));
+  }
+
+  /// A Deezer or Spotify link: a list opens its page; a single song is matched
+  /// and played once, with its similar ones (R-199); no match shows a page with
+  /// that one row (R-196). Any failure opens the page, which says what went wrong.
+  Future<void> _openExternal(ClassifiedQuery q) async {
+    final serial = ++_linkSerial;
+    var link = q.link;
+    OnlineCollectionRef page = link != null
+        ? OnlineCollectionRef.external(link)
+        : OnlineCollectionRef.shortLink(q.url!);
+    try {
+      if (link == null) {
+        final resolved = await ref.read(shortLinkResolverProvider).resolve(q.url!);
+        if (!mounted) return;
+        link = parseExternalLink(resolved);
+        if (link != null) page = OnlineCollectionRef.external(link);
+      }
+      if (link != null && link.kind == ExternalLinkKind.track) {
+        final c = await ref.read(externalReaderProvider(link.service)).read(link);
+        if (!mounted) return;
+        final key = Object();
+        final sub = ref.listenManual(collectionMatcherProvider(key), (_, _) {});
+        TrackMatch? m;
+        try {
+          await for (final (_, one)
+              in ref.read(collectionMatcherProvider(key)).match(c.tracks.take(1).toList())) {
+            m = one;
+            break;
+          }
+        } finally {
+          sub.close();
+        }
+        if (!mounted || serial != _linkSerial) return;
+        switch (m) {
+          case TrackReadyOnline(:final result):
+            unawaited(playFromSearchAndOpen(context, ref, result));
+            return;
+          case TrackReadyLibrary(:final track):
+            unawaited(playFromSearchNotice(context, ref, track: track));
+            return;
+          case _:
+            // The page shows this one row as not found without matching it again.
+            if (m != null) ref.read(resolvedMatchesProvider(page))[c.tracks.first.fingerprint] = m;
+        }
+      }
+    } on Object catch (e, st) {
+      AppLog.w('external link: $e', e, st);
+    }
+    if (mounted && serial == _linkSerial) _openPage(page);
   }
 
   Future<void> _pullToRefresh() async {

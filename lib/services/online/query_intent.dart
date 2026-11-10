@@ -1,12 +1,13 @@
+import 'external_links.dart';
 import 'youtube_urls.dart';
 import 'ytm_artist.dart';
 import '../../core/artist_key.dart';
 
 /// What the text typed in the online search is.
-enum QueryKind { listing, video, album, text }
+enum QueryKind { listing, video, album, text, external }
 
 class ClassifiedQuery {
-  const ClassifiedQuery(this.kind, [this.url, this.browseId]);
+  const ClassifiedQuery(this.kind, [this.url, this.browseId, this.link]);
 
   final QueryKind kind;
 
@@ -15,10 +16,21 @@ class ClassifiedQuery {
 
   /// The `MPREb_…` id for [QueryKind.album].
   final String? browseId;
+
+  /// For [QueryKind.external]: the Deezer/Spotify page, or null when [url] is
+  /// a short link still to resolve.
+  final ExternalLink? link;
 }
 
 /// A playlist or channel address, a video address, or words to search.
 ClassifiedQuery classifyQuery(String text) {
+  final link = parseExternalLink(text);
+  if (link != null) {
+    return ClassifiedQuery(QueryKind.external, null, null, link);
+  }
+  if (isShortLink(text)) {
+    return ClassifiedQuery(QueryKind.external, text.trim());
+  }
   final listing = listingUrl(text);
   if (listing != null) return ClassifiedQuery(QueryKind.listing, listing);
   final albumId = ytmAlbumBrowseId(text);

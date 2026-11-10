@@ -11887,6 +11887,54 @@ abstract class AppLocalizations {
   /// **'Metti in pausa quando il volume è a zero'**
   String get pauseOnZeroVolume;
 
+  /// No description provided for @extMatching.
+  ///
+  /// In it, this message translates to:
+  /// **'in abbinamento'**
+  String get extMatching;
+
+  /// No description provided for @extFindByHand.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca a mano'**
+  String get extFindByHand;
+
+  /// No description provided for @extNotFoundLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'non trovato, cerca a mano'**
+  String get extNotFoundLabel;
+
+  /// No description provided for @extDownloadAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica tutto'**
+  String get extDownloadAll;
+
+  /// No description provided for @extNotPublic.
+  ///
+  /// In it, this message translates to:
+  /// **'Questa playlist non è pubblica o non esiste'**
+  String get extNotPublic;
+
+  /// No description provided for @extUnreadable.
+  ///
+  /// In it, this message translates to:
+  /// **'Non riesco a leggere questa playlist (la pagina è cambiata)'**
+  String get extUnreadable;
+
+  /// No description provided for @extExportifyFull.
+  ///
+  /// In it, this message translates to:
+  /// **'Importa la playlist completa con Exportify'**
+  String get extExportifyFull;
+
+  /// No description provided for @extTruncated.
+  ///
+  /// In it, this message translates to:
+  /// **'Mostro i primi {count} brani.'**
+  String extTruncated(int count);
+
   /// No description provided for @pauseOnZeroVolumeHelp.
   ///
   /// In it, this message translates to:
