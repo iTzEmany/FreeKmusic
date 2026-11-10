@@ -1479,10 +1479,12 @@ mobile_scanner — fase 24 — 2026-10-19
   - Prova sui telefoni NON fatta: l'utente tiene il volume a zero su tutti i dispositivi (D-535); va rifatta quando lo permette (in «Tocca a te» dell'obiettivo).
 
 ## Fase 112 — Link in Cerca (`fase-112-link-in-cerca.md`)
-- [ ] 112.1 Riconoscere i link
-- [ ] 112.2 Pagina della playlist online
-- [ ] 112.3 Album YouTube Music e singolo video
-- [ ] 112.4 Controlli di fase
+- [x] 112.1 Riconoscere i link (`ytmAlbumBrowseId`, `QueryKind.album` con `browseId`; accetta la barra finale)
+- [x] 112.2 Pagina della playlist online (`OnlinePlaylistScreen` sul modello comune; `TrackReady.online`/`.library`, il caso libreria si disegna nella 114; lista vuota con `playlistSourceEmpty`; Play/Jam in `online_list_play.dart`, condiviso con la pagina album)
+- [x] 112.3 Album YouTube Music e singolo video (il link al video suona una volta sola con `playFromSearchAndOpen`, come un tocco sulla riga)
+- [x] 112.4 Controlli di fase
+  - Review Opus high: 6 rilievi corretti (fra cui i test del foglio che si sarebbero rotti in CI). Prova sul Mi A3 a volume 0 (D-535): playlist YouTube e YouTube Music, canale (troncato a 500), album, video con coda di simili, input cattivi, nessuna doppia pagina. Corretto: una playlist inesistente o privata ora dà «non disponibile» invece di «YouTube ha cambiato qualcosa».
+  - Non riprodotto nei test: sul telefono una ricerca di un link video scaduta (timeout di rete) ha lasciato Cerca vuota senza errore; il test con lo stesso errore mostra «Riprova». Da riguardare nella 113. «Copia link» e la pagina in una Jam non provati sul telefono.
 
 ## Fase 113 — Chiusura del refactor «coda-e-libreria» (`fase-113-chiusura-coda-libreria.md`)
 - [ ] 113.1 Metriche di arrivo

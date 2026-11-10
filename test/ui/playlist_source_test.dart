@@ -8,7 +8,9 @@ import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
 import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
+import 'package:codecore/ui/screens/youtube/playlist_source_sheet.dart';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,6 +64,20 @@ YtResult _v(int i) => YtResult(
       duration: const Duration(minutes: 3),
     );
 
+class _Opener extends StatelessWidget {
+  const _Opener(this.url);
+  final String url;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: TextButton(
+          key: const ValueKey('open-sheet'),
+          onPressed: () => PlaylistSourceSheet.show(context, url),
+          child: const Text('open'),
+        ),
+      );
+}
+
 void main() {
   late Harness h;
   late _Yt yt;
@@ -69,7 +85,7 @@ void main() {
   late PlaylistImportService service;
   const url = 'https://www.youtube.com/playlist?list=PLabc';
 
-  Future<void> open(WidgetTester tester, {String query = url, PlaylistListing? listing}) async {
+  Future<void> open(WidgetTester tester, {String query = url, PlaylistListing? listing, bool viaSearch = false}) async {
     tester.view.physicalSize = const Size(420, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -101,17 +117,27 @@ void main() {
         );
     await h.pump(
       tester,
-      Scaffold(body: OnlineResults(query: query, submitted: 1)),
+      query == url && !viaSearch ? const _Opener(url) : Scaffold(body: OnlineResults(query: query, submitted: 1)),
       extraOverrides: [
         youtubeServiceProvider.overrideWithValue(yt),
         playlistImportServiceProvider.overrideWithValue(service),
         ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
       ],
     );
+    if (query == url && !viaSearch) await tester.tap(find.byKey(const ValueKey('open-sheet')));
     await _settle(tester);
   }
 
-  testWidgets('a pasted playlist address opens its list instead of searching', (tester) async {
+  testWidgets('a pasted playlist address opens the playlist page, not a search', (tester) async {
+    await open(tester, viaSearch: true);
+    expect(find.byType(OnlinePlaylistScreen), findsOneWidget);
+    expect(yt.searched, 0);
+    expect(yt.listed, [url]);
+    expect(find.byType(PlaylistSourceSheet), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the sheet lists the videos of a playlist address', (tester) async {
     await open(tester);
     expect(yt.searched, 0);
     expect(yt.listed, [url]);
@@ -206,9 +232,10 @@ void main() {
     };
     await h.pump(
       tester,
-      const Scaffold(body: OnlineResults(query: url, submitted: 1)),
+      const _Opener(url),
       extraOverrides: [youtubeServiceProvider.overrideWithValue(yt)],
     );
+    await tester.tap(find.byKey(const ValueKey('open-sheet')));
     await _settle(tester);
     expect(find.text('Riprova'), findsOneWidget);
 

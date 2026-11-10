@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/online_collection_providers.dart' show OnlineCollectionRef;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
@@ -23,12 +24,13 @@ import '../../widgets/yt_dlp_outdated_banner.dart';
 import '../online/album_card.dart';
 import '../online/artist_card.dart';
 import '../online/artist_page_screen.dart';
+import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
 import '../online/online_album_screen.dart';
 import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
 import 'online_results_rows.dart';
 import 'online_results_sections.dart';
-import 'playlist_source_sheet.dart';
+import '../online/online_playlist_screen.dart';
 
 String ytErrorText(BuildContext context, YtErrorKind k) {
   final l = context.l10n;
@@ -73,6 +75,10 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
   MediaKind? _filter;
   bool _othersOpen = false;
 
+  /// A pasted video link plays its video once, when the result with that id
+  /// arrives (it stays listed).
+  String? _autoPlayId;
+
   @override
   void initState() {
     super.initState();
@@ -91,9 +97,18 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     // A playlist or channel address is not a search: it opens its video list.
     final listing = listingUrl(q);
     if (listing != null) {
-      // After the frame: a sheet cannot be opened while the page is building.
+      // After the frame: a page cannot be pushed while this one is building.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) PlaylistSourceSheet.show(context, listing);
+        if (mounted) {
+          ShellNav.open<void>(context, OnlinePlaylistScreen(OnlineCollectionRef.youtubeListing(listing)));
+        }
+      });
+      return;
+    }
+    final album = ytmAlbumBrowseId(q);
+    if (album != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ShellNav.open<void>(context, OnlineAlbumScreen(browseId: album));
       });
       return;
     }
@@ -109,6 +124,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       return;
     }
     final first = current == null;
+    if (!refresh) _autoPlayId = youtubeVideoId(q);
     setState(() {
       _slots.clear();
       _request = (query: q, refresh: refresh, serial: ++_serial);
@@ -183,6 +199,19 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     final othersRows = owned?.others ?? s?.others ?? const <SmartResult>[];
     final hidden = owned?.hidden ?? 0;
     final all = [...bestRows, ...othersRows];
+    final autoId = _autoPlayId;
+    if (autoId != null && s != null) {
+      for (final r in [...s.best, ...s.others]) {
+        final hit = [r.primary, ...r.alternatives].where((y) => y.id == autoId).firstOrNull;
+        if (hit == null) continue;
+        _autoPlayId = null;
+        // After the frame: playing changes providers that this build reads.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(playFromSearchAndOpen(context, ref, hit));
+        });
+        break;
+      }
+    }
     final bestEnd = bestRows.length;
     final slots = [for (final r in all) _slotOf(r)];
     // (slot, row) of what is shown under the filter.

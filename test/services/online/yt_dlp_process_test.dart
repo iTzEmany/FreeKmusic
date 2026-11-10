@@ -51,6 +51,9 @@ void main() {
                 'ERROR: [soundcloud] 2366118086: This video is DRM protected')
             .kind,
         YtErrorKind.unavailable);
+    expect(
+        ytExceptionFromStderr('ERROR: [youtube:tab] x: The playlist does not exist.').kind,
+        YtErrorKind.unavailable);
     expect(ytExceptionFromStderr('Sign in to confirm your age').kind,
         YtErrorKind.unavailable);
     expect(ytExceptionFromStderr('HTTP Error 429: Too Many Requests').kind,
