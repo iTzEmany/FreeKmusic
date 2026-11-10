@@ -194,6 +194,63 @@ void main() {
     await h.dispose(tester);
   });
 
+  group('playlist page: search (D-490)', () {
+    Future<(Harness, int)> open(WidgetTester tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 4);
+      final id = await tester.runAsync(() async {
+        final repo = PlaylistRepository(h.db);
+        final id = await repo.create('Notte');
+        final rows = await h.db.select(h.db.tracks).get();
+        await repo.addTracks(id, [for (final t in rows) t.id]);
+        return id;
+      });
+      await h.pump(
+          tester,
+          PlaylistDetailScreen(
+              playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
+      await _settle(tester);
+      await tester.enterText(find.byType(TextField), 'SONG 2');
+      await tester.pump(const Duration(seconds: 1));
+      return (h, id);
+    }
+
+    testWidgets('a result plays the whole playlist from there', (tester) async {
+      final (h, _) = await open(tester);
+      expect(find.text('Song 1'), findsNothing);
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Song 2'));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      expect(h.handler.currentTrack?.title, 'Song 2');
+      expect(h.handler.queueIds, hasLength(4));
+      await h.dispose(tester);
+    });
+
+    testWidgets('reordering is off while searching', (tester) async {
+      final (h, _) = await open(tester);
+      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Modifica ordine'), findsNothing);
+      expect(find.byIcon(Icons.drag_handle_rounded), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('removing a result takes out that track, by its place in the whole list',
+        (tester) async {
+      final (h, id) = await open(tester);
+      await tester.tap(find.byIcon(Icons.more_vert_rounded).last);
+      await _settle(tester);
+      await tester.tap(find.text('Rimuovi dalla playlist'));
+      await _settle(tester);
+      final left = await tester.runAsync(
+          () => PlaylistRepository(h.db).watchTracks(id).first);
+      expect(left!.map((t) => t.title), ['Song 0', 'Song 1', 'Song 3']);
+      await h.dispose(tester);
+    });
+  });
+
   testWidgets('playlist page: the pill and Play share one key (toggle, then Play starts shuffled)',
       (tester) async {
     _phone(tester);

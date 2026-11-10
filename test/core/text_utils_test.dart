@@ -40,4 +40,24 @@ void main() {
       );
     });
   });
+
+  group('filterByText', () {
+    const rows = [
+      ('Café del Mar', 'Ibiza', 'Chill'),
+      ('Song', 'ÉLODIE', 'Other'),
+      ('Plain', 'Nobody', 'Dëep'),
+    ];
+    List<String> hits(String q) => [
+          for (final r in filterByText(rows, q, (r) => [r.$1, r.$2, r.$3])) r.$1,
+        ];
+    test('title, artist and album, case and accents ignored', () {
+      expect(hits('cafe'), ['Café del Mar']);
+      expect(hits('elodie'), ['Song']);
+      expect(hits('DEEP'), ['Plain']);
+    });
+    test('an empty query keeps everything, no match keeps nothing', () {
+      expect(hits('  '), hasLength(3));
+      expect(hits('zzz'), isEmpty);
+    });
+  });
 }

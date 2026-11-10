@@ -30,6 +30,30 @@ final _spaces = RegExp(r'\s+');
 String normalize(String s) =>
     stripDiacritics(s).toLowerCase().trim().replaceAll(_spaces, ' ');
 
+// The normalised fields of each list, made once per list (a new list comes
+// only when the data changes), not again at every key typed (D-500).
+// shortcut: keyed on the list only, so every caller of one list must pass the
+// same `fields`; make the key (list, fields) if that ever changes.
+final _haystacks = Expando<List<String>>();
+
+/// [items] whose [fields] contain [query] (case and accents ignored); all of
+/// them for an empty query. One filter for every in-memory search (D-490).
+List<T> filterByText<T>(
+  List<T> items,
+  String query,
+  Iterable<String?> Function(T) fields,
+) {
+  final needle = normalize(query);
+  if (needle.isEmpty) return items;
+  final hay = _haystacks[items] ??= [
+    for (final i in items) fields(i).map((f) => normalize(f ?? '')).join('\n'),
+  ];
+  return [
+    for (var k = 0; k < items.length; k++)
+      if (hay[k].contains(needle)) items[k],
+  ];
+}
+
 const _unknownAlbums = {'album sconosciuto', 'unknown', 'unknown album'};
 
 String computeAlbumKey({

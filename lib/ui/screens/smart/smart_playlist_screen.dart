@@ -1,4 +1,6 @@
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/cc_search_field.dart';
+import '../../../core/text_utils.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/playlist_ops.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/collection_header.dart';
 import '../../widgets/confirm.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/smart_cover.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
@@ -25,23 +28,36 @@ import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// A smart playlist: its tracks come from the rules and change by themselves,
 /// so the page is read-only (no reordering, no «add songs»).
-class SmartPlaylistScreen extends ConsumerWidget {
+class SmartPlaylistScreen extends ConsumerStatefulWidget {
   const SmartPlaylistScreen({super.key, required this.id});
 
   final int id;
 
+  @override
+  ConsumerState<SmartPlaylistScreen> createState() => _SmartPlaylistScreenState();
+}
+
+class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
+  int get id => widget.id;
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   Future<void> _convert(
-    BuildContext context,
-    WidgetRef ref,
     SmartPlaylist p,
     List<Track> tracks,
   ) async {
     await ref.read(playlistOpsProvider).createWith(p.name, [for (final t in tracks) t.id]);
-    if (!context.mounted) return;
+    if (!mounted) return;
     showMsg(context, context.l10n.smartConverted(p.name));
   }
 
-  Future<void> _delete(BuildContext context, WidgetRef ref, SmartPlaylist p) async {
+  Future<void> _delete(SmartPlaylist p) async {
     final l = context.l10n;
     final ok = await showConfirm(
       context,
@@ -52,15 +68,18 @@ class SmartPlaylistScreen extends ConsumerWidget {
     );
     if (!ok) return;
     await ref.read(playlistOpsProvider).deleteSmart(p.id);
-    if (context.mounted) Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final cc = context.cc;
     final p = ref.watch(smartPlaylistProvider(id)).value;
     final tracks = ref.watch(smartTracksProvider(id)).value ?? const <Track>[];
+    final shown = filterByText(tracks, _query, (t) => [t.title, t.artist, t.album]);
+    // Rows of a search keep the place they have in the whole list.
+    int whole(Track t) => tracks.indexWhere((x) => x.id == t.id);
     if (p == null) return const Scaffold();
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
@@ -69,7 +88,7 @@ class SmartPlaylistScreen extends ConsumerWidget {
     final key = SelectionKey.smartOf(id);
     final selection = RowSelection(
       listKey: key,
-      visibleIds: [for (final t in tracks) t.id],
+      visibleIds: [for (final t in shown) t.id],
     );
     // One key for the pill and Play: they must be the same list (D-534).
     final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
@@ -119,22 +138,42 @@ class SmartPlaylistScreen extends ConsumerWidget {
               case _SmartAction.edit:
                 await ShellNav.open<bool>(context, SmartPlaylistEditor(existing: p));
               case _SmartAction.convert:
-                await _convert(context, ref, p, tracks);
+                await _convert(p, tracks);
               case _SmartAction.delete:
-                await _delete(context, ref, p);
+                await _delete(p);
             }
           },
         ),
         slivers: [
+          if (tracks.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  CcDims.gap4,
+                  CcDims.margin,
+                  CcDims.gap8,
+                ),
+                child: CcSearchField(
+                  controller: _search,
+                  hint: l.searchHint,
+                  onQuery: (v) => setState(() => _query = v),
+                ),
+              ),
+            ),
+          if (tracks.isNotEmpty && shown.isEmpty)
+            SliverToBoxAdapter(
+              child: EmptyState(icon: Icons.search_off_rounded, message: l.noResults),
+            ),
           SliverList.builder(
-            itemCount: tracks.length,
+            itemCount: shown.length,
             itemBuilder: (_, i) => SizedBox(
               height: extent,
               child: LiveTrackRow(
-                track: tracks[i],
+                track: shown[i],
                 compact: compact,
                 selection: selection,
-                onTap: () => ctrl.playFromList(tracks, i, context: playCtx),
+                onTap: () => ctrl.playFromList(tracks, whole(shown[i]), context: playCtx),
               ),
             ),
           ),

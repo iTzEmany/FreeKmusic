@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
@@ -68,6 +69,14 @@ void main() {
       expect(count.read<int>('n'), _tracks);
       final q = LibraryQueries(db);
       final search = await _ms(() => repo.watchTracks(query: 'song 4999').first);
+      // D-500: the Library list search is a Dart filter, accents ignored, on the
+      // list already loaded (the load itself is `allTracks` below).
+      final loaded = await repo.watchTracks().first;
+      List<Track> find(String q) =>
+          filterByText(loaded, q, (t) => [t.title, t.artist, t.album]);
+      // The first key of a loaded list normalises it; the next ones only look.
+      final accentFirst = await _ms(() async => find('SÓNG 4'));
+      final accentFree = await _ms(() async => find('SÓNG 4999'));
       final albums = await _ms(() => q.watchAlbums().first);
       final artists = await _ms(() => q.watchArtists().first);
       final firstPage = await _ms(() => repo.watchTracks().first);
@@ -75,9 +84,10 @@ void main() {
       final lite = await _ms(() => repo.liteEntries());
       final genres = await _ms(() => q.watchGenres().first);
       // ignore: avoid_print
-      print('perf50k ms: search=$search albums=$albums artists=$artists '
+      print('perf50k ms: search=$search accentFirst=$accentFirst accentFree=$accentFree albums=$albums artists=$artists '
           'allTracks=$firstPage byArtist=$sorted liteEntries=$lite genres=$genres');
       expect(search, lessThan(80 * margin), reason: 'text search');
+      expect(accentFree, lessThan(80 * margin), reason: 'text search, accents ignored');
       expect(albums, lessThan(150 * margin), reason: 'albums');
       expect(artists, lessThan(150 * margin), reason: 'artists');
       // The document asks 300 ms for the first page, but «Tutti i brani» loads

@@ -94,6 +94,25 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('the search field filters the rows and a tap plays the whole list from there', (tester) async {
+      h = await Harness.create(tester, tracks: 4);
+      repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
+      final id = await make(tester, 'Tutti', 'artista:artist');
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await h.pump(tester, SmartPlaylistScreen(id: id));
+      await _settle(tester);
+      await tester.enterText(find.byType(TextField), 'SONG 2');
+      await tester.pump(const Duration(seconds: 1));
+      expect(_row('Song 1'), findsNothing);
+      await tester.tap(_row('Song 2'));
+      await _settle(tester);
+      expect(h.handler.currentTrack?.title, 'Song 2');
+      expect(h.handler.queueIds, hasLength(4));
+      await h.dispose(tester);
+    });
+
     testWidgets('«Converti in playlist normale» copies the current list and keeps the rule', (tester) async {
       h = await Harness.create(tester, tracks: 4);
       repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));

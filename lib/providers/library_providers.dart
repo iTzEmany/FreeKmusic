@@ -1,3 +1,4 @@
+import '../core/text_utils.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
@@ -16,6 +17,7 @@ import '../data/repositories/library_queries.dart';
 import '../data/repositories/library_search.dart';
 import '../data/repositories/smart_search.dart';
 import '../data/repositories/track_repository.dart';
+import 'youtube_providers.dart' show resolveDownloadFolder;
 import '../services/covers/cover_store.dart';
 import '../services/covers/cover_thumbnails.dart';
 import '../services/scanner/library_scanner.dart';
@@ -103,10 +105,35 @@ final trackQueryProvider =
       TrackQueryNotifier.new,
     );
 
-final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) {
-  return ref
+// The list without text, as read from the database; the text is filtered on
+// top of it in Dart and without accents (D-500), so it stays cached while typing.
+final _plainTracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>(
+  (ref, q) => ref
       .watch(trackRepositoryProvider)
-      .watchTracks(query: q.text, sort: q.sort, favoritesOnly: q.favoritesOnly);
+      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly),
+);
+
+final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
+  final all = await ref.watch(_plainTracksProvider(q.copyWith(text: '')).future);
+  yield filterByText(all, q.text, (t) => [t.title, t.artist, t.album]);
+});
+
+/// Id of the download folder (null when there is none); tests override it.
+final downloadFolderIdProvider = FutureProvider<int?>(
+  (ref) async => (await resolveDownloadFolder(ref.read(folderRepositoryProvider)))?.$2.id,
+);
+
+/// Downloaded tracks that are in no playlist (D-485).
+final downloadedNoPlaylistProvider =
+    StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
+  final folderId = await ref.watch(downloadFolderIdProvider.future);
+  if (folderId == null) {
+    yield const <Track>[];
+    return;
+  }
+  yield* ref
+      .watch(trackRepositoryProvider)
+      .watchDownloadedWithoutPlaylist(folderId: folderId, query: q.text, sort: q.sort);
 });
 
 /// All music tracks, whatever the Library search says.

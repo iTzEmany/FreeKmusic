@@ -1,3 +1,4 @@
+import '../core/text_utils.dart';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -211,8 +212,13 @@ class TrackOps {
 final trackOpsProvider = Provider<TrackOps>(TrackOps.new);
 
 /// Library tracks matching a search text (all of them for ''), live.
+final _allTracksProvider = StreamProvider.autoDispose<List<Track>>(
+  (ref) => ref.watch(trackRepositoryProvider).watchTracks(),
+);
+
+// Accents ignored (D-500): filtered in Dart on the whole list.
 final trackSearchProvider = StreamProvider.autoDispose
-    .family<List<Track>, String>(
-      (ref, query) =>
-          ref.watch(trackRepositoryProvider).watchTracks(query: query),
-    );
+    .family<List<Track>, String>((ref, query) async* {
+      final all = await ref.watch(_allTracksProvider.future);
+      yield filterByText(all, query, (t) => [t.title, t.artist, t.album]);
+    });
