@@ -105,7 +105,7 @@ class _EmptyInfo extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                MarqueeText(l.playerEmptyTitle, style: theme.bodyLarge?.copyWith(color: cc.textMuted)),
+                Text(l.playerEmptyTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.bodyLarge?.copyWith(color: cc.textMuted)),
                 Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.bodyMedium),
               ],
             ),

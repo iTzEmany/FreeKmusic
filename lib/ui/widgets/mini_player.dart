@@ -274,10 +274,15 @@ class _MiniCard extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  MarqueeText(title, style: theme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: empty ? cc.textMuted : null),
-                  ),
+                  () {
+                    final style = theme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: empty ? cc.textMuted : null);
+                    // Nothing playing: a static label, no endless animation.
+                    return empty
+                        ? Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)
+                        : MarqueeText(title, style: style);
+                  }(),
                   Row(
                     children: [
                       if (inJam)
