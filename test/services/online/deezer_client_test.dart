@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:codecore/services/online/deezer_client.dart';
 import 'package:codecore/services/online/credits.dart';
 import 'package:codecore/services/online/deezer_models.dart';
+import 'package:codecore/services/online/external_collection.dart';
+import 'package:codecore/services/online/external_links.dart';
 import 'package:codecore/services/online/http_client.dart';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter_test/flutter_test.dart';
@@ -162,4 +164,104 @@ void main() {
     expect(r.length, greaterThan(1));
     expect(r.first.artist, 'Party Machine');
   });
+
+  group('link reading', () {
+    const base = 'https://api.deezer.com';
+    final instant = RateLimiter(minGap: Duration.zero);
+
+    DeezerClient client(_Web web, {List<Duration>? pauses}) => DeezerClient(
+      web,
+      limiter: instant,
+      pause: (d) async => pauses?.add(d),
+    );
+
+    test('playlist: `next` is followed and every track read', () async {
+      final web = _Web(null, byUrl: {
+        '$base/playlist/2138566342': _fixture('playlist'),
+        '$base/playlist/2138566342/tracks?limit=100': _fixture('playlist_tracks_p1'),
+        '$base/playlist/2138566342/tracks?limit=100&index=100':
+            _fixture('playlist_tracks_p2'),
+      });
+      final l = await client(web).playlist(2138566342);
+      expect(l.tracks.length, 136);
+      expect(l.declaredTotal, 136);
+      expect(l.title, 'Jazz Now');
+      expect(web.calls, 3);
+    });
+
+    test('code 4: waits 5 s and retries, without the 10-minute rest', () async {
+      final answers = [_fixture('error_quota'), _fixture('track')];
+      final web = _Seq(answers);
+      final pauses = <Duration>[];
+      final c = client(web, pauses: pauses);
+      final t = await c.track(3135556);
+      expect(t.title, isNotEmpty);
+      expect(pauses, [const Duration(seconds: 5)]);
+      expect(c.isResting, isFalse);
+    });
+
+    test('code 4 four times in a row: gives up as a network error', () async {
+      final web = _Seq([for (var i = 0; i < 4; i++) _fixture('error_quota')]);
+      final pauses = <Duration>[];
+      await expectLater(
+        client(web, pauses: pauses).track(1),
+        throwsA(isA<DeezerNetworkException>()),
+      );
+      expect(pauses.length, 3);
+    });
+
+    test('code 800: the collection is not found', () async {
+      await expectLater(
+        client(_Web(_fixture('error_no_data'))).playlist(1),
+        throwsA(isA<CollectionNotFound>()),
+      );
+    });
+
+    test('reader: an album becomes an ExternalCollection', () async {
+      final web = _Web(null, byUrl: {
+        '$base/album/119606': _fixture('album'),
+        '$base/album/119606/tracks?limit=100': _fixture('album_tracks'),
+      });
+      final c = await DeezerCollectionReader(client(web))
+          .read(const ExternalLink(ExternalService.deezer, ExternalLinkKind.album, '119606'));
+      expect(c.kind, CollectionKind.album);
+      expect(c.tracks.first.title, 'Intro');
+      expect(c.tracks.first.artists, ['Eminem']);
+      expect(c.tracks.first.durationMs, 34000);
+      expect(c.tracks.first.isrc, 'USUM70506385');
+      expect(c.coverUrl, isNotNull);
+    });
+
+    test('reader: an artist top and a track', () async {
+      final web = _Web(null, byUrl: {
+        '$base/artist/27': _fixture('artist'),
+        '$base/artist/27/top?limit=50': _fixture('artist_top'),
+        '$base/track/3135556': _fixture('track'),
+      });
+      final r = DeezerCollectionReader(client(web));
+      final top = await r.read(const ExternalLink(ExternalService.deezer, ExternalLinkKind.artist, '27'));
+      expect(top.title, 'Daft Punk');
+      expect(top.tracks, isNotEmpty);
+      final one = await r.read(const ExternalLink(ExternalService.deezer, ExternalLinkKind.track, '3135556'));
+      expect(one.tracks.length, 1);
+    });
+  });
+}
+
+/// Serves [answers] one per request.
+class _Seq extends _Web {
+  _Seq(this.queue) : super(null);
+
+  final List<Object> queue;
+
+  @override
+  Future<Object?> getJson(
+    String url, {
+    Map<String, String>? query,
+    CancelToken? cancel,
+    bool strict = false,
+  }) async {
+    calls++;
+    return queue.removeAt(0);
+  }
 }

@@ -95,3 +95,19 @@ class DeezerAlbum {
   final int? fans;
   final List<String> genres;
 }
+
+/// What a Deezer link points at: a title, a cover and its songs.
+class DeezerList {
+  const DeezerList({
+    required this.title,
+    required this.tracks,
+    this.coverUrl,
+    this.owner,
+    this.declaredTotal,
+  });
+
+  final String title;
+  final String? coverUrl, owner;
+  final int? declaredTotal;
+  final List<DeezerTrack> tracks;
+}
