@@ -7478,4 +7478,18 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get extSaveToLibrary => 'Save to Library';
+
+  @override
+  String extSavedAs(String name) {
+    return 'Saved as «$name»';
+  }
+
+  @override
+  String get extSaveNothing => 'No song ready to save';
+
+  @override
+  String get extRefresh => 'Refresh';
 }

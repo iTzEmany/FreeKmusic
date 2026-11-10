@@ -3689,5 +3689,16 @@
   "queueCountShuffle": "{count, plural, one{1 Titel, Zufall} other{{count} Titel, Zufall}}",
   "queueBlockPosition": "Position {n} von {total}",
   "queueReorderHandle": "Zum Sortieren ziehen",
-  "resultsCount": "{count, plural, one{1 Ergebnis} other{{count} Ergebnisse}}"
+  "resultsCount": "{count, plural, one{1 Ergebnis} other{{count} Ergebnisse}}",
+  "extSaveToLibrary": "In Bibliothek speichern",
+  "extSavedAs": "Gespeichert als «{name}»",
+  "@extSavedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extSaveNothing": "Noch kein Titel zum Speichern bereit",
+  "extRefresh": "Aktualisieren"
 }

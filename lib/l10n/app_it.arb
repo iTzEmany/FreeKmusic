@@ -4395,5 +4395,16 @@
   "queueReorderHandle": "Trascina per riordinare",
   "@queueReorderHandle": {"description": "Name of the drag handle of a queue row, for TalkBack."},
   "resultsCount": "{count, plural, one{1 risultato} other{{count} risultati}}",
-  "@resultsCount": {"description": "Number of rows a search in a list found.", "placeholders": {"count": {"type": "int"}}}
+  "@resultsCount": {"description": "Number of rows a search in a list found.", "placeholders": {"count": {"type": "int"}}},
+  "extSaveToLibrary": "Salva in Libreria",
+  "extSavedAs": "Salvata come «{name}»",
+  "@extSavedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extSaveNothing": "Nessun brano pronto da salvare",
+  "extRefresh": "Aggiorna"
 }

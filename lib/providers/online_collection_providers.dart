@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
+import 'database_providers.dart' show databaseProvider, playlistRepositoryProvider, trackRepositoryProvider;
 import '../services/online/deezer_client.dart' show DeezerCollectionReader;
 import '../services/online/external_collection.dart';
 import '../services/online/external_links.dart';
@@ -173,3 +174,31 @@ void retryOnlineCollection(WidgetRef ref, OnlineCollectionRef r) => switch (r) {
       YoutubeListingRef(:final url) => ref.invalidate(playlistListingProvider(url)),
       ExternalRef() => {ref.invalidate(onlineCollectionProvider(r)), ref.invalidate(onlineMatchesProvider(r))},
     };
+
+/// «Salva in Libreria»: a playlist called like the page (« (2)», « (3)»… if the name is
+/// taken) with the `ready` rows in page order; online rows become shadow rows, so the copy
+/// streams and no longer depends on the page (D-524). Returns the playlist name, or null
+/// when no row is ready yet (nothing is created).
+Future<String?> saveToLibrary(WidgetRef ref, String title, List<TrackMatch> matches) async {
+  final ready = matches.whereType<TrackReady>().toList();
+  if (ready.isEmpty) return null;
+  final playlists = ref.read(playlistRepositoryProvider);
+  final tracks = ref.read(trackRepositoryProvider);
+  final base = title.trim();
+  return ref.read(databaseProvider).transaction(() async {
+    var name = base, n = 1;
+    while (await playlists.nameTaken(name)) {
+      name = '$base (${++n})';
+    }
+    final id = await playlists.create(name);
+    final ids = <int>[
+      for (final m in ready)
+        switch (m) {
+          TrackReadyLibrary(:final track) => track.id,
+          TrackReadyOnline(:final result) => await tracks.ensureStreamRow(result),
+        },
+    ];
+    await playlists.addStreamTracks(id, ids);
+    return name;
+  });
+}

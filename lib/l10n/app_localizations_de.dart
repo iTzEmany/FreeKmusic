@@ -7532,4 +7532,18 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get extSaveToLibrary => 'In Bibliothek speichern';
+
+  @override
+  String extSavedAs(String name) {
+    return 'Gespeichert als «$name»';
+  }
+
+  @override
+  String get extSaveNothing => 'Noch kein Titel zum Speichern bereit';
+
+  @override
+  String get extRefresh => 'Aktualisieren';
 }
