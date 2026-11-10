@@ -6,15 +6,7 @@ import '../../core/app_log.dart';
 import 'innertube_client.dart';
 import 'youtube_service.dart';
 import 'ytm_catalog.dart';
-
-final _albumPath = RegExp(r'^/browse/(MPREb_[\w-]+)$');
-
-/// `MPREb_…` of a `music.youtube.com/browse/…` album link, else null.
-String? _ytmAlbumId(String link) {
-  final uri = Uri.tryParse(link.trim());
-  if (uri == null || uri.host != 'music.youtube.com') return null;
-  return _albumPath.firstMatch(uri.path)?.group(1);
-}
+import 'youtube_urls.dart';
 
 /// Searches YouTube and YouTube Music with one direct request ([client]) and
 /// leaves everything else (addresses, albums, playlists,
@@ -77,7 +69,7 @@ class DirectSearchService implements YoutubeService {
 
   @override
   Future<List<YtResult>> albumTracks(String albumLink) async {
-    final id = _ytmAlbumId(albumLink);
+    final id = ytmAlbumBrowseId(albumLink);
     final c = catalog;
     if (id == null || c == null) return inner.albumTracks(albumLink);
     // The catalog falls back to yt-dlp itself when the page cannot be read.

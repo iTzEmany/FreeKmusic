@@ -3,21 +3,26 @@ import 'ytm_artist.dart';
 import '../../core/artist_key.dart';
 
 /// What the text typed in the online search is.
-enum QueryKind { listing, video, text }
+enum QueryKind { listing, video, album, text }
 
 class ClassifiedQuery {
-  const ClassifiedQuery(this.kind, [this.url]);
+  const ClassifiedQuery(this.kind, [this.url, this.browseId]);
 
   final QueryKind kind;
 
   /// The address to list for [QueryKind.listing] (`listingUrl`).
   final String? url;
+
+  /// The `MPREb_…` id for [QueryKind.album].
+  final String? browseId;
 }
 
 /// A playlist or channel address, a video address, or words to search.
 ClassifiedQuery classifyQuery(String text) {
   final listing = listingUrl(text);
   if (listing != null) return ClassifiedQuery(QueryKind.listing, listing);
+  final albumId = ytmAlbumBrowseId(text);
+  if (albumId != null) return ClassifiedQuery(QueryKind.album, null, albumId);
   if (classifyYoutubeUrl(text) == YoutubeLinkKind.video) {
     return const ClassifiedQuery(QueryKind.video);
   }

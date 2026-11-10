@@ -179,6 +179,8 @@ YtException ytExceptionFromStderr(String err) {
     return YtException(YtErrorKind.network, err);
   }
   if (t.contains('private video') ||
+      t.contains('playlist does not exist') ||
+      t.contains('playlist is private') ||
       t.contains('video unavailable') ||
       t.contains('not available') ||
       t.contains('sign in') ||

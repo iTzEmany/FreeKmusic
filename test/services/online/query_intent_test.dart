@@ -50,4 +50,11 @@ void main() {
     expect(classifyQuery('https://youtu.be/dQw4w9WgXcQ').kind, QueryKind.video);
     expect(classifyQuery('pink floyd mother').kind, QueryKind.text);
   });
+
+  test('a YouTube Music album address carries its browse id', () {
+    final album = classifyQuery('https://music.youtube.com/browse/MPREb_abc123?si=x');
+    expect(album.kind, QueryKind.album);
+    expect(album.browseId, 'MPREb_abc123');
+    expect(classifyQuery('https://music.youtube.com/browse/UCabc').kind, QueryKind.text);
+  });
 }
