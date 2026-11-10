@@ -107,7 +107,8 @@ Alternativa: al tocco su «Jam» un foglio con due righe («Ascolta con X», «C
 - Casi: richieste ripetute, sospensione scaduta, broker irraggiungibile, host in sottofondo, ospite che perde la rete, codice sbagliato o scaduto, messaggi di estranei sul canale.
 ```
 
-## 3. Build per macOS (29 ott, da fare dopo la chat in corso)
+## 3. Build per macOS (29 ott) — FATTO (D-543)
+Fatto in D-543: job `macos` nella Release, artefatto nella CI manuale, README. Sotto, il piano originale.
 Un APK è solo per Android: per il Mac serve la `.app`. Il Mac non è tra le piattaforme del progetto e da Linux non si compila.
 - In CI c'è già il job «macOS / iOS (trial)» (`.github/workflows/ci.yml`, `build-apple`): parte solo a mano (`workflow_dispatch`), fa `flutter build macos --debug` ma non carica il file.
 - Da fare: una piccola PR che aggiunge al job il caricamento della `.app` (zip di `build/macos/Build/Products/Debug/*.app` con `actions/upload-artifact`), poi `gh workflow run ci.yml --ref master` e scaricare l'artefatto dalla run.
@@ -233,3 +234,6 @@ Rilievi della scheggia di fase 116 (10 nov, Redmi), fuori dal perimetro della fa
 - Testo Shazam in arabo («ليلى di فيروز») abbinato a un video con titolo diverso: soglie del `CollectionMatcher` larghe su titoli non latini. Da guardare con una fixture.
 - Dopo «Elimina dal dispositivo» `files/downloads.json` tiene la voce del brano cancellato: capire se si pulisce da sola più tardi, altrimenti toglierla alla cancellazione.
 - Solo testi Shazam it-IT riconosciuti (R-210): un'altra lingua o versione apre Cerca. Si aggiunge una riga per ogni testo vero raccolto.
+
+## Backlog release
+- Runtime Flatpak `org.freedesktop.Platform/ffmpeg-full` 24.08 a fine vita: passare a 25.08.
