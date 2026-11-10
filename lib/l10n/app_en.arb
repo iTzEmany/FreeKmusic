@@ -3685,5 +3685,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "queueCountShuffle": "{count, plural, one{1 track, Shuffle} other{{count} tracks, Shuffle}}",
+  "queueBlockPosition": "Position {n} of {total}",
+  "queueReorderHandle": "Drag to reorder",
+  "resultsCount": "{count, plural, one{1 result} other{{count} results}}"
 }

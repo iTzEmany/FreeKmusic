@@ -75,3 +75,18 @@ I tocchi (`input tap`, `telefono.py tocca`) non arrivano al selettore di file de
 
 ## `MarqueeText` e `pumpAndSettle` (2026-11-10)
 Un titolo lungo scorre in un ciclo infinito: un test che parte con un brano dal titolo lungo in riproduzione (mini player visibile) va in timeout con `pumpAndSettle`. Usare `pump(durata)`; a player vuoto il titolo è fermo.
+
+## Movimento ridotto su Android via adb (2026-11-10)
+Flutter legge `transition_animation_scale`, non `animator_duration_scale`. Per provare «Rimuovi animazioni» servono tutti e tre:
+```
+settings put global animator_duration_scale 0
+settings put global transition_animation_scale 0
+settings put global window_animation_scale 0
+```
+Alla fine vanno rimessi a 1.
+
+## Pausa a volume zero in secondo piano (2026-11-10)
+Con l'app in secondo piano e la musica messa in pausa dalla funzione, il tasto «volume su» fa ripartire la musica solo entro circa 2 s. Dopo, Android considera la sessione multimediale non più attiva e manda il tasto alla suoneria, quindi STREAM_MUSIC resta a 0. In primo piano invece funziona sempre. È un limite di Android, non un errore dell'app: se serve, va tenuta attiva la sessione più a lungo (seguito in `prossimi-lavori.md`).
+
+## Test instabili visti nelle fasi 108–113
+`online_playback_test` («the next track still downl…»), `smart_playlists_test` e `daylist_provider_test`. In CI un rilancio è passato. Con `uiautomator dump` mentre il player anima, il comando si blocca: prima metti in pausa con `input keyevent 127`.

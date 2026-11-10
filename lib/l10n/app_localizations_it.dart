@@ -7438,10 +7438,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get pauseOnZeroVolume => 'Metti in pausa quando il volume è a zero';
 
   @override
-  String get pauseOnZeroVolumeHelp =>
-      'Alzando di nuovo il volume la musica riparte da sola, solo se l\'ha fermata questa funzione.';
-
-  @override
   String get extMatching => 'in abbinamento';
 
   @override
@@ -7466,5 +7462,39 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String extTruncated(int count) {
     return 'Mostro i primi $count brani.';
+  }
+
+  @override
+  String get pauseOnZeroVolumeHelp =>
+      'Alzando di nuovo il volume la musica riparte da sola, solo se l’ha fermata questa funzione.';
+
+  @override
+  String queueCountShuffle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brani, Casuale',
+      one: '1 brano, Casuale',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueBlockPosition(int n, int total) {
+    return 'Posizione $n di $total';
+  }
+
+  @override
+  String get queueReorderHandle => 'Trascina per riordinare';
+
+  @override
+  String resultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count risultati',
+      one: '1 risultato',
+    );
+    return '$_temp0';
   }
 }

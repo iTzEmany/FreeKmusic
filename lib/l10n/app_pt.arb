@@ -3871,5 +3871,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "queueCountShuffle": "{count, plural, one{1 faixa, Aleatório} other{{count} faixas, Aleatório}}",
+  "queueBlockPosition": "Posição {n} de {total}",
+  "queueReorderHandle": "Arraste para reordenar",
+  "resultsCount": "{count, plural, one{1 resultado} other{{count} resultados}}"
 }

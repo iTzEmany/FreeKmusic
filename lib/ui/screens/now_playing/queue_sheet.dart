@@ -60,17 +60,26 @@ class QueueSheet extends ConsumerStatefulWidget {
 }
 
 /// The part of the queue a list shows: the entries after the current one and
-/// a key per entry (the same track may sit twice, so id + occurrence).
+/// a key per entry (the same track may sit twice: the queue's own entry key).
 class _Upcoming {
   _Upcoming(this.first, this.tracks, this.keys, this.block);
 
-  factory _Upcoming.of(List<Track> queue, int at, int block) {
+  factory _Upcoming.of(
+    List<Track> queue,
+    int at,
+    int block,
+    List<int> entryKeys,
+  ) {
     final first = at >= 0 && at < queue.length ? at + 1 : 0;
     final tracks = queue.sublist(first);
+    // The list can lag the handler by a frame: then fall back to id + occurrence.
+    final stable = entryKeys.length == queue.length;
     final seen = <int, int>{};
     return _Upcoming(first, tracks, [
-      for (final t in tracks)
-        'q-${t.id}-${seen[t.id] = (seen[t.id] ?? -1) + 1}',
+      for (var i = 0; i < tracks.length; i++)
+        stable
+            ? 'q-${entryKeys[first + i]}'
+            : 'q-${tracks[i].id}-${seen[tracks[i].id] = (seen[tracks[i].id] ?? -1) + 1}',
     ], block);
   }
 
@@ -160,6 +169,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     Set<int> enriching,
     bool similar,
     Widget? above,
+    int block,
   ) {
     final ctrl = ref.read(playerControllerProvider);
     final l = context.l10n;
@@ -170,12 +180,11 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       background: const DismissBackground(),
       secondaryBackground: const DismissBackground(alignEnd: true),
       onDismissed: (_) async {
+        final user = i < ref.read(audioHandlerProvider).userAhead;
         await ctrl.removeFromQueue(first + i);
         if (!mounted) return;
         showUndoSnack(context, l.removedFromQueue, () {
-          ctrl.addToQueue(t.id);
-          final n = ref.read(queueProvider).value?.length ?? queueLength;
-          ctrl.reorderQueue(n - 1, first + i);
+          ctrl.putBackInQueue(first + i, t.id, user: user);
         });
       },
       child: Material(
@@ -197,6 +206,46 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         ),
       ),
     );
+    final inBlock = i < block;
+    // The block is one box (mockup `blkbox`): number 1, 2, 3 before each row.
+    final shown = !inBlock
+        ? row
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: cc.surface2,
+                borderRadius: i == block - 1
+                    ? const BorderRadius.vertical(
+                        bottom: Radius.circular(CcDims.rCard),
+                      )
+                    : null,
+              ),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: i == block - 1 ? CcDims.gap4 : 0),
+                child: Semantics(
+                  label: l.queueBlockPosition(i + 1, block),
+                  child: Row(
+                    children: [
+                      ExcludeSemantics(
+                        child: SizedBox(
+                          width: 28,
+                          child: Center(
+                            child: Text(
+                              '${i + 1}',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: cc.accentSoft),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(child: row),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
     // Always a Column, so the item keeps its type when a block appears.
     return Column(
       key: ValueKey(keys[i]),
@@ -215,7 +264,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                 )
               : above ?? const SizedBox.shrink(),
         ),
-        row,
+        shown,
       ],
     );
   }
@@ -236,6 +285,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     ref.watch(currentTrackProvider.select((t) => t.value?.id));
     final pending = ref.watch(shufflePlusPendingProvider);
     final similar = ref.watch(similarSeedProvider);
+    final shuffled = ref.watch(shuffleProvider).value ?? false;
     final ctrl = ref.read(playerControllerProvider);
     if (queue.isEmpty) {
       return EmptyState(icon: Icons.queue_music_rounded, message: l.emptyQueue);
@@ -244,7 +294,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     final at = handler.currentIndex;
     // Entries right after the current one added with «Aggiungi in coda».
     final current = at >= 0 && at < queue.length ? queue[at] : null;
-    final liveUp = _Upcoming.of(queue, at, handler.userAhead);
+    final liveUp = _Upcoming.of(queue, at, handler.userAhead, handler.queueKeys);
     final shown = _dragging && _dragSnapshot != null ? _dragSnapshot! : liveUp;
     final first = shown.first;
     final block = shown.block;
@@ -273,8 +323,10 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
             owned: upcoming.where((t) => !isOnlineId(t.id)).length,
           );
     // With a block, the second header sits above the first entry after it.
+    final rest = upcoming.length - block;
+    final restCount = shuffled ? l.queueCountShuffle(rest) : l.tracksCount(rest);
     final afterBlock = block > 0 && block < upcoming.length
-        ? similarHeader ?? SectionHeader(l.queueThen)
+        ? similarHeader ?? SectionHeader(l.queueThen, count: restCount)
         : null;
 
     return Column(
@@ -282,6 +334,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
         _QueueTitleRow(
           showTitle: showTitle,
           hasUpcoming: upcoming.isNotEmpty,
+          count: upcoming.isEmpty ? null : l.tracksCount(upcoming.length),
           onClear: clearNext,
         ),
         Expanded(
@@ -304,11 +357,11 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                   ),
                 ],
                 if (block > 0 && upcoming.isNotEmpty)
-                  SectionHeader(l.queueUpNext)
+                  _BlockHeader(count: l.tracksCount(block))
                 else if (similar != null)
                   similarHeader!
                 else if (upcoming.isNotEmpty)
-                  SectionHeader(l.queueNext),
+                  SectionHeader(l.queueNext, count: restCount),
               ],
             ),
             // Rows for the suggestions Shuffle+ is still choosing.
@@ -354,6 +407,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                 ref.read(queueProvider).value ?? const <Track>[],
                 ref.read(audioHandlerProvider).currentIndex,
                 ref.read(audioHandlerProvider).userAhead,
+                ref.read(audioHandlerProvider).queueKeys,
               );
               final move = mapDrop(
                 key: snap.keys[from],
@@ -372,10 +426,59 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
               pending.enriching,
               similar != null,
               i == block ? afterBlock : null,
+              block,
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Top of the block's box: «Prossimi in coda» and how many entries it holds.
+class _BlockHeader extends StatelessWidget {
+  const _BlockHeader({required this.count});
+
+  final String count;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = context.cc;
+    final theme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(CcDims.gap8, 12, CcDims.gap8, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: cc.surface2,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(CcDims.rCard),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CcDims.gap8,
+            CcDims.gap12,
+            CcDims.gap8,
+            CcDims.gap4,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.l10n.queueUpNext,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.titleMedium?.copyWith(color: cc.accentSoft),
+                ),
+              ),
+              Text(
+                count,
+                style: theme.labelSmall?.copyWith(color: cc.textMuted),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -438,11 +541,15 @@ class _QueueTitleRow extends StatelessWidget {
   const _QueueTitleRow({
     required this.showTitle,
     required this.hasUpcoming,
+    required this.count,
     required this.onClear,
   });
 
   final bool showTitle;
   final bool hasUpcoming;
+
+  /// «12 brani» after the title: everything that follows the playing entry.
+  final String? count;
   final VoidCallback onClear;
 
   @override
@@ -459,12 +566,25 @@ class _QueueTitleRow extends StatelessWidget {
         builder: (context, box) => Row(
           children: [
             Expanded(
-              child: showTitle
-                  ? Text(
-                      l.queue,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    )
-                  : const SizedBox.shrink(),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    if (showTitle)
+                      TextSpan(
+                        text: l.queue,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    if (count != null)
+                      TextSpan(
+                        text: showTitle ? '  $count' : count,
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(color: context.cc.textMuted),
+                      ),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (hasUpcoming)
               TextButton(onPressed: onClear, child: Text(l.queueClear)),

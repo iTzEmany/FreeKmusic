@@ -3906,5 +3906,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "queueCountShuffle": "{count, plural, one{1 titre, Aléatoire} other{{count} titres, Aléatoire}}",
+  "queueBlockPosition": "Position {n} sur {total}",
+  "queueReorderHandle": "Faites glisser pour réorganiser",
+  "resultsCount": "{count, plural, =0{0 résultat} one{1 résultat} other{{count} résultats}}"
 }

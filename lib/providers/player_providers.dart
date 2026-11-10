@@ -428,6 +428,8 @@ class PlayerController {
   Future<void> jumpToQueueIndex(int index) => _handler.skipToQueueItem(index);
   Future<void> removeFromQueue(int index) => _handler.removeFromQueue(index);
   Future<void> removeTracks(Set<int> ids) => _handler.removeTracks(ids);
+  void putBackInQueue(int index, int id, {required bool user}) =>
+      _handler.putBackInQueue(index, id, user: user);
   void reorderQueue(int from, int to) {
     _handler.moveInQueue(from, to);
   }

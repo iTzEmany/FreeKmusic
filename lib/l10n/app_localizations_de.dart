@@ -7472,10 +7472,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pauseOnZeroVolume => 'Pausieren, wenn die Lautstärke auf null ist';
 
   @override
-  String get pauseOnZeroVolumeHelp =>
-      'Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat.';
-
-  @override
   String get extMatching => 'wird zugeordnet';
 
   @override
@@ -7501,5 +7497,39 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String extTruncated(int count) {
     return 'Ich zeige die ersten $count Titel.';
+  }
+
+  @override
+  String get pauseOnZeroVolumeHelp =>
+      'Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat.';
+
+  @override
+  String queueCountShuffle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Titel, Zufall',
+      one: '1 Titel, Zufall',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueBlockPosition(int n, int total) {
+    return 'Position $n von $total';
+  }
+
+  @override
+  String get queueReorderHandle => 'Zum Sortieren ziehen';
+
+  @override
+  String resultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ergebnisse',
+      one: '1 Ergebnis',
+    );
+    return '$_temp0';
   }
 }

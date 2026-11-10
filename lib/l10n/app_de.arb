@@ -3685,5 +3685,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "queueCountShuffle": "{count, plural, one{1 Titel, Zufall} other{{count} Titel, Zufall}}",
+  "queueBlockPosition": "Position {n} von {total}",
+  "queueReorderHandle": "Zum Sortieren ziehen",
+  "resultsCount": "{count, plural, one{1 Ergebnis} other{{count} Ergebnisse}}"
 }

@@ -296,7 +296,7 @@ class _TrackRowState extends State<TrackRow> {
       case TrackRowVariant.queue:
         final i = widget.reorderIndex;
         final handle = Icon(Icons.drag_handle_rounded, color: cc.textMuted);
-        // Hidden from TalkBack: the list already offers move actions on the row.
+        // Spoken as the row's hint (no second stop); the move actions sit on the list item.
         final grip = ExcludeSemantics(
           child: Padding(
             padding: const EdgeInsets.only(left: CcDims.gap8),
@@ -482,6 +482,9 @@ class _TrackRowState extends State<TrackRow> {
           // One node named by title and artist (no empty twin: the cover's long press used to split it).
           button: true,
           label: subtitle.isEmpty ? t.title : '${t.title}, $subtitle',
+          hint: widget.variant == TrackRowVariant.queue && widget.reorderIndex != null
+              ? context.l10n.queueReorderHandle
+              : null,
           onTap: widget.onTap,
           onLongPress: widget.onLongPress,
           selected: widget.selectionMode ? widget.selected : null,

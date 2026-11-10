@@ -11887,12 +11887,6 @@ abstract class AppLocalizations {
   /// **'Metti in pausa quando il volume è a zero'**
   String get pauseOnZeroVolume;
 
-  /// No description provided for @pauseOnZeroVolumeHelp.
-  ///
-  /// In it, this message translates to:
-  /// **'Alzando di nuovo il volume la musica riparte da sola, solo se l\'ha fermata questa funzione.'**
-  String get pauseOnZeroVolumeHelp;
-
   /// No description provided for @extMatching.
   ///
   /// In it, this message translates to:
@@ -11940,6 +11934,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Mostro i primi {count} brani.'**
   String extTruncated(int count);
+
+  /// No description provided for @pauseOnZeroVolumeHelp.
+  ///
+  /// In it, this message translates to:
+  /// **'Alzando di nuovo il volume la musica riparte da sola, solo se l’ha fermata questa funzione.'**
+  String get pauseOnZeroVolumeHelp;
+
+  /// Count at the end of the queue's «Poi» / «Prossimi» header while shuffle is on.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano, Casuale} other{{count} brani, Casuale}}'**
+  String queueCountShuffle(int count);
+
+  /// Spoken for a row of the queue block: its place among the entries added by the user.
+  ///
+  /// In it, this message translates to:
+  /// **'Posizione {n} di {total}'**
+  String queueBlockPosition(int n, int total);
+
+  /// Name of the drag handle of a queue row, for TalkBack.
+  ///
+  /// In it, this message translates to:
+  /// **'Trascina per riordinare'**
+  String get queueReorderHandle;
+
+  /// Number of rows a search in a list found.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 risultato} other{{count} risultati}}'**
+  String resultsCount(int count);
 }
 
 class _AppLocalizationsDelegate

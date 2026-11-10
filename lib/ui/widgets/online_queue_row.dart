@@ -145,9 +145,12 @@ class OnlineQueueRow extends ConsumerWidget {
               icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
             ),
             if (i != null)
-              ReorderableDragStartListener(
-                index: i,
-                child: Icon(Icons.drag_handle_rounded, color: cc.textMuted),
+              Semantics(
+                label: l.queueReorderHandle,
+                child: ReorderableDragStartListener(
+                  index: i,
+                  child: Icon(Icons.drag_handle_rounded, color: cc.textMuted),
+                ),
               ),
           ],
         ),
