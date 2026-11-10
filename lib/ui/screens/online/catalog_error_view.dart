@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../services/online/external_collection.dart';
 import '../../../services/online/innertube_client.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../theme/tokens.dart';
@@ -40,8 +41,12 @@ class CatalogErrorView extends StatelessWidget {
     if (e is ArtistNotFound) {
       message = notFoundText ?? l.ytmArtistNotFound;
       retry = false;
-    } else if (e is InnerTubeChanged) {
-      message = unreadableText ?? l.ytmPageUnreadable;
+    } else if (e is CollectionNotFound) {
+      // R-207: private, deleted or wrong link; asking again changes nothing.
+      message = notFoundText ?? l.extNotPublic;
+      retry = false;
+    } else if (e is InnerTubeChanged || e is CollectionUnreadable) {
+      message = unreadableText ?? (e is InnerTubeChanged ? l.ytmPageUnreadable : l.extUnreadable);
     } else if (e is YtException) {
       message = ytErrorText(context, e.kind);
     } else {
@@ -56,7 +61,7 @@ class CatalogErrorView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(message, style: Theme.of(context).textTheme.titleSmall),
-            if (e is InnerTubeChanged &&
+            if ((e is InnerTubeChanged || e is CollectionUnreadable) &&
                 onSearch != null &&
                 searchLabel != null) ...[
               const SizedBox(height: 16),

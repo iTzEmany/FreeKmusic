@@ -3856,5 +3856,20 @@
   "downloadedNoPlaylist": "Transferidas sem playlist",
   "downloadedNoPlaylistEmpty": "Todas as faixas transferidas já estão numa playlist",
   "pauseOnZeroVolume": "Pausar quando o volume está em zero",
-  "pauseOnZeroVolumeHelp": "Ao subir o volume de novo a música continua, só se esta função a pausou."
+  "pauseOnZeroVolumeHelp": "Ao subir o volume de novo a música continua, só se esta função a pausou.",
+  "extMatching": "a associar",
+  "extFindByHand": "Procurar à mão",
+  "extNotFoundLabel": "não encontrado, procurar à mão",
+  "extDownloadAll": "Descarregar tudo",
+  "extNotPublic": "Esta playlist não é pública ou não existe",
+  "extUnreadable": "Não consigo ler esta playlist (a página mudou)",
+  "extExportifyFull": "Importar a playlist completa com o Exportify",
+  "extTruncated": "A mostrar as primeiras {count} músicas.",
+  "@extTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

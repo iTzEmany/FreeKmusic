@@ -3891,5 +3891,20 @@
   "downloadedNoPlaylist": "Téléchargés hors playlist",
   "downloadedNoPlaylistEmpty": "Tous les titres téléchargés sont déjà dans une playlist",
   "pauseOnZeroVolume": "Mettre en pause quand le volume est à zéro",
-  "pauseOnZeroVolumeHelp": "En remontant le volume, la musique reprend, seulement si cette fonction l’a mise en pause."
+  "pauseOnZeroVolumeHelp": "En remontant le volume, la musique reprend, seulement si cette fonction l’a mise en pause.",
+  "extMatching": "association en cours",
+  "extFindByHand": "Chercher à la main",
+  "extNotFoundLabel": "introuvable, chercher à la main",
+  "extDownloadAll": "Tout télécharger",
+  "extNotPublic": "Cette playlist n’est pas publique ou n’existe pas",
+  "extUnreadable": "Impossible de lire cette playlist (la page a changé)",
+  "extExportifyFull": "Importer la playlist complète avec Exportify",
+  "extTruncated": "Je montre les {count} premiers titres.",
+  "@extTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

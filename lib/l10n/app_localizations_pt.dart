@@ -7455,4 +7455,30 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get pauseOnZeroVolumeHelp =>
       'Ao subir o volume de novo a música continua, só se esta função a pausou.';
+
+  @override
+  String get extMatching => 'a associar';
+
+  @override
+  String get extFindByHand => 'Procurar à mão';
+
+  @override
+  String get extNotFoundLabel => 'não encontrado, procurar à mão';
+
+  @override
+  String get extDownloadAll => 'Descarregar tudo';
+
+  @override
+  String get extNotPublic => 'Esta playlist não é pública ou não existe';
+
+  @override
+  String get extUnreadable => 'Não consigo ler esta playlist (a página mudou)';
+
+  @override
+  String get extExportifyFull => 'Importar a playlist completa com o Exportify';
+
+  @override
+  String extTruncated(int count) {
+    return 'A mostrar as primeiras $count músicas.';
+  }
 }

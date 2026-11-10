@@ -26,8 +26,10 @@ final searchRowsLimiterProvider =
 final linkMatchLimiterProvider =
     Provider<WindowLimiter>((ref) => WindowLimiter(perMinute: kLinkMatchPerMinute));
 
-/// Matches the songs of a link page; cancelled when the provider is dropped.
-final collectionMatcherProvider = Provider.autoDispose<CollectionMatcher>((ref) {
+/// Matches the songs of a link page; one matcher per page ([page] is its key),
+/// cancelled when that page's provider is dropped.
+final collectionMatcherProvider =
+    Provider.autoDispose.family<CollectionMatcher, Object>((ref, page) {
   final tracks = ref.watch(trackRepositoryProvider);
   final matcher = CollectionMatcher(
     youtube: ref.watch(youtubeServiceProvider),

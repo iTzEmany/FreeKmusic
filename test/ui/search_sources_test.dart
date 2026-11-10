@@ -1,4 +1,15 @@
+import 'package:codecore/data/db/app_database.dart' show Track;
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:codecore/providers/online_collection_providers.dart';
+import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/smart_search_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/services/online/collection_matcher.dart';
+import 'package:codecore/services/online/external_collection.dart';
+import 'package:codecore/services/online/external_links.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/query_match.dart' show MediaKind;
 import 'package:codecore/ui/screens/search/search_screen.dart';
@@ -21,11 +32,55 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
+class _SongCtrl implements PlayerController {
+  final played = <String>[];
+  @override
+  bool inJam = false;
+  @override
+  bool isPlayingList(Object key) => false;
+  @override
+  Future<bool?> playFromSearch({Track? track, YtResult? online}) async {
+    played.add(online?.id ?? 'library');
+    return true;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _OneSongReader implements ExternalReader {
+  @override
+  Future<ExternalCollection> read(ExternalLink link, {CancelToken? cancelToken}) async =>
+      const ExternalCollection(
+        title: 'Song',
+        kind: CollectionKind.playlist,
+        sourceUrl: 'https://www.deezer.com/track/1',
+        tracks: [ExternalTrack(title: 'Song', artists: ['Band'], key: 'k')],
+      );
+}
+
+class _OneMatcher implements CollectionMatcher {
+  _OneMatcher(this.answer);
+  final TrackMatch answer;
+  int calls = 0;
+  @override
+  Stream<(int, TrackMatch)> match(List<ExternalTrack> tracks) {
+    calls++;
+    return Stream.value((0, answer));
+  }
+
+  @override
+  void cancel() {}
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 void main() {
   late Harness h;
   late FakeYoutube svc;
 
-  Future<void> open(WidgetTester tester, {int tracks = 2}) async {
+  Future<void> open(WidgetTester tester,
+      {int tracks = 2, List<Override> extra = const []}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -37,6 +92,7 @@ void main() {
       extraOverrides: [
         youtubeServiceProvider.overrideWithValue(svc),
         ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+        ...extra,
       ],
     );
     await _settle(tester);
@@ -233,6 +289,37 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  Future<(_SongCtrl, _OneMatcher)> pasteTrackLink(WidgetTester tester, TrackMatch answer) async {
+    final ctrl = _SongCtrl(), matcher = _OneMatcher(answer);
+    await open(tester, extra: [
+      playerControllerProvider.overrideWithValue(ctrl),
+      externalReaderProvider.overrideWith((ref, s) => _OneSongReader()),
+      collectionMatcherProvider.overrideWith((ref, page) => matcher),
+    ]);
+    await searchOnline(tester, 'https://www.deezer.com/track/1');
+    return (ctrl, matcher);
+  }
+
+  testWidgets('a track link plays its song once, even if the page rebuilds', (tester) async {
+    final (ctrl, matcher) = await pasteTrackLink(tester, TrackReady.online(ytmSong('y1', 'Song')));
+    await _settle(tester);
+    await tester.pump(const Duration(seconds: 1));
+    expect(ctrl.played, ['y1']);
+    expect(matcher.calls, 1);
+    expect(find.byType(OnlinePlaylistScreen), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a track link with no match opens a page with that one row', (tester) async {
+    final (ctrl, matcher) = await pasteTrackLink(tester, const TrackNotFound());
+    await _settle(tester);
+    expect(ctrl.played, isEmpty);
+    expect(find.byType(OnlinePlaylistScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey('notfound-0')), findsOneWidget);
+    expect(matcher.calls, 1);
+    await h.dispose(tester);
+  });
 }
 
 /// A block of the source filter (the rows carry the same words).

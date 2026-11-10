@@ -141,6 +141,18 @@ Future<void> playOnlineListAndOpen(
   ref.read(playerControllerProvider).playOnlineList(list, listKey: listKey),
 );
 
+/// Play of a list of library and online songs (a link page): opens the player in loading.
+Future<void> playMixedAndOpen(
+  BuildContext context,
+  WidgetRef ref,
+  List<MixItem> items, {
+  required PlayContext playContext,
+  Object? listKey,
+}) => _playAndOpen(
+  context,
+  ref.read(playerControllerProvider).playMixed(items, context: playContext, listKey: listKey),
+);
+
 Future<void> _playAndOpen(BuildContext context, Future<void> playing) {
   if (context.mounted && !_playerOnTop(context)) {
     unawaited(_openPlayer(context));

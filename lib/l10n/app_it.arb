@@ -4372,5 +4372,20 @@
   "downloadedNoPlaylist": "Scaricati senza playlist",
   "downloadedNoPlaylistEmpty": "Tutti i brani scaricati stanno già in una playlist",
   "pauseOnZeroVolume": "Metti in pausa quando il volume è a zero",
-  "pauseOnZeroVolumeHelp": "Alzando di nuovo il volume la musica riparte da sola, solo se l'ha fermata questa funzione."
+  "pauseOnZeroVolumeHelp": "Alzando di nuovo il volume la musica riparte da sola, solo se l'ha fermata questa funzione.",
+  "extMatching": "in abbinamento",
+  "extFindByHand": "Cerca a mano",
+  "extNotFoundLabel": "non trovato, cerca a mano",
+  "extDownloadAll": "Scarica tutto",
+  "extNotPublic": "Questa playlist non è pubblica o non esiste",
+  "extUnreadable": "Non riesco a leggere questa playlist (la pagina è cambiata)",
+  "extExportifyFull": "Importa la playlist completa con Exportify",
+  "extTruncated": "Mostro i primi {count} brani.",
+  "@extTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

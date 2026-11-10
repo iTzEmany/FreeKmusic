@@ -3670,5 +3670,20 @@
   "downloadedNoPlaylist": "Heruntergeladen, ohne Playlist",
   "downloadedNoPlaylistEmpty": "Jeder heruntergeladene Titel ist schon in einer Playlist",
   "pauseOnZeroVolume": "Pausieren, wenn die Lautstärke auf null ist",
-  "pauseOnZeroVolumeHelp": "Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat."
+  "pauseOnZeroVolumeHelp": "Wird die Lautstärke wieder erhöht, läuft die Musik weiter, aber nur, wenn diese Funktion sie angehalten hat.",
+  "extMatching": "wird zugeordnet",
+  "extFindByHand": "Von Hand suchen",
+  "extNotFoundLabel": "nicht gefunden, von Hand suchen",
+  "extDownloadAll": "Alle herunterladen",
+  "extNotPublic": "Diese Playlist ist nicht öffentlich oder existiert nicht",
+  "extUnreadable": "Ich kann diese Playlist nicht lesen (die Seite hat sich geändert)",
+  "extExportifyFull": "Komplette Playlist mit Exportify importieren",
+  "extTruncated": "Ich zeige die ersten {count} Titel.",
+  "@extTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

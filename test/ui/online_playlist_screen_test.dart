@@ -1,5 +1,16 @@
 import 'package:codecore/providers/online_collection_providers.dart';
+import 'dart:async';
+
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/smart_search_providers.dart';
+import 'package:codecore/providers/ui_providers.dart' show searchPrefillProvider;
+import 'package:codecore/services/online/collection_matcher.dart';
+import 'package:codecore/services/online/deezer_client.dart' show DeezerNetworkException;
+import 'package:codecore/services/online/external_collection.dart';
+import 'package:codecore/services/online/external_links.dart';
+import 'package:codecore/ui/screens/import/import_intro_sheet.dart';
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
@@ -49,6 +60,168 @@ PlaylistListing _listing({bool truncated = false}) => PlaylistListing(
       truncated: truncated,
       entries: [ytmSong('a', 'First song', seconds: 100), ytmSong('b', 'Second song', seconds: 200)],
     );
+
+
+class _MixCtrl extends _Ctrl {
+  final mixed = <List<String>>[];
+  final enqueued = <String>[];
+  @override
+  Future<void> playMixed(List<MixItem> items,
+      {int? index, PlayContext? context, bool? shuffle, Object? listKey}) async {
+    mixed.add([for (final i in items) i.online!.id]);
+  }
+
+  @override
+  Future<void> enqueueOnline(YtResult r) async => enqueued.add(r.id);
+}
+
+class _Matcher implements CollectionMatcher {
+  final out = StreamController<(int, TrackMatch)>();
+  @override
+  Stream<(int, TrackMatch)> match(List<ExternalTrack> tracks) => out.stream;
+  @override
+  void cancel() => out.close();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _Reader implements ExternalReader {
+  _Reader(this.collection, {this.error});
+  final ExternalCollection collection;
+  final Object? error;
+  @override
+  Future<ExternalCollection> read(ExternalLink link, {CancelToken? cancelToken}) async =>
+      error == null ? collection : throw error!;
+}
+
+ExternalCollection _ext({bool truncated = false, String url = 'https://www.deezer.com/playlist/1'}) =>
+    ExternalCollection(
+      title: 'Mix',
+      kind: CollectionKind.playlist,
+      sourceUrl: url,
+      truncated: truncated,
+      tracks: [
+        for (final n in ['One', 'Two', 'Three']) ExternalTrack(title: n, artists: ['Band'], key: n),
+      ],
+    );
+
+void externalTests() {
+  const link = ExternalLink(ExternalService.deezer, ExternalLinkKind.playlist, '1');
+  late _MixCtrl ctrl;
+  late _Matcher matcher;
+  late Harness h;
+
+  Future<void> turn(WidgetTester tester) async {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  Future<void> showExt(WidgetTester tester, ExternalCollection c, {Object? error}) async {
+    tester.view.physicalSize = const Size(500, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    ctrl = _MixCtrl();
+    matcher = _Matcher();
+    h = await Harness.create(tester);
+    await h.pump(tester, const OnlinePlaylistScreen(OnlineCollectionRef.external(link)),
+        extraOverrides: [
+          externalReaderProvider.overrideWith((ref, s) => _Reader(c, error: error)),
+          collectionMatcherProvider.overrideWith((ref, page) => matcher),
+          playerControllerProvider.overrideWithValue(ctrl),
+        ]);
+    await turn(tester);
+  }
+
+  // Pending rows spin forever: pumpAndSettle would never return.
+  Future<void> settle(WidgetTester tester) async {
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  Future<void> emit(WidgetTester tester, int i, TrackMatch m) async {
+    matcher.out.add((i, m));
+    await turn(tester);
+  }
+
+  ProviderContainer container(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(OnlinePlaylistScreen)));
+
+  testWidgets('the page is there before matching ends, rows pending, Play off', (tester) async {
+    await showExt(tester, _ext());
+    expect(find.text('Mix'), findsWidgets);
+    expect(find.byKey(const ValueKey('pending-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-2')), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('playlist-play'))).onPressed, isNull);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a matched row becomes playable, an unmatched one offers «Cerca a mano»', (tester) async {
+    await showExt(tester, _ext());
+    await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
+    await emit(tester, 1, const TrackNotFound());
+    expect(find.text('One found'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-0')), findsNothing);
+    expect(find.byKey(const ValueKey('pending-2')), findsOneWidget);
+    expect(find.text('Cerca a mano'), findsOneWidget);
+    await tester.tap(find.text('Cerca a mano'));
+    await tester.pump();
+    expect(container(tester).read(searchPrefillProvider), 'Two Band');
+    await h.dispose(tester);
+  });
+
+  testWidgets('Play before the end plays the ready rows; later ones join the queue', (tester) async {
+    await showExt(tester, _ext());
+    await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
+    await tester.tap(find.byKey(const ValueKey('playlist-play')));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(ctrl.mixed, [
+      ['y0']
+    ]);
+    h.handler.setPlayContext(PlayContextKind.playlist.index, 'Mix');
+    await emit(tester, 2, TrackReady.online(ytmSong('y2', 'Three found')));
+    expect(ctrl.enqueued, ['y2']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Scarica tutto» downloads only the ready rows', (tester) async {
+    await showExt(tester, _ext());
+    await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
+    await emit(tester, 1, const TrackNotFound());
+    await tester.tap(find.byKey(const ValueKey('playlist-more')));
+    await settle(tester);
+    await tester.tap(find.text('Scarica tutto'));
+    await settle(tester);
+    expect([for (final d in container(tester).read(downloadsProvider)) d.result.id], ['y0']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a Spotify list cut short offers the full import with Exportify', (tester) async {
+    await showExt(tester, _ext(truncated: true, url: 'https://open.spotify.com/playlist/abc'));
+    expect(find.text('Mostro i primi 3 brani.'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('playlist-exportify')));
+    await tester.tap(find.byKey(const ValueKey('playlist-exportify')));
+    await settle(tester);
+    expect(find.byType(ImportIntroSheet), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a private or missing page says so, with no «Riprova»', (tester) async {
+    await showExt(tester, _ext(), error: const CollectionNotFound());
+    expect(find.text('Questa playlist non è pubblica o non esiste'), findsOneWidget);
+    expect(find.byKey(const ValueKey('error-retry')), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('no network offers «Riprova»; an unreadable page offers Exportify', (tester) async {
+    await showExt(tester, _ext(), error: const DeezerNetworkException('u'));
+    expect(find.byKey(const ValueKey('error-retry')), findsOneWidget);
+    await h.dispose(tester);
+    await showExt(tester, _ext(), error: const CollectionUnreadable());
+    expect(find.byKey(const ValueKey('error-search')), findsOneWidget);
+    await h.dispose(tester);
+  });
+}
 
 void main() {
   late _Ctrl ctrl;
@@ -131,4 +304,6 @@ void main() {
     expect(find.text('Mostro i primi 2 video.'), findsOneWidget);
     await h.dispose(tester);
   });
+
+  externalTests();
 }
