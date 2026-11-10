@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Tabella dei tempi dello streaming veloce dalle righe `stream timing` di freekmusic.log.
+"""Tabella dei tempi dello streaming veloce dalle righe `stream timing` di codecore.log.
 
-    scripts/stream_times.py --log ~/.local/share/<app>/freekmusic.log
+    scripts/stream_times.py --log ~/.local/share/<app>/codecore.log
     scripts/stream_times.py --adb <serial> [--last 10]
     scripts/stream_times.py --self-test
 """
@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 # getApplicationSupportDirectory() on Android; AppLog writes `<iso8601> <message>` per line.
-REMOTE_LOG = 'files/freekmusic.log'
+REMOTE_LOG = 'files/codecore.log'
 PKG = 'com.freekmusic.player'
 PREP = ('spawn', 'downloaded', 'post', 'cached')
 KV = re.compile(r'(\w+)=(\S+)')
