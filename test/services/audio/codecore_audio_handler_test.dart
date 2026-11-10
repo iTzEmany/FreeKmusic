@@ -114,6 +114,43 @@ void main() {
     expect(handler.userAhead, 1);
   });
 
+  test('jumping into the block plays the touched entry, not the block head (D-494)', () async {
+    for (final n in ['d', 'e', 'f']) {
+      await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$n.mp3',
+            title: n,
+            albumKey: 'k',
+            format: 'mp3',
+            sizeBytes: 1,
+            mtimeMs: 1,
+            addedAt: 1,
+            durationMs: const Value(100000),
+          ));
+    }
+    final all = (await db.select(db.tracks).get()).map((t) => t.id).toList();
+    await handler.playQueue(all.sublist(0, 3), 0);
+    await settle();
+    handler.addToQueue(all[3]);
+    handler.addToQueue(all[4]);
+    handler.addToQueue(all[5]);
+    expect(handler.queueIds, [all[0], all[3], all[4], all[5], all[1], all[2]]);
+    var changes = 0;
+    final sub = handler.queueChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    await handler.skipToQueueItem(2); // the middle one of the block
+    expect(changes, greaterThan(0), reason: 'the block moved: lists reread the order');
+    await settle();
+    expect(handler.currentTrack!.title, 'e');
+    expect(backend.loaded.last, '/m/e.mp3');
+    expect(handler.queueIds, [all[0], all[4], all[3], all[5], all[1], all[2]]);
+    expect(handler.userAhead, 2);
+    // Past the block: the touched entry plays and the block follows it.
+    await handler.skipToQueueItem(4);
+    await settle();
+    expect(handler.currentTrack!.title, 'b');
+    expect(handler.queueIds.sublist(handler.currentIndex + 1, handler.currentIndex + 3), [all[3], all[5]]);
+  });
+
   test('a radio station empties the block (D-496)', () async {
     final h = CodecoreAudioHandler(backend, PlayQueue(), repo,
         onError: errors.add, online: OnlineEntries());

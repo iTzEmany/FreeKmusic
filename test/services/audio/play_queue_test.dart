@@ -277,6 +277,24 @@ void main() {
       expect(q.userAhead, 1);
     });
 
+    test('jumpTo plays the touched entry wherever it sits, block or after', () {
+      PlayQueue fresh() => make([1, 2, 3, 4])
+        ..enqueue(7)
+        ..enqueue(8)
+        ..enqueue(9);
+      // Queue [1, 7, 8, 9, 2, 3, 4]: block 7 8 9.
+      for (final i in [1, 2, 3, 4, 5, 6]) {
+        final q = fresh();
+        final want = q.items[i];
+        q.jumpTo(i);
+        expect(q.currentId, want, reason: 'jumpTo($i)');
+        expect(q.invariantError, isNull);
+      }
+      final q = fresh()..jumpTo(5); // 3, past the block
+      expect(q.items.sublist(q.currentIndex + 1, q.currentIndex + 4), [7, 8, 9]);
+      expect(q.userAhead, 3);
+    });
+
     test(
       'move: landing in the block joins it, outside it is normal (D-487)',
       () {
@@ -510,7 +528,12 @@ void main() {
                   expect(q.items[q.currentIndex + q.userAhead], id);
                 }
               case 6:
-                if (q.items.isNotEmpty) q.jumpTo(ops.nextInt(q.items.length));
+                if (q.items.isNotEmpty) {
+                  final at = ops.nextInt(q.items.length);
+                  final want = q.items[at];
+                  q.jumpTo(at);
+                  expect(q.currentId, want, reason: 'jumpTo($at) plays that entry');
+                }
               case 7:
                 q.previous();
               case 8:

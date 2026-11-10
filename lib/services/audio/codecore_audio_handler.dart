@@ -1623,6 +1623,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     } else {
       _queue.previous();
+      _queueController.add(null); // the block follows the new current entry
     }
     await _loadCurrent(play: true);
   }
@@ -1630,6 +1631,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToQueueItem(int index) async {
     _queue.jumpTo(index);
+    // The block moved behind the new current entry: lists must see the new order.
+    _queueController.add(null);
     await _loadCurrent(play: true);
   }
 
