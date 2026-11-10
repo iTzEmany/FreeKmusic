@@ -7,8 +7,8 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/user_activity_provider.dart';
 import '../theme/tokens.dart';
 
-/// Search field with a ✕ that is always there: with text it clears, empty and
-/// focused it hides the keyboard, empty and unfocused it is dimmed and inert.
+/// Search field with a ✕: with text it clears, empty and focused it hides the
+/// keyboard, empty and unfocused (without [onCloseEmpty]) there is no ✕.
 class CcSearchField extends ConsumerStatefulWidget {
   const CcSearchField({
     super.key,
@@ -119,7 +119,6 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final cc = context.cc;
     final controller = widget.controller;
     final focusNode = _node;
     final bare = widget.bare;
@@ -144,14 +143,16 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
             decoration: InputDecoration(
               hintText: widget.hint,
               prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: IconButton(
+              // Nothing to clear and nothing to close: no ✕ at all.
+              suffixIcon: action == null
+                  ? null
+                  : IconButton(
                 tooltip: !hasText && widget.onCloseEmpty != null
                     ? l.closeSearch
                     : !hasText && focused
                     ? l.closeKeyboard
                     : l.clearSearch,
                 icon: const Icon(Icons.close_rounded),
-                disabledColor: cc.textFaint,
                 onPressed: action,
               ),
               filled: bare ? false : null,

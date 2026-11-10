@@ -1419,7 +1419,7 @@
   "settingsRecordHistory": "Guardar el historial de escucha",
   "settingsRecordHistoryHint": "Se queda en el dispositivo. Si se apaga, no se añade nada más a la lista.",
   "statsTitle": "Estadísticas",
-  "statsSubtitle": "Cuánto y qué escuchas",
+  "statsSubtitle": "Reproducciones, artistas y días más escuchados",
   "statsMonth": "Mes",
   "statsYear": "Año",
   "statsPrevious": "Periodo anterior",

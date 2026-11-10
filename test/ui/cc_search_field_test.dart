@@ -83,20 +83,15 @@ void main() {
     await t.tap(find.byTooltip('Chiudi tastiera'));
     await t.pump();
     expect(f.hasFocus, isFalse);
-    expect(find.byTooltip('Cancella ricerca'), findsOneWidget);
+    expect(find.byTooltip('Cancella ricerca'), findsNothing);
   });
 
-  testWidgets('empty and unfocused the ✕ is inert and 48 dp', (t) async {
-    final (_, f) = await _pump(t);
-    f.requestFocus();
+  testWidgets('empty and unfocused there is no ✕; typing shows it', (t) async {
+    final (c, _) = await _pump(t);
+    expect(find.byTooltip('Cancella ricerca'), findsNothing);
+    c.text = 'a';
     await t.pump();
-    expect(find.byTooltip('Chiudi tastiera'), findsOneWidget);
-    f.unfocus();
-    await t.pump();
-    final x = find.byTooltip('Cancella ricerca');
-    final btn = find.ancestor(of: x, matching: find.byType(IconButton));
-    expect(t.widget<IconButton>(btn).onPressed, isNull);
-    expect(t.getSize(btn).height, greaterThanOrEqualTo(48));
+    expect(find.byTooltip('Cancella ricerca'), findsOneWidget);
   });
 
   testWidgets('without a focusNode it owns one; onChanged and autofocus work', (

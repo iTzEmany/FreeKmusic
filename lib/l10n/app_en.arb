@@ -1419,7 +1419,7 @@
   "settingsRecordHistory": "Keep a listening history",
   "settingsRecordHistoryHint": "It stays on the device. When off, nothing more is added to the list.",
   "statsTitle": "Statistics",
-  "statsSubtitle": "How much and what you listen to",
+  "statsSubtitle": "Listens, artists and most-played days",
   "statsMonth": "Month",
   "statsYear": "Year",
   "statsPrevious": "Previous period",

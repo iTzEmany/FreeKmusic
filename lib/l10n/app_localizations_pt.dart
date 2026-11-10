@@ -2866,7 +2866,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get statsTitle => 'Estatísticas';
 
   @override
-  String get statsSubtitle => 'Quanto e o que ouve';
+  String get statsSubtitle => 'Reproduções, artistas e dias mais ouvidos';
 
   @override
   String get statsMonth => 'Mês';

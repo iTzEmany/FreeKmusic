@@ -69,3 +69,9 @@
 - **`latestIs(x)` in `watch_with_countries_test.dart` ritorna subito se l'ultimo valore è già `x`**: dopo una scrittura che deve dare lo stesso risultato, aspetta davvero la riesecuzione (contatore dello `_Spy` o un'attesa oltre i 300 ms).
 
 - **I test che fanno `implements PlayerController` con `noSuchMethod` rispondono `null` anche ai campi nuovi**: un `ValueNotifier` aggiunto al controller (es. `similarTitle`) rompe a sorpresa i test UI che aprono il foglio della coda (CI rossa in #135, `seek_characterization_test`). Aggiungi il campo agli spy.
+
+## Selettore di file di Android (DocumentsUI) sul Mi A3 via adb (2026-11-10)
+I tocchi (`input tap`, `telefono.py tocca`) non arrivano al selettore di file del sistema. Si seleziona il primo file con `adb shell input keyevent TAB TAB ENTER`: copiare prima il file in modo che sia il primo della lista. Un `am start -a SEND` con `file://` o `content://` dà `SecurityException` in `IncomingBridge` (il permesso concesso da `am` non basta): non è un bug dell'app.
+
+## `MarqueeText` e `pumpAndSettle` (2026-11-10)
+Un titolo lungo scorre in un ciclo infinito: un test che parte con un brano dal titolo lungo in riproduzione (mini player visibile) va in timeout con `pumpAndSettle`. Usare `pump(durata)`; a player vuoto il titolo è fermo.

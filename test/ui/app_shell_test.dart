@@ -770,15 +770,14 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('✕ is always there, inert while empty and unfocused', (t) async {
+  testWidgets('no ✕ while empty and unfocused, it appears with text', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
     await h.pump(t, const AppShell());
     await t.tap(_bar('Cerca'));
     await _settle(t);
     final x = find.byTooltip('Cancella ricerca');
-    final btn = find.ancestor(of: x, matching: find.byType(IconButton));
-    expect(t.widget<IconButton>(btn).onPressed, isNull);
+    expect(x, findsNothing);
     await t.enterText(_dockField(), 'Song');
     await t.pump();
     await t.tap(x);

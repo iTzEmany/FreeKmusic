@@ -1466,7 +1466,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 110.3 Sorgente nuova in «Tutti i brani» e voce in Libreria
 - [x] 110.4 Ricerca nel dettaglio playlist
 - [x] 110.5 Playlist intelligente e ricerca senza accenti
-- [ ] 110.6 Controlli di fase
+- [x] 110.6 Controlli di fase
 
 ## Fase 111 — Pausa a volume zero (`fase-111-pausa-volume-zero.md`)
 - [ ] 111.1 Impostazione

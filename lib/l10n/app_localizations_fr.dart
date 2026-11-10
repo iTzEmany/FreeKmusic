@@ -2889,7 +2889,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get statsTitle => 'Statistiques';
 
   @override
-  String get statsSubtitle => 'Combien et quoi vous écoutez';
+  String get statsSubtitle => 'Écoutes, artistes et jours les plus écoutés';
 
   @override
   String get statsMonth => 'Mois';

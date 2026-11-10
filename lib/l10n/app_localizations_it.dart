@@ -2860,7 +2860,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get statsTitle => 'Statistiche';
 
   @override
-  String get statsSubtitle => 'Quanto e cosa ascolti';
+  String get statsSubtitle => 'Ascolti, artisti e giorni più ascoltati';
 
   @override
   String get statsMonth => 'Mese';

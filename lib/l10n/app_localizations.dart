@@ -4723,7 +4723,7 @@ abstract class AppLocalizations {
   /// No description provided for @statsSubtitle.
   ///
   /// In it, this message translates to:
-  /// **'Quanto e cosa ascolti'**
+  /// **'Ascolti, artisti e giorni più ascoltati'**
   String get statsSubtitle;
 
   /// No description provided for @statsMonth.
