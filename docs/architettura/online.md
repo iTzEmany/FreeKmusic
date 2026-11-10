@@ -91,6 +91,14 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 `RadioBrowserClient.standard()` + `RadioCatalog` per il catalogo, `RadioRepository` per le stazioni salvate, `near_you` per le vicine, `icy_title` per il titolo in onda, `saved_refresh` per aggiornare le salvate. La pulizia cache non tocca le stazioni salvate.
 
+### Podcast
+
+`lib/services/podcast/`: `feed_fetcher` (Dio a flusso, max 20 MB, solo http/https), `podcast_service` (`refreshIfStale` a 6 ore), `episode_downloader`, `apple_podcasts` (ricerca iTunes), `ytm_podcast_sync`, `rss_parser`, `podcast_cleanup`.
+
+- La rete parte solo da un'azione dell'utente (iscriversi, «Aggiorna», aprire una pagina con ultimo controllo oltre 6 ore, «Scarica»), mai all'avvio.
+- Gli episodi scaricati stanno in `<appSupportDir>/podcasts/<id>/`, fuori da `folders`: la scansione non li vede.
+- Il gestore audio non scrive sui podcast: chiama `onEpisodeHeard`, che `main.dart` collega a `PodcastRepository.markPlayedByTrack`.
+
 ## Invarianti da non rompere
 
 - Ogni chiamata YTM passa da `budgetedYtm`; un 429 deve far scattare il `SourceCooldown`.

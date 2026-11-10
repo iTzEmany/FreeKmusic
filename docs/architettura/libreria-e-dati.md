@@ -39,6 +39,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | 3 | `replayGainDb` |
 | 4-5 | tabelle import, `sourceKind`, `folderPath` |
 | 6 | `resumePositionMs` |
+| 7 | `plays`, `smartPlaylists`, `userTags`, `trackTags` |
 | 8 | `ignored` |
 | 9 | `kind` + podcast |
 | 10 | playlist `uuid`, `updatedAt` |
@@ -95,7 +96,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 
 - Sorgenti (`sourceKind`): exportify, tunemymusic, soundiiz, lastfm, csv, m3u, xspf. `PlaylistImportService`: `start`, `startFromResults`, `sync`, `pause`, `resume`, `cancel`, `retry`, `skip`, `download`, `startPlanned`.
 - `track_matcher` decide il collegamento (`decide`, `scoreCandidate`, `MatchThresholds`, `LibraryIndex`, `matchTitleKey`).
-- Stato dell'import in `playlist_imports`: 0 in corso, 1 in pausa, 2 finito, 3 annullato. Stato degli item: 0 da cercare, 1 in coda, 2 scaricato, 3 collegato, 4 da verificare, 8 pianificato.
+- Stato dell'import in `playlist_imports`: 0 in corso, 1 in pausa, 2 finito, 3 annullato. Stato degli item: 0 da cercare, 1 in coda, 2 scaricato, 3 collegato, 4 da verificare, 5 non trovato, 6 fallito, 7 saltato dall'utente, 8 pianificato, 9 tolto dalla fonte.
 - All'avvio gli import «in corso» diventano «in pausa» e gli item in coda tornano «da cercare».
 - «Scarica album» crea una playlist nascosta (`visiblePlaylistSql`). `DownloadIndex` (`downloads.json`) mappa `<source>:<id>` al percorso.
 
@@ -138,7 +139,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - `AppDataKind`: covers, database, imageMemory, jamCache, searchCache, catalogCache, suggestions, blurCopies, tagBackups, log, podcasts, radio.
 - `clearableKinds` = `imageMemory, jamCache, searchCache, catalogCache, suggestions, blurCopies, radio`. Copertine, DB e backup dei tag non si cancellano mai.
 - `CacheCleaner.clear()` salta la cache Jam se un Jam è attivo; le radio salvate restano.
-- `StreamCache`: cartella `<appSupportDir>/stream_cache`, LRU per mtime. Il costruttore ha 500 MB di default, ma l'impostazione `streamCacheMb` parte da 1024 (256-8192); margine libero 500 MB. `open()` toglie i `.part` e le cartelle `.dl-*`. Le pin proteggono brano corrente e successivo.
+- `StreamCache`: cartella `<appSupportDir>/stream_cache`, LRU per mtime. Il costruttore ha 500 MB di default, ma l'impostazione `streamCacheMb` parte da 1024 (256-8192); margine libero 500 MB. `open()` toglie i `.part` e le cartelle `.dl-*`. `setQueue` fissa le pin su `items.take(3)`: corrente e 2 successivi.
 - `clearStreamCache` = `cache.clear(keep)` + `tracks.deleteUnplayedStreamRows(keepKeys)`: le righe con ascolti restano.
 - Podcast: `podcast_cleanup.dart` (`autoDeleteDays`).
 - Cache e cartella stream non si scansionano e non finiscono nel backup.

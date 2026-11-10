@@ -53,12 +53,13 @@ Regole del blocco:
 
 - I1: le chiavi del blocco stanno in `_pos+1 .. _pos+userAhead`, nell'ordine di `_user`.
 - I2: il brano corrente non è mai nel blocco.
+- `insertAt` non entra mai nel blocco: un indice dentro il blocco finisce subito dopo. `move` verso l'interno o subito dopo il blocco ci entra, altrove ne esce. Lo shuffle rimescola solo il resto: `_settle` rimette il blocco subito dopo il corrente. `previous` e `jumpTo` lasciano il blocco subito dopo il nuovo corrente (D-493, D-494). La scheda coda titola «Prossimi in coda» e «Poi» (D-495).
 - `_settle` ripristina entrambe dopo ogni operazione; `invariantError` è controllato da un test a operazioni casuali.
-- `playQueue` mantiene il blocco (D-488); `playStations` lo azzera (D-496). Un brano del blocco già suonato diventa normale (D-492). `enqueue` aggiunge dopo il corrente (D-487).
+- `playQueue` mantiene il blocco (D-488); `playStations` lo azzera (D-496). Un brano del blocco già suonato diventa normale (D-492). `enqueue` inserisce in `_pos+1+userAhead`: dopo il corrente e dietro le aggiunte precedenti, in ordine di arrivo (D-487).
 
 ### Shuffle e ripetizione
 
-- `ShuffleMode {off, shuffle, plus}`; `cycleShuffle`, `cycleListShuffle` (D-534). `repeat` è un'impostazione.
+- `ShuffleMode {off, shuffle, plus}`; `cycleShuffle`, `cycleListShuffle` (D-534). `repeat` è `PlayQueue.repeat` (`PlayRepeat {off, all, one}`), salvato anche in `AppSettings.repeat`.
 - Shuffle+: `ShufflePlusController` inserisce brani secondo `insertion_plan`. Salta il blocco utente (`plusPlan(skip: userAhead)`).
 - `plus_allowed` dice quando Shuffle+ è bloccato: `ShufflePlusBlock {jam, shortList, noTool, metered, stopped, online, radio}`.
 - Skip = lasciare un brano prima degli ultimi 3 s (D-497).
@@ -78,7 +79,7 @@ Regole del blocco:
 
 ### Streaming
 
-- `StreamPreparer` (`setQueue`, `ready`, `start`, `restart`, `cachedFile`): scarica al massimo 2 file insieme, prefetch di corrente + 2 successivi (3 su rete a consumo), 1 nuovo tentativo.
+- `StreamPreparer` (`setQueue`, `ready`, `start`, `restart`, `cachedFile`): scarica al massimo 2 file insieme (`maxParallel`), prefetch di tutta la coda online che segue quando la rete non è a consumo, solo dei primi 3 su rete a consumo (`meteredAhead`), 1 nuovo tentativo. Il gestore gli passa fino a 30 righe di libreria (`_lookupAhead`).
 - Avvio rapido dall'URL (NewPipe su Android, riga yt-dlp altrove), il download in cache prosegue in parallelo, al replay si usa il file. Recupero da URL scaduto fino a 2 volte per brano (R-76), poi si aspetta il file.
 - `StreamPromoter.promote` sposta dalla cache alla cartella download; la riga ombra diventa kind 0.
 - In Jam non c'è streaming da URL: si aspetta il file in cache.

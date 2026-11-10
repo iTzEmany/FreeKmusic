@@ -134,7 +134,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Rotazione dei telefoni**: l'utente la tiene spenta; una prova che forza l'orizzontale legge e poi ripristina `accelerometer_rotation` e `user_rotation`.
 - **Pausa a volume zero in secondo piano**: il tasto volume su riprende solo entro circa 2 s (limite di Android).
 - **`IndexedStack` e `TickerMode`**: vedi `ui-e-design.md`.
-- **Da verificare per macOS**: `macos/Runner/Release.entitlements` contiene solo `com.apple.security.app-sandbox`, senza `com.apple.security.network.client`. Un pacchetto di rilascio sandboxed senza quell'entitlement non fa richieste di rete in uscita; controlla prima di distribuirlo.
+- **Entitlements macOS**: `macos/Runner/Release.entitlements` ha `app-sandbox`, `network.client`, `network.server` e `files.user-selected.read-write`. Un entitlement in meno e l'app sandboxed perde rete o accesso ai file.
 
 ## Decisioni chiave
 | ID | Significato |

@@ -26,7 +26,7 @@ Tutto ciò che parla con altri dispositivi o esce dal dispositivo: condivisione 
 | `share_notifier.dart` | `ShareNotifier`, `AndroidShareNotifier` | Servizio in primo piano e notifiche (canale `codecore/share`). |
 
 Stato e orchestrazione:
-- `lib/providers/share_hub.dart`: `ShareHubNotifier` possiede nodo, scoperta, abbinamenti, offerte; monta `/pair` e `/sync` come `secureRoutes` (righe 669 e seguenti). Tiene anche i conteggi `holdJam`/`releaseJam` del servizio in primo piano.
+- `lib/providers/share_hub.dart`: `ShareHubNotifier` possiede nodo, scoperta, abbinamenti, offerte; monta `/pair` e `/sync` come `secureRoutes` (il metodo `_secureRoutes` di `share_hub.dart`). Tiene anche i conteggi `holdJam`/`releaseJam` del servizio in primo piano.
 - `lib/providers/share_providers.dart`: `lanServerProvider`, `ShareController`, `TrustedDevicesNotifier`, `ownIdentityProvider`.
 - Dati: `lib/data/repositories/playlist_sync_repository.dart` (`PlaylistSyncRepository`: `export`, `local`, `resolver`, `apply`).
 - UI: `lib/ui/screens/share/` (`share_screen.dart`, `sync_flow.dart`, `sync_preview_dialog.dart`, `pairing_dialogs.dart`, `qr_scan_screen.dart`), `lib/ui/screens/devices/devices_sheet.dart`, `lib/ui/screens/settings/trusted_devices_tiles.dart`.
@@ -95,7 +95,7 @@ TLS autentica solo il server (un server Dart non prende un certificato client au
 5. Le righe ombra (brani in streaming, D-524) non entrano nell'export e in un `replace` restano in coda dopo i brani sincronizzati (D-537).
 
 ### Backup
-Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `user_data.json`, `codecore.sqlite` da `VACUUM INTO`, `covers/`, `downloads.json`, `dislikes.json`. Il ripristino completo non scrive subito: `stageFullRestore` estrae in `staging` e `main.dart` chiama `applyPendingRestore` prima di aprire il DB. L'unione (`mergeBackup`) è una transazione e non cancella nulla.
+Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `user_data.json`, `codecore.sqlite` da `VACUUM INTO`, `covers/`, `downloads.json`, `dislikes.json`. Il ripristino completo non scrive subito: `stageFullRestore` estrae in `<appSupport>/restore` (`restoreStagingDir`, `lib/core/paths.dart`) e `main.dart` chiama `applyPendingRestore` prima di aprire il DB. L'unione (`mergeBackup`) è una transazione e non cancella nulla.
 
 ### Jam
 - Un solo dispositivo suona; l'altro è telecomando. Stato autoritativo sull'host (`JamState.version`), comandi validati da `applyCommand`.

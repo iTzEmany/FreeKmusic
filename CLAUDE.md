@@ -27,7 +27,7 @@ flutter analyze
 flutter test
 flutter run -d linux            # sviluppo desktop (il più veloce)
 flutter build apk --debug       # Android
-flutter build linux / windows   # windows solo da una macchina Windows
+flutter build linux / windows   # windows solo da una macchina Windows (macOS: zip non firmato dalla CI)
 ```
 
 ## Lingua

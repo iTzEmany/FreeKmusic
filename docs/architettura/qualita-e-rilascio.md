@@ -145,12 +145,13 @@ Se un job della release fallisce, il tag esiste ma la release no. È successo co
 - `latestIs(x)` in `watch_with_countries_test.dart` ritorna subito se l'ultimo valore è già `x`: dopo una scrittura che deve dare lo stesso risultato, aspetta davvero la riesecuzione (contatore dello `_Spy` o attesa oltre i 300 ms).
 - Test instabili noti: `download_tagger_test`, `shuffle_plus_test`, `online_playback_test`, `smart_playlists_test`, `daylist_provider_test`, `seek_characterization`, `now_playing_loading`, `performance_backup`. Prima di dare la colpa al cambiamento, rilancia.
 - Su Windows sono instabili `stream_preparer_test` e i test di seek. `jam_gate_test` è rosso su Windows.
-- `pr-attendi.sh` legge le esecuzioni duplicate annullate come rosse: controlla "Analyze and test" con `gh pr checks`. Vuole i minuti senza unità (o con, secondo `.claude/obiettivo.md`); `sorveglia.sh` vuole l'unità (`5m`).
+- `pr-attendi.sh` legge le esecuzioni duplicate annullate come rosse: controlla "Analyze and test" con `gh pr checks`. Accetta i minuti come `15m` o `15`; `sorveglia.sh` vuole l'unità (`5m`).
 - `gradlew --stop` ferma anche le build degli altri.
 - Mai `dart format` su una cartella intera: riformatta file non toccati. Formatta i file che hai cambiato.
 - Un `FutureProvider` che fallisce può non riprovare come ti aspetti: vedi `../storico/gotchas.md`.
 - Il commento di `ci.yml` parla di quattro test d'integrazione, ma `integration.sh` ne lancia cinque.
-- `perf_device.py` avvia `com.freekmusic.player.perf/com.freekmusic.player.MainActivity`, mentre la classe Kotlin è `com.codecore.player.MainActivity` (namespace). Non verificato su un dispositivo: se l'avvio fallisce, parti da qui.
+- La classe dell'activity sta nel namespace `com.codecore.player`, mentre l'applicationId è `com.freekmusic.player*`: `perf_device.py` avvia `{PKG}/com.codecore.player.MainActivity`.
+- Scrivere uno scenario di `perf_device.py`: dipende dalla semantica del mini player (`mini()`, `setup_mini()`: se cambia il mini player vanno aggiornati); le liste non tornano in cima fra uno scenario e l'altro (`dev.top()` prima di un tap su una riga in alto); la lente di ricerca della Libreria resta aperta con la query, quindi ogni scenario parte da `to_library_top`.
 - Chiusura dei lavori in background: ferma le shell e i monitor che non servono più; per aspettare usa comandi che escono da soli.
 
 ## Decisioni chiave

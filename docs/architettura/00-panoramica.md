@@ -3,7 +3,7 @@
 ## Scopo
 
 FreeKmusic (ex Codecore) è un lettore musicale **standalone**: nessun backend, tutto sul dispositivo.
-Una sola codebase Flutter/Dart per Android, Windows, Linux (macOS e iOS sono solo build di prova in CI, `ci.yml`).
+Una sola codebase Flutter/Dart per Android, Windows, Linux (macOS ha un job di release con zip non firmato, D-543; iOS è solo una build di prova in CI, `ci.yml`).
 
 Questo documento dà la visione d'insieme. Le aree hanno un documento ciascuna:
 
@@ -14,6 +14,8 @@ Questo documento dà la visione d'insieme. Le aree hanno un documento ciascuna:
 | YouTube Music, link, Shazam, arricchimento, testi, uscite, radio | `online.md` |
 | Piattaforme e build | `piattaforme.md` |
 | Sync, backup tra dispositivi, Jam | `sync-backup-jam.md` |
+| Temi, schermate, widget, accessibilità | `ui-e-design.md` |
+| Test, guardie, CI, prove su dispositivo, rilascio | `qualita-e-rilascio.md` |
 
 Il codice vince sempre sui documenti. Le regole di lavoro sono in `../01-regole-di-lavoro.md`, le decisioni in `../decisioni.md`.
 
@@ -119,7 +121,7 @@ Aggiungere una funzione, dall'alto al basso:
 7. **Stringhe**: `python3 scripts/arb_add.py` (6 lingue), poi `flutter gen-l10n`. `test/l10n/arb_test.dart` esige ogni chiave in tutte le lingue; fr e pt vogliono l'apostrofo tipografico `’`; le stringhe uguali all'italiano vanno in `_sameAsItalian`.
 8. **Impostazione**: campo in `AppSettings` + chiave in `SettingsStore`. Se è legata al dispositivo, aggiungerla a `kDeviceBoundKeys` del backup.
 9. **Test mirati**: un test per comportamento, vicino al codice (`test/<stessa area>`). La suite completa la esegue la CI.
-10. **Guardie**: `scripts/guardie.sh` (pre-push) lancia `arb_test`, `no_separator_literals_test`, `architecture_test`, `no_stray_colors_test` (+ goldens se cambia `lib/ui`).
+10. **Guardie**: `scripts/guardie.sh` (pre-push) lancia `arb_test`, `no_separator_literals_test`, `architecture_test`, `no_stray_colors_test`, lo script `check_perf_labels.py` (+ goldens se cambia `lib/ui`).
 11. **Documentazione**: aggiornare il documento d'area, il file della fase in `../fasi/` e, se serve, le «Trappole» del documento.
 
 Comandi: `flutter pub get`, `flutter analyze` (pulito), `flutter test <file>`, `flutter run -d linux`.

@@ -113,7 +113,7 @@ Ogni testo visibile viene da un ARB (`context.l10n.<chiave>`). Italiano è il mo
 - **La UI non parla con il database.** Solo provider e Ops. Le letture restano live (`StreamProvider`), le scritture passano da un Ops.
 - **Nessun colore, `fontSize` o `BorderRadius` letterale** fuori dal tema: `context.cc`, `CcDims`, `buildTextTheme`.
 - **Una sola scala di movimento**, sempre con `ccDuration`. Eccezione dichiarata: la dissolvenza fra pagine (`CcPageTransitionsBuilder`); il player sale dal basso.
-- **Un solo `showModalBottomSheet`** (in `cc_sheet.dart`, più `car_playlists_sheet.dart`), **un solo `AppBar(`** (`CcAppBar`, con le varianti `SliverAppBar` e `SelectableAppBar`), **nessun `PopupMenuButton`**.
+- **Un solo `showModalBottomSheet`** (in `cc_sheet.dart`; `car_playlists_sheet.dart` è solo esentato da `widgets_test`), **un solo `AppBar(`** (`CcAppBar`, con le varianti `SliverAppBar` e `SelectableAppBar`), **nessun `PopupMenuButton`**.
 - **Avvisi sempre da `showMsg`/`showMsgOn`.** Oggi ci sono due eccezioni che costruiscono un `SnackBar` da sé: `lib/ui/widgets/shuffle_button.dart` (spiegazione una tantum del Shuffle+, con `CcSnackContent`) e i tre avvisi globali di `lib/app.dart` (messenger di radice). Non aggiungerne altre.
 - **Ogni scheda della shell sta in `TickerMode(enabled: i == index)`.** Nessuna animazione continua deve girare fuori schermo.
 - **Ogni stringa visibile in tutti e sei gli ARB**, senza separatori nei letterali.
