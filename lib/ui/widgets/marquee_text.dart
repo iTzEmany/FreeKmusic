@@ -10,11 +10,14 @@ class MarqueeText extends StatelessWidget {
 
   static const _pause = 2.0; // seconds, at the start and at the end
   static const _speed = 30.0; // dp/s
+  static const _fade = 16.0; // dp, on the edge that hides text
   static const _back = 1.0; // seconds to return to the start
 
   @override
   Widget build(BuildContext context) {
-    final effective = DefaultTextStyle.of(context).style.merge(style);
+    var effective = DefaultTextStyle.of(context).style.merge(style);
+    // Text does the same, so the measure matches what is drawn.
+    if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
     final scaler = MediaQuery.textScalerOf(context);
     final plain = Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
     return Semantics(
@@ -33,13 +36,16 @@ class MarqueeText extends StatelessWidget {
             painter.dispose();
             if (overflow <= 0 || MediaQuery.disableAnimationsOf(context)) return plain;
             return IgnorePointer(
-              child: ClipRect(
-                child: SizedBox(
-                  height: h,
-                  child: _Scroller(
-                    key: ValueKey((text, overflow)),
-                    distance: overflow,
-                    child: Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.visible, style: style),
+              child: RepaintBoundary(
+                child: ClipRect(
+                  child: SizedBox(
+                    height: h,
+                    child: _Scroller(
+                      key: ValueKey((text, overflow)),
+                      // The extra fade width lets the last letter clear the fade.
+                      distance: overflow + MarqueeText._fade,
+                      child: Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.visible, style: style),
+                    ),
                   ),
                 ),
               ),
@@ -92,9 +98,22 @@ class _ScrollerState extends State<_Scroller> with SingleTickerProviderStateMixi
           alignment: AlignmentDirectional.centerStart,
           child: widget.child,
         ),
-        builder: (_, child) => Transform.translate(
-          offset: Offset(-_offset(_c.value * _total), 0),
-          child: child,
-        ),
+        builder: (context, child) {
+          final o = _offset(_c.value * _total);
+          final left = o.clamp(0.0, MarqueeText._fade);
+          final right = (widget.distance - o).clamp(0.0, MarqueeText._fade);
+          return ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (r) {
+              // Only the alpha matters with dstIn.
+              final on = Theme.of(context).colorScheme.surface.withAlpha(255), off = on.withAlpha(0);
+              return LinearGradient(
+                colors: [left > 0 ? off : on, on, on, right > 0 ? off : on],
+                stops: [0, left / r.width, 1 - right / r.width, 1],
+              ).createShader(r);
+            },
+            child: Transform.translate(offset: Offset(-o, 0), child: child),
+          );
+        },
       );
 }

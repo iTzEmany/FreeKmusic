@@ -28,6 +28,8 @@ Widget _host({
       ),
     );
 
+double _textWidth(WidgetTester t) => t.getSize(find.byType(Text)).width;
+
 double _x(WidgetTester t) => t.getTopLeft(find.byType(Text)).dx;
 
 void main() {
@@ -60,11 +62,27 @@ void main() {
     h.dispose();
   });
 
-  testWidgets('a tap reaches the parent', (t) async {
-    var taps = 0;
-    await t.pumpWidget(_host(onTap: () => taps++));
-    await t.tap(find.byType(MarqueeText));
-    expect(taps, 1);
+  testWidgets('the scrolling title ignores pointers', (t) async {
+    await t.pumpWidget(_host());
+    expect(find.descendant(of: find.byType(MarqueeText), matching: find.byType(IgnorePointer)), findsWidgets);
+  });
+
+  testWidgets('timings: travel after 2 s, hold 2 s, back in 1 s, repeat', (t) async {
+    await t.pumpWidget(_host());
+    await t.pump(); // the ticker's clock starts on the first frame
+    final x0 = _x(t);
+    final texts = _textWidth(t);
+    final d = texts - 100 + 16; // overflow + fade
+    await t.pump(Duration(milliseconds: (2000 + d / 30 * 1000).round()));
+    expect(x0 - _x(t), closeTo(d, 0.5));
+    await t.pump(const Duration(milliseconds: 1900));
+    expect(x0 - _x(t), closeTo(d, 0.5));
+    await t.pump(const Duration(milliseconds: 1100)); // 2 s hold over + 1 s back (+100 ms)
+    expect(_x(t), closeTo(x0, 0.5));
+    await t.pump(const Duration(milliseconds: 1900)); // next cycle: still in its initial pause
+    expect(_x(t), closeTo(x0, 0.5));
+    await t.pump(const Duration(seconds: 2));
+    expect(_x(t), lessThan(x0));
   });
 
   testWidgets('the animation stops when the screen is covered', (t) async {
