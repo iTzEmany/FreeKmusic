@@ -1780,7 +1780,7 @@
   "settingsRecordHistory": "Registra la cronologia di ascolto",
   "settingsRecordHistoryHint": "Resta sul dispositivo. Spenta, non si aggiunge nient’altro all’elenco.",
   "statsTitle": "Statistiche",
-  "statsSubtitle": "Quanto e cosa ascolti",
+  "statsSubtitle": "Ascolti, artisti e giorni più ascoltati",
   "statsMonth": "Mese",
   "statsYear": "Anno",
   "statsPrevious": "Periodo precedente",
@@ -4368,5 +4368,7 @@
   "chineseDictionaryDeleteFailed": "Impossibile eliminare il dizionario cinese",
   "editorDiscardBody": "Le modifiche non sono state salvate.",
   "queueUpNext": "Prossimi in coda",
-  "queueThen": "Poi"
+  "queueThen": "Poi",
+  "downloadedNoPlaylist": "Scaricati senza playlist",
+  "downloadedNoPlaylistEmpty": "Tutti i brani scaricati stanno già in una playlist"
 }

@@ -2855,7 +2855,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsTitle => 'Statistics';
 
   @override
-  String get statsSubtitle => 'How much and what you listen to';
+  String get statsSubtitle => 'Listens, artists and most-played days';
 
   @override
   String get statsMonth => 'Month';
@@ -7407,4 +7407,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queueThen => 'Then';
+
+  @override
+  String get downloadedNoPlaylist => 'Downloaded, not in a playlist';
+
+  @override
+  String get downloadedNoPlaylistEmpty =>
+      'Every downloaded track is already in a playlist';
 }

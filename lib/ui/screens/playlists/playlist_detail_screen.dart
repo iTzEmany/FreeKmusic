@@ -1,4 +1,6 @@
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/cc_search_field.dart';
+import '../../../core/text_utils.dart';
 import '../../widgets/cover_picker_sheet.dart';
 
 import 'package:flutter/material.dart';
@@ -48,6 +50,14 @@ class PlaylistDetailScreen extends ConsumerStatefulWidget {
 class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   late String _name = widget.playlist.name;
   bool _editing = false;
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   Future<void> _onAction(
     _PlaylistAction v,
@@ -221,6 +231,14 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
     final personal = order.sort == PlaylistSort.personal;
     final tracks = order.apply(stored);
+    final searching = _query.isNotEmpty;
+    final shown = filterByText(
+      tracks,
+      _query,
+      (t) => [t.title, t.artist, t.album],
+    );
+    // Rows of a search keep the place they have in the whole list.
+    int whole(Track t) => tracks.indexWhere((x) => x.id == t.id);
     final ops = ref.read(playlistOpsProvider);
     final summary = ref
         .watch(playlistsProvider)
@@ -238,7 +256,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final key = SelectionKey.playlistOf(id);
     final selection = RowSelection(
       listKey: key,
-      visibleIds: [for (final t in tracks) t.id],
+      visibleIds: [for (final t in shown) t.id],
     );
 
     Future<void> remove(Track t, int i) async {
@@ -263,7 +281,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               ShellNav.open<void>(context, AddTracksScreen(playlistId: id)),
         ),
       );
-    } else if (_editing && personal) {
+    } else if (shown.isEmpty) {
+      list = SliverToBoxAdapter(
+        child: EmptyState(icon: Icons.search_off_rounded, message: l.noResults),
+      );
+    } else if (_editing && personal && !searching) {
       list = SliverReorderableList(
         proxyDecorator: (child, _, anim) => ccDragProxy(context, child, anim),
         itemCount: tracks.length,
@@ -281,9 +303,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     } else {
       list = EntranceScope(
         child: SliverList.builder(
-          itemCount: tracks.length,
+          itemCount: shown.length,
           itemBuilder: (_, i) {
-            final t = tracks[i];
+            final t = shown[i];
             return SizedBox(
               height: extent,
               child: EnterOnce(
@@ -295,9 +317,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                   lead: TrackAction(
                     Icons.playlist_remove_rounded,
                     l.removeFromPlaylistAction,
-                    () => remove(t, i),
+                    () => remove(t, whole(t)),
                   ),
-                  onTap: () => ctrl.playFromList(tracks, i, context: playCtx),
+                  onTap: () =>
+                      ctrl.playFromList(tracks, whole(t), context: playCtx),
                 ),
               ),
             );
@@ -316,7 +339,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       child: CollectionScaffold(
         selectionBar: SelectionBarSlot(
           listKey: key,
-          tracks: tracks,
+          tracks: shown, // «select all» takes what the search shows
           bulk: BulkContext(playlistId: id),
         ),
         title: _name,
@@ -340,13 +363,32 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           onPressed: () async {
             final v = await showCcActionSheet<_PlaylistAction>(
               context: context,
-              groups: _menuGroups(custom != null, personal),
+              groups: _menuGroups(custom != null, personal && !searching),
             );
             if (v != null) _onAction(v, id, key, tracks);
           },
         ),
         slivers: [
           SliverToBoxAdapter(child: ImportBanner(playlistId: id)),
+          if (tracks.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  CcDims.gap4,
+                  CcDims.margin,
+                  CcDims.gap8,
+                ),
+                child: CcSearchField(
+                  controller: _search,
+                  hint: l.searchHint,
+                  onQuery: (v) => setState(() {
+                    _query = v;
+                    if (v.isNotEmpty) _editing = false; // «Fine modifica» hides while searching
+                  }),
+                ),
+              ),
+            ),
           list,
         ],
       ),

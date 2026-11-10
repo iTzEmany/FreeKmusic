@@ -2860,7 +2860,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get statsTitle => 'Statistiche';
 
   @override
-  String get statsSubtitle => 'Quanto e cosa ascolti';
+  String get statsSubtitle => 'Ascolti, artisti e giorni più ascoltati';
 
   @override
   String get statsMonth => 'Mese';
@@ -7426,4 +7426,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queueThen => 'Poi';
+
+  @override
+  String get downloadedNoPlaylist => 'Scaricati senza playlist';
+
+  @override
+  String get downloadedNoPlaylistEmpty =>
+      'Tutti i brani scaricati stanno già in una playlist';
 }

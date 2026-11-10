@@ -15,6 +15,7 @@ import '../../services/online/youtube_service.dart' show YtResult;
 import '../db/app_database.dart';
 import 'duplicate_repository.dart';
 import 'artist_info_repository.dart' show ArtistInfoRepository;
+import 'hidden_playlists.dart';
 import 'light_tracks.dart';
 import 'track_genre_repository.dart';
 import 'track_kinds.dart';
@@ -500,6 +501,47 @@ class TrackRepository {
       })
       ..orderBy(_orderFor(sort));
     return lightSelect(_db, q).watch();
+  }
+
+  Expression<bool> _downloadedNoPlaylist($TracksTable t, int folderId) =>
+      t.missing.equals(false) &
+      t.ignored.equals(false) &
+      t.kind.equals(kMusicKind) &
+      t.folderId.equals(folderId) &
+      // Only visible playlists count: «Scarica album» keeps its tracks in a
+      // hidden technical one.
+      notExistsQuery(
+        _db.select(_db.playlistTracks)..where(
+          (pt) =>
+              pt.trackId.equalsExp(t.id) &
+              existsQuery(
+                _db.select(_db.playlists)..where(
+                  (pl) => pl.id.equalsExp(pt.playlistId) & _db.isPlaylistVisible(pl),
+                ),
+              ),
+        ),
+      );
+
+  /// Music tracks of the download folder that sit in no normal playlist (D-485).
+  /// Favourites and smart playlists (rules only, no `playlist_tracks` rows) do
+  /// not count; shadow rows (`kind = 2`) and episodes (`kind = 1`) are out.
+  Stream<List<Track>> watchDownloadedWithoutPlaylist({
+    required int folderId,
+    SortOption sort = SortOption.defaultOrder,
+  }) {
+    final q = _db.select(_db.tracks)
+      ..where((t) => _downloadedNoPlaylist(t, folderId))
+      ..orderBy(_orderFor(sort));
+    return lightSelect(_db, q).watch();
+  }
+
+  /// How many tracks [watchDownloadedWithoutPlaylist] lists, without loading them.
+  Stream<int> watchDownloadedWithoutPlaylistCount({required int folderId}) {
+    final c = _db.tracks.id.count();
+    final q = _db.selectOnly(_db.tracks)
+      ..addColumns([c])
+      ..where(_downloadedNoPlaylist(_db.tracks, folderId));
+    return q.map((r) => r.read(c)!).watchSingle();
   }
 
   List<OrderingTerm Function($TracksTable)> _orderFor(SortOption sort) {

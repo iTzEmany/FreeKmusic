@@ -4723,7 +4723,7 @@ abstract class AppLocalizations {
   /// No description provided for @statsSubtitle.
   ///
   /// In it, this message translates to:
-  /// **'Quanto e cosa ascolti'**
+  /// **'Ascolti, artisti e giorni più ascoltati'**
   String get statsSubtitle;
 
   /// No description provided for @statsMonth.
@@ -11868,6 +11868,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Poi'**
   String get queueThen;
+
+  /// No description provided for @downloadedNoPlaylist.
+  ///
+  /// In it, this message translates to:
+  /// **'Scaricati senza playlist'**
+  String get downloadedNoPlaylist;
+
+  /// No description provided for @downloadedNoPlaylistEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutti i brani scaricati stanno già in una playlist'**
+  String get downloadedNoPlaylistEmpty;
 }
 
 class _AppLocalizationsDelegate

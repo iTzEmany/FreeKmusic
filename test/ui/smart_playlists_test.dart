@@ -13,6 +13,7 @@ import 'package:codecore/ui/screens/smart/smart_playlist_screen.dart';
 import 'package:codecore/ui/widgets/smart_cover.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -91,6 +92,48 @@ void main() {
       await _settle(tester);
       expect(h.handler.currentTrack?.title, 'Song 2');
       expect(h.handler.queueIds, hasLength(4));
+      await h.dispose(tester);
+    });
+
+    testWidgets('the search field filters the rows and a tap plays the whole list from there', (tester) async {
+      h = await Harness.create(tester, tracks: 4);
+      repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
+      final id = await make(tester, 'Tutti', 'artista:artist');
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await h.pump(tester, SmartPlaylistScreen(id: id));
+      await _settle(tester);
+      await tester.enterText(find.byType(TextField), 'SONG 2');
+      await tester.pump(const Duration(seconds: 1));
+      expect(_row('Song 1'), findsNothing);
+      await tester.tap(_row('Song 2'));
+      await _settle(tester);
+      expect(h.handler.currentTrack?.title, 'Song 2');
+      expect(h.handler.queueIds, hasLength(4));
+      await h.dispose(tester);
+    });
+
+    testWidgets('«select all» takes only the rows the search shows; no match says so', (tester) async {
+      h = await Harness.create(tester, tracks: 4);
+      repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
+      final id = await make(tester, 'Tutti', 'artista:artist');
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await h.pump(tester, SmartPlaylistScreen(id: id));
+      await _settle(tester);
+      await tester.enterText(find.byType(TextField), 'SONG 2');
+      await tester.pump(const Duration(seconds: 1));
+      await tester.longPress(_row('Song 2'));
+      await _settle(tester);
+      await tester.tap(find.byTooltip('Seleziona tutto'));
+      await _settle(tester);
+      expect(find.text('1 selezionato'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Nessun risultato'), findsOneWidget);
       await h.dispose(tester);
     });
 

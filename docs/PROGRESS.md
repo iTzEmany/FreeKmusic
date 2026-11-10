@@ -1461,12 +1461,12 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 109.4 Controlli di fase
 
 ## Fase 110 — Libreria e playlist (`fase-110-libreria-e-playlist.md`)
-- [ ] 110.1 «Statistiche» fuori dalla Libreria
-- [ ] 110.2 Stream «Scaricati senza playlist»
-- [ ] 110.3 Sorgente nuova in «Tutti i brani» e voce in Libreria
-- [ ] 110.4 Ricerca nel dettaglio playlist
-- [ ] 110.5 Playlist intelligente e ricerca senza accenti
-- [ ] 110.6 Controlli di fase
+- [x] 110.1 «Statistiche» fuori dalla Libreria
+- [x] 110.2 Stream «Scaricati senza playlist»
+- [x] 110.3 Sorgente nuova in «Tutti i brani» e voce in Libreria
+- [x] 110.4 Ricerca nel dettaglio playlist
+- [x] 110.5 Playlist intelligente e ricerca senza accenti
+- [x] 110.6 Controlli di fase
 
 ## Fase 111 — Pausa a volume zero (`fase-111-pausa-volume-zero.md`)
 - [ ] 111.1 Impostazione

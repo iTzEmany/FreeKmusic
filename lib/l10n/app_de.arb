@@ -1419,7 +1419,7 @@
   "settingsRecordHistory": "Hörverlauf speichern",
   "settingsRecordHistoryHint": "Bleibt auf dem Gerät. Wenn aus, wird nichts mehr hinzugefügt.",
   "statsTitle": "Statistiken",
-  "statsSubtitle": "Wie viel und was du hörst",
+  "statsSubtitle": "Wiedergaben, Künstler und meistgehörte Tage",
   "statsMonth": "Monat",
   "statsYear": "Jahr",
   "statsPrevious": "Voriger Zeitraum",
@@ -3666,5 +3666,7 @@
   "chineseDictionaryDeleteFailed": "Chinesisches Wörterbuch konnte nicht gelöscht werden",
   "editorDiscardBody": "Deine Änderungen wurden nicht gespeichert.",
   "queueUpNext": "Als Nächstes in der Warteschlange",
-  "queueThen": "Danach"
+  "queueThen": "Danach",
+  "downloadedNoPlaylist": "Heruntergeladen, ohne Playlist",
+  "downloadedNoPlaylistEmpty": "Jeder heruntergeladene Titel ist schon in einer Playlist"
 }

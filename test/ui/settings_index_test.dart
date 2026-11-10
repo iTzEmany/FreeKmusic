@@ -4,6 +4,7 @@ import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_providers.dart';
 import 'package:codecore/providers/theme_providers.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
+import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,6 +47,16 @@ void main() {
       findsNothing,
       reason: 'tiles live on the pages',
     );
+    await h.dispose(t);
+  });
+
+  testWidgets('the fixed Statistiche entry opens the stats screen', (t) async {
+    _size(t, 400, 1200);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    await t.tap(find.text('Statistiche'));
+    await t.pumpAndSettle();
+    expect(find.byType(StatsScreen), findsOneWidget);
     await h.dispose(t);
   });
 
@@ -177,7 +188,7 @@ void main() {
     final summary = find.textContaining('Un tema dal nome');
     expect(summary, findsOneWidget);
     expect(t.widget<Text>(summary).maxLines, 1);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(8));
+    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(9)); // 8 pages + Statistiche
     await h.dispose(t);
   });
 
@@ -193,6 +204,22 @@ void main() {
     expect(find.text('Crea backup'), findsOneWidget);
     expect(
       t.widget<ListTile>(find.widgetWithText(ListTile, 'Backup')).selected,
+      isTrue,
+    );
+    await h.dispose(t);
+  });
+
+  testWidgets('desktop: Statistiche opens in the right pane, not a route', (t) async {
+    _size(t, 1280, 800);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    await t.tap(find.text('Statistiche'));
+    await t.pumpAndSettle();
+    expect(find.byType(StatsScreen), findsOneWidget);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.byType(SettingsPageView), findsNothing);
+    expect(
+      t.widget<ListTile>(find.widgetWithText(ListTile, 'Statistiche')).selected,
       isTrue,
     );
     await h.dispose(t);

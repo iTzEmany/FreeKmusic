@@ -8,6 +8,7 @@ import '../../widgets/motion.dart';
 import 'settings_pages.dart';
 import 'settings_summaries.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../stats/stats_screen.dart';
 
 export 'settings_pages.dart' show SettingsPage, SettingsPageView, SettingsGroup, settingsPageTitle;
 
@@ -25,6 +26,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late SettingsPage _page = widget.initial ?? SettingsPage.appearance;
+  bool _stats = false; // wide: Statistiche in the right pane
 
   Widget _index(bool wide) {
     final l = context.l10n;
@@ -41,7 +43,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               for (final p in SettingsPage.values)
                 ListTile(
-                  selected: wide && p == _page,
+                  selected: wide && !_stats && p == _page,
                   selectedTileColor: cc.surface2,
                   selectedColor: cc.text,
                   title: Text(
@@ -49,7 +51,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: text.titleSmall?.copyWith(
-                      fontWeight: wide && p == _page ? FontWeight.w700 : null,
+                      fontWeight: wide && !_stats && p == _page ? FontWeight.w700 : null,
                     ),
                   ),
                   subtitle: Text(
@@ -60,7 +62,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   trailing: wide ? null : const Icon(Icons.chevron_right_rounded),
                   onTap: () => wide
-                      ? setState(() => _page = p)
+                      ? setState(() {
+                          _page = p;
+                          _stats = false;
+                        })
                       : ShellNav.open<void>(
                           context,
                           Scaffold(
@@ -69,6 +74,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                 ),
+              // Fixed entry, always there (D-484); opens the same screen as Home.
+              ListTile(
+                selected: wide && _stats,
+                selectedTileColor: cc.surface2,
+                selectedColor: cc.text,
+                title: Text(
+                  l.statsTitle,
+                  style: text.titleSmall?.copyWith(fontWeight: wide && _stats ? FontWeight.w700 : null),
+                ),
+                subtitle: Text(
+                  l.statsSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall?.copyWith(color: cc.textMuted),
+                ),
+                trailing: wide ? null : const Icon(Icons.chevron_right_rounded),
+                onTap: () => wide
+                    ? setState(() => _stats = true)
+                    : ShellNav.open<void>(context, const StatsScreen()),
+              ),
             ],
           ),
         ),
@@ -87,7 +112,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Align(
               alignment: Alignment.topLeft,
               child: TabFade(
-                child: SettingsPageView(_page, key: ValueKey(_page)),
+                child: _stats
+                    ? const StatsScreen(key: ValueKey('stats'))
+                    : SettingsPageView(_page, key: ValueKey(_page)),
               ),
             ),
           ),

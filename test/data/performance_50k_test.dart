@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/library_providers.dart' show searchTracks, trackSearchFields;
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,6 +70,25 @@ void main() {
       expect(count.read<int>('n'), _tracks);
       final q = LibraryQueries(db);
       final search = await _ms(() => repo.watchTracks(query: 'song 4999').first);
+      // D-500: the Library list search is a Dart filter, accents ignored, on the
+      // list already loaded (the load itself is `allTracks` below).
+      List<Track> find(List<Track> l, String q) => filterByText(l, q, trackSearchFields);
+      // Cold: the first key on a list that has just arrived, the whole path
+      // the user waits for (the isolate normalises, then the filter runs).
+      final fresh = await repo.watchTracks().first;
+      final accentCold = await _ms(() => searchTracks(fresh, 'SÓNG 4999'));
+      final accentWarm = await _ms(() async => find(fresh, 'SÓNG 4'));
+      // Downloaded without a playlist: every row in folder 1, a few thousand in
+      // a playlist.
+      await db.into(db.folders).insert(FoldersCompanion.insert(path: '/m', addedAt: 1));
+      await db.customStatement('UPDATE tracks SET folder_id = 1');
+      await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'P', createdAt: 1));
+      await db.customStatement(
+          'INSERT INTO playlist_tracks (playlist_id, track_id, position) '
+          'SELECT 1, id, id FROM tracks WHERE id % 10 < 3');
+      final noPlaylist = await _ms(() => repo.watchDownloadedWithoutPlaylist(folderId: 1).first);
+      final noPlaylistCount =
+          await _ms(() => repo.watchDownloadedWithoutPlaylistCount(folderId: 1).first);
       final albums = await _ms(() => q.watchAlbums().first);
       final artists = await _ms(() => q.watchArtists().first);
       final firstPage = await _ms(() => repo.watchTracks().first);
@@ -75,9 +96,12 @@ void main() {
       final lite = await _ms(() => repo.liteEntries());
       final genres = await _ms(() => q.watchGenres().first);
       // ignore: avoid_print
-      print('perf50k ms: search=$search albums=$albums artists=$artists '
+      print('perf50k ms: search=$search accentCold=$accentCold accentWarm=$accentWarm noPlaylist=$noPlaylist count=$noPlaylistCount albums=$albums artists=$artists '
           'allTracks=$firstPage byArtist=$sorted liteEntries=$lite genres=$genres');
       expect(search, lessThan(80 * margin), reason: 'text search');
+      expect(accentWarm, lessThan(80 * margin), reason: 'text search, accents ignored');
+      expect(accentCold, lessThan(400 * margin), reason: 'text search, first key, whole path');
+      expect(noPlaylistCount, lessThan(150 * margin), reason: 'downloaded without playlist, count');
       expect(albums, lessThan(150 * margin), reason: 'albums');
       expect(artists, lessThan(150 * margin), reason: 'artists');
       // The document asks 300 ms for the first page, but «Tutti i brani» loads
@@ -85,6 +109,7 @@ void main() {
       // so no index helps. Proposal in PROGRESS: page the list in a later phase.
       expect(firstPage, lessThan(1500 * margin), reason: 'all tracks (whole list)');
       expect(sorted, lessThan(1500 * margin), reason: 'all tracks sorted by artist');
+      expect(noPlaylist, lessThan(1500 * margin), reason: 'downloaded without playlist (whole list)');
       expect(lite, lessThan(400 * margin), reason: 'liteEntries (import)');
       expect(genres, lessThan(150 * margin), reason: 'genres');
     });
