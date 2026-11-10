@@ -7,6 +7,87 @@ PlayQueue make(List<int> ids, {int start = 0}) =>
     PlayQueue(random: Random(7))..setItems(ids, startIndex: start);
 
 void main() {
+  test('putBack after the current moved on keeps the entry upcoming', () {
+    final q = make([1, 2, 3, 4]);
+    q.removeAt(1);
+    q.next();
+    q.putBack(1, 2, user: false);
+    expect(q.items.sublist(q.currentIndex + 1), contains(2));
+    expect(q.invariantError, isNull);
+  });
+
+  test('putBack of a user entry: head of the block, end of the block, empty queue', () {
+    final q = make([1, 2, 3, 4])
+      ..enqueue(7)
+      ..enqueue(8);
+    q.removeAt(1);
+    q.next(); // the block is now empty
+    final cur = q.currentIndex;
+    q.putBack(0, 9, user: true); // index <= current: head of the block
+    expect(q.items[cur + 1], 9);
+    final ahead = q.userAhead;
+    q.putBack(99, 10, user: true); // past the block: end of the block
+    expect(q.userAhead, ahead + 1);
+    expect(q.items[cur + q.userAhead], 10);
+    expect(q.invariantError, isNull);
+    final e = make([]);
+    e.putBack(0, 5, user: true);
+    expect(e.items, [5]);
+    expect(e.invariantError, isNull);
+  });
+
+  test('putBack bumps revision and peekNext stays consistent (shuffle + repeat all)', () {
+    final q = make([1, 2, 3, 4, 5])
+      ..shuffle = true
+      ..repeat = PlayRepeat.all;
+    final id = q.items[q.currentIndex + 1];
+    q.removeAt(q.currentIndex + 1);
+    final rev = q.revision;
+    q.putBack(q.currentIndex + 1, id, user: false);
+    expect(q.revision, greaterThan(rev));
+    final announced = q.peekNext();
+    expect(q.peekNext(), announced);
+    expect(q.next(auto: true), announced);
+    expect(q.invariantError, isNull);
+  });
+
+  test('putBack deferred past interleaved ops: invariants hold, entry upcoming', () {
+    final ops = Random(77);
+    for (var seed = 0; seed < 200; seed++) {
+      final q = make(List.generate(2 + ops.nextInt(8), (i) => 100 + i));
+      q.shuffle = ops.nextBool();
+      var nextId = 500;
+      final pend = <(int, int, bool)>[];
+      for (var s = 0; s < 40; s++) {
+        switch (ops.nextInt(6)) {
+          case 0:
+            q.enqueue(nextId++);
+          case 1:
+            q.next();
+          case 2:
+            q.previous();
+          case 3:
+            q.repeat = PlayRepeat.values[ops.nextInt(3)];
+          case 4:
+            if (q.items.length > q.currentIndex + 1) {
+              final i = q.currentIndex + 1 + ops.nextInt(q.items.length - q.currentIndex - 1);
+              pend.add((i, q.items[i], i <= q.currentIndex + q.userAhead));
+              q.removeAt(i);
+            }
+          default:
+            if (pend.isNotEmpty) {
+              final (i, id, user) = pend.removeAt(ops.nextInt(pend.length));
+              final cur = q.currentId;
+              q.putBack(i, id, user: user);
+              expect(q.currentId, cur, reason: 'seed $seed step $s');
+              expect(q.items.sublist(q.currentIndex + 1), contains(id), reason: 'seed $seed step $s');
+            }
+        }
+        expect(q.invariantError, isNull, reason: 'seed $seed step $s');
+      }
+    }
+  });
+
   test('putBack returns a removed entry to its slot, in or out of the block', () {
     final q = make([1, 2, 3, 4])
       ..enqueue(7)
@@ -456,12 +537,16 @@ void main() {
               case 12:
                 q.insertAt(ops.nextInt(q.items.length + 2), nextId++);
               case 14:
-                if (q.items.length > 1) {
-                  final i = ops.nextInt(q.items.length);
-                  final user = i > q.currentIndex && i <= q.currentIndex + q.userAhead;
+                if (q.items.length > q.currentIndex + 1) {
+                  final i = q.currentIndex + 1 + ops.nextInt(q.items.length - q.currentIndex - 1);
+                  final user = i <= q.currentIndex + q.userAhead;
+                  final before = q.items;
+                  final ahead = q.userAhead;
                   final id = q.items[i];
-                  if (q.removeAt(i)) break;
+                  q.removeAt(i);
                   q.putBack(i, id, user: user);
+                  expect(q.items, before, reason: 'seed $seed step $step');
+                  expect(q.userAhead, ahead);
                 }
               case 13:
                 if (q.items.isNotEmpty) {

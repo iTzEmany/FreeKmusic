@@ -354,6 +354,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// A Jam or other remote transport owns playback.
   bool get hasRemote => _remote != null;
   List<int> get queueIds => _queue.items;
+  List<int> get queueKeys => _queue.keys;
   int get currentIndex => _queue.currentIndex;
   int get userAhead => _queue.userAhead;
   bool get currentFromUser => _queue.currentFromUser;

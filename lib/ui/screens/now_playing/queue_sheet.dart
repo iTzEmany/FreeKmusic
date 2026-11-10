@@ -60,17 +60,26 @@ class QueueSheet extends ConsumerStatefulWidget {
 }
 
 /// The part of the queue a list shows: the entries after the current one and
-/// a key per entry (the same track may sit twice, so id + occurrence).
+/// a key per entry (the same track may sit twice: the queue's own entry key).
 class _Upcoming {
   _Upcoming(this.first, this.tracks, this.keys, this.block);
 
-  factory _Upcoming.of(List<Track> queue, int at, int block) {
+  factory _Upcoming.of(
+    List<Track> queue,
+    int at,
+    int block,
+    List<int> entryKeys,
+  ) {
     final first = at >= 0 && at < queue.length ? at + 1 : 0;
     final tracks = queue.sublist(first);
+    // The list can lag the handler by a frame: then fall back to id + occurrence.
+    final stable = entryKeys.length == queue.length;
     final seen = <int, int>{};
     return _Upcoming(first, tracks, [
-      for (final t in tracks)
-        'q-${t.id}-${seen[t.id] = (seen[t.id] ?? -1) + 1}',
+      for (var i = 0; i < tracks.length; i++)
+        stable
+            ? 'q-${entryKeys[first + i]}'
+            : 'q-${tracks[i].id}-${seen[tracks[i].id] = (seen[tracks[i].id] ?? -1) + 1}',
     ], block);
   }
 
@@ -243,7 +252,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
     final at = handler.currentIndex;
     // Entries right after the current one added with «Aggiungi in coda».
     final current = at >= 0 && at < queue.length ? queue[at] : null;
-    final liveUp = _Upcoming.of(queue, at, handler.userAhead);
+    final liveUp = _Upcoming.of(queue, at, handler.userAhead, handler.queueKeys);
     final shown = _dragging && _dragSnapshot != null ? _dragSnapshot! : liveUp;
     final first = shown.first;
     final block = shown.block;
@@ -353,6 +362,7 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
                 ref.read(queueProvider).value ?? const <Track>[],
                 ref.read(audioHandlerProvider).currentIndex,
                 ref.read(audioHandlerProvider).userAhead,
+                ref.read(audioHandlerProvider).queueKeys,
               );
               final move = mapDrop(
                 key: snap.keys[from],

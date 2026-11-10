@@ -70,6 +70,9 @@ class PlayQueue {
   }
 
   List<int> get items => List.unmodifiable(_items);
+
+  /// One stable key per entry of [items] (the same track may sit twice).
+  List<int> get keys => List.unmodifiable(_keys);
   int get currentIndex => _pos;
   int? get currentId => _pos < 0 ? null : _items[_pos];
   bool get isEmpty => _items.isEmpty;
@@ -498,12 +501,17 @@ class PlayQueue {
     return n;
   }
 
-  /// Undo of a removal: puts [id] back at [index]. A [user] entry returns into
-  /// the block at its old slot; any other goes through [insertAt] (its old
-  /// index is always past the block).
+  /// Undo of the removal of an UPCOMING entry: puts [id] back at [index]. A
+  /// [user] entry returns into the block at its old slot; any other lands at
+  /// [index] past the block. If the current track moved on meanwhile, the
+  /// entry still goes after it, never among the played ones.
   void putBack(int index, int id, {required bool user}) {
-    if (!user || _items.isEmpty) {
+    if (_items.isEmpty) {
       insertAt(index, id);
+      return;
+    }
+    if (!user) {
+      insertAt(index.clamp(_pos + 1, _items.length), id);
       return;
     }
     _changed();

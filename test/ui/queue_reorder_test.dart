@@ -256,4 +256,81 @@ void main() {
     expect(find.text('La coda è vuota'), findsOneWidget);
     await h.dispose(tester);
   });
+
+  group('swipe away and «Annulla»', () {
+    Future<(Harness, List<int>, List<String>)> setup(WidgetTester tester, {int tracks = 6, int queue = 6}) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester, tracks: tracks);
+      final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+      final ids = [for (final t in rows) t.id];
+      final titles = [for (final t in rows) t.title];
+      await tester.runAsync(() => h.handler.playQueue(ids.take(queue).toList(), 0));
+      await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+      await _settle(tester);
+      return (h, ids, titles);
+    }
+
+    Future<void> swipe(WidgetTester tester, String title) async {
+      await tester.fling(find.text(title).first, const Offset(-300, 0), 1500);
+      await _settle(tester);
+      await _settle(tester);
+    }
+
+    Future<void> undo(WidgetTester tester) async {
+      tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
+      await _settle(tester);
+    }
+
+    testWidgets('undo of a normal row restores queue and block size', (tester) async {
+      final (h, _, titles) = await setup(tester);
+      final before = h.handler.queueIds;
+      await swipe(tester, titles[3]);
+      expect(h.handler.queueIds.length, before.length - 1);
+      await undo(tester);
+      expect(h.handler.queueIds, before);
+      expect(h.handler.userAhead, 0);
+      expect(tester.takeException(), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('undo of a block row puts it back in the block', (tester) async {
+      final (h, ids, titles) = await setup(tester, tracks: 6, queue: 4);
+      h.handler.addToQueue(ids[4]);
+      h.handler.addToQueue(ids[5]);
+      await _settle(tester);
+      expect(h.handler.userAhead, 2);
+      final before = h.handler.queueIds;
+      await swipe(tester, titles[4]);
+      expect(h.handler.userAhead, 1);
+      await undo(tester);
+      expect(h.handler.queueIds, before);
+      expect(h.handler.userAhead, 2);
+      expect(tester.takeException(), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('undo after the current track moved on keeps the entry upcoming', (tester) async {
+      final (h, ids, titles) = await setup(tester);
+      await swipe(tester, titles[1]);
+      await tester.runAsync(() => h.handler.skipToNext());
+      await _settle(tester);
+      await undo(tester);
+      expect(h.handler.queueIds.indexOf(ids[1]), greaterThan(h.handler.currentIndex));
+      expect(tester.takeException(), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('swiping one copy of a duplicated track leaves the other shown', (tester) async {
+      final (h, ids, titles) = await setup(tester, queue: 4);
+      h.handler.addToQueue(ids[2]);
+      await _settle(tester);
+      expect(find.text(titles[2]), findsNWidgets(2));
+      await swipe(tester, titles[2]);
+      expect(tester.takeException(), isNull);
+      expect(find.text(titles[2]), findsOneWidget);
+      await h.dispose(tester);
+    });
+  });
 }
