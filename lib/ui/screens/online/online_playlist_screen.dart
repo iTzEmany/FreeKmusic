@@ -124,7 +124,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
             label: l.extSaveToLibrary,
             value: 'playlist-menu-save',
             onTap: () async {
-              final name = await saveToLibrary(ref, c.title, matches);
+              final name = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
               if (mounted) showMsg(context, name == null ? l.extSaveNothing : l.extSavedAs(name));
             },
           ),

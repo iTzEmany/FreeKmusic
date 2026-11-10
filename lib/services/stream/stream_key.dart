@@ -60,5 +60,5 @@ YtResult streamResultOf(
 /// True for a well-formed `<source>:<id>` stream key (what [streamResultOf] needs).
 bool isStreamKey(String key) {
   final sep = key.indexOf(':');
-  return sep > 0 && sep < key.length - 1;
+  return sep > 0 && sep < key.length - 1 && MediaSource.values.any((m) => m.name == key.substring(0, sep));
 }

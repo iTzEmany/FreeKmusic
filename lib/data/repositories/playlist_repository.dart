@@ -333,12 +333,10 @@ class PlaylistRepository {
 
   /// True when a playlist is already called [name] (trimmed, any letter case).
   Future<bool> nameTaken(String name) async {
-    final taken = await _db.customSelect(
-      'SELECT 1 FROM playlists WHERE name = ? COLLATE NOCASE LIMIT 1',
-      variables: [Variable<String>(name.trim())],
-      readsFrom: {_db.playlists},
-    ).get();
-    return taken.isNotEmpty;
+    // Compared in Dart: SQLite's NOCASE folds only ASCII letters.
+    final want = name.trim().toLowerCase();
+    final all = await _db.visiblePlaylists(); // the technical «Scarica album» ones are never seen
+    return all.any((p) => p.name.trim().toLowerCase() == want);
   }
 
   Future<void> _renumber(int playlistId) async {

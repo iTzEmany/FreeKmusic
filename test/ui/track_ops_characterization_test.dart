@@ -115,6 +115,24 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('shadow rows (kind 2) in a playlist can be played, queued and removed, never tagged or favourited', (tester) async {
+      final h = await Harness.create(tester, tracks: 2);
+      final rows = await _all(tester, h);
+      final shadow = rows[0].copyWith(kind: 2);
+      final g = await _grab(tester, h);
+      List<String> labels(List<Track> p) => [
+            for (final x in bulkActions(g.context, g.ref, p, const BulkContext(playlistId: 1), done: () {}))
+              for (final a in x.actions) a.label
+          ];
+      final only = labels([shadow]);
+      expect(only, containsAll(['Riproduci', 'Aggiungi in coda', 'Rimuovi dalla playlist']));
+      expect(only, isNot(contains('Aggiungi ai preferiti')));
+      expect(only, isNot(contains('Aggiungi a playlist…')));
+      final mixed = labels([shadow, rows[1]]);
+      expect(mixed, containsAll(['Riproduci', 'Rimuovi dalla playlist']));
+      await h.dispose(tester);
+    });
+
     testWidgets('an episode (kind 1) can be picked but never offers «Elimina dal dispositivo»', (tester) async {
       final h = await Harness.create(tester, tracks: 2);
       final rows = await _all(tester, h);

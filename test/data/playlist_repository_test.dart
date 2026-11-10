@@ -208,6 +208,22 @@ void main() {
       expect((await repo.watchTracks(p).first).map((t) => t.id), ids);
     });
 
+    test('addAtTop refuses an episode', () async {
+      final p = await repo.create('Mix');
+      await db.customStatement('UPDATE tracks SET kind = 1 WHERE id = ${ids[0]}');
+      expect(await repo.addAtTop(p, ids[0]), isFalse);
+      expect(await repo.watchTracks(p).first, isEmpty);
+    });
+
+    test('nameTaken folds non-ASCII letters and ignores the hidden «Scarica album» playlist', () async {
+      await repo.create('Éclair');
+      expect(await repo.nameTaken(' éCLAIR '), isTrue);
+      final h = await repo.create('Hidden');
+      await db.into(db.playlistImports).insert(PlaylistImportsCompanion.insert(
+          playlistId: h, sourceKind: const Value('ytm-album'), sourceName: 'x', createdAt: 1));
+      expect(await repo.nameTaken('Hidden'), isFalse);
+    });
+
     test('nameTaken ignores case and spaces', () async {
       await repo.create('Mix');
       expect(await repo.nameTaken(' mix '), isTrue);

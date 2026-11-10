@@ -5,6 +5,7 @@ import 'package:codecore/data/repositories/radio_repository.dart';
 import 'package:codecore/services/radio/radio_station.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/audio/media_browse_tree.dart';
+import 'package:codecore/services/online/youtube_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,6 +60,17 @@ void main() {
     expect(items.map((i) => i.title), ['T2', 'T0', 'T1']);
     expect(items.every((i) => i.playable == true), isTrue);
     expect(items.first.id, 'track:${ids.first}@playlist:$list');
+  });
+
+  test('a playlist with a streamed row counts and lists only the library tracks', () async {
+    await seed(2);
+    final ids = [for (final p in ['T0', 'T1']) (await tracks.idForPath('/m/$p.mp3'))!];
+    final shadow = await tracks.ensureStreamRow(YtResult(id: 'v1', title: 'S', channel: 'Ch', duration: Duration.zero));
+    final list = await playlists.create('Road');
+    await playlists.addStreamTracks(list, [ids[0], shadow, ids[1]]);
+
+    expect((await tree.children('playlists')).single.artist, '2');
+    expect((await tree.children('playlist:$list')).map((i) => i.title), ['T0', 'T1']);
   });
 
   test('choosing a track of an album queues the album from that track', () async {

@@ -177,7 +177,8 @@ class MediaBrowseTree {
         return [
           for (final p in (await _src.playlists()).take(kBrowseLimit))
             _folder('playlist:${p.playlist.id}', p.playlist.name,
-                subtitle: '${p.trackCount}',
+                // Only what the folder lists: streamed rows are left out of it.
+                subtitle: '${(await _src.playlistTracks(p.playlist.id)).where((t) => t.kind != kStreamKind).length}',
                 art: p.coverKey == null ? null : coverUri?.call(p.coverKey!)),
         ];
       case 'albums':

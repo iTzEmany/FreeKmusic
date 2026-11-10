@@ -281,6 +281,35 @@ void main() {
       expect(titles, ['Online one', 'Lib', 'Online two']);
     });
 
+    testWidgets('a blank page title gives the fallback name; a failure midway leaves no playlist', (tester) async {
+      late WidgetRef w;
+      await tester.pumpWidget(ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(db)],
+        child: Consumer(builder: (_, ref, _) {
+          w = ref;
+          return const SizedBox();
+        }),
+      ));
+      Track? lib;
+      String? name;
+      Object? failure;
+      await tester.runAsync(() async {
+        lib = await db.select(db.tracks).getSingle();
+        name = await saveToLibrary(w, '   ', [TrackReady.online(ytmSong('y1', 'One'))], fallback: 'Nuova');
+        try {
+          // A library row that does not exist: the playlist insert fails after the playlist was created.
+          await saveToLibrary(w, 'Broken', [TrackReady.library(lib!.copyWith(id: 9999))]);
+        } catch (e) {
+          failure = e;
+        }
+      });
+      expect(name, 'Nuova');
+      expect(failure, isNotNull);
+      await tester.runAsync(() async {
+        expect([for (final p in await db.select(db.playlists).get()) p.name], ['Nuova']);
+      });
+    });
+
     test('Aggiorna with one extra track asks for that one only; gone rows leave the page', () async {
       final c = externalContainer();
       const ref = OnlineCollectionRef.external(link);

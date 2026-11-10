@@ -129,4 +129,20 @@ void main() {
     expect(report.playlistItemsSkipped, 1);
     expect(await here.select(here.tracks).get(), isEmpty);
   });
+
+  test('a key with an unknown source leaves no stray shadow row; an episode path is skipped', () async {
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await TrackRepository(here).ensureStreamRow(YtResult(id: 'e1', title: 'Ep', channel: 'C', duration: Duration.zero));
+    await here.customStatement("UPDATE tracks SET kind = 1 WHERE path = 'stream:youtube:e1'");
+    final data = UserData(createdAt: 1, playlists: [
+      const PlaylistData(name: 'X', createdAt: 1, uuid: 'u1', items: [
+        TrackRef(title: 'x', streamKey: 'spotify:abc'),
+        TrackRef(title: 'ep', streamKey: 'youtube:e1'),
+      ]),
+    ]);
+    final report = await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
+    expect(report.playlistItemsSkipped, 2);
+    expect([for (final t in await here.select(here.tracks).get()) t.path], ['stream:youtube:e1']);
+  });
 }

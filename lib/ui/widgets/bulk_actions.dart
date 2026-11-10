@@ -8,6 +8,7 @@ import '../../providers/jam_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/playlist_ops.dart';
 import '../../providers/track_ops.dart';
+import '../../services/audio/online_entries.dart' show isOnlineId;
 import '../screens/cleanup/move_to_album_dialog.dart';
 import '../screens/playlists/playlist_dialogs.dart';
 import '../screens/tags/tags_sheet.dart';
@@ -37,15 +38,20 @@ List<TrackActionGroup> bulkActions(
   BulkContext ctx, {
   required VoidCallback done,
 }) {
-  // Streamed entries are not library rows: the group actions skip them.
+  // Streamed entries are not library rows: the library actions skip them. Shadow rows (kind 2)
+  // of a playlist can still be played, queued and taken out of the playlist.
+  final playable = [
+    for (final t in picked)
+      if (!isOnlineId(t.id)) t,
+  ];
   final tracks = [
     for (final t in picked)
       if (t.trackKind != TrackKind.online) t,
   ];
-  if (tracks.isEmpty) return const [];
+  if (playable.isEmpty) return const [];
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
-  final n = tracks.length;
+  final n = playable.length;
 
   void snack(String text) => showMsg(outer, text);
 
@@ -71,7 +77,7 @@ List<TrackActionGroup> bulkActions(
       confirmLabel: l.removeFromList,
     );
     if (!ok) return;
-    final undo = await ref.read(playlistOpsProvider).removeTracks(playlistId, [for (final t in tracks) t.id]);
+    final undo = await ref.read(playlistOpsProvider).removeTracks(playlistId, [for (final t in playable) t.id]);
     if (!outer.mounted) return;
     showUndoSnack(outer, l.removedManyFromPlaylist(n), undo);
     done();
@@ -80,7 +86,7 @@ List<TrackActionGroup> bulkActions(
   Future<void> removeFromLibrary() async {
     final ok = await showConfirm(
       outer,
-      title: l.removeManyFromLibraryTitle(n),
+      title: l.removeManyFromLibraryTitle(tracks.length),
       body: l.removeManyFromLibraryBody,
       confirmLabel: l.removeFromList,
       destructive: true,
@@ -105,12 +111,12 @@ List<TrackActionGroup> bulkActions(
   return [
     TrackActionGroup(l.groupQueue, [
       TrackAction(Icons.play_arrow_rounded, l.play, () async {
-        await ctrl.playFromList(tracks, 0);
+        await ctrl.playFromList(playable, 0);
         done();
       }),
       TrackAction(Icons.queue_rounded, l.addToQueue, () async {
         var added = 0, full = false;
-        for (final t in tracks) {
+        for (final t in playable) {
           final r = await ctrl.addToQueue(t.id);
           added += r?.added ?? 1;
           if (r != null && r.full) {
@@ -124,7 +130,7 @@ List<TrackActionGroup> bulkActions(
       if (ref.read(jamProvider).active)
         TrackAction(Icons.queue_music_rounded, l.jamAddToJam, () async {
           final remote = ref.read(jamProvider).remote;
-          final r = await ref.read(jamProvider.notifier).addTracks(tracks);
+          final r = await ref.read(jamProvider.notifier).addTracks(playable);
           if (outer.mounted) {
             if (remote && r.added == 0 && !r.full && ref.read(jamProvider.notifier).lastNotFound > 0) {
               showMsg(outer, l.jamNotFoundOnline);
@@ -136,6 +142,7 @@ List<TrackActionGroup> bulkActions(
         }),
     ]),
     TrackActionGroup(l.groupCollection, [
+      if (tracks.isNotEmpty) ...[
       TrackAction(
         allFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
         allFavorite ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
@@ -153,6 +160,7 @@ List<TrackActionGroup> bulkActions(
       TrackAction(Icons.album_outlined, l.moveToAlbum, () async {
         if (await showMoveToAlbumDialog(outer, ref, tracks)) done();
       }),
+      ],
       if (ctx.playlistId != null)
         TrackAction(
           Icons.playlist_remove_rounded,
