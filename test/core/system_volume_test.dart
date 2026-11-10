@@ -47,4 +47,29 @@ void main() {
     await v.start();
     await v.stop();
   });
+
+  test('a platform error gives null without throwing', () async {
+    messenger.setMockMethodCallHandler(
+        ch, (c) async => throw PlatformException(code: 'x'));
+    final v = SystemVolume(ch);
+    expect(await v.current(), isNull);
+    await v.start();
+    await v.stop();
+  });
+
+  test('other methods and non-number arguments are ignored', () async {
+    final v = SystemVolume(ch);
+    final got = <double>[];
+    final sub = v.changes.listen(got.add);
+    for (final call in const [
+      MethodCall('other', 0.5),
+      MethodCall('changed', 'loud'),
+      MethodCall('changed'),
+    ]) {
+      await messenger.handlePlatformMessage(
+          ch.name, ch.codec.encodeMethodCall(call), (_) {});
+    }
+    await sub.cancel();
+    expect(got, isEmpty);
+  });
 }

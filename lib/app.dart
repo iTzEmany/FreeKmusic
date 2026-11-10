@@ -42,7 +42,7 @@ class CodecoreApp extends ConsumerWidget {
     // Enriches a streamed track as soon as it has its row (D-351).
     ref.listen(streamEnrichTriggerProvider, (_, _) {});
     ref.watch(outputRouteSyncProvider);
-    ref.watch(volumeZeroPauseProvider);
+    ref.listen(volumeZeroPauseProvider, (_, _) {});
     ref.watch(importNotificationProvider);
     // Checks for new releases of followed artists (starts once settled).
     ref.watch(releaseCheckControllerProvider);

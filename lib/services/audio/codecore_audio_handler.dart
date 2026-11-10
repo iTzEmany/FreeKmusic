@@ -344,6 +344,13 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Stream<Duration?> get durationStream => _durOut.stream;
   BackendState get backendState => _state;
   bool get isPlaying => _state == BackendState.playing;
+  /// Local playback is asked to run (also while loading or just resumed), not
+  /// only what the backend reports now.
+  bool get wantsPlay =>
+      _remote == null &&
+      _queue.currentId != null &&
+      _playWhenReady &&
+      (_current != null || _loadBusy);
   /// A Jam or other remote transport owns playback.
   bool get hasRemote => _remote != null;
   List<int> get queueIds => _queue.items;

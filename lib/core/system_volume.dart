@@ -38,6 +38,7 @@ class SystemVolume {
     try {
       return await _channel.invokeMethod<T>(method);
     } on MissingPluginException {
+      AppLog.d('system volume $method: no plugin');
       return null;
     } on PlatformException catch (e, st) {
       AppLog.w('system volume $method failed', e, st);

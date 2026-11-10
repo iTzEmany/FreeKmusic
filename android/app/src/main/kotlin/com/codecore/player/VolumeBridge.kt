@@ -3,6 +3,7 @@ package com.codecore.player
 import android.content.Context
 import android.database.ContentObserver
 import android.media.AudioManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -66,7 +67,7 @@ object VolumeBridge {
     }
 
     private fun read(am: AudioManager): Double {
-        val min = am.getStreamMinVolume(AudioManager.STREAM_MUSIC)
+        val min = if (Build.VERSION.SDK_INT >= 28) am.getStreamMinVolume(AudioManager.STREAM_MUSIC) else 0
         val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         return if (max <= min) 0.0
         else (am.getStreamVolume(AudioManager.STREAM_MUSIC) - min).toDouble() / (max - min)
