@@ -37,6 +37,7 @@ import '../../widgets/motion.dart';
 import '../../widgets/ring_progress.dart';
 import '../../../providers/theme_providers.dart';
 import '../../theme/cover_tint.dart';
+import '../../widgets/marquee_text.dart';
 
 const _playerRouteName = 'now-playing';
 const _wideBreakpoint = 900.0;
@@ -599,12 +600,7 @@ class _TitleRow extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  texts?.title ?? track.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.titleLarge,
-                ),
+                MarqueeText(texts?.title ?? track.title, style: theme.titleLarge),
                 if (radio == null)
                   ArtistLinks(
                     track,

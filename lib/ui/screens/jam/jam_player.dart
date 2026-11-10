@@ -10,6 +10,7 @@ import '../../../providers/jam_providers.dart';
 import '../../../services/jam/jam_models.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/marquee_text.dart';
 import '../../widgets/ring_progress.dart';
 import '../../widgets/seek_bar.dart';
 import '../../widgets/show_msg.dart';
@@ -285,12 +286,7 @@ class _JamPlayer extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          cur?.title ?? l.jamNothingPlaying,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.titleLarge,
-                        ),
+                        MarqueeText(cur?.title ?? l.jamNothingPlaying, style: theme.titleLarge),
                         Text(
                           cur?.artist ?? '',
                           maxLines: 1,

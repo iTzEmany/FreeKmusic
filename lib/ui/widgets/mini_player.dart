@@ -22,6 +22,7 @@ import 'radio_now.dart';
 import 'ring_progress.dart';
 import '../../providers/radio_providers.dart' show onAirProvider;
 import 'track_art.dart';
+import 'marquee_text.dart';
 
 /// Shared-element tags of the cover between the player (mini player or desktop
 /// bar, by width) and Now Playing.
@@ -273,15 +274,15 @@ class _MiniCard extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: empty ? cc.textMuted : null,
-                    ),
-                  ),
+                  () {
+                    final style = theme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: empty ? cc.textMuted : null);
+                    // Nothing playing: a static label, no endless animation.
+                    return empty
+                        ? Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)
+                        : MarqueeText(title, style: style);
+                  }(),
                   Row(
                     children: [
                       if (inJam)

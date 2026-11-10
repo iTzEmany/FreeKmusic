@@ -8,6 +8,7 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/mini_player.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:codecore/ui/widgets/marquee_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,8 +41,7 @@ void main() {
     await h.dispose(t);
   });
 
-  // Changes in 109 (D-486): long titles will scroll.
-  testWidgets('a long title is one line with an ellipsis', (t) async {
+  testWidgets('a long title scrolls on one line (D-486)', (t) async {
     final longTitle = 'A very long title ' * 20;
     final h = await Harness.create(t, tracks: 1);
     await t.runAsync(() => h.db.update(h.db.tracks).write(TracksCompanion(title: Value(longTitle))));
@@ -50,9 +50,8 @@ void main() {
     await h.pump(t, const Scaffold(body: MiniPlayer()));
     await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await t.pump(const Duration(milliseconds: 300));
-    final title = t.widget<Text>(find.text(longTitle));
-    expect(title.maxLines, 1);
-    expect(title.overflow, TextOverflow.ellipsis);
+    expect(find.widgetWithText(MarqueeText, longTitle), findsOneWidget);
+    expect(t.widget<Text>(find.text(longTitle)).softWrap, isFalse);
     await h.dispose(t);
   });
 

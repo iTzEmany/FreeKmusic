@@ -46,3 +46,23 @@ Note:
 | `liteEntries` (import) | 118 (< 400) |
 | Generi | 35 (< 150) |
 | Apertura del DB + prime query della Home | 103 (< 1000) |
+
+## Dopo la 109 (`marquee-109`)
+
+Data: 2026-11-10. Stesso dispositivo e comando con `--label marquee-109`; commit `156929eb` (fasi 108, 2b e 109). File grezzo: `build/perf/marquee-109.md`.
+
+Scansione di 3000 brani in 16,8 s. Avvio a freddo: mediana 3124 ms su 5 (2721–3645). Memoria (PSS) 270 MB.
+
+| Scenario | > 16,7 ms prima-107 | > 16,7 ms marquee-109 |
+|---|---|---|
+| Tutti i brani | 1,6 % | 0,9 % |
+| Scroll Libreria | 0,9 % | 0,6 % |
+| Scroll Tutti i brani | 0,3 % | 0,5 % |
+| Lente Libreria | 5,2 % | 1,4 % |
+| In riproduzione | 2,4 % | 1,8 % |
+| Lettore dal dock | 3,1 % | 2,6 % |
+| Swipe mini player | 0,6 % | 1,8 % |
+| Fogli | 4,1 % | 1,9 % |
+| Apertura player | 3,0 % | 2,2 % |
+
+Scroll e player aperto non peggiorano. Lo swipe del mini player sale a 1,8 % (il titolo lungo ora scorre lì, con `RepaintBoundary`), dentro la soglia della fase 90 (1–2 %). Memoria +30 MB rispetto a prima-107, con in mezzo anche la fase 108.
