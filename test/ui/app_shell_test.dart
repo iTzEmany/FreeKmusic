@@ -1,5 +1,8 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/activity_providers.dart';
+import 'dart:async';
+
+import 'package:codecore/providers/exportify_providers.dart' show incomingTextProvider;
 import 'package:codecore/providers/memory_providers.dart';
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
@@ -155,6 +158,31 @@ void main() {
     await _settle(t);
     expect(c.read(navIndexProvider), NavTab.search.index);
     expect(c.read(searchControllerProvider).text, 'Song 1');
+    await h.dispose(t);
+  });
+
+  testWidgets('shared plain text brings Cerca to the front over a pushed page',
+      (t) async {
+    _phone(t);
+    final h = await Harness.create(t, tracks: 2);
+    final shared = StreamController<String>();
+    addTearDown(shared.close);
+    await h.pump(t, const AppShell(), extraOverrides: [
+      incomingTextProvider.overrideWith((ref) => shared.stream),
+    ]);
+    final c = _container(t);
+    c.read(navIndexProvider.notifier).set(NavTab.search.index);
+    await _settle(t);
+    final nav = c.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState!;
+    nav.push(MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('PUSHED'))));
+    await _settle(t);
+    expect(find.text('PUSHED'), findsOneWidget);
+    shared.add('some words');
+    await _settle(t);
+    expect(c.read(searchControllerProvider).text, 'some words');
+    await _settle(t);
+    expect(find.text('PUSHED'), findsNothing);
     await h.dispose(t);
   });
 

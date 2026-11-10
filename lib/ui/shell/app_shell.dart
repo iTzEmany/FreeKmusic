@@ -357,6 +357,11 @@ class AppShell extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         ref.read(searchPrefillProvider.notifier).set(query);
+        // A page pushed in the Search tab would hide the field.
+        ref
+            .read(tabNavigatorKeysProvider)[NavTab.search.index]
+            .currentState
+            ?.popUntil((r) => r.isFirst);
         ShellNav.showSearch(context, ref);
       });
     });
