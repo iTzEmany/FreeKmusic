@@ -49,6 +49,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - Nessun lavoro aperto in backlog. Le prove a mano rimaste di Jam e broker sono nelle fasi archiviate (`storico/fasi/fase-84-broker-e-debito-jam.md`); su UniBA la scoperta con la maschera vera va riprovata (vedi le Trappole di [`sync-backup-jam.md`](architettura/sync-backup-jam.md)).
 
 ## Piattaforme
+- (10/11) Database desktop in `<Documenti>/codecore.sqlite`, condiviso con Codecore e fuori dalla cartella dell'app: spostarlo in `appSupportDir` con una migrazione all'avvio (copia se manca), poi aggiornare D-539 e `piattaforme.md`.
 - **Runtime Flatpak `org.freedesktop.Platform/ffmpeg-full` 24.08 a fine vita**: passare a 25.08.
 - **Accessibilità TalkBack, minori** (8 nov, prova fase 105): risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
 
