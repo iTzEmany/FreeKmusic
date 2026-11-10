@@ -16,7 +16,7 @@ class ReceiveService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val title = intent?.getStringExtra("title") ?: "Codecore"
+        val title = intent?.getStringExtra("title") ?: "FreeKmusic"
         val text = intent?.getStringExtra("text") ?: ""
         val disable = intent?.getStringExtra("disable") ?: "Stop"
         val n = ShareNotifications.serviceNotification(this, title, text, disable)

@@ -1,4 +1,4 @@
-# Guida a Codecore
+# Guida a FreeKmusic
 
 Una pagina per funzione. Le immagini si generano con `scripts/shots.sh` (tema «notte», 100 %) e vanno in `docs/guida/img/`.
 

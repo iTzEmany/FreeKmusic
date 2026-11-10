@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.codecore.player</id>
-  <name>Codecore</name>
+  <id>com.freekmusic.player</id>
+  <name>FreeKmusic</name>
   <summary>Lettore musicale personale, senza account e senza server</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LicenseRef-proprietary</project_license>
   <description>
     <p>Libreria locale, playlist (anche intelligenti), importazione da CSV, download online, condivisione e Jam sulla rete locale, podcast.</p>
   </description>
-  <launchable type="desktop-id">com.codecore.player.desktop</launchable>
+  <launchable type="desktop-id">com.freekmusic.player.desktop</launchable>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="1.2.0" date="2026-10-19"/>
   </releases>
   <provides>
-    <binary>codecore</binary>
+    <binary>freekmusic</binary>
   </provides>
 </component>

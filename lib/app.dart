@@ -118,7 +118,7 @@ class CodecoreApp extends ConsumerWidget {
         crossfadeSeconds: s.crossfadeSeconds,
       );
     return MaterialApp(
-      title: 'Codecore',
+      title: 'FreeKmusic',
       scaffoldMessengerKey: _messengerKey,
       debugShowCheckedModeBanner: false,
       theme: buildThemeFromColors(

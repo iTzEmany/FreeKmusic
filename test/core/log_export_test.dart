@@ -58,7 +58,7 @@ void main() {
         home: '/home/emanuele',
         appVersion: '1.1.0',
         platform: 'linux');
-    expect(out, 'Codecore 1.1.0, linux\n\nold ~/a\nnew <ip>\n');
+    expect(out, 'FreeKmusic 1.1.0, linux\n\nold ~/a\nnew <ip>\n');
     expect(
         await buildLogReport(
             supportDir: '${dir.path}/none',

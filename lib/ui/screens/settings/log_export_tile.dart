@@ -39,7 +39,7 @@ class LogExportTile extends ConsumerWidget {
         msg = l.exportLogNone;
       } else {
         final saved = await saveBytes(
-            'codecore-log-${_stamp()}.txt', utf8.encode(text),
+            'freekmusic-log-${_stamp()}.txt', utf8.encode(text),
             mimeType: 'text/plain');
         if (!saved) return;
         msg = l.exportLogSaved;

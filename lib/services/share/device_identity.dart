@@ -97,7 +97,7 @@ class DeviceIdentity {
   final pair = CryptoUtils.generateEcKeyPair();
   final priv = pair.privateKey as ECPrivateKey;
   final pub = pair.publicKey as ECPublicKey;
-  final csr = X509Utils.generateEccCsrPem({'CN': 'Codecore', 'O': 'Codecore'}, priv, pub);
+  final csr = X509Utils.generateEccCsrPem({'CN': 'FreeKmusic', 'O': 'FreeKmusic'}, priv, pub);
   final cert = X509Utils.generateSelfSignedCertificate(priv, csr, 365 * 20, sans: ['localhost']);
   return (cert, CryptoUtils.encodeEcPrivateKeyToPem(priv));
 }

@@ -38,9 +38,9 @@ jobs:
         with:
           name: linux
           path: |
-            build/codecore-linux-x64.zip
-            build/codecore_*_amd64.deb
-            build/codecore-*-x86_64.AppImage
+            build/freekmusic-linux-x64.zip
+            build/freekmusic_*_amd64.deb
+            build/freekmusic-*-x86_64.AppImage
           if-no-files-found: error
 
   flatpak:
@@ -63,16 +63,16 @@ jobs:
       - name: Release bundle from the zip
         run: |
           mkdir -p build/linux/x64/release
-          unzip -q dl/codecore-linux-x64.zip -d dl/unzipped
-          cp -r dl/unzipped/codecore build/linux/x64/release/bundle
+          unzip -q dl/freekmusic-linux-x64.zip -d dl/unzipped
+          cp -r dl/unzipped/freekmusic build/linux/x64/release/bundle
       - name: Build the bundle
         run: |
-          flatpak-builder --user --force-clean --repo=repo build-dir packaging/flatpak/com.codecore.player.yml
-          flatpak build-bundle repo codecore.flatpak com.codecore.player
+          flatpak-builder --user --force-clean --repo=repo build-dir packaging/flatpak/com.freekmusic.player.yml
+          flatpak build-bundle repo freekmusic.flatpak com.freekmusic.player
       - uses: actions/upload-artifact@v7
         with:
           name: flatpak
-          path: codecore.flatpak
+          path: freekmusic.flatpak
           if-no-files-found: error
 
   android:
@@ -112,7 +112,7 @@ jobs:
         run: |
           flutter build apk --release --split-per-abi
           for f in build/app/outputs/flutter-apk/app-*-release.apk; do
-            cp "$f" "codecore-full-$(basename "$f" | sed 's/^app-//')"
+            cp "$f" "freekmusic-full-$(basename "$f" | sed 's/^app-//')"
           done
       - name: Lite (no downloads)
         env:
@@ -120,16 +120,16 @@ jobs:
         run: |
           flutter build apk --release --split-per-abi --dart-define=CODECORE_YOUTUBE=false
           for f in build/app/outputs/flutter-apk/app-*-release.apk; do
-            cp "$f" "codecore-lite-$(basename "$f" | sed 's/^app-//')"
+            cp "$f" "freekmusic-lite-$(basename "$f" | sed 's/^app-//')"
           done
       - uses: actions/upload-artifact@v7
         with:
           name: android
           path: |
-            codecore-full-arm64-v8a-release.apk
-            codecore-full-armeabi-v7a-release.apk
-            codecore-lite-arm64-v8a-release.apk
-            codecore-lite-armeabi-v7a-release.apk
+            freekmusic-full-arm64-v8a-release.apk
+            freekmusic-full-armeabi-v7a-release.apk
+            freekmusic-lite-arm64-v8a-release.apk
+            freekmusic-lite-armeabi-v7a-release.apk
           if-no-files-found: error
 
   windows:
@@ -164,11 +164,11 @@ jobs:
         run: |
           $v = (Select-String -Path pubspec.yaml -Pattern '^version:\s*([0-9.]+)').Matches[0].Groups[1].Value
           choco install innosetup -y --no-progress
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$v" packaging\windows\codecore.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$v" packaging\windows\freekmusic.iss
       - uses: actions/upload-artifact@v7
         with:
           name: windows
-          path: build/Codecore-Setup-*.exe
+          path: build/FreeKmusic-Setup-*.exe
           if-no-files-found: error
 
   publish:

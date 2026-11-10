@@ -1,4 +1,4 @@
-# Profilo obiettivo — Codecore (Flutter)
+# Profilo obiettivo — FreeKmusic (Flutter)
 
 > Letto da `/obiettivo` all'avvio. Ricavato il 2026-10-25 da CLAUDE.md, ci.yml, memorie e git log.
 

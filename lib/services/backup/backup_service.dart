@@ -91,7 +91,7 @@ Future<void> applySettingsJson(
   }
 }
 
-/// Creates `codecore-backup-YYYY-MM-DD.zip`: the database (a consistent copy
+/// Creates `freekmusic-backup-YYYY-MM-DD.zip`: the database (a consistent copy
 /// via `VACUUM INTO`), settings, the portable user data, covers and
 /// `downloads.json` and `dislikes.json`. The temporary files are ours and always removed.
 class BackupService {
@@ -118,7 +118,7 @@ class BackupService {
   final DateTime Function() _now;
 
   static String fileName(DateTime d) =>
-      'codecore-backup-${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}.zip';
+      'freekmusic-backup-${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}.zip';
 
   Future<BackupSummary> createBackup(
     String outPath, {

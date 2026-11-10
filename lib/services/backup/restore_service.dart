@@ -80,7 +80,7 @@ Future<RestorePlan> inspectBackup(
   } on RestoreException {
     rethrow;
   } on Object catch (e) {
-    throw RestoreException('not a Codecore backup: $e');
+    throw RestoreException('not a FreeKmusic backup: $e');
   }
   final format = (m['backupFormat'] as num?)?.toInt() ?? 0;
   if (format < 1 || format > kBackupFormat) {

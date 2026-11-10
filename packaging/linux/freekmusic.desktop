@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Codecore
+Name=FreeKmusic
 Comment=Lettore musicale personale
-Exec=codecore
-Icon=com.codecore.player
+Exec=@EXEC@
+Icon=freekmusic
 Categories=AudioVideo;Audio;Player;
 Terminal=false

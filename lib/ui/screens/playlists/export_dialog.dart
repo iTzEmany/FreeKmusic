@@ -212,7 +212,7 @@ Future<void> exportAllPlaylistsFlow(BuildContext context, WidgetRef ref) async {
     );
     final stamp = DateTime.now().toIso8601String().substring(0, 10);
     final saved = await saveBytes(
-      'codecore-playlists-$stamp.zip',
+      'freekmusic-playlists-$stamp.zip',
       Uint8List.fromList(ZipEncoder().encode(archive)),
       mimeType: 'application/zip',
     );

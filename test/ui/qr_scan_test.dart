@@ -31,7 +31,7 @@ void main() {
 
     feed!('https://example.com/poster');
     await tester.pump();
-    expect(find.text('Questo codice non è di Codecore.'), findsOneWidget);
+    expect(find.text('Questo codice non è di FreeKmusic.'), findsOneWidget);
     expect(result, isNull);
     feed!('http://8.8.8.8:80/?pin=123456'); // public address: ignored too
     await tester.pump();

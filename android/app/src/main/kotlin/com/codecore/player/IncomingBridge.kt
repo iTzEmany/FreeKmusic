@@ -10,7 +10,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 /**
- * `codecore/incoming`: a ZIP/CSV opened with Codecore («Apri con», «Condividi»).
+ * `codecore/incoming`: a ZIP/CSV opened with FreeKmusic («Apri con», «Condividi»).
  * The content is copied into the cache (at most [MAX_BYTES], a sanitized name)
  * and its path kept until Dart takes it with `takeIncoming`; `incoming` is
  * pushed to Dart when the file arrives while the app already runs.

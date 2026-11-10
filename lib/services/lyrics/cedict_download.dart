@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 import '../../core/app_log.dart';
 
 const cedictUrl =
-    'https://github.com/iTzEmany/codecore-music-player/releases/download/'
+    'https://github.com/iTzEmany/FreeKmusic/releases/download/'
     'data-cedict-2026-11-08/cedict_1_0_ts_utf-8_mdbg.txt.gz';
 const cedictSha256 =
     '85a742880b294197546c5c48b716a2811d7790367d98cc3ef814df8095fe991e';

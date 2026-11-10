@@ -22,7 +22,7 @@ import '../tags/audio_metadata_tag_reader.dart';
 
 /// True only in builds made by `scripts/perf_device.py`
 /// (`--dart-define=CODECORE_PERF=true`), installed as the separate app
-/// `com.codecore.player.perf`: everything below touches that app's own data.
+/// `com.freekmusic.player.perf`: everything below touches that app's own data.
 const kPerfBuild = bool.fromEnvironment('CODECORE_PERF');
 
 /// True in builds made by `scripts/perf_device.py --real`

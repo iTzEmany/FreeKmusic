@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.codecore" "\0"
-            VALUE "FileDescription", "codecore" "\0"
+            VALUE "CompanyName", "com.freekmusic" "\0"
+            VALUE "FileDescription", "FreeKmusic" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "codecore" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.codecore. All rights reserved." "\0"
-            VALUE "OriginalFilename", "codecore.exe" "\0"
-            VALUE "ProductName", "codecore" "\0"
+            VALUE "InternalName", "freekmusic" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.freekmusic. All rights reserved." "\0"
+            VALUE "OriginalFilename", "freekmusic.exe" "\0"
+            VALUE "ProductName", "FreeKmusic" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

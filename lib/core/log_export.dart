@@ -61,5 +61,5 @@ Future<String?> buildLogReport({
   }
   if (parts.isEmpty) return null;
   final body = redactLog(parts.join(), home: home, deviceName: deviceName);
-  return 'Codecore $appVersion, $platform\n\n$body';
+  return 'FreeKmusic $appVersion, $platform\n\n$body';
 }

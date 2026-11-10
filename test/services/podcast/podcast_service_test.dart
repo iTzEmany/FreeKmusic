@@ -529,7 +529,7 @@ void main() {
         final fetch = dioFeedFetcher();
         expect(await fetch(url('/ok')), '<rss>perché</rss>');
         expect(await fetch(url('/redirect')), '<rss>perché</rss>');
-        expect(hits.first, contains('Codecore'));
+        expect(hits.first, contains('FreeKmusic'));
       },
     );
 

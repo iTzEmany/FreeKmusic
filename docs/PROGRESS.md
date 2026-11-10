@@ -1,5 +1,7 @@
 # Avanzamento
 
+> Dal 10/11/2026 l'app si chiama FreeKmusic (D-539); i documenti storici usano ancora Codecore.
+
 Legenda: `[ ]` da fare · `[~]` codice fatto e verde nei test, manca solo una prova a mano dell'utente · `[x]` fatto.
 Spunta a fine task (dopo `flutter analyze` + test mirati verdi; la suite completa la esegue la CI). Annota **una riga** se hai deviato dal piano.
 L'agente riparte sempre dal primo task non spuntato.

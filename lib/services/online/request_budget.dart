@@ -30,11 +30,11 @@ const kLinkMatchPerMinute = 40;
 /// (`kApiContact`), which is what moves it from the 10 / min tier to 200 / min.
 bool get apiIdentified => kApiContact.trim().isNotEmpty;
 
-/// The `User-Agent` of every request: `Codecore/<version> (<contact>)` in the
+/// The `User-Agent` of every request: `FreeKmusic/<version> (<contact>)` in the
 /// form the Wikimedia policy asks for, or the plain one when no contact is set.
 String get apiUserAgent => apiIdentified
-    ? 'Codecore/$kAppVersion (${kApiContact.trim()})'
-    : 'Codecore/1.0 (uso personale)';
+    ? 'FreeKmusic/$kAppVersion (${kApiContact.trim()})'
+    : 'FreeKmusic/1.0 (uso personale)';
 
 /// Hosts that share Wikimedia's limit: it is global for all their sites.
 bool isWikimediaHost(String host) =>

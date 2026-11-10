@@ -175,7 +175,7 @@ Notazione: `‖` concatenazione; `u64be` intero a 8 byte big endian; `b64u` base
 | host → ospite | `ccj1/<b64u(tp)>/h` | 1 / no | buste `h2g` |
 | ospite → host | `ccj1/<b64u(tp)>/g` | 1 / no | buste `g2h` |
 
-Il broker vede che esiste una Jam di Codecore (prefisso `ccj1`) e i suoi partecipanti, non chi sono: tutti i nomi cambiano a ogni accensione (R-133).
+Il broker vede che esiste una Jam di FreeKmusic (prefisso `ccj1`) e i suoi partecipanti, non chi sono: tutti i nomi cambiano a ogni accensione (R-133).
 
 #### Formati
 | Messaggio | Byte |

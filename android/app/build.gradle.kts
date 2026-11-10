@@ -10,7 +10,7 @@ plugins {
 // no YouTube); pair it with `--dart-define=CODECORE_YOUTUBE=false`.
 val lite = System.getenv("CODECORE_LITE") == "1"
 
-// `CODECORE_PERF=1` installs as a separate app, com.codecore.player.perf, with
+// `CODECORE_PERF=1` installs as a separate app, com.freekmusic.player.perf, with
 // its own data: the phase 28 measurements never touch the real library.
 val perf = System.getenv("CODECORE_PERF") == "1"
 
@@ -33,8 +33,8 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = if (perf) "com.codecore.player.perf" else "com.codecore.player"
-        manifestPlaceholders["appLabel"] = if (perf) "Codecore Perf" else "Codecore"
+        applicationId = if (perf) "com.freekmusic.player.perf" else "com.freekmusic.player"
+        manifestPlaceholders["appLabel"] = if (perf) "FreeKmusic Perf" else "FreeKmusic"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
