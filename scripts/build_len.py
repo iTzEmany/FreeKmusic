@@ -2,7 +2,7 @@
 """Length in lines of every `build` method under a dir (default lib/ui), longest first.
 
 Usage: build_len.py [DIR] [--metrics] [--self-test]
-  --metrics    also print the structure greps of docs/fase-38 (lines/files, counts)
+  --metrics    also print the structure greps of docs/storico/fasi/fase-38 (lines/files, counts)
 """
 import re
 import signal

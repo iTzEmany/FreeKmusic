@@ -10,7 +10,7 @@ bool jamQueueFull(JamState s, {int reserve = 0, int inFlight = 0}) =>
 /// Pure reducer for the authoritative Jam state (lives on the host).
 ///
 /// [from] is the device id issuing the command; [nowMs] is the host clock.
-/// Rules (docs/fase-8-jam.md): the guest can add, move, play/pause, seek,
+/// Rules (docs/storico/fasi/fase-8-jam.md): the guest can add, move, play/pause, seek,
 /// volume, skip (`next`, `jump`, D-160) and change the output device, but
 /// cannot remove the current item nor end the session; each participant removes their own items, the host
 /// removes any. An added track goes right after the current one (after earlier

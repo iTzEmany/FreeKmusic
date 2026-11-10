@@ -9,7 +9,7 @@ import 'broker_entry.dart';
 import 'jam_crypto.dart';
 
 /// Remote Jam wire protocol, pure (no I/O). Formulas, labels and sizes follow
-/// `docs/feature-jam-distanza.md` §Protocollo di sicurezza to the letter: a change
+/// `docs/storico/feature/feature-jam-distanza.md` §Protocollo di sicurezza to the letter: a change
 /// is a new decision (K-JD-03).
 abstract final class JamWire {
   static const version = 1;
