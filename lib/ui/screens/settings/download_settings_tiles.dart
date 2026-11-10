@@ -145,6 +145,14 @@ class DownloadSettingsTiles extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => _pickFormat(context, ref, format),
         ),
+        if (isAndroid)
+          SwitchListTile(
+            key: const ValueKey('shazam-auto-download'),
+            title: Text(l.shazamAutoDownload),
+            subtitle: Text(l.shazamAutoDownloadHint),
+            value: ref.watch(shazamAutoDownloadProvider),
+            onChanged: ref.read(shazamAutoDownloadProvider.notifier).set,
+          ),
         const _SearchCacheTile(),
         const StreamCacheTile(),
         ListTile(

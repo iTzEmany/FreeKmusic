@@ -26,8 +26,8 @@ object IncomingBridge {
     @Volatile
     private var pendingPath: String? = null
 
-    @Volatile
-    private var pendingText: String? = null
+    // A queue, so shares arriving before Dart drains it are not overwritten.
+    private val pendingTexts = java.util.concurrent.ConcurrentLinkedQueue<String>()
 
     fun detach() {
         channel = null
@@ -43,8 +43,9 @@ object IncomingBridge {
                     pendingPath = null
                 }
                 "takeIncomingText" -> {
-                    result.success(pendingText)
-                    pendingText = null
+                    val all = ArrayList<String>()
+                    while (true) all.add(pendingTexts.poll() ?: break)
+                    result.success(all)
                 }
                 else -> result.notImplemented()
             }
@@ -69,7 +70,7 @@ object IncomingBridge {
                 ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)?.takeIf { it.isNotBlank() }
                 ?: return
             intent.action = null
-            pendingText = text
+            pendingTexts.add(text)
             channel?.invokeMethod("incomingText", null)
             return
         }

@@ -49,6 +49,7 @@ import 'shell_keys.dart';
 import 'side_panel.dart';
 import '../widgets/motion.dart';
 import '../widgets/show_msg.dart';
+import 'shazam_share.dart';
 
 /// Ctrl+F searches the Library when there is no online Search or it is the
 /// current tab; elsewhere it opens Search.
@@ -349,20 +350,21 @@ class AppShell extends ConsumerWidget {
     ref.listen(incomingTextProvider, (_, next) {
       final text = next.value;
       if (text == null) return;
-      final query = switch (routeSharedText(text)) {
+      final shared = routeSharedText(text);
+      final query = switch (shared) {
         SharedLink(:final url) => url,
         PlainShare(text: final t) => t,
+        ShazamShare() => '',
       };
+      if (shared is ShazamShare) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) handleShazamShare(context, ref, shared);
+        });
+        return;
+      }
       if (query.isEmpty) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        ref.read(searchPrefillProvider.notifier).set(query);
-        // A page pushed in the Search tab would hide the field.
-        ref
-            .read(tabNavigatorKeysProvider)[NavTab.search.index]
-            .currentState
-            ?.popUntil((r) => r.isFirst);
-        ShellNav.showSearch(context, ref);
+        if (context.mounted) openSearchWith(context, ref, query);
       });
     });
     ref.listen(shareOffersProvider, (_, next) {

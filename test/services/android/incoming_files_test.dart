@@ -8,16 +8,20 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('codecore/incoming');
   String? path;
-  String? text;
+  List<String> text = [];
 
   setUp(() {
     path = null;
-    text = null;
+    text = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (c) async {
-          final v = c.method == 'takeIncoming' ? path : text;
-          if (c.method == 'takeIncoming') path = null;
-          if (c.method == 'takeIncomingText') text = null;
+          if (c.method == 'takeIncoming') {
+            final v = path;
+            path = null;
+            return v;
+          }
+          final v = text;
+          text = [];
           return v;
         });
   });
@@ -36,16 +40,28 @@ void main() {
       );
 
   test('a pending text at start comes from texts()', () async {
-    text = 'https://youtu.be/x';
+    text = ['https://youtu.be/x'];
     final files = IncomingFiles(channel: channel);
     expect(await files.texts().first, 'https://youtu.be/x');
-    expect(text, isNull);
+    expect(text, isEmpty);
   });
 
   test('a pending file at start comes from paths()', () async {
     path = '/cache/a.zip';
     final files = IncomingFiles(channel: channel);
     expect(await files.paths().first, '/cache/a.zip');
+  });
+
+  test('texts shared in a row all arrive, in order', () async {
+    final files = IncomingFiles(channel: channel);
+    final texts = <String>[];
+    final a = files.texts().listen(texts.add);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    text = ['one', 'two', 'three'];
+    await push('incomingText');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(texts, ['one', 'two', 'three']);
+    unawaited(a.cancel());
   });
 
   test('pushes are routed: incomingText to texts, incoming to paths', () async {
@@ -55,7 +71,7 @@ void main() {
     final a = files.texts().listen(texts.add);
     final b = files.paths().listen(paths.add);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    text = 'hello';
+    text = ['hello'];
     await push('incomingText');
     path = '/cache/b.csv';
     await push('incoming');

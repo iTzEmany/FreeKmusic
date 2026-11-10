@@ -658,6 +658,16 @@ class SettingsStore {
   Future<void> writeReleasesNotify(bool on) =>
       _prefs.setBool('releasesNotify', on);
 
+  /// Songs added to «Da Shazam» are also downloaded (Android).
+  bool readShazamAutoDownload() => _prefs.getBool('shazamAutoDownload') ?? false;
+  Future<void> writeShazamAutoDownload(bool on) =>
+      _prefs.setBool('shazamAutoDownload', on);
+
+  /// The `uuid` of the «Da Shazam» playlist, once created.
+  String? readShazamPlaylistUuid() => _prefs.getString('shazamPlaylistUuid');
+  Future<void> writeShazamPlaylistUuid(String uuid) =>
+      _prefs.setString('shazamPlaylistUuid', uuid);
+
   /// Check only on a network that is not metered (off).
   bool get releasesUnmeteredOnly =>
       _prefs.getBool('releasesUnmeteredOnly') ?? false;

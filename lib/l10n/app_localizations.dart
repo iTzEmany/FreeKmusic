@@ -11988,6 +11988,42 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Aggiorna'**
   String get extRefresh;
+
+  /// No description provided for @shazamAutoDownload.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica i brani da Shazam'**
+  String get shazamAutoDownload;
+
+  /// No description provided for @shazamAutoDownloadHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Ogni brano aggiunto a «Da Shazam» si scarica anche.'**
+  String get shazamAutoDownloadHint;
+
+  /// Snackbar of a song shared from Shazam.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiunto a Da Shazam: {title}'**
+  String shazamAdded(String title);
+
+  /// Snackbar of a song shared from Shazam.
+  ///
+  /// In it, this message translates to:
+  /// **'Già in Da Shazam: {title}'**
+  String shazamDuplicate(String title);
+
+  /// Snackbar of a song shared from Shazam.
+  ///
+  /// In it, this message translates to:
+  /// **'Non trovato su YouTube Music: {title}'**
+  String shazamNotFound(String title);
+
+  /// No description provided for @shazamOffline.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna connessione: il brano di Shazam non è stato aggiunto.'**
+  String get shazamOffline;
 }
 
 class _AppLocalizationsDelegate

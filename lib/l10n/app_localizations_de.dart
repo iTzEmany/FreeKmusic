@@ -7546,4 +7546,30 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get extRefresh => 'Aktualisieren';
+
+  @override
+  String get shazamAutoDownload => 'Shazam-Titel herunterladen';
+
+  @override
+  String get shazamAutoDownloadHint =>
+      'Jeder zu «Da Shazam» hinzugefügte Titel wird auch heruntergeladen.';
+
+  @override
+  String shazamAdded(String title) {
+    return 'Zu Da Shazam hinzugefügt: $title';
+  }
+
+  @override
+  String shazamDuplicate(String title) {
+    return 'Schon in Da Shazam: $title';
+  }
+
+  @override
+  String shazamNotFound(String title) {
+    return 'Auf YouTube Music nicht gefunden: $title';
+  }
+
+  @override
+  String get shazamOffline =>
+      'Keine Verbindung: der Shazam-Titel wurde nicht hinzugefügt.';
 }
