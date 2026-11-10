@@ -664,7 +664,7 @@ void main() {
       final h = await open(t, width: 360);
       final fav = block(t, 'Preferiti');
       final all = block(t, 'Tutti i brani');
-      final last = block(t, 'Statistiche');
+      final last = block(t, 'Scaricati senza playlist');
       expect(all.top, fav.top);
       expect(all.left, greaterThan(fav.right));
       expect(find.byIcon(Icons.favorite_rounded), findsNothing);
@@ -675,10 +675,16 @@ void main() {
     },
   );
 
+  testWidgets('the grid has no Statistiche shortcut (D-484)', (t) async {
+    final h = await open(t, width: 360);
+    expect(find.text('Statistiche'), findsNothing);
+    await h.dispose(t);
+  });
+
   testWidgets('desktop: all shortcuts on one row', (t) async {
     final h = await open(t, width: 1600);
     final fav = block(t, 'Preferiti');
-    final last = block(t, 'Statistiche');
+    final last = block(t, 'Scaricati senza playlist');
     expect(last.top, fav.top);
     expect(last.left, greaterThan(fav.right));
     await h.dispose(t);

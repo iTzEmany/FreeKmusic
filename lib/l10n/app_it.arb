@@ -4368,5 +4368,7 @@
   "chineseDictionaryDeleteFailed": "Impossibile eliminare il dizionario cinese",
   "editorDiscardBody": "Le modifiche non sono state salvate.",
   "queueUpNext": "Prossimi in coda",
-  "queueThen": "Poi"
+  "queueThen": "Poi",
+  "downloadedNoPlaylist": "Scaricati senza playlist",
+  "downloadedNoPlaylistEmpty": "Tutti i brani scaricati stanno già in una playlist"
 }

@@ -3887,5 +3887,7 @@
   "chineseDictionaryDeleteFailed": "Impossible de supprimer le dictionnaire chinois",
   "editorDiscardBody": "Les modifications n’ont pas été enregistrées.",
   "queueUpNext": "Ensuite dans la file",
-  "queueThen": "Puis"
+  "queueThen": "Puis",
+  "downloadedNoPlaylist": "Téléchargés hors playlist",
+  "downloadedNoPlaylistEmpty": "Tous les titres téléchargés sont déjà dans une playlist"
 }

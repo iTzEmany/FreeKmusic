@@ -3666,5 +3666,7 @@
   "chineseDictionaryDeleteFailed": "Chinesisches Wörterbuch konnte nicht gelöscht werden",
   "editorDiscardBody": "Deine Änderungen wurden nicht gespeichert.",
   "queueUpNext": "Als Nächstes in der Warteschlange",
-  "queueThen": "Danach"
+  "queueThen": "Danach",
+  "downloadedNoPlaylist": "Heruntergeladen, ohne Playlist",
+  "downloadedNoPlaylistEmpty": "Jeder heruntergeladene Titel ist schon in einer Playlist"
 }

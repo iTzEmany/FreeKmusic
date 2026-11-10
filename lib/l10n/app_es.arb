@@ -3666,5 +3666,7 @@
   "chineseDictionaryDeleteFailed": "No se pudo eliminar el diccionario chino",
   "editorDiscardBody": "Los cambios no se han guardado.",
   "queueUpNext": "A continuación en la cola",
-  "queueThen": "Después"
+  "queueThen": "Después",
+  "downloadedNoPlaylist": "Descargadas sin lista",
+  "downloadedNoPlaylistEmpty": "Todas las canciones descargadas ya están en una lista"
 }

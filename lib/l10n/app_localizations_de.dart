@@ -7460,4 +7460,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queueThen => 'Danach';
+
+  @override
+  String get downloadedNoPlaylist => 'Heruntergeladen, ohne Playlist';
+
+  @override
+  String get downloadedNoPlaylistEmpty =>
+      'Jeder heruntergeladene Titel ist schon in einer Playlist';
 }

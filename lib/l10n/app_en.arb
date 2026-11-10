@@ -3666,5 +3666,7 @@
   "chineseDictionaryDeleteFailed": "Could not delete the Chinese dictionary",
   "editorDiscardBody": "Your changes have not been saved.",
   "queueUpNext": "Up next in queue",
-  "queueThen": "Then"
+  "queueThen": "Then",
+  "downloadedNoPlaylist": "Downloaded, not in a playlist",
+  "downloadedNoPlaylistEmpty": "Every downloaded track is already in a playlist"
 }

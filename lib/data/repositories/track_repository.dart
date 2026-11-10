@@ -502,6 +502,40 @@ class TrackRepository {
     return lightSelect(_db, q).watch();
   }
 
+  /// Music tracks of the download folder that sit in no normal playlist (D-485).
+  /// Favourites and smart playlists (rules only, no `playlist_tracks` rows) do
+  /// not count; shadow rows (`kind = 2`) and episodes (`kind = 1`) are out.
+  Stream<List<Track>> watchDownloadedWithoutPlaylist({
+    required int folderId,
+    String query = '',
+    SortOption sort = SortOption.defaultOrder,
+  }) {
+    final q = _db.select(_db.tracks)
+      ..where((t) {
+        Expression<bool> cond =
+            t.missing.equals(false) &
+            t.ignored.equals(false) &
+            t.kind.equals(kMusicKind) &
+            t.folderId.equals(folderId) &
+            notExistsQuery(
+              _db.select(_db.playlistTracks)
+                ..where((pt) => pt.trackId.equalsExp(t.id)),
+            );
+        final text = query.trim();
+        if (text.isNotEmpty) {
+          final pattern = '%${_escapeLike(text)}%';
+          cond =
+              cond &
+              (t.title.like(pattern, escapeChar: r'\') |
+                  t.artist.like(pattern, escapeChar: r'\') |
+                  t.album.like(pattern, escapeChar: r'\'));
+        }
+        return cond;
+      })
+      ..orderBy(_orderFor(sort));
+    return lightSelect(_db, q).watch();
+  }
+
   List<OrderingTerm Function($TracksTable)> _orderFor(SortOption sort) {
     OrderingTerm nocase(Expression<String> e) =>
         OrderingTerm(expression: e.collate(Collate.noCase));

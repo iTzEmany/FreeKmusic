@@ -7492,4 +7492,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queueThen => 'Puis';
+
+  @override
+  String get downloadedNoPlaylist => 'Téléchargés hors playlist';
+
+  @override
+  String get downloadedNoPlaylistEmpty =>
+      'Tous les titres téléchargés sont déjà dans une playlist';
 }

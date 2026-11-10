@@ -47,8 +47,10 @@ class _AllTracksHeader extends StatelessWidget {
     required this.shuffleKey,
     required this.wide,
     required this.onPlay,
+    required this.title,
   });
 
+  final String title;
   final bool loaded;
   final List<Track> shown;
   final Object shuffleKey;
@@ -74,7 +76,7 @@ class _AllTracksHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l.allTracks,
+                  title,
                   style: wide ? theme.displaySmall : theme.headlineSmall,
                 ),
                 // No «0 brani» while loading or on error.
@@ -112,7 +114,10 @@ class _AllTracksHeader extends StatelessWidget {
 /// Every track as a collection: a fixed row with count, Play and Shuffle; search
 /// and sort chips follow the scroll (gone going down, back going up).
 class AllTracksScreen extends ConsumerStatefulWidget {
-  const AllTracksScreen({super.key, this.initialSort});
+  const AllTracksScreen({super.key, this.initialSort, this.downloadedNoPlaylist = false});
+
+  /// Only the downloaded tracks that are in no playlist (D-485).
+  final bool downloadedNoPlaylist;
 
   /// Sort applied on open (null: keep the current one).
   final SortOption? initialSort;
@@ -184,7 +189,9 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
   @override
   Widget build(BuildContext context) {
     final query = ref.watch(trackQueryProvider(false)).copyWith(text: _text);
-    final fresh = ref.watch(tracksProvider(query));
+    final fresh = widget.downloadedNoPlaylist
+        ? ref.watch(downloadedNoPlaylistProvider(query))
+        : ref.watch(tracksProvider(query));
     final tracks = keepWhileLoading(fresh, _prev);
     _prev = tracks.hasError ? null : tracks;
     final compact = ref.watch(settingsProvider).compactMode;
@@ -211,6 +218,9 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
           children: [
             const ScanStatus(),
             _AllTracksHeader(
+              title: widget.downloadedNoPlaylist
+                  ? context.l10n.downloadedNoPlaylist
+                  : context.l10n.allTracks,
               loaded: tracks.hasValue,
               shown: shown,
               shuffleKey: shuffleKey,
@@ -308,7 +318,11 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
           SliverAsyncBody(
             value: tracks,
             loading: SliverToBoxAdapter(child: RowsLoading(rowHeight: rowHeight)),
-            onRetry: () => ref.invalidate(tracksProvider(query)),
+            onRetry: () => ref.invalidate(
+              widget.downloadedNoPlaylist
+                  ? downloadedNoPlaylistProvider(query)
+                  : tracksProvider(query),
+            ),
             data: (list) => list.isEmpty
                 ? SliverFillRemaining(
                     hasScrollBody: false,
@@ -316,7 +330,11 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                       icon: query.text.isEmpty
                           ? Icons.music_off
                           : Icons.search_off,
-                      message: query.text.isEmpty ? l.noTracks : l.noResults,
+                      message: query.text.isNotEmpty
+                          ? l.noResults
+                          : widget.downloadedNoPlaylist
+                              ? l.downloadedNoPlaylistEmpty
+                              : l.noTracks,
                     ),
                   )
                 : _list(list, compact, ctrl, ctx),

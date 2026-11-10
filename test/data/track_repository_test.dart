@@ -1,5 +1,8 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/track_ops.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,16 +69,17 @@ void main() {
     expect(u, isEmpty);
   });
 
-  // Changes in 110.5 (D-500): accents will match.
-  test(
-    'search is accent-sensitive: "e" does not find "Café", "Caf" does',
-    () async {
-      await repo.upsertBatch([row('/c.mp3', 'Café')]);
-      expect(await repo.watchTracks(query: 'e').first, isEmpty);
-      final r = await repo.watchTracks(query: 'Caf').first;
-      expect(r.map((t) => t.title), ['Café']);
-    },
-  );
+  // Was accent-sensitive in 107.3; flipped in 110.5 (D-500).
+  test('the Library list search ignores accents: "e" finds "Café"', () async {
+    await repo.upsertBatch([row('/c.mp3', 'Café'), row('/d.mp3', 'Zzz')]);
+    final c = ProviderContainer(
+      overrides: [trackRepositoryProvider.overrideWithValue(repo)],
+    );
+    addTearDown(c.dispose);
+    c.listen(trackSearchProvider('E'), (_, _) {});
+    final r = await c.read(trackSearchProvider('E').future);
+    expect(r.map((t) => t.title), ['Café']);
+  });
 
   test('missing excluded, getByIds keeps order', () async {
     await repo.upsertBatch([row('/a.mp3', 'A'), row('/b.mp3', 'B')]);
@@ -329,5 +333,49 @@ void main() {
       final t = (await repo.byPath(p))!;
       expect([t.coverKey, t.coverSource], ['pick', 1], reason: p);
     }
+  });
+
+  group('watchDownloadedWithoutPlaylist (D-485)', () {
+    Future<List<String>> titles() async => [
+      for (final t in await repo.watchDownloadedWithoutPlaylist(folderId: 1).first) t.title,
+    ];
+
+    setUp(() async {
+      await db.into(db.folders).insert(FoldersCompanion.insert(path: '/d', addedAt: 1));
+      await db.into(db.folders).insert(FoldersCompanion.insert(path: '/o', addedAt: 1));
+    });
+
+    test('keeps favourites and smart playlists, drops the rest', () async {
+      await repo.upsertBatch([
+        row('/d/fav.mp3', 'fav', folderId: 1),
+        row('/d/smart.mp3', 'smart', folderId: 1),
+        row('/d/pl.mp3', 'inPlaylist', folderId: 1),
+        row('/o/out.mp3', 'outside', folderId: 2),
+        row('/d/ep.mp3', 'episode', folderId: 1),
+        row('/d/shadow.mp3', 'shadow', folderId: 1),
+      ]);
+      Future<int> idOf(String title) async =>
+          (await (db.select(db.tracks)..where((t) => t.title.equals(title))).getSingle()).id;
+      await (db.update(db.tracks)..where((t) => t.title.equals('fav')))
+          .write(const TracksCompanion(isFavorite: Value(true)));
+      await (db.update(db.tracks)..where((t) => t.title.equals('episode')))
+          .write(const TracksCompanion(kind: Value(1)));
+      await (db.update(db.tracks)..where((t) => t.title.equals('shadow')))
+          .write(const TracksCompanion(kind: Value(2)));
+      await db.into(db.smartPlaylists).insert(
+        SmartPlaylistsCompanion.insert(name: 'S', rules: '[]', createdAt: 1),
+      );
+      final pl = await db.into(db.playlists).insert(
+        PlaylistsCompanion.insert(name: 'P', createdAt: 1),
+      );
+      await db.into(db.playlistTracks).insert(
+        PlaylistTracksCompanion.insert(
+          playlistId: pl,
+          trackId: await idOf('inPlaylist'),
+          position: 0,
+        ),
+      );
+      expect(await titles(), unorderedEquals(['fav', 'smart']));
+    });
   });
 }

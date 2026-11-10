@@ -7454,4 +7454,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queueThen => 'Después';
+
+  @override
+  String get downloadedNoPlaylist => 'Descargadas sin lista';
+
+  @override
+  String get downloadedNoPlaylistEmpty =>
+      'Todas las canciones descargadas ya están en una lista';
 }

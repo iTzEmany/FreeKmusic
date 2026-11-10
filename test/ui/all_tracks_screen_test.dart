@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
@@ -39,6 +41,39 @@ Future<Harness> _open(
 }
 
 void main() {
+  testWidgets('downloadedNoPlaylist lists only the matching tracks, with search', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    final folder = await h.db.into(h.db.folders).insert(
+      FoldersCompanion.insert(path: '/m', addedAt: 1),
+    );
+    // Song 0 and 1 are in the download folder; 1 is also in a playlist.
+    await (h.db.update(h.db.tracks)..where((t) => t.title.isIn(['Song 0', 'Song 1'])))
+        .write(TracksCompanion(folderId: Value(folder)));
+    final pl = await h.db.into(h.db.playlists).insert(
+      PlaylistsCompanion.insert(name: 'P', createdAt: 1),
+    );
+    final id1 = (await (h.db.select(h.db.tracks)..where((t) => t.title.equals('Song 1'))).getSingle()).id;
+    await h.db.into(h.db.playlistTracks).insert(
+      PlaylistTracksCompanion.insert(playlistId: pl, trackId: id1, position: 0),
+    );
+    h.downloadFolderId = folder;
+    await h.pump(tester, const AllTracksScreen(downloadedNoPlaylist: true));
+    await _settle(tester);
+    expect(find.text('Scaricati senza playlist'), findsOneWidget);
+    expect(find.byType(TrackRow), findsOneWidget);
+    expect(find.text('Song 0'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'zzz');
+    await tester.pump(const Duration(milliseconds: 400));
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets(
     'the play icon starts the whole list from the first, shuffle off',
     (tester) async {

@@ -45,7 +45,6 @@ import 'artist_screen.dart';
 import 'favorites_screen.dart';
 import '../history/history_screen.dart';
 import '../smart/smart_playlist_screen.dart';
-import '../stats/stats_screen.dart';
 import '../tags/tags_screen.dart';
 import '../../../providers/folder_actions.dart';
 import '../../../core/constants.dart';
@@ -393,6 +392,10 @@ class _LibraryShortcuts extends ConsumerWidget {
       reviewCountProvider.select((c) => c.value ?? 0),
     );
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
+    final downloadedCount = ref
+        .watch(downloadedNoPlaylistProvider(const TrackQuery()))
+        .value
+        ?.length ?? 0;
     void open(Widget w) => ShellNav.open<void>(context, w);
     return LibraryShortcuts(
       items: [
@@ -437,16 +440,18 @@ class _LibraryShortcuts extends ConsumerWidget {
           keepWhenZero: true,
           onTap: () => open(const TagsScreen()),
         ),
-        LibraryShortcut(
-          label: l.statsTitle,
-          onTap: () => open(const StatsScreen()),
-        ),
         if (reviewCount > 0)
           LibraryShortcut(
             label: l.reviewTitle,
             count: reviewCount,
             onTap: () => open(const ReviewScreen()),
           ),
+        LibraryShortcut(
+          label: l.downloadedNoPlaylist,
+          count: downloadedCount,
+          keepWhenZero: true,
+          onTap: () => open(const AllTracksScreen(downloadedNoPlaylist: true)),
+        ),
       ],
     );
   }

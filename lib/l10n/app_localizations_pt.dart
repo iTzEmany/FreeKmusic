@@ -7441,4 +7441,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queueThen => 'Depois';
+
+  @override
+  String get downloadedNoPlaylist => 'Transferidas sem playlist';
+
+  @override
+  String get downloadedNoPlaylistEmpty =>
+      'Todas as faixas transferidas já estão numa playlist';
 }

@@ -8,6 +8,7 @@ import '../../widgets/motion.dart';
 import 'settings_pages.dart';
 import 'settings_summaries.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../stats/stats_screen.dart';
 
 export 'settings_pages.dart' show SettingsPage, SettingsPageView, SettingsGroup, settingsPageTitle;
 
@@ -69,6 +70,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                 ),
+              // Fixed entry, always there (D-484); opens the same screen as Home.
+              ListTile(
+                title: Text(l.statsTitle, style: text.titleSmall),
+                subtitle: Text(
+                  l.statsSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall?.copyWith(color: cc.textMuted),
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => ShellNav.open<void>(context, const StatsScreen()),
+              ),
             ],
           ),
         ),

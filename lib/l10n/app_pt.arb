@@ -3852,5 +3852,7 @@
   "chineseDictionaryDeleteFailed": "Não foi possível eliminar o dicionário chinês",
   "editorDiscardBody": "As alterações não foram guardadas.",
   "queueUpNext": "A seguir na fila",
-  "queueThen": "Depois"
+  "queueThen": "Depois",
+  "downloadedNoPlaylist": "Transferidas sem playlist",
+  "downloadedNoPlaylistEmpty": "Todas as faixas transferidas já estão numa playlist"
 }

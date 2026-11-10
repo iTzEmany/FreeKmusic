@@ -63,6 +63,9 @@ class Harness {
     return Harness._(db, handler, backend, store);
   }
 
+  /// Id of the download folder (none by default); set before `pump`.
+  int? downloadFolderId;
+
   /// What the lyrics view shows under the lines; set before `pump`.
   RomanizationState romanization = RomanizationState.off;
 
@@ -78,6 +81,8 @@ class Harness {
         startupSettledProvider.overrideWith((ref) async {}),
         // Never a real search for the artist-merge suggestion.
         artistMergeSearchProvider.overrideWithValue(mergeSearch),
+        // Never the real download folder (it would create ~/Music).
+        downloadFolderIdProvider.overrideWith((ref) async => downloadFolderId),
         // The real one reads the app support folder (no plugin in tests).
         romanizationProvider.overrideWith(
           (ref, id) => AsyncData(romanization),
