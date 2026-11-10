@@ -1457,7 +1457,7 @@ mobile_scanner — fase 24 — 2026-10-19
 ## Fase 109 — Titoli che scorrono (`fase-109-titoli-che-scorrono.md`)
 - [x] 109.1 `MarqueeText`
 - [x] 109.2 Dove si usa
-- [ ] 109.3 Prestazioni
+- [x] 109.3 Prestazioni
 - [ ] 109.4 Controlli di fase
 
 ## Fase 110 — Libreria e playlist (`fase-110-libreria-e-playlist.md`)
