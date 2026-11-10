@@ -1458,7 +1458,7 @@ mobile_scanner — fase 24 — 2026-10-19
 - [x] 109.1 `MarqueeText`
 - [x] 109.2 Dove si usa
 - [x] 109.3 Prestazioni
-- [ ] 109.4 Controlli di fase
+- [x] 109.4 Controlli di fase
 
 ## Fase 110 — Libreria e playlist (`fase-110-libreria-e-playlist.md`)
 - [ ] 110.1 «Statistiche» fuori dalla Libreria
