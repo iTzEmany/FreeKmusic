@@ -86,7 +86,7 @@ class JamLocalQueue {
     if (mode == null) return;
     final give = _toGive;
     _asidePart = _unplayed();
-    final q = give == null ? (ids: const <int>[], index: 0) : savedQueue(give.ids, give.index);
+    final q = give == null ? (ids: const <int>[], index: 0, userAhead: 0) : savedQueue(give.ids, give.index);
     await _persistence?.keepAside(
       SavedPlayback(
         queueIds: q.ids,

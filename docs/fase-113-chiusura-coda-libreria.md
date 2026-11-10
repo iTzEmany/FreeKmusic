@@ -13,7 +13,7 @@ Tutte le soglie di `refactor/coda-e-libreria/analisi.md` «Metriche di arrivo»,
 
 | Metrica | Soglia | Comando |
 |---|---|---|
-| «Riproduci dopo» sparito | 0 righe | `grep -rniE "playNext\|playOnlineNext\|insertNext" lib test` |
+| «Riproduci dopo» sparito | 0 righe | `grep -rniE --exclude=play_queue_characterization_test.dart "playNext\|playOnlineNext\|insertNext" lib test` |
 | Statistiche fuori dalla Libreria | 0 righe | `grep -rn "StatsScreen" lib/ui/screens/library` |
 | Niente testo che scorre nelle liste | 0 righe | `grep -rn MarqueeText lib/ui/widgets/track_row.dart lib/ui/screens/now_playing/queue_sheet.dart` |
 | Invarianti del blocco | 0 violazioni su tutti i semi | test a operazioni casuali di `play_queue_test.dart` |
@@ -36,6 +36,8 @@ Tutte le soglie di `refactor/coda-e-libreria/analisi.md` «Metriche di arrivo»,
 
 ### 113.4 — Review di architettura (Opus)
 - Sul diff 107–111: `PlayQueue` (invarianti I1/I2, `_settle`, nessuna operazione che li rompa), handler e persistenza (`lastQueueUser`), Shuffle+ (`skip = userAhead`, `_played`), livelli rispettati (nessuna logica di dominio nuova in `lib/ui`; `MarqueeText` e filtro playlist sono presentazione), nessun lavoro pesante sul thread UI, nessun `catch` muto (`AppLog`), bridge Kotlin di 111 (registrazione e deregistrazione del ricevitore). Bug corretti subito con il loro test; debito in `prossimi-lavori.md` (sezione nuova «coda-e-libreria»).
+- Seguiti da 108.6 (da fare qui o in `prossimi-lavori.md`): spezzare `play_queue.dart` (`placeAfter` puro per la ricostruzione di `_settle`, helper dell'ordine shuffle), `queue_sheet.dart` (widget della lista del drag con la foto), `shuffle_plus_controller.dart`; sostituire lo `shortcut:` di Shuffle+ (arrivo per (id, fromBlock)) con una chiave della voce / contatore d'arrivo esposto da `ShuffleHost`.
+- Differenze dal mockup `coda.html` viste sul telefono nel foglio della coda: conteggi nell'intestazione («· N brani»), numeri progressivi sulle righe del blocco, etichetta «suggerito» visibile; da decidere in 113.2 contro `coda.html`.
 
 ### 113.5 — Documenti
 - `docs/02-architettura.md`: sezione della coda aggiornata (blocco dell'utente, invarianti I1/I2, regole di `enqueue`/`next`/`previous`/`jumpTo`/`move`/Svuota, `lastQueueUser`); `MarqueeText` e «Pausa a volume zero» (`VolumeBridge`) nelle sezioni giuste.

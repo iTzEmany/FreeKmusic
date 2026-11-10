@@ -304,6 +304,15 @@ void main() {
     expect(q.userAhead, 2);
   });
 
+  test('move from outside to between two block entries lands there (D-487)', () {
+    final q = make([1, 2, 3, 4, 5])
+      ..enqueue(7)
+      ..enqueue(8);
+    q.move(6, 2); // 5 between 7 and 8
+    expect(q.items, [1, 7, 5, 8, 2, 3, 4]);
+    expect(q.userAhead, 3);
+  });
+
   test('jumpTo the current entry keeps currentFromUser', () {
     final q = make([1, 2, 3])..enqueue(9);
     q.next();

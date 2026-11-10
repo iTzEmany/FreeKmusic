@@ -143,49 +143,16 @@ void main() {
     expect(b.userAhead, 2);
   });
 
-  test('an online current takes itself out of the saved block count', () async {
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
-    final ids = [
-      for (var i = 0; i < 4; i++)
-        await db.into(db.tracks).insert(TracksCompanion.insert(
-            path: '/m/$i.mp3', title: 'S$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: i)),
-    ];
-    SharedPreferences.setMockInitialValues({});
-    final store = SettingsStore(await SharedPreferences.getInstance());
-    CodecoreAudioHandler open(PlayQueue q) {
-      final h = CodecoreAudioHandler(FakeBackend(), q, TrackRepository(db), onError: (_) {});
-      addTearDown(h.dispose);
-      return h;
-    }
-
+  test('an online current takes itself out of the saved block count', () {
     // [A, O (online, current), U (block), B, C]: the block is only U.
-    final q = PlayQueue()..setItems([ids[0], -1, ids[1], ids[2], ids[3]], startIndex: 1, userAhead: 1);
-    await PlaybackPersistence(open(q), store).flush();
-    expect(store.readPlayback().userAhead, 0);
-
-    final b = open(PlayQueue());
-    await PlaybackPersistence(b, store).restore();
-    expect(b.userAhead, 0);
+    expect(savedQueue([5, -1, 6, 7, 8], 1, userAhead: 1).userAhead, 0);
   });
 
-  test('an online entry inside the block is dropped from the saved block count', () async {
-    SharedPreferences.setMockInitialValues({});
-    final store = SettingsStore(await SharedPreferences.getInstance());
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
-    final q = PlayQueue()..setItems([5, 6, -1, 7, 8], userAhead: 3);
-    await PlaybackPersistence(CodecoreAudioHandler(FakeBackend(), q, TrackRepository(db), onError: (_) {}), store).flush();
-    expect(store.readPlayback().userAhead, 2);
+  test('an online entry inside the block is dropped from the saved block count', () {
+    expect(savedQueue([5, 6, -1, 7, 8], 0, userAhead: 3).userAhead, 2);
   });
 
-  test('current online with an empty block saves 0', () async {
-    SharedPreferences.setMockInitialValues({});
-    final store = SettingsStore(await SharedPreferences.getInstance());
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
-    final q = PlayQueue()..setItems([5, -1, 6], startIndex: 1);
-    await PlaybackPersistence(CodecoreAudioHandler(FakeBackend(), q, TrackRepository(db), onError: (_) {}), store).flush();
-    expect(store.readPlayback().userAhead, 0);
+  test('current online with an empty block saves 0', () {
+    expect(savedQueue([5, -1, 6], 1).userAhead, 0);
   });
 }

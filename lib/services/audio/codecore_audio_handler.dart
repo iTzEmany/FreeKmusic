@@ -1668,12 +1668,13 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Puts the online (or library) entry [id] at [index] of the play order;
-  /// the current track keeps playing.
-  void insertAt(int index, int id) {
+  /// the current track keeps playing. Returns the index actually used.
+  int insertAt(int index, int id) {
     if (_queue.isEmpty) _source = null;
-    _queue.insertAt(index, id);
+    final at = _queue.insertAt(index, id);
     _queueController.add(null);
     unawaited(_refreshWindow());
+    return at;
   }
 
   /// Swaps the stream entry [oldId] for the library track [newId] (it was
