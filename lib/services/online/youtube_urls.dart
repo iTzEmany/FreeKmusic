@@ -74,6 +74,14 @@ YoutubeLinkKind classifyYoutubeUrl(String input) {
   return YoutubeLinkKind.other;
 }
 
+/// The video id of a [YoutubeLinkKind.video] address, else null.
+String? youtubeVideoId(String input) {
+  final u = _parse(input);
+  if (u == null || classifyYoutubeUrl(input) != YoutubeLinkKind.video) return null;
+  final s = _segments(u);
+  return u.host == 'youtu.be' ? s.first : u.queryParameters['v'] ?? s[1];
+}
+
 /// The address to hand to `yt-dlp --flat-playlist`: a playlist by its id (a
 /// `watch?v=…&list=…` link becomes the playlist page), a channel by its
 /// Videos tab. Null when [input] is neither.

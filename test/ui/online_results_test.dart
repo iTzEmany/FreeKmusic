@@ -1,3 +1,4 @@
+import 'package:codecore/data/db/app_database.dart' show Track;
 import 'dart:async';
 
 import 'package:codecore/providers/player_providers.dart';
@@ -10,6 +11,9 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/ui/screens/online/album_card.dart';
 import 'package:codecore/ui/screens/online/artist_card.dart';
+import 'package:codecore/ui/screens/online/online_album_screen.dart';
+import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_ytm.dart';
+import '../support/fake_youtube.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
@@ -91,6 +96,20 @@ class _EnqueueSpy implements PlayerController {
   Future<void> enqueueOnline(YtResult r) async => calls.add(r.id);
   @override
   bool get jamQueueFull => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _PlaySpy implements PlayerController {
+  final played = <String>[];
+  @override
+  bool inJam = false;
+  @override
+  Future<bool?> playFromSearch({Track? track, YtResult? online}) async {
+    played.add(online!.id);
+    return false;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
@@ -408,6 +427,48 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets(
+    'a video link plays its video once, as soon as that result arrives, and the row stays',
+    (tester) async {
+      final spy = _PlaySpy();
+      final h = await open(
+        tester,
+        page: const Scaffold(
+          body: OnlineResults(query: 'https://youtu.be/vid1', submitted: 1),
+        ),
+        more: [playerControllerProvider.overrideWithValue(spy)],
+      );
+      await emit(tester, _state(best: [_video('other', 'Other clip')]));
+      expect(spy.played, isEmpty, reason: 'no result with that id yet');
+      await emit(tester, _state(best: [_video('vid1', 'The clip')]));
+      await emit(tester, _state(best: [_video('vid1', 'The clip'), _video('x', 'More')]));
+      expect(spy.played, ['vid1']);
+      expect(find.text('The clip'), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets('a YouTube Music album link opens the album page', (tester) async {
+    final h = await open(
+      tester,
+      page: const Scaffold(
+        body: OnlineResults(
+          query: 'https://music.youtube.com/browse/MPREb_abc?si=x',
+          submitted: 1,
+        ),
+      ),
+      more: [
+        youtubeServiceProvider.overrideWithValue(FakeYoutube()),
+        ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+      ],
+    );
+    await _settle(tester);
+    expect(find.byType(OnlineAlbumScreen), findsOneWidget);
+    expect(tester.widget<OnlineAlbumScreen>(find.byType(OnlineAlbumScreen)).browseId, 'MPREb_abc');
+    expect(requests, isEmpty, reason: 'an album link is not searched');
+    await h.dispose(tester);
+  });
 }
 
 /// A block of the source filter (the rows carry the same words).
