@@ -3700,5 +3700,11 @@
     }
   },
   "extSaveNothing": "No song ready to save",
-  "extRefresh": "Refresh"
+  "extRefresh": "Refresh",
+  "shazamAutoDownload": "Download Shazam songs",
+  "shazamAutoDownloadHint": "Every song added to «Da Shazam» is downloaded too.",
+  "shazamAdded": "Added to Da Shazam: {title}",
+  "shazamDuplicate": "Already in Da Shazam: {title}",
+  "shazamNotFound": "Not found on YouTube Music: {title}",
+  "shazamOffline": "No connection: the Shazam song was not added."
 }

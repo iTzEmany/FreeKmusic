@@ -3886,5 +3886,11 @@
     }
   },
   "extSaveNothing": "Nenhuma música pronta para guardar",
-  "extRefresh": "Atualizar"
+  "extRefresh": "Atualizar",
+  "shazamAutoDownload": "Baixar músicas do Shazam",
+  "shazamAutoDownloadHint": "Cada música adicionada a «Da Shazam» também é baixada.",
+  "shazamAdded": "Adicionada a Da Shazam: {title}",
+  "shazamDuplicate": "Já está em Da Shazam: {title}",
+  "shazamNotFound": "Não encontrada no YouTube Music: {title}",
+  "shazamOffline": "Sem conexão: a música do Shazam não foi adicionada."
 }

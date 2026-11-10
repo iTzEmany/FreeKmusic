@@ -4406,5 +4406,14 @@
     }
   },
   "extSaveNothing": "Nessun brano pronto da salvare",
-  "extRefresh": "Aggiorna"
+  "extRefresh": "Aggiorna",
+  "shazamAutoDownload": "Scarica i brani da Shazam",
+  "shazamAutoDownloadHint": "Ogni brano aggiunto a «Da Shazam» si scarica anche.",
+  "shazamAdded": "Aggiunto a Da Shazam: {title}",
+  "@shazamAdded": {"description": "Snackbar of a song shared from Shazam.", "placeholders": {"title": {"type": "String"}}},
+  "shazamDuplicate": "Già in Da Shazam: {title}",
+  "@shazamDuplicate": {"description": "Snackbar of a song shared from Shazam.", "placeholders": {"title": {"type": "String"}}},
+  "shazamNotFound": "Non trovato su YouTube Music: {title}",
+  "@shazamNotFound": {"description": "Snackbar of a song shared from Shazam.", "placeholders": {"title": {"type": "String"}}},
+  "shazamOffline": "Nessuna connessione: il brano di Shazam non è stato aggiunto."
 }

@@ -3700,5 +3700,11 @@
     }
   },
   "extSaveNothing": "Noch kein Titel zum Speichern bereit",
-  "extRefresh": "Aktualisieren"
+  "extRefresh": "Aktualisieren",
+  "shazamAutoDownload": "Shazam-Titel herunterladen",
+  "shazamAutoDownloadHint": "Jeder zu «Da Shazam» hinzugefügte Titel wird auch heruntergeladen.",
+  "shazamAdded": "Zu Da Shazam hinzugefügt: {title}",
+  "shazamDuplicate": "Schon in Da Shazam: {title}",
+  "shazamNotFound": "Auf YouTube Music nicht gefunden: {title}",
+  "shazamOffline": "Keine Verbindung: der Shazam-Titel wurde nicht hinzugefügt."
 }

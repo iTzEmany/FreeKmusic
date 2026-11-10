@@ -24,12 +24,13 @@ class IncomingFiles {
     }
   }
 
-  Future<String?> takeIncomingText() async {
+  /// Every text shared since the last call, oldest first.
+  Future<List<String>> takeIncomingTexts() async {
     try {
-      return await _channel.invokeMethod<String>('takeIncomingText');
+      return await _channel.invokeListMethod<String>('takeIncomingText') ?? [];
     } on PlatformException catch (e, st) {
       AppLog.w('incoming text not readable', e, st);
-      return null;
+      return [];
     }
   }
 
@@ -45,11 +46,9 @@ class IncomingFiles {
   /// The text that started the app, then every later one while it lives.
   Stream<String> texts() async* {
     _listen();
-    final first = await takeIncomingText();
-    if (first != null) yield first;
+    yield* Stream.fromIterable(await takeIncomingTexts());
     await for (final _ in _pushedText.stream) {
-      final t = await takeIncomingText();
-      if (t != null) yield t;
+      yield* Stream.fromIterable(await takeIncomingTexts());
     }
   }
 

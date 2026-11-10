@@ -1543,8 +1543,14 @@ mobile_scanner — fase 24 — 2026-10-19
   - Non provato sul telefono: un brano scaricato dalla playlist che resta in posizione (è coperto da un test).
 
 ## Fase 116 — Brani da Shazam (`fase-116-brani-da-shazam.md`)
-- [ ] 116.1 Lettore del testo e «Da Shazam»
-- [ ] 116.2 Controlli di fase
+- [x] 116.1 Lettore del testo e «Da Shazam»
+  - Testi veri catturati dal Mi A3 (Shazam 9.50, it-IT) in `test/fixtures/shazam/`: «<titolo> di <artista> https://www.shazam.com/track/<id>/<slug>». `routeSharedText` riconosce `ShazamShare` prima dei link (separatore: l'ultimo « di »); un link shazam.com senza la frase, un titolo o un artista vuoti, un'altra lingua → Cerca (R-209, R-210).
+  - `ShazamInbox.add` (`lib/providers/shazam_providers.dart`): un abbinamento con `CollectionMatcher`; playlist «Da Shazam» ritrovata per uuid (preferenze, solo playlist visibili) o ricreata; doppione per id o per titolo+artista prima di creare la riga in streaming; `addAtTop`; scritture in serie (due condivisioni insieme non creano due playlist). Avvisi «Aggiunto» con «Ascolta», «Già in Da Shazam», «Non trovato» con «Cerca», «Nessuna connessione» con «Riprova» (`lib/ui/shell/shazam_share.dart`, titoli oltre 80 caratteri accorciati).
+  - Impostazione «Scarica i brani da Shazam» (Download, solo Android, spenta di serie).
+- [x] 116.2 Controlli di fase
+  - Review Sonnet high e scheggia di passo high: corsa fra condivisioni (riprodotta), playlist nascosta presa per «Da Shazam», riga in streaming inutile sui doppioni, artista vuoto; corretti con test, e test rinforzati sui mutanti sopravvissuti.
+  - Scheggia di fase sul Redmi a volume 0: creazione, doppione, ricreazione, download con l'impostazione, testo semplice e brano inesistente verso Cerca, «Riprova» senza Wi-Fi, «Svuota» che lascia «Da Shazam» intera. Trovati e corretti: condivisioni ravvicinate perse (`IncomingBridge` ora tiene una coda) e avviso a schermo intero con un titolo lunghissimo. Ricontrollato sul Redmi: due condivisioni di fila → due righe in una sola «Da Shazam».
+  - Con due condivisioni insieme l'ordine in cima segue la fine dell'abbinamento, non l'arrivo. Rilievi fuori fase in `prossimi-lavori.md` §7. Non provata una condivisione vera da Shazam sul Redmi (cronologia dell'utente); il testo vero viene dal Mi A3.
 
 ## Correzioni fuori fase
 - [x] Pulsanti «Casuale» delle liste come interruttori (D-534)
