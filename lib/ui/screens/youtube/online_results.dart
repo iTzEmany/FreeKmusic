@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/online_collection_providers.dart' show OnlineCollectionRef;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
@@ -28,7 +29,7 @@ import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
 import 'online_results_rows.dart';
 import 'online_results_sections.dart';
-import 'playlist_source_sheet.dart';
+import '../online/online_playlist_screen.dart';
 
 String ytErrorText(BuildContext context, YtErrorKind k) {
   final l = context.l10n;
@@ -91,9 +92,11 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     // A playlist or channel address is not a search: it opens its video list.
     final listing = listingUrl(q);
     if (listing != null) {
-      // After the frame: a sheet cannot be opened while the page is building.
+      // After the frame: a page cannot be pushed while this one is building.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) PlaylistSourceSheet.show(context, listing);
+        if (mounted) {
+          ShellNav.open<void>(context, OnlinePlaylistScreen(OnlineCollectionRef.youtubeListing(listing)));
+        }
       });
       return;
     }

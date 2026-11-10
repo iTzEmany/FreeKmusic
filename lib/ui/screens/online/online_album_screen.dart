@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
-import '../../../providers/player_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/import_providers.dart';
 import '../../../providers/library_overlap_providers.dart';
@@ -19,7 +16,6 @@ import '../../../services/online/album_download_plan.dart';
 import '../../../services/online/ytm_artist.dart';
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../shell/shell_nav.dart';
-import '../now_playing/now_playing_screen.dart';
 import '../playlists/playlist_picker.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_sheet.dart';
@@ -30,6 +26,7 @@ import '../import/import_detail_screen.dart';
 import 'artist_page_screen.dart';
 import 'artist_page_sections.dart';
 import 'catalog_error_view.dart';
+import 'online_list_play.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
 import '../../widgets/show_msg.dart';
@@ -91,34 +88,6 @@ class OnlineAlbumScreen extends ConsumerWidget {
     }
   }
 
-  /// Play / Shuffle: opens the player in loading; the controller queues the album
-  /// in the Jam instead when one is on (D-89), then no player opens.
-  void _play(BuildContext context, WidgetRef ref, List<YtResult> songs) {
-    if (songs.isEmpty) return;
-    unawaited(ref.read(playerControllerProvider).inJam
-        ? _queueAlbum(context, ref, songs)
-        : playOnlineListAndOpen(context, ref, songs, listKey: _listKey));
-  }
-
-  Future<void> _queueAlbum(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
-    final ctrl = ref.read(playerControllerProvider);
-    var added = 0, full = false;
-    try {
-      for (final r in songs) {
-        if (ctrl.jamQueueFull) {
-          full = true;
-          break;
-        }
-        await ctrl.enqueueOnline(r);
-        added++;
-      }
-    } on Object catch (e, st) {
-      AppLog.w('album queue failed', e, st);
-      return;
-    }
-    if (context.mounted) showQueued(context, (added: added, full: full), wanted: songs.length);
-  }
-
   Future<void> _addToPlaylist(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
     final picked = await pickPlaylist(context, ref);
     if (picked == null || !context.mounted) return;
@@ -139,7 +108,7 @@ class OnlineAlbumScreen extends ConsumerWidget {
     final items = <(String, IconData, String, VoidCallback)>[
       ('album-menu-download', Icons.download_rounded, l.ytmDownloadAlbum,
           () => _downloadAlbum(context, ref, album)),
-      ('album-menu-queue', Icons.queue_rounded, l.ytmAlbumQueue, () => _queueAlbum(context, ref, songs)),
+      ('album-menu-queue', Icons.queue_rounded, l.ytmAlbumQueue, () => queueOnlineList(context, ref, songs)),
       ('album-menu-playlist', Icons.playlist_add_rounded, l.addToPlaylist,
           () => _addToPlaylist(context, ref, songs)),
       ('album-menu-share', Icons.share_rounded, l.shareMenu, () => _share(context)),
@@ -182,7 +151,9 @@ class OnlineAlbumScreen extends ConsumerWidget {
           child: _AlbumHeader(
             album: album,
             release: release,
-            onPlay: songs.isEmpty ? null : () => _play(context, ref, songs),
+            onPlay: songs.isEmpty
+                ? null
+                : () => playOrQueueOnline(context, ref, songs, listKey: _listKey),
             listKey: _listKey,
             onMore: album == null ? null : () => _openMenu(context, ref, album, songs),
           ),
