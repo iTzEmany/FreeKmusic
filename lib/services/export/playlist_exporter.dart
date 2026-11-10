@@ -2,16 +2,23 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 
+import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/backup_queries.dart' show trackRefFor;
 import '../../core/text_utils.dart';
 import '../backup/user_data.dart';
 import '../import/csv_parser.dart';
 
-/// M3U8 (UTF-8). Paths are absolute, or relative to [relativeTo] with `/`.
+/// M3U8 (UTF-8). Paths are absolute, or relative to [relativeTo] with `/`. A streamed
+/// track (`kind = 2`, D-524) has no file: it is left out.
 String toM3u8(String name, List<Track> tracks, {String? relativeTo}) {
   final b = StringBuffer('#EXTM3U\n#PLAYLIST:$name\n');
-  for (final t in tracks) {
+  final files = tracks.where((t) => t.kind != kStreamKind).toList();
+  if (files.length != tracks.length) {
+    AppLog.i('m3u: ${tracks.length - files.length} streamed tracks not exported');
+  }
+  for (final t in files) {
     final secs = t.durationMs > 0 ? (t.durationMs / 1000).round() : -1;
     final label = t.artist == null || t.artist!.isEmpty
         ? t.title
@@ -102,7 +109,7 @@ String renderPlaylist(
 }) =>
     switch (format) {
       ExportFormat.m3u8 => toM3u8(name, tracks,
-          relativeTo: relativePaths ? commonDirectory(tracks) : null),
+          relativeTo: relativePaths ? commonDirectory([for (final t in tracks) if (t.kind != kStreamKind) t]) : null),
       ExportFormat.csv => toExportifyCsv(tracks, isrcByTrack),
       ExportFormat.json => toPlaylistJson(PlaylistData(
           name: name,

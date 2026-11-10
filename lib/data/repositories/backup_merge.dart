@@ -8,6 +8,7 @@ import '../../core/text_utils.dart';
 import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
 import '../../services/backup/user_data.dart';
+import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
 import 'artist_country_repository.dart';
 import 'artist_alias_repository.dart';
@@ -59,6 +60,7 @@ bool _blank(String? s) => s == null || s.trim().isEmpty;
 Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver resolver,
     {Directory? coversDir}) {
   final report = MergeReport();
+  final trackRepo = TrackRepository(db);
   return db.transaction(() async {
     for (final u in data.tracks) {
       final id = resolver.resolve(u.ref);
@@ -145,7 +147,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       final ids = <int>[];
       final seen = <int>{};
       for (final ref in pl.items) {
-        final id = resolver.resolve(ref);
+        final id = await _resolveItem(trackRepo, resolver, ref);
         if (id == null) {
           report.playlistItemsSkipped++;
         } else if (seen.add(id)) {
@@ -209,6 +211,22 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     await _mergeArtistAliases(db, data);
     return report;
   });
+}
+
+/// The local track of a playlist item. A streamed one (D-524) has no file to find: its
+/// shadow row is created here when it is missing.
+Future<int?> _resolveItem(TrackRepository tracks, TrackResolver resolver, TrackRef ref) async {
+  final key = ref.streamKey;
+  if (key == null) return resolver.resolve(ref);
+  if (!isStreamKey(key)) {
+    AppLog.w('backup: playlist item with a malformed stream key skipped: $key');
+    return null;
+  }
+  await tracks.ensureStreamRow(
+    streamResultOf(key, title: ref.title, artist: ref.artist, durationMs: ref.durationMs),
+  );
+  // Null when an episode already has that path: it is not a track for a playlist.
+  return (await tracks.streamRow(key))?.id;
 }
 
 bool _coverFileExists(Directory? dir, String key) =>

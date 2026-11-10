@@ -7,6 +7,7 @@ import '../../services/share/playlist_sync.dart';
 import '../db/app_database.dart';
 import 'backup_queries.dart' show trackRefFor;
 import 'hidden_playlists.dart';
+import 'track_kinds.dart';
 
 /// Reads the playlists in the shapes [planSync] needs, and writes a plan.
 class PlaylistSyncRepository {
@@ -14,14 +15,30 @@ class PlaylistSyncRepository {
 
   final AppDatabase _db;
 
+  Future<Set<int>> _shadowIds() async => (await (_db.selectOnly(_db.tracks)
+            ..addColumns([_db.tracks.id])
+            ..where(_db.tracks.kind.equals(kStreamKind)))
+          .map((r) => r.read(_db.tracks.id)!)
+          .get())
+      .toSet();
+
+  /// Track ids in playlist order. Shadow rows (streamed tracks, D-524) are left out: they are
+  /// not synced, so neither the plan nor the export sees them.
   Future<Map<int, List<int>>> _trackIdsByPlaylist() async {
     final links = await (_db.select(_db.playlistTracks)
           ..orderBy([(l) => OrderingTerm.asc(l.position)]))
         .get();
+    final shadow = await _shadowIds();
     final byPlaylist = <int, List<int>>{};
+    var skipped = 0;
     for (final l in links) {
+      if (shadow.contains(l.trackId)) {
+        skipped++;
+        continue;
+      }
       (byPlaylist[l.playlistId] ??= []).add(l.trackId);
     }
+    if (skipped > 0) AppLog.i('sync: $skipped streamed tracks in playlists not synced');
     return byPlaylist;
   }
 
@@ -100,6 +117,7 @@ class PlaylistSyncRepository {
       for (final e in plan.toWrite) {
         final r = e.remote;
         final int playlistId;
+        var kept = const <int>[];
         if (e.action == SyncAction.add) {
           playlistId = await _db.into(_db.playlists).insert(
               PlaylistsCompanion.insert(
@@ -114,14 +132,24 @@ class PlaylistSyncRepository {
                 ..where((p) => p.id.equals(playlistId)))
               .write(PlaylistsCompanion(
                   name: Value(r.name), updatedAt: Value(r.updatedAt)));
+          // The plan never saw the streamed tracks: they stay, after the synced ones.
+          final shadow = await _shadowIds();
+          kept = [
+            for (final l in await (_db.select(_db.playlistTracks)
+                  ..where((t) => t.playlistId.equals(playlistId))
+                  ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+                .get())
+              if (shadow.contains(l.trackId)) l.trackId,
+          ];
           await (_db.delete(_db.playlistTracks)
                 ..where((t) => t.playlistId.equals(playlistId)))
               .go();
         }
-        for (var i = 0; i < e.trackIds.length; i++) {
+        final ids = [...e.trackIds, ...kept.where((id) => !e.trackIds.contains(id))];
+        for (var i = 0; i < ids.length; i++) {
           await _db.into(_db.playlistTracks).insert(
               PlaylistTracksCompanion.insert(
-                  playlistId: playlistId, trackId: e.trackIds[i], position: i));
+                  playlistId: playlistId, trackId: ids[i], position: i));
         }
       }
       AppLog.i('sync: ${plan.toAdd.length} playlists added, '

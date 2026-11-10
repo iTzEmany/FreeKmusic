@@ -1,6 +1,8 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/services/online/youtube_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -152,6 +154,64 @@ void main() {
       await repo.removeTracks(a, ids);
       expect(await order(a), isEmpty);
       expect(await order(b), ids);
+    });
+  });
+
+  group('streamed tracks (D-524)', () {
+    Future<int> shadow(String id, {int secs = 100}) => TrackRepository(db).ensureStreamRow(
+        YtResult(id: id, title: 'S$id', channel: 'Ch', duration: Duration(seconds: secs), artists: const ['Art']));
+
+    test('ensureStreamRow makes one kind-2 row per key', () async {
+      final a = await shadow('v1');
+      expect(await shadow('v1'), a);
+      final row = (await TrackRepository(db).getById(a))!;
+      expect((row.kind, row.path, row.title, row.artist, row.durationMs),
+          (kStreamKind, 'stream:youtube:v1', 'Sv1', 'Art', 100000));
+    });
+
+    test('addStreamTracks takes library and shadow rows in order, addTracks still refuses shadows', () async {
+      final p = await repo.create('Mix');
+      final s1 = await shadow('v1'), s2 = await shadow('v2');
+      expect(await repo.addTracks(p, [s1]), 0);
+      expect(await repo.addStreamTracks(p, [ids[0], s1, s2, s1]), 3);
+      expect((await repo.watchTracks(p).first).map((t) => t.id), [ids[0], s1, s2]);
+    });
+
+    test('addStreamTracks refuses an episode', () async {
+      final p = await repo.create('Mix');
+      await db.customStatement("UPDATE tracks SET kind = 1 WHERE id = ${ids[0]}");
+      expect(await repo.addStreamTracks(p, [ids[0]]), 0);
+    });
+
+    test('watchAll counts and sums the shadow rows', () async {
+      final p = await repo.create('Mix');
+      await db.customStatement('UPDATE tracks SET duration_ms = 1000');
+      await repo.addStreamTracks(p, [ids[0], await shadow('v1', secs: 2)]);
+      final s = (await repo.watchAll().first).single;
+      expect((s.trackCount, s.durationMs), (2, 3000));
+    });
+
+    test('addAtTop puts the track first and renumbers, in one go', () async {
+      final p = await repo.create('Mix');
+      await repo.addTracks(p, ids);
+      final s1 = await shadow('v1');
+      expect(await repo.addAtTop(p, s1), isTrue);
+      expect((await repo.watchTracks(p).first).map((t) => t.id), [s1, ...ids]);
+      final positions = [for (final r in await db.select(db.playlistTracks).get()) r.position]..sort();
+      expect(positions, [0, 1, 2, 3]);
+    });
+
+    test('addAtTop leaves a track already there where it is', () async {
+      final p = await repo.create('Mix');
+      await repo.addTracks(p, ids);
+      expect(await repo.addAtTop(p, ids[2]), isFalse);
+      expect((await repo.watchTracks(p).first).map((t) => t.id), ids);
+    });
+
+    test('nameTaken ignores case and spaces', () async {
+      await repo.create('Mix');
+      expect(await repo.nameTaken(' mix '), isTrue);
+      expect(await repo.nameTaken('Mix (2)'), isFalse);
     });
   });
 }
