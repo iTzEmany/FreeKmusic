@@ -1736,6 +1736,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     unawaited(_refreshWindow());
   }
 
+  /// Undo of a queue removal: see [PlayQueue.putBack].
+  void putBackInQueue(int index, int id, {required bool user}) {
+    if (_queue.isEmpty) _source = null;
+    _queue.putBack(index, id, user: user);
+    _queueController.add(null);
+    unawaited(_refreshWindow());
+  }
+
   void addToQueue(int trackId) {
     if (_queue.isEmpty) _source = null;
     _queue.enqueue(trackId);

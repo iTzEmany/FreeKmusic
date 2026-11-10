@@ -32,7 +32,9 @@ class VolumeZeroPauseController extends Notifier<bool> {
     var on = ref.read(settingsProvider).pauseOnZeroVolume;
     void sysVolume(bool start) {
       if (!isAndroid) return;
-      (start ? sv.start() : sv.stop()).ignore();
+      (start ? sv.start() : sv.stop()).catchError(
+        (Object e, StackTrace st) => AppLog.w('system volume start/stop failed', e, st),
+      );
     }
 
     if (on) sysVolume(true);

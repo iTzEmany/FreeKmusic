@@ -170,12 +170,11 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       background: const DismissBackground(),
       secondaryBackground: const DismissBackground(alignEnd: true),
       onDismissed: (_) async {
+        final user = i < ref.read(audioHandlerProvider).userAhead;
         await ctrl.removeFromQueue(first + i);
         if (!mounted) return;
         showUndoSnack(context, l.removedFromQueue, () {
-          ctrl.addToQueue(t.id);
-          final n = ref.read(queueProvider).value?.length ?? queueLength;
-          ctrl.reorderQueue(n - 1, first + i);
+          ctrl.putBackInQueue(first + i, t.id, user: user);
         });
       },
       child: Material(

@@ -7,6 +7,21 @@ PlayQueue make(List<int> ids, {int start = 0}) =>
     PlayQueue(random: Random(7))..setItems(ids, startIndex: start);
 
 void main() {
+  test('putBack returns a removed entry to its slot, in or out of the block', () {
+    final q = make([1, 2, 3, 4])
+      ..enqueue(7)
+      ..enqueue(8);
+    q.removeAt(1);
+    q.putBack(1, 7, user: true);
+    expect(q.items, [1, 7, 8, 2, 3, 4]);
+    expect(q.userAhead, 2);
+    q.removeAt(4);
+    q.putBack(4, 3, user: false);
+    expect(q.items, [1, 7, 8, 2, 3, 4]);
+    expect(q.userAhead, 2);
+    expect(q.invariantError, isNull);
+  });
+
   test('starts at requested index', () {
     final q = make([10, 20, 30], start: 1);
     expect(q.currentId, 20);
@@ -440,6 +455,14 @@ void main() {
                 }
               case 12:
                 q.insertAt(ops.nextInt(q.items.length + 2), nextId++);
+              case 14:
+                if (q.items.length > 1) {
+                  final i = ops.nextInt(q.items.length);
+                  final user = i > q.currentIndex && i <= q.currentIndex + q.userAhead;
+                  final id = q.items[i];
+                  if (q.removeAt(i)) break;
+                  q.putBack(i, id, user: user);
+                }
               case 13:
                 if (q.items.isNotEmpty) {
                   q.enqueue(q.items[ops.nextInt(q.items.length)]); // duplicate

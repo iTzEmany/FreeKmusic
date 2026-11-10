@@ -498,6 +498,20 @@ class PlayQueue {
     return n;
   }
 
+  /// Undo of a removal: puts [id] back at [index]. A [user] entry returns into
+  /// the block at its old slot; any other goes through [insertAt] (its old
+  /// index is always past the block).
+  void putBack(int index, int id, {required bool user}) {
+    if (!user || _items.isEmpty) {
+      insertAt(index, id);
+      return;
+    }
+    _changed();
+    final at = index.clamp(_pos + 1, _pos + 1 + _user.length);
+    _insertUser(at, id);
+    _user.insert(at - _pos - 1, _user.removeLast());
+  }
+
   /// «Add to queue»: after the current track and the user entries before it.
   void enqueue(int trackId) {
     if (_items.isEmpty) {
