@@ -7468,4 +7468,34 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pauseOnZeroVolumeHelp =>
       'Al subir de nuevo el volumen la música continúa, solo si la pausó esta función.';
+
+  @override
+  String queueCountShuffle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count canciones, Aleatorio',
+      one: '1 canción, Aleatorio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueBlockPosition(int n, int total) {
+    return 'Posición $n de $total';
+  }
+
+  @override
+  String get queueReorderHandle => 'Arrastra para reordenar';
+
+  @override
+  String resultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count resultados',
+      one: '1 resultado',
+    );
+    return '$_temp0';
+  }
 }

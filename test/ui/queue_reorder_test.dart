@@ -107,6 +107,73 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('counts in the headers, numbers on the block rows, named drag handles', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(4).toList(), 0));
+    final sem = tester.ensureSemantics();
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    h.handler.addToQueue(ids[4]);
+    h.handler.addToQueue(ids[5]);
+    await _settle(tester);
+    expect(find.textContaining('5 brani', findRichText: true), findsOneWidget, reason: 'sheet header: everything after the current');
+    expect(find.text('2 brani'), findsOneWidget, reason: 'block');
+    expect(find.text('3 brani'), findsOneWidget, reason: '«Poi»');
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Posizione 2 di 2')), findsOneWidget);
+    // One node per row: the title as label, the handle text as hint, with the move actions.
+    for (final title in ['Song 4', 'Song 1']) {
+      final node = find.bySemanticsLabel(RegExp(title));
+      expect(node, findsOneWidget, reason: title);
+      final data = tester.getSemantics(node).getSemanticsData();
+      expect(data.hint, 'Trascina per riordinare', reason: title);
+      expect(data.customSemanticsActionIds, isNotEmpty, reason: '$title keeps the move actions');
+    }
+    expect(find.bySemanticsLabel(RegExp('Trascina per riordinare')), findsNothing, reason: 'never a separate stop');
+    sem.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('tapping a row plays that row: inside the block and past it (D-494)', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 6);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final ids = [for (final t in rows) t.id];
+    await tester.runAsync(() => h.handler.playQueue(ids.take(3).toList(), 0));
+    await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+    h.handler.addToQueue(ids[3]);
+    h.handler.addToQueue(ids[4]);
+    h.handler.addToQueue(ids[5]);
+    await _settle(tester);
+    expect(h.handler.userAhead, 3);
+
+    await tester.tap(find.text('Song 4')); // the 2nd of the block (titles are 0-based)
+    await _settle(tester);
+    expect(h.handler.currentTrack!.title, 'Song 4');
+    expect(h.handler.queueIds.sublist(2), [ids[3], ids[5], ids[1], ids[2]]);
+    // The jump moved the block after the entry: the list shows the new order
+    // (the entry itself only in the header), so the next tap hits the right row.
+    expect(find.text('Song 4'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Song 3')).dy, lessThan(tester.getTopLeft(find.text('Song 5')).dy));
+    await tester.tap(find.text('Song 3')); // now the head of the block
+    await _settle(tester);
+    expect(h.handler.currentTrack!.title, 'Song 3');
+    expect(h.handler.queueIds.sublist(h.handler.currentIndex + 1), [ids[5], ids[1], ids[2]]);
+
+    await tester.tap(find.text('Song 1')); // past the block
+    await _settle(tester);
+    expect(h.handler.currentTrack!.title, 'Song 1');
+    expect(h.handler.queueIds.sublist(h.handler.currentIndex + 1), [ids[5], ids[2]]);
+    await h.dispose(tester);
+  });
+
   for (final similar in [false, true]) {
     testWidgets(similar
         ? 'with the similar-songs header, it sits above the first entry after the block instead of «Poi»'
@@ -255,5 +322,82 @@ void main() {
     expect(find.byType(EmptyState), findsOneWidget);
     expect(find.text('La coda è vuota'), findsOneWidget);
     await h.dispose(tester);
+  });
+
+  group('swipe away and «Annulla»', () {
+    Future<(Harness, List<int>, List<String>)> setup(WidgetTester tester, {int tracks = 6, int queue = 6}) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester, tracks: tracks);
+      final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+      final ids = [for (final t in rows) t.id];
+      final titles = [for (final t in rows) t.title];
+      await tester.runAsync(() => h.handler.playQueue(ids.take(queue).toList(), 0));
+      await h.pump(tester, Scaffold(body: QueueSheet(scrollController: ScrollController())));
+      await _settle(tester);
+      return (h, ids, titles);
+    }
+
+    Future<void> swipe(WidgetTester tester, String title) async {
+      await tester.fling(find.text(title).first, const Offset(-300, 0), 1500);
+      await _settle(tester);
+      await _settle(tester);
+    }
+
+    Future<void> undo(WidgetTester tester) async {
+      tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
+      await _settle(tester);
+    }
+
+    testWidgets('undo of a normal row restores queue and block size', (tester) async {
+      final (h, _, titles) = await setup(tester);
+      final before = h.handler.queueIds;
+      await swipe(tester, titles[3]);
+      expect(h.handler.queueIds.length, before.length - 1);
+      await undo(tester);
+      expect(h.handler.queueIds, before);
+      expect(h.handler.userAhead, 0);
+      expect(tester.takeException(), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('undo of a block row puts it back in the block', (tester) async {
+      final (h, ids, titles) = await setup(tester, tracks: 6, queue: 4);
+      h.handler.addToQueue(ids[4]);
+      h.handler.addToQueue(ids[5]);
+      await _settle(tester);
+      expect(h.handler.userAhead, 2);
+      final before = h.handler.queueIds;
+      await swipe(tester, titles[4]);
+      expect(h.handler.userAhead, 1);
+      await undo(tester);
+      expect(h.handler.queueIds, before);
+      expect(h.handler.userAhead, 2);
+      expect(tester.takeException(), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('undo after the current track moved on keeps the entry upcoming', (tester) async {
+      final (h, ids, titles) = await setup(tester);
+      await swipe(tester, titles[1]);
+      await tester.runAsync(() => h.handler.skipToNext());
+      await _settle(tester);
+      await undo(tester);
+      expect(h.handler.queueIds.indexOf(ids[1]), greaterThan(h.handler.currentIndex));
+      expect(tester.takeException(), isNull);
+      await h.dispose(tester);
+    });
+
+    testWidgets('swiping one copy of a duplicated track leaves the other shown', (tester) async {
+      final (h, ids, titles) = await setup(tester, queue: 4);
+      h.handler.addToQueue(ids[2]);
+      await _settle(tester);
+      expect(find.text(titles[2]), findsNWidgets(2));
+      await swipe(tester, titles[2]);
+      expect(tester.takeException(), isNull);
+      expect(find.text(titles[2]), findsOneWidget);
+      await h.dispose(tester);
+    });
   });
 }

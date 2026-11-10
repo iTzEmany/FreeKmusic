@@ -121,3 +121,20 @@ Base verde prima di ogni passo: `flutter test test/services/audio/play_queue_tes
 - **Statistiche**: schermata, query (`stats_queries`) e blocco in Home invariati; cambia solo la porta (D-484).
 - **Righe delle liste**: restano con «…»; il mini player si scorre col dito come oggi.
 - **Coda senza aggiunte dell'utente**: impronta della caratterizzazione identica.
+
+## Stato finale (fase 113)
+Fasi 107–113 chiuse (PR #145–#156 più la 113). Metriche di arrivo:
+
+| Metrica | Valore | Esito |
+|---|---|---|
+| «Riproduci dopo» sparito | 0 righe | ok |
+| Statistiche fuori dalla Libreria | 0 righe (`StatsScreen` in `lib/ui/screens/library`) | ok |
+| Testo che scorre nelle liste | 0 righe (`MarqueeText` in `track_row.dart` e `queue_sheet.dart`) | ok |
+| Caratterizzazione della coda | `play_queue_characterization_test.dart` invariato dalla 107 (solo `55c53945`) | ok |
+| Schema | `schemaVersion` 19, invariato | ok |
+| DB e backup | diff vuoto | ok |
+| Jam | solo il campo `userAhead: 0` in `jam_local_queue.dart` (imposto dal tipo) | ok |
+| Invarianti del blocco | test a operazioni casuali di `play_queue_test.dart` | ok |
+| Prestazioni 50k e scatti sul Mi A3 | query 50k dentro le soglie (`performance_50k_test` verde); scatti: `misure.md`, «Dopo la 113» | 50k sì; scatti in parte: «Apri album», «In riproduzione» e «Pallino schede» peggiorano di pochi frame in entrambe le ripetute (seguito in `prossimi-lavori.md`) |
+
+Aperto: la prova sul telefono della 111 è rimandata (D-535, volume a zero); il debito sta in `prossimi-lavori.md` (sezione «coda-e-libreria»).

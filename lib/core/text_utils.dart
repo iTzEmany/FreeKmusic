@@ -74,8 +74,13 @@ Future<void> primeHaystacks<T>(
 ) {
   if (_haystacks[items] != null) return Future.value();
   return _priming[items] ??= () async {
-    final raw = [for (final i in items) fields(i).map((f) => f ?? '').join('\n')];
-    _haystacks[items] ??= await Isolate.run(() => _normaliseAll(raw));
+    try {
+      await null; // so a failure before any real await still clears after the caller stored the future
+      final raw = [for (final i in items) fields(i).map((f) => f ?? '').join('\n')];
+      _haystacks[items] ??= await Isolate.run(() => _normaliseAll(raw));
+    } finally {
+      _priming[items] = null; // a failure is not kept: the next key retries
+    }
   }();
 }
 

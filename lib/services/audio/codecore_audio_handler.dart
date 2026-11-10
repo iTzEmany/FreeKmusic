@@ -354,6 +354,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// A Jam or other remote transport owns playback.
   bool get hasRemote => _remote != null;
   List<int> get queueIds => _queue.items;
+  List<int> get queueKeys => _queue.keys;
   int get currentIndex => _queue.currentIndex;
   int get userAhead => _queue.userAhead;
   bool get currentFromUser => _queue.currentFromUser;
@@ -953,7 +954,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       await _goIdle();
       return;
     }
-    final next = _queue.next(auto: true);
+    final next = _nextInQueue(auto: true);
     if (next == null) {
       await _goIdle();
       return;
@@ -1141,7 +1142,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         return;
       }
       _forgetBookmarkOfFinished();
-      final next = _queue.next(auto: true);
+      final next = _nextInQueue(auto: true);
       final stay = _pauseAtTrackEnd;
       _pauseAtTrackEnd = false;
       if (next == null) {
@@ -1206,7 +1207,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final preparedFor = _window?.id;
     final prepared = _window?.consume();
     _forgetBookmarkOfFinished();
-    final id = _queue.next(auto: true);
+    final id = _nextInQueue(auto: true);
     // The sleep timer was set too late to stop the backend from moving on by
     // itself: the next track has started, so stop it at its very beginning.
     final stay = _pauseAtTrackEnd;
@@ -1587,12 +1588,22 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _publish(playbackState.value.processingState);
   }
 
+  /// `PlayQueue.next`, telling the lists when a shuffled lap restarts.
+  int? _nextInQueue({bool auto = false}) {
+    final lap = _queue.shuffle &&
+        _queue.currentIndex == _queue.items.length - 1 &&
+        !(auto && _queue.repeat == PlayRepeat.one);
+    final id = _queue.next(auto: auto);
+    if (lap && id != null) _queueController.add(null); // a new lap reshuffled everything
+    return id;
+  }
+
   @override
   Future<void> skipToNext() async {
     final remote = _remote;
     if (remote != null) return remote.next();
     if (_queue.currentId == null) return;
-    var next = _queue.next();
+    var next = _nextInQueue();
     // Past the last station the list starts again.
     if (next == null && _queueRadio != null && _queue.items.length > 1) {
       _queue.jumpTo(0);
@@ -1623,12 +1634,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     } else {
       _queue.previous();
     }
+    _queueController.add(null); // the block follows the new current entry
     await _loadCurrent(play: true);
   }
 
   @override
   Future<void> skipToQueueItem(int index) async {
     _queue.jumpTo(index);
+    // The block moved behind the new current entry: lists must see the new order.
+    _queueController.add(null);
     await _loadCurrent(play: true);
   }
 
@@ -1736,6 +1750,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     unawaited(_refreshWindow());
   }
 
+  /// Undo of a queue removal: see [PlayQueue.putBack].
+  void putBackInQueue(int index, int id, {required bool user}) {
+    if (_queue.isEmpty) _source = null;
+    _queue.putBack(index, id, user: user);
+    _queueController.add(null);
+    unawaited(_refreshWindow());
+  }
+
   void addToQueue(int trackId) {
     if (_queue.isEmpty) _source = null;
     _queue.enqueue(trackId);
@@ -1768,8 +1790,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     required bool shuffle,
     required PlayRepeat repeat,
   }) {
+    final reshuffled = _queue.shuffle != shuffle;
     _queue.shuffle = shuffle;
     _queue.repeat = repeat;
+    if (reshuffled) _queueController.add(null);
     unawaited(_refreshWindow());
   }
 

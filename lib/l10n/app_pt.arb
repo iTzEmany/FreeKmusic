@@ -3856,5 +3856,9 @@
   "downloadedNoPlaylist": "Transferidas sem playlist",
   "downloadedNoPlaylistEmpty": "Todas as faixas transferidas já estão numa playlist",
   "pauseOnZeroVolume": "Pausar quando o volume está em zero",
-  "pauseOnZeroVolumeHelp": "Ao subir o volume de novo a música continua, só se esta função a pausou."
+  "pauseOnZeroVolumeHelp": "Ao subir o volume de novo a música continua, só se esta função a pausou.",
+  "queueCountShuffle": "{count, plural, one{1 faixa, Aleatório} other{{count} faixas, Aleatório}}",
+  "queueBlockPosition": "Posição {n} de {total}",
+  "queueReorderHandle": "Arraste para reordenar",
+  "resultsCount": "{count, plural, one{1 resultado} other{{count} resultados}}"
 }

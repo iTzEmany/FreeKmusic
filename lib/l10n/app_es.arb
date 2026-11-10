@@ -3670,5 +3670,9 @@
   "downloadedNoPlaylist": "Descargadas sin lista",
   "downloadedNoPlaylistEmpty": "Todas las canciones descargadas ya están en una lista",
   "pauseOnZeroVolume": "Pausar cuando el volumen está a cero",
-  "pauseOnZeroVolumeHelp": "Al subir de nuevo el volumen la música continúa, solo si la pausó esta función."
+  "pauseOnZeroVolumeHelp": "Al subir de nuevo el volumen la música continúa, solo si la pausó esta función.",
+  "queueCountShuffle": "{count, plural, one{1 canción, Aleatorio} other{{count} canciones, Aleatorio}}",
+  "queueBlockPosition": "Posición {n} de {total}",
+  "queueReorderHandle": "Arrastra para reordenar",
+  "resultsCount": "{count, plural, one{1 resultado} other{{count} resultados}}"
 }

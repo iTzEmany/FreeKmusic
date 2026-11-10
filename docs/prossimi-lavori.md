@@ -196,6 +196,21 @@ Corretti subito: `daylist.json` cancellato dalla sostituzione totale del backup;
 - Download verificato duplicato (`cedict_download` e `yt_dlp_updater`: `.tmp`, sha256, rename; stesso `Dio` con 8/15 s e User-Agent in due provider). Rimedio: un `downloadVerified(...)` e un `downloadDioProvider`.
 - La tile «Scarica» del dizionario carica tutta la mappa dopo il download solo per verificarla (lo sha256 basta).
 
+### coda-e-libreria (review di architettura della fase 113)
+- Pausa a volume zero in secondo piano: il tasto «volume su» la fa ripartire solo entro circa 2 s, poi Android lo manda alla suoneria (`gotchas.md`). Valutare se tenere attiva la sessione multimediale più a lungo, oppure scriverlo nella descrizione dell'impostazione.
+- `queueProvider` combina indice, chiavi e `userAhead` letti dal vivo con una lista che arriva in modo asincrono, quindi per qualche millisecondo può non combaciare. Più robusto: uno snapshot `(tracks, keys, currentIndex, userAhead)` letto in un colpo solo. In più, `queueTracks` scarta gli id che non trova e sfasa l'indice.
+- Scatti dopo la 113 (`refactor/coda-e-libreria/misure.md`, «Dopo la 113»): «Apri album» 11 → 17 %, «In riproduzione» 2,4 → 5–6 %, «Pallino schede» 7 → 9–10 % rispetto a prima-107, in due ripetute. Profilare (`flutter run --profile` e DevTools) il titolo che scorre in Now Playing, i listener nuovi della radice e la pagina album.
+- `_settle` ricostruisce una mappa e due liste grandi quanto la coda a ogni next/jumpTo/move/previous mentre il blocco non è vuoto. Rimedio: via veloce se `_user` sta già subito dopo il corrente.
+- L'arrivo in Shuffle+ per (id, `currentFromUser`) non distingue due copie dello stesso id di fila. Rimedio: chiave della voce da `ShuffleHost` (richiede che `rebuildUpcoming`/`setItems` mantengano la chiave del corrente).
+- `currentFromUser` non è salvato: dopo un riavvio un corrente nato dal blocco conta una volta in Shuffle+.
+- `playQueue(keepUser)`: toccare in una lista un brano che sta anche nel blocco lo suona due volte.
+- `move`: una voce del blocco non si può lasciare come prima sotto «Poi» (lo slot subito dopo il blocco la fa entrare).
+- `listPlayingProvider` copia `sourceIds`, fa `listEquals` e calcola gli hash dell'intera sorgente per ogni pill visibile a ogni evento della coda. Rimedio: tenere l'hash della sorgente nel controller.
+- `listKeyOf` usa il contenuto: aggiungere un brano a una playlist azzera la sua modalità Casuale; le chiavi non sono salvate.
+- `_modeOf` in `shuffle_button.dart` → un provider `listShuffleModeProvider(key)`.
+- Spezzare `play_queue.dart` (510 righe: `placeAfter` puro, aiuto per l'ordine casuale), `queue_sheet.dart` (488: widget della lista trascinabile), `shuffle_plus_controller.dart` (666): rinviato, rischio medio senza guadagno di comportamento.
+- Fase 112: il timeout della ricerca di un link video sul telefono ha lasciato Cerca vuota (non riprodotto nei test); il messaggio «non disponibile» riusato per le playlist dice «video».
+
 ### Bassa
 - Scritture dei podcast dalla UI senza Ops: sistemate in fase 102 (`PodcastOps`) per `podcasts_screen`, `podcast_subscribe_sheet`, `podcast_detail`; resta la sola ricerca (lettura) del foglio «Aggiungi podcast».
 - `YtmPodcasts._guarded`: `acquire()` attende fino a 60 s senza dirlo all'utente.

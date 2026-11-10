@@ -1,5 +1,7 @@
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../../core/app_log.dart';
+import '../../../providers/library_providers.dart';
 import '../../../core/text_utils.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/playlist_ops.dart';
@@ -77,7 +79,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
     final cc = context.cc;
     final p = ref.watch(smartPlaylistProvider(id)).value;
     final tracks = ref.watch(smartTracksProvider(id)).value ?? const <Track>[];
-    final shown = filterByText(tracks, _query, (t) => [t.title, t.artist, t.album]);
+    final shown = filterByText(tracks, _query, trackSearchFields);
     // Rows of a search keep the place they have in the whole list.
     int whole(Track t) => tracks.indexWhere((x) => x.id == t.id);
     if (p == null) return const Scaffold();
@@ -157,7 +159,19 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
                 child: CcSearchField(
                   controller: _search,
                   hint: l.searchHint,
-                  onQuery: (v) => setState(() => _query = v),
+                  onQuery: (v) async {
+                    // A big list gets its search texts made off the UI thread.
+                    if (v.isNotEmpty && tracks.length > 2000) {
+                      try {
+                        await primeHaystacks(tracks, trackSearchFields);
+                      } on Object catch (e, st) {
+                        AppLog.w('search prime failed', e, st);
+                      }
+                      // The field may have changed while the isolate worked.
+                      if (!mounted || _search.text.trim() != v.trim()) return;
+                    }
+                    setState(() => _query = v);
+                  },
                 ),
               ),
             ),

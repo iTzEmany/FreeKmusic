@@ -1487,12 +1487,27 @@ mobile_scanner — fase 24 — 2026-10-19
   - Non riprodotto nei test: sul telefono una ricerca di un link video scaduta (timeout di rete) ha lasciato Cerca vuota senza errore; il test con lo stesso errore mostra «Riprova». Da riguardare nella 113. «Copia link» e la pagina in una Jam non provati sul telefono.
 
 ## Fase 113 — Chiusura del refactor «coda-e-libreria» (`fase-113-chiusura-coda-libreria.md`)
-- [ ] 113.1 Metriche di arrivo
-- [ ] 113.2 Prova sui telefoni contro i mockup
-- [ ] 113.3 Pulizia dei telefoni e dei dati di prova
-- [ ] 113.4 Review di architettura
-- [ ] 113.5 Documenti
-- [ ] 113.6 Controlli di fase
+- [x] 113.1 Metriche di arrivo
+  - I controlli col grep sono tutti a 0. Il test di caratterizzazione non è cambiato dalla 107, `schemaVersion` resta 19 e DB e backup sono identici. Nella Jam cambia solo il campo `userAhead: 0`. Le query a 50k restano dentro le soglie.
+  - Scatti sul Mi A3 (due ripetute, `refactor/coda-e-libreria/misure.md`): «Apri album», «In riproduzione» e «Pallino schede» peggiorano di pochi frame rispetto a prima-107. Il seguito è in `prossimi-lavori.md`.
+- [x] 113.2 Prova sui telefoni contro i mockup
+  - **Mi A3:** fatta a volume 0 (D-535). Trovato e corretto il bug alto: un tocco su una riga della coda, col blocco presente, suonava la testa del blocco, perché l'handler non emetteva `queueChanges` dopo `jumpTo`. Correggendolo sono emersi altri casi della stessa classe, corretti anch'essi: il giro nuovo in casuale, il precedente in radio e il casuale della Jam.
+  - **Coda come `coda.html`:** conteggi nelle intestazioni, numeri e riquadro del blocco, posizione e maniglia lette da TalkBack (unite alla riga che ha le azioni). Nella playlist c'è ora «N risultati».
+  - **Differenze minori accettate:**
+    - la maniglia resta anche sulle righe di «Poi», che si possono riordinare;
+    - «Casuale» al posto di «Shuffle», come nel resto dell'app;
+    - le righe della playlist hanno la copertina e non il numero d'ordine.
+  - **Pausa a volume zero (111):** provata alzando il volume solo di 1 tacca. In primo piano funziona. In secondo piano il tasto la fa ripartire solo entro circa 2 s: dopo, Android manda il tasto alla suoneria.
+  - **Redmi:** solo ricerca e libreria (nessun brano riproducibile). «Suggerito» non è stato visto, perché il Mi A3 era senza rete.
+- [x] 113.3 Pulizia dei telefoni e dei dati di prova
+  - Tolti la playlist e i 2253 brani finti, i file `zz_` e le copie del DB. Volume a 0 su entrambi e interruttore spento.
+  - Sul Mi A3 la rotazione automatica è rimasta spenta (prima era accesa).
+- [x] 113.4 Review di architettura
+  - Opus. Bug corretti: «Annulla» dello swipe (`putBack`) e ricerca nelle playlist fuori dal thread UI. Il debito è in `prossimi-lavori.md`, «coda-e-libreria».
+- [x] 113.5 Documenti
+  - `02-architettura.md` (coda e blocco, MarqueeText, pausa a volume zero, D-534, link), «Stato finale» in `analisi.md`, `prossimi-lavori.md`.
+- [x] 113.6 Controlli di fase
+  - `flutter analyze` pulito. Comando mirato verde (1135 test, più 566 dopo le correzioni). Review Opus e scheggia di passo su ogni correzione. Scheggia di fase sui telefoni.
 
 ## Fase 114 — Link Spotify e Deezer in Cerca (`fase-114-link-spotify-deezer.md`)
 - [ ] 114.1 Link, link brevi, lettori

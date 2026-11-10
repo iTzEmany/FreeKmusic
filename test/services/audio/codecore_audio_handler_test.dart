@@ -114,6 +114,86 @@ void main() {
     expect(handler.userAhead, 1);
   });
 
+  test('jumping into the block plays the touched entry, not the block head (D-494)', () async {
+    for (final n in ['d', 'e', 'f']) {
+      await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$n.mp3',
+            title: n,
+            albumKey: 'k',
+            format: 'mp3',
+            sizeBytes: 1,
+            mtimeMs: 1,
+            addedAt: 1,
+            durationMs: const Value(100000),
+          ));
+    }
+    final all = (await db.select(db.tracks).get()).map((t) => t.id).toList();
+    await handler.playQueue(all.sublist(0, 3), 0);
+    await settle();
+    handler.addToQueue(all[3]);
+    handler.addToQueue(all[4]);
+    handler.addToQueue(all[5]);
+    expect(handler.queueIds, [all[0], all[3], all[4], all[5], all[1], all[2]]);
+    var changes = 0;
+    final sub = handler.queueChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    await handler.skipToQueueItem(2); // the middle one of the block
+    expect(changes, greaterThan(0), reason: 'the block moved: lists reread the order');
+    await settle();
+    expect(handler.currentTrack!.title, 'e');
+    expect(backend.loaded.last, '/m/e.mp3');
+    expect(handler.queueIds, [all[0], all[4], all[3], all[5], all[1], all[2]]);
+    expect(handler.userAhead, 2);
+    // Past the block: the touched entry plays and the block follows it.
+    await handler.skipToQueueItem(4);
+    await settle();
+    expect(handler.currentTrack!.title, 'b');
+    expect(handler.queueIds.sublist(handler.currentIndex + 1, handler.currentIndex + 3), [all[3], all[5]]);
+  });
+
+  test('a shuffled repeat-all lap restarting tells the lists, by skip and by itself', () async {
+    await handler.setRepeatMode(AudioServiceRepeatMode.all);
+    await handler.setShuffleMode(AudioServiceShuffleMode.all);
+    await handler.playQueue(ids, 0);
+    await settle();
+    var changes = 0;
+    final sub = handler.queueChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    await handler.skipToNext();
+    await handler.skipToNext();
+    await settle();
+    expect(changes, 0, reason: 'mid-lap the order stays');
+    await handler.skipToNext(); // last one: a new lap, reshuffled
+    await settle();
+    expect(changes, 1);
+    expect(handler.currentIndex, 0);
+    await handler.skipToNext();
+    await handler.skipToNext();
+    changes = 0;
+    backend.stateC.add(BackendState.completed); // the last one ends by itself
+    await settle();
+    expect(changes, 1);
+    expect(handler.currentIndex, 0);
+  });
+
+  test('previous between stations moves the block and tells the lists', () async {
+    final h = CodecoreAudioHandler(backend, PlayQueue(), repo,
+        onError: errors.add, online: OnlineEntries());
+    addTearDown(h.dispose);
+    await h.playStations([
+      const RadioStation(id: 'a', name: 'A', streamUrl: 'http://r.test/a'),
+      const RadioStation(id: 'b', name: 'B', streamUrl: 'http://r.test/b'),
+    ], 0);
+    await settle();
+    h.addToQueue(ids[2]);
+    var changes = 0;
+    final sub = h.queueChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    await h.skipToPrevious();
+    await settle();
+    expect(changes, greaterThan(0));
+  });
+
   test('a radio station empties the block (D-496)', () async {
     final h = CodecoreAudioHandler(backend, PlayQueue(), repo,
         onError: errors.add, online: OnlineEntries());
