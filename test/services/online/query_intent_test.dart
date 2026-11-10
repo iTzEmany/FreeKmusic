@@ -57,4 +57,19 @@ void main() {
     expect(album.browseId, 'MPREb_abc123');
     expect(classifyQuery('https://music.youtube.com/browse/UCabc').kind, QueryKind.text);
   });
+  _externalRows();
+}
+
+void _externalRows() {
+  test('Deezer and Spotify links are external, short links carry the url', () {
+    final c = classifyQuery('https://open.spotify.com/playlist/abc');
+    expect(c.kind, QueryKind.external);
+    expect(c.link?.id, 'abc');
+    final s = classifyQuery(' https://spotify.link/xyz ');
+    expect(s.kind, QueryKind.external);
+    expect(s.link, isNull);
+    expect(s.url, 'https://spotify.link/xyz');
+    expect(classifyQuery('spotify wrapped').kind, QueryKind.text);
+    expect(classifyQuery('www.deezer.com/playlist/1').kind, QueryKind.text);
+  });
 }

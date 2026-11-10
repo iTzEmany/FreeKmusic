@@ -1,4 +1,8 @@
+import 'package:dio/dio.dart' show CancelToken;
+
+import '../../core/import_row.dart';
 import '../../data/db/app_database.dart' show Track;
+import 'external_links.dart';
 import 'youtube_service.dart' show YtResult;
 
 enum CollectionKind { playlist, album }
@@ -46,6 +50,33 @@ class ExternalTrack {
 
   /// Stable id of the song inside its collection.
   final String key;
+
+  ImportRow toImportRow(int index) => ImportRow(
+        index: index,
+        title: title,
+        artists: artists,
+        durationMs: durationMs,
+        isrc: isrc,
+      );
+}
+
+/// The link points at nothing (deleted, private, wrong id).
+class CollectionNotFound implements Exception {
+  const CollectionNotFound();
+  @override
+  String toString() => 'CollectionNotFound';
+}
+
+/// The page exists but could not be read (network, layout change).
+class CollectionUnreadable implements Exception {
+  const CollectionUnreadable([this.cause]);
+  final Object? cause;
+  @override
+  String toString() => 'CollectionUnreadable($cause)';
+}
+
+abstract interface class ExternalReader {
+  Future<ExternalCollection> read(ExternalLink link, {CancelToken? cancelToken});
 }
 
 /// What a track of a collection resolved to. A page draws one row per case.
