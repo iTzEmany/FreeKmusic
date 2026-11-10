@@ -1,5 +1,9 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/folder_repository.dart';
+import 'package:codecore/data/repositories/hidden_playlists.dart';
+import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/track_ops.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -377,5 +381,125 @@ void main() {
       );
       expect(await titles(), unorderedEquals(['fav', 'smart']));
     });
+
+    Future<int> idOf(String title) async =>
+        (await (db.select(db.tracks)..where((t) => t.title.equals(title))).getSingle()).id;
+
+    test('missing and ignored tracks are out, the sort is respected', () async {
+      await repo.upsertBatch([
+        row('/d/b.mp3', 'b', folderId: 1),
+        row('/d/a.mp3', 'a', folderId: 1),
+        row('/d/m.mp3', 'm', folderId: 1),
+        row('/d/i.mp3', 'i', folderId: 1),
+      ]);
+      await (db.update(db.tracks)..where((t) => t.title.equals('m')))
+          .write(const TracksCompanion(missing: Value(true)));
+      await (db.update(db.tracks)..where((t) => t.title.equals('i')))
+          .write(const TracksCompanion(ignored: Value(true)));
+      await (db.update(db.tracks)..where((t) => t.title.equals('b')))
+          .write(const TracksCompanion(artist: Value('A')));
+      await (db.update(db.tracks)..where((t) => t.title.equals('a')))
+          .write(const TracksCompanion(artist: Value('Z')));
+      expect(
+        [for (final t in await repo.watchDownloadedWithoutPlaylist(folderId: 1, sort: SortOption.artist).first) t.title],
+        ['b', 'a'],
+      );
+    });
+
+    test('follows playlist_tracks alone, and the count agrees', () async {
+      await repo.upsertBatch([row('/d/a.mp3', 'a', folderId: 1)]);
+      final pls = PlaylistRepository(db);
+      final lists = <int>[];
+      final counts = <int>[];
+      final s1 = repo.watchDownloadedWithoutPlaylist(folderId: 1).listen((l) => lists.add(l.length));
+      final s2 = repo.watchDownloadedWithoutPlaylistCount(folderId: 1).listen(counts.add);
+      addTearDown(s1.cancel);
+      addTearDown(s2.cancel);
+      Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 100));
+      await settle();
+      expect([lists.last, counts.last], [1, 1]);
+      final pl = await pls.create('P');
+      await pls.addTracks(pl, [await idOf('a')]);
+      await settle();
+      expect([lists.last, counts.last], [0, 0], reason: 'added to a playlist');
+      await pls.removeTrack(pl, await idOf('a'));
+      await settle();
+      expect([lists.last, counts.last], [1, 1], reason: 'removed from it');
+      await pls.addTracks(pl, [await idOf('a')]);
+      await settle();
+      await pls.delete(pl);
+      await settle();
+      expect([lists.last, counts.last], [1, 1], reason: 'playlist deleted');
+    });
+
+    test('a hidden «Scarica album» playlist does not count as a playlist', () async {
+      await repo.upsertBatch([row('/d/a.mp3', 'a', folderId: 1)]);
+      final pls = PlaylistRepository(db);
+      final pl = await pls.create('album');
+      await pls.addTracks(pl, [await idOf('a')]);
+      expect(await titles(), isEmpty);
+      await db.into(db.playlistImports).insert(PlaylistImportsCompanion.insert(
+            playlistId: pl,
+            sourceName: 'album',
+            createdAt: 1,
+            sourceKind: const Value(ytmAlbumSourceKind),
+          ));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(await titles(), ['a']);
+      expect(await repo.watchDownloadedWithoutPlaylistCount(folderId: 1).first, 1);
+    });
+
+    test('the provider search ignores accents', () async {
+      await repo.upsertBatch([
+        row('/d/c.mp3', 'Café', folderId: 1),
+        row('/d/z.mp3', 'Zzz', folderId: 1),
+      ]);
+      final c = ProviderContainer(overrides: [
+        trackRepositoryProvider.overrideWithValue(repo),
+        downloadFolderIdProvider.overrideWith((ref) async => 1),
+      ]);
+      addTearDown(c.dispose);
+      const q = TrackQuery(text: 'CAFE');
+      c.listen(downloadedNoPlaylistProvider(q), (_, _) {});
+      final r = await c.read(downloadedNoPlaylistProvider(q).future);
+      expect(r.map((t) => t.title), ['Café']);
+    });
+
+    test('downloadFolderIdProvider only reads: never adds a folder', () async {
+      final c = ProviderContainer(overrides: [databaseProvider.overrideWithValue(db)]);
+      addTearDown(c.dispose);
+      c.listen(downloadFolderIdProvider, (_, _) {});
+      expect(await c.read(downloadFolderIdProvider.future), 1, reason: 'first folder');
+      await db.delete(db.folders).go();
+      c.invalidate(foldersProvider);
+      c.invalidate(downloadFolderIdProvider);
+      expect(await c.read(downloadFolderIdProvider.future), equals(null));
+      expect(await FolderRepository(db).getAll(), isEmpty);
+    });
   });
+
+  test('Retry: invalidating tracksProvider re-reads a plain stream that failed', () async {
+    var calls = 0;
+    final c = ProviderContainer(overrides: [
+      trackRepositoryProvider.overrideWithValue(_FlakyRepo(db, () => calls++ == 0)),
+    ]);
+    addTearDown(c.dispose);
+    const q = TrackQuery();
+    c.listen(tracksProvider(q), (_, _) {});
+    await expectLater(c.read(tracksProvider(q).future), throwsA(anything));
+    c.invalidate(tracksProvider(q));
+    expect(await c.read(tracksProvider(q).future), isEmpty);
+    expect(calls, 2, reason: 'one retry, no loop');
+  });
+}
+
+class _FlakyRepo extends TrackRepository {
+  _FlakyRepo(super.db, this.fail);
+  final bool Function() fail;
+  @override
+  Stream<List<Track>> watchTracks({
+    String query = '',
+    SortOption sort = SortOption.defaultOrder,
+    bool favoritesOnly = false,
+  }) => fail() ? Stream.error(StateError('boom')) : Stream.value(const []);
 }

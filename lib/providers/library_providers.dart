@@ -7,7 +7,10 @@ import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:path_provider/path_provider.dart';
+
 import '../core/app_log.dart';
+import '../core/platform.dart';
 import '../core/import_row.dart' show LibraryEntryLite;
 import '../services/import/track_matcher.dart' show LibraryIndex;
 import '../data/db/app_database.dart';
@@ -17,7 +20,6 @@ import '../data/repositories/library_queries.dart';
 import '../data/repositories/library_search.dart';
 import '../data/repositories/smart_search.dart';
 import '../data/repositories/track_repository.dart';
-import 'youtube_providers.dart' show resolveDownloadFolder;
 import '../services/covers/cover_store.dart';
 import '../services/covers/cover_thumbnails.dart';
 import '../services/scanner/library_scanner.dart';
@@ -105,26 +107,64 @@ final trackQueryProvider =
       TrackQueryNotifier.new,
     );
 
+Iterable<String?> trackSearchFields(Track t) => [t.title, t.artist, t.album];
+
+/// A list as it comes from the database. A big one gets its search texts made
+/// in another isolate now, so the first key does not (D-500).
+List<Track> primedForSearch(List<Track> l) {
+  if (l.length > 2000) {
+    primeHaystacks(l, trackSearchFields).catchError(
+      (Object e, StackTrace st) => AppLog.w('search prime failed', e, st),
+    );
+  }
+  return l;
+}
+
+final _failedPlain = Expando<Set<Object>>();
+
+/// The plain list under a public provider. A plain list that failed is kept by
+/// Riverpod, so Retry (`ref.invalidate(public)`) would re-read the same error:
+/// the next read after a failure starts the plain provider again.
+Future<List<Track>> readPlainList(
+  Ref ref,
+  StreamProvider<List<Track>> plain,
+) async {
+  final failed = _failedPlain[ref.container] ??= {};
+  if (failed.remove(plain)) ref.invalidate(plain);
+  try {
+    return await ref.watch(plain.future);
+  } catch (_) {
+    failed.add(plain);
+    rethrow;
+  }
+}
+
 // The list without text, as read from the database; the text is filtered on
 // top of it in Dart and without accents (D-500), so it stays cached while typing.
 final _plainTracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>(
   (ref, q) => ref
       .watch(trackRepositoryProvider)
-      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly),
+      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly)
+      .map(primedForSearch),
 );
 
 final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
-  final all = await ref.watch(_plainTracksProvider(q.copyWith(text: '')).future);
-  yield filterByText(all, q.text, (t) => [t.title, t.artist, t.album]);
+  final all = await readPlainList(ref, _plainTracksProvider(q.copyWith(text: '')));
+  yield filterByText(all, q.text, trackSearchFields);
 });
 
 /// Id of the download folder (null when there is none); tests override it.
-final downloadFolderIdProvider = FutureProvider<int?>(
-  (ref) async => (await resolveDownloadFolder(ref.read(folderRepositoryProvider)))?.$2.id,
-);
+/// Read only: it never adds a folder, and follows the folders list.
+final downloadFolderIdProvider = FutureProvider<int?>((ref) async {
+  final folders = await ref.watch(foldersProvider.future);
+  if (!isAndroid) return folders.firstOrNull?.id;
+  final ext = await getExternalStorageDirectory();
+  if (ext == null) return null;
+  final path = p.join(ext.path, 'Music');
+  return folders.where((f) => f.path == path).firstOrNull?.id;
+});
 
-/// Downloaded tracks that are in no playlist (D-485).
-final downloadedNoPlaylistProvider =
+final _plainDownloadedProvider =
     StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
   final folderId = await ref.watch(downloadFolderIdProvider.future);
   if (folderId == null) {
@@ -133,7 +173,27 @@ final downloadedNoPlaylistProvider =
   }
   yield* ref
       .watch(trackRepositoryProvider)
-      .watchDownloadedWithoutPlaylist(folderId: folderId, query: q.text, sort: q.sort);
+      .watchDownloadedWithoutPlaylist(folderId: folderId, sort: q.sort)
+      .map(primedForSearch);
+});
+
+/// Downloaded tracks that are in no playlist (D-485).
+final downloadedNoPlaylistProvider =
+    StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
+  final all = await readPlainList(ref, _plainDownloadedProvider(q.copyWith(text: '')));
+  yield filterByText(all, q.text, trackSearchFields);
+});
+
+/// How many [downloadedNoPlaylistProvider] lists, counted by the database.
+final downloadedNoPlaylistCountProvider = StreamProvider.autoDispose<int>((ref) async* {
+  final folderId = await ref.watch(downloadFolderIdProvider.future);
+  if (folderId == null) {
+    yield 0;
+    return;
+  }
+  yield* ref
+      .watch(trackRepositoryProvider)
+      .watchDownloadedWithoutPlaylistCount(folderId: folderId);
 });
 
 /// All music tracks, whatever the Library search says.

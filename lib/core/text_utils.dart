@@ -1,8 +1,11 @@
+import 'dart:isolate';
+
 const _diacritics = <String, String>{
   'àáâãäåāăą': 'a', 'ç': 'c', 'ćčĉċ': 'c', 'ďđ': 'd', 'èéêëēėęěĕ': 'e',
   'ĝğġ': 'g', 'ìíîïīĩįı': 'i', 'ñńňņ': 'n', 'òóôõöøōőŏ': 'o', 'ŕřŗ': 'r',
   'śšşŝș': 's', 'ťţț': 't', 'ùúûüūůűŭũų': 'u', 'ýÿŷ': 'y', 'źżž': 'z',
-  'ß': 'ss', 'æ': 'ae', 'œ': 'oe', 'ł': 'l',
+  'ạảấầẩẫậắằẳẵặ': 'a', 'ẹẻẽếềểễệ': 'e', 'ỉị': 'i', 'ọỏốồổỗộớờởỡợ': 'o',
+  'ụủứừửữự': 'u', 'ỳỵỷỹ': 'y', 'ß': 'ss', 'æ': 'ae', 'œ': 'oe', 'ł': 'l',
 };
 
 final Map<int, String> _diacriticMap = {
@@ -13,6 +16,7 @@ final Map<int, String> _diacriticMap = {
 String stripDiacritics(String s) {
   final out = StringBuffer();
   for (final r in s.runes) {
+    if (r >= 0x300 && r <= 0x36F) continue; // combining marks (NFD text)
     final lower = String.fromCharCode(r).toLowerCase().runes.first;
     final rep = _diacriticMap[lower];
     if (rep == null) {
@@ -30,11 +34,28 @@ final _spaces = RegExp(r'\s+');
 String normalize(String s) =>
     stripDiacritics(s).toLowerCase().trim().replaceAll(_spaces, ' ');
 
-// The normalised fields of each list, made once per list (a new list comes
-// only when the data changes), not again at every key typed (D-500).
-// shortcut: keyed on the list only, so every caller of one list must pass the
-// same `fields`; make the key (list, fields) if that ever changes.
+// The normalised fields of each list, made once per list, not at every key
+// typed (D-500). shortcut: keyed on the list only, so every caller of one list
+// must pass the same `fields`; make the key (list, fields) if that changes.
 final _haystacks = Expando<List<String>>();
+
+String _haystack<T>(T i, Iterable<String?> Function(T) fields) =>
+    fields(i).map((f) => normalize(f ?? '')).join('\n');
+
+List<String> _normaliseAll(List<String> raw) =>
+    [for (final r in raw) r.split('\n').map(normalize).join('\n')];
+
+/// Makes the haystacks of a big [items] in another isolate, so the search does
+/// not do it on the UI thread at the first key. Without it [filterByText]
+/// makes them on the spot (fine for small lists).
+Future<void> primeHaystacks<T>(
+  List<T> items,
+  Iterable<String?> Function(T) fields,
+) async {
+  if (_haystacks[items] != null) return;
+  final raw = [for (final i in items) fields(i).map((f) => f ?? '').join('\n')];
+  _haystacks[items] ??= await Isolate.run(() => _normaliseAll(raw));
+}
 
 /// [items] whose [fields] contain [query] (case and accents ignored); all of
 /// them for an empty query. One filter for every in-memory search (D-490).
@@ -45,9 +66,7 @@ List<T> filterByText<T>(
 ) {
   final needle = normalize(query);
   if (needle.isEmpty) return items;
-  final hay = _haystacks[items] ??= [
-    for (final i in items) fields(i).map((f) => normalize(f ?? '')).join('\n'),
-  ];
+  final hay = _haystacks[items] ??= [for (final i in items) _haystack(i, fields)];
   return [
     for (var k = 0; k < items.length; k++)
       if (hay[k].contains(needle)) items[k],

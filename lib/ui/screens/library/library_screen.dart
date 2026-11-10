@@ -392,10 +392,7 @@ class _LibraryShortcuts extends ConsumerWidget {
       reviewCountProvider.select((c) => c.value ?? 0),
     );
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
-    final downloadedCount = ref
-        .watch(downloadedNoPlaylistProvider(const TrackQuery()))
-        .value
-        ?.length ?? 0;
+    final downloadedCount = ref.watch(downloadedNoPlaylistCountProvider).value ?? 0;
     void open(Widget w) => ShellNav.open<void>(context, w);
     return LibraryShortcuts(
       items: [

@@ -18,7 +18,8 @@ String visiblePlaylistSql(String alias) =>
 extension AppDatabasePlaylists on AppDatabase {
   /// Drift filter with [visiblePlaylistSql].
   Expression<bool> isPlaylistVisible($PlaylistsTable table) =>
-      CustomExpression<bool>(visiblePlaylistSql(table.aliasedName));
+      CustomExpression<bool>(visiblePlaylistSql(table.aliasedName),
+          watchedTables: [playlistImports]);
 
   /// Every playlist the user can see (not the technical ones).
   Future<List<Playlist>> visiblePlaylists() => (select(playlists)

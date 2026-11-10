@@ -35,6 +35,6 @@ Selectable<Track> lightSelect(
   final rest = sql.substring(star.length).replaceFirst(RegExp(r';\s*$'), '');
   return db
       .customSelect('SELECT ${lightTrackColumns(db)} FROM $rest',
-          variables: ctx.introducedVariables, readsFrom: {db.tracks})
+          variables: ctx.introducedVariables, readsFrom: {db.tracks, ...ctx.watchedTables})
       .map((r) => db.tracks.map(r.data));
 }

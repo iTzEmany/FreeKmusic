@@ -60,4 +60,24 @@ void main() {
       expect(hits('zzz'), isEmpty);
     });
   });
+
+  group('filterByText', () {
+    List<String> hits(List<String> titles, String q) =>
+        filterByText(titles, q, (s) => [s]);
+    test('NFD text, NFC query and the reverse', () {
+      expect(hits(['Cafe\u0301 del Mar'], 'cafe del'), hasLength(1));
+      expect(hits(['Café'], 'cafe\u0301'), hasLength(1));
+      expect(hits(['CAFÉ'], 'café'), hasLength(1));
+      expect(hits(['Café'], 'CAFE'), hasLength(1));
+    });
+    test('Vietnamese letters', () => expect(hits(['Việt Nam'], 'viet'), hasLength(1)));
+    test('a query never matches across two fields', () {
+      expect(filterByText([('Foo', 'Bar')], 'foo bar', (r) => [r.$1, r.$2]), isEmpty);
+    });
+    test('haystacks made off the UI isolate give the same answer', () async {
+      final items = ['Café del Mar', 'Zzz'];
+      await primeHaystacks(items, (s) => [s]);
+      expect(filterByText(items, 'CAFE', (s) => [s]), ['Café del Mar']);
+    });
+  });
 }

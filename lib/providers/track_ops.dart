@@ -7,6 +7,7 @@ import '../core/import_row.dart' show LibraryEntryLite;
 import '../data/db/app_database.dart';
 import '../data/repositories/track_repository.dart';
 import '../core/app_log.dart';
+import 'library_providers.dart' show primedForSearch, readPlainList, trackSearchFields;
 import '../services/online/lrc_parser.dart' show lyricsFromText;
 import 'database_providers.dart';
 import 'enrich_completer_providers.dart';
@@ -213,12 +214,12 @@ final trackOpsProvider = Provider<TrackOps>(TrackOps.new);
 
 /// Library tracks matching a search text (all of them for ''), live.
 final _allTracksProvider = StreamProvider.autoDispose<List<Track>>(
-  (ref) => ref.watch(trackRepositoryProvider).watchTracks(),
+  (ref) => ref.watch(trackRepositoryProvider).watchTracks().map(primedForSearch),
 );
 
 // Accents ignored (D-500): filtered in Dart on the whole list.
 final trackSearchProvider = StreamProvider.autoDispose
     .family<List<Track>, String>((ref, query) async* {
-      final all = await ref.watch(_allTracksProvider.future);
-      yield filterByText(all, query, (t) => [t.title, t.artist, t.album]);
+      final all = await readPlainList(ref, _allTracksProvider);
+      yield filterByText(all, query, trackSearchFields);
     });
