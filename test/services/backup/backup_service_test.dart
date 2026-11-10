@@ -114,7 +114,7 @@ void main() {
   test('the file name carries the date', () {
     expect(
       BackupService.fileName(DateTime(2026, 3, 7)),
-      'codecore-backup-2026-03-07.zip',
+      'freekmusic-backup-2026-03-07.zip',
     );
   });
 

@@ -148,7 +148,7 @@ jobs:
           flutter build apk --release --split-per-abi
           mkdir -p out
           for f in build/app/outputs/flutter-apk/app-*-release.apk; do
-            cp "$f" "out/codecore-full-$(basename "$f" | sed 's/^app-//')"
+            cp "$f" "out/freekmusic-full-$(basename "$f" | sed 's/^app-//')"
           done
       - name: Lite (no downloads)
         env:
@@ -156,11 +156,11 @@ jobs:
         run: |
           flutter build apk --release --split-per-abi --dart-define=CODECORE_YOUTUBE=false
           for f in build/app/outputs/flutter-apk/app-*-release.apk; do
-            cp "$f" "out/codecore-lite-$(basename "$f" | sed 's/^app-//')"
+            cp "$f" "out/freekmusic-lite-$(basename "$f" | sed 's/^app-//')"
           done
       - uses: actions/upload-artifact@v7
         with:
-          name: codecore-android
+          name: freekmusic-android
           path: out/*.apk
           if-no-files-found: error
 
@@ -187,10 +187,10 @@ jobs:
       - run: scripts/package-linux.sh --deb
       - uses: actions/upload-artifact@v7
         with:
-          name: codecore-linux-x64
+          name: freekmusic-linux-x64
           path: |
-            build/codecore-linux-x64.zip
-            build/codecore_*_amd64.deb
+            build/freekmusic-linux-x64.zip
+            build/freekmusic_*_amd64.deb
           if-no-files-found: error
 
   build-windows:
@@ -211,11 +211,11 @@ jobs:
       - run: flutter build windows --release
       - name: Zip the bundle
         shell: pwsh
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath codecore-windows-x64.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath freekmusic-windows-x64.zip
       - uses: actions/upload-artifact@v7
         with:
-          name: codecore-windows-x64
-          path: codecore-windows-x64.zip
+          name: freekmusic-windows-x64
+          path: freekmusic-windows-x64.zip
           if-no-files-found: error
 
   # The four integration tests (integration_test/, the same as

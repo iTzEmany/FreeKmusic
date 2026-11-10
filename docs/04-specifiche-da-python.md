@@ -52,7 +52,7 @@ Rimuove gruppi tra parentesi che contengono `live, unplugged, acoustic, version,
 - Pausa minima tra richieste in batch: 3 s. Se HTTP 403/429: interrompi il batch e avvisa.
 
 ## 5. Testi LRCLIB (`lrclib_client.dart`)
-- Base: `https://lrclib.net/api`. Header `User-Agent: Codecore/1.0 (uso personale)`.
+- Base: `https://lrclib.net/api`. Header `User-Agent: FreeKmusic/1.0 (uso personale)`.
 - Tentativi in ordine, `(artist, title)` → `(primaryArtist, title)` → `(artist, coreTitle)` → `(primaryArtist, coreTitle)`:
   1. `GET /get?artist_name=&track_name=&album_name=&duration=` (passa `album_name` e `duration` in secondi se noti; 404 = nessun risultato).
   2. `GET /search?track_name=&artist_name=` e scegli il risultato migliore.

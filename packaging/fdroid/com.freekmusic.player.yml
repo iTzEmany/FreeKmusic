@@ -3,9 +3,9 @@
 Categories:
   - Multimedia
 License: Unlicense   # placeholder: the project has no public licence yet
-SourceCode: https://github.com/OWNER/codecore
-IssueTracker: https://github.com/OWNER/codecore/issues
-AutoName: Codecore
+SourceCode: https://github.com/iTzEmany/FreeKmusic
+IssueTracker: https://github.com/iTzEmany/FreeKmusic/issues
+AutoName: FreeKmusic
 Description: |-
   Personal music player: local library, playlists, CSV import, Jam on the local
   network. This is the build without the YouTube/yt-dlp downloader.
@@ -13,7 +13,7 @@ AntiFeatures:
   NonFreeDep:
     en: Google ML Kit (lyrics translation, QR scanner) are proprietary libraries.
 RepoType: git
-Repo: https://github.com/OWNER/codecore.git
+Repo: https://github.com/iTzEmany/FreeKmusic.git
 Builds:
   - versionName: 1.2.0
     versionCode: 3

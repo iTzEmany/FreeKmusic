@@ -25,7 +25,7 @@ class MprisControls implements SystemMediaControls {
       final client = DBusClient.session();
       final obj = _Object(handler);
       await client.registerObject(obj);
-      await client.requestName('org.mpris.MediaPlayer2.codecore');
+      await client.requestName('org.mpris.MediaPlayer2.freekmusic');
       _client = client;
       _subs
         ..add(handler.mediaItem.listen(obj.onMediaItem))
@@ -157,8 +157,8 @@ class _Object extends DBusObject {
         'CanQuit' => const DBusBoolean(false),
         'CanRaise' => const DBusBoolean(false),
         'HasTrackList' => const DBusBoolean(false),
-        'Identity' => const DBusString('Codecore'),
-        'DesktopEntry' => const DBusString('codecore'),
+        'Identity' => const DBusString('FreeKmusic'),
+        'DesktopEntry' => const DBusString('freekmusic'),
         _ => null,
       };
     }

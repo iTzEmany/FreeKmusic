@@ -46,7 +46,7 @@ final deviceNameProvider = Provider<String>((ref) {
   final system = ref.watch(systemDeviceNameProvider).trim();
   if (real(system)) return system;
   final model = ref.watch(systemDeviceModelProvider).trim();
-  return model.isEmpty ? 'Codecore' : model;
+  return model.isEmpty ? 'FreeKmusic' : model;
 });
 
 /// Local LAN address: the Wi-Fi IP when the OS reports it, otherwise the

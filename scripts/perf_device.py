@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Misure della fase 28 su un telefono vero, con un'app separata.
 
-Installa la build «perf» (pacchetto com.codecore.player.perf, dati suoi: la
+Installa la build «perf» (pacchetto com.freekmusic.player.perf, dati suoi: la
 libreria vera dell'utente non viene mai toccata), le dà la libreria di prova di
 scripts/perf_library.py, poi misura: scansione, avvio a freddo, memoria e i
 frame mentre scorre «Tutti i brani», «Album», la ricerca e (con --playback)
@@ -12,7 +12,7 @@ lo swipe del mini player e l'apertura del player. Tabella in build/perf/<etichet
     scripts/perf_device.py <id-adb> --label prima
     scripts/perf_device.py <id-adb> --label dopo --no-push   # stessa libreria, solo l'app nuova
 
-Con --real si misura invece l'app VERA (com.codecore.player) con la sua libreria, senza
+Con --real si misura invece l'app VERA (com.freekmusic.player) con la sua libreria, senza
 toccare i dati: niente `pm clear`, niente push, nessuna scrittura su impostazioni o database
 (l'APK ha CODECORE_PERF_REAL, che registra soltanto i frame); niente riproduzione. Vuole
 --apk (o costruisce da sé senza CODECORE_PERF), gli scenari di serie sono quelli che non
@@ -34,13 +34,13 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-PKG = 'com.codecore.player.perf'
-ACTIVITY = f'{PKG}/com.codecore.player.MainActivity'
+PKG = 'com.freekmusic.player.perf'
+ACTIVITY = f'{PKG}/com.freekmusic.player.MainActivity'
 REMOTE = f'/sdcard/Android/data/{PKG}/files'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRAME_60HZ = 1000 / 60
 
-REAL_PKG = 'com.codecore.player'
+REAL_PKG = 'com.freekmusic.player'
 REAL_DEFAULT = 'Pallino schede,Tutti i brani,Album,Ricerca «notte»'
 
 
@@ -181,12 +181,12 @@ def main():
     ap.add_argument('--only', help='run only these scenarios (exact names, comma separated, e.g. "Fogli,Apertura player"); '
                                    'skips the cold starts; the playback ones imply --playback')
     ap.add_argument('--real', action='store_true',
-                    help='measure the real app (com.codecore.player) without touching its data; needs --apk or builds one')
+                    help='measure the real app (com.freekmusic.player) without touching its data; needs --apk or builds one')
     args = ap.parse_args()
     global PKG, ACTIVITY, REMOTE
     if args.real:
         PKG = REAL_PKG
-        ACTIVITY = f'{PKG}/com.codecore.player.MainActivity'
+        ACTIVITY = f'{PKG}/com.freekmusic.player.MainActivity'
         REMOTE = f'/sdcard/Android/data/{PKG}/files'
         args.no_push = True
         if args.no_build:

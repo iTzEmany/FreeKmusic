@@ -231,7 +231,7 @@ class MediaBrowseTree {
     final ref = parseTrackId(mediaId);
     if (ref == null) {
       return switch (mediaId) {
-        root => _folder(root, 'Codecore'),
+        root => _folder(root, 'FreeKmusic'),
         'fav' => _folder('fav', labels.favorites),
         'playlists' => _folder('playlists', labels.playlists),
         'albums' => _folder('albums', labels.albums),

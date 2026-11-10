@@ -36,7 +36,7 @@ void main() {
       expect(apiIdentified, isTrue);
       expect(
         apiUserAgent,
-        'Codecore/$kAppVersion (https://github.com/iTzEmany/codecore-music-player)',
+        'FreeKmusic/$kAppVersion (https://github.com/iTzEmany/FreeKmusic)',
       );
       expect(wikimediaLimiter().perMinute, kWikimediaIdentifiedPerMinute);
       expect(kWikimediaAnonymousPerMinute, lessThan(10));

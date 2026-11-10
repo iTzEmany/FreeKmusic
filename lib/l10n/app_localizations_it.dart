@@ -10,7 +10,7 @@ class AppLocalizationsIt extends AppLocalizations {
   AppLocalizationsIt([String locale = 'it']) : super(locale);
 
   @override
-  String get appName => 'Codecore';
+  String get appName => 'FreeKmusic';
 
   @override
   String get chooseFolder => 'Scegli cartella';
@@ -29,7 +29,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get permissionExplain =>
-      'Codecore ha bisogno del permesso di leggere i file audio per mostrare la tua musica.';
+      'FreeKmusic ha bisogno del permesso di leggere i file audio per mostrare la tua musica.';
 
   @override
   String get navLibrary => 'Libreria';
@@ -794,7 +794,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareErrBlocked => 'Troppi tentativi: riprova tra un minuto';
 
   @override
-  String get shareErrNotCodecore => 'Non è un dispositivo Codecore';
+  String get shareErrNotCodecore => 'Non è un dispositivo FreeKmusic';
 
   @override
   String get shareErrFailed => 'Trasferimento non riuscito';
@@ -943,7 +943,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Rende il dispositivo visibile e riceve richieste anche in background. Su Android mostra una notifica fissa con cui puoi disattivarlo';
 
   @override
-  String get receiveServiceTitle => 'Codecore è visibile sulla rete';
+  String get receiveServiceTitle => 'FreeKmusic è visibile sulla rete';
 
   @override
   String get receiveServiceText =>
@@ -1699,7 +1699,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get csvImportNote =>
-      'Codecore cerca i brani nella tua libreria e scarica gli altri da YouTube Music.';
+      'FreeKmusic cerca i brani nella tua libreria e scarica gli altri da YouTube Music.';
 
   @override
   String get csvImportNoteOffline =>
@@ -1874,7 +1874,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get exportFormatCsv => 'CSV, come Exportify';
 
   @override
-  String get exportFormatJson => 'JSON, formato Codecore';
+  String get exportFormatJson => 'JSON, formato FreeKmusic';
 
   @override
   String get exportRelativePaths => 'Percorsi relativi';
@@ -2148,7 +2148,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get csvImportNumberFilesHint =>
-      '07 - Artista - Titolo: la cartella si ascolta nell\'ordine giusto anche fuori da Codecore';
+      '07 - Artista - Titolo: la cartella si ascolta nell\'ordine giusto anche fuori da FreeKmusic';
 
   @override
   String get csvImportFetchCovers => 'Cerca le copertine';
@@ -2765,7 +2765,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get onboardingWelcomeTitle => 'Benvenuto in Codecore';
+  String get onboardingWelcomeTitle => 'Benvenuto in FreeKmusic';
 
   @override
   String get onboardingWelcomeBody =>
@@ -2776,7 +2776,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingFoldersBody =>
-      'Scegli le cartelle dove tieni i brani. Codecore li legge: non li modifica e non li sposta.';
+      'Scegli le cartelle dove tieni i brani. FreeKmusic li legge: non li modifica e non li sposta.';
 
   @override
   String onboardingFoldersAdded(int count) {
@@ -2800,7 +2800,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'Sono spente: Codecore non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.';
+      'Sono spente: FreeKmusic non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.';
 
   @override
   String get onboardingShareTitle => 'Download, Jam e condivisione';
@@ -3830,7 +3830,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get restoreNotBackup =>
-      'Questo file non è un backup di Codecore che posso leggere.';
+      'Questo file non è un backup di FreeKmusic che posso leggere.';
 
   @override
   String get restoreRestartNeeded =>
@@ -4014,7 +4014,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get scanTitle => 'Inquadra il codice QR';
 
   @override
-  String get scanNotCodecore => 'Questo codice non è di Codecore.';
+  String get scanNotCodecore => 'Questo codice non è di FreeKmusic.';
 
   @override
   String get scanCameraDenied =>
@@ -4042,7 +4042,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get writeTagsAfterDownloadHint =>
-      'Solo nei file che Codecore ha scaricato o ricevuto. L\'ISRC resta nell\'app.';
+      'Solo nei file che FreeKmusic ha scaricato o ricevuto. L\'ISRC resta nell\'app.';
 
   @override
   String get writeTagsWarnTitle => 'Scrivere le modifiche nei file?';
@@ -5410,7 +5410,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingSpotifyBody =>
-      'Su exportify.net scarichi le tue playlist di Spotify in un file. Codecore lo prende e le aggiorna qui.\nNon serve collegare nessun account: il file lo scarichi tu.';
+      'Su exportify.net scarichi le tue playlist di Spotify in un file. FreeKmusic lo prende e le aggiorna qui.\nNon serve collegare nessun account: il file lo scarichi tu.';
 
   @override
   String get deezerMeta => 'Metadati da Deezer';
@@ -5421,7 +5421,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deezerMetaNote =>
-      'Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e Codecore scarica da YouTube: è un rischio tuo.';
+      'Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e FreeKmusic scarica da YouTube: è un rischio tuo.';
 
   @override
   String get acoustId => 'Riconosci dal suono (AcoustID)';
@@ -5690,7 +5690,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get speakerPermBody =>
-      'Per riconoscere la tua cassa, Codecore deve vedere quali dispositivi Bluetooth sono collegati. Non legge altro.';
+      'Per riconoscere la tua cassa, FreeKmusic deve vedere quali dispositivi Bluetooth sono collegati. Non legge altro.';
 
   @override
   String get speakerPermAllow => 'Consenti';
@@ -5705,7 +5705,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get speakerAskBody =>
-      'Se lo è, quando si collega Codecore apre da solo una Jam a cui gli altri possono unirsi.';
+      'Se lo è, quando si collega FreeKmusic apre da solo una Jam a cui gli altri possono unirsi.';
 
   @override
   String get speakerYes => 'Sì';

@@ -98,7 +98,7 @@ object ImportNotifications {
     )
 
     @Volatile
-    var last = Progress("Codecore", "", 0, 0, null)
+    var last = Progress("FreeKmusic", "", 0, 0, null)
 
     private fun builder(ctx: Context): Notification.Builder {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -171,7 +171,7 @@ object ImportBridge {
             when (call.method) {
                 "show" -> {
                     ImportService.show(ctx, ImportNotifications.Progress(
-                        call.argument<String>("title") ?: "Codecore",
+                        call.argument<String>("title") ?: "FreeKmusic",
                         call.argument<String>("text") ?: "",
                         call.argument<Int>("done") ?: 0,
                         call.argument<Int>("total") ?: 0,
@@ -185,7 +185,7 @@ object ImportBridge {
                 }
                 "finished" -> {
                     ImportNotifications.finished(ctx,
-                        call.argument<String>("title") ?: "Codecore",
+                        call.argument<String>("title") ?: "FreeKmusic",
                         call.argument<String>("text") ?: "")
                     result.success(null)
                 }

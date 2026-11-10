@@ -5,6 +5,6 @@
     <string name="widget_pause">Pausa</string>
     <string name="widget_previous">Anterior</string>
     <string name="widget_next">Siguiente</string>
-    <string name="widget_description">Controla Codecore desde la pantalla de inicio</string>
-    <string name="tile_label">Codecore</string>
+    <string name="widget_description">Controla FreeKmusic desde la pantalla de inicio</string>
+    <string name="tile_label">FreeKmusic</string>
 </resources>

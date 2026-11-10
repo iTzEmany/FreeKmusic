@@ -167,7 +167,7 @@ Future<void> main() async {
     handler = await AudioService.init<CodecoreAudioHandler>(
       builder: build,
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.codecore.player.audio',
+        androidNotificationChannelId: 'com.freekmusic.player.audio',
         androidNotificationChannelName: 'Riproduzione',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: true,

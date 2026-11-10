@@ -109,7 +109,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In it, this message translates to:
-  /// **'Codecore'**
+  /// **'FreeKmusic'**
   String get appName;
 
   /// No description provided for @chooseFolder.
@@ -145,7 +145,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionExplain.
   ///
   /// In it, this message translates to:
-  /// **'Codecore ha bisogno del permesso di leggere i file audio per mostrare la tua musica.'**
+  /// **'FreeKmusic ha bisogno del permesso di leggere i file audio per mostrare la tua musica.'**
   String get permissionExplain;
 
   /// No description provided for @navLibrary.
@@ -1405,7 +1405,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareErrNotCodecore.
   ///
   /// In it, this message translates to:
-  /// **'Non è un dispositivo Codecore'**
+  /// **'Non è un dispositivo FreeKmusic'**
   String get shareErrNotCodecore;
 
   /// No description provided for @shareErrFailed.
@@ -1669,7 +1669,7 @@ abstract class AppLocalizations {
   /// No description provided for @receiveServiceTitle.
   ///
   /// In it, this message translates to:
-  /// **'Codecore è visibile sulla rete'**
+  /// **'FreeKmusic è visibile sulla rete'**
   String get receiveServiceTitle;
 
   /// No description provided for @receiveServiceText.
@@ -2851,7 +2851,7 @@ abstract class AppLocalizations {
   /// No description provided for @csvImportNote.
   ///
   /// In it, this message translates to:
-  /// **'Codecore cerca i brani nella tua libreria e scarica gli altri da YouTube Music.'**
+  /// **'FreeKmusic cerca i brani nella tua libreria e scarica gli altri da YouTube Music.'**
   String get csvImportNote;
 
   /// No description provided for @csvImportNoteOffline.
@@ -3151,7 +3151,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportFormatJson.
   ///
   /// In it, this message translates to:
-  /// **'JSON, formato Codecore'**
+  /// **'JSON, formato FreeKmusic'**
   String get exportFormatJson;
 
   /// No description provided for @exportRelativePaths.
@@ -3553,7 +3553,7 @@ abstract class AppLocalizations {
   /// No description provided for @csvImportNumberFilesHint.
   ///
   /// In it, this message translates to:
-  /// **'07 - Artista - Titolo: la cartella si ascolta nell\'ordine giusto anche fuori da Codecore'**
+  /// **'07 - Artista - Titolo: la cartella si ascolta nell\'ordine giusto anche fuori da FreeKmusic'**
   String get csvImportNumberFilesHint;
 
   /// No description provided for @csvImportFetchCovers.
@@ -4567,7 +4567,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingWelcomeTitle.
   ///
   /// In it, this message translates to:
-  /// **'Benvenuto in Codecore'**
+  /// **'Benvenuto in FreeKmusic'**
   String get onboardingWelcomeTitle;
 
   /// No description provided for @onboardingWelcomeBody.
@@ -4585,7 +4585,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingFoldersBody.
   ///
   /// In it, this message translates to:
-  /// **'Scegli le cartelle dove tieni i brani. Codecore li legge: non li modifica e non li sposta.'**
+  /// **'Scegli le cartelle dove tieni i brani. FreeKmusic li legge: non li modifica e non li sposta.'**
   String get onboardingFoldersBody;
 
   /// No description provided for @onboardingFoldersAdded.
@@ -4615,7 +4615,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingOnlineBody.
   ///
   /// In it, this message translates to:
-  /// **'Sono spente: Codecore non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.'**
+  /// **'Sono spente: FreeKmusic non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.'**
   String get onboardingOnlineBody;
 
   /// No description provided for @onboardingShareTitle.
@@ -6001,7 +6001,7 @@ abstract class AppLocalizations {
   /// No description provided for @restoreNotBackup.
   ///
   /// In it, this message translates to:
-  /// **'Questo file non è un backup di Codecore che posso leggere.'**
+  /// **'Questo file non è un backup di FreeKmusic che posso leggere.'**
   String get restoreNotBackup;
 
   /// No description provided for @restoreRestartNeeded.
@@ -6282,7 +6282,7 @@ abstract class AppLocalizations {
   /// No description provided for @scanNotCodecore.
   ///
   /// In it, this message translates to:
-  /// **'Questo codice non è di Codecore.'**
+  /// **'Questo codice non è di FreeKmusic.'**
   String get scanNotCodecore;
 
   /// No description provided for @scanCameraDenied.
@@ -6330,7 +6330,7 @@ abstract class AppLocalizations {
   /// No description provided for @writeTagsAfterDownloadHint.
   ///
   /// In it, this message translates to:
-  /// **'Solo nei file che Codecore ha scaricato o ricevuto. L\'ISRC resta nell\'app.'**
+  /// **'Solo nei file che FreeKmusic ha scaricato o ricevuto. L\'ISRC resta nell\'app.'**
   String get writeTagsAfterDownloadHint;
 
   /// No description provided for @writeTagsWarnTitle.
@@ -8478,7 +8478,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingSpotifyBody.
   ///
   /// In it, this message translates to:
-  /// **'Su exportify.net scarichi le tue playlist di Spotify in un file. Codecore lo prende e le aggiorna qui.\nNon serve collegare nessun account: il file lo scarichi tu.'**
+  /// **'Su exportify.net scarichi le tue playlist di Spotify in un file. FreeKmusic lo prende e le aggiorna qui.\nNon serve collegare nessun account: il file lo scarichi tu.'**
   String get onboardingSpotifyBody;
 
   /// No description provided for @deezerMeta.
@@ -8496,7 +8496,7 @@ abstract class AppLocalizations {
   /// No description provided for @deezerMetaNote.
   ///
   /// In it, this message translates to:
-  /// **'Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e Codecore scarica da YouTube: è un rischio tuo.'**
+  /// **'Uso privato e non commerciale. Le condizioni di Deezer vietano di promuovere lo scaricamento non autorizzato, e FreeKmusic scarica da YouTube: è un rischio tuo.'**
   String get deezerMetaNote;
 
   /// No description provided for @acoustId.
@@ -8998,7 +8998,7 @@ abstract class AppLocalizations {
   /// No description provided for @speakerPermBody.
   ///
   /// In it, this message translates to:
-  /// **'Per riconoscere la tua cassa, Codecore deve vedere quali dispositivi Bluetooth sono collegati. Non legge altro.'**
+  /// **'Per riconoscere la tua cassa, FreeKmusic deve vedere quali dispositivi Bluetooth sono collegati. Non legge altro.'**
   String get speakerPermBody;
 
   /// No description provided for @speakerPermAllow.
@@ -9022,7 +9022,7 @@ abstract class AppLocalizations {
   /// No description provided for @speakerAskBody.
   ///
   /// In it, this message translates to:
-  /// **'Se lo è, quando si collega Codecore apre da solo una Jam a cui gli altri possono unirsi.'**
+  /// **'Se lo è, quando si collega FreeKmusic apre da solo una Jam a cui gli altri possono unirsi.'**
   String get speakerAskBody;
 
   /// No description provided for @speakerYes.

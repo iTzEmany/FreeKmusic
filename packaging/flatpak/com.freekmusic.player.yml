@@ -1,8 +1,8 @@
-app-id: com.codecore.player
+app-id: com.freekmusic.player
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
-command: codecore
+command: freekmusic
 finish-args:
   - --share=network        # downloads, local-network share and Jam (UDP discovery included)
   - --share=ipc
@@ -13,7 +13,7 @@ finish-args:
   - --filesystem=xdg-music
   - --filesystem=xdg-download
   - --talk-name=org.freedesktop.Notifications
-  - --own-name=org.mpris.MediaPlayer2.codecore   # media keys and the desktop's player widget
+  - --own-name=org.mpris.MediaPlayer2.freekmusic   # media keys and the desktop's player widget
 modules:
   # mpv 0.38 needs libplacebo >= 6.338.2, which the 24.08 runtime does not ship.
   - name: libplacebo
@@ -63,24 +63,24 @@ modules:
         dest-filename: yt-dlp
         sha256: 58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a
 
-  - name: codecore
+  - name: freekmusic
     buildsystem: simple
     build-commands:
-      - mkdir -p /app/codecore /app/bin /app/share/applications /app/share/metainfo /app/share/icons/hicolor/512x512/apps
-      - cp -r bundle/* /app/codecore/
-      - ln -s /app/codecore/codecore /app/bin/codecore
-      - install -Dm644 com.codecore.player.desktop /app/share/applications/com.codecore.player.desktop
-      - install -Dm644 com.codecore.player.metainfo.xml /app/share/metainfo/com.codecore.player.metainfo.xml
-      - install -Dm644 icon-512.png /app/share/icons/hicolor/512x512/apps/com.codecore.player.png
+      - mkdir -p /app/freekmusic /app/bin /app/share/applications /app/share/metainfo /app/share/icons/hicolor/512x512/apps
+      - cp -r bundle/* /app/freekmusic/
+      - ln -s /app/freekmusic/freekmusic /app/bin/freekmusic
+      - install -Dm644 com.freekmusic.player.desktop /app/share/applications/com.freekmusic.player.desktop
+      - install -Dm644 com.freekmusic.player.metainfo.xml /app/share/metainfo/com.freekmusic.player.metainfo.xml
+      - install -Dm644 icon-512.png /app/share/icons/hicolor/512x512/apps/com.freekmusic.player.png
     sources:
       # The release bundle built by the workflow (flutter build linux --release).
       - type: dir
         path: ../../build/linux/x64/release
         dest: .
       - type: file
-        path: com.codecore.player.desktop
+        path: com.freekmusic.player.desktop
       - type: file
-        path: com.codecore.player.metainfo.xml
+        path: com.freekmusic.player.metainfo.xml
       - type: file
         path: icon-512.png
 

@@ -61,7 +61,7 @@ void main() {
   testWidgets('a first start with an empty library opens the guide, not the app', (tester) async {
     final h = await Harness.create(tester);
     await _openGate(tester, h);
-    expect(find.text('Benvenuto in Codecore'), findsOneWidget);
+    expect(find.text('Benvenuto in FreeKmusic'), findsOneWidget);
     expect(find.text('APP'), findsNothing);
     expect(find.text('Salta'), findsOneWidget);
     expect(find.text('Avanti'), findsOneWidget);
@@ -152,7 +152,7 @@ void main() {
     final h = await Harness.create(tester, tracks: 2);
     await _openGate(tester, h);
     expect(find.text('APP'), findsOneWidget);
-    expect(find.text('Benvenuto in Codecore'), findsNothing);
+    expect(find.text('Benvenuto in FreeKmusic'), findsNothing);
     await _settle(tester);
     expect(_settings(tester).onboardingDone, isTrue);
     await h.dispose(tester);

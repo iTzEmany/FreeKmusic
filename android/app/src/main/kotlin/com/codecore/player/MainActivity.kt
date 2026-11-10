@@ -123,7 +123,7 @@ class MainActivity : AudioServiceActivity() {
                 "startService" -> {
                     ReceiveService.start(
                         ctx,
-                        call.argument<String>("title") ?: "Codecore",
+                        call.argument<String>("title") ?: "FreeKmusic",
                         call.argument<String>("text") ?: "",
                         call.argument<String>("disable") ?: "Stop",
                     )

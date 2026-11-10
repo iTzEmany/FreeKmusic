@@ -13,7 +13,7 @@ import sys
 
 # getApplicationSupportDirectory() on Android; AppLog writes `<iso8601> <message>` per line.
 REMOTE_LOG = 'files/codecore.log'
-PKG = 'com.codecore.player'
+PKG = 'com.freekmusic.player'
 PREP = ('spawn', 'downloaded', 'post', 'cached')
 KV = re.compile(r'(\w+)=(\S+)')
 

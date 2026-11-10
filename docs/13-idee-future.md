@@ -1,4 +1,4 @@
-# Idee future per Codecore
+# Idee future per FreeKmusic
 
 Raccolta ragionata di ciò che si potrebbe aggiungere **dopo la fase 12**. Non è un piano: ogni voce, quando la si
 vuole fare, diventa un documento di fase (`fase-N-*.md`) con task e verifiche, come le altre.

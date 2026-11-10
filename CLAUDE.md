@@ -1,4 +1,4 @@
-# Codecore (Flutter) — istruzioni per l'agente
+# FreeKmusic (Flutter) — istruzioni per l'agente
 
 App musicale **standalone** (nessun backend) per uso personale. Un'unica codebase Flutter/Dart
 per **Android, Windows e Linux**. Sostituisce la vecchia app Python/CustomTkinter che sta nella

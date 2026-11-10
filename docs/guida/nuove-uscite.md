@@ -1,6 +1,6 @@
 # Nuove uscite
 
-Scopri quando i **tuoi artisti** pubblicano album, singoli o EP. Si seguono gli artisti che ti interessano; una volta al giorno, aprendo l'app, Codecore guarda se c'è qualcosa di nuovo.
+Scopri quando i **tuoi artisti** pubblicano album, singoli o EP. Si seguono gli artisti che ti interessano; una volta al giorno, aprendo l'app, FreeKmusic guarda se c'è qualcosa di nuovo.
 
 ## Come si fa
 1. **Segui un artista.** Cerca un artista online e apri la sua pagina: tocca **Segui**. Dalla Libreria, nella pagina di un artista, tocca la campanella in alto («Segui su YouTube Music»): se c'è un solo artista con quel nome lo segui subito, se ce n'è più d'uno scegli quello giusto.

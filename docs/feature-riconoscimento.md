@@ -85,7 +85,7 @@ Priorità: **I** indispensabile · **U** utile · **R** rimandabile. Valgono su 
 
 ## Vincoli
 - **Servizi solo gratuiti.** AcoustID è gratis solo per uso non commerciale: l'app è personale, open source, non commerciale. Chiave dell'applicazione `Hsn5w6Tjwv` nel sorgente (`lib/core/app_info.dart`, `kAcoustIdClient`, accanto a `kApiContact`), come fanno Picard e beets (D-313). La chiave utente non entra mai nel repo.
-- **Quote:** AcoustID ≤ 3 richieste/s; MusicBrainz 1 richiesta/s per IP con User-Agent `Codecore/<versione> ( kApiContact )`; quelle di iTunes, Deezer, YTM e Wikimedia restano come oggi (`RateLimiter`, `WindowLimiter`, pause per servizio).
+- **Quote:** AcoustID ≤ 3 richieste/s; MusicBrainz 1 richiesta/s per IP con User-Agent `FreeKmusic/<versione> ( kApiContact )`; quelle di iTunes, Deezer, YTM e Wikimedia restano come oggi (`RateLimiter`, `WindowLimiter`, pause per servizio).
 - **Dati:** nessuna migrazione, schema drift v15 e formato del backup invariati (D-280): l'identità va in `track_enrich.mbid` e `details`.
 - **Piattaforme:** Android, Linux, Windows; l'impronta deve funzionare su tutte e tre (niente fpcalc, che esiste solo per desktop). Windows si compila solo su una macchina Windows: lì si prova a mano o in CI.
 - **Formati per l'impronta:** mp3, m4a/aac, flac, ogg/vorbis, wav; Opus/WebM no (D-311).

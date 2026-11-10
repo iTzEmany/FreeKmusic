@@ -74,7 +74,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 
 ## Da sapere per la 106
 - **Formato:** i file toccati dalle fasi 98–105 sono a larghezza 80 (`dart format` di serie). Un file nuovo o toccato si formatta allo stesso modo. Poi `flutter analyze`: andando a capo, un `if` senza graffe dà `curly_braces_in_flow_control_structures`. Non usare `dart fix` sul progetto: aggiunge `fake_async` a `pubspec.yaml`.
-- **CC-CEDICT:** `https://github.com/iTzEmany/codecore-music-player/releases/download/data-cedict-2026-11-08/cedict_1_0_ts_utf-8_mdbg.txt.gz` (3 984 202 byte, sha256 `85a742880b294197546c5c48b716a2811d7790367d98cc3ef814df8095fe991e`). È l'unica release del repo, per ora marcata «Latest»; la release di v1.4.0 prenderà il suo posto.
+- **CC-CEDICT:** `https://github.com/iTzEmany/FreeKmusic/releases/download/data-cedict-2026-11-08/cedict_1_0_ts_utf-8_mdbg.txt.gz` (3 984 202 byte, sha256 `85a742880b294197546c5c48b716a2811d7790367d98cc3ef814df8095fe991e`). È l'unica release del repo, per ora marcata «Latest»; la release di v1.4.0 prenderà il suo posto.
 - **Menu del testo:** il menu è pubblico (`LyricsMenuButton`) anche nel pannello desktop. Il «come mostrato» del testo (`lyricsAsShown` in `lyrics_view.dart`) è il punto dove entra la traslitterazione (debito della 103).
 - **Debito nuovo:** in `prossimi-lavori.md` §6 «fase 105». Tra le voci: circa 77 s di «Caricamento…» dopo un'interruzione di rete, e la daylist non salvata con la radio spenta per sempre.
 - **Telefono:** sul Mi A3 «Blue In Green» ha un testo di prova («boom / fuori ordine»). Va eliminato e ricercato.
@@ -185,7 +185,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 - Decisioni: fino a D-418. Le prove a due telefoni le fa l'agente via adb; il Motorola fa solo l'host in «Coda dell'host» e va tenuto sveglio (`KEYCODE_WAKEUP`, si sospende dopo 30 min).
 - In LAN non c'è un «Entra» da ospite: si preme «Jam» sulla riga dell'altro telefono e **chi accetta diventa host**.
 - «Sospendi» e «Blocca» esistono solo nel dialogo della richiesta in arrivo, non per un ospite già dentro.
-- Il launcher del Mi A3 oggi è `com.codecore.player/.IconArancioDark` (non più `IconAmbraDark`).
+- Il launcher del Mi A3 oggi è `com.freekmusic.player/.IconArancioDark` (non più `IconAmbraDark`).
 
 ## Da riprovare o capire
 - `shadowWaitProvider` tiene le `phases` del preparer che c'era quando è partito: se `streamPreparerProvider` si rifà, un download vivo può dire «Non disponibile» dopo il tetto (già così prima della 85).
@@ -206,7 +206,7 @@ Prompt di avvio (nuova chat nella cartella del progetto):
 
 ## Dispositivi
 - **Motorola edge 40** `ZY22HKD85K`: libreria vera. Solo `install -r`; mai disinstallare né `pm clear`. 120 Hz.
-- **Mi A3** `0d7ae9df206e`: si disinstalla solo con `-k`; mai cancellare i file musicali; l'app vera è `com.codecore.player` (69 brani), le misure sull'app `.perf`; volume della musica a 0; PIN nelle memorie.
+- **Mi A3** `0d7ae9df206e`: si disinstalla solo con `-k`; mai cancellare i file musicali; l'app vera è `com.freekmusic.player` (69 brani), le misure sull'app `.perf`; volume della musica a 0; PIN nelle memorie.
 - **JBL**: si spengono da sole dopo circa 20 minuti senza suono.
 - Su entrambi i telefoni: mai toccare la rotazione o le impostazioni di sistema.
 - **Misure**: `python3 scripts/perf_device.py <id> --label <l> [--no-build --no-push --apk <apk>] [--only "A,B"]`.

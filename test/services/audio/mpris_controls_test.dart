@@ -15,7 +15,7 @@ import '../../support/fake_backend.dart';
 /// Needs a session bus (a desktop session); skipped without one.
 final _hasBus = Platform.isLinux && (Platform.environment['DBUS_SESSION_BUS_ADDRESS'] ?? '').isNotEmpty;
 
-const _busName = 'org.mpris.MediaPlayer2.codecore';
+const _busName = 'org.mpris.MediaPlayer2.freekmusic';
 
 /// Reads [read] until it gives [want] (the bus answers asynchronously), for at
 /// most two seconds; the caller then checks the value.
@@ -31,9 +31,9 @@ void main() {
     final client = DBusClient.session();
     addTearDown(client.close);
     if (await client.nameHasOwner(_busName)) {
-      // A running Codecore owns the name: the calls below would reach it (and
+      // A running FreeKmusic owns the name: the calls below would reach it (and
       // pause or skip its music) instead of the player under test.
-      markTestSkipped('another Codecore owns $_busName on this session bus');
+      markTestSkipped('another FreeKmusic owns $_busName on this session bus');
       return;
     }
 
@@ -82,6 +82,6 @@ void main() {
     await player.setProperty(pl, 'LoopStatus', const DBusString('Track'));
     await _until(() async => handler.repeatMode, PlayRepeat.one);
     expect((await prop('LoopStatus') as DBusString).value, 'Track');
-    expect((await player.getProperty('org.mpris.MediaPlayer2', 'Identity') as DBusString).value, 'Codecore');
+    expect((await player.getProperty('org.mpris.MediaPlayer2', 'Identity') as DBusString).value, 'FreeKmusic');
   }, skip: _hasBus ? false : 'no D-Bus session bus');
 }

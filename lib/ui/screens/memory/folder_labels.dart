@@ -5,7 +5,7 @@ import '../../../data/repositories/memory_queries.dart';
 /// Display names for the folder rows, keyed by folder path. Folders whose
 /// names are unique keep them; when names collide each one gets the shortest
 /// trailing part of its path that tells them apart, skipping technical
-/// segments (`0`, `files`...): `Music` vs `com.codecore.player/Music`.
+/// segments (`0`, `files`...): `Music` vs `com.freekmusic.player/Music`.
 Map<String, String> folderLabels(List<SizeGroup> folders) {
   final paths = [
     for (final g in folders)

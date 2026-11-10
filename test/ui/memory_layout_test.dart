@@ -15,14 +15,14 @@ void main() {
       _g('Music', '/storage/emulated/0/Music'),
       _g(
         'Music',
-        '/storage/emulated/0/Android/data/com.codecore.player/files/Music',
+        '/storage/emulated/0/Android/data/com.freekmusic.player/files/Music',
       ),
       _g('Podcasts', '/storage/emulated/0/Podcasts'),
     ]);
     expect(labels['/storage/emulated/0/Music'], 'Music');
     expect(
-      labels['/storage/emulated/0/Android/data/com.codecore.player/files/Music'],
-      'com.codecore.player/Music',
+      labels['/storage/emulated/0/Android/data/com.freekmusic.player/files/Music'],
+      'com.freekmusic.player/Music',
     );
     expect(labels['/storage/emulated/0/Podcasts'], 'Podcasts');
   });

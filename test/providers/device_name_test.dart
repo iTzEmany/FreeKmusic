@@ -37,7 +37,7 @@ void main() {
     }
   });
 
-  test('generic and no model: Codecore', () async {
-    expect(await _name(system: 'Telefono'), 'Codecore');
+  test('generic and no model: FreeKmusic', () async {
+    expect(await _name(system: 'Telefono'), 'FreeKmusic');
   });
 }

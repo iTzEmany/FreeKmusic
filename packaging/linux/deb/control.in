@@ -1,10 +1,10 @@
-Package: codecore
+Package: freekmusic
 Version: @VERSION@
 Section: sound
 Priority: optional
 Architecture: amd64
 Depends: libmpv2 | libmpv1, libgtk-3-0, libsqlite3-0
-Maintainer: Codecore <noreply@codecore.local>
+Maintainer: FreeKmusic <noreply@freekmusic.local>
 Description: Lettore musicale personale
  Libreria locale, playlist, Jam sulla rete locale e download. Nessun account,
  nessun server.
