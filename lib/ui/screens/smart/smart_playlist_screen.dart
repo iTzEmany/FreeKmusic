@@ -167,7 +167,8 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
                       } on Object catch (e, st) {
                         AppLog.w('search prime failed', e, st);
                       }
-                      if (!mounted) return;
+                      // The field may have changed while the isolate worked.
+                      if (!mounted || _search.text.trim() != v.trim()) return;
                     }
                     setState(() => _query = v);
                   },

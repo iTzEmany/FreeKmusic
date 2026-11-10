@@ -83,6 +83,15 @@ void main() {
       await primeHaystacks(items, (s) => [s]);
       expect(filterByText(items, 'CAFE', (s) => [s]), ['Café del Mar']);
     });
+    test('a failed priming is not kept: the next call tries again', () async {
+      final items = ['Café'];
+      var fail = true;
+      Iterable<String?> fields(String s) => fail ? throw StateError('boom') : [s];
+      await expectLater(primeHaystacks(items, fields), throwsStateError);
+      fail = false;
+      await primeHaystacks(items, fields);
+      expect(filterByText(items, 'cafe', fields), ['Café']);
+    });
   });
 
   group('album keys stay as they were (not search folding)', () {
