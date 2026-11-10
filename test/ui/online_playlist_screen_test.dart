@@ -76,7 +76,7 @@ class _MixCtrl extends _Ctrl {
   }
 
   @override
-  Future<void> enqueueOnline(YtResult r) async => enqueued.add(r.id);
+  Future<void> appendOnline(YtResult r) async => enqueued.add(r.id);
 }
 
 class _Matcher implements CollectionMatcher {

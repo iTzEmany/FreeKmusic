@@ -74,6 +74,13 @@ void main() {
     );
   });
 
+  test('pageProps.status 404 (missing or private playlist): not found', () async {
+    await expectLater(
+      read(_page('not_found'), ExternalLinkKind.playlist),
+      throwsA(isA<CollectionNotFound>()),
+    );
+  });
+
   test('no __NEXT_DATA__: unreadable', () async {
     await expectLater(
       read('<html></html>', ExternalLinkKind.playlist),

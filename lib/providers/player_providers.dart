@@ -572,6 +572,28 @@ class PlayerController {
     }
   }
 
+  Future<void> _appendTail = Future.value();
+
+  /// Continuation of a list already playing (D-525): at the END of the queue, never in the
+  /// user block, in call order (the id lookups of [appendOnline] would interleave otherwise).
+  Future<void> _append(Future<int?> Function() id) => _appendTail = _appendTail.then((_) async {
+        final n = await id();
+        if (n != null) _handler.insertAt(_handler.queueIds.length, n);
+      });
+
+  Future<void> appendTrack(int trackId) async {
+    if (inJam) {
+      await addToJam?.call([trackId]);
+      return;
+    }
+    return _append(() async => trackId);
+  }
+
+  Future<void> appendOnline(YtResult r) async {
+    if (inJam) return _onlineToJam(r);
+    return _append(() => _idOrLog(r));
+  }
+
   Future<void> enqueueOnline(YtResult r) async {
     if (inJam) return _onlineToJam(r);
     final id = await _idOrLog(r);

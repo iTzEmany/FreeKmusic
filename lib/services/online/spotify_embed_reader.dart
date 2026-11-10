@@ -42,6 +42,8 @@ class SpotifyEmbedReader implements ExternalReader {
     } on FormatException catch (e) {
       throw CollectionUnreadable(e);
     }
+    // A missing or private playlist is still HTTP 200, with the status inside the page.
+    if (_path(data, ['props', 'pageProps', 'status']) == 404) throw const CollectionNotFound();
     final entity = _path(data, ['props', 'pageProps', 'state', 'data', 'entity']);
     if (entity is! Map) throw const CollectionUnreadable('no __NEXT_DATA__ entity');
     return link.kind == ExternalLinkKind.track

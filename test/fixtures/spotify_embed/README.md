@@ -3,3 +3,4 @@ Percorso: `props.pageProps.state.data.entity` -> `title`, `coverArt.sources[0].u
 `subtitle` separa gli artisti con una virgola e uno spazio non divisibile (U+00A0).
 Nessun campo del totale dichiarato: l'embed taglia a 100 brani (`playlist_big.html`, 100 letti da una playlist di 150).
 - `no_track_list.html`: costruita a mano (pagina dell'artista senza `trackList`).
+- `not_found.html`: costruita a mano (playlist inesistente o privata: HTTP 200 con `pageProps.status` 404).

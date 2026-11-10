@@ -17,6 +17,7 @@ void main() {
       'https://deezer.com/en/album/456/': l(d, al, '456'),
       'https://www.deezer.com/fr/track/7?utm=x': l(d, tr, '7'),
       'https://www.deezer.com/pt-br/artist/8': l(d, ar, '8'),
+      'https://www.deezer.com/EN/playlist/9': l(d, pl, '9'),
       'https://open.spotify.com/playlist/37i9dQZF1DX': l(s, pl, '37i9dQZF1DX'),
       'https://open.spotify.com/intl-it/album/4aawyAB9?si=a': l(s, al, '4aawyAB9'),
       ' http://open.spotify.com/track/abc ': l(s, tr, 'abc'),

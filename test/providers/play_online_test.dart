@@ -73,6 +73,27 @@ void main() {
     await db.close();
   });
 
+  test('append* puts later rows at the end in call order, outside the user block', () async {
+    final slow = Completer<int?>();
+    var first = true;
+    player = PlayerController(handler, null, libraryIdOf: (_) {
+      if (!first) return Future.value(null);
+      first = false;
+      return slow.future;
+    });
+    await player.addToQueue(ids[1]); // a user entry: stays right after the current track
+    final x = player.appendOnline(_r('x')); // slow lookup, issued first
+    final t = player.appendTrack(ids[0]);
+    final y = player.appendOnline(_r('y'));
+    slow.complete(null);
+    await Future.wait([x, t, y]);
+    final q = handler.queueIds;
+    expect(q.length, 6);
+    expect(q.sublist(0, 3), [ids[0], ids[1], ids[1]]);
+    expect(q[3] < 0 && q[5] < 0 && q[4] == ids[0], isTrue);
+    expect(handler.userAhead, 1);
+  });
+
   test('playOnline inserts after the current track and jumps to it', () async {
     await player.playOnline(_r('x'));
     final q = handler.queueIds;

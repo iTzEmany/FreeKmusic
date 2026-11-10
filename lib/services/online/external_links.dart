@@ -28,7 +28,8 @@ const _deezerHosts = {'deezer.com', 'www.deezer.com'};
 const _shortHosts = {'link.deezer.com', 'deezer.page.link', 'spotify.link'};
 
 final _deezerPath = RegExp(
-    r'^/(?:[a-z]{2}(?:-[a-z]{2})?/)?(playlist|album|track|artist)/(\d+)/?$');
+    r'^/(?:[a-z]{2}(?:-[a-z]{2})?/)?(playlist|album|track|artist)/(\d+)/?$',
+    caseSensitive: false);
 final _spotifyPath = RegExp(
     r'^/(?:intl-[a-z]{2}(?:-[a-z]{2})?/)?(playlist|album|track|artist)/([A-Za-z0-9]+)/?$');
 

@@ -84,8 +84,8 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
       final m = matches[i];
       if (m is! TrackReady || !queued.add(i)) continue;
       unawaited(switch (m) {
-        TrackReadyOnline(:final result) => ctrl.enqueueOnline(result),
-        TrackReadyLibrary(:final track) => ctrl.addToQueue(track.id),
+        TrackReadyOnline(:final result) => ctrl.appendOnline(result),
+        TrackReadyLibrary(:final track) => ctrl.appendTrack(track.id),
       });
     }
   }
