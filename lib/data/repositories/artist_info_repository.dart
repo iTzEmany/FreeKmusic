@@ -39,4 +39,34 @@ class ArtistInfoRepository {
           ),
         );
   }
+
+  // Hand-set artist images (D-566) live in this table as `image:<library artist key>` rows
+  // whose [body] is the cover key: no schema change, and no clash with the bios (an
+  // `artistKey` never contains the prefix of a library key).
+  static const _imagePrefix = 'image:';
+
+  /// Library artist key -> cover key of the image the user picked.
+  Stream<Map<String, String>> watchImages() => _db.select(_db.artistInfos).watch().map(_images);
+
+  Future<Map<String, String>> images() async => _images(await _db.select(_db.artistInfos).get());
+
+  static Map<String, String> _images(List<ArtistInfo> rows) => {
+    for (final r in rows)
+      if (r.artistKey.startsWith(_imagePrefix)) r.artistKey.substring(_imagePrefix.length): r.body,
+  };
+
+  Future<void> setImage(String libraryKey, String coverKey) => _db
+      .into(_db.artistInfos)
+      .insertOnConflictUpdate(
+        ArtistInfosCompanion.insert(
+          artistKey: '$_imagePrefix$libraryKey',
+          body: coverKey,
+          sourceUrl: '',
+          lang: '',
+          fetchedAt: nowMs(),
+        ),
+      );
+
+  Future<void> clearImage(String libraryKey) =>
+      (_db.delete(_db.artistInfos)..where((r) => r.artistKey.equals('$_imagePrefix$libraryKey'))).go();
 }

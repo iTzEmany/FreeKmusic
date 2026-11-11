@@ -146,4 +146,21 @@ void main() {
     expect(await ops.setTrackCover(9999, [1, 2], null), isFalse);
     expect(store.dir.listSync().length, before);
   });
+
+  test('an artist image is read back, replaced without leaving the old file, and reset to automatic', () async {
+    expect(await ops.setArtistCover('art', [1, 1], 'image/png'), isTrue);
+    final first = (await c.read(artistInfoRepositoryProvider).images())['art']!;
+    expect(store.fileFor(first), isNotNull);
+    expect(await ops.setArtistCover('art', [2, 2], 'image/png'), isTrue);
+    final second = (await db.select(db.artistInfos).get()).single.body;
+    expect(second, isNot(first));
+    expect(store.fileFor(first), isNull);
+
+    await ops.clearCache();
+    expect(store.fileFor(second), isNotNull, reason: 'the cache clear keeps hand-picked images');
+
+    await ops.restoreArtistCover('art');
+    expect(await db.select(db.artistInfos).get(), isEmpty);
+    expect(store.fileFor(second), isNull);
+  });
 }

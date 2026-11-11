@@ -5742,6 +5742,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get coverRestoreOriginal => 'Ripristina copertina originale';
 
   @override
+  String get artistImageRestore => 'Ripristina immagine automatica';
+
+  @override
   String get coverSourceDevice => 'Dal dispositivo';
 
   @override
@@ -7607,4 +7610,19 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get shazamOffline =>
       'Nessuna connessione: il brano di Shazam non è stato aggiunto.';
+
+  @override
+  String get ytErrInternal =>
+      'Errore interno dell’app (non di YouTube): riavvia l’app e riprova';
+
+  @override
+  String get activityYtDlp => 'Scarico yt-dlp';
+
+  @override
+  String get ytDlpMissingBanner =>
+      'Manca yt-dlp: serve per cercare e scaricare online';
+
+  @override
+  String get csvImportNoPortal =>
+      'Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione';
 }

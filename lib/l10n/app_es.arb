@@ -3092,6 +3092,7 @@
   "enrichPartCredits": "Créditos",
   "coverChange": "Cambiar carátula",
   "coverRestoreOriginal": "Restaurar carátula original",
+  "artistImageRestore": "Restaurar imagen automática",
   "coverSourceDevice": "Del dispositivo",
   "coverSourceLibrary": "De la biblioteca",
   "coverSourceOnline": "En línea",
@@ -3755,5 +3756,9 @@
   "shazamAdded": "Añadida a Da Shazam: {title}",
   "shazamDuplicate": "Ya está en Da Shazam: {title}",
   "shazamNotFound": "No encontrada en YouTube Music: {title}",
-  "shazamOffline": "Sin conexión: la canción de Shazam no se añadió."
+  "shazamOffline": "Sin conexión: la canción de Shazam no se añadió.",
+  "ytErrInternal": "Error interno de la app (no de YouTube): reinicia la app e inténtalo de nuevo",
+  "activityYtDlp": "Descargando yt-dlp",
+  "ytDlpMissingBanner": "Falta yt-dlp: hace falta para buscar y descargar en línea",
+  "csvImportNoPortal": "El selector de archivos no responde: instala xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) y reinicia la sesión"
 }

@@ -3313,6 +3313,7 @@
   "enrichPartCredits": "Créditos",
   "coverChange": "Alterar capa",
   "coverRestoreOriginal": "Restaurar capa original",
+  "artistImageRestore": "Restaurar imagem automática",
   "coverSourceDevice": "Do dispositivo",
   "coverSourceLibrary": "Da biblioteca",
   "coverSourceOnline": "Online",
@@ -3941,5 +3942,9 @@
   "shazamAdded": "Adicionada a Da Shazam: {title}",
   "shazamDuplicate": "Já está em Da Shazam: {title}",
   "shazamNotFound": "Não encontrada no YouTube Music: {title}",
-  "shazamOffline": "Sem conexão: a música do Shazam não foi adicionada."
+  "shazamOffline": "Sem conexão: a música do Shazam não foi adicionada.",
+  "ytErrInternal": "Erro interno da app (não do YouTube): reinicie a app e tente novamente",
+  "activityYtDlp": "A transferir o yt-dlp",
+  "ytDlpMissingBanner": "Falta o yt-dlp: é preciso para pesquisar e transferir online",
+  "csvImportNoPortal": "O seletor de ficheiros não responde: instale xdg-desktop-portal-gtk (ou xdg-desktop-portal-kde) e reinicie a sessão"
 }

@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:codecore/data/repositories/backup_merge.dart';
 import 'package:codecore/data/repositories/backup_queries.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
+import 'package:codecore/data/repositories/artist_info_repository.dart';
 import 'package:codecore/data/repositories/artist_country_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
@@ -583,5 +584,25 @@ void main() {
       expect(await db.select(db.artistAliases).get(), isEmpty);
       expect(await db.select(db.artistNotSame).get(), isEmpty);
     });
+  });
+
+  test('an artist image travels in user data and is merged only for an artist with none, twice with the same result', () async {
+    final covers = Directory.systemTemp.createTempSync('artimg');
+    addTearDown(() => covers.deleteSync(recursive: true));
+    for (final k in ['theirs', 'mine']) {
+      File('${covers.path}/$k.jpg').writeAsBytesSync([1]);
+    }
+    final repo = ArtistInfoRepository(db);
+    await repo.setImage('queen', 'theirs');
+    await repo.setImage('abba', 'mine');
+    final d = UserData.fromJson(jsonDecode(jsonEncode((await collectUserData(db)).toJson())) as Map<String, dynamic>);
+    expect({for (final a in d.artistImages) a.artistKey: a.coverKey}, {'queen': 'theirs', 'abba': 'mine'});
+
+    await repo.clearImage('queen');
+    await repo.setImage('abba', 'other');
+    for (var i = 0; i < 2; i++) {
+      await mergeUserData(db, d, await PlaylistSyncRepository(db).resolver(), coversDir: covers);
+    }
+    expect(await repo.images(), {'queen': 'theirs', 'abba': 'other'});
   });
 }

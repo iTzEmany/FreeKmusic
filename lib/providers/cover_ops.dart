@@ -8,9 +8,15 @@ import '../data/db/app_database.dart';
 import '../data/repositories/track_repository.dart';
 import '../services/covers/cover_store.dart';
 import '../services/scanner/library_scanner.dart';
+import '../data/repositories/artist_info_repository.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'playlist_ops.dart';
+
+/// Library artist key -> cover key of the image picked by hand (D-566).
+final artistImagesProvider = StreamProvider<Map<String, String>>(
+  (ref) => ref.watch(artistInfoRepositoryProvider).watchImages(),
+);
 
 final coverOpsProvider = Provider<CoverOps>((ref) => CoverOps(ref));
 
@@ -78,6 +84,23 @@ class CoverOps {
     return true;
   }
 
+  ArtistInfoRepository get _artists => _ref.read(artistInfoRepositoryProvider);
+
+  Future<bool> setArtistCover(String artistKey, List<int> bytes, String? mime) async {
+    final key = await _save('artist', artistKey, bytes, mime);
+    if (key == null) return false;
+    final old = (await _artists.images())[artistKey];
+    await _artists.setImage(artistKey, key);
+    await _drop([old], const []);
+    return true;
+  }
+
+  Future<void> restoreArtistCover(String artistKey) async {
+    final old = (await _artists.images())[artistKey];
+    await _artists.clearImage(artistKey);
+    await _drop([old], const []);
+  }
+
   Future<void> restoreTrackCover(int trackId) async {
     final t = await _tracks.getById(trackId);
     if (t == null || t.coverSource == 0) return;
@@ -101,6 +124,7 @@ class CoverOps {
   Future<void> clearCache() async {
     final keep = {
       ...await _tracks.handPickedCoverKeys(),
+      ...(await _artists.images()).values,
       for (final p in await _playlists())
         if (p.coverKey != null) p.coverKey!,
     };

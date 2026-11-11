@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/cover_ops.dart';
 import '../theme/tokens.dart';
 import 'cover_image.dart';
 
@@ -27,20 +29,27 @@ double artistHue(String? name) {
 
 /// Circle with the cover of the artist's most frequent album, otherwise a
 /// monogram on a dark gradient.
-class ArtistAvatar extends StatelessWidget {
+class ArtistAvatar extends ConsumerWidget {
   const ArtistAvatar({
     super.key,
     required this.name,
     required this.size,
     this.coverKey,
+    this.artistKey,
   });
 
   final String? name;
   final double size;
   final String? coverKey;
 
+  /// Library key of the artist: a picked image (D-566) beats [coverKey].
+  final String? artistKey;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coverKey = artistKey == null
+        ? this.coverKey
+        : ref.watch(artistImagesProvider.select((m) => m.value?[artistKey])) ?? this.coverKey;
     if (coverKey != null) {
       return ClipOval(
         child: CoverImage(coverKey: coverKey, size: size, radius: 0),

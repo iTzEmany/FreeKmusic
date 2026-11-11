@@ -589,3 +589,4 @@ Decisioni superate (sostituite da una più recente, la riga resta): D-81 (in par
 | D-563 | 2026-11-11 | yt-dlp mancante o vecchio sul desktop | L'app scarica da sola la sua copia (aggiornatore esistente, oggi solo a mano) se manca o è troppo vecchio | solo un avviso con istruzioni | — | utente, 11/11 |
 | D-564 | 2026-11-11 | Importazione dopo un riavvio | Riprende da sola | resta in pausa con un avviso | — | utente, 11/11 |
 | D-565 | 2026-11-11 | Avanzamento di un'importazione | Nelle attività in corso «Importazione <playlist>: N di M»; nel Registro una sola riga che si aggiorna | solo nelle attività in corso | — | utente, 11/11 |
+| D-566 | 2026-11-11 | Immagine dell'artista scelta a mano | Come per album e playlist (stesso foglio, stesse fonti, ripristino dell'automatica, backup e unione se le altre copertine a mano ci sono), nella fase 118 per non aprire un'altra PR | una fase a parte | togliere la scelta dalla pagina dell'artista | utente, 11/11 |

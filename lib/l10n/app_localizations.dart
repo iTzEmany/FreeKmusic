@@ -9007,6 +9007,12 @@ abstract class AppLocalizations {
   /// **'Ripristina copertina originale'**
   String get coverRestoreOriginal;
 
+  /// No description provided for @artistImageRestore.
+  ///
+  /// In it, this message translates to:
+  /// **'Ripristina immagine automatica'**
+  String get artistImageRestore;
+
   /// No description provided for @coverSourceDevice.
   ///
   /// In it, this message translates to:
@@ -12066,6 +12072,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Nessuna connessione: il brano di Shazam non è stato aggiunto.'**
   String get shazamOffline;
+
+  /// No description provided for @ytErrInternal.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore interno dell’app (non di YouTube): riavvia l’app e riprova'**
+  String get ytErrInternal;
+
+  /// No description provided for @activityYtDlp.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarico yt-dlp'**
+  String get activityYtDlp;
+
+  /// No description provided for @ytDlpMissingBanner.
+  ///
+  /// In it, this message translates to:
+  /// **'Manca yt-dlp: serve per cercare e scaricare online'**
+  String get ytDlpMissingBanner;
+
+  /// No description provided for @csvImportNoPortal.
+  ///
+  /// In it, this message translates to:
+  /// **'Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione'**
+  String get csvImportNoPortal;
 }
 
 class _AppLocalizationsDelegate

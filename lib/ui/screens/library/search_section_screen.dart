@@ -112,7 +112,7 @@ List<Widget> searchSectionRows(
         for (final a in res.artists)
           SearchResultRow(
             key: ValueKey('artist-${a.key}'),
-            leading: ArtistAvatar(name: a.name, size: 40, coverKey: a.coverKey),
+            leading: ArtistAvatar(name: a.name, size: 40, coverKey: a.coverKey, artistKey: a.key),
             title: a.name ?? l.unknownArtist,
             subtitle: [
               l.albumsCount(a.albumCount),

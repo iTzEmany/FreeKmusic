@@ -14,6 +14,7 @@ import 'artist_country_repository.dart';
 import 'backup_merge_helpers.dart';
 import 'backup_merge_tables.dart';
 import 'artist_alias_repository.dart';
+import 'artist_info_repository.dart';
 import 'credits_repository.dart';
 import 'track_genre_repository.dart';
 import 'track_repository.dart';
@@ -217,6 +218,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     await _mergeFollowedArtists(db, data.followedArtists, report);
     await _mergeArtistCountries(db, data.artistCountries);
     await _mergeArtistAliases(db, data);
+    await _mergeArtistImages(db, data.artistImages, coversDir);
     return report;
   });
 }
@@ -347,5 +349,17 @@ Future<void> _mergeArtistAliases(AppDatabase db, UserData data) async {
     } catch (e) {
       AppLog.w('backup: "different" pair skipped: $e');
     }
+  }
+}
+
+/// A hand-set artist image is taken only if its file came with the backup and the
+/// artist has none here (idempotent: a second merge finds it already set).
+Future<void> _mergeArtistImages(AppDatabase db, List<ArtistImageData> items, Directory? coversDir) async {
+  if (items.isEmpty) return;
+  final repo = ArtistInfoRepository(db);
+  final have = await repo.images();
+  for (final a in items) {
+    if (a.artistKey.isEmpty || have.containsKey(a.artistKey) || !_coverFileExists(coversDir, a.coverKey)) continue;
+    await repo.setImage(a.artistKey, a.coverKey);
   }
 }

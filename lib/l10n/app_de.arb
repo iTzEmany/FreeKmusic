@@ -3092,6 +3092,7 @@
   "enrichPartCredits": "Credits",
   "coverChange": "Cover ändern",
   "coverRestoreOriginal": "Originalcover wiederherstellen",
+  "artistImageRestore": "Automatisches Bild wiederherstellen",
   "coverSourceDevice": "Vom Gerät",
   "coverSourceLibrary": "Aus der Mediathek",
   "coverSourceOnline": "Online",
@@ -3755,5 +3756,9 @@
   "shazamAdded": "Zu Da Shazam hinzugefügt: {title}",
   "shazamDuplicate": "Schon in Da Shazam: {title}",
   "shazamNotFound": "Auf YouTube Music nicht gefunden: {title}",
-  "shazamOffline": "Keine Verbindung: der Shazam-Titel wurde nicht hinzugefügt."
+  "shazamOffline": "Keine Verbindung: der Shazam-Titel wurde nicht hinzugefügt.",
+  "ytErrInternal": "Interner App-Fehler (nicht YouTube): App neu starten und erneut versuchen",
+  "activityYtDlp": "yt-dlp wird geladen",
+  "ytDlpMissingBanner": "yt-dlp fehlt: es wird für Online-Suche und Downloads gebraucht",
+  "csvImportNoPortal": "Der Dateiauswahldialog antwortet nicht: installiere xdg-desktop-portal-gtk (oder xdg-desktop-portal-kde) und starte die Sitzung neu"
 }

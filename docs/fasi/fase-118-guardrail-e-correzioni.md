@@ -5,7 +5,7 @@ Dopo le prove dell'11/11 (Motorola, Linux con il .deb di un amico, Release Linux
 Fuori: i ritocchi di UI e la 1.6.0 (fase 119), lo spostamento dei download già in `Android/data` (D-547).
 
 ## Riferimenti
-- Decisioni D-547, D-554 (MediaStore), D-557..D-565.
+- Decisioni D-547, D-554 (MediaStore), D-557..D-566.
 - Aree: [`piattaforme.md`](../architettura/piattaforme.md), [`online.md`](../architettura/online.md), [`libreria-e-dati.md`](../architettura/libreria-e-dati.md), [`ui-e-design.md`](../architettura/ui-e-design.md).
 - Diagnosi dell'11/11 in breve:
   - yt-dlp rotto nelle APK release per R8 (corretto nella 1.5.1, D-557);
@@ -30,6 +30,7 @@ Fuori: i ritocchi di UI e la 1.6.0 (fase 119), lo spostamento dei download già 
 | R-233 | I tag si scrivono anche sui brani con più artisti: la verifica dopo la scrittura confronta ciò che è stato scritto (primo artista come artista dell'album) | I | test: brano «Tinariwen, Matt Sweeney, Alain Johannes» → file con titolo, artista e album; nessun `verifyFailed` |
 | R-234 | Linux: se il selettore file non risponde (manca il portale), dopo un tempo breve compare un errore chiaro con cosa installare (`xdg-desktop-portal-gtk` o `-kde`), non una rotella infinita | U | test con un selettore finto che non risponde → messaggio; il caso normale invariato |
 | R-235 | Un'importazione interrotta (app chiusa) riprende da sola al riavvio (D-564) | I | test: blocchi in pausa per chiusura dell'app → all'avvio tornano in coda; una pausa voluta dall'utente resta pausa |
+| R-237 | Immagine dell'artista scelta a mano, come per album e playlist: stesso foglio e stesse fonti, ripristino dell'immagine automatica, nel backup e nell'unione se lo sono le copertine a mano di album e playlist (D-566) | I | test: dopo la scelta la pagina e le card dell'artista mostrano l'immagine nuova, anche dopo un riavvio; «ripristina» torna all'automatica; backup e unione la portano |
 | R-236 | Avanzamento di un'importazione: nelle attività in corso «Importazione <playlist>: N di M»; nel Registro una sola riga che si aggiorna fino alla fine (D-565) | I | test: durante l'importazione l'attività ha N e M giusti; il Registro ha una riga, aggiornata, non una per blocco |
 
 ## Architettura
@@ -70,6 +71,11 @@ Fuori: i ritocchi di UI e la 1.6.0 (fase 119), lo spostamento dei download già 
   - File: `lib/services/import/playlist_import_service.dart`, `lib/providers/import_providers.dart`, `activity_providers.dart`, `activity_log_providers.dart`, ARB
   - Comando mirato: `flutter test test/services/import/ test/providers/ <toccati>`
   - Fatto quando: i criteri di R-235, R-236; prova con `Liked_Songs.csv` sulla Release Linux (schermo virtuale, home finta) per almeno 30 minuti, con un riavvio a metà
+
+- [ ] 118.5 Immagine dell'artista scelta a mano (R-237)
+  - File: pagina e card dell'artista (`lib/ui/screens/artist*`), il foglio delle copertine già usato da album e playlist, dove si salva l'immagine dell'artista (senza cambiare lo schema se si può; altrimenti una sola migrazione), backup e unione se servono, ARB
+  - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart test/l10n/arb_test.dart`
+  - Fatto quando: il criterio di R-237
 
 ## Tocca a te
 - Chiedere al tuo amico, dopo la versione con questa fase, di riprovare il .deb e di mandare «Esporta log» se qualcosa non va.

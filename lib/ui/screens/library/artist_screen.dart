@@ -13,7 +13,10 @@ import '../../../providers/settings_providers.dart';
 import '../../../core/constants.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
+import '../../../providers/cover_ops.dart';
 import '../../widgets/album_card.dart';
+import '../../widgets/cc_sheet.dart';
+import '../../widgets/cover_picker_sheet.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/collection_header.dart';
 import '../../widgets/error_state.dart';
@@ -45,7 +48,9 @@ class ArtistDetailScreen extends ConsumerWidget {
     final list = tracks.value ?? const <Track>[];
     final albumList = albums.value ?? const <AlbumSummary>[];
     // Most present cover among the albums, for the avatar and the backdrop.
+    final picked = ref.watch(artistImagesProvider.select((m) => m.value?[artist.key]));
     final coverKey =
+        picked ??
         artist.coverKey ??
         albumList.map((a) => a.coverKey).whereType<String>().firstOrNull;
     final top = ([
@@ -80,9 +85,7 @@ class ArtistDetailScreen extends ConsumerWidget {
           coverKey: coverKey,
         ),
         meta: meta,
-        menu: kEnableYoutube && artist.name != null
-            ? _YtmButtons(name: artist.name!)
-            : null,
+        menu: _ArtistMenu(artist: artist, picked: picked != null),
         onPlay: list.isEmpty
             ? null
             : () => ctrl.playAll(
@@ -187,6 +190,53 @@ class _CreditedSection extends ConsumerWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+enum _ArtistAction { cover, restoreCover }
+
+/// The image of the artist, picked as for albums and playlists (D-566), and the
+/// YouTube Music buttons.
+class _ArtistMenu extends ConsumerWidget {
+  const _ArtistMenu({required this.artist, required this.picked});
+
+  final ArtistSummary artist;
+  final bool picked;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (kEnableYoutube && artist.name != null) _YtmButtons(name: artist.name!),
+        IconButton(
+          key: const ValueKey('artist-more'),
+          tooltip: l.moreActions,
+          icon: const Icon(Icons.more_vert_rounded),
+          onPressed: () async {
+            final v = await showCcActionSheet<_ArtistAction>(
+              context: context,
+              title: artist.name ?? l.unknownArtist,
+              groups: [
+                [
+                  CcAction(icon: Icons.image_outlined, label: l.coverChange, value: _ArtistAction.cover),
+                  if (picked)
+                    CcAction(icon: Icons.restore_rounded, label: l.artistImageRestore, value: _ArtistAction.restoreCover),
+                ],
+              ],
+            );
+            if (v == null || !context.mounted) return;
+            switch (v) {
+              case _ArtistAction.cover:
+                showCoverPicker(context, save: (ops, bytes, mime) => ops.setArtistCover(artist.key, bytes, mime));
+              case _ArtistAction.restoreCover:
+                ref.read(coverOpsProvider).restoreArtistCover(artist.key);
+            }
+          },
+        ),
       ],
     );
   }
