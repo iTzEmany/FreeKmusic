@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:sqlite3/sqlite3.dart';
 
@@ -23,6 +24,7 @@ class BackupDbData {
     this.podcasts = const [],
     this.podcastEpisodes = const [],
     this.refs = const {},
+    this.unreadable = false,
   });
 
   /// Rows with `id`, `cover_key`, `cover_source`, `has_cover`.
@@ -36,6 +38,9 @@ class BackupDbData {
 
   /// Portable reference of every backup track, by the backup's track id.
   final Map<int, TrackRef> refs;
+
+  /// The file could not be opened or read: the lists are empty.
+  final bool unreadable;
 }
 
 const _columns = <String, List<String>>{
@@ -58,6 +63,9 @@ const _columns = <String, List<String>>{
   'folders': ['id', 'path'],
 };
 
+/// [readBackupDb] off the UI isolate (here, so the closure captures only [file]).
+Future<BackupDbData> readBackupDbOffThread(File file) => Isolate.run(() => readBackupDb(file));
+
 BackupDbData readBackupDb(File file) {
   Database? db;
   try {
@@ -77,7 +85,7 @@ BackupDbData readBackupDb(File file) {
     );
   } catch (e, st) {
     AppLog.e('backup db unreadable', e, st);
-    return BackupDbData();
+    return BackupDbData(unreadable: true);
   } finally {
     db?.close();
   }

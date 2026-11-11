@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/backup_merge_tables.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
+import 'package:codecore/services/stream/stream_key.dart';
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -158,5 +159,34 @@ void main() {
     expect(await counts(), first);
     expect((r.playsAdded, r.tagsAdded, r.trackTagsAdded, r.smartPlaylistsAdded, r.podcastsAdded, r.episodesAdded, r.coversLinked),
         (0, 0, 0, 0, 0, 0, 0));
+  });
+
+  test('a play of a stream track is linked to its existing shadow row, otherwise unlinked', () async {
+    Future<void> streamTrack(AppDatabase d, String path, {int? at}) async {
+      await d.into(d.tracks).insert(TracksCompanion.insert(
+          path: path, title: 's', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, kind: const Value(2)));
+      if (at != null) await d.into(d.plays).insert(PlaysCompanion.insert(trackId: 1, playedAt: at));
+    }
+
+    final path = streamPathOf('youtube:v1');
+    final b = AppDatabase(NativeDatabase(backup));
+    await streamTrack(b, path, at: 10);
+    await b.close();
+
+    await streamTrack(local, path);
+    var r = await merge();
+    expect((r.playsAdded, r.playsUnlinked), (1, 0));
+    expect((await local.select(local.plays).getSingle()).trackId, 1);
+
+    final other = AppDatabase(NativeDatabase.memory());
+    addTearDown(other.close);
+    r = await mergeBackupTables(other, backup, await PlaylistSyncRepository(other).resolver());
+    expect((r.playsAdded, r.playsUnlinked), (0, 1));
+    expect(await other.select(other.tracks).get(), isEmpty);
+  });
+
+  test('an unreadable backup database is reported', () async {
+    backup.writeAsStringSync('not sqlite');
+    expect((await merge()).backupDbUnreadable, isTrue);
   });
 }

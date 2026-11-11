@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
+import '../../data/repositories/backup_merge_tables.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
 import '../../ui/theme/custom_theme.dart';
 import '../shuffle_plus/dislike_store.dart';
@@ -368,6 +369,8 @@ Future<MergeReport> mergeBackup(
   Directory? themeDir,
 }) async {
   Map<String, dynamic>? settings;
+  File? backupDb;
+  final tmp = Directory.systemTemp.createTempSync('merge');
   final input = InputFileStream(zip.path);
   late final UserData data;
   var windows = Platform.isWindows;
@@ -408,6 +411,11 @@ Future<MergeReport> mergeBackup(
         AppLog.w('settings.json of the backup unreadable, settings skipped', e, s);
       }
     }
+    final dbEntry = archive.findFile(_stagedDb);
+    if (dbEntry != null) {
+      backupDb = File(p.join(tmp.path, _stagedDb));
+      backupDb.writeAsBytesSync(dbEntry.content as List<int>);
+    }
     if (themeDir != null) _extractThemeImages(archive, themeDir);
     coversDir.createSync(recursive: true);
     for (final f in archive.files) {
@@ -418,15 +426,30 @@ Future<MergeReport> mergeBackup(
       if (!target.existsSync()) target.writeAsBytesSync(f.content as List<int>);
     }
   } on RestoreException {
+    _quietDelete(tmp);
     rethrow;
   } on FormatException catch (e) {
+    _quietDelete(tmp);
     throw RestoreException('unreadable backup: ${e.message}');
   } finally {
     await input.close();
   }
-  final resolver = await PlaylistSyncRepository(db)
-      .resolver(caseInsensitive: windows);
-  final report = await mergeUserData(db, data, resolver, coversDir: coversDir);
+  final MergeReport report;
+  try {
+    final resolver = await PlaylistSyncRepository(db)
+        .resolver(caseInsensitive: windows);
+    // One transaction: user data first (it creates the shadow rows of playlists).
+    final staged = backupDb;
+    report = await db.transaction(() async {
+      final r = await mergeUserData(db, data, resolver, coversDir: coversDir);
+      if (staged != null) {
+        r.tables = await mergeBackupTables(db, staged, resolver, coversDir: coversDir);
+      }
+      return r;
+    });
+  } finally {
+    _quietDelete(tmp);
+  }
   if (prefs != null && settings != null) {
     await _applyMergedSettings(prefs, settings, themeDir);
   }

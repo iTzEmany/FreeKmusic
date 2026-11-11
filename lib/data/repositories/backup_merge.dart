@@ -11,6 +11,7 @@ import '../../services/backup/user_data.dart';
 import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
 import 'artist_country_repository.dart';
+import 'backup_merge_tables.dart';
 import 'artist_alias_repository.dart';
 import 'credits_repository.dart';
 import 'track_genre_repository.dart';
@@ -25,6 +26,10 @@ class MergeReport {
   int playlistItemsSkipped = 0;
   int radiosAdded = 0;
   int followedArtistsAdded = 0;
+
+  /// What came from the backup's database (history, tags, smart playlists, podcasts).
+  TablesMergeReport tables = TablesMergeReport();
+  bool get backupDbUnreadable => tables.backupDbUnreadable;
 
   /// Transliterations typed by hand in the backup, by id of the track here, for
   /// tracks whose lyrics are the backup's; the caller keeps the ones it has none for.

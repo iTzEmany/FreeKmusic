@@ -751,6 +751,53 @@ void main() {
     },
   );
 
+  test('mergeBackup brings history, tags, smart playlists and podcasts by title when paths differ, once', () async {
+    Future<void> track(AppDatabase d, String path) => d.into(d.tracks).insert(TracksCompanion.insert(
+        path: path, title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
+        artist: const Value('A'), durationMs: const Value(1000)));
+    final src = AppDatabase(NativeDatabase.memory());
+    await track(src, '/m/x.mp3');
+    await src.into(src.plays).insert(PlaysCompanion.insert(trackId: 1, playedAt: 100));
+    await src.into(src.plays).insert(PlaysCompanion.insert(trackId: 1, playedAt: 200));
+    final tag = await src.into(src.userTags).insert(UserTagsCompanion.insert(name: 'Rock'));
+    await src.into(src.trackTags).insert(TrackTagsCompanion.insert(trackId: 1, tagId: tag));
+    await src.into(src.smartPlaylists).insert(SmartPlaylistsCompanion.insert(name: 'S', rules: 'r', createdAt: 1));
+    final pod = await src.into(src.podcasts).insert(PodcastsCompanion.insert(feedUrl: 'http://f', title: 'P', addedAt: 1));
+    await src.into(src.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+        podcastId: pod, guid: 'g', title: 'E', audioUrl: 'http://e'));
+    SharedPreferences.setMockInitialValues({'deviceId': 'A'});
+    final zip = File(p.join(dir.path, 'tables.zip'));
+    await BackupService(
+      db: src,
+      prefs: await SharedPreferences.getInstance(),
+      coversDir: Directory(p.join(dir.path, 'none'))..createSync(),
+      downloadsFile: File(p.join(dir.path, 'none.json')),
+      deviceId: 'A',
+    ).createBackup(zip.path);
+    await src.close();
+
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await track(here, '/elsewhere/x.mp3');
+    Future<List<int>> counts() async => [
+          (await here.select(here.plays).get()).length,
+          (await here.select(here.userTags).get()).length,
+          (await here.select(here.trackTags).get()).length,
+          (await here.select(here.smartPlaylists).get()).length,
+          (await here.select(here.podcasts).get()).length,
+          (await here.select(here.podcastEpisodes).get()).length,
+        ];
+    final dest = Directory(p.join(dir.path, 'tables-dest'));
+    final first = await mergeBackup(zip, here, dest);
+    expect(first.tables.playsAdded, 2);
+    expect(first.backupDbUnreadable, isFalse);
+    final after = await counts();
+    expect(after, [2, 1, 1, 1, 1, 1]);
+    final second = await mergeBackup(zip, here, dest);
+    expect(await counts(), after);
+    expect(second.tables.playsAdded, 0);
+  });
+
   test('mergeBackup puts back hand-set covers (track and album) with their files; a track with its own hand cover keeps it', () async {
     final src = AppDatabase(NativeDatabase.memory());
     Future<void> add(AppDatabase d, String t, {int source = 0, String? key, bool fav = false}) =>

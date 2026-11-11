@@ -2263,6 +2263,47 @@
       }
     }
   },
+  "restoreMergePlays": "{count, plural, one{1 écoute ajoutée à l’historique} other{{count} écoutes ajoutées à l’historique}}",
+  "@restoreMergePlays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeTags": "{count, plural, one{1 tag ajouté} other{{count} tags ajoutés}}",
+  "@restoreMergeTags": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeSmart": "{count, plural, one{1 playlist intelligente ajoutée} other{{count} playlists intelligentes ajoutées}}",
+  "@restoreMergeSmart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergePodcasts": "{count, plural, one{1 podcast ajouté} other{{count} podcasts ajoutés}}",
+  "@restoreMergePodcasts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeUnlinked": "{count, plural, one{1 écoute non liée} other{{count} écoutes non liées}}",
+  "@restoreMergeUnlinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeDbUnreadable": "La base de données de la sauvegarde est illisible : historique, tags, playlists intelligentes et podcasts n’ont pas été fusionnés.",
   "restoreNotFound": "Titres introuvables",
   "restoreCopyList": "Copier la liste",
   "restoreFailed": "Échec de la restauration",

@@ -2105,6 +2105,47 @@
       }
     }
   },
+  "restoreMergePlays": "{count, plural, one{1 listening entry added to history} other{{count} listening entries added to history}}",
+  "@restoreMergePlays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeTags": "{count, plural, one{1 tag added} other{{count} tags added}}",
+  "@restoreMergeTags": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeSmart": "{count, plural, one{1 smart playlist added} other{{count} smart playlists added}}",
+  "@restoreMergeSmart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergePodcasts": "{count, plural, one{1 podcast added} other{{count} podcasts added}}",
+  "@restoreMergePodcasts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeUnlinked": "{count, plural, one{1 play not linked} other{{count} plays not linked}}",
+  "@restoreMergeUnlinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeDbUnreadable": "The backup database cannot be read: history, tags, smart playlists and podcasts were not merged.",
   "restoreNotFound": "Tracks not found",
   "restoreCopyList": "Copy list",
   "restoreFailed": "Restore failed",

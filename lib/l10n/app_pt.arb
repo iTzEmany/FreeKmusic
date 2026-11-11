@@ -2263,6 +2263,47 @@
       }
     }
   },
+  "restoreMergePlays": "{count, plural, one{1 reprodução adicionada ao histórico} other{{count} reproduções adicionadas ao histórico}}",
+  "@restoreMergePlays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeTags": "{count, plural, one{1 etiqueta adicionada} other{{count} etiquetas adicionadas}}",
+  "@restoreMergeTags": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeSmart": "{count, plural, one{1 playlist inteligente adicionada} other{{count} playlists inteligentes adicionadas}}",
+  "@restoreMergeSmart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergePodcasts": "{count, plural, one{1 podcast adicionado} other{{count} podcasts adicionados}}",
+  "@restoreMergePodcasts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeUnlinked": "{count, plural, one{1 reprodução não associada} other{{count} reproduções não associadas}}",
+  "@restoreMergeUnlinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeDbUnreadable": "A base de dados da cópia não pode ser lida: histórico, etiquetas, playlists inteligentes e podcasts não foram unidos.",
   "restoreNotFound": "Faixas não encontradas",
   "restoreCopyList": "Copiar lista",
   "restoreFailed": "Falha no restauro",

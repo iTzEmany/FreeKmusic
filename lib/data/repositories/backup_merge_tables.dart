@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../../services/backup/backup_db_reader.dart';
 import '../../services/backup/track_resolver.dart';
 import '../db/app_database.dart';
+import 'track_repository.dart';
 
 class TablesMergeReport {
   int playsAdded = 0;
@@ -18,6 +19,9 @@ class TablesMergeReport {
   int podcastsAdded = 0;
   int episodesAdded = 0;
   int coversLinked = 0;
+
+  /// The backup's database could not be read: none of the above was merged.
+  bool backupDbUnreadable = false;
 }
 
 /// Adds the listening history, tags, smart playlists and podcasts of the
@@ -27,16 +31,20 @@ Future<TablesMergeReport> mergeBackupTables(
   File backupDb,
   TrackResolver resolver, {
   Directory? coversDir,
-}) {
-  final data = readBackupDb(backupDb);
-  final report = TablesMergeReport();
+}) async {
+  // Synchronous sqlite I/O: off the UI isolate. The data is plain maps and TrackRefs.
+  final data = await readBackupDbOffThread(backupDb);
+  final report = TablesMergeReport()..backupDbUnreadable = data.unreadable;
+  final repo = TrackRepository(db);
   return db.transaction(() async {
-    // Backup track id -> local id; unresolved ones are left out.
+    // Backup track id -> local id; unresolved ones are left out. A streamed track
+    // maps to its existing shadow row only: none is created here (D-546).
     final tracks = <int, int>{};
-    data.refs.forEach((id, ref) {
-      final local = resolver.resolve(ref);
-      if (local != null) tracks[id] = local;
-    });
+    for (final e in data.refs.entries) {
+      final key = e.value.streamKey;
+      final local = key == null ? resolver.resolve(e.value) : (await repo.streamRow(key))?.id;
+      if (local != null) tracks[e.key] = local;
+    }
     await _plays(db, data, tracks, report);
     await _tags(db, data, tracks, report);
     await _smartPlaylists(db, data, report);

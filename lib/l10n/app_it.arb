@@ -2466,6 +2466,47 @@
       }
     }
   },
+  "restoreMergePlays": "{count, plural, one{1 ascolto aggiunto allo storico} other{{count} ascolti aggiunti allo storico}}",
+  "@restoreMergePlays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeTags": "{count, plural, one{1 tag aggiunto} other{{count} tag aggiunti}}",
+  "@restoreMergeTags": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeSmart": "{count, plural, one{1 playlist smart aggiunta} other{{count} playlist smart aggiunte}}",
+  "@restoreMergeSmart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergePodcasts": "{count, plural, one{1 podcast aggiunto} other{{count} podcast aggiunti}}",
+  "@restoreMergePodcasts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeUnlinked": "{count, plural, one{1 ascolto non collegato} other{{count} ascolti non collegati}}",
+  "@restoreMergeUnlinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeDbUnreadable": "Il database del backup non si legge: storico, tag, playlist smart e podcast non sono stati uniti.",
   "restoreNotFound": "Brani non trovati",
   "restoreCopyList": "Copia elenco",
   "restoreFailed": "Ripristino non riuscito",

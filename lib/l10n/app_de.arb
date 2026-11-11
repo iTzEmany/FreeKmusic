@@ -2105,6 +2105,47 @@
       }
     }
   },
+  "restoreMergePlays": "{count, plural, one{1 Wiedergabe zum Verlauf hinzugefügt} other{{count} Wiedergaben zum Verlauf hinzugefügt}}",
+  "@restoreMergePlays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeTags": "{count, plural, one{1 Tag hinzugefügt} other{{count} Tags hinzugefügt}}",
+  "@restoreMergeTags": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeSmart": "{count, plural, one{1 Smart-Playlist hinzugefügt} other{{count} Smart-Playlists hinzugefügt}}",
+  "@restoreMergeSmart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergePodcasts": "{count, plural, one{1 Podcast hinzugefügt} other{{count} Podcasts hinzugefügt}}",
+  "@restoreMergePodcasts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeUnlinked": "{count, plural, one{1 Wiedergabe nicht zugeordnet} other{{count} Wiedergaben nicht zugeordnet}}",
+  "@restoreMergeUnlinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeDbUnreadable": "Die Datenbank des Backups ist nicht lesbar: Verlauf, Tags, Smart-Playlists und Podcasts wurden nicht zusammengeführt.",
   "restoreNotFound": "Nicht gefundene Titel",
   "restoreCopyList": "Liste kopieren",
   "restoreFailed": "Wiederherstellung fehlgeschlagen",
