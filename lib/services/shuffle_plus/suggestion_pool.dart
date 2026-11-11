@@ -1,3 +1,4 @@
+import '../../core/app_log.dart';
 import '../../data/db/app_database.dart' show Track;
 import '../import/track_matcher.dart' show LibraryIndex;
 import '../online/merge_results.dart' show libraryMatchOf;
@@ -194,6 +195,9 @@ class SuggestionPool {
             !filter.allows(r.id, suggestionArtistKey(r), positionsOf(r.id)) ||
             inLibrary(r);
         if (never) {
+          AppLog.i(
+            'DIAG never ${r.id} kind=${item.kind} fits=${_fits(r)} dur=${r.duration} used=${_used.contains(r.id)} recent=${log.recentlySuggested(r.id)} allows=${filter.allows(r.id, suggestionArtistKey(r), positionsOf(r.id))} inLib=${inLibrary(r)} logLen=${log.length}',
+          );
           queue.removeAt(i);
           continue;
         }
