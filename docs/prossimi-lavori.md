@@ -3,7 +3,7 @@
 Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
 ## Da fare subito (richieste dell'11/11)
-- [Fase 117](fasi/fase-117-ripristino-completo.md): «Unisci» completo. [Fase 118](fasi/fase-118-download-ritocchi-e-1-6-0.md): download in `Music/FreeKmusic`, ritocchi di Registro, swipe, selezione, sfocatura, trasparenza e pulsanti del suggerito; poi la versione 1.6.0. Dopo: la CI Windows (sotto, «Qualità e rilascio»).
+- [Fase 117](storico/fasi/fase-117-ripristino-completo.md): «Unisci» completo. [Fase 118](fasi/fase-118-download-ritocchi-e-1-6-0.md): download in `Music/FreeKmusic`, ritocchi di Registro, swipe, selezione, sfocatura, trasparenza e pulsanti del suggerito; poi la versione 1.6.0. Dopo: la CI Windows (sotto, «Qualità e rilascio»).
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
@@ -57,6 +57,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **Accessibilità TalkBack, minori** (8 nov, prova fase 105): risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
 
 ## UI e design
+- **Dialogo dell'icona dopo una cancellazione dei dati** (11/11, prova fase 117 sul Mi A3): dopo `pm clear` l'alias dell'icona resta il vecchio (Arancio) e a ogni avvio compare «Cambiare anche l'icona dell'app?», prima dell'onboarding. Allineare la preferenza all'alias attivo all'avvio.
 - **`libraryEntriesProvider`** tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto. Rimedio: tenere viva solo l'ultima combinazione per scheda.
 - **`PlaylistOrder.apply`** viene chiamato dentro `build`.
 - **`app_fr.arb` con chiavi duplicate** (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.

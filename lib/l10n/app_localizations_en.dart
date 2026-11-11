@@ -3843,6 +3843,76 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String restoreMergePlays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count listening entries added to history',
+      one: '1 listening entry added to history',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeTags(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tags added',
+      one: '1 tag added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeSmart(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count smart playlists added',
+      one: '1 smart playlist added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergePodcasts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count podcasts added',
+      one: '1 podcast added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeUnlinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plays not linked',
+      one: '1 play not linked',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count custom themes not added: limit reached',
+      one: '1 custom theme not added: limit reached',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreMergeDbUnreadable =>
+      'The backup database cannot be read: history, tags, smart playlists and podcasts were not merged.';
+
+  @override
   String get restoreNotFound => 'Tracks not found';
 
   @override

@@ -3858,6 +3858,76 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String restoreMergePlays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reproducciones añadidas al historial',
+      one: '1 reproducción añadida al historial',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeTags(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count etiquetas añadidas',
+      one: '1 etiqueta añadida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeSmart(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count listas inteligentes añadidas',
+      one: '1 lista inteligente añadida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergePodcasts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pódcasts añadidos',
+      one: '1 pódcast añadido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeUnlinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reproducciones sin enlazar',
+      one: '1 reproducción sin enlazar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count temas personalizados no añadidos: límite alcanzado',
+      one: '1 tema personalizado no añadido: límite alcanzado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreMergeDbUnreadable =>
+      'No se puede leer la base de datos de la copia: historial, etiquetas, listas inteligentes y pódcasts no se unieron.';
+
+  @override
   String get restoreNotFound => 'Canciones no encontradas';
 
   @override

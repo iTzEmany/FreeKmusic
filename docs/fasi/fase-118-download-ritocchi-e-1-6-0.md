@@ -1,7 +1,7 @@
 # Fase 118 — Download pubblici, ritocchi e versione 1.6.0
 
 ## Obiettivo
-I download nuovi vanno nella cartella pubblica `Music/FreeKmusic`. Sette ritocchi di UI (Registro, swipe, selezione, sfocatura, trasparenza dei temi, pulsanti del brano suggerito). Chiude con la versione 1.6.0 e la Release, dopo la [fase 117](fase-117-ripristino-completo.md). Viene prima della CI Windows.
+I download nuovi vanno nella cartella pubblica `Music/FreeKmusic`. Sette ritocchi di UI (Registro, swipe, selezione, sfocatura, trasparenza dei temi, pulsanti del brano suggerito). Chiude con la versione 1.6.0 e la Release, dopo la [fase 117](../storico/fasi/fase-117-ripristino-completo.md). Viene prima della CI Windows.
 Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla delle card di album, playlist e artisti (D-550), un'impostazione per scegliere la cartella dei download.
 
 ## Riferimenti

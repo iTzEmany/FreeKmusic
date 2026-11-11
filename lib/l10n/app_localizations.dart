@@ -6021,6 +6021,48 @@ abstract class AppLocalizations {
     int favorites,
   );
 
+  /// No description provided for @restoreMergePlays.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 ascolto aggiunto allo storico} other{{count} ascolti aggiunti allo storico}}'**
+  String restoreMergePlays(int count);
+
+  /// No description provided for @restoreMergeTags.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 tag aggiunto} other{{count} tag aggiunti}}'**
+  String restoreMergeTags(int count);
+
+  /// No description provided for @restoreMergeSmart.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 playlist smart aggiunta} other{{count} playlist smart aggiunte}}'**
+  String restoreMergeSmart(int count);
+
+  /// No description provided for @restoreMergePodcasts.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 podcast aggiunto} other{{count} podcast aggiunti}}'**
+  String restoreMergePodcasts(int count);
+
+  /// No description provided for @restoreMergeUnlinked.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 ascolto non collegato} other{{count} ascolti non collegati}}'**
+  String restoreMergeUnlinked(int count);
+
+  /// No description provided for @restoreMergeThemesDropped.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 tema personalizzato non aggiunto: limite raggiunto} other{{count} temi personalizzati non aggiunti: limite raggiunto}}'**
+  String restoreMergeThemesDropped(int count);
+
+  /// No description provided for @restoreMergeDbUnreadable.
+  ///
+  /// In it, this message translates to:
+  /// **'Il database del backup non si legge: storico, tag, playlist smart e podcast non sono stati uniti.'**
+  String get restoreMergeDbUnreadable;
+
   /// No description provided for @restoreNotFound.
   ///
   /// In it, this message translates to:

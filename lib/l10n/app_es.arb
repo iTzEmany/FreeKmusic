@@ -2105,6 +2105,55 @@
       }
     }
   },
+  "restoreMergePlays": "{count, plural, one{1 reproducción añadida al historial} other{{count} reproducciones añadidas al historial}}",
+  "@restoreMergePlays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeTags": "{count, plural, one{1 etiqueta añadida} other{{count} etiquetas añadidas}}",
+  "@restoreMergeTags": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeSmart": "{count, plural, one{1 lista inteligente añadida} other{{count} listas inteligentes añadidas}}",
+  "@restoreMergeSmart": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergePodcasts": "{count, plural, one{1 pódcast añadido} other{{count} pódcasts añadidos}}",
+  "@restoreMergePodcasts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeUnlinked": "{count, plural, one{1 reproducción sin enlazar} other{{count} reproducciones sin enlazar}}",
+  "@restoreMergeUnlinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeThemesDropped": "{count, plural, one{1 tema personalizado no añadido: límite alcanzado} other{{count} temas personalizados no añadidos: límite alcanzado}}",
+  "@restoreMergeThemesDropped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreMergeDbUnreadable": "No se puede leer la base de datos de la copia: historial, etiquetas, listas inteligentes y pódcasts no se unieron.",
   "restoreNotFound": "Canciones no encontradas",
   "restoreCopyList": "Copiar lista",
   "restoreFailed": "La restauración ha fallado",

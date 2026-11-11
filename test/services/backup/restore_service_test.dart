@@ -6,6 +6,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/backup/backup_service.dart';
 import 'package:codecore/services/backup/restore_service.dart';
 import 'package:codecore/services/shuffle_plus/dislike_store.dart';
+import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,7 @@ void main() {
     Future<void> Function(AppDatabase)? seed,
     File? dislikes,
     Map<String, Object> extraPrefs = const {},
+    Directory? themeDir,
   }) async {
     final db = AppDatabase(NativeDatabase.memory());
     for (final f in folders) {
@@ -72,6 +74,7 @@ void main() {
       db: db,
       prefs: prefs,
       coversDir: covers,
+      themeDir: themeDir,
       downloadsFile: File(p.join(dir.path, 'none.json')),
       dislikesFile: dislikes,
       deviceId: deviceId,
@@ -748,9 +751,56 @@ void main() {
     },
   );
 
+  test('mergeBackup brings history, tags, smart playlists and podcasts by title when paths differ, once', () async {
+    Future<void> track(AppDatabase d, String path) => d.into(d.tracks).insert(TracksCompanion.insert(
+        path: path, title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
+        artist: const Value('A'), durationMs: const Value(1000)));
+    final src = AppDatabase(NativeDatabase.memory());
+    await track(src, '/m/x.mp3');
+    await src.into(src.plays).insert(PlaysCompanion.insert(trackId: 1, playedAt: 100));
+    await src.into(src.plays).insert(PlaysCompanion.insert(trackId: 1, playedAt: 200));
+    final tag = await src.into(src.userTags).insert(UserTagsCompanion.insert(name: 'Rock'));
+    await src.into(src.trackTags).insert(TrackTagsCompanion.insert(trackId: 1, tagId: tag));
+    await src.into(src.smartPlaylists).insert(SmartPlaylistsCompanion.insert(name: 'S', rules: 'r', createdAt: 1));
+    final pod = await src.into(src.podcasts).insert(PodcastsCompanion.insert(feedUrl: 'http://f', title: 'P', addedAt: 1));
+    await src.into(src.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+        podcastId: pod, guid: 'g', title: 'E', audioUrl: 'http://e'));
+    SharedPreferences.setMockInitialValues({'deviceId': 'A'});
+    final zip = File(p.join(dir.path, 'tables.zip'));
+    await BackupService(
+      db: src,
+      prefs: await SharedPreferences.getInstance(),
+      coversDir: Directory(p.join(dir.path, 'none'))..createSync(),
+      downloadsFile: File(p.join(dir.path, 'none.json')),
+      deviceId: 'A',
+    ).createBackup(zip.path);
+    await src.close();
+
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await track(here, '/elsewhere/x.mp3');
+    Future<List<int>> counts() async => [
+          (await here.select(here.plays).get()).length,
+          (await here.select(here.userTags).get()).length,
+          (await here.select(here.trackTags).get()).length,
+          (await here.select(here.smartPlaylists).get()).length,
+          (await here.select(here.podcasts).get()).length,
+          (await here.select(here.podcastEpisodes).get()).length,
+        ];
+    final dest = Directory(p.join(dir.path, 'tables-dest'));
+    final first = await mergeBackup(zip, here, dest);
+    expect(first.tables.playsAdded, 2);
+    expect(first.backupDbUnreadable, isFalse);
+    final after = await counts();
+    expect(after, [2, 1, 1, 1, 1, 1]);
+    final second = await mergeBackup(zip, here, dest);
+    expect(await counts(), after);
+    expect(second.tables.playsAdded, 0);
+  });
+
   test('mergeBackup puts back hand-set covers (track and album) with their files; a track with its own hand cover keeps it', () async {
     final src = AppDatabase(NativeDatabase.memory());
-    Future<void> add(AppDatabase d, String t, {int source = 0, String? key}) =>
+    Future<void> add(AppDatabase d, String t, {int source = 0, String? key, bool fav = false}) =>
         d
             .into(d.tracks)
             .insert(
@@ -764,12 +814,13 @@ void main() {
                 addedAt: 1,
                 coverSource: Value(source),
                 coverKey: Value(key),
+                isFavorite: Value(fav),
               ),
             );
     await add(src, 'one', source: 2, key: 'manual_one');
     await add(src, 'two', source: 1, key: 'manual_alb');
     await add(src, 'three', source: 2, key: 'manual_theirs');
-    await add(src, 'auto', key: 'auto_k');
+    await add(src, 'auto', key: 'auto_k', fav: true);
     SharedPreferences.setMockInitialValues({'deviceId': 'A'});
     final covers = Directory(p.join(dir.path, 'h-covers'))..createSync();
     for (final k in ['manual_one', 'manual_alb', 'manual_theirs', 'auto_k']) {
@@ -803,13 +854,241 @@ void main() {
       2,
       'manual_mine',
     ), reason: 'its own hand cover stays');
-    expect(rows['auto'], (
-      0,
-      null,
-    ), reason: 'automatic covers are not carried by the merge');
+    expect(rows['auto'], (0, 'auto_k'));
     expect(
       File(p.join(dest.path, 'manual_one.jpg')).readAsBytesSync(),
       'manual_one'.codeUnits,
     );
+  });
+
+  test('mergeBackup recognizes a track whose title differs only by case when the backup says windows', () async {
+    final src = AppDatabase(NativeDatabase.memory());
+    await src.into(src.tracks).insert(TracksCompanion.insert(
+        path: 'C:/m/X.mp3', title: 'X', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, isFavorite: const Value(true)));
+    SharedPreferences.setMockInitialValues({'deviceId': 'A'});
+    final zip = File(p.join(dir.path, 'win.zip'));
+    await BackupService(
+      db: src,
+      prefs: await SharedPreferences.getInstance(),
+      coversDir: Directory(p.join(dir.path, 'none'))..createSync(),
+      downloadsFile: File(p.join(dir.path, 'none.json')),
+      deviceId: 'A',
+      platform: 'windows',
+    ).createBackup(zip.path);
+    await src.close();
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await here.into(here.tracks).insert(TracksCompanion.insert(
+        path: '/other/x.mp3', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    final report = await mergeBackup(zip, here, Directory(p.join(dir.path, 'win-dest')));
+    expect(report.recognized, 1);
+  });
+
+  test('mergeBackup links the automatic cover of a track that is not a favourite', () async {
+    final src = AppDatabase(NativeDatabase.memory());
+    await src.into(src.tracks).insert(TracksCompanion.insert(
+        path: '/m/x.mp3', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, coverKey: const Value('auto_k')));
+    SharedPreferences.setMockInitialValues({'deviceId': 'A'});
+    final covers = Directory(p.join(dir.path, 'n-covers'))..createSync();
+    File(p.join(covers.path, 'auto_k.jpg')).writeAsBytesSync([1]);
+    final zip = File(p.join(dir.path, 'n.zip'));
+    await BackupService(
+      db: src,
+      prefs: await SharedPreferences.getInstance(),
+      coversDir: covers,
+      downloadsFile: File(p.join(dir.path, 'none.json')),
+      deviceId: 'A',
+    ).createBackup(zip.path);
+    await src.close();
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await here.into(here.tracks).insert(TracksCompanion.insert(
+        path: '/o/x.mp3', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    final report = await mergeBackup(zip, here, Directory(p.join(dir.path, 'n-dest')));
+    expect(report.tables.coversLinked, 1);
+  });
+
+  String themesJson(List<(String, String, String)> items) => jsonEncode([
+    for (final (id, name, img) in items)
+      {
+        'id': id,
+        'name': name,
+        'base': 'notte',
+        'overrides': <String, int>{},
+        'background': {'kind': 'image', 'imagePath': img},
+      },
+  ]);
+
+  /// A backup holding the themes [items] and the picture `bg.jpg`.
+  Future<File> themedBackup(List<(String, String, String)> items) {
+    final themes = Directory(p.join(dir.path, 'src-theme'))..createSync();
+    File(p.join(themes.path, 'bg.jpg')).writeAsBytesSync([8, 8]);
+    return makeBackup(
+      ['x'],
+      themeDir: themes,
+      extraPrefs: {
+        'customThemes': themesJson(items),
+        'compactMode': true,
+        'playlistSorts': '{"3":"title"}',
+        'lastQueueIds': ['7'],
+        'deviceName': 'Other phone',
+        'trustedDevices': '[1]',
+        'jamLatencyMs': 120,
+      },
+    );
+  }
+
+  String? imageOf(SharedPreferences prefs, String id) => CustomThemes.decode(
+    prefs.getString('customThemes'),
+  ).byId(id)?.background.imagePath;
+
+  test('a full restore puts the theme picture in themeDir and points the theme at it', () async {
+    final staging = Directory(p.join(dir.path, 'restore'));
+    final themeDir = Directory(p.join(dir.path, 'theme'));
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await stageFullRestore(
+      await themedBackup([('t1', 'One', '/other/device/theme/bg.jpg')]),
+      staging,
+    );
+    expect(
+      await applyPendingRestore(
+        dbFile: File(p.join(dir.path, 'codecore.sqlite')),
+        staging: staging,
+        prefs: prefs,
+        coversDir: Directory(p.join(dir.path, 'covers')),
+        themeDir: themeDir,
+        schemaVersion: schema,
+      ),
+      isTrue,
+    );
+    expect(File(p.join(themeDir.path, 'bg.jpg')).readAsBytesSync(), [8, 8]);
+    expect(imageOf(prefs, 't1'), p.join(themeDir.path, 'bg.jpg'));
+  });
+
+  group('mergeBackup settings and themes', () {
+    late AppDatabase here;
+    late SharedPreferences prefs;
+    late Directory themeDir;
+
+    setUp(() async {
+      here = AppDatabase(NativeDatabase.memory());
+      themeDir = Directory(p.join(dir.path, 'here-theme'));
+      SharedPreferences.setMockInitialValues({
+        'deviceName': 'This phone',
+        'trustedDevices': '[2]',
+        'jamLatencyMs': 40,
+        'playlistSorts': '{"1":"mine"}',
+        'lastQueueIds': ['1'],
+        'customThemes': themesJson([('t2', 'Local', '/x/y.jpg')]),
+      });
+      prefs = await SharedPreferences.getInstance();
+    });
+    tearDown(() => here.close());
+
+    Future<void> merge(File zip) => mergeBackup(
+      zip,
+      here,
+      Directory(p.join(dir.path, 'here-covers')),
+      prefs: prefs,
+      themeDir: themeDir,
+    );
+
+    test('a setting of the backup arrives; device and id-bound keys stay local', () async {
+      await merge(await themedBackup([]));
+      expect(prefs.getBool('compactMode'), isTrue);
+      expect(prefs.getString('theme'), 'oled');
+      expect(prefs.getString('deviceName'), 'This phone');
+      expect(prefs.getString('trustedDevices'), '[2]');
+      expect(prefs.getInt('jamLatencyMs'), 40);
+      expect(prefs.getString('playlistSorts'), '{"1":"mine"}');
+      expect(prefs.getStringList('lastQueueIds'), ['1']);
+    });
+
+    test('themes are united by id and the backup wins on the same id; the picture lands in themeDir', () async {
+      await merge(
+        await themedBackup([
+          ('t1', 'Theirs', '/other/theme/bg.jpg'),
+          ('t2', 'Backup wins', '/other/theme/bg.jpg'),
+        ]),
+      );
+      final themes = CustomThemes.decode(prefs.getString('customThemes'));
+      expect(themes.items.map((t) => t.id), unorderedEquals(['t1', 't2']));
+      expect(themes.byId('t2')!.name, 'Backup wins');
+      final local = p.join(themeDir.path, 'bg.jpg');
+      expect(File(local).readAsBytesSync(), [8, 8]);
+      expect(imageOf(prefs, 't1'), local);
+    });
+
+    test('a theme picture already in themeDir with other content stays as it is', () async {
+      themeDir.createSync(recursive: true);
+      File(p.join(themeDir.path, 'bg.jpg')).writeAsBytesSync([1]);
+      await merge(await themedBackup([]));
+      expect(File(p.join(themeDir.path, 'bg.jpg')).readAsBytesSync(), [1]);
+    });
+
+    test('a theme whose picture is not in themeDir loses the image; a local theme keeps its path', () async {
+      await merge(await themedBackup([('t1', 'Theirs', '/other/theme/missing.jpg')]));
+      expect(imageOf(prefs, 't1'), isNull);
+      expect(imageOf(prefs, 't2'), '/x/y.jpg');
+    });
+
+    test('a backup without theme/ pictures gives the merged theme no image', () async {
+      await merge(await makeBackup(['x'], extraPrefs: {'customThemes': themesJson([('t1', 'Old', '/data/user/0/app/files/theme/a.jpg')])}));
+      expect(imageOf(prefs, 't1'), isNull);
+    });
+
+    test('merging the same backup twice leaves the same themes', () async {
+      final zip = await themedBackup([('t1', 'Theirs', '/o/bg.jpg')]);
+      await merge(zip);
+      final first = prefs.getString('customThemes');
+      await merge(zip);
+      expect(prefs.getString('customThemes'), first);
+    });
+
+    test('duplicate-group choices and device timers of the backup are not applied', () async {
+      SharedPreferences.setMockInitialValues({'notDuplicates': ['mine']});
+      prefs = await SharedPreferences.getInstance();
+      await merge(
+        await makeBackup(
+          ['x'],
+          extraPrefs: {'notDuplicates': ['theirs'], 'exportifyLastSyncAt': 5, 'compactMode': true},
+        ),
+      );
+      expect(prefs.getStringList('notDuplicates'), ['mine']);
+      expect(prefs.getInt('exportifyLastSyncAt'), isNull);
+      expect(prefs.getBool('compactMode'), isTrue);
+    });
+
+    test('a theme that does not fit is counted and the theme setting naming it stays local', () async {
+      SharedPreferences.setMockInitialValues({
+        'theme': 'notte',
+        'customThemes': themesJson([for (var i = 0; i < kMaxCustomThemes; i++) ('l$i', 'L$i', '/x.jpg')]),
+      });
+      prefs = await SharedPreferences.getInstance();
+      final zip = await makeBackup(
+        ['x'],
+        extraPrefs: {
+          'theme': 'custom:over',
+          'customThemes': themesJson([('over', 'Over', '/x.jpg')]),
+        },
+      );
+      final report = await mergeBackup(zip, here, Directory(p.join(dir.path, 'here-covers')), prefs: prefs, themeDir: themeDir);
+      expect(report.themesDropped, 1);
+      expect(prefs.getString('theme'), 'notte');
+      expect(CustomThemes.decode(prefs.getString('customThemes')).byId('over'), isNull);
+    });
+
+    test('theme and cover entries that are not plain file names are never extracted', () async {
+      final src = await themedBackup([]);
+      final a = ZipDecoder().decodeBytes(src.readAsBytesSync());
+      for (final n in ['theme/..', 'theme/.', 'covers/..', 'theme/a/b.jpg']) {
+        a.addFile(ArchiveFile.bytes(n, [1]));
+      }
+      final zip = File(p.join(dir.path, 'crafted.zip'))..writeAsBytesSync(ZipEncoder().encode(a));
+      await merge(zip);
+      expect(themeDir.listSync().map((e) => p.basename(e.path)), ['bg.jpg']);
+      expect(File(p.join(dir.path, 'a')).existsSync(), isFalse);
+    });
   });
 }

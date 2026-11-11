@@ -3854,6 +3854,76 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String restoreMergePlays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reproduções adicionadas ao histórico',
+      one: '1 reprodução adicionada ao histórico',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeTags(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count etiquetas adicionadas',
+      one: '1 etiqueta adicionada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeSmart(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count playlists inteligentes adicionadas',
+      one: '1 playlist inteligente adicionada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergePodcasts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count podcasts adicionados',
+      one: '1 podcast adicionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeUnlinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reproduções não associadas',
+      one: '1 reprodução não associada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count temas personalizados não adicionados: limite atingido',
+      one: '1 tema personalizado não adicionado: limite atingido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreMergeDbUnreadable =>
+      'A base de dados da cópia não pode ser lida: histórico, etiquetas, playlists inteligentes e podcasts não foram unidos.';
+
+  @override
   String get restoreNotFound => 'Faixas não encontradas';
 
   @override

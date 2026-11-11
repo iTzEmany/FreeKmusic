@@ -134,6 +134,16 @@ Future<void> _showMergeReport(BuildContext context, MergeReport r) {
       content: SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.restoreMergeDone(r.recognized, r.notFound.length, r.playlistsCreated, r.favoritesAdded)),
+          for (final line in [
+            if (r.backupDbUnreadable) l.restoreMergeDbUnreadable,
+            if (r.tables.playsAdded > 0) l.restoreMergePlays(r.tables.playsAdded),
+            if (r.tables.tagsAdded > 0) l.restoreMergeTags(r.tables.tagsAdded),
+            if (r.tables.smartPlaylistsAdded > 0) l.restoreMergeSmart(r.tables.smartPlaylistsAdded),
+            if (r.tables.podcastsAdded > 0) l.restoreMergePodcasts(r.tables.podcastsAdded),
+            if (r.themesDropped > 0) l.restoreMergeThemesDropped(r.themesDropped),
+            if (r.tables.playsUnlinked > 0) l.restoreMergeUnlinked(r.tables.playsUnlinked),
+          ])
+            Padding(padding: const EdgeInsets.only(top: 8), child: Text(line)),
           if (r.notFound.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(l.restoreNotFound, style: Theme.of(ctx).textTheme.titleSmall),

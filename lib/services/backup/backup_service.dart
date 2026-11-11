@@ -37,6 +37,11 @@ const kDeviceBoundKeys = {
   recogPassDoneKey,
   genreRereadAfterKey,
   genreRereadDoneKey,
+  // State of this device's own sessions: a copy would be wrong (or skip a prompt) elsewhere.
+  'jamBlePermAsked',
+  'lastUpdateCheckDay',
+  'releasesRetryAt',
+  'releasesLastNotifiedAt',
 };
 
 class BackupSummary {
@@ -99,6 +104,7 @@ class BackupService {
     required this.db,
     required this.prefs,
     required this.coversDir,
+    this.themeDir,
     required this.downloadsFile,
     this.dislikesFile,
     required this.deviceId,
@@ -110,6 +116,9 @@ class BackupService {
   final AppDatabase db;
   final SharedPreferences prefs;
   final Directory coversDir;
+
+  /// Pictures of the custom themes; left out of the zip when null or missing.
+  final Directory? themeDir;
   final File downloadsFile;
 
   /// `dislikes.json`; left out of the zip when null or missing.
@@ -161,13 +170,16 @@ class BackupService {
       final covers = coversDir.existsSync()
           ? [for (final f in coversDir.listSync().whereType<File>()) f.path]
           : <String>[];
+      final themeImages = (themeDir?.existsSync() ?? false)
+          ? [for (final f in themeDir!.listSync().whereType<File>()) f.path]
+          : <String>[];
       final downloads = downloadsFile.existsSync() ? downloadsFile.path : null;
       final dislikes = (dislikesFile?.existsSync() ?? false)
           ? dislikesFile!.path
           : null;
       final tmpPath = tmp.path;
       await Isolate.run(
-        () => _zip(outPath, tmpPath, covers, downloads, dislikes),
+        () => _zip(outPath, tmpPath, covers, themeImages, downloads, dislikes),
       );
       onProgress?.call(1);
       return BackupSummary(
@@ -193,6 +205,7 @@ void _zip(
   String outPath,
   String tmp,
   List<String> covers,
+  List<String> themeImages,
   String? downloads,
   String? dislikes,
 ) {
@@ -208,6 +221,9 @@ void _zip(
         ? ZipFileEncoder.store
         : ZipFileEncoder.gzip;
     enc.addFileSync(File(c), 'covers/${p.basename(c)}', level);
+  }
+  for (final t in themeImages) {
+    enc.addFileSync(File(t), 'theme/${p.basename(t)}', ZipFileEncoder.store);
   }
   enc.closeSync();
 }
