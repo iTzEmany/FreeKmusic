@@ -713,9 +713,6 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
                         // The group heading of the real rows.
                         SizedBox(height: 16 + _lineOf(context, t.labelLarge)),
                         const Skeleton.card(lines: 3, roles: true),
-                        // The «refresh» button of the real card (on with «Credits and details»).
-                        if (ref.watch(settingsProvider.select((s) => s.creditsDetails)))
-                          const SizedBox(height: 48),
                       ],
                     ),
                   ),
