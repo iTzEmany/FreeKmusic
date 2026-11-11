@@ -34,12 +34,12 @@
 | Ascolti doppi se due ascolti diversi hanno lo stesso `playedAt` | chiave `(trackId, playedAt)`: due ascolti nello stesso millisecondo sono lo stesso | — |
 
 ## Task
-- [ ] 117.1 Unione: impostazioni, temi con immagine, copertine automatiche, playlist senza doppioni (R-211, R-212, R-214, R-216 per playlist e temi). **Area a rischio (backup): `/code-review high`**
+- [x] 117.1 Unione: impostazioni, temi con immagine, copertine automatiche, playlist senza doppioni (R-211, R-212, R-214, R-216 per playlist e temi). **Area a rischio (backup): `/code-review high`**
   - File: `lib/services/backup/backup_service.dart`, `restore_service.dart`, `user_data.dart`, `lib/data/repositories/backup_merge.dart`, `lib/data/settings/custom_theme.dart` (solo se serve per l'unione dei temi), test in `test/services/backup/` e `test/data/backup_merge_test.dart`
   - Passi: 1) `theme/*` nel backup, ripristino dell'immagine e riscrittura di `imagePath` (completo e unione); 2) `mergeBackup` legge `settings.json`, fonde `customThemes`, applica dopo il DB; rivedere `kDeviceBoundKeys`; 3) copertine con `coverSource` 0 e `.webp`; 4) playlist rinominata riconosciuta alla seconda unione; 5) un test «due volte» che copre tutto ciò che il task tocca
   - Comando mirato: `flutter test test/services/backup/ test/data/backup_merge_test.dart`
   - Fatto quando: i criteri di R-211, R-212, R-214 verdi, e R-216 per playlist, temi, radio e artisti
-- [ ] 117.2 Unione: ascolti, tag, playlist smart, podcast dal sqlite del backup (R-213, R-215, R-216 per queste tabelle). **Area a rischio (backup): `/code-review high`**
+- [x] 117.2 Unione: ascolti, tag, playlist smart, podcast dal sqlite del backup (R-213, R-215, R-216 per queste tabelle). **Area a rischio (backup): `/code-review high`**
   - File: nuovo `lib/services/backup/backup_db_reader.dart` (sola lettura, colonne esistenti), `restore_service.dart`, `backup_merge.dart` (o `backup_queries.dart`), `MergeReport` (+ ascolti non collegati), testo del resoconto nell'ARB (6 lingue)
   - Passi: 1) estrarre `codecore.sqlite` in una cartella temporanea e aprirlo in sola lettura; 2) mappa id del backup → id locale con `TrackResolver`; 3) inserimento senza doppioni nella stessa transazione di `mergeUserData`; 4) test con un DB di backup costruito nel test (anche con uno schema senza colonne recenti) e con l'unione ripetuta due volte
   - Comando mirato: `flutter test test/services/backup/ test/data/backup_merge_test.dart`
@@ -49,3 +49,6 @@
 - Niente in questa fase: la prova vera sul Motorola si fa dopo la 1.6.0 (fase 118).
 
 ## Note di deviazione
+- Scartato: tipi sbagliati in una colonna del sqlite del backup danno un errore e annullano l'unione (nessuna perdita di dati).
+- Ascolti in streaming collegati solo a righe ombra già presenti (D-546).
+- kDeviceBoundKeys allargata: jamBlePermAsked, lastUpdateCheckDay, releasesRetryAt, releasesLastNotifiedAt.

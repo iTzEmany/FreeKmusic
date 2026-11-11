@@ -38,6 +38,8 @@ Stato e orchestrazione:
 | `lib/services/backup/restore_service.dart` | `inspectBackup`, `stageFullRestore`, `applyPendingRestore`, `mergeBackup`. |
 | `lib/services/backup/user_data.dart`, `track_resolver.dart` | Formato portabile e abbinamento dei brani. |
 | `lib/data/repositories/backup_merge.dart`, `backup_queries.dart` | Unione dentro una transazione. |
+| `lib/services/backup/backup_db_reader.dart` | Lettura in sola lettura del `codecore.sqlite` del backup (schemi vecchi tollerati). |
+| `lib/data/repositories/backup_merge_tables.dart`, `backup_merge_helpers.dart` | Unione di ascolti, tag, copertine, playlist smart, podcast e puntate. |
 | `lib/services/export/playlist_exporter.dart` | `toM3u8`, `toExportifyCsv`, `toPlaylistJson`, `renderPlaylist`. |
 | `lib/services/export/save_file.dart` | Salvataggio verso l'utente (canale `codecore/save`, copia a flusso su Android). |
 | `lib/providers/backup_providers.dart`, `backup_ops.dart` | Provider e operazioni. |
@@ -95,7 +97,13 @@ TLS autentica solo il server (un server Dart non prende un certificato client au
 5. Le righe ombra (brani in streaming, D-524) non entrano nell'export e in un `replace` restano in coda dopo i brani sincronizzati (D-537).
 
 ### Backup
-Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `user_data.json`, `codecore.sqlite` da `VACUUM INTO`, `covers/`, `downloads.json`, `dislikes.json`. Il ripristino completo non scrive subito: `stageFullRestore` estrae in `<appSupport>/restore` (`restoreStagingDir`, `lib/core/paths.dart`) e `main.dart` chiama `applyPendingRestore` prima di aprire il DB. L'unione (`mergeBackup`) è una transazione e non cancella nulla.
+Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `user_data.json`, `codecore.sqlite` da `VACUUM INTO`, `covers/`, `theme/` (immagini di sfondo dei temi), `downloads.json`, `dislikes.json`. Il ripristino completo non scrive subito: `stageFullRestore` estrae in `<appSupport>/restore` (`restoreStagingDir`, `lib/core/paths.dart`) e `main.dart` chiama `applyPendingRestore` prima di aprire il DB. L'unione (`mergeBackup`) è una sola transazione, idempotente, e non cancella nulla. Porta:
+- impostazioni, tranne `kDeviceBoundKeys` e `kMergeSkippedKeys` (chiavi legate agli id del DB o alle sessioni di questo dispositivo);
+- temi personalizzati uniti per id (limite 20, gli scartati sono contati);
+- ascolti (doppioni per trackId+playedAt; i non riconosciuti sono saltati e contati; quelli in streaming solo su righe ombra già presenti, D-546);
+- copertine automatiche, tag, playlist smart, podcast e puntate, letti in sola lettura dal `codecore.sqlite` del backup.
+
+Dopo l'unione i provider vengono ricaricati.
 
 ### Jam
 - Un solo dispositivo suona; l'altro è telecomando. Stato autoritativo sull'host (`JamState.version`), comandi validati da `applyCommand`.
@@ -132,6 +140,7 @@ Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `us
 - **Nuovo comando di Jam**: aggiungilo a `JamState`/`applyCommand` con i permessi; se passa dal ponte, serve anche un tipo in `JamMsg` e il limite di dimensione in `JamWire`. Aggiorna [`feature-jam-distanza.md`](../storico/feature/feature-jam-distanza.md).
 - **Nuovo broker predefinito**: in fondo a `kDefaultJamBrokers` (l'indice è scritto nei QR e nei codici, mai riordinare), certificato verificato col nome dell'host.
 - **Nuova impostazione che non deve viaggiare**: aggiungi la chiave a `kDeviceBoundKeys` e un test sul backup.
+- **Nuova impostazione con id del DB o stato di sessione del dispositivo**: va in `kMergeSkippedKeys` o `kDeviceBoundKeys`, con un test.
 - **Nuovo formato di export**: una funzione in `playlist_exporter.dart`, la voce in `ExportFormat`, `renderPlaylist` e `exportFileName`.
 - **Nuovo file grande verso l'utente**: `saveFileAt`, mai `Uint8List` sul canale.
 
@@ -161,4 +170,7 @@ Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `us
 | [D-272](../decisioni.md) | `JamCrypto` espone i tipi di `sodium`; il rollback cambia anche i chiamanti. |
 | [D-383](../decisioni.md) | HiveMQ come broker di riserva, in fondo alla lista. |
 | [D-537](../decisioni.md) | Sync playlist: le righe ombra restano in coda su un `replace`. |
+| [D-545](../decisioni.md) | Unione: impostazioni e temi, con esclusioni per chiavi legate a id o dispositivo. |
+| [D-546](../decisioni.md) | «Unisci»: ascolti di brani non riconosciuti saltati e contati, nessuna riga ombra creata apposta. |
+| [D-554](../decisioni.md) | Unione dal sqlite del backup in sola lettura, in una transazione. |
 | [D-539](../decisioni.md) | Nuovo nome FreeKmusic; pacchetto Dart e stringhe di protocollo restano `codecore`. |

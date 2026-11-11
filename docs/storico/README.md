@@ -145,3 +145,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 114 | Link spotify deezer | [`fase-114-link-spotify-deezer.md`](fasi/fase-114-link-spotify-deezer.md) |
 | 115 | Salva e condividi | [`fase-115-salva-e-condividi.md`](fasi/fase-115-salva-e-condividi.md) |
 | 116 | Brani da shazam | [`fase-116-brani-da-shazam.md`](fasi/fase-116-brani-da-shazam.md) |
+| 117 | Ripristino completo | [`fase-117-ripristino-completo.md`](fasi/fase-117-ripristino-completo.md) |
