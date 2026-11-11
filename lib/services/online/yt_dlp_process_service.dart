@@ -163,12 +163,11 @@ DownloadProgress? parseProgressLine(String line) {
   return DownloadProgress(received: done, total: total);
 }
 
-/// The yt-dlp channel's own failures (Kotlin appends `| root: <class>: <msg>`
-/// to internal Throwables), as opposed to yt-dlp's stderr.
-bool isInternalChannelError(String msg) =>
-    msg.contains('| root:') ||
-    RegExp(r'NoClassDefFoundError|ExceptionInInitializerError|UnsatisfiedLinkError')
-        .hasMatch(msg);
+/// The yt-dlp channel's own failures, as opposed to yt-dlp's stderr. Kotlin
+/// appends `| root: <class>: <msg>` to every Throwable: only the class decides.
+bool isInternalChannelError(String msg) => RegExp(
+        r'NoClassDefFoundError|ExceptionInInitializerError|UnsatisfiedLinkError|ClassNotFoundException|LinkageError')
+    .hasMatch(msg);
 
 /// Maps yt-dlp's stderr to a user-facing error kind.
 YtException ytExceptionFromStderr(String err) {

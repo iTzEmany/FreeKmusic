@@ -53,6 +53,11 @@ Future<DefaultFolders> resolveDefaultFolders({
     default:
       music = p.join(e['HOME'] ?? '', 'Music');
   }
+  if (!(os == 'windows' ? p.windows : p.posix).isAbsolute(music)) {
+    // No HOME / USERPROFILE: never a relative path.
+    final docs = await (documentsDir ?? () async => (await getApplicationDocumentsDirectory()).path)();
+    return DefaultFolders(library: docs, downloads: docs);
+  }
   final folders = DefaultFolders(library: music, downloads: (os == 'windows' ? p.windows : p.posix).join(music, 'FreeKmusic'));
   if (create) {
     for (final d in [folders.library, folders.downloads]) {
@@ -73,7 +78,8 @@ Future<String> _xdgMusicDir(Map<String, String> env) async {
   final home = env['HOME'] ?? '';
   String? expand(String v) {
     final x = v.replaceAll(r'$HOME', home);
-    return x.isEmpty || p.equals(x, home) ? null : x;
+    // Relative values and «/» are never a music folder.
+    return !p.isAbsolute(x) || x == '/' || p.equals(x, home) ? null : x;
   }
 
   final fromEnv = expand(env['XDG_MUSIC_DIR'] ?? '');

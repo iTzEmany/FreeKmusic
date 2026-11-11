@@ -106,7 +106,7 @@ Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo) async 
   final dir = Directory((await resolveDefaultFolders()).downloads);
   // Inside a library folder already: it is scanned from there (no second folder, no double scan).
   for (final f in await repo.getAll()) {
-    if (p.isWithin(f.path, dir.path)) return (dir, f);
+    if (p.isWithin(f.path, dir.path) || p.equals(f.path, dir.path)) return (dir, f);
   }
   // No library folder yet: the parent (Music), as the startup default would add it.
   return (dir, await repo.add((await resolveDefaultFolders()).library));

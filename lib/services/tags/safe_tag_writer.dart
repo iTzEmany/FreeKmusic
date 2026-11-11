@@ -113,18 +113,19 @@ String? tagMismatch(
   final artists = {after.artist, after.albumArtist};
   // A multi-artist string may be read back whole while the album artist
   // written is its first name: accept any single name inside it too.
-  final names = {
+  final names = <String?>{
     for (final a in artists.nonNulls) ...[a, ...a.split(RegExp(r'\s*[,;&]\s*'))],
   };
-  String? inArtists(String name, String? want) =>
-      want == null || names.contains(want.trim())
+  // Only the album artist (the first artist) may be a part of the string read back.
+  String? inArtists(String name, String? want, Set<String?> pool) =>
+      want == null || pool.contains(want.trim())
       ? null
       : '$name: "$want" not found in ${artists.nonNulls.toList()}';
   final yearUnreadable = format == 'flac' && after.year == null;
   final checks = <String?>[
     if (c.title != null) bad('title', c.title!.trim(), after.title),
-    inArtists('artist', c.artist),
-    inArtists('albumArtist', c.albumArtist),
+    inArtists('artist', c.artist, artists),
+    inArtists('albumArtist', c.albumArtist, names),
     if (c.album != null) bad('album', c.album!.trim(), after.album),
     if (c.year != null && !yearUnreadable) bad('year', c.year, after.year),
     if (c.trackNumber != null) bad('track', c.trackNumber, after.trackNumber),

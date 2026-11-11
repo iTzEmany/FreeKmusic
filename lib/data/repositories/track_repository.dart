@@ -540,8 +540,9 @@ class TrackRepository {
       t.ignored.equals(false) &
       t.kind.equals(kMusicKind) &
       (t.folderId.equals(folderId ?? -1) |
-          t.path.isIn(paths) |
-          [for (final x in prefixes) t.path.substr(1, x.length).equals(x)]
+          // Literals, not bound variables: the index can outgrow SQLite's variable limit.
+          t.path.isInExp([for (final x in paths) Constant(x)]) |
+          [for (final x in prefixes) t.path.substr(1, x.runes.length).equals(x)]
               .fold<Expression<bool>>(const Constant(false), (a, b) => a | b)) &
       // Only visible playlists count: «Scarica album» keeps its tracks in a
       // hidden technical one.

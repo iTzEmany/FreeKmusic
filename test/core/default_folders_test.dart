@@ -68,4 +68,15 @@ void main() {
     expect(Directory(f.library).existsSync(), isTrue);
     expect(Directory(f.downloads).existsSync(), isTrue);
   });
+
+  test('Linux: a relative or «/» XDG_MUSIC_DIR is ignored', () async {
+    expect((await resolve('linux', {'XDG_MUSIC_DIR': 'Music'})).library, '${home.path}/Music');
+    expect((await resolve('linux', {'XDG_MUSIC_DIR': '/'})).library, '${home.path}/Music');
+  });
+
+  test('without HOME the app documents folder is used, never a relative path', () async {
+    final f = await resolveDefaultFolders(
+        platform: 'macos', env: {}, create: false, documentsDir: () async => '/docs');
+    expect((f.library, f.downloads), ('/docs', '/docs'));
+  });
 }

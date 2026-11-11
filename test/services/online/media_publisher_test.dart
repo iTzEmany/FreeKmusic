@@ -50,6 +50,14 @@ void main() {
     expect(work.existsSync(), isTrue);
   });
 
+  test('D-567: the boundary is API 30', () async {
+    debugIsAndroidOverride = true;
+    for (final (sdk, publishes) in [(29, false), (30, true), (31, true)]) {
+      debugAndroidSdk = sdk;
+      expect(await publishesToMediaStore(channel: channel), publishes, reason: 'API $sdk');
+    }
+  });
+
   test('Android: the subfolder under download-work travels with the path', () async {
     debugIsAndroidOverride = true;
     debugAndroidSdk = 33;

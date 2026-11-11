@@ -161,6 +161,33 @@ void main() {
     expect((shown.progress, shown.item!.done), (true, 21), reason: 'the loaded line follows too');
   });
 
+  test('a cancelled import closes its progress line; a deleted one too', () async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      downloadsProvider.overrideWith(_Downloads.new),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    final repo = ImportRepository(db);
+    final playlistId = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'L', createdAt: 0));
+    final id = await repo.create(
+        playlistId: playlistId, sourceName: 'Mood', rows: const [ImportRow(index: 0, title: 'T', artists: ['A'])]);
+    ActivityState at(int n) => ActivityState([
+          ActivityItem(kind: ActivityKind.import, key: 'imp-$n', name: 'Mood', done: 1, total: 50, ref: n),
+        ], const []);
+    c.read(_activity.notifier).set(at(id));
+    await pumpEventQueue();
+    c.read(_activity.notifier).set(ActivityState([...at(id).running, ...at(99).running], const []));
+    await pumpEventQueue();
+    await pumpEventQueue();
+    expect(await db.select(db.activityLogRows).get(), hasLength(2));
+    await repo.setStatus(id, ImportStatus.cancelled);
+    c.read(_activity.notifier).set(const ActivityState([], []));
+    await pumpEventQueue();
+    expect(await db.select(db.activityLogRows).get(), isEmpty);
+  });
+
   test('a pause event of an import stays until the count moves again', () async {
     final events = StreamController<ImportEvent>();
     addTearDown(events.close);

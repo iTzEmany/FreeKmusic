@@ -586,6 +586,16 @@ void main() {
     });
   });
 
+  test('an artist image whose file is missing from the backup is skipped', () async {
+    final covers = Directory.systemTemp.createTempSync('artimg2');
+    addTearDown(() => covers.deleteSync(recursive: true));
+    final d = UserData.fromJson({'format': 1, 'createdAt': 1, 'artistImages': [
+      {'artistKey': 'queen', 'coverKey': 'absent'},
+    ]});
+    await mergeUserData(db, d, await PlaylistSyncRepository(db).resolver(), coversDir: covers);
+    expect(await ArtistInfoRepository(db).images(), isEmpty);
+  });
+
   test('an artist image travels in user data and is merged only for an artist with none, twice with the same result', () async {
     final covers = Directory.systemTemp.createTempSync('artimg');
     addTearDown(() => covers.deleteSync(recursive: true));

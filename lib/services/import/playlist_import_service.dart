@@ -583,10 +583,14 @@ class PlaylistImportService {
     }
   }
 
+  bool _recovered = false;
+
   /// App start: a block still «running» in the database was cut off by the app
   /// closing (a user pause is stored as paused), so it goes on by itself; the
   /// paused ones, and the blocks waiting in a chain, stay as they are.
   Future<void> recoverAfterRestart() async {
+    if (_recovered) return; // the shell may rebuild its listener mid-session
+    _recovered = true;
     final cut = [for (final i in await _runningImports()) i.id];
     await imports.recoverAfterRestart();
     for (final id in cut) {

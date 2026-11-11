@@ -150,4 +150,20 @@ void main() {
     expect(res.$2.id, music.id);
     expect((await repo.getAll()).length, 1);
   });
+
+  test('Android 11+: a library folder equal to FreeKmusic is reused, the parent is not added', () async {
+    debugIsAndroidOverride = true;
+    debugAndroidSdk = 33;
+    addTearDown(() {
+      debugIsAndroidOverride = null;
+      debugAndroidSdk = null;
+    });
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = FolderRepository(db);
+    await repo.add('/storage/emulated/0/Music/FreeKmusic');
+    final res = await resolveDownloadFolder(repo);
+    expect([for (final f in await repo.getAll()) f.path], ['/storage/emulated/0/Music/FreeKmusic']);
+    expect(res!.$2.path, '/storage/emulated/0/Music/FreeKmusic');
+  });
 }

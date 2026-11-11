@@ -467,6 +467,38 @@ void main() {
       expect(l.map((t) => t.title).toSet(), {'new', 'old', 'idx'});
     });
 
+    test('a prefix with an emoji, quotes or spaces still matches', () async {
+      await repo.upsertBatch([
+        row('/home/u/🎵 Music/FreeKmusic/a.mp3', 'a'),
+        row("/home/o'brien/Musica \"x\"/FreeKmusic/b.mp3", 'b'),
+      ]);
+      final l = await repo
+          .watchDownloadedWithoutPlaylist(
+              prefixes: ['/home/u/🎵 Music/FreeKmusic/', "/home/o'brien/Musica \"x\"/FreeKmusic/"])
+          .first;
+      expect(l.map((t) => t.title).toSet(), {'a', 'b'});
+    });
+
+    test('a download index bigger than the SQL variable limit still works', () async {
+      await repo.upsertBatch([row('/x/1.mp3', 'a')]);
+      final l = await repo.watchDownloadedWithoutPlaylist(paths: {for (var i = 0; i < 40000; i++) '/x/$i.mp3'}).first;
+      expect(l.map((t) => t.title), ['a']);
+    });
+
+    test('a download root without a trailing separator does not match a sibling folder', () async {
+      await repo.upsertBatch([row('/Music/FreeKmusic/a.mp3', 'in'), row('/Music/FreeKmusic2/b.mp3', 'out')]);
+      final c = ProviderContainer(overrides: [
+        trackRepositoryProvider.overrideWithValue(repo),
+        downloadRootsProvider.overrideWithValue(const AsyncData(<String>['/Music/FreeKmusic'])),
+        downloadFolderIdProvider.overrideWith((ref) async => null),
+        downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
+      ]);
+      addTearDown(c.dispose);
+      c.listen(downloadedNoPlaylistProvider(const TrackQuery()), (_, _) {});
+      final r = await c.read(downloadedNoPlaylistProvider(const TrackQuery()).future);
+      expect(r.map((t) => t.title), ['in']);
+    });
+
     test('the provider search ignores accents', () async {
       await repo.upsertBatch([
         row('/d/c.mp3', 'Café', folderId: 1),

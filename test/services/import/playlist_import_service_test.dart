@@ -455,6 +455,19 @@ void main() {
     expect(queued.single.$2, importTag(id, 0));
   });
 
+  test('a second recoverAfterRestart mid-session does not queue live downloads again', () async {
+    yt.songs['one'] = [topic('v1', 'One', 'Band', 200)];
+    yt.songs['two'] = [topic('v2', 'Two', 'Band', 200)];
+    await service.recoverAfterRestart(); // app start
+    final id = await service.start(csv([row(0, 'One', 'Band', 200), row(1, 'Two', 'Band', 200)]));
+    await idle();
+    expect(queued.length, 2);
+    await service.recoverAfterRestart(); // the shell rebuilt its listener
+    await idle();
+    expect(queued.length, 2, reason: 'downloads already in the queue must not be queued again');
+    expect((await imports.get(id))!.state, ImportStatus.running);
+  });
+
   group('after an app restart', () {
     Future<int> cutImport(ImportStatus status) async {
       yt.songs['one'] = [topic('v1', 'One', 'Band', 200)];

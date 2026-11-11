@@ -8,6 +8,7 @@ import '../core/app_log.dart';
 import '../core/clock.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/activity_log_repository.dart';
+import '../data/repositories/import_repository.dart';
 import '../services/import/import_chain.dart';
 import '../services/import/playlist_import_service.dart';
 import 'activity_providers.dart';
@@ -358,6 +359,7 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
     final still = {for (final r in s.running) r.key};
     _ended.removeWhere((k) => !still.contains(k));
     for (final r in prev?.running ?? const <ActivityItem>[]) {
+      if (r.kind == ActivityKind.import && !still.contains(r.key)) unawaited(_dropIfCancelled(r.key));
       if (_oneLine.contains(r.kind) && !still.contains(r.key)) {
         // The last snapshot seen may be the one before the end: the batch
         // enrichment knows how it ended, so that is read instead.
@@ -409,6 +411,15 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
     await _repo.update(row, at: _now().millisecondsSinceEpoch, done: r.done, total: r.total, failed: false, detail: detail);
     return _replace(row);
   });
+
+  /// A cancelled or deleted import never gets an ending event: its progress line goes away.
+  Future<void> _dropIfCancelled(String key) async {
+    final imp = await ref.read(importRepositoryProvider).get(int.parse(key.substring(4)));
+    if (!ref.mounted || imp != null && imp.state != ImportStatus.cancelled) return;
+    _importRow.remove(key);
+    _lastCount.remove(key);
+    await _run(() => _repo.dropImportProgress(key));
+  }
 
   /// Puts the stored row [id] back in the loaded list (it changed in place).
   Future<void> _replace(int id) async {

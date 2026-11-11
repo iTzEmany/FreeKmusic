@@ -51,6 +51,11 @@ class ActivityLogRepository {
     return r?.id;
   }
 
+  /// Drops the progress line of import [key] (an import that was cancelled or deleted).
+  Future<void> dropImportProgress(String key) => (_db.delete(_db.activityLogRows)
+        ..where((r) => r.kind.equals('import') & r.detail.like('%"progress":true%"key":"$key"%')))
+      .go();
+
   /// Newest first. With [before] (the last row seen) only the older ones come,
   /// so rows added meanwhile do not shift the page.
   Future<List<ActivityLogRow>> page({required int limit, ({int at, int id})? before}) =>

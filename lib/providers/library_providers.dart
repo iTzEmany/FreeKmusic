@@ -180,7 +180,8 @@ final _downloadScopeProvider = FutureProvider<_DownloadScope>((ref) async {
   final idx = await ref.watch(downloadIndexProvider.future);
   return (
     folderId: await ref.watch(downloadFolderIdProvider.future),
-    prefixes: [for (final r in await ref.watch(downloadRootsProvider.future)) p.join(r, '')],
+    // With a trailing separator, so `FreeKmusic` does not match `FreeKmusic2`.
+    prefixes: [for (final r in await ref.watch(downloadRootsProvider.future)) r.endsWith(p.separator) ? r : r + p.separator],
     paths: idx.paths.toSet(),
   );
 });

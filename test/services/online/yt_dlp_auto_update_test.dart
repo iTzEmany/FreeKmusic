@@ -27,6 +27,12 @@ class _Updater extends YtDlpUpdater {
 void main() {
   final now = DateTime(2026, 11, 11);
 
+  test('impossible dates in a version are left alone', () {
+    expect(ytDlpNeedsDownload('2026.00.01', now), isFalse);
+    expect(ytDlpNeedsDownload('0000.01.01', now), isFalse);
+    expect(ytDlpNeedsDownload('2026.02.31', now), isFalse);
+  });
+
   test('missing, or older than 90 days, calls for a download; recent does not', () {
     expect(ytDlpNeedsDownload(null, now), isTrue);
     expect(ytDlpNeedsDownload('2026.06.01', now), isTrue);
@@ -67,6 +73,19 @@ void main() {
     expect(ytExceptionFromStderr("ERROR: Sign in to confirm you're not a bot").kind,
         YtErrorKind.rateLimited);
   });
+
+  // The Kotlin channel appends " | root: <class>: <msg>" to every Throwable.
+  for (final (msg, kind) in [
+    ('ERROR: [youtube] abc: HTTP Error 429: Too Many Requests', YtErrorKind.rateLimited),
+    ('ERROR: [youtube] abc: Video unavailable', YtErrorKind.unavailable),
+    ('ERROR: Temporary failure in name resolution', YtErrorKind.network),
+  ]) {
+    test('a real yt-dlp error through the channel keeps its kind: ${kind.name}', () {
+      expect(
+          ytExceptionFromStderr('$msg | root: com.yausername.youtubedl_android.YoutubeDLException: $msg').kind,
+          kind);
+    });
+  }
 
   test('the file portal check: missing portal is reported, a present one is not', () async {
     ProcessResult res(int code, String out) => ProcessResult(0, code, out, '');
