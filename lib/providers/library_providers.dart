@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:path_provider/path_provider.dart';
 
 import '../core/app_log.dart';
 import '../core/platform.dart';
@@ -160,12 +159,7 @@ final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery
 final downloadFolderIdProvider = FutureProvider<int?>((ref) async {
   // Watch the derived id only: a folders emission that leaves it unchanged
   // (each download touches folders) must not restart the downloaded list.
-  if (!isAndroid) {
-    return ref.watch(foldersProvider.selectAsync((f) => f.firstOrNull?.id));
-  }
-  final ext = await getExternalStorageDirectory();
-  if (ext == null) return null;
-  final path = p.join(ext.path, 'Music');
+  final path = (await resolveDefaultFolders(create: false)).downloads;
   return ref.watch(
     foldersProvider.selectAsync((f) => f.where((x) => x.path == path).firstOrNull?.id),
   );
