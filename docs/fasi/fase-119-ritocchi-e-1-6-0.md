@@ -1,17 +1,16 @@
-# Fase 118 — Download pubblici, ritocchi e versione 1.6.0
+# Fase 119 — Ritocchi e versione 1.6.0
 
 ## Obiettivo
-I download nuovi vanno nella cartella pubblica `Music/FreeKmusic`. Sette ritocchi di UI (Registro, swipe, selezione, sfocatura, trasparenza dei temi, pulsanti del brano suggerito). Chiude con la versione 1.6.0 e la Release, dopo la [fase 117](../storico/fasi/fase-117-ripristino-completo.md). Viene prima della CI Windows.
+Sette ritocchi di UI (Registro, swipe, selezione, sfocatura, trasparenza dei temi, pulsanti del brano suggerito). Chiude con la versione 1.6.0 e la Release, dopo la fase 118 «Guardrail e correzioni» ([fase-118](fase-118-guardrail-e-correzioni.md)), che ha preso i download pubblici (D-559). Viene prima della CI Windows.
 Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla delle card di album, playlist e artisti (D-550), un'impostazione per scegliere la cartella dei download.
 
 ## Riferimenti
-- Decisioni D-547..D-553, D-554 (download), D-555, D-556 (divisione in due fasi). Richieste: `.claude/obiettivi/2026-11-11-richieste-utente.md`.
+- Decisioni D-547..D-553, D-554 (download), D-555, D-556 (divisione in due fasi), D-559 (download pubblici spostati nella 118). Richieste: `.claude/obiettivi/2026-11-11-richieste-utente.md`.
 - Aree: [`piattaforme.md`](../architettura/piattaforme.md), [`riproduzione-e-coda.md`](../architettura/riproduzione-e-coda.md), [`ui-e-design.md`](../architettura/ui-e-design.md).
 
 ## Requisiti
 | ID | Requisito | Pri | Criterio di accettazione |
 |---|---|---|---|
-| R-217 | I download nuovi su Android vanno in `Music/FreeKmusic` via MediaStore, leggibili da altre app, adb e MTP; su desktop non cambia niente | I | sul Mi A3: un brano scaricato compare in `/sdcard/Music/FreeKmusic` con `adb shell ls -l`, si riproduce, ha i tag scritti; «Elimina dal dispositivo» lo cancella |
 | R-218 | Registro: con un tema che ha un'immagine o un gradiente di sfondo, l'intestazione fissa dei giorni mostra lo stesso sfondo della pagina (D-548) | I | test widget o golden: con `pageBackdrop` attivo l'intestazione non dipinge un riquadro `cc.bg` pieno |
 | R-219 | Registro: una voce per ogni brano che non parte (titolo e motivo); se lo stesso brano fallisce più volte di fila, la voce è una sola (D-549) | I | test: due `PlaybackFailure` dello stesso brano di fila danno una sola voce; uno di un altro brano ne dà una seconda |
 | R-220 | Lo swipe per mettere in coda funziona in ogni lista di brani, compresi i brani online: daylist (propri e suggeriti), playlist online, Suggeriti e righe online di `LiveTrackRow`. Le varianti coda e scelta restano senza | I | test widget: lo swipe sulla riga della daylist e su una riga online chiama la messa in coda |
@@ -23,7 +22,6 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
 | R-225 | Versione 1.6.0, CHANGELOG, tag `v1.6.0` e Release (D-553) | I | `gh release view v1.6.0` mostra i pacchetti |
 
 ## Architettura
-- **Download pubblici (R-217)**: yt-dlp scrive come oggi in una cartella privata di lavoro, e lì `DownloadTagger` e `SafeTagWriter` scrivono i tag. Poi un nuovo metodo Kotlin (canale `codecore/media` esistente, `MediaDeleteBridge`, oppure uno nuovo accanto) pubblica il file con `MediaStore.Audio`: `RELATIVE_PATH = Music/FreeKmusic`, `IS_PENDING` 1→0. Restituisce il percorso finale `/storage/emulated/0/Music/FreeKmusic/<nome>`, che va in `downloads.json`, nella tabella `folders` e in `scanFiles`. La cartella dei download diventa `Music/FreeKmusic` in `_resolveDownloadFolder`, `downloadFolderIdProvider` e `perf_probe.dart`. Le modifiche dei tag dopo il download (`SafeTagWriter`) restano possibili, perché l'app è proprietaria del file MediaStore; se `installFile` fallisce, ripiega su una scrittura via `ContentResolver.openFileDescriptor`. Da verificare sul Mi A3 (Android 11). `stream_promoter.dart` (cache stream → download) usa la stessa pubblicazione. Podcast (`episode_downloader.dart`) fuori.
 - **Registro (R-218, R-219)**: `_DayHeader` non dipinge `cc.bg` quando c'è `pageBackdrop`, ma lo stesso sfondo della pagina (il backdrop ritagliato, per esempio con `pageBackdrop` dietro l'intestazione allineato alla pagina). Gli errori: un nuovo `ActivityKind.playback` (o una voce diretta via `ActivityLogNotifier.add`) che ascolta `playerErrorsProvider`; testo localizzato nelle 6 lingue.
 - **Swipe (R-220, R-221)**: `SwipeToQueue` riceve una callback, non un id; `OnlineQueueRow` dentro `LiveTrackRow`, le righe della daylist, `online_playlist_screen` e `suggestions_screen` la usano (`enqueueOnline` per i brani online). Limite: il trascinamento si ferma al 60 % (Dismissible non lo permette: un `GestureDetector` orizzontale con offset limitato, oppure un clamp sul `Dismissible`); la soglia per mettere in coda resta 0,3.
 - **Selezione (R-222)**: in `TrackRow` e `OnlineSongRow` la `SelectionBox` va in uno `Stack` sopra `CoverImage`; la colonna di 40 px resta per il numero fuori dalla selezione.
@@ -33,25 +31,18 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
 ## Rischi
 | Rischio | Mitigazione | Segnale d'allarme |
 |---|---|---|
-| Con lo scoped storage la scrittura dei tag su un file MediaStore fallisce (Android 10/11) | ripiego su `ContentResolver`; prova sul Mi A3 prima del merge | «Tag non scritti» o `EACCES` nei log dopo un download |
-| Nome della cartella: sul Motorola esiste già una cartella scritta «FreeKMusic» | la memoria condivisa di Android non distingue le maiuscole: `Music/FreeKmusic` cade nella stessa cartella; verificarlo sul Mi A3 creando «FreeKMusic» prima | due cartelle quasi uguali in `Music/` |
 | Superfici trasparenti rendono illeggibili testi su sfondi con immagine | minimo 20 %, contrasto calcolato sul colore composto | avviso di contrasto che non scatta con un'immagine chiara |
 | Regressioni dello swipe (gesto di sistema «indietro», scroll verticale) | si tiene il bordo `edge` attuale e la soglia 0,3; test widget | swipe che parte scorrendo in verticale |
 
 ## Task
-- [ ] 118.1 Download in `Music/FreeKmusic` via MediaStore (R-217)
-  - File: `lib/providers/youtube_providers.dart` (`_resolveDownloadFolder`), `library_providers.dart` (`downloadFolderIdProvider`), `perf_probe.dart`, `lib/services/online/android_yt_dlp_service.dart`, `stream_promoter.dart`, Kotlin accanto a `MediaDeleteBridge.kt` (pubblicazione con `RELATIVE_PATH`/`IS_PENDING`), `SafeTagWriter` solo per il ripiego
-  - Passi: 1) download e tag nella cartella privata di lavoro; 2) pubblicazione MediaStore e percorso finale in `downloads.json`, `folders`, `scanFiles`; 3) download già in `Android/data`: nessuno spostamento, continuano a funzionare finché ci sono (D-547); 4) prova sul Mi A3: download, `adb shell ls -l /sdcard/Music/FreeKmusic`, riproduzione, modifica di un tag, «Elimina dal dispositivo»
-  - Comando mirato: `flutter test test/services/online/ test/providers/` (solo i file toccati) + `flutter build apk --debug`
-  - Fatto quando: il criterio di R-217 sul Mi A3; desktop invariato (test esistenti verdi)
-- [ ] 118.2 Ritocchi UI: Registro (sfondo ed errori di streaming), swipe ovunque fino a 3/5, spunta sopra la copertina, sfocatura dell'isola, trasparenza delle superfici, pulsanti del brano suggerito (R-218..R-224, R-226)
+- [ ] 119.1 Ritocchi UI: Registro (sfondo ed errori di streaming), swipe ovunque fino a 3/5, spunta sopra la copertina, sfocatura dell'isola, trasparenza delle superfici, pulsanti del brano suggerito (R-218..R-224, R-226)
   - File: `activity_log_screen.dart`, `activity_log_providers.dart`, `activity_providers.dart`, `track_row.dart` (`SwipeToQueue`, `TrackRow`), `online_song_row.dart`, `online_queue_row.dart`, `daylist_screen.dart`, `online_playlist_screen.dart`, `suggestions_screen.dart`, `bottom_bar.dart`, `library_island.dart`, nuovo widget comune per la sfocatura, `theme_editor_screen.dart`, `custom_theme.dart`, `lib/ui/screens/now_playing/suggested_info.dart` (`_Tile`), ARB (6 lingue) per la voce di errore
   - Passi: uno per requisito, ognuno col suo test widget; lo swipe con un limite al 60 % e la soglia 0,3 invariata
   - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart` + golden se cambiano (`scripts/guardie.sh`)
   - Fatto quando: i criteri di R-218..R-224 e R-226 verdi; prova a vista sul Mi A3 (swipe in daylist e Cerca, selezione, isola sfocata, tema con superfici trasparenti, un brano che non parte con la rete spenta nel Registro)
-- [ ] 118.3 Rilascio 1.6.0 (R-225)
+- [ ] 119.2 Rilascio 1.6.0 (R-225)
   - File: `pubspec.yaml` (1.6.0+8), `CHANGELOG.md`, documenti d'area (`sync-backup-jam.md`, `piattaforme.md`, `ui-e-design.md`), `prossimi-lavori.md`
-  - Passi: dopo il merge della PR della fase 118 (la 117 è già fusa): tag `v1.6.0` su master e Release dal workflow esistente (come D-544)
+  - Passi: dopo il merge della PR della fase 119 (117 e 118 già fuse): tag `v1.6.0` su master e Release dal workflow esistente (come D-544)
   - Fatto quando: `gh release view v1.6.0` con APK, Linux, Windows, macOS
 
 ## Tocca a te
