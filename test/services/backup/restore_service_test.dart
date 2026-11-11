@@ -6,6 +6,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/backup/backup_service.dart';
 import 'package:codecore/services/backup/restore_service.dart';
 import 'package:codecore/services/shuffle_plus/dislike_store.dart';
+import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,7 @@ void main() {
     Future<void> Function(AppDatabase)? seed,
     File? dislikes,
     Map<String, Object> extraPrefs = const {},
+    Directory? themeDir,
   }) async {
     final db = AppDatabase(NativeDatabase.memory());
     for (final f in folders) {
@@ -72,6 +74,7 @@ void main() {
       db: db,
       prefs: prefs,
       coversDir: covers,
+      themeDir: themeDir,
       downloadsFile: File(p.join(dir.path, 'none.json')),
       dislikesFile: dislikes,
       deviceId: deviceId,
@@ -750,7 +753,7 @@ void main() {
 
   test('mergeBackup puts back hand-set covers (track and album) with their files; a track with its own hand cover keeps it', () async {
     final src = AppDatabase(NativeDatabase.memory());
-    Future<void> add(AppDatabase d, String t, {int source = 0, String? key}) =>
+    Future<void> add(AppDatabase d, String t, {int source = 0, String? key, bool fav = false}) =>
         d
             .into(d.tracks)
             .insert(
@@ -764,12 +767,13 @@ void main() {
                 addedAt: 1,
                 coverSource: Value(source),
                 coverKey: Value(key),
+                isFavorite: Value(fav),
               ),
             );
     await add(src, 'one', source: 2, key: 'manual_one');
     await add(src, 'two', source: 1, key: 'manual_alb');
     await add(src, 'three', source: 2, key: 'manual_theirs');
-    await add(src, 'auto', key: 'auto_k');
+    await add(src, 'auto', key: 'auto_k', fav: true);
     SharedPreferences.setMockInitialValues({'deviceId': 'A'});
     final covers = Directory(p.join(dir.path, 'h-covers'))..createSync();
     for (final k in ['manual_one', 'manual_alb', 'manual_theirs', 'auto_k']) {
@@ -803,13 +807,128 @@ void main() {
       2,
       'manual_mine',
     ), reason: 'its own hand cover stays');
-    expect(rows['auto'], (
-      0,
-      null,
-    ), reason: 'automatic covers are not carried by the merge');
+    expect(rows['auto'], (0, 'auto_k'));
     expect(
       File(p.join(dest.path, 'manual_one.jpg')).readAsBytesSync(),
       'manual_one'.codeUnits,
     );
+  });
+
+  String themesJson(List<(String, String, String)> items) => jsonEncode([
+    for (final (id, name, img) in items)
+      {
+        'id': id,
+        'name': name,
+        'base': 'notte',
+        'overrides': <String, int>{},
+        'background': {'kind': 'image', 'imagePath': img},
+      },
+  ]);
+
+  /// A backup holding the themes [items] and the picture `bg.jpg`.
+  Future<File> themedBackup(List<(String, String, String)> items) {
+    final themes = Directory(p.join(dir.path, 'src-theme'))..createSync();
+    File(p.join(themes.path, 'bg.jpg')).writeAsBytesSync([8, 8]);
+    return makeBackup(
+      ['x'],
+      themeDir: themes,
+      extraPrefs: {
+        'customThemes': themesJson(items),
+        'compactMode': true,
+        'playlistSorts': '{"3":"title"}',
+        'lastQueueIds': ['7'],
+        'deviceName': 'Other phone',
+        'trustedDevices': '[1]',
+      },
+    );
+  }
+
+  String? imageOf(SharedPreferences prefs, String id) => CustomThemes.decode(
+    prefs.getString('customThemes'),
+  ).byId(id)?.background.imagePath;
+
+  test('a full restore puts the theme picture in themeDir and points the theme at it', () async {
+    final staging = Directory(p.join(dir.path, 'restore'));
+    final themeDir = Directory(p.join(dir.path, 'theme'));
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await stageFullRestore(
+      await themedBackup([('t1', 'One', '/other/device/theme/bg.jpg')]),
+      staging,
+    );
+    expect(
+      await applyPendingRestore(
+        dbFile: File(p.join(dir.path, 'codecore.sqlite')),
+        staging: staging,
+        prefs: prefs,
+        coversDir: Directory(p.join(dir.path, 'covers')),
+        themeDir: themeDir,
+        schemaVersion: schema,
+      ),
+      isTrue,
+    );
+    expect(File(p.join(themeDir.path, 'bg.jpg')).readAsBytesSync(), [8, 8]);
+    expect(imageOf(prefs, 't1'), p.join(themeDir.path, 'bg.jpg'));
+  });
+
+  group('mergeBackup settings and themes', () {
+    late AppDatabase here;
+    late SharedPreferences prefs;
+    late Directory themeDir;
+
+    setUp(() async {
+      here = AppDatabase(NativeDatabase.memory());
+      themeDir = Directory(p.join(dir.path, 'here-theme'));
+      SharedPreferences.setMockInitialValues({
+        'deviceName': 'This phone',
+        'trustedDevices': '[2]',
+        'playlistSorts': '{"1":"mine"}',
+        'lastQueueIds': ['1'],
+        'customThemes': themesJson([('t2', 'Local', '/x/y.jpg')]),
+      });
+      prefs = await SharedPreferences.getInstance();
+    });
+    tearDown(() => here.close());
+
+    Future<void> merge(File zip) => mergeBackup(
+      zip,
+      here,
+      Directory(p.join(dir.path, 'here-covers')),
+      prefs: prefs,
+      themeDir: themeDir,
+    );
+
+    test('a setting of the backup arrives; device and id-bound keys stay local', () async {
+      await merge(await themedBackup([]));
+      expect(prefs.getBool('compactMode'), isTrue);
+      expect(prefs.getString('theme'), 'oled');
+      expect(prefs.getString('deviceName'), 'This phone');
+      expect(prefs.getString('trustedDevices'), '[2]');
+      expect(prefs.getString('playlistSorts'), '{"1":"mine"}');
+      expect(prefs.getStringList('lastQueueIds'), ['1']);
+    });
+
+    test('themes are united by id and the backup wins on the same id; the picture lands in themeDir', () async {
+      await merge(
+        await themedBackup([
+          ('t1', 'Theirs', '/other/theme/bg.jpg'),
+          ('t2', 'Backup wins', '/other/theme/bg.jpg'),
+        ]),
+      );
+      final themes = CustomThemes.decode(prefs.getString('customThemes'));
+      expect(themes.items.map((t) => t.id), unorderedEquals(['t1', 't2']));
+      expect(themes.byId('t2')!.name, 'Backup wins');
+      final local = p.join(themeDir.path, 'bg.jpg');
+      expect(File(local).readAsBytesSync(), [8, 8]);
+      expect(imageOf(prefs, 't1'), local);
+    });
+
+    test('merging the same backup twice leaves the same themes', () async {
+      final zip = await themedBackup([('t1', 'Theirs', '/o/bg.jpg')]);
+      await merge(zip);
+      final first = prefs.getString('customThemes');
+      await merge(zip);
+      expect(prefs.getString('customThemes'), first);
+    });
   });
 }

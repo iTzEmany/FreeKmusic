@@ -111,4 +111,11 @@ void main() {
     expect((old.coverSource, old.coverKey), (0, null));
     expect(const TrackUserData(ref: TrackRef(title: 'a'), favorite: true).toJson().containsKey('coverSource'), isFalse);
   });
+
+  test('an automatic cover key travels too (source 0), and an old file without it reads as no key', () {
+    const t = TrackUserData(ref: TrackRef(title: 'a'), coverKey: 'auto_k');
+    final back = TrackUserData.fromJson(jsonDecode(jsonEncode(t.toJson())) as Map<String, dynamic>);
+    expect((back.coverSource, back.coverKey), (0, 'auto_k'));
+    expect(TrackUserData.fromJson({'ref': {'title': 'a'}}).coverKey, isNull);
+  });
 }

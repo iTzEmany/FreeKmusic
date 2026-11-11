@@ -115,8 +115,13 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         upd = upd.copyWith(lastPlayedAt: Value(last));
       }
       final ck = u.coverKey;
-      if (u.coverSource > 0 && ck != null && t.coverSource == 0 && _coverFileExists(coversDir, ck)) {
-        upd = upd.copyWith(coverSource: Value(u.coverSource), coverKey: Value(ck), hasCover: const Value(true));
+      if (ck != null && t.coverSource == 0 && _coverFileExists(coversDir, ck)) {
+        // An automatic cover (source 0) only fills a track that has none; a hand one replaces the automatic.
+        if (u.coverSource > 0) {
+          upd = upd.copyWith(coverSource: Value(u.coverSource), coverKey: Value(ck), hasCover: const Value(true));
+        } else if (t.coverKey == null && !t.hasCover) {
+          upd = upd.copyWith(coverKey: Value(ck), hasCover: const Value(true));
+        }
       }
       await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(upd);
       // A hand edit here sets the genres from its text; otherwise the backup's only fill a track that has none.
@@ -160,7 +165,9 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       if (same == null && pl.uuid == null) {
         for (final c in local) {
           final have = {for (final l in tracksOf[c.id] ?? const <PlaylistTrack>[]) l.trackId};
-          if (c.name == pl.name && have.length == seen.length && have.containsAll(seen)) {
+          // A copy made by an earlier merge of this backup is «name (ripristinata N)».
+          final sameName = c.name == pl.name || c.name.startsWith('${pl.name} (ripristinata');
+          if (sameName && have.length == seen.length && have.containsAll(seen)) {
             same = c;
             break;
           }
@@ -180,9 +187,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       }
 
       var name = pl.name;
-      var renamed = false;
       if (names.contains(name)) {
-        renamed = true;
         name = '${pl.name} (ripristinata)';
         for (var n = 2; names.contains(name); n++) {
           name = '${pl.name} (ripristinata $n)';
@@ -191,7 +196,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       names.add(name);
       // A copy keeps the backup's uuid only when it is free, so the next merge
       // of the same backup recognises it instead of copying again.
-      final keepUuid = !renamed && pl.uuid != null && !uuids.contains(pl.uuid);
+      final keepUuid = pl.uuid != null && !uuids.contains(pl.uuid);
       final playlistId = await db.into(db.playlists).insert(PlaylistsCompanion.insert(
           name: name,
           createdAt: pl.createdAt,
@@ -232,7 +237,7 @@ Future<int?> _resolveItem(TrackRepository tracks, TrackResolver resolver, TrackR
 bool _coverFileExists(Directory? dir, String key) =>
     dir != null &&
     key == p.basename(key) &&
-    ['jpg', 'png'].any((e) => File(p.join(dir.path, '$key.$e')).existsSync());
+    ['jpg', 'png', 'webp'].any((e) => File(p.join(dir.path, '$key.$e')).existsSync());
 
 String? _blankToNullTrim(String? s) => _blank(s) ? null : s!.trim();
 

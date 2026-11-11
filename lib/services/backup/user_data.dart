@@ -131,8 +131,8 @@ class TrackUserData {
   /// `track_genres` in order (absent in older backups = none).
   final List<String> genres;
 
-  /// Hand-set cover (1 album, 2 track) and its file key in the covers folder;
-  /// written only when the cover is by hand.
+  /// Cover source (0 automatic, 1 album, 2 track by hand) and its file key in
+  /// the covers folder (absent in older backups for an automatic cover).
   final int coverSource;
   final String? coverKey;
 
@@ -151,7 +151,7 @@ class TrackUserData {
         'details': details?.toJson(),
         'genres': genres.isEmpty ? null : genres,
         'coverSource': coverSource == 0 ? null : coverSource,
-        'coverKey': coverSource == 0 ? null : coverKey,
+        'coverKey': coverKey,
       });
 
   factory TrackUserData.fromJson(Map<String, dynamic> j) => TrackUserData(

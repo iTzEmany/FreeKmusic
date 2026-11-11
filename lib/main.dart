@@ -91,6 +91,7 @@ Future<void> main() async {
       staging: await restoreStagingDir(),
       prefs: await SharedPreferences.getInstance(),
       coversDir: Directory(await coversDir()),
+      themeDir: await themeDir(),
       schemaVersion: kSchemaVersion,
       dislikesFile: File(p.join(await appSupportDir(), 'dislikes.json')),
       daylistFile: File(p.join(await appSupportDir(), daylistFileName)),

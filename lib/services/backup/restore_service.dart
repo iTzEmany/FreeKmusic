@@ -11,6 +11,7 @@ import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
+import '../../ui/theme/custom_theme.dart';
 import '../shuffle_plus/dislike_store.dart';
 import 'user_data.dart';
 import '../../data/settings/settings_store.dart'
@@ -56,6 +57,71 @@ class RestorePlan {
 const _stagedDb = 'codecore.sqlite';
 const _stagedDislikes = 'dislikes.json';
 const _readyMarker = 'ready';
+const _customThemesKey = 'customThemes';
+
+/// Settings «Unisci» never applies: they hold ids of this database or state
+/// of this device's session, which mean nothing (or something wrong) here.
+const kMergeSkippedKeys = {
+  'playlistSorts', // playlist ids
+  unsyncedLyricsKey, // track ids
+  manualRomanizationKey, // track ids
+  handWrittenLyricsKey, // track ids
+  'reviewDismissed', // track ids
+  'reviewChecked', // track ids
+  'lastQueueIds', // track ids of the saved queue
+  'lastQueueUser',
+  'lastIndex',
+  'lastPositionMs',
+  'lastContextKind', // may name a playlist of the other database
+  'lastContextName',
+};
+
+/// Copies the `theme/` pictures of [archive] into [themeDir] (existing files win).
+void _extractThemeImages(Archive archive, Directory themeDir) {
+  for (final f in archive.files) {
+    if (!f.isFile || !f.name.startsWith('theme/') || f.name.length <= 6) continue;
+    final target = File(p.join(themeDir.path, p.basename(f.name)));
+    if (target.existsSync()) continue;
+    themeDir.createSync(recursive: true);
+    target.writeAsBytesSync(f.content as List<int>);
+  }
+}
+
+/// Points each custom theme's picture at the same file name in [themeDir], when
+/// it is there: the backup stored the path of the other device.
+Future<void> _relinkThemeImages(SharedPreferences prefs, Directory themeDir) async {
+  final themes = CustomThemes.decode(prefs.getString(_customThemesKey));
+  var out = themes;
+  for (final t in themes.items) {
+    final path = t.background.imagePath;
+    if (path == null) continue;
+    final local = p.join(themeDir.path, path.split(RegExp(r'[\\/]')).last);
+    if (local != path && File(local).existsSync()) {
+      out = out.put(t.copyWith(background: t.background.copyWith(imagePath: local)));
+    }
+  }
+  if (out != themes) await prefs.setString(_customThemesKey, out.encode());
+}
+
+/// «Unisci» settings: the backup wins except for device-bound and id-bound keys;
+/// custom themes are united by id (the backup's wins on the same id).
+Future<void> _applyMergedSettings(
+  SharedPreferences prefs,
+  Map<String, dynamic> json,
+  Directory? themeDir,
+) async {
+  final rest = {...json}..removeWhere((k, _) => kMergeSkippedKeys.contains(k));
+  final mine = rest[_customThemesKey];
+  if (mine is Map && mine['v'] is String) {
+    var themes = CustomThemes.decode(prefs.getString(_customThemesKey));
+    for (final t in CustomThemes.decode(mine['v'] as String).items) {
+      themes = themes.put(t);
+    }
+    rest[_customThemesKey] = {'t': 'string', 'v': themes.encode()};
+  }
+  await applySettingsJson(prefs, rest);
+  if (themeDir != null) await _relinkThemeImages(prefs, themeDir);
+}
 
 /// Reads `manifest.json` of [zip] and judges it. Refuses a `backupFormat` this
 /// app does not know and a database newer than itself.
@@ -119,7 +185,9 @@ Future<void> stageFullRestore(File zip, Directory staging) async {
       for (final f in archive.files) {
         if (!f.isFile) continue;
         final String? target;
-        if (f.name == _stagedDb ||
+        if (f.name.startsWith('theme/') && f.name.length > 6) {
+          target = p.join(dest, 'theme', p.basename(f.name));
+        } else if (f.name == _stagedDb ||
             f.name == 'settings.json' ||
             f.name == _stagedDislikes) {
           target = p.join(dest, f.name);
@@ -156,6 +224,7 @@ Future<bool> applyPendingRestore({
   required SharedPreferences prefs,
   required Directory coversDir,
   required int schemaVersion,
+  Directory? themeDir,
   File? dislikesFile,
   File? daylistFile,
   File? romanizationCacheFile,
@@ -233,6 +302,17 @@ Future<bool> applyPendingRestore({
         if (!target.existsSync()) f.copySync(target.path);
       }
     }
+    final themes = Directory(p.join(staging.path, 'theme'));
+    if (themeDir != null) {
+      if (themes.existsSync()) {
+        themeDir.createSync(recursive: true);
+        for (final f in themes.listSync().whereType<File>()) {
+          final target = File(p.join(themeDir.path, p.basename(f.path)));
+          if (!target.existsSync()) f.copySync(target.path);
+        }
+      }
+      await _relinkThemeImages(prefs, themeDir);
+    }
     _quietDelete(staging);
     AppLog.i('restore applied; the previous database is in ${backup.path}');
     return true;
@@ -277,13 +357,17 @@ void _quietDelete(Directory d) {
 
 /// «Unisci a questa libreria»: merges the user data of [zip] into [db] (see
 /// [mergeUserData]) and copies its covers into [coversDir] without
-/// overwriting any. The database file of the backup is not used.
+/// overwriting any. The database file of the backup is not used. With [prefs]
+/// the backup's settings are applied too (see [kMergeSkippedKeys]).
 Future<MergeReport> mergeBackup(
   File zip,
   AppDatabase db,
   Directory coversDir, {
   DislikeStore? dislikes,
+  SharedPreferences? prefs,
+  Directory? themeDir,
 }) async {
+  Map<String, dynamic>? settings;
   final input = InputFileStream(zip.path);
   late final UserData data;
   var windows = Platform.isWindows;
@@ -316,6 +400,15 @@ Future<MergeReport> mergeBackup(
         );
       }
     }
+    final st = archive.findFile('settings.json');
+    if (prefs != null && st != null) {
+      try {
+        settings = jsonDecode(utf8.decode(st.content as List<int>)) as Map<String, dynamic>;
+      } on Object catch (e, s) {
+        AppLog.w('settings.json of the backup unreadable, settings skipped', e, s);
+      }
+    }
+    if (themeDir != null) _extractThemeImages(archive, themeDir);
     coversDir.createSync(recursive: true);
     for (final f in archive.files) {
       if (!f.isFile || !f.name.startsWith('covers/') || f.name.length <= 7) {
@@ -333,5 +426,9 @@ Future<MergeReport> mergeBackup(
   }
   final resolver = await PlaylistSyncRepository(db)
       .resolver(caseInsensitive: windows);
-  return mergeUserData(db, data, resolver, coversDir: coversDir);
+  final report = await mergeUserData(db, data, resolver, coversDir: coversDir);
+  if (prefs != null && settings != null) {
+    await _applyMergedSettings(prefs, settings, themeDir);
+  }
+  return report;
 }

@@ -106,6 +106,52 @@ void main() {
     expect(((await track('c')).coverSource, (await track('c')).coverKey), (0, null));
   });
 
+  test('an automatic cover is linked to a local track without one (webp too); a local cover never changes', () async {
+    final covers = Directory.systemTemp.createTempSync('bm');
+    addTearDown(() => covers.deleteSync(recursive: true));
+    for (final f in ['auto_a.webp', 'auto_b.jpg', 'auto_c.jpg']) {
+      File('${covers.path}/$f').writeAsBytesSync([1]);
+    }
+    await (db.update(db.tracks)..where((r) => r.title.equals('c')))
+        .write(const TracksCompanion(coverKey: Value('mine'), hasCover: Value(true)));
+    await mergeUserData(
+        db,
+        UserData(createdAt: 1, tracks: [
+          TrackUserData(ref: ref('a'), coverKey: 'auto_a'),
+          TrackUserData(ref: ref('b'), coverKey: 'auto_gone'),
+          TrackUserData(ref: ref('c'), coverKey: 'auto_c'),
+        ]),
+        await PlaylistSyncRepository(db).resolver(),
+        coversDir: covers);
+    expect(((await track('a')).coverKey, (await track('a')).hasCover), ('auto_a', true));
+    expect(((await track('b')).coverKey, (await track('b')).hasCover), (null, false));
+    expect((await track('c')).coverKey, 'mine');
+  });
+
+  test('merging twice leaves playlists (renamed ones too), radios, followed artists unchanged', () async {
+    final id = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
+    await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: id, trackId: 1, position: 0));
+    final d = UserData(createdAt: 1, playlists: [
+      PlaylistData(name: 'Mix', uuid: 'u-9', createdAt: 5, items: [ref('b')]),
+      PlaylistData(name: 'Mix', createdAt: 5, items: [ref('c')]),
+    ], radios: const [
+      RadioData(stationId: 'r1', name: 'R', streamUrl: 'http://x'),
+    ], followedArtists: const [
+      FollowedArtistData(ytmId: 'y1', name: 'Y'),
+    ]);
+    Future<List<int>> counts() async => [
+          (await db.select(db.playlists).get()).length,
+          (await db.select(db.playlistTracks).get()).length,
+          (await db.select(db.radioStations).get()).length,
+          (await db.select(db.followedArtists).get()).length,
+        ];
+    await merge(d);
+    final first = await counts();
+    expect(first, [3, 3, 1, 1]);
+    await merge(d);
+    expect(await counts(), first);
+  });
+
   group('hand cover safety', () {
     final badKeys = ['../escape', '..', 'a/b'];
 
@@ -130,13 +176,13 @@ void main() {
       }
     });
 
-    test('coverSource 0 with a coverKey changes nothing', () async {
+    test('coverSource 0 with a coverKey fills a track without cover', () async {
       final covers = Directory.systemTemp.createTempSync('bm');
       addTearDown(() => covers.deleteSync(recursive: true));
       File('${covers.path}/k.jpg').writeAsBytesSync([1]);
       await mergeCovers(covers, [TrackUserData(ref: ref('a'), coverKey: 'k')]);
       final a = await track('a');
-      expect((a.coverSource, a.coverKey, a.hasCover), (0, null, false));
+      expect((a.coverSource, a.coverKey, a.hasCover), (0, 'k', true));
     });
 
     test('backup album pick does not split a locally picked album', () async {

@@ -73,7 +73,7 @@ Future<UserData> collectUserData(
           details: portable[t.id]!.details,
           genres: genresOf[t.id] ?? const [],
           coverSource: t.coverKey == null ? 0 : t.coverSource,
-          coverKey: t.coverSource > 0 ? t.coverKey : null,
+          coverKey: t.coverKey,
         ),
       );
     }

@@ -17,6 +17,7 @@ final backupServiceProvider = FutureProvider<BackupService>((ref) async {
     db: ref.watch(databaseProvider),
     prefs: await SharedPreferences.getInstance(),
     coversDir: Directory(await coversDir()),
+    themeDir: await themeDir(),
     downloadsFile: DownloadIndex.defaultFile(support),
     dislikesFile: File(p.join(support, 'dislikes.json')),
     deviceId: await ref.watch(settingsStoreProvider).deviceId(),

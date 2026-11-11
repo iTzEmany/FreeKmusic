@@ -96,7 +96,7 @@ void main() {
     dir.deleteSync(recursive: true);
   });
 
-  BackupService service({File? downloads}) {
+  BackupService service({File? downloads, Directory? themeDir}) {
     final covers = Directory(p.join(dir.path, 'covers'))..createSync();
     File(p.join(covers.path, 'a.jpg')).writeAsBytesSync(List.filled(500, 7));
     File(p.join(covers.path, 'b.bin')).writeAsBytesSync(List.filled(500, 0));
@@ -104,6 +104,7 @@ void main() {
       db: db,
       prefs: prefs,
       coversDir: covers,
+      themeDir: themeDir,
       downloadsFile: downloads ?? File(p.join(dir.path, 'downloads.json')),
       deviceId: 'dev-1',
       platform: 'linux',
@@ -116,6 +117,15 @@ void main() {
       BackupService.fileName(DateTime(2026, 3, 7)),
       'freekmusic-backup-2026-03-07.zip',
     );
+  });
+
+  test('the pictures of the custom themes travel as theme/<file>', () async {
+    final themes = Directory(p.join(dir.path, 'theme'))..createSync();
+    File(p.join(themes.path, 'bg.jpg')).writeAsBytesSync([4, 2]);
+    final out = p.join(dir.path, 'th.zip');
+    await service(themeDir: themes).createBackup(out);
+    final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
+    expect(zip.findFile('theme/bg.jpg')!.content, [4, 2]);
   });
 
   test('the zip holds manifest, settings, user data, database, covers and downloads', () async {
