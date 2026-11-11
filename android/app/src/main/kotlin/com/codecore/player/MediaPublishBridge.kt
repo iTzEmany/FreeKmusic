@@ -7,7 +7,6 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
-import android.webkit.MimeTypeMap
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -17,7 +16,8 @@ import java.io.File
  * private work folder into `Music/FreeKmusic` through MediaStore (IS_PENDING
  * 1 -> 0, the app owns the entry and can rewrite its tags) and answers with
  * the final path, e.g. `/storage/emulated/0/Music/FreeKmusic/Song.m4a`.
- * The work copy is deleted by the caller. Android 9 and older copy the file.
+ * `subdir` keeps the import's folder under `Music/FreeKmusic`. Called only on
+ * Android 11+ (D-567); the work copy is deleted by the caller.
  */
 object MediaPublishBridge {
     private const val DIR = "FreeKmusic"
@@ -25,6 +25,10 @@ object MediaPublishBridge {
 
     fun register(messenger: BinaryMessenger, context: Context) {
         MethodChannel(messenger, "codecore/publish").setMethodCallHandler { call, result ->
+            if (call.method == "sdk") {
+                result.success(Build.VERSION.SDK_INT)
+                return@setMethodCallHandler
+            }
             if (call.method != "publish") {
                 result.notImplemented()
                 return@setMethodCallHandler
@@ -36,7 +40,7 @@ object MediaPublishBridge {
             }
             Thread {
                 try {
-                    val out = publish(context, File(path))
+                    val out = publish(context, File(path), call.argument<String>("subdir") ?: "")
                     main.post { result.success(out) }
                 } catch (e: Exception) {
                     main.post { result.error("publish", e.message, null) }
@@ -45,20 +49,23 @@ object MediaPublishBridge {
         }
     }
 
-    private fun publish(context: Context, src: File): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), DIR)
-            dir.mkdirs()
-            val dest = File(dir, src.name)
-            src.copyTo(dest, overwrite = false)
-            android.media.MediaScannerConnection.scanFile(context, arrayOf(dest.path), null, null)
-            return dest.path
-        }
-        val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(src.extension.lowercase()) ?: "audio/mp4"
+    // MediaStore only takes audio/* in Music: never the video/* some extensions map to.
+    private fun audioMime(ext: String) = when (ext.lowercase()) {
+        "mp3" -> "audio/mpeg"
+        "flac" -> "audio/flac"
+        "opus", "ogg" -> "audio/ogg"
+        "webm" -> "audio/webm"
+        else -> "audio/mp4"
+    }
+
+    private fun publish(context: Context, src: File, subdir: String): String {
+        val sub = subdir.split('/').filter { it.isNotEmpty() && it != "." && it != ".." }.joinToString("/")
+        val rel = if (sub.isEmpty()) DIR else "$DIR/$sub"
+        val mime = audioMime(src.extension)
         val values = ContentValues().apply {
             put(MediaStore.Audio.Media.DISPLAY_NAME, src.name)
             put(MediaStore.Audio.Media.MIME_TYPE, mime)
-            put(MediaStore.Audio.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MUSIC}/$DIR")
+            put(MediaStore.Audio.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MUSIC}/$rel")
             put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
         val resolver = context.contentResolver
@@ -75,6 +82,6 @@ object MediaPublishBridge {
         resolver.query(uri, arrayOf(MediaStore.MediaColumns.DATA), null, null, null)?.use {
             if (it.moveToFirst()) return it.getString(0)
         }
-        return File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "$DIR/${src.name}").path
+        return File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "$rel/${src.name}").path
     }
 }

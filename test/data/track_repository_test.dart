@@ -1,4 +1,8 @@
+import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
+import 'package:codecore/services/online/download_index.dart';
+import 'dart:io';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/data/repositories/hidden_playlists.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
@@ -450,6 +454,19 @@ void main() {
       expect(await repo.watchDownloadedWithoutPlaylistCount(folderId: 1).first, 1);
     });
 
+    test('downloaded by path prefix or by index path, whatever the folder', () async {
+      await repo.upsertBatch([
+        row('/m/FreeKmusic/new.mp3', 'new', folderId: 2),
+        row('/old/Music/old.mp3', 'old', folderId: 2),
+        row('/lib/idx.mp3', 'idx', folderId: 2),
+        row('/m/FreeKmusicX/other.mp3', 'other', folderId: 2),
+      ]);
+      final l = await repo
+          .watchDownloadedWithoutPlaylist(prefixes: ['/m/FreeKmusic/', '/old/Music/'], paths: {'/lib/idx.mp3'})
+          .first;
+      expect(l.map((t) => t.title).toSet(), {'new', 'old', 'idx'});
+    });
+
     test('the provider search ignores accents', () async {
       await repo.upsertBatch([
         row('/d/c.mp3', 'Café', folderId: 1),
@@ -457,7 +474,9 @@ void main() {
       ]);
       final c = ProviderContainer(overrides: [
         trackRepositoryProvider.overrideWithValue(repo),
+        downloadRootsProvider.overrideWithValue(const AsyncData(<String>[])),
         downloadFolderIdProvider.overrideWith((ref) async => 1),
+        downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
       ]);
       addTearDown(c.dispose);
       const q = TrackQuery(text: 'CAFE');
@@ -469,8 +488,10 @@ void main() {
     test('downloadFolderIdProvider only reads: never adds a folder', () async {
       final c = ProviderContainer(overrides: [databaseProvider.overrideWithValue(db)]);
       addTearDown(c.dispose);
+      final downloads = (await resolveDefaultFolders(create: false)).downloads;
+      final id = (await FolderRepository(db).add(downloads)).id;
       c.listen(downloadFolderIdProvider, (_, _) {});
-      expect(await c.read(downloadFolderIdProvider.future), 1, reason: 'first folder');
+      expect(await c.read(downloadFolderIdProvider.future), id, reason: 'the download location');
       await db.delete(db.folders).go();
       c.invalidate(foldersProvider);
       c.invalidate(downloadFolderIdProvider);

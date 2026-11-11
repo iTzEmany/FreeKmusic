@@ -137,6 +137,10 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
       },
       tag: ref.read(downloadTaggerProvider).tag,
       publish: isAndroid ? ref.read(mediaPublisherProvider).publish : null,
-      workDir: isAndroid ? downloadWorkDir : null,
+      workDir: isAndroid
+          ? () async => await publishesToMediaStore()
+              ? downloadWorkDir()
+              : (await resolveDownloadFolder(ref.read(folderRepositoryProvider)))!.$1
+          : null,
       onShadowMerged: (shadow, keep) => ref.read(audioHandlerProvider).replaceQueueId(shadow, keep),
     ));

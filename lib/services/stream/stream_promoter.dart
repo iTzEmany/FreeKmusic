@@ -72,6 +72,11 @@ class StreamPromoter {
         dest = await pub(dest);
       } on Object catch (e, st) {
         AppLog.w('promote: publish failed for $key', e, st);
+        try {
+          await _move(File(dest), file.path); // the cache entry stays valid
+        } on Object catch (e2, st2) {
+          AppLog.w('promote: cached file not restored for $key', e2, st2);
+        }
         throw StreamPromoteException('Impossibile pubblicare il brano: $e');
       }
     }

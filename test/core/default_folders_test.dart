@@ -51,6 +51,13 @@ void main() {
     expect(f.downloads, '${home.path}/Musica/FreeKmusic');
   });
 
+  test('Linux: XDG_MUSIC_DIR = \$HOME (disabled) is ignored, in the environment and in user-dirs.dirs', () async {
+    expect((await resolve('linux', {'XDG_MUSIC_DIR': home.path})).library, '${home.path}/Music');
+    final conf = Directory(p.join(home.path, '.config'))..createSync();
+    File(p.join(conf.path, 'user-dirs.dirs')).writeAsStringSync('XDG_MUSIC_DIR="\$HOME/"\n');
+    expect((await resolve('linux')).library, '${home.path}/Music');
+  });
+
   test('Linux: no configuration falls back to ~/Music', () async {
     final f = await resolve('linux');
     expect(f.library, '${home.path}/Music');

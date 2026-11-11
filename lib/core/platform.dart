@@ -68,9 +68,14 @@ Future<DefaultFolders> resolveDefaultFolders({
 }
 
 /// `XDG_MUSIC_DIR` (env, then `user-dirs.dirs`, then `xdg-user-dir MUSIC`), else `~/Music`.
+/// A value that is `$HOME` itself means the folder is disabled: it never counts.
 Future<String> _xdgMusicDir(Map<String, String> env) async {
   final home = env['HOME'] ?? '';
-  String? expand(String v) => v.isEmpty ? null : v.replaceAll(r'$HOME', home);
+  String? expand(String v) {
+    final x = v.replaceAll(r'$HOME', home);
+    return x.isEmpty || p.equals(x, home) ? null : x;
+  }
+
   final fromEnv = expand(env['XDG_MUSIC_DIR'] ?? '');
   if (fromEnv != null) return fromEnv;
   try {
@@ -81,15 +86,18 @@ Future<String> _xdgMusicDir(Map<String, String> env) async {
       final v = m == null ? null : expand(m.group(1)!);
       if (v != null) return v;
     }
-  } on FileSystemException {
-    // No user-dirs.dirs: ask the tool, then fall back.
+  } on FileSystemException catch (e, st) {
+    AppLog.w('user-dirs.dirs not readable, asking xdg-user-dir', e, st);
   }
   try {
     final r = await Process.run('xdg-user-dir', ['MUSIC'], environment: env);
-    final out = '${r.stdout}'.trim();
-    if (r.exitCode == 0 && out.isNotEmpty && out != home) return out;
-  } on ProcessException {
-    // xdg-user-dir not installed.
+    final out = expand('${r.stdout}'.trim());
+    if (r.exitCode == 0 && out != null) return out;
+  } on ProcessException catch (e, st) {
+    AppLog.w('xdg-user-dir not available, using ~/Music', e, st);
   }
   return p.join(home, 'Music');
 }
+
+/// `getExternalStorageDirectory()` on Android (where 1.5.1 kept the downloads), else null.
+Future<String?> androidAppMusicDir() async => isAndroid ? (await getExternalStorageDirectory())?.path : null;

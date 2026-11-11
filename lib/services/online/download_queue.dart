@@ -239,7 +239,7 @@ class DownloadQueue {
       retrying = _failOrRetry(item, e.kind, token);
     } on Object catch (e, st) {
       AppLog.e('download failed', e, st);
-      retrying = _failOrRetry(item, YtErrorKind.changed, token);
+      retrying = _failOrRetry(item, YtErrorKind.internal, token); // our own failure, not YouTube's
     } finally {
       _tokens.remove(item.id);
       _emit();

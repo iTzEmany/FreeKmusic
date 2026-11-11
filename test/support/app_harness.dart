@@ -1,3 +1,5 @@
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
+import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/providers/romanization_providers.dart';
 import 'package:codecore/services/lyrics/romanization_resolver.dart';
 import 'package:codecore/providers/artist_merge_providers.dart';
@@ -82,7 +84,9 @@ class Harness {
         // Never a real search for the artist-merge suggestion.
         artistMergeSearchProvider.overrideWithValue(mergeSearch),
         // Never the real download folder (it would create ~/Music).
+        downloadRootsProvider.overrideWithValue(const AsyncData(<String>[])),
         downloadFolderIdProvider.overrideWith((ref) async => downloadFolderId),
+        downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
         // The real one reads the app support folder (no plugin in tests).
         romanizationProvider.overrideWith(
           (ref, id) => AsyncData(romanization),

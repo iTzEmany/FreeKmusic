@@ -59,7 +59,11 @@ void main() {
 
   test('Android: the download is made in the work folder, published, and the final path is registered', () async {
     debugIsAndroidOverride = true;
-    addTearDown(() => debugIsAndroidOverride = null);
+    debugAndroidSdk = 33;
+    addTearDown(() {
+      debugIsAndroidOverride = null;
+      debugAndroidSdk = null;
+    });
     final root = await Directory.systemTemp.createTemp('android_pub');
     addTearDown(() => root.delete(recursive: true));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -95,6 +99,55 @@ void main() {
     expect(scanner.scanned, [_final]);
     expect(index.idForPath(_final), _r.id);
     expect(c.read(downloadsProvider).single.path, _final);
-    expect([for (final f in await FolderRepository(db).getAll()) f.path], ['/storage/emulated/0/Music/FreeKmusic']);
+    expect([for (final f in await FolderRepository(db).getAll()) f.path], ['/storage/emulated/0/Music'], reason: 'FreeKmusic is scanned from Music, not its own folder');
+  });
+
+  test('Android: a refused publish leaves no copy in download-work and the item is internal', () async {
+    debugIsAndroidOverride = true;
+    debugAndroidSdk = 33;
+    addTearDown(() {
+      debugIsAndroidOverride = null;
+      debugAndroidSdk = null;
+    });
+    final root = await Directory.systemTemp.createTemp('android_pub_fail');
+    addTearDown(() => root.delete(recursive: true));
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/path_provider'), (c) async => root.path);
+    const channel = MethodChannel('codecore/publish');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (c) async => throw PlatformException(code: 'publish'));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final c = ProviderContainer(overrides: [
+      folderRepositoryProvider.overrideWithValue(FolderRepository(db)),
+      trackRepositoryProvider.overrideWithValue(TrackRepository(db)),
+      youtubeServiceProvider.overrideWithValue(_Yt('${root.path}/download-work/Song.m4a')),
+      settingsProvider.overrideWith(_Settings.new),
+      libraryScannerProvider.overrideWithValue(_Scanner()),
+      downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('${root.path}/downloads.json'))),
+      mediaPublisherProvider.overrideWithValue(MediaPublisher(channel: channel)),
+    ]);
+    addTearDown(c.dispose);
+    c.read(downloadsProvider.notifier).add(_r, tag: 'x');
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(File('${root.path}/download-work/Song.m4a').existsSync(), isFalse);
+    expect(c.read(downloadsProvider).single.error, YtErrorKind.internal);
+  });
+
+  test('Android 11+: FreeKmusic inside a library folder is not registered on its own', () async {
+    debugIsAndroidOverride = true;
+    debugAndroidSdk = 33;
+    addTearDown(() {
+      debugIsAndroidOverride = null;
+      debugAndroidSdk = null;
+    });
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = FolderRepository(db);
+    final music = await repo.add('/storage/emulated/0/Music');
+    final res = await resolveDownloadFolder(repo);
+    expect(res!.$1.path, '/storage/emulated/0/Music/FreeKmusic');
+    expect(res.$2.id, music.id);
+    expect((await repo.getAll()).length, 1);
   });
 }

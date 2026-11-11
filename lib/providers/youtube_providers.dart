@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import '../core/app_log.dart';
+import '../core/constants.dart' show kEnableYoutube;
 import '../core/paths.dart';
 import '../core/platform.dart';
 import 'player_providers.dart' show audioHandlerProvider, onlineEntriesProvider;
@@ -77,7 +79,7 @@ final ytDlpStatusProvider = FutureProvider<YtDlpStatus>((ref) async {
   final v = await ref.watch(youtubeServiceProvider).toolVersion();
   // Desktop builds ship no yt-dlp: fetch it (or a fresh one) in the background.
   // Not in `flutter test`, which must never reach the network.
-  if (isDesktop && !Platform.environment.containsKey('FLUTTER_TEST')) {
+  if (kEnableYoutube && isDesktop && !Platform.environment.containsKey('FLUTTER_TEST')) {
     unawaited(Future(
         () => ref.read(ytDlpUpdateProvider.notifier).autoUpdate(v)));
   }
@@ -96,9 +98,20 @@ final mediaPublisherProvider = Provider<MediaPublisher>((ref) => MediaPublisher(
 /// scanned folder. On Android it is the public folder the files are published
 /// to; the download itself happens in [downloadWorkDir].
 Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo) async {
+  if (isAndroid && !await publishesToMediaStore()) {
+    // D-567: Android 10 and older keep the 1.5.1 folder (app files, own library folder).
+    final dir = Directory(p.join((await androidAppMusicDir())!, 'Music'))..createSync(recursive: true);
+    return (dir, await repo.add(dir.path));
+  }
   final dir = Directory((await resolveDefaultFolders()).downloads);
-  return (dir, await repo.add(dir.path));
+  // Inside a library folder already: it is scanned from there (no second folder, no double scan).
+  for (final f in await repo.getAll()) {
+    if (p.isWithin(f.path, dir.path)) return (dir, f);
+  }
+  // No library folder yet: the parent (Music), as the startup default would add it.
+  return (dir, await repo.add((await resolveDefaultFolders()).library));
 }
+
 
 /// Any `.part` found before the first download of a session belongs to a
 /// download that was interrupted (app killed) and will never be completed.
@@ -124,6 +137,14 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   /// scanned into the library.
   Stream<DownloadItem> get settled => _settled.stream;
 
+  Future<void> _dropWorkCopy(String path) async {
+    try {
+      await File(path).delete();
+    } on FileSystemException catch (e, st) {
+      AppLog.w('work copy not removed: $path', e, st);
+    }
+  }
+
   @override
   List<DownloadItem> build() {
     final yt = ref.watch(youtubeServiceProvider);
@@ -145,7 +166,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
           ref.read(folderRepositoryProvider),
         );
         folder = res?.$2;
-        final dir = isAndroid ? await downloadWorkDir() : res?.$1;
+        final dir = await publishesToMediaStore() ? await downloadWorkDir() : res?.$1;
         if (dir != null) await (_stale ??= removeStalePartFiles(dir));
         return dir;
       },
@@ -157,7 +178,13 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
         final f = folder;
         if (f == null) return null;
         // Android: the finished file goes public now (the tags are written on that copy).
-        final path = await ref.read(mediaPublisherProvider).publish(workPath);
+        final String path;
+        try {
+          path = await ref.read(mediaPublisherProvider).publish(workPath);
+        } on Object {
+          await _dropWorkCopy(workPath); // no orphan in download-work
+          rethrow;
+        }
         await for (final _ in ref.read(libraryScannerProvider).scanFiles(f, [
           path,
         ])) {}

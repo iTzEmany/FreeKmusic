@@ -533,11 +533,16 @@ class TrackRepository {
     return lightSelect(_db, q).watch();
   }
 
-  Expression<bool> _downloadedNoPlaylist($TracksTable t, int folderId) =>
+  /// Downloaded = the folder, or under one of the [prefixes] (download
+  /// locations), or listed in [paths] (the download index).
+  Expression<bool> _downloadedNoPlaylist($TracksTable t, int? folderId, List<String> prefixes, Set<String> paths) =>
       t.missing.equals(false) &
       t.ignored.equals(false) &
       t.kind.equals(kMusicKind) &
-      t.folderId.equals(folderId) &
+      (t.folderId.equals(folderId ?? -1) |
+          t.path.isIn(paths) |
+          [for (final x in prefixes) t.path.substr(1, x.length).equals(x)]
+              .fold<Expression<bool>>(const Constant(false), (a, b) => a | b)) &
       // Only visible playlists count: «Scarica album» keeps its tracks in a
       // hidden technical one.
       notExistsQuery(
@@ -556,21 +561,27 @@ class TrackRepository {
   /// Favourites and smart playlists (rules only, no `playlist_tracks` rows) do
   /// not count; shadow rows (`kind = 2`) and episodes (`kind = 1`) are out.
   Stream<List<Track>> watchDownloadedWithoutPlaylist({
-    required int folderId,
+    int? folderId,
+    List<String> prefixes = const [],
+    Set<String> paths = const {},
     SortOption sort = SortOption.defaultOrder,
   }) {
     final q = _db.select(_db.tracks)
-      ..where((t) => _downloadedNoPlaylist(t, folderId))
+      ..where((t) => _downloadedNoPlaylist(t, folderId, prefixes, paths))
       ..orderBy(_orderFor(sort));
     return lightSelect(_db, q).watch();
   }
 
   /// How many tracks [watchDownloadedWithoutPlaylist] lists, without loading them.
-  Stream<int> watchDownloadedWithoutPlaylistCount({required int folderId}) {
+  Stream<int> watchDownloadedWithoutPlaylistCount({
+    int? folderId,
+    List<String> prefixes = const [],
+    Set<String> paths = const {},
+  }) {
     final c = _db.tracks.id.count();
     final q = _db.selectOnly(_db.tracks)
       ..addColumns([c])
-      ..where(_downloadedNoPlaylist(_db.tracks, folderId));
+      ..where(_downloadedNoPlaylist(_db.tracks, folderId, prefixes, paths));
     return q.map((r) => r.read(c)!).watchSingle();
   }
 

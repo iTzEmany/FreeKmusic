@@ -324,6 +324,15 @@ void main() {
     expect(scanned, [destOf()]);
   });
 
+  test('Android: a refused publish puts the file back in the cache', () async {
+    final work = Directory(p.join(root.path, 'work'))..createSync();
+    await expectLater(
+        build(workDir: () async => work, publish: (_) async => throw StateError('no')).promote(_r),
+        throwsA(isA<StreamPromoteException>()));
+    expect(await cache.fileFor(_key), isNotNull);
+    expect(work.listSync(), isEmpty);
+  });
+
   test('a missing row already at the destination path: the index has the file and the scan runs', () async {
     final libId = await db.into(db.tracks).insert(TracksCompanion.insert(
         path: destOf(), title: 'Song', albumKey: 'artist|album', format: 'm4a', sizeBytes: 1, mtimeMs: 1,

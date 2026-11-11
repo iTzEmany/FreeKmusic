@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:codecore/services/online/download_queue.dart';
+import 'package:codecore/services/online/retry_policy.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -54,6 +55,22 @@ void main() {
     expect(q.items.every((e) => e.status == DownloadStatus.done), true);
     q.clearFinished();
     expect(q.items, isEmpty);
+  });
+
+  test('a failure that is not a YtException is internal and not retried', () async {
+    final q = DownloadQueue(
+      downloader: (res, dir, cancel) async* {
+        yield const DownloadProgress(received: 1, total: 1, path: '/o/a.m4a');
+      },
+      outDir: () async => Directory.systemTemp,
+      onChanged: (_) {},
+      onDownloaded: (p) async => throw StateError('publish'),
+      retryPolicy: RetryPolicy(),
+    );
+    q.add(r('a'));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(q.items.single.status, DownloadStatus.failed);
+    expect(q.items.single.error, YtErrorKind.internal);
   });
 
   test('cancel stops the active item and later ones continue', () async {
