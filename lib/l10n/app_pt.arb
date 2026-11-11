@@ -1558,7 +1558,7 @@
   "onboardingAllowAccess": "Permitir o acesso aos ficheiros de áudio",
   "onboardingAccessGranted": "Acesso permitido",
   "onboardingOnlineTitle": "Funcionalidades online",
-  "onboardingOnlineBody": "Estão desligadas: o FreeKmusic nunca se liga à Internet por iniciativa própria. Pode ativá-las agora ou mais tarde nas Definições.",
+  "onboardingOnlineBody": "Estão ativadas: enriquecem as suas músicas com dados online. Pode desativá-las aqui ou mais tarde nas Definições.",
   "onboardingShareTitle": "Transferências, Jam e partilha",
   "onboardingYoutubeBody": "Pode transferir faixas do YouTube para o seu dispositivo e ouvi-las como o resto da sua música.",
   "onboardingJamBody": "Com uma Jam ouve a mesma música em conjunto com outro dispositivo na mesma rede.",

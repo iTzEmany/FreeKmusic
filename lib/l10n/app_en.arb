@@ -1400,7 +1400,7 @@
   "onboardingAllowAccess": "Allow access to audio files",
   "onboardingAccessGranted": "Access granted",
   "onboardingOnlineTitle": "Online features",
-  "onboardingOnlineBody": "They are off: FreeKmusic never goes online on its own. You can turn them on now or later in Settings.",
+  "onboardingOnlineBody": "They are on: they enrich your songs with online data. You can turn them off here or later in Settings.",
   "onboardingShareTitle": "Downloads, Jam and sharing",
   "onboardingYoutubeBody": "You can download tracks from YouTube to your device and listen to them like the rest of your music.",
   "onboardingJamBody": "With a Jam you listen to the same music together with another device on the same network.",

@@ -2826,7 +2826,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'Elles sont désactivées : FreeKmusic ne se connecte jamais à Internet de lui-même. Vous pouvez les activer maintenant ou plus tard dans les Paramètres.';
+      'Elles sont activées : elles enrichissent vos titres avec des données en ligne. Vous pouvez les désactiver ici ou plus tard dans les Paramètres.';
 
   @override
   String get onboardingShareTitle => 'Téléchargements, Jam et partage';

@@ -2803,7 +2803,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'Estão desligadas: o FreeKmusic nunca se liga à Internet por iniciativa própria. Pode ativá-las agora ou mais tarde nas Definições.';
+      'Estão ativadas: enriquecem as suas músicas com dados online. Pode desativá-las aqui ou mais tarde nas Definições.';
 
   @override
   String get onboardingShareTitle => 'Transferências, Jam e partilha';

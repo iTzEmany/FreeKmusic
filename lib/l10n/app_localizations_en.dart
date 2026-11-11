@@ -2793,7 +2793,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'They are off: FreeKmusic never goes online on its own. You can turn them on now or later in Settings.';
+      'They are on: they enrich your songs with online data. You can turn them off here or later in Settings.';
 
   @override
   String get onboardingShareTitle => 'Downloads, Jam and sharing';

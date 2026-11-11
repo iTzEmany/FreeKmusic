@@ -2797,7 +2797,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'Sono spente: FreeKmusic non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.';
+      'Sono accese: arricchiscono i brani con dati online. Puoi spegnerle qui o più tardi dalle Impostazioni.';
 
   @override
   String get onboardingShareTitle => 'Download, Jam e condivisione';

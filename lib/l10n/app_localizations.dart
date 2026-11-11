@@ -4609,7 +4609,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingOnlineBody.
   ///
   /// In it, this message translates to:
-  /// **'Sono spente: FreeKmusic non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.'**
+  /// **'Sono accese: arricchiscono i brani con dati online. Puoi spegnerle qui o più tardi dalle Impostazioni.'**
   String get onboardingOnlineBody;
 
   /// No description provided for @onboardingShareTitle.

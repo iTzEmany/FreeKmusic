@@ -2806,7 +2806,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'Sie sind aus: FreeKmusic geht nie von allein online. Du kannst sie jetzt oder später in den Einstellungen einschalten.';
+      'Sie sind an: sie ergänzen deine Titel mit Online-Daten. Du kannst sie hier oder später in den Einstellungen ausschalten.';
 
   @override
   String get onboardingShareTitle => 'Downloads, Jam und Teilen';

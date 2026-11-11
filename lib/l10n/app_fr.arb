@@ -1558,7 +1558,7 @@
   "onboardingAllowAccess": "Autoriser l’accès aux fichiers audio",
   "onboardingAccessGranted": "Accès autorisé",
   "onboardingOnlineTitle": "Fonctions en ligne",
-  "onboardingOnlineBody": "Elles sont désactivées : FreeKmusic ne se connecte jamais à Internet de lui-même. Vous pouvez les activer maintenant ou plus tard dans les Paramètres.",
+  "onboardingOnlineBody": "Elles sont activées : elles enrichissent vos titres avec des données en ligne. Vous pouvez les désactiver ici ou plus tard dans les Paramètres.",
   "onboardingShareTitle": "Téléchargements, Jam et partage",
   "onboardingYoutubeBody": "Vous pouvez télécharger des titres depuis YouTube sur votre appareil et les écouter comme le reste de votre musique.",
   "onboardingJamBody": "Avec une Jam, vous écoutez la même musique avec un autre appareil du même réseau.",
