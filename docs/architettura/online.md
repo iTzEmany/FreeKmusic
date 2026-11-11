@@ -51,6 +51,12 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - Il primo ascolto crea la riga ombra (`kind = 2`, `path = 'stream:<key>'`); il download la fonde in una riga reale (`mergeStreamRow`). Dettagli e pulizia in `libreria-e-dati.md`.
 - Lo streaming funziona anche a consumo (D-68).
 
+### yt-dlp e download
+
+- Desktop: se `locateYtDlp` non trova yt-dlp, o la versione ha più di 90 giorni, `YtDlpUpdateNotifier` scarica da solo la copia gestita (avviso nelle attività, «Riprova» se la rete fallisce) (D-563).
+- Gli errori del canale Android con radice di classe JVM (`| root: <classe>`) sono di tipo «interno»: niente ritentativi e niente «YouTube è cambiato». Gli stderr veri di yt-dlp restano come prima.
+- Su Android da 11 il download passa da una cartella di lavoro e `MediaPublisher.publish` lo pubblica in `Music/FreeKmusic` (vedi `piattaforme.md`).
+
 ### Limiti, budget e pause
 
 - `WindowLimiter(perMinute)`: `acquire` attende, `tryAcquire` risponde subito. Costanti: `kWikimediaAnonymousPerMinute = 8`, `kWikimediaIdentifiedPerMinute = 150`, `kSearchRowsPerMinute = 20`, `kLinkMatchPerMinute = 40`.

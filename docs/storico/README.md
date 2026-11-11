@@ -5,7 +5,7 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 ## Cosa c'è
 | Percorso | Contenuto |
 |---|---|
-| `fasi/` | Un file per fase (122 file): obiettivo, task, verifiche, note di deviazione. Tabella sotto. |
+| `fasi/` | Un file per fase (123 file): obiettivo, task, verifiche, note di deviazione. Tabella sotto. |
 | `feature/` | Specifiche di feature (requisiti R-…, rischi K-…) che hanno originato le fasi: streaming, arricchimento, riconoscimento, Jam a distanza, Jam della cassa, link e Shazam. |
 | `refactor/` | Analisi, mockup, misure e rete di sicurezza dei refactor (`ui-fluida`, `superfici-e-ricerca`, …). |
 | `superpowers/` | Piani e specifiche di lavoro di agenti (identità «anello» e simili). |
@@ -146,3 +146,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 115 | Salva e condividi | [`fase-115-salva-e-condividi.md`](fasi/fase-115-salva-e-condividi.md) |
 | 116 | Brani da shazam | [`fase-116-brani-da-shazam.md`](fasi/fase-116-brani-da-shazam.md) |
 | 117 | Ripristino completo | [`fase-117-ripristino-completo.md`](fasi/fase-117-ripristino-completo.md) |
+| 118 | Guardrail e correzioni | [`fase-118-guardrail-e-correzioni.md`](fasi/fase-118-guardrail-e-correzioni.md) |
