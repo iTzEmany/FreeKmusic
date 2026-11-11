@@ -99,16 +99,19 @@ void _extractThemeImages(Archive archive, Directory themeDir) {
 }
 
 /// Points each custom theme's picture at the same file name in [themeDir], when
-/// it is there: the backup stored the path of the other device.
-Future<void> _relinkThemeImages(SharedPreferences prefs, Directory themeDir) async {
+/// it is there: the backup stored the path of the other device. A picture still
+/// missing afterwards is cleared. Only themes in [ids] (all when null) are touched.
+Future<void> _relinkThemeImages(SharedPreferences prefs, Directory themeDir, {Set<String>? ids}) async {
   final themes = CustomThemes.decode(prefs.getString(_customThemesKey));
   var out = themes;
   for (final t in themes.items) {
     final path = t.background.imagePath;
-    if (path == null) continue;
+    if (path == null || (ids != null && !ids.contains(t.id))) continue;
     final local = p.join(themeDir.path, path.split(RegExp(r'[\\/]')).last);
     if (local != path && File(local).existsSync()) {
       out = out.put(t.copyWith(background: t.background.copyWith(imagePath: local)));
+    } else if (!File(path).existsSync()) {
+      out = out.put(t.copyWith(background: t.background.copyWith(clearImage: true)));
     }
   }
   if (out != themes) await prefs.setString(_customThemesKey, out.encode());
@@ -124,10 +127,12 @@ Future<int> _applyMergedSettings(
 ) async {
   final rest = {...json}..removeWhere((k, _) => kMergeSkippedKeys.contains(k));
   var dropped = 0;
+  final fromBackup = <String>{};
   final mine = rest[_customThemesKey];
   if (mine is Map && mine['v'] is String) {
     var themes = CustomThemes.decode(prefs.getString(_customThemesKey));
     for (final t in CustomThemes.decode(mine['v'] as String).items) {
+      fromBackup.add(t.id);
       final next = themes.put(t);
       if (identical(next, themes)) dropped++;
       themes = next;
@@ -138,7 +143,7 @@ Future<int> _applyMergedSettings(
     if (id != null && themes.byId(id) == null) rest.remove('theme');
   }
   await applySettingsJson(prefs, rest);
-  if (themeDir != null) await _relinkThemeImages(prefs, themeDir);
+  if (themeDir != null) await _relinkThemeImages(prefs, themeDir, ids: fromBackup);
   return dropped;
 }
 

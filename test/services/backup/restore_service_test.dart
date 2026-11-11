@@ -1027,9 +1027,15 @@ void main() {
       expect(File(p.join(themeDir.path, 'bg.jpg')).readAsBytesSync(), [1]);
     });
 
-    test('a theme whose picture is not in themeDir keeps its original path', () async {
+    test('a theme whose picture is not in themeDir loses the image; a local theme keeps its path', () async {
       await merge(await themedBackup([('t1', 'Theirs', '/other/theme/missing.jpg')]));
-      expect(imageOf(prefs, 't1'), '/other/theme/missing.jpg');
+      expect(imageOf(prefs, 't1'), isNull);
+      expect(imageOf(prefs, 't2'), '/x/y.jpg');
+    });
+
+    test('a backup without theme/ pictures gives the merged theme no image', () async {
+      await merge(await makeBackup(['x'], extraPrefs: {'customThemes': themesJson([('t1', 'Old', '/data/user/0/app/files/theme/a.jpg')])}));
+      expect(imageOf(prefs, 't1'), isNull);
     });
 
     test('merging the same backup twice leaves the same themes', () async {
