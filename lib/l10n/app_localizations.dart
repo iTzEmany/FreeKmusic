@@ -4534,12 +4534,6 @@ abstract class AppLocalizations {
   /// **'Rosso'**
   String get accentRosso;
 
-  /// No description provided for @onboardingSkip.
-  ///
-  /// In it, this message translates to:
-  /// **'Salta'**
-  String get onboardingSkip;
-
   /// No description provided for @onboardingNext.
   ///
   /// In it, this message translates to:

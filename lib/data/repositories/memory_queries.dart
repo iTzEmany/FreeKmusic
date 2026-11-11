@@ -273,8 +273,8 @@ class MemoryQueries {
           .read<int>('bytes');
 
   /// UTF-8 bytes of a text column (length() alone counts characters).
-  static String _bytesOf(String table, String col) =>
-      'COALESCE((SELECT SUM(length(CAST($col AS BLOB))) FROM $table), 0)';
+  static String _bytesOf(String table, String col, [String where = '1']) =>
+      'COALESCE((SELECT SUM(length(CAST($col AS BLOB))) FROM $table WHERE $where), 0)';
 
   Future<EnrichmentBytes> enrichmentBytes() async {
     final r = await _db
@@ -283,7 +283,7 @@ class MemoryQueries {
           '(SELECT ${_bytesOf('tracks', 'lyrics_plain')} + '
           '${_bytesOf('tracks', 'lyrics_synced')}) AS lyrics, '
           '(SELECT ${_bytesOf('tracks', 'curiosities')} + '
-          '${_bytesOf('artist_infos', 'body')}) AS curio, '
+          '${_bytesOf('artist_infos', 'body', "artist_key NOT LIKE 'image:%'")}) AS curio, '
           '(SELECT ${_bytesOf('track_credits', 'name')} + '
           '${_bytesOf('track_credits', 'role')} + '
           '${_bytesOf('track_credits', 'source')}) AS credits, '

@@ -44,7 +44,10 @@ class _OnboardingGateState extends ConsumerState<OnboardingGate> {
     }
     if (_guiding) {
       return OnboardingScreen(
-        onFinished: () => setState(() => _guiding = false),
+        onFinished: () {
+          _ensureOnce(); // the permission was explained by the guide
+          setState(() => _guiding = false);
+        },
       );
     }
     final tracks = ref.watch(tracksProvider(const TrackQuery()));
@@ -54,7 +57,6 @@ class _OnboardingGateState extends ConsumerState<OnboardingGate> {
     }
     final empty = folders.value!.isEmpty && tracks.value!.isEmpty;
     if (empty) {
-      _ensureOnce();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _guiding = true);
       });

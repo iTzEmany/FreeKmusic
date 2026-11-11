@@ -1722,7 +1722,6 @@
   "accentArancio": "Arancio",
   "accentRosa": "Rosa",
   "accentRosso": "Rosso",
-  "onboardingSkip": "Salta",
   "onboardingNext": "Avanti",
   "onboardingStart": "Inizia",
   "onboardingPageOf": "Pagina {page} di {total}",

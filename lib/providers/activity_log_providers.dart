@@ -247,6 +247,7 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
 
   final _logged = <String>{};
   final _importRow = <String, int>{}; // import item key -> its Registro row
+  final _lastCount = <String, (int, int)>{}; // import item key -> the N/M its row last got
   final _ended = <String>{}; // finished imports whose item may still tick once
   Future<void> _tail = Future.value();
   bool _paging = false;
@@ -395,9 +396,10 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
 
   /// The one line of a running import: written once, then rewritten with the count.
   Future<void> _importProgress(ActivityItem r) => _run(() async {
-    if (_ended.contains(r.key)) return;
+    if (_ended.contains(r.key) || _lastCount[r.key] == (r.done, r.total)) return; // an event row stays until N/M move
     final row = _importRow[r.key] ?? await _repo.idOfImport(r.key);
     final detail = jsonEncode({'progress': true, 'key': r.key});
+    _lastCount[r.key] = (r.done, r.total);
     if (row == null) {
       _importRow[r.key] = await _repo.add(
           at: _now().millisecondsSinceEpoch, kind: 'import', name: r.name ?? '', done: r.done, total: r.total, detail: detail);
@@ -420,9 +422,8 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
   Future<void> _recordImport(ImportEvent e) async {
     final repo = ref.read(importRepositoryProvider);
     final imp = await repo.get(e.importId);
-    final chain = imp == null
-        ? const <PlaylistImport>[]
-        : groupImportChains(await repo.forPlaylist(imp.playlistId)).firstWhere((c) => c.any((i) => i.id == imp.id));
+    if (imp == null) AppLog.w('import ${e.importId} not found for its Registro line');
+    final chain = await ref.read(playlistImportServiceProvider).chainOf(e.importId);
     if (!ref.mounted) return;
     final entry = LogEntry(
       at: _now(),

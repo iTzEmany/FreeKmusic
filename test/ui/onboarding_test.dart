@@ -155,13 +155,23 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('with no folder the app adds the default one once, and the guide still shows', (tester) async {
+  testWidgets('with no folder the guide shows and the default folder (its permission) waits for the guide to end', (tester) async {
     final h = await Harness.create(tester);
     var calls = 0;
     await h.pump(tester, OnboardingGate(ensureFolder: () async => calls++, child: const Scaffold(body: Text('APP'))));
     await _settle(tester);
-    expect(calls, 1);
+    expect(calls, 0);
     expect(find.text('Benvenuto in FreeKmusic'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('once the guide was done and there is no folder, the app adds the default one', (tester) async {
+    final h = await Harness.create(tester);
+    await h.store.writeSettings(const AppSettings(onboardingDone: true));
+    var calls = 0;
+    await h.pump(tester, OnboardingGate(ensureFolder: () async => calls++, child: const Scaffold(body: Text('APP'))));
+    await _settle(tester);
+    expect(calls, 1);
     await h.dispose(tester);
   });
 

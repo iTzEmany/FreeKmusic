@@ -161,6 +161,41 @@ void main() {
     expect((shown.progress, shown.item!.done), (true, 21), reason: 'the loaded line follows too');
   });
 
+  test('a pause event of an import stays until the count moves again', () async {
+    final events = StreamController<ImportEvent>();
+    addTearDown(events.close);
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      downloadsProvider.overrideWith(_Downloads.new),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+      importEventsProvider.overrideWith((ref) => events.stream),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    final playlistId = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'L', createdAt: 0));
+    final importId = await ImportRepository(db).create(
+      playlistId: playlistId,
+      sourceName: 'Mood',
+      rows: const [ImportRow(index: 0, title: 'T', artists: ['A'])],
+    );
+    ActivityState at(int saved) => ActivityState([
+          ActivityItem(kind: ActivityKind.import, key: 'imp-$importId', name: 'Mood', done: saved, total: 50, ref: importId),
+        ], const []);
+    c.read(_activity.notifier).set(at(3));
+    await pumpEventQueue();
+    events.add(ImportEvent(ImportEventKind.network, importId));
+    await pumpEventQueue();
+    c.read(_activity.notifier).set(at(3)); // same count: another tick
+    await pumpEventQueue();
+    var row = (await db.select(db.activityLogRows).get()).single;
+    expect(c.read(activityLogProvider).entries.single.event, ImportEventKind.network);
+    expect(row.detail, contains('network'));
+    c.read(_activity.notifier).set(at(4)); // runs again
+    await pumpEventQueue();
+    row = (await db.select(db.activityLogRows).get()).single;
+    expect(row.done, 4);
+  });
+
   // The background completion writes its own line (enrich_completer_providers_test).
   test('a job leaves one line when it leaves running; a download that ends leaves one', () async {
     final c = ProviderContainer(

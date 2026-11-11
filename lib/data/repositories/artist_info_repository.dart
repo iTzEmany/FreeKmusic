@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import '../../core/clock.dart';
 import '../db/app_database.dart';
 import '../../core/artist_key.dart';
@@ -46,9 +47,12 @@ class ArtistInfoRepository {
   static const _imagePrefix = 'image:';
 
   /// Library artist key -> cover key of the image the user picked.
-  Stream<Map<String, String>> watchImages() => _db.select(_db.artistInfos).watch().map(_images);
+  Stream<Map<String, String>> watchImages() => _imageRows().watch().map(_images);
 
-  Future<Map<String, String>> images() async => _images(await _db.select(_db.artistInfos).get());
+  Future<Map<String, String>> images() async => _images(await _imageRows().get());
+
+  SimpleSelectStatement<$ArtistInfosTable, ArtistInfo> _imageRows() =>
+      _db.select(_db.artistInfos)..where((r) => r.artistKey.like('$_imagePrefix%'));
 
   static Map<String, String> _images(List<ArtistInfo> rows) => {
     for (final r in rows)

@@ -249,6 +249,8 @@ void main() {
             fetchedAt: 1,
           ),
         );
+    await db.into(db.artistInfos).insert(ArtistInfosCompanion.insert(
+        artistKey: 'image:k', body: 'cover-key-not-a-bio', sourceUrl: '', lang: '', fetchedAt: 1));
     await db
         .into(db.trackCredits)
         .insert(

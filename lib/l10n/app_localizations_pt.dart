@@ -2751,9 +2751,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accentRosso => 'Vermelho';
 
   @override
-  String get onboardingSkip => 'Saltar';
-
-  @override
   String get onboardingNext => 'Seguinte';
 
   @override

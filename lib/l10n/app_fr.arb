@@ -1529,7 +1529,6 @@
   "accentArancio": "Orange",
   "accentRosa": "Rose",
   "accentRosso": "Rouge",
-  "onboardingSkip": "Passer",
   "onboardingNext": "Suivant",
   "onboardingStart": "Commencer",
   "onboardingPageOf": "Page {page} sur {total}",
