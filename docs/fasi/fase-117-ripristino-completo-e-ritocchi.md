@@ -5,7 +5,7 @@
 Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla delle card di album, playlist e artisti (D-550), un'impostazione per scegliere la cartella dei download.
 
 ## Riferimenti
-- Decisioni D-545..D-553. Richieste e diagnosi: `.claude/obiettivi/2026-11-11-richieste-utente.md`.
+- Decisioni D-545..D-555. Richieste e diagnosi: `.claude/obiettivi/2026-11-11-richieste-utente.md`.
 - Aree: [`sync-backup-jam.md`](../architettura/sync-backup-jam.md) (Backup), [`piattaforme.md`](../architettura/piattaforme.md), [`riproduzione-e-coda.md`](../architettura/riproduzione-e-coda.md), [`ui-e-design.md`](../architettura/ui-e-design.md).
 - Caso reale: un backup di Codecore (musica in `Android/data`) ripristinato su FreeKmusic (musica in `Music/FreeKmusic`), quindi percorsi diversi e solo «Unisci».
 
@@ -26,6 +26,7 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
 | R-222 | Selezione multipla: le righe dei brani (locali e online) mostrano la copertina e la casella di spunta sopra la copertina, non più in una colonna a parte (D-550) | I | test widget: in modalità selezione la copertina c'è e la casella sta sopra di essa |
 | R-223 | `LibraryIsland` segue «Dock e intestazioni sfocati» (`blurredChrome`) come il dock, con lo stesso effetto (sfocatura 20 e `surface2` all'alfa 0,78), estratto in un widget comune | I | test widget: con `blurredChrome` attivo c'è un `BackdropFilter`, spento non c'è |
 | R-224 | Editor del tema avanzato: Superficie 1, 2 e 3 hanno un cursore di trasparenza (minimo 20 % di opacità); i controlli di contrasto usano il colore composto sopra lo sfondo; le altre voci restano opache (D-551) | I | test: alfa salvata e riletta da `CustomTheme` per le superfici; sotto il 20 % si ferma al 20 %; il testo resta opaco |
+| R-226 | Player di un brano suggerito: i tre pulsanti Scarica, Aggiungi a playlist e Non mi piace sono blocchi con superficie (`surface2`), angoli arrotondati (raggio delle card) e 8 px fra l'uno e l'altro, come nel mockup `docs/storico/refactor/ascolto-quotidiano/mockup/player-suggerito.html` (`.tiles button`, alti 64 px) (D-555) | I | test widget: ogni pulsante di `SuggestedInfo` ha uno sfondo `surface2` con bordo arrotondato; golden aggiornato se c'è |
 | R-225 | Versione 1.6.0, CHANGELOG, tag `v1.6.0` e Release (D-553) | I | `gh release view v1.6.0` mostra i pacchetti |
 
 ## Architettura
@@ -69,11 +70,11 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
   - Passi: 1) download e tag nella cartella privata di lavoro; 2) pubblicazione MediaStore e percorso finale in `downloads.json`, `folders`, `scanFiles`; 3) download già in `Android/data`: nessuno spostamento, continuano a funzionare finché ci sono (D-547); 4) prova sul Mi A3: download, `adb shell ls -l /sdcard/Music/FreeKmusic`, riproduzione, modifica di un tag, «Elimina dal dispositivo»
   - Comando mirato: `flutter test test/services/online/ test/providers/` (solo i file toccati) + `flutter build apk --debug`
   - Fatto quando: il criterio di R-217 sul Mi A3; desktop invariato (test esistenti verdi)
-- [ ] 117.4 Ritocchi UI: Registro (sfondo ed errori di streaming), swipe ovunque fino a 3/5, spunta sopra la copertina, sfocatura dell'isola, trasparenza delle superfici (R-218..R-224)
-  - File: `activity_log_screen.dart`, `activity_log_providers.dart`, `activity_providers.dart`, `track_row.dart` (`SwipeToQueue`, `TrackRow`), `online_song_row.dart`, `online_queue_row.dart`, `daylist_screen.dart`, `online_playlist_screen.dart`, `suggestions_screen.dart`, `bottom_bar.dart`, `library_island.dart`, nuovo widget comune per la sfocatura, `theme_editor_screen.dart`, `custom_theme.dart`, ARB (6 lingue) per la voce di errore
+- [ ] 117.4 Ritocchi UI: Registro (sfondo ed errori di streaming), swipe ovunque fino a 3/5, spunta sopra la copertina, sfocatura dell'isola, trasparenza delle superfici, pulsanti del brano suggerito (R-218..R-224, R-226)
+  - File: `activity_log_screen.dart`, `activity_log_providers.dart`, `activity_providers.dart`, `track_row.dart` (`SwipeToQueue`, `TrackRow`), `online_song_row.dart`, `online_queue_row.dart`, `daylist_screen.dart`, `online_playlist_screen.dart`, `suggestions_screen.dart`, `bottom_bar.dart`, `library_island.dart`, nuovo widget comune per la sfocatura, `theme_editor_screen.dart`, `custom_theme.dart`, `lib/ui/screens/now_playing/suggested_info.dart` (`_Tile`), ARB (6 lingue) per la voce di errore
   - Passi: uno per requisito, ognuno col suo test widget; lo swipe con un limite al 60 % e la soglia 0,3 invariata
   - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart` + golden se cambiano (`scripts/guardie.sh`)
-  - Fatto quando: i criteri di R-218..R-224 verdi; prova a vista sul Mi A3 (swipe in daylist e Cerca, selezione, isola sfocata, tema con superfici trasparenti, un brano che non parte con la rete spenta nel Registro)
+  - Fatto quando: i criteri di R-218..R-224 e R-226 verdi; prova a vista sul Mi A3 (swipe in daylist e Cerca, selezione, isola sfocata, tema con superfici trasparenti, un brano che non parte con la rete spenta nel Registro)
 - [ ] 117.5 Rilascio 1.6.0 (R-225)
   - File: `pubspec.yaml` (1.6.0+8), `CHANGELOG.md`, documenti d'area (`sync-backup-jam.md`, `piattaforme.md`, `ui-e-design.md`), `prossimi-lavori.md`
   - Passi: dopo il merge della PR della fase: tag `v1.6.0` su master e Release dal workflow esistente (come D-544)
