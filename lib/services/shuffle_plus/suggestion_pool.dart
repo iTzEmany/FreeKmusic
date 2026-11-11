@@ -109,6 +109,7 @@ class SuggestionPool {
 
   /// Adds a radio page of the seed [seedKey] (its video id) named [seedTitle].
   void addPage(String seedKey, String seedTitle, RadioPage page) {
+    dbg.add('addPage $seedKey items=${page.items.length} seed=${page.items.where((i) => i.isSeed).length} cont=${page.continuation != null}');
     _titles[seedKey] = seedTitle;
     _continuations[seedKey] = page.continuation;
     final queue = _queues.putIfAbsent(seedKey, () => []);
@@ -125,9 +126,11 @@ class SuggestionPool {
   }
 
   // DIAG120
+  final dbg = <String>[];
   String debugDump(bool Function(YtResult) inLibrary, SuggestionLog log, SuggestionGate filter) => [
     for (final e in _queues.entries)
       '${e.key}: ${[for (final i in e.value) '${i.result.id}/${i.kind.name}/dur=${i.result.duration}/fits=${_fits(i.result)}/used=${_used.contains(i.result.id)}/rec=${log.recentlySuggested(i.result.id)}/allow=${filter.allows(i.result.id, suggestionArtistKey(i.result), positionsOf(i.result.id))}/lib=${inLibrary(i.result)}/akey=${suggestionArtistKey(i.result)}'].join(' | ')}',
+    ...dbg,
     'turn=$_turn used=${_used.length} queues=${_queues.length}',
   ].join('\n');
 
@@ -135,6 +138,7 @@ class SuggestionPool {
     _queues.clear();
     _titles.clear();
     _continuations.clear();
+    dbg.add('clear');
     _used.clear();
     _rows.clear();
     _positions.clear();
@@ -201,6 +205,7 @@ class SuggestionPool {
             !filter.allows(r.id, suggestionArtistKey(r), positionsOf(r.id)) ||
             inLibrary(r);
         if (never) {
+          dbg.add('drop ${r.id} kind=${item.kind.name} fits=${_fits(r)} dur=${r.duration} used=${_used.contains(r.id)} rec=${log.recentlySuggested(r.id)} allow=${filter.allows(r.id, suggestionArtistKey(r), positionsOf(r.id))} lib=${inLibrary(r)}');
           queue.removeAt(i);
           continue;
         }
