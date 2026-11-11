@@ -57,6 +57,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **Accessibilità TalkBack, minori** (8 nov, prova fase 105): risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
 
 ## UI e design
+- **Dialogo dell'icona dopo una cancellazione dei dati** (11/11, prova fase 117 sul Mi A3): dopo `pm clear` l'alias dell'icona resta il vecchio (Arancio) e a ogni avvio compare «Cambiare anche l'icona dell'app?», prima dell'onboarding. Allineare la preferenza all'alias attivo all'avvio.
 - **`libraryEntriesProvider`** tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto. Rimedio: tenere viva solo l'ultima combinazione per scheda.
 - **`PlaylistOrder.apply`** viene chiamato dentro `build`.
 - **`app_fr.arb` con chiavi duplicate** (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.
