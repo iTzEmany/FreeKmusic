@@ -3,7 +3,12 @@
 # youtubedl-android reads yt-dlp's JSON into model classes by reflection (Jackson).
 -keep class com.yausername.youtubedl_android.** { *; }
 -keep class com.yausername.ffmpeg.** { *; }
+-keep class com.yausername.youtubedl_common.** { *; }
+# Jackson builds its parsers and node types by reflection (update check, video info).
+-keep class com.fasterxml.jackson.** { *; }
 -keepclassmembers class com.yausername.youtubedl_android.mapper.** { *; }
+# commons-compress' ExtraFieldUtils registers its zip extra fields by class name (Class.forName): obfuscating them breaks yt-dlp init.
+-keep class org.apache.commons.compress.archivers.zip.** { *; }
 -dontwarn com.fasterxml.jackson.**
 -dontwarn org.apache.commons.compress.**
 -dontwarn org.tukaani.xz.**

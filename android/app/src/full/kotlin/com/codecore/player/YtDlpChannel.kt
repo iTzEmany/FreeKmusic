@@ -130,7 +130,9 @@ class YtDlpChannel(private val applicationContext: Context) {
             "streamUrl" -> run(result) { NewPipeUrl.streamUrl(call.argument<String>("id")!!) }
             "version" -> run(result) {
                 ensureInit()
+                // The library stores a version only after a successful update: ask the bundled yt-dlp otherwise.
                 YoutubeDL.getInstance().version(applicationContext)
+                    ?: YoutubeDL.getInstance().execute(YoutubeDLRequest(emptyList<String>()).addOption("--version")).out.trim()
             }
             "cancel" -> {
                 val processId = call.argument<String>("processId")
@@ -147,7 +149,10 @@ class YtDlpChannel(private val applicationContext: Context) {
                 val value = block()
                 main.post { result.success(value) }
             } catch (e: Throwable) {
-                main.post { result.error("YTDLP", e.message ?: e.toString(), null) }
+                android.util.Log.e("codecore", "yt-dlp channel call failed", e)
+                val root = generateSequence<Throwable>(e) { it.cause }.last()
+                val msg = "${e.message ?: e.toString()} | root: ${root.javaClass.name}: ${root.message}"
+                main.post { result.error("YTDLP", msg, null) }
             }
         }
     }
