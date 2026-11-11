@@ -1,7 +1,7 @@
 # Fase 117 — Ripristino completo
 
 ## Obiettivo
-«Unisci» porta su un altro dispositivo tutto ciò che sta nel backup: impostazioni, temi con l'immagine, storico degli ascolti, copertine automatiche, tag, playlist smart e podcast. Rifarlo non duplica niente. Download, ritocchi e rilascio sono nella [fase 118](fase-118-download-ritocchi-e-1-6-0.md).
+«Unisci» porta su un altro dispositivo tutto ciò che sta nel backup: impostazioni, temi con l'immagine, storico degli ascolti, copertine automatiche, tag, playlist smart e podcast. Rifarlo non duplica niente. Download, ritocchi e rilascio sono nella fase 118 e 119 ([`fase-119`](../../fasi/fase-119-ritocchi-e-1-6-0.md)).
 
 ## Riferimenti
 - Decisioni D-545, D-546, D-552, D-554 (lettura del sqlite del backup), D-556 (divisione in due fasi). Richieste e diagnosi: `.claude/obiettivi/2026-11-11-richieste-utente.md`.
