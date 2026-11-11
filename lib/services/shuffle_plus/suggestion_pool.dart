@@ -124,6 +124,13 @@ class SuggestionPool {
     }
   }
 
+  // DIAG120
+  String debugDump(bool Function(YtResult) inLibrary, SuggestionLog log, SuggestionGate filter) => [
+    for (final e in _queues.entries)
+      '${e.key}: ${[for (final i in e.value) '${i.result.id}/${i.kind.name}/dur=${i.result.duration}/fits=${_fits(i.result)}/used=${_used.contains(i.result.id)}/rec=${log.recentlySuggested(i.result.id)}/allow=${filter.allows(i.result.id, suggestionArtistKey(i.result), positionsOf(i.result.id))}/lib=${inLibrary(i.result)}/akey=${suggestionArtistKey(i.result)}'].join(' | ')}',
+    'turn=$_turn used=${_used.length} queues=${_queues.length}',
+  ].join('\n');
+
   void clear() {
     _queues.clear();
     _titles.clear();

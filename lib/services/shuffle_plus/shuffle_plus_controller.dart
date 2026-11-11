@@ -460,6 +460,9 @@ class ShufflePlusController {
       await _fill();
       if (_changedSince(src)) return false;
       candidate = await _take();
+      if (candidate == null) {
+        AppLog.i('DIAG120 take2 null lastArtists=$_lastArtists seeds=${_seeds.length}\n${pool.debugDump(inLibraryTest(hasDownload: hasDownload, library: _library), log, filter)}');
+      }
     }
     if (candidate == null || _changedSince(src)) return false;
     final prep = prepare;
