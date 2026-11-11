@@ -251,6 +251,7 @@ void main() {
       (tester) async {
         final store = DislikeStore(
           file: () async => File('/nonexistent/dislikes.json'),
+          writeDelay: const Duration(days: 1), // never written (see testGate)
         );
         await tester.runAsync(store.load);
         store
