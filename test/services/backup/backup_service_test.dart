@@ -32,6 +32,7 @@ void main() {
       'deviceName': 'Telefono',
       'trustedDevices': '[]',
       'enrichMark': 42,
+      'lastUpdateCheckDay': 20000,
       'playlistSorts': '{"12":"title:asc"}',
     });
     prefs = await SharedPreferences.getInstance();
@@ -163,6 +164,7 @@ void main() {
       reason: 'bound to this device',
     );
     expect(settings.containsKey('deviceName'), isFalse);
+    expect(settings.containsKey('lastUpdateCheckDay'), isFalse, reason: 'session of this device');
     expect(
       settings.containsKey('trustedDevices'),
       isFalse,

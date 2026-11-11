@@ -2303,6 +2303,14 @@
       }
     }
   },
+  "restoreMergeThemesDropped": "{count, plural, one{1 thème personnalisé non ajouté : limite atteinte} other{{count} thèmes personnalisés non ajoutés : limite atteinte}}",
+  "@restoreMergeThemesDropped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "restoreMergeDbUnreadable": "La base de données de la sauvegarde est illisible : historique, tags, playlists intelligentes et podcasts n’ont pas été fusionnés.",
   "restoreNotFound": "Titres introuvables",
   "restoreCopyList": "Copier la liste",

@@ -977,5 +977,50 @@ void main() {
       await merge(zip);
       expect(prefs.getString('customThemes'), first);
     });
+
+    test('duplicate-group choices and device timers of the backup are not applied', () async {
+      SharedPreferences.setMockInitialValues({'notDuplicates': ['mine']});
+      prefs = await SharedPreferences.getInstance();
+      await merge(
+        await makeBackup(
+          ['x'],
+          extraPrefs: {'notDuplicates': ['theirs'], 'exportifyLastSyncAt': 5, 'compactMode': true},
+        ),
+      );
+      expect(prefs.getStringList('notDuplicates'), ['mine']);
+      expect(prefs.getInt('exportifyLastSyncAt'), isNull);
+      expect(prefs.getBool('compactMode'), isTrue);
+    });
+
+    test('a theme that does not fit is counted and the theme setting naming it stays local', () async {
+      SharedPreferences.setMockInitialValues({
+        'theme': 'notte',
+        'customThemes': themesJson([for (var i = 0; i < kMaxCustomThemes; i++) ('l$i', 'L$i', '/x.jpg')]),
+      });
+      prefs = await SharedPreferences.getInstance();
+      final zip = await makeBackup(
+        ['x'],
+        extraPrefs: {
+          'theme': 'custom:over',
+          'customThemes': themesJson([('over', 'Over', '/x.jpg')]),
+        },
+      );
+      final report = await mergeBackup(zip, here, Directory(p.join(dir.path, 'here-covers')), prefs: prefs, themeDir: themeDir);
+      expect(report.themesDropped, 1);
+      expect(prefs.getString('theme'), 'notte');
+      expect(CustomThemes.decode(prefs.getString('customThemes')).byId('over'), isNull);
+    });
+
+    test('theme and cover entries that are not plain file names are never extracted', () async {
+      final src = await themedBackup([]);
+      final a = ZipDecoder().decodeBytes(src.readAsBytesSync());
+      for (final n in ['theme/..', 'theme/.', 'covers/..', 'theme/a/b.jpg']) {
+        a.addFile(ArchiveFile.bytes(n, [1]));
+      }
+      final zip = File(p.join(dir.path, 'crafted.zip'))..writeAsBytesSync(ZipEncoder().encode(a));
+      await merge(zip);
+      expect(themeDir.listSync().map((e) => p.basename(e.path)), ['bg.jpg']);
+      expect(File(p.join(dir.path, 'a')).existsSync(), isFalse);
+    });
   });
 }

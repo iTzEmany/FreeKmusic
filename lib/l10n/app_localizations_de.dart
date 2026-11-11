@@ -3918,6 +3918,17 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eigene Designs nicht hinzugefügt: Limit erreicht',
+      one: '1 eigenes Design nicht hinzugefügt: Limit erreicht',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restoreMergeDbUnreadable =>
       'Die Datenbank des Backups ist nicht lesbar: Verlauf, Tags, Smart-Playlists und Podcasts wurden nicht zusammengeführt.';
 

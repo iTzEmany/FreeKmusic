@@ -3,10 +3,7 @@ import 'dart:isolate';
 
 import 'package:sqlite3/sqlite3.dart';
 
-import '../../core/app_log.dart';
-import '../../data/repositories/track_kinds.dart';
-import '../stream/stream_key.dart';
-import 'package:path/path.dart' as p;
+import '../../data/repositories/backup_queries.dart' show trackRefOf;
 import 'user_data.dart';
 
 typedef BackupRow = Map<String, Object?>;
@@ -24,7 +21,7 @@ class BackupDbData {
     this.podcasts = const [],
     this.podcastEpisodes = const [],
     this.refs = const {},
-    this.unreadable = false,
+    this.error,
   });
 
   /// Rows with `id`, `cover_key`, `cover_source`, `has_cover`.
@@ -39,8 +36,10 @@ class BackupDbData {
   /// Portable reference of every backup track, by the backup's track id.
   final Map<int, TrackRef> refs;
 
-  /// The file could not be opened or read: the lists are empty.
-  final bool unreadable;
+  /// Why the file could not be opened or read (the lists are then empty); logged by
+  /// the caller, since this runs in another isolate.
+  final String? error;
+  bool get unreadable => error != null;
 }
 
 const _columns = <String, List<String>>{
@@ -84,8 +83,7 @@ BackupDbData readBackupDb(File file) {
       refs: {for (final t in tracks) t['id'] as int: _refOf(t, folders)},
     );
   } catch (e, st) {
-    AppLog.e('backup db unreadable', e, st);
-    return BackupDbData(unreadable: true);
+    return BackupDbData(error: '$e\n$st');
   } finally {
     db?.close();
   }
@@ -98,24 +96,12 @@ List<BackupRow> _rows(Database db, String table, List<String> wanted) {
   return [for (final r in db.select('SELECT ${cols.join(', ')} FROM $table')) {...r}];
 }
 
-// Same shape as trackRefFor (backup_queries.dart), but from raw rows.
-TrackRef _refOf(BackupRow t, Map<int, String> folders) {
-  final path = (t['path'] as String?) ?? '';
-  final title = (t['title'] as String?) ?? '';
-  final artist = t['artist'] as String?;
-  final duration = (t['duration_ms'] as int?) ?? 0;
-  final streamKey = t['kind'] == kStreamKind ? keyOfStreamPath(path) : null;
-  if (streamKey != null) {
-    return TrackRef(streamKey: streamKey, title: title, artist: artist, durationMs: duration);
-  }
-  final root = folders[t['folder_id']];
-  final inside = root != null && p.isWithin(root, path);
-  return TrackRef(
-    folder: inside ? root : path,
-    relPath: inside ? p.relative(path, from: root).replaceAll(r'\', '/') : null,
-    title: title,
-    artist: artist,
-    durationMs: duration,
-    sha256: t['sha256'] as String?,
-  );
-}
+TrackRef _refOf(BackupRow t, Map<int, String> folders) => trackRefOf(
+  path: (t['path'] as String?) ?? '',
+  kind: t['kind'] as int?,
+  folderRoot: folders[t['folder_id']],
+  title: (t['title'] as String?) ?? '',
+  artist: t['artist'] as String?,
+  durationMs: (t['duration_ms'] as int?) ?? 0,
+  sha256: t['sha256'] as String?,
+);

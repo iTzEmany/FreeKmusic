@@ -3898,6 +3898,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count custom themes not added: limit reached',
+      one: '1 custom theme not added: limit reached',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restoreMergeDbUnreadable =>
       'The backup database cannot be read: history, tags, smart playlists and podcasts were not merged.';
 

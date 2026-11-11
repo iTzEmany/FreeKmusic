@@ -11,6 +11,7 @@ import '../../services/backup/user_data.dart';
 import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
 import 'artist_country_repository.dart';
+import 'backup_merge_helpers.dart';
 import 'backup_merge_tables.dart';
 import 'artist_alias_repository.dart';
 import 'credits_repository.dart';
@@ -26,6 +27,9 @@ class MergeReport {
   int playlistItemsSkipped = 0;
   int radiosAdded = 0;
   int followedArtistsAdded = 0;
+
+  /// Custom themes of the backup left out because the list was full (set by the settings step).
+  int themesDropped = 0;
 
   /// What came from the backup's database (history, tags, smart playlists, podcasts).
   TablesMergeReport tables = TablesMergeReport();
@@ -171,7 +175,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         for (final c in local) {
           final have = {for (final l in tracksOf[c.id] ?? const <PlaylistTrack>[]) l.trackId};
           // A copy made by an earlier merge of this backup is «name (ripristinata N)».
-          final sameName = c.name == pl.name || c.name.startsWith('${pl.name} (ripristinata');
+          final sameName = isRestoredCopyOf(c.name, pl.name);
           if (sameName && have.length == seen.length && have.containsAll(seen)) {
             same = c;
             break;
@@ -191,13 +195,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         continue;
       }
 
-      var name = pl.name;
-      if (names.contains(name)) {
-        name = '${pl.name} (ripristinata)';
-        for (var n = 2; names.contains(name); n++) {
-          name = '${pl.name} (ripristinata $n)';
-        }
-      }
+      final name = restoredName(pl.name, names);
       names.add(name);
       // A copy keeps the backup's uuid only when it is free, so the next merge
       // of the same backup recognises it instead of copying again.
@@ -241,8 +239,7 @@ Future<int?> _resolveItem(TrackRepository tracks, TrackResolver resolver, TrackR
 
 bool _coverFileExists(Directory? dir, String key) =>
     dir != null &&
-    key == p.basename(key) &&
-    ['jpg', 'png', 'webp'].any((e) => File(p.join(dir.path, '$key.$e')).existsSync());
+    hasCoverFile(key, (n) => File(p.join(dir.path, n)).existsSync());
 
 String? _blankToNullTrim(String? s) => _blank(s) ? null : s!.trim();
 

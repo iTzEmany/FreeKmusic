@@ -209,21 +209,37 @@ Future<UserData> collectUserData(
 }
 
 /// Portable reference to [t]; [folders] maps folder id to root path.
-TrackRef trackRefFor(Track t, Map<int, String> folders) {
-  final streamKey = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
+TrackRef trackRefFor(Track t, Map<int, String> folders) => trackRefOf(
+  path: t.path,
+  kind: t.kind,
+  folderRoot: t.folderId == null ? null : folders[t.folderId],
+  title: t.title,
+  artist: t.artist,
+  durationMs: t.durationMs,
+  sha256: t.sha256,
+);
+
+/// [trackRefFor] from raw fields ([folderRoot]: path of the track's music folder).
+TrackRef trackRefOf({
+  required String path,
+  required int? kind,
+  required String? folderRoot,
+  required String title,
+  required String? artist,
+  required int durationMs,
+  required String? sha256,
+}) {
+  final streamKey = kind == kStreamKind ? keyOfStreamPath(path) : null;
   if (streamKey != null) {
-    return TrackRef(streamKey: streamKey, title: t.title, artist: t.artist, durationMs: t.durationMs);
+    return TrackRef(streamKey: streamKey, title: title, artist: artist, durationMs: durationMs);
   }
-  final root = t.folderId == null ? null : folders[t.folderId];
-  final inside = root != null && p.isWithin(root, t.path);
+  final inside = folderRoot != null && p.isWithin(folderRoot, path);
   return TrackRef(
-    folder: inside ? root : t.path,
-    relPath: inside
-        ? p.relative(t.path, from: root).replaceAll(r'\', '/')
-        : null,
-    title: t.title,
-    artist: t.artist,
-    durationMs: t.durationMs,
-    sha256: t.sha256,
+    folder: inside ? folderRoot : path,
+    relPath: inside ? p.relative(path, from: folderRoot).replaceAll(r'\', '/') : null,
+    title: title,
+    artist: artist,
+    durationMs: durationMs,
+    sha256: sha256,
   );
 }

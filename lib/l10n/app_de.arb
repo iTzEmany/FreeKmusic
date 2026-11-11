@@ -2145,6 +2145,14 @@
       }
     }
   },
+  "restoreMergeThemesDropped": "{count, plural, one{1 eigenes Design nicht hinzugefügt: Limit erreicht} other{{count} eigene Designs nicht hinzugefügt: Limit erreicht}}",
+  "@restoreMergeThemesDropped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "restoreMergeDbUnreadable": "Die Datenbank des Backups ist nicht lesbar: Verlauf, Tags, Smart-Playlists und Podcasts wurden nicht zusammengeführt.",
   "restoreNotFound": "Nicht gefundene Titel",
   "restoreCopyList": "Liste kopieren",

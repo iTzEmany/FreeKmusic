@@ -3941,6 +3941,17 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count thèmes personnalisés non ajoutés : limite atteinte',
+      one: '1 thème personnalisé non ajouté : limite atteinte',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restoreMergeDbUnreadable =>
       'La base de données de la sauvegarde est illisible : historique, tags, playlists intelligentes et podcasts n’ont pas été fusionnés.';
 

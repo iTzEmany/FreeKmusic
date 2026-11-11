@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/app_log.dart';
 import '../../services/backup/backup_db_reader.dart';
 import '../../services/backup/track_resolver.dart';
 import '../db/app_database.dart';
+import 'backup_merge_helpers.dart';
 import 'track_repository.dart';
 
 class TablesMergeReport {
@@ -35,6 +38,9 @@ Future<TablesMergeReport> mergeBackupTables(
   // Synchronous sqlite I/O: off the UI isolate. The data is plain maps and TrackRefs.
   final data = await readBackupDbOffThread(backupDb);
   final report = TablesMergeReport()..backupDbUnreadable = data.unreadable;
+  if (data.error != null) AppLog.e('backup db unreadable: ${data.error}');
+  // Which cover files exist, listed once off the UI isolate.
+  final covers = coversDir == null ? const <String>{} : await _coverNames(coversDir);
   final repo = TrackRepository(db);
   return db.transaction(() async {
     // Backup track id -> local id; unresolved ones are left out. A streamed track
@@ -49,7 +55,7 @@ Future<TablesMergeReport> mergeBackupTables(
     await _tags(db, data, tracks, report);
     await _smartPlaylists(db, data, report);
     await _podcasts(db, data, tracks, report);
-    await _covers(db, data, tracks, coversDir, report);
+    await _covers(db, data, tracks, covers, report);
     return report;
   });
 }
@@ -58,6 +64,7 @@ Future<void> _plays(AppDatabase db, BackupDbData data, Map<int, int> tracks, Tab
   final seen = {
     for (final r in await db.select(db.plays).get()) (r.trackId, r.playedAt),
   };
+  final rows = <PlaysCompanion>[];
   for (final r in data.plays) {
     final local = tracks[r['track_id']];
     final at = r['played_at'] as int?;
@@ -66,15 +73,16 @@ Future<void> _plays(AppDatabase db, BackupDbData data, Map<int, int> tracks, Tab
       continue;
     }
     if (at == null || !seen.add((local, at))) continue;
-    await db.into(db.plays).insert(PlaysCompanion.insert(
-          trackId: local,
-          playedAt: at,
-          msPlayed: Value((r['ms_played'] as int?) ?? 0),
-          context: Value(r['context'] as int?),
-          contextName: Value(r['context_name'] as String?),
-        ));
-    report.playsAdded++;
+    rows.add(PlaysCompanion.insert(
+      trackId: local,
+      playedAt: at,
+      msPlayed: Value((r['ms_played'] as int?) ?? 0),
+      context: Value(r['context'] as int?),
+      contextName: Value(r['context_name'] as String?),
+    ));
   }
+  await db.batch((b) => b.insertAll(db.plays, rows));
+  report.playsAdded += rows.length;
 }
 
 Future<void> _tags(AppDatabase db, BackupDbData data, Map<int, int> tracks, TablesMergeReport report) async {
@@ -94,12 +102,14 @@ Future<void> _tags(AppDatabase db, BackupDbData data, Map<int, int> tracks, Tabl
   final have = {
     for (final r in await db.select(db.trackTags).get()) (r.trackId, r.tagId),
   };
+  final rows = <TrackTagsCompanion>[];
   for (final r in data.trackTags) {
     final track = tracks[r['track_id']], tag = tagIds[r['tag_id']];
     if (track == null || tag == null || !have.add((track, tag))) continue;
-    await db.into(db.trackTags).insert(TrackTagsCompanion.insert(trackId: track, tagId: tag));
-    report.trackTagsAdded++;
+    rows.add(TrackTagsCompanion.insert(trackId: track, tagId: tag));
   }
+  await db.batch((b) => b.insertAll(db.trackTags, rows));
+  report.trackTagsAdded += rows.length;
 }
 
 Future<void> _smartPlaylists(AppDatabase db, BackupDbData data, TablesMergeReport report) async {
@@ -109,17 +119,8 @@ Future<void> _smartPlaylists(AppDatabase db, BackupDbData data, TablesMergeRepor
     final name = r['name'] as String?, rules = r['rules'] as String?;
     if (name == null || rules == null) continue;
     // A renamed copy («name (ripristinata N)») of the same rules counts as the same one.
-    final same = local.any(
-      (s) => s.$2 == rules && (s.$1 == name || s.$1.startsWith('$name (ripristinata')),
-    );
-    if (same) continue;
-    var unique = name;
-    if (names.contains(unique)) {
-      unique = '$name (ripristinata)';
-      for (var n = 2; names.contains(unique); n++) {
-        unique = '$name (ripristinata $n)';
-      }
-    }
+    if (local.any((s) => s.$2 == rules && isRestoredCopyOf(s.$1, name))) continue;
+    final unique = restoredName(name, names);
     names.add(unique);
     await db.into(db.smartPlaylists).insert(SmartPlaylistsCompanion.insert(
           name: unique,
@@ -164,12 +165,15 @@ Future<void> _podcasts(AppDatabase db, BackupDbData data, Map<int, int> tracks, 
   final local = {
     for (final e in await db.select(db.podcastEpisodes).get()) (e.podcastId, e.guid): e,
   };
+  final fresh = <PodcastEpisodesCompanion>[];
+  final queued = <(int, String)>{};
   for (final r in data.podcastEpisodes) {
     final podcast = ids[r['podcast_id']], guid = r['guid'] as String?, audio = r['audio_url'] as String?;
     if (podcast == null || guid == null || audio == null) continue;
     final played = (r['played'] as int?) == 1, playedAt = r['played_at'] as int?;
     final track = tracks[r['track_id']];
     final here = local[(podcast, guid)];
+    if (here == null && !queued.add((podcast, guid))) continue; // twice in the backup
     if (here != null) {
       // The furthest progress wins: played stays played, the latest date is kept.
       final nowPlayed = here.played || played;
@@ -184,23 +188,27 @@ Future<void> _podcasts(AppDatabase db, BackupDbData data, Map<int, int> tracks, 
       }
       continue;
     }
-    await db.into(db.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
-          podcastId: podcast,
-          guid: guid,
-          title: (r['title'] as String?) ?? guid,
-          audioUrl: audio,
-          publishedAt: Value(r['published_at'] as int?),
-          durationMs: Value(r['duration_ms'] as int?),
-          mimeType: Value(r['mime_type'] as String?),
-          sizeBytes: Value(r['size_bytes'] as int?),
-          description: Value(r['description'] as String?),
-          trackId: Value(track),
-          played: Value(played),
-          playedAt: Value(playedAt),
-        ));
-    report.episodesAdded++;
+    fresh.add(PodcastEpisodesCompanion.insert(
+      podcastId: podcast,
+      guid: guid,
+      title: (r['title'] as String?) ?? guid,
+      audioUrl: audio,
+      publishedAt: Value(r['published_at'] as int?),
+      durationMs: Value(r['duration_ms'] as int?),
+      mimeType: Value(r['mime_type'] as String?),
+      sizeBytes: Value(r['size_bytes'] as int?),
+      description: Value(r['description'] as String?),
+      trackId: Value(track),
+      played: Value(played),
+      playedAt: Value(playedAt),
+    ));
   }
+  await db.batch((b) => b.insertAll(db.podcastEpisodes, fresh));
+  report.episodesAdded += fresh.length;
 }
+
+Future<Set<String>> _coverNames(Directory dir) =>
+    Isolate.run(() => dir.existsSync() ? {for (final f in dir.listSync()) p.basename(f.path)} : <String>{});
 
 /// Old backups carry no portable cover list: the automatic cover is found by
 /// the key the backup's row had, when its file came along.
@@ -208,19 +216,22 @@ Future<void> _covers(
   AppDatabase db,
   BackupDbData data,
   Map<int, int> tracks,
-  Directory? coversDir,
+  Set<String> coverFiles,
   TablesMergeReport report,
 ) async {
-  if (coversDir == null) return;
+  final wanted = <int, Map<String, Object?>>{}; // local id -> backup row
   for (final r in data.tracks) {
     final key = r['cover_key'] as String?;
     final local = tracks[r['id']];
-    if (key == null || local == null || key != p.basename(key)) continue;
-    if (!['jpg', 'png', 'webp'].any((e) => File(p.join(coversDir.path, '$key.$e')).existsSync())) continue;
-    final t = await (db.select(db.tracks)..where((x) => x.id.equals(local))).getSingleOrNull();
-    if (t == null || t.hasCover || t.coverKey != null) continue;
-    await (db.update(db.tracks)..where((x) => x.id.equals(local))).write(TracksCompanion(
-      coverKey: Value(key),
+    if (key != null && local != null && hasCoverFile(key, coverFiles.contains)) wanted[local] = r;
+  }
+  if (wanted.isEmpty) return;
+  final rows = await (db.select(db.tracks)..where((t) => t.id.isIn(wanted.keys))).get();
+  for (final t in rows) {
+    if (t.hasCover || t.coverKey != null) continue;
+    final r = wanted[t.id]!;
+    await (db.update(db.tracks)..where((x) => x.id.equals(t.id))).write(TracksCompanion(
+      coverKey: Value(r['cover_key'] as String?),
       hasCover: const Value(true),
       coverSource: Value((r['cover_source'] as int?) ?? 0),
     ));

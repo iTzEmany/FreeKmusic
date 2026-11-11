@@ -3913,6 +3913,17 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count temas personalizados no añadidos: límite alcanzado',
+      one: '1 tema personalizado no añadido: límite alcanzado',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restoreMergeDbUnreadable =>
       'No se puede leer la base de datos de la copia: historial, etiquetas, listas inteligentes y pódcasts no se unieron.';
 

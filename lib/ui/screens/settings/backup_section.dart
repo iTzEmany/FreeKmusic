@@ -140,6 +140,7 @@ Future<void> _showMergeReport(BuildContext context, MergeReport r) {
             if (r.tables.tagsAdded > 0) l.restoreMergeTags(r.tables.tagsAdded),
             if (r.tables.smartPlaylistsAdded > 0) l.restoreMergeSmart(r.tables.smartPlaylistsAdded),
             if (r.tables.podcastsAdded > 0) l.restoreMergePodcasts(r.tables.podcastsAdded),
+            if (r.themesDropped > 0) l.restoreMergeThemesDropped(r.themesDropped),
             if (r.tables.playsUnlinked > 0) l.restoreMergeUnlinked(r.tables.playsUnlinked),
           ])
             Padding(padding: const EdgeInsets.only(top: 8), child: Text(line)),

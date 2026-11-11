@@ -3902,6 +3902,17 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String restoreMergeThemesDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count temi personalizzati non aggiunti: limite raggiunto',
+      one: '1 tema personalizzato non aggiunto: limite raggiunto',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restoreMergeDbUnreadable =>
       'Il database del backup non si legge: storico, tag, playlist smart e podcast non sono stati uniti.';
 

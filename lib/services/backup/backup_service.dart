@@ -37,6 +37,11 @@ const kDeviceBoundKeys = {
   recogPassDoneKey,
   genreRereadAfterKey,
   genreRereadDoneKey,
+  // State of this device's own sessions: a copy would be wrong (or skip a prompt) elsewhere.
+  'jamBlePermAsked',
+  'lastUpdateCheckDay',
+  'releasesRetryAt',
+  'releasesLastNotifiedAt',
 };
 
 class BackupSummary {

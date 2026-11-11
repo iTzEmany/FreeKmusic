@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
+import '../../data/repositories/backup_merge_helpers.dart';
 import '../../data/repositories/backup_merge_tables.dart';
 import '../../data/repositories/playlist_sync_repository.dart';
 import '../../ui/theme/custom_theme.dart';
@@ -75,13 +76,21 @@ const kMergeSkippedKeys = {
   'lastPositionMs',
   'lastContextKind', // may name a playlist of the other database
   'lastContextName',
+  'notDuplicates', // DuplicateGroup keys built on track ids
+  'jamAside', // saved queue (track ids) of a Jam in progress on that device
+  // Timers of this device's own sessions: a copied one would skip or fire a run here.
+  'releasesLastRunAt',
+  'exportifyLastSyncAt',
+  'exportifyOpenedAt',
+  'exportifySnoozeUntil',
 };
 
 /// Copies the `theme/` pictures of [archive] into [themeDir] (existing files win).
 void _extractThemeImages(Archive archive, Directory themeDir) {
   for (final f in archive.files) {
-    if (!f.isFile || !f.name.startsWith('theme/') || f.name.length <= 6) continue;
-    final target = File(p.join(themeDir.path, p.basename(f.name)));
+    final leaf = f.isFile ? zipLeaf(f.name, 'theme/') : null;
+    if (leaf == null) continue;
+    final target = File(p.join(themeDir.path, leaf));
     if (target.existsSync()) continue;
     themeDir.createSync(recursive: true);
     target.writeAsBytesSync(f.content as List<int>);
@@ -105,23 +114,31 @@ Future<void> _relinkThemeImages(SharedPreferences prefs, Directory themeDir) asy
 }
 
 /// «Unisci» settings: the backup wins except for device-bound and id-bound keys;
-/// custom themes are united by id (the backup's wins on the same id).
-Future<void> _applyMergedSettings(
+/// custom themes are united by id (the backup's wins on the same id). Returns how many
+/// themes did not fit (the list is full); a `theme` setting naming one of them is not applied.
+Future<int> _applyMergedSettings(
   SharedPreferences prefs,
   Map<String, dynamic> json,
   Directory? themeDir,
 ) async {
   final rest = {...json}..removeWhere((k, _) => kMergeSkippedKeys.contains(k));
+  var dropped = 0;
   final mine = rest[_customThemesKey];
   if (mine is Map && mine['v'] is String) {
     var themes = CustomThemes.decode(prefs.getString(_customThemesKey));
     for (final t in CustomThemes.decode(mine['v'] as String).items) {
-      themes = themes.put(t);
+      final next = themes.put(t);
+      if (identical(next, themes)) dropped++;
+      themes = next;
     }
     rest[_customThemesKey] = {'t': 'string', 'v': themes.encode()};
+    final sel = rest['theme'];
+    final id = sel is Map && sel['v'] is String ? customThemeIdOf(sel['v'] as String) : null;
+    if (id != null && themes.byId(id) == null) rest.remove('theme');
   }
   await applySettingsJson(prefs, rest);
   if (themeDir != null) await _relinkThemeImages(prefs, themeDir);
+  return dropped;
 }
 
 /// Reads `manifest.json` of [zip] and judges it. Refuses a `backupFormat` this
@@ -186,16 +203,15 @@ Future<void> stageFullRestore(File zip, Directory staging) async {
       for (final f in archive.files) {
         if (!f.isFile) continue;
         final String? target;
-        if (f.name.startsWith('theme/') && f.name.length > 6) {
-          target = p.join(dest, 'theme', p.basename(f.name));
+        final theme = zipLeaf(f.name, 'theme/'), cover = zipLeaf(f.name, 'covers/');
+        if (theme != null) {
+          target = p.join(dest, 'theme', theme);
         } else if (f.name == _stagedDb ||
             f.name == 'settings.json' ||
             f.name == _stagedDislikes) {
           target = p.join(dest, f.name);
-        } else if (f.name.startsWith('covers/') &&
-            p.basename(f.name) == f.name.substring(7) &&
-            f.name.length > 7) {
-          target = p.join(dest, 'covers', p.basename(f.name));
+        } else if (cover != null) {
+          target = p.join(dest, 'covers', cover);
         } else {
           target = null;
         }
@@ -356,10 +372,52 @@ void _quietDelete(Directory d) {
   }
 }
 
+/// What [mergeBackup] reads out of the zip: the JSON texts and the extracted database.
+typedef _MergeInput = ({String userData, String? manifest, String? dislikes, String? settings, bool hasDb});
+
+/// Unpacks the zip off the UI isolate (a separate function so the closure holds only these strings): the database goes to [tmp], theme pictures
+/// and covers to their folders (existing files win); the small JSON files come back as text.
+_MergeInput _extractForMerge(String zipPath, String tmp, String? themeDir, String coversDir, bool wantSettings) {
+  final input = InputFileStream(zipPath);
+  try {
+    final archive = ZipDecoder().decodeStream(input);
+    String? text(String name) {
+      final e = archive.findFile(name);
+      return e == null ? null : utf8.decode(e.content as List<int>);
+    }
+
+    final userData = text('user_data.json');
+    if (userData == null) throw const RestoreException('user_data.json missing');
+    final db = archive.findFile(_stagedDb);
+    if (db != null) File(p.join(tmp, _stagedDb)).writeAsBytesSync(db.content as List<int>);
+    if (themeDir != null) _extractThemeImages(archive, Directory(themeDir));
+    Directory(coversDir).createSync(recursive: true);
+    for (final f in archive.files) {
+      final leaf = f.isFile ? zipLeaf(f.name, 'covers/') : null;
+      if (leaf == null) continue;
+      final target = File(p.join(coversDir, leaf));
+      if (!target.existsSync()) target.writeAsBytesSync(f.content as List<int>);
+    }
+    return (
+      userData: userData,
+      manifest: text('manifest.json'),
+      dislikes: text(_stagedDislikes),
+      settings: wantSettings ? text('settings.json') : null,
+      hasDb: db != null,
+    );
+  } finally {
+    input.closeSync();
+  }
+}
+
+Future<_MergeInput> _extractOffThread(String zip, String tmp, String? theme, String covers, bool settings) =>
+    Isolate.run(() => _extractForMerge(zip, tmp, theme, covers, settings));
+
 /// «Unisci a questa libreria»: merges the user data of [zip] into [db] (see
 /// [mergeUserData]) and copies its covers into [coversDir] without
-/// overwriting any. The database file of the backup is not used. With [prefs]
-/// the backup's settings are applied too (see [kMergeSkippedKeys]).
+/// overwriting any. The backup's database is read for history, tags, smart
+/// playlists and podcasts. With [prefs] the backup's settings are applied too
+/// (see [kMergeSkippedKeys]).
 Future<MergeReport> mergeBackup(
   File zip,
   AppDatabase db,
@@ -368,90 +426,49 @@ Future<MergeReport> mergeBackup(
   SharedPreferences? prefs,
   Directory? themeDir,
 }) async {
-  Map<String, dynamic>? settings;
-  File? backupDb;
   final tmp = Directory.systemTemp.createTempSync('merge');
-  final input = InputFileStream(zip.path);
-  late final UserData data;
-  var windows = Platform.isWindows;
   try {
-    final archive = ZipDecoder().decodeStream(input);
-    final entry = archive.findFile('user_data.json');
-    if (entry == null) throw const RestoreException('user_data.json missing');
-    data = UserData.fromJson(
-      jsonDecode(utf8.decode(entry.content as List<int>))
-          as Map<String, dynamic>,
-    );
-    final manifest = archive.findFile('manifest.json');
-    if (manifest != null) {
-      final m = jsonDecode(
-        utf8.decode(manifest.content as List<int>),
-      ) as Map<String, dynamic>;
-      windows = windows || m['platform'] == 'windows';
+    final tmpPath = tmp.path;
+    final x = await _extractOffThread(zip.path, tmpPath, themeDir?.path, coversDir.path, prefs != null);
+    final data = UserData.fromJson(jsonDecode(x.userData) as Map<String, dynamic>);
+    var windows = Platform.isWindows;
+    if (x.manifest != null) {
+      windows = windows || (jsonDecode(x.manifest!) as Map<String, dynamic>)['platform'] == 'windows';
     }
     // «Non mi piace» blocks are added to the current ones (union).
-    final dl = archive.findFile(_stagedDislikes);
-    if (dislikes != null && dl != null) {
+    if (dislikes != null && x.dislikes != null) {
       try {
         await dislikes.load();
-        dislikes.mergeJson(jsonDecode(utf8.decode(dl.content as List<int>)));
+        dislikes.mergeJson(jsonDecode(x.dislikes!));
       } on Object catch (e, st) {
-        AppLog.w(
-          'dislikes.json of the backup unreadable, blocks skipped',
-          e,
-          st,
-        );
+        AppLog.w('dislikes.json of the backup unreadable, blocks skipped', e, st);
       }
     }
-    final st = archive.findFile('settings.json');
-    if (prefs != null && st != null) {
+    Map<String, dynamic>? settings;
+    if (x.settings != null) {
       try {
-        settings = jsonDecode(utf8.decode(st.content as List<int>)) as Map<String, dynamic>;
+        settings = jsonDecode(x.settings!) as Map<String, dynamic>;
       } on Object catch (e, s) {
         AppLog.w('settings.json of the backup unreadable, settings skipped', e, s);
       }
     }
-    final dbEntry = archive.findFile(_stagedDb);
-    if (dbEntry != null) {
-      backupDb = File(p.join(tmp.path, _stagedDb));
-      backupDb.writeAsBytesSync(dbEntry.content as List<int>);
-    }
-    if (themeDir != null) _extractThemeImages(archive, themeDir);
-    coversDir.createSync(recursive: true);
-    for (final f in archive.files) {
-      if (!f.isFile || !f.name.startsWith('covers/') || f.name.length <= 7) {
-        continue;
-      }
-      final target = File(p.join(coversDir.path, p.basename(f.name)));
-      if (!target.existsSync()) target.writeAsBytesSync(f.content as List<int>);
-    }
-  } on RestoreException {
-    _quietDelete(tmp);
-    rethrow;
-  } on FormatException catch (e) {
-    _quietDelete(tmp);
-    throw RestoreException('unreadable backup: ${e.message}');
-  } finally {
-    await input.close();
-  }
-  final MergeReport report;
-  try {
-    final resolver = await PlaylistSyncRepository(db)
-        .resolver(caseInsensitive: windows);
+    final resolver = await PlaylistSyncRepository(db).resolver(caseInsensitive: windows);
+    final staged = x.hasDb ? File(p.join(tmpPath, _stagedDb)) : null;
     // One transaction: user data first (it creates the shadow rows of playlists).
-    final staged = backupDb;
-    report = await db.transaction(() async {
+    final report = await db.transaction(() async {
       final r = await mergeUserData(db, data, resolver, coversDir: coversDir);
       if (staged != null) {
         r.tables = await mergeBackupTables(db, staged, resolver, coversDir: coversDir);
       }
       return r;
     });
+    if (prefs != null && settings != null) {
+      report.themesDropped = await _applyMergedSettings(prefs, settings, themeDir);
+    }
+    return report;
+  } on FormatException catch (e) {
+    throw RestoreException('unreadable backup: ${e.message}');
   } finally {
     _quietDelete(tmp);
   }
-  if (prefs != null && settings != null) {
-    await _applyMergedSettings(prefs, settings, themeDir);
-  }
-  return report;
 }

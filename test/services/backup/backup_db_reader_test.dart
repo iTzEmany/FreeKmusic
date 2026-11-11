@@ -37,6 +37,8 @@ void main() {
 
   test('an unreadable file gives empty data', () {
     final f = File('${dir.path}/none.sqlite');
-    expect(readBackupDb(f).refs, isEmpty);
+    final d = readBackupDb(f);
+    expect(d.refs, isEmpty);
+    expect(d.error, isNotNull, reason: 'the caller logs it: AppLog is lost in another isolate');
   });
 }

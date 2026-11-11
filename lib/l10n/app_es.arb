@@ -2145,6 +2145,14 @@
       }
     }
   },
+  "restoreMergeThemesDropped": "{count, plural, one{1 tema personalizado no añadido: límite alcanzado} other{{count} temas personalizados no añadidos: límite alcanzado}}",
+  "@restoreMergeThemesDropped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "restoreMergeDbUnreadable": "No se puede leer la base de datos de la copia: historial, etiquetas, listas inteligentes y pódcasts no se unieron.",
   "restoreNotFound": "Canciones no encontradas",
   "restoreCopyList": "Copiar lista",

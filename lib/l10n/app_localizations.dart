@@ -6051,6 +6051,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{1 ascolto non collegato} other{{count} ascolti non collegati}}'**
   String restoreMergeUnlinked(int count);
 
+  /// No description provided for @restoreMergeThemesDropped.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 tema personalizzato non aggiunto: limite raggiunto} other{{count} temi personalizzati non aggiunti: limite raggiunto}}'**
+  String restoreMergeThemesDropped(int count);
+
   /// No description provided for @restoreMergeDbUnreadable.
   ///
   /// In it, this message translates to:

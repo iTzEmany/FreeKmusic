@@ -2303,6 +2303,14 @@
       }
     }
   },
+  "restoreMergeThemesDropped": "{count, plural, one{1 tema personalizado não adicionado: limite atingido} other{{count} temas personalizados não adicionados: limite atingido}}",
+  "@restoreMergeThemesDropped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "restoreMergeDbUnreadable": "A base de dados da cópia não pode ser lida: histórico, etiquetas, playlists inteligentes e podcasts não foram unidos.",
   "restoreNotFound": "Faixas não encontradas",
   "restoreCopyList": "Copiar lista",

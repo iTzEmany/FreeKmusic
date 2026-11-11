@@ -2145,6 +2145,14 @@
       }
     }
   },
+  "restoreMergeThemesDropped": "{count, plural, one{1 custom theme not added: limit reached} other{{count} custom themes not added: limit reached}}",
+  "@restoreMergeThemesDropped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "restoreMergeDbUnreadable": "The backup database cannot be read: history, tags, smart playlists and podcasts were not merged.",
   "restoreNotFound": "Tracks not found",
   "restoreCopyList": "Copy list",
