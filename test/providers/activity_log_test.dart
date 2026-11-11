@@ -139,6 +139,28 @@ void main() {
     expect(await db.select(db.activityLogRows).get(), isEmpty);
   });
 
+  test('an import keeps one Registro line that follows the count and becomes its ending', () async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      downloadsProvider.overrideWith(_Downloads.new),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    ActivityState at(int saved) => ActivityState([
+          ActivityItem(kind: ActivityKind.import, key: 'imp-1', name: 'Mood', done: saved, total: 50, ref: 1),
+        ], const []);
+    for (final n in [3, 20, 21]) {
+      c.read(_activity.notifier).set(at(n));
+      await pumpEventQueue();
+    }
+    final rows = await db.select(db.activityLogRows).get();
+    expect(rows, hasLength(1));
+    expect((rows.single.done, rows.single.total), (21, 50));
+    final shown = c.read(activityLogProvider).entries.single;
+    expect((shown.progress, shown.item!.done), (true, 21), reason: 'the loaded line follows too');
+  });
+
   // The background completion writes its own line (enrich_completer_providers_test).
   test('a job leaves one line when it leaves running; a download that ends leaves one', () async {
     final c = ProviderContainer(

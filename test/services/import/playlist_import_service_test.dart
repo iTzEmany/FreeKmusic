@@ -455,6 +455,32 @@ void main() {
     expect(queued.single.$2, importTag(id, 0));
   });
 
+  group('after an app restart', () {
+    Future<int> cutImport(ImportStatus status) async {
+      yt.songs['one'] = [topic('v1', 'One', 'Band', 200)];
+      final id = await imports.create(
+          playlistId: await playlists.create('Mood'), sourceName: 'Mood', rows: [row(0, 'One', 'Band', 200)]);
+      await imports.setStatus(id, status);
+      return id;
+    }
+
+    test('an import cut off by the app closing goes on by itself', () async {
+      final id = await cutImport(ImportStatus.running);
+      await service.recoverAfterRestart();
+      await idle();
+      expect(queued.single.$2, importTag(id, 0));
+      expect((await imports.get(id))!.state, ImportStatus.running);
+    });
+
+    test('a pause chosen by the user stays paused', () async {
+      final id = await cutImport(ImportStatus.paused);
+      await service.recoverAfterRestart();
+      await idle();
+      expect(queued, isEmpty);
+      expect((await imports.get(id))!.state, ImportStatus.paused);
+    });
+  });
+
   group('a pasted YouTube playlist (startFromResults)', () {
     YtResult video(String id, String title, String channel, int seconds) => YtResult(
           id: id,

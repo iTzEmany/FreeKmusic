@@ -63,6 +63,7 @@ LogText logText(AppLocalizations l, LogEntry e) {
       e.failed
       ? LogText(l.logTaskFailed, title)
       : LogText(title, sub, chips: chips);
+  if (e.progress) return LogText(l.activityImport(name, i.done, i.total), '');
   return switch (i.kind) {
     ActivityKind.download => LogText(e.failed ? l.logDlFailed : l.logDlDone, name),
     ActivityKind.transfer =>

@@ -583,8 +583,16 @@ class PlaylistImportService {
     }
   }
 
-  /// App start: nothing resumes by itself (no network without a user action).
-  Future<void> recoverAfterRestart() => imports.recoverAfterRestart();
+  /// App start: a block still «running» in the database was cut off by the app
+  /// closing (a user pause is stored as paused), so it goes on by itself; the
+  /// paused ones, and the blocks waiting in a chain, stay as they are.
+  Future<void> recoverAfterRestart() async {
+    final cut = [for (final i in await _runningImports()) i.id];
+    await imports.recoverAfterRestart();
+    for (final id in cut) {
+      await resume(id);
+    }
+  }
 
   // ---- engine -------------------------------------------------------------
 

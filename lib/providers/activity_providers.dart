@@ -212,7 +212,7 @@ ActivityState buildActivity({
     running.add(
       ActivityItem(
         kind: ActivityKind.import,
-        key: 'imp-${i.id}',
+        key: 'imp-${i.blockIds.first}',
         name: i.name,
         // Songs saved so far; the bar follows every row handled.
         done: i.saved,
@@ -229,8 +229,8 @@ ActivityState buildActivity({
     final active = d.status == DownloadStatus.queued ||
         d.status == DownloadStatus.downloading ||
         waiting;
-    // The songs of an import are followed in the import's own screen.
-    if (active && parseImportTag(d.tag) != null) continue;
+    // The songs of an import are counted in its one item, not one by one.
+    if (parseImportTag(d.tag) != null) continue;
     final item = ActivityItem(
       kind: ActivityKind.download,
       key: 'dl-${d.id}',

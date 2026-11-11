@@ -56,6 +56,9 @@ class LogEntry {
   /// A completion that stopped for lack of answers.
   bool get noAnswer => detail?['noAnswer'] == true;
 
+  /// An import line still counting (it turns into its ending when it ends).
+  bool get progress => detail?['progress'] == true;
+
   /// Why the file of a correction was not written (a [TagWriteReason] name).
   String? get file => detail?['file'] is String ? detail!['file'] as String : null;
 
@@ -99,12 +102,12 @@ class LogEntry {
       at = DateTime.fromMillisecondsSinceEpoch(r.at),
       detail = _decode(r.detail),
       correction = r.kind == _correctionKind ? r : null,
-      importName = r.kind == _importKind ? r.name : null,
-      event = r.kind == _importKind
+      importName = r.kind == _importKind && _decode(r.detail)?['progress'] != true ? r.name : null,
+      event = r.kind == _importKind && _decode(r.detail)?['progress'] != true
           ? ImportEventKind.values.asNameMap()[_decode(r.detail)?['event']] ??
                 (r.failed != 0 ? ImportEventKind.failing : ImportEventKind.completed)
           : null,
-      item = r.kind == _importKind || r.kind == _correctionKind
+      item = (r.kind == _importKind && _decode(r.detail)?['progress'] != true) || r.kind == _correctionKind
           ? null
           : ActivityItem(
               kind: _kindOf(r.kind),
@@ -243,6 +246,8 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
   };
 
   final _logged = <String>{};
+  final _importRow = <String, int>{}; // import item key -> its Registro row
+  final _ended = <String>{}; // finished imports whose item may still tick once
   Future<void> _tail = Future.value();
   bool _paging = false;
 
@@ -328,21 +333,29 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
   }
 
   /// Database jobs one after the other, so the lines keep their order.
-  Future<void> _run(Future<void> Function() job) =>
-      _tail = _tail.then((_) async {
-        try {
-          await job();
-        } on Object catch (e, st) {
-          AppLog.w('activity log write failed', e, st);
-        }
-      });
+  Future<T?> _run<T>(Future<T> Function() job) {
+    final done = _tail.then((_) async {
+      try {
+        return await job();
+      } on Object catch (e, st) {
+        AppLog.w('activity log write failed', e, st);
+        return null;
+      }
+    });
+    _tail = done;
+    return done;
+  }
 
   void _record(ActivityState? prev, ActivityState s) {
     final now = _now();
     for (final c in s.completed) {
       if (_logged.add(c.key)) add(LogEntry(at: now, item: c));
     }
+    for (final r in s.running.where((r) => r.kind == ActivityKind.import)) {
+      unawaited(_importProgress(r));
+    }
     final still = {for (final r in s.running) r.key};
+    _ended.removeWhere((k) => !still.contains(k));
     for (final r in prev?.running ?? const <ActivityItem>[]) {
       if (_oneLine.contains(r.kind) && !still.contains(r.key)) {
         // The last snapshot seen may be the one before the end: the batch
@@ -380,16 +393,51 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
     }
   }
 
+  /// The one line of a running import: written once, then rewritten with the count.
+  Future<void> _importProgress(ActivityItem r) => _run(() async {
+    if (_ended.contains(r.key)) return;
+    final row = _importRow[r.key] ?? await _repo.idOfImport(r.key);
+    final detail = jsonEncode({'progress': true, 'key': r.key});
+    if (row == null) {
+      _importRow[r.key] = await _repo.add(
+          at: _now().millisecondsSinceEpoch, kind: 'import', name: r.name ?? '', done: r.done, total: r.total, detail: detail);
+      return; // the table change reads it
+    }
+    _importRow[r.key] = row;
+    await _repo.update(row, at: _now().millisecondsSinceEpoch, done: r.done, total: r.total, failed: false, detail: detail);
+    return _replace(row);
+  });
+
+  /// Puts the stored row [id] back in the loaded list (it changed in place).
+  Future<void> _replace(int id) async {
+    final fresh = (await _repo.byIds([id])).firstOrNull;
+    if (fresh == null || !ref.mounted || !state.entries.any((e) => e.id == id)) return;
+    state = ActivityLogState(
+        [for (final e in state.entries) e.id == id ? LogEntry.fromRow(fresh) : e], state.total, state.dbCounts);
+  }
+
+  /// The ending of an import takes the place of its progress line (or is a new line when it never had one).
   Future<void> _recordImport(ImportEvent e) async {
-    final imp = await ref.read(importRepositoryProvider).get(e.importId);
+    final repo = ref.read(importRepositoryProvider);
+    final imp = await repo.get(e.importId);
+    final chain = imp == null
+        ? const <PlaylistImport>[]
+        : groupImportChains(await repo.forPlaylist(imp.playlistId)).firstWhere((c) => c.any((i) => i.id == imp.id));
     if (!ref.mounted) return;
-    add(
-      LogEntry(
-        at: _now(),
-        importName: imp == null ? null : importLabel(imp.sourceName),
-        event: e.kind,
-      ),
+    final entry = LogEntry(
+      at: _now(),
+      importName: imp == null ? null : importLabel(imp.sourceName),
+      event: e.kind,
     );
+    final key = 'imp-${chain.isEmpty ? e.importId : chain.first.id}';
+    if (e.kind == ImportEventKind.completed) _ended.add(key);
+    final row = await _run(() async => _importRow[key] ?? await _repo.idOfImport(key));
+    if (row == null) return add(entry);
+    await _run(() async {
+      final d = jsonEncode({'event': e.kind.name, 'key': key});
+      await _repo.update(row, at: entry.at.millisecondsSinceEpoch, done: 0, total: 0, failed: entry._storedFailed, detail: d);
+      await _reloadPages();
+    });
   }
 
   /// Writes [e] to the database (off the UI thread); it then shows where its time puts it.
