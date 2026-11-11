@@ -13,7 +13,7 @@ import '../support/enrich_fakes.dart';
 
 class _Settings extends SettingsNotifier {
   @override
-  AppSettings build() => AppSettings();
+  AppSettings build() => helpersOff();
 }
 
 void main() {

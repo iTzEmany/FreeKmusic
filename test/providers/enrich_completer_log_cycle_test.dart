@@ -63,8 +63,8 @@ void main() {
   });
 
   test('a switch turned on starts the completion, with the real providers', () async {
-    await open(settings: AppSettings());
-    (c.read(settingsProvider.notifier) as _Settings).put(AppSettings(autoLyrics: true));
+    await open(settings: helpersOff());
+    (c.read(settingsProvider.notifier) as _Settings).put(helpersOff(autoLyrics: true));
     await lineWritten();
   });
 
@@ -99,7 +99,7 @@ ProviderContainer _container(EnrichRig r, SettingsStore store, AppSettings? sett
         enrichEngineProvider.overrideWithValue(r.engine),
         creditsRepositoryProvider.overrideWithValue(r.credits),
         settingsProvider.overrideWith(
-          () => _Settings(settings ?? AppSettings(autoLyrics: true)),
+          () => _Settings(settings ?? helpersOff(autoLyrics: true)),
         ),
         userActivityProvider.overrideWithValue(UserActivity()),
         // Never settles: the starts under test are the scan and the switch.

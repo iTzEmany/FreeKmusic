@@ -99,7 +99,7 @@ void main() {
         enrichEngineProvider.overrideWithValue(r.engine),
         creditsRepositoryProvider.overrideWithValue(r.credits),
         settingsProvider.overrideWith(
-          () => _Settings(settings ?? AppSettings(autoLyrics: true)),
+          () => _Settings(settings ?? helpersOff(autoLyrics: true)),
         ),
         userActivityProvider.overrideWithValue(user),
         activityProvider.overrideWithValue(const ActivityState([], [])),
@@ -299,7 +299,7 @@ void main() {
         enrichEngineProvider.overrideWithValue(r.engine),
         creditsRepositoryProvider.overrideWithValue(r.credits),
         settingsProvider.overrideWith(
-          () => _Settings(AppSettings(autoLyrics: true)),
+          () => _Settings(helpersOff(autoLyrics: true)),
         ),
         startupSettledProvider.overrideWith((ref) async {}),
         enrichJobProvider.overrideWith(_Job.new),
@@ -436,14 +436,14 @@ void main() {
   test('turning a switch on starts the completion', () async {
     user = UserActivity(); // idle
     await track();
-    c = open(settings: AppSettings());
+    c = open(settings: helpersOff());
     final sub = c.listen(enrichCompleterStartProvider, (_, _) {});
     addTearDown(sub.close);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(r.chain.calls, 0, reason: 'no switch is on');
 
     (c.read(settingsProvider.notifier) as _Settings).put(
-      AppSettings(autoLyrics: true),
+      helpersOff(autoLyrics: true),
     );
     await until(() => r.chain.calls == 1);
     await until(() => !state().running);
