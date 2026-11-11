@@ -12,7 +12,7 @@ const onboardingPageCount = 5;
 /// The guide of the first start: welcome, music folders (and, on Android, the
 /// audio permission), the online features (off by default), the optional
 /// Spotify sync reminder and what downloads,
-/// Jam and sharing do. Every page can be skipped.
+/// Jam and sharing do.  It cannot be skipped.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, this.onFinished, this.askAudioPermission});
 
@@ -39,14 +39,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   bool get _last => _page == onboardingPageCount - 1;
 
-  void _finish({required bool reachedEnd}) {
+  void _finish() {
     // Whoever read the last page has seen the download notice.
     ref
         .read(settingsProvider.notifier)
         .update(
           (s) => s.copyWith(
             onboardingDone: true,
-            ytNoticeSeen: s.ytNoticeSeen || reachedEnd,
+            ytNoticeSeen: true,
           ),
         );
     widget.onFinished?.call();
@@ -54,7 +54,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _next() {
     if (_last) {
-      _finish(reachedEnd: true);
+      _finish();
     } else {
       _controller.nextPage(
         duration: ccDuration(context, CcMotion.sheet),
@@ -76,14 +76,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             constraints: const BoxConstraints(maxWidth: 560),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => _finish(reachedEnd: false),
-                    style: TextButton.styleFrom(foregroundColor: cc.accentSoft, minimumSize: const Size(48, 48)),
-                    child: Text(l.onboardingSkip),
-                  ),
-                ),
                 Expanded(
                   child: PageView(
                     controller: _controller,

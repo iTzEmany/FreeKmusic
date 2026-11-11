@@ -40,13 +40,13 @@ class AppSettings {
     this.pauseOnZeroVolume = false,
     this.blurredChrome = false,
     this.language = 'it',
-    this.autoEnrich = false,
-    this.autoLyrics = false,
+    this.autoEnrich = true,
+    this.autoLyrics = true,
     this.deezerMeta = true,
     this.acoustId = true,
-    this.creditsDetails = false,
+    this.creditsDetails = true,
     this.romanization = true,
-    this.autoCuriosities = false,
+    this.autoCuriosities = true,
     this.showUndoSnackbar = true,
     this.deviceName,
     this.jamLatencyMs = 0,
@@ -87,7 +87,7 @@ class AppSettings {
 
   final String theme;
 
-  /// The first-run guide was finished or skipped (never shown again).
+  /// The first-run guide was finished (stored as `onboardingFinished`: users who skipped it under the old key see it once more, D-562).
   final bool onboardingDone;
 
   /// Keep the listening history (`plays`); local only.
@@ -410,13 +410,13 @@ class SettingsStore {
     pauseOnZeroVolume: _prefs.getBool('pauseOnZeroVolume') ?? false,
     blurredChrome: _prefs.getBool('blurredChrome') ?? false,
     language: _prefs.getString('language') ?? 'it',
-    autoEnrich: _prefs.getBool('autoEnrich') ?? false,
-    autoLyrics: _prefs.getBool('autoLyrics') ?? false,
+    autoEnrich: _prefs.getBool('autoEnrich') ?? true,
+    autoLyrics: _prefs.getBool('autoLyrics') ?? true,
     deezerMeta: _prefs.getBool('deezerMeta') ?? true,
     acoustId: _prefs.getBool('acoustId') ?? true,
-    creditsDetails: _prefs.getBool('creditsDetails') ?? false,
+    creditsDetails: _prefs.getBool('creditsDetails') ?? true,
     romanization: _prefs.getBool('romanization') ?? true,
-    autoCuriosities: _prefs.getBool('autoCuriosities') ?? false,
+    autoCuriosities: _prefs.getBool('autoCuriosities') ?? true,
     showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,
     deviceName: _prefs.getString('deviceName'),
     normalizeVolume: _prefs.getBool('normalizeVolume') ?? false,
@@ -428,7 +428,7 @@ class SettingsStore {
     libraryGrid: _prefs.getBool('libraryGrid') ?? false,
     recentSearches: _prefs.getStringList('recentSearches') ?? const [],
     ytNoticeSeen: _prefs.getBool('ytNoticeSeen') ?? false,
-    onboardingDone: _prefs.getBool('onboardingDone') ?? false,
+    onboardingDone: _prefs.getBool('onboardingFinished') ?? false,
     recordHistory: _prefs.getBool('recordHistory') ?? true,
     downloadParallel: (_prefs.getInt('downloadParallel') ?? 2).clamp(1, 3),
     downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
@@ -517,7 +517,7 @@ class SettingsStore {
     await _prefs.setBool('libraryGrid', s.libraryGrid);
     await _prefs.setStringList('recentSearches', s.recentSearches);
     await _prefs.setBool('ytNoticeSeen', s.ytNoticeSeen);
-    await _prefs.setBool('onboardingDone', s.onboardingDone);
+    await _prefs.setBool('onboardingFinished', s.onboardingDone);
     await _prefs.setBool('recordHistory', s.recordHistory);
     await _prefs.setInt('downloadParallel', s.downloadParallel);
     await _prefs.setInt('downloadRateLimitKBps', s.downloadRateLimitKBps);
