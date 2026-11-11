@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:isolate';
 
 import 'package:drift/drift.dart';
@@ -226,7 +227,12 @@ Future<void> _covers(
     if (key != null && local != null && hasCoverFile(key, coverFiles.contains)) wanted[local] = r;
   }
   if (wanted.isEmpty) return;
-  final rows = await (db.select(db.tracks)..where((t) => t.id.isIn(wanted.keys))).get();
+  // Chunks: SQLite caps the variables of one statement (32766).
+  final ids = wanted.keys.toList();
+  final rows = <Track>[];
+  for (var i = 0; i < ids.length; i += 500) {
+    rows.addAll(await (db.select(db.tracks)..where((t) => t.id.isIn(ids.sublist(i, min(i + 500, ids.length))))).get());
+  }
   for (final t in rows) {
     if (t.hasCover || t.coverKey != null) continue;
     final r = wanted[t.id]!;

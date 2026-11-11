@@ -79,6 +79,7 @@ const kMergeSkippedKeys = {
   'notDuplicates', // DuplicateGroup keys built on track ids
   'jamAside', // saved queue (track ids) of a Jam in progress on that device
   // Timers of this device's own sessions: a copied one would skip or fire a run here.
+  'jamLatencyMs', // audio output latency calibration of this device
   'releasesLastRunAt',
   'exportifyLastSyncAt',
   'exportifyOpenedAt',

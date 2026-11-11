@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/backup_merge_helpers.dart';
 import 'package:codecore/data/repositories/backup_merge_tables.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
 import 'package:codecore/services/stream/stream_key.dart';
@@ -183,6 +184,100 @@ void main() {
     r = await mergeBackupTables(other, backup, await PlaylistSyncRepository(other).resolver());
     expect((r.playsAdded, r.playsUnlinked), (0, 1));
     expect(await other.select(other.tracks).get(), isEmpty);
+  });
+
+  test('a smart playlist already copied as «X (ripristinata)» is not copied again', () async {
+    await addTracks(local);
+    await local.into(local.smartPlaylists).insert(SmartPlaylistsCompanion.insert(name: 'Mine (ripristinata)', rules: 'tag:Rock', createdAt: 1));
+    await local.into(local.smartPlaylists).insert(SmartPlaylistsCompanion.insert(name: 'Same', rules: 'x', createdAt: 1));
+    await buildBackup();
+    expect((await merge()).smartPlaylistsAdded, 0);
+    expect((await local.select(local.smartPlaylists).get()).length, 2);
+  });
+
+  test('restoredName counts up: the third same-name item is «X (ripristinata 2)»', () {
+    expect(restoredName('X', {'X', 'X (ripristinata)'}), 'X (ripristinata 2)');
+  });
+
+  test('a cover key whose file is not in the covers folder links nothing', () async {
+    await addTracks(local);
+    await buildBackup(coverKey: 'abc');
+    final covers = Directory('${dir.path}/covers')..createSync();
+    expect((await merge(covers: covers)).coversLinked, 0);
+    expect((await (local.select(local.tracks)..where((t) => t.title.equals('a'))).getSingle()).hasCover, isFalse);
+  });
+
+  test('more than 32766 tracks sharing one cover are all linked (ids are queried in chunks)', () async {
+    const n = 32800;
+    final stopwatch = Stopwatch()..start();
+    Future<void> fill(AppDatabase d, {String? key}) async {
+      await d.batch((b) => b.insertAll(d.tracks, [
+            for (var i = 0; i < n; i++)
+              TracksCompanion.insert(
+                  path: '/m/$i.mp3', title: 't$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
+                  coverKey: Value(key), hasCover: Value(key != null)),
+          ]));
+    }
+
+    final b = AppDatabase(NativeDatabase(backup));
+    await fill(b, key: 'abc');
+    await b.close();
+    await fill(local);
+    final covers = Directory('${dir.path}/covers')..createSync();
+    File('${covers.path}/abc.jpg').writeAsBytesSync([1]);
+    expect((await merge(covers: covers)).coversLinked, n);
+    // ignore: avoid_print
+    print('big covers test: ${stopwatch.elapsedMilliseconds} ms');
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  test('the same episode guid twice in the backup arrives once', () async {
+    await addTracks(local);
+    final db = sqlite3.open(backup.path);
+    db.execute('CREATE TABLE podcasts (id INTEGER PRIMARY KEY, feed_url TEXT, title TEXT)');
+    db.execute('CREATE TABLE podcast_episodes (id INTEGER PRIMARY KEY, podcast_id INTEGER, guid TEXT, title TEXT, audio_url TEXT)');
+    db.execute("INSERT INTO podcasts VALUES (1, 'http://f', 'P')");
+    db.execute("INSERT INTO podcast_episodes VALUES (1, 1, 'g', 'E', 'http://e')");
+    db.execute("INSERT INTO podcast_episodes VALUES (2, 1, 'g', 'E again', 'http://e2')");
+    db.close();
+    expect((await merge()).episodesAdded, 1);
+    expect((await local.select(local.podcastEpisodes).get()).length, 1);
+  });
+
+  test('a local episode already played, or with a track, keeps those values', () async {
+    await addTracks(local);
+    final pod = await local.into(local.podcasts).insert(PodcastsCompanion.insert(feedUrl: 'http://f', title: 'P', addedAt: 1));
+    // g1: backup is played at 900 with local track 1; g2: backup is not played.
+    await local.into(local.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+        podcastId: pod, guid: 'g1', title: 'E1', audioUrl: 'u', trackId: const Value(2), played: const Value(true), playedAt: const Value(5000)));
+    await local.into(local.podcastEpisodes).insert(PodcastEpisodesCompanion.insert(
+        podcastId: pod, guid: 'g2', title: 'E2', audioUrl: 'u', trackId: const Value(1), played: const Value(true), playedAt: const Value(7000)));
+    await buildBackup();
+    await merge();
+    final eps = {for (final e in await local.select(local.podcastEpisodes).get()) e.guid: e};
+    expect((eps['g1']!.played, eps['g1']!.playedAt, eps['g1']!.trackId), (true, 5000, 2));
+    expect((eps['g2']!.played, eps['g2']!.playedAt, eps['g2']!.trackId), (true, 7000, 1));
+  });
+
+  test('a podcast not followed in the backup stays not followed', () async {
+    await addTracks(local);
+    await buildBackup();
+    final db = sqlite3.open(backup.path);
+    db.execute('UPDATE podcasts SET followed = 0');
+    db.close();
+    await merge();
+    expect((await local.select(local.podcasts).getSingle()).followed, isFalse);
+  });
+
+  test('a blank tag name in the backup creates no tag', () async {
+    await addTracks(local);
+    await buildBackup();
+    final db = sqlite3.open(backup.path);
+    db.execute("INSERT INTO user_tags (id, name) VALUES (50, ''), (51, '  ')");
+    db.execute('INSERT INTO track_tags (track_id, tag_id) VALUES (1, 50), (1, 51)');
+    db.close();
+    final r = await merge();
+    expect((r.tagsAdded, r.trackTagsAdded), (1, 1));
+    expect((await local.select(local.userTags).getSingle()).name, 'Rock');
   });
 
   test('an unreadable backup database is reported', () async {

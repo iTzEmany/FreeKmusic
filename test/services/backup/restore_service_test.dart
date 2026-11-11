@@ -861,6 +861,53 @@ void main() {
     );
   });
 
+  test('mergeBackup recognizes a track whose title differs only by case when the backup says windows', () async {
+    final src = AppDatabase(NativeDatabase.memory());
+    await src.into(src.tracks).insert(TracksCompanion.insert(
+        path: 'C:/m/X.mp3', title: 'X', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, isFavorite: const Value(true)));
+    SharedPreferences.setMockInitialValues({'deviceId': 'A'});
+    final zip = File(p.join(dir.path, 'win.zip'));
+    await BackupService(
+      db: src,
+      prefs: await SharedPreferences.getInstance(),
+      coversDir: Directory(p.join(dir.path, 'none'))..createSync(),
+      downloadsFile: File(p.join(dir.path, 'none.json')),
+      deviceId: 'A',
+      platform: 'windows',
+    ).createBackup(zip.path);
+    await src.close();
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await here.into(here.tracks).insert(TracksCompanion.insert(
+        path: '/other/x.mp3', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    final report = await mergeBackup(zip, here, Directory(p.join(dir.path, 'win-dest')));
+    expect(report.recognized, 1);
+  });
+
+  test('mergeBackup links the automatic cover of a track that is not a favourite', () async {
+    final src = AppDatabase(NativeDatabase.memory());
+    await src.into(src.tracks).insert(TracksCompanion.insert(
+        path: '/m/x.mp3', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, coverKey: const Value('auto_k')));
+    SharedPreferences.setMockInitialValues({'deviceId': 'A'});
+    final covers = Directory(p.join(dir.path, 'n-covers'))..createSync();
+    File(p.join(covers.path, 'auto_k.jpg')).writeAsBytesSync([1]);
+    final zip = File(p.join(dir.path, 'n.zip'));
+    await BackupService(
+      db: src,
+      prefs: await SharedPreferences.getInstance(),
+      coversDir: covers,
+      downloadsFile: File(p.join(dir.path, 'none.json')),
+      deviceId: 'A',
+    ).createBackup(zip.path);
+    await src.close();
+    final here = AppDatabase(NativeDatabase.memory());
+    addTearDown(here.close);
+    await here.into(here.tracks).insert(TracksCompanion.insert(
+        path: '/o/x.mp3', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+    final report = await mergeBackup(zip, here, Directory(p.join(dir.path, 'n-dest')));
+    expect(report.tables.coversLinked, 1);
+  });
+
   String themesJson(List<(String, String, String)> items) => jsonEncode([
     for (final (id, name, img) in items)
       {
@@ -886,6 +933,7 @@ void main() {
         'lastQueueIds': ['7'],
         'deviceName': 'Other phone',
         'trustedDevices': '[1]',
+        'jamLatencyMs': 120,
       },
     );
   }
@@ -929,6 +977,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'deviceName': 'This phone',
         'trustedDevices': '[2]',
+        'jamLatencyMs': 40,
         'playlistSorts': '{"1":"mine"}',
         'lastQueueIds': ['1'],
         'customThemes': themesJson([('t2', 'Local', '/x/y.jpg')]),
@@ -951,6 +1000,7 @@ void main() {
       expect(prefs.getString('theme'), 'oled');
       expect(prefs.getString('deviceName'), 'This phone');
       expect(prefs.getString('trustedDevices'), '[2]');
+      expect(prefs.getInt('jamLatencyMs'), 40);
       expect(prefs.getString('playlistSorts'), '{"1":"mine"}');
       expect(prefs.getStringList('lastQueueIds'), ['1']);
     });
@@ -968,6 +1018,18 @@ void main() {
       final local = p.join(themeDir.path, 'bg.jpg');
       expect(File(local).readAsBytesSync(), [8, 8]);
       expect(imageOf(prefs, 't1'), local);
+    });
+
+    test('a theme picture already in themeDir with other content stays as it is', () async {
+      themeDir.createSync(recursive: true);
+      File(p.join(themeDir.path, 'bg.jpg')).writeAsBytesSync([1]);
+      await merge(await themedBackup([]));
+      expect(File(p.join(themeDir.path, 'bg.jpg')).readAsBytesSync(), [1]);
+    });
+
+    test('a theme whose picture is not in themeDir keeps its original path', () async {
+      await merge(await themedBackup([('t1', 'Theirs', '/other/theme/missing.jpg')]));
+      expect(imageOf(prefs, 't1'), '/other/theme/missing.jpg');
     });
 
     test('merging the same backup twice leaves the same themes', () async {
