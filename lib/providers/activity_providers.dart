@@ -219,7 +219,7 @@ ActivityState buildActivity({
     running.add(
       ActivityItem(
         kind: ActivityKind.import,
-        key: 'imp-${i.blockIds.first}',
+        key: 'imp-${i.blockIds.firstOrNull ?? i.id}',
         name: i.name,
         // Songs saved so far; the bar follows every row handled.
         done: i.saved,

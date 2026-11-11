@@ -178,20 +178,23 @@ final downloadRootsProvider = FutureProvider<List<String>>((ref) async => [
 typedef _DownloadScope = ({int? folderId, List<String> prefixes, Set<String> paths});
 
 final _downloadScopeProvider = FutureProvider<_DownloadScope>((ref) async {
-  final idx = await ref.watch(downloadIndexProvider.future);
+  // Watch first, await after: a Ref is dead once the provider is disposed mid-await.
+  final index = ref.watch(downloadIndexProvider.future);
+  final folderId = ref.watch(downloadFolderIdProvider.future);
+  final roots = ref.watch(downloadRootsProvider.future);
   return (
-    folderId: await ref.watch(downloadFolderIdProvider.future),
+    folderId: await folderId,
     // With a trailing separator, so `FreeKmusic` does not match `FreeKmusic2`.
-    prefixes: [for (final r in await ref.watch(downloadRootsProvider.future)) r.endsWith(p.separator) ? r : r + p.separator],
-    paths: idx.paths.toSet(),
+    prefixes: [for (final r in await roots) r.endsWith(p.separator) ? r : r + p.separator],
+    paths: (await index).paths.toSet(),
   );
 });
 
 final _plainDownloadedProvider =
     StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
+  final repo = ref.watch(trackRepositoryProvider);
   final s = await ref.watch(_downloadScopeProvider.future);
-  yield* ref
-      .watch(trackRepositoryProvider)
+  yield* repo
       .watchDownloadedWithoutPlaylist(folderId: s.folderId, prefixes: s.prefixes, paths: s.paths, sort: q.sort);
 });
 
@@ -204,9 +207,9 @@ final downloadedNoPlaylistProvider =
 
 /// How many [downloadedNoPlaylistProvider] lists, counted by the database.
 final downloadedNoPlaylistCountProvider = StreamProvider.autoDispose<int>((ref) async* {
+  final repo = ref.watch(trackRepositoryProvider);
   final s = await ref.watch(_downloadScopeProvider.future);
-  yield* ref
-      .watch(trackRepositoryProvider)
+  yield* repo
       .watchDownloadedWithoutPlaylistCount(folderId: s.folderId, prefixes: s.prefixes, paths: s.paths);
 });
 

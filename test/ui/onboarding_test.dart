@@ -87,7 +87,7 @@ void main() {
   });
 
   testWidgets('the online features start on and can be turned off', (tester) async {
-    final h = await Harness.create(tester);
+    final h = await Harness.create(tester, onlineOff: false);
     await _openGate(tester, h);
     await tester.tap(find.text('Avanti'));
     await _settle(tester);

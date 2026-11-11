@@ -41,8 +41,11 @@ class Harness {
   /// Overridable before `pump`: where cover files are looked up.
   Directory coversDir = Directory.systemTemp;
 
-  static Future<Harness> create(WidgetTester tester, {int tracks = 0, bool radio = false}) async {
-    SharedPreferences.setMockInitialValues({});
+  static Future<Harness> create(WidgetTester tester, {int tracks = 0, bool radio = false, bool onlineOff = true}) async {
+    // D-563 turned the online helpers on by default; widget tests start with them off (no network, no timers).
+    SharedPreferences.setMockInitialValues({
+      if (onlineOff) ...{'autoEnrich': false, 'autoLyrics': false, 'autoCuriosities': false, 'creditsDetails': false},
+    });
     final store = await SettingsStore.open();
     final db = AppDatabase(NativeDatabase.memory());
     final backend = FakeBackend();
@@ -86,12 +89,21 @@ class Harness {
         // Never the real download folder (it would create ~/Music).
         downloadRootsProvider.overrideWithValue(const AsyncData(<String>[])),
         downloadFolderIdProvider.overrideWith((ref) async => downloadFolderId),
+        // Not loaded (no file I/O on fake time); a test that needs its own passes it as an extra.
         downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
         // The real one reads the app support folder (no plugin in tests).
         romanizationProvider.overrideWith(
           (ref, id) => AsyncData(romanization),
         ),
       ];
+
+  /// [overrides] with [extra] on top: a provider overridden in both keeps only the extra one
+  /// (the same provider twice in a container is an assertion error).
+  List<Override> overridesWith(List<Override> extra) {
+    Object? originOf(Override o) => (o as dynamic).origin;
+    final mine = {for (final e in extra) originOf(e)};
+    return [...overrides.where((o) => !mine.contains(originOf(o))), ...extra];
+  }
 
   Future<void> pump(WidgetTester tester, Widget child,
       {List<Override> extraOverrides = const [],
@@ -100,7 +112,7 @@ class Harness {
       CcColors colors = CcColors.notte}) async {
     await tester.pumpWidget(
         ProviderScope(
-        overrides: [...overrides, ...extraOverrides],
+        overrides: overridesWith(extraOverrides),
         child: MaterialApp(
           theme: buildThemeFromColors(colors, false),
           locale: locale,
@@ -118,6 +130,9 @@ class Harness {
   Future<void> dispose(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(Duration.zero);
+    // Startup work (import recovery: a query, then a transaction) needs real time, then fake timers, or the db close never ends.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(seconds: 1));
     await tester.runAsync(() async {
       await handler.dispose();
       await db.close();
