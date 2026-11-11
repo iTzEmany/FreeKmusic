@@ -2,6 +2,13 @@
 
 Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
+## Da fare subito (richieste dell'11/11)
+- **Download in cartella pubblica**: i brani scaricati vanno in `Music/FreeKmusic` (via MediaStore su Android 10+), non in `Android/data/<app>/files/Music`, che Android cancella alla disinstallazione e che nessun'altra app, adb o MTP possono leggere (caso reale sul Motorola: 180 file `rw-------` di Codecore recuperabili solo dall'app stessa). Poi nuovo tag.
+- **Registro**: l'intestazione dei giorni ha uno sfondo diverso; deve avere lo sfondo di base come il resto della pagina.
+- **Swipe per mettere in coda**: nella daylist non mette in coda; verificare con tutti i brani online/streaming; deve funzionare in ogni lista di brani.
+- **Swipe, limite dell'animazione**: la riga si ferma a 3/5 della larghezza dello schermo invece di scorrere fino a quasi sparire.
+- **Selezione multipla**: mantenere le copertine (brani, album…) e mettere la casella di spunta sopra la copertina.
+
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
 - **`m.createIndex` prima della v15 senza IF NOT EXISTS** (6 nov): dopo un ritorno a una build più vecchia e un nuovo aggiornamento l'avvio fallisce. Rimedio: un helper unico per gli indici con IF NOT EXISTS.
@@ -62,7 +69,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - (10/11) **«Test (Windows)» rosso da giorni** (non è un check obbligatorio, quindi le PR passano; la build «Windows» della CI dipende da lui e viene saltata; l'installer della Release invece si costruisce). 21 test: 19 in `test/providers/shuffle_plus_test.dart`, uno in `shuffle_plus_source_change_test.dart`, uno in `daylist_provider_test.dart`. Diagnosi (run 42869153465, 42877133055, 42881818927):
   - si riproduce anche col solo file `shuffle_plus_test.dart` su Windows, non dipende dalla concorrenza della suite; il primo test che si blocca cambia da run a run, poi falliscono a catena tutti quelli che aspettano un suggerimento (helper `until`);
   - nel test bloccato `_suggestOne` torna `false` in ~4 ms senza inserire né chiedere la radio, e il controller si risveglia solo con un `Timer` reale (`_wakeAt(_retryAt)`, attesa `retryAfterError`) mentre il `now` finto dei test è fermo: sospetti `_take()` nullo con un ramo muto di `_fill()` (`gate.nextAsk`, seed morti, `_changedSince`, riserva senza candidati) o stato che resta fra un test e l'altro (un `until` rimasto vivo dal test scaduto);
-  - `daylist_provider_test.dart:143`: `deleteSync(recursive: true)` nel teardown dà `PathAccessException errno 32` perché un file è ancora aperto (su Windows non si cancella un file aperto): chiudere lo store prima di cancellare.
+  - `daylist_provider_test.dart`: teardown corretto (attende la scrittura di `dislikes.json` prima di cancellare la cartella; su Windows un file aperto non si cancella).
   - Prossimo passo: diagnostica con `AppLog.i` (non `print`, che rompe `flutter analyze`), solo quel file su Windows, senza `continue-on-error`. Il ramo `fix/test-windows` su GitHub ha solo commit di diagnostica: non va fuso, si può cancellare.
 - **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.
 - **`ci.yml`**: il commento dice 4 test di integrazione, `scripts/integration.sh` ne esegue 5.
