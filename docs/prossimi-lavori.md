@@ -3,11 +3,7 @@
 Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
 ## Da fare subito (richieste dell'11/11)
-- **Download in cartella pubblica**: i brani scaricati vanno in `Music/FreeKmusic` (via MediaStore su Android 10+), non in `Android/data/<app>/files/Music`, che Android cancella alla disinstallazione e che nessun'altra app, adb o MTP possono leggere (caso reale sul Motorola: 180 file `rw-------` di Codecore recuperabili solo dall'app stessa). Poi nuovo tag.
-- **Registro**: l'intestazione dei giorni ha uno sfondo diverso; deve avere lo sfondo di base come il resto della pagina.
-- **Swipe per mettere in coda**: nella daylist non mette in coda; verificare con tutti i brani online/streaming; deve funzionare in ogni lista di brani.
-- **Swipe, limite dell'animazione**: la riga si ferma a 3/5 della larghezza dello schermo invece di scorrere fino a quasi sparire.
-- **Selezione multipla**: mantenere le copertine (brani, album…) e mettere la casella di spunta sopra la copertina.
+- In corso nella [fase 117](fasi/fase-117-ripristino-completo-e-ritocchi.md): «Unisci» completo, download in `Music/FreeKmusic`, ritocchi di Registro, swipe, selezione, sfocatura e trasparenza; poi la versione 1.6.0. Dopo: la CI Windows (sotto, «Qualità e rilascio»).
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
