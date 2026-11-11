@@ -147,7 +147,7 @@ Future<void> withShot(
   tester.view.physicalSize = size.size * size.dpr;
   tester.view.devicePixelRatio = size.dpr;
   addTearDown(tester.view.reset);
-  final h = await Harness.create(tester, radio: radio);
+  final h = await Harness.create(tester, radio: radio, onlineOff: false);
   final dir = (await tester.runAsync(() => Directory.systemTemp.createTemp('shots')))!;
   h.coversDir = dir;
   final seed = (await tester.runAsync(() => seedLibrary(h.db, dir)))!;
