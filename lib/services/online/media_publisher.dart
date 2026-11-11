@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../../core/app_log.dart';
 import '../../core/paths.dart';
 import '../../core/platform.dart';
+import '../tags/tag_backups.dart';
 
 const _workDirName = 'download-work';
 
@@ -49,4 +50,24 @@ class MediaPublisher {
     }
     return out;
   }
+
+  /// Rewrites the public file [dest] with [src] through MediaStore (a rename
+  /// is refused there). False: [dest] is not an entry of this app, so the
+  /// caller must use a plain rename. A failure is a [FileSystemException].
+  Future<bool> replace(String dest, String src) async {
+    try {
+      return await _channel.invokeMethod<bool>('replace', {'path': dest, 'src': src}) ?? false;
+    } on PlatformException catch (e) {
+      throw FileSystemException('MediaStore replace failed: ${e.message}', dest);
+    }
+  }
+}
+
+/// Installs a tagged copy [src] over [dest]: through MediaStore for the app's
+/// own files in the public Music folder (Android 11+), else [installFile].
+Future<void> installTagged(String src, String dest, {MediaPublisher? publisher}) async {
+  if (await publishesToMediaStore() && p.isWithin('/storage/emulated/0/Music', dest) && await (publisher ?? MediaPublisher()).replace(dest, src)) {
+    return;
+  }
+  await installFile(src, dest);
 }

@@ -22,6 +22,7 @@ import '../data/repositories/track_repository.dart';
 import '../services/covers/cover_store.dart';
 import '../services/covers/cover_thumbnails.dart';
 import '../services/scanner/library_scanner.dart';
+import '../services/online/media_publisher.dart' show installTagged;
 import '../services/tags/audio_metadata_tag_reader.dart';
 import '../services/tags/metadata_god_tag_writer.dart';
 import '../services/tags/safe_tag_writer.dart';
@@ -463,6 +464,7 @@ final safeTagWriterProvider = FutureProvider<SafeTagWriter>((ref) async {
     reader: ref.watch(tagReaderProvider),
     workDir: Directory(p.join(await appSupportDir(), 'tagwork')),
     backups: await ref.watch(tagBackupStoreProvider.future),
+    install: installTagged,
   );
 });
 

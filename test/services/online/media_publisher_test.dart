@@ -68,4 +68,43 @@ void main() {
     await MediaPublisher(channel: channel).publish(sub.path);
     expect((args as Map)['subdir'], 'My Import');
   });
+
+  group('installTagged', () {
+    const dest = '/storage/emulated/0/Music/FreeKmusic/a.m4a';
+    late List<String> calls;
+    void answer(Object? Function(MethodCall) f) =>
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (c) async {
+          calls.add(c.method);
+          return f(c);
+        });
+    setUp(() => calls = []);
+
+    test('MediaStore file: replace is called, no rename or side file', () async {
+      debugIsAndroidOverride = true;
+      debugAndroidSdk = 33;
+      answer((_) => true);
+      await installTagged(work.path, dest, publisher: MediaPublisher(channel: channel));
+      expect(calls, ['replace']);
+      expect(work.existsSync(), isTrue);
+    });
+
+    test('a failing replace surfaces as FileSystemException', () async {
+      debugIsAndroidOverride = true;
+      debugAndroidSdk = 33;
+      answer((_) => throw PlatformException(code: 'replace'));
+      await expectLater(
+        installTagged(work.path, dest, publisher: MediaPublisher(channel: channel)),
+        throwsA(isA<FileSystemException>()),
+      );
+    });
+
+    test('desktop: plain rename, the channel is never asked', () async {
+      debugIsAndroidOverride = false;
+      answer((_) => true);
+      final target = '${work.parent.path}/b.m4a';
+      await installTagged(work.path, target, publisher: MediaPublisher(channel: channel));
+      expect(calls, isEmpty);
+      expect(File(target).existsSync(), isTrue);
+    });
+  });
 }

@@ -18,6 +18,7 @@ class SafeTagWriter {
     required this.workDir,
     required this.backups,
     this.rename,
+    this.install,
   });
 
   final TagWriter writer;
@@ -27,6 +28,9 @@ class SafeTagWriter {
 
   /// Replaceable in tests to force the cross-partition path.
   final Future<void> Function(String from, String to)? rename;
+
+  /// Replaces [installFile] where a rename cannot (Android MediaStore files).
+  final Future<void> Function(String from, String to)? install;
 
   Future<void> _queue = Future.value();
 
@@ -76,7 +80,7 @@ class SafeTagWriter {
         throw TagWriteException(TagWriteReason.verifyFailed, problem);
       }
       if (backup) await backups.add(path);
-      await installFile(tmp.path, path, rename: rename);
+      await (install ?? (a, b) => installFile(a, b, rename: rename))(tmp.path, path);
       return await stampOf(path);
     } on TagWriteException catch (e) {
       AppLog.w('tag write refused for $path: ${e.reason.name} ${e.detail ?? ''}');

@@ -1,5 +1,7 @@
 package com.codecore.player
 
+import android.content.ContentResolver
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
@@ -29,13 +31,29 @@ object MediaPublishBridge {
                 result.success(Build.VERSION.SDK_INT)
                 return@setMethodCallHandler
             }
-            if (call.method != "publish") {
+            if (call.method != "publish" && call.method != "replace") {
                 result.notImplemented()
                 return@setMethodCallHandler
             }
             val path = call.argument<String>("path")
             if (path == null) {
                 result.error("args", "path missing", null)
+                return@setMethodCallHandler
+            }
+            if (call.method == "replace") {
+                val src = call.argument<String>("src")
+                if (src == null) {
+                    result.error("args", "src missing", null)
+                    return@setMethodCallHandler
+                }
+                Thread {
+                    try {
+                        val done = replace(context, File(path), File(src))
+                        main.post { result.success(done) }
+                    } catch (e: Exception) {
+                        main.post { result.error("replace", e.message, null) }
+                    }
+                }.start()
                 return@setMethodCallHandler
             }
             Thread {
@@ -58,6 +76,37 @@ object MediaPublishBridge {
         else -> "audio/mp4"
     }
 
+    /**
+     * Rewrites the bytes of the app's own MediaStore entry at [path] with [src]
+     * (same uri and path: FUSE refuses renames and side files in Music). False
+     * when no entry of this app is there: the caller falls back to a rename.
+     */
+    private fun replace(context: Context, path: File, src: File): Boolean {
+        val resolver = context.contentResolver
+        val base = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val id = resolver.query(base, arrayOf(MediaStore.MediaColumns._ID), "${MediaStore.MediaColumns.DATA} = ?", arrayOf(path.path), null)?.use {
+            if (it.moveToFirst()) it.getLong(0) else null
+        } ?: return false
+        val uri = ContentUris.withAppendedId(base, id)
+        try {
+            resolver.openOutputStream(uri, "wt")!!.use { out -> src.inputStream().use { it.copyTo(out) } }
+        } catch (e: SecurityException) {
+            return false // not this app's entry
+        }
+        return true
+    }
+
+    // A force-stop during publish leaves an IS_PENDING row: drop it, or the next publish becomes «(2)».
+    @Suppress("DEPRECATION")
+    private fun dropOrphans(resolver: ContentResolver, rel: String, name: String) {
+        val pending = MediaStore.setIncludePending(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY))
+        resolver.delete(
+            pending,
+            "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.IS_PENDING} = 1",
+            arrayOf("${Environment.DIRECTORY_MUSIC}/$rel/", name),
+        )
+    }
+
     private fun publish(context: Context, src: File, subdir: String): String {
         val sub = subdir.split('/').filter { it.isNotEmpty() && it != "." && it != ".." }.joinToString("/")
         val rel = if (sub.isEmpty()) DIR else "$DIR/$sub"
@@ -69,6 +118,7 @@ object MediaPublishBridge {
             put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
         val resolver = context.contentResolver
+        dropOrphans(resolver, rel, src.name)
         val uri = resolver.insert(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values)
             ?: throw IllegalStateException("MediaStore refused the insert")
         try {
