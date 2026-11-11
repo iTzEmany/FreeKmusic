@@ -120,6 +120,7 @@ LogText logText(AppLocalizations l, LogEntry e) {
     ActivityKind.releases => plain(l.logReleases, l.logReleasesSub),
     ActivityKind.podcastRefresh => plain(l.logPodcasts, ''),
     ActivityKind.radio => plain(l.logRadio, ''),
+    ActivityKind.ytDlp => plain(l.activityYtDlp, ''),
     ActivityKind.import =>
       e.failed
           ? LogText(l.logImportFailed, name)

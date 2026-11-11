@@ -139,6 +139,10 @@ enum YtErrorKind {
   toolMissing,
   rateLimited,
 
+  /// The yt-dlp channel itself broke (JVM class error, init failure): not
+  /// YouTube's doing, and retrying changes nothing.
+  internal,
+
   /// yt-dlp is older than `kMinYtDlpVersion` and the request failed.
   toolOutdated,
 }

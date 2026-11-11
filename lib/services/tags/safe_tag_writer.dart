@@ -111,8 +111,13 @@ String? tagMismatch(
   String? bad(String name, Object? want, Object? got) =>
       want == got ? null : '$name: "$got" instead of "$want"';
   final artists = {after.artist, after.albumArtist};
+  // A multi-artist string may be read back whole while the album artist
+  // written is its first name: accept any single name inside it too.
+  final names = {
+    for (final a in artists.nonNulls) ...[a, ...a.split(RegExp(r'\s*[,;&]\s*'))],
+  };
   String? inArtists(String name, String? want) =>
-      want == null || artists.contains(want.trim())
+      want == null || names.contains(want.trim())
       ? null
       : '$name: "$want" not found in ${artists.nonNulls.toList()}';
   final yearUnreadable = format == 'flac' && after.year == null;

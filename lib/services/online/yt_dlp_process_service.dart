@@ -163,8 +163,16 @@ DownloadProgress? parseProgressLine(String line) {
   return DownloadProgress(received: done, total: total);
 }
 
+/// The yt-dlp channel's own failures (Kotlin appends `| root: <class>: <msg>`
+/// to internal Throwables), as opposed to yt-dlp's stderr.
+bool isInternalChannelError(String msg) =>
+    msg.contains('| root:') ||
+    RegExp(r'NoClassDefFoundError|ExceptionInInitializerError|UnsatisfiedLinkError')
+        .hasMatch(msg);
+
 /// Maps yt-dlp's stderr to a user-facing error kind.
 YtException ytExceptionFromStderr(String err) {
+  if (isInternalChannelError(err)) return YtException(YtErrorKind.internal, err);
   final t = err.toLowerCase();
   if (t.contains('http error 429') ||
       t.contains('too many requests') ||

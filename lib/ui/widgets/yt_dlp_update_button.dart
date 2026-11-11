@@ -37,7 +37,9 @@ class YtDlpUpdateButton extends ConsumerWidget {
     }
     return TextButton(
       onPressed: () => ref.read(ytDlpUpdateProvider.notifier).run(),
-      child: Text(context.l10n.ytDlpUpdate),
+      child: Text(st.phase == YtDlpUpdatePhase.failed
+          ? context.l10n.retry
+          : context.l10n.ytDlpUpdate),
     );
   }
 }

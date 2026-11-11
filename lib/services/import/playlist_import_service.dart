@@ -908,6 +908,7 @@ class PlaylistImportService {
         stop = ImportEventKind.toolOutdated;
       case YtErrorKind.unavailable:
       case YtErrorKind.changed:
+      case YtErrorKind.internal:
         _failStreak++;
         await imports.setItem(
           importId,

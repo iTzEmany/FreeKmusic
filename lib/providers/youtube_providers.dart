@@ -24,7 +24,7 @@ import '../services/stream/stream_promoter.dart' show StreamPromoteException;
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'online_providers.dart';
-import 'yt_dlp_update_providers.dart' show locateYtDlp;
+import 'yt_dlp_update_providers.dart' show locateYtDlp, ytDlpUpdateProvider;
 import 'ytm_catalog_providers.dart' show ytmCatalogProvider;
 import 'settings_providers.dart';
 import 'pending_playlist_adds.dart' show parseAddToPlaylistTag;
@@ -75,6 +75,12 @@ class YtDlpStatus {
 
 final ytDlpStatusProvider = FutureProvider<YtDlpStatus>((ref) async {
   final v = await ref.watch(youtubeServiceProvider).toolVersion();
+  // Desktop builds ship no yt-dlp: fetch it (or a fresh one) in the background.
+  // Not in `flutter test`, which must never reach the network.
+  if (isDesktop && !Platform.environment.containsKey('FLUTTER_TEST')) {
+    unawaited(Future(
+        () => ref.read(ytDlpUpdateProvider.notifier).autoUpdate(v)));
+  }
   return YtDlpStatus(v);
 });
 
