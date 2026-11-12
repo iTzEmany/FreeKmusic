@@ -4468,5 +4468,8 @@
   "ytErrInternal": "Errore interno dell’app (non di YouTube): riavvia l’app e riprova",
   "activityYtDlp": "Scarico yt-dlp",
   "ytDlpMissingBanner": "Manca yt-dlp: serve per cercare e scaricare online",
-  "csvImportNoPortal": "Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione"
+  "csvImportNoPortal": "Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione",
+  "logPlayFailed": "Riproduzione non riuscita",
+  "logPlayFailedSub": "{title}: {reason}",
+  "@logPlayFailedSub": {"placeholders": {"title": {"type": "String"}, "reason": {"type": "String"}}}
 }

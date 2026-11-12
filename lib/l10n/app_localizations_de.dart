@@ -7657,4 +7657,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get csvImportNoPortal =>
       'Der Dateiauswahldialog antwortet nicht: installiere xdg-desktop-portal-gtk (oder xdg-desktop-portal-kde) und starte die Sitzung neu';
+
+  @override
+  String get logPlayFailed => 'Wiedergabe fehlgeschlagen';
+
+  @override
+  String logPlayFailedSub(String title, String reason) {
+    return '$title: $reason';
+  }
 }

@@ -228,17 +228,7 @@ class OnlineSongRow extends StatelessWidget {
             height: onlineRowExtentOf(context),
             child: Row(
               children: [
-                if (selecting)
-                  Padding(
-                    padding: const EdgeInsets.only(left: CcDims.gap4),
-                    child: SelectionBox(
-                      selected: selected,
-                      position: position,
-                      size: 40,
-                    ),
-                  )
-                else
-                  const SizedBox(width: CcDims.margin),
+                const SizedBox(width: CcDims.margin),
                 if (number != null && !selecting)
                   SizedBox(
                     width: 32,
@@ -248,19 +238,40 @@ class OnlineSongRow extends StatelessWidget {
                       style: theme.bodyMedium?.copyWith(color: cc.textMuted),
                     ),
                   )
-                else if (square)
-                  NetThumbnail(
-                    url: result.thumbnailUrl,
-                    width: 48,
-                    height: 48,
-                    icon: Icons.music_note,
-                  )
                 else
-                  NetThumbnail(
-                    url: result.thumbnailUrl,
-                    width: 80,
-                    height: 45,
-                    icon: Icons.music_video,
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (square)
+                        NetThumbnail(
+                          url: result.thumbnailUrl,
+                          width: 48,
+                          height: 48,
+                          icon: Icons.music_note,
+                        )
+                      else
+                        NetThumbnail(
+                          url: result.thumbnailUrl,
+                          width: 80,
+                          height: 45,
+                          icon: Icons.music_video,
+                        ),
+                      if (selecting) ...[
+                        Container(
+                          width: square ? 48 : 80,
+                          height: square ? 48 : 45,
+                          decoration: BoxDecoration(
+                            color: cc.bg.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(CcDims.rList),
+                          ),
+                        ),
+                        SelectionBox(
+                          selected: selected,
+                          position: position,
+                          size: square ? 40 : 36,
+                        ),
+                      ],
+                    ],
                   ),
                 const SizedBox(width: 12),
                 Expanded(

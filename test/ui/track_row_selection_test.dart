@@ -71,7 +71,7 @@ void main() {
     await settle(tester);
     expect(selection(tester).ids, {tracks[1].id});
     expect(find.byType(SelectionBox), findsNWidgets(4), reason: 'every row shows its box');
-    expect(find.byType(CoverImage), findsNothing, reason: 'the box takes the cover\'s place');
+    expect(find.byType(CoverImage), findsNWidgets(4), reason: 'the box sits on the cover');
     expect(tester.getSize(find.byType(TrackRow).first).height, before);
     expect(tapped, isEmpty);
     await h.dispose(tester);
@@ -160,10 +160,10 @@ void main() {
 
   testWidgets('no «add to queue» swipe while selecting', (tester) async {
     final h = await build(tester);
-    expect(find.byType(Dismissible), findsNWidgets(4));
+    expect(find.byType(SwipeToQueue), findsNWidgets(4));
     await tester.longPress(find.text('Song 1'));
     await settle(tester);
-    expect(find.byType(Dismissible), findsNothing);
+    expect(find.byType(SwipeToQueue), findsNothing);
     await h.dispose(tester);
   });
 
@@ -220,6 +220,44 @@ void main() {
     await tester.dragFrom(Offset(100, y + 64), const Offset(250, 0));
     await tester.pumpAndSettle();
     expect(h.handler.queueIds, [ts[1].id]);
+    await h.dispose(tester);
+  });
+
+  testWidgets('swipe stops at 60 % of the row width; a short one still queues (R-221)',
+      (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 1);
+    final ts = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    await h.pump(
+      tester,
+      Scaffold(
+        body: ListView(children: [
+          SizedBox(height: 64, child: LiveTrackRow(track: ts[0], onTap: () {})),
+        ]),
+      ),
+    );
+    final w = tester.getSize(find.byType(SwipeToQueue)).width;
+    final y = tester.getCenter(find.text('Song 0')).dy;
+    final g = await tester.startGesture(Offset(100, y));
+    for (var i = 0; i < 8; i++) {
+      await g.moveBy(const Offset(50, 0));
+      await tester.pump();
+    }
+    final moved = tester.getTopLeft(find.byType(TrackRow)).dx;
+    expect(moved, closeTo(w * 0.6, 0.5));
+    await g.up();
+    await tester.pumpAndSettle();
+    await h.dispose(tester);
+  });
+
+  testWidgets('while selecting, the tick box sits on top of the cover (R-222)',
+      (tester) async {
+    final h = await build(tester);
+    await tester.longPress(find.text('Song 1'));
+    await settle(tester);
+    final cover = tester.getRect(find.byType(CoverImage).first);
+    final box = tester.getRect(find.byType(SelectionBox).first);
+    expect(cover.contains(box.center), isTrue);
     await h.dispose(tester);
   });
 }

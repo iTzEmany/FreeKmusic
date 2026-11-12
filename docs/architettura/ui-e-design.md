@@ -81,6 +81,13 @@ Sul telefono il dock è un blocco unico in fondo: il campo di Cerca (solo in Cer
 
 Sul desktop e sulle finestre larghe (`CcDims.wideBreakpoint`, 840) la shell diventa `_WideShell`: sidebar a sinistra (compatta sotto 1000 px), barra del player in basso, pannello a destra con coda, testo o info (`SidePanel`); sopra `xlBreakpoint` (1200) il pannello della coda si apre da solo e griglie e scaffali tengono più elementi.
 
+### Righe dei brani, swipe e sfocatura (fase 119)
+- **Swipe per la coda** (`SwipeToQueue` in `track_row.dart`): in ogni lista di brani, compresi quelli online, la daylist e i Suggeriti; restano senza le varianti coda e scelta. È un `GestureDetector` orizzontale, non un `Dismissible`. Lo spostamento si ferma al 60 % della riga e mette in coda oltre il 30 %. Un trascinamento che parte dal bordo dello schermo resta al gesto «indietro». Per TalkBack c'è l'azione «Aggiungi alla coda».
+- **Selezione**: la `SelectionBox` sta sopra la copertina, con un velo `cc.bg` al 45 %, sia in `TrackRow` sia in `OnlineSongRow`.
+- **Sfocatura**: `BlurredChrome` (`lib/ui/widgets/blurred_chrome.dart`) è l'unico effetto vetro, usato dal dock e da `LibraryIsland`. Segue «Dock e intestazioni sfocati»: sfocatura 20, con `surface2` all'alfa del tema × 0,78.
+- **Superfici trasparenti**: nell'editor del tema solo Superficie 1, 2 e 3 hanno l'alfa, con minimo 20 % (`hasAlphaToken`, `_fit` in `custom_theme.dart`). Il contrasto si calcola sul colore composto sopra lo sfondo (`Color.alphaBlend`).
+- **Registro**: con un tema con immagine o gradiente l'intestazione fissa dei giorni non dipinge `cc.bg` ma sfoca la pagina sotto. Gli errori di riproduzione sono una voce `playbackFailed`, una sola se lo stesso brano fallisce di fila. Il testo del motivo viene da `playbackReasonText`.
+
 ### Fogli, dialoghi, menu
 Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio per le scelte** (elenchi, azioni, selettori). Ogni foglio si apre con `showCcSheet` (sempre sul navigator di radice, così copre dock e sidebar, 250 ms, zero con «Riduci animazioni»). I menu sono `showCcActionSheet` con `CcAction`.
 

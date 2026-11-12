@@ -10,6 +10,7 @@ import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/now_playing/suggested_info.dart';
+import 'package:codecore/ui/theme/tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,5 +84,19 @@ void main() {
     await open(tester, suggested: false);
     expect(find.byType(TextButton), findsNWidgets(2));
     expect(find.text('Non mi piace'), findsNothing);
+  });
+
+  testWidgets('each tile is a surface2 block with card corners', (
+    tester,
+  ) async {
+    await open(tester, suggested: true, onDislike: () {});
+    final cc = tester.element(find.byType(SuggestedInfo)).cc;
+    final buttons = tester.widgetList<TextButton>(find.byType(TextButton));
+    expect(buttons, hasLength(3));
+    for (final b in buttons) {
+      expect(b.style!.backgroundColor!.resolve({}), cc.surface2);
+      final shape = b.style!.shape!.resolve({}) as RoundedRectangleBorder;
+      expect(shape.borderRadius, BorderRadius.circular(CcDims.rCard));
+    }
   });
 }

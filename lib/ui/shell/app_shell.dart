@@ -19,7 +19,6 @@ import '../../services/shuffle_plus/shuffle_plus_controller.dart'
     show ShufflePlusNotice;
 import '../../providers/ui_providers.dart';
 import '../../providers/youtube_providers.dart' show ytDlpStatusProvider;
-import '../../services/audio/codecore_audio_handler.dart';
 import '../screens/library/library_screen.dart';
 import '../screens/memory/memory_screen.dart';
 import '../screens/share/incoming_offer_dialog.dart';
@@ -48,6 +47,7 @@ import 'desktop_sidebar.dart';
 import 'shell_keys.dart';
 import 'side_panel.dart';
 import '../widgets/motion.dart';
+import '../widgets/playback_reason_text.dart';
 import '../widgets/show_msg.dart';
 import 'shazam_share.dart';
 
@@ -304,16 +304,7 @@ class AppShell extends ConsumerWidget {
       final f = next.value;
       if (f == null) return;
       final l = context.l10n;
-      final reason = switch (f.reason) {
-        PlaybackFailureReason.fileMissing => l.reasonFileMissing,
-        PlaybackFailureReason.unplayable => l.reasonUnplayable,
-        PlaybackFailureReason.notInLibrary => l.reasonNotInLibrary,
-        PlaybackFailureReason.onlineUnavailable => l.reasonOnlineUnavailable,
-        PlaybackFailureReason.episodeUnavailable => l.reasonEpisodeUnavailable,
-        PlaybackFailureReason.ageRestricted => l.reasonAgeRestricted,
-        PlaybackFailureReason.networkUnavailable => l.ytErrNetwork,
-        PlaybackFailureReason.radioUnavailable => l.reasonRadioUnavailable,
-      };
+      final reason = playbackReasonText(l, f.reason);
       showMsg(context, l.playbackError(reason, f.title ?? ''));
     });
     // Shuffle+ runs while the shell is up; a suggestion downloaded "into a

@@ -579,6 +579,9 @@ double _lineOf(BuildContext context, TextStyle? style) {
   return h;
 }
 
+/// Height of the «Aggiorna» button row of `CreditsCard` (a 48 dp tap target).
+const creditsRefreshHeight = 48.0;
+
 /// A streamed track's cards before its data row exists: skeletons with the
 /// shape and height of the real ones (no jump on arrival); after 20 s a single
 /// «Non disponibile» card with Riprova (F-52). [infoOnly] is the side panel's.
@@ -713,6 +716,11 @@ class _StreamCardsWaitState extends ConsumerState<StreamCardsWait> {
                         // The group heading of the real rows.
                         SizedBox(height: 16 + _lineOf(context, t.labelLarge)),
                         const Skeleton.card(lines: 3, roles: true),
+                        // The real card's «Aggiorna» button: no jump on arrival.
+                        if (ref.watch(
+                          settingsProvider.select((s) => s.creditsDetails),
+                        ))
+                          const SizedBox(height: creditsRefreshHeight),
                       ],
                     ),
                   ),

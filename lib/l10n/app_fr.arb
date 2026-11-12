@@ -3980,5 +3980,8 @@
   "ytErrInternal": "Erreur interne de l’application (pas de YouTube) : redémarrez l’application et réessayez",
   "activityYtDlp": "Téléchargement de yt-dlp",
   "ytDlpMissingBanner": "yt-dlp est absent : il faut pour chercher et télécharger en ligne",
-  "csvImportNoPortal": "Le sélecteur de fichiers ne répond pas : installez xdg-desktop-portal-gtk (ou xdg-desktop-portal-kde) et redémarrez la session"
+  "csvImportNoPortal": "Le sélecteur de fichiers ne répond pas : installez xdg-desktop-portal-gtk (ou xdg-desktop-portal-kde) et redémarrez la session",
+  "logPlayFailed": "Lecture impossible",
+  "logPlayFailedSub": "{title}: {reason}",
+  "@logPlayFailedSub": {"placeholders": {"title": {"type": "String"}, "reason": {"type": "String"}}}
 }

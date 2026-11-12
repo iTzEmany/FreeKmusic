@@ -11,6 +11,7 @@ import 'package:codecore/services/online/download_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/online/online_song_row.dart';
+import 'package:codecore/ui/widgets/track_row.dart' show SwipeToQueue;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -152,7 +153,7 @@ void main() {
     container.read(selectionProvider('k').notifier).toggle(0);
     await tester.pump();
     expect(find.byTooltip('Altre opzioni'), findsNothing);
-    expect(find.byType(Dismissible), findsNothing);
+    expect(find.byType(SwipeToQueue), findsNothing);
     await tester.tap(find.text('Online song'));
     await tester.pump();
     expect(container.read(selectionProvider('k')).active, isFalse);

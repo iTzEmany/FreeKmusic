@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../../services/audio/online_entries.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -145,14 +146,35 @@ class _TrackRowState extends State<TrackRow> {
     return parts.join(', ');
   }
 
+  /// The cover with the tick box on top of it (a scrim keeps the box readable).
+  Widget _coverWithBox(BuildContext context, double cover, Widget box) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CoverImage(coverKey: widget.track.coverKey, size: cover),
+        Container(
+          width: cover,
+          height: cover,
+          decoration: BoxDecoration(
+            color: context.cc.bg.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(CcDims.rList),
+          ),
+        ),
+        box,
+      ],
+    );
+  }
+
   Widget _leading(BuildContext context, double cover, {bool dot = true}) {
     final t = widget.track;
     if (widget.selectionMode) {
-      return SelectionBox(
+      final album = widget.variant == TrackRowVariant.album;
+      final box = SelectionBox(
         selected: widget.selected,
         position: widget.selectedPosition,
-        size: widget.variant == TrackRowVariant.album ? 32 : cover,
+        size: album ? 32 : cover,
       );
+      return album ? box : _coverWithBox(context, cover, box);
     }
     if (widget.variant == TrackRowVariant.album) {
       final n = t.trackNumber;
@@ -406,7 +428,7 @@ class _TrackRowState extends State<TrackRow> {
         children: [
           SizedBox(
             width: 40,
-            child: widget.selectionMode
+            child: widget.selectionMode && widget.variant == TrackRowVariant.album
                 ? SelectionBox(
                     selected: widget.selected,
                     position: widget.selectedPosition,
@@ -423,10 +445,7 @@ class _TrackRowState extends State<TrackRow> {
           ),
           if (widget.variant != TrackRowVariant.album) ...[
             // The dot already sits in the number column.
-            if (widget.selectionMode)
-              CoverImage(coverKey: t.coverKey, size: cover)
-            else
-              _leading(context, cover, dot: false),
+            _leading(context, cover, dot: false),
             const SizedBox(width: 12),
           ],
           Expanded(flex: 5, child: titleBlock),
@@ -586,11 +605,24 @@ class LiveTrackRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isOnlineId(track.id)) {
-      return OnlineQueueRow(
+      final online = OnlineQueueRow(
         track: track,
         onTap: onTap,
         reorderIndex: reorderIndex,
         current: current,
+      );
+      if (variant == TrackRowVariant.queue || variant == TrackRowVariant.pick) {
+        return online;
+      }
+      return SwipeToQueue(
+        swipeKey: 'swipe-queue-${track.id}',
+        onQueue: () async {
+          final added = await ref
+              .read(playerControllerProvider)
+              .addToQueue(track.id);
+          if (context.mounted) showQueued(context, added);
+        },
+        child: online,
       );
     }
     final byId = ref.watch(
@@ -690,10 +722,10 @@ class LiveTrackRow extends ConsumerWidget {
   }
 }
 
-/// A swipe to the right that asks to queue [child]'s song; the row always
-/// comes back. One that starts at the left edge belongs to the system back
-/// gesture and does nothing (D-59).
-class SwipeToQueue extends StatelessWidget {
+/// A swipe to the right that asks to queue [child]'s song; the row follows
+/// the finger up to 60 % of its width and always comes back. One that starts
+/// at the left edge belongs to the system back gesture and does nothing (D-59).
+class SwipeToQueue extends StatefulWidget {
   const SwipeToQueue({
     super.key,
     required this.swipeKey,
@@ -706,31 +738,78 @@ class SwipeToQueue extends StatelessWidget {
   final Widget child;
 
   @override
+  State<SwipeToQueue> createState() => _SwipeToQueueState();
+}
+
+class _SwipeToQueueState extends State<SwipeToQueue> {
+  double _dx = 0;
+  bool _dragging = false, _fromEdge = false;
+
+  @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final edge = math.max(48.0, media.systemGestureInsets.left + 24);
-    return Listener(
-      onPointerDown: (e) => _lastDownX = e.position.dx,
-      child: Dismissible(
-        key: ValueKey(swipeKey),
-        direction: DismissDirection.startToEnd,
-        dismissThresholds: const {DismissDirection.startToEnd: 0.3},
-        background: Container(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: CcDims.gap24),
-          color: context.cc.surface2,
-          child: Icon(Icons.queue_rounded, color: context.cc.accentSoft),
-        ),
-        confirmDismiss: (_) async {
-          if (_lastDownX >= edge) onQueue();
-          return false;
-        },
-        child: child,
-      ),
+    return LayoutBuilder(
+      builder: (context, box) {
+        final w = box.maxWidth;
+        return Listener(
+          onPointerDown: (e) => _fromEdge = e.position.dx < edge,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragStart: (_) => setState(() => _dragging = true),
+            onHorizontalDragUpdate: (d) {
+              if (_fromEdge) return; // the system back gesture owns it
+              setState(
+                () => _dx = (_dx + d.delta.dx).clamp(0.0, w * _maxSwipe),
+              );
+            },
+            onHorizontalDragEnd: (_) => _end(w),
+            onHorizontalDragCancel: () => _end(w, cancelled: true),
+            child: Semantics(
+              customSemanticsActions: {
+                CustomSemanticsAction(label: context.l10n.addToQueue):
+                    widget.onQueue,
+              },
+              child: Stack(
+              children: [
+                if (_dx > 0)
+                  Positioned.fill(
+                    child: Container(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: CcDims.gap24),
+                      color: context.cc.surface2,
+                      child: Icon(
+                        Icons.queue_rounded,
+                        color: context.cc.accentSoft,
+                      ),
+                    ),
+                  ),
+                AnimatedContainer(
+                  duration: _dragging
+                      ? Duration.zero
+                      : const Duration(milliseconds: 150),
+                  transform: Matrix4.translationValues(_dx, 0, 0),
+                  child: widget.child,
+                ),
+              ],
+            ),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  void _end(double w, {bool cancelled = false}) {
+    final queue = !cancelled && !_fromEdge && _dx >= w * 0.3;
+    setState(() {
+      _dx = 0;
+      _dragging = false;
+    });
+    if (queue) widget.onQueue();
   }
 }
 
-/// Global x of the latest pointer-down: the one that started the swipe.
-// shortcut: one shared x for all rows, a second finger during a swipe overwrites it; per-pointer tracking if it ever matters.
-double _lastDownX = double.infinity;
+/// How far a row follows the swipe, as a share of its width.
+const _maxSwipe = 0.6;
+

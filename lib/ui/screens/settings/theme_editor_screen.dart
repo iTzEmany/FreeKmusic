@@ -34,14 +34,37 @@ class ContrastCheck {
 }
 
 List<ContrastCheck> contrastChecks(AppLocalizations l, CcColors c) => [
-  ContrastCheck(l.contrastTextBg, c.text, c.bg, 4.5,
-      () => (CcToken.text, ensureContrast(c.text, c.bg))),
-  ContrastCheck(l.contrastMutedSurface, c.textMuted, c.surface1, 4.5,
-      () => (CcToken.textMuted, ensureContrast(c.textMuted, c.surface1))),
-  ContrastCheck(l.contrastOnAccent, c.onAccent, c.accent, 4.5,
-      () => (CcToken.onAccent, ensureContrast(c.onAccent, c.accent))),
-  ContrastCheck(l.contrastAccentBg, c.accent, c.bg, 3,
-      () => (CcToken.accent, ensureContrast(c.accent, c.bg, min: 3))),
+  ContrastCheck(
+    l.contrastTextBg,
+    c.text,
+    c.bg,
+    4.5,
+    () => (CcToken.text, ensureContrast(c.text, c.bg)),
+  ),
+  ContrastCheck(
+    l.contrastMutedSurface,
+    c.textMuted,
+    Color.alphaBlend(c.surface1, c.bg),
+    4.5,
+    () => (
+      CcToken.textMuted,
+      ensureContrast(c.textMuted, Color.alphaBlend(c.surface1, c.bg)),
+    ),
+  ),
+  ContrastCheck(
+    l.contrastOnAccent,
+    c.onAccent,
+    c.accent,
+    4.5,
+    () => (CcToken.onAccent, ensureContrast(c.onAccent, c.accent)),
+  ),
+  ContrastCheck(
+    l.contrastAccentBg,
+    c.accent,
+    c.bg,
+    3,
+    () => (CcToken.accent, ensureContrast(c.accent, c.bg, min: 3)),
+  ),
 ];
 
 /// Makes or changes one of the user's themes. Nothing is applied until «Salva».
@@ -141,7 +164,12 @@ class _ThemeEditorScreenState extends ConsumerState<ThemeEditorScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, CcDims.gap32).withDock(context),
+              padding: const EdgeInsets.fromLTRB(
+                CcDims.margin,
+                CcDims.gap8,
+                CcDims.margin,
+                CcDims.gap32,
+              ).withDock(context),
               children: [
                 TextField(
                   controller: _name,
@@ -158,9 +186,21 @@ class _ThemeEditorScreenState extends ConsumerState<ThemeEditorScreen> {
                 const SizedBox(height: 8),
                 SegmentedBlocks<AppThemeId>(
                   items: [
-                    BlockItem(value: AppThemeId.notte, icon: Icons.dark_mode_outlined, label: l.themeNotte),
-                    BlockItem(value: AppThemeId.oled, icon: Icons.contrast, label: l.themeOled),
-                    BlockItem(value: AppThemeId.chiaro, icon: Icons.light_mode_outlined, label: l.themeChiaro),
+                    BlockItem(
+                      value: AppThemeId.notte,
+                      icon: Icons.dark_mode_outlined,
+                      label: l.themeNotte,
+                    ),
+                    BlockItem(
+                      value: AppThemeId.oled,
+                      icon: Icons.contrast,
+                      label: l.themeOled,
+                    ),
+                    BlockItem(
+                      value: AppThemeId.chiaro,
+                      icon: Icons.light_mode_outlined,
+                      label: l.themeChiaro,
+                    ),
                   ],
                   selected: _t.base,
                   onChanged: (v) => _set(_t.copyWith(base: v)),
@@ -168,8 +208,16 @@ class _ThemeEditorScreenState extends ConsumerState<ThemeEditorScreen> {
                 const SizedBox(height: 16),
                 SegmentedBlocks<bool>(
                   items: [
-                    BlockItem(value: false, icon: Icons.palette_outlined, label: l.themeModeSimple),
-                    BlockItem(value: true, icon: Icons.tune, label: l.themeModeAdvanced),
+                    BlockItem(
+                      value: false,
+                      icon: Icons.palette_outlined,
+                      label: l.themeModeSimple,
+                    ),
+                    BlockItem(
+                      value: true,
+                      icon: Icons.tune,
+                      label: l.themeModeAdvanced,
+                    ),
                   ],
                   selected: _advanced,
                   onChanged: (v) => setState(() {
@@ -186,6 +234,7 @@ class _ThemeEditorScreenState extends ConsumerState<ThemeEditorScreen> {
                     color: tokenColor(colors, t),
                     set: _t.overrides.containsKey(t),
                     open: _open == t,
+                    allowAlpha: hasAlphaToken(t),
                     recent: _recent,
                     onToggle: () => setState(() {
                       _commitOpen();
@@ -235,9 +284,11 @@ class _ContrastSection extends StatelessWidget {
         if (hasLowContrastText(colors))
           Padding(
             padding: const EdgeInsets.only(top: CcDims.gap4),
-            child: Text(l.themeLowContrastWarning,
-                key: const ValueKey('low-contrast-warning'),
-                style: text.bodySmall?.copyWith(color: cc.error)),
+            child: Text(
+              l.themeLowContrastWarning,
+              key: const ValueKey('low-contrast-warning'),
+              style: text.bodySmall?.copyWith(color: cc.error),
+            ),
           ),
         for (final c in checks)
           ListTile(
@@ -245,7 +296,9 @@ class _ContrastSection extends StatelessWidget {
             dense: true,
             contentPadding: EdgeInsets.zero,
             leading: Icon(
-              c.ok ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
+              c.ok
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.warning_amber_rounded,
               color: c.ok ? cc.accentSoft : cc.error,
             ),
             title: Text(c.label),
@@ -275,6 +328,7 @@ class _TokenRow extends StatelessWidget {
     required this.color,
     required this.set,
     required this.open,
+    required this.allowAlpha,
     required this.recent,
     required this.onToggle,
     required this.onChanged,
@@ -283,7 +337,7 @@ class _TokenRow extends StatelessWidget {
 
   final String label;
   final Color color;
-  final bool set, open;
+  final bool set, open, allowAlpha;
   final List<Color> recent;
   final VoidCallback onToggle, onReset;
   final ValueChanged<Color> onChanged;
@@ -315,7 +369,9 @@ class _TokenRow extends StatelessWidget {
                   icon: const Icon(Icons.restart_alt_rounded),
                   onPressed: onReset,
                 )
-              : Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded),
+              : Icon(
+                  open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                ),
         ),
         // Instant open/close: no per-row layout animation.
         if (open)
@@ -323,6 +379,7 @@ class _TokenRow extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: CcDims.gap12),
             child: CcColorPicker(
               color: color,
+              allowAlpha: allowAlpha,
               onChanged: onChanged,
               recent: recent,
               labels: pickerLabels(l),
@@ -336,7 +393,11 @@ class _TokenRow extends StatelessWidget {
 /// A few real widgets in the theme being made, so the colours can be judged
 /// together before they are saved.
 class ThemePreview extends StatelessWidget {
-  const ThemePreview({super.key, required this.colors, required this.background});
+  const ThemePreview({
+    super.key,
+    required this.colors,
+    required this.background,
+  });
 
   final CcColors colors;
   final ThemeBackground background;
@@ -375,7 +436,10 @@ class ThemePreview extends StatelessWidget {
                             color: colors.surface3,
                             borderRadius: BorderRadius.circular(CcDims.rList),
                           ),
-                          child: Icon(Icons.music_note_rounded, color: colors.accent),
+                          child: Icon(
+                            Icons.music_note_rounded,
+                            color: colors.accent,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -384,8 +448,12 @@ class ThemePreview extends StatelessWidget {
                             children: [
                               Text(l.tokenText, style: text.bodyLarge),
                               Text(l.tokenTextMuted, style: text.bodyMedium),
-                              Text(l.tokenTextFaint,
-                                  style: text.bodySmall?.copyWith(color: colors.textFaint)),
+                              Text(
+                                l.tokenTextFaint,
+                                style: text.bodySmall?.copyWith(
+                                  color: colors.textFaint,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -393,29 +461,48 @@ class ThemePreview extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: CcDims.gap12, vertical: CcDims.gap8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: CcDims.gap12,
+                        vertical: CcDims.gap8,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.surface1,
                         borderRadius: BorderRadius.circular(CcDims.rCard),
                       ),
                       child: Row(
                         children: [
-                          Expanded(child: Text(l.tokenSurface1, style: text.bodyMedium)),
+                          Expanded(
+                            child: Text(
+                              l.tokenSurface1,
+                              style: text.bodyMedium,
+                            ),
+                          ),
                           Switch(value: true, onChanged: (_) {}),
                         ],
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: CcDims.gap12, vertical: CcDims.gap8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: CcDims.gap12,
+                        vertical: CcDims.gap8,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.surface2,
                         borderRadius: BorderRadius.circular(CcDims.rCard),
                       ),
                       child: Row(
                         children: [
-                          Expanded(child: Text(l.tokenSurface2, style: text.bodyMedium)),
-                          Text(l.tokenError, style: TextStyle(color: colors.error)),
+                          Expanded(
+                            child: Text(
+                              l.tokenSurface2,
+                              style: text.bodyMedium,
+                            ),
+                          ),
+                          Text(
+                            l.tokenError,
+                            style: TextStyle(color: colors.error),
+                          ),
                         ],
                       ),
                     ),
@@ -424,8 +511,14 @@ class ThemePreview extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        FilledButton(onPressed: () {}, child: Text(l.tokenOnAccent)),
-                        OutlinedButton(onPressed: () {}, child: Text(l.tokenAccent)),
+                        FilledButton(
+                          onPressed: () {},
+                          child: Text(l.tokenOnAccent),
+                        ),
+                        OutlinedButton(
+                          onPressed: () {},
+                          child: Text(l.tokenAccent),
+                        ),
                         Chip(
                           label: Text(l.tokenAccentSoft),
                           backgroundColor: colors.surface3,

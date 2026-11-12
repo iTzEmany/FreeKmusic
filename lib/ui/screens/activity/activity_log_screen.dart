@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +11,8 @@ import '../../../providers/activity_log_providers.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../providers/activity_providers.dart' show ActivityKind;
 import '../../../providers/recognition_providers.dart';
-import '../../../services/recognition/track_identity.dart' show Recognition, RecogSource;
+import '../../../services/recognition/track_identity.dart'
+    show Recognition, RecogSource;
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -48,6 +51,7 @@ class ActivityLogScreen extends ConsumerStatefulWidget {
 
 class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
   LogFilter _filter = LogFilter.all;
+
   /// Days whose downloads are shown one by one (the day is a key that outlives a new download).
   final _open = <DateTime>{};
   int? _selectedId;
@@ -55,7 +59,8 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
   /// Wide: the row picked if it is still shown, else the first one shown.
   LogRow? _selected(List<LogDay> days) {
     final shown = [for (final d in days) ...d.rows];
-    return shown.firstWhereOrNull((r) => r.entry.id == _selectedId) ?? shown.firstOrNull;
+    return shown.firstWhereOrNull((r) => r.entry.id == _selectedId) ??
+        shown.firstOrNull;
   }
 
   @override
@@ -66,8 +71,14 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
 
   /// Where a line leads on its own, if it does.
   VoidCallback? _opener(LogEntry e) => switch (e.item?.kind) {
-    ActivityKind.secondOpinion => () => ShellNav.open<void>(context, const SecondOpinionLogScreen()),
-    ActivityKind.enrichBackground => () => ShellNav.open<void>(context, EnrichRoundScreen(entry: e)),
+    ActivityKind.secondOpinion => () => ShellNav.open<void>(
+      context,
+      const SecondOpinionLogScreen(),
+    ),
+    ActivityKind.enrichBackground => () => ShellNav.open<void>(
+      context,
+      EnrichRoundScreen(entry: e),
+    ),
     _ => null,
   };
 
@@ -85,7 +96,12 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
           context: context,
           isScrollControlled: true,
           showDragHandle: true,
-          builder: (_) => SafeArea(child: LogDetail(e, sources: recogSourcesLine(context.l10n, e.detail))),
+          builder: (_) => SafeArea(
+            child: LogDetail(
+              e,
+              sources: recogSourcesLine(context.l10n, e.detail),
+            ),
+          ),
         );
       }
     }
@@ -111,7 +127,10 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     final log = ref.watch(activityLogProvider);
     final days = groupLog(log.entries, _filter);
     // A filter may show nothing of the first page: read on until it does (not when it has no line at all).
-    if (days.isEmpty && log.entries.isNotEmpty && log.hasMore && (log.counts[_filter] ?? 0) > 0) {
+    if (days.isEmpty &&
+        log.entries.isNotEmpty &&
+        log.hasMore &&
+        (log.counts[_filter] ?? 0) > 0) {
       Future.microtask(ref.read(activityLogProvider.notifier).loadMore);
     }
     final sel = wide ? _selected(days) : null;
@@ -127,7 +146,14 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
               onPressed: () => showCcActionSheet<void>(
                 context: context,
                 groups: [
-                  [CcAction(icon: Icons.delete_sweep_outlined, label: l.logClearMenu, destructive: true, onTap: _clear)],
+                  [
+                    CcAction(
+                      icon: Icons.delete_sweep_outlined,
+                      label: l.logClearMenu,
+                      destructive: true,
+                      onTap: _clear,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -145,7 +171,10 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                     SizedBox(
                       width: 400,
                       child: sel == null
-                          ? EmptyState(icon: Icons.receipt_long_rounded, message: l.logPickEntry)
+                          ? EmptyState(
+                              icon: Icons.receipt_long_rounded,
+                              message: l.logPickEntry,
+                            )
                           : LogDetail(
                               sel.entry,
                               group: sel.group,
@@ -161,13 +190,21 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     );
   }
 
-  Widget _list(BuildContext context, ActivityLogState log, List<LogDay> days, bool wide, LogRow? sel) {
+  Widget _list(
+    BuildContext context,
+    ActivityLogState log,
+    List<LogDay> days,
+    bool wide,
+    LogRow? sel,
+  ) {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final now = DateTime.fromMillisecondsSinceEpoch(nowMs());
     final proposals = ref.watch(proposalsProvider).value ?? const [];
-    final showPending = proposals.isNotEmpty && (_filter == LogFilter.all || _filter == LogFilter.correction);
+    final showPending =
+        proposals.isNotEmpty &&
+        (_filter == LogFilter.all || _filter == LogFilter.correction);
     return CustomScrollView(
       slivers: [
         if (log.entries.isNotEmpty)
@@ -182,7 +219,10 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
         if (days.isEmpty)
           SliverToBoxAdapter(
             child: log.entries.isEmpty
-                ? EmptyState(icon: Icons.receipt_long_rounded, message: l.activityLogEmpty)
+                ? EmptyState(
+                    icon: Icons.receipt_long_rounded,
+                    message: l.activityLogEmpty,
+                  )
                 : Padding(
                     padding: const EdgeInsets.all(CcDims.margin),
                     child: Text(l.logNoMatch, style: theme.bodyMedium),
@@ -191,15 +231,21 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
         for (final (di, day) in days.indexed)
           SliverMainAxisGroup(
             slivers: [
-              PinnedHeaderSliver(child: _DayHeader(logDayLabel(l, locale, day.day, now), day)),
+              PinnedHeaderSliver(
+                child: _DayHeader(logDayLabel(l, locale, day.day, now), day),
+              ),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
                 sliver: SliverList.separated(
                   itemCount: day.rows.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (_, i) {
-                    if (di == days.length - 1 && i == day.rows.length - 1 && log.hasMore) {
-                      Future.microtask(ref.read(activityLogProvider.notifier).loadMore);
+                    if (di == days.length - 1 &&
+                        i == day.rows.length - 1 &&
+                        log.hasMore) {
+                      Future.microtask(
+                        ref.read(activityLogProvider.notifier).loadMore,
+                      );
                     }
                     final row = day.rows[i];
                     return LogEntryCard(
@@ -217,7 +263,10 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(CcDims.margin).withDock(context),
-              child: Text(l.logRetention, style: theme.bodySmall?.copyWith(color: context.cc.textMuted)),
+              child: Text(
+                l.logRetention,
+                style: theme.bodySmall?.copyWith(color: context.cc.textMuted),
+              ),
             ),
           ),
       ],
@@ -234,29 +283,45 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
-    final n = day.rows.fold(0, (a, r) => a + (r.group.isEmpty ? 1 : r.group.length));
-    return ColoredBox(
-      color: context.cc.bg,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, 12, CcDims.margin, 6),
-        child: Row(
-          children: [
-            Expanded(
-              child: Semantics(header: true, child: Text(label, style: theme.titleSmall)),
+    final n = day.rows.fold(
+      0,
+      (a, r) => a + (r.group.isEmpty ? 1 : r.group.length),
+    );
+    // With a page backdrop the header is see-through (blurring what scrolls under it), not a solid box.
+    final backdrop = Theme.of(context).scaffoldBackgroundColor.a == 0;
+    final body = Padding(
+      padding: const EdgeInsets.fromLTRB(CcDims.margin, 12, CcDims.margin, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(label, style: theme.titleSmall),
             ),
-            Text(
-              context.l10n.logDayCount(n),
-              style: theme.bodySmall?.copyWith(color: context.cc.textMuted),
-            ),
-          ],
-        ),
+          ),
+          Text(
+            context.l10n.logDayCount(n),
+            style: theme.bodySmall?.copyWith(color: context.cc.textMuted),
+          ),
+        ],
+      ),
+    );
+    if (!backdrop) return ColoredBox(color: context.cc.bg, child: body);
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: body,
       ),
     );
   }
 }
 
 class _Filters extends StatelessWidget {
-  const _Filters({required this.counts, required this.selected, required this.onSelected});
+  const _Filters({
+    required this.counts,
+    required this.selected,
+    required this.onSelected,
+  });
 
   final Map<LogFilter, int> counts;
   final LogFilter selected;
@@ -275,14 +340,19 @@ class _Filters extends StatelessWidget {
     };
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CcDims.margin,
+        vertical: 8,
+      ),
       child: Row(
         children: [
           for (final f in LogFilter.values)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
-                avatar: f == LogFilter.errors ? const Icon(Icons.error_outline_rounded, size: 18) : null,
+                avatar: f == LogFilter.errors
+                    ? const Icon(Icons.error_outline_rounded, size: 18)
+                    : null,
                 label: Text('${name(f)} ${counts[f]}'),
                 selected: selected == f,
                 onSelected: (_) => onSelected(f),
@@ -307,7 +377,10 @@ class _Pending extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final title = l.recogToConfirm(proposals.length);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CcDims.margin, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CcDims.margin,
+        vertical: 4,
+      ),
       child: CcTile(
         key: const ValueKey('to-confirm'),
         semanticsLabel: '$title. ${l.logPendingSub}',
@@ -326,12 +399,20 @@ class _Pending extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(title, style: theme.titleSmall),
-                        Text(l.logPendingSub, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
+                        Text(
+                          l.logPendingSub,
+                          style: theme.bodyMedium?.copyWith(
+                            color: cc.textMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(l.logPendingReview, style: theme.labelLarge?.copyWith(color: cc.accentSoft)),
+                  Text(
+                    l.logPendingReview,
+                    style: theme.labelLarge?.copyWith(color: cc.accentSoft),
+                  ),
                   const Icon(Icons.chevron_right_rounded),
                 ],
               ),
@@ -349,8 +430,14 @@ class _Pending extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        identLabel(l, p.rec.identity!.title, p.rec.identity!.artist),
-                        style: theme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        identLabel(
+                          l,
+                          p.rec.identity!.title,
+                          p.rec.identity!.artist,
+                        ),
+                        style: theme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -358,7 +445,10 @@ class _Pending extends StatelessWidget {
               if (proposals.length > 2)
                 Padding(
                   padding: const EdgeInsets.only(top: 8, left: 36),
-                  child: Text(l.logPendingMore(proposals.length - 2), style: theme.bodySmall),
+                  child: Text(
+                    l.logPendingMore(proposals.length - 2),
+                    style: theme.bodySmall,
+                  ),
                 ),
             ],
           ),

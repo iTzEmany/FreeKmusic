@@ -10,6 +10,7 @@ import '../../../providers/folder_actions.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
+import '../../widgets/blurred_chrome.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/new_playlist_menu.dart';
 import '../../widgets/segmented_blocks.dart';
@@ -89,10 +90,8 @@ class LibraryIsland extends StatelessWidget {
     final rows = LibraryIslandRows.of(context);
     // Own layer: the page under it (tab change, results) repaints without it.
     return RepaintBoundary(
-      child: Material(
-        color: context.cc.surface2,
-        borderRadius: BorderRadius.circular(CcDims.dockRadius),
-        clipBehavior: Clip.antiAlias,
+      child: BlurredChrome(
+        radius: CcDims.dockRadius,
         child: TweenAnimationBuilder<double>(
           tween: Tween(end: searching ? 1 : 0),
           duration: ccDuration(context, CcMotion.sheet),

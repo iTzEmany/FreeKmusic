@@ -16,7 +16,11 @@ import '../../widgets/online_queue_row.dart' show SuggestedMarker;
 import '../../widgets/play_buttons.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/shuffle_button.dart' show ShufflePill;
+import '../../../providers/player_providers.dart' show playerControllerProvider;
+import '../../widgets/show_msg.dart' show showQueued;
 import '../../widgets/track_actions.dart' show showTrackActions;
+import '../online/online_song_row.dart' show queueOnline;
+import '../../widgets/track_row.dart' show SwipeToQueue;
 import '../settings/settings_screen.dart';
 import 'daylist_labels.dart';
 
@@ -214,6 +218,13 @@ class _OwnRow extends ConsumerWidget {
     ),
     onPlay,
     () => showTrackActions(context, ref, track),
+    () async {
+      final added = await ref
+          .read(playerControllerProvider)
+          .addToQueue(track.id);
+      if (context.mounted) showQueued(context, added);
+    },
+    'own-${track.id}',
   );
 }
 
@@ -259,6 +270,8 @@ class _SuggestedRow extends ConsumerWidget {
       ),
       onPlay,
       () => showDislikeSheetFor(context, ref, result),
+      () => queueOnline(context, ref, result),
+      'sug-${result.indexKey}',
     );
   }
 }
@@ -270,64 +283,70 @@ Widget _row(
   Widget sub,
   VoidCallback onTap,
   VoidCallback onMore,
+  VoidCallback onQueue,
+  String swipeKey,
 ) {
   final text = Theme.of(context).textTheme;
   final cc = context.cc;
-  return Row(
-    children: [
-      Expanded(
-        child: MergeSemantics(
-          child: Semantics(
-            button: true,
-            child: InkWell(
-              onTap: onTap,
-              onLongPress: onMore,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  left: CcDims.margin,
-                  top: 6,
-                  bottom: 6,
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(CcDims.rList),
-                      child: cover,
-                    ),
-                    const SizedBox(width: CcDims.gap12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: text.bodyLarge,
-                          ),
-                          DefaultTextStyle.merge(
-                            style: text.bodySmall?.copyWith(
-                              color: cc.textMuted,
-                            ),
-                            child: sub,
-                          ),
-                        ],
+  return SwipeToQueue(
+    swipeKey: 'swipe-daylist-$swipeKey',
+    onQueue: onQueue,
+    child: Row(
+      children: [
+        Expanded(
+          child: MergeSemantics(
+            child: Semantics(
+              button: true,
+              child: InkWell(
+                onTap: onTap,
+                onLongPress: onMore,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: CcDims.margin,
+                    top: 6,
+                    bottom: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(CcDims.rList),
+                        child: cover,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: CcDims.gap12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: text.bodyLarge,
+                            ),
+                            DefaultTextStyle.merge(
+                              style: text.bodySmall?.copyWith(
+                                color: cc.textMuted,
+                              ),
+                              child: sub,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-      IconButton(
-        tooltip: context.l10n.moreOptions,
-        visualDensity: ccIconDensity,
-        onPressed: onMore,
-        icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
-      ),
-      const SizedBox(width: CcDims.gap8),
-    ],
+        IconButton(
+          tooltip: context.l10n.moreOptions,
+          visualDensity: ccIconDensity,
+          onPressed: onMore,
+          icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
+        ),
+        const SizedBox(width: CcDims.gap8),
+      ],
+    ),
   );
 }

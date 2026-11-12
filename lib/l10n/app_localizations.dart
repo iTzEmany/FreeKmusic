@@ -12090,6 +12090,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione'**
   String get csvImportNoPortal;
+
+  /// No description provided for @logPlayFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Riproduzione non riuscita'**
+  String get logPlayFailed;
+
+  /// No description provided for @logPlayFailedSub.
+  ///
+  /// In it, this message translates to:
+  /// **'{title}: {reason}'**
+  String logPlayFailedSub(String title, String reason);
 }
 
 class _AppLocalizationsDelegate

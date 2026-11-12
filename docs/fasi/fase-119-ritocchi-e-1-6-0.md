@@ -35,7 +35,7 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
 | Regressioni dello swipe (gesto di sistema «indietro», scroll verticale) | si tiene il bordo `edge` attuale e la soglia 0,3; test widget | swipe che parte scorrendo in verticale |
 
 ## Task
-- [ ] 119.1 Ritocchi UI: Registro (sfondo ed errori di streaming), swipe ovunque fino a 3/5, spunta sopra la copertina, sfocatura dell'isola, trasparenza delle superfici, pulsanti del brano suggerito (R-218..R-224, R-226)
+- [x] 119.1 Ritocchi UI: Registro (sfondo ed errori di streaming), swipe ovunque fino a 3/5, spunta sopra la copertina, sfocatura dell'isola, trasparenza delle superfici, pulsanti del brano suggerito (R-218..R-224, R-226)
   - File: `activity_log_screen.dart`, `activity_log_providers.dart`, `activity_providers.dart`, `track_row.dart` (`SwipeToQueue`, `TrackRow`), `online_song_row.dart`, `online_queue_row.dart`, `daylist_screen.dart`, `online_playlist_screen.dart`, `suggestions_screen.dart`, `bottom_bar.dart`, `library_island.dart`, nuovo widget comune per la sfocatura, `theme_editor_screen.dart`, `custom_theme.dart`, `lib/ui/screens/now_playing/suggested_info.dart` (`_Tile`), ARB (6 lingue) per la voce di errore
   - Passi: uno per requisito, ognuno col suo test widget; lo swipe con un limite al 60 % e la soglia 0,3 invariata
   - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart` + golden se cambiano (`scripts/guardie.sh`)
@@ -49,3 +49,11 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
 - A fine fase, sul Motorola: aggiorna FreeKmusic con l'APK della Release 1.6.0 (stessa firma) e rifai «Unisci» col backup di Codecore (fase 117). Controlla temi, statistiche, copertine, tag, playlist smart e podcast. Poi puoi disinstallare Codecore: i file rimasti nella sua cartella `Android/data` verranno cancellati (D-547).
 
 ## Note di deviazione
+- 119.1 (PR della fase 119):
+  - R-218: l'intestazione dei giorni sfoca la pagina sotto (`BackdropFilter`) invece di ridipingere l'immagine di sfondo allineata; non dipinge più un riquadro `cc.bg` pieno.
+  - In più rispetto al piano:
+    - lo skeleton dei crediti nel player è alto quanto la scheda con «Aggiorna», dopo che i crediti sono accesi di partenza (D-563);
+    - azione TalkBack «Aggiungi alla coda» sullo swipe;
+    - funzione unica `playbackReasonText`.
+  - La prova a vista sul Mi A3 si fa nel test di sistema con build release (fase 121, D-568).
+  - Il rilascio 119.2 va in fondo all'obiettivo, dopo le fasi 120–122 (D-568).
