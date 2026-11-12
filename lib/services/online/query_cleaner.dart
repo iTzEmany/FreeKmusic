@@ -34,7 +34,7 @@ final _remasterTail = RegExp(
 final _copyNumber = RegExp(r'\s*\(\d{1,2}\)\s*$');
 
 final _noisePhrase = RegExp(
-  r'\b(official video|official audio|lyric video|4k remaster|remastered)\b',
+  r'\b(official (?:(?:music|lyric|hd|4k) )*(?:video|audio)|music video\s*$|lyric video|4k remaster|remastered)\b',
   caseSensitive: false,
 );
 final _separator = RegExp(r' [-–—] ');
@@ -69,7 +69,7 @@ final _channelNo = RegExp(
 final _byArtist = RegExp(r'(?<=["”_])\s+by\s+([^"”_]+)$', caseSensitive: false);
 final _bracketGroup = RegExp(r'[\(\[\{][^\)\]\}]*[\)\]\}]');
 final _artistSuffix = RegExp(
-  r'\s*(?:-\s*)?(official|vevo|topic)$',
+  r'\s*(?:-\s*)?(official|vevo|topic|music videos?)$',
   caseSensitive: false,
 );
 
@@ -92,6 +92,12 @@ bool isGenericArtist(String artist) {
 const _maxInput = 300;
 String _cut(String s) => s.length > _maxInput ? s.substring(0, _maxInput) : s;
 
+/// [s] without [noise]; a title that is all noise stays as it was.
+String _strip(String s, RegExp noise) {
+  final out = s.replaceAll(noise, ' ');
+  return out.trim().isEmpty ? s : out;
+}
+
 CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   rawTitle = _cut(rawTitle);
   rawArtist = _cut(rawArtist);
@@ -102,7 +108,7 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   var genericArtist = isGenericArtist(rawArtist);
   var artist = rawArtist.trim();
 
-  title = title.replaceAll(_noiseGroup, ' ').replaceAll(_noisePhrase, ' ');
+  title = _strip(_strip(title, _noiseGroup), _noisePhrase);
   title = title
       .replaceAll(_emoji, ' ')
       .replaceAll(_cjkBrackets, ' ')
@@ -160,8 +166,13 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
       }
     }
   }
-  artist = artist.replaceFirst(_artistSuffix, '');
-  return CleanQuery(title.trim(), artist.trim(), tagged: tagged);
+  final bare = artist.replaceFirst(_artistSuffix, '');
+  if (bare.trim().isNotEmpty) artist = bare;
+  return CleanQuery(
+    title.trim().isEmpty ? rawTitle.trim() : title.trim(),
+    artist.trim(),
+    tagged: tagged,
+  );
 }
 
 /// (artist, title) of «a - b» when the artist is not known.

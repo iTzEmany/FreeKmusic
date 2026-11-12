@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
@@ -6,6 +7,7 @@ import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../tags/tag_reader.dart';
 import '../tags/tag_writer.dart';
+import 'pending_tags.dart';
 import 'track_file_sync.dart';
 
 /// Writes a library track's tags (and cover) into the file Codecore itself
@@ -15,6 +17,7 @@ import 'track_file_sync.dart';
 class DownloadTagger {
   DownloadTagger({
     required this.trackById,
+    required this.trackByPath,
     required this.sync,
     required this.reader,
     required this.downloadRoot,
@@ -23,9 +26,11 @@ class DownloadTagger {
     required this.playingPath,
     required this.playingChanges,
     this.onFailed,
+    this.pending,
   });
 
   final Future<Track?> Function(int id) trackById;
+  final Future<Track?> Function(String path) trackByPath;
   final TrackFileSync sync;
   final TagReader reader;
   final Future<String?> Function() downloadRoot;
@@ -37,12 +42,46 @@ class DownloadTagger {
   /// Told when the file was left without its tags (the Registro shows it).
   final Future<void> Function(Track, TagWriteReason)? onFailed;
 
+  /// Files still to tag, persisted across app restarts.
+  final PendingTags? pending;
+
   Future<void> _queue = Future.value();
   // Paths waiting (queued or deferred): one write per file however often asked.
   final _waiting = <String>{};
   final _deferred = <String, int>{};
   StreamSubscription<String?>? _sub;
   bool _disposed = false;
+  bool _resumed = false;
+
+  /// Remembers that track [id] still has to be tagged (until [tag] ends).
+  Future<void> markPending(int id) async {
+    try {
+      final t = await trackById(id);
+      if (t != null && enabled()) await pending?.add(t.path);
+    } on Object catch (e, st) {
+      AppLog.w('tagger: cannot mark $id pending', e, st);
+    }
+  }
+
+  /// App start: tags the files a previous run left pending. Once per process
+  /// (the widget that asks can be built again); files already waiting are live work.
+  Future<void> resumePending() async {
+    if (_resumed) return;
+    _resumed = true;
+    try {
+      for (final path in await pending?.paths() ?? const <String>[]) {
+        if (_waiting.contains(path)) continue;
+        final t = await File(path).exists() ? await trackByPath(path) : null;
+        if (t == null || !enabled()) {
+          await pending!.remove(path);
+        } else {
+          unawaited(tag(t.id));
+        }
+      }
+    } on Object catch (e, st) {
+      AppLog.w('tagger: resume failed', e, st);
+    }
+  }
 
   /// Queues the write for track [id]; completes when it was written, refused
   /// or put off until the song changes.
@@ -73,7 +112,10 @@ class DownloadTagger {
     } on Object catch (e, st) {
       AppLog.w('tagger: ${t.path} not written', e, st);
     } finally {
-      if (!_deferred.containsKey(t.path)) _waiting.remove(t.path);
+      if (!_deferred.containsKey(t.path)) {
+        _waiting.remove(t.path);
+        await pending?.remove(t.path);
+      }
     }
   }
 

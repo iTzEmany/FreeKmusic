@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/providers/folder_actions.dart';
 import 'package:drift/native.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -30,5 +33,45 @@ void main() {
     expect(await ensureDefaultFolder(repo, () async => scans++, resolve: fake), isFalse);
     expect((await repo.getAll()).length, 1);
     expect(scans, 0);
+  });
+
+  group('scanIfPermissionLate', () {
+    Future<SharedPreferences> prefs(bool flagged) async {
+      SharedPreferences.setMockInitialValues({if (flagged) kScanNeedsPermission: true});
+      return SharedPreferences.getInstance();
+    }
+
+    test('Android, the last scan was skipped for the permission, granted now: scans and clears the flag', () async {
+      final p = await prefs(true);
+      var scans = 0;
+      expect(await scanIfPermissionLate(p, () async => true, () async => scans++, android: true), isTrue);
+      expect(scans, 1);
+      expect(p.getBool(kScanNeedsPermission), isFalse);
+      expect(await scanIfPermissionLate(p, () async => true, () async => scans++, android: true), isFalse);
+    });
+
+    test('no flag (an empty library alone proves nothing), not Android or still denied: nothing', () async {
+      var scans = 0;
+      expect(await scanIfPermissionLate(await prefs(false), () async => true, () async => scans++, android: true), isFalse);
+      expect(await scanIfPermissionLate(await prefs(true), () async => true, () async => scans++, android: false), isFalse);
+      expect(await scanIfPermissionLate(await prefs(true), () async => false, () async => scans++, android: true), isFalse);
+      expect(scans, 0);
+    });
+
+    test('two calls at once scan once', () async {
+      final p = await prefs(true);
+      var scans = 0;
+      final gate = Completer<void>();
+      Future<void> scan() async {
+        scans++;
+        await gate.future;
+      }
+
+      final a = scanIfPermissionLate(p, () async => true, scan, android: true);
+      final b = scanIfPermissionLate(p, () async => true, scan, android: true);
+      gate.complete();
+      expect(await Future.wait([a, b]), [true, false]);
+      expect(scans, 1);
+    });
   });
 }

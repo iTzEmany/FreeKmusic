@@ -289,6 +289,21 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
       final f = e.value;
       if (f != null) _recordPlayFailure(f);
     });
+    final promoted = ref.read(downloadsProvider.notifier).promoted.listen((r) {
+      final now = _now();
+      add(
+        LogEntry(
+          at: now,
+          item: ActivityItem(
+            kind: ActivityKind.download,
+            key: 'dl-promoted-${now.microsecondsSinceEpoch}',
+            name: r.title,
+            running: false,
+          ),
+        ),
+      );
+    });
+    ref.onDispose(promoted.cancel);
     // Corrections are written straight to the database: the table tells when to read again.
     final sub = _repo.changes().listen((_) => unawaited(_refresh()));
     ref.onDispose(sub.cancel);

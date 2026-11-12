@@ -97,7 +97,11 @@ void main() {
     await pumpEventQueue();
     expect(jamBackend.loadedUris, isEmpty);
     gate.complete();
-    await pumpEventQueue();
+    // The load waits on real file I/O (temp cache dir): on a busy CI runner one
+    // event-queue turn is not always enough.
+    for (var i = 0; i < 50 && jamBackend.loaded.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
     expect(jamBackend.loaded, hasLength(1));
     expect(jamBackend.loadedUris, isEmpty);
   });

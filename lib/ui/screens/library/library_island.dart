@@ -270,11 +270,17 @@ class _TitleRow extends ConsumerWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        l.navLibrary,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                      // Scales down instead of cutting when the activity chip crowds the row.
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            l.navLibrary,
+                            maxLines: 1,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ),
                       ),
                     ),
                     const ActivityButton(),
