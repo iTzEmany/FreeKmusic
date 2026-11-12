@@ -78,7 +78,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     final index = DownloadIndex(File('${root.path}/downloads.json'));
-    final yt = _Yt('${root.path}/download-work/Song.m4a');
+    final yt = _Yt(p.join(root.path, 'download-work', 'Song.m4a'));
     final scanner = _Scanner();
     final c = ProviderContainer(overrides: [
       folderRepositoryProvider.overrideWithValue(FolderRepository(db)),
@@ -122,7 +122,7 @@ void main() {
     final c = ProviderContainer(overrides: [
       folderRepositoryProvider.overrideWithValue(FolderRepository(db)),
       trackRepositoryProvider.overrideWithValue(TrackRepository(db)),
-      youtubeServiceProvider.overrideWithValue(_Yt('${root.path}/download-work/Song.m4a')),
+      youtubeServiceProvider.overrideWithValue(_Yt(p.join(root.path, 'download-work', 'Song.m4a'))),
       settingsProvider.overrideWith(_Settings.new),
       libraryScannerProvider.overrideWithValue(_Scanner()),
       downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('${root.path}/downloads.json'))),
