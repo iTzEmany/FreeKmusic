@@ -244,7 +244,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - run: flutter pub get
-      - uses: reactivecircus/android-emulator-runner@v2
+      - name: Integration tests
+        env:
+          CODECORE_X64: '1' # the emulator is x86_64, the release ABIs are not
+        uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64

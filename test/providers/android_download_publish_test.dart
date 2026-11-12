@@ -18,6 +18,7 @@ import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 const _r = YtResult(id: 'abc', title: 'Song', channel: 'Chan', duration: Duration(seconds: 200));
 const _final = '/storage/emulated/0/Music/FreeKmusic/Song.m4a';
@@ -93,8 +94,8 @@ void main() {
     c.read(downloadsProvider.notifier).add(_r, tag: 'x');
     await Future<void>.delayed(const Duration(milliseconds: 300));
 
-    expect(yt.outDir!.path, '${root.path}/download-work');
-    expect(published, ['${root.path}/download-work/Song.m4a']);
+    expect(yt.outDir!.path, p.join(root.path, 'download-work'));
+    expect(published, [p.join(root.path, 'download-work', 'Song.m4a')]);
     expect(File(published.single).existsSync(), isFalse); // work copy deleted
     expect(scanner.scanned, [_final]);
     expect(index.idForPath(_final), _r.id);

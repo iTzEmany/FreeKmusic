@@ -89,9 +89,9 @@ void main() {
 
   test('the file portal check: missing portal is reported, a present one is not', () async {
     ProcessResult res(int code, String out) => ProcessResult(0, code, out, '');
-    expect(await filePortalMissing(run: (_, _) async => res(1, '')), isTrue);
-    expect(await filePortalMissing(run: (_, _) async => res(0, 'interface org.freedesktop.portal.Settings')), isTrue);
-    expect(await filePortalMissing(run: (_, _) async => res(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
-    expect(await filePortalMissing(run: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
+    expect(await filePortalMissing(linux: true, run: (_, _) async => res(1, '')), isTrue);
+    expect(await filePortalMissing(linux: true, run: (_, _) async => res(0, 'interface org.freedesktop.portal.Settings')), isTrue);
+    expect(await filePortalMissing(linux: true, run: (_, _) async => res(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
+    expect(await filePortalMissing(linux: true, run: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
   });
 }

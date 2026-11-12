@@ -7,8 +7,9 @@ import 'app_log.dart';
 /// one or when it cannot be told (no `gdbus`).
 Future<bool> filePortalMissing({
   Future<ProcessResult> Function(String, List<String>) run = Process.run,
+  bool? linux, // test seam
 }) async {
-  if (!Platform.isLinux) return false;
+  if (!(linux ?? Platform.isLinux)) return false;
   try {
     final r = await run('gdbus', [
       'introspect', '--session', '--timeout', '3',
