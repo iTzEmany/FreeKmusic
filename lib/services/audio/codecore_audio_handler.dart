@@ -633,7 +633,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       unawaited(_refreshWindow());
     } on Object catch (e, st) {
       // A load replaced by a newer one is not a failure (just_audio: «Loading interrupted»).
-      if (token != _loadToken || '$e'.toLowerCase().contains('interrupted')) {
+      // Only a superseded load: the text of an error says nothing (a network drop may say «interrupted»).
+      if (token != _loadToken) {
         AppLog.d('load superseded: $e');
         return;
       }

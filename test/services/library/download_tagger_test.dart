@@ -267,6 +267,39 @@ void main() {
       expect(_tags(t.path)['title'], 'Old');
     });
 
+    test('resuming twice tags once', () async {
+      final t = await add(music.path, 'a.mp3');
+      await tagger.markPending(t.id);
+      tagger.dispose();
+      tagger = make();
+      await tagger.resumePending();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      File(t.path).writeAsStringSync(jsonEncode({'title': 'Old'})); // a rewrite would show
+      await tagger.resumePending();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(writer.calls, 1);
+    });
+
+    test('a path whose switch is off or whose file is gone leaves the pending list', () async {
+      final t = await add(music.path, 'a.mp3');
+      final gone = await add(music.path, 'b.mp3');
+      await tagger.markPending(t.id);
+      await tagger.markPending(gone.id);
+      File(gone.path).deleteSync();
+      enabled = false;
+      tagger = make();
+      await tagger.resumePending();
+      enabled = true;
+      expect(await PendingTags(() async => File(p.join(root.path, 'pending.json'))).paths(), isEmpty);
+      expect(writer.calls, 0);
+    });
+
+    test('markPending never throws', () async {
+      await db.close();
+      await tagger.markPending(1);
+      db = AppDatabase(NativeDatabase.memory()); // tearDown closes it
+    });
+
     test('files never marked (old downloads) are left alone', () async {
       await add(music.path, 'a.mp3');
       await tagger.resumePending();

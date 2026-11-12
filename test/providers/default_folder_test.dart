@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/folder_repository.dart';
-import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/folder_actions.dart';
 import 'package:drift/native.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -34,24 +36,42 @@ void main() {
   });
 
   group('scanIfPermissionLate', () {
-    test('permission granted, a folder, an empty library: scans', () async {
-      await repo.add('/m');
+    Future<SharedPreferences> prefs(bool flagged) async {
+      SharedPreferences.setMockInitialValues({if (flagged) kScanNeedsPermission: true});
+      return SharedPreferences.getInstance();
+    }
+
+    test('Android, the last scan was skipped for the permission, granted now: scans and clears the flag', () async {
+      final p = await prefs(true);
       var scans = 0;
-      final tracks = TrackRepository(db);
-      expect(await scanIfPermissionLate(repo, tracks, () async => true, () async => scans++), isTrue);
+      expect(await scanIfPermissionLate(p, () async => true, () async => scans++, android: true), isTrue);
       expect(scans, 1);
+      expect(p.getBool(kScanNeedsPermission), isFalse);
+      expect(await scanIfPermissionLate(p, () async => true, () async => scans++, android: true), isFalse);
     });
 
-    test('no permission, no folder or a library with tracks: nothing', () async {
+    test('no flag (an empty library alone proves nothing), not Android or still denied: nothing', () async {
       var scans = 0;
-      final tracks = TrackRepository(db);
-      expect(await scanIfPermissionLate(repo, tracks, () async => true, () async => scans++), isFalse, reason: 'no folder');
-      await repo.add('/m');
-      expect(await scanIfPermissionLate(repo, tracks, () async => false, () async => scans++), isFalse);
-      await db.into(db.tracks).insert(TracksCompanion.insert(
-          path: '/m/a.mp3', title: 'A', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
-      expect(await scanIfPermissionLate(repo, tracks, () async => true, () async => scans++), isFalse);
+      expect(await scanIfPermissionLate(await prefs(false), () async => true, () async => scans++, android: true), isFalse);
+      expect(await scanIfPermissionLate(await prefs(true), () async => true, () async => scans++, android: false), isFalse);
+      expect(await scanIfPermissionLate(await prefs(true), () async => false, () async => scans++, android: true), isFalse);
       expect(scans, 0);
+    });
+
+    test('two calls at once scan once', () async {
+      final p = await prefs(true);
+      var scans = 0;
+      final gate = Completer<void>();
+      Future<void> scan() async {
+        scans++;
+        await gate.future;
+      }
+
+      final a = scanIfPermissionLate(p, () async => true, scan, android: true);
+      final b = scanIfPermissionLate(p, () async => true, scan, android: true);
+      gate.complete();
+      expect(await Future.wait([a, b]), [true, false]);
+      expect(scans, 1);
     });
   });
 }

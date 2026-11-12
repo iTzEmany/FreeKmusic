@@ -11,6 +11,8 @@ class PendingTags {
 
   final Future<File> Function() _file;
   Set<String>? _paths;
+  // Saves run one after another: two writers on one file would interleave.
+  Future<void> _writing = Future.value();
 
   Future<Set<String>> _load() async {
     if (_paths != null) return _paths!;
@@ -36,11 +38,16 @@ class PendingTags {
     if ((await _load()).remove(path)) await _save();
   }
 
-  Future<void> _save() async {
+  Future<void> _save() => _writing = _writing.then((_) => _write());
+
+  Future<void> _write() async {
     try {
       final f = await _file();
       await f.parent.create(recursive: true);
-      await f.writeAsString(jsonEncode(_paths!.toList()));
+      // Written aside and renamed: a kill mid-write never leaves half a file.
+      final tmp = File('${f.path}.tmp');
+      await tmp.writeAsString(jsonEncode(_paths!.toList()));
+      await tmp.rename(f.path);
     } on Object catch (e, st) {
       AppLog.w('pending tags write failed', e, st);
     }

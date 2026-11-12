@@ -263,12 +263,12 @@ void main() {
     expect(b.loaded.last, '/m/b.mp3');
   });
 
-  test('an «interrupted» backend error is not a failure either', () async {
-    backend.interrupted.add('/m/a.mp3');
+  test('a current-load error whose text says «interrupted» still fails and skips', () async {
+    backend.failMessages['/m/a.mp3'] = 'unplayable stream: connection interrupted by peer';
     await handler.playQueue(ids, 0);
     await settle();
-    expect(errors, isEmpty);
-    expect(handler.currentTrack!.title, 'a');
+    expect(errors.first.title, 'a');
+    expect(backend.loaded.last, '/m/b.mp3');
   });
 
   test('more than 3 consecutive errors stop playback', () async {

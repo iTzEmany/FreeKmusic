@@ -123,6 +123,7 @@ void main() {
   late _Yt yt;
   var metered = false;
   var online = true;
+  var checks = 0;
   late StreamPreparer prep;
 
   StreamPreparer make({
@@ -142,7 +143,10 @@ void main() {
         tracks: tracks,
         youtube: yt,
         isMetered: () async => metered,
-        hasNetwork: () async => online,
+        hasNetwork: () async {
+          checks++;
+          return online;
+        },
         cooldown: cooldown,
         clock: clock ?? DateTime.now,
       );
@@ -156,6 +160,7 @@ void main() {
     yt = _Yt();
     metered = false;
     online = true;
+    checks = 0;
     make();
   });
   tearDown(() async {
@@ -180,13 +185,29 @@ void main() {
     expect(yt.maxOpen, 2);
   });
 
-  test('no network: the load fails at once as a network error, yt-dlp never starts', () async {
+  test('online: a download never asks for the network', () async {
+    yt.autoFinish = true;
+    await prep.start('youtube:a', _i('a').result);
+    expect(checks, 0);
+  });
+
+  test('a network failure while offline: fails at once as a network error, no retry', () async {
     online = false;
+    yt.failuresLeft['a'] = 5;
+    yt.autoFinish = true;
     await expectLater(
       prep.start('youtube:a', _i('a').result).timeout(const Duration(seconds: 5)),
       throwsA(isA<YtException>().having((e) => e.kind, 'kind', YtErrorKind.network)),
     );
-    expect(yt.started, isEmpty);
+    expect(yt.started, ['a']);
+    expect(checks, 1);
+  });
+
+  test('a network failure while online: the normal retry', () async {
+    yt.failuresLeft['a'] = 1;
+    yt.autoFinish = true;
+    await prep.start('youtube:a', _i('a').result).timeout(const Duration(seconds: 5));
+    expect(yt.started, ['a', 'a']);
   });
 
   test('metered network and 10 tracks: only the next 3 are prepared', () async {

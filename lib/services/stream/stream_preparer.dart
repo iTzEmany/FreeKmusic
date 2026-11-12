@@ -441,6 +441,9 @@ class StreamPreparer {
     }
   }
 
+  static bool _networkish(Object e) =>
+      e is TimeoutException || (e is YtException && e.kind == YtErrorKind.network);
+
   static bool _isRateLimited(Object e) =>
       e is YtException &&
       (e.kind == YtErrorKind.rateLimited ||
@@ -463,6 +466,11 @@ class StreamPreparer {
         AppLog.w('stream download of ${j.key} ($attempt)', e, st);
         error = e;
         if (e is YtException && e.kind == YtErrorKind.network && e.detail == _offline) break; // a retry would wait again
+        // The network is asked only after a failure: no DNS round trip before every download.
+        if (_networkish(e) && !await hasNetwork()) {
+          error = const YtException(YtErrorKind.network, _offline);
+          break;
+        }
         if (isAgeRestricted(e) && !j.ageTried) {
           j.ageTried = true;
           j.substitute = await _ageSubstitute(j.result);
@@ -558,7 +566,6 @@ class StreamPreparer {
     final name = streamFileName(j.key);
     // A folder and a token per attempt: a hung attempt must not share them with the retry.
     final tmp = Directory(p.join(cache.dir.path, '.dl-$name-${_tmpSeq++}'));
-    if (!await hasNetwork()) throw const YtException(YtErrorKind.network, _offline);
     final cancel = j.cancel = CancelToken();
     j.t0 = clock();
     j.spawn = j.urlMs = j.downloaded = j.post = j.cached = null;

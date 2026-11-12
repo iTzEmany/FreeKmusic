@@ -28,6 +28,7 @@ class _State extends ConsumerState<ImportEventListener> {
   void initState() {
     super.initState();
     ref.read(playlistImportServiceProvider).recoverAfterRestart();
+    // The tagger resumes once per process, so a rebuilt widget does no harm.
     unawaited(ref.read(downloadTaggerProvider).resumePending());
   }
 

@@ -8,7 +8,7 @@ import '../core/permissions.dart' show hasAudioPermission;
 import '../services/tags/mp3_length_fix.dart';
 import 'folder_actions.dart' show scanIfPermissionLate;
 import 'activity_log_providers.dart';
-import 'database_providers.dart' show folderRepositoryProvider, trackRepositoryProvider;
+import 'database_providers.dart' show trackRepositoryProvider;
 import 'enrich_completer_providers.dart';
 import 'library_providers.dart' show scanStateProvider;
 import 'online_providers.dart' show autoParts;
@@ -62,14 +62,13 @@ final mp3LengthFixStartProvider = Provider<void>((ref) {
   });
 });
 
-/// Scans when the audio permission is granted after the last scan found it missing: at start
+/// Android: scans when the audio permission is granted after the last scan was skipped for it: at start
 /// (once settled) and on every resume (the user comes back from the system settings). Watched from the root.
 final permissionRescanProvider = Provider<void>((ref) {
   Future<void> check() async {
     if (ref.read(scanStateProvider).running) return;
     await scanIfPermissionLate(
-      ref.read(folderRepositoryProvider),
-      ref.read(trackRepositoryProvider),
+      await SharedPreferences.getInstance(),
       hasAudioPermission,
       () => ref.read(scanStateProvider.notifier).scanAll(),
     );

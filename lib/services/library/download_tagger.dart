@@ -51,22 +51,35 @@ class DownloadTagger {
   final _deferred = <String, int>{};
   StreamSubscription<String?>? _sub;
   bool _disposed = false;
+  bool _resumed = false;
 
   /// Remembers that track [id] still has to be tagged (until [tag] ends).
   Future<void> markPending(int id) async {
-    final t = await trackById(id);
-    if (t != null && enabled()) await pending?.add(t.path);
+    try {
+      final t = await trackById(id);
+      if (t != null && enabled()) await pending?.add(t.path);
+    } on Object catch (e, st) {
+      AppLog.w('tagger: cannot mark $id pending', e, st);
+    }
   }
 
-  /// App start: tags the files a previous run left pending.
+  /// App start: tags the files a previous run left pending. Once per process
+  /// (the widget that asks can be built again); files already waiting are live work.
   Future<void> resumePending() async {
-    for (final path in await pending?.paths() ?? const <String>[]) {
-      final t = File(path).existsSync() ? await trackByPath(path) : null;
-      if (t == null) {
-        await pending!.remove(path);
-      } else {
-        unawaited(tag(t.id));
+    if (_resumed) return;
+    _resumed = true;
+    try {
+      for (final path in await pending?.paths() ?? const <String>[]) {
+        if (_waiting.contains(path)) continue;
+        final t = await File(path).exists() ? await trackByPath(path) : null;
+        if (t == null || !enabled()) {
+          await pending!.remove(path);
+        } else {
+          unawaited(tag(t.id));
+        }
       }
+    } on Object catch (e, st) {
+      AppLog.w('tagger: resume failed', e, st);
     }
   }
 

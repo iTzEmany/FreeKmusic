@@ -208,4 +208,19 @@ void main() {
       expect(r.single.sep, '');
     },
   );
+
+  group('noise that is the whole title or part of it', () {
+    test('«Music Video» alone stays', () {
+      expect(cleanSearchQuery('Music Video', 'X').title, 'Music Video');
+    });
+    test('«Music Video Girl» stays', () {
+      expect(cleanSearchQuery('Music Video Girl', 'X').title, 'Music Video Girl');
+    });
+    test('a bracketed «Official Music Video» goes', () {
+      expect(cleanSearchQuery('Song (Official Music Video)', 'X').title, 'Song');
+    });
+    test('an artist that is only «Official» stays', () {
+      expect(cleanSearchQuery('Song', 'Official').artist, 'Official');
+    });
+  });
 }
