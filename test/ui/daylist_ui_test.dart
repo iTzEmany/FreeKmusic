@@ -15,6 +15,7 @@ import 'package:codecore/ui/screens/daylist/daylist_labels.dart'
 import 'package:codecore/ui/screens/daylist/daylist_card.dart';
 import 'package:codecore/ui/screens/daylist/daylist_screen.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
+import 'package:codecore/ui/widgets/track_row.dart' show SwipeToQueue;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -292,5 +293,15 @@ void main() {
       expect(h.store.readMoodTable().moodsOf('jazz'), contains(Mood.energetic));
       await h.dispose(tester);
     });
+  });
+
+  testWidgets('a swipe on a daylist row queues the track (R-220)', (tester) async {
+    await pump(tester, const DaylistScreen(), _state);
+    expect(find.byType(SwipeToQueue), findsWidgets);
+    final y = tester.getCenter(find.text('Song 0')).dy;
+    await tester.dragFrom(Offset(150, y), const Offset(300, 0));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(h.handler.queueIds, hasLength(1));
+    await h.dispose(tester);
   });
 }

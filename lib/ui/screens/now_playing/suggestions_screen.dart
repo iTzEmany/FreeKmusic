@@ -114,6 +114,7 @@ class _SuggestionRow extends ConsumerWidget {
       inLibrary: inLibrary,
       item: item,
       square: true,
+      onQueue: () => queueOnline(context, ref, result),
       note: l.suggestionsRowNote(record.seedTitle, suggestionOutcomeText(l, record.outcome)),
       onDownload: () {
         ref.read(downloadsProvider.notifier).add(result);
