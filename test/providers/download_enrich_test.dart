@@ -14,6 +14,9 @@ class _Tagger implements DownloadTagger {
   Future<void> tag(int id) async => tagged.add(id);
 
   @override
+  Future<void> markPending(int id) async {}
+
+  @override
   dynamic noSuchMethod(Invocation i) => throw UnimplementedError();
 }
 

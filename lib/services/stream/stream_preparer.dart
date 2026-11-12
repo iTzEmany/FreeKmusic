@@ -75,6 +75,8 @@ class _Job {
   var attempt = 0;
 }
 
+const _offline = 'no network';
+
 /// Downloads the queue's online tracks into the [StreamCache] ahead of the
 /// player (at most [maxParallel] at once, queue order, one per key).
 /// The handler calls [setQueue] before [ready] (45.4).
@@ -84,6 +86,7 @@ class StreamPreparer {
     required this.tracks,
     required this.youtube,
     required this.isMetered,
+    this.hasNetwork = _dnsReachable,
     this.maxParallel = 2,
     this.meteredAhead = 3,
     this.cooldown = const Duration(minutes: 5),
@@ -114,6 +117,9 @@ class StreamPreparer {
   final TrackRepository tracks;
   final YoutubeService youtube;
   final Future<bool> Function() isMetered;
+
+  /// False when there is no connectivity: the load then fails at once instead of waiting on yt-dlp's DNS retries.
+  final Future<bool> Function() hasNetwork;
   final int maxParallel, meteredAhead;
 
   /// Pause of the prefetch after a 403/429 (like Shuffle+'s source cooldown).
@@ -426,6 +432,18 @@ class StreamPreparer {
     unawaited(_run(j));
   }
 
+  static Future<bool> _dnsReachable() async {
+    try {
+      return (await InternetAddress.lookup('www.youtube.com').timeout(const Duration(seconds: 3))).isNotEmpty;
+    } on Object catch (e) {
+      AppLog.d('stream preparer: no network: $e');
+      return false;
+    }
+  }
+
+  static bool _networkish(Object e) =>
+      e is TimeoutException || (e is YtException && e.kind == YtErrorKind.network);
+
   static bool _isRateLimited(Object e) =>
       e is YtException &&
       (e.kind == YtErrorKind.rateLimited ||
@@ -447,6 +465,12 @@ class StreamPreparer {
         }
         AppLog.w('stream download of ${j.key} ($attempt)', e, st);
         error = e;
+        if (e is YtException && e.kind == YtErrorKind.network && e.detail == _offline) break; // a retry would wait again
+        // The network is asked only after a failure: no DNS round trip before every download.
+        if (_networkish(e) && !await hasNetwork()) {
+          error = const YtException(YtErrorKind.network, _offline);
+          break;
+        }
         if (isAgeRestricted(e) && !j.ageTried) {
           j.ageTried = true;
           j.substitute = await _ageSubstitute(j.result);

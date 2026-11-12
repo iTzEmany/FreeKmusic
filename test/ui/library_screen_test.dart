@@ -24,7 +24,9 @@ import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:codecore/providers/activity_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
+import 'package:codecore/ui/widgets/activity_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../support/app_harness.dart';
 import '../support/search_input.dart';
@@ -514,6 +516,30 @@ void main() {
         expect(r.width, greaterThanOrEqualTo(48 - 0.01), reason: '${e.widget}');
       }
     }
+    await h.dispose(t);
+  });
+
+  testWidgets('with the activity chip showing, the title is not cut to an ellipsis', (t) async {
+    t.view.physicalSize = const Size(360, 1400);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, tracks: 4);
+    await h.pump(
+      t,
+      const LibraryScreen(),
+      textScale: 1.3,
+      extraOverrides: [
+        activityProvider.overrideWithValue(const ActivityState([
+          ActivityItem(kind: ActivityKind.scan, key: 'scan', name: null, progress: 0.3),
+        ], [])),
+      ],
+    );
+    await _settle(t);
+    expect(find.byType(ActivityButton), findsOneWidget);
+    final p = t.renderObject<RenderParagraph>(find.text('Libreria'));
+    expect(p.didExceedMaxLines, isFalse);
+    expect(t.getSize(find.text('Libreria')).width, greaterThan(60));
+    expect(find.text('Libreria'), findsOneWidget);
     await h.dispose(t);
   });
 

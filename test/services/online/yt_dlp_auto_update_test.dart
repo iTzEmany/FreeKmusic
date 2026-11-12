@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:codecore/providers/yt_dlp_update_providers.dart';
@@ -88,10 +90,38 @@ void main() {
   }
 
   test('the file portal check: missing portal is reported, a present one is not', () async {
-    ProcessResult res(int code, String out) => ProcessResult(0, code, out, '');
-    expect(await filePortalMissing(run: (_, _) async => res(1, '')), isTrue);
-    expect(await filePortalMissing(run: (_, _) async => res(0, 'interface org.freedesktop.portal.Settings')), isTrue);
-    expect(await filePortalMissing(run: (_, _) async => res(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
-    expect(await filePortalMissing(run: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
+    Future<Process> proc(int code, String out) async => _FakeProc(Future.value(code), out);
+    expect(await filePortalMissing(start: (_, _) => proc(1, '')), isTrue);
+    expect(await filePortalMissing(start: (_, _) => proc(0, 'interface org.freedesktop.portal.Settings')), isTrue);
+    expect(await filePortalMissing(start: (_, _) => proc(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
+    expect(await filePortalMissing(start: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
+    // gdbus introspect rejects --timeout (prints usage, exit 1).
+    late List<String> args;
+    await filePortalMissing(start: (_, a) {
+      args = a;
+      return proc(0, '');
+    });
+    expect(args, isNot(contains('--timeout')));
   });
+
+  test('the file portal check: a portal that never answers is missing and its process is killed', () async {
+    final p = _FakeProc(Completer<int>().future, '');
+    expect(await filePortalMissing(start: (_, _) async => p), isTrue);
+    expect(p.killed, isTrue);
+  });
+}
+
+class _FakeProc implements Process {
+  _FakeProc(this.exitCode, String out) : stdout = Stream.value(utf8.encode(out));
+  @override
+  final Future<int> exitCode;
+  @override
+  final Stream<List<int>> stdout;
+  @override
+  final Stream<List<int>> stderr = const Stream.empty();
+  bool killed = false;
+  @override
+  bool kill([ProcessSignal signal = ProcessSignal.sigterm]) => killed = true;
+  @override
+  dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
 }

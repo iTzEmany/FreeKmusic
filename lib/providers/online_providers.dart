@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
@@ -32,6 +33,9 @@ import '../services/online/request_budget.dart' show apiIdentified;
 import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/online/quiet_enricher.dart';
 import '../services/library/download_tagger.dart';
+import '../services/library/pending_tags.dart';
+import 'package:path/path.dart' as p;
+import '../core/paths.dart' show appSupportDir;
 import '../services/library/track_corrections.dart';
 import '../services/library/track_file_sync.dart';
 import '../services/recognition/track_identity.dart' show Recognition;
@@ -454,6 +458,10 @@ final enrichingTracksProvider = StreamProvider<Set<int>>((ref) async* {
   yield* enricher.changes;
 });
 
+final pendingTagsProvider = Provider<PendingTags>(
+  (ref) => PendingTags(() async => File(p.join(await appSupportDir(), 'pending-tags.json'))),
+);
+
 /// Writes the tags of files Codecore downloaded or received into them.
 /// Call `tag(trackId)` once the row has its final tags (also after a receive).
 final downloadTaggerProvider = Provider<DownloadTagger>((ref) {
@@ -461,8 +469,11 @@ final downloadTaggerProvider = Provider<DownloadTagger>((ref) {
   final tracks = ref.watch(trackRepositoryProvider);
   final covers = ref.watch(coverStoreProvider);
   final handler = ref.watch(audioHandlerProvider);
+  final pending = ref.watch(pendingTagsProvider);
   final tagger = DownloadTagger(
     trackById: tracks.getById,
+    trackByPath: tracks.byPath,
+    pending: pending,
     sync: TrackFileSync(db, () => ref.read(safeTagWriterProvider.future)),
     reader: ref.watch(tagReaderProvider),
     downloadRoot: () async =>
@@ -492,6 +503,7 @@ final downloadTaggerProvider = Provider<DownloadTagger>((ref) {
 /// write its tags now when enrichment is off.
 void afterDownload(Ref ref, int trackId) {
   try {
+    unawaited(ref.read(downloadTaggerProvider).markPending(trackId));
     if (autoParts(ref.read(settingsProvider)).isNotEmpty) {
       ref.read(downloadEnricherProvider).add(trackId);
     } else {
@@ -511,6 +523,7 @@ void afterDownload(Ref ref, int trackId) {
 /// [read] is `ref.read` of a Ref or a WidgetRef.
 void afterReceive(T Function<T>(ProviderListenable<T>) read, int trackId) {
   try {
+    unawaited(read(downloadTaggerProvider).markPending(trackId));
     if (autoParts(read(settingsProvider)).isNotEmpty) {
       read(downloadEnricherProvider).add(trackId);
     } else {

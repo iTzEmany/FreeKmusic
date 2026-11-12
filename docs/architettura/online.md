@@ -105,6 +105,8 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - Gli episodi scaricati stanno in `<appSupportDir>/podcasts/<id>/`, fuori da `folders`: la scansione non li vede.
 - Il gestore audio non scrive sui podcast: chiama `onEpisodeHeard`, che `main.dart` collega a `PodcastRepository.markPlayedByTrack`.
 
+- **Tag dei download che sopravvivono a un riavvio**: `DownloadTagger.markPending` registra il file in `pending-tags.json` (`PendingTags`) appena il brano è pronto; il file esce dall'elenco quando la scrittura finisce (riuscita o rifiutata, così un errore non si ripete a ogni avvio). All'avvio `resumePending` (da `ImportEventListener`) rimette in coda i file ancora elencati; i download vecchi, mai elencati, non vengono toccati.
+
 ## Invarianti da non rompere
 
 - Ogni chiamata YTM passa da `budgetedYtm`; un 429 deve far scattare il `SourceCooldown`.

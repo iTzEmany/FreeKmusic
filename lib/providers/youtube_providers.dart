@@ -137,6 +137,10 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   /// scanned into the library.
   Stream<DownloadItem> get settled => _settled.stream;
 
+  /// Songs that joined the library from the stream cache (no queue item).
+  Stream<YtResult> get promoted => _promoted.stream;
+  final _promoted = StreamController<YtResult>.broadcast();
+
   Future<void> _dropWorkCopy(String path) async {
     try {
       await File(path).delete();
@@ -206,6 +210,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     ref.onDispose(() {
       _queue.dispose();
       _settled.close();
+      _promoted.close();
       _promoteErrors.close();
     });
     return const [];
@@ -278,6 +283,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     try {
       if (await ref.read(streamPromoterProvider).promote(r)) {
         ref.invalidate(downloadIndexProvider); // rows and player watch the index
+        if (!_promoted.isClosed) _promoted.add(r); // the Registro line: a promotion has no queue item
         await _joinPlaylist(r, parseAddToPlaylistTag(tag));
         _resyncPlayer();
         return true;

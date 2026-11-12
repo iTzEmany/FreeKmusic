@@ -10,6 +10,10 @@ class FakeBackend implements AudioBackend, GaplessCapable {
   final titleC = StreamController<String?>.broadcast();
   final loaded = <String>[];
   final failing = <String>{};
+
+  /// Paths whose load fails like a load replaced by a newer one.
+  /// Paths that fail with an unplayable error carrying this message.
+  final failMessages = <String, String>{};
   bool playing = false;
 
   /// Like just_audio: a player that was playing goes on playing a file loaded
@@ -53,6 +57,8 @@ class FakeBackend implements AudioBackend, GaplessCapable {
   @override
   Future<void> load(String filePath) async {
     if (failing.contains(filePath)) throw const BackendException('missing', fileMissing: true);
+    final m = failMessages[filePath];
+    if (m != null) throw BackendException(m);
     nextPath = null;
     loaded.add(filePath);
     if (forgetSpeedOnLoad) speed = 1.0;

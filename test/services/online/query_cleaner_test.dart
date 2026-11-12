@@ -19,6 +19,9 @@ void main() {
     ['Jay-Z - Empire State of Mind', '', 'Empire State of Mind', 'Jay-Z'],
     ['Don’t Stop Believin’', 'Journey', "Don't Stop Believin'", 'Journey'],
     ['song.mp3', 'Artist - Topic', 'song', 'Artist'],
+    ['Queen - Bohemian Rhapsody (Official Music Video)', 'Queen Music videos', 'Bohemian Rhapsody', 'Queen'],
+    ['Bohemian Rhapsody OFFICIAL MUSIC VIDEO', 'Queen Music Video', 'Bohemian Rhapsody', 'Queen'],
+    ['Hello (official HD music video)', 'Adele OFFICIAL', 'Hello', 'Adele'],
     // extra cases
     ['Spider-Man Theme', 'Unknown', 'Spider-Man Theme', 'Unknown'],
     ['Adele - Hello [Official Audio]', 'Adele VEVO', 'Hello', 'Adele'],
@@ -205,4 +208,19 @@ void main() {
       expect(r.single.sep, '');
     },
   );
+
+  group('noise that is the whole title or part of it', () {
+    test('«Music Video» alone stays', () {
+      expect(cleanSearchQuery('Music Video', 'X').title, 'Music Video');
+    });
+    test('«Music Video Girl» stays', () {
+      expect(cleanSearchQuery('Music Video Girl', 'X').title, 'Music Video Girl');
+    });
+    test('a bracketed «Official Music Video» goes', () {
+      expect(cleanSearchQuery('Song (Official Music Video)', 'X').title, 'Song');
+    });
+    test('an artist that is only «Official» stays', () {
+      expect(cleanSearchQuery('Song', 'Official').artist, 'Official');
+    });
+  });
 }
