@@ -51,10 +51,12 @@ final enrichCompleterStartProvider = Provider<void>((ref) {
 /// Info / header-less fix. A flag in the preferences makes it run a single time. Watched from the root.
 final mp3LengthFixStartProvider = Provider<void>((ref) {
   Future<void> run() async {
-    final fix = Mp3LengthFix(ref.read(trackRepositoryProvider), await SharedPreferences.getInstance());
-    await fix.runOnce();
-    await SharedCoverFix(ref.read(trackRepositoryProvider), ref.read(libraryScannerProvider), await SharedPreferences.getInstance())
-        .runOnce();
+    // Read before any await: the provider may be disposed meanwhile (tests, root rebuild).
+    final tracks = ref.read(trackRepositoryProvider);
+    final scanner = ref.read(libraryScannerProvider);
+    final prefs = await SharedPreferences.getInstance();
+    await Mp3LengthFix(tracks, prefs).runOnce();
+    await SharedCoverFix(tracks, scanner, prefs).runOnce();
   }
 
   ref.listen(scanStateProvider.select((s) => s.running), (was, now) {
