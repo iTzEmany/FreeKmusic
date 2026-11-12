@@ -1,5 +1,6 @@
 import 'package:codecore/core/clock.dart';
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/services/covers/cover_store.dart';
 import 'package:codecore/services/online/curiosity_finder.dart';
 import 'package:codecore/services/online/itunes_client.dart' show ItunesMatch;
 import 'package:codecore/services/online/wikipedia_client.dart' show Curiosity;
@@ -67,6 +68,22 @@ void main() {
       await r.engine.completeOne(id, {EnrichPart.meta});
       expect(r.web.bytes, 0);
       expect((await r.repo.getById(id))!.hasCover, isFalse);
+    });
+
+    test('a row on the shared unknown|dir cover still fetches its real one', () async {
+      final id = await r.add();
+      const old = 'unknown|/';
+      await (r.db.update(r.db.tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(
+          albumKey: const Value(old),
+          hasCover: const Value(true),
+          coverKey: Value(CoverStore.coverKeyFor(old)),
+        ),
+      );
+      await r.engine.completeOne(id, {EnrichPart.meta});
+      final t = (await r.repo.getById(id))!;
+      expect(t.hasCover, isTrue);
+      expect(t.coverKey, isNot(CoverStore.coverKeyFor(old)));
     });
 
     test(

@@ -361,6 +361,27 @@ class TrackRepository {
         );
   }
 
+  /// Rows with an automatic cover whose album is a real one (not «unknown|dir»).
+  Future<List<Track>> autoCoverRowsOfRealAlbums() =>
+      (_db.select(_db.tracks)..where(
+            (t) =>
+                t.coverSource.equals(0) &
+                t.coverKey.isNotNull() &
+                t.albumKey.like('unknown|%').not(),
+          ))
+          .get();
+
+  /// Sets the automatic cover of one row (null clears it); a hand-picked one stays.
+  Future<void> setAutoCover(int trackId, String? coverKey) =>
+      (_db.update(_db.tracks)
+            ..where((t) => t.id.equals(trackId) & t.coverSource.equals(0)))
+          .write(
+            TracksCompanion(
+              hasCover: Value(coverKey != null),
+              coverKey: Value(coverKey),
+            ),
+          );
+
   /// A hand-picked cover for one track (`cover_source = 2`).
   Future<void> setManualCover(int trackId, String coverKey) =>
       (_db.update(_db.tracks)..where((t) => t.id.equals(trackId))).write(

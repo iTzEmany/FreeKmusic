@@ -158,7 +158,7 @@ class EnrichCommitter {
         g.metaAsked &&
         !c.fills &&
         m?.artworkUrl != null &&
-        !f.hasCover &&
+        !f.hasOwnCover &&
         f.coverSource == 0;
     // A cover that is yet to be applied settles meta after it.
     final metaLeft = g.metaAsked && !c.coverPending && !c.fills && !metaEmpty;
@@ -189,7 +189,7 @@ class EnrichCommitter {
     final saved =
         fetched &&
         g.coverAlbum == albumKey &&
-        !f.hasCover &&
+        !f.hasOwnCover &&
         f.coverSource == 0;
     if (saved) {
       await tracks.setCoverForAlbum(
