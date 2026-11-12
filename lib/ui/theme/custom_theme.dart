@@ -111,7 +111,9 @@ class ThemeBackground {
       imagePath: path is String && path.isNotEmpty ? path : null,
       dim: num01(j['dim'], 0, 0.8, 0.35),
       blur: num01(j['blur'], 0, 20, 0),
-      coverBackdrop: j['coverBackdrop'] is bool ? j['coverBackdrop'] as bool : true,
+      coverBackdrop: j['coverBackdrop'] is bool
+          ? j['coverBackdrop'] as bool
+          : true,
     );
   }
 
@@ -127,12 +129,28 @@ class ThemeBackground {
       other.coverBackdrop == coverBackdrop;
 
   @override
-  int get hashCode =>
-      Object.hash(kind, gradientEnd, angle, imagePath, dim, blur, coverBackdrop);
+  int get hashCode => Object.hash(
+    kind,
+    gradientEnd,
+    angle,
+    imagePath,
+    dim,
+    blur,
+    coverBackdrop,
+  );
 }
 
-/// A colour is always fully opaque in a theme: a see-through text or surface
-/// would change with what is behind it.
+/// Only the three surfaces may be see-through (D-551), never under 20 % opaque.
+bool hasAlphaToken(CcToken t) =>
+    t == CcToken.surface1 || t == CcToken.surface2 || t == CcToken.surface3;
+
+const _minSurfaceAlpha = 0x33;
+
+/// A colour is fully opaque in a theme: a see-through text would change with
+/// what is behind it. A surface keeps its alpha, clamped to >= 20 %.
+Color _fit(CcToken t, Color c) => c.withAlpha(
+  hasAlphaToken(t) ? (c.a * 255).round().clamp(_minSurfaceAlpha, 0xFF) : 0xFF,
+);
 Color _opaque(Color c) => c.withAlpha(0xFF);
 
 /// A theme the user made: a built-in theme as the starting point, the colours
@@ -181,7 +199,8 @@ class CustomTheme {
 
   /// What goes into a file for another device: a picture lives in this
   /// device's own folder, so it is left out.
-  CustomTheme forExport() => copyWith(background: background.copyWith(clearImage: true));
+  CustomTheme forExport() =>
+      copyWith(background: background.copyWith(clearImage: true));
 
   @override
   bool operator ==(Object other) =>
@@ -193,11 +212,18 @@ class CustomTheme {
       other.background == background;
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, base, Object.hashAllUnordered(overrides.entries.map((e) => Object.hash(e.key, e.value))), background);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    base,
+    Object.hashAllUnordered(
+      overrides.entries.map((e) => Object.hash(e.key, e.value)),
+    ),
+    background,
+  );
 
   CustomTheme withColor(CcToken t, Color c) =>
-      copyWith(overrides: {...overrides, t: _opaque(c)});
+      copyWith(overrides: {...overrides, t: _fit(t, c)});
 
   /// Back to the derived value for [t].
   CustomTheme withoutColor(CcToken t) =>
@@ -218,7 +244,8 @@ class CustomTheme {
 
     // Surfaces step away from the background towards the text colour.
     Color surface(CcToken t, Color baseValue, double step) =>
-        o(t) ?? (bgSet ? Color.lerp(bg, text, light ? step * 0.85 : step)! : baseValue);
+        o(t) ??
+        (bgSet ? Color.lerp(bg, text, light ? step * 0.85 : step)! : baseValue);
 
     final muted = bgSet || textSet;
     final accent = o(CcToken.accent) ?? b.accent;
@@ -228,13 +255,20 @@ class CustomTheme {
       surface2: surface(CcToken.surface2, b.surface2, 0.10),
       surface3: surface(CcToken.surface3, b.surface3, 0.17),
       accent: accent,
-      accentSoft: o(CcToken.accentSoft) ??
+      accentSoft:
+          o(CcToken.accentSoft) ??
           (accentSet || bgSet ? accentSoftFor(accent, light) : b.accentSoft),
-      onAccent: o(CcToken.onAccent) ?? (accentSet ? onAccentFor(accent) : b.onAccent),
+      onAccent:
+          o(CcToken.onAccent) ?? (accentSet ? onAccentFor(accent) : b.onAccent),
       text: text,
-      textMuted: o(CcToken.textMuted) ?? (muted ? Color.lerp(text, bg, 0.35)! : b.textMuted),
-      textFaint: o(CcToken.textFaint) ?? (muted ? Color.lerp(text, bg, 0.6)! : b.textFaint),
-      heroBase: o(CcToken.heroBase) ??
+      textMuted:
+          o(CcToken.textMuted) ??
+          (muted ? Color.lerp(text, bg, 0.35)! : b.textMuted),
+      textFaint:
+          o(CcToken.textFaint) ??
+          (muted ? Color.lerp(text, bg, 0.6)! : b.textFaint),
+      heroBase:
+          o(CcToken.heroBase) ??
           (accentSet || bgSet ? heroFor(accent, light) : b.heroBase),
       error: o(CcToken.error) ?? b.error,
       isLight: light,
@@ -255,7 +289,9 @@ class CustomTheme {
     'id': id,
     'name': name,
     'base': base.name,
-    'colors': {for (final e in overrides.entries) e.key.name: e.value.toARGB32()},
+    'colors': {
+      for (final e in overrides.entries) e.key.name: e.value.toARGB32(),
+    },
     'background': background.toJson(),
   };
 
@@ -270,7 +306,7 @@ class CustomTheme {
     if (raw is Map) {
       for (final t in CcToken.values) {
         final v = raw[t.name];
-        if (v is int) colors[t] = _opaque(Color(v));
+        if (v is int) colors[t] = _fit(t, Color(v));
       }
     }
     final name = j['name'];
@@ -323,8 +359,10 @@ class CustomThemes {
     return CustomThemes([...items, t]);
   }
 
-  CustomThemes remove(String id) =>
-      CustomThemes([for (final t in items) if (t.id != id) t]);
+  CustomThemes remove(String id) => CustomThemes([
+    for (final t in items)
+      if (t.id != id) t,
+  ]);
 
   String encode() => jsonEncode([for (final t in items) t.toJson()]);
 
@@ -338,7 +376,9 @@ class CustomThemes {
       final out = <CustomTheme>[];
       for (final e in j) {
         final t = CustomTheme.fromJson(e);
-        if (t != null && seen.add(t.id) && out.length < kMaxCustomThemes) out.add(t);
+        if (t != null && seen.add(t.id) && out.length < kMaxCustomThemes) {
+          out.add(t);
+        }
       }
       return CustomThemes(out);
     } on FormatException {
@@ -368,7 +408,8 @@ Color ensureContrast(Color fg, Color bg, {double min = 4.5}) {
     if (contrastRatio(c, bg) >= min) return c;
     if (l == 0 || l == 1) break;
   }
-  return contrastRatio(const Color(0xFFFFFFFF), bg) >= contrastRatio(const Color(0xFF000000), bg)
+  return contrastRatio(const Color(0xFFFFFFFF), bg) >=
+          contrastRatio(const Color(0xFF000000), bg)
       ? const Color(0xFFFFFFFF)
       : const Color(0xFF000000);
 }
@@ -377,6 +418,6 @@ Color ensureContrast(Color fg, Color bg, {double min = 4.5}) {
 /// accent) is under its minimum. Only a warning: colours are never changed (D-07, D-13).
 bool hasLowContrastText(CcColors c) =>
     contrastRatio(c.text, c.bg) < 4.5 ||
-    contrastRatio(c.textMuted, c.surface1) < 4.5 ||
+    contrastRatio(c.textMuted, Color.alphaBlend(c.surface1, c.bg)) < 4.5 ||
     contrastRatio(c.onAccent, c.accent) < 4.5 ||
     contrastRatio(c.accent, c.bg) < 3;

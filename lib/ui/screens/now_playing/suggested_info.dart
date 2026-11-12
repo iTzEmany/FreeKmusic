@@ -121,31 +121,39 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-    child: Semantics(
-      label: semanticLabel,
-      excludeSemantics: semanticLabel != null,
-      button: semanticLabel != null,
-      enabled: onPressed != null,
-      onTap: semanticLabel != null ? onPressed : null,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          minimumSize: const Size(0, 64),
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 22),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium,
+    // 8 px between the blocks, as the mockup's `.tiles`.
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: CcDims.gap4),
+      child: Semantics(
+        label: semanticLabel,
+        excludeSemantics: semanticLabel != null,
+        button: semanticLabel != null,
+        enabled: onPressed != null,
+        onTap: semanticLabel != null ? onPressed : null,
+        child: TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            backgroundColor: context.cc.surface2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(CcDims.rCard),
             ),
-          ],
+            minimumSize: const Size(0, 64),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 22),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ],
+          ),
         ),
       ),
     ),
