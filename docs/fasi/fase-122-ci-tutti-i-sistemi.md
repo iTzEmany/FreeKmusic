@@ -7,7 +7,7 @@ Tutti i job della CI (Analyze and test, Test (Windows), Windows, APK full e lite
 R-240 «tutti i job della CI verdi in un run manuale completo». Documento d'area: `../architettura/qualita-e-rilascio.md`.
 
 ## Task
-- [ ] 122.1 Run manuale completo verde
+- [x] 122.1 Run manuale completo verde
   - File: `.github/workflows/ci.yml`, `test/services/audio/online_playback_test.dart`
   - Passi: 1. togliere `continue-on-error` da `build-apple`; 2. rendere deterministico il test «the next track still downloading…»; 3. lanciare il workflow con `integration=true` e correggere ciò che è rosso.
   - Comando mirato: `flutter test test/services/audio/online_playback_test.dart` (più `flutter analyze`)
