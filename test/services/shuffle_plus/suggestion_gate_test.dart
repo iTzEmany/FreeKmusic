@@ -10,6 +10,7 @@ void main() {
   setUp(() {
     final store = DislikeStore(
       file: () async => File('/nonexistent/dislikes.json'),
+      writeDelay: const Duration(days: 1), // never written (see testGate)
     );
     store.blockTrack(
       const DislikedTrack(videoId: 'bad', title: 't', artist: 'a'),

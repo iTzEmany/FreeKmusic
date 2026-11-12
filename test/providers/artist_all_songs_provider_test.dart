@@ -33,7 +33,10 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
-    store = DislikeStore(file: () async => File('/nonexistent/dislikes.json'));
+    store = DislikeStore(
+      file: () async => File('/nonexistent/dislikes.json'),
+      writeDelay: const Duration(days: 1), // never written (see testGate)
+    );
   });
   tearDown(() => db.close());
 

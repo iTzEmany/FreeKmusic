@@ -10,6 +10,9 @@ SuggestionGate testGate({
 }) {
   final store = DislikeStore(
     file: () async => File('/nonexistent/dislikes.json'),
+    // A block schedules a write: on Windows /nonexistent is C:\nonexistent,
+    // writable and shared by every test, so a later test would read it.
+    writeDelay: const Duration(days: 1),
   );
   for (final t in tracks) {
     store.blockTrack(DislikedTrack(videoId: t, title: t, artist: ''));
