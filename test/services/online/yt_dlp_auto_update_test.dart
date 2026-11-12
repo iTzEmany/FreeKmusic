@@ -91,13 +91,13 @@ void main() {
 
   test('the file portal check: missing portal is reported, a present one is not', () async {
     Future<Process> proc(int code, String out) async => _FakeProc(Future.value(code), out);
-    expect(await filePortalMissing(start: (_, _) => proc(1, '')), isTrue);
-    expect(await filePortalMissing(start: (_, _) => proc(0, 'interface org.freedesktop.portal.Settings')), isTrue);
-    expect(await filePortalMissing(start: (_, _) => proc(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
-    expect(await filePortalMissing(start: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
+    expect(await filePortalMissing(linux: true, start: (_, _) => proc(1, '')), isTrue);
+    expect(await filePortalMissing(linux: true, start: (_, _) => proc(0, 'interface org.freedesktop.portal.Settings')), isTrue);
+    expect(await filePortalMissing(linux: true, start: (_, _) => proc(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
+    expect(await filePortalMissing(linux: true, start: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
     // gdbus introspect rejects --timeout (prints usage, exit 1).
     late List<String> args;
-    await filePortalMissing(start: (_, a) {
+    await filePortalMissing(linux: true, start: (_, a) {
       args = a;
       return proc(0, '');
     });
@@ -106,7 +106,7 @@ void main() {
 
   test('the file portal check: a portal that never answers is missing and its process is killed', () async {
     final p = _FakeProc(Completer<int>().future, '');
-    expect(await filePortalMissing(start: (_, _) async => p), isTrue);
+    expect(await filePortalMissing(linux: true, start: (_, _) async => p), isTrue);
     expect(p.killed, isTrue);
   });
 }

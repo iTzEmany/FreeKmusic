@@ -14,6 +14,9 @@ val lite = System.getenv("CODECORE_LITE") == "1"
 // its own data: the phase 28 measurements never touch the real library.
 val perf = System.getenv("CODECORE_PERF") == "1"
 
+// `CODECORE_X64=1` adds x86_64, so `flutter test integration_test -d <emulator>` finds an app to install.
+val x64 = System.getenv("CODECORE_X64") == "1"
+
 val keyProps = Properties().apply {
     val f = rootProject.file("key.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -48,7 +51,7 @@ android {
         // Flutter's --split-per-abi sets its own ABI splits; filters conflict with them.
         if (!project.hasProperty("split-per-abi")) {
             ndk {
-                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a") + (if (x64) listOf("x86_64") else emptyList())
             }
         }
     }

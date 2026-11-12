@@ -250,6 +250,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// The track whose load or stream failed: it keeps its old bookmark.
   int? _noSaveId;
   bool _handlingCompleted = false;
+  // Set by dispose(): a load or a track end still in flight must not add to the closed streams.
+  bool _disposed = false;
 
   // Live radio: the cleaned «now playing» text, the new attempts after a drop
   // and when the stream was left paused.
@@ -483,6 +485,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     Duration? startAt,
     DateTime? ended,
   }) async {
+    if (_disposed) return;
     final token = ++_loadToken;
     _waitingStream = false;
     _loadBusy = true;
@@ -920,6 +923,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   /// Makes [track] the current one (state, gain, notification).
   void _enterTrack(Track track) {
+    if (_disposed) return;
     _seekTo = null;
     _playCounted = false;
     _playedMs = 0;
@@ -951,6 +955,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     int token, {
     bool play = true,
   }) async {
+    if (_disposed) return;
     _consecutiveErrors++;
     // What the failed track reports from here on (position 0, a seek never reached) is not a place
     // somebody listened to: its bookmark stays as it was until it plays again.
@@ -969,6 +974,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> _goIdle() async {
+    if (_disposed) return;
     _waitingStream = false;
     _url = null;
     _cancelRadioTimers();
@@ -1998,6 +2004,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> dispose() async {
+    _disposed = true;
     _cancelRadioTimers();
     _endListen();
     await _remoteSub?.cancel();

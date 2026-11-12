@@ -149,7 +149,6 @@ Se un job della release fallisce, il tag esiste ma la release no. È successo co
 - `gradlew --stop` ferma anche le build degli altri.
 - Mai `dart format` su una cartella intera: riformatta file non toccati. Formatta i file che hai cambiato.
 - Un `FutureProvider` che fallisce può non riprovare come ti aspetti: vedi `../storico/gotchas.md`.
-- Il commento di `ci.yml` parla di quattro test d'integrazione, ma `integration.sh` ne lancia cinque.
 - La classe dell'activity sta nel namespace `com.codecore.player`, mentre l'applicationId è `com.freekmusic.player*`: `perf_device.py` avvia `{PKG}/com.codecore.player.MainActivity`.
 - Scrivere uno scenario di `perf_device.py`: dipende dalla semantica del mini player (`mini()`, `setup_mini()`: se cambia il mini player vanno aggiornati); le liste non tornano in cima fra uno scenario e l'altro (`dev.top()` prima di un tap su una riga in alto); la lente di ricerca della Libreria resta aperta con la query, quindi ogni scenario parte da `to_library_top`.
 - Chiusura dei lavori in background: ferma le shell e i monitor che non servono più; per aspettare usa comandi che escono da soli.

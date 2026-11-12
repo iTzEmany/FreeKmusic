@@ -434,12 +434,14 @@ void main() {
     'broker lost: reconnecting, then SYNC on the next broker, same keys',
     () async {
       await joined();
+      final links = <JamLinkState>[];
+      guest.links.listen(links.add);
       net[a].goDown();
-      await pump();
-      expect(guest.link, JamLinkState.reconnecting);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      await pump();
-      expect(guest.link, JamLinkState.ok);
+      // The 5 ms retry is a real timer: wait for the state, not for a number of event turns.
+      for (var i = 0; i < 200 && links.length < 2; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      expect(links, [JamLinkState.reconnecting, JamLinkState.ok]);
       hostPull();
       expect(inbox.any((m) => m.type == JamMsg.sync), isTrue);
       expect(lostCount, 0);

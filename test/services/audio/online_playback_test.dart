@@ -334,6 +334,10 @@ void main() {
     expect(handler.playbackState.value.processingState, AudioProcessingState.loading);
     expect(backend.loaded, ['/m/a.mp3']);
     gate.complete();
+    // The load goes through real DB/file I/O: wait for it, not for a fixed number of event turns.
+    for (var i = 0; i < 500 && backend.loaded.length < 2; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
     await settle();
     expect(backend.loaded.last, endsWith('youtube_v2.m4a'));
     expect(backend.playing, isTrue);

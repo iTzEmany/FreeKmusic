@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 TracksCompanion row(
   String path,
@@ -486,10 +487,11 @@ void main() {
     });
 
     test('a download root without a trailing separator does not match a sibling folder', () async {
-      await repo.upsertBatch([row('/Music/FreeKmusic/a.mp3', 'in'), row('/Music/FreeKmusic2/b.mp3', 'out')]);
+      final root = p.join('/Music', 'FreeKmusic'); // `\Music\...` on Windows: the prefixes use the host separator
+      await repo.upsertBatch([row(p.join(root, 'a.mp3'), 'in'), row(p.join('${root}2', 'b.mp3'), 'out')]);
       final c = ProviderContainer(overrides: [
         trackRepositoryProvider.overrideWithValue(repo),
-        downloadRootsProvider.overrideWithValue(const AsyncData(<String>['/Music/FreeKmusic'])),
+        downloadRootsProvider.overrideWithValue(AsyncData(<String>[root])),
         downloadFolderIdProvider.overrideWith((ref) async => null),
         downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
       ]);

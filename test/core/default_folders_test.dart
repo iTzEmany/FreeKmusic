@@ -39,7 +39,7 @@ void main() {
 
   test('Linux: XDG_MUSIC_DIR from the environment', () async {
     final f = await resolve('linux', {'XDG_MUSIC_DIR': r'$HOME/Musica'});
-    expect(f.library, '${home.path}/Musica');
+    expect(f.library, p.join(home.path, 'Musica'));
   });
 
   test('Linux: XDG_MUSIC_DIR from user-dirs.dirs', () async {
@@ -47,20 +47,20 @@ void main() {
     File(p.join(conf.path, 'user-dirs.dirs'))
         .writeAsStringSync('XDG_DOCUMENTS_DIR="\$HOME/Doc"\nXDG_MUSIC_DIR="\$HOME/Musica"\n');
     final f = await resolve('linux');
-    expect(f.library, '${home.path}/Musica');
-    expect(f.downloads, '${home.path}/Musica/FreeKmusic');
+    expect(f.library, p.join(home.path, 'Musica'));
+    expect(f.downloads, p.join(home.path, 'Musica', 'FreeKmusic'));
   });
 
   test('Linux: XDG_MUSIC_DIR = \$HOME (disabled) is ignored, in the environment and in user-dirs.dirs', () async {
-    expect((await resolve('linux', {'XDG_MUSIC_DIR': home.path})).library, '${home.path}/Music');
+    expect((await resolve('linux', {'XDG_MUSIC_DIR': home.path})).library, p.join(home.path, 'Music'));
     final conf = Directory(p.join(home.path, '.config'))..createSync();
     File(p.join(conf.path, 'user-dirs.dirs')).writeAsStringSync('XDG_MUSIC_DIR="\$HOME/"\n');
-    expect((await resolve('linux')).library, '${home.path}/Music');
+    expect((await resolve('linux')).library, p.join(home.path, 'Music'));
   });
 
   test('Linux: no configuration falls back to ~/Music', () async {
     final f = await resolve('linux');
-    expect(f.library, '${home.path}/Music');
+    expect(f.library, p.join(home.path, 'Music'));
   });
 
   test('the folders are created when missing', () async {
@@ -70,8 +70,8 @@ void main() {
   });
 
   test('Linux: a relative or «/» XDG_MUSIC_DIR is ignored', () async {
-    expect((await resolve('linux', {'XDG_MUSIC_DIR': 'Music'})).library, '${home.path}/Music');
-    expect((await resolve('linux', {'XDG_MUSIC_DIR': '/'})).library, '${home.path}/Music');
+    expect((await resolve('linux', {'XDG_MUSIC_DIR': 'Music'})).library, p.join(home.path, 'Music'));
+    expect((await resolve('linux', {'XDG_MUSIC_DIR': '/'})).library, p.join(home.path, 'Music'));
   });
 
   test('without HOME the app documents folder is used, never a relative path', () async {

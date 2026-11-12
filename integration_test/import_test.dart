@@ -1,8 +1,11 @@
+import 'package:codecore/data/db/app_database.dart' show TracksCompanion;
 import 'package:codecore/data/repositories/import_repository.dart';
+import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/services/import/imported_playlist.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -37,6 +40,8 @@ void main() {
     );
     // The CSV lists the tracks in an order different from the library's.
     final order = ['Tone C', 'Tone A', 'Tone D'];
+    // Rows without an artist never match the library (too risky), and the generated files have none.
+    await tester.runAsync(() => app.db.update(app.db.tracks).write(const TracksCompanion(artist: Value('Tone Band'))));
     final all = (await tester.runAsync(() => tracks.liteEntries()))!;
     final byTitle = {for (final t in all) t.title.toLowerCase(): t};
     final csv = ImportedPlaylist(name: 'Da CSV', rows: [
@@ -48,11 +53,21 @@ void main() {
             durationMs: byTitle[order[i].toLowerCase()]!.durationMs),
     ]);
     final importId = (await tester.runAsync(() => service.start(csv)))!;
-    await tester.runAsync(() => Future<void>.delayed(const Duration(seconds: 2)));
-
-    final list = (await tester.runAsync(() => playlists.watchAll().first))!.single;
+    // The import runs in the background: wait for the playlist to fill, not for a fixed time.
+    late List<String> titles;
+    late PlaylistSummary list;
+    await tester.runAsync(() async {
+      for (var i = 0; i < 300; i++) {
+        final all = await playlists.watchAll().first;
+        if (all.isNotEmpty) {
+          list = all.single;
+          titles = (await playlists.watchTracks(list.playlist.id).first).map((t) => t.title.toLowerCase()).toList();
+          if (titles.length >= order.length) return;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    });
     expect(list.playlist.name, 'Da CSV');
-    final titles = (await tester.runAsync(() => playlists.watchTracks(list.playlist.id).first))!.map((t) => t.title.toLowerCase()).toList();
     expect(titles, order.map((s) => s.toLowerCase()).toList());
     expect(yt.searches, 0, reason: 'every row was matched in the library');
     expect(importId, isNonZero);
