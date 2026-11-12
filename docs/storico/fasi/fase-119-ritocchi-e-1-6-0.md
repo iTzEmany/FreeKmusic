@@ -40,10 +40,10 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
   - Passi: uno per requisito, ognuno col suo test widget; lo swipe con un limite al 60 % e la soglia 0,3 invariata
   - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart` + golden se cambiano (`scripts/guardie.sh`)
   - Fatto quando: i criteri di R-218..R-224 e R-226 verdi; prova a vista sul Mi A3 (swipe in daylist e Cerca, selezione, isola sfocata, tema con superfici trasparenti, un brano che non parte con la rete spenta nel Registro)
-- [ ] 119.2 Rilascio 1.6.0 (R-225)
-  - File: `pubspec.yaml` (1.6.0+8), `CHANGELOG.md`, documenti d'area (`sync-backup-jam.md`, `piattaforme.md`, `ui-e-design.md`), `prossimi-lavori.md`
+- [x] 119.2 Rilascio 1.6.0 (R-225)
+  - File: `pubspec.yaml` (1.6.0+9), `lib/core/app_info.dart`, golden delle impostazioni, documenti d'area (`sync-backup-jam.md`, `piattaforme.md`, `ui-e-design.md`), `prossimi-lavori.md`
   - Passi: dopo il merge della PR della fase 119 (117 e 118 già fuse): tag `v1.6.0` su master e Release dal workflow esistente (come D-544)
-  - Fatto quando: `gh release view v1.6.0` con APK, Linux, Windows, macOS
+  - Fatto quando: `gh release view v1.6.0` con APK, Linux, Windows, macOS (tag e Release dopo il merge)
 
 ## Tocca a te
 - A fine fase, sul Motorola: aggiorna FreeKmusic con l'APK della Release 1.6.0 (stessa firma) e rifai «Unisci» col backup di Codecore (fase 117). Controlla temi, statistiche, copertine, tag, playlist smart e podcast. Poi puoi disinstallare Codecore: i file rimasti nella sua cartella `Android/data` verranno cancellati (D-547).
@@ -57,3 +57,4 @@ Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla
     - funzione unica `playbackReasonText`.
   - La prova a vista sul Mi A3 si fa nel test di sistema con build release (fase 121, D-568).
   - Il rilascio 119.2 va in fondo all'obiettivo, dopo le fasi 120–122 (D-568).
+- 119.2: rilascio fatto dopo le fasi 120–122 (D-568). Versione 1.6.0+9 (1.5.1 era +8). Nel repo non esiste `CHANGELOG.md`: le note della Release sono generate dal workflow (`generate_release_notes`), quindi nessun file da aggiornare.
