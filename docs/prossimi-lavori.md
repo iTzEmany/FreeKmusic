@@ -3,7 +3,7 @@
 Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
 ## Da fare subito (richieste dell'11/11)
-- Fasi 117 (PR #175) e 118 chiuse; versione correttiva 1.5.1 (D-557). Fase 118 [«Guardrail e correzioni»](storico/fasi/fase-118-guardrail-e-correzioni.md) (cartella predefinita, download pubblici, onboarding non saltabile, yt-dlp sempre presente, tag con più artisti, importazione che riprende e mostra l'avanzamento). Ora: [fase 119](fasi/fase-119-ritocchi-e-1-6-0.md) «Ritocchi e 1.6.0». Dopo: la CI Windows (sotto, «Qualità e rilascio»).
+- Fasi 117–121 chiuse (117 «Ripristino completo», 118 «Guardrail e correzioni», 119 «Ritocchi e 1.6.0», 120 «CI Windows», 121 «Test di sistema») e fase 122 «CI di tutti i sistemi» fatta; versione 1.6.0 rilasciata (tag e Release dopo il merge). Prossimi: le voci aperte qui sotto per area, in particolare «Qualità e rilascio».
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
