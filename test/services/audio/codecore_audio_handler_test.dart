@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:just_audio/just_audio.dart' show PlayerInterruptedException;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:audio_service/audio_service.dart';
@@ -243,6 +246,31 @@ void main() {
     expect(backend.loaded.last, '/m/c.mp3');
   });
 
+  test('a load interrupted by a newer one is not a failure', () async {
+    final slow = Completer<void>();
+    final b = _SlowBackend('/m/a.mp3', slow.future);
+    await handler.dispose();
+    handler = CodecoreAudioHandler(b, PlayQueue(), repo, onError: errors.add);
+    final first = handler.playQueue(ids, 0);
+    await settle();
+    await handler.playQueue(ids, 1);
+    await settle();
+    slow.completeError(PlayerInterruptedException('Loading interrupted'));
+    await first;
+    await settle();
+    expect(errors, isEmpty);
+    expect(handler.currentTrack!.title, 'b');
+    expect(b.loaded.last, '/m/b.mp3');
+  });
+
+  test('an «interrupted» backend error is not a failure either', () async {
+    backend.interrupted.add('/m/a.mp3');
+    await handler.playQueue(ids, 0);
+    await settle();
+    expect(errors, isEmpty);
+    expect(handler.currentTrack!.title, 'a');
+  });
+
   test('more than 3 consecutive errors stop playback', () async {
     final extra = <int>[];
     for (var i = 0; i < 5; i++) {
@@ -482,4 +510,16 @@ void main() {
       expect(await saved(shortId), isNull);
     });
   });
+}
+
+/// Holds the load of [path] until [gate] completes (or fails).
+class _SlowBackend extends FakeBackend {
+  _SlowBackend(this.path, this.gate);
+  final String path;
+  final Future<void> gate;
+  @override
+  Future<void> load(String filePath) async {
+    if (filePath == path) await gate;
+    return super.load(filePath);
+  }
 }

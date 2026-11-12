@@ -631,8 +631,13 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       }
       _window?.invalidate(); // the load dropped the backend's window
       unawaited(_refreshWindow());
-    } on BackendException catch (e) {
-      if (token != _loadToken) return;
+    } on Object catch (e, st) {
+      // A load replaced by a newer one is not a failure (just_audio: «Loading interrupted»).
+      if (token != _loadToken || '$e'.toLowerCase().contains('interrupted')) {
+        AppLog.d('load superseded: $e');
+        return;
+      }
+      if (e is! BackendException) Error.throwWithStackTrace(e, st);
       AppLog.w('load failed: ${e.message}');
       if (radio != null) {
         _radioBusy = false;

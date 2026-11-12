@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/providers/yt_dlp_update_providers.dart';
@@ -93,5 +94,16 @@ void main() {
     expect(await filePortalMissing(run: (_, _) async => res(0, 'interface org.freedesktop.portal.Settings')), isTrue);
     expect(await filePortalMissing(run: (_, _) async => res(0, 'interface org.freedesktop.portal.FileChooser')), isFalse);
     expect(await filePortalMissing(run: (_, _) => throw const ProcessException('gdbus', [])), isFalse);
+    // gdbus introspect rejects --timeout (prints usage, exit 1).
+    late List<String> args;
+    await filePortalMissing(run: (_, a) async {
+      args = a;
+      return res(0, '');
+    });
+    expect(args, isNot(contains('--timeout')));
+  });
+
+  test('the file portal check: a portal that never answers is missing', () async {
+    expect(await filePortalMissing(run: (_, _) => Completer<ProcessResult>().future), isTrue);
   });
 }
