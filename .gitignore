@@ -9,7 +9,7 @@ build/
 .flutter-plugins-dependencies
 
 # Segreti di firma
-android/key.properties
+android/key.properties*
 *.jks
 *.keystore
 
