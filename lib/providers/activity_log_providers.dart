@@ -275,7 +275,7 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
           at: _now(),
           item: ActivityItem(
             kind: ActivityKind.secondOpinion,
-            key: 'secondOpinion-${DateTime.now().microsecondsSinceEpoch}',
+            key: 'secondOpinion-${_now().microsecondsSinceEpoch}',
             name: null,
             done: s.done,
             total: s.total,
@@ -407,7 +407,8 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
   /// One line per track that fails to play; the same track failing again in a row adds none.
   void _recordPlayFailure(PlaybackFailure f) {
     final key = (f.title, f.reason.name);
-    if (_lastFailure == key) return;
+    // Untitled failures can be different tracks: never merged.
+    if (f.title != null && _lastFailure == key) return;
     _lastFailure = key;
     add(
       LogEntry(

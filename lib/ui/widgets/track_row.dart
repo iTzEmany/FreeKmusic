@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../../services/audio/online_entries.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -756,12 +757,20 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onHorizontalDragStart: (_) => setState(() => _dragging = true),
-            onHorizontalDragUpdate: (d) => setState(
-              () => _dx = (_dx + d.delta.dx).clamp(0.0, w * _maxSwipe),
-            ),
+            onHorizontalDragUpdate: (d) {
+              if (_fromEdge) return; // the system back gesture owns it
+              setState(
+                () => _dx = (_dx + d.delta.dx).clamp(0.0, w * _maxSwipe),
+              );
+            },
             onHorizontalDragEnd: (_) => _end(w),
             onHorizontalDragCancel: () => _end(w, cancelled: true),
-            child: Stack(
+            child: Semantics(
+              customSemanticsActions: {
+                CustomSemanticsAction(label: context.l10n.addToQueue):
+                    widget.onQueue,
+              },
+              child: Stack(
               children: [
                 if (_dx > 0)
                   Positioned.fill(
@@ -783,6 +792,7 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
                   child: widget.child,
                 ),
               ],
+            ),
             ),
           ),
         );

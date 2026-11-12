@@ -22,7 +22,7 @@ class BlurredChrome extends ConsumerWidget {
     // Material (not a coloured Container) so the ink of the taps shows.
     final surface = Material(
       color: blurred
-          ? context.cc.surface2.withValues(alpha: 0.78)
+          ? context.cc.surface2.withValues(alpha: context.cc.surface2.a * 0.78)
           : context.cc.surface2,
       shape: RoundedRectangleBorder(borderRadius: shape),
       clipBehavior: Clip.antiAlias,

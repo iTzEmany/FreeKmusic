@@ -256,12 +256,21 @@ class OnlineSongRow extends StatelessWidget {
                           height: 45,
                           icon: Icons.music_video,
                         ),
-                      if (selecting)
+                      if (selecting) ...[
+                        Container(
+                          width: square ? 48 : 80,
+                          height: square ? 48 : 45,
+                          decoration: BoxDecoration(
+                            color: cc.bg.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(CcDims.rList),
+                          ),
+                        ),
                         SelectionBox(
                           selected: selected,
                           position: position,
-                          size: 40,
+                          size: square ? 40 : 36,
                         ),
+                      ],
                     ],
                   ),
                 const SizedBox(width: 12),
