@@ -244,9 +244,15 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - run: flutter pub get
+      # The emulator is x86_64, the release ABIs are not. `flutter test -d` only
+      # finds the app to install (its package name) in an APK built beforehand.
+      - name: Debug APK for the emulator
+        env:
+          CODECORE_X64: '1'
+        run: flutter build apk --debug --target-platform android-x64
       - name: Integration tests
         env:
-          CODECORE_X64: '1' # the emulator is x86_64, the release ABIs are not
+          CODECORE_X64: '1'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
