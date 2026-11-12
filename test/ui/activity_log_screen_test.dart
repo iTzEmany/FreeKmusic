@@ -92,7 +92,7 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> pump(WidgetTester tester, {double scale = 1, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage}) async {
+  Future<void> pump(WidgetTester tester, {double scale = 1, bool backdrop = false, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -104,6 +104,7 @@ void main() {
           proposalsProvider.overrideWith((ref) => Stream.value(proposals ? [_proposal] : const [])),
         ],
         child: MaterialApp(
+          theme: ThemeData(scaffoldBackgroundColor: backdrop ? Colors.transparent : null),
           locale: const Locale('it'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -124,6 +125,14 @@ void main() {
     expect(find.text('Ieri'), findsOneWidget);
     expect(find.text(DateFormat.MMMEd('it').format(DateTime(old.year, old.month, old.day))), findsOneWidget);
   });
+
+  for (final backdrop in [false, true]) {
+    testWidgets('the pinned day header ${backdrop ? 'has no solid box' : 'paints a solid box'} with backdrop=$backdrop', (tester) async {
+      await pump(tester, backdrop: backdrop);
+      final box = find.descendant(of: find.byType(PinnedHeaderSliver).first, matching: find.byType(ColoredBox));
+      expect(box, backdrop ? findsNothing : findsOneWidget);
+    });
+  }
 
   testWidgets('filters show their counts and keep only their category', (tester) async {
     await pump(tester);

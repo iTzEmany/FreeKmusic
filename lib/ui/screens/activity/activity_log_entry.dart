@@ -8,6 +8,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../providers/activity_providers.dart';
 import '../../../providers/online_providers.dart' show trackCorrectionsProvider;
+import '../../../services/audio/codecore_audio_handler.dart' show PlaybackFailureReason;
 import '../../../services/import/playlist_import_service.dart';
 import '../../../services/tags/tag_writer.dart' show TagWriteReason;
 import '../../theme/tokens.dart';
@@ -121,12 +122,24 @@ LogText logText(AppLocalizations l, LogEntry e) {
     ActivityKind.podcastRefresh => plain(l.logPodcasts, ''),
     ActivityKind.radio => plain(l.logRadio, ''),
     ActivityKind.ytDlp => plain(l.activityYtDlp, ''),
+    ActivityKind.playbackFailed => LogText(l.logPlayFailed, l.logPlayFailedSub(name, _playReason(l, e.detail?['reason']))),
     ActivityKind.import =>
       e.failed
           ? LogText(l.logImportFailed, name)
           : LogText(l.logImportDone(name), '', chips: songs),
   };
 }
+
+String _playReason(AppLocalizations l, Object? name) => switch (PlaybackFailureReason.values.asNameMap()[name]) {
+  PlaybackFailureReason.fileMissing => l.reasonFileMissing,
+  PlaybackFailureReason.notInLibrary => l.reasonNotInLibrary,
+  PlaybackFailureReason.onlineUnavailable => l.reasonOnlineUnavailable,
+  PlaybackFailureReason.episodeUnavailable => l.reasonEpisodeUnavailable,
+  PlaybackFailureReason.ageRestricted => l.reasonAgeRestricted,
+  PlaybackFailureReason.networkUnavailable => l.ytErrNetwork,
+  PlaybackFailureReason.radioUnavailable => l.reasonRadioUnavailable,
+  _ => l.reasonUnplayable,
+};
 
 LogText _importText(AppLocalizations l, LogEntry e) {
   final name = e.importName ?? '';

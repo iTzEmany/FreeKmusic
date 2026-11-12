@@ -3759,5 +3759,8 @@
   "ytErrInternal": "Internal app error (not YouTube): restart the app and try again",
   "activityYtDlp": "Downloading yt-dlp",
   "ytDlpMissingBanner": "yt-dlp is missing: it is needed to search and download online",
-  "csvImportNoPortal": "The file picker does not answer: install xdg-desktop-portal-gtk (or xdg-desktop-portal-kde) and restart the session"
+  "csvImportNoPortal": "The file picker does not answer: install xdg-desktop-portal-gtk (or xdg-desktop-portal-kde) and restart the session",
+  "logPlayFailed": "Playback failed",
+  "logPlayFailedSub": "{title}: {reason}",
+  "@logPlayFailedSub": {"placeholders": {"title": {"type": "String"}, "reason": {"type": "String"}}}
 }

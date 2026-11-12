@@ -10,6 +10,8 @@ import 'package:codecore/providers/import_providers.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/providers/second_opinion_providers.dart';
+import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/services/audio/codecore_audio_handler.dart' show PlaybackFailure, PlaybackFailureReason;
 import 'package:codecore/services/online/download_queue.dart';
 import 'package:codecore/services/scanner/library_scanner.dart' show ScanProgress;
 import 'package:codecore/providers/youtube_providers.dart';
@@ -137,6 +139,31 @@ void main() {
     await c.read(activityLogProvider.notifier).clear();
     expect(c.read(activityLogProvider).entries, isEmpty);
     expect(await db.select(db.activityLogRows).get(), isEmpty);
+  });
+
+  test('a track that fails to play leaves one line, however many times in a row', () async {
+    final errors = StreamController<PlaybackFailure>();
+    final c = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        downloadsProvider.overrideWith(_Downloads.new),
+        playerErrorsProvider.overrideWithValue(errors.stream),
+      ],
+    );
+    addTearDown(c.dispose);
+    addTearDown(errors.close);
+    c.listen(activityLogProvider, (_, _) {});
+    const f = PlaybackFailure('Volare', PlaybackFailureReason.fileMissing);
+    errors
+      ..add(f)
+      ..add(f);
+    await pumpEventQueue();
+    errors.add(const PlaybackFailure('Blue', PlaybackFailureReason.unplayable));
+    await pumpEventQueue();
+    final e = c.read(activityLogProvider).entries;
+    expect(e.map((x) => x.item!.name), ['Blue', 'Volare']);
+    expect(e.last.failed, isTrue);
+    expect(e.last.detail?['reason'], 'fileMissing');
   });
 
   test('an import keeps one Registro line that follows the count and becomes its ending', () async {

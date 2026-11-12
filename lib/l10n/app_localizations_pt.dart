@@ -7636,4 +7636,12 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get csvImportNoPortal =>
       'O seletor de ficheiros não responde: instale xdg-desktop-portal-gtk (ou xdg-desktop-portal-kde) e reinicie a sessão';
+
+  @override
+  String get logPlayFailed => 'Reprodução falhou';
+
+  @override
+  String logPlayFailedSub(String title, String reason) {
+    return '$title: $reason';
+  }
 }

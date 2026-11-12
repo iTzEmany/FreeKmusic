@@ -9,6 +9,7 @@ import '../core/clock.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/activity_log_repository.dart';
 import '../data/repositories/import_repository.dart';
+import '../services/audio/codecore_audio_handler.dart' show PlaybackFailure;
 import '../services/import/import_chain.dart';
 import '../services/import/playlist_import_service.dart';
 import 'activity_providers.dart';
@@ -16,6 +17,7 @@ import 'database_providers.dart';
 import 'import_providers.dart';
 import 'library_providers.dart';
 import 'online_providers.dart';
+import 'player_providers.dart';
 import 'podcast_providers.dart';
 import 'second_opinion_providers.dart';
 import 'youtube_providers.dart';
@@ -283,6 +285,10 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
         ),
       );
     });
+    ref.listen<AsyncValue<PlaybackFailure>>(playerFailuresProvider, (_, e) {
+      final f = e.value;
+      if (f != null) _recordPlayFailure(f);
+    });
     // Corrections are written straight to the database: the table tells when to read again.
     final sub = _repo.changes().listen((_) => unawaited(_refresh()));
     ref.onDispose(sub.cancel);
@@ -394,6 +400,28 @@ class ActivityLogNotifier extends Notifier<ActivityLogState> {
         );
       }
     }
+  }
+
+  (String?, String)? _lastFailure;
+
+  /// One line per track that fails to play; the same track failing again in a row adds none.
+  void _recordPlayFailure(PlaybackFailure f) {
+    final key = (f.title, f.reason.name);
+    if (_lastFailure == key) return;
+    _lastFailure = key;
+    add(
+      LogEntry(
+        at: _now(),
+        detail: {'reason': f.reason.name},
+        item: ActivityItem(
+          kind: ActivityKind.playbackFailed,
+          key: 'playbackFailed-${DateTime.now().microsecondsSinceEpoch}',
+          name: f.title,
+          running: false,
+          failed: true,
+        ),
+      ),
+    );
   }
 
   /// The one line of a running import: written once, then rewritten with the count.

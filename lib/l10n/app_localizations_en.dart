@@ -7602,4 +7602,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get csvImportNoPortal =>
       'The file picker does not answer: install xdg-desktop-portal-gtk (or xdg-desktop-portal-kde) and restart the session';
+
+  @override
+  String get logPlayFailed => 'Playback failed';
+
+  @override
+  String logPlayFailedSub(String title, String reason) {
+    return '$title: $reason';
+  }
 }
