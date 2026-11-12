@@ -6,6 +6,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/track_genre_repository.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
+import '../covers/cover_store.dart';
 import '../tags/tag_reader.dart' show splitGenres;
 import 'enrich_parts.dart';
 import 'enrichment_proposal.dart';
@@ -68,6 +69,13 @@ class EnrichWriter {
       if (genre != null) await TrackGenreRepository(_db).write(t.id, splitGenres([genre], slash: false));
     });
     await _tracks.settleMovedCover(t, key);
+    // The shared «unknown|dir» cover is not this album's: leave the row bare so its real one is fetched.
+    if (key != t.albumKey &&
+        t.albumKey.startsWith('unknown|') &&
+        t.coverSource == 0 &&
+        t.coverKey == CoverStore.coverKeyFor(t.albumKey)) {
+      await _tracks.setAutoCover(t.id, null);
+    }
     final wrote = [title, artist, album, year, genre, disc, isrc, number, plain, synced, curiosity]
         .any((v) => v != null);
     return (found: found, wrote: wrote, key: key);

@@ -5,12 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/permissions.dart' show hasAudioPermission;
+import '../services/scanner/shared_cover_fix.dart';
 import '../services/tags/mp3_length_fix.dart';
 import 'folder_actions.dart' show scanIfPermissionLate;
 import 'activity_log_providers.dart';
 import 'database_providers.dart' show trackRepositoryProvider;
 import 'enrich_completer_providers.dart';
-import 'library_providers.dart' show scanStateProvider;
+import 'library_providers.dart' show libraryScannerProvider, scanStateProvider;
 import 'online_providers.dart' show autoParts;
 import 'settings_providers.dart';
 import 'user_activity_provider.dart';
@@ -50,8 +51,12 @@ final enrichCompleterStartProvider = Provider<void>((ref) {
 /// Info / header-less fix. A flag in the preferences makes it run a single time. Watched from the root.
 final mp3LengthFixStartProvider = Provider<void>((ref) {
   Future<void> run() async {
-    final fix = Mp3LengthFix(ref.read(trackRepositoryProvider), await SharedPreferences.getInstance());
-    await fix.runOnce();
+    // Read before any await: the provider may be disposed meanwhile (tests, root rebuild).
+    final tracks = ref.read(trackRepositoryProvider);
+    final scanner = ref.read(libraryScannerProvider);
+    final prefs = await SharedPreferences.getInstance();
+    await Mp3LengthFix(tracks, prefs).runOnce();
+    await SharedCoverFix(tracks, scanner, prefs).runOnce();
   }
 
   ref.listen(scanStateProvider.select((s) => s.running), (was, now) {

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -123,6 +124,7 @@ class CodecoreApp extends ConsumerWidget {
     return MaterialApp(
       title: 'FreeKmusic',
       scaffoldMessengerKey: _messengerKey,
+      scrollBehavior: const AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
       theme: buildThemeFromColors(
         themeColors,
@@ -183,4 +185,17 @@ class AppTextScaler extends TextScaler {
 
   @override
   int get hashCode => Object.hash(base, app);
+}
+
+/// Lets the mouse drag scrollables (horizontal shelves/chips on desktop).
+/// Shift+wheel already scrolls horizontally in Flutter; a plain wheel is left
+/// alone so it keeps scrolling the vertical page under a shelf.
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        ...super.dragDevices,
+        PointerDeviceKind.mouse,
+      };
 }

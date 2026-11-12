@@ -192,7 +192,15 @@ class LibraryScanner {
       directory: dir,
     );
     // An album with a hand-picked cover gives it to every new track.
-    final cover = albumCovers[albumKey] ??= await _albumCover(albumKey, dir, t);
+    // A picture in one «unknown|dir» file is that file's own, so it is not cached for the album.
+    var cover = albumCovers[albumKey];
+    if (cover == null) {
+      cover = await _albumCover(albumKey, f.path, t);
+      // Cached only when it is the album's (a folder picture), not one file's own.
+      if (!albumKey.startsWith('unknown|') || cover.key == CoverStore.coverKeyFor(albumKey)) {
+        albumCovers[albumKey] = cover;
+      }
+    }
     final coverKey = cover.key;
     final ext = p.extension(f.path).replaceFirst('.', '').toLowerCase();
     var title = t.title ?? p.basenameWithoutExtension(f.path);
@@ -231,11 +239,11 @@ class LibraryScanner {
     );
   }
 
-  Future<({String? key, int source})> _albumCover(String albumKey, String dir, TagInfo t) async {
+  Future<({String? key, int source})> _albumCover(String albumKey, String path, TagInfo t) async {
     final manual = await _tracks.albumManualRow(albumKey);
     if (manual?.coverKey != null) return (key: manual!.coverKey, source: 1);
-    final key = await _resolveCover(albumKey, dir, t);
-    if (key != null) await _tracks.setCoverForAlbum(albumKey, true, key);
+    final key = await _resolveCover(albumKey, path, t);
+    if (key != null && key == CoverStore.coverKeyFor(albumKey)) await _tracks.setCoverForAlbum(albumKey, true, key);
     return (key: key, source: 0);
   }
 
@@ -244,31 +252,36 @@ class LibraryScanner {
   Future<String?> originalCoverKey(String albumKey, String path) async {
     if (_covers.fileFor(CoverStore.coverKeyFor(albumKey)) != null) return CoverStore.coverKeyFor(albumKey);
     try {
-      return await _resolveCover(albumKey, p.dirname(path), await _tags.read(path));
+      return await _resolveCover(albumKey, path, await _tags.read(path));
     } on Object catch (e, st) {
       AppLog.w('original cover not resolved: $path', e, st);
       return null;
     }
   }
 
-  Future<String?> _resolveCover(String albumKey, String dir, TagInfo t) async {
+  Future<String?> _resolveCover(String albumKey, String path, TagInfo t) async {
     final existing = CoverStore.coverKeyFor(albumKey);
-    if (_covers.fileFor(existing) != null) return existing;
+    final unknown = albumKey.startsWith('unknown|');
+    // A file saved under «unknown|dir» by an older scan may hold one file's picture.
+    if (!unknown && _covers.fileFor(existing) != null) return existing;
     final bytes = t.coverBytes;
-    if (bytes != null) {
+    // Embedded in a file with no album: its own picture, never the folder's.
+    if (bytes != null && !unknown) {
       final key = await _covers.saveFromBytes(albumKey, bytes, t.coverMime);
       if (key != null) return key;
     }
-    final folderCover = await _covers.findFolderCover(dir);
-    if (folderCover == null) return null;
-    final data = await File(folderCover).readAsBytes();
-    return _covers.saveFromBytes(
-      albumKey,
-      data,
-      p.extension(folderCover).toLowerCase() == '.png'
-          ? 'image/png'
-          : 'image/jpeg',
-    );
+    final folderCover = await _covers.findFolderCover(p.dirname(path));
+    if (folderCover != null) {
+      final data = await File(folderCover).readAsBytes();
+      return _covers.saveFromBytes(
+        albumKey,
+        data,
+        p.extension(folderCover).toLowerCase() == '.png' ? 'image/png' : 'image/jpeg',
+        overwrite: unknown,
+      );
+    }
+    if (bytes != null && unknown) return _covers.saveFromBytes('file|${normalize(path)}', bytes, t.coverMime);
+    return null;
   }
 
   bool _isHidden(String path, String root) {

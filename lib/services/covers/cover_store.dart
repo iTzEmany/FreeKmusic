@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
+import '../../data/db/app_database.dart' show Track;
 import 'cover_thumbnails.dart';
 
 /// The files of one cover: the original and its small copy for lists and
@@ -186,4 +187,11 @@ class CoverStore {
     }
     return null;
   }
+}
+
+extension TrackOwnCover on Track {
+  /// A cover of its own: not the one every «unknown|dir» file once shared.
+  bool get hasOwnCover =>
+      hasCover &&
+      !(albumKey.startsWith('unknown|') && coverKey == CoverStore.coverKeyFor(albumKey));
 }

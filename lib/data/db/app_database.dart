@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import '../../core/clock.dart';
+import '../../core/paths.dart';
 import '../../core/uuid.dart';
 import 'tables.dart';
 
@@ -41,7 +42,10 @@ const kSchemaVersion = 19;
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
-  AppDatabase.production() : super(driftDatabase(name: 'codecore'));
+  AppDatabase.production() : super(driftDatabase(
+      name: 'codecore',
+      native: DriftNativeOptions(databaseDirectory: databaseDir),
+    ));
 
   @override
   int get schemaVersion => kSchemaVersion;

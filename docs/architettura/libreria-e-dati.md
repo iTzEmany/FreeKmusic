@@ -22,7 +22,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | Impostazioni | `lib/data/settings/settings_store.dart`, `lib/providers/settings_providers.dart`, `jam_secret_store.dart` |
 | Backup | `lib/services/backup/` (`backup_service`, `restore_service`, `track_resolver`), `data/repositories/backup_merge`, `backup_queries` |
 | Cache | `lib/services/memory/app_data.dart`, `lib/services/stream/stream_cache.dart`, `lib/providers/stream_providers.dart`, `lib/services/podcast/podcast_cleanup.dart` |
-| Percorsi | `lib/core/paths.dart` (`databaseFile()` = `<documenti>/codecore.sqlite`) |
+| Percorsi | `lib/core/paths.dart` (`databaseFile()` = `<appSupport>/codecore.sqlite` su desktop, `<documenti>/…` su telefono) |
 | Provider | `lib/providers/library_providers.dart` (`tagReaderProvider`, `libraryScannerProvider`, `scanStateProvider`, `ScanNotifier`, `tracksProvider`, ...), `database_providers.dart` |
 
 ## Come funziona

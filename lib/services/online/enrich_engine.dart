@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../data/db/app_database.dart';
+import '../covers/cover_store.dart' show TrackOwnCover;
 import '../../data/repositories/credits_repository.dart' show decodeRec;
 import '../../data/repositories/track_repository.dart';
 import 'cover_fetcher.dart';
@@ -368,7 +369,7 @@ class EnrichEngine {
     // The cover file is saved here (network); [commit] only points the album at it.
     final url = metaAsked ? meta?.match.artworkUrl : null;
     // Never over a hand-made cover (cover_source > 0) or an existing one.
-    if (url != null && !t.hasCover && t.coverSource == 0) {
+    if (url != null && !t.hasOwnCover && t.coverSource == 0) {
       final album = fillableFields(t).contains(EnrichField.album)
           ? meta!.match.album
           : null;
