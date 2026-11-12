@@ -65,5 +65,4 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 
 ## Qualità e rilascio
 - **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.
-- **`ci.yml`**: il commento dice 4 test di integrazione, `scripts/integration.sh` ne esegue 5.
 - **Test di poco valore** in `settings_store_test` («blurred dock off by default and kept»): da togliere.

@@ -218,7 +218,7 @@ jobs:
           path: freekmusic-windows-x64.zip
           if-no-files-found: error
 
-  # The four integration tests (integration_test/, the same as
+  # The five integration tests (integration_test/, the same as
   # scripts/integration.sh) on an emulator: only when asked, they are slow.
   # Never on a phone with real data: same package name.
   integration-android:
@@ -258,7 +258,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     timeout-minutes: 60
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
