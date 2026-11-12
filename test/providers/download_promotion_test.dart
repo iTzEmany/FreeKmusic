@@ -4,7 +4,9 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/pending_playlist_adds.dart';
+import 'package:codecore/providers/activity_providers.dart' show ActivityKind;
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/stream_providers.dart';
@@ -60,6 +62,7 @@ void main() {
     builds = 0;
     promoter = _Promoter();
     c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
       folderRepositoryProvider.overrideWithValue(FolderRepository(db)),
       trackRepositoryProvider.overrideWithValue(TrackRepository(db)),
       playlistRepositoryProvider.overrideWithValue(PlaylistRepository(db)),
@@ -82,6 +85,16 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(promoter.calls, 1);
     expect(builds, 2);
+  });
+
+  test('a promoted download leaves its «Brano scaricato» line in the Registro', () async {
+    c.listen(activityLogProvider, (_, _) {});
+    await c.read(downloadsProvider.notifier).add(_r);
+    await pumpEventQueue();
+    final e = c.read(activityLogProvider).entries.single;
+    expect(e.item!.kind, ActivityKind.download);
+    expect(e.item!.name, 'Song');
+    expect(e.failed, isFalse);
   });
 
   test('«Scarica» on a video already in the index starts nothing', () async {

@@ -14,3 +14,9 @@ Future<bool> isAudioPermissionPermanentlyDenied() async {
   return await Permission.audio.isPermanentlyDenied &&
       await Permission.storage.isPermanentlyDenied;
 }
+
+/// [ensureAudioPermission] without the prompt: what the system says now.
+Future<bool> hasAudioPermission() async {
+  if (!isAndroid) return true;
+  return await Permission.audio.isGranted || await Permission.storage.isGranted;
+}

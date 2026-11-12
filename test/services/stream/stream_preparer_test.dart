@@ -122,6 +122,7 @@ void main() {
   late StreamCache cache;
   late _Yt yt;
   var metered = false;
+  var online = true;
   late StreamPreparer prep;
 
   StreamPreparer make({
@@ -141,6 +142,7 @@ void main() {
         tracks: tracks,
         youtube: yt,
         isMetered: () async => metered,
+        hasNetwork: () async => online,
         cooldown: cooldown,
         clock: clock ?? DateTime.now,
       );
@@ -153,6 +155,7 @@ void main() {
     await cache.open();
     yt = _Yt();
     metered = false;
+    online = true;
     make();
   });
   tearDown(() async {
@@ -175,6 +178,15 @@ void main() {
     await _until(() => prep.phases.value.length == 4 && prep.phases.value.values.every((v) => v == StreamPhase.ready));
     expect(yt.started, ['a', 'b', 'c', 'd']);
     expect(yt.maxOpen, 2);
+  });
+
+  test('no network: the load fails at once as a network error, yt-dlp never starts', () async {
+    online = false;
+    await expectLater(
+      prep.start('youtube:a', _i('a').result).timeout(const Duration(seconds: 5)),
+      throwsA(isA<YtException>().having((e) => e.kind, 'kind', YtErrorKind.network)),
+    );
+    expect(yt.started, isEmpty);
   });
 
   test('metered network and 10 tracks: only the next 3 are prepared', () async {

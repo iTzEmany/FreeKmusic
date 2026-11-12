@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/permissions.dart';
 import '../core/platform.dart';
 import '../data/repositories/folder_repository.dart';
+import '../data/repositories/track_repository.dart';
 import 'folder_ops.dart';
 import 'library_providers.dart';
 
@@ -39,6 +40,19 @@ Future<bool> ensureDefaultFolder(
 }) async {
   if ((await folders.getAll()).isNotEmpty) return false;
   await folders.add((await resolve()).library);
+  await scan();
+  return true;
+}
+
+/// The audio permission was denied at the last scan and is granted now (onboarding, then the
+/// settings): folders exist but the library is empty, so it is scanned. True when it did.
+Future<bool> scanIfPermissionLate(
+  FolderRepository folders,
+  TrackRepository tracks,
+  Future<bool> Function() granted,
+  Future<void> Function() scan,
+) async {
+  if ((await folders.getAll()).isEmpty || await tracks.countAll() > 0 || !await granted()) return false;
   await scan();
   return true;
 }

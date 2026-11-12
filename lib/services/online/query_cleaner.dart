@@ -34,7 +34,7 @@ final _remasterTail = RegExp(
 final _copyNumber = RegExp(r'\s*\(\d{1,2}\)\s*$');
 
 final _noisePhrase = RegExp(
-  r'\b(official video|official audio|lyric video|4k remaster|remastered)\b',
+  r'\b(official (?:(?:music|lyric|hd|4k) )*(?:video|audio)|music video|lyric video|4k remaster|remastered)\b',
   caseSensitive: false,
 );
 final _separator = RegExp(r' [-–—] ');
@@ -69,7 +69,7 @@ final _channelNo = RegExp(
 final _byArtist = RegExp(r'(?<=["”_])\s+by\s+([^"”_]+)$', caseSensitive: false);
 final _bracketGroup = RegExp(r'[\(\[\{][^\)\]\}]*[\)\]\}]');
 final _artistSuffix = RegExp(
-  r'\s*(?:-\s*)?(official|vevo|topic)$',
+  r'\s*(?:-\s*)?(official|vevo|topic|music videos?)$',
   caseSensitive: false,
 );
 

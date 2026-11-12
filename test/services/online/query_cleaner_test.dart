@@ -19,6 +19,9 @@ void main() {
     ['Jay-Z - Empire State of Mind', '', 'Empire State of Mind', 'Jay-Z'],
     ['Don’t Stop Believin’', 'Journey', "Don't Stop Believin'", 'Journey'],
     ['song.mp3', 'Artist - Topic', 'song', 'Artist'],
+    ['Queen - Bohemian Rhapsody (Official Music Video)', 'Queen Music videos', 'Bohemian Rhapsody', 'Queen'],
+    ['Bohemian Rhapsody OFFICIAL MUSIC VIDEO', 'Queen Music Video', 'Bohemian Rhapsody', 'Queen'],
+    ['Hello (official HD music video)', 'Adele OFFICIAL', 'Hello', 'Adele'],
     // extra cases
     ['Spider-Man Theme', 'Unknown', 'Spider-Man Theme', 'Unknown'],
     ['Adele - Hello [Official Audio]', 'Adele VEVO', 'Hello', 'Adele'],

@@ -1,6 +1,7 @@
 import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/folder_repository.dart';
+import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/folder_actions.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,5 +31,27 @@ void main() {
     expect(await ensureDefaultFolder(repo, () async => scans++, resolve: fake), isFalse);
     expect((await repo.getAll()).length, 1);
     expect(scans, 0);
+  });
+
+  group('scanIfPermissionLate', () {
+    test('permission granted, a folder, an empty library: scans', () async {
+      await repo.add('/m');
+      var scans = 0;
+      final tracks = TrackRepository(db);
+      expect(await scanIfPermissionLate(repo, tracks, () async => true, () async => scans++), isTrue);
+      expect(scans, 1);
+    });
+
+    test('no permission, no folder or a library with tracks: nothing', () async {
+      var scans = 0;
+      final tracks = TrackRepository(db);
+      expect(await scanIfPermissionLate(repo, tracks, () async => true, () async => scans++), isFalse, reason: 'no folder');
+      await repo.add('/m');
+      expect(await scanIfPermissionLate(repo, tracks, () async => false, () async => scans++), isFalse);
+      await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: '/m/a.mp3', title: 'A', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+      expect(await scanIfPermissionLate(repo, tracks, () async => true, () async => scans++), isFalse);
+      expect(scans, 0);
+    });
   });
 }
