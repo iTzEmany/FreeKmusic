@@ -166,20 +166,23 @@ void main() {
     expect(store.readSettings().importReviewThreshold, 0.6);
   });
 
-  test('creditsDetails is off by default and round trips', () async {
+  test('the four automatic options are on when never saved, a saved off stays off (R-230)', () async {
     SharedPreferences.setMockInitialValues({});
-    final store = await SettingsStore.open();
-    expect(store.readSettings().creditsDetails, isFalse);
-    await store.writeSettings(const AppSettings(creditsDetails: true));
-    expect(store.readSettings().creditsDetails, isTrue);
+    var d = (await SettingsStore.open()).readSettings();
+    expect([d.autoEnrich, d.autoLyrics, d.autoCuriosities, d.creditsDetails], everyElement(isTrue));
+    SharedPreferences.setMockInitialValues({
+      'autoEnrich': false,
+      'autoLyrics': false,
+      'autoCuriosities': false,
+      'creditsDetails': false,
+    });
+    d = (await SettingsStore.open()).readSettings();
+    expect([d.autoEnrich, d.autoLyrics, d.autoCuriosities, d.creditsDetails], everyElement(isFalse));
   });
 
-  test('autoCuriosities is off by default and round trips', () async {
-    SharedPreferences.setMockInitialValues({});
-    final store = await SettingsStore.open();
-    expect(store.readSettings().autoCuriosities, isFalse);
-    await store.writeSettings(const AppSettings(autoCuriosities: true));
-    expect(store.readSettings().autoCuriosities, isTrue);
+  test('onboardingDone ignores the old skippable key (D-562)', () async {
+    SharedPreferences.setMockInitialValues({'onboardingDone': true});
+    expect((await SettingsStore.open()).readSettings().onboardingDone, isFalse);
   });
 
   test('playback speed defaults to 1× and is kept within 0.5–2', () async {

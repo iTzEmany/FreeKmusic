@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:path_provider/path_provider.dart';
 
 import '../core/app_log.dart';
 import '../core/platform.dart';
@@ -23,6 +22,7 @@ import '../data/repositories/track_repository.dart';
 import '../services/covers/cover_store.dart';
 import '../services/covers/cover_thumbnails.dart';
 import '../services/scanner/library_scanner.dart';
+import '../services/online/media_publisher.dart' show installTagged;
 import '../services/tags/audio_metadata_tag_reader.dart';
 import '../services/tags/metadata_god_tag_writer.dart';
 import '../services/tags/safe_tag_writer.dart';
@@ -37,6 +37,7 @@ import 'credits_providers.dart' show searchCreditedProvider;
 import 'database_providers.dart';
 import 'smart_playlist_providers.dart';
 import 'settings_providers.dart';
+import 'youtube_providers.dart' show downloadIndexProvider;
 
 final tagReaderProvider = Provider<TagReader>(
   (ref) => const AudioMetadataTagReader(),
@@ -155,32 +156,46 @@ final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery
   yield await searchTracks(all, q.text);
 });
 
-/// Id of the download folder (null when there is none); tests override it.
-/// Read only: it never adds a folder, and follows the folders list.
+/// Id of the library folder that is a download location itself (null when none);
+/// tests override it. Read only: it never adds a folder.
 final downloadFolderIdProvider = FutureProvider<int?>((ref) async {
   // Watch the derived id only: a folders emission that leaves it unchanged
   // (each download touches folders) must not restart the downloaded list.
-  if (!isAndroid) {
-    return ref.watch(foldersProvider.selectAsync((f) => f.firstOrNull?.id));
-  }
-  final ext = await getExternalStorageDirectory();
-  if (ext == null) return null;
-  final path = p.join(ext.path, 'Music');
+  final paths = (await ref.watch(downloadRootsProvider.future)).toSet();
   return ref.watch(
-    foldersProvider.selectAsync((f) => f.where((x) => x.path == path).firstOrNull?.id),
+    foldersProvider.selectAsync((f) => f.where((x) => paths.contains(x.path)).firstOrNull?.id),
+  );
+});
+
+/// Every place downloads have lived: `<Music>/FreeKmusic` and, on Android, the
+/// 1.5.1 app folder. Desktop 1.5.1 downloads sat in the first library folder:
+/// those are found through the download index.
+final downloadRootsProvider = FutureProvider<List<String>>((ref) async => [
+      (await resolveDefaultFolders(create: false)).downloads,
+      if (await androidAppMusicDir() case final a?) p.join(a, 'Music'),
+    ]);
+
+typedef _DownloadScope = ({int? folderId, List<String> prefixes, Set<String> paths});
+
+final _downloadScopeProvider = FutureProvider<_DownloadScope>((ref) async {
+  // Watch first, await after: a Ref is dead once the provider is disposed mid-await.
+  final index = ref.watch(downloadIndexProvider.future);
+  final folderId = ref.watch(downloadFolderIdProvider.future);
+  final roots = ref.watch(downloadRootsProvider.future);
+  return (
+    folderId: await folderId,
+    // With a trailing separator, so `FreeKmusic` does not match `FreeKmusic2`.
+    prefixes: [for (final r in await roots) r.endsWith(p.separator) ? r : r + p.separator],
+    paths: (await index).paths.toSet(),
   );
 });
 
 final _plainDownloadedProvider =
     StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
-  final folderId = await ref.watch(downloadFolderIdProvider.future);
-  if (folderId == null) {
-    yield const <Track>[];
-    return;
-  }
-  yield* ref
-      .watch(trackRepositoryProvider)
-      .watchDownloadedWithoutPlaylist(folderId: folderId, sort: q.sort);
+  final repo = ref.watch(trackRepositoryProvider);
+  final s = await ref.watch(_downloadScopeProvider.future);
+  yield* repo
+      .watchDownloadedWithoutPlaylist(folderId: s.folderId, prefixes: s.prefixes, paths: s.paths, sort: q.sort);
 });
 
 /// Downloaded tracks that are in no playlist (D-485).
@@ -192,14 +207,10 @@ final downloadedNoPlaylistProvider =
 
 /// How many [downloadedNoPlaylistProvider] lists, counted by the database.
 final downloadedNoPlaylistCountProvider = StreamProvider.autoDispose<int>((ref) async* {
-  final folderId = await ref.watch(downloadFolderIdProvider.future);
-  if (folderId == null) {
-    yield 0;
-    return;
-  }
-  yield* ref
-      .watch(trackRepositoryProvider)
-      .watchDownloadedWithoutPlaylistCount(folderId: folderId);
+  final repo = ref.watch(trackRepositoryProvider);
+  final s = await ref.watch(_downloadScopeProvider.future);
+  yield* repo
+      .watchDownloadedWithoutPlaylistCount(folderId: s.folderId, prefixes: s.prefixes, paths: s.paths);
 });
 
 /// All music tracks, whatever the Library search says.
@@ -456,6 +467,7 @@ final safeTagWriterProvider = FutureProvider<SafeTagWriter>((ref) async {
     reader: ref.watch(tagReaderProvider),
     workDir: Directory(p.join(await appSupportDir(), 'tagwork')),
     backups: await ref.watch(tagBackupStoreProvider.future),
+    install: installTagged,
   );
 });
 

@@ -35,7 +35,7 @@ void main() {
     expect(find.textContaining('troppo vecchio'), findsNothing);
   });
 
-  testWidgets('the banner offers «Aggiorna» and explains a failed update',
+  testWidgets('after a failed update the banner offers «Riprova» and explains why',
       (tester) async {
     final h = await Harness.create(tester);
     await h.pump(
@@ -47,7 +47,7 @@ void main() {
         ytDlpUpdateProvider.overrideWith(_FailedUpdate.new),
       ],
     );
-    expect(find.text('Aggiorna'), findsOneWidget);
+    expect(find.text('Riprova'), findsOneWidget);
     expect(find.textContaining('rete non raggiungibile'), findsOneWidget);
     await h.dispose(tester);
   });

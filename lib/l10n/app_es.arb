@@ -1371,7 +1371,6 @@
   "accentArancio": "Naranja",
   "accentRosa": "Rosa",
   "accentRosso": "Rojo",
-  "onboardingSkip": "Omitir",
   "onboardingNext": "Siguiente",
   "onboardingStart": "Empezar",
   "onboardingPageOf": "Página {page} de {total}",
@@ -1401,7 +1400,7 @@
   "onboardingAllowAccess": "Permitir el acceso a los archivos de audio",
   "onboardingAccessGranted": "Acceso permitido",
   "onboardingOnlineTitle": "Funciones en línea",
-  "onboardingOnlineBody": "Están desactivadas: FreeKmusic nunca se conecta a Internet por su cuenta. Puedes activarlas ahora o más tarde en Ajustes.",
+  "onboardingOnlineBody": "Están activadas: enriquecen tus canciones con datos en línea. Puedes desactivarlas aquí o más tarde en Ajustes.",
   "onboardingShareTitle": "Descargas, Jam y compartir",
   "onboardingYoutubeBody": "Puedes descargar canciones de YouTube en tu dispositivo y escucharlas como el resto de tu música.",
   "onboardingJamBody": "Con una Jam escuchas la misma música junto con otro dispositivo de la misma red.",
@@ -3092,6 +3091,7 @@
   "enrichPartCredits": "Créditos",
   "coverChange": "Cambiar carátula",
   "coverRestoreOriginal": "Restaurar carátula original",
+  "artistImageRestore": "Restaurar imagen automática",
   "coverSourceDevice": "Del dispositivo",
   "coverSourceLibrary": "De la biblioteca",
   "coverSourceOnline": "En línea",
@@ -3755,5 +3755,9 @@
   "shazamAdded": "Añadida a Da Shazam: {title}",
   "shazamDuplicate": "Ya está en Da Shazam: {title}",
   "shazamNotFound": "No encontrada en YouTube Music: {title}",
-  "shazamOffline": "Sin conexión: la canción de Shazam no se añadió."
+  "shazamOffline": "Sin conexión: la canción de Shazam no se añadió.",
+  "ytErrInternal": "Error interno de la app (no de YouTube): reinicia la app e inténtalo de nuevo",
+  "activityYtDlp": "Descargando yt-dlp",
+  "ytDlpMissingBanner": "Falta yt-dlp: hace falta para buscar y descargar en línea",
+  "csvImportNoPortal": "El selector de archivos no responde: instala xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) y reinicia la sesión"
 }

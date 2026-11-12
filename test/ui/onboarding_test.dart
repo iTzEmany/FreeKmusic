@@ -63,20 +63,8 @@ void main() {
     await _openGate(tester, h);
     expect(find.text('Benvenuto in FreeKmusic'), findsOneWidget);
     expect(find.text('APP'), findsNothing);
-    expect(find.text('Salta'), findsOneWidget);
+    expect(find.text('Salta'), findsNothing, reason: 'R-229: not skippable');
     expect(find.text('Avanti'), findsOneWidget);
-    await h.dispose(tester);
-  });
-
-  testWidgets('«Salta» goes to the app and the guide is not shown again', (tester) async {
-    final h = await Harness.create(tester);
-    await _openGate(tester, h);
-    await tester.tap(find.text('Salta'));
-    await _settle(tester);
-    expect(find.text('APP'), findsOneWidget);
-    expect(_settings(tester).onboardingDone, isTrue);
-    expect(_settings(tester).ytNoticeSeen, isFalse, reason: 'skipped before the notice');
-    expect(h.store.readSettings().onboardingDone, isTrue, reason: 'saved');
     await h.dispose(tester);
   });
 
@@ -98,19 +86,19 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('the online features start off and can be turned on', (tester) async {
-    final h = await Harness.create(tester);
+  testWidgets('the online features start on and can be turned off', (tester) async {
+    final h = await Harness.create(tester, onlineOff: false);
     await _openGate(tester, h);
     await tester.tap(find.text('Avanti'));
     await _settle(tester);
     await tester.tap(find.text('Avanti'));
     await _settle(tester);
-    expect(_settings(tester).autoEnrich, isFalse);
-    expect(_settings(tester).autoLyrics, isFalse);
+    expect(_settings(tester).autoEnrich, isTrue);
+    expect(_settings(tester).autoLyrics, isTrue);
     await tester.tap(find.text('Arricchimento automatico'));
     await _settle(tester);
-    expect(_settings(tester).autoEnrich, isTrue);
-    expect(_settings(tester).autoLyrics, isFalse);
+    expect(_settings(tester).autoEnrich, isFalse);
+    expect(_settings(tester).autoLyrics, isTrue);
     await h.dispose(tester);
   });
 
@@ -164,6 +152,26 @@ void main() {
     await h.pump(tester, const OnboardingGate(child: Scaffold(body: Text('APP'))));
     await _settle(tester);
     expect(find.text('APP'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('with no folder the guide shows and the default folder (its permission) waits for the guide to end', (tester) async {
+    final h = await Harness.create(tester);
+    var calls = 0;
+    await h.pump(tester, OnboardingGate(ensureFolder: () async => calls++, child: const Scaffold(body: Text('APP'))));
+    await _settle(tester);
+    expect(calls, 0);
+    expect(find.text('Benvenuto in FreeKmusic'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('once the guide was done and there is no folder, the app adds the default one', (tester) async {
+    final h = await Harness.create(tester);
+    await h.store.writeSettings(const AppSettings(onboardingDone: true));
+    var calls = 0;
+    await h.pump(tester, OnboardingGate(ensureFolder: () async => calls++, child: const Scaffold(body: Text('APP'))));
+    await _settle(tester);
+    expect(calls, 1);
     await h.dispose(tester);
   });
 

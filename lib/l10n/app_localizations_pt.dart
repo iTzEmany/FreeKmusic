@@ -2751,9 +2751,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accentRosso => 'Vermelho';
 
   @override
-  String get onboardingSkip => 'Saltar';
-
-  @override
   String get onboardingNext => 'Seguinte';
 
   @override
@@ -2806,7 +2803,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingOnlineBody =>
-      'Estão desligadas: o FreeKmusic nunca se liga à Internet por iniciativa própria. Pode ativá-las agora ou mais tarde nas Definições.';
+      'Estão ativadas: enriquecem as suas músicas com dados online. Pode desativá-las aqui ou mais tarde nas Definições.';
 
   @override
   String get onboardingShareTitle => 'Transferências, Jam e partilha';
@@ -5752,6 +5749,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get coverRestoreOriginal => 'Restaurar capa original';
 
   @override
+  String get artistImageRestore => 'Restaurar imagem automática';
+
+  @override
   String get coverSourceDevice => 'Do dispositivo';
 
   @override
@@ -7621,4 +7621,19 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get shazamOffline =>
       'Sem conexão: a música do Shazam não foi adicionada.';
+
+  @override
+  String get ytErrInternal =>
+      'Erro interno da app (não do YouTube): reinicie a app e tente novamente';
+
+  @override
+  String get activityYtDlp => 'A transferir o yt-dlp';
+
+  @override
+  String get ytDlpMissingBanner =>
+      'Falta o yt-dlp: é preciso para pesquisar e transferir online';
+
+  @override
+  String get csvImportNoPortal =>
+      'O seletor de ficheiros não responde: instale xdg-desktop-portal-gtk (ou xdg-desktop-portal-kde) e reinicie a sessão';
 }

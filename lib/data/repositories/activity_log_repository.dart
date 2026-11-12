@@ -32,6 +32,30 @@ class ActivityLogRepository {
         ),
       );
 
+  /// Rewrites the row [id] (an import line that goes on until its end).
+  Future<void> update(int id, {required int at, required int done, required int total, required bool failed, String? detail}) =>
+      (_db.update(_db.activityLogRows)..where((r) => r.id.equals(id))).write(ActivityLogRowsCompanion(
+        at: Value(at),
+        done: Value(done),
+        total: Value(total),
+        failed: Value(failed ? 1 : 0),
+        detail: Value(detail),
+      ));
+
+  /// The import line whose detail carries [key] (null = none yet).
+  Future<int?> idOfImport(String key) async {
+    final r = await (_db.select(_db.activityLogRows)
+          ..where((r) => r.kind.equals('import') & r.detail.like('%"key":"$key"%'))
+          ..limit(1))
+        .getSingleOrNull();
+    return r?.id;
+  }
+
+  /// Drops the progress line of import [key] (an import that was cancelled or deleted).
+  Future<void> dropImportProgress(String key) => (_db.delete(_db.activityLogRows)
+        ..where((r) => r.kind.equals('import') & r.detail.like('%"progress":true%"key":"$key"%')))
+      .go();
+
   /// Newest first. With [before] (the last row seen) only the older ones come,
   /// so rows added meanwhile do not shift the page.
   Future<List<ActivityLogRow>> page({required int limit, ({int at, int id})? before}) =>

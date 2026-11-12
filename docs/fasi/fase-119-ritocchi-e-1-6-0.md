@@ -1,7 +1,7 @@
 # Fase 119 — Ritocchi e versione 1.6.0
 
 ## Obiettivo
-Sette ritocchi di UI (Registro, swipe, selezione, sfocatura, trasparenza dei temi, pulsanti del brano suggerito). Chiude con la versione 1.6.0 e la Release, dopo la fase 118 «Guardrail e correzioni» ([fase-118](fase-118-guardrail-e-correzioni.md)), che ha preso i download pubblici (D-559). Viene prima della CI Windows.
+Sette ritocchi di UI (Registro, swipe, selezione, sfocatura, trasparenza dei temi, pulsanti del brano suggerito). Chiude con la versione 1.6.0 e la Release, dopo la fase 118 «Guardrail e correzioni» ([fase-118](../storico/fasi/fase-118-guardrail-e-correzioni.md)), che ha preso i download pubblici (D-559). Viene prima della CI Windows.
 Fuori: spostare i download già in `Android/data` (D-547), la selezione multipla delle card di album, playlist e artisti (D-550), un'impostazione per scegliere la cartella dei download.
 
 ## Riferimenti

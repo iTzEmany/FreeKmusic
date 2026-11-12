@@ -22,6 +22,7 @@ class DownloadTagger {
     required this.coverOf,
     required this.playingPath,
     required this.playingChanges,
+    this.onFailed,
   });
 
   final Future<Track?> Function(int id) trackById;
@@ -32,6 +33,9 @@ class DownloadTagger {
   final Future<TagCover?> Function(Track) coverOf;
   final String? Function() playingPath;
   final Stream<String?> playingChanges;
+
+  /// Told when the file was left without its tags (the Registro shows it).
+  final Future<void> Function(Track, TagWriteReason)? onFailed;
 
   Future<void> _queue = Future.value();
   // Paths waiting (queued or deferred): one write per file however often asked.
@@ -127,7 +131,9 @@ class DownloadTagger {
     }
     final out = await sync.write([t], (_) => c, backup: false);
     if (out.hasFailures) {
-      AppLog.i('tagger: ${t.path} left as it is (${out.mainReason?.name})');
+      final why = out.mainReason ?? TagWriteReason.ioError;
+      AppLog.w('tagger: ${t.path} left as it is (${why.name})');
+      await onFailed?.call(t, why);
     }
   }
 

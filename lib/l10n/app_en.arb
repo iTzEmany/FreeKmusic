@@ -1371,7 +1371,6 @@
   "accentArancio": "Orange",
   "accentRosa": "Pink",
   "accentRosso": "Red",
-  "onboardingSkip": "Skip",
   "onboardingNext": "Next",
   "onboardingStart": "Get started",
   "onboardingPageOf": "Page {page} of {total}",
@@ -1401,7 +1400,7 @@
   "onboardingAllowAccess": "Allow access to audio files",
   "onboardingAccessGranted": "Access granted",
   "onboardingOnlineTitle": "Online features",
-  "onboardingOnlineBody": "They are off: FreeKmusic never goes online on its own. You can turn them on now or later in Settings.",
+  "onboardingOnlineBody": "They are on: they enrich your songs with online data. You can turn them off here or later in Settings.",
   "onboardingShareTitle": "Downloads, Jam and sharing",
   "onboardingYoutubeBody": "You can download tracks from YouTube to your device and listen to them like the rest of your music.",
   "onboardingJamBody": "With a Jam you listen to the same music together with another device on the same network.",
@@ -3092,6 +3091,7 @@
   "enrichPartCredits": "Credits",
   "coverChange": "Change cover",
   "coverRestoreOriginal": "Restore original cover",
+  "artistImageRestore": "Restore automatic image",
   "coverSourceDevice": "From device",
   "coverSourceLibrary": "From library",
   "coverSourceOnline": "Online",
@@ -3755,5 +3755,9 @@
   "shazamAdded": "Added to Da Shazam: {title}",
   "shazamDuplicate": "Already in Da Shazam: {title}",
   "shazamNotFound": "Not found on YouTube Music: {title}",
-  "shazamOffline": "No connection: the Shazam song was not added."
+  "shazamOffline": "No connection: the Shazam song was not added.",
+  "ytErrInternal": "Internal app error (not YouTube): restart the app and try again",
+  "activityYtDlp": "Downloading yt-dlp",
+  "ytDlpMissingBanner": "yt-dlp is missing: it is needed to search and download online",
+  "csvImportNoPortal": "The file picker does not answer: install xdg-desktop-portal-gtk (or xdg-desktop-portal-kde) and restart the session"
 }

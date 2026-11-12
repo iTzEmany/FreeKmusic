@@ -24,7 +24,7 @@ class RetryPolicy {
   int get maxRetries => delays.length;
 
   static bool isTransient(YtErrorKind k) =>
-      k == YtErrorKind.network || k == YtErrorKind.changed;
+      k == YtErrorKind.network || k == YtErrorKind.changed; // not internal
 
   /// Wait before retry number [retriesDone] + 1; null = give up.
   Duration? nextDelay(int retriesDone, YtErrorKind kind) {

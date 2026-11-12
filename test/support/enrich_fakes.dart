@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:codecore/data/repositories/artist_info_repository.dart';
@@ -506,3 +507,11 @@ class EnrichRig {
 
   Future<TrackEnrichData?> enrichOf(int id) => credits.enrichOf(id);
 }
+
+/// Settings with every online helper off (the pre-D-563 defaults), then the asked ones on.
+AppSettings helpersOff({bool autoLyrics = false}) => AppSettings(
+      autoEnrich: false,
+      autoLyrics: autoLyrics,
+      creditsDetails: false,
+      autoCuriosities: false,
+    );

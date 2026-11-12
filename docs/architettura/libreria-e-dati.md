@@ -75,6 +75,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - `albumKey` = `normalize(albumArtist ?? artist) + '|' + normalize(album)`; se l'album è vuoto o sconosciuto, `'unknown|' + normalize(dir)`.
 - `coverKey` = SHA-1 di `albumKey`. Le copertine stanno in `<appSupportDir>/covers`. `CoverStore.saveFromBytes` salva sotto `sha1(key)`, quindi una copertina manuale non ha un prefisso `manual:` nel DB.
 - `cover_source`: 0 automatica, 1 album a mano, 2 brano a mano.
+- Immagine dell'artista scelta a mano: `CoverOps.setArtistCover`, riga di `artist_infos` con chiave `image:<artistKey>` (esclusa da biografie e Memoria); nel backup come `artistImages` di `user_data.json` (D-566).
 - Ogni scrittura che cambia `album_key` passa da `settleMovedCover`.
 
 ### Scansione
@@ -97,7 +98,8 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - Sorgenti (`sourceKind`): exportify, tunemymusic, soundiiz, lastfm, csv, m3u, xspf. `PlaylistImportService`: `start`, `startFromResults`, `sync`, `pause`, `resume`, `cancel`, `retry`, `skip`, `download`, `startPlanned`.
 - `track_matcher` decide il collegamento (`decide`, `scoreCandidate`, `MatchThresholds`, `LibraryIndex`, `matchTitleKey`).
 - Stato dell'import in `playlist_imports`: 0 in corso, 1 in pausa, 2 finito, 3 annullato. Stato degli item: 0 da cercare, 1 in coda, 2 scaricato, 3 collegato, 4 da verificare, 5 non trovato, 6 fallito, 7 saltato dall'utente, 8 pianificato, 9 tolto dalla fonte.
-- All'avvio gli import «in corso» diventano «in pausa» e gli item in coda tornano «da cercare».
+- All'avvio (`recoverAfterRestart`) gli import «in corso» diventano «in pausa» e gli item in coda tornano «da cercare»; `PlaylistImportService` riprende da solo quelli interrotti dalla chiusura dell'app (una sola volta), non quelli messi in pausa dall'utente (D-564).
+- Avanzamento: nelle attività «Importazione <playlist>: N di M»; nel Registro una sola riga che si aggiorna (D-565). I download dell'importazione sono visibili nelle attività.
 - «Scarica album» crea una playlist nascosta (`visiblePlaylistSql`). `DownloadIndex` (`downloads.json`) mappa `<source>:<id>` al percorso.
 
 ### Playlist
@@ -111,6 +113,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 
 - `SettingsStore` avvolge `SharedPreferences`; `AppSettings` è immutabile con `copyWith`. `settingsProvider` scrive con debounce di 400 ms.
 - Chiavi di sessione (`PlaybackPersistence`): `lastQueueIds`, `lastContextKind`, `lastContextName`, `lastQueueUser`, `lastIndex`, `lastPositionMs`. Altre: `volume`, `shuffle`, `repeat`, `transition`, `crossfadeSeconds`, `playbackSpeed`, `streamCacheMb`, `playlistSorts`, `trustedDevices`, `recordHistory`, ...
+- Di partenza `autoEnrich`, `autoLyrics`, `autoCuriosities`, `creditsDetails` sono veri (D-561); le preferenze già salvate non cambiano. L'onboarding non si salta; all'avvio, se la tabella `folders` è vuota, `ensureDefaultFolder` aggiunge la cartella predefinita (`resolveDefaultFolders`) e la scansiona (D-562).
 - Fuori da `AppSettings`: `releases*`, `radioDataNoticeSeen`, `radioRefreshedAt`, `genreRereadAfter/Done`.
 - Segreti Jam: `PrefsJamSecretStore` (Android), `FileJamSecretStore` (desktop, `jam_secrets.json`), `MemoryJamSecretStore` (test).
 

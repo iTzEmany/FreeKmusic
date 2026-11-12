@@ -20,28 +20,28 @@ void main() {
 
   test('a track with nothing left to ask is not asked again', () async {
     final id = await r.add();
-    await r.runManual([id], parts: manualParts(AppSettings()));
+    await r.runManual([id], parts: manualParts(AppSettings(creditsDetails: false)));
     r.web.urls.clear();
-    final round = await r.runManual([id], parts: manualParts(AppSettings()));
+    final round = await r.runManual([id], parts: manualParts(AppSettings(creditsDetails: false)));
     expect(round.updatedTracks, 0);
     expect(r.web.count('itunes'), 0);
   });
 
   test('a track missing something is asked', () async {
     final id = await r.add();
-    final round = await r.runManual([id], parts: manualParts(AppSettings()));
+    final round = await r.runManual([id], parts: manualParts(AppSettings(creditsDetails: false)));
     expect(round.updatedTracks, 1);
     expect((await row(id)).lyricsPlain, isNotNull);
   });
 
   test('the manual parts ask the curiosities', () async {
     final id = await r.add();
-    await r.runManual([id], parts: manualParts(AppSettings()));
+    await r.runManual([id], parts: manualParts(AppSettings(creditsDetails: false)));
     expect((await row(id)).curiosities, isNotNull);
   });
 
   test('credits are asked by a manual job only with «Crediti e dettagli»', () async {
-    await r.runManual([await r.add(path: '/a.mp3')], parts: manualParts(AppSettings()));
+    await r.runManual([await r.add(path: '/a.mp3')], parts: manualParts(AppSettings(creditsDetails: false)));
     expect(r.web.count('musicbrainz'), 0);
     await r.runManual([await r.add(path: '/b.mp3')], parts: manualParts(AppSettings(creditsDetails: true)));
     expect(r.web.count('musicbrainz'), greaterThan(0));

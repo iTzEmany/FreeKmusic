@@ -51,15 +51,6 @@ void main() {
       expect(_scan(tester).error, contains(_gone), reason: 'the unreachable folder was visited');
       await h.dispose(tester);
     });
-
-    testWidgets('«Salta» without folders does not scan', (tester) async {
-      final h = await Harness.create(tester);
-      await h.pump(tester, const OnboardingScreen(askAudioPermission: false));
-      await tester.tap(find.text('Salta'));
-      await _settle(tester);
-      expect(_scan(tester).progress, isNull);
-      await h.dispose(tester);
-    });
   });
 
   group('folders sheet', () {

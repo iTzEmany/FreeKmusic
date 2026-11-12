@@ -288,6 +288,8 @@ void main() {
     Future<void> Function(File, String)? rename,
     Future<void> Function(File, String)? copy,
     void Function(int, int)? onShadowMerged,
+    Future<String> Function(String)? publish,
+    Future<Directory> Function()? workDir,
   }) =>
       StreamPromoter(
         cache: cache,
@@ -300,8 +302,36 @@ void main() {
         rename: rename,
         copy: copy,
         onShadowMerged: onShadowMerged,
+        publish: publish,
+        workDir: workDir,
       );
   String destOf([String suffix = '']) => p.join(root.path, 'Music', '${downloadBaseName(_r)}$suffix.m4a');
+
+  test('Android: the file is staged in the work folder, published, and the published path is registered', () async {
+    final work = Directory(p.join(root.path, 'work'))..createSync();
+    final staged = <String>[];
+    final id = await build(
+      workDir: () async => work,
+      publish: (path) async {
+        staged.add(path);
+        return File(path).copySync(destOf()).path;
+      },
+    ).promote(_r);
+    expect(id, isTrue);
+    expect(staged, [p.join(work.path, '${downloadBaseName(_r)}.m4a')]);
+    expect(index.pathFor(_key), destOf());
+    expect((await tracks.getById(shadowId))!.path, destOf());
+    expect(scanned, [destOf()]);
+  });
+
+  test('Android: a refused publish puts the file back in the cache', () async {
+    final work = Directory(p.join(root.path, 'work'))..createSync();
+    await expectLater(
+        build(workDir: () async => work, publish: (_) async => throw StateError('no')).promote(_r),
+        throwsA(isA<StreamPromoteException>()));
+    expect(await cache.fileFor(_key), isNotNull);
+    expect(work.listSync(), isEmpty);
+  });
 
   test('a missing row already at the destination path: the index has the file and the scan runs', () async {
     final libId = await db.into(db.tracks).insert(TracksCompanion.insert(

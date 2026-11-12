@@ -24,6 +24,26 @@ void main() {
   YtResult yt(String id) =>
       YtResult(id: id, title: 'Titolo $id', channel: 'C', duration: null);
 
+  test('an import is one item with the songs saved and the total; its downloads do not appear', () {
+    const imp = ImportProgress(
+        id: 7, playlistId: 1, name: 'Liked Songs', total: 2253, done: 120, saved: 100, review: 0, missing: 20, paused: false, blockIds: [7]);
+    DownloadItem dl(int id, DownloadStatus st, String? tag) => DownloadItem(id: id, result: yt('$id'), status: st, tag: tag);
+    final s = buildActivity(
+      scan: const ScanState(),
+      enrich: const EnrichJobState(),
+      downloads: [
+        dl(1, DownloadStatus.downloading, 'import:7:0'),
+        dl(2, DownloadStatus.done, 'import:7:1'),
+        dl(3, DownloadStatus.done, null),
+      ],
+      outgoing: const [],
+      imports: const [imp],
+    );
+    final item = s.running.single;
+    expect((item.kind, item.name, item.done, item.total), (ActivityKind.import, 'Liked Songs', 100, 2253));
+    expect(s.completed.map((c) => c.ref), [3], reason: 'only the download that is not an import row');
+  });
+
   test('nothing running → empty', () {
     final s = buildActivity(
       scan: const ScanState(),
@@ -109,7 +129,7 @@ void main() {
   });
 
   test(
-    'the downloads of an import are followed in its own screen, not here',
+    'the downloads of an import are not items: its one line counts them',
     () {
       const r = YtResult(
         id: 'v',
@@ -142,9 +162,7 @@ void main() {
         outgoing: const [],
       );
       expect(s.running.map((a) => a.key), ['dl-2']);
-      expect(s.completed.map((a) => a.key), [
-        'dl-3',
-      ], reason: 'still recorded in the Registro');
+      expect(s.completed, isEmpty, reason: 'the import has its own line in the Registro');
     },
   );
 

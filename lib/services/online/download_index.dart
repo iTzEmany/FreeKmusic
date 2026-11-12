@@ -28,6 +28,9 @@ class DownloadIndex {
     }
   }
 
+  /// Every indexed file path (memory only).
+  Iterable<String> get paths => _map.values;
+
   bool contains(String id, {MediaSource source = MediaSource.youtube}) =>
       pathFor(id, source: source) != null;
 

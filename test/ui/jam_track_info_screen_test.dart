@@ -324,8 +324,7 @@ void main() {
     final chain = _FakeChain();
     final idx = DownloadIndex(File('${Directory.systemTemp.path}/no-such-downloads.json'));
     final c = ProviderContainer(overrides: [
-      ...h.overrides,
-      downloadIndexProvider.overrideWith((ref) async => idx),
+      ...h.overridesWith([downloadIndexProvider.overrideWith((ref) async => idx)]),
       lyricsChainProvider.overrideWithValue(chain),
       curiosityServiceProvider.overrideWithValue(_FakeCurio()),
       jamProvider.overrideWith(() => _RemoteJam(const JamUiState(
@@ -402,8 +401,7 @@ void main() {
     final chain = _FakeChain();
     final idx = DownloadIndex(File('${Directory.systemTemp.path}/no-such-downloads.json'));
     final c = ProviderContainer(overrides: [
-      ...h.overrides,
-      downloadIndexProvider.overrideWith((ref) async => idx),
+      ...h.overridesWith([downloadIndexProvider.overrideWith((ref) async => idx)]),
       lyricsChainProvider.overrideWithValue(chain),
       curiosityServiceProvider.overrideWithValue(_FakeCurio()),
       jamProvider.overrideWith(() => _RemoteJam(const JamUiState(

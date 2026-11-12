@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../core/app_log.dart';
+import '../core/constants.dart' show kEnableYoutube;
 import '../core/paths.dart';
 import '../core/platform.dart';
 import 'player_providers.dart' show audioHandlerProvider, onlineEntriesProvider;
@@ -16,6 +16,7 @@ import '../services/online/direct_search_service.dart';
 import '../services/online/download_index.dart';
 import '../services/online/download_queue.dart';
 import '../services/online/innertube_client.dart';
+import '../services/online/media_publisher.dart';
 import '../services/online/retry_policy.dart';
 import '../services/online/android_yt_dlp_service.dart';
 import '../services/online/yt_dlp_process_service.dart';
@@ -25,7 +26,7 @@ import '../services/stream/stream_promoter.dart' show StreamPromoteException;
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'online_providers.dart';
-import 'yt_dlp_update_providers.dart' show locateYtDlp;
+import 'yt_dlp_update_providers.dart' show locateYtDlp, ytDlpUpdateProvider;
 import 'ytm_catalog_providers.dart' show ytmCatalogProvider;
 import 'settings_providers.dart';
 import 'pending_playlist_adds.dart' show parseAddToPlaylistTag;
@@ -76,6 +77,12 @@ class YtDlpStatus {
 
 final ytDlpStatusProvider = FutureProvider<YtDlpStatus>((ref) async {
   final v = await ref.watch(youtubeServiceProvider).toolVersion();
+  // Desktop builds ship no yt-dlp: fetch it (or a fresh one) in the background.
+  // Not in `flutter test`, which must never reach the network.
+  if (kEnableYoutube && isDesktop && !Platform.environment.containsKey('FLUTTER_TEST')) {
+    unawaited(Future(
+        () => ref.read(ytDlpUpdateProvider.notifier).autoUpdate(v)));
+  }
   return YtDlpStatus(v);
 });
 
@@ -85,12 +92,26 @@ final downloadIndexProvider = FutureProvider<DownloadIndex>((ref) async {
   return idx;
 });
 
-/// Destination folder for downloads, registered as a scanned folder.
-Future<(Directory, Folder)?> resolveDownloadFolder(
-  FolderRepository repo,
-) async {
-  return _resolveDownloadFolder(repo);
+final mediaPublisherProvider = Provider<MediaPublisher>((ref) => MediaPublisher());
+
+/// Destination folder for downloads (`<Music>/FreeKmusic`), registered as a
+/// scanned folder. On Android it is the public folder the files are published
+/// to; the download itself happens in [downloadWorkDir].
+Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo) async {
+  if (isAndroid && !await publishesToMediaStore()) {
+    // D-567: Android 10 and older keep the 1.5.1 folder (app files, own library folder).
+    final dir = Directory(p.join((await androidAppMusicDir())!, 'Music'))..createSync(recursive: true);
+    return (dir, await repo.add(dir.path));
+  }
+  final dir = Directory((await resolveDefaultFolders()).downloads);
+  // Inside a library folder already: it is scanned from there (no second folder, no double scan).
+  for (final f in await repo.getAll()) {
+    if (p.isWithin(f.path, dir.path) || p.equals(f.path, dir.path)) return (dir, f);
+  }
+  // No library folder yet: the parent (Music), as the startup default would add it.
+  return (dir, await repo.add((await resolveDefaultFolders()).library));
 }
+
 
 /// Any `.part` found before the first download of a session belongs to a
 /// download that was interrupted (app killed) and will never be completed.
@@ -105,26 +126,6 @@ Future<void> removeStalePartFiles(Directory dir) async {
   }
 }
 
-Future<(Directory, Folder)?> _resolveDownloadFolder(
-  FolderRepository repo,
-) async {
-  if (isAndroid) {
-    final ext = await getExternalStorageDirectory();
-    if (ext == null) return null;
-    final dir = Directory(p.join(ext.path, 'Music'));
-    await dir.create(recursive: true);
-    return (dir, await repo.add(dir.path));
-  }
-  final folders = await repo.getAll();
-  if (folders.isNotEmpty) {
-    return (Directory(folders.first.path), folders.first);
-  }
-  // No library folder yet: fall back to the system Music folder.
-  final music = Directory(await defaultMusicDir());
-  await music.create(recursive: true);
-  return (music, await repo.add(music.path));
-}
-
 class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   late final DownloadQueue _queue;
 
@@ -135,6 +136,14 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   /// Every item that finished (done, failed or cancelled), after the file was
   /// scanned into the library.
   Stream<DownloadItem> get settled => _settled.stream;
+
+  Future<void> _dropWorkCopy(String path) async {
+    try {
+      await File(path).delete();
+    } on FileSystemException catch (e, st) {
+      AppLog.w('work copy not removed: $path', e, st);
+    }
+  }
 
   @override
   List<DownloadItem> build() {
@@ -157,7 +166,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
           ref.read(folderRepositoryProvider),
         );
         folder = res?.$2;
-        final dir = res?.$1;
+        final dir = await publishesToMediaStore() ? await downloadWorkDir() : res?.$1;
         if (dir != null) await (_stale ??= removeStalePartFiles(dir));
         return dir;
       },
@@ -165,13 +174,21 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       onSettled: (item) {
         if (!_settled.isClosed) _settled.add(item);
       },
-      onDownloaded: (path) async {
+      onDownloaded: (workPath) async {
         final f = folder;
-        if (f == null) return;
+        if (f == null) return null;
+        // Android: the finished file goes public now (the tags are written on that copy).
+        final String path;
+        try {
+          path = await ref.read(mediaPublisherProvider).publish(workPath);
+        } on Object {
+          await _dropWorkCopy(workPath); // no orphan in download-work
+          rethrow;
+        }
         await for (final _ in ref.read(libraryScannerProvider).scanFiles(f, [
           path,
         ])) {}
-        final item = _queue.items.where((e) => e.path == path).firstOrNull;
+        final item = _queue.items.where((e) => e.path == workPath).firstOrNull;
         if (item != null) {
           final idx = await ref.read(downloadIndexProvider.future);
           await idx.add(item.result.id, path, source: item.result.source);
@@ -181,6 +198,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
         }
         // An import enriches its songs itself, after putting the CSV tags on.
         if (parseImportTag(item?.tag) == null) await _enrichAfterDownload(path);
+        return path;
       },
     );
     ref.listen(settingsProvider.select((s) => s.downloadParallel),

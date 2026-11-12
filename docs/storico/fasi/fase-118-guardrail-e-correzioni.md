@@ -5,7 +5,7 @@ Dopo le prove dell'11/11 (Motorola, Linux con il .deb di un amico, Release Linux
 Fuori: i ritocchi di UI e la 1.6.0 (fase 119), lo spostamento dei download già in `Android/data` (D-547).
 
 ## Riferimenti
-- Decisioni D-547, D-554 (MediaStore), D-557..D-565.
+- Decisioni D-547, D-554 (MediaStore), D-557..D-566.
 - Aree: [`piattaforme.md`](../architettura/piattaforme.md), [`online.md`](../architettura/online.md), [`libreria-e-dati.md`](../architettura/libreria-e-dati.md), [`ui-e-design.md`](../architettura/ui-e-design.md).
 - Diagnosi dell'11/11 in breve:
   - yt-dlp rotto nelle APK release per R8 (corretto nella 1.5.1, D-557);
@@ -30,6 +30,7 @@ Fuori: i ritocchi di UI e la 1.6.0 (fase 119), lo spostamento dei download già 
 | R-233 | I tag si scrivono anche sui brani con più artisti: la verifica dopo la scrittura confronta ciò che è stato scritto (primo artista come artista dell'album) | I | test: brano «Tinariwen, Matt Sweeney, Alain Johannes» → file con titolo, artista e album; nessun `verifyFailed` |
 | R-234 | Linux: se il selettore file non risponde (manca il portale), dopo un tempo breve compare un errore chiaro con cosa installare (`xdg-desktop-portal-gtk` o `-kde`), non una rotella infinita | U | test con un selettore finto che non risponde → messaggio; il caso normale invariato |
 | R-235 | Un'importazione interrotta (app chiusa) riprende da sola al riavvio (D-564) | I | test: blocchi in pausa per chiusura dell'app → all'avvio tornano in coda; una pausa voluta dall'utente resta pausa |
+| R-237 | Immagine dell'artista scelta a mano, come per album e playlist: stesso foglio e stesse fonti, ripristino dell'immagine automatica, nel backup e nell'unione se lo sono le copertine a mano di album e playlist (D-566) | I | test: dopo la scelta la pagina e le card dell'artista mostrano l'immagine nuova, anche dopo un riavvio; «ripristina» torna all'automatica; backup e unione la portano |
 | R-236 | Avanzamento di un'importazione: nelle attività in corso «Importazione <playlist>: N di M»; nel Registro una sola riga che si aggiorna fino alla fine (D-565) | I | test: durante l'importazione l'attività ha N e M giusti; il Registro ha una riga, aggiornata, non una per blocco |
 
 ## Architettura
@@ -53,25 +54,37 @@ Fuori: i ritocchi di UI e la 1.6.0 (fase 119), lo spostamento dei download già 
 | Regressioni di R8 in altre librerie (NewPipe, Jackson) | prova sul Mi A3 con una build **release**, non debug | `ClassNotFound`, `NoClassDefFoundError` nel logcat |
 
 ## Task
-- [ ] 118.1 Cartella predefinita e download pubblici (R-217, R-227, R-228). **Area a rischio (piattaforme, permessi): `/code-review high`**
+- [x] 118.1 Cartella predefinita e download pubblici (R-217, R-227, R-228). **Area a rischio (piattaforme, permessi): `/code-review high`**
   - File: `lib/core/platform.dart`, `lib/providers/youtube_providers.dart`, `library_providers.dart`, `folder_actions.dart`, `lib/services/online/android_yt_dlp_service.dart`, `stream_promoter.dart`, `perf_probe.dart`, Kotlin accanto a `MediaDeleteBridge.kt`
   - Passi: 1) risolutore unico per piattaforma; 2) pubblicazione MediaStore su Android; 3) cartella aggiunta all'avvio se la libreria non ne ha; 4) prova sul Mi A3 con una build release
   - Comando mirato: `flutter test <test toccati>` + `flutter build apk --release --target-platform android-arm64`
   - Fatto quando: i criteri di R-217, R-227, R-228
-- [ ] 118.2 Onboarding non saltabile e arricchimento acceso (R-229, R-230)
+- [x] 118.2 Onboarding non saltabile e arricchimento acceso (R-229, R-230)
   - File: `lib/ui/screens/onboarding/*`, `lib/data/settings/settings_store.dart`, avvio in `lib/app.dart` o `main.dart`, ARB se cambiano i testi
   - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart`
   - Fatto quando: i criteri di R-229, R-230
-- [ ] 118.3 yt-dlp sempre presente ed errori veri; tag dei brani con più artisti; selettore file su Linux (R-231..R-234)
+- [x] 118.3 yt-dlp sempre presente ed errori veri; tag dei brani con più artisti; selettore file su Linux (R-231..R-234)
   - File: `lib/providers/yt_dlp_update_providers.dart`, `lib/services/online/android_yt_dlp_service.dart`, `retry_policy.dart`, `yt_dlp_process_service.dart`, `lib/services/tags/safe_tag_writer.dart`, `lib/services/library/download_tagger.dart`, `import_intro_sheet.dart` (selettore), ARB
   - Comando mirato: `flutter test test/services/online/ test/services/tags/ <altri toccati>`
   - Fatto quando: i criteri di R-231..R-234; su Linux, con `PATH` senza yt-dlp e una home finta, un download funziona dopo il download automatico
-- [ ] 118.4 Importazione che riprende e mostra l'avanzamento (R-235, R-236)
+- [x] 118.4 Importazione che riprende e mostra l'avanzamento (R-235, R-236)
   - File: `lib/services/import/playlist_import_service.dart`, `lib/providers/import_providers.dart`, `activity_providers.dart`, `activity_log_providers.dart`, ARB
   - Comando mirato: `flutter test test/services/import/ test/providers/ <toccati>`
   - Fatto quando: i criteri di R-235, R-236; prova con `Liked_Songs.csv` sulla Release Linux (schermo virtuale, home finta) per almeno 30 minuti, con un riavvio a metà
+
+- [x] 118.5 Immagine dell'artista scelta a mano (R-237)
+  - File: pagina e card dell'artista (`lib/ui/screens/artist*`), il foglio delle copertine già usato da album e playlist, dove si salva l'immagine dell'artista (senza cambiare lo schema se si può; altrimenti una sola migrazione), backup e unione se servono, ARB
+  - Comando mirato: `flutter test <test toccati> test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart test/l10n/arb_test.dart`
+  - Fatto quando: il criterio di R-237
 
 ## Tocca a te
 - Chiedere al tuo amico, dopo la versione con questa fase, di riprovare il .deb e di mandare «Esporta log» se qualcosa non va.
 
 ## Note di deviazione
+- D-567: la pubblicazione MediaStore vale solo da Android 11 (API 30); sotto, i download restano nella cartella dell'app come nella 1.5.1.
+- Chiave ARB `onboardingSkip` tolta: l'onboarding non ha più «Salta».
+- Immagine dell'artista: riga di `artist_infos` con chiave `image:<artistKey>` (esclusa da biografie e Memoria, nessuna migrazione), esportata in `user_data.json` come `artistImages`.
+- Tag sui file MediaStore: scritti via `ContentResolver` in sostituzione ("wt"); se fallisce, riga di errore nel Registro. Le righe `IS_PENDING` orfane si tolgono all'avvio.
+- yt-dlp desktop: aggiornamento automatico oltre i 90 giorni. Errori «interni» solo per radici di classe JVM (`| root: <classe>`).
+- Golden `now_playing` aggiornati: `creditsDetails` parte vero (D-563).
+- Verifica su Mi A3: in corso (tag, `Music/FreeKmusic`, build release).

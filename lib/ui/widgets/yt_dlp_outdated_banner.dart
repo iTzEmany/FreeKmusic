@@ -17,10 +17,14 @@ class YtDlpOutdatedBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isDesktop) return const SizedBox.shrink();
     final status = ref.watch(ytDlpStatusProvider).value;
-    if (status == null || !status.outdated) return const SizedBox.shrink();
+    final update = ref.watch(ytDlpUpdateProvider);
+    // A failed automatic download stays visible with «Riprova».
+    if (status == null ||
+        !(status.outdated || update.phase == YtDlpUpdatePhase.failed)) {
+      return const SizedBox.shrink();
+    }
     final cc = context.cc;
-    final message = ytDlpUpdateMessage(
-        context.l10n, ref.watch(ytDlpUpdateProvider));
+    final message = ytDlpUpdateMessage(context.l10n, update);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           CcDims.margin, CcDims.gap4, CcDims.margin, CcDims.gap8),
@@ -40,7 +44,9 @@ class YtDlpOutdatedBanner extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.l10n.ytDlpOutdatedBanner(status.version ?? ''),
+                    status.version == null
+                        ? context.l10n.ytDlpMissingBanner
+                        : context.l10n.ytDlpOutdatedBanner(status.version!),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   if (message != null)

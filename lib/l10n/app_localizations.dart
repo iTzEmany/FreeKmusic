@@ -4534,12 +4534,6 @@ abstract class AppLocalizations {
   /// **'Rosso'**
   String get accentRosso;
 
-  /// No description provided for @onboardingSkip.
-  ///
-  /// In it, this message translates to:
-  /// **'Salta'**
-  String get onboardingSkip;
-
   /// No description provided for @onboardingNext.
   ///
   /// In it, this message translates to:
@@ -4615,7 +4609,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingOnlineBody.
   ///
   /// In it, this message translates to:
-  /// **'Sono spente: FreeKmusic non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.'**
+  /// **'Sono accese: arricchiscono i brani con dati online. Puoi spegnerle qui o più tardi dalle Impostazioni.'**
   String get onboardingOnlineBody;
 
   /// No description provided for @onboardingShareTitle.
@@ -9007,6 +9001,12 @@ abstract class AppLocalizations {
   /// **'Ripristina copertina originale'**
   String get coverRestoreOriginal;
 
+  /// No description provided for @artistImageRestore.
+  ///
+  /// In it, this message translates to:
+  /// **'Ripristina immagine automatica'**
+  String get artistImageRestore;
+
   /// No description provided for @coverSourceDevice.
   ///
   /// In it, this message translates to:
@@ -12066,6 +12066,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Nessuna connessione: il brano di Shazam non è stato aggiunto.'**
   String get shazamOffline;
+
+  /// No description provided for @ytErrInternal.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore interno dell’app (non di YouTube): riavvia l’app e riprova'**
+  String get ytErrInternal;
+
+  /// No description provided for @activityYtDlp.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarico yt-dlp'**
+  String get activityYtDlp;
+
+  /// No description provided for @ytDlpMissingBanner.
+  ///
+  /// In it, this message translates to:
+  /// **'Manca yt-dlp: serve per cercare e scaricare online'**
+  String get ytDlpMissingBanner;
+
+  /// No description provided for @csvImportNoPortal.
+  ///
+  /// In it, this message translates to:
+  /// **'Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione'**
+  String get csvImportNoPortal;
 }
 
 class _AppLocalizationsDelegate

@@ -1371,7 +1371,6 @@
   "accentArancio": "Orange",
   "accentRosa": "Rosa",
   "accentRosso": "Rot",
-  "onboardingSkip": "Überspringen",
   "onboardingNext": "Weiter",
   "onboardingStart": "Los geht’s",
   "onboardingPageOf": "Seite {page} von {total}",
@@ -1401,7 +1400,7 @@
   "onboardingAllowAccess": "Zugriff auf Audiodateien erlauben",
   "onboardingAccessGranted": "Zugriff erlaubt",
   "onboardingOnlineTitle": "Online-Funktionen",
-  "onboardingOnlineBody": "Sie sind aus: FreeKmusic geht nie von allein online. Du kannst sie jetzt oder später in den Einstellungen einschalten.",
+  "onboardingOnlineBody": "Sie sind an: sie ergänzen deine Titel mit Online-Daten. Du kannst sie hier oder später in den Einstellungen ausschalten.",
   "onboardingShareTitle": "Downloads, Jam und Teilen",
   "onboardingYoutubeBody": "Du kannst Titel von YouTube auf dein Gerät laden und wie den Rest deiner Musik hören.",
   "onboardingJamBody": "Mit einer Jam hörst du dieselbe Musik gemeinsam mit einem anderen Gerät im selben Netzwerk.",
@@ -3092,6 +3091,7 @@
   "enrichPartCredits": "Credits",
   "coverChange": "Cover ändern",
   "coverRestoreOriginal": "Originalcover wiederherstellen",
+  "artistImageRestore": "Automatisches Bild wiederherstellen",
   "coverSourceDevice": "Vom Gerät",
   "coverSourceLibrary": "Aus der Mediathek",
   "coverSourceOnline": "Online",
@@ -3755,5 +3755,9 @@
   "shazamAdded": "Zu Da Shazam hinzugefügt: {title}",
   "shazamDuplicate": "Schon in Da Shazam: {title}",
   "shazamNotFound": "Auf YouTube Music nicht gefunden: {title}",
-  "shazamOffline": "Keine Verbindung: der Shazam-Titel wurde nicht hinzugefügt."
+  "shazamOffline": "Keine Verbindung: der Shazam-Titel wurde nicht hinzugefügt.",
+  "ytErrInternal": "Interner App-Fehler (nicht YouTube): App neu starten und erneut versuchen",
+  "activityYtDlp": "yt-dlp wird geladen",
+  "ytDlpMissingBanner": "yt-dlp fehlt: es wird für Online-Suche und Downloads gebraucht",
+  "csvImportNoPortal": "Der Dateiauswahldialog antwortet nicht: installiere xdg-desktop-portal-gtk (oder xdg-desktop-portal-kde) und starte die Sitzung neu"
 }

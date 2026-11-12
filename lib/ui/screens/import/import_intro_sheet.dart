@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/app_log.dart';
 import '../../../core/constants.dart';
+import '../../../core/file_portal.dart';
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/exportify_providers.dart';
@@ -55,6 +56,10 @@ class _ImportIntroSheetState extends ConsumerState<ImportIntroSheet> {
       _busy = true;
       _error = null;
     });
+    if (await filePortalMissing()) {
+      if (mounted) setState(() { _busy = false; _error = l.csvImportNoPortal; });
+      return;
+    }
     String? error;
     try {
       // Some Android file pickers hide .csv behind a MIME filter, so there

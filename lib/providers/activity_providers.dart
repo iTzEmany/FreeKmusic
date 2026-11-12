@@ -14,6 +14,7 @@ import 'releases_providers.dart' show manualReleaseCheckProvider;
 import 'second_opinion_providers.dart';
 import 'share_hub.dart';
 import 'youtube_providers.dart';
+import 'yt_dlp_update_providers.dart';
 import '../services/import/playlist_import_service.dart';
 
 enum ActivityKind {
@@ -30,6 +31,7 @@ enum ActivityKind {
   enrichBackground,
   genreReread,
   artistCountries,
+  ytDlp,
 }
 
 /// One line of the Activity centre. [progress] is 0..1, null = indeterminate.
@@ -126,6 +128,7 @@ ActivityState buildActivity({
   CleanupProgress? secondOpinion,
   bool podcastRefresh = false,
   bool radio = false,
+  double? ytDlp,
   EnrichBackgroundProgress? enrichBackground,
 }) {
   final running = <ActivityItem>[];
@@ -192,6 +195,10 @@ ActivityState buildActivity({
   if (radio) {
     running.add(const ActivityItem(kind: ActivityKind.radio, key: 'radio', name: null));
   }
+  if (ytDlp != null) {
+    running.add(ActivityItem(
+        kind: ActivityKind.ytDlp, key: 'ytDlp', name: null, progress: ytDlp > 0 ? ytDlp : null));
+  }
   if (enrichBackground != null) {
     running.add(
       ActivityItem(
@@ -212,7 +219,7 @@ ActivityState buildActivity({
     running.add(
       ActivityItem(
         kind: ActivityKind.import,
-        key: 'imp-${i.id}',
+        key: 'imp-${i.blockIds.firstOrNull ?? i.id}',
         name: i.name,
         // Songs saved so far; the bar follows every row handled.
         done: i.saved,
@@ -229,8 +236,8 @@ ActivityState buildActivity({
     final active = d.status == DownloadStatus.queued ||
         d.status == DownloadStatus.downloading ||
         waiting;
-    // The songs of an import are followed in the import's own screen.
-    if (active && parseImportTag(d.tag) != null) continue;
+    // The songs of an import are counted in its one item, not one by one.
+    if (parseImportTag(d.tag) != null) continue;
     final item = ActivityItem(
       kind: ActivityKind.download,
       key: 'dl-${d.id}',
@@ -287,6 +294,8 @@ final activityProvider = Provider<ActivityState>((ref) {
     releases: ref.watch(manualReleaseCheckProvider),
     podcastRefresh: ref.watch(podcastRefreshingProvider),
     radio: ref.watch(radioCheckingProvider),
+    ytDlp: ref.watch(ytDlpUpdateProvider.select(
+        (s) => s.phase == YtDlpUpdatePhase.working ? s.progress : null)),
     secondOpinion: ref.watch(
       secondOpinionJobProvider.select(
         (j) => j.running ? CleanupProgress(j.done, j.total) : null,

@@ -31,6 +31,8 @@ class StreamPromoter {
     required this.scan,
     required this.tag,
     this.onShadowMerged,
+    this.publish,
+    this.workDir,
     Future<void> Function(File, String)? rename,
     Future<void> Function(File, String)? copy,
   })  : _rename = rename ?? ((f, to) => f.rename(to)),
@@ -45,6 +47,9 @@ class StreamPromoter {
   final Future<void> Function(int trackId) tag;
   /// The shadow row [shadowId] merged into the library row [keepId]: queues must follow.
   final void Function(int shadowId, int keepId)? onShadowMerged;
+  /// Android: the file is moved to [workDir] first, then published; its final path is the row's path.
+  final Future<String> Function(String path)? publish;
+  final Future<Directory> Function()? workDir;
   final Future<void> Function(File, String) _rename; // seams for the cross-volume path
   final Future<void> Function(File, String) _copy;
 
@@ -58,8 +63,23 @@ class StreamPromoter {
     if (target == null) return false;
     final (dir, folder) = target;
     final ext = p.extension(file.path).replaceFirst('.', '');
-    final dest = await _freePath(dir.path, downloadBaseName(r), ext);
+    final pub = publish;
+    final staging = pub == null ? dir.path : (await workDir!()).path;
+    var dest = await _freePath(staging, downloadBaseName(r), ext);
     await _move(file, dest);
+    if (pub != null) {
+      try {
+        dest = await pub(dest);
+      } on Object catch (e, st) {
+        AppLog.w('promote: publish failed for $key', e, st);
+        try {
+          await _move(File(dest), file.path); // the cache entry stays valid
+        } on Object catch (e2, st2) {
+          AppLog.w('promote: cached file not restored for $key', e2, st2);
+        }
+        throw StreamPromoteException('Impossibile pubblicare il brano: $e');
+      }
+    }
     cache.forget(key);
     // The file is in the downloads now: from here on nothing may lead to a second download.
     // Each step is logged on its own so one failure never skips the others.

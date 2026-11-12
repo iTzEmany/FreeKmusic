@@ -68,6 +68,8 @@ void main() {
   late AppDatabase db;
   late _Writer writer;
   late bool enabled;
+  var installFails = false;
+  final failed = <TagWriteReason>[];
   late String? playing;
   late StreamController<String?> playingStream;
   late DownloadTagger tagger;
@@ -78,6 +80,8 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     writer = _Writer();
     enabled = true;
+    installFails = false;
+    failed.clear();
     playing = null;
     playingStream = StreamController<String?>.broadcast();
     final tracks = TrackRepository(db);
@@ -90,8 +94,13 @@ void main() {
           reader: _Reader(),
           workDir: Directory(p.join(root.path, 'work')),
           backups: TagBackupStore(Directory(p.join(root.path, 'bk'))),
+          install: (a, b) async {
+            if (installFails) throw const FileSystemException('refused');
+            await installFile(a, b);
+          },
         ),
       ),
+      onFailed: (t, why) async => failed.add(why),
       reader: _Reader(),
       downloadRoot: () async => music.path,
       enabled: () => enabled,
@@ -160,6 +169,14 @@ void main() {
     final t = await add(music.path, 'a.mp3');
     await tagger.tag(t.id);
     expect(writer.calls, 0);
+  });
+
+  test('a refused install is reported, not swallowed', () async {
+    final t = await add(music.path, 'a.mp3');
+    installFails = true;
+    await tagger.tag(t.id);
+    expect(failed, [TagWriteReason.ioError]);
+    expect(_tags(t.path)['title'], 'Old');
   });
 
   test('an unwritable format (opus) is left alone without an error', () async {

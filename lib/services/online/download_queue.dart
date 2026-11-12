@@ -87,7 +87,8 @@ class DownloadQueue {
   final Downloader downloader;
   final Future<Directory?> Function() outDir;
   final void Function(List<DownloadItem> items) onChanged;
-  final Future<void> Function(String path)? onDownloaded;
+  /// May answer the final path when the file moved (Android publishes it): the item takes it.
+  final Future<Object?> Function(String path)? onDownloaded;
 
   /// Called once per item when it reaches done, failed or cancelled for good
   /// (after [onDownloaded] for the done ones); a retry is not a settlement.
@@ -230,14 +231,15 @@ class DownloadQueue {
       } else {
         _replace(item.id,
             (e) => e.copyWith(status: DownloadStatus.done, progress: 1, path: path));
-        await onDownloaded?.call(path);
+        final moved = await onDownloaded?.call(path);
+        if (moved is String && moved != path) _replace(item.id, (e) => e.copyWith(path: moved));
       }
     } on YtException catch (e, st) {
       AppLog.w('download of ${item.result.id} failed (${e.kind})', e.detail, st);
       retrying = _failOrRetry(item, e.kind, token);
     } on Object catch (e, st) {
       AppLog.e('download failed', e, st);
-      retrying = _failOrRetry(item, YtErrorKind.changed, token);
+      retrying = _failOrRetry(item, YtErrorKind.internal, token); // our own failure, not YouTube's
     } finally {
       _tokens.remove(item.id);
       _emit();

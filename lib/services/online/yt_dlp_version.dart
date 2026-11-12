@@ -37,6 +37,22 @@ YtDlpVersion? parseYtDlpVersion(String out) {
       int.parse(m[4] ?? '0'));
 }
 
+/// yt-dlp is fixed by YouTube changes: past this age (from the date in its
+/// version) the app downloads a fresh copy by itself.
+const kYtDlpMaxAge = Duration(days: 90);
+
+/// No yt-dlp at all, or one older than [kYtDlpMaxAge]. An unreadable version
+/// is left alone.
+bool ytDlpNeedsDownload(String? raw, DateTime now) {
+  if (raw == null) return true;
+  final v = parseYtDlpVersion(raw);
+  if (v == null) return false;
+  final d = DateTime(v.year, v.month, v.day);
+  // DateTime rolls impossible dates over (month 00, day 31 of a short month): leave those alone.
+  if (v.year < 2000 || d.year != v.year || d.month != v.month || d.day != v.day) return false;
+  return now.difference(d) > kYtDlpMaxAge;
+}
+
 /// True only when [raw] is a valid version older than [kMinYtDlpVersion]; an
 /// unknown output is never reported as outdated.
 bool isYtDlpOutdated(String? raw) {

@@ -139,6 +139,90 @@ void main() {
     expect(await db.select(db.activityLogRows).get(), isEmpty);
   });
 
+  test('an import keeps one Registro line that follows the count and becomes its ending', () async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      downloadsProvider.overrideWith(_Downloads.new),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    ActivityState at(int saved) => ActivityState([
+          ActivityItem(kind: ActivityKind.import, key: 'imp-1', name: 'Mood', done: saved, total: 50, ref: 1),
+        ], const []);
+    for (final n in [3, 20, 21]) {
+      c.read(_activity.notifier).set(at(n));
+      await pumpEventQueue();
+    }
+    final rows = await db.select(db.activityLogRows).get();
+    expect(rows, hasLength(1));
+    expect((rows.single.done, rows.single.total), (21, 50));
+    final shown = c.read(activityLogProvider).entries.single;
+    expect((shown.progress, shown.item!.done), (true, 21), reason: 'the loaded line follows too');
+  });
+
+  test('a cancelled import closes its progress line; a deleted one too', () async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      downloadsProvider.overrideWith(_Downloads.new),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    final repo = ImportRepository(db);
+    final playlistId = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'L', createdAt: 0));
+    final id = await repo.create(
+        playlistId: playlistId, sourceName: 'Mood', rows: const [ImportRow(index: 0, title: 'T', artists: ['A'])]);
+    ActivityState at(int n) => ActivityState([
+          ActivityItem(kind: ActivityKind.import, key: 'imp-$n', name: 'Mood', done: 1, total: 50, ref: n),
+        ], const []);
+    c.read(_activity.notifier).set(at(id));
+    await pumpEventQueue();
+    c.read(_activity.notifier).set(ActivityState([...at(id).running, ...at(99).running], const []));
+    await pumpEventQueue();
+    await pumpEventQueue();
+    expect(await db.select(db.activityLogRows).get(), hasLength(2));
+    await repo.setStatus(id, ImportStatus.cancelled);
+    c.read(_activity.notifier).set(const ActivityState([], []));
+    await pumpEventQueue();
+    expect(await db.select(db.activityLogRows).get(), isEmpty);
+  });
+
+  test('a pause event of an import stays until the count moves again', () async {
+    final events = StreamController<ImportEvent>();
+    addTearDown(events.close);
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      downloadsProvider.overrideWith(_Downloads.new),
+      activityProvider.overrideWith((ref) => ref.watch(_activity)),
+      importEventsProvider.overrideWith((ref) => events.stream),
+    ]);
+    addTearDown(c.dispose);
+    c.listen(activityLogProvider, (_, _) {});
+    final playlistId = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'L', createdAt: 0));
+    final importId = await ImportRepository(db).create(
+      playlistId: playlistId,
+      sourceName: 'Mood',
+      rows: const [ImportRow(index: 0, title: 'T', artists: ['A'])],
+    );
+    ActivityState at(int saved) => ActivityState([
+          ActivityItem(kind: ActivityKind.import, key: 'imp-$importId', name: 'Mood', done: saved, total: 50, ref: importId),
+        ], const []);
+    c.read(_activity.notifier).set(at(3));
+    await pumpEventQueue();
+    events.add(ImportEvent(ImportEventKind.network, importId));
+    await pumpEventQueue();
+    c.read(_activity.notifier).set(at(3)); // same count: another tick
+    await pumpEventQueue();
+    var row = (await db.select(db.activityLogRows).get()).single;
+    expect(c.read(activityLogProvider).entries.single.event, ImportEventKind.network);
+    expect(row.detail, contains('network'));
+    c.read(_activity.notifier).set(at(4)); // runs again
+    await pumpEventQueue();
+    row = (await db.select(db.activityLogRows).get()).single;
+    expect(row.done, 4);
+  });
+
   // The background completion writes its own line (enrich_completer_providers_test).
   test('a job leaves one line when it leaves running; a download that ends leaves one', () async {
     final c = ProviderContainer(

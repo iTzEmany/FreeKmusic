@@ -3,7 +3,7 @@
 Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
 ## Da fare subito (richieste dell'11/11)
-- Fase 117 fusa (PR #175). Versione correttiva 1.5.1 (yt-dlp nelle APK release, D-557). Poi [fase 118](fasi/fase-118-guardrail-e-correzioni.md) «Guardrail e correzioni» (cartella predefinita, download pubblici, onboarding non saltabile, yt-dlp sempre presente, tag con più artisti, importazione che riprende e mostra l'avanzamento) e [fase 119](fasi/fase-119-ritocchi-e-1-6-0.md) «Ritocchi e 1.6.0». Dopo: la CI Windows (sotto, «Qualità e rilascio»).
+- Fasi 117 (PR #175) e 118 chiuse; versione correttiva 1.5.1 (D-557). Fase 118 [«Guardrail e correzioni»](storico/fasi/fase-118-guardrail-e-correzioni.md) (cartella predefinita, download pubblici, onboarding non saltabile, yt-dlp sempre presente, tag con più artisti, importazione che riprende e mostra l'avanzamento). Ora: [fase 119](fasi/fase-119-ritocchi-e-1-6-0.md) «Ritocchi e 1.6.0». Dopo: la CI Windows (sotto, «Qualità e rilascio»).
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
@@ -18,6 +18,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **SQL della copertina automatica ripetuto** in `memory_queries.dart` e `playlist_repository.dart` (7 nov, fase 103): una costante condivisa.
 - **`FollowRepository.watchNames`** ricostruisce tutta la mappa nomi a ogni scrittura su `artist_lookups`/`followed_artists` (Artisti uniti si ridisegna durante l'arricchimento). Rimedio: limitarla agli ID uniti o «diversi», o `.distinct`.
 - **Rilettura dei generi ferma mentre suona** (D-390): per chi ascolta quasi sempre può non finire mai. Rimedio: dopo N giorni leggere a basso ritmo anche durante la riproduzione.
+- **Tag mai scritti se l'app muore prima** (11 nov, prova fase 118 sul Mi A3): il file viene pubblicato in `Music/FreeKmusic` subito, i tag (titolo, artista, album, copertina) arrivano circa 60 s dopo; un force-stop in mezzo lascia il file senza tag per sempre (nessun nuovo tentativo all'avvio). Rimedio: all'avvio ritentare `DownloadTagger` sui download di `downloads.json` senza titolo nel file.
 - **Dopo «Elimina dal dispositivo»** `files/downloads.json` tiene la voce del brano cancellato (10 nov, scheggia 116): capire se si pulisce da sola, altrimenti toglierla alla cancellazione.
 - **Orfani di testi** (7 nov): `unsyncedLyrics`, `manualRomanization`, `handWrittenLyrics` non vengono mai potati (solo crescono); l'unione dei doppioni (`duplicate_repository._mergeTrackFields`) sposta il testo senza traslitterazione a mano né segni.
 

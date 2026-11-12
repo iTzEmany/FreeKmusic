@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
+import '../core/clock.dart';
+import '../data/repositories/activity_log_repository.dart';
 import '../data/repositories/credits_repository.dart';
 import '../data/settings/settings_store.dart' show AppSettings;
 import '../services/online/acoustid_client.dart';
@@ -473,6 +476,13 @@ final downloadTaggerProvider = Provider<DownloadTagger>((ref) {
     },
     playingPath: () => handler.currentTrack?.path,
     playingChanges: handler.currentTrackStream.map((t) => t?.path),
+    onFailed: (t, why) => ActivityLogRepository(db).add(
+      at: nowMs(),
+      kind: 'correction',
+      name: t.title,
+      failed: true,
+      detail: jsonEncode({'trackId': t.id, 'file': why.name}),
+    ),
   );
   ref.onDispose(tagger.dispose);
   return tagger;

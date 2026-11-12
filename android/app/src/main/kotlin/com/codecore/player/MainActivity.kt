@@ -63,6 +63,7 @@ class MainActivity : AudioServiceActivity() {
         YtDlpChannel(applicationContext).register(flutterEngine.dartExecutor.binaryMessenger)
         ImportBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         MediaDeleteBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
+        MediaPublishBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         SaveFileBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageBridge.register(this, flutterEngine.dartExecutor.binaryMessenger)
         NetworkBridge.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)

@@ -1,4 +1,8 @@
+import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
+import 'package:codecore/services/online/download_index.dart';
+import 'dart:io';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/data/repositories/hidden_playlists.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
@@ -450,6 +454,51 @@ void main() {
       expect(await repo.watchDownloadedWithoutPlaylistCount(folderId: 1).first, 1);
     });
 
+    test('downloaded by path prefix or by index path, whatever the folder', () async {
+      await repo.upsertBatch([
+        row('/m/FreeKmusic/new.mp3', 'new', folderId: 2),
+        row('/old/Music/old.mp3', 'old', folderId: 2),
+        row('/lib/idx.mp3', 'idx', folderId: 2),
+        row('/m/FreeKmusicX/other.mp3', 'other', folderId: 2),
+      ]);
+      final l = await repo
+          .watchDownloadedWithoutPlaylist(prefixes: ['/m/FreeKmusic/', '/old/Music/'], paths: {'/lib/idx.mp3'})
+          .first;
+      expect(l.map((t) => t.title).toSet(), {'new', 'old', 'idx'});
+    });
+
+    test('a prefix with an emoji, quotes or spaces still matches', () async {
+      await repo.upsertBatch([
+        row('/home/u/🎵 Music/FreeKmusic/a.mp3', 'a'),
+        row("/home/o'brien/Musica \"x\"/FreeKmusic/b.mp3", 'b'),
+      ]);
+      final l = await repo
+          .watchDownloadedWithoutPlaylist(
+              prefixes: ['/home/u/🎵 Music/FreeKmusic/', "/home/o'brien/Musica \"x\"/FreeKmusic/"])
+          .first;
+      expect(l.map((t) => t.title).toSet(), {'a', 'b'});
+    });
+
+    test('a download index bigger than the SQL variable limit still works', () async {
+      await repo.upsertBatch([row('/x/1.mp3', 'a')]);
+      final l = await repo.watchDownloadedWithoutPlaylist(paths: {for (var i = 0; i < 40000; i++) '/x/$i.mp3'}).first;
+      expect(l.map((t) => t.title), ['a']);
+    });
+
+    test('a download root without a trailing separator does not match a sibling folder', () async {
+      await repo.upsertBatch([row('/Music/FreeKmusic/a.mp3', 'in'), row('/Music/FreeKmusic2/b.mp3', 'out')]);
+      final c = ProviderContainer(overrides: [
+        trackRepositoryProvider.overrideWithValue(repo),
+        downloadRootsProvider.overrideWithValue(const AsyncData(<String>['/Music/FreeKmusic'])),
+        downloadFolderIdProvider.overrideWith((ref) async => null),
+        downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
+      ]);
+      addTearDown(c.dispose);
+      c.listen(downloadedNoPlaylistProvider(const TrackQuery()), (_, _) {});
+      final r = await c.read(downloadedNoPlaylistProvider(const TrackQuery()).future);
+      expect(r.map((t) => t.title), ['in']);
+    });
+
     test('the provider search ignores accents', () async {
       await repo.upsertBatch([
         row('/d/c.mp3', 'Café', folderId: 1),
@@ -457,7 +506,9 @@ void main() {
       ]);
       final c = ProviderContainer(overrides: [
         trackRepositoryProvider.overrideWithValue(repo),
+        downloadRootsProvider.overrideWithValue(const AsyncData(<String>[])),
         downloadFolderIdProvider.overrideWith((ref) async => 1),
+        downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),
       ]);
       addTearDown(c.dispose);
       const q = TrackQuery(text: 'CAFE');
@@ -469,8 +520,10 @@ void main() {
     test('downloadFolderIdProvider only reads: never adds a folder', () async {
       final c = ProviderContainer(overrides: [databaseProvider.overrideWithValue(db)]);
       addTearDown(c.dispose);
+      final downloads = (await resolveDefaultFolders(create: false)).downloads;
+      final id = (await FolderRepository(db).add(downloads)).id;
       c.listen(downloadFolderIdProvider, (_, _) {});
-      expect(await c.read(downloadFolderIdProvider.future), 1, reason: 'first folder');
+      expect(await c.read(downloadFolderIdProvider.future), id, reason: 'the download location');
       await db.delete(db.folders).go();
       c.invalidate(foldersProvider);
       c.invalidate(downloadFolderIdProvider);

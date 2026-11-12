@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
+import 'providers/database_providers.dart' show folderRepositoryProvider;
 import 'providers/equalizer_providers.dart';
+import 'providers/folder_actions.dart' show ensureDefaultFolder, scanWithPermission;
 import 'providers/jam_providers.dart' show jamOnlineFailuresProvider;
 import 'providers/player_providers.dart';
 import 'providers/volume_zero_pause_provider.dart';
@@ -145,7 +147,15 @@ class CodecoreApp extends ConsumerWidget {
           child: UserActivityScope(child: child ?? const SizedBox.shrink()),
         ),
       ),
-      home: const AppIconSync(child: OnboardingGate(child: AppShell())),
+      home: AppIconSync(
+        child: OnboardingGate(
+          ensureFolder: () => ensureDefaultFolder(
+            ref.read(folderRepositoryProvider),
+            () => scanWithPermission(ref),
+          ),
+          child: const AppShell(),
+        ),
+      ),
     );
   }
 }

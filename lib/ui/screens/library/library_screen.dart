@@ -477,6 +477,7 @@ Widget _cover(LibraryEntry e, double size) => switch (e.kind) {
     name: e.title,
     size: size,
     coverKey: e.coverKey,
+    artistKey: e.id,
   ),
   LibraryKind.playlist => PlaylistCover(
     size: size,

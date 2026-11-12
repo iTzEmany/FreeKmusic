@@ -1722,7 +1722,6 @@
   "accentArancio": "Arancio",
   "accentRosa": "Rosa",
   "accentRosso": "Rosso",
-  "onboardingSkip": "Salta",
   "onboardingNext": "Avanti",
   "onboardingStart": "Inizia",
   "onboardingPageOf": "Pagina {page} di {total}",
@@ -1762,7 +1761,7 @@
   "onboardingAllowAccess": "Consenti l’accesso ai file audio",
   "onboardingAccessGranted": "Accesso consentito",
   "onboardingOnlineTitle": "Funzioni online",
-  "onboardingOnlineBody": "Sono spente: FreeKmusic non si collega a Internet per conto suo. Puoi accenderle ora o più tardi dalle Impostazioni.",
+  "onboardingOnlineBody": "Sono accese: arricchiscono i brani con dati online. Puoi spegnerle qui o più tardi dalle Impostazioni.",
   "onboardingShareTitle": "Download, Jam e condivisione",
   "onboardingYoutubeBody": "Puoi scaricare brani da YouTube sul tuo dispositivo, per ascoltarli come il resto della tua musica.",
   "onboardingJamBody": "Con una Jam ascolti la stessa musica insieme a un altro dispositivo sulla stessa rete.",
@@ -3663,6 +3662,7 @@
   "enrichPartCredits": "Crediti",
   "coverChange": "Cambia copertina",
   "coverRestoreOriginal": "Ripristina copertina originale",
+  "artistImageRestore": "Ripristina immagine automatica",
   "coverSourceDevice": "Dal dispositivo",
   "coverSourceLibrary": "Dalla libreria",
   "coverSourceOnline": "Online",
@@ -4464,5 +4464,9 @@
   "@shazamDuplicate": {"description": "Snackbar of a song shared from Shazam.", "placeholders": {"title": {"type": "String"}}},
   "shazamNotFound": "Non trovato su YouTube Music: {title}",
   "@shazamNotFound": {"description": "Snackbar of a song shared from Shazam.", "placeholders": {"title": {"type": "String"}}},
-  "shazamOffline": "Nessuna connessione: il brano di Shazam non è stato aggiunto."
+  "shazamOffline": "Nessuna connessione: il brano di Shazam non è stato aggiunto.",
+  "ytErrInternal": "Errore interno dell’app (non di YouTube): riavvia l’app e riprova",
+  "activityYtDlp": "Scarico yt-dlp",
+  "ytDlpMissingBanner": "Manca yt-dlp: serve per cercare e scaricare online",
+  "csvImportNoPortal": "Il selettore file non risponde: installa xdg-desktop-portal-gtk (o xdg-desktop-portal-kde) e riavvia la sessione"
 }

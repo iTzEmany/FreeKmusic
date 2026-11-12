@@ -425,6 +425,20 @@ class ArtistAliasData {
       : null;
 }
 
+/// An artist image picked by hand (D-566): [artistKey] is the library artist key,
+/// [coverKey] the file in the covers folder.
+class ArtistImageData {
+  const ArtistImageData({required this.artistKey, required this.coverKey});
+
+  final String artistKey, coverKey;
+
+  Map<String, Object?> toJson() => {'artistKey': artistKey, 'coverKey': coverKey};
+
+  static ArtistImageData? tryParse(Object? j) => j is Map && j['artistKey'] is String && j['coverKey'] is String
+      ? ArtistImageData(artistKey: j['artistKey'] as String, coverKey: j['coverKey'] as String)
+      : null;
+}
+
 class UserData {
   const UserData({
     required this.createdAt,
@@ -436,6 +450,7 @@ class UserData {
     this.artistCountries = const [],
     this.artistAliases = const [],
     this.artistNotSame = const [],
+    this.artistImages = const [],
   });
 
   final int createdAt;
@@ -457,6 +472,9 @@ class UserData {
   final List<ArtistAliasData> artistAliases;
   final List<List<String>> artistNotSame;
 
+  /// Artist images picked by hand (absent in older backups = none).
+  final List<ArtistImageData> artistImages;
+
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -469,6 +487,7 @@ class UserData {
         if (artistCountries.isNotEmpty) 'artistCountries': [for (final a in artistCountries) a.toJson()],
         if (artistAliases.isNotEmpty) 'artistAliases': [for (final a in artistAliases) a.toJson()],
         if (artistNotSame.isNotEmpty) 'artistNotSame': artistNotSame,
+        if (artistImages.isNotEmpty) 'artistImages': [for (final a in artistImages) a.toJson()],
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -510,6 +529,9 @@ class UserData {
       artistNotSame: [
         for (final a in (j['artistNotSame'] as List? ?? const []))
           if (a is List && a.length == 2 && a[0] is String && a[1] is String) [a[0] as String, a[1] as String],
+      ],
+      artistImages: [
+        for (final a in (j['artistImages'] as List? ?? const [])) ?ArtistImageData.tryParse(a),
       ],
     );
   }

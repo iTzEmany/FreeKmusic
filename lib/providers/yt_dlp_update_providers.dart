@@ -9,6 +9,7 @@ import '../core/paths.dart';
 import '../services/online/http_client.dart';
 import '../services/online/yt_dlp_process_service.dart';
 import '../services/online/yt_dlp_updater.dart';
+import '../services/online/yt_dlp_version.dart';
 import 'youtube_providers.dart';
 
 Future<String> ytDlpBinDir() async => p.join(await appSupportDir(), 'bin');
@@ -39,16 +40,28 @@ class YtDlpUpdateState {
   final YtDlpUpdateError? error;
 }
 
-/// Runs only when the user taps «Aggiorna».
+/// Runs when the user taps «Aggiorna», and by itself (desktop) when yt-dlp is
+/// missing or too old, see [autoUpdate].
 class YtDlpUpdateNotifier extends Notifier<YtDlpUpdateState> {
   @override
   YtDlpUpdateState build() => const YtDlpUpdateState(YtDlpUpdatePhase.idle);
 
-  Future<void> run() async {
+  /// Downloads the managed copy when [version] (null = no yt-dlp) calls for
+  /// it. Tried once per session: after a failure the user taps «Riprova».
+  Future<void> autoUpdate(String? version,
+      {DateTime? now, YtDlpUpdater? updater}) async {
+    if (state.phase != YtDlpUpdatePhase.idle ||
+        !ytDlpNeedsDownload(version, now ?? DateTime.now())) {
+      return;
+    }
+    await run(updater: updater);
+  }
+
+  Future<void> run({YtDlpUpdater? updater}) async {
     if (state.phase == YtDlpUpdatePhase.working) return;
     state = const YtDlpUpdateState(YtDlpUpdatePhase.working);
     try {
-      final updater = YtDlpUpdater(
+      updater ??= YtDlpUpdater(
         dio: Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 8),
           receiveTimeout: const Duration(seconds: 15),

@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
+import '../core/platform.dart';
 import '../data/repositories/track_repository.dart';
 import '../data/repositories/track_kinds.dart';
 import '../services/audio/online_entries.dart' show isOnlineId;
 import '../services/online/enrich_parts.dart' show EnrichStatus;
+import '../services/online/media_publisher.dart';
 import '../services/online/synthetic_track.dart';
 import '../services/stream/stream_enrich_trigger.dart';
 import '../services/online/enrichment_service.dart';
@@ -134,5 +136,11 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
         await for (final _ in ref.read(libraryScannerProvider).scanFiles(folder, [path])) {}
       },
       tag: ref.read(downloadTaggerProvider).tag,
+      publish: isAndroid ? ref.read(mediaPublisherProvider).publish : null,
+      workDir: isAndroid
+          ? () async => await publishesToMediaStore()
+              ? downloadWorkDir()
+              : (await resolveDownloadFolder(ref.read(folderRepositoryProvider)))!.$1
+          : null,
       onShadowMerged: (shadow, keep) => ref.read(audioHandlerProvider).replaceQueueId(shadow, keep),
     ));

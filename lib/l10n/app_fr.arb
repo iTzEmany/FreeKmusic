@@ -1529,7 +1529,6 @@
   "accentArancio": "Orange",
   "accentRosa": "Rose",
   "accentRosso": "Rouge",
-  "onboardingSkip": "Passer",
   "onboardingNext": "Suivant",
   "onboardingStart": "Commencer",
   "onboardingPageOf": "Page {page} sur {total}",
@@ -1559,7 +1558,7 @@
   "onboardingAllowAccess": "Autoriser l’accès aux fichiers audio",
   "onboardingAccessGranted": "Accès autorisé",
   "onboardingOnlineTitle": "Fonctions en ligne",
-  "onboardingOnlineBody": "Elles sont désactivées : FreeKmusic ne se connecte jamais à Internet de lui-même. Vous pouvez les activer maintenant ou plus tard dans les Paramètres.",
+  "onboardingOnlineBody": "Elles sont activées : elles enrichissent vos titres avec des données en ligne. Vous pouvez les désactiver ici ou plus tard dans les Paramètres.",
   "onboardingShareTitle": "Téléchargements, Jam et partage",
   "onboardingYoutubeBody": "Vous pouvez télécharger des titres depuis YouTube sur votre appareil et les écouter comme le reste de votre musique.",
   "onboardingJamBody": "Avec une Jam, vous écoutez la même musique avec un autre appareil du même réseau.",
@@ -3313,6 +3312,7 @@
   "enrichPartCredits": "Crédits",
   "coverChange": "Changer la pochette",
   "coverRestoreOriginal": "Rétablir la pochette d’origine",
+  "artistImageRestore": "Rétablir l’image automatique",
   "coverSourceDevice": "Depuis l’appareil",
   "coverSourceLibrary": "Depuis la bibliothèque",
   "coverSourceOnline": "En ligne",
@@ -3976,5 +3976,9 @@
   "shazamAdded": "Ajouté à Da Shazam : {title}",
   "shazamDuplicate": "Déjà dans Da Shazam : {title}",
   "shazamNotFound": "Introuvable sur YouTube Music : {title}",
-  "shazamOffline": "Pas de connexion : le titre de Shazam n’a pas été ajouté."
+  "shazamOffline": "Pas de connexion : le titre de Shazam n’a pas été ajouté.",
+  "ytErrInternal": "Erreur interne de l’application (pas de YouTube) : redémarrez l’application et réessayez",
+  "activityYtDlp": "Téléchargement de yt-dlp",
+  "ytDlpMissingBanner": "yt-dlp est absent : il faut pour chercher et télécharger en ligne",
+  "csvImportNoPortal": "Le sélecteur de fichiers ne répond pas : installez xdg-desktop-portal-gtk (ou xdg-desktop-portal-kde) et redémarrez la session"
 }

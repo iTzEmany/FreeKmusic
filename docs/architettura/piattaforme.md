@@ -33,6 +33,7 @@ Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchett
 | `StorageBridge.kt` | `codecore/storage`: `diskSpace`, `openFolder`. |
 | `SaveFileBridge.kt` | `codecore/save`: copia a flusso verso un file scelto dall'utente. |
 | `MediaDeleteBridge.kt` | `codecore/media`: elimina dal dispositivo. |
+| `MediaPublishBridge.kt` | `codecore/publish`: `sdk`, `publish` (copia in `Music/FreeKmusic` con `MediaStore.Audio`, `IS_PENDING`, MIME audio, sottocartelle), `replace` (riscrive un file pubblicato con "wt", per i tag). Solo da Android 11 (D-567). Dart: `lib/services/online/media_publisher.dart`. |
 | `NotifyBridge.kt` | `codecore/notify`: notifica «Nuove uscite», `takeLaunchTarget`. |
 | `LinkBridge.kt` | `codecore/link`: `openUrl`, `deviceInfo`. |
 | `JamBeaconBridge.kt` | `codecore/jam_beacon`: annuncio e scansione BLE della Jam a distanza. |
@@ -93,7 +94,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 | Controlli di sistema | `audio_service` (notifica, schermata di blocco, cuffie) | SMTC / MPRIS | non cablati in `main.dart` |
 | Equalizzatore | `AndroidEqualizer` (la voce compare solo se `equalizerProvider` non è nullo) | assente (il filtro `af` di mpv è di `scaletempo`) | non verificato |
 | Permessi file | `READ_MEDIA_AUDIO` (`READ_EXTERNAL_STORAGE` fino ad API 32) | nessuno | sandbox |
-| Cartella musica | `/storage/emulated/0/Music` | `~/Music` o `%USERPROFILE%\Music` | `~/Music` (`defaultMusicDir`) |
+| Cartelle predefinite (`resolveDefaultFolders`, `lib/core/platform.dart`) | libreria `/storage/emulated/0/Music`, download `Music/FreeKmusic` (MediaStore da Android 11; sotto, cartella dell'app) | Linux: `XDG_MUSIC_DIR` / `xdg-user-dir MUSIC`, ripiego `~/Music`; Windows `%USERPROFILE%\Music`; download in `<Musica>/FreeKmusic` | `~/Music`; iOS: cartella documenti |
 | Orientamento | bloccato in verticale | libero | libero |
 | Scoperta in LAN (`discovery.dart`) | senza `reusePort` | `reusePort` solo su Linux | `reusePort` |
 

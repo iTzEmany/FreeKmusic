@@ -1,4 +1,5 @@
 import 'package:codecore/data/repositories/library_queries.dart';
+import 'package:codecore/providers/cover_ops.dart';
 import 'package:codecore/providers/credits_providers.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/ui/screens/library/artist_screen.dart';
@@ -117,4 +118,25 @@ void main() {
       await h.dispose(tester);
     });
   }
+
+  testWidgets('the artist page offers the image change, and the reset only when one is picked', (tester) async {
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const ArtistDetailScreen(
+        artist: ArtistSummary(key: 'a', name: 'A', trackCount: 0, albumCount: 0),
+      ),
+      extraOverrides: [
+        artistAlbumsProvider('a').overrideWith((ref) => Stream.value([])),
+        artistTracksProvider('a').overrideWith((ref) => Stream.value([])),
+        artistImagesProvider.overrideWith((ref) => Stream.value({'a': 'k'})),
+      ],
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('artist-more')));
+    await tester.pumpAndSettle();
+    expect(find.text('Cambia copertina'), findsOneWidget);
+    expect(find.text('Ripristina immagine automatica'), findsOneWidget);
+    await h.dispose(tester);
+  });
 }

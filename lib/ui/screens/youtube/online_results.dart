@@ -43,6 +43,7 @@ String ytErrorText(BuildContext context, YtErrorKind k) {
     YtErrorKind.changed => l.ytErrChanged,
     YtErrorKind.toolMissing => l.ytErrToolMissing,
     YtErrorKind.rateLimited => l.ytErrRateLimited,
+    YtErrorKind.internal => l.ytErrInternal,
     YtErrorKind.toolOutdated => l.ytErrToolOutdated,
   };
 }

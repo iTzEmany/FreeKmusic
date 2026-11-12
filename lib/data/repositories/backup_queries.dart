@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import '../../services/backup/user_data.dart';
 import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
+import 'artist_info_repository.dart';
 import 'credits_repository.dart';
 import 'hidden_playlists.dart';
 import 'track_kinds.dart';
@@ -199,6 +200,10 @@ Future<UserData> collectUserData(
       artistAliases: [
         for (final r in await (db.select(db.artistAliases)..orderBy([(r) => OrderingTerm.asc(r.aliasId)])).get())
           ArtistAliasData(aliasId: r.aliasId, mainId: r.mainId, createdAt: r.createdAt),
+      ],
+      artistImages: [
+        for (final e in (await ArtistInfoRepository(db).images()).entries)
+          ArtistImageData(artistKey: e.key, coverKey: e.value),
       ],
       artistNotSame: [
         for (final r in await (db.select(db.artistNotSame)..orderBy([(r) => OrderingTerm.asc(r.a), (r) => OrderingTerm.asc(r.b)])).get())

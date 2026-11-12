@@ -18,6 +18,7 @@ class SafeTagWriter {
     required this.workDir,
     required this.backups,
     this.rename,
+    this.install,
   });
 
   final TagWriter writer;
@@ -27,6 +28,9 @@ class SafeTagWriter {
 
   /// Replaceable in tests to force the cross-partition path.
   final Future<void> Function(String from, String to)? rename;
+
+  /// Replaces [installFile] where a rename cannot (Android MediaStore files).
+  final Future<void> Function(String from, String to)? install;
 
   Future<void> _queue = Future.value();
 
@@ -76,7 +80,7 @@ class SafeTagWriter {
         throw TagWriteException(TagWriteReason.verifyFailed, problem);
       }
       if (backup) await backups.add(path);
-      await installFile(tmp.path, path, rename: rename);
+      await (install ?? (a, b) => installFile(a, b, rename: rename))(tmp.path, path);
       return await stampOf(path);
     } on TagWriteException catch (e) {
       AppLog.w('tag write refused for $path: ${e.reason.name} ${e.detail ?? ''}');
@@ -111,15 +115,21 @@ String? tagMismatch(
   String? bad(String name, Object? want, Object? got) =>
       want == got ? null : '$name: "$got" instead of "$want"';
   final artists = {after.artist, after.albumArtist};
-  String? inArtists(String name, String? want) =>
-      want == null || artists.contains(want.trim())
+  // A multi-artist string may be read back whole while the album artist
+  // written is its first name: accept any single name inside it too.
+  final names = <String?>{
+    for (final a in artists.nonNulls) ...[a, ...a.split(RegExp(r'\s*[,;&]\s*'))],
+  };
+  // Only the album artist (the first artist) may be a part of the string read back.
+  String? inArtists(String name, String? want, Set<String?> pool) =>
+      want == null || pool.contains(want.trim())
       ? null
       : '$name: "$want" not found in ${artists.nonNulls.toList()}';
   final yearUnreadable = format == 'flac' && after.year == null;
   final checks = <String?>[
     if (c.title != null) bad('title', c.title!.trim(), after.title),
-    inArtists('artist', c.artist),
-    inArtists('albumArtist', c.albumArtist),
+    inArtists('artist', c.artist, artists),
+    inArtists('albumArtist', c.albumArtist, names),
     if (c.album != null) bad('album', c.album!.trim(), after.album),
     if (c.year != null && !yearUnreadable) bad('year', c.year, after.year),
     if (c.trackNumber != null) bad('track', c.trackNumber, after.trackNumber),
