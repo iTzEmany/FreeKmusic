@@ -1,9 +1,11 @@
+import 'package:codecore/data/db/app_database.dart' show TracksCompanion;
 import 'package:codecore/data/repositories/import_repository.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/services/import/imported_playlist.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -38,6 +40,8 @@ void main() {
     );
     // The CSV lists the tracks in an order different from the library's.
     final order = ['Tone C', 'Tone A', 'Tone D'];
+    // Rows without an artist never match the library (too risky), and the generated files have none.
+    await tester.runAsync(() => app.db.update(app.db.tracks).write(const TracksCompanion(artist: Value('Tone Band'))));
     final all = (await tester.runAsync(() => tracks.liteEntries()))!;
     final byTitle = {for (final t in all) t.title.toLowerCase(): t};
     final csv = ImportedPlaylist(name: 'Da CSV', rows: [
