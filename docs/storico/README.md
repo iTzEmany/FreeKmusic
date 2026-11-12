@@ -5,7 +5,7 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 ## Cosa c'è
 | Percorso | Contenuto |
 |---|---|
-| `fasi/` | Un file per fase (126 file): obiettivo, task, verifiche, note di deviazione. Tabella sotto. |
+| `fasi/` | Un file per fase (127 file): obiettivo, task, verifiche, note di deviazione. Tabella sotto. |
 | `feature/` | Specifiche di feature (requisiti R-…, rischi K-…) che hanno originato le fasi: streaming, arricchimento, riconoscimento, Jam a distanza, Jam della cassa, link e Shazam. |
 | `refactor/` | Analisi, mockup, misure e rete di sicurezza dei refactor (`ui-fluida`, `superfici-e-ricerca`, …). |
 | `superpowers/` | Piani e specifiche di lavoro di agenti (identità «anello» e simili). |
@@ -150,3 +150,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 119 | Ritocchi e 1.6.0 | [`fase-119-ritocchi-e-1-6-0.md`](fasi/fase-119-ritocchi-e-1-6-0.md) |
 | 120 | CI Windows | [`fase-120-ci-windows.md`](fasi/fase-120-ci-windows.md) |
 | 121 | Test di sistema | [`fase-121-test-di-sistema.md`](fasi/fase-121-test-di-sistema.md) |
+| 122 | CI di tutti i sistemi | [`fase-122-ci-tutti-i-sistemi.md`](fasi/fase-122-ci-tutti-i-sistemi.md) |
