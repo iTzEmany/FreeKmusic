@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/download_tagger.dart';
+import 'package:codecore/services/library/pending_tags.dart';
 import 'package:codecore/services/library/track_file_sync.dart';
 import 'package:codecore/services/tags/safe_tag_writer.dart';
 import 'package:codecore/services/tags/tag_backups.dart';
@@ -74,19 +75,13 @@ void main() {
   late StreamController<String?> playingStream;
   late DownloadTagger tagger;
 
-  setUp(() {
-    root = Directory.systemTemp.createTempSync('dtag');
-    music = Directory(p.join(root.path, 'Music'))..createSync();
-    db = AppDatabase(NativeDatabase.memory());
-    writer = _Writer();
-    enabled = true;
-    installFails = false;
-    failed.clear();
-    playing = null;
-    playingStream = StreamController<String?>.broadcast();
+  // A new tagger over the same files and pending list = an app restart.
+  DownloadTagger make() {
     final tracks = TrackRepository(db);
-    tagger = DownloadTagger(
+    return DownloadTagger(
       trackById: tracks.getById,
+      trackByPath: tracks.byPath,
+      pending: PendingTags(() async => File(p.join(root.path, 'pending.json'))),
       sync: TrackFileSync(
         db,
         () async => SafeTagWriter(
@@ -108,6 +103,19 @@ void main() {
       playingPath: () => playing,
       playingChanges: playingStream.stream,
     );
+  }
+
+  setUp(() {
+    root = Directory.systemTemp.createTempSync('dtag');
+    music = Directory(p.join(root.path, 'Music'))..createSync();
+    db = AppDatabase(NativeDatabase.memory());
+    writer = _Writer();
+    enabled = true;
+    installFails = false;
+    failed.clear();
+    playing = null;
+    playingStream = StreamController<String?>.broadcast();
+    tagger = make();
   });
   tearDown(() async {
     tagger.dispose();
@@ -233,5 +241,37 @@ void main() {
     final m = _tags(t.path);
     expect(m['title'], 'Poetica');
     expect(m.containsKey('cover'), isFalse);
+  });
+
+  group('pending tags survive a restart', () {
+    test('an untagged download is tagged by the next run', () async {
+      final t = await add(music.path, 'a.mp3');
+      await tagger.markPending(t.id); // the app dies before tag() ends
+      tagger.dispose();
+      tagger = make();
+      await tagger.resumePending();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(_tags(t.path)['artist'], 'Cesare Cremonini');
+    });
+
+    test('a tagged file is not run again and a failure is not retried', () async {
+      final t = await add(music.path, 'a.mp3');
+      await tagger.markPending(t.id);
+      installFails = true;
+      await tagger.tag(t.id); // refused for good
+      installFails = false;
+      tagger = make();
+      await tagger.resumePending();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(writer.calls, 1);
+      expect(_tags(t.path)['title'], 'Old');
+    });
+
+    test('files never marked (old downloads) are left alone', () async {
+      await add(music.path, 'a.mp3');
+      await tagger.resumePending();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(writer.calls, 0);
+    });
   });
 }

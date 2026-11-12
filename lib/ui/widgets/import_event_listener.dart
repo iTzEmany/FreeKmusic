@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +9,7 @@ import '../../services/import/import_options.dart' show ImportNote;
 import '../../l10n/l10n_ext.dart';
 import '../../providers/playlist_ops.dart';
 import '../../providers/import_providers.dart';
+import '../../providers/online_providers.dart' show downloadTaggerProvider;
 import '../../services/import/playlist_import_service.dart';
 import '../screens/import/import_labels.dart';
 import 'show_msg.dart';
@@ -25,6 +28,7 @@ class _State extends ConsumerState<ImportEventListener> {
   void initState() {
     super.initState();
     ref.read(playlistImportServiceProvider).recoverAfterRestart();
+    unawaited(ref.read(downloadTaggerProvider).resumePending());
   }
 
   Future<void> _report(ImportEvent e) async {
