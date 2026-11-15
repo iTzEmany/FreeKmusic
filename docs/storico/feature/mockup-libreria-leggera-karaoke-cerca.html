@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box} body{margin:0}</style>
+<title>FreeKmusic, mockup fasi 123–129</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: a contact sheet of phone screens, grouped by phase, each with its requirements beside it. Colors are the app's own «Notte» (dark) and «Chiaro» (light) themes. */
+:root {
+  --bg: #FAF8FD; --s1: #F2EEF9; --s2: #E9E3F4; --s3: #DAD1EB;
+  --accent: #6A35D8; --accent-soft: #5B2BBE; --on-accent: #FFFFFF;
+  --text: #1B1427; --muted: #5C5170; --faint: #6D6280; --hero: #E6DAFA; --error: #B01B33;
+  --page: #EFEAF7; --frame: #1B1427;
+  --display: "Unbounded", "Figtree", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #07050C; --s1: #120E1C; --s2: #1D1630; --s3: #2A2140;
+  --accent: #A06BFF; --accent-soft: #D9C8FF; --on-accent: #12081F;
+  --text: #F4F0FA; --muted: #A79DB8; --faint: #887F99; --hero: #3B1F70; --error: #FF6B81;
+  --page: #0E0B16; --frame: #000000; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #07050C; --s1: #120E1C; --s2: #1D1630; --s3: #2A2140;
+  --accent: #A06BFF; --accent-soft: #D9C8FF; --on-accent: #12081F;
+  --text: #F4F0FA; --muted: #A79DB8; --faint: #887F99; --hero: #3B1F70; --error: #FF6B81;
+  --page: #0E0B16; --frame: #000000; color-scheme: dark }
+
+body { background: var(--page); color: var(--text); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: grid; gap: 8px; max-width: 70ch; margin-bottom: 28px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(22px, 4vw, 32px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 13px; }
+.legend b { color: var(--text); font-weight: 600; }
+
+section.phase { margin-top: 40px; display: grid; gap: 16px; }
+.phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; border-top: 1px solid var(--s3); padding-top: 14px; }
+.phase-head h2 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; }
+.phase-tag { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.phase-head p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 75ch; }
+
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px 20px; }
+figure.shot { margin: 0; display: grid; gap: 10px; align-content: start; min-width: 0; }
+figcaption { display: grid; gap: 2px; }
+figcaption strong { font-weight: 600; }
+figcaption .req { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+figcaption span.note { font-size: 13px; color: var(--muted); }
+
+/* phone */
+.phone { background: var(--frame); border-radius: 30px; padding: 8px; max-width: 280px; width: 100%; }
+.screen { background: var(--bg); border-radius: 23px; overflow: hidden; height: 520px; display: flex; flex-direction: column; position: relative; font-size: 12px; }
+.status { display: flex; justify-content: space-between; padding: 8px 16px 2px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.title { font-family: var(--display); font-weight: 500; font-size: 17px; padding: 6px 14px 8px; }
+.body { flex: 1; overflow: hidden; padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.dock { margin: 6px 10px 10px; background: var(--s2); border-radius: 18px; display: flex; justify-content: space-around; padding: 8px 4px; color: var(--muted); font-size: 9px; }
+.dock span { display: grid; justify-items: center; gap: 2px; }
+.dock .on { color: var(--accent); font-weight: 700; }
+.dock i { width: 16px; height: 16px; border-radius: 5px; background: currentColor; opacity: .5; display: block; }
+.dock .on i { opacity: 1; }
+
+.field { display: flex; align-items: center; gap: 8px; background: var(--s2); border-radius: 14px; padding: 9px 12px; color: var(--muted); }
+.field.focus { outline: 2px solid var(--accent); color: var(--text); }
+.label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-top: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: var(--s1); border-radius: 999px; padding: 4px 10px; font-size: 11px; }
+.chip.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tile { border-radius: 12px; padding: 8px 6px; min-height: 48px; display: flex; align-items: flex-end; font-weight: 600; font-size: 11px; background: var(--s2); }
+.tile:nth-child(3n+1) { background: var(--hero); }
+.tile:nth-child(4n+2) { background: var(--s3); }
+.row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cov { width: 34px; height: 34px; border-radius: 7px; background: var(--s3); flex: none; }
+.cov.sm { width: 28px; height: 28px; }
+.meta { display: grid; min-width: 0; flex: 1; }
+.meta b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank { width: 18px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; flex: none; }
+.dim { opacity: .38; }
+.ic { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ic.acc { color: var(--accent); }
+.btns { display: flex; gap: 6px; }
+.btn { border-radius: 999px; padding: 7px 12px; font-weight: 600; font-size: 11px; background: var(--s2); text-align: center; flex: 1; }
+.btn.pri { background: var(--accent); color: var(--on-accent); }
+.card { background: var(--s1); border-radius: 14px; padding: 10px; display: grid; gap: 6px; }
+.card.pick { outline: 2px solid var(--accent); }
+.card h4 { margin: 0; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 6px; }
+.card p { margin: 0; color: var(--muted); font-size: 11px; }
+.badge { font-size: 9px; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 1px 7px; font-weight: 700; white-space: nowrap; }
+.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--s2); }
+.set span:last-child { color: var(--muted); text-align: right; }
+.toggle { width: 26px; height: 15px; border-radius: 999px; background: var(--accent); position: relative; flex: none; }
+.toggle::after { content: ""; position: absolute; right: 2px; top: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--on-accent); }
+.toggle.off { background: var(--s3); }
+.toggle.off::after { right: auto; left: 2px; background: var(--muted); }
+.slider { height: 4px; border-radius: 4px; background: var(--s3); position: relative; margin: 8px 0; }
+.slider > i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent); }
+.slider > b { position: absolute; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+.bsheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--s1); border-radius: 20px 20px 0 0; padding: 10px 14px 16px; display: grid; gap: 8px; }
+.handle { width: 32px; height: 4px; border-radius: 4px; background: var(--s3); margin: 0 auto 4px; }
+.mi { display: flex; gap: 10px; align-items: center; padding: 5px 0; }
+.mi.strong { color: var(--accent); font-weight: 700; }
+.banner { background: var(--hero); border-radius: 12px; padding: 8px 10px; font-size: 11px; display: flex; gap: 8px; align-items: center; }
+.np-art { aspect-ratio: 1; border-radius: 16px; background: linear-gradient(140deg, var(--hero), var(--s3)); max-width: 100%; }
+.ctrl { display: flex; justify-content: space-around; align-items: center; color: var(--text); padding: 4px 0; }
+.ctrl .play { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); }
+.ctrl .mic { color: var(--accent); background: var(--s2); border-radius: 50%; padding: 6px; display: grid; }
+.lyr { display: grid; gap: 8px; font-size: 15px; font-weight: 600; color: var(--faint); padding: 8px 4px; }
+.lyr .cur { color: var(--text); font-size: 17px; }
+.pill { display: inline-flex; gap: 6px; align-items: center; background: var(--s2); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 600; }
+.progress { height: 4px; border-radius: 4px; background: var(--s3); overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 42%; background: var(--accent); }
+.note-card { background: var(--bg); border: 1px dashed var(--s3); border-radius: 16px; padding: 14px; display: grid; gap: 6px; max-width: 280px; }
+.note-card p { margin: 0; color: var(--muted); font-size: 13px; }
+.shade { background: var(--s2); border-radius: 14px; padding: 10px; display: grid; gap: 8px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 9.5 4.25 4.25 0 0 0 7 18z"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+  <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="off" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 8.6A6 6 0 0 0 6.1 9.5 4.25 4.25 0 0 0 7 18h10"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <h1>Mockup delle fasi 123–129</h1>
+  <p class="lede">Libreria in streaming, karaoke, Cerca con le classifiche, comandi multimediali. Uno schermo per ogni parte dell'app che cambia, con i requisiti che lo descrivono (R-226..R-250) e le decisioni D-571..D-606. I dati sono d'esempio.</p>
+  <div class="legend"><span><b>Tema</b>: segue quello del tuo sistema (Notte o Chiaro)</span><span><b>Mockup a blocchi</b>: posizioni e testi, non i dettagli grafici finali</span></div>
+</header>
+
+<section class="phase">
+  <div class="phase-head"><span class="phase-tag">Fase 123</span><h2>Tasti multimediali e notifica</h2>
+  <p>Nessuno schermo nuovo: cambia il comportamento. I tasti delle cuffie e della tendina funzionano anche dopo una Jam; pausa è sempre pausa; dopo 30 minuti senza musica la notifica sparisce.</p></div>
+  <div class="sheet">
+    <figure class="shot">
+      <div class="note-card">
+        <div class="shade">
+          <div class="row"><div class="cov"></div><div class="meta"><b>Blinding Lights</b><small>The Weeknd · in pausa</small></div></div>
+          <div class="btns"><span class="btn">⏮</span><span class="btn pri">▶</span><span class="btn">⏭</span></div>
+        </div>
+        <p>14:02 in pausa → 14:32 la notifica esce dalla tendina. Coda e posizione restano: Play dall'app riparte dallo stesso secondo. Con una Jam attiva non succede.</p>
+      </div>
+      <figcaption><span class="req">R-226 · R-227 · R-228</span><strong>Tendina di Android</strong><span class="note">Aspetto invariato; tasti e chiusura dopo 30 minuti.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="phase">
+  <div class="phase-head"><span class="phase-tag">Fase 124</span><h2>Cerca con le classifiche</h2>
+  <p>La barra resta in cima anche sul telefono e il dock perde il campo di testo. Senza testo: ricerche recenti, poi 12 macrogeneri che aprono la top 20 di Deezer. I generi della tua libreria passano in Libreria.</p></div>
+  <div class="sheet">
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Cerca</div>
+        <div class="body">
+          <div class="field"><svg class="ic"><use href="#search"/></svg>Brani, artisti, album, link</div>
+          <div class="label">Recenti</div>
+          <div class="chips"><span class="chip">anyma</span><span class="chip">daft punk discovery</span><span class="chip">calcutta</span></div>
+          <div class="label">Top 20 per genere</div>
+          <div class="grid3">
+            <div class="tile">Pop</div><div class="tile">Rap e Hip-hop</div><div class="tile">Rock</div>
+            <div class="tile">Dance ed Elettronica</div><div class="tile">R&amp;B e Soul</div><div class="tile">Latina e Reggaeton</div>
+            <div class="tile">Italiana</div><div class="tile">Indie e Alternative</div><div class="tile">Jazz</div>
+            <div class="tile">Classica</div><div class="tile">Metal</div><div class="tile">Country</div>
+          </div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span class="on"><i></i>Cerca</span><span><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-247 · R-248</span><strong>Cerca senza testo</strong><span class="note">Barra fissa: scorrendo la griglia resta visibile. Il tasto Cerca del dock apre questa pagina con la tastiera.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Top 20 · Pop</div>
+        <div class="body">
+          <small style="color:var(--muted)">Classifica Deezer · Italia · aggiornata oggi alle 9:12</small>
+          <div class="btns"><span class="btn pri">Riproduci</span><span class="btn">Casuale</span></div>
+          <div class="row"><span class="rank">1</span><div class="cov sm"></div><div class="meta"><b>Espresso</b><small>Sabrina Carpenter · 2:55</small></div><svg class="ic"><use href="#dots"/></svg></div>
+          <div class="row"><span class="rank">2</span><div class="cov sm"></div><div class="meta"><b>Birds of a Feather</b><small>Billie Eilish · 3:30</small></div><svg class="ic"><use href="#dots"/></svg></div>
+          <div class="row"><span class="rank">3</span><div class="cov sm"></div><div class="meta"><b>Die With A Smile</b><small>Lady Gaga, Bruno Mars · 4:11</small></div><svg class="ic"><use href="#dots"/></svg></div>
+          <div class="row"><span class="rank">4</span><div class="cov sm"></div><div class="meta"><b>APT.</b><small>ROSÉ, Bruno Mars · 2:49</small></div><svg class="ic"><use href="#dots"/></svg></div>
+          <div class="row"><span class="rank">5</span><div class="cov sm"></div><div class="meta"><b>Sesso e samba</b><small>Tony Effe, Gaia · 3:02</small></div><svg class="ic"><use href="#dots"/></svg></div>
+          <div class="row dim"><span class="rank">6</span><div class="cov sm"></div><div class="meta"><b>Brano senza corrispondenza</b><small>Non trovato su YouTube</small></div></div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span class="on"><i></i>Cerca</span><span><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-248 · R-249</span><strong>Pagina Top 20</strong><span class="note">Tocco su un brano: suona e mette in coda i successivi. Senza rete mostra l'ultima classifica salvata con la sua data. Un brano senza versione suonabile resta grigio.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Libreria</div>
+        <div class="body">
+          <div class="grid3" style="grid-template-columns:1fr 1fr">
+            <div class="tile" style="background:var(--s1)">Preferiti</div><div class="tile" style="background:var(--s1)">Tutti i brani</div>
+            <div class="tile" style="background:var(--s1)">Cronologia</div><div class="tile" style="background:var(--s1);outline:2px solid var(--accent)">Generi</div>
+          </div>
+          <div class="label">Generi della tua libreria</div>
+          <div class="grid3">
+            <div class="tile">Indie italiano</div><div class="tile">House</div><div class="tile">Cantautori</div>
+            <div class="tile">Synthwave</div><div class="tile">Soundtrack</div><div class="tile">Lo-fi</div>
+          </div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span class="on"><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-250</span><strong>«Generi» in Libreria</strong><span class="note">Nuovo blocco accanto a Preferiti e Cronologia. Apre la griglia dei generi dei tuoi brani (quella che oggi sta in Cerca); un genere apre la pagina del genere come oggi.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="phase">
+  <div class="phase-head"><span class="phase-tag">Fasi 125–126</span><h2>Libreria in streaming</h2>
+  <p>Chi sceglie lo streaming aggiunge i brani alla libreria senza scaricarli: suonano dalla rete passando dalla cache. Chi aggiorna l'app resta «Sul dispositivo» e non cambia niente.</p></div>
+  <div class="sheet">
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Dove tieni la musica?</div>
+        <div class="body">
+          <p style="margin:0;color:var(--muted)">Puoi cambiarlo quando vuoi nelle impostazioni.</p>
+          <div class="card pick"><h4>Streaming con cache <span class="badge">Consigliato</span></h4><p>I brani restano online; i più ascoltati in 1 GB sul telefono. Ti restano 2,8 GB liberi.</p></div>
+          <div class="card"><h4>Sul dispositivo</h4><p>Ogni brano si scarica come file. Funziona sempre senza rete.</p></div>
+          <div class="card"><h4>Scheda SD</h4><p>I download vanno sulla scheda (32 GB liberi).</p></div>
+          <div class="set"><span>Backup automatico ogni settimana</span><span class="toggle"></span></div>
+          <div class="btns" style="margin-top:auto"><span class="btn">Indietro</span><span class="btn pri">Avanti</span></div>
+        </div>
+        <div style="height:12px"></div>
+      </div></div>
+      <figcaption><span class="req">R-237 · R-241</span><strong>Onboarding, passo nuovo</strong><span class="note">Con meno di 4 GB liberi è già scelto lo streaming. «Scheda SD» compare solo se c'è una scheda.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Brani</div>
+        <div class="body">
+          <div class="chips"><span class="chip on">Tutti</span><span class="chip">Sul dispositivo</span><span class="chip">In streaming</span></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Instant Crush</b><small>Daft Punk</small></div><svg class="ic acc" aria-label="In streaming"><use href="#cloud"/></svg></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Cosa mi manchi a fare</b><small>Calcutta</small></div></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Midnight City</b><small>M83</small></div><svg class="ic acc"><use href="#cloud"/></svg></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Nightcall</b><small>Kavinsky</small></div></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Strobe</b><small>deadmau5</small></div><svg class="ic acc"><use href="#cloud"/></svg></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Paracetamolo</b><small>Calcutta</small></div></div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span class="on"><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-230 · R-231 · R-232</span><strong>Filtro nelle schede della libreria</strong><span class="note">Uguale in Brani, Album e Artisti. La nuvola segna i brani in streaming; valgono come gli altri in Home, daylist, playlist smart e statistiche.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Cerca</div>
+        <div class="body">
+          <div class="field">daft punk</div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>One More Time</b><small>Daft Punk · 5:20</small></div></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Around the World</b><small>Daft Punk · 7:09</small></div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="bsheet">
+          <div class="handle"></div>
+          <div class="row"><div class="cov sm"></div><div class="meta"><b>One More Time</b><small>Daft Punk</small></div></div>
+          <div class="mi strong"><svg class="ic"><use href="#plus"/></svg>Aggiungi alla libreria</div>
+          <div class="mi"><svg class="ic"><use href="#down"/></svg>Scarica sul dispositivo</div>
+          <div class="mi"><svg class="ic"><use href="#plus"/></svg>Aggiungi a una playlist</div>
+          <div class="mi"><svg class="ic"><use href="#dots"/></svg>Riproduci dopo</div>
+        </div>
+      </div></div>
+      <figcaption><span class="req">R-230 · R-233</span><strong>Menu di un brano online</strong><span class="note">In modalità streaming «Aggiungi alla libreria» prende il posto di «Scarica», che resta come seconda voce. Shazam e l'importazione delle playlist aggiungono senza scaricare.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Nessuna rete</span></div>
+        <div class="title">Coda</div>
+        <div class="body">
+          <div class="banner"><svg class="ic"><use href="#off"/></svg>Senza rete: 14 brani disponibili</div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Nightcall</b><small>Kavinsky · sul dispositivo</small></div></div>
+          <div class="row dim"><div class="cov"></div><div class="meta"><b>Midnight City</b><small>M83 · non in cache, si salta</small></div><svg class="ic"><use href="#cloud"/></svg></div>
+          <div class="row"><div class="cov"></div><div class="meta"><b>Strobe</b><small>deadmau5 · in cache</small></div><svg class="ic acc"><use href="#cloud"/></svg></div>
+          <div class="row dim"><div class="cov"></div><div class="meta"><b>Instant Crush</b><small>Daft Punk · non in cache</small></div><svg class="ic"><use href="#cloud"/></svg></div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span class="on"><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-234 · R-235</span><strong>Senza rete</strong><span class="note">I brani in streaming non in cache sono grigi e la coda li salta. I preferiti restano in cache finché c'è spazio.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Memoria e streaming</div>
+        <div class="body">
+          <div class="set"><span>Dove tieni la musica</span><span>Streaming con cache</span></div>
+          <div class="set" style="display:grid;gap:0"><span>Cache dello streaming · 1,0 GB</span><div class="slider"><i style="width:22%"></i><b style="left:20%"></b></div><small style="color:var(--muted)">Usati 640 MB · preferiti tenuti finché c'è spazio</small></div>
+          <div class="set"><span>Memoria per download e cache</span><span>Interna</span></div>
+          <div class="set"><span>Qualità download</span><span>Alta</span></div>
+          <div class="set"><span>Qualità streaming</span><span>Media (~128 kbps)</span></div>
+          <div class="set"><span>Pre-carica anche con i dati mobili (fino a 3 brani)</span><span class="toggle"></span></div>
+          <div class="set"><span style="display:flex;gap:6px;align-items:center"><svg class="ic"><use href="#folder"/></svg>Backup automatico</span><span>Documenti/Backup · sab 14 nov</span></div>
+          <div class="btn" style="margin-top:4px">Libera spazio</div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span><i></i>Libreria</span><span class="on"><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-229 · R-235 · R-238 · R-239 · R-241</span><strong>Impostazioni della memoria</strong><span class="note">Riunisce ciò che oggi sta in Online › Download (cache). Sul computer al posto di «Interna» c'è la scelta della cartella dei download.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Libera spazio</div>
+        <div class="body">
+          <p style="margin:0;color:var(--muted)">Questi brani diventano in streaming: il file si cancella, restano preferiti, playlist, ascolti e testi.</p>
+          <div class="label">Non ascoltati da 90 giorni</div>
+          <div class="set"><span class="row"><span class="toggle"></span>Get Lucky · Daft Punk</span><span>9,8 MB</span></div>
+          <div class="set"><span class="row"><span class="toggle"></span>Lisztomania · Phoenix</span><span>7,1 MB</span></div>
+          <div class="set"><span class="row"><span class="toggle"></span>Oblivion · Grimes</span><span>8,4 MB</span></div>
+          <div class="set"><span class="row"><span class="toggle off"></span>Tutti i download (312)</span><span>2,9 GB</span></div>
+          <div class="btn pri" style="margin-top:auto">Libera 25,3 MB</div>
+        </div>
+        <div style="height:12px"></div>
+      </div></div>
+      <figcaption><span class="req">R-240</span><strong>Libera spazio</strong><span class="note">Nessun file si cancella senza questo tasto. Un brano sparito da YouTube viene sostituito con la stessa versione e lo trovi nel registro (R-242).</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="phase">
+  <div class="phase-head"><span class="phase-tag">Fasi 127–129</span><h2>Karaoke</h2>
+  <p>Su Android, Linux e Windows. Il filtro toglie la voce in tempo reale; «Alta qualità» separa il brano con l'intelligenza artificiale sul dispositivo. Nella Jam il karaoke vale per tutti.</p></div>
+  <div class="sheet">
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="body" style="padding-top:12px">
+          <div class="np-art"></div>
+          <div class="meta"><b style="font-size:15px">Cosa mi manchi a fare</b><small>Calcutta</small></div>
+          <div class="slider"><i style="width:35%"></i><b style="left:33%"></b></div>
+          <div class="ctrl"><span>⏮</span><span class="play"></span><span>⏭</span><span class="mic" aria-label="Karaoke"><svg class="ic"><use href="#mic"/></svg></span></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="bsheet">
+          <div class="handle"></div>
+          <div class="row" style="justify-content:space-between"><b>Karaoke</b><span class="toggle"></span></div>
+          <div style="display:flex;justify-content:space-between;color:var(--muted)"><span>Voce</span><span>20 %</span></div>
+          <div class="slider"><i style="width:20%"></i><b style="left:18%"></b></div>
+          <div class="card"><h4>Alta qualità <span style="color:var(--muted);font-weight:500">42 %</span></h4><div class="progress"><i></i></div><p>Separazione sul telefono, circa 3 minuti. Intanto suona il filtro.</p></div>
+        </div>
+      </div></div>
+      <figcaption><span class="req">R-243 · R-244 · R-245</span><strong>In riproduzione, karaoke acceso</strong><span class="note">Il microfono apre il cursore 0–100 %. Il livello si ricorda e resta fra un brano e l'altro; su episodi e radio il karaoke si spegne da solo. Su macOS e iOS il microfono non c'è.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title" style="display:flex;justify-content:space-between;align-items:center">Testo <span class="pill"><svg class="ic acc"><use href="#mic"/></svg>Voce 20 %</span></div>
+        <div class="body">
+          <div class="lyr">
+            <span>Riga già cantata</span>
+            <span>un'altra riga già cantata</span>
+            <span class="cur">la riga che stai cantando</span>
+            <span>la riga che viene dopo</span>
+            <span>e poi il ritornello</span>
+            <span>che tutti sanno a memoria</span>
+          </div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-244</span><strong>Vista dei testi</strong><span class="note">Accendendo il karaoke si apre il testo sincronizzato, se c'è. La pillola riapre il cursore. Testo d'esempio.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Jam</div>
+        <div class="body">
+          <div class="label">Host · impostazioni della Jam</div>
+          <div class="set"><span>Gli ospiti possono usare il karaoke</span><span class="toggle"></span></div>
+          <div class="label" style="margin-top:12px">Ospite in una Jam a distanza</div>
+          <div class="banner"><svg class="ic"><use href="#mic"/></svg>Karaoke acceso da Marco · voce 10 %</div>
+          <div class="set"><span>Ignora per me</span><span class="toggle off"></span></div>
+          <p style="margin:0;color:var(--muted);font-size:11px">Nella Jam in casa suona un solo dispositivo, quindi il karaoke vale per tutti. Le versioni vecchie dell'app ignorano il comando.</p>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-246</span><strong>Karaoke nella Jam</strong><span class="note">Sopra: l'host decide se gli ospiti lo comandano. Sotto: chi ascolta a distanza può tenere la voce.</span></figcaption>
+    </figure>
+  </div>
+</section>
+</div>
+</body>
+</html>

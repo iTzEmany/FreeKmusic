@@ -205,3 +205,19 @@ CI ──► Test d'integrazione su telefono ──► Pacchetti/installer
 1. Scrivere `docs/fasi/fase-N-<nome>.md` come le altre: obiettivo, prerequisiti, decisioni, task con **File / Passi / Verifica**, rischi, Definition of Done.
 2. Aggiungerla alla tabella di `docs/00-INDICE.md` (se serve) e spuntare i task nel suo file; a fase chiusa va in `docs/storico/fasi/`.
 3. Per le funzioni di rete, aggiungere una prova «dal vivo» opzionale in `test/live/` (come `import_live_test.dart`) e annotare nel documento quali parti **non** si possono automatizzare (selettore file di sistema, schermata di blocco…).
+
+---
+
+## Cloud dell'utente via WebDAV (accantonato il 15/11/2026, D-588)
+Nato come alternativa a Google Drive (scartato, D-572: analisi in `storico/feature/feature-analisi-google-drive.md`).
+Scelte già fatte dall'utente se si riapre: terzo modo «Nel mio cloud» in «Dove tieni la musica», con smart cache propria
+(1 GB, 256 MB–8 GB, stesse regole di D-578) e «Tieni una copia anche sul dispositivo»; passo in onboarding con 2–3
+servizi consigliati, «Ho già un account» (indirizzo, utente, password per le app, «Prova la connessione») e «Più
+tardi»; nel cloud vanno download, brani promossi e backup settimanale (ultimi 3), «Carica nel cloud» dal menu per i
+brani locali; indice nella cartella del cloud perché un secondo dispositivo veda la libreria; coda dei caricamenti con
+nuovi tentativi, solo Wi-Fi salvo impostazione, file locale cancellato solo dopo verifica; allo scollegamento si
+propone di riscaricare i brani «solo cloud».
+Ricerca del 15/11/2026: nel piano gratuito il WebDAV manca su kDrive, pCloud (dal 2022), Yandex (dal 2026), Icedrive,
+Filen, MEGA; resta Koofr (10 GB, UE, da provare con un account vero: Range, banda, condizioni d'uso) e Nextcloud
+ospitato (2–5 GB). Client: i pochi verbi WebDAV con `dio`; password con `flutter_secure_storage` (pacchetto nuovo, da
+approvare).

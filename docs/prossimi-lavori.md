@@ -4,6 +4,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 
 ## Da fare subito (richieste dell'11/11)
 - Fasi 117–121 chiuse (117 «Ripristino completo», 118 «Guardrail e correzioni», 119 «Ritocchi e 1.6.0», 120 «CI Windows», 121 «Test di sistema») e fase 122 «CI di tutti i sistemi» fatta; versione 1.6.0 rilasciata (tag e Release dopo il merge). Prossimi: le voci aperte qui sotto per area, in particolare «Qualità e rilascio».
+- **Feature «Libreria leggera, karaoke, Cerca con le classifiche, comandi multimediali»** (kickoff del 15/11): fasi 123–129 in [`fasi/`](fasi/README.md), specifica in [`storico/feature/feature-libreria-leggera-karaoke-cerca.md`](storico/feature/feature-libreria-leggera-karaoke-cerca.md). La voce «`KEYCODE_MEDIA_PAUSE` a musica in pausa la fa ripartire» è passata nella fase 123 (R-227).
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
@@ -24,7 +25,6 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 ## Riproduzione e coda
 - **Crossfade sul Mi A3 (Android 11)** (27 ott): dopo alcuni cambi `AudioEffect: set/get parameter error` e il cambio ripiega sul caricamento normale (gap ~530 ms). Da capire con un log del player (fase 57, «Note»).
 - **Pausa a volume zero in secondo piano** (10 nov): il tasto «volume su» la fa ripartire solo entro circa 2 s, poi Android lo manda alla suoneria. Valutare se tenere attiva la sessione multimediale più a lungo, o scriverlo nella descrizione dell'impostazione.
-- **`KEYCODE_MEDIA_PAUSE` (127) a musica già in pausa la fa ripartire** (10 nov, 2 volte su 2): il tasto pausa del media session fa da interruttore. Da verificare in `audio_handler` (pausa = sempre pausa).
 - **Scatti dopo la fase 113** (`refactor/coda-e-libreria/misure.md`, «Dopo la 113»): «Apri album» 11 → 17 %, «In riproduzione» 2,4 → 5–6 %, «Pallino schede» 7 → 9–10 % rispetto a prima-107. Profilare (`flutter run --profile`, DevTools) il titolo che scorre in Now Playing, i listener nuovi della radice e la pagina album.
 - **`queueProvider`** combina indice, chiavi e `userAhead` letti dal vivo con una lista asincrona: per qualche ms può non combaciare; `queueTracks` scarta gli id che non trova e sfasa l'indice. Più robusto: uno snapshot `(tracks, keys, currentIndex, userAhead)`.
 - **`_settle`** ricostruisce una mappa e due liste grandi quanto la coda a ogni next/jumpTo/move/previous mentre il blocco non è vuoto. Rimedio: via veloce se `_user` sta già subito dopo il corrente.
