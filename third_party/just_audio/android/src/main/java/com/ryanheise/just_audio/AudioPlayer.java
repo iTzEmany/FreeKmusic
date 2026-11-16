@@ -79,6 +79,7 @@ public class AudioPlayer implements MethodCallHandler, Player.Listener, Metadata
 
     private final Context context;
     private final MethodChannel methodChannel;
+    private final VoiceFilterProcessor voiceFilter = new VoiceFilterProcessor();
     private final BetterEventChannel eventChannel;
     private final BetterEventChannel dataEventChannel;
 
@@ -465,6 +466,10 @@ public class AudioPlayer implements MethodCallHandler, Player.Listener, Metadata
                 setPitch((float) ((double) ((Double) call.argument("pitch"))));
                 result.success(new HashMap<String, Object>());
                 break;
+            case "setVoiceLevel":
+                voiceFilter.setLevel(call.argument("level"));
+                result.success(new HashMap<String, Object>());
+                break;
             case "setSkipSilence":
                 setSkipSilenceEnabled((Boolean) call.argument("enabled"));
                 result.success(new HashMap<String, Object>());
@@ -777,7 +782,7 @@ public class AudioPlayer implements MethodCallHandler, Player.Listener, Metadata
     private void ensurePlayerInitialized() {
         if (player == null) {
             RenderersFactory renderersFactory = (eventHandler, videoListener, audioListener, textOutput, metadataOutput) -> {
-                Renderer[] defaultRenderers = new DefaultRenderersFactory(context)
+                Renderer[] defaultRenderers = new VoiceFilterRenderersFactory(context, voiceFilter)
                     .createRenderers(eventHandler, videoListener, audioListener, textOutput, metadataOutput);
                 Renderer[] allRenderers = Arrays.copyOf(defaultRenderers, defaultRenderers.length + 1);
                 allRenderers[defaultRenderers.length] = new ObserverRenderer();

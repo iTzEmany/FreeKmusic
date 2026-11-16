@@ -114,6 +114,7 @@ class AudioPlayer {
   StreamSubscription<void>? _errorsResetSubscription;
 
   String? _id;
+  double? _voiceLevel;
   final _proxy = _ProxyHttpServer();
   // ignore: deprecated_member_use_from_same_package
   final ConcatenatingAudioSource _playlist;
@@ -1181,6 +1182,21 @@ class AudioPlayer {
     await (await _platform).setVolume(SetVolumeRequest(volume: volume));
   }
 
+  /// FreeKmusic (D-603): the karaoke voice level of the Android audio
+  /// processor, 0.0 (voice as low as it goes) to 1.0 (untouched); null is 1.0.
+  /// Remembered and sent again when the platform player is recreated.
+  Future<void> setAndroidVoiceLevel(double? level) async {
+    if (_disposed || !_isAndroid()) return;
+    _voiceLevel = level;
+    // An idle player has no native side yet: it gets the level when it wakes up.
+    if (await _platform is _IdleAudioPlayer) return;
+    await _sendVoiceLevel(_id!);
+  }
+
+  Future<void> _sendVoiceLevel(String id) =>
+      MethodChannel('com.ryanheise.just_audio.methods.$id')
+          .invokeMethod<void>('setVoiceLevel', {'level': _voiceLevel});
+
   /// Sets whether silence should be skipped in audio playback. (Currently
   /// Android only).
   Future<void> setSkipSilenceEnabled(bool enabled) async {
@@ -1660,6 +1676,13 @@ class AudioPlayer {
               ));
 
         _platformValue = platform;
+        if (active && !_disposed && _voiceLevel != null) {
+          try {
+            await _sendVoiceLevel(_id!);
+          } catch (e) {
+            debugPrint('just_audio: setVoiceLevel failed: $e');
+          }
+        }
         return platform;
       });
       if (checkInterruption() || _disposed) return inactiveResult(platform);

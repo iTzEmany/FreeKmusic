@@ -49,9 +49,12 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   @override
   final Equalizer? equalizer;
 
-  // Phase 127 tasks 127.2 (Android) and 127.3 (desktop) fill this in.
+  // Android main player only (it is the one built `withEqualizer`; previews and
+  // the Jam's player have none). Uses `setAndroidVoiceLevel` of the local
+  // just_audio copy (127.2); desktop gets its own in 127.3.
   @override
-  VoiceFilter? get voiceFilter => null;
+  late final VoiceFilter? voiceFilter =
+      equalizer != null ? _AndroidVoiceFilter(_player) : null;
 
   @override
   Stream<Duration> get position => _player.positionStream;
@@ -212,6 +215,15 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
     await _advanced.close();
     await _player.dispose();
   }
+}
+
+class _AndroidVoiceFilter implements VoiceFilter {
+  _AndroidVoiceFilter(this._player);
+
+  final AudioPlayer _player;
+
+  @override
+  Future<void> setLevel(double? level) => _player.setAndroidVoiceLevel(level);
 }
 
 class _AndroidEq implements Equalizer {

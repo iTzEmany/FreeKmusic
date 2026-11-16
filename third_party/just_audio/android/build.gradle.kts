@@ -73,4 +73,5 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer-dash:$exoplayerVersion")
     implementation("androidx.media3:media3-exoplayer-hls:$exoplayerVersion")
     implementation("androidx.media3:media3-exoplayer-smoothstreaming:$exoplayerVersion")
+    testImplementation("junit:junit:4.13.2")
 }
