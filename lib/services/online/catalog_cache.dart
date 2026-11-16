@@ -9,7 +9,8 @@ enum CatalogKind {
   artist(Duration(days: 2)),
   album(Duration(days: 14)),
   discography(Duration(days: 14)),
-  songs(Duration(days: 2));
+  songs(Duration(days: 2)),
+  chart(Duration(hours: 24));
 
   const CatalogKind(this.ttl);
 

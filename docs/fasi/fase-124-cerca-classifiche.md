@@ -93,3 +93,6 @@ Libreria
 Niente.
 
 ## Note di deviazione
+
+- 124.1: la classifica Deezer non ha parametro paese: `/chart/<id>/tracks` con `country=US` o con `X-Forwarded-For` ha dato gli stessi 20 id della richiesta semplice, quindi segue l'IP di chi chiama (verificato dal vivo il 16/11/2026, da qui in Italia). Il paese scelto in `chartCountry` vale quindi solo per il feed Apple; la pagina deve scrivere «Deezer · <paese dell'IP>» o evitare di promettere il paese scelto (da decidere in 124.2).
+- 124.1: i nomi dei generi del feed Apple sono tradotti per paese (feed `it`: «Latina», «Alternativa», «Elettronica»; `us`: «Latin», «Alternative»), quindi il filtro usa `genres[].genreId` (stabile: 14 Pop, 18 Hip-Hop/Rap, 21 Rock, 17 Dance, 7 Electronic, 15 R&B/Soul, 12 Latin, 20 Alternative, 2 Jazz, 5 Classical, 1153 Metal, 1152 Hard Rock, 6 Country) e non il nome. `chartCountry` è una stringa vuota = segue il locale (come `radioCountry`), non null.

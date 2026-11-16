@@ -65,6 +65,16 @@ void main() {
     expect(web.urls, ['https://api.deezer.com/track/1', albumUrl]);
   });
 
+  test('chart: the genre chart fixture becomes tracks, in one request', () async {
+    final web = _Web(_fixture('chart_tracks'));
+    final t = await DeezerClient(web).chart(116);
+    expect(web.urls, ['https://api.deezer.com/chart/116/tracks?limit=20']);
+    expect(t, hasLength(20));
+    expect(t.first.title, 'Anxiety');
+    expect(t.first.artist, 'Doechii');
+    expect(t.first.duration, 249);
+  });
+
   test('trackDetails: an album already read saves the request', () async {
     final web = details('track_details');
     final alb = DeezerAlbum.fromJson(_fixture('album_details') as Map);

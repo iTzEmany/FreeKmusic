@@ -149,6 +149,13 @@ class DeezerClient {
     );
   }
 
+  /// Top tracks of a genre chart. Deezer picks the country from the caller's IP.
+  Future<List<DeezerTrack>> chart(int genreId, {int limit = 20, CancelToken? cancel}) async {
+    final j = await _getPaged('$_base/chart/$genreId/tracks?limit=$limit', cancel: cancel);
+    final data = j['data'];
+    return [if (data is List) for (final t in data) if (t is Map) DeezerTrack.fromJson(t)];
+  }
+
   Future<DeezerTrack> track(int id, {CancelToken? cancel}) async =>
       DeezerTrack.fromJson(await _getPaged('$_base/track/$id', cancel: cancel));
 
