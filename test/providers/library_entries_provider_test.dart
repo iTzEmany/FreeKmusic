@@ -30,12 +30,22 @@ void main() {
         playlistsProvider.overrideWith((_) => Stream.value([])),
         albumsProvider.overrideWith((_) => Stream.value([_album('B'), _album('A')])),
         artistsProvider.overrideWith((_) => Stream.value([])),
+        // The Album tab reads the filtered variants.
+        filteredAlbumsProvider.overrideWith((_) => Stream.value([_album('B'), _album('A')])),
+        filteredArtistsProvider.overrideWith((_) => Stream.value([])),
         smartPlaylistsProvider.overrideWith((_) => Stream.value([])),
       ],
     );
     addTearDown(c.dispose);
     // Keep the sources alive and wait for their first value.
-    for (final p in [playlistsProvider, albumsProvider, artistsProvider, smartPlaylistsProvider]) {
+    for (final p in [
+      playlistsProvider,
+      albumsProvider,
+      artistsProvider,
+      filteredAlbumsProvider,
+      filteredArtistsProvider,
+      smartPlaylistsProvider,
+    ]) {
       c.listen(p, (_, _) {});
       await c.read(p.future);
     }

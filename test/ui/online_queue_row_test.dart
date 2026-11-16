@@ -130,7 +130,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Altre opzioni'));
       await tester.pumpAndSettle();
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       expect(find.text('Aggiungi a playlist…'), findsOneWidget);
       expect(find.text('Non mi piace'), findsOneWidget);
       expect(find.text('Rimuovi dalla coda'), findsOneWidget);
@@ -177,7 +177,7 @@ void main() {
       expect(find.text(', '), findsNothing);
       await tester.tap(find.byTooltip('Altre opzioni'));
       await tester.pumpAndSettle();
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       expect(find.text('Non mi piace'), findsNothing);
       await h.dispose(tester);
     },

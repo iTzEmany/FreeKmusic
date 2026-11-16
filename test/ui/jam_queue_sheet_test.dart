@@ -191,21 +191,21 @@ void main() {
     testWidgets('brano online non in libreria: c\'è; entra in libreria a foglio aperto: sparisce',
         (tester) async {
       final (idx, h) = await openMenu(tester, online);
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Scarica sul dispositivo'), findsOneWidget);
       final f = File('${Directory.systemTemp.path}/jam-dl-test.m4a')..writeAsStringSync('x');
       addTearDown(() => f.existsSync() ? f.deleteSync() : null);
       await tester.runAsync(() => idx.add('abcdefghijk', f.path));
       ProviderScope.containerOf(tester.element(find.byType(JamQueueSliver)))
           .invalidate(downloadIndexProvider);
       await tester.pumpAndSettle();
-      expect(find.text('Scarica'), findsNothing);
+      expect(find.text('Scarica sul dispositivo'), findsNothing);
       await h.dispose(tester);
     });
 
     testWidgets('brano di libreria: non c\'è', (tester) async {
       final (_, h) = await openMenu(tester, local);
       expect(find.text('Salta qui'), findsOneWidget);
-      expect(find.text('Scarica'), findsNothing);
+      expect(find.text('Scarica sul dispositivo'), findsNothing);
       await h.dispose(tester);
     });
   });
