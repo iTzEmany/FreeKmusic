@@ -29,6 +29,10 @@ class EqProfile {
 /// (the user is asked at the first change), yes, or no.
 enum IconFollow { ask, on, off }
 
+/// Where the user keeps the music: files on the device, or saved tracks played
+/// from the net (D-575).
+enum StorageMode { device, stream }
+
 class AppSettings {
   const AppSettings({
     this.theme = 'notte',
@@ -64,6 +68,8 @@ class AppSettings {
     this.downloadRateLimitKBps = 0,
     this.downloadFormat = DownloadFormat.m4a,
     this.streamCacheMb = 1024,
+    this.storageMode = StorageMode.device,
+    this.prefetchOnMobile = true,
     this.importSureThreshold = 0.80,
     this.importReviewThreshold = 0.55,
     this.playbackSpeed = 1.0,
@@ -156,6 +162,12 @@ class AppSettings {
   /// Disk space for the streaming cache, in MB (256–8192).
   final int streamCacheMb;
 
+  /// Where the music lives; the onboarding sets it, older installs keep `device` (D-598).
+  final StorageMode storageMode;
+
+  /// Pre-load up to 3 tracks ahead on mobile data too (D-577).
+  final bool prefetchOnMobile;
+
   /// CSV import: score from which a match is downloaded without asking, and
   /// from which it is at least proposed (advanced settings).
   final double importSureThreshold, importReviewThreshold;
@@ -242,6 +254,8 @@ class AppSettings {
     int? downloadRateLimitKBps,
     DownloadFormat? downloadFormat,
     int? streamCacheMb,
+    StorageMode? storageMode,
+    bool? prefetchOnMobile,
     double? importSureThreshold,
     double? importReviewThreshold,
     double? playbackSpeed,
@@ -296,6 +310,8 @@ class AppSettings {
     downloadRateLimitKBps: downloadRateLimitKBps ?? this.downloadRateLimitKBps,
     downloadFormat: downloadFormat ?? this.downloadFormat,
     streamCacheMb: streamCacheMb ?? this.streamCacheMb,
+    storageMode: storageMode ?? this.storageMode,
+    prefetchOnMobile: prefetchOnMobile ?? this.prefetchOnMobile,
     importSureThreshold: importSureThreshold ?? this.importSureThreshold,
     importReviewThreshold: importReviewThreshold ?? this.importReviewThreshold,
     playbackSpeed: playbackSpeed ?? this.playbackSpeed,
@@ -439,6 +455,12 @@ class SettingsStore {
     downloadParallel: (_prefs.getInt('downloadParallel') ?? 2).clamp(1, 3),
     downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
     streamCacheMb: (_prefs.getInt('streamCacheMb') ?? 1024).clamp(256, 8192),
+    // Absent = an install from before the choice: it keeps its files (D-598).
+    storageMode: StorageMode.values.firstWhere(
+      (m) => m.name == _prefs.getString('storageMode'),
+      orElse: () => StorageMode.device,
+    ),
+    prefetchOnMobile: _prefs.getBool('prefetchOnMobile') ?? true,
     // The old «downloadOriginal» switch is not read: MP3 was only ever the
     // default, so everyone moves to M4A.
     downloadFormat: DownloadFormat.values.firstWhere(
@@ -530,6 +552,8 @@ class SettingsStore {
     await _prefs.setInt('downloadRateLimitKBps', s.downloadRateLimitKBps);
     await _prefs.setString('downloadFormat', s.downloadFormat.name);
     await _prefs.setInt('streamCacheMb', s.streamCacheMb);
+    await _prefs.setString('storageMode', s.storageMode.name);
+    await _prefs.setBool('prefetchOnMobile', s.prefetchOnMobile);
     await _prefs.remove('downloadOriginal');
     await _prefs.setDouble('importSureThreshold', s.importSureThreshold);
     await _prefs.setDouble('importReviewThreshold', s.importReviewThreshold);

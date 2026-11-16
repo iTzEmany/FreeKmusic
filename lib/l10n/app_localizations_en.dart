@@ -7673,4 +7673,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartCountryAuto => 'Automatic (device region)';
+
+  @override
+  String get storageGroupTitle => 'Memory and streaming';
+
+  @override
+  String get storageWhere => 'Where you keep your music';
+
+  @override
+  String get storageModeDevice => 'On the device';
+
+  @override
+  String get storageModeStream => 'Streaming';
+
+  @override
+  String get prefetchOnMobile => 'Also pre-load on mobile data (up to 3)';
+
+  @override
+  String get onboardingStorageTitle => 'Where do you keep your music?';
+
+  @override
+  String get onboardingStorageBody =>
+      'Keep tracks as files on the device, or save them and listen in streaming. You can change it any time in settings.';
+
+  @override
+  String onboardingStorageFree(String size) {
+    return 'Free space: $size';
+  }
+
+  @override
+  String get onboardingStorageDeviceHint =>
+      'Files stay on the device and play without a network.';
+
+  @override
+  String get onboardingStorageStreamHint =>
+      'Takes little space: tracks load while you listen.';
 }

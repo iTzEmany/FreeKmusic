@@ -3781,5 +3781,22 @@
   "chartSourceApple": "Apple-Music-Charts, {country}, aktualisiert {when}",
   "chartGridTitle": "Top 20 nach Genre",
   "chartCountryTitle": "Land der Charts",
-  "chartCountryAuto": "Automatisch (Region des Geräts)"
+  "chartCountryAuto": "Automatisch (Region des Geräts)",
+  "storageGroupTitle": "Speicher und Streaming",
+  "storageWhere": "Wo du deine Musik aufbewahrst",
+  "storageModeDevice": "Auf dem Gerät",
+  "storageModeStream": "Streaming",
+  "prefetchOnMobile": "Auch mit mobilen Daten vorladen (bis zu 3)",
+  "onboardingStorageTitle": "Wo bewahrst du deine Musik auf?",
+  "onboardingStorageBody": "Behalte Titel als Dateien auf dem Gerät oder speichere sie und höre sie per Streaming. Du kannst das jederzeit in den Einstellungen ändern.",
+  "onboardingStorageFree": "Freier Speicher: {size}",
+  "@onboardingStorageFree": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingStorageDeviceHint": "Die Dateien bleiben auf dem Gerät und spielen auch ohne Netz.",
+  "onboardingStorageStreamHint": "Braucht wenig Platz: Titel laden, während du hörst."
 }

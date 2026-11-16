@@ -12216,6 +12216,66 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Automatico (regione del dispositivo)'**
   String get chartCountryAuto;
+
+  /// No description provided for @storageGroupTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Memoria e streaming'**
+  String get storageGroupTitle;
+
+  /// No description provided for @storageWhere.
+  ///
+  /// In it, this message translates to:
+  /// **'Dove tieni la musica'**
+  String get storageWhere;
+
+  /// No description provided for @storageModeDevice.
+  ///
+  /// In it, this message translates to:
+  /// **'Sul dispositivo'**
+  String get storageModeDevice;
+
+  /// No description provided for @storageModeStream.
+  ///
+  /// In it, this message translates to:
+  /// **'In streaming'**
+  String get storageModeStream;
+
+  /// No description provided for @prefetchOnMobile.
+  ///
+  /// In it, this message translates to:
+  /// **'Pre-carica anche con i dati mobili (fino a 3)'**
+  String get prefetchOnMobile;
+
+  /// No description provided for @onboardingStorageTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Dove tieni la musica?'**
+  String get onboardingStorageTitle;
+
+  /// No description provided for @onboardingStorageBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Puoi tenere i brani come file sul telefono o salvarli e ascoltarli in streaming. Si cambia quando vuoi nelle impostazioni.'**
+  String get onboardingStorageBody;
+
+  /// No description provided for @onboardingStorageFree.
+  ///
+  /// In it, this message translates to:
+  /// **'Spazio libero: {size}'**
+  String onboardingStorageFree(String size);
+
+  /// No description provided for @onboardingStorageDeviceHint.
+  ///
+  /// In it, this message translates to:
+  /// **'I file restano sul dispositivo e suonano anche senza rete.'**
+  String get onboardingStorageDeviceHint;
+
+  /// No description provided for @onboardingStorageStreamHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Occupa poco spazio: i brani si scaricano mentre li ascolti.'**
+  String get onboardingStorageStreamHint;
 }
 
 class _AppLocalizationsDelegate

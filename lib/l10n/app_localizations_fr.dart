@@ -7761,4 +7761,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chartCountryAuto => 'Automatique (région de l’appareil)';
+
+  @override
+  String get storageGroupTitle => 'Mémoire et streaming';
+
+  @override
+  String get storageWhere => 'Où tu gardes ta musique';
+
+  @override
+  String get storageModeDevice => 'Sur l’appareil';
+
+  @override
+  String get storageModeStream => 'En streaming';
+
+  @override
+  String get prefetchOnMobile =>
+      'Précharger aussi avec les données mobiles (jusqu’à 3)';
+
+  @override
+  String get onboardingStorageTitle => 'Où gardes-tu ta musique ?';
+
+  @override
+  String get onboardingStorageBody =>
+      'Tu peux garder les titres comme fichiers sur l’appareil, ou les enregistrer et les écouter en streaming. Tu peux changer à tout moment dans les réglages.';
+
+  @override
+  String onboardingStorageFree(String size) {
+    return 'Espace libre : $size';
+  }
+
+  @override
+  String get onboardingStorageDeviceHint =>
+      'Les fichiers restent sur l’appareil et se lisent sans réseau.';
+
+  @override
+  String get onboardingStorageStreamHint =>
+      'Prend peu de place : les titres se chargent pendant l’écoute.';
 }

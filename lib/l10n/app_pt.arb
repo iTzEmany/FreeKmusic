@@ -3967,5 +3967,22 @@
   "chartSourceApple": "Tabela do Apple Music, {country}, atualizada {when}",
   "chartGridTitle": "Top 20 por género",
   "chartCountryTitle": "País das tabelas",
-  "chartCountryAuto": "Automático (região do dispositivo)"
+  "chartCountryAuto": "Automático (região do dispositivo)",
+  "storageGroupTitle": "Memória e streaming",
+  "storageWhere": "Onde guardas a música",
+  "storageModeDevice": "No dispositivo",
+  "storageModeStream": "Em streaming",
+  "prefetchOnMobile": "Pré-carregar também com dados móveis (até 3)",
+  "onboardingStorageTitle": "Onde guardas a música?",
+  "onboardingStorageBody": "Podes manter as músicas como ficheiros no dispositivo ou guardá-las e ouvi-las em streaming. Mudas quando quiseres nas definições.",
+  "onboardingStorageFree": "Espaço livre: {size}",
+  "@onboardingStorageFree": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingStorageDeviceHint": "Os ficheiros ficam no dispositivo e tocam sem rede.",
+  "onboardingStorageStreamHint": "Ocupa pouco espaço: as músicas carregam enquanto ouves."
 }

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
+import 'package:codecore/providers/memory_providers.dart';
+import 'package:codecore/services/memory/disk_space.dart';
 import 'package:codecore/services/scanner/library_scanner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:codecore/data/settings/settings_store.dart';
@@ -68,10 +70,10 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('five pages with Avanti, the last says «Inizia» and marks the notice as seen', (tester) async {
+  testWidgets('six pages with Avanti, the last says «Inizia» and marks the notice as seen', (tester) async {
     final h = await Harness.create(tester);
     await _openGate(tester, h);
-    for (final title in ['La tua musica', 'Funzioni online', 'Playlist da Spotify', 'Download, Jam e condivisione']) {
+    for (final title in ['La tua musica', 'Dove tieni la musica?', 'Funzioni online', 'Playlist da Spotify', 'Download, Jam e condivisione']) {
       await tester.tap(find.text('Avanti'));
       await _settle(tester);
       expect(find.text(title), findsOneWidget);
@@ -89,10 +91,10 @@ void main() {
   testWidgets('the online features start on and can be turned off', (tester) async {
     final h = await Harness.create(tester, onlineOff: false);
     await _openGate(tester, h);
-    await tester.tap(find.text('Avanti'));
-    await _settle(tester);
-    await tester.tap(find.text('Avanti'));
-    await _settle(tester);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Avanti'));
+      await _settle(tester);
+    }
     expect(_settings(tester).autoEnrich, isTrue);
     expect(_settings(tester).autoLyrics, isTrue);
     await tester.tap(find.text('Arricchimento automatico'));
@@ -105,7 +107,7 @@ void main() {
   testWidgets('the Spotify page leaves the reminder off, and a choice is saved', (tester) async {
     final h = await Harness.create(tester);
     await _openGate(tester, h);
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 4; i++) {
       await tester.tap(find.text('Avanti'));
       await _settle(tester);
     }
@@ -116,6 +118,49 @@ void main() {
     await tester.tap(find.text('14 giorni'));
     await _settle(tester);
     expect(h.store.readExportifyRemindDays(), 14);
+    await h.dispose(tester);
+  });
+
+  for (final (free, label, mode) in [
+    (3 * 1024 * 1024 * 1024, 'below 4 GB', StorageMode.stream),
+    (50 * 1024 * 1024 * 1024, '4 GB or more', StorageMode.device),
+  ]) {
+    testWidgets('storage step, $label free: preselects ${mode.name} and the choice reaches the settings', (tester) async {
+      final h = await Harness.create(tester);
+      await h.pump(
+        tester,
+        const OnboardingScreen(askAudioPermission: false),
+        extraOverrides: [
+          musicDiskSpaceProvider.overrideWith((_) async => DiskSpace(totalBytes: 100 * 1024 * 1024 * 1024, freeBytes: free)),
+        ],
+      );
+      await tester.tap(find.text('Avanti'));
+      await _settle(tester);
+      await tester.tap(find.text('Avanti'));
+      await _settle(tester);
+      expect(find.text('Dove tieni la musica?'), findsOneWidget);
+      await _settle(tester);
+      expect(find.textContaining('Spazio libero'), findsOneWidget);
+      expect(_settings(tester).storageMode, mode);
+      expect(tester.widget<RadioGroup<StorageMode>>(find.byType(RadioGroup<StorageMode>)).groupValue, mode);
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('storage step: tapping the other choice saves it', (tester) async {
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const OnboardingScreen(askAudioPermission: false),
+      extraOverrides: [musicDiskSpaceProvider.overrideWith((_) async => null)],
+    );
+    await tester.tap(find.text('Avanti'));
+    await _settle(tester);
+    await tester.tap(find.text('Avanti'));
+    await _settle(tester);
+    await tester.tap(find.text('In streaming'));
+    await _settle(tester);
+    expect(_settings(tester).storageMode, StorageMode.stream);
     await h.dispose(tester);
   });
 
