@@ -6,8 +6,7 @@ import 'package:path/path.dart' as p;
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/folder_actions.dart';
-import '../../../providers/database_providers.dart';
-import '../../../providers/youtube_providers.dart' show libraryFolderFor;
+import '../../../providers/folder_ops.dart';
 import '../../../services/stream/stream_cache.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/online/media_publisher.dart';
@@ -34,7 +33,7 @@ class DownloadLocationTile extends ConsumerWidget {
     final path = await FilePicker.getDirectoryPath();
     if (path == null) return;
     await _set(ref, path);
-    await libraryFolderFor(ref.read(folderRepositoryProvider), path, path);
+    await ref.read(folderOpsProvider).libraryFolder(path);
     await scanWithPermission(ref);
   }
 

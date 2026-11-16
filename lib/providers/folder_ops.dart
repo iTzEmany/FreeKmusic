@@ -23,6 +23,9 @@ class FolderOps {
 
   /// Where downloads go (registered as a library folder), or null if none.
   Future<(Directory, Folder)?> downloadFolder() => resolveDownloadFolder(_ref.read(folderRepositoryProvider), location: _ref.read(settingsProvider).downloadLocation);
+
+  /// [path] as a library folder too (or the one that already contains it).
+  Future<Folder> libraryFolder(String path) => libraryFolderFor(_ref.read(folderRepositoryProvider), path, path);
 }
 
 final folderOpsProvider = Provider<FolderOps>(FolderOps.new);
