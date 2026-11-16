@@ -231,6 +231,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   // Tap-to-first-sound timing of the load in flight (logged once, see _onPosition).
   _Timing? _timing;
   int _consecutiveErrors = 0;
+  int _offlineSkips = 0; // uncached streams passed over in a row with no network (D-577)
   // The current streamed track plays from its address (not the cached file): an
   // error there asks the preparer for a new start (R-76).
   _UrlSession? _url;
@@ -595,6 +596,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await synced;
         if (token != _loadToken) return;
         final res = entry?.result ?? streamResultOfRow(streamKey, track);
+        if (await _skipOffline(p, streamKey, res, play, token)) return;
         final began = await _asStream(streamKey, p.start(streamKey, res));
         if (token != _loadToken) return;
         playNow = _playWhenReady;
@@ -634,7 +636,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await _backend.seek(start);
         _position = start; // a paused backend emits no position
       }
-      _consecutiveErrors = 0;
+      _consecutiveErrors = _offlineSkips = 0;
       _noSaveId = null;
       // A backend that was playing keeps playing a newly loaded file.
       if (playNow && !_loadPaused) {
@@ -687,6 +689,22 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         _errorWhileLoading = false;
       }
     }
+  }
+
+  /// With no network, a stream not in the cache is passed over to the next
+  /// queue item without an error (D-577); true when it was. When every item is
+  /// such a stream the player stops with a network failure instead of looping.
+  Future<bool> _skipOffline(StreamPreparer p, String key, YtResult res, bool play, int token) async {
+    if (await p.cachedFile(key, res) != null || await p.hasNetwork()) return false;
+    if (token != _loadToken) return true;
+    if (++_offlineSkips > _queue.items.length || _nextInQueue(auto: true) == null) {
+      _offlineSkips = 0;
+      onError(PlaybackFailure(_current?.title, PlaybackFailureReason.networkUnavailable));
+      await _goIdle();
+      return true;
+    }
+    await _loadCurrent(play: play);
+    return true;
   }
 
   /// Runs [f]; a failure is logged and comes out as a [_StreamNotReady].

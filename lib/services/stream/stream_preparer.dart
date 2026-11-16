@@ -88,7 +88,8 @@ class StreamPreparer {
     required this.isMetered,
     this.hasNetwork = _dnsReachable,
     this.maxParallel = 2,
-    this.meteredAhead = 3,
+    this.ahead = 3,
+    this.prefetchOnMetered = _yes,
     this.cooldown = const Duration(minutes: 5),
     this.attemptTimeout = const Duration(minutes: 5),
     this.startTimeout = const Duration(seconds: 90),
@@ -120,7 +121,12 @@ class StreamPreparer {
 
   /// False when there is no connectivity: the load then fails at once instead of waiting on yt-dlp's DNS retries.
   final Future<bool> Function() hasNetwork;
-  final int maxParallel, meteredAhead;
+  final int maxParallel;
+
+  /// Tracks prepared after the current one (D-609); 0 on a metered network when [prefetchOnMetered] says no.
+  final int ahead;
+  final bool Function() prefetchOnMetered;
+  static bool _yes() => true;
 
   /// Pause of the prefetch after a 403/429 (like Shuffle+'s source cooldown).
   final Duration cooldown;
@@ -403,7 +409,7 @@ class StreamPreparer {
     } on Object catch (e, st) {
       AppLog.w('stream preparer: network kind unavailable', e, st);
     }
-    for (final i in _queue.take(metered ? meteredAhead : _queue.length)) {
+    for (final i in _queue.take(metered && !prefetchOnMetered() ? 0 : ahead + 1)) { // the queue starts at the current track
       if (_active >= maxParallel || _disposed) return;
       // shortcut: a key marked ready is trusted; if evicted, ready() re-downloads it.
       if (_jobs.containsKey(i.key) || phases.value[i.key] == StreamPhase.ready) continue;

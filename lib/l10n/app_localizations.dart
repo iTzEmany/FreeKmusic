@@ -12276,6 +12276,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Occupa poco spazio: i brani si scaricano mentre li ascolti.'**
   String get onboardingStorageStreamHint;
+
+  /// No description provided for @queueOfflineBanner.
+  ///
+  /// In it, this message translates to:
+  /// **'Senza rete: {count, plural, one{1 brano disponibile} other{{count} brani disponibili}}'**
+  String queueOfflineBanner(int count);
 }
 
 class _AppLocalizationsDelegate

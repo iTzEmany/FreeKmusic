@@ -39,6 +39,10 @@ class FakeStreamPreparer implements StreamPreparer {
   @override
   final CountingNotifier phases = CountingNotifier();
 
+  /// What `hasNetwork` answers.
+  @override
+  Future<bool> Function() hasNetwork = () async => true;
+
   /// Files already in the cache, by key.
   final cached = <String, File>{};
 

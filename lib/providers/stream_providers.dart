@@ -13,13 +13,14 @@ import '../services/online/synthetic_track.dart';
 import '../services/stream/stream_enrich_trigger.dart';
 import '../services/online/enrichment_service.dart';
 import '../services/stream/stream_cache.dart';
+import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import '../services/stream/stream_preparer.dart';
 import '../services/stream/stream_promoter.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'online_providers.dart';
-import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider, onlineEntriesProvider;
+import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider, onlineEntriesProvider, queueProvider;
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'youtube_providers.dart';
 
@@ -54,6 +55,7 @@ void _applyLimit(StreamCache cache, int mb, void Function() done) {
 final streamPreparerProvider = Provider<StreamPreparer>((ref) {
   final cache = ref.watch(streamCacheProvider);
   void used() => ref.invalidate(streamCacheUsedProvider);
+  cache.keepLonger = ref.read(trackRepositoryProvider).favoriteStreamKeys;
   _applyLimit(cache, ref.read(settingsProvider).streamCacheMb, used);
   ref.listen(settingsProvider.select((s) => s.streamCacheMb), (_, mb) => _applyLimit(cache, mb, used));
   final preparer = StreamPreparer(
@@ -61,6 +63,7 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
     tracks: ref.watch(trackRepositoryProvider),
     youtube: ref.watch(youtubeServiceProvider),
     isMetered: () async => (await ref.read(networkProbeProvider).current()).metered,
+    prefetchOnMetered: () => ref.read(settingsProvider).prefetchOnMobile,
   );
   ref.onDispose(preparer.dispose);
   return preparer;
@@ -144,3 +147,31 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
           : null,
       onShadowMerged: (shadow, keep) => ref.read(audioHandlerProvider).replaceQueueId(shadow, keep),
     ));
+
+/// Whether the device has a network now (always true off Android).
+final networkOnlineProvider = StreamProvider<bool>((ref) async* {
+  final probe = ref.watch(networkProbeProvider);
+  yield (await probe.current()).online;
+  await for (final _ in probe.changes) {
+    yield (await probe.current()).online;
+  }
+});
+
+/// With no network: ids of the queue's streamed tracks that are not in the cache
+/// (the player skips them, D-577). Null while online.
+final queueOfflineOutProvider = FutureProvider.autoDispose<Set<int>?>((ref) async {
+  if (await ref.watch(networkOnlineProvider.future)) return null;
+  final queue = await ref.watch(queueProvider.future);
+  final online = ref.watch(onlineEntriesProvider);
+  final cache = ref.watch(streamCacheProvider);
+  final out = <int>{};
+  for (final t in queue) {
+    final key = isOnlineId(t.id)
+        ? online?.entryOf(t.id)?.result.indexKey
+        : t.kind == kStreamKind
+            ? keyOfStreamPath(t.path)
+            : null;
+    if (key != null && await cache.fileFor(key) == null) out.add(t.id);
+  }
+  return out;
+});

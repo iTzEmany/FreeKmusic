@@ -7708,4 +7708,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingStorageStreamHint =>
       'Takes little space: tracks load while you listen.';
+
+  @override
+  String queueOfflineBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks available',
+      one: '1 track available',
+    );
+    return 'Offline: $_temp0';
+  }
 }

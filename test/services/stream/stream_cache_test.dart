@@ -50,6 +50,19 @@ void main() {
     expect(await c.fileFor('a:4'), isNotNull);
   });
 
+  test('over the limit a non-favourite goes first, a favourite only when nothing else is left', () async {
+    final c = cache()..keepLonger = () async => {'a:1'};
+    await c.open();
+    await add(c, 'a:1', 4, 1); // oldest, but a favourite
+    await add(c, 'a:2', 4, 2);
+    await add(c, 'a:3', 4, 3);
+    expect(await c.fileFor('a:1'), isNotNull);
+    expect(await c.fileFor('a:2'), isNull);
+    c.limitBytes = 3 * _mb;
+    await c.evict();
+    expect(await c.fileFor('a:1'), isNull);
+  });
+
   test('without pins the least recently used file goes', () async {
     final c = cache();
     await c.open();

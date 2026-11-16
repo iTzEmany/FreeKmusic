@@ -4510,5 +4510,13 @@
     }
   },
   "onboardingStorageDeviceHint": "I file restano sul dispositivo e suonano anche senza rete.",
-  "onboardingStorageStreamHint": "Occupa poco spazio: i brani si scaricano mentre li ascolti."
+  "onboardingStorageStreamHint": "Occupa poco spazio: i brani si scaricano mentre li ascolti.",
+  "queueOfflineBanner": "Senza rete: {count, plural, one{1 brano disponibile} other{{count} brani disponibili}}",
+  "@queueOfflineBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

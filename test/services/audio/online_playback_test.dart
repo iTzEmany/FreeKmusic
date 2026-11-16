@@ -297,6 +297,28 @@ void main() {
     expect(failures.single.reason, PlaybackFailureReason.networkUnavailable);
   });
 
+  test('offline: streams not in the cache are skipped, silently, to the next available one', () async {
+    final cachedId = online.register(result('c1'));
+    preparer.hasNetwork = () async => false;
+    preparer.cached['youtube:c1'] = File('${dir.path}/c1.m4a')..writeAsStringSync('x');
+    final gone = [for (final n in ['1', '2', '3', '4']) online.register(result(n))];
+    await handler.playQueue([...gone, cachedId], 0);
+    await settle();
+    expect(failures, isEmpty);
+    expect(preparer.asked, isNot(contains('youtube:1')));
+    expect(handler.currentTrack?.id, isNot(gone.first));
+    expect(backend.loaded.single, endsWith('c1.m4a'));
+  });
+
+  test('offline with nothing available in the queue: one network failure, then idle', () async {
+    preparer.hasNetwork = () async => false;
+    final gone = [for (final n in ['1', '2']) online.register(result(n))];
+    await handler.playQueue(gone, 0);
+    await settle();
+    expect(failures.single.reason, PlaybackFailureReason.networkUnavailable);
+    expect(handler.playbackState.value.processingState, AudioProcessingState.idle);
+  });
+
   test('an age-restricted video with no substitute is reported as ageRestricted', () async {
     final id = online.register(result('v1'));
     preparer.failing.add('youtube:v1');

@@ -7729,4 +7729,15 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get onboardingStorageStreamHint =>
       'Occupa poco spazio: i brani si scaricano mentre li ascolti.';
+
+  @override
+  String queueOfflineBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brani disponibili',
+      one: '1 brano disponibile',
+    );
+    return 'Senza rete: $_temp0';
+  }
 }

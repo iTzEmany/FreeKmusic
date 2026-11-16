@@ -122,6 +122,7 @@ void main() {
   late StreamCache cache;
   late _Yt yt;
   var metered = false;
+  var onMobile = true;
   var online = true;
   var checks = 0;
   late StreamPreparer prep;
@@ -143,6 +144,7 @@ void main() {
         tracks: tracks,
         youtube: yt,
         isMetered: () async => metered,
+        prefetchOnMetered: () => onMobile,
         hasNetwork: () async {
           checks++;
           return online;
@@ -159,6 +161,7 @@ void main() {
     await cache.open();
     yt = _Yt();
     metered = false;
+    onMobile = true;
     online = true;
     checks = 0;
     make();
@@ -210,13 +213,30 @@ void main() {
     expect(yt.started, ['a', 'a']);
   });
 
-  test('metered network and 10 tracks: only the next 3 are prepared', () async {
+  test('on Wi-Fi and 10 tracks: the current one and 3 ahead, never more', () async {
+    yt.autoFinish = true;
+    prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
+    await _until(() => yt.started.length >= 4);
+    await _quiet();
+    expect(yt.started, ['0', '1', '2', '3']);
+  });
+
+  test('metered network with the option on: 3 ahead like on Wi-Fi', () async {
     metered = true;
     yt.autoFinish = true;
     prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
-    await _until(() => yt.started.length >= 3);
+    await _until(() => yt.started.length >= 4);
     await _quiet();
-    expect(yt.started, ['0', '1', '2']);
+    expect(yt.started, ['0', '1', '2', '3']);
+  });
+
+  test('metered network with the option off: nothing is prepared', () async {
+    metered = true;
+    onMobile = false;
+    yt.autoFinish = true;
+    prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
+    await _quiet();
+    expect(yt.started, isEmpty);
   });
 
   test('a user pick on a metered network is prepared even out of the window', () async {

@@ -3984,5 +3984,6 @@
     }
   },
   "onboardingStorageDeviceHint": "Os ficheiros ficam no dispositivo e tocam sem rede.",
-  "onboardingStorageStreamHint": "Ocupa pouco espaço: as músicas carregam enquanto ouves."
+  "onboardingStorageStreamHint": "Ocupa pouco espaço: as músicas carregam enquanto ouves.",
+  "queueOfflineBanner": "Sem rede: {count, plural, one{1 faixa disponível} other{{count} faixas disponíveis}}"
 }
