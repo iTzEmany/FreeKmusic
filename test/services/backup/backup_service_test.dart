@@ -12,6 +12,17 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  final now = DateTime(2026, 10, 22, 12);
+
+  group('isBackupDue', () {
+    test('due at 7 days or never made, not at 6, not with the clock set back', () {
+      expect(isBackupDue(null, now), isTrue);
+      expect(isBackupDue(now.subtract(const Duration(days: 7)), now), isTrue);
+      expect(isBackupDue(now.subtract(const Duration(days: 6, hours: 23)), now), isFalse);
+      expect(isBackupDue(now.add(const Duration(days: 1)), now), isFalse);
+    });
+  });
+
   late Directory dir;
   late AppDatabase db;
   late SharedPreferences prefs;

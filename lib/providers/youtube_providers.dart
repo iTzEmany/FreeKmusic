@@ -16,6 +16,7 @@ import '../services/online/direct_search_service.dart';
 import '../services/online/download_index.dart';
 import '../services/online/download_queue.dart';
 import '../services/online/innertube_client.dart';
+import '../core/storage_volumes.dart' show effectiveLocation, sdRootOf;
 import '../services/online/media_publisher.dart';
 import '../services/online/retry_policy.dart';
 import '../services/online/android_yt_dlp_service.dart';
@@ -101,7 +102,7 @@ final mediaPublisherProvider = Provider<MediaPublisher>(
 ///
 /// [location] is the «download location» setting (D-579): on Android the app
 /// folder of an SD volume, on desktop a chosen folder; empty = the default.
-Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo, {String location = ''}) async {
+Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo, {required String location}) async {
   location = await effectiveLocation(location); // a removed card falls back to internal
   final sd = isAndroid ? sdRootOf(location) : null;
   if (isAndroid && !await publishesToMediaStore()) {

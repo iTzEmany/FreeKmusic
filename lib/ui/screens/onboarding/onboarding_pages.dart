@@ -16,9 +16,9 @@ import '../../widgets/format_utils.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/scanner/library_scanner.dart' show ScanProgress;
 import '../../theme/tokens.dart';
-import '../../../services/online/media_publisher.dart' show sdRootOf;
+import '../../../core/storage_volumes.dart' show sdRootOf;
 import '../import/exportify_remind_choice.dart';
-import '../settings/download_location_tile.dart' show sdVolumesProvider;
+import '../../../providers/storage_providers.dart' show sdVolumesProvider;
 import 'onboarding_screen.dart' show onboardingPageCount;
 
 class _Page extends StatelessWidget {

@@ -16,7 +16,6 @@ import 'smart_search_providers.dart' show linkMatchLimiterProvider, sourceCooldo
 import 'youtube_providers.dart' show downloadIndexProvider, youtubeServiceProvider;
 
 /// Replaces the saved streams that YouTube dropped (R-242); `main` calls `handle` when the player reports one.
-/// The Registro line is not localized yet (shortcut: kind `vanished` shows as a plain line, a later task adds the text).
 final vanishedTracksProvider = Provider<VanishedTracks>((ref) {
   final tracks = ref.watch(trackRepositoryProvider);
   final log = ActivityLogRepository(ref.watch(databaseProvider));

@@ -47,7 +47,7 @@ class AndroidYtDlpService implements YoutubeService {
     try {
       final m = await _channel.invokeMapMethod<String, Object?>(
         'streamUrl',
-        {'id': id, 'quality': quality.name},
+        {'id': id, 'capKbps': quality.capKbps},
       );
       final url = m?['url'];
       if (url is! String) throw StateError('newpipe answered without a url');

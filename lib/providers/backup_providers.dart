@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
+import '../core/storage_volumes.dart' show kAndroidPrimaryRoot;
 import '../services/backup/backup_service.dart';
 import '../services/online/download_index.dart';
 import 'database_providers.dart';
@@ -43,7 +44,7 @@ class AutoBackupLast extends Notifier<DateTime?> {
 }
 
 /// Android 11+ lets the app write here with plain `dart:io`; no picker (R-241).
-const kAndroidBackupDir = '/storage/emulated/0/Documents/FreeKmusic';
+const kAndroidBackupDir = '$kAndroidPrimaryRoot/Documents/FreeKmusic';
 
 /// Android: [kAndroidBackupDir], or (Android 10 and lower, where it is refused) the app's own
 /// external folder, which goes away with the app. Created if missing.

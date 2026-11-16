@@ -67,6 +67,17 @@ void main() {
     expect(reloaded.signatureMatches('youtube:t', path), true, reason: 'persisted');
   });
 
+  test('a legacy entry without a signature (a user file at that path) is never a candidate', () async {
+    final id = await add('u.m4a');
+    final path = (await repo.getById(id))!.path;
+    File(p.join(dir.path, 'downloads.json')).writeAsStringSync('{"dQw4w9WgXcQ":"$path"}'); // bare id, no signature
+    index = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
+    await index.load();
+    expect(await svc().freeSpaceCandidates(), isEmpty);
+    expect((await svc().freeSpace([id])).freedIds, isEmpty);
+    expect(File(path).existsSync(), true);
+  });
+
   test('freeSpace demotes the row, then deletes the file and forgets the download', () async {
     final id = await add('a.mp3', vid: 'a');
     final path = (await repo.getById(id))!.path;

@@ -10,7 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/ui/screens/onboarding/onboarding_gate.dart';
-import 'package:codecore/ui/screens/settings/download_location_tile.dart' show sdVolumesProvider;
+import 'package:codecore/providers/storage_providers.dart' show sdVolumesProvider;
 import 'package:codecore/ui/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

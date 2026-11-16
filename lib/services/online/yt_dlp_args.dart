@@ -23,12 +23,9 @@ const _preferM4a = 'bestaudio[ext=m4a]/bestaudio/best';
   // A chosen selector (a podcast episode) is taken as it is: never converted.
   if (selector != null) return (selector: selector, audioFormat: null, quality: null);
   // A lower level caps the source bitrate; the conversion below still applies.
-  final capped = switch (quality) {
-    AudioQuality.high => null,
-    AudioQuality.medium => 'bestaudio[abr<=135]/bestaudio',
-    AudioQuality.low => 'bestaudio[abr<=64]/worstaudio',
-  };
-  if (capped != null) {
+  final cap = quality.capKbps;
+  if (cap != null) {
+    final capped = 'bestaudio[abr<=$cap]/${quality == AudioQuality.low ? 'worstaudio' : 'bestaudio'}';
     final c = downloadChoice(format, hasFfmpeg: hasFfmpeg);
     return (selector: capped, audioFormat: c.audioFormat, quality: c.quality);
   }

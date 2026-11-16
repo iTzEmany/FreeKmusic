@@ -12,6 +12,7 @@ import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/scanner/library_scanner.dart';
 import 'package:codecore/services/stream/stream_cache.dart';
 import 'package:codecore/services/online/download_index.dart';
+import 'package:codecore/core/storage_volumes.dart';
 import 'package:codecore/services/online/media_publisher.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:drift/native.dart';
@@ -147,7 +148,7 @@ void main() {
     addTearDown(db.close);
     final repo = FolderRepository(db);
     final music = await repo.add('/storage/emulated/0/Music');
-    final res = await resolveDownloadFolder(repo);
+    final res = await resolveDownloadFolder(repo, location: '');
     expect(res!.$1.path, '/storage/emulated/0/Music/FreeKmusic');
     expect(res.$2.id, music.id);
     expect((await repo.getAll()).length, 1);
@@ -164,7 +165,7 @@ void main() {
     addTearDown(db.close);
     final repo = FolderRepository(db);
     await repo.add('/storage/emulated/0/Music/FreeKmusic');
-    final res = await resolveDownloadFolder(repo);
+    final res = await resolveDownloadFolder(repo, location: '');
     expect([for (final f in await repo.getAll()) f.path], ['/storage/emulated/0/Music/FreeKmusic']);
     expect(res!.$2.path, '/storage/emulated/0/Music/FreeKmusic');
   });
@@ -232,6 +233,21 @@ void main() {
       await StreamCache.deleteAt(tmp.path);
       expect(Directory(p.join(tmp.path, 'stream_cache')).existsSync(), isFalse);
       expect(File(p.join(tmp.path, 'keep.txt')).existsSync(), isTrue);
+    });
+
+    test('dropLeftBehind deletes the old volume cache, never the one in use or nothing recorded', () async {
+      final a = await Directory.systemTemp.createTemp('cacheA');
+      final b = await Directory.systemTemp.createTemp('cacheB');
+      addTearDown(() => Future.wait([a.delete(recursive: true), b.delete(recursive: true)]));
+      for (final d in [a, b]) {
+        Directory(p.join(d.path, 'stream_cache')).createSync();
+      }
+      await StreamCache.dropLeftBehind(last: null, current: b.path);
+      await StreamCache.dropLeftBehind(last: b.path, current: b.path);
+      expect(Directory(p.join(a.path, 'stream_cache')).existsSync() && Directory(p.join(b.path, 'stream_cache')).existsSync(), isTrue);
+      await StreamCache.dropLeftBehind(last: a.path, current: b.path);
+      expect(Directory(p.join(a.path, 'stream_cache')).existsSync(), isFalse);
+      expect(Directory(p.join(b.path, 'stream_cache')).existsSync(), isTrue);
     });
 
     test('libraryFolderFor reuses a containing library folder', () async {

@@ -57,7 +57,10 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 - Desktop: se `locateYtDlp` non trova yt-dlp, o la versione ha più di 90 giorni, `YtDlpUpdateNotifier` scarica da solo la copia gestita (avviso nelle attività, «Riprova» se la rete fallisce) (D-563).
 - Gli errori del canale Android con radice di classe JVM (`| root: <classe>`) sono di tipo «interno»: niente ritentativi e niente «YouTube è cambiato». Gli stderr veri di yt-dlp restano come prima.
-- Su Android da 11 il download passa da una cartella di lavoro e `MediaPublisher.publish` lo pubblica in `Music/FreeKmusic` (vedi `piattaforme.md`).
+- Su Android da 11 il download passa da una cartella di lavoro e `MediaPublisher.publish` lo pubblica in `Music/FreeKmusic`, sul volume scelto (SD compresa; vedi `piattaforme.md`).
+- Qualità: `AudioQuality` (alta, media, bassa) è in `DownloadOptions` e in `StreamPreparer.quality`; `capKbps` (135 e 64) è l'unico numero, usato da `yt_dlp_args` e passato a NewPipe (`streamUrl`, `capKbps`).
+- Brani spariti da YouTube: `isVideoGone` riconosce l'errore, il player chiama `onStreamGone`, `VanishedTracks` cerca il sostituto (durata ±2 s) e lo scrive nel Registro; un solo tentativo per sessione.
+- «Tieni offline» (playlist e album) scarica sempre tramite `downloadsProvider`, mai a parte.
 
 ### Limiti, budget e pause
 
@@ -133,6 +136,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - **Nuovo limite**: costante in `request_budget.dart` e finestra condivisa; non creare timer a parte.
 - **Nuova fonte di testi**: anello in `LyricsChain`, in ordine di priorità.
 - **Nuova stringa di notifica o avviso**: ARB in 6 lingue.
+- **Riscrivere un file scaricato**: chi lo fa chiama `DownloadIndex.refreshSignature` (altrimenti «Libera spazio» non lo offre più).
 - **Nuovo `MediaSource`**: in `YtResult`/`downloadIndexKey`, con la chiave in `downloads.json`.
 
 ## Trappole

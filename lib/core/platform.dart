@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'app_log.dart';
+import 'storage_volumes.dart' show kAndroidPrimaryRoot;
 
 /// Tests set it to true to exercise the Android path on a Linux host.
 @visibleForTesting
@@ -42,7 +43,7 @@ Future<DefaultFolders> resolveDefaultFolders({
   final String music;
   switch (os) {
     case 'android':
-      music = '/storage/emulated/0/Music';
+      music = '$kAndroidPrimaryRoot/Music';
     case 'ios':
       final docs = await (documentsDir ?? () async => (await getApplicationDocumentsDirectory()).path)();
       return DefaultFolders(library: docs, downloads: docs);

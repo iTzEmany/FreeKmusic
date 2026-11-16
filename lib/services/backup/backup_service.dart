@@ -13,7 +13,6 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_queries.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/settings/jam_secret_store.dart';
-import '../releases/check_schedule.dart' show isBackupDue;
 import '../../data/settings/settings_store.dart'
     show
         SettingsStore,
@@ -48,6 +47,7 @@ const kDeviceBoundKeys = {
   'autoBackup',
   'backupFolder',
   'backupLastAt',
+  'streamCacheVolume',
 };
 
 class BackupSummary {
@@ -204,6 +204,12 @@ class BackupService {
     }
   }
 }
+
+/// Time between two automatic backups.
+const kBackupEvery = Duration(days: 7);
+
+/// Whether the weekly backup (R-241) is due: never made, or 7 days or more ago.
+bool isBackupDue(DateTime? lastAt, DateTime now) => lastAt == null || now.difference(lastAt) >= kBackupEvery;
 
 /// How many automatic backups stay in the folder.
 const kBackupsKept = 3;

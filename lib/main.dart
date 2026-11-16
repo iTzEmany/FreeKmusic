@@ -20,7 +20,7 @@ import 'core/app_log.dart';
 import 'core/memory_budget.dart';
 import 'core/paths.dart';
 import 'core/platform.dart';
-import 'services/online/media_publisher.dart' show effectiveLocation;
+import 'core/storage_volumes.dart' show effectiveLocation;
 import 'data/db/app_database.dart';
 import 'data/repositories/library_queries.dart';
 import 'data/repositories/play_history_repository.dart';
@@ -236,9 +236,8 @@ Future<void> main() async {
   }
 
   if (kPerfProbe) PerfProbe.mark('deviceName', sinceMain);
-  final streamCache = await StreamCache.inAppSupport(
-    volumeDir: isAndroid ? await effectiveLocation(settingsStore.readSettings().downloadLocation) : '',
-  );
+  final cacheVolume = isAndroid ? await effectiveLocation(settingsStore.readSettings().downloadLocation) : '';
+  final streamCache = await StreamCache.inAppSupport(volumeDir: cacheVolume);
   final container = ProviderContainer(
     overrides: [
       systemDeviceNameProvider.overrideWithValue(systemName),
@@ -265,6 +264,9 @@ Future<void> main() async {
   // the queue comes back, so a restored streamed track finds it.
   try {
     await streamCache.open();
+    // The cache of the previous volume goes only now: the one in use was opened above.
+    await StreamCache.dropLeftBehind(last: settingsStore.streamCacheVolume, current: cacheVolume);
+    await settingsStore.writeStreamCacheVolume(cacheVolume);
     container.listen(
       streamPreparerProvider,
       (_, p) => handler.preparer = p,

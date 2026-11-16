@@ -42,7 +42,7 @@ Stato e orchestrazione:
 | `lib/data/repositories/backup_merge_tables.dart`, `backup_merge_helpers.dart` | Unione di ascolti, tag, copertine, playlist smart, podcast e puntate. |
 | `lib/services/export/playlist_exporter.dart` | `toM3u8`, `toExportifyCsv`, `toPlaylistJson`, `renderPlaylist`. |
 | `lib/services/export/save_file.dart` | Salvataggio verso l'utente (canale `codecore/save`, copia a flusso su Android). |
-| `lib/providers/backup_providers.dart`, `backup_ops.dart` | Provider e operazioni. |
+| `lib/providers/backup_providers.dart`, `backup_ops.dart` | Provider e operazioni (`backupLastAtProvider`, `androidBackupFolder`). |
 | `lib/ui/screens/settings/backup_section.dart`, `restore_dialog.dart` | UI. |
 
 ### Jam locale e della cassa (`lib/services/jam/`)
@@ -104,7 +104,9 @@ Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `us
 - brani salvati in streaming: `TrackUserData.saved/album/addedAt`; `collectUserData` prende `kind != 2 OR saved = 1`; il ripristino ricrea la riga con `saveStream`;
 - copertine automatiche, tag, playlist smart, podcast e puntate, letti in sola lettura dal `codecore.sqlite` del backup.
 
-Dopo l'unione i provider vengono ricaricati.
+Dopo l'unione i provider vengono ricaricati. Lo zip non porta `downloads.sig.json`.
+
+Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.zip` come `.part` e lo rinomina a zip finito; ne tiene 3 (`kBackupsKept`), i backup manuali non si toccano mai. Dopo un errore riprova al prossimo avvio; non parte durante l'onboarding. Le chiavi `autoBackup`, `backupFolder`, `backupLastAt` e `streamCacheVolume` sono in `kDeviceBoundKeys`. `isBackupDue` è in `backup_service.dart`.
 
 ### Jam
 - Un solo dispositivo suona; l'altro è telecomando. Stato autoritativo sull'host (`JamState.version`), comandi validati da `applyCommand`.

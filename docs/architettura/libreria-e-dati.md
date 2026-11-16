@@ -69,7 +69,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - La riga ombra ha `path = 'stream:<key>'`, `folderId = null`, `sizeBytes = 0`, `mtimeMs = 0`.
 - Storico e statistiche usano `listenKinds = [0, 2]`.
 - Le playlist accettano 0 e 2 (D-524): `addStreamTracks` e `watchTracks` (`kind IN (0,2)` solo per le playlist).
-- Ciclo di vita della riga ombra: `upsertStreamRow` la crea; dopo il download `mergeStreamRow` la fonde nella riga reale; `saveStream` la crea o la segna `saved = 1` con chiave album `stream|…`; `deleteUnplayedStreamRows` toglie quelle mai ascoltate e non salvate (le salvate restano); `promoteStreamRow` rimette `saved = 0`; «Rimuovi dalla libreria» = `setSaved(false)`.
+- Ciclo di vita della riga ombra: `upsertStreamRow` la crea; dopo il download `mergeStreamRow` la fonde nella riga reale; «Libera spazio» la fa tornare ombra con `demoteToStream` (stesso id, quindi playlist, ascolti, preferito e testi restano) e `restoreRow` la rimette com'era se il file non si cancella; `rekeyStream` rinomina la chiave quando il video è sostituito; `saveStream` la crea o la segna `saved = 1` con chiave album `stream|…`; `deleteUnplayedStreamRows` toglie quelle mai ascoltate e non salvate (le salvate restano); `promoteStreamRow` rimette `saved = 0`; «Rimuovi dalla libreria» = `setSaved(false)`.
 
 ### Album e copertine
 
@@ -101,7 +101,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - Stato dell'import in `playlist_imports`: 0 in corso, 1 in pausa, 2 finito, 3 annullato. Stato degli item: 0 da cercare, 1 in coda, 2 scaricato, 3 collegato, 4 da verificare, 5 non trovato, 6 fallito, 7 saltato dall'utente, 8 pianificato, 9 tolto dalla fonte.
 - All'avvio (`recoverAfterRestart`) gli import «in corso» diventano «in pausa» e gli item in coda tornano «da cercare»; `PlaylistImportService` riprende da solo quelli interrotti dalla chiusura dell'app (una sola volta), non quelli messi in pausa dall'utente (D-564).
 - Avanzamento: nelle attività «Importazione <playlist>: N di M»; nel Registro una sola riga che si aggiorna (D-565). I download dell'importazione sono visibili nelle attività.
-- «Scarica album» crea una playlist nascosta (`visiblePlaylistSql`). `DownloadIndex` (`downloads.json`) mappa `<source>:<id>` al percorso.
+- «Scarica album» crea una playlist nascosta (`visiblePlaylistSql`). `DownloadIndex` (`downloads.json`) mappa `<source>:<id>` al percorso; accanto, `downloads.sig.json` tiene `[dimensione, mtime]` del file com'è stato scaricato (firma). `pruneGone` toglie le voci il cui file non c'è più (solo se la cartella esiste: una scheda estratta non svuota l'indice). Chi riscrive un file scaricato (il tagger, `installTagged`) chiama `refreshSignature`/`refreshSignatureByPath`. Una voce senza firma (download precedenti alla fase 126, backup ripristinato) non è mai un candidato di «Libera spazio» (D-598): i nostri download non portano l'id nei tag, quindi non c'è modo di provare che il file sia ancora quello scaricato.
 
 ### Playlist
 
@@ -128,7 +128,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | `settings.json` | voci tipate `{"t","v"}`, senza `kDeviceBoundKeys` |
 | `user_data.json` | `UserData` (`collectUserData`): dati portabili, compresi generi, `artistCountries`, `artistAliases`, `artistNotSame`, romanizzazioni a mano, testi scritti a mano |
 | `codecore.sqlite` | copia con `VACUUM INTO` |
-| `downloads.json`, `dislikes.json`, `covers/*` | indici e copertine |
+| `downloads.json`, `dislikes.json`, `covers/*` | indici e copertine (`downloads.sig.json` non c'è: dopo il ripristino i download non hanno firma) |
 
 - Lo zip si crea in `Isolate.run`.
 - `inspectBackup` rifiuta un `backupFormat` sconosciuto o un DB più nuovo.
@@ -143,7 +143,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - `AppDataKind`: covers, database, imageMemory, jamCache, searchCache, catalogCache, suggestions, blurCopies, tagBackups, log, podcasts, radio.
 - `clearableKinds` = `imageMemory, jamCache, searchCache, catalogCache, suggestions, blurCopies, radio`. Copertine, DB e backup dei tag non si cancellano mai.
 - `CacheCleaner.clear()` salta la cache Jam se un Jam è attivo; le radio salvate restano.
-- `StreamCache`: cartella `<appSupportDir>/stream_cache`, LRU per mtime. Il costruttore ha 500 MB di default, ma l'impostazione `streamCacheMb` parte da 1024 (256-8192); margine libero 500 MB. `open()` toglie i `.part` e le cartelle `.dl-*`. `setQueue` fissa le pin su `items.take(3)`: corrente e 2 successivi.
+- `StreamCache`: cartella `<appSupportDir>/stream_cache`, o `<volume>/stream_cache` sul volume scelto per i download (SD, `effectiveLocation`); cambia al riavvio, e `main` cancella quella vecchia al avvio successivo, dopo aver aperto la nuova (`dropLeftBehind`, volume salvato in `streamCacheVolume`, mai la cartella in uso), LRU per mtime. Il costruttore ha 500 MB di default, ma l'impostazione `streamCacheMb` parte da 1024 (256-8192); margine libero 500 MB. `open()` toglie i `.part` e le cartelle `.dl-*`. `setQueue` fissa le pin su `items.take(3)`: corrente e 2 successivi.
 - `clearStreamCache` = `cache.clear(keep)` + `tracks.deleteUnplayedStreamRows(keepKeys)`: le righe con ascolti restano.
 - Podcast: `podcast_cleanup.dart` (`autoDeleteDays`).
 - Cache e cartella stream non si scansionano e non finiscono nel backup.
@@ -160,6 +160,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - La scansione non marca `missing` se la radice non è raggiungibile.
 - Il ripristino si applica prima di aprire il DB. Un errore lascia l'originale.
 - Lavoro pesante (tag, zip, miniature) in `Isolate.run`.
+- «Libera spazio» cancella solo file con firma intatta in `downloads.sig.json`, e solo dopo aver cambiato la riga (D-581, D-598): un file che l'app non ha scaricato non si tocca.
 
 ## Come si estende
 

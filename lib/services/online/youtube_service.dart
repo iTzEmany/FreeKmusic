@@ -91,7 +91,16 @@ enum DownloadFormat { original, m4a, mp3High, mp3Low }
 
 /// Source quality of a download or a stream: the audio bitrate it is capped at.
 /// Known debt: the stream cache key does not include it (docs/prossimi-lavori.md).
-enum AudioQuality { high, medium, low }
+enum AudioQuality {
+  high(null),
+  medium(135),
+  low(64);
+
+  const AudioQuality(this.capKbps);
+
+  /// Bitrate cap in kbit/s (null = none); the one number yt-dlp and NewPipe both use.
+  final int? capKbps;
+}
 
 /// How a download is run; read from the settings when it starts.
 class DownloadOptions {

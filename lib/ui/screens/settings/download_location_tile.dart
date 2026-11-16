@@ -7,27 +7,19 @@ import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/folder_actions.dart';
 import '../../../providers/folder_ops.dart';
-import '../../../services/stream/stream_cache.dart';
+import '../../../providers/storage_providers.dart';
 import '../../../providers/settings_providers.dart';
-import '../../../services/online/media_publisher.dart';
-
-/// App folders of the SD cards in the device (empty without one, D-579).
-final sdVolumesProvider = FutureProvider.autoDispose<List<String>>((ref) => sdVolumeDirs());
+import '../../../core/storage_volumes.dart' show sdRootOf;
+import '../../../services/online/media_publisher.dart' show publishesToMediaStore;
 
 /// D-579: where downloads (and the stream cache) go. Android: internal or the SD
 /// card, only with a card; desktop: a chosen folder, also added to the library.
 class DownloadLocationTile extends ConsumerWidget {
   const DownloadLocationTile({super.key});
 
-  /// Stores the new location; the stream cache moves at the next start, so the
-  /// one left on the previous volume goes now (only that folder).
-  Future<void> _set(WidgetRef ref, String v) async {
-    final old = ref.read(settingsProvider).downloadLocation;
-    ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: v));
-    if (!isAndroid) return;
-    final (from, to) = (await effectiveLocation(old), await effectiveLocation(v));
-    if (from != to) await StreamCache.deleteAt(from);
-  }
+  /// Stores the new location; the stream cache moves at the next start (`main` then drops the old one).
+  Future<void> _set(WidgetRef ref, String v) async =>
+      ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: v));
 
   Future<void> _pick(WidgetRef ref) async {
     final path = await FilePicker.getDirectoryPath();

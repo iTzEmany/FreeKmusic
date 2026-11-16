@@ -758,6 +758,10 @@ class SettingsStore {
   int? get releasesRetryAt => _prefs.getInt('releasesRetryAt');
   int? get releasesLastNotifiedAt => _prefs.getInt('releasesLastNotifiedAt');
 
+  /// Volume the stream cache was opened on at the last start (`''` = internal; null = never recorded).
+  String? get streamCacheVolume => _prefs.getString('streamCacheVolume');
+  Future<void> writeStreamCacheVolume(String v) => _prefs.setString('streamCacheVolume', v);
+
   /// Time of the last automatic backup (epoch ms; null = none).
   int? get backupLastAt => _prefs.getInt('backupLastAt');
   Future<void> writeBackupLastAt(int ms) => _prefs.setInt('backupLastAt', ms);

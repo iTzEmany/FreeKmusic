@@ -35,6 +35,12 @@ class StreamCache {
     }
   }
 
+  /// Start-up: the cache left on the volume of the previous run ([last]) goes, once the new one is open
+  /// on [current]; never the one in use. Both as [volumeDir] in [inAppSupport].
+  static Future<void> dropLeftBehind({required String? last, required String current}) async {
+    if (last != null && last != current) await deleteAt(last);
+  }
+
   /// Space always left free on the disk (D-84).
   static const freeMargin = 500 * _mb;
 
