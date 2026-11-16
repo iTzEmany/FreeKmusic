@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/services/audio/audio_backend.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/audio/play_queue.dart';
@@ -34,9 +35,11 @@ class _Jam implements RemoteTransport {
 }
 
 // The park waits are real but short: the handler takes the wait as a parameter.
+// Tests that must see it fire use the short one and only look well after it;
+// tests that look before it fires use the long one and do not wait at all.
 const _park = Duration(milliseconds: 60);
+const _long = Duration(minutes: 30);
 Future<void> _past() => Future<void>.delayed(_park * 3);
-Future<void> _before() => Future<void>.delayed(_park ~/ 3);
 
 void main() {
   late AppDatabase db;
@@ -47,13 +50,13 @@ void main() {
   late List<int> ids;
   late CodecoreAudioHandler handler;
 
-  CodecoreAudioHandler build({bool stopWhenIdle = true}) => CodecoreAudioHandler(
+  CodecoreAudioHandler build({bool stopWhenIdle = true, Duration park = _park}) => CodecoreAudioHandler(
       backend, PlayQueue(), TrackRepository(db),
       onError: (_) {},
       online: online,
       preparer: preparer,
       stopServiceWhenIdle: stopWhenIdle,
-      idleParkAfter: _park);
+      idleParkAfter: park);
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -80,12 +83,15 @@ void main() {
   AudioProcessingState processing() => handler.playbackState.value.processingState;
 
   test('paused for long enough, the session goes idle but queue, track and place stay', () async {
+    await handler.dispose();
+    handler = build(park: _long);
+    await handler.restore(ids, 1, Duration.zero);
+    expect(processing(), AudioProcessingState.ready, reason: 'not before the wait is over');
+    await handler.dispose();
+    handler = build();
     await handler.restore(ids, 1, Duration.zero);
     backend.posC.add(const Duration(minutes: 42));
     await pumpEventQueue();
-    expect(processing(), AudioProcessingState.ready);
-    await _before();
-    expect(processing(), AudioProcessingState.ready);
     await _past();
     expect(processing(), AudioProcessingState.idle);
     expect(handler.currentTrack?.title, 'b');
@@ -130,12 +136,35 @@ void main() {
     expect(processing(), AudioProcessingState.idle, reason: 'after the Jam the wait runs again');
   });
 
-  test('a Jam attached before the wait is over cancels it', () async {
+  test('a Jam attached and detached before the wait is over does not park', () async {
+    await handler.dispose();
+    handler = build(park: const Duration(seconds: 1));
     await handler.restore(ids, 0, Duration.zero);
-    await _before();
-    handler.attachRemote(_Jam());
-    await _past();
     expect(processing(), AudioProcessingState.ready);
+    handler.attachRemote(_Jam());
+    handler.attachRemote(null);
+    expect(processing(), AudioProcessingState.ready);
+  });
+
+  test('a backend event after the park does not wake the session', () async {
+    await handler.restore(ids, 0, Duration.zero);
+    await _past();
+    expect(processing(), AudioProcessingState.idle);
+    backend.stateC.add(BackendState.paused);
+    await pumpEventQueue();
+    expect(processing(), AudioProcessingState.idle);
+  });
+
+  test('another track becoming current while parked wakes the session, and it parks again', () async {
+    await handler.restore(ids, 0, Duration.zero);
+    await _past();
+    expect(processing(), AudioProcessingState.idle);
+    await handler.removeFromQueue(0);
+    await pumpEventQueue();
+    expect(handler.currentTrack?.title, 'b');
+    expect(processing(), AudioProcessingState.ready);
+    await _past();
+    expect(processing(), AudioProcessingState.idle);
   });
 
   test('a stream waiting for its file does not park', () async {

@@ -104,6 +104,16 @@ void main() {
     expect(calls, ['play']);
   });
 
+  test('the headset button goes to the Jam, not to the local queue', () async {
+    await handler.restore(ids, 0, Duration.zero);
+    await handler.play();
+    final calls = <String>[];
+    handler.attachRemote(_RecordingJam(calls));
+    await handler.click();
+    expect(calls, ['play']);
+    expect(backend.playing, isTrue, reason: 'the local player was not paused');
+  });
+
   test('pause when already paused stays paused', () async {
     await handler.restore(ids, 0, Duration.zero);
     await handler.pause();
@@ -174,6 +184,28 @@ void main() {
     expect(backend.seeks.last, const Duration(seconds: 42));
   });
 
+  test('click with nothing loaded plays the saved queue once it is restored', () async {
+    await handler.click();
+    await handler.restore(ids, 1, Duration.zero);
+    expect(backend.playing, isTrue);
+  });
+
+  test('a play that found nothing is forgotten once something else is loaded', () async {
+    await handler.play();
+    await handler.playQueue(ids, 0);
+    await handler.pause();
+    await handler.restore(ids, 1, Duration.zero);
+    expect(backend.playing, isFalse);
+  });
+
+  test('a play that found nothing is forgotten when a Jam comes', () async {
+    await handler.play();
+    handler.attachRemote(_Jam(emptyJam));
+    handler.attachRemote(null);
+    await handler.restore(ids, 1, Duration.zero);
+    expect(backend.playing, isFalse);
+  });
+
   test('a pause before the restore cancels the play that was waiting', () async {
     await handler.play();
     await handler.pause();
@@ -183,9 +215,12 @@ void main() {
 }
 
 class _RecordingJam extends _Jam {
-  _RecordingJam(this.calls) : super(const RemoteStatus());
+  _RecordingJam(this.calls, {bool playing = false})
+      : super(RemoteStatus(title: 'Jam song', playing: playing));
 
   final List<String> calls;
   @override
   Future<void> play() async => calls.add('play');
+  @override
+  Future<void> pause() async => calls.add('pause');
 }

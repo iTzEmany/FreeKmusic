@@ -496,6 +496,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     if (_disposed) return;
     final token = ++_loadToken;
     _playOnRestore = false;
+    _parked = false; // another track: the real state is shown, the wait starts again
     _waitingStream = false;
     _loadBusy = true;
     _loadPaused = false;
@@ -1543,6 +1544,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// A play() found nothing loaded: the queue about to be restored starts playing.
   bool _playOnRestore = false;
 
+  /// The start-up restore found no queue: a play() that waited for it is forgotten.
+  void forgetPlayOnRestore() => _playOnRestore = false;
+
   /// The headset and the notification's own button: «media» is one button that
   /// toggles (85, HEADSETHOOK, widget, tile); with a Jam it goes to the Jam.
   @override
@@ -1917,6 +1921,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _idleTimer?.cancel();
     _idleTimer = null;
     _parked = false;
+    _playOnRestore = false;
     if (transport == null) {
       // Back to what the local player says, not to what the Jam last said.
       final t = _current;
