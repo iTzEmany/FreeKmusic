@@ -4046,5 +4046,8 @@
   "autoBackupSummary": "{folder}, dernière : {last}",
   "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
   "logBackup": "Sauvegarde automatique",
-  "logBackupSub": "Enregistrée dans le dossier choisi."
+  "logBackupSub": "Enregistrée dans le dossier choisi.",
+  "autoBackupHintAndroid": "Les sauvegardes vont dans Documents/FreeKmusic : copiez-les ailleurs pour les garder en sécurité.",
+  "autoBackupHintAndroidApp": "Les sauvegardes vont dans le dossier de l’app et sont supprimées si vous la désinstallez : copiez-les ailleurs pour les garder en sécurité.",
+  "logBackupFailed": "Échec de la sauvegarde automatique"
 }

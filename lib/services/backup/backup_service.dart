@@ -45,6 +45,7 @@ const kDeviceBoundKeys = {
   'releasesRetryAt',
   'releasesLastNotifiedAt',
   // Folder and time of the weekly backup (R-241) belong to this device.
+  'autoBackup',
   'backupFolder',
   'backupLastAt',
 };
@@ -207,13 +208,18 @@ class BackupService {
 /// How many automatic backups stay in the folder.
 const kBackupsKept = 3;
 
-final _backupName = RegExp(r'^freekmusic-backup-\d{4}-\d{2}-\d{2}\.zip$');
+/// Automatic backups have their own name, so keeping the newest 3 never touches a manual one.
+String autoBackupName(DateTime d) => BackupService.fileName(d).replaceFirst('freekmusic-backup-', 'freekmusic-auto-');
+
+final _autoBackupName = RegExp(r'^freekmusic-auto-\d{4}-\d{2}-\d{2}\.zip$');
 
 /// R-241: when [enabled], a [folder] is chosen and [isBackupDue], writes
-/// `freekmusic-backup-<date>.zip` there and keeps the newest [kBackupsKept]
+/// `freekmusic-auto-<date>.zip` there and keeps the newest [kBackupsKept]
 /// (by the date in the name; the zip just written always stays, other files are
-/// never touched). Returns whether a backup was made; a failure goes to
-/// [onError] (and AppLog) and leaves [saveLastAt] uncalled, so the next start retries.
+/// never touched). The folder is probed (the `.part` file) before the heavy work, and the zip
+/// is renamed into place only when complete, so a failure leaves no partial zip and no
+/// existing one truncated. Returns whether a backup was made; a failure goes to
+/// [onError] (and AppLog) and leaves [saveLastAt] uncalled.
 Future<bool> runAutoBackupIfDue({
   required BackupService service,
   required bool enabled,
@@ -224,13 +230,21 @@ Future<bool> runAutoBackupIfDue({
   required void Function(Object error, StackTrace st) onError,
 }) async {
   if (!enabled || folder.isEmpty || !isBackupDue(lastAt, now)) return false;
+  final name = autoBackupName(now);
+  final part = File(p.join(folder, '$name.part'));
   try {
-    final out = p.join(folder, BackupService.fileName(now));
-    await service.createBackup(out);
+    await part.create();
+    try {
+      await service.createBackup(part.path);
+      await part.rename(p.join(folder, name));
+    } on Object {
+      if (part.existsSync()) await part.delete();
+      rethrow;
+    }
     await saveLastAt(now);
     final others = [
-      for (final f in Directory(folder).listSync().whereType<File>())
-        if (_backupName.hasMatch(p.basename(f.path)) && f.path != out) f,
+      await for (final f in Directory(folder).list())
+        if (f is File && _autoBackupName.hasMatch(p.basename(f.path)) && p.basename(f.path) != name) f,
     ]..sort((a, b) => p.basename(b.path).compareTo(p.basename(a.path)));
     for (final f in others.skip(kBackupsKept - 1)) {
       await f.delete();
@@ -241,6 +255,41 @@ Future<bool> runAutoBackupIfDue({
     onError(e, st);
     return false;
   }
+}
+
+/// Runs [runAutoBackupIfDue] and, after a failure, nothing more until the next app start
+/// (resume and focus would redo the heavy work and fill the Registro).
+class AutoBackupRunner {
+  bool _failed = false;
+
+  Future<bool> run({
+    required BackupService service,
+    required bool enabled,
+    required String folder,
+    required DateTime? lastAt,
+    required DateTime now,
+    required Future<void> Function(DateTime) saveLastAt,
+    required void Function(Object error, StackTrace st) onError,
+  }) async {
+    if (_failed) return false;
+    final ok = await runAutoBackupIfDue(
+      service: service,
+      enabled: enabled,
+      folder: folder,
+      lastAt: lastAt,
+      now: now,
+      saveLastAt: saveLastAt,
+      onError: (e, st) {
+        _failed = true;
+        onError(e, st);
+      },
+    );
+    return ok;
+  }
+
+  /// A failure outside the run (the service could not be built): also blocks retries.
+  void fail() => _failed = true;
+  bool get failed => _failed;
 }
 
 const _alreadyCompressed = {'.jpg', '.jpeg', '.png', '.webp'};

@@ -3825,5 +3825,8 @@
   "autoBackupSummary": "{folder}, zuletzt: {last}",
   "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
   "logBackup": "Automatisches Backup",
-  "logBackupSub": "Im gewählten Ordner gespeichert."
+  "logBackupSub": "Im gewählten Ordner gespeichert.",
+  "autoBackupHintAndroid": "Backups landen in Dokumente/FreeKmusic: Kopiere sie an einen anderen Ort, um sie zu sichern.",
+  "autoBackupHintAndroidApp": "Backups landen im App-Ordner und werden beim Deinstallieren gelöscht: Kopiere sie an einen anderen Ort, um sie zu sichern.",
+  "logBackupFailed": "Automatisches Backup fehlgeschlagen"
 }

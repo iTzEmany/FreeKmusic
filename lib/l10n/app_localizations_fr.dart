@@ -7885,7 +7885,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String autoBackupSummary(String folder, String last) {
-    return '$folder · dernière : $last';
+    return '$folder, dernière : $last';
   }
 
   @override
@@ -7893,4 +7893,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logBackupSub => 'Enregistrée dans le dossier choisi.';
+
+  @override
+  String get autoBackupHintAndroid =>
+      'Les sauvegardes vont dans Documents/FreeKmusic : copiez-les ailleurs pour les garder en sécurité.';
+
+  @override
+  String get autoBackupHintAndroidApp =>
+      'Les sauvegardes vont dans le dossier de l’app et sont supprimées si vous la désinstallez : copiez-les ailleurs pour les garder en sécurité.';
+
+  @override
+  String get logBackupFailed => 'Échec de la sauvegarde automatique';
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/backup_providers.dart';
 import '../../../providers/settings_providers.dart';
@@ -29,24 +30,32 @@ class AutoBackupTile extends ConsumerWidget {
     final on = ref.watch(settingsProvider.select((s) => s.autoBackup));
     final folder = ref.watch(settingsProvider.select((s) => s.backupFolder));
     final last = ref.watch(backupLastAtProvider);
+    final dir = isAndroid ? ref.watch(backupFolderProvider).value : null;
     final lastText = last == null ? l.autoBackupNever : DateFormat.yMMMd(l.localeName).format(last);
     final sw = SwitchListTile(
       contentPadding: onboarding ? EdgeInsets.zero : null,
       secondary: onboarding ? null : const Icon(Icons.backup_outlined),
       title: Text(l.autoBackup),
-      subtitle: Text(onboarding || !on ? l.autoBackupHint : l.autoBackupSummary(folder, lastText)),
+      subtitle: Text(
+        isAndroid
+            ? (dir == null || dir == kAndroidBackupDir ? l.autoBackupHintAndroid : l.autoBackupHintAndroidApp) +
+                  (!onboarding && on ? '\n${l.autoBackupSummary(dir ?? '', lastText)}' : '')
+            : onboarding || !on
+            ? l.autoBackupHint
+            : l.autoBackupSummary(folder, lastText),
+      ),
       value: on,
       onChanged: (v) {
         if (!v) {
           ref.read(settingsProvider.notifier).update((s) => s.copyWith(autoBackup: false));
-        } else if (folder.isEmpty) {
+        } else if (!isAndroid && folder.isEmpty) {
           _pick(ref, turnOn: true);
         } else {
           ref.read(settingsProvider.notifier).update((s) => s.copyWith(autoBackup: true));
         }
       },
     );
-    if (onboarding || !on) return sw;
+    if (onboarding || !on || isAndroid) return sw;
     return Column(
       children: [
         sw,

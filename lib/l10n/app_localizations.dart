@@ -12400,7 +12400,7 @@ abstract class AppLocalizations {
   /// No description provided for @autoBackupSummary.
   ///
   /// In it, this message translates to:
-  /// **'{folder} · ultimo: {last}'**
+  /// **'{folder}, ultimo: {last}'**
   String autoBackupSummary(String folder, String last);
 
   /// No description provided for @logBackup.
@@ -12414,6 +12414,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Salvato nella cartella scelta.'**
   String get logBackupSub;
+
+  /// No description provided for @autoBackupHintAndroid.
+  ///
+  /// In it, this message translates to:
+  /// **'I backup vanno in Documenti/FreeKmusic: copiali altrove per tenerli al sicuro.'**
+  String get autoBackupHintAndroid;
+
+  /// No description provided for @autoBackupHintAndroidApp.
+  ///
+  /// In it, this message translates to:
+  /// **'I backup vanno nella cartella dell\'app e si cancellano se la disinstalli: copiali altrove per tenerli al sicuro.'**
+  String get autoBackupHintAndroidApp;
+
+  /// No description provided for @logBackupFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup automatico non riuscito'**
+  String get logBackupFailed;
 }
 
 class _AppLocalizationsDelegate

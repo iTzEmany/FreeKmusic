@@ -393,7 +393,7 @@ void main() {
     final errors = <Object>[];
 
     String name(int daysAgo) =>
-        BackupService.fileName(now.subtract(Duration(days: daysAgo)));
+        autoBackupName(now.subtract(Duration(days: daysAgo)));
     List<String> names() =>
         out.listSync().map((e) => p.basename(e.path)).toList()..sort();
 
@@ -448,9 +448,13 @@ void main() {
         File(p.join(out.path, name(d))).writeAsStringSync('old');
       }
       File(p.join(out.path, 'notes.zip')).writeAsStringSync('mine');
+      for (final d in [30, 40, 50]) {
+        File(p.join(out.path, BackupService.fileName(now.subtract(Duration(days: d))))).writeAsStringSync('manual');
+      }
       File(p.join(out.path, 'freekmusic-backup-x.zip')).writeAsStringSync('mine');
       await run(now.subtract(const Duration(days: 7)));
       expect(names(), [
+        for (final d in [30, 40, 50]) BackupService.fileName(now.subtract(Duration(days: d))),
         'freekmusic-backup-x.zip',
         'notes.zip',
         name(14),
@@ -466,6 +470,43 @@ void main() {
       await run(null);
       expect(names().contains(name(0)), isTrue);
       expect(names().length, 3);
+    });
+
+    test('a failed write leaves the earlier zips intact and no partial zip', () async {
+      final sameDay = File(p.join(out.path, name(0)))..writeAsStringSync('old');
+      final earlier = File(p.join(out.path, name(7)))..writeAsStringSync('older');
+      final svc = service();
+      await db.close(); // the copy of the database fails after the folder probe
+      await runAutoBackupIfDue(
+        service: svc,
+        enabled: true,
+        folder: out.path,
+        lastAt: null,
+        now: now,
+        saveLastAt: (d) async => saved = d,
+        onError: (e, _) => errors.add(e),
+      );
+      expect(errors, hasLength(1));
+      expect(sameDay.readAsStringSync(), 'old');
+      expect(earlier.readAsStringSync(), 'older');
+      expect(names(), [name(7), name(0)]);
+    });
+
+    test('after a failure the runner does not try again until the next start', () async {
+      final notAFolder = File(p.join(dir.path, 'file.txt'))..writeAsStringSync('x');
+      final runner = AutoBackupRunner();
+      for (var i = 0; i < 3; i++) {
+        await runner.run(
+          service: service(),
+          enabled: true,
+          folder: notAFolder.path,
+          lastAt: null,
+          now: now,
+          saveLastAt: (d) async => saved = d,
+          onError: (e, _) => errors.add(e),
+        );
+      }
+      expect(errors, hasLength(1));
     });
 
     test('an error goes to the callback and the last time is not saved', () async {

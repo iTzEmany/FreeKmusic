@@ -3825,5 +3825,8 @@
   "autoBackupSummary": "{folder}, última: {last}",
   "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
   "logBackup": "Copia de seguridad automática",
-  "logBackupSub": "Guardada en la carpeta elegida."
+  "logBackupSub": "Guardada en la carpeta elegida.",
+  "autoBackupHintAndroid": "Las copias van a Documentos/FreeKmusic: cópialas a otro sitio para tenerlas a salvo.",
+  "autoBackupHintAndroidApp": "Las copias van a la carpeta de la app y se borran si la desinstalas: cópialas a otro sitio para tenerlas a salvo.",
+  "logBackupFailed": "Copia de seguridad automática fallida"
 }

@@ -7844,7 +7844,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String autoBackupSummary(String folder, String last) {
-    return '$folder · última: $last';
+    return '$folder, última: $last';
   }
 
   @override
@@ -7852,4 +7852,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get logBackupSub => 'Guardada en la carpeta elegida.';
+
+  @override
+  String get autoBackupHintAndroid =>
+      'Las copias van a Documentos/FreeKmusic: cópialas a otro sitio para tenerlas a salvo.';
+
+  @override
+  String get autoBackupHintAndroidApp =>
+      'Las copias van a la carpeta de la app y se borran si la desinstalas: cópialas a otro sitio para tenerlas a salvo.';
+
+  @override
+  String get logBackupFailed => 'Copia de seguridad automática fallida';
 }
