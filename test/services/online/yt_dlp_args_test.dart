@@ -14,6 +14,15 @@ List<String> args({
         jsArgs: ['--js-runtimes', 'node']);
 
 void main() {
+  test('quality: high as today, medium and low cap the source bitrate', () {
+    String sel(AudioQuality q) => downloadChoice(DownloadFormat.m4a, hasFfmpeg: true, quality: q).selector;
+    expect(sel(AudioQuality.high), 'bestaudio[ext=m4a]/bestaudio/best');
+    expect(sel(AudioQuality.medium), 'bestaudio[abr<=135]/bestaudio');
+    expect(sel(AudioQuality.low), 'bestaudio[abr<=64]/worstaudio');
+    final a = args(options: const DownloadOptions(quality: AudioQuality.low));
+    expect(a, containsAllInOrder(['-f', 'bestaudio[abr<=64]/worstaudio', '--audio-format', 'm4a']));
+  });
+
   test('default: M4A, YouTube\'s AAC stream first, no rate limit', () {
     final a = args();
     expect(

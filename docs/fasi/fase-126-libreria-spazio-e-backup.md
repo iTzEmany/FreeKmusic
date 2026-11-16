@@ -105,3 +105,7 @@ Libera spazio                        Onboarding (aggiunte)
 - Se vuoi, ascolta un brano in «Bassa» e dimmi se la qualità è accettabile.
 
 ## Note di deviazione
+
+- **126.2, prova di yt-dlp su Linux** (video `dQw4w9WgXcQ`, 16 nov): Alta `bestaudio[ext=m4a]/bestaudio/best` -> 140 (m4a, abr 129,5);
+  Bassa `bestaudio[abr<=64]/worstaudio` -> 250 (opus, abr 61). Con il tetto 128 la Media cadeva su 250 (come la Bassa, perche
+  l'AAC e 129,5): tetto portato a 135, Media `bestaudio[abr<=135]/bestaudio` -> 251 (opus, abr 128,9; yt-dlp preferisce Opus all AAC a pari bitrate, 140 qualifica comunque). Da provare su youtubedl-android (Mi A3).

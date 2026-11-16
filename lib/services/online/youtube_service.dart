@@ -89,6 +89,10 @@ String? smallestThumbnail(Object? thumbnails, {int minWidth = 160}) {
 /// keep the audio as served; the MP3s are re-encoded for players that need them.
 enum DownloadFormat { original, m4a, mp3High, mp3Low }
 
+/// Source quality of a download or a stream: the audio bitrate it is capped at.
+/// Known debt: the stream cache key does not include it (docs/prossimi-lavori.md).
+enum AudioQuality { high, medium, low }
+
 /// How a download is run; read from the settings when it starts.
 class DownloadOptions {
   const DownloadOptions({
@@ -96,7 +100,10 @@ class DownloadOptions {
     this.format = DownloadFormat.m4a,
     this.emitStreamUrl = false,
     this.selector,
+    this.quality = AudioQuality.high,
   });
+
+  final AudioQuality quality;
 
   /// A yt-dlp format selector that replaces the one of [format] (the audio of
   /// a podcast episode); the file is then kept as served.
