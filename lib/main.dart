@@ -236,7 +236,9 @@ Future<void> main() async {
   }
 
   if (kPerfProbe) PerfProbe.mark('deviceName', sinceMain);
-  final cacheVolume = isAndroid ? await effectiveLocation(settingsStore.readSettings().downloadLocation) : '';
+  final cacheVolume = isAndroid
+      ? await StreamCache.usableVolume(await effectiveLocation(settingsStore.readSettings().downloadLocation))
+      : '';
   final streamCache = await StreamCache.inAppSupport(volumeDir: cacheVolume);
   final container = ProviderContainer(
     overrides: [

@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'app_log.dart';
 import 'platform.dart';
 
 /// Primary shared storage of an Android device.
@@ -17,7 +20,24 @@ Future<List<String>> sdVolumeDirs() async {
   if (debugSdDirs case final d?) return d;
   if (!isAndroid) return const [];
   final dirs = await getExternalStorageDirectories() ?? const [];
-  return [for (final d in dirs.skip(1)) d.path];
+  return writableDirs([for (final d in dirs.skip(1)) d.path]);
+}
+
+/// An unmountable card still has an entry in the list: keep only folders that exist and take a file.
+@visibleForTesting
+Future<List<String>> writableDirs(List<String> dirs) async => [for (final d in dirs) if (await _writable(d)) d];
+
+Future<bool> _writable(String dir) async {
+  try {
+    if (!await Directory(dir).exists()) return false;
+    final probe = File(p.join(dir, '.probe'));
+    await probe.writeAsString('');
+    await probe.delete();
+    return true;
+  } on FileSystemException catch (e) {
+    AppLog.w('SD folder not usable, left out: $dir', e);
+    return false;
+  }
 }
 
 /// `/storage/1234-5678/…` -> `/storage/1234-5678`; null for any other path (the internal `emulated` too).

@@ -50,23 +50,36 @@ class DownloadLocationTile extends ConsumerWidget {
     // The chosen card may be gone: say so instead of showing «internal».
     final missing = location.isNotEmpty && !sds.contains(location);
     final legacy = !(ref.watch(_mediaStoreProvider).value ?? true);
+    String name(String v) => v.isEmpty
+        ? l.downloadMemoryInternal
+        : sds.contains(v)
+            ? l.downloadMemorySd(p.basename(sdRootOf(v) ?? v))
+            : l.downloadMemorySdMissing(p.basename(sdRootOf(v) ?? v));
     return ListTile(
       leading: const Icon(Icons.sd_storage_outlined),
       title: Text(l.downloadMemory),
       subtitle: Text([
+        name(location),
         if (location.isNotEmpty && legacy) l.downloadMemorySdLegacy,
         l.downloadMemoryRestart,
-      ].join(' ')),
-      trailing: DropdownButton<String>(
-        value: location,
-        underline: const SizedBox.shrink(),
-        items: [
-          DropdownMenuItem(value: '', child: Text(l.downloadMemoryInternal)),
-          if (missing) DropdownMenuItem(value: location, child: Text(l.downloadMemorySdMissing(p.basename(sdRootOf(location) ?? location)))),
-          for (final d in sds) DropdownMenuItem(value: d, child: Text(l.downloadMemorySd(p.basename(sdRootOf(d) ?? d)))),
-        ],
-        onChanged: (v) => v == null ? null : set(v),
-      ),
+      ].join('\n')),
+      onTap: () async {
+        final v = await showDialog<String>(
+          context: context,
+          builder: (c) => SimpleDialog(
+            title: Text(l.downloadMemory),
+            children: [
+              for (final d in ['', if (missing) location, ...sds])
+                ListTile(
+                  title: Text(name(d)),
+                  trailing: d == location ? const Icon(Icons.check) : null,
+                  onTap: () => Navigator.pop(c, d),
+                ),
+            ],
+          ),
+        );
+        if (v != null && v != location) set(v);
+      },
     );
   }
 }

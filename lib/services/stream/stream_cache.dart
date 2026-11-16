@@ -25,6 +25,19 @@ class StreamCache {
       StreamCache(Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache')),
           limitBytes: limitBytes);
 
+  /// [volumeDir] if its `stream_cache` folder can be created there, else '' (the internal one, logged):
+  /// a card that is mounted read-only or half-gone must not leave streamed tracks without a cache.
+  static Future<String> usableVolume(String volumeDir) async {
+    if (volumeDir.isEmpty) return '';
+    try {
+      await Directory(p.join(volumeDir, 'stream_cache')).create(recursive: true);
+      return volumeDir;
+    } on FileSystemException catch (e, st) {
+      AppLog.w('stream cache: $volumeDir not writable, using the internal folder', e, st);
+      return '';
+    }
+  }
+
   /// Deletes the cache folder of a volume left behind ([volumeDir] as in [inAppSupport]); nothing else.
   static Future<void> deleteAt(String volumeDir) async {
     final d = Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache'));
@@ -197,7 +210,7 @@ class StreamCache {
     await _measure(); // K-06: a failed delete is retried at the next evict
   }
 
-  /// Deletes everything except the [keep] keys and the pinned ones.
+  /// Deletes everything except the [keep] keys and the pinned ones (tracks being downloaded or played: deleting their file would cut them off).
   Future<void> clear({Set<String> keep = const {}}) async {
     final kept = {...keep, ..._pins.keys}.map(streamFileName).toSet();
     for (final e in await _files()) {

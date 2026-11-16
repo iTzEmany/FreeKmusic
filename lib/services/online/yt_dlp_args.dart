@@ -22,12 +22,13 @@ const _preferM4a = 'bestaudio[ext=m4a]/bestaudio/best';
     AudioQuality quality = AudioQuality.high}) {
   // A chosen selector (a podcast episode) is taken as it is: never converted.
   if (selector != null) return (selector: selector, audioFormat: null, quality: null);
-  // A lower level caps the source bitrate; the conversion below still applies.
+  // A lower level caps the source bitrate AND the encoder's: m4a kept (tags still
+  // written), but at the cap, else a ~64 kbps Opus source would grow to 192K AAC.
   final cap = quality.capKbps;
   if (cap != null) {
     final capped = 'bestaudio[abr<=$cap]/${quality == AudioQuality.low ? 'worstaudio' : 'bestaudio'}';
     final c = downloadChoice(format, hasFfmpeg: hasFfmpeg);
-    return (selector: capped, audioFormat: c.audioFormat, quality: c.quality);
+    return (selector: capped, audioFormat: c.audioFormat, quality: c.audioFormat == null ? null : '${cap}K');
   }
   if (!hasFfmpeg) return (selector: _preferM4a, audioFormat: null, quality: null);
   return switch (format) {

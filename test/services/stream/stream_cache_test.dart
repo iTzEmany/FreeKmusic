@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 const _mb = 1024 * 1024;
 
 void main() {
+  volumeTests();
   late Directory root;
   late Directory dir;
 
@@ -254,5 +255,17 @@ void main() {
     await c.fileFor('a:2');
     g.deleteSync();
     await c.touch('a:2');
+  });
+}
+
+void volumeTests() {
+  test('usableVolume: an unwritable volume falls back to the internal cache', () async {
+    final root = await Directory.systemTemp.createTemp('vol_test');
+    addTearDown(() => root.delete(recursive: true));
+    final file = File(p.join(root.path, 'a_file'))..writeAsStringSync('x');
+    // A path below a plain file can never be created.
+    expect(await StreamCache.usableVolume(p.join(file.path, 'sd')), '');
+    expect(await StreamCache.usableVolume(root.path), root.path);
+    expect(await StreamCache.usableVolume(''), '');
   });
 }

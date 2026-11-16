@@ -47,21 +47,26 @@ class AutoBackupLast extends Notifier<DateTime?> {
 const kAndroidBackupDir = '$kAndroidPrimaryRoot/Documents/FreeKmusic';
 
 /// Android: [kAndroidBackupDir], or (Android 10 and lower, where it is refused) the app's own
-/// external folder, which goes away with the app. Created if missing.
-Future<String> androidBackupFolder() async {
+/// external folder, which goes away with the app. With [create] false (just showing it) nothing is
+/// made: the answer is the folder already in use, else [kAndroidBackupDir].
+Future<String> androidBackupFolder({bool create = true, String dir = kAndroidBackupDir}) async {
+  if (!create) {
+    final app = p.join(await androidAppMusicDir() ?? await appSupportDir(), 'backups');
+    return !await Directory(dir).exists() && await Directory(app).exists() ? app : dir;
+  }
   try {
-    await Directory(kAndroidBackupDir).create(recursive: true);
-    return kAndroidBackupDir;
-  } on FileSystemException catch (e) {
-    AppLog.w('Documents/FreeKmusic not writable, backups go to the app folder', e);
-    final dir = p.join(await androidAppMusicDir() ?? await appSupportDir(), 'backups');
     await Directory(dir).create(recursive: true);
     return dir;
+  } on FileSystemException catch (e) {
+    AppLog.w('Documents/FreeKmusic not writable, backups go to the app folder', e);
+    final app = p.join(await androidAppMusicDir() ?? await appSupportDir(), 'backups');
+    await Directory(app).create(recursive: true);
+    return app;
   }
 }
 
 /// Where the automatic backups go: fixed on Android, the picked folder on desktop.
 final backupFolderProvider = FutureProvider<String>(
-  (ref) async => isAndroid ? androidBackupFolder() : ref.watch(settingsProvider.select((s) => s.backupFolder)),
+  (ref) async => isAndroid ? androidBackupFolder(create: false) : ref.watch(settingsProvider.select((s) => s.backupFolder)),
   retry: (_, _) => null,
 );

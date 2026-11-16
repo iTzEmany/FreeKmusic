@@ -6,12 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_log.dart';
 import '../core/permissions.dart' show hasAudioPermission;
-import '../services/backup/backup_service.dart' show AutoBackupRunner;
+import '../services/backup/backup_service.dart' show AutoBackupRunner, isBackupDue;
 import '../services/scanner/shared_cover_fix.dart';
 import '../services/tags/mp3_length_fix.dart';
 import 'folder_actions.dart' show scanIfPermissionLate;
 import 'activity_log_providers.dart';
 import 'activity_providers.dart' show ActivityItem, ActivityKind;
+import '../core/platform.dart' show isAndroid;
 import 'backup_providers.dart';
 import 'database_providers.dart' show trackRepositoryProvider;
 import 'enrich_completer_providers.dart';
@@ -118,7 +119,10 @@ final autoBackupStartProvider = Provider<void>((ref) {
     );
     try {
       final last = ref.read(backupLastAtProvider.notifier);
-      final folder = await ref.read(backupFolderProvider.future);
+      // Android: the folder is made only when a backup is really due.
+      final due = s.autoBackup && isBackupDue(ref.read(backupLastAtProvider), now);
+      final folder =
+          isAndroid ? await androidBackupFolder(create: due) : await ref.read(backupFolderProvider.future);
       await runner.run(
         service: await ref.read(backupServiceProvider.future),
         enabled: s.autoBackup,
