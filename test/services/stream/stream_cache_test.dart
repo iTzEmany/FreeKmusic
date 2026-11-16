@@ -63,6 +63,16 @@ void main() {
     expect(await c.fileFor('a:1'), isNull);
   });
 
+  test('a keepLonger that throws falls back to plain LRU, and the cache still trims', () async {
+    final c = cache()..keepLonger = () async => throw StateError('db closed');
+    await c.open();
+    for (var i = 1; i <= 4; i++) {
+      await add(c, 'a:$i', 4, i);
+    }
+    expect(c.usedBytes, lessThanOrEqualTo(10 * _mb));
+    expect(await c.fileFor('a:1'), isNull);
+  });
+
   test('without pins the least recently used file goes', () async {
     final c = cache();
     await c.open();

@@ -125,6 +125,8 @@ class StreamCache {
     }
   }
 
+  bool isPinned(String key) => _pins.containsKey(key);
+
   void pin(String key) => _pins.update(key, (n) => n + 1, ifAbsent: () => 1);
 
   void unpin(String key) {
@@ -153,7 +155,13 @@ class StreamCache {
     final limit = await effectiveLimit(usedBytes);
     final files = await _files();
     var used = usedBytes;
-    final dear = {for (final k in await keepLonger?.call() ?? const <String>{}) streamFileName(k)};
+    var favourites = const <String>{};
+    try {
+      favourites = await keepLonger?.call() ?? favourites;
+    } on Object catch (e, st) {
+      AppLog.w('stream cache: favourites unavailable, plain LRU', e, st);
+    }
+    final dear = {for (final k in favourites) streamFileName(k)};
     // Stable by false < true: oldest first within each group, favourites last.
     files.sort((a, b) {
       final d = (dear.contains(_stem(a.file)) ? 1 : 0) - (dear.contains(_stem(b.file)) ? 1 : 0);

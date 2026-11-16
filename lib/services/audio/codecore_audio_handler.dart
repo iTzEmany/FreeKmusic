@@ -231,7 +231,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   // Tap-to-first-sound timing of the load in flight (logged once, see _onPosition).
   _Timing? _timing;
   int _consecutiveErrors = 0;
-  int _offlineSkips = 0; // uncached streams passed over in a row with no network (D-577)
+  bool _skipBack = false; // the skip that loads the next track goes backwards (Previous)
   // The current streamed track plays from its address (not the cached file): an
   // error there asks the preparer for a new start (R-76).
   _UrlSession? _url;
@@ -496,6 +496,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }) async {
     if (_disposed) return;
     final token = ++_loadToken;
+    final back = _skipBack;
+    _skipBack = false;
     _playOnRestore = false;
     _parked = false; // another track: the real state is shown, the wait starts again
     _waitingStream = false;
@@ -596,7 +598,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await synced;
         if (token != _loadToken) return;
         final res = entry?.result ?? streamResultOfRow(streamKey, track);
-        if (await _skipOffline(p, streamKey, res, play, token)) return;
+        if (await _skipOffline(p, streamKey, res, play, token, back)) return;
         final began = await _asStream(streamKey, p.start(streamKey, res));
         if (token != _loadToken) return;
         playNow = _playWhenReady;
@@ -636,7 +638,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await _backend.seek(start);
         _position = start; // a paused backend emits no position
       }
-      _consecutiveErrors = _offlineSkips = 0;
+      _consecutiveErrors = 0;
       _noSaveId = null;
       // A backend that was playing keeps playing a newly loaded file.
       if (playNow && !_loadPaused) {
@@ -663,6 +665,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       }
       if (streamKey != null && e is _StreamNotReady) {
         offline = e.offline;
+        // The probe said online but the fetch found no network: pass over it like an offline skip.
+        if (offline && await _jumpToAvailable(back: back, play: _playWhenReady, token: token)) return;
         ageGated = e.ageRestricted;
         playNow = _playWhenReady;
       }
@@ -691,20 +695,57 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
-  /// With no network, a stream not in the cache is passed over to the next
-  /// queue item without an error (D-577); true when it was. When every item is
-  /// such a stream the player stops with a network failure instead of looping.
-  Future<bool> _skipOffline(StreamPreparer p, String key, YtResult res, bool play, int token) async {
-    if (await p.cachedFile(key, res) != null || await p.hasNetwork()) return false;
+  /// With no network (the probe's state: no network I/O here), a stream not in the
+  /// cache is passed over to the nearest queue entry that can play (D-577); true
+  /// when it was. With none left the player stops with one network failure.
+  Future<bool> _skipOffline(StreamPreparer p, String key, YtResult res, bool play, int token, bool back) async {
+    if (await p.cachedFile(key, res) != null || await p.isOnline()) return false;
     if (token != _loadToken) return true;
-    if (++_offlineSkips > _queue.items.length || _nextInQueue(auto: true) == null) {
-      _offlineSkips = 0;
-      onError(PlaybackFailure(_current?.title, PlaybackFailureReason.networkUnavailable));
-      await _goIdle();
-      return true;
+    if (await _jumpToAvailable(back: back, play: play, token: token)) return true;
+    if (token != _loadToken) return true;
+    onError(PlaybackFailure(_current?.title, PlaybackFailureReason.networkUnavailable));
+    await _goIdle();
+    return true;
+  }
+
+  /// Queue index of the nearest entry in the direction of [back] that has a file
+  /// (the library's or a cached stream), wrapping when repeating; null if none.
+  Future<int?> _availableIndex({required bool back}) async {
+    final items = _queue.items;
+    final at = _queue.currentIndex;
+    final n = items.length;
+    final wrap = _queue.repeat != PlayRepeat.off;
+    for (var k = 1; k < n; k++) {
+      final j = back ? at - k : at + k;
+      if ((j < 0 || j >= n) && !wrap) break;
+      final i = (j % n + n) % n;
+      if (await _nextFile(items[i]) != null) return i;
     }
+    return null;
+  }
+
+  /// Moves to [_availableIndex] and loads it; false (nothing changed) when there is none.
+  Future<bool> _jumpToAvailable({required bool back, required bool play, required int token}) async {
+    final i = await _availableIndex(back: back);
+    if (token != _loadToken) return true;
+    if (i == null) return false;
+    _queue.jumpTo(i);
+    _queueController.add(null);
     await _loadCurrent(play: play);
     return true;
+  }
+
+  /// A skip with no network: the index to go to, or null after telling the user once
+  /// that nothing ahead can play (the current track keeps playing).
+  Future<int?> _offlineSkipTarget({required bool back}) async {
+    final p = preparer;
+    if (p == null || await p.isOnline()) return null;
+    final i = await _availableIndex(back: back);
+    if (i == null) {
+      onError(PlaybackFailure(_current?.title, PlaybackFailureReason.networkUnavailable));
+      return -1;
+    }
+    return i;
   }
 
   /// Runs [f]; a failure is logged and comes out as a [_StreamNotReady].
@@ -907,12 +948,13 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final byId = {for (final r in rows) r.id: r};
     final out = <StreamItem>[];
     var looked = 0;
-    for (final id in ids) {
+    for (var pos = 0; pos < ids.length; pos++) {
+      final id = ids[pos];
       if (isOnlineId(id)) {
         final r = online?.entryOf(id)?.result;
         if (r != null &&
             (looked++ >= _lookupAhead || await _downloadedId(r) == null)) {
-          out.add(StreamItem(r.indexKey, r));
+          out.add(StreamItem(r.indexKey, r, pos: pos));
         }
         if (token != _syncToken) return;
       } else {
@@ -920,7 +962,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         final key = row == null
             ? null
             : keyOfStreamPath(row.path); // streamRowsAmong: kind 2 and 1
-        if (key != null) out.add(StreamItem(key, streamResultOfRow(key, row!)));
+        if (key != null) out.add(StreamItem(key, streamResultOfRow(key, row!), pos: pos));
       }
     }
     p.setQueue(out);
@@ -1689,7 +1731,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final remote = _remote;
     if (remote != null) return remote.next();
     if (_queue.currentId == null) return;
-    var next = _nextInQueue();
+    final jump = await _offlineSkipTarget(back: false);
+    if (jump == -1) return;
+    if (jump != null) _queue.jumpTo(jump);
+    var next = jump != null ? _queue.currentId : _nextInQueue();
     // Past the last station the list starts again.
     if (next == null && _queueRadio != null && _queue.items.length > 1) {
       _queue.jumpTo(0);
@@ -1718,7 +1763,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       await seek(Duration.zero);
       return;
     } else {
-      _queue.previous();
+      final jump = await _offlineSkipTarget(back: true);
+      if (jump == -1) return;
+      if (jump != null) {
+        _queue.jumpTo(jump);
+      } else {
+        _queue.previous();
+        _skipBack = true;
+      }
     }
     _queueController.add(null); // the block follows the new current entry
     await _loadCurrent(play: true);

@@ -16,9 +16,12 @@ enum StreamPhase { queued, downloading, ready, failed }
 
 /// A queue entry that can be streamed: its cache key and what to download.
 class StreamItem {
-  const StreamItem(this.key, this.result);
+  const StreamItem(this.key, this.result, {this.pos});
   final String key;
   final YtResult result;
+
+  /// Position in the player's queue counted from the current track (0); null: its place in the list given.
+  final int? pos;
 }
 
 /// Where a streamed track starts from: the cached [file] or the stream [url]
@@ -90,6 +93,7 @@ class StreamPreparer {
     this.maxParallel = 2,
     this.ahead = 3,
     this.prefetchOnMetered = _yes,
+    this.isOnline = _yesAsync,
     this.cooldown = const Duration(minutes: 5),
     this.attemptTimeout = const Duration(minutes: 5),
     this.startTimeout = const Duration(seconds: 90),
@@ -127,6 +131,13 @@ class StreamPreparer {
   final int ahead;
   final bool Function() prefetchOnMetered;
   static bool _yes() => true;
+  static Future<bool> _yesAsync() async => true;
+
+  /// The network probe's state (no network I/O): what the player checks before skipping a track not in the cache.
+  final Future<bool> Function() isOnline;
+
+  /// Whether [i], the [index]th of the list, is within the current track and the [ahead] after it.
+  bool _inWindow(StreamItem i, int index) => (i.pos ?? index) <= ahead;
 
   /// Pause of the prefetch after a 403/429 (like Shuffle+'s source cooldown).
   final Duration cooldown;
@@ -167,7 +178,10 @@ class StreamPreparer {
     if (_disposed) return;
     if (items.isEmpty && _queue.isEmpty) return;
     _queue = List.of(items);
-    final want = {for (final i in items.take(3)) i.key};
+    final want = {
+      for (var n = 0; n < items.length; n++)
+        if (_inWindow(items[n], n)) items[n].key
+    };
     for (final k in _pinned.difference(want)) {
       cache.unpin(k);
     }
@@ -409,7 +423,10 @@ class StreamPreparer {
     } on Object catch (e, st) {
       AppLog.w('stream preparer: network kind unavailable', e, st);
     }
-    for (final i in _queue.take(metered && !prefetchOnMetered() ? 0 : ahead + 1)) { // the queue starts at the current track
+    final none = metered && !prefetchOnMetered();
+    for (var n = 0; n < _queue.length; n++) {
+      final i = _queue[n];
+      if (none || !_inWindow(i, n)) continue; // the queue starts at the current track
       if (_active >= maxParallel || _disposed) return;
       // shortcut: a key marked ready is trusted; if evicted, ready() re-downloads it.
       if (_jobs.containsKey(i.key) || phases.value[i.key] == StreamPhase.ready) continue;

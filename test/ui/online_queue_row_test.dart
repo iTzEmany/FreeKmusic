@@ -5,6 +5,7 @@ import 'package:codecore/providers/stream_providers.dart';
 import 'package:codecore/services/stream/stream_cache.dart';
 import 'package:codecore/ui/screens/now_playing/queue_sheet.dart' show QueueOfflineBanner;
 import 'dart:io';
+import 'package:codecore/services/audio/codecore_audio_handler.dart' show CodecoreAudioHandler;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -14,6 +15,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
+
+class _Handler implements CodecoreAudioHandler {
+  _Handler(this.libraryIdOf);
+  @override
+  Future<int?> Function(YtResult)? libraryIdOf;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class _Net extends NetworkProbe {
   _Net(this.kind);
@@ -38,12 +47,14 @@ void main() {
     final online = OnlineEntries();
     final hit = online.register(const YtResult(id: 'hit', title: 'Hit', channel: 'C', duration: null));
     final miss = online.register(const YtResult(id: 'miss', title: 'Miss', channel: 'C', duration: null));
+    final dl = online.register(const YtResult(id: 'dl', title: 'Downloaded', channel: 'C', duration: null));
     await cache.put('youtube:hit', File('${root.path}/h.m4a.part')..writeAsBytesSync([1]));
     ProviderContainer make(bool up) => ProviderContainer(overrides: [
           networkProbeProvider.overrideWithValue(_Net(NetworkKind(online: up))),
           streamCacheProvider.overrideWithValue(cache),
           onlineEntriesProvider.overrideWithValue(online),
-          queueProvider.overrideWith((ref) => Stream.value([online.trackOf(hit)!, online.trackOf(miss)!])),
+          audioHandlerProvider.overrideWithValue(_Handler((r) async => r.id == 'dl' ? 7 : null)),
+          queueProvider.overrideWith((ref) => Stream.value([online.trackOf(hit)!, online.trackOf(miss)!, online.trackOf(dl)!])),
         ]);
     final off = make(false);
     addTearDown(off.dispose);

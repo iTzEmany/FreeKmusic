@@ -6,7 +6,9 @@ import '../core/app_log.dart';
 import '../core/platform.dart';
 import '../data/repositories/track_repository.dart';
 import '../data/repositories/track_kinds.dart';
+import '../services/audio/codecore_audio_handler.dart' show CodecoreAudioHandler;
 import '../services/audio/online_entries.dart' show isOnlineId;
+import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/enrich_parts.dart' show EnrichStatus;
 import '../services/online/media_publisher.dart';
 import '../services/online/synthetic_track.dart';
@@ -64,6 +66,7 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
     youtube: ref.watch(youtubeServiceProvider),
     isMetered: () async => (await ref.read(networkProbeProvider).current()).metered,
     prefetchOnMetered: () => ref.read(settingsProvider).prefetchOnMobile,
+    isOnline: () async => (await ref.read(networkProbeProvider).current()).online,
   );
   ref.onDispose(preparer.dispose);
   return preparer;
@@ -164,10 +167,14 @@ final queueOfflineOutProvider = FutureProvider.autoDispose<Set<int>?>((ref) asyn
   final queue = await ref.watch(queueProvider.future);
   final online = ref.watch(onlineEntriesProvider);
   final cache = ref.watch(streamCacheProvider);
+  final handler = ref.read(audioHandlerProvider);
   final out = <int>{};
   for (final t in queue) {
+    // A downloaded entry plays from its library file.
+    final entry = isOnlineId(t.id) ? online?.entryOf(t.id) : null;
+    if (entry != null && await _downloaded(handler, entry.result)) continue;
     final key = isOnlineId(t.id)
-        ? online?.entryOf(t.id)?.result.indexKey
+        ? entry?.result.indexKey
         : t.kind == kStreamKind
             ? keyOfStreamPath(t.path)
             : null;
@@ -175,3 +182,12 @@ final queueOfflineOutProvider = FutureProvider.autoDispose<Set<int>?>((ref) asyn
   }
   return out;
 });
+
+Future<bool> _downloaded(CodecoreAudioHandler handler, YtResult r) async {
+  try {
+    return await handler.libraryIdOf?.call(r) != null;
+  } on Object catch (e, st) {
+    AppLog.w('download lookup failed: offline queue', e, st);
+    return false;
+  }
+}

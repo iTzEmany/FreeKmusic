@@ -32,6 +32,7 @@ class FakeStreamPreparer implements StreamPreparer {
   final TrackRepository tracks;
   final Directory dir;
   final queues = <List<String>>[];
+  final positions = <List<int?>>[];
   final asked = <String>[];
   final failing = <String>{};
   Object failure = StateError('download failed'); // what a failing key throws
@@ -39,9 +40,9 @@ class FakeStreamPreparer implements StreamPreparer {
   @override
   final CountingNotifier phases = CountingNotifier();
 
-  /// What `hasNetwork` answers.
+  /// What the network probe says (`isOnline`).
   @override
-  Future<bool> Function() hasNetwork = () async => true;
+  Future<bool> Function() isOnline = () async => true;
 
   /// Files already in the cache, by key.
   final cached = <String, File>{};
@@ -50,7 +51,10 @@ class FakeStreamPreparer implements StreamPreparer {
   Future<File?> cachedFile(String key, YtResult r) async => cached[key];
 
   @override
-  void setQueue(List<StreamItem> items) => queues.add([for (final i in items) i.key]);
+  void setQueue(List<StreamItem> items) {
+    queues.add([for (final i in items) i.key]);
+    positions.add([for (final i in items) i.pos]);
+  }
 
   @override
   Future<File> ready(String key, YtResult r) async {
