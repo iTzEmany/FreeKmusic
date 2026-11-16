@@ -187,6 +187,7 @@ void main() {
     RadioGate? gate,
   })
   make;
+  Track Function(int) trackOf = track;
   const library = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
   Future<void> settle() async {
@@ -258,7 +259,7 @@ void main() {
           jamActive: () => jam,
           isMetered: () async => metered,
           toolAvailable: () async => true,
-          loadTracks: (ids) async => [for (final id in ids) track(id)],
+          loadTracks: (ids) async => [for (final id in ids) trackOf(id)],
           loadLibrary: () async => LibraryIndex(const []),
           hasDownload: (_) => false,
           prepare: (r) => prepareHook(r),
@@ -423,6 +424,17 @@ void main() {
     await settle();
     expect(adapter.sent, hasLength(1));
   });
+
+  for (final saved in [false, true]) {
+    test('a source of ${saved ? 'saved' : 'unsaved'} stream rows ${saved ? 'is' : 'is not'} a library source', () async {
+      addTearDown(() => trackOf = track);
+      trackOf = (id) => track(id).copyWith(kind: 2, saved: saved);
+      host.sourceIds = [...library];
+      controller.start();
+      await settle();
+      expect(adapter.sent, saved ? hasLength(1) : isEmpty);
+    });
+  }
 
   test('a list shorter than 5 songs gets plain shuffle', () async {
     host.sourceIds = [1, 2, 3, 4];

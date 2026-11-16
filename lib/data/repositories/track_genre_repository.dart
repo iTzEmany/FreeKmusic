@@ -39,7 +39,7 @@ class TrackGenreRepository {
             ),
           ])
           ..where(
-            _db.tracks.kind.equals(kMusicKind) &
+            isLibraryRow(_db.tracks) &
                 _db.tracks.missing.equals(false) &
                 _db.tracks.ignored.equals(false),
           )

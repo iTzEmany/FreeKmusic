@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/track_editor.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/library/track_file_sync.dart';
 import 'package:codecore/services/tags/safe_tag_writer.dart';
 import 'package:codecore/services/tags/tag_backups.dart';
@@ -134,5 +135,18 @@ void main() {
     expect(c.album, 'Al');
     expect(c.year, 2001);
     expect(c.genre, isNull);
+  });
+
+  test('a saved stream row: the album key keeps `stream|`, and no tag is written to a file', () async {
+    final tracks = TrackRepository(db);
+    const r = YtResult(id: 'x', title: 'S', channel: 'C', duration: Duration(seconds: 9), artists: ['Art']);
+    final id = (await tracks.saveStream(r))!;
+    final row = await (db.select(db.tracks)..where((t) => t.id.equals(id))).getSingle();
+    enabled = true;
+    await editor.saveMany([row], album: 'Alb', albumArtist: 'AA');
+    final after = await (db.select(db.tracks)..where((t) => t.id.equals(id))).getSingle();
+    expect(after.albumKey, 'stream|aa|alb');
+    final out = await editor.writeToFiles([after], (_) => edit.toChanges());
+    expect((out.attempted, writer.calls), (0, 0));
   });
 }

@@ -1,3 +1,4 @@
+import '../../data/repositories/track_kinds.dart';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
@@ -66,6 +67,13 @@ class TrackEditor {
   final TrackFileSync? files;
   final bool Function() _enabled;
 
+  /// The album key of [t] after an edit; a saved stream row keeps the `stream|` prefix and
+  /// no folder (same format as `TrackRepository.saveStream`), so it never joins a local album.
+  static String _albumKeyOf(Track t, {String? albumArtist, String? artist, String? album}) =>
+      t.kind == kStreamKind
+          ? 'stream|${computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: '')}'
+          : computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
+
   /// Whether [writeToFiles] would write at all.
   bool get writesFiles => files != null && _enabled();
 
@@ -106,12 +114,7 @@ class TrackEditor {
     final artist = _blankToNull(e.artist);
     final album = _blankToNull(e.album);
     final albumArtist = _blankToNull(e.albumArtist);
-    final key = computeAlbumKey(
-      albumArtist: albumArtist,
-      artist: artist,
-      album: album,
-      directory: p.dirname(track.path),
-    );
+    final key = _albumKeyOf(track, albumArtist: albumArtist, artist: artist, album: album);
     final genre = _blankToNull(e.genre);
     await _db.transaction(() async {
       await (_db.update(_db.tracks)..where((t) => t.id.equals(track.id))).write(
@@ -154,12 +157,7 @@ class TrackEditor {
       final pick = cover?.coverKey;
       final source = pick != null && await _isAlbumPick(pick) ? 1 : 0;
       for (final t in tracks) {
-        final key = computeAlbumKey(
-          albumArtist: aa,
-          artist: t.artist,
-          album: al,
-          directory: p.dirname(t.path),
-        );
+        final key = _albumKeyOf(t, albumArtist: aa, artist: t.artist, album: al);
         final withCover = cover != null && t.coverSource != 2;
         await (_db.update(_db.tracks)..where((r) => r.id.equals(t.id))).write(
           TracksCompanion(
@@ -196,6 +194,7 @@ class TrackEditor {
   });
 
   Future<void> restoreFromFile(Track track) async {
+    if (track.kind == kStreamKind) return; // no file to read
     final t = await _tags.read(track.path, withCover: false);
     final dir = p.dirname(track.path);
     final key = computeAlbumKey(

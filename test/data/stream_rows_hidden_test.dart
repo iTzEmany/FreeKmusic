@@ -13,6 +13,14 @@ import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/rules/rule_ast.dart';
 import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/data/repositories/credits_repository.dart';
+import 'package:codecore/data/repositories/artist_country_repository.dart';
+import 'package:codecore/data/repositories/track_genre_repository.dart';
+import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/library_providers.dart';
+import 'package:codecore/providers/share_providers.dart';
+import 'package:codecore/services/library/track_deleter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +33,8 @@ Future<void> _play(AppDatabase d, TrackRepository t) async => d.into(d.plays).in
     playedAt: DateTime.now().millisecondsSinceEpoch,
   ),
 );
+
+final _refProvider = Provider<Ref>((ref) => ref);
 
 void main() {
   late AppDatabase db;
@@ -286,6 +296,72 @@ void main() {
       expect(v, v is int ? 1 : isNotEmpty);
     });
   }
+
+  group('a SAVED shadow row (D-607)', () {
+    setUp(() async {
+      await tracks.setSaved('youtube:abc', true);
+      await tracks.setSaved('youtube:zero', true);
+    });
+
+    test('stays out of the views that work on files', () async {
+      for (final k in [
+        'duplicates',
+        'Memory totals',
+        'Memory never played',
+        'Memory heaviest',
+        'review',
+        'review count',
+        'hidden tracks',
+        'missing tracks',
+      ]) {
+        var v = await lib[k]!(db, tracks);
+        if (v is SizeTotals) v = v.trackCount;
+        expect(v, v is int ? 0 : isEmpty, reason: k);
+      }
+      final down = await tracks
+          .watchDownloadedWithoutPlaylist(paths: {'stream:youtube:zero'}, prefixes: ['stream:'])
+          .first;
+      expect(down, isEmpty);
+      final gone = <String>[];
+      final report = await TrackDeleter(
+        tracks: tracks,
+        removeFromQueue: (_) async {},
+        deleter: (path) async => gone.add(path),
+      ).deleteTracks([(await tracks.streamRow('youtube:zero'))!]);
+      expect(gone, isEmpty);
+      expect(report.deleted, isEmpty);
+    });
+
+    test('an artist with only saved tracks has a cover and a summary', () async {
+      final q = LibraryQueries(db);
+      expect((await q.watchArtists().first).single.coverKey, 'c');
+      expect((await q.artistNamed('Shadow Artist'))?.trackCount, 2);
+    });
+
+    test('credits, artist countries and genres see the saved row', () async {
+      final id = (await tracks.streamRow('youtube:abc'))!.id;
+      await db.into(db.trackCredits).insert(
+            TrackCreditsCompanion.insert(trackId: id, name: 'N', nameKey: 'n', role: 'composer', source: 'deezer'),
+          );
+      expect((await CreditsRepository(db).creditedTracks('n')).map((r) => r.track.id), [id]);
+      expect(await ArtistCountryRepository(db).libraryArtistNames(), contains('Shadow Artist'));
+      await TrackGenreRepository(db).write(id, ['Pop']);
+      expect((await TrackGenreRepository(db).musicGenres()).keys, contains(id));
+    });
+
+    test('a share offer leaves it out: it has no file to send', () async {
+      final c = ProviderContainer(overrides: [
+        databaseProvider.overrideWithValue(db),
+        coversDirProvider.overrideWithValue(tmp),
+      ]);
+      addTearDown(c.dispose);
+      final row = (await tracks.streamRow('youtube:abc'))!;
+      final local = await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/a.mp3', title: 'Local', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+      final entries = await buildShareEntries(c.read(_refProvider), [row, (await tracks.getByIds([local])).single]);
+      expect(entries.map((e) => e.id), [local]);
+    });
+  });
 
   for (final e in lib.entries) {
     test('not in: ${e.key}', () async {
