@@ -7,10 +7,10 @@ su playlist e album, backup automatico settimanale, sostituzione dei brani in st
 si cancella senza un gesto esplicito (D-598). Fuori: cloud WebDAV (D-588).
 
 ## Riferimenti
-D-578..D-581, D-588, D-598, D-612, D-613, D-615; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)
+D-578..D-581, D-588, D-598, D-612, D-613, D-615; specifica [`../feature/feature-libreria-leggera-karaoke-cerca.md`](../feature/feature-libreria-leggera-karaoke-cerca.md)
 § Architettura C («Scheda SD», «Qualità», «Libera spazio», «Backup automatico», «Brani spariti»), RNF-03, rischi F-2, F-5.
-Documenti d'area: `../architettura/libreria-e-dati.md`, `../architettura/online.md`, `../architettura/sync-backup-jam.md`,
-`../architettura/piattaforme.md`.
+Documenti d'area: `../../architettura/libreria-e-dati.md`, `../../architettura/online.md`, `../../architettura/sync-backup-jam.md`,
+`../../architettura/piattaforme.md`.
 
 ## Mockup
 ```text
@@ -44,7 +44,7 @@ Libera spazio                        Onboarding (aggiunte)
 ```
 
 ## Task
-- [ ] 126.1 Scheda SD e cartella dei download (R-238, D-579)
+- [x] 126.1 Scheda SD e cartella dei download (R-238, D-579)
   - File: `lib/data/settings/settings_store.dart` (volume o cartella), `lib/providers/youtube_providers.dart`
     (`resolveDownloadFolder`), `android/app/src/main/kotlin/com/codecore/player/MediaPublishBridge.kt` (nome del volume,
     Android 11+), `lib/services/stream/stream_cache.dart` (`inAppSupport` sul volume scelto), voce in «Memoria e
@@ -57,7 +57,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Fatto quando: test verdi; senza SD la voce e la scelta d'onboarding non compaiono sul Mi A3; con una SD (se c'è)
     un download finisce sul volume SD.
 
-- [ ] 126.2 Qualità download e streaming (R-239, D-580)
+- [x] 126.2 Qualità download e streaming (R-239, D-580)
   - File: `lib/services/online/yt_dlp_args.dart` (`downloadChoice` col livello), `android/app/src/full/kotlin/com/codecore/player/NewPipeUrl.kt`
     (`:45`, flusso con `averageBitrate` sotto il tetto), impostazioni e due voci in «Memoria e streaming», ARB,
     `test/services/online/yt_dlp_args_test.dart`.
@@ -68,7 +68,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Fatto quando: test verdi; sul Mi A3 con «Bassa» un download pesa circa metà della «Media» e il log del flusso
     mostra un bitrate ≤ 64 kbps.
 
-- [ ] 126.3 «Libera spazio» (R-240, D-581, RNF-03) — `/code-review high`
+- [x] 126.3 «Libera spazio» (R-240, D-581, RNF-03) — `/code-review high`
   - File: `lib/data/repositories/track_repository.dart` (`demoteToStream(id, key)`), `lib/services/online/download_index.dart`,
     `lib/ui/screens/memory/free_space_screen.dart` (nuovo), voce in «Memoria e streaming», ARB, test in `test/data/track_repository_test.dart`
     e `test/ui/free_space_screen_test.dart` (nuovo).
@@ -78,7 +78,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Comando mirato: `flutter test test/data/track_repository_test.dart test/ui/free_space_screen_test.dart test/data/stream_rows_hidden_test.dart test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; sul Mi A3 un brano convertito resta nella playlist con la nuvola e suona in streaming.
 
-- [ ] 126.4 «Tieni offline» e brani spariti da YouTube (R-236, R-242, D-578, D-588) — `/code-review high` (scrive su `tracks`)
+- [x] 126.4 «Tieni offline» e brani spariti da YouTube (R-236, R-242, D-578, D-588) — `/code-review high` (scrive su `tracks`)
   - File: menu di playlist e album (`lib/ui/widgets/track_actions.dart` o dove stanno i menu delle raccolte), gestione
     di `YtErrorKind.unavailable` (`lib/services/online/youtube_service.dart`) con `searchRow` sotto `budgetedYtm`,
     voce nel registro attività, test in `test/providers/` e `test/services/online/`.
