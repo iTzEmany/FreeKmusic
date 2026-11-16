@@ -922,6 +922,27 @@ void main() {
     await db.close();
   });
 
+  test('the v20 step does not fail when the column already exists', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, '
+            'saved INTEGER NOT NULL DEFAULT 0)',
+          );
+          raw.execute("INSERT INTO tracks (path, title, kind, album_key, saved) VALUES ('stream:x', 'S', 2, 'k', 1)");
+          raw.userVersion = 19;
+        },
+      ),
+    );
+    expect(
+      (await db.customSelect('SELECT saved FROM tracks').getSingle()).read<int>('saved'),
+      1,
+    );
+    await db.close();
+  });
+
   test('the v19 step does not fail when the column already exists', () async {
     final db = AppDatabase(
       NativeDatabase.memory(

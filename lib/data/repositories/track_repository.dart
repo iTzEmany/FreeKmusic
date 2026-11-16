@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../core/import_row.dart';
 import '../../core/text_utils.dart';
 import '../../services/share/track_meta.dart';
@@ -251,28 +253,45 @@ class TrackRepository {
     );
   });
 
-  Future<void> setSaved(String key, bool saved) =>
+  /// Returns how many rows changed.
+  Future<int> setSaved(String key, bool saved) =>
       (_db.update(_db.tracks)
             ..where((t) => t.path.equals(streamPathOf(key)) & t.kind.equals(kStreamKind)))
           .write(TracksCompanion(saved: Value(saved)));
 
   /// Saves the streamed track [r] to the library: its shadow row (created when missing)
   /// becomes `saved`, grouped with the other saved tracks of its album (never a local one).
-  Future<int> saveStream(YtResult r) => _db.transaction(() async {
+  /// Returns its id, or null when the row at that path is not a shadow row (an episode).
+  Future<int?> saveStream(YtResult r) => _db.transaction(() async {
     final id = await ensureStreamRow(r);
-    final album = r.album;
-    await (_db.update(_db.tracks)
-          ..where((t) => t.id.equals(id) & t.kind.equals(kStreamKind)))
-        .write(
+    final row = (await getById(id))!;
+    if (row.kind != kStreamKind) {
+      AppLog.w('saveStream: ${row.path} is not a shadow row (kind ${row.kind}), not saved');
+      return null;
+    }
+    // A row made without album or artist (radio, related) takes them from [r], unless edited by hand.
+    final fill = !row.userEdited;
+    final album = fill && (row.album ?? '').isEmpty ? r.album : row.album;
+    // The shadow row holds the joined credits ("A, B"): the album groups by the first one.
+    final artist = !fill
+        ? row.artist
+        : r.artists.isNotEmpty
+        ? r.artists.first
+        : ((row.artist ?? '').isEmpty ? r.channel : row.artist);
+    var key = 'stream|${computeAlbumKey(albumArtist: row.albumArtist, artist: artist, album: album, directory: '')}';
+    // A generic album would lump unrelated tracks together: keep the row's own key.
+    if (key.startsWith('stream|unknown|')) key = row.albumKey;
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
       TracksCompanion(
         saved: const Value(true),
-        albumKey: album == null || album.trim().isEmpty
-            ? const Value.absent()
-            : Value(
-                'stream|${computeAlbumKey(artist: displayArtist(r), album: album, directory: '')}',
-              ),
+        album: Value(album),
+        artist: Value(artist),
+        albumKey: Value(key),
+        // A track listened to before enters the library now: it is a recent addition.
+        addedAt: row.saved ? const Value.absent() : Value(nowMs()),
       ),
     );
+    await settleMovedCover(row, key);
     return id;
   });
 

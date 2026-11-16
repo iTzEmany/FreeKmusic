@@ -555,12 +555,40 @@ void main() {
     test('saveStream makes a saved shadow row with an album key, setSaved toggles, a saved row is kept', () async {
       final r = YtResult(id: 'a', title: 'T', channel: 'Ch', duration: null, artists: ['Art'], album: 'Alb');
       final id = await repo.saveStream(r);
-      var t = (await repo.getById(id))!;
+      var t = (await repo.getById(id!))!;
       expect([t.kind, t.saved, t.albumKey], [2, true, 'stream|art|alb']);
       expect(await repo.deleteUnplayedStreamRows(), 0);
       await repo.setSaved(r.indexKey, false);
       expect((await repo.getById(id))!.saved, isFalse);
       expect(await repo.deleteUnplayedStreamRows(), 1);
+    });
+
+    test('saveStream on an existing row: new addedAt, album and first artist filled in, key from them', () async {
+      final bare = YtResult(id: 'b', title: 'T', channel: 'Ch', duration: null);
+      final id = await repo.ensureStreamRow(bare);
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(addedAt: Value(1)));
+      final r = YtResult(id: 'b', title: 'T', channel: 'Ch', duration: null, artists: ['Art', 'Feat'], album: 'Alb');
+      expect(await repo.saveStream(r), id);
+      final t = (await repo.getById(id))!;
+      expect([t.artist, t.album, t.albumKey], ['Art', 'Alb', 'stream|art|alb']);
+      expect(t.addedAt, greaterThan(1));
+      // Saving again keeps the date.
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(addedAt: Value(1)));
+      await repo.saveStream(r);
+      expect((await repo.getById(id))!.addedAt, 1);
+    });
+
+    test('saveStream with no album keeps the album key; an episode on the path is not saved', () async {
+      final r = YtResult(id: 'n', title: 'T', channel: 'Ch', duration: null);
+      final id = await repo.saveStream(r);
+      expect((await repo.getById(id!))!.albumKey, 'stream|youtube:n');
+      final ep = YtResult(id: 'e', title: 'E', channel: 'Ch', duration: null);
+      final epId = await repo.ensureStreamRow(ep);
+      await (db.update(db.tracks)..where((t) => t.id.equals(epId))).write(const TracksCompanion(kind: Value(1)));
+      expect(await repo.saveStream(ep), equals(null));
+      expect((await repo.getById(epId))!.saved, isFalse);
+      expect(await repo.setSaved(ep.indexKey, true), 0);
+      expect(await repo.setSaved(r.indexKey, false), 1);
     });
 
     test('downloading a streamed track keeps its place in the playlist', () async {
