@@ -14,7 +14,7 @@ D-589, D-594, D-599, D-608, D-610; specifica [`../storico/feature/feature-librer
 Nessuna schermata nuova: cambia solo il comportamento (tendina e notifica restano come sono).
 
 ## Task
-- [ ] 123.1 Diagnosi sul Mi A3 (R-226, R-227, D-594)
+- [x] 123.1 Diagnosi sul Mi A3 (R-226, R-227, D-594)
   - File: nessun file di codice; esito nelle «Note di deviazione» di questa fase.
   - Passi:
     1. APK debug di `master` sul Mi A3 (volume 0), cuffie JBL collegate; stato letto con `adb shell dumpsys media_session`.
@@ -42,7 +42,7 @@ Nessuna schermata nuova: cambia solo il comportamento (tendina e notifica restan
   - Fatto quando: i test nuovi passano (e fallivano prima); sul Mi A3, dopo una Jam chiusa nei due modi, keyevent
     85/87/88 cambiano lo stato del player locale.
 
-- [ ] 123.3 Copia di `audio_service`: PLAY e PAUSE separati (R-227, D-608) — `/code-review high`
+- [x] 123.3 Copia di `audio_service`: PLAY e PAUSE separati (R-227, D-608) — `/code-review high`
   - File: `third_party/audio_service/` (copia di `~/.pub-cache/hosted/pub.dev/audio_service-0.18.19`, con la sua
     LICENSE), `third_party/audio_service/MODIFICHE.md` (nuovo), `pubspec.yaml` (`dependency_overrides`).
   - Passi:
@@ -69,7 +69,7 @@ Nessuna schermata nuova: cambia solo il comportamento (tendina e notifica restan
     notifica dell'app, e Play dall'app e dal riquadro rapido riparte dallo stesso secondo; con una Jam in pausa da 35
     minuti la notifica c'è ancora.
 
-- [ ] 123.5 Licenza GPLv3 (D-599)
+- [x] 123.5 Licenza GPLv3 (D-599)
   - File: `LICENSE` (nuovo, testo integrale: `/usr/share/common-licenses/GPL-3`), `README.md` (riga «Licenza»),
     `lib/ui/screens/settings/settings_pages.dart` (voce accanto a `showLicensePage`, `:492`), ARB in `lib/l10n/` (6 lingue).
   - Passi: 1. copiare il testo; 2. riga nel README; 3. voce «Licenza: GNU GPLv3» in Informazioni; 4. `flutter gen-l10n`.
@@ -81,3 +81,9 @@ Niente di obbligatorio. Se hai cuffie Bluetooth diverse dalle JBL, a fase chiusa
 e dimmi se qualcosa non risponde.
 
 ## Note di deviazione
+- 123.1 (16/11, Mi A3, APK master): **H1 confermata** (da pausa 127 e 126 fanno ripartire, 85 alterna; 87/88 da pausa
+  avviano). **H2 in altra forma**: durante e dopo la Jam la sessione FreeKmusic è `active=false` (state 0 o 2) e la
+  tendina mostra la sessione di un'altra app finché un tasto non la riattiva; i keyevent arrivano comunque. **H3
+  smentita** con l'host Linux ucciso (il telefono esce da solo in ~8 s); non provato «ospite ucciso con il telefono
+  host». **H4 confermata in altra forma**: dopo `am kill` in pausa, 126 rilancia il processo ma non suona (sessione
+  `active=false state=0`): `play()` a freddo deve caricare la ripresa salvata. 123.2 si allarga a questo caso.
