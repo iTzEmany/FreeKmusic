@@ -886,6 +886,12 @@ abstract class AppLocalizations {
   /// **'Licenze'**
   String get licenses;
 
+  /// No description provided for @aboutLicenseGpl.
+  ///
+  /// In it, this message translates to:
+  /// **'Licenza: GNU GPLv3'**
+  String get aboutLicenseGpl;
+
   /// No description provided for @personalUse.
   ///
   /// In it, this message translates to:

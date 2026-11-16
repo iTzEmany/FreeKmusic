@@ -134,3 +134,6 @@ Il download da YouTube e da SoundCloud può violare i termini del servizio e il 
 personale e si disattiva con `kEnableYoutube = false` in `lib/core/constants.dart`. Testi e metadati provengono da servizi
 terzi (LRCLIB, iTunes Search API, Wikipedia — CC BY-SA) e restano di proprietà dei rispettivi titolari.
 La libreria `youtubedl-android` usata su Android è sotto licenza GPL-3.0.
+
+## Licenza
+Il progetto è rilasciato con licenza GNU GPLv3: vedi [LICENSE](LICENSE).
