@@ -55,6 +55,18 @@ void main() {
     expect(c.map((e) => e.stale), [true, true, false]);
   });
 
+  test('a downloaded file whose tags were then written is a candidate once its signature is refreshed', () async {
+    final id = await add('tagged.mp3', vid: 't');
+    final path = (await repo.getById(id))!.path;
+    File(path).writeAsBytesSync([1, 2, 3, 4]); // the tagger rewrote it
+    expect(await svc().freeSpaceCandidates(), isEmpty, reason: 'size and mtime no longer match');
+    await index.refreshSignatureByPath(path);
+    expect((await svc().freeSpaceCandidates()).map((e) => e.track.id), [id]);
+    final reloaded = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
+    await reloaded.load();
+    expect(reloaded.signatureMatches('youtube:t', path), true, reason: 'persisted');
+  });
+
   test('freeSpace demotes the row, then deletes the file and forgets the download', () async {
     final id = await add('a.mp3', vid: 'a');
     final path = (await repo.getById(id))!.path;

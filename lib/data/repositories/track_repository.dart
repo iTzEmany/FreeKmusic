@@ -252,6 +252,31 @@ class TrackRepository {
     return shadow.id;
   }
 
+  /// A saved stream row whose video vanished: the SAME row (id, playlists, plays, favourite) moves to the
+  /// replacement [newKey]. A shadow row already at [newKey] is merged into it ([mergeStreamRow]); an episode
+  /// there makes this a no-op. The old cache fields go (they described the old video's file). Returns true
+  /// when the row moved. The CALLER drops the old key's cache file.
+  Future<bool> rekeyStream(int id, String newKey) => _db.transaction(() async {
+    final row = await getById(id);
+    final oldKey = row == null || row.kind != kStreamKind ? null : keyOfStreamPath(row.path);
+    if (oldKey == null || oldKey == newKey) return false;
+    final other = await byPath(streamPathOf(newKey));
+    if (other != null && other.kind != kStreamKind) return false;
+    await mergeStreamRow(newKey, id);
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(
+        path: Value(streamPathOf(newKey)),
+        // Only the row's own key follows; a shared or hand-picked album key stays.
+        albumKey: row!.albumKey == 'stream|$oldKey' ? Value('stream|$newKey') : const Value.absent(),
+        format: const Value(''),
+        sizeBytes: const Value(0),
+        mtimeMs: const Value(0),
+        missing: const Value(false),
+      ),
+    );
+    return true;
+  });
+
   /// Creates or refreshes the shadow row (`kind = 2`) of the streamed track
   /// [key] whose cached [file] is ready; one row per key. Returns its id.
   Future<int> upsertStreamRow(String key, YtResult r, File file) async {

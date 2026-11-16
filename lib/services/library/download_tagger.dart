@@ -26,6 +26,7 @@ class DownloadTagger {
     required this.playingPath,
     required this.playingChanges,
     this.onFailed,
+    this.onWritten,
     this.pending,
   });
 
@@ -41,6 +42,9 @@ class DownloadTagger {
 
   /// Told when the file was left without its tags (the Registro shows it).
   final Future<void> Function(Track, TagWriteReason)? onFailed;
+
+  /// Told after the app rewrote the file's tags (its size and mtime changed).
+  final Future<void> Function(Track)? onWritten;
 
   /// Files still to tag, persisted across app restarts.
   final PendingTags? pending;
@@ -172,6 +176,7 @@ class DownloadTagger {
       return;
     }
     final out = await sync.write([t], (_) => c, backup: false);
+    await onWritten?.call(t);
     if (out.hasFailures) {
       final why = out.mainReason ?? TagWriteReason.ioError;
       AppLog.w('tagger: ${t.path} left as it is (${why.name})');

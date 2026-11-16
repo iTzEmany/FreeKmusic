@@ -121,6 +121,41 @@ void main() {
     await repo.setFavoriteMany(const [], true); // nothing to do
   });
 
+  group('rekeyStream (R-242)', () {
+    Future<int> saved(String id) async {
+      final rowId = (await repo.saveStream(yt(id)))!;
+      await (db.update(db.tracks)..where((t) => t.id.equals(rowId))).write(
+        const TracksCompanion(isFavorite: Value(true), playCount: Value(7)),
+      );
+      return rowId;
+    }
+
+    test('the same row moves to the new key and keeps its id, plays and favourite', () async {
+      final id = await saved('old');
+      expect(await repo.rekeyStream(id, 'youtube:new'), true);
+      final t = (await repo.getById(id))!;
+      expect([t.path, t.albumKey, t.saved, t.isFavorite, t.playCount], ['stream:youtube:new', 'stream|youtube:new', true, true, 7]);
+      expect(await repo.streamRow('youtube:old'), null);
+    });
+
+    test('a shadow row already at the new key is merged into the moved row', () async {
+      final id = await saved('old');
+      final shadow = await repo.ensureStreamRow(yt('new'));
+      expect(await repo.rekeyStream(id, 'youtube:new'), true);
+      expect(await repo.getById(shadow), null);
+      expect((await repo.getById(id))!.path, 'stream:youtube:new');
+    });
+
+    test('not a stream row, or the same key: nothing changes', () async {
+      await repo.upsertBatch([row('/a.mp3', 'a')]);
+      final file = (await repo.byPath('/a.mp3'))!.id;
+      expect(await repo.rekeyStream(file, 'youtube:x'), false);
+      final id = await saved('old');
+      expect(await repo.rekeyStream(id, 'youtube:old'), false);
+      expect(await repo.rekeyStream(9999, 'youtube:x'), false);
+    });
+  });
+
   test(
     'deleteMissingTracks removes only the tracks whose file is gone',
     () async {

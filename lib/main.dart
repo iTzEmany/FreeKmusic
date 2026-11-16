@@ -36,6 +36,7 @@ import 'providers/youtube_providers.dart'
 import 'providers/library_providers.dart';
 import 'providers/player_providers.dart';
 import 'providers/stream_providers.dart';
+import 'providers/vanished_providers.dart';
 import 'services/stream/stream_cache.dart';
 import 'providers/radio_providers.dart' show radioClientProvider;
 import 'providers/settings_providers.dart';
@@ -261,6 +262,8 @@ Future<void> main() async {
   );
   // A queued online entry downloaded meanwhile plays its library file (D-81).
   handler.libraryIdOf = container.read(playerControllerProvider).libraryIdOf;
+  // A saved stream the video of which vanished from YouTube gets its replacement (R-242).
+  handler.onStreamGone = (t) => unawaited(container.read(vanishedTracksProvider).handle(t));
   // The player downloads streamed tracks through the preparer (45.4); before
   // the queue comes back, so a restored streamed track finds it.
   try {

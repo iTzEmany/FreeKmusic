@@ -109,6 +109,14 @@ class DownloadIndex {
     return _persist();
   }
 
+  /// [refreshSignature] for the entry whose file is [path] (the tagger knows the path, not the key).
+  Future<void> refreshSignatureByPath(String path) {
+    for (final e in _map.entries) {
+      if (e.value == path) _stamp(e.key, path);
+    }
+    return _persist();
+  }
+
   void _stamp(String key, String path) {
     try {
       final st = File(path).statSync();

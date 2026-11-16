@@ -489,6 +489,8 @@ final downloadTaggerProvider = Provider<DownloadTagger>((ref) {
     },
     playingPath: () => handler.currentTrack?.path,
     playingChanges: handler.currentTrackStream.map((t) => t?.path),
+    // «Libera spazio» only deletes a file whose size and mtime still match the download's.
+    onWritten: (t) async => (await ref.read(downloadIndexProvider.future)).refreshSignatureByPath(t.path),
     onFailed: (t, why) => ActivityLogRepository(db).add(
       at: nowMs(),
       kind: 'correction',
