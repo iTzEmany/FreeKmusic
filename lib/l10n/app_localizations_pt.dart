@@ -508,6 +508,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get licenses => 'Licenças';
 
   @override
+  String get aboutLicenseGpl => 'Licença: GNU GPLv3';
+
+  @override
   String get personalUse => 'App para uso pessoal';
 
   @override

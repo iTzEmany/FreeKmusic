@@ -151,4 +151,5 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 120 | CI Windows | [`fase-120-ci-windows.md`](fasi/fase-120-ci-windows.md) |
 | 121 | Test di sistema | [`fase-121-test-di-sistema.md`](fasi/fase-121-test-di-sistema.md) |
 | 122 | CI di tutti i sistemi | [`fase-122-ci-tutti-i-sistemi.md`](fasi/fase-122-ci-tutti-i-sistemi.md) |
+| 123 | Tasti, notifica e licenza | [`fase-123-tasti-e-notifica.md`](fasi/fase-123-tasti-e-notifica.md) |
 | 124 | Cerca con le classifiche | [`fase-124-cerca-classifiche.md`](fasi/fase-124-cerca-classifiche.md) |

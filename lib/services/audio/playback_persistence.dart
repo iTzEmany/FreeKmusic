@@ -76,6 +76,7 @@ class PlaybackPersistence {
       }
       if (aside != null) applyPlus?.call(aside.plus);
     } finally {
+      _handler.forgetPlayOnRestore();
       await dropAside();
     }
   }

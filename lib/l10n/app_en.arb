@@ -186,6 +186,7 @@
   "settingsAbout": "About",
   "appVersion": "Version {version}",
   "licenses": "Licenses",
+  "aboutLicenseGpl": "License: GNU GPLv3",
   "personalUse": "Personal-use app",
   "missingTracksTitle": "Missing tracks",
   "removeFromLibrary": "Remove from library",

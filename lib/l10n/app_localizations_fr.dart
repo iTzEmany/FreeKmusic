@@ -511,6 +511,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get licenses => 'Licences';
 
   @override
+  String get aboutLicenseGpl => 'Licence : GNU GPLv3';
+
+  @override
   String get personalUse => 'Application à usage personnel';
 
   @override
