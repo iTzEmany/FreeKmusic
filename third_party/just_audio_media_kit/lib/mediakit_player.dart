@@ -50,7 +50,15 @@ class MediaKitPlayer extends AudioPlayerPlatform {
     return medias[_player.state.playlist.index];
   }
 
-  MediaKitPlayer(super.id) {
+  /// Which app player this is (see [JustAudioMediaKit.voiceFilterTag]); null for
+  /// players that never get a voice filter.
+  final int? voiceTag;
+
+  /// The voice filter part of mpv's `af` (empty = none); lives here because
+  /// `setRate`/`setPitch` of media_kit overwrite `af` with `scaletempo`.
+  String _voiceAf = '';
+
+  MediaKitPlayer(super.id, {this.voiceTag}) {
     _player = Player(
         configuration: PlayerConfiguration(
       pitch: JustAudioMediaKit.pitch,
@@ -289,13 +297,35 @@ class MediaKitPlayer extends AudioPlayerPlatform {
   }
 
   @override
-  Future<SetSpeedResponse> setSpeed(SetSpeedRequest request) {
-    return _player.setRate(request.speed).then((_) => SetSpeedResponse());
+  Future<SetSpeedResponse> setSpeed(SetSpeedRequest request) async {
+    await _player.setRate(request.speed);
+    if (_voiceAf.isNotEmpty) await _writeAf();
+    return SetSpeedResponse();
+  }
+
+  /// Sets the voice filter (an `af` fragment such as `lavfi=[...]`, '' = none).
+  Future<void> applyVoiceFilter(String af) {
+    _voiceAf = af;
+    return _writeAf();
+  }
+
+  /// Writes `af` as media_kit would for the speed (`scaletempo`), followed by
+  /// the voice filter.
+  Future<void> _writeAf() {
+    final s = _player.state;
+    final tempo = JustAudioMediaKit.pitch && (s.rate != 1.0 || s.pitch != 1.0)
+        ? 'scaletempo:scale=${(s.rate / s.pitch).toStringAsFixed(8)}'
+        : '';
+    return setProperty(
+        _player, 'af', [tempo, _voiceAf].where((e) => e.isNotEmpty).join(','));
   }
 
   @override
-  Future<SetPitchResponse> setPitch(SetPitchRequest request) =>
-      _player.setPitch(request.pitch).then((_) => SetPitchResponse());
+  Future<SetPitchResponse> setPitch(SetPitchRequest request) async {
+    await _player.setPitch(request.pitch);
+    if (_voiceAf.isNotEmpty) await _writeAf();
+    return SetPitchResponse();
+  }
 
   @override
   Future<SetLoopModeResponse> setLoopMode(SetLoopModeRequest request) async {

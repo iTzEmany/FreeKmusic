@@ -81,3 +81,23 @@ In riproduzione, karaoke acceso      Vista dei testi
 - Solo se la CI non basta per il task 127.1: la stessa prova sulla tua macchina Windows.
 
 ## Note di deviazione
+
+**Esito 127.1 (17/11/2026), filtro voce desktop.** Stringa (livello `l`, `k = (1-l)/2`, 4 decimali; 100 % = `af` vuoto):
+`lavfi=[asplit[o][m];[m]pan=stereo|c0=-k*c0-k*c1|c1=-k*c0-k*c1,highpass=f=150[h];[o][h]amix=inputs=2:normalize=0]`
+(il centro sopra 150 Hz, con il passa-alto, viene sottratto da entrambi i canali; sotto i 150 Hz basso e cassa restano). Un solo
+ingresso e una sola uscita, come vuole `lavfi` di mpv; con la velocità `af` diventa `scaletempo:scale=1.25,lavfi=[…]`.
+- Linux (mpv 0.37 di sistema, `xvfb-run`, uscita `ao=pcm` su file): **funziona**. Nessun errore di mpv a 0, 50, 100 %, con la
+  velocità 1,25 insieme al filtro e da `just_audio` (livello e velocità cambiati in riproduzione). Misura su un WAV
+  (1 kHz e 60 Hz al centro, 2 kHz solo a sinistra): 1 kHz 0,30 → 0,156 (50 %) → 0,064 (0 %, circa −13 dB); 60 Hz 0,30 → 0,32 → 0,34 (basso tenuto).
+  A 0 % il lato sinistro resta com'è e il destro va in controfase rispetto al lato: uscita stereo, non mono come su Android.
+- Windows: **non funziona** (verifica statica, nessun run). `media_kit_libs_windows_audio` 1.0.9 scarica
+  `libmpv-win32-audio-build` 2023-09-24 (`mpv-dev-x86_64-20230924-git-652a1dd.7z`, MD5 verificato); nella DLL la riga di
+  configurazione di FFmpeg ha `--disable-filters --enable-filter=overlay --enable-filter=equalizer`: mancano `pan`,
+  `asplit`, `amix`, `highpass` (nessuna traccia nelle stringhe). Su Windows `voiceFilter` resta `null`: il microfono non
+  compare. Un filtro che mpv non riesce a creare ferma la riproduzione («Audio filter initialized failed»), quindi non si prova a metà.
+- `af` e `PlayerConfiguration.pitch`: `just_audio_media_kit` usa `pitch: true` (default) e `main.dart` non lo cambia;
+  `setRate`/`setPitch` di media_kit (`real.dart:829`, `:880`) sovrascrivono tutto `af` con `scaletempo:scale=…`. Nella copia
+  `setSpeed`/`setPitch` riscrivono `af` con `scaletempo` seguito dal filtro (`MODIFICHE.md`).
+- Legame `AudioPlayer` e player media_kit: l'`id` di `just_audio` è privato e cambia a ogni reinizializzazione (dopo `stop`), quindi
+  si usa un tag nel campo `DarwinLoadControl.preferredPeakBitRate` della configurazione (inutilizzato su desktop): `DesktopVoiceFilter`
+  (`lib/services/audio/desktop_voice_filter.dart`). La prova `integration_test/voice_filter_probe_test.dart` resta fino a 127.4.

@@ -48,6 +48,27 @@ class JustAudioMediaKit extends JustAudioPlatform {
   /// [the related issue](https://github.com/Pato05/just_audio_media_kit/issues/11) for more information
   static bool prefetchPlaylist = false;
 
+  /// Marks an app player for [setVoiceFilter]: pass the result in the player's
+  /// `AudioLoadConfiguration(darwinLoadControl: DarwinLoadControl(preferredPeakBitRate: tag))`
+  /// (an unused field on Linux/Windows). The id of the `AudioPlayer` is private
+  /// and changes on every re-initialisation, so this tag is the stable link.
+  /// [tag] must be a whole number.
+  static double voiceFilterTag(int tag) => tag.toDouble();
+
+  static final _voiceAf = <int, String>{};
+
+  /// Sets the voice filter (an mpv `af` fragment, '' = none) of the players
+  /// tagged with [tag], now and whenever they are created again, and keeps it
+  /// next to the `scaletempo` that the playback speed puts in `af`.
+  static Future<void> setVoiceFilter(int tag, String af) async {
+    _voiceAf[tag] = af;
+    final platform = JustAudioPlatform.instance;
+    if (platform is! JustAudioMediaKit) return;
+    await Future.wait(platform._players.values
+        .where((p) => p.voiceTag == tag)
+        .map((p) => p.applyVoiceFilter(af)));
+  }
+
   static final _logger = Logger('JustAudioMediaKit');
   final _players = HashMap<String, MediaKitPlayer>();
 
@@ -92,9 +113,13 @@ class JustAudioMediaKit extends JustAudioPlatform {
     }
 
     _logger.fine('instantiating new player ${request.id}');
-    final player = MediaKitPlayer(request.id);
+    final tag = request.audioLoadConfiguration?.darwinLoadControl
+        ?.preferredPeakBitRate?.toInt();
+    final player = MediaKitPlayer(request.id, voiceTag: tag);
     _players[request.id] = player;
     await player.ready();
+    final voice = _voiceAf[tag];
+    if (voice != null && voice.isNotEmpty) await player.applyVoiceFilter(voice);
     _logger.fine('player ready! (players: $_players)');
     return player;
   }

@@ -56,6 +56,7 @@ class CrossfadeEngine implements AudioBackend, GaplessCapable {
   _Side? _other;
   final _subs = <StreamSubscription<Object?>>[];
   final _mirror = MirrorEqualizer();
+  final _voiceMirror = MirrorVoiceFilter();
 
   final _stateC = StreamController<BackendState>.broadcast();
   final _positionC = StreamController<Duration>.broadcast();
@@ -83,6 +84,8 @@ class CrossfadeEngine implements AudioBackend, GaplessCapable {
     final side = _Side(b);
     final eq = b.equalizer;
     if (eq != null) _mirror.add(eq);
+    final voice = b.voiceFilter;
+    if (voice != null) _voiceMirror.add(voice);
     bool isMain() => identical(side, _main);
     _subs
       ..add(b.state.listen((s) {
@@ -120,9 +123,8 @@ class CrossfadeEngine implements AudioBackend, GaplessCapable {
   Stream<void> get advanced => _advancedC.stream;
   @override
   Equalizer? get equalizer => _mirror.isEmpty ? null : _mirror;
-  // Task 127.3 adds a MirrorVoiceFilter like the equalizer one.
   @override
-  VoiceFilter? get voiceFilter => null;
+  VoiceFilter? get voiceFilter => _voiceMirror.isEmpty ? null : _voiceMirror;
   @override
   Duration get positionNow => _main.backend.positionNow;
 
@@ -425,6 +427,33 @@ class MirrorEqualizer implements Equalizer {
     _gains = gainsDb;
     for (final t in List.of(_targets)) {
       await t.setGains(gainsDb);
+    }
+  }
+}
+
+/// One voice filter for two players, like [MirrorEqualizer]: the level goes to
+/// both, and to the second one when it is created later.
+@visibleForTesting
+class MirrorVoiceFilter implements VoiceFilter {
+  final _targets = <VoiceFilter>[];
+  bool _known = false;
+  double? _level;
+
+  bool get isEmpty => _targets.isEmpty;
+
+  void add(VoiceFilter v) {
+    _targets.add(v);
+    if (_known) unawaited(v.setLevel(_level));
+  }
+
+  @override
+  Future<void> setLevel(double? level) async {
+    _known = true;
+    _level = level;
+    // A copy: the second player may join while this waits, and gets the
+    // level from add().
+    for (final t in List.of(_targets)) {
+      await t.setLevel(level);
     }
   }
 }
