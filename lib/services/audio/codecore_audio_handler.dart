@@ -10,6 +10,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/play_history_repository.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
+import '../online/vanished_tracks.dart' show isVideoGone;
 import '../online/youtube_service.dart';
 import '../stream/stream_key.dart';
 import '../stream/stream_preparer.dart';
@@ -218,6 +219,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   final PlayQueue _queue;
   final TrackRepository _tracks;
   final void Function(PlaybackFailure failure) onError;
+
+  /// Told (without waiting) when a SAVED stream row cannot play because YouTube no longer has the video.
+  void Function(Track row)? onStreamGone;
   final String? Function(Track track)? coverPathFor;
   final List<StreamSubscription<Object?>> _subs = [];
   final _trackController = StreamController<Track?>.broadcast();
@@ -668,6 +672,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         // The probe said online but the fetch found no network: pass over it like an offline skip.
         if (offline && await _jumpToAvailable(back: back, play: _playWhenReady, token: token)) return;
         ageGated = e.ageRestricted;
+        if (e.gone && track.kind == kStreamKind && track.saved) onStreamGone?.call(track);
         playNow = _playWhenReady;
       }
       await _failAndSkip(
@@ -2173,7 +2178,11 @@ class _StreamNotReady extends BackendException {
   _StreamNotReady(Object cause)
     : offline = cause is YtException && cause.kind == YtErrorKind.network,
       ageRestricted = isAgeRestricted(cause),
+      gone = isVideoGone(cause),
       super('stream not ready: $cause');
   final bool offline;
   final bool ageRestricted;
+
+  /// The video is gone (not merely age-gated).
+  final bool gone;
 }

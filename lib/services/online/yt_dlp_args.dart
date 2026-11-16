@@ -18,9 +18,18 @@ const _preferM4a = 'bestaudio[ext=m4a]/bestaudio/best';
 ({String selector, String? audioFormat, String? quality}) downloadChoice(
     DownloadFormat format,
     {required bool hasFfmpeg,
-    String? selector}) {
+    String? selector,
+    AudioQuality quality = AudioQuality.high}) {
   // A chosen selector (a podcast episode) is taken as it is: never converted.
   if (selector != null) return (selector: selector, audioFormat: null, quality: null);
+  // A lower level caps the source bitrate AND the encoder's: m4a kept (tags still
+  // written), but at the cap, else a ~64 kbps Opus source would grow to 192K AAC.
+  final cap = quality.capKbps;
+  if (cap != null) {
+    final capped = 'bestaudio[abr<=$cap]/${quality == AudioQuality.low ? 'worstaudio' : 'bestaudio'}';
+    final c = downloadChoice(format, hasFfmpeg: hasFfmpeg);
+    return (selector: capped, audioFormat: c.audioFormat, quality: c.audioFormat == null ? null : '${cap}K');
+  }
   if (!hasFfmpeg) return (selector: _preferM4a, audioFormat: null, quality: null);
   return switch (format) {
     DownloadFormat.original =>
@@ -45,7 +54,8 @@ List<String> buildDownloadArgs({
   List<String> jsArgs = const [],
 }) {
   final rate = options.rateLimitKBps;
-  final choice = downloadChoice(options.format, hasFfmpeg: hasFfmpeg, selector: options.selector);
+  final choice = downloadChoice(options.format,
+      hasFfmpeg: hasFfmpeg, selector: options.selector, quality: options.quality);
   final audioFormat = choice.audioFormat;
   return [
     '--no-playlist',
@@ -84,7 +94,8 @@ List<String> buildDownloadArgs({
 /// audio usually is as served (Opus once extracted, m4a without ffmpeg). Pair
 /// it with [anyDownloadExtensionExists] for the uniqueness check.
 String reservedExtension({required bool hasFfmpeg, required DownloadOptions options}) =>
-    downloadChoice(options.format, hasFfmpeg: hasFfmpeg, selector: options.selector).audioFormat ??
+    downloadChoice(options.format,
+      hasFfmpeg: hasFfmpeg, selector: options.selector, quality: options.quality).audioFormat ??
     (hasFfmpeg ? 'opus' : 'm4a');
 
 /// True when `<stem>.<ext>` exists for any container a download can produce,

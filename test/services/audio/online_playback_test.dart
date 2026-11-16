@@ -44,12 +44,14 @@ void main() {
   late Directory dir;
   late List<int> ids;
   late List<PlaybackFailure> failures;
+  late List<Track> gone;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     backend = FakeBackend();
     online = OnlineEntries();
     failures = [];
+    gone = [];
     dir = Directory.systemTemp.createTempSync('online_playback');
     for (final n in ['a', 'b']) {
       await db.into(db.tracks).insert(TracksCompanion.insert(
@@ -62,7 +64,8 @@ void main() {
         onError: failures.add,
         history: PlayHistoryRepository(db),
         online: online,
-        preparer: preparer);
+        preparer: preparer)
+      ..onStreamGone = gone.add;
   });
   tearDown(() async {
     await handler.dispose();
@@ -418,6 +421,31 @@ void main() {
     await handler.playQueue([id, ids[0]], 0);
     await settle();
     expect(failures.single.reason, PlaybackFailureReason.onlineUnavailable);
+  });
+
+  test('a saved stream row whose video is unavailable is reported gone; unsaved, age-gated or offline ones are not', () async {
+    final file = File('${dir.path}/x.m4a')..writeAsStringSync('x');
+    final repo = TrackRepository(db);
+    final rowId = await repo.upsertStreamRow('youtube:v9', result('v9'), file);
+    preparer.failing.add('youtube:v9');
+    preparer.failure = const YtException(YtErrorKind.unavailable, 'ERROR: [youtube] v9: Video unavailable');
+    await handler.playQueue([rowId, ids[0]], 0);
+    await settle();
+    expect(gone, isEmpty, reason: 'a shadow row that is not saved');
+    await repo.setSaved('youtube:v9', true);
+    await handler.playQueue([rowId, ids[0]], 0);
+    await settle();
+    expect(gone.map((t) => t.id), [rowId]);
+    preparer.failure = const YtException(YtErrorKind.unavailable, 'ERROR: Sign in to confirm your age');
+    await handler.playQueue([rowId, ids[0]], 0);
+    await settle();
+    preparer.failure = const YtException(YtErrorKind.unavailable, "ERROR: [youtube] v9: This content isn't available, try again later.");
+    await handler.playQueue([rowId, ids[0]], 0);
+    await settle();
+    preparer.failure = const YtException(YtErrorKind.network);
+    await handler.playQueue([rowId, ids[0]], 0);
+    await settle();
+    expect(gone.length, 1);
   });
 
   test('one failure skips to the next track', () async {

@@ -2,7 +2,7 @@ import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/services/audio/audio_backend.dart' show TransitionMode;
 import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart'
-    show DownloadFormat;
+    show AudioQuality, DownloadFormat;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +18,26 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().storageMode, StorageMode.stream);
     expect(store.readSettings().prefetchOnMobile, isFalse);
+  });
+
+  test('qualities: High when absent, round trip', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().downloadQuality, AudioQuality.high);
+    expect(store.readSettings().streamQuality, AudioQuality.high);
+    await store.writeSettings(store.readSettings().copyWith(downloadQuality: AudioQuality.low, streamQuality: AudioQuality.medium));
+    store = await SettingsStore.open();
+    expect(store.readSettings().downloadQuality, AudioQuality.low);
+    expect(store.readSettings().streamQuality, AudioQuality.medium);
+  });
+
+  test('downloadLocation: empty when absent, round trips', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().downloadLocation, '');
+    await store.writeSettings(store.readSettings().copyWith(downloadLocation: '/storage/1234-5678/x'));
+    store = await SettingsStore.open();
+    expect(store.readSettings().downloadLocation, '/storage/1234-5678/x');
   });
 
   test(

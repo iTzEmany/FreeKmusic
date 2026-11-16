@@ -71,6 +71,8 @@ void main() {
   late bool enabled;
   var installFails = false;
   final failed = <TagWriteReason>[];
+  final written = <String>[];
+  var pristine = true;
   late String? playing;
   late StreamController<String?> playingStream;
   late DownloadTagger tagger;
@@ -96,6 +98,8 @@ void main() {
         ),
       ),
       onFailed: (t, why) async => failed.add(why),
+      isPristine: (t) async => pristine,
+      onWritten: (t) async => written.add(t.path),
       reader: _Reader(),
       downloadRoot: () async => music.path,
       enabled: () => enabled,
@@ -113,6 +117,8 @@ void main() {
     enabled = true;
     installFails = false;
     failed.clear();
+    written.clear();
+    pristine = true;
     playing = null;
     playingStream = StreamController<String?>.broadcast();
     tagger = make();
@@ -163,6 +169,21 @@ void main() {
       'disc': 2,
       'cover': 3,
     });
+    expect(written, [t.path], reason: 'the download index re-stamps the file');
+  });
+
+  test('the signature is not refreshed for a file that was no longer the download, nor after a failed write', () async {
+    pristine = false;
+    final t = await add(music.path, 'a.mp3');
+    await tagger.tag(t.id);
+    expect(_tags(t.path)['title'], 'Poetica', reason: 'tags are still written');
+    expect(written, isEmpty);
+    pristine = true;
+    installFails = true;
+    final u = await add(music.path, 'b.mp3');
+    await tagger.tag(u.id);
+    expect(failed, isNotEmpty);
+    expect(written, isEmpty);
   });
 
   test('never writes a file outside the download folder', () async {
@@ -170,6 +191,7 @@ void main() {
     final t = await add(other.path, 'a.mp3');
     await tagger.tag(t.id);
     expect(writer.calls, 0);
+    expect(written, isEmpty);
   });
 
   test('writes nothing when the option is off', () async {

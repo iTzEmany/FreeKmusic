@@ -34,6 +34,8 @@ TracksCompanion row(
   folderId: Value(folderId),
 );
 
+YtResult yt(String id) => YtResult(id: id, title: 'S\$id', channel: 'Ch', duration: null);
+
 void main() {
   late AppDatabase db;
   late TrackRepository repo;
@@ -117,6 +119,52 @@ void main() {
       false,
     ]);
     await repo.setFavoriteMany(const [], true); // nothing to do
+  });
+
+  group('rekeyStream (R-242)', () {
+    Future<int> saved(String id) async {
+      final rowId = (await repo.saveStream(yt(id)))!;
+      await (db.update(db.tracks)..where((t) => t.id.equals(rowId))).write(
+        const TracksCompanion(isFavorite: Value(true), playCount: Value(7)),
+      );
+      return rowId;
+    }
+
+    test('the same row moves to the new key and keeps its id, plays and favourite', () async {
+      final id = await saved('old');
+      expect(await repo.rekeyStream(id, 'youtube:new'), true);
+      final t = (await repo.getById(id))!;
+      expect([t.path, t.albumKey, t.saved, t.isFavorite, t.playCount], ['stream:youtube:new', 'stream|youtube:new', true, true, 7]);
+      expect(await repo.streamRow('youtube:old'), null);
+    });
+
+    test('a shadow row already at the new key is merged into the moved row', () async {
+      final id = await saved('old');
+      final shadow = await repo.ensureStreamRow(yt('new'));
+      expect(await repo.rekeyStream(id, 'youtube:new'), true);
+      expect(await repo.getById(shadow), null);
+      expect((await repo.getById(id))!.path, 'stream:youtube:new');
+    });
+
+    test('a hand-edited row already at the new key keeps its title, artist and album', () async {
+      final id = await saved('old');
+      final shadow = await repo.ensureStreamRow(yt('new'));
+      await (db.update(db.tracks)..where((t) => t.id.equals(shadow))).write(
+        const TracksCompanion(title: Value('Mine'), artist: Value('Me'), album: Value('Al'), userEdited: Value(true), albumKey: Value('stream|mine')),
+      );
+      expect(await repo.rekeyStream(id, 'youtube:new'), true);
+      final t = (await repo.getById(id))!;
+      expect([t.title, t.artist, t.album, t.albumKey, t.userEdited], ['Mine', 'Me', 'Al', 'stream|mine', true]);
+    });
+
+    test('not a stream row, or the same key: nothing changes', () async {
+      await repo.upsertBatch([row('/a.mp3', 'a')]);
+      final file = (await repo.byPath('/a.mp3'))!.id;
+      expect(await repo.rekeyStream(file, 'youtube:x'), false);
+      final id = await saved('old');
+      expect(await repo.rekeyStream(id, 'youtube:old'), false);
+      expect(await repo.rekeyStream(9999, 'youtube:x'), false);
+    });
   });
 
   test(
@@ -637,6 +685,43 @@ void main() {
       await repo.mergeStreamRow('youtube:b', lib['B']!);
       expect((await pl.watchTracks(p).first).map((t) => t.id), [lib['A'], lib['B'], lib['C']]);
       expect(await repo.streamRow('youtube:b'), equals(null));
+    });
+  });
+
+  group('demoteToStream', () {
+    test('keeps id, playlist row, plays, favourite and lyrics; sets path, kind and saved', () async {
+      final folderId = (await FolderRepository(db).add('/m')).id;
+      await repo.upsertBatch([row('/m/a.mp3', 'A', folderId: folderId)]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
+        const TracksCompanion(isFavorite: Value(true), lyricsPlain: Value('la la'), artist: Value('Art'), album: Value('Alb')),
+      );
+      await db.into(db.plays).insert(PlaysCompanion.insert(trackId: id, playedAt: 7));
+      final pl = PlaylistRepository(db);
+      final plId = await pl.create('Mix');
+      await pl.addTracks(plId, [id]);
+
+      final before = await repo.demoteToStream(id, 'youtube:a');
+
+      expect(before!.path, '/m/a.mp3');
+      final t = (await repo.getById(id))!;
+      expect([t.path, t.kind, t.saved, t.folderId], ['stream:youtube:a', 2, true, null]);
+      expect(t.albumKey, startsWith('stream|'));
+      expect([t.isFavorite, t.lyricsPlain], [true, 'la la']);
+      expect(await db.select(db.plays).get(), hasLength(1));
+      expect((await pl.watchTracks(plId).first).map((x) => x.id), [id]);
+      expect(await repo.streamRow('youtube:a'), isNot(equals(null)));
+    });
+
+    test('a stream row is not demoted, and restoreRow puts the file row back', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      final shadow = await repo.ensureStreamRow(yt('s'));
+      expect(await repo.demoteToStream(shadow, 'youtube:s'), equals(null));
+      final before = (await repo.demoteToStream(id, 'youtube:a'))!;
+      await repo.restoreRow(before);
+      final t = (await repo.getById(id))!;
+      expect([t.path, t.kind, t.saved], ['/a.mp3', 0, false]);
     });
   });
 

@@ -41,13 +41,17 @@ object NewPipeUrl {
         System.currentTimeMillis() - t
     }
 
-    /** Best progressive audio stream of a video: m4a/AAC first, then the highest bitrate. */
-    fun streamUrl(id: String): Map<String, Any?> {
+    /** Best progressive audio stream of a video: m4a/AAC first, then the highest bitrate, under the cap of [capKbps] kbit/s when one stream fits. */
+    fun streamUrl(id: String, capKbps: Int? = null): Map<String, Any?> {
         val t = System.currentTimeMillis()
         val init = initMs
         val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
-        val best = info.audioStreams
+        val all = info.audioStreams
             .filter { it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && it.content.isNotEmpty() }
+        val cap = capKbps ?: Int.MAX_VALUE
+        // Unknown bitrate (-1) passes; with nothing under the cap the lowest one is taken.
+        val fit = all.filter { it.averageBitrate <= cap }
+        val best = (if (fit.isNotEmpty() || cap == Int.MAX_VALUE) fit else listOf(all.minByOrNull { it.averageBitrate }).filterNotNull())
             .sortedWith(compareByDescending<org.schabi.newpipe.extractor.stream.AudioStream> {
                 it.format?.suffix == "m4a"
             }.thenByDescending { it.averageBitrate })

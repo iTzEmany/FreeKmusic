@@ -127,7 +127,7 @@ class YtDlpChannel(private val applicationContext: Context) {
                     ?.absolutePath
                     ?: throw IllegalStateException("output file not found")
             }
-            "streamUrl" -> run(result) { NewPipeUrl.streamUrl(call.argument<String>("id")!!) }
+            "streamUrl" -> run(result) { NewPipeUrl.streamUrl(call.argument<String>("id")!!, call.argument<Int>("capKbps")) }
             "version" -> run(result) {
                 ensureInit()
                 // The library stores a version only after a successful update: ask the bundled yt-dlp otherwise.

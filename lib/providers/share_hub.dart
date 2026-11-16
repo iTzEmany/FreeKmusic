@@ -564,6 +564,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     try {
       final base = await resolveDownloadFolder(
         ref.read(folderRepositoryProvider),
+        location: ref.read(settingsProvider).downloadLocation,
       );
       if (base == null) {
         AppLog.w('offer: no destination folder');

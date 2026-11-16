@@ -346,6 +346,7 @@ void main() {
         'edit',
         'add',
         'cover',
+        'keepOffline',
         'export',
         'rename',
         'delete',
@@ -381,6 +382,7 @@ void main() {
       expect(await _open(tester, find.byTooltip('Altre azioni')), [
         'queue',
         'playlist',
+        'keepOffline',
         'share',
         'enrich',
         'cover',

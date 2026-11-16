@@ -43,11 +43,11 @@ class AndroidYtDlpService implements YoutubeService {
 
   /// Asks NewPipe for the stream URL. Without it (lite build, or any failure)
   /// the yt-dlp line of the download is the fallback.
-  Future<void> _newPipeUrl(String pid, String id) async {
+  Future<void> _newPipeUrl(String pid, String id, AudioQuality quality) async {
     try {
       final m = await _channel.invokeMapMethod<String, Object?>(
         'streamUrl',
-        {'id': id},
+        {'id': id, 'capKbps': quality.capKbps},
       );
       final url = m?['url'];
       if (url is! String) throw StateError('newpipe answered without a url');
@@ -176,7 +176,8 @@ class AndroidYtDlpService implements YoutubeService {
   }) async* {
     await outDir.create(recursive: true);
     // yt-dlp in the app always comes with ffmpeg.
-    final choice = downloadChoice(options.format, hasFfmpeg: true, selector: options.selector);
+    final choice = downloadChoice(options.format,
+        hasFfmpeg: true, selector: options.selector, quality: options.quality);
     final target = uniquePath(
       outDir.path,
       downloadBaseName(r),
@@ -191,7 +192,7 @@ class AndroidYtDlpService implements YoutubeService {
       _streamLines[processId] = StreamUrlLines();
       _started[processId] = Stopwatch()..start();
       _ids[processId] = r.id;
-      unawaited(_newPipeUrl(processId, r.id));
+      unawaited(_newPipeUrl(processId, r.id, options.quality));
     }
     unawaited(
       cancel?.whenCancel.then((_) {

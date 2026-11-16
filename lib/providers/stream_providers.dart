@@ -66,6 +66,7 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
     youtube: ref.watch(youtubeServiceProvider),
     isMetered: () async => (await ref.read(networkProbeProvider).current()).metered,
     prefetchOnMetered: () => ref.read(settingsProvider).prefetchOnMobile,
+    quality: () => ref.read(settingsProvider).streamQuality,
     isOnline: () async => (await ref.read(networkProbeProvider).current()).online,
   );
   ref.onDispose(preparer.dispose);
@@ -136,7 +137,7 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
       cache: ref.watch(streamCacheProvider),
       tracks: ref.watch(trackRepositoryProvider),
       covers: ref.watch(coverStoreProvider),
-      downloadFolder: () => resolveDownloadFolder(ref.read(folderRepositoryProvider)),
+      downloadFolder: () => resolveDownloadFolder(ref.read(folderRepositoryProvider), location: ref.read(settingsProvider).downloadLocation),
       index: () => ref.read(downloadIndexProvider.future),
       scan: (folder, path) async {
         await for (final _ in ref.read(libraryScannerProvider).scanFiles(folder, [path])) {}
@@ -146,7 +147,7 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
       workDir: isAndroid
           ? () async => await publishesToMediaStore()
               ? downloadWorkDir()
-              : (await resolveDownloadFolder(ref.read(folderRepositoryProvider)))!.$1
+              : (await resolveDownloadFolder(ref.read(folderRepositoryProvider), location: ref.read(settingsProvider).downloadLocation))!.$1
           : null,
       onShadowMerged: (shadow, keep) => ref.read(audioHandlerProvider).replaceQueueId(shadow, keep),
     ));

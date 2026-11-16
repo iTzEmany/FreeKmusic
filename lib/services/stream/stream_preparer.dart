@@ -93,6 +93,7 @@ class StreamPreparer {
     this.maxParallel = 2,
     this.ahead = 3,
     this.prefetchOnMetered = _yes,
+    this.quality = _high,
     this.isOnline = _yesAsync,
     this.cooldown = const Duration(minutes: 5),
     this.attemptTimeout = const Duration(minutes: 5),
@@ -130,6 +131,10 @@ class StreamPreparer {
   /// Tracks prepared after the current one (D-609); 0 on a metered network when [prefetchOnMetered] says no.
   final int ahead;
   final bool Function() prefetchOnMetered;
+
+  /// Stream quality (D-580), read at each attempt.
+  final AudioQuality Function() quality;
+  static AudioQuality _high() => AudioQuality.high;
   static bool _yes() => true;
   static Future<bool> _yesAsync() async => true;
 
@@ -610,7 +615,7 @@ class StreamPreparer {
         arm(startTimeout);
         try {
           await for (final e in youtube.download(j.substitute ?? j.result, tmp,
-              cancel: cancel, options: const DownloadOptions(emitStreamUrl: true))) {
+              cancel: cancel, options: DownloadOptions(emitStreamUrl: true, quality: quality()))) {
             j.spawn ??= _ms(j);
             final u = e.streamUrl;
             if (u != null) _onUrl(j, u, e.headers ?? const {});

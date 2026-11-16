@@ -9,7 +9,7 @@ import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
 import '../../services/daylist/daylist_slots.dart';
 import '../../services/daylist/mood_table.dart';
-import '../../services/online/youtube_service.dart' show DownloadFormat;
+import '../../services/online/youtube_service.dart' show AudioQuality, DownloadFormat;
 import '../../services/recognition/track_identity.dart' show kRecogVersion;
 
 /// The equalizer curve chosen for one kind of output (speaker or headphones).
@@ -67,7 +67,12 @@ class AppSettings {
     this.downloadParallel = 2,
     this.downloadRateLimitKBps = 0,
     this.downloadFormat = DownloadFormat.m4a,
+    this.downloadQuality = AudioQuality.high,
+    this.streamQuality = AudioQuality.high,
     this.streamCacheMb = 1024,
+    this.downloadLocation = '',
+    this.autoBackup = false,
+    this.backupFolder = '',
     this.storageMode = StorageMode.device,
     this.prefetchOnMobile = true,
     this.importSureThreshold = 0.80,
@@ -158,9 +163,18 @@ class AppSettings {
 
   /// M4A keeps YouTube's AAC as served; MP3 converts for players that need it.
   final DownloadFormat downloadFormat;
+  final AudioQuality downloadQuality;
+  final AudioQuality streamQuality;
 
   /// Disk space for the streaming cache, in MB (256–8192).
   final int streamCacheMb;
+
+  /// D-579: Android = app folder of the SD volume, desktop = chosen download folder; empty = default.
+  final String downloadLocation;
+
+  /// R-241: weekly backup into [backupFolder] (off by default).
+  final bool autoBackup;
+  final String backupFolder;
 
   /// Where the music lives; the onboarding sets it, older installs keep `device` (D-598).
   final StorageMode storageMode;
@@ -253,7 +267,12 @@ class AppSettings {
     int? downloadParallel,
     int? downloadRateLimitKBps,
     DownloadFormat? downloadFormat,
+    AudioQuality? downloadQuality,
+    AudioQuality? streamQuality,
     int? streamCacheMb,
+    String? downloadLocation,
+    bool? autoBackup,
+    String? backupFolder,
     StorageMode? storageMode,
     bool? prefetchOnMobile,
     double? importSureThreshold,
@@ -309,7 +328,12 @@ class AppSettings {
     downloadParallel: downloadParallel ?? this.downloadParallel,
     downloadRateLimitKBps: downloadRateLimitKBps ?? this.downloadRateLimitKBps,
     downloadFormat: downloadFormat ?? this.downloadFormat,
+    downloadQuality: downloadQuality ?? this.downloadQuality,
+    streamQuality: streamQuality ?? this.streamQuality,
     streamCacheMb: streamCacheMb ?? this.streamCacheMb,
+    downloadLocation: downloadLocation ?? this.downloadLocation,
+    autoBackup: autoBackup ?? this.autoBackup,
+    backupFolder: backupFolder ?? this.backupFolder,
     storageMode: storageMode ?? this.storageMode,
     prefetchOnMobile: prefetchOnMobile ?? this.prefetchOnMobile,
     importSureThreshold: importSureThreshold ?? this.importSureThreshold,
@@ -455,6 +479,9 @@ class SettingsStore {
     downloadParallel: (_prefs.getInt('downloadParallel') ?? 2).clamp(1, 3),
     downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
     streamCacheMb: (_prefs.getInt('streamCacheMb') ?? 1024).clamp(256, 8192),
+    downloadLocation: _prefs.getString('downloadLocation') ?? '',
+    autoBackup: _prefs.getBool('autoBackup') ?? false,
+    backupFolder: _prefs.getString('backupFolder') ?? '',
     // Absent = an install from before the choice: it keeps its files (D-598).
     storageMode: StorageMode.values.firstWhere(
       (m) => m.name == _prefs.getString('storageMode'),
@@ -466,6 +493,14 @@ class SettingsStore {
     downloadFormat: DownloadFormat.values.firstWhere(
       (f) => f.name == _prefs.getString('downloadFormat'),
       orElse: () => DownloadFormat.m4a,
+    ),
+    downloadQuality: AudioQuality.values.firstWhere(
+      (q) => q.name == _prefs.getString('downloadQuality'),
+      orElse: () => AudioQuality.high,
+    ),
+    streamQuality: AudioQuality.values.firstWhere(
+      (q) => q.name == _prefs.getString('streamQuality'),
+      orElse: () => AudioQuality.high,
     ),
     importSureThreshold: _prefs.getDouble('importSureThreshold') ?? 0.80,
     importReviewThreshold: _prefs.getDouble('importReviewThreshold') ?? 0.55,
@@ -551,7 +586,12 @@ class SettingsStore {
     await _prefs.setInt('downloadParallel', s.downloadParallel);
     await _prefs.setInt('downloadRateLimitKBps', s.downloadRateLimitKBps);
     await _prefs.setString('downloadFormat', s.downloadFormat.name);
+    await _prefs.setString('downloadQuality', s.downloadQuality.name);
+    await _prefs.setString('streamQuality', s.streamQuality.name);
     await _prefs.setInt('streamCacheMb', s.streamCacheMb);
+    await _prefs.setString('downloadLocation', s.downloadLocation);
+    await _prefs.setBool('autoBackup', s.autoBackup);
+    await _prefs.setString('backupFolder', s.backupFolder);
     await _prefs.setString('storageMode', s.storageMode.name);
     await _prefs.setBool('prefetchOnMobile', s.prefetchOnMobile);
     await _prefs.remove('downloadOriginal');
@@ -717,6 +757,14 @@ class SettingsStore {
   int? get releasesLastRunAt => _prefs.getInt('releasesLastRunAt');
   int? get releasesRetryAt => _prefs.getInt('releasesRetryAt');
   int? get releasesLastNotifiedAt => _prefs.getInt('releasesLastNotifiedAt');
+
+  /// Volume the stream cache was opened on at the last start (`''` = internal; null = never recorded).
+  String? get streamCacheVolume => _prefs.getString('streamCacheVolume');
+  Future<void> writeStreamCacheVolume(String v) => _prefs.setString('streamCacheVolume', v);
+
+  /// Time of the last automatic backup (epoch ms; null = none).
+  int? get backupLastAt => _prefs.getInt('backupLastAt');
+  Future<void> writeBackupLastAt(int ms) => _prefs.setInt('backupLastAt', ms);
 
   Future<void> writeReleasesLastRunAt(int ms) =>
       _prefs.setInt('releasesLastRunAt', ms);

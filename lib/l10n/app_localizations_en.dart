@@ -7687,6 +7687,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageModeStream => 'Streaming';
 
   @override
+  String get downloadFolder => 'Download folder';
+
+  @override
+  String get downloadFolderDefault => 'The Music folder (default)';
+
+  @override
+  String get downloadFolderReset => 'Back to the default folder';
+
+  @override
+  String get downloadMemory => 'Download storage';
+
+  @override
+  String get downloadMemoryInternal => 'Internal storage';
+
+  @override
+  String downloadMemorySd(String name) {
+    return 'SD card ($name)';
+  }
+
+  @override
+  String downloadMemorySdMissing(String name) {
+    return 'SD card not inserted ($name)';
+  }
+
+  @override
+  String get downloadMemoryRestart => 'The change applies at the next start.';
+
+  @override
+  String get downloadMemorySdLegacy =>
+      'On this Android version the files on the SD card live in the app folder and disappear if you uninstall the app.';
+
+  @override
+  String get onboardingStorageSdHint =>
+      'Keep downloads and cache on the SD card.';
+
+  @override
   String get prefetchOnMobile => 'Also pre-load on mobile data (up to 3)';
 
   @override
@@ -7751,4 +7787,146 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'No streamed tracks. Use “Add to library” on an online track.';
+
+  @override
+  String get autoBackup => 'Automatic backup';
+
+  @override
+  String get autoBackupHint =>
+      'Once a week it saves a backup in the folder you choose, keeping the last 3.';
+
+  @override
+  String get autoBackupFolder => 'Backup folder';
+
+  @override
+  String get autoBackupNever => 'never';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder, last: $last';
+  }
+
+  @override
+  String get logBackup => 'Automatic backup';
+
+  @override
+  String get logBackupSub => 'Saved in the chosen folder.';
+
+  @override
+  String get autoBackupHintAndroid =>
+      'Backups go to Documents/FreeKmusic: copy them elsewhere to keep them safe.';
+
+  @override
+  String get autoBackupHintAndroidApp =>
+      'Backups go to the app\'s folder and are deleted if you uninstall it: copy them elsewhere to keep them safe.';
+
+  @override
+  String get logBackupFailed => 'Automatic backup failed';
+
+  @override
+  String get qualityDownload => 'Download quality';
+
+  @override
+  String get qualityStream => 'Streaming quality';
+
+  @override
+  String get qualityHigh => 'High';
+
+  @override
+  String get qualityMedium => 'Medium (~128 kbps)';
+
+  @override
+  String get qualityLow => 'Low (~64 kbps)';
+
+  @override
+  String get freeSpaceTitle => 'Free up space';
+
+  @override
+  String get freeSpaceIntro =>
+      'These tracks become streams: the file is deleted, favourites, playlists and plays stay.';
+
+  @override
+  String get freeSpaceStale => 'Not played for 90 days';
+
+  @override
+  String get freeSpaceOthers => 'Other downloads';
+
+  @override
+  String freeSpaceAll(int n, String size) {
+    return 'All downloads ($n) $size';
+  }
+
+  @override
+  String freeSpaceButton(String size) {
+    return 'Free up $size';
+  }
+
+  @override
+  String get freeSpaceEmpty => 'No downloads to free up.';
+
+  @override
+  String get freeSpaceBusy => 'A scan is running: try again when it ends.';
+
+  @override
+  String get freeSpaceConfirmTitle => 'Free up the space?';
+
+  @override
+  String freeSpaceConfirmBody(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tracks become streams and their files are deleted.',
+      one: '1 track becomes a stream and its file is deleted.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String freeSpaceDone(int n, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tracks freed',
+      one: '1 track freed',
+    );
+    return '$_temp0, $size';
+  }
+
+  @override
+  String freeSpaceFailed(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tracks were not freed: their files are still there.',
+      one: '1 track was not freed: its file is still there.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOfflineAction => 'Keep offline';
+
+  @override
+  String keepOfflineQueued(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tracks downloading',
+      one: '1 track downloading',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOfflineAlready => 'Already all offline';
+
+  @override
+  String logVanishedReplaced(String name) {
+    return 'Track replaced: $name';
+  }
+
+  @override
+  String logVanishedGone(String name) {
+    return 'Track no longer available: $name';
+  }
 }

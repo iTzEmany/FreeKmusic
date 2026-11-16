@@ -29,6 +29,9 @@ import 'advanced_section.dart';
 import 'backup_section.dart';
 import 'download_settings_tiles.dart';
 import 'stream_cache_tile.dart';
+import 'quality_tiles.dart';
+import 'auto_backup_tile.dart';
+import 'download_location_tile.dart';
 import '../../../data/settings/settings_store.dart' show StorageMode;
 import 'enrich_library_tile.dart';
 import 'equalizer_screen.dart';
@@ -341,7 +344,11 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
                       .update((c) => c.copyWith(storageMode: m)),
           ),
         ),
+        const DownloadLocationTile(),
         const StreamCacheTile(),
+        const QualityTile(stream: false),
+        const QualityTile(stream: true),
+        const AutoBackupTile(),
         SwitchListTile(
           secondary: const Icon(Icons.network_cell_outlined),
           title: Text(l.prefetchOnMobile),
@@ -350,6 +357,7 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
               .read(settingsProvider.notifier)
               .update((c) => c.copyWith(prefetchOnMobile: v)),
         ),
+        const FreeSpaceTile(),
       ],
     ),
     SettingsGroup(

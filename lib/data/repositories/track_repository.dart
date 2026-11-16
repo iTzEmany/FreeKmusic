@@ -208,6 +208,38 @@ class TrackRepository {
     return getById(row.id);
   }
 
+  /// «Libera spazio»: the file row [id] (downloaded from [key]) becomes a saved stream row, the inverse
+  /// of [promoteStreamRow]. The id stays, so playlists, plays, favourite and lyrics stay. Returns the
+  /// row as it was (for [restoreRow]), or null when [id] is not a file row. The CALLER deletes the file
+  /// after this returns.
+  Future<Track?> demoteToStream(int id, String key) => _db.transaction(() async {
+    final row = await getById(id);
+    if (row == null || row.kind != kMusicKind) return null;
+    // The track was streamed before: its shadow row (same path) would collide; its listens move here.
+    await mergeStreamRow(key, id);
+    var albumKey = streamAlbumKey(albumArtist: row.albumArtist, artist: row.artist, album: row.album);
+    // A generic album would lump unrelated tracks together; a hand-picked key is kept.
+    if (albumKey.startsWith('stream|unknown|') || row.userEdited) albumKey = 'stream|$key';
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(
+        path: Value(streamPathOf(key)),
+        kind: const Value(kStreamKind),
+        saved: const Value(true),
+        albumKey: Value(albumKey),
+        folderId: const Value(null),
+        format: const Value(''),
+        sizeBytes: const Value(0),
+        mtimeMs: const Value(0),
+        missing: const Value(false),
+      ),
+    );
+    await settleMovedCover(row, albumKey);
+    return row;
+  });
+
+  /// Puts [before] (as returned by [demoteToStream]) back, when the file could not be deleted.
+  Future<void> restoreRow(Track before) => _db.update(_db.tracks).replace(before);
+
   /// A fresh download [keepId] of the track [key] was streamed before: its listens,
   /// counts, lyrics and curiosities move to [keepId] (as in `DuplicateRepository.merge`)
   /// and the shadow row goes. Returns the id of the deleted shadow row (a queue may still
@@ -219,6 +251,40 @@ class TrackRepository {
     await (_db.delete(_db.tracks)..where((t) => t.id.equals(shadow.id))).go();
     return shadow.id;
   }
+
+  /// A saved stream row whose video vanished: the SAME row (id, playlists, plays, favourite) moves to the
+  /// replacement [newKey]. A shadow row already at [newKey] is merged into it ([mergeStreamRow]); an episode
+  /// there makes this a no-op; when that row was edited by hand its title, artist, album and album key win.
+  /// A replacement that is already a downloaded FILE is the caller's check (`VanishedTracks.hasFile`: skip + log).
+  /// The old cache fields go; the old key's cache file stays and the LRU removes it. Returns true when the row moved.
+  Future<bool> rekeyStream(int id, String newKey) => _db.transaction(() async {
+    final row = await getById(id);
+    final oldKey = row == null || row.kind != kStreamKind ? null : keyOfStreamPath(row.path);
+    if (oldKey == null || oldKey == newKey) return false;
+    final other = await byPath(streamPathOf(newKey));
+    if (other != null && other.kind != kStreamKind) return false;
+    await mergeStreamRow(newKey, id);
+    final keep = other != null && other.userEdited; // the existing row's hand-made metadata survives
+    // Only the row's own key follows; a shared or hand-picked album key stays.
+    final albumKey = keep ? other.albumKey : (row!.albumKey == 'stream|$oldKey' ? 'stream|$newKey' : row.albumKey);
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(
+        path: Value(streamPathOf(newKey)),
+        albumKey: Value(albumKey),
+        title: keep ? Value(other.title) : const Value.absent(),
+        artist: keep ? Value(other.artist) : const Value.absent(),
+        album: keep ? Value(other.album) : const Value.absent(),
+        albumArtist: keep ? Value(other.albumArtist) : const Value.absent(),
+        userEdited: keep ? const Value(true) : const Value.absent(),
+        format: const Value(''),
+        sizeBytes: const Value(0),
+        mtimeMs: const Value(0),
+        missing: const Value(false),
+      ),
+    );
+    await settleMovedCover(row!, albumKey);
+    return true;
+  });
 
   /// Creates or refreshes the shadow row (`kind = 2`) of the streamed track
   /// [key] whose cached [file] is ready; one row per key. Returns its id.

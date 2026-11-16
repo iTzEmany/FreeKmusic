@@ -19,9 +19,64 @@ class StreamCache {
   })  : _freeSpace = freeSpace ?? (() async => (await diskSpaceOf(dir.path))?.freeBytes),
         _delete = delete ?? ((f) => f.delete());
 
-  /// `<appSupportDir>/stream_cache`, outside every music folder.
-  static Future<StreamCache> inAppSupport({int limitBytes = 500 * _mb}) async =>
-      StreamCache(Directory(p.join(await appSupportDir(), 'stream_cache')), limitBytes: limitBytes);
+  /// `<appSupportDir>/stream_cache`, outside every music folder; with [volumeDir]
+  /// (the app folder of the chosen SD volume, D-579) `<volumeDir>/stream_cache`.
+  static Future<StreamCache> inAppSupport({int limitBytes = 500 * _mb, String volumeDir = ''}) async =>
+      StreamCache(Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache')),
+          limitBytes: limitBytes);
+
+  /// [volumeDir] if its `stream_cache` folder can be created, listed and written there, else ''
+  /// (the internal one, logged): a card that is read-only, half-gone or lists nothing (sdcardfs
+  /// answers errno 13 to a listing of a folder it just created) must not leave streams without a cache.
+  static Future<String> usableVolume(String volumeDir) async {
+    if (volumeDir.isEmpty) return '';
+    final d = Directory(p.join(volumeDir, 'stream_cache'));
+    try {
+      await d.create(recursive: true);
+      await d.list().drain<void>();
+      final probe = File(p.join(d.path, '.probe'));
+      await probe.writeAsString('');
+      await probe.delete();
+      return volumeDir;
+    } on FileSystemException catch (e, st) {
+      AppLog.w('stream cache: $volumeDir not usable, using the internal folder', e, st);
+      return '';
+    }
+  }
+
+  /// An opened cache on [volumeDir] or, when it cannot be used or opened, on the internal folder;
+  /// `volume` is the one really in use ('' = internal).
+  static Future<({StreamCache cache, String volume})> openWithFallback(String volumeDir,
+      {int limitBytes = 500 * _mb}) async {
+    final volume = await usableVolume(volumeDir);
+    final cache = await inAppSupport(limitBytes: limitBytes, volumeDir: volume);
+    try {
+      await cache.open();
+      return (cache: cache, volume: volume);
+    } on FileSystemException catch (e, st) {
+      if (volume.isEmpty) rethrow;
+      AppLog.w('stream cache: $volume could not be opened, using the internal folder', e, st);
+      final internal = await inAppSupport(limitBytes: limitBytes);
+      await internal.open();
+      return (cache: internal, volume: '');
+    }
+  }
+
+  /// Deletes the cache folder of a volume left behind ([volumeDir] as in [inAppSupport]); nothing else.
+  static Future<void> deleteAt(String volumeDir) async {
+    final d = Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache'));
+    try {
+      if (await d.exists()) await d.delete(recursive: true);
+    } on FileSystemException catch (e, st) {
+      AppLog.w('old stream cache not removed: ${d.path}', e, st);
+    }
+  }
+
+  /// Start-up: the cache left on the volume of the previous run ([last]) goes, once the new one is open
+  /// on [current]; never the one in use. Both as [volumeDir] in [inAppSupport].
+  static Future<void> dropLeftBehind({required String? last, required String current}) async {
+    if (last != null && last != current) await deleteAt(last);
+  }
 
   /// Space always left free on the disk (D-84).
   static const freeMargin = 500 * _mb;
@@ -179,7 +234,7 @@ class StreamCache {
     await _measure(); // K-06: a failed delete is retried at the next evict
   }
 
-  /// Deletes everything except the [keep] keys and the pinned ones.
+  /// Deletes everything except the [keep] keys and the pinned ones (tracks being downloaded or played: deleting their file would cut them off).
   Future<void> clear({Set<String> keep = const {}}) async {
     final kept = {...keep, ..._pins.keys}.map(streamFileName).toSet();
     for (final e in await _files()) {

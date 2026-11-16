@@ -134,6 +134,7 @@ void main() {
     Duration startTimeout = const Duration(minutes: 5),
     Duration ageSearchTimeout = const Duration(seconds: 20),
     DateTime Function()? clock,
+    AudioQuality Function()? quality,
   }) =>
       prep = StreamPreparer(
         attemptTimeout: attemptTimeout,
@@ -150,6 +151,7 @@ void main() {
           return online;
         },
         cooldown: cooldown,
+        quality: quality ?? () => AudioQuality.high,
         clock: clock ?? DateTime.now,
       );
 
@@ -415,6 +417,15 @@ void main() {
       expect(s.file, isNotNull);
       expect(s.url, isNull);
       expect(yt.started, isEmpty);
+    });
+
+    test('«Qualità streaming» reaches the DownloadOptions of the stream', () async {
+      prep.dispose();
+      make(quality: () => AudioQuality.low);
+      yt.urls.add(far);
+      await prep.start('youtube:a', _r('a'));
+      expect(yt.optionsSeen.single.quality, AudioQuality.low);
+      yt.finish('a');
     });
 
     test('address before file: the address with its headers; the download goes on with emitStreamUrl', () async {

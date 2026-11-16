@@ -18,6 +18,8 @@ const _sameAsItalian = {
   'chartGenreRnb', // pt
   'chartGenreLatin', // pt
   'chartTitle',
+  'qualityHigh', // es and pt
+  'qualityMedium', // es
   'logPlayFailedSub', // only placeholders: «{title}: {reason}»
   'podcastOriginApple',
   'podcastGenreSports',

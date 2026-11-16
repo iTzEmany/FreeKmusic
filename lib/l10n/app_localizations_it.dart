@@ -7707,6 +7707,42 @@ class AppLocalizationsIt extends AppLocalizations {
   String get storageModeStream => 'In streaming';
 
   @override
+  String get downloadFolder => 'Cartella dei download';
+
+  @override
+  String get downloadFolderDefault => 'Quella di Musica (predefinita)';
+
+  @override
+  String get downloadFolderReset => 'Torna alla cartella predefinita';
+
+  @override
+  String get downloadMemory => 'Memoria dei download';
+
+  @override
+  String get downloadMemoryInternal => 'Memoria interna';
+
+  @override
+  String downloadMemorySd(String name) {
+    return 'Scheda SD ($name)';
+  }
+
+  @override
+  String downloadMemorySdMissing(String name) {
+    return 'Scheda SD non inserita ($name)';
+  }
+
+  @override
+  String get downloadMemoryRestart => 'Il cambio vale dal prossimo avvio.';
+
+  @override
+  String get downloadMemorySdLegacy =>
+      'Sulla scheda SD in questa versione di Android i file stanno nella cartella dell\'app e spariscono se la disinstalli.';
+
+  @override
+  String get onboardingStorageSdHint =>
+      'Salva i download e la cache sulla scheda SD.';
+
+  @override
   String get prefetchOnMobile =>
       'Pre-carica anche con i dati mobili (fino a 3)';
 
@@ -7773,4 +7809,148 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.';
+
+  @override
+  String get autoBackup => 'Backup automatico';
+
+  @override
+  String get autoBackupHint =>
+      'Una volta a settimana salva un backup nella cartella che scegli, tenendo gli ultimi 3.';
+
+  @override
+  String get autoBackupFolder => 'Cartella del backup';
+
+  @override
+  String get autoBackupNever => 'mai';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder, ultimo: $last';
+  }
+
+  @override
+  String get logBackup => 'Backup automatico';
+
+  @override
+  String get logBackupSub => 'Salvato nella cartella scelta.';
+
+  @override
+  String get autoBackupHintAndroid =>
+      'I backup vanno in Documenti/FreeKmusic: copiali altrove per tenerli al sicuro.';
+
+  @override
+  String get autoBackupHintAndroidApp =>
+      'I backup vanno nella cartella dell\'app e si cancellano se la disinstalli: copiali altrove per tenerli al sicuro.';
+
+  @override
+  String get logBackupFailed => 'Backup automatico non riuscito';
+
+  @override
+  String get qualityDownload => 'Qualità download';
+
+  @override
+  String get qualityStream => 'Qualità streaming';
+
+  @override
+  String get qualityHigh => 'Alta';
+
+  @override
+  String get qualityMedium => 'Media (~128 kbps)';
+
+  @override
+  String get qualityLow => 'Bassa (~64 kbps)';
+
+  @override
+  String get freeSpaceTitle => 'Libera spazio';
+
+  @override
+  String get freeSpaceIntro =>
+      'Questi brani diventano in streaming: il file si cancella, restano preferiti, playlist e ascolti.';
+
+  @override
+  String get freeSpaceStale => 'Non ascoltati da 90 giorni';
+
+  @override
+  String get freeSpaceOthers => 'Altri download';
+
+  @override
+  String freeSpaceAll(int n, String size) {
+    return 'Tutti i download ($n) $size';
+  }
+
+  @override
+  String freeSpaceButton(String size) {
+    return 'Libera $size';
+  }
+
+  @override
+  String get freeSpaceEmpty => 'Nessun download da liberare.';
+
+  @override
+  String get freeSpaceBusy =>
+      'Una scansione è in corso: riprova quando finisce.';
+
+  @override
+  String get freeSpaceConfirmTitle => 'Liberare lo spazio?';
+
+  @override
+  String freeSpaceConfirmBody(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          '$n brani diventano in streaming e i loro file vengono cancellati.',
+      one: '1 brano diventa in streaming e il suo file viene cancellato.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String freeSpaceDone(int n, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n brani liberati',
+      one: '1 brano liberato',
+    );
+    return '$_temp0, $size';
+  }
+
+  @override
+  String freeSpaceFailed(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n brani non sono stati liberati: i file sono rimasti dove sono.',
+      one: '1 brano non è stato liberato: il file è rimasto dov’è.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOfflineAction => 'Tieni offline';
+
+  @override
+  String keepOfflineQueued(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n brani in download',
+      one: '1 brano in download',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOfflineAlready => 'Già tutti offline';
+
+  @override
+  String logVanishedReplaced(String name) {
+    return 'Brano sostituito: $name';
+  }
+
+  @override
+  String logVanishedGone(String name) {
+    return 'Brano non più disponibile: $name';
+  }
 }

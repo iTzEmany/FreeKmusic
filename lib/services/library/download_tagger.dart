@@ -26,6 +26,8 @@ class DownloadTagger {
     required this.playingPath,
     required this.playingChanges,
     this.onFailed,
+    this.onWritten,
+    this.isPristine,
     this.pending,
   });
 
@@ -41,6 +43,12 @@ class DownloadTagger {
 
   /// Told when the file was left without its tags (the Registro shows it).
   final Future<void> Function(Track, TagWriteReason)? onFailed;
+
+  /// Told after the app rewrote the file's tags (its size and mtime changed).
+  final Future<void> Function(Track)? onWritten;
+
+  /// Whether the file is still the one downloaded (asked before writing): only then is [onWritten] told.
+  final Future<bool> Function(Track)? isPristine;
 
   /// Files still to tag, persisted across app restarts.
   final PendingTags? pending;
@@ -171,7 +179,9 @@ class DownloadTagger {
         (c.discNumber == null || c.discNumber == info.discNumber)) {
       return;
     }
+    final pristine = await isPristine?.call(t) ?? false;
     final out = await sync.write([t], (_) => c, backup: false);
+    if (pristine && !out.hasFailures) await onWritten?.call(t);
     if (out.hasFailures) {
       final why = out.mainReason ?? TagWriteReason.ioError;
       AppLog.w('tagger: ${t.path} left as it is (${why.name})');

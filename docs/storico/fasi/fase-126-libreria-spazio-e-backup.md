@@ -7,10 +7,10 @@ su playlist e album, backup automatico settimanale, sostituzione dei brani in st
 si cancella senza un gesto esplicito (D-598). Fuori: cloud WebDAV (D-588).
 
 ## Riferimenti
-D-578..D-581, D-588, D-598, D-612, D-613, D-615; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)
+D-578..D-581, D-588, D-598, D-612, D-613, D-615; specifica [`../feature/feature-libreria-leggera-karaoke-cerca.md`](../feature/feature-libreria-leggera-karaoke-cerca.md)
 § Architettura C («Scheda SD», «Qualità», «Libera spazio», «Backup automatico», «Brani spariti»), RNF-03, rischi F-2, F-5.
-Documenti d'area: `../architettura/libreria-e-dati.md`, `../architettura/online.md`, `../architettura/sync-backup-jam.md`,
-`../architettura/piattaforme.md`.
+Documenti d'area: `../../architettura/libreria-e-dati.md`, `../../architettura/online.md`, `../../architettura/sync-backup-jam.md`,
+`../../architettura/piattaforme.md`.
 
 ## Mockup
 ```text
@@ -44,7 +44,7 @@ Libera spazio                        Onboarding (aggiunte)
 ```
 
 ## Task
-- [ ] 126.1 Scheda SD e cartella dei download (R-238, D-579)
+- [x] 126.1 Scheda SD e cartella dei download (R-238, D-579)
   - File: `lib/data/settings/settings_store.dart` (volume o cartella), `lib/providers/youtube_providers.dart`
     (`resolveDownloadFolder`), `android/app/src/main/kotlin/com/codecore/player/MediaPublishBridge.kt` (nome del volume,
     Android 11+), `lib/services/stream/stream_cache.dart` (`inAppSupport` sul volume scelto), voce in «Memoria e
@@ -57,7 +57,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Fatto quando: test verdi; senza SD la voce e la scelta d'onboarding non compaiono sul Mi A3; con una SD (se c'è)
     un download finisce sul volume SD.
 
-- [ ] 126.2 Qualità download e streaming (R-239, D-580)
+- [x] 126.2 Qualità download e streaming (R-239, D-580)
   - File: `lib/services/online/yt_dlp_args.dart` (`downloadChoice` col livello), `android/app/src/full/kotlin/com/codecore/player/NewPipeUrl.kt`
     (`:45`, flusso con `averageBitrate` sotto il tetto), impostazioni e due voci in «Memoria e streaming», ARB,
     `test/services/online/yt_dlp_args_test.dart`.
@@ -68,7 +68,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Fatto quando: test verdi; sul Mi A3 con «Bassa» un download pesa circa metà della «Media» e il log del flusso
     mostra un bitrate ≤ 64 kbps.
 
-- [ ] 126.3 «Libera spazio» (R-240, D-581, RNF-03) — `/code-review high`
+- [x] 126.3 «Libera spazio» (R-240, D-581, RNF-03) — `/code-review high`
   - File: `lib/data/repositories/track_repository.dart` (`demoteToStream(id, key)`), `lib/services/online/download_index.dart`,
     `lib/ui/screens/memory/free_space_screen.dart` (nuovo), voce in «Memoria e streaming», ARB, test in `test/data/track_repository_test.dart`
     e `test/ui/free_space_screen_test.dart` (nuovo).
@@ -78,7 +78,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Comando mirato: `flutter test test/data/track_repository_test.dart test/ui/free_space_screen_test.dart test/data/stream_rows_hidden_test.dart test/ui/no_separator_literals_test.dart test/ui/architecture_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; sul Mi A3 un brano convertito resta nella playlist con la nuvola e suona in streaming.
 
-- [ ] 126.4 «Tieni offline» e brani spariti da YouTube (R-236, R-242, D-578, D-588) — `/code-review high` (scrive su `tracks`)
+- [x] 126.4 «Tieni offline» e brani spariti da YouTube (R-236, R-242, D-578, D-588) — `/code-review high` (scrive su `tracks`)
   - File: menu di playlist e album (`lib/ui/widgets/track_actions.dart` o dove stanno i menu delle raccolte), gestione
     di `YtErrorKind.unavailable` (`lib/services/online/youtube_service.dart`) con `searchRow` sotto `budgetedYtm`,
     voce nel registro attività, test in `test/providers/` e `test/services/online/`.
@@ -88,7 +88,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Comando mirato: `flutter test <test nuovi> test/ui/track_actions_test.dart test/ui/architecture_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi.
 
-- [ ] 126.5 Backup automatico settimanale (R-241, D-588, F-5) — `/code-review high`
+- [x] 126.5 Backup automatico settimanale (R-241, D-588, F-5) — `/code-review high`
   - File: `isBackupDue(lastAt, now)` accanto a `lib/services/releases/check_schedule.dart`, `lib/providers/startup_providers.dart`
     (all'avvio e a `onResume`), `lib/services/backup/backup_service.dart`, impostazioni (cartella, ultimo backup), voce in
     «Memoria e streaming», interruttore nell'onboarding (spento di partenza; acceso apre la scelta della cartella),
@@ -105,3 +105,9 @@ Libera spazio                        Onboarding (aggiunte)
 - Se vuoi, ascolta un brano in «Bassa» e dimmi se la qualità è accettabile.
 
 ## Note di deviazione
+
+- **126.4, «Libera spazio» sui download vecchi** (16 nov): i download precedenti alla fase 126 o ripristinati da un backup non hanno firma in `downloads.sig.json` e non vengono offerti (D-598). Provare l'id dai tag non serve: i nostri download non lo scrivono (niente `--embed-metadata`). Restano eliminabili uno per uno dal menu del brano, «Elimina dal dispositivo».
+- **126.2, prova di yt-dlp su Linux** (video `dQw4w9WgXcQ`, 16 nov): Alta `bestaudio[ext=m4a]/bestaudio/best` -> 140 (m4a, abr 129,5);
+  Bassa `bestaudio[abr<=64]/worstaudio` -> 250 (opus, abr 61). Con il tetto 128 la Media cadeva su 250 (come la Bassa, perche
+  l'AAC e 129,5): tetto portato a 135, Media `bestaudio[abr<=135]/bestaudio` -> 251 (opus, abr 128,9; yt-dlp preferisce Opus all AAC a pari bitrate, 140 qualifica comunque). Da provare su youtubedl-android (Mi A3).
+- **126.5, cartella del backup su Android** (16 nov): `file_picker` usa SAF e restituisce un percorso di file, ma il manifest non ha `MANAGE_EXTERNAL_STORAGE`: su Android niente selettore. Cartella fissa `/storage/emulated/0/Documents/FreeKmusic` (Android 11+ permette la scrittura con `dart:io` in `Documents/`); se la creazione è rifiutata (Android 10 e prima) si ripiega sulla cartella esterna dell'app (`.../files/backups`), che sparisce con la disinstallazione (lo dice il testo dell'impostazione). Sul desktop resta il selettore. I backup automatici si chiamano `freekmusic-auto-<data>.zip` (mai toccati i manuali); si scrive in `<nome>.part` e si rinomina a fine lavoro; dopo un errore si riprova solo al prossimo avvio; errore nel Registro con il dettaglio e in `AppLog`; niente backup durante l'onboarding.

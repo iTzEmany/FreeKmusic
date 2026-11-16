@@ -16,6 +16,7 @@ import '../services/online/direct_search_service.dart';
 import '../services/online/download_index.dart';
 import '../services/online/download_queue.dart';
 import '../services/online/innertube_client.dart';
+import '../core/storage_volumes.dart' show effectiveLocation, sdRootOf;
 import '../services/online/media_publisher.dart';
 import '../services/online/retry_policy.dart';
 import '../services/online/android_yt_dlp_service.dart';
@@ -92,24 +93,39 @@ final downloadIndexProvider = FutureProvider<DownloadIndex>((ref) async {
   return idx;
 });
 
-final mediaPublisherProvider = Provider<MediaPublisher>((ref) => MediaPublisher());
+final mediaPublisherProvider = Provider<MediaPublisher>(
+    (ref) => MediaPublisher(volume: () => effectiveLocation(ref.read(settingsProvider).downloadLocation)));
 
 /// Destination folder for downloads (`<Music>/FreeKmusic`), registered as a
 /// scanned folder. On Android it is the public folder the files are published
 /// to; the download itself happens in [downloadWorkDir].
-Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo) async {
+///
+/// [location] is the «download location» setting (D-579): on Android the app
+/// folder of an SD volume, on desktop a chosen folder; empty = the default.
+Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo, {required String location}) async {
+  location = await effectiveLocation(location); // a removed card falls back to internal
+  final sd = isAndroid ? sdRootOf(location) : null;
   if (isAndroid && !await publishesToMediaStore()) {
-    // D-567: Android 10 and older keep the 1.5.1 folder (app files, own library folder).
-    final dir = Directory(p.join((await androidAppMusicDir())!, 'Music'))..createSync(recursive: true);
+    // D-567: Android 10 and older keep the 1.5.1 folder (app files, own library folder); on the SD its app folder.
+    final base = location.isNotEmpty ? location : (await androidAppMusicDir())!;
+    final dir = Directory(p.join(base, 'Music'))..createSync(recursive: true);
     return (dir, await repo.add(dir.path));
   }
-  final dir = Directory((await resolveDefaultFolders()).downloads);
-  // Inside a library folder already: it is scanned from there (no second folder, no double scan).
+  final (dir, library) = switch ((sd, location)) {
+    (final root?, _) => (Directory(p.join(root, 'Music', 'FreeKmusic')), p.join(root, 'Music')),
+    (_, final l) when !isAndroid && l.isNotEmpty => (Directory(l), l),
+    _ => (Directory((await resolveDefaultFolders()).downloads), (await resolveDefaultFolders()).library),
+  };
+  return (dir, await libraryFolderFor(repo, dir.path, library));
+}
+
+/// The library folder [dir] is scanned from: one that contains it already (no
+/// second folder, no double scan), else [library] (the parent, as the startup default would add it).
+Future<Folder> libraryFolderFor(FolderRepository repo, String dir, String library) async {
   for (final f in await repo.getAll()) {
-    if (p.isWithin(f.path, dir.path) || p.equals(f.path, dir.path)) return (dir, f);
+    if (p.isWithin(f.path, dir) || p.equals(f.path, dir)) return f;
   }
-  // No library folder yet: the parent (Music), as the startup default would add it.
-  return (dir, await repo.add((await resolveDefaultFolders()).library));
+  return repo.add(library);
 }
 
 
@@ -163,11 +179,13 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
             options: DownloadOptions(
               rateLimitKBps: s.downloadRateLimitKBps,
               format: s.downloadFormat,
+              quality: s.downloadQuality,
             ));
       },
       outDir: () async {
         final res = await resolveDownloadFolder(
           ref.read(folderRepositoryProvider),
+          location: ref.read(settingsProvider).downloadLocation,
         );
         folder = res?.$2;
         final dir = await publishesToMediaStore() ? await downloadWorkDir() : res?.$1;

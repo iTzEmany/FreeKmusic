@@ -20,6 +20,7 @@ import 'core/app_log.dart';
 import 'core/memory_budget.dart';
 import 'core/paths.dart';
 import 'core/platform.dart';
+import 'core/storage_volumes.dart' show effectiveLocation;
 import 'data/db/app_database.dart';
 import 'data/repositories/library_queries.dart';
 import 'data/repositories/play_history_repository.dart';
@@ -35,6 +36,7 @@ import 'providers/youtube_providers.dart'
 import 'providers/library_providers.dart';
 import 'providers/player_providers.dart';
 import 'providers/stream_providers.dart';
+import 'providers/vanished_providers.dart';
 import 'services/stream/stream_cache.dart';
 import 'providers/radio_providers.dart' show radioClientProvider;
 import 'providers/settings_providers.dart';
@@ -234,7 +236,17 @@ Future<void> main() async {
   }
 
   if (kPerfProbe) PerfProbe.mark('deviceName', sinceMain);
-  final streamCache = await StreamCache.inAppSupport();
+  var cacheVolume = isAndroid ? await effectiveLocation(settingsStore.readSettings().downloadLocation) : '';
+  StreamCache streamCache;
+  var cacheOpened = true;
+  try {
+    final r = await StreamCache.openWithFallback(cacheVolume);
+    (streamCache, cacheVolume) = (r.cache, r.volume);
+  } on Object catch (e, st) {
+    AppLog.e('stream cache could not be opened: streamed tracks will not play', e, st);
+    streamCache = await StreamCache.inAppSupport();
+    (cacheVolume, cacheOpened) = ('', false);
+  }
   final container = ProviderContainer(
     overrides: [
       systemDeviceNameProvider.overrideWithValue(systemName),
@@ -255,20 +267,18 @@ Future<void> main() async {
   );
   // A queued online entry downloaded meanwhile plays its library file (D-81).
   handler.libraryIdOf = container.read(playerControllerProvider).libraryIdOf;
+  // A saved stream the video of which vanished from YouTube gets its replacement (R-242).
+  handler.onStreamGone = (t) => unawaited(container.read(vanishedTracksProvider).handle(t));
   // The player downloads streamed tracks through the preparer (45.4); before
   // the queue comes back, so a restored streamed track finds it.
-  try {
-    await streamCache.open();
+  if (cacheOpened) {
+    // The cache of the previous volume goes only now: the one in use was opened above.
+    await StreamCache.dropLeftBehind(last: settingsStore.streamCacheVolume, current: cacheVolume);
+    await settingsStore.writeStreamCacheVolume(cacheVolume);
     container.listen(
       streamPreparerProvider,
       (_, p) => handler.preparer = p,
       fireImmediately: true,
-    );
-  } on Object catch (e, st) {
-    AppLog.e(
-      'stream cache could not be opened: streamed tracks will not play',
-      e,
-      st,
     );
   }
   // The last queue comes back right after the first frame, not before it:

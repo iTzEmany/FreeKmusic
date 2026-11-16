@@ -123,6 +123,9 @@ LogText logText(AppLocalizations l, LogEntry e) {
     ActivityKind.podcastRefresh => plain(l.logPodcasts, ''),
     ActivityKind.radio => plain(l.logRadio, ''),
     ActivityKind.ytDlp => plain(l.activityYtDlp, ''),
+    ActivityKind.backup =>
+      e.failed ? LogText(l.logBackupFailed, '${e.detail?['error'] ?? ''}') : LogText(l.logBackup, l.logBackupSub),
+    ActivityKind.vanished => LogText(e.failed ? l.logVanishedGone(name) : l.logVanishedReplaced(name), ''),
     ActivityKind.playbackFailed => LogText(l.logPlayFailed, l.logPlayFailedSub(name, playbackReasonText(l, PlaybackFailureReason.values.asNameMap()[e.detail?['reason']]))),
     ActivityKind.import =>
       e.failed

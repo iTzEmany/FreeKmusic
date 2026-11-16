@@ -12241,6 +12241,66 @@ abstract class AppLocalizations {
   /// **'In streaming'**
   String get storageModeStream;
 
+  /// No description provided for @downloadFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'Cartella dei download'**
+  String get downloadFolder;
+
+  /// No description provided for @downloadFolderDefault.
+  ///
+  /// In it, this message translates to:
+  /// **'Quella di Musica (predefinita)'**
+  String get downloadFolderDefault;
+
+  /// No description provided for @downloadFolderReset.
+  ///
+  /// In it, this message translates to:
+  /// **'Torna alla cartella predefinita'**
+  String get downloadFolderReset;
+
+  /// No description provided for @downloadMemory.
+  ///
+  /// In it, this message translates to:
+  /// **'Memoria dei download'**
+  String get downloadMemory;
+
+  /// No description provided for @downloadMemoryInternal.
+  ///
+  /// In it, this message translates to:
+  /// **'Memoria interna'**
+  String get downloadMemoryInternal;
+
+  /// No description provided for @downloadMemorySd.
+  ///
+  /// In it, this message translates to:
+  /// **'Scheda SD ({name})'**
+  String downloadMemorySd(String name);
+
+  /// No description provided for @downloadMemorySdMissing.
+  ///
+  /// In it, this message translates to:
+  /// **'Scheda SD non inserita ({name})'**
+  String downloadMemorySdMissing(String name);
+
+  /// No description provided for @downloadMemoryRestart.
+  ///
+  /// In it, this message translates to:
+  /// **'Il cambio vale dal prossimo avvio.'**
+  String get downloadMemoryRestart;
+
+  /// No description provided for @downloadMemorySdLegacy.
+  ///
+  /// In it, this message translates to:
+  /// **'Sulla scheda SD in questa versione di Android i file stanno nella cartella dell\'app e spariscono se la disinstalli.'**
+  String get downloadMemorySdLegacy;
+
+  /// No description provided for @onboardingStorageSdHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Salva i download e la cache sulla scheda SD.'**
+  String get onboardingStorageSdHint;
+
   /// No description provided for @prefetchOnMobile.
   ///
   /// In it, this message translates to:
@@ -12324,6 +12384,198 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.'**
   String get noStreamedTracks;
+
+  /// No description provided for @autoBackup.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup automatico'**
+  String get autoBackup;
+
+  /// No description provided for @autoBackupHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Una volta a settimana salva un backup nella cartella che scegli, tenendo gli ultimi 3.'**
+  String get autoBackupHint;
+
+  /// No description provided for @autoBackupFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'Cartella del backup'**
+  String get autoBackupFolder;
+
+  /// No description provided for @autoBackupNever.
+  ///
+  /// In it, this message translates to:
+  /// **'mai'**
+  String get autoBackupNever;
+
+  /// No description provided for @autoBackupSummary.
+  ///
+  /// In it, this message translates to:
+  /// **'{folder}, ultimo: {last}'**
+  String autoBackupSummary(String folder, String last);
+
+  /// No description provided for @logBackup.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup automatico'**
+  String get logBackup;
+
+  /// No description provided for @logBackupSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Salvato nella cartella scelta.'**
+  String get logBackupSub;
+
+  /// No description provided for @autoBackupHintAndroid.
+  ///
+  /// In it, this message translates to:
+  /// **'I backup vanno in Documenti/FreeKmusic: copiali altrove per tenerli al sicuro.'**
+  String get autoBackupHintAndroid;
+
+  /// No description provided for @autoBackupHintAndroidApp.
+  ///
+  /// In it, this message translates to:
+  /// **'I backup vanno nella cartella dell\'app e si cancellano se la disinstalli: copiali altrove per tenerli al sicuro.'**
+  String get autoBackupHintAndroidApp;
+
+  /// No description provided for @logBackupFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup automatico non riuscito'**
+  String get logBackupFailed;
+
+  /// No description provided for @qualityDownload.
+  ///
+  /// In it, this message translates to:
+  /// **'Qualità download'**
+  String get qualityDownload;
+
+  /// No description provided for @qualityStream.
+  ///
+  /// In it, this message translates to:
+  /// **'Qualità streaming'**
+  String get qualityStream;
+
+  /// No description provided for @qualityHigh.
+  ///
+  /// In it, this message translates to:
+  /// **'Alta'**
+  String get qualityHigh;
+
+  /// No description provided for @qualityMedium.
+  ///
+  /// In it, this message translates to:
+  /// **'Media (~128 kbps)'**
+  String get qualityMedium;
+
+  /// No description provided for @qualityLow.
+  ///
+  /// In it, this message translates to:
+  /// **'Bassa (~64 kbps)'**
+  String get qualityLow;
+
+  /// No description provided for @freeSpaceTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Libera spazio'**
+  String get freeSpaceTitle;
+
+  /// No description provided for @freeSpaceIntro.
+  ///
+  /// In it, this message translates to:
+  /// **'Questi brani diventano in streaming: il file si cancella, restano preferiti, playlist e ascolti.'**
+  String get freeSpaceIntro;
+
+  /// No description provided for @freeSpaceStale.
+  ///
+  /// In it, this message translates to:
+  /// **'Non ascoltati da 90 giorni'**
+  String get freeSpaceStale;
+
+  /// No description provided for @freeSpaceOthers.
+  ///
+  /// In it, this message translates to:
+  /// **'Altri download'**
+  String get freeSpaceOthers;
+
+  /// No description provided for @freeSpaceAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutti i download ({n}) {size}'**
+  String freeSpaceAll(int n, String size);
+
+  /// No description provided for @freeSpaceButton.
+  ///
+  /// In it, this message translates to:
+  /// **'Libera {size}'**
+  String freeSpaceButton(String size);
+
+  /// No description provided for @freeSpaceEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun download da liberare.'**
+  String get freeSpaceEmpty;
+
+  /// No description provided for @freeSpaceBusy.
+  ///
+  /// In it, this message translates to:
+  /// **'Una scansione è in corso: riprova quando finisce.'**
+  String get freeSpaceBusy;
+
+  /// No description provided for @freeSpaceConfirmTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Liberare lo spazio?'**
+  String get freeSpaceConfirmTitle;
+
+  /// No description provided for @freeSpaceConfirmBody.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano diventa in streaming e il suo file viene cancellato.} other{{n} brani diventano in streaming e i loro file vengono cancellati.}}'**
+  String freeSpaceConfirmBody(int n);
+
+  /// No description provided for @freeSpaceDone.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano liberato} other{{n} brani liberati}}, {size}'**
+  String freeSpaceDone(int n, String size);
+
+  /// No description provided for @freeSpaceFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano non è stato liberato: il file è rimasto dov’è.} other{{n} brani non sono stati liberati: i file sono rimasti dove sono.}}'**
+  String freeSpaceFailed(int n);
+
+  /// No description provided for @keepOfflineAction.
+  ///
+  /// In it, this message translates to:
+  /// **'Tieni offline'**
+  String get keepOfflineAction;
+
+  /// No description provided for @keepOfflineQueued.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano in download} other{{n} brani in download}}'**
+  String keepOfflineQueued(int n);
+
+  /// No description provided for @keepOfflineAlready.
+  ///
+  /// In it, this message translates to:
+  /// **'Già tutti offline'**
+  String get keepOfflineAlready;
+
+  /// No description provided for @logVanishedReplaced.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano sostituito: {name}'**
+  String logVanishedReplaced(String name);
+
+  /// No description provided for @logVanishedGone.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano non più disponibile: {name}'**
+  String logVanishedGone(String name);
 }
 
 class _AppLocalizationsDelegate

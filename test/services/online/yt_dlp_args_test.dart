@@ -14,6 +14,25 @@ List<String> args({
         jsArgs: ['--js-runtimes', 'node']);
 
 void main() {
+  test('quality: high as today, medium and low cap the source bitrate', () {
+    String sel(AudioQuality q) => downloadChoice(DownloadFormat.m4a, hasFfmpeg: true, quality: q).selector;
+    expect(sel(AudioQuality.high), 'bestaudio[ext=m4a]/bestaudio/best');
+    expect(sel(AudioQuality.medium), 'bestaudio[abr<=135]/bestaudio');
+    expect(sel(AudioQuality.low), 'bestaudio[abr<=64]/worstaudio');
+    final a = args(options: const DownloadOptions(quality: AudioQuality.low));
+    expect(a, containsAllInOrder(['-f', 'bestaudio[abr<=64]/worstaudio', '--audio-format', 'm4a']));
+  });
+
+  test('quality: medium and low re-encode at their cap, never at the 192K of high', () {
+    String? q(DownloadFormat f, AudioQuality a) => downloadChoice(f, hasFfmpeg: true, quality: a).quality;
+    expect(q(DownloadFormat.m4a, AudioQuality.high), '192K');
+    expect(q(DownloadFormat.m4a, AudioQuality.medium), '135K');
+    expect(q(DownloadFormat.mp3High, AudioQuality.low), '64K');
+    expect(q(DownloadFormat.original, AudioQuality.low), isNull);
+    final a = args(options: const DownloadOptions(quality: AudioQuality.low));
+    expect(a, containsAllInOrder(['--audio-quality', '64K']));
+  });
+
   test('default: M4A, YouTube\'s AAC stream first, no rate limit', () {
     final a = args();
     expect(
