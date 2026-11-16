@@ -8,6 +8,9 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/exportify_providers.dart';
 import '../../../providers/folder_actions.dart';
 import '../../../providers/library_providers.dart';
+import '../../../providers/memory_providers.dart';
+import '../../../data/settings/settings_store.dart' show StorageMode;
+import '../../widgets/format_utils.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/scanner/library_scanner.dart' show ScanProgress;
 import '../../theme/tokens.dart';
@@ -22,7 +25,7 @@ class _Page extends StatelessWidget {
     required this.children,
   });
 
-  /// Zero-based position in the guide: the ring fills one fifth per page.
+  /// Zero-based position in the guide: the ring fills one sixth per page.
   final int index;
   final IconData icon;
   final String title;
@@ -224,6 +227,70 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
   }
 }
 
+/// Under this much free space the guide suggests streaming (D-575).
+const _lowSpaceBytes = 4 * 1024 * 1024 * 1024;
+
+/// «Dove tieni la musica?»: files on the device or saved tracks in streaming.
+class StoragePage extends ConsumerStatefulWidget {
+  const StoragePage({super.key});
+
+  @override
+  ConsumerState<StoragePage> createState() => _StoragePageState();
+}
+
+class _StoragePageState extends ConsumerState<StoragePage> {
+  bool _preselected = false;
+
+  void _set(StorageMode m) =>
+      ref.read(settingsProvider.notifier).update((s) => s.copyWith(storageMode: m));
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final free = ref.watch(musicDiskSpaceProvider).value?.freeBytes;
+    if (free != null && !_preselected) {
+      _preselected = true;
+      final m = free < _lowSpaceBytes ? StorageMode.stream : StorageMode.device;
+      // After the frame: a provider cannot change while the tree is building.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _set(m);
+      });
+    }
+    final mode = ref.watch(settingsProvider.select((s) => s.storageMode));
+    return _Page(
+      index: 2,
+      icon: Icons.storage_rounded,
+      title: l.onboardingStorageTitle,
+      children: [
+        _body(context, l.onboardingStorageBody),
+        if (free != null) _body(context, l.onboardingStorageFree(formatBytes(free, l.localeName))),
+        RadioGroup<StorageMode>(
+          groupValue: mode,
+          onChanged: (m) {
+            if (m != null) _set(m);
+          },
+          child: Column(
+            children: [
+              RadioListTile<StorageMode>(
+                contentPadding: EdgeInsets.zero,
+                value: StorageMode.device,
+                title: Text(l.storageModeDevice),
+                subtitle: Text(l.onboardingStorageDeviceHint),
+              ),
+              RadioListTile<StorageMode>(
+                contentPadding: EdgeInsets.zero,
+                value: StorageMode.stream,
+                title: Text(l.storageModeStream),
+                subtitle: Text(l.onboardingStorageStreamHint),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Scan in progress after a folder is added (the scan itself is shared).
 class _ScanProgress extends StatelessWidget {
   const _ScanProgress(this.progress);
@@ -264,7 +331,7 @@ class OnlinePage extends ConsumerWidget {
     final s = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     return _Page(
-      index: 2,
+      index: 3,
       icon: Icons.cloud_outlined,
       title: l.onboardingOnlineTitle,
       children: [
@@ -319,7 +386,7 @@ class SpotifyPage extends ConsumerWidget {
     final l = context.l10n;
     final lines = l.onboardingSpotifyBody.split('\n');
     return _Page(
-      index: 3,
+      index: 4,
       icon: Icons.playlist_add_rounded,
       title: l.onboardingSpotifyTitle,
       children: [
@@ -352,7 +419,7 @@ class SharePage extends StatelessWidget {
     final l = context.l10n;
     final cc = context.cc;
     return _Page(
-      index: 4,
+      index: 5,
       icon: Icons.devices_rounded,
       title: l.onboardingShareTitle,
       children: [

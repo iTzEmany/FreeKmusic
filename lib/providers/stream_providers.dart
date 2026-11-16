@@ -6,20 +6,23 @@ import '../core/app_log.dart';
 import '../core/platform.dart';
 import '../data/repositories/track_repository.dart';
 import '../data/repositories/track_kinds.dart';
+import '../services/audio/codecore_audio_handler.dart' show CodecoreAudioHandler;
 import '../services/audio/online_entries.dart' show isOnlineId;
+import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/enrich_parts.dart' show EnrichStatus;
 import '../services/online/media_publisher.dart';
 import '../services/online/synthetic_track.dart';
 import '../services/stream/stream_enrich_trigger.dart';
 import '../services/online/enrichment_service.dart';
 import '../services/stream/stream_cache.dart';
+import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import '../services/stream/stream_preparer.dart';
 import '../services/stream/stream_promoter.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
 import 'settings_providers.dart';
 import 'online_providers.dart';
-import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider, onlineEntriesProvider;
+import 'player_providers.dart' show audioHandlerProvider, currentShadowRowProvider, currentTrackProvider, onlineEntriesProvider, queueProvider;
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'youtube_providers.dart';
 
@@ -54,6 +57,7 @@ void _applyLimit(StreamCache cache, int mb, void Function() done) {
 final streamPreparerProvider = Provider<StreamPreparer>((ref) {
   final cache = ref.watch(streamCacheProvider);
   void used() => ref.invalidate(streamCacheUsedProvider);
+  cache.keepLonger = ref.read(trackRepositoryProvider).favoriteStreamKeys;
   _applyLimit(cache, ref.read(settingsProvider).streamCacheMb, used);
   ref.listen(settingsProvider.select((s) => s.streamCacheMb), (_, mb) => _applyLimit(cache, mb, used));
   final preparer = StreamPreparer(
@@ -61,6 +65,8 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
     tracks: ref.watch(trackRepositoryProvider),
     youtube: ref.watch(youtubeServiceProvider),
     isMetered: () async => (await ref.read(networkProbeProvider).current()).metered,
+    prefetchOnMetered: () => ref.read(settingsProvider).prefetchOnMobile,
+    isOnline: () async => (await ref.read(networkProbeProvider).current()).online,
   );
   ref.onDispose(preparer.dispose);
   return preparer;
@@ -144,3 +150,45 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
           : null,
       onShadowMerged: (shadow, keep) => ref.read(audioHandlerProvider).replaceQueueId(shadow, keep),
     ));
+
+/// Whether the device has a network now (always true off Android). AutoDispose: a missed
+/// `changed` event must not pin a stale value; reopening the queue re-reads the probe.
+final networkOnlineProvider = StreamProvider.autoDispose<bool>((ref) async* {
+  final probe = ref.watch(networkProbeProvider);
+  yield (await probe.current()).online;
+  await for (final _ in probe.changes) {
+    yield (await probe.current()).online;
+  }
+});
+
+/// With no network: ids of the queue's streamed tracks that are not in the cache
+/// (the player skips them, D-577). Null while online.
+final queueOfflineOutProvider = FutureProvider.autoDispose<Set<int>?>((ref) async {
+  if (await ref.watch(networkOnlineProvider.future)) return null;
+  final queue = await ref.watch(queueProvider.future);
+  final online = ref.watch(onlineEntriesProvider);
+  final cache = ref.watch(streamCacheProvider);
+  final handler = ref.read(audioHandlerProvider);
+  final out = <int>{};
+  for (final t in queue) {
+    // A downloaded entry plays from its library file.
+    final entry = isOnlineId(t.id) ? online?.entryOf(t.id) : null;
+    if (entry != null && await _downloaded(handler, entry.result)) continue;
+    final key = isOnlineId(t.id)
+        ? entry?.result.indexKey
+        : t.kind == kStreamKind
+            ? keyOfStreamPath(t.path)
+            : null;
+    if (key != null && await cache.fileFor(key) == null) out.add(t.id);
+  }
+  return out;
+});
+
+Future<bool> _downloaded(CodecoreAudioHandler handler, YtResult r) async {
+  try {
+    return await handler.libraryIdOf?.call(r) != null;
+  } on Object catch (e, st) {
+    AppLog.w('download lookup failed: offline queue', e, st);
+    return false;
+  }
+}

@@ -3,7 +3,7 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/stream/stream_key.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track _row({String? artist = 'A'}) => Track(coverSource: 0, 
+Track _row({String? artist = 'A'}) => Track(saved: false, coverSource: 0, 
       id: 1, path: 'stream:x', title: 'T', artist: artist, album: 'Al', albumKey: '',
       durationMs: 5000, format: '', sizeBytes: 0, mtimeMs: 0, hasCover: false,
       isFavorite: false, enrichStatus: 0, userEdited: false, missing: false,

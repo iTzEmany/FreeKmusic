@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/shuffle_plus_providers.dart';
+import '../../../providers/library_add_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../services/shuffle_plus/genre_mix.dart';
@@ -160,12 +161,7 @@ class _SuggestedRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
-    final inLibrary =
-        ref
-            .watch(downloadIndexProvider)
-            .value
-            ?.contains(result.id, source: result.source) ??
-        false;
+    final inLibrary = ref.watch(inLibraryOfProvider)(result.id, result.source);
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,
@@ -195,7 +191,7 @@ class _SuggestedRow extends ConsumerWidget {
       onTap: () => tapOnline(context, ref, result),
       onQueue: () => queueOnline(context, ref, result),
       onMore: () => showOnlineActions(context, ref, result),
-      onDownload: () => ref.read(downloadsProvider.notifier).add(result),
+      onDownload: () => ref.read(libraryAdderProvider).add(result),
     );
   }
 }

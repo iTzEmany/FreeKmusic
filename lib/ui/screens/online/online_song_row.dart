@@ -5,7 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/library_add_providers.dart';
+import '../../../providers/settings_providers.dart';
 import '../../../providers/youtube_providers.dart';
+import '../../../data/settings/settings_store.dart' show StorageMode;
 import '../../../services/online/download_queue.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../providers/player_providers.dart';
@@ -37,7 +40,8 @@ void startOnlineDownloads(
   Iterable<YtResult> picked,
 ) {
   final l = context.l10n;
-  final index = ref.read(downloadIndexProvider).value;
+  final inLibrary = ref.read(inLibraryOfProvider);
+  final streaming = ref.read(settingsProvider).storageMode == StorageMode.stream;
   final busy = {
     for (final d in ref.read(downloadsProvider))
       if (d.status == DownloadStatus.queued ||
@@ -47,18 +51,19 @@ void startOnlineDownloads(
   };
   var started = 0, skipped = 0;
   for (final r in picked) {
-    if ((index?.contains(r.id, source: r.source) ?? false) ||
-        busy.contains(r.id)) {
+    if (inLibrary(r.id, r.source) || busy.contains(r.id)) {
       skipped++;
       continue;
     }
-    ref.read(downloadsProvider.notifier).add(r);
+    ref.read(libraryAdderProvider).add(r);
     started++;
   }
   showMsg(
     context,
     started == 0
         ? l.ytNothingToDownload
+        : streaming
+        ? (skipped == 0 ? l.libraryAddedMany(started) : l.libraryAddedSkipped(started, skipped))
         : skipped == 0
         ? l.ytDownloadsStarted(started)
         : l.ytDownloadsSkipped(started, skipped),
@@ -118,13 +123,7 @@ class OnlineSongTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pick = watchOnlinePick(ref, selectionKey, index);
-    final inLibrary =
-        ownedLocally ||
-        (ref
-                .watch(downloadIndexProvider)
-                .value
-                ?.contains(result.id, source: result.source) ??
-            false);
+    final inLibrary = ownedLocally || ref.watch(inLibraryOfProvider)(result.id, result.source);
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,
@@ -143,7 +142,7 @@ class OnlineSongTile extends ConsumerWidget {
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, result),
       onMore: () => showOnlineActions(context, ref, result),
-      onDownload: () => ref.read(downloadsProvider.notifier).add(result),
+      onDownload: () => ref.read(libraryAdderProvider).add(result),
     );
   }
 }
@@ -312,7 +311,7 @@ class OnlineSongRow extends StatelessWidget {
   }
 }
 
-class _DownloadState extends StatelessWidget {
+class _DownloadState extends ConsumerWidget {
   const _DownloadState({
     required this.item,
     required this.inLibrary,
@@ -324,7 +323,7 @@ class _DownloadState extends StatelessWidget {
   final VoidCallback onDownload;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
     final st = item?.status;
@@ -361,7 +360,7 @@ class _DownloadState extends StatelessWidget {
       );
     } else {
       trailing = IconButton(
-        tooltip: l.ytDownload,
+        tooltip: ref.watch(settingsProvider).storageMode == StorageMode.stream ? l.addToLibrary : l.ytDownload,
         icon: const Icon(Icons.download_rounded),
         onPressed: onDownload,
       );

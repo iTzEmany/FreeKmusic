@@ -14,7 +14,7 @@ import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-Track track(int id) => Track(
+Track track(int id) => Track(saved: false, 
   coverSource: 0,
   id: id,
   path: '/m/$id.mp3',

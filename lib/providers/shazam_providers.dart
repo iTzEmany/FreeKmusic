@@ -11,7 +11,7 @@ import '../services/stream/stream_key.dart' show displayArtist;
 import 'database_providers.dart';
 import 'settings_providers.dart';
 import 'smart_search_providers.dart' show collectionMatcherProvider;
-import 'youtube_providers.dart' show downloadsProvider;
+import 'library_add_providers.dart';
 
 /// Name of the playlist; shortcut: not localised (a proper name, like the app's), created once.
 const kShazamPlaylistName = 'Da Shazam';
@@ -99,7 +99,7 @@ class ShazamInbox {
     final id = lib?.id ?? await tracks.ensureStreamRow(online!);
     if (!await playlists.addAtTop(pid, id)) return ShazamDuplicate(title); // same id
     if (online != null && store.readShazamAutoDownload()) {
-      await _ref.read(downloadsProvider.notifier).add(online).catchError((Object e, StackTrace st) {
+      await _ref.read(libraryAdderProvider).add(online).catchError((Object e, StackTrace st) {
         AppLog.w('shazam: download not started', e, st);
         return false;
       });

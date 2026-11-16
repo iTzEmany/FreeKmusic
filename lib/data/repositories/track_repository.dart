@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../core/import_row.dart';
 import '../../core/text_utils.dart';
 import '../../services/share/track_meta.dart';
@@ -141,6 +143,14 @@ class TrackRepository {
     return row != null && row.kind == kStreamKind ? row : null;
   }
 
+  /// Keys of the streamed tracks (shadow rows) marked as favourites: the cache evicts them last.
+  Future<Set<String>> favoriteStreamKeys() async {
+    final rows = await (_db.select(_db.tracks)
+          ..where((t) => t.kind.equals(kStreamKind) & t.isFavorite.equals(true)))
+        .get();
+    return {for (final r in rows) ?keyOfStreamPath(r.path)};
+  }
+
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
   /// in the cache). Rows with plays stay (D-81), and so do the ones in a playlist
   /// (D-524). Returns how many went.
@@ -148,6 +158,7 @@ class TrackRepository {
       (_db.delete(_db.tracks)..where(
             (t) =>
                 t.kind.equals(kStreamKind) &
+                t.saved.equals(false) &
                 t.path.isNotIn([for (final k in keepKeys) streamPathOf(k)]) &
                 notExistsQuery(
                   _db.select(_db.plays)
@@ -191,6 +202,7 @@ class TrackRepository {
           ),
         ),
         missing: const Value(false),
+        saved: const Value(false),
       ),
     );
     return getById(row.id);
@@ -248,6 +260,59 @@ class TrackRepository {
     return _db.into(_db.tracks).insert(
       _streamRow(r.indexKey, r, format: '', sizeBytes: 0, mtimeMs: 0),
     );
+  });
+
+  /// Returns how many rows changed.
+  Future<int> setSaved(String key, bool saved) =>
+      (_db.update(_db.tracks)
+            ..where((t) => t.path.equals(streamPathOf(key)) & t.kind.equals(kStreamKind)))
+          .write(TracksCompanion(saved: Value(saved)));
+
+  /// Cache keys (`<source>:<id>`) of the saved streamed tracks: «already in the library» for the online rows.
+  Stream<Set<String>> watchSavedStreamKeys() =>
+      (_db.selectOnly(_db.tracks)
+            ..addColumns([_db.tracks.path])
+            ..where(_db.tracks.kind.equals(kStreamKind) & _db.tracks.saved.equals(true)))
+          .watch()
+          .map((rows) => {
+                for (final r in rows) ?keyOfStreamPath(r.read(_db.tracks.path)!),
+              });
+
+  /// Saves the streamed track [r] to the library: its shadow row (created when missing)
+  /// becomes `saved`, grouped with the other saved tracks of its album (never a local one).
+  /// Returns its id, or null when the row at that path is not a shadow row (an episode).
+  Future<int?> saveStream(YtResult r) => _db.transaction(() async {
+    final id = await ensureStreamRow(r);
+    final row = (await getById(id))!;
+    if (row.kind != kStreamKind) {
+      AppLog.w('saveStream: ${row.path} is not a shadow row (kind ${row.kind}), not saved');
+      return null;
+    }
+    // A row made without album or artist (radio, related) takes them from [r], unless edited by hand.
+    final fill = !row.userEdited;
+    final album = fill && (row.album ?? '').isEmpty ? r.album : row.album;
+    // The shadow row holds the joined credits ("A, B"): the album groups by the first one.
+    final artist = !fill
+        ? row.artist
+        : r.artists.isNotEmpty
+        ? r.artists.first
+        : ((row.artist ?? '').isEmpty ? r.channel : row.artist);
+    var key = streamAlbumKey(albumArtist: row.albumArtist, artist: artist, album: album);
+    // A generic album would lump unrelated tracks together: keep the row's own key.
+    // A hand-picked album key (edited row) is never overwritten.
+    if (key.startsWith('stream|unknown|') || row.userEdited) key = row.albumKey;
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(
+        saved: const Value(true),
+        album: Value(album),
+        artist: Value(artist),
+        albumKey: Value(key),
+        // A track listened to before enters the library now: it is a recent addition.
+        addedAt: row.saved ? const Value.absent() : Value(nowMs()),
+      ),
+    );
+    await settleMovedCover(row, key);
+    return id;
   });
 
   TracksCompanion _streamRow(
@@ -523,7 +588,7 @@ class TrackRepository {
       (t) =>
           t.missing.equals(false) &
           t.ignored.equals(false) &
-          t.kind.equals(kMusicKind),
+          isLibraryRow(t),
     ),
   ).get();
 
@@ -531,13 +596,14 @@ class TrackRepository {
     String query = '',
     SortOption sort = SortOption.defaultOrder,
     bool favoritesOnly = false,
+    LibraryFilter filter = LibraryFilter.all,
   }) {
     final q = _db.select(_db.tracks)
       ..where((t) {
         Expression<bool> cond =
             t.missing.equals(false) &
             t.ignored.equals(false) &
-            t.kind.equals(0);
+            isLibraryRow(t, filter);
         if (favoritesOnly) cond = cond & t.isFavorite.equals(true);
         final text = query.trim();
         if (text.isNotEmpty) {
@@ -691,7 +757,7 @@ class TrackRepository {
     return _db
         .customSelect(
           'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 '
-          'AND ignored = 0 AND kind = 0 AND artist IN '
+          'AND ignored = 0 AND ${libraryRowSql()} AND artist IN '
           '(${List.filled(spellings.length, '?').join(',')}) '
           'ORDER BY title COLLATE NOCASE',
           variables: [for (final s in spellings) Variable<String>(s)],
@@ -852,7 +918,7 @@ class TrackRepository {
                         t.albumKey.equals(key) &
                         t.missing.equals(false) &
                         t.ignored.equals(false) &
-                        t.kind.equals(0),
+                        isLibraryRow(t),
                   )
                   ..orderBy([
                     (t) => OrderingTerm.asc(t.discNumber),
@@ -982,7 +1048,7 @@ class TrackRepository {
         (t) =>
             t.missing.equals(false) &
             t.ignored.equals(false) &
-            t.kind.equals(0),
+            isLibraryRow(t),
       )
       ..orderBy([
         (t) => OrderingTerm.desc(t.addedAt),
@@ -1044,7 +1110,7 @@ class TrackRepository {
     final rows = await _db
         .customSelect(
           'SELECT id, title, artist, duration_ms, path FROM tracks '
-          'WHERE missing = 0 AND ignored = 0 AND kind = 0',
+          'WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()}',
           readsFrom: {_db.tracks},
         )
         .get();
@@ -1223,7 +1289,7 @@ class TrackRepository {
     final row =
         await (_db.selectOnly(_db.tracks)
               ..addColumns([c])
-              ..where(_db.tracks.kind.equals(0)))
+              ..where(isLibraryRow(_db.tracks)))
             .getSingle();
     return row.read(c) ?? 0;
   }
@@ -1234,7 +1300,7 @@ class TrackRepository {
     return (_db.selectOnly(_db.tracks)
           ..addColumns([c])
           ..where(
-            _db.tracks.kind.equals(0) &
+            isLibraryRow(_db.tracks) &
                 _db.tracks.missing.equals(false) &
                 _db.tracks.ignored.equals(false) &
                 (favoritesOnly

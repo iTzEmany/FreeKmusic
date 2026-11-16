@@ -45,9 +45,13 @@ class Tracks extends Table {
   /// the scanner never clears it; «Brani nascosti» does.
   BoolColumn get ignored => boolean().withDefault(const Constant(false))();
 
-  /// 0 music · 1 a downloaded podcast episode. Every music view filters
-  /// `kind = 0`: episodes never show up in the library. Playlists hold kind 0 and 2 (shadow rows).
+  /// 0 music · 1 a downloaded podcast episode. 2 a shadow row (streamed track). Library views
+  /// filter `libraryRowSql` (kind 0, or kind 2 with `saved`): episodes and unsaved shadow rows never show
+  /// up in the library. Playlists hold kind 0 and 2.
   IntColumn get kind => integer().withDefault(const Constant(0))();
+
+  /// A shadow row (kind 2) the user saved to the library: it shows in the library views (D-607).
+  BoolColumn get saved => boolean().withDefault(const Constant(false))();
   TextColumn get sha256 => text().nullable()();
   IntColumn get addedAt => integer()();
   IntColumn get playCount => integer().withDefault(const Constant(0))();

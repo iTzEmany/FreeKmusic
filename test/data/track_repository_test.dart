@@ -1,5 +1,6 @@
 import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_kinds.dart' show LibraryFilter;
 import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
 import 'package:codecore/services/online/download_index.dart';
 import 'dart:io';
@@ -552,6 +553,80 @@ void main() {
       expect((await pl.watchTracks(p).first).map((t) => t.id), [inList]);
     });
 
+    test('saveStream makes a saved shadow row with an album key, setSaved toggles, a saved row is kept', () async {
+      final r = YtResult(id: 'a', title: 'T', channel: 'Ch', duration: null, artists: ['Art'], album: 'Alb');
+      final id = await repo.saveStream(r);
+      var t = (await repo.getById(id!))!;
+      expect([t.kind, t.saved, t.albumKey], [2, true, 'stream|art|alb']);
+      expect(await repo.deleteUnplayedStreamRows(), 0);
+      await repo.setSaved(r.indexKey, false);
+      expect((await repo.getById(id))!.saved, isFalse);
+      expect(await repo.deleteUnplayedStreamRows(), 1);
+    });
+
+    test('saveStream on an existing row: new addedAt, album and first artist filled in, key from them', () async {
+      final bare = YtResult(id: 'b', title: 'T', channel: 'Ch', duration: null);
+      final id = await repo.ensureStreamRow(bare);
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(addedAt: Value(1)));
+      final r = YtResult(id: 'b', title: 'T', channel: 'Ch', duration: null, artists: ['Art', 'Feat'], album: 'Alb');
+      expect(await repo.saveStream(r), id);
+      final t = (await repo.getById(id))!;
+      expect([t.artist, t.album, t.albumKey], ['Art', 'Alb', 'stream|art|alb']);
+      expect(t.addedAt, greaterThan(1));
+      // Saving again keeps the date.
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(addedAt: Value(1)));
+      await repo.saveStream(r);
+      expect((await repo.getById(id))!.addedAt, 1);
+    });
+
+    test('saveStream with no album keeps the album key; an episode on the path is not saved', () async {
+      final r = YtResult(id: 'n', title: 'T', channel: 'Ch', duration: null);
+      final id = await repo.saveStream(r);
+      expect((await repo.getById(id!))!.albumKey, 'stream|youtube:n');
+      final ep = YtResult(id: 'e', title: 'E', channel: 'Ch', duration: null);
+      final epId = await repo.ensureStreamRow(ep);
+      await (db.update(db.tracks)..where((t) => t.id.equals(epId))).write(const TracksCompanion(kind: Value(1)));
+      expect(await repo.saveStream(ep), equals(null));
+      expect((await repo.getById(epId))!.saved, isFalse);
+      expect(await repo.setSaved(ep.indexKey, true), 0);
+      expect(await repo.setSaved(r.indexKey, false), 1);
+    });
+
+    test('saveStream keeps the fields and the album key of a row edited by hand', () async {
+      final id = await repo.ensureStreamRow(YtResult(id: 'u', title: 'T', channel: 'Ch', duration: null));
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(
+          userEdited: Value(true), artist: Value('Mine'), album: Value(''), albumKey: Value('stream|hand|pick')));
+      await repo.saveStream(YtResult(id: 'u', title: 'T', channel: 'Ch', duration: null, artists: ['Art'], album: 'Alb'));
+      final t = (await repo.getById(id))!;
+      expect([t.saved, t.artist, t.album, t.albumKey], [true, 'Mine', '', 'stream|hand|pick']);
+    });
+
+    test('saveStream takes the channel as artist when the result has no artists, and moves a hand-picked cover', () async {
+      final id = await repo.ensureStreamRow(YtResult(id: 'c', title: 'T', channel: 'Ch', duration: null));
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(
+          artist: Value(''), coverSource: Value(1), coverKey: Value('pick'), hasCover: Value(true)));
+      await repo.saveStream(YtResult(id: 'c', title: 'T', channel: 'Ch', duration: null, album: 'Alb'));
+      final t = (await repo.getById(id))!;
+      expect([t.artist, t.albumKey, t.coverSource, t.coverKey], ['Ch', 'stream|ch|alb', 0, null]);
+    });
+
+    test('favoriteStreamKeys lists favourite shadow rows only', () async {
+      await repo.ensureStreamRow(YtResult(id: 'f1', title: 'A', channel: 'Ch', duration: null));
+      await repo.ensureStreamRow(YtResult(id: 'f2', title: 'B', channel: 'Ch', duration: null));
+      await db.customStatement("UPDATE tracks SET is_favorite = 1 WHERE path = 'stream:youtube:f1'");
+      expect(await repo.favoriteStreamKeys(), {'youtube:f1'});
+    });
+
+    test('a saved row that becomes a file is no longer saved', () async {
+      final folderId = (await FolderRepository(db).add('/m')).id;
+      final id = (await repo.saveStream(YtResult(id: 'p', title: 'T', channel: 'Ch', duration: null)))!;
+      final dir = Directory.systemTemp.createTempSync('promo');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File(p.join(dir.path, 'p.mp3'))..writeAsBytesSync([1]);
+      final t = await repo.promoteStreamRow('youtube:p', file.path, folderId, file);
+      expect([t!.id, t.kind, t.saved], [id, 0, false]);
+    });
+
     test('downloading a streamed track keeps its place in the playlist', () async {
       await repo.upsertBatch([row('/a.mp3', 'A'), row('/c.mp3', 'C'), row('/b.mp3', 'B')]);
       final lib = {for (final t in await db.select(db.tracks).get()) t.title: t.id};
@@ -588,5 +663,6 @@ class _FlakyRepo extends TrackRepository {
     String query = '',
     SortOption sort = SortOption.defaultOrder,
     bool favoritesOnly = false,
+    LibraryFilter filter = LibraryFilter.all,
   }) => fail() ? Stream.error(StateError('boom')) : Stream.value(const []);
 }

@@ -16,7 +16,7 @@ Track track(
   int? played,
   int plays = 0,
 }) =>
-    Track(coverSource: 0, 
+    Track(saved: false, coverSource: 0, 
       id: id,
       path: '/$id',
       title: title,

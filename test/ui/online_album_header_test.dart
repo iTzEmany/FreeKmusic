@@ -1,3 +1,4 @@
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/selection_providers.dart' show SelectionKey;
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
@@ -66,13 +67,14 @@ void main() {
   late _Ctrl ctrl;
   late _Downloads downloads;
 
-  Future<Harness> show(WidgetTester tester, {bool jam = false}) async {
+  Future<Harness> show(WidgetTester tester, {bool jam = false, StorageMode? mode}) async {
     tester.view.physicalSize = const Size(500, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     ctrl = _Ctrl()..inJam = jam;
     downloads = _Downloads();
     final h = await Harness.create(tester);
+    if (mode != null) await tester.runAsync(() => h.store.writeSettings(h.store.readSettings().copyWith(storageMode: mode)));
     await tester.runAsync(() => h.db.customStatement(
         "INSERT INTO playlists (name, created_at, uuid, updated_at) VALUES ('P1', 1, 'u1', 1)"));
     await h.pump(tester, const OnlineAlbumScreen(browseId: 'MPREb_wall'), extraOverrides: [
@@ -117,6 +119,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(ctrl.calls, ['enqueue a', 'enqueue b']);
     expect(find.byType(NowPlayingScreen), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('streaming mode: «Aggiungi a playlist» saves the songs into the playlist, no download job', (tester) async {
+    final h = await show(tester, mode: StorageMode.stream);
+    await menu(tester, 'album-menu-playlist');
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('P1'));
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(downloads.adds, isEmpty);
+    final rows = await tester.runAsync(() => h.db.select(h.db.playlistTracks).get());
+    expect(rows, hasLength(2));
+    expect(find.text('2 brani aggiunti a «P1»'), findsOneWidget);
     await h.dispose(tester);
   });
 

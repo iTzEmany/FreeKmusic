@@ -50,6 +50,8 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - `StreamPreparer` avvia dall'URL e scarica in `StreamCache` in parallelo; riproduzione lato audio in `riproduzione-e-coda.md`.
 - Il primo ascolto crea la riga ombra (`kind = 2`, `path = 'stream:<key>'`); il download la fonde in una riga reale (`mergeStreamRow`). Dettagli e pulizia in `libreria-e-dati.md`.
 - Lo streaming funziona anche a consumo (D-68).
+- `StreamCache.keepLonger` (preferiti) fa togliere i preferiti per ultimi dalla cache.
+- `libraryAdder` è l'unico ingresso per aggiungere un brano online: `storageMode` decide tra salvare (streaming) e scaricare (dispositivo); Shazam e importazione passano da lì.
 
 ### yt-dlp e download
 
@@ -76,7 +78,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 ### Shazam
 
-`ShazamShare` entra in `ShazamInbox.add`, che risponde `ShazamAdded`, `Duplicate`, `NotFound` o `Retry`. I brani vanno nella playlist «Da Shazam» (`kShazamPlaylistName`, uuid in `shazamPlaylistUuid`); `shazamAutoDownload` scarica in automatico. Le righe ombra possono stare in playlist (D-524).
+`ShazamShare` entra in `ShazamInbox.add`, che risponde `ShazamAdded`, `Duplicate`, `NotFound` o `Retry`. I brani vanno nella playlist «Da Shazam» (`kShazamPlaylistName`, uuid in `shazamPlaylistUuid`); `shazamAutoDownload` scarica in automatico (in modalità streaming salva senza scaricare, D-576). Le righe ombra possono stare in playlist (D-524).
 
 ### Riconoscimento e arricchimento
 

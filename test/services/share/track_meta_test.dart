@@ -126,7 +126,7 @@ void main() {
   });
 
   test('fromTrack with 250 credits sends 200', () {
-    final t = Track(
+    final t = Track(saved: false, 
       coverSource: 0,
       id: 1,
       path: '/1',

@@ -7707,4 +7707,83 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get chartCountryAuto => 'Automático (região do dispositivo)';
+
+  @override
+  String get storageGroupTitle => 'Memória e streaming';
+
+  @override
+  String get storageWhere => 'Onde guardas a música';
+
+  @override
+  String get storageModeDevice => 'No dispositivo';
+
+  @override
+  String get storageModeStream => 'Em streaming';
+
+  @override
+  String get prefetchOnMobile => 'Pré-carregar também com dados móveis (até 3)';
+
+  @override
+  String get onboardingStorageTitle => 'Onde guardas a música?';
+
+  @override
+  String get onboardingStorageBody =>
+      'Podes manter as músicas como ficheiros no dispositivo ou guardá-las e ouvi-las em streaming. Mudas quando quiseres nas definições.';
+
+  @override
+  String onboardingStorageFree(String size) {
+    return 'Espaço livre: $size';
+  }
+
+  @override
+  String get onboardingStorageDeviceHint =>
+      'Os ficheiros ficam no dispositivo e tocam sem rede.';
+
+  @override
+  String get onboardingStorageStreamHint =>
+      'Ocupa pouco espaço: as músicas carregam enquanto ouves.';
+
+  @override
+  String queueOfflineBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas disponíveis',
+      one: '1 faixa disponível',
+    );
+    return 'Sem rede: $_temp0';
+  }
+
+  @override
+  String get addToLibrary => 'Adicionar à biblioteca';
+
+  @override
+  String get ytDownloadOnDevice => 'Transferir para o dispositivo';
+
+  @override
+  String get libraryFilterLabel => 'Filtro da biblioteca';
+
+  @override
+  String get libraryAddFailed =>
+      'Não foi possível adicionar a música à biblioteca';
+
+  @override
+  String libraryAddedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count músicas adicionadas à biblioteca',
+      one: '1 música adicionada à biblioteca',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryAddedSkipped(int added, int skipped) {
+    return '$added adicionadas à biblioteca, $skipped já existentes ou em curso';
+  }
+
+  @override
+  String get noStreamedTracks =>
+      'Nenhuma faixa em streaming. Use «Adicionar à biblioteca» numa faixa online.';
 }

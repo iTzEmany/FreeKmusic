@@ -1,3 +1,4 @@
+import '../../data/repositories/track_kinds.dart';
 import 'package:drift/drift.dart';
 
 import '../../core/app_log.dart';
@@ -55,6 +56,9 @@ class TrackFileSync {
     TagChanges Function(Track) changes, {
     bool backup = true,
   }) async {
+    // A saved stream row has no file: its tags live in the database only.
+    tracks = [for (final t in tracks) if (t.kind != kStreamKind) t];
+    if (tracks.isEmpty) return TagFileOutcome.none;
     final failures = <int, TagWriteReason>{};
     final SafeTagWriter writer;
     try {

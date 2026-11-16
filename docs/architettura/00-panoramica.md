@@ -144,7 +144,7 @@ Dalle vecchie trappole (ora archiviate in `../storico/gotchas.md`):
 | Termine | Significato |
 |---|---|
 | Blocco (blocco utente) | Brani aggiunti a mano in coda («Aggiungi in coda»): restano subito dopo il corrente, nell'ordine di aggiunta. Vedi `riproduzione-e-coda.md` |
-| Riga ombra (shadow row, `kind = 2`) | Riga in `tracks` per un brano ascoltato in streaming, `path = 'stream:<key>'`. Serve a storico, statistiche, playlist |
+| Riga ombra (shadow row, `kind = 2`) | Riga in `tracks` per un brano ascoltato in streaming, `path = 'stream:<key>'`. Serve a storico, statistiche, playlist, e sta in libreria se `saved` (D-607) |
 | `kind` | 0 musica, 1 episodio podcast, 2 stream (ombra) |
 | Brano online | Voce di coda con id negativo (`OnlineEntries`), non ancora in libreria |
 | Jam | Ascolto condiviso tra dispositivi (LAN o MQTT a distanza). Vedi `sync-backup-jam.md` |

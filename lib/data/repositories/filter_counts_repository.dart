@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'track_kinds.dart';
 import '../../core/text_utils.dart';
 import '../db/app_database.dart';
 import 'artist_info_repository.dart';
@@ -24,7 +25,7 @@ class ValueCount {
 }
 
 // Visible music tracks, as in the rest of the library.
-const _visible = "t.missing = 0 AND t.ignored = 0 AND t.kind = 0";
+final _visible = "t.missing = 0 AND t.ignored = 0 AND ${libraryRowSql('t')}";
 
 /// A value of a list with the key its search and sort use, computed once.
 typedef KeyedCount = ({ValueCount value, String key});

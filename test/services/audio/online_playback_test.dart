@@ -7,7 +7,7 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/stream_providers.dart';
-import 'package:audio_service/audio_service.dart' show AudioProcessingState;
+import 'package:audio_service/audio_service.dart' show AudioProcessingState, AudioServiceRepeatMode;
 import 'package:codecore/services/audio/audio_backend.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
@@ -292,9 +292,114 @@ void main() {
     final id = online.register(result('v1'));
     preparer.failing.add('youtube:v1');
     preparer.failure = const YtException(YtErrorKind.network);
-    await handler.playQueue([id, ids[0]], 0);
+    await handler.playQueue([id], 0);
     await settle();
     expect(failures.single.reason, PlaybackFailureReason.networkUnavailable);
+  });
+
+  // Offline queue helpers: [cachedKeys] are in the cache, the rest are not.
+  List<int> offlineQueue(List<String> names, Set<String> cachedKeys) {
+    preparer.isOnline = () async => false;
+    for (final k in cachedKeys) {
+      preparer.cached['youtube:$k'] = File('${dir.path}/$k.m4a')..writeAsStringSync('x');
+    }
+    return [for (final n in names) online.register(result(n))];
+  }
+
+  test('offline: streams not in the cache are skipped, silently, to the next available one', () async {
+    final q = offlineQueue(['1', '2', '3', '4', 'c1'], {'c1'});
+    await handler.playQueue(q, 0);
+    await settle();
+    expect(failures, isEmpty);
+    expect(preparer.asked, ['youtube:c1']);
+    expect(handler.currentTrack?.id, q.last);
+  });
+
+  test('offline: no DNS or download is tried for a track the probe already knows is unreachable', () async {
+    final q = offlineQueue(['1', 'c1'], {'c1'});
+    await handler.playQueue(q, 0);
+    await settle();
+    expect(preparer.asked, isNot(contains('youtube:1')));
+  });
+
+  test('offline with nothing available in the queue: one network failure, then idle', () async {
+    final q = offlineQueue(['1', '2'], {});
+    await handler.playQueue(q, 0);
+    await settle();
+    expect(failures.single.reason, PlaybackFailureReason.networkUnavailable);
+    expect(handler.playbackState.value.processingState, AudioProcessingState.idle);
+  });
+
+  test('offline with repeat all and nothing in the cache: one failure, no endless loop', () async {
+    final q = offlineQueue(['1', '2', '3'], {});
+    await handler.setRepeatMode(AudioServiceRepeatMode.all);
+    await handler.playQueue(q, 1);
+    await settle();
+    expect(failures.length, 1);
+    expect(handler.playbackState.value.processingState, AudioProcessingState.idle);
+  });
+
+  test('offline with repeat one on [uncached, cached]: the cached one plays, no error', () async {
+    final q = offlineQueue(['1', 'c2'], {'c2'});
+    await handler.setRepeatMode(AudioServiceRepeatMode.one);
+    await handler.playQueue(q, 0);
+    await settle();
+    expect(failures, isEmpty);
+    expect(handler.currentTrack?.id, q.last);
+  });
+
+  test('offline: Previous from the last of [cached, uncached, cached] reaches the first', () async {
+    final q = offlineQueue(['c1', '2', 'c3'], {'c1', 'c3'});
+    await handler.playQueue(q, 2);
+    await settle();
+    await handler.skipToPrevious();
+    await settle();
+    expect(failures, isEmpty);
+    expect(handler.currentTrack?.id, q.first);
+  });
+
+  test('offline: Next with nothing available ahead keeps the playing track and says so once', () async {
+    final q = offlineQueue(['c1', '2'], {'c1'});
+    await handler.playQueue(q, 0);
+    await settle();
+    final loaded = backend.loaded.length;
+    await handler.skipToNext();
+    await settle();
+    expect(failures.single.reason, PlaybackFailureReason.networkUnavailable);
+    expect(handler.currentTrack?.id, q.first);
+    expect(backend.loaded.length, loaded);
+    expect(handler.playbackState.value.processingState, isNot(AudioProcessingState.idle));
+  });
+
+  test('the probe says online but the fetch finds no network: skipped silently to the available one', () async {
+    final q = [online.register(result('1')), online.register(result('c2'))];
+    preparer.cached['youtube:c2'] = File('${dir.path}/c2.m4a')..writeAsStringSync('x');
+    preparer.failing.add('youtube:1');
+    preparer.failure = const YtException(YtErrorKind.network);
+    await handler.playQueue(q, 0);
+    await settle();
+    expect(failures, isEmpty);
+    expect(handler.currentTrack?.id, q.last);
+  });
+
+  test('a load that takes over while the probe is asked is not overridden by the skip', () async {
+    final q = offlineQueue(['1', 'c2'], {'c2'});
+    final gate = Completer<bool>();
+    preparer.isOnline = () => gate.future;
+    unawaited(handler.playQueue(q, 0));
+    await settle();
+    await handler.playQueue([ids[0]], 0);
+    gate.complete(false);
+    await settle();
+    expect(handler.currentTrack?.id, ids[0]);
+    expect(failures, isEmpty);
+  });
+
+  test('the preparer gets the queue position of each stream, counted from the current track', () async {
+    final s = [for (final n in ['1', '2', '3', '4', '5']) online.register(result(n))];
+    await handler.playQueue([ids[0], s[0], ids[1], s[1], s[2], s[3]], 0);
+    await settle();
+    expect(preparer.positions.last, [1, 3, 4, 5]);
   });
 
   test('an age-restricted video with no substitute is reported as ageRestricted', () async {

@@ -12216,6 +12216,114 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Automatico (regione del dispositivo)'**
   String get chartCountryAuto;
+
+  /// No description provided for @storageGroupTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Memoria e streaming'**
+  String get storageGroupTitle;
+
+  /// No description provided for @storageWhere.
+  ///
+  /// In it, this message translates to:
+  /// **'Dove tieni la musica'**
+  String get storageWhere;
+
+  /// No description provided for @storageModeDevice.
+  ///
+  /// In it, this message translates to:
+  /// **'Sul dispositivo'**
+  String get storageModeDevice;
+
+  /// No description provided for @storageModeStream.
+  ///
+  /// In it, this message translates to:
+  /// **'In streaming'**
+  String get storageModeStream;
+
+  /// No description provided for @prefetchOnMobile.
+  ///
+  /// In it, this message translates to:
+  /// **'Pre-carica anche con i dati mobili (fino a 3)'**
+  String get prefetchOnMobile;
+
+  /// No description provided for @onboardingStorageTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Dove tieni la musica?'**
+  String get onboardingStorageTitle;
+
+  /// No description provided for @onboardingStorageBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Puoi tenere i brani come file sul telefono o salvarli e ascoltarli in streaming. Si cambia quando vuoi nelle impostazioni.'**
+  String get onboardingStorageBody;
+
+  /// No description provided for @onboardingStorageFree.
+  ///
+  /// In it, this message translates to:
+  /// **'Spazio libero: {size}'**
+  String onboardingStorageFree(String size);
+
+  /// No description provided for @onboardingStorageDeviceHint.
+  ///
+  /// In it, this message translates to:
+  /// **'I file restano sul dispositivo e suonano anche senza rete.'**
+  String get onboardingStorageDeviceHint;
+
+  /// No description provided for @onboardingStorageStreamHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Occupa poco spazio: i brani si scaricano mentre li ascolti.'**
+  String get onboardingStorageStreamHint;
+
+  /// No description provided for @queueOfflineBanner.
+  ///
+  /// In it, this message translates to:
+  /// **'Senza rete: {count, plural, one{1 brano disponibile} other{{count} brani disponibili}}'**
+  String queueOfflineBanner(int count);
+
+  /// No description provided for @addToLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi alla libreria'**
+  String get addToLibrary;
+
+  /// No description provided for @ytDownloadOnDevice.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica sul dispositivo'**
+  String get ytDownloadOnDevice;
+
+  /// No description provided for @libraryFilterLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Filtro della libreria'**
+  String get libraryFilterLabel;
+
+  /// No description provided for @libraryAddFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non sono riuscito ad aggiungere il brano alla libreria'**
+  String get libraryAddFailed;
+
+  /// No description provided for @libraryAddedMany.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano aggiunto alla libreria} other{{count} brani aggiunti alla libreria}}'**
+  String libraryAddedMany(int count);
+
+  /// No description provided for @libraryAddedSkipped.
+  ///
+  /// In it, this message translates to:
+  /// **'{added} aggiunti alla libreria, {skipped} già presenti o in corso'**
+  String libraryAddedSkipped(int added, int skipped);
+
+  /// No description provided for @noStreamedTracks.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.'**
+  String get noStreamedTracks;
 }
 
 class _AppLocalizationsDelegate

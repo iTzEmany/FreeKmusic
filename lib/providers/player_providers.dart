@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../core/platform.dart';
+import '../data/repositories/track_kinds.dart';
 import '../data/db/app_database.dart';
 import '../services/audio/codecore_audio_handler.dart';
 import '../services/audio/online_entries.dart';
@@ -762,7 +763,7 @@ Future<ShufflePlusBlock?> plusAllowedNow(Ref ref, {List<int>? ids}) async {
       radio:
           ids == null &&
           ref.read(playContextProvider)?.kind == PlayContextKind.radio,
-      localCount: local.where((t) => !t.missing && t.kind == 0).length,
+      localCount: local.where((t) => !t.missing && isLibraryTrack(t)).length,
     );
   } on Object catch (e, st) {
     AppLog.w('shuffle+ allowed check failed', e, st);

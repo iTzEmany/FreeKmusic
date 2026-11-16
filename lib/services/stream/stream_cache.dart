@@ -28,6 +28,9 @@ class StreamCache {
 
   final Directory dir;
 
+  /// Keys of the favourites: over the limit they go only when nothing else is left (D-577).
+  Future<Set<String>> Function()? keepLonger;
+
   /// The slider value; may change at runtime.
   int limitBytes;
   final Future<int?> Function() _freeSpace;
@@ -122,6 +125,8 @@ class StreamCache {
     }
   }
 
+  bool isPinned(String key) => _pins.containsKey(key);
+
   void pin(String key) => _pins.update(key, (n) => n + 1, ifAbsent: () => 1);
 
   void unpin(String key) {
@@ -150,7 +155,18 @@ class StreamCache {
     final limit = await effectiveLimit(usedBytes);
     final files = await _files();
     var used = usedBytes;
-    files.sort((a, b) => a.time.compareTo(b.time));
+    var favourites = const <String>{};
+    try {
+      favourites = await keepLonger?.call() ?? favourites;
+    } on Object catch (e, st) {
+      AppLog.w('stream cache: favourites unavailable, plain LRU', e, st);
+    }
+    final dear = {for (final k in favourites) streamFileName(k)};
+    // Stable by false < true: oldest first within each group, favourites last.
+    files.sort((a, b) {
+      final d = (dear.contains(_stem(a.file)) ? 1 : 0) - (dear.contains(_stem(b.file)) ? 1 : 0);
+      return d != 0 ? d : a.time.compareTo(b.time);
+    });
     final pinned = _pins.keys.map(streamFileName).toSet();
     for (final e in files) {
       if (used <= limit) break;

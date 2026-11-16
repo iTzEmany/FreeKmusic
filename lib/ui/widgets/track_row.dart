@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/db/app_database.dart';
+import '../../data/repositories/track_kinds.dart' show kStreamKind;
 import '../../l10n/l10n_ext.dart';
 import '../../providers/player_providers.dart';
 import '../../core/platform.dart';
@@ -397,16 +398,23 @@ class _TrackRowState extends State<TrackRow> {
       color: widget.isCurrent ? cc.accent : cc.text,
     );
 
+    // A saved stream (D-607): the cloud, and its words for the screen reader.
+    final saved = t.kind == kStreamKind && t.saved;
     final titleBlock = ExcludeSemantics(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            t.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: titleStyle,
+          Row(
+            children: [
+              Flexible(
+                child: Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: titleStyle),
+              ),
+              if (saved) ...[
+                const SizedBox(width: CcDims.gap4),
+                Icon(Icons.cloud_outlined, size: 14, color: cc.textMuted),
+              ],
+            ],
           ),
           if (subtitle.isNotEmpty)
             Text(
@@ -500,7 +508,7 @@ class _TrackRowState extends State<TrackRow> {
         child: Semantics(
           // One node named by title and artist (no empty twin: the cover's long press used to split it).
           button: true,
-          label: subtitle.isEmpty ? t.title : '${t.title}, $subtitle',
+          label: [t.title, if (subtitle.isNotEmpty) subtitle, if (saved) context.l10n.storageModeStream].join(', '),
           hint: widget.variant == TrackRowVariant.queue && widget.reorderIndex != null
               ? context.l10n.queueReorderHandle
               : null,

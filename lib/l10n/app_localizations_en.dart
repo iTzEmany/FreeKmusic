@@ -7673,4 +7673,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartCountryAuto => 'Automatic (device region)';
+
+  @override
+  String get storageGroupTitle => 'Memory and streaming';
+
+  @override
+  String get storageWhere => 'Where you keep your music';
+
+  @override
+  String get storageModeDevice => 'On the device';
+
+  @override
+  String get storageModeStream => 'Streaming';
+
+  @override
+  String get prefetchOnMobile => 'Also pre-load on mobile data (up to 3)';
+
+  @override
+  String get onboardingStorageTitle => 'Where do you keep your music?';
+
+  @override
+  String get onboardingStorageBody =>
+      'Keep tracks as files on the device, or save them and listen in streaming. You can change it any time in settings.';
+
+  @override
+  String onboardingStorageFree(String size) {
+    return 'Free space: $size';
+  }
+
+  @override
+  String get onboardingStorageDeviceHint =>
+      'Files stay on the device and play without a network.';
+
+  @override
+  String get onboardingStorageStreamHint =>
+      'Takes little space: tracks load while you listen.';
+
+  @override
+  String queueOfflineBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks available',
+      one: '1 track available',
+    );
+    return 'Offline: $_temp0';
+  }
+
+  @override
+  String get addToLibrary => 'Add to library';
+
+  @override
+  String get ytDownloadOnDevice => 'Download to the device';
+
+  @override
+  String get libraryFilterLabel => 'Library filter';
+
+  @override
+  String get libraryAddFailed => 'Could not add the song to the library';
+
+  @override
+  String libraryAddedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs added to the library',
+      one: '1 song added to the library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryAddedSkipped(int added, int skipped) {
+    return '$added added to the library, $skipped already there or in progress';
+  }
+
+  @override
+  String get noStreamedTracks =>
+      'No streamed tracks. Use “Add to library” on an online track.';
 }

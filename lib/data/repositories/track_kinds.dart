@@ -1,4 +1,9 @@
-/// `tracks.kind` values. Library views filter `kind = 0`; history and stats
+import 'package:drift/drift.dart';
+
+import '../../core/text_utils.dart' show computeAlbumKey;
+import '../db/app_database.dart';
+
+/// `tracks.kind` values. Library views filter [libraryRowSql] (files, and saved streams); history and stats
 /// use [listenKinds]; a shadow row (a streamed track cached for playback) is
 /// never shown in the library.
 const kMusicKind = 0;
@@ -15,3 +20,38 @@ bool isRemoteEpisodePath(String path) =>
 /// An `http://` or `https://` address, in any letter case (as `Uri.scheme` reads it).
 bool isHttpAddress(String s) =>
     RegExp(r'^https?://', caseSensitive: false).hasMatch(s);
+
+/// A row the library shows: a file on the device, or a streamed track the user saved (D-607).
+/// [alias] is the table alias in the query, when it has one.
+String libraryRowSql([String? alias, LibraryFilter filter = LibraryFilter.all]) {
+  final a = alias == null ? '' : '$alias.';
+  final device = '${a}kind = $kMusicKind';
+  final stream = '(${a}kind = $kStreamKind AND ${a}saved = 1)';
+  return switch (filter) {
+    LibraryFilter.all => '($device OR $stream)',
+    LibraryFilter.device => '($device)',
+    LibraryFilter.stream => stream,
+  };
+}
+
+/// The filter on top of Brani, Album and Artisti (D-596): every library row, only the files, only the saved streams.
+enum LibraryFilter { all, device, stream }
+
+/// [libraryRowSql] on a loaded row.
+bool isLibraryTrack(Track t) => t.kind == kMusicKind || (t.kind == kStreamKind && t.saved);
+
+/// The drift form of [libraryRowSql].
+Expression<bool> isLibraryRow($TracksTable t, [LibraryFilter filter = LibraryFilter.all]) {
+  final device = t.kind.equals(kMusicKind);
+  final stream = t.kind.equals(kStreamKind) & t.saved.equals(true);
+  return switch (filter) {
+    LibraryFilter.all => device | stream,
+    LibraryFilter.device => device,
+    LibraryFilter.stream => stream,
+  };
+}
+
+/// The album key of a stream row (saved or shadow): the `stream|` prefix and no folder,
+/// so it never joins a local album.
+String streamAlbumKey({String? albumArtist, String? artist, String? album}) =>
+    'stream|${computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: '')}';

@@ -3,7 +3,7 @@ import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/ui/screens/home/resume_rows.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track track(int id) => Track(coverSource: 0, 
+Track track(int id) => Track(saved: false, coverSource: 0, 
   id: id,
   path: '/m/$id.mp3',
   title: 'Song $id',

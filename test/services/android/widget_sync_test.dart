@@ -15,7 +15,7 @@ class _FakeBridge implements WidgetBridge {
   Future<void> markReady() async => ready++;
 }
 
-Track _track(int id, String title, {String? artist = 'Art', String? cover}) => Track(coverSource: 0, 
+Track _track(int id, String title, {String? artist = 'Art', String? cover}) => Track(saved: false, coverSource: 0, 
       id: id,
       path: '/m/$id.mp3',
       title: title,

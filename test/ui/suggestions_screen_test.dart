@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/ui/screens/now_playing/suggestions_screen.dart';
@@ -60,6 +61,28 @@ void main() {
     expect(log.length, 1);
     expect(find.text('New one'), findsNothing);
     expect(find.text('Old one'), findsOneWidget); // the dislike stays
+    await h.dispose(tester);
+    await tester.runAsync(() => log.dispose());
+  });
+
+  testWidgets('streaming mode: the download button of a suggestion saves a row, no file, and the row shows the check',
+      (tester) async {
+    final h = await Harness.create(tester);
+    await tester.runAsync(
+        () => h.store.writeSettings(h.store.readSettings().copyWith(storageMode: StorageMode.stream)));
+    final log = await logWith(tester);
+    await h.pump(tester, const SuggestionsScreen(),
+        extraOverrides: [suggestionLogProvider.overrideWithValue(log)]);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byTooltip('Aggiungi alla libreria').first);
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pump(const Duration(milliseconds: 100));
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    expect(rows!.where((t) => t.kind == 2 && t.saved), hasLength(1));
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    await tester.runAsync(() => log.flush());
     await h.dispose(tester);
     await tester.runAsync(() => log.dispose());
   });

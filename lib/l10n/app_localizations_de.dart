@@ -7728,4 +7728,83 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chartCountryAuto => 'Automatisch (Region des Geräts)';
+
+  @override
+  String get storageGroupTitle => 'Speicher und Streaming';
+
+  @override
+  String get storageWhere => 'Wo du deine Musik aufbewahrst';
+
+  @override
+  String get storageModeDevice => 'Auf dem Gerät';
+
+  @override
+  String get storageModeStream => 'Streaming';
+
+  @override
+  String get prefetchOnMobile => 'Auch mit mobilen Daten vorladen (bis zu 3)';
+
+  @override
+  String get onboardingStorageTitle => 'Wo bewahrst du deine Musik auf?';
+
+  @override
+  String get onboardingStorageBody =>
+      'Behalte Titel als Dateien auf dem Gerät oder speichere sie und höre sie per Streaming. Du kannst das jederzeit in den Einstellungen ändern.';
+
+  @override
+  String onboardingStorageFree(String size) {
+    return 'Freier Speicher: $size';
+  }
+
+  @override
+  String get onboardingStorageDeviceHint =>
+      'Die Dateien bleiben auf dem Gerät und spielen auch ohne Netz.';
+
+  @override
+  String get onboardingStorageStreamHint =>
+      'Braucht wenig Platz: Titel laden, während du hörst.';
+
+  @override
+  String queueOfflineBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Titel verfügbar',
+      one: '1 Titel verfügbar',
+    );
+    return 'Ohne Netz: $_temp0';
+  }
+
+  @override
+  String get addToLibrary => 'Zur Bibliothek hinzufügen';
+
+  @override
+  String get ytDownloadOnDevice => 'Auf das Gerät herunterladen';
+
+  @override
+  String get libraryFilterLabel => 'Bibliotheksfilter';
+
+  @override
+  String get libraryAddFailed =>
+      'Der Titel konnte nicht zur Mediathek hinzugefügt werden';
+
+  @override
+  String libraryAddedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Titel zur Mediathek hinzugefügt',
+      one: '1 Titel zur Mediathek hinzugefügt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryAddedSkipped(int added, int skipped) {
+    return '$added zur Mediathek hinzugefügt, $skipped bereits vorhanden oder in Arbeit';
+  }
+
+  @override
+  String get noStreamedTracks =>
+      'Keine Streaming-Titel. Nutze „Zur Mediathek hinzufügen“ bei einem Online-Titel.';
 }

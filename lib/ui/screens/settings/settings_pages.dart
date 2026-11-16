@@ -28,6 +28,8 @@ import 'cleanup_tiles.dart';
 import 'advanced_section.dart';
 import 'backup_section.dart';
 import 'download_settings_tiles.dart';
+import 'stream_cache_tile.dart';
+import '../../../data/settings/settings_store.dart' show StorageMode;
 import 'enrich_library_tile.dart';
 import 'equalizer_screen.dart';
 import 'log_export_tile.dart';
@@ -271,6 +273,7 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
   final l = context.l10n;
   final folders = ref.watch(foldersProvider).value ?? const [];
   final missing = ref.watch(missingTracksProvider).value ?? const [];
+  final settings = ref.watch(settingsProvider);
   return [
     SettingsGroup(
       title: l.settingsLibrary,
@@ -310,6 +313,43 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
               ),
             ),
           ),
+      ],
+    ),
+    SettingsGroup(
+      title: l.storageGroupTitle,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.storage_rounded),
+          title: Text(l.storageWhere),
+          trailing: DropdownButton<StorageMode>(
+            value: settings.storageMode,
+            underline: const SizedBox.shrink(),
+            items: [
+              DropdownMenuItem(
+                value: StorageMode.device,
+                child: Text(l.storageModeDevice),
+              ),
+              DropdownMenuItem(
+                value: StorageMode.stream,
+                child: Text(l.storageModeStream),
+              ),
+            ],
+            onChanged: (m) => m == null
+                ? null
+                : ref
+                      .read(settingsProvider.notifier)
+                      .update((c) => c.copyWith(storageMode: m)),
+          ),
+        ),
+        const StreamCacheTile(),
+        SwitchListTile(
+          secondary: const Icon(Icons.network_cell_outlined),
+          title: Text(l.prefetchOnMobile),
+          value: settings.prefetchOnMobile,
+          onChanged: (v) => ref
+              .read(settingsProvider.notifier)
+              .update((c) => c.copyWith(prefetchOnMobile: v)),
+        ),
       ],
     ),
     SettingsGroup(

@@ -7,6 +7,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../core/app_log.dart';
+import '../data/repositories/track_kinds.dart';
 import '../data/db/app_database.dart';
 import '../services/share/lan_client.dart';
 import '../services/share/received_meta.dart';
@@ -87,7 +88,8 @@ Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async {
   final entries = <ShareEntry>[];
   final extra = await credits.portableOfMany([for (final t in tracks) t.id]);
   for (final t in tracks) {
-    if (t.missing) continue;
+    // A saved stream row has no file to send.
+    if (t.missing || t.kind == kStreamKind) continue;
     final c = extra[t.id]!;
     entries.add(ShareEntry(
       id: t.id,

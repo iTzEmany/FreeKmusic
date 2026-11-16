@@ -3967,5 +3967,32 @@
   "chartSourceApple": "Tabela do Apple Music, {country}, atualizada {when}",
   "chartGridTitle": "Top 20 por género",
   "chartCountryTitle": "País das tabelas",
-  "chartCountryAuto": "Automático (região do dispositivo)"
+  "chartCountryAuto": "Automático (região do dispositivo)",
+  "storageGroupTitle": "Memória e streaming",
+  "storageWhere": "Onde guardas a música",
+  "storageModeDevice": "No dispositivo",
+  "storageModeStream": "Em streaming",
+  "prefetchOnMobile": "Pré-carregar também com dados móveis (até 3)",
+  "onboardingStorageTitle": "Onde guardas a música?",
+  "onboardingStorageBody": "Podes manter as músicas como ficheiros no dispositivo ou guardá-las e ouvi-las em streaming. Mudas quando quiseres nas definições.",
+  "onboardingStorageFree": "Espaço livre: {size}",
+  "@onboardingStorageFree": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingStorageDeviceHint": "Os ficheiros ficam no dispositivo e tocam sem rede.",
+  "onboardingStorageStreamHint": "Ocupa pouco espaço: as músicas carregam enquanto ouves.",
+  "queueOfflineBanner": "Sem rede: {count, plural, one{1 faixa disponível} other{{count} faixas disponíveis}}",
+  "addToLibrary": "Adicionar à biblioteca",
+  "ytDownloadOnDevice": "Transferir para o dispositivo",
+  "libraryFilterLabel": "Filtro da biblioteca",
+  "libraryAddFailed": "Não foi possível adicionar a música à biblioteca",
+  "libraryAddedMany": "{count, plural, one{1 música adicionada à biblioteca} other{{count} músicas adicionadas à biblioteca}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} adicionadas à biblioteca, {skipped} já existentes ou em curso",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "Nenhuma faixa em streaming. Use «Adicionar à biblioteca» numa faixa online."
 }

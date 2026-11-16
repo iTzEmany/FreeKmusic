@@ -122,6 +122,7 @@ void main() {
   late StreamCache cache;
   late _Yt yt;
   var metered = false;
+  var onMobile = true;
   var online = true;
   var checks = 0;
   late StreamPreparer prep;
@@ -143,6 +144,7 @@ void main() {
         tracks: tracks,
         youtube: yt,
         isMetered: () async => metered,
+        prefetchOnMetered: () => onMobile,
         hasNetwork: () async {
           checks++;
           return online;
@@ -159,6 +161,7 @@ void main() {
     await cache.open();
     yt = _Yt();
     metered = false;
+    onMobile = true;
     online = true;
     checks = 0;
     make();
@@ -210,13 +213,49 @@ void main() {
     expect(yt.started, ['a', 'a']);
   });
 
-  test('metered network and 10 tracks: only the next 3 are prepared', () async {
+  test('on Wi-Fi and 10 tracks: the current one and 3 ahead, never more', () async {
+    yt.autoFinish = true;
+    prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
+    await _until(() => yt.started.length >= 4);
+    await _quiet();
+    expect(yt.started, ['0', '1', '2', '3']);
+  });
+
+  test('on Wi-Fi the option for mobile data does not matter: still 3 ahead', () async {
+    onMobile = false;
+    yt.autoFinish = true;
+    prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
+    await _until(() => yt.started.length >= 4);
+    await _quiet();
+    expect(yt.started, ['0', '1', '2', '3']);
+  });
+
+  test('3 ahead are counted in queue positions: streams further than that are not prepared', () async {
+    yt.autoFinish = true;
+    prep.setQueue([for (final n in [1, 3, 4, 7, 8]) StreamItem('youtube:$n', _r('$n'), pos: n)]);
+    await _until(() => yt.started.length >= 2);
+    await _quiet();
+    expect(yt.started, ['1', '3']);
+    expect(cache.isPinned('youtube:3'), isTrue);
+    expect(cache.isPinned('youtube:4'), isFalse);
+  });
+
+  test('metered network with the option on: 3 ahead like on Wi-Fi', () async {
     metered = true;
     yt.autoFinish = true;
     prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
-    await _until(() => yt.started.length >= 3);
+    await _until(() => yt.started.length >= 4);
     await _quiet();
-    expect(yt.started, ['0', '1', '2']);
+    expect(yt.started, ['0', '1', '2', '3']);
+  });
+
+  test('metered network with the option off: nothing is prepared', () async {
+    metered = true;
+    onMobile = false;
+    yt.autoFinish = true;
+    prep.setQueue([for (var n = 0; n < 10; n++) _i('$n')]);
+    await _quiet();
+    expect(yt.started, isEmpty);
   });
 
   test('a user pick on a metered network is prepared even out of the window', () async {
@@ -605,9 +644,11 @@ void main() {
     yt.autoFinish = true;
     prep.setQueue([for (final n in ['a', 'b', 'c', 'd']) _i(n)]);
     await _until(() => ['a', 'b', 'c', 'd'].every((n) => prep.phases.value['youtube:$n'] == StreamPhase.ready));
+    // d slips out of the window of 3 ahead: still queued, no longer pinned.
+    prep.setQueue([for (final n in ['a', 'b', 'c']) _i(n), StreamItem('youtube:d', _r('d'), pos: 4)]);
     final limit = cache.limitBytes;
     cache.limitBytes = 0;
-    await cache.evict(); // d is not pinned
+    await cache.evict();
     expect(prep.phases.value.containsKey('youtube:d'), isFalse);
     expect(prep.phases.value['youtube:c'], StreamPhase.ready);
     cache.limitBytes = limit;
@@ -807,7 +848,7 @@ void main() {
     expect(yt.started, ['a', 'b']);
   });
 
-  test('current and next 2 are pinned, and unpinned when they leave the queue', () async {
+  test('current and next 3 are pinned, and unpinned when they leave the queue', () async {
     yt.autoFinish = true;
     prep.setQueue([for (final n in ['a', 'b', 'c', 'd']) _i(n)]);
     await _until(() => ['a', 'b', 'c', 'd'].every((n) => prep.phases.value['youtube:$n'] == StreamPhase.ready));
@@ -818,9 +859,8 @@ void main() {
       return await cache.fileFor(k) != null;
     }
 
-    expect(await pinned('youtube:c'), isTrue);
+    expect(await pinned('youtube:d'), isTrue);
+    prep.setQueue([_i('e')]);
     expect(await pinned('youtube:d'), isFalse);
-    prep.setQueue([_i('d')]);
-    expect(await pinned('youtube:c'), isFalse);
   });
 }

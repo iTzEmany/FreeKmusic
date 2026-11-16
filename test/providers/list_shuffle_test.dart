@@ -152,6 +152,27 @@ void main() {
     expect(await plusAllowedNow(ref, ids: const []), isNull);
   });
 
+  test('saved stream rows count as library songs for Shuffle+', () async {
+    final repo = TrackRepository(db);
+    final ids = <int>[];
+    for (var i = 0; i < 5; i++) {
+      const r = YtResult(id: 'x', title: 'S', channel: 'C', duration: Duration(seconds: 9));
+      final id = await repo.upsertStreamRow('youtube:s$i', r, File('/nowhere'));
+      ids.add(id);
+    }
+    final c = ProviderContainer(overrides: [
+      audioHandlerProvider.overrideWithValue(handler),
+      trackRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(c.dispose);
+    final ref = c.read(_refProvider);
+    expect(await plusAllowedNow(ref, ids: ids), ShufflePlusBlock.shortList);
+    for (var i = 0; i < 5; i++) {
+      await repo.setSaved('youtube:s$i', true);
+    }
+    expect(await plusAllowedNow(ref, ids: ids), isNull);
+  });
+
   group('a list page\'s «Casuale» (D-534)', () {
     late Map<Object, ShuffleMode> modes;
     late PlayerController lists;

@@ -153,3 +153,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 122 | CI di tutti i sistemi | [`fase-122-ci-tutti-i-sistemi.md`](fasi/fase-122-ci-tutti-i-sistemi.md) |
 | 123 | Tasti, notifica e licenza | [`fase-123-tasti-e-notifica.md`](fasi/fase-123-tasti-e-notifica.md) |
 | 124 | Cerca con le classifiche | [`fase-124-cerca-classifiche.md`](fasi/fase-124-cerca-classifiche.md) |
+| 125 | Libreria in streaming (base) | [`fase-125-libreria-in-streaming.md`](fasi/fase-125-libreria-in-streaming.md) |

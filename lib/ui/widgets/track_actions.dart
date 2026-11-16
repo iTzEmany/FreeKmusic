@@ -19,7 +19,10 @@ import '../../core/platform.dart';
 import '../../data/db/app_database.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/equalizer_providers.dart';
+import '../../data/settings/settings_store.dart' show StorageMode;
+import '../../providers/library_add_providers.dart';
 import '../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
+import '../../providers/settings_providers.dart' show settingsProvider;
 import '../../providers/player_providers.dart';
 import '../../providers/preview_providers.dart';
 import '../../providers/suggestion_actions.dart';
@@ -86,12 +89,7 @@ bool Function(String) _inLibrary(WidgetRef ref) =>
 
 bool entryInLibrary(WidgetRef ref, int id) {
   final r = ref.read(onlineEntriesProvider)?[id]?.result;
-  return r != null &&
-      (ref
-              .read(downloadIndexProvider)
-              .value
-              ?.contains(r.id, source: r.source) ??
-          false);
+  return r != null && ref.read(inLibraryOfProvider)(r.id, r.source);
 }
 
 /// Streamed (online) entries are not library rows: no favourites, tags,
@@ -112,8 +110,8 @@ List<TrackActionGroup> onlineTrackActions(
       // Gone as soon as the entry is in the library, also with the sheet open (R-93).
       if (!entryInLibrary(ref, track.id))
         TrackAction(
-          Icons.download_rounded,
-          l.ytDownload,
+          Icons.library_add_rounded,
+          l.addToLibrary,
           () => downloadOnline(
             outer,
             inLibrary: entryInLibrary(ref, track.id),
@@ -130,6 +128,8 @@ List<TrackActionGroup> onlineTrackActions(
                 ? l.addedToPlaylist(picked.name)
                 : l.suggestionAddWhenDownloaded(picked.name),
           );
+        } else if (outer.mounted) {
+          snack(l.libraryAddFailed);
         }
       }),
     ]),
@@ -258,6 +258,21 @@ List<TrackActionGroup> trackActions(
       }, onStreamRow: true),
     ]),
     TrackActionGroup(l.groupCollection, [
+      // An unsaved shadow row (of a playlist or the history) in streaming mode joins the library without a file.
+      if (track.kind == kStreamKind &&
+          !track.saved &&
+          keyOfStreamPath(track.path) != null &&
+          ref.read(settingsProvider).storageMode == StorageMode.stream)
+        TrackAction(
+          Icons.library_add_rounded,
+          l.addToLibrary,
+          () => downloadOnline(
+            outer,
+            inLibrary: false,
+            start: () => ref.read(libraryAdderProvider).add(streamResultOfRow(keyOfStreamPath(track.path)!, track)),
+          ),
+          onStreamRow: true,
+        ),
       // A streamed shadow row: the download promotes it to a real library track.
       if (track.kind == kStreamKind &&
           keyOfStreamPath(track.path) != null &&
@@ -266,7 +281,10 @@ List<TrackActionGroup> trackActions(
                   .value
                   ?.pathForKey(keyOfStreamPath(track.path)!) ==
               null)
-        TrackAction(Icons.download_rounded, l.ytDownload, () async {
+        TrackAction(
+          Icons.download_rounded,
+          ref.read(settingsProvider).storageMode == StorageMode.stream ? l.ytDownloadOnDevice : l.ytDownload,
+          () async {
           ref
               .read(downloadsProvider.notifier)
               .add(streamResultOfRow(keyOfStreamPath(track.path)!, track));
@@ -333,6 +351,12 @@ List<TrackActionGroup> trackActions(
       ),
     ]),
     TrackActionGroup(l.groupOther, [
+      // A saved stream leaves the library only: it stays in its playlists and the history (D-524).
+      if (track.kind == kStreamKind && track.saved && keyOfStreamPath(track.path) != null)
+        TrackAction(Icons.delete_outline_rounded, l.removeFromLibrary, () async {
+          final n = await ref.read(trackOpsProvider).removeSavedStreams([track]);
+          if (outer.mounted) showMsg(outer, l.removedManyFromLibrary(n));
+        }, onStreamRow: true),
       // From Now Playing's ⋯ (the playing track's menu), where the equalizer is.
       if (ref.read(equalizerProvider) != null &&
           ref.read(currentTrackProvider).value?.id == track.id)
@@ -424,9 +448,8 @@ Future<void> downloadOnline(
   final l = context.l10n;
   if (inLibrary) return showMsg(context, l.ytAlreadyInLibrary);
   final now = await start();
-  if (now != null && context.mounted) {
-    showMsg(context, now ? l.addedToLibrary : l.suggestionDownloadStarted);
-  }
+  if (!context.mounted) return;
+  showMsg(context, now == null ? l.libraryAddFailed : now ? l.addedToLibrary : l.suggestionDownloadStarted);
 }
 
 /// Shows [groups] as an action sheet; the chosen action runs once it is closed.
@@ -584,6 +607,7 @@ List<TrackAction> onlineResultActions(
 ) {
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
+  bool inLibrary() => ref.read(inLibraryOfProvider)(r.id, r.source);
   return [
     TrackAction(Icons.queue_rounded, l.addToQueue, () async {
       final full = ctrl.jamQueueFull;
@@ -594,31 +618,36 @@ List<TrackAction> onlineResultActions(
       final picked = await pickPlaylist(outer, ref);
       if (picked == null || !outer.mounted) return;
       final now = await ref
-          .read(downloadsProvider.notifier)
+          .read(libraryAdderProvider)
           .add(r, tag: addToPlaylistTag(picked.id));
       if (outer.mounted) {
         showMsg(
           outer,
-          now
+          now == null
+              ? l.libraryAddFailed
+              : now
               ? l.addedToPlaylist(picked.name)
               : l.suggestionAddWhenDownloaded(picked.name),
         );
       }
     }),
     TrackAction(
-      Icons.download_rounded,
-      l.ytDownload,
-      () => downloadOnline(
-        outer,
-        inLibrary:
-            ref
-                .read(downloadIndexProvider)
-                .value
-                ?.contains(r.id, source: r.source) ??
-            false,
-        start: () => ref.read(downloadsProvider.notifier).add(r),
-      ),
+      Icons.library_add_rounded,
+      l.addToLibrary,
+      () => downloadOnline(outer, inLibrary: inLibrary(), start: () => ref.read(libraryAdderProvider).add(r)),
     ),
+    // In device mode the first item already downloads.
+    if (ref.read(settingsProvider).storageMode == StorageMode.stream)
+      TrackAction(
+        Icons.download_rounded,
+        l.ytDownloadOnDevice,
+        // A saved stream is no file: only a downloaded one blocks it.
+        () => downloadOnline(
+          outer,
+          inLibrary: ref.read(downloadIndexProvider).value?.contains(r.id, source: r.source) ?? false,
+          start: () => ref.read(downloadsProvider.notifier).add(r),
+        ),
+      ),
     TrackAction(
       Icons.person_outline_rounded,
       l.goToArtist,

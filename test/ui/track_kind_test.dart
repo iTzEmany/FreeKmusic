@@ -2,7 +2,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/ui/widgets/track_kind.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track _t(int id, {int kind = 0}) => Track(coverSource: 0, 
+Track _t(int id, {int kind = 0}) => Track(saved: false, coverSource: 0, 
       id: id,
       path: '/m/$id.mp3',
       title: 't',

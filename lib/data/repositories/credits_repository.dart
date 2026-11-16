@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'track_kinds.dart';
 import 'package:drift/drift.dart';
 
 import '../../core/app_log.dart';
@@ -110,7 +111,7 @@ class CreditsRepository {
           '${lightTrackColumns(_db, alias: 't')} '
           'FROM track_credits c JOIN tracks t ON t.id = c.track_id '
           'WHERE ${prefix ? 'c.name_key >= ? AND c.name_key < ? || char(1114111)' : 'c.name_key = ?'} '
-          'AND t.kind = 0 AND t.missing = 0 AND t.ignored = 0 '
+          'AND ${libraryRowSql('t')} AND t.missing = 0 AND t.ignored = 0 '
           '${prefix ? 'GROUP BY t.id ORDER BY t.title COLLATE NOCASE' : 'ORDER BY c.role, t.title COLLATE NOCASE'}'
           '${limit == null ? '' : ' LIMIT ?'}',
           variables: [

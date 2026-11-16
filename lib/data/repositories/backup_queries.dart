@@ -22,7 +22,7 @@ Future<UserData> collectUserData(
     };
     final tracks = await (db.select(
       db.tracks,
-    )..where((t) => t.kind.isNotValue(kStreamKind))).get();
+    )..where((t) => t.kind.isNotValue(kStreamKind) | t.saved.equals(true))).get();
     final portable = await CreditsRepository(db)
         .portableOfMany([for (final t in tracks) t.id]);
     final genresOf = <int, List<String>>{};
@@ -40,6 +40,7 @@ Future<UserData> collectUserData(
           t.curiosities != null ||
           romanizations.containsKey(t.id);
       if (!(t.isFavorite ||
+          t.saved ||
           t.userEdited ||
           hasLyrics ||
           t.playCount > 0 ||
@@ -52,6 +53,9 @@ Future<UserData> collectUserData(
         TrackUserData(
           ref: ref,
           favorite: t.isFavorite,
+          saved: t.saved,
+          album: t.saved ? t.album : null,
+          addedAt: t.saved ? t.addedAt : null,
           edit: t.userEdited
               ? TrackEditData(
                   title: t.title,

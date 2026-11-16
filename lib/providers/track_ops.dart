@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/import_row.dart' show LibraryEntryLite;
 import '../data/db/app_database.dart';
+import '../data/repositories/track_kinds.dart' show kStreamKind;
 import '../data/repositories/track_repository.dart';
+import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import '../core/app_log.dart';
 import 'library_providers.dart' show readPlainList, searchTracks;
 import '../services/online/lrc_parser.dart' show lyricsFromText;
@@ -132,6 +134,16 @@ class TrackOps {
 
   Future<void> setIgnored(Set<int> ids, bool value) =>
       _repo.setIgnored(ids, value);
+
+  /// «Rimuovi dalla libreria» of saved streamed rows: they stay in playlists and history. Returns how many left.
+  Future<int> removeSavedStreams(List<Track> rows) async {
+    var n = 0;
+    for (final t in rows) {
+      final key = keyOfStreamPath(t.path);
+      if (t.kind == kStreamKind && t.saved && key != null) n += await _repo.setSaved(key, false);
+    }
+    return n;
+  }
 
   Future<void> deleteTrack(int id) => _repo.deleteTrack(id);
 

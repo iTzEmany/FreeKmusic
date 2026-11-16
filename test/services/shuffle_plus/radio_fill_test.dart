@@ -80,7 +80,7 @@ void main() {
       asked = [];
     });
 
-    Track libTrack(int id) => Track(
+    Track libTrack(int id) => Track(saved: false, 
       coverSource: 0,
       id: id,
       path: '/m/$id.mp3',

@@ -8,6 +8,7 @@ import '../core/paths.dart';
 import '../data/repositories/import_repository.dart';
 import '../core/constants.dart';
 import '../data/db/app_database.dart';
+import '../data/repositories/track_kinds.dart' show kStreamKind;
 import '../services/import/import_chain.dart';
 import '../services/import/playlist_import_service.dart';
 import '../services/import/track_matcher.dart' show MatchThresholds;
@@ -16,9 +17,11 @@ import '../services/online/cached_youtube_service.dart';
 import '../services/online/download_queue.dart';
 import '../services/online/search_cache.dart';
 import 'database_providers.dart';
+import 'library_add_providers.dart';
 import 'library_providers.dart';
 import 'online_providers.dart';
 import 'settings_providers.dart';
+import 'stream_providers.dart' show streamEnrichRowProvider;
 import 'youtube_providers.dart';
 
 /// Single import engine. Created at app start by the shell, which also turns
@@ -59,6 +62,8 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
               sure: s.importSureThreshold, review: s.importReviewThreshold)
           .clamped();
     },
+    saveNow: ref.read(libraryAdderProvider).saveNow,
+    streaming: () => ref.read(libraryAdderProvider).streaming,
     enqueue: (r, tag) => downloads.add(r, tag: tag),
     cancelDownloads: downloads.cancelWhere,
     settled: downloads.settled,
@@ -71,7 +76,15 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
           .read(coverFetcherProvider)
           .coverForAlbum(t, row.album!, row.primaryArtist, isrc: row.isrc);
     },
-    enrichLater: (id) => afterDownload(ref, id),
+    // A saved stream row has no file to tag: it is enriched like a played one.
+    enrichLater: (id) async {
+      final row = await tracks.getById(id);
+      if (row?.kind == kStreamKind) {
+        unawaited(ref.read(streamEnrichRowProvider)(id));
+      } else {
+        afterDownload(ref, id);
+      }
+    },
     pathForVideo: (v) async =>
         (await ref.read(downloadIndexProvider.future)).pathFor(v.id, source: v.source),
     applyTags: (trackId, row) async {

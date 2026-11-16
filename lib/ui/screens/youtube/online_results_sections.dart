@@ -10,6 +10,7 @@ import '../../../providers/library_providers.dart' show searchTracksProvider;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart'
     show ownedTracksProvider;
+import '../../../providers/library_add_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/merge_results.dart';
 import '../../../services/online/query_match.dart' show MediaKind;
@@ -310,12 +311,8 @@ class SmartRow extends ConsumerWidget {
     final r = row.primary;
     final pick = watchOnlinePick(ref, selectionKey, index);
     final ids = row.ids.toSet();
-    final inLibrary = ref.watch(
-      downloadIndexProvider.select(
-        (i) =>
-            ids.any((id) => i.value?.contains(id, source: r.source) ?? false),
-      ),
-    );
+    final inLibraryOf = ref.watch(inLibraryOfProvider);
+    final inLibrary = ids.any((id) => inLibraryOf(id, r.source));
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => ids.contains(x.result.id)).lastOrNull,
@@ -338,7 +335,7 @@ class SmartRow extends ConsumerWidget {
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, r),
       onMore: () => showOnlineActions(context, ref, r),
-      onDownload: () => ref.read(downloadsProvider.notifier).add(r),
+      onDownload: () => ref.read(libraryAdderProvider).add(r),
       onArtistTap: onArtistTap == null || who < 0 || who >= r.artists.length
           ? null
           : () => onArtistTap!(

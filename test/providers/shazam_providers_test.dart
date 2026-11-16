@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
@@ -78,8 +81,9 @@ void main() {
   });
   tearDown(() => db.close());
 
-  ProviderContainer container() {
+  ProviderContainer container({DownloadIndex? index}) {
     final c = ProviderContainer(overrides: [
+      if (index != null) downloadIndexProvider.overrideWith((ref) async => index),
       databaseProvider.overrideWithValue(db),
       settingsStoreProvider.overrideWithValue(store),
       collectionMatcherProvider.overrideWith((ref, page) => _Matcher(match, delay: delay)),
@@ -161,6 +165,18 @@ void main() {
     match = TrackReady.online(ytmSong('y3', 'New', artist: 'Else'));
     await add(container());
     expect(downloads.added, ['y3']);
+  });
+
+  test('streaming mode: the automatic download becomes a saved row, no job', () async {
+    await store.writeSettings(store.readSettings().copyWith(storageMode: StorageMode.stream));
+    await store.writeShazamAutoDownload(true);
+    final dir = await Directory.systemTemp.createTemp('shz');
+    addTearDown(() => dir.delete(recursive: true));
+    final c = container(index: DownloadIndex(File('${dir.path}/i.json')));
+    expect(await add(c), isA<ShazamAdded>());
+    expect(downloads.added, isEmpty);
+    final saved = (await db.select(db.tracks).get()).where((t) => t.kind == 2 && t.saved);
+    expect(saved.map((t) => t.title), ['Siren']);
   });
 
   test('a matcher that throws or ends empty asks to retry', () async {

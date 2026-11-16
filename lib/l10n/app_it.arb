@@ -4493,5 +4493,39 @@
   "@chartSourceApple": {"placeholders": {"country": {"type": "String"}, "when": {"type": "String"}}},
   "chartGridTitle": "Top 20 per genere",
   "chartCountryTitle": "Paese delle classifiche",
-  "chartCountryAuto": "Automatico (regione del dispositivo)"
+  "chartCountryAuto": "Automatico (regione del dispositivo)",
+  "storageGroupTitle": "Memoria e streaming",
+  "storageWhere": "Dove tieni la musica",
+  "storageModeDevice": "Sul dispositivo",
+  "storageModeStream": "In streaming",
+  "prefetchOnMobile": "Pre-carica anche con i dati mobili (fino a 3)",
+  "onboardingStorageTitle": "Dove tieni la musica?",
+  "onboardingStorageBody": "Puoi tenere i brani come file sul telefono o salvarli e ascoltarli in streaming. Si cambia quando vuoi nelle impostazioni.",
+  "onboardingStorageFree": "Spazio libero: {size}",
+  "@onboardingStorageFree": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingStorageDeviceHint": "I file restano sul dispositivo e suonano anche senza rete.",
+  "onboardingStorageStreamHint": "Occupa poco spazio: i brani si scaricano mentre li ascolti.",
+  "queueOfflineBanner": "Senza rete: {count, plural, one{1 brano disponibile} other{{count} brani disponibili}}",
+  "@queueOfflineBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addToLibrary": "Aggiungi alla libreria",
+  "ytDownloadOnDevice": "Scarica sul dispositivo",
+  "libraryFilterLabel": "Filtro della libreria",
+  "libraryAddFailed": "Non sono riuscito ad aggiungere il brano alla libreria",
+  "libraryAddedMany": "{count, plural, one{1 brano aggiunto alla libreria} other{{count} brani aggiunti alla libreria}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} aggiunti alla libreria, {skipped} già presenti o in corso",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online."
 }

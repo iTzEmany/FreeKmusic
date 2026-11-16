@@ -12,6 +12,8 @@ import '../../theme/tokens.dart';
 import '../../../data/db/app_database.dart';
 import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
+import '../../../data/repositories/track_kinds.dart' show LibraryFilter;
+import '../../widgets/library_filter_bar.dart';
 import '../../widgets/play_buttons.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
@@ -188,7 +190,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final query = ref.watch(trackQueryProvider(false)).copyWith(text: _text);
+    final query = ref.watch(trackQueryProvider(false)).copyWith(text: _text, filter: ref.watch(libraryFilterProvider));
     final fresh = widget.downloadedNoPlaylist
         ? ref.watch(downloadedNoPlaylistProvider(query))
         : ref.watch(tracksProvider(query));
@@ -312,6 +314,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                     onChanged: (o) => _query.update((q) => q.copyWith(sort: o)),
                   ),
                 ),
+                if (!widget.downloadedNoPlaylist) const LibraryFilterBar(),
               ],
             ),
           ),
@@ -334,7 +337,9 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                           ? l.noResults
                           : widget.downloadedNoPlaylist
                               ? l.downloadedNoPlaylistEmpty
-                              : l.noTracks,
+                              : query.filter == LibraryFilter.stream
+                                  ? l.noStreamedTracks
+                                  : l.noTracks,
                     ),
                   )
                 : _list(list, compact, ctrl, ctx),

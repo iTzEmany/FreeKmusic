@@ -7,6 +7,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../core/app_log.dart';
 import '../../../providers/online_collection_providers.dart';
 import '../../../providers/selection_providers.dart';
+import '../../../data/settings/settings_store.dart' show StorageMode;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
 import '../../../services/online/merge_results.dart';
@@ -310,7 +311,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
       ids: shownIds,
       actions: (_) => [
         IconButton(
-          tooltip: l.ytDownload,
+          tooltip: ref.read(settingsProvider).storageMode == StorageMode.stream ? l.addToLibrary : l.ytDownload,
           icon: const Icon(Icons.download_rounded),
           onPressed: () => _downloadSelection({
             for (var i = 0; i < all.length; i++) slots[i]: all[i],

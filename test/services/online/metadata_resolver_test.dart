@@ -12,7 +12,7 @@ void main() {
     final web = FakeWeb((_, q) => {
           'results': [if (q['term']!.contains('Beethoven')) song('Symphony No. 5 - I. Allegro', 'Beethoven')]
         });
-    final t = Track(
+    final t = Track(saved: false, 
       coverSource: 0,
       id: 1,
       path: '/m/x.mp3',
@@ -39,7 +39,7 @@ void main() {
     expect(r!.match.title, 'Symphony No. 5 - I. Allegro');
   });
 
-  Track track(String title, String artist) => Track(
+  Track track(String title, String artist) => Track(saved: false, 
         coverSource: 0, id: 1, path: '/m/x.mp3', title: title, artist: artist,
         albumKey: 'k', durationMs: 200000, format: 'mp3', sizeBytes: 1, mtimeMs: 1,
         hasCover: false, isFavorite: false, enrichStatus: 0, userEdited: false,

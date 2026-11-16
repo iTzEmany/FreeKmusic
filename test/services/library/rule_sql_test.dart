@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/rules/rule_parser.dart';
 import 'package:codecore/services/library/rules/rule_sql.dart';
@@ -231,7 +232,7 @@ void main() {
     expect(q.where.contains("a'b"), isFalse);
     expect(q.where.contains('floyd'), isFalse);
     expect(RegExp(r'\?').allMatches(q.where).length, q.vars.length);
-    expect(q.where, startsWith('missing = 0 AND ignored = 0 AND kind = 0 AND ('));
+    expect(q.where, startsWith('missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND ('));
   });
 
   test('a rule on tags updates when a tag is assigned', () async {

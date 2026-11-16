@@ -87,6 +87,8 @@ class PlaylistImportService {
     this.trackDurationMs,
     this.fetchCover,
     this.enrichLater,
+    this.saveNow,
+    this.streaming,
     this.thresholds,
     this.youtubeEnabled = true,
     this.searchGap = const Duration(milliseconds: 1500),
@@ -131,6 +133,13 @@ class PlaylistImportService {
   /// Hands a saved song over to the background enrichment (lyrics, missing
   /// tags), once the CSV tags are on it.
   final void Function(int trackId)? enrichLater;
+
+  /// Streaming mode: saves [YtResult] as a library row without a file and returns its id
+  /// (null: download it instead).
+  final Future<int?> Function(YtResult r)? saveNow;
+
+  /// Whether the app is in streaming mode: a failed [saveNow] is then a failed item, never a download.
+  final bool Function()? streaming;
 
   /// Cut-offs read at each search, so a change in the settings applies at once.
   final MatchThresholds Function()? thresholds;
@@ -950,6 +959,23 @@ class PlaylistImportService {
     }
   }
 
+  /// A streaming-mode import saved the row [trackId] instead of downloading: it gets what a
+  /// finished download gets (CSV tags, place in the playlist, cover, enrichment).
+  Future<void> _tagSaved(int importId, ImportRow row, int trackId) async {
+    final imp = await imports.get(importId);
+    try {
+      await applyTags(
+        trackId,
+        imp?.sourceKind == ytmAlbumSourceKind ? row.withTrackNumber(row.index + 1) : row,
+      );
+    } on Object catch (e, st) {
+      AppLog.w('import: could not apply CSV tags to saved track $trackId', e, st);
+    }
+    await _link(importId, row, trackId);
+    if (imp != null) await _coverFor(imp, row, trackId);
+    enrichLater?.call(trackId);
+  }
+
   Future<void> _queueDownload(
     ImportRow row,
     int importId,
@@ -963,6 +989,16 @@ class PlaylistImportService {
         await _link(importId, row, id);
         return;
       }
+    }
+    final saved = await saveNow?.call(r);
+    if (saved != null) {
+      await _tagSaved(importId, row, saved);
+      return;
+    }
+    if (streaming?.call() ?? false) {
+      AppLog.w('import: ${r.indexKey} could not be saved in streaming mode, item failed');
+      await imports.setItem(importId, row.index, status: ImportItemStatus.failed);
+      return;
     }
     final imp = await imports.get(importId);
     final total = imp == null || !imp.numberFiles
@@ -1106,7 +1142,10 @@ class PlaylistImportService {
       trackId: Value(trackId),
       note: off ? const Value(ImportNote.lengthOff) : const Value.absent(),
     );
-    final row = it.toRow();
+    await _coverFor(imp, it.toRow(), trackId);
+  }
+
+  Future<void> _coverFor(PlaylistImport imp, ImportRow row, int trackId) async {
     if (imp.fetchCovers && fetchCover != null && row.album != null) {
       try {
         await fetchCover!(trackId, row);

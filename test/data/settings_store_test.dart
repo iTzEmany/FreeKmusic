@@ -7,6 +7,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('storageMode: an install from before the choice reads device; the choice and prefetchOnMobile round trip', () async {
+    SharedPreferences.setMockInitialValues({'onboardingFinished': true});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().storageMode, StorageMode.device);
+    expect(store.readSettings().prefetchOnMobile, isTrue);
+    await store.writeSettings(
+      store.readSettings().copyWith(storageMode: StorageMode.stream, prefetchOnMobile: false),
+    );
+    store = await SettingsStore.open();
+    expect(store.readSettings().storageMode, StorageMode.stream);
+    expect(store.readSettings().prefetchOnMobile, isFalse);
+  });
+
   test(
     'the transliteration is on when absent and a saved off stays off',
     () async {

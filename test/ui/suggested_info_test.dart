@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/l10n/app_localizations.dart';
+import 'package:codecore/providers/library_add_providers.dart' show savedStreamKeysProvider;
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/providers/youtube_providers.dart'
@@ -51,6 +52,7 @@ void main() {
         overrides: [
           onlineEntriesProvider.overrideWithValue(entries),
           suggestionActionsProvider.overrideWithValue(_Actions()),
+          savedStreamKeysProvider.overrideWith((ref) => Stream.value(const <String>{})),
           downloadIndexProvider.overrideWith(
             (ref) => Completer<DownloadIndex>().future,
           ),

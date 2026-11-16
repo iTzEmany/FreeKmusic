@@ -125,7 +125,7 @@ class OnlineEntries {
     final e = _entries[id];
     if (e == null) return null;
     final r = e.result;
-    return Track(coverSource: 0, 
+    return Track(saved: false, coverSource: 0, 
       id: id,
       path: 'online:${r.source.name}:${r.id}',
       title: r.title,
@@ -149,7 +149,7 @@ class OnlineEntries {
     );
   }
 
-  Track _radioTrack(RadioEntry e) => Track(coverSource: 0, 
+  Track _radioTrack(RadioEntry e) => Track(saved: false, coverSource: 0, 
         id: e.id,
         path: 'online:radio:${e.station.id}',
         title: e.station.name,

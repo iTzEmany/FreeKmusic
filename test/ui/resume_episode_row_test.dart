@@ -28,7 +28,7 @@ void main() {
     'an episode row names the podcast, where it was left and plays it',
     (tester) async {
       final semantics = tester.ensureSemantics();
-      final episode = Track(
+      final episode = Track(saved: false, 
         coverSource: 0,
         id: 7,
         path: '/e/7.mp3',
@@ -98,7 +98,7 @@ void main() {
   testWidgets(
     'a song with a bookmark keeps its usual subtitle (no podcast wording)',
     (tester) async {
-      final song = Track(
+      final song = Track(saved: false, 
         coverSource: 0,
         id: 8,
         path: '/m/8.mp3',

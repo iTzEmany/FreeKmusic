@@ -1,4 +1,13 @@
+import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/data/db/app_database.dart' show Track;
+import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
+import 'package:codecore/providers/stream_providers.dart';
+import 'package:codecore/services/stream/stream_cache.dart';
+import 'package:codecore/ui/screens/now_playing/queue_sheet.dart' show QueueOfflineBanner;
+import 'dart:io';
+import 'package:codecore/services/audio/codecore_audio_handler.dart' show CodecoreAudioHandler;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/widgets/online_queue_row.dart';
@@ -8,7 +17,81 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 
+class _Handler implements CodecoreAudioHandler {
+  _Handler(this.libraryIdOf);
+  @override
+  Future<int?> Function(YtResult)? libraryIdOf;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Net extends NetworkProbe {
+  _Net(this.kind);
+  NetworkKind kind;
+  @override
+  Future<NetworkKind> current() async => kind;
+}
+
 void main() {
+  testWidgets('the offline banner counts the tracks still available', (tester) async {
+    final h = await Harness.create(tester, tracks: 1);
+    await h.pump(tester, const Scaffold(body: QueueOfflineBanner(count: 14)));
+    expect(find.text('Senza rete: 14 brani disponibili'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  test('offline, the streamed tracks missing from the cache are out; online, nothing', () async {
+    final root = await Directory.systemTemp.createTemp('offline_out');
+    addTearDown(() => root.delete(recursive: true));
+    final cache = StreamCache(Directory('${root.path}/c'), freeSpace: () async => null);
+    await cache.open();
+    final online = OnlineEntries();
+    final hit = online.register(const YtResult(id: 'hit', title: 'Hit', channel: 'C', duration: null));
+    final miss = online.register(const YtResult(id: 'miss', title: 'Miss', channel: 'C', duration: null));
+    final dl = online.register(const YtResult(id: 'dl', title: 'Downloaded', channel: 'C', duration: null));
+    await cache.put('youtube:hit', File('${root.path}/h.m4a.part')..writeAsBytesSync([1]));
+    ProviderContainer make(bool up) => ProviderContainer(overrides: [
+          networkProbeProvider.overrideWithValue(_Net(NetworkKind(online: up))),
+          streamCacheProvider.overrideWithValue(cache),
+          onlineEntriesProvider.overrideWithValue(online),
+          audioHandlerProvider.overrideWithValue(_Handler((r) async => r.id == 'dl' ? 7 : null)),
+          queueProvider.overrideWith((ref) => Stream.value([online.trackOf(hit)!, online.trackOf(miss)!, online.trackOf(dl)!])),
+        ]);
+    final off = make(false);
+    addTearDown(off.dispose);
+    off.listen(networkOnlineProvider, (_, _) {});
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(await off.read(queueOfflineOutProvider.future), {miss});
+    final on = make(true);
+    addTearDown(on.dispose);
+    on.listen(networkOnlineProvider, (_, _) {});
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(await on.read(queueOfflineOutProvider.future), isNull);
+  });
+
+  test('the network coming back without a change event clears the offline queue on reopen', () async {
+    final net = _Net(const NetworkKind(online: false));
+    final root = await Directory.systemTemp.createTemp('offline_reopen');
+    addTearDown(() => root.delete(recursive: true));
+    final cache = StreamCache(Directory('${root.path}/c'), freeSpace: () async => null);
+    await cache.open();
+    final c = ProviderContainer(overrides: [
+      streamCacheProvider.overrideWithValue(cache),
+      audioHandlerProvider.overrideWithValue(_Handler((r) async => null)),
+      networkProbeProvider.overrideWithValue(net),
+      onlineEntriesProvider.overrideWithValue(OnlineEntries()),
+      queueProvider.overrideWith((ref) => Stream.value(<Track>[])),
+    ]);
+    addTearDown(c.dispose);
+    final open = c.listen(queueOfflineOutProvider, (_, _) {});
+    expect(await c.read(queueOfflineOutProvider.future), isEmpty);
+    open.close(); // queue closed
+    await Future<void>.delayed(Duration.zero); // autoDispose runs on the next tick
+    net.kind = const NetworkKind(online: true); // no `changed` pushed
+    c.listen(queueOfflineOutProvider, (_, _) {}); // queue reopened
+    expect(await c.read(queueOfflineOutProvider.future), isNull);
+  });
+
   testWidgets(
     'a streamed row says «Suggerito» and its menu has only the online actions',
     (tester) async {
@@ -47,7 +130,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Altre opzioni'));
       await tester.pumpAndSettle();
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       expect(find.text('Aggiungi a playlist…'), findsOneWidget);
       expect(find.text('Non mi piace'), findsOneWidget);
       expect(find.text('Rimuovi dalla coda'), findsOneWidget);
@@ -94,7 +177,7 @@ void main() {
       expect(find.text(', '), findsNothing);
       await tester.tap(find.byTooltip('Altre opzioni'));
       await tester.pumpAndSettle();
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       expect(find.text('Non mi piace'), findsNothing);
       await h.dispose(tester);
     },

@@ -26,6 +26,7 @@ import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../widgets/library_filter_bar.dart';
 import '../../widgets/cover_image.dart';
 import 'library_results.dart';
 import '../../widgets/empty_state.dart';
@@ -168,8 +169,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         ? _fallbackAscending ?? sort.defaultAscending
         : settings.librarySortAscending ?? sort.defaultAscending;
     final playlists = ref.watch(playlistsProvider);
-    final albums = ref.watch(albumsProvider);
-    final artists = ref.watch(artistsProvider);
+    final filtered = _kind == LibraryKind.album || _kind == LibraryKind.artist;
+    final albums = ref.watch(filtered ? filteredAlbumsProvider : albumsProvider);
+    final artists = ref.watch(filtered ? filteredArtistsProvider : artistsProvider);
     final built = ref.watch(libraryEntriesProvider((_kind, sort, ascending)));
     final folders = ref.watch(foldersProvider).value;
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
@@ -201,6 +203,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ref.invalidate(playlistsProvider);
           ref.invalidate(albumsProvider);
           ref.invalidate(artistsProvider);
+          ref.invalidate(filteredAlbumsProvider);
+          ref.invalidate(filteredArtistsProvider);
         },
       );
     } else if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
@@ -223,7 +227,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         LibraryKind.album => l.albumsCount(entries.length),
         LibraryKind.artist => l.artistsCount(entries.length),
       };
-      final shortcuts = _kind != null ? null : const _LibraryShortcuts();
+      final Widget? shortcuts = _kind == null
+          ? const _LibraryShortcuts()
+          : filtered
+          ? const LibraryFilterBar()
+          : null;
       isList = true;
       body = settings.libraryGrid
           ? _LibraryGrid(

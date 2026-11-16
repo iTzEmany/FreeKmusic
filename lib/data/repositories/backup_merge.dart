@@ -17,6 +17,7 @@ import 'artist_alias_repository.dart';
 import 'artist_info_repository.dart';
 import 'credits_repository.dart';
 import 'track_genre_repository.dart';
+import 'track_kinds.dart';
 import 'track_repository.dart';
 
 class MergeReport {
@@ -73,10 +74,21 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
   final trackRepo = TrackRepository(db);
   return db.transaction(() async {
     for (final u in data.tracks) {
-      final id = resolver.resolve(u.ref);
+      // A streamed track has no file to find: its shadow row is made here, and marked saved when the backup says so.
+      final id = u.ref.streamKey == null ? resolver.resolve(u.ref) : await _resolveItem(trackRepo, resolver, u.ref);
       if (id == null) {
         report.notFound.add(u.ref.title);
         continue;
+      }
+      final key = u.ref.streamKey;
+      if (u.saved && key != null) {
+        final wasSaved = (await trackRepo.getById(id))?.saved ?? false;
+        // saveStream groups the row with the saved tracks of its album; the backup's date keeps it out of «recent».
+        await trackRepo.saveStream(streamResultOf(key,
+            title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs));
+        if (!wasSaved && u.addedAt != null) {
+          await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(TracksCompanion(addedAt: Value(u.addedAt!)));
+        }
       }
       final t = await (db.select(db.tracks)..where((r) => r.id.equals(id))).getSingleOrNull();
       if (t == null) continue;
@@ -90,8 +102,10 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       if (e != null && !t.userEdited) {
         final artist = _blankToNullTrim(e.artist), album = _blankToNullTrim(e.album);
         final albumArtist = _blankToNullTrim(e.albumArtist);
-        final newKey = computeAlbumKey(
-            albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
+        final isStream = t.kind == kStreamKind;
+        final newKey = isStream
+            ? streamAlbumKey(albumArtist: albumArtist, artist: artist, album: album)
+            : computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
         // A row with an album pick leaves it behind when the edit moves it to another album.
         await TrackRepository(db).settleMovedCover(t, newKey);
         upd = upd.copyWith(

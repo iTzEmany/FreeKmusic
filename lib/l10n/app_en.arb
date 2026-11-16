@@ -3781,5 +3781,32 @@
   "chartSourceApple": "Apple Music chart, {country}, updated {when}",
   "chartGridTitle": "Top 20 by genre",
   "chartCountryTitle": "Chart country",
-  "chartCountryAuto": "Automatic (device region)"
+  "chartCountryAuto": "Automatic (device region)",
+  "storageGroupTitle": "Memory and streaming",
+  "storageWhere": "Where you keep your music",
+  "storageModeDevice": "On the device",
+  "storageModeStream": "Streaming",
+  "prefetchOnMobile": "Also pre-load on mobile data (up to 3)",
+  "onboardingStorageTitle": "Where do you keep your music?",
+  "onboardingStorageBody": "Keep tracks as files on the device, or save them and listen in streaming. You can change it any time in settings.",
+  "onboardingStorageFree": "Free space: {size}",
+  "@onboardingStorageFree": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingStorageDeviceHint": "Files stay on the device and play without a network.",
+  "onboardingStorageStreamHint": "Takes little space: tracks load while you listen.",
+  "queueOfflineBanner": "Offline: {count, plural, one{1 track available} other{{count} tracks available}}",
+  "addToLibrary": "Add to library",
+  "ytDownloadOnDevice": "Download to the device",
+  "libraryFilterLabel": "Library filter",
+  "libraryAddFailed": "Could not add the song to the library",
+  "libraryAddedMany": "{count, plural, one{1 song added to the library} other{{count} songs added to the library}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} added to the library, {skipped} already there or in progress",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "No streamed tracks. Use “Add to library” on an online track."
 }

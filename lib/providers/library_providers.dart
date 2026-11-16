@@ -18,6 +18,7 @@ import '../data/repositories/library_entries.dart';
 import '../data/repositories/library_queries.dart';
 import '../data/repositories/library_search.dart';
 import '../data/repositories/smart_search.dart';
+import '../data/repositories/track_kinds.dart' show LibraryFilter;
 import '../data/repositories/track_repository.dart';
 import '../services/covers/cover_store.dart';
 import '../services/covers/cover_thumbnails.dart';
@@ -66,17 +67,20 @@ class TrackQuery {
     this.text = '',
     this.sort = SortOption.defaultOrder,
     this.favoritesOnly = false,
+    this.filter = LibraryFilter.all,
   });
 
   final String text;
   final SortOption sort;
   final bool favoritesOnly;
+  final LibraryFilter filter;
 
-  TrackQuery copyWith({String? text, SortOption? sort, bool? favoritesOnly}) =>
+  TrackQuery copyWith({String? text, SortOption? sort, bool? favoritesOnly, LibraryFilter? filter}) =>
       TrackQuery(
         text: text ?? this.text,
         sort: sort ?? this.sort,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
+        filter: filter ?? this.filter,
       );
 
   @override
@@ -84,10 +88,11 @@ class TrackQuery {
       other is TrackQuery &&
       other.text == text &&
       other.sort == sort &&
-      other.favoritesOnly == favoritesOnly;
+      other.favoritesOnly == favoritesOnly &&
+      other.filter == filter;
 
   @override
-  int get hashCode => Object.hash(text, sort, favoritesOnly);
+  int get hashCode => Object.hash(text, sort, favoritesOnly, filter);
 }
 
 class TrackQueryNotifier extends Notifier<TrackQuery> {
@@ -148,7 +153,7 @@ Future<List<Track>> readPlainList(
 final _plainTracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>(
   (ref, q) => ref
       .watch(trackRepositoryProvider)
-      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly),
+      .watchTracks(sort: q.sort, favoritesOnly: q.favoritesOnly, filter: q.filter),
 );
 
 final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
@@ -230,8 +235,10 @@ final libraryEntriesProvider = Provider.family<
   (LibraryKind?, LibrarySort, bool)
 >((ref, key) {
   final playlists = ref.watch(playlistsProvider);
-  final albums = ref.watch(albumsProvider);
-  final artists = ref.watch(artistsProvider);
+  // Only the Album and Artisti tabs show the filter; the others stay whole.
+  final filtered = key.$1 == LibraryKind.album || key.$1 == LibraryKind.artist;
+  final albums = ref.watch(filtered ? filteredAlbumsProvider : albumsProvider);
+  final artists = ref.watch(filtered ? filteredArtistsProvider : artistsProvider);
   final smart = ref.watch(smartPlaylistsProvider).value ?? const [];
   if (!playlists.hasValue || !albums.hasValue || !artists.hasValue) {
     return const AsyncLoading();
@@ -329,6 +336,28 @@ class AlbumSortNotifier extends Notifier<AlbumSort> {
 
 final albumSortProvider = NotifierProvider<AlbumSortNotifier, AlbumSort>(
   AlbumSortNotifier.new,
+);
+
+/// The filter on top of Brani, Album and Artisti; one for the three tabs.
+class LibraryFilterNotifier extends Notifier<LibraryFilter> {
+  @override
+  LibraryFilter build() => LibraryFilter.all;
+
+  void set(LibraryFilter f) => state = f;
+}
+
+final libraryFilterProvider = NotifierProvider<LibraryFilterNotifier, LibraryFilter>(LibraryFilterNotifier.new);
+
+/// [albumsProvider] under the filter. One provider that re-runs when the filter changes, so the
+/// previous list stays (reloading) while the new one loads: the tab does not flash.
+final filteredAlbumsProvider = StreamProvider<List<AlbumSummary>>(
+  (ref) => ref
+      .watch(libraryQueriesProvider)
+      .watchAlbums(sort: ref.watch(albumSortProvider), filter: ref.watch(libraryFilterProvider)),
+);
+
+final filteredArtistsProvider = StreamProvider<List<ArtistSummary>>(
+  (ref) => ref.watch(libraryQueriesProvider).watchArtists(filter: ref.watch(libraryFilterProvider)),
 );
 
 final albumsProvider = StreamProvider<List<AlbumSummary>>(

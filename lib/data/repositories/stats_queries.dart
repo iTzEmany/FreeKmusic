@@ -102,10 +102,10 @@ class PeriodStats {
 
 /// [StatsQueries.listensSince]. `CROSS JOIN` fixes the order: the period first
 /// through `plays_at`; left to itself the planner starts from `tracks`.
-const listensSinceSql =
+final listensSinceSql =
     'SELECT p.track_id AS id, p.played_at AS at FROM plays p '
     'CROSS JOIN tracks t ON t.id = p.track_id '
-    'WHERE p.played_at >= ? AND t.kind = $kMusicKind AND t.missing = 0 AND t.ignored = 0';
+    'WHERE p.played_at >= ? AND ${libraryRowSql('t')} AND t.missing = 0 AND t.ignored = 0';
 
 /// Aggregates over the listening history (`plays`), all in SQL. Artists and
 /// albums are grouped as the library does: by the lower-cased trimmed artist
@@ -272,7 +272,7 @@ class StatsQueries {
     if (artistEntries.isNotEmpty) {
       for (final r in await _q(
         'SELECT lower(trim(artist)) AS k, cover_key, SUM(cover_source < 2) AS n FROM tracks '
-        'WHERE missing = 0 AND ignored = 0 AND kind = 0 AND cover_key IS NOT NULL '
+        'WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND cover_key IS NOT NULL '
         'AND lower(trim(artist)) IN (${List.filled(artistEntries.length, '?').join(',')}) '
         'GROUP BY k, cover_key ORDER BY k, n DESC, cover_key',
         [for (final e in artistEntries) Variable.withString(e.key)],

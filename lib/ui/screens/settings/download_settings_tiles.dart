@@ -12,7 +12,6 @@ import '../../../services/online/youtube_service.dart' show DownloadFormat;
 import '../../theme/tokens.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/yt_dlp_update_button.dart';
-import 'stream_cache_tile.dart';
 import '../../widgets/show_msg.dart';
 
 String downloadFormatLabel(AppLocalizations l, DownloadFormat f) => switch (f) {
@@ -154,7 +153,6 @@ class DownloadSettingsTiles extends ConsumerWidget {
             onChanged: ref.read(shazamAutoDownloadProvider.notifier).set,
           ),
         const _SearchCacheTile(),
-        const StreamCacheTile(),
         ListTile(
           leading: const Icon(Icons.speed),
           title: Text(l.downloadRateLimit),

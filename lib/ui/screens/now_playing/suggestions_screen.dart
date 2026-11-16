@@ -5,6 +5,7 @@ import '../../../core/app_log.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/shuffle_plus_providers.dart';
+import '../../../providers/library_add_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../services/shuffle_plus/suggestion_log.dart';
@@ -106,8 +107,7 @@ class _SuggestionRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final result = suggestionResult(record);
-    final inLibrary = ref.watch(downloadIndexProvider).value?.contains(result.id, source: result.source) ??
-        false;
+    final inLibrary = ref.watch(inLibraryOfProvider)(result.id, result.source);
     final item = ref.watch(downloadsProvider.select((d) => d.where((x) => x.result.id == result.id).lastOrNull));
     return OnlineSongRow(
       result: result,
@@ -117,7 +117,7 @@ class _SuggestionRow extends ConsumerWidget {
       onQueue: () => queueOnline(context, ref, result),
       note: l.suggestionsRowNote(record.seedTitle, suggestionOutcomeText(l, record.outcome)),
       onDownload: () {
-        ref.read(downloadsProvider.notifier).add(result);
+        ref.read(libraryAdderProvider).add(result);
         ref.read(suggestionLogProvider).setOutcome(result.id, SuggestionOutcome.downloaded);
         ref.invalidate(suggestionRecordsProvider);
       },

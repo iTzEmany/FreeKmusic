@@ -7693,4 +7693,84 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get chartCountryAuto => 'Automatico (regione del dispositivo)';
+
+  @override
+  String get storageGroupTitle => 'Memoria e streaming';
+
+  @override
+  String get storageWhere => 'Dove tieni la musica';
+
+  @override
+  String get storageModeDevice => 'Sul dispositivo';
+
+  @override
+  String get storageModeStream => 'In streaming';
+
+  @override
+  String get prefetchOnMobile =>
+      'Pre-carica anche con i dati mobili (fino a 3)';
+
+  @override
+  String get onboardingStorageTitle => 'Dove tieni la musica?';
+
+  @override
+  String get onboardingStorageBody =>
+      'Puoi tenere i brani come file sul telefono o salvarli e ascoltarli in streaming. Si cambia quando vuoi nelle impostazioni.';
+
+  @override
+  String onboardingStorageFree(String size) {
+    return 'Spazio libero: $size';
+  }
+
+  @override
+  String get onboardingStorageDeviceHint =>
+      'I file restano sul dispositivo e suonano anche senza rete.';
+
+  @override
+  String get onboardingStorageStreamHint =>
+      'Occupa poco spazio: i brani si scaricano mentre li ascolti.';
+
+  @override
+  String queueOfflineBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brani disponibili',
+      one: '1 brano disponibile',
+    );
+    return 'Senza rete: $_temp0';
+  }
+
+  @override
+  String get addToLibrary => 'Aggiungi alla libreria';
+
+  @override
+  String get ytDownloadOnDevice => 'Scarica sul dispositivo';
+
+  @override
+  String get libraryFilterLabel => 'Filtro della libreria';
+
+  @override
+  String get libraryAddFailed =>
+      'Non sono riuscito ad aggiungere il brano alla libreria';
+
+  @override
+  String libraryAddedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brani aggiunti alla libreria',
+      one: '1 brano aggiunto alla libreria',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryAddedSkipped(int added, int skipped) {
+    return '$added aggiunti alla libreria, $skipped già presenti o in corso';
+  }
+
+  @override
+  String get noStreamedTracks =>
+      'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.';
 }

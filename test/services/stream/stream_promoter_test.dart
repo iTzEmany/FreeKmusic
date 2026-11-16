@@ -493,7 +493,7 @@ class _VanishingTracks extends TrackRepository {
   @override
   Future<Track?> streamRow(String key) async => _first++ == 0 ? _fake : null;
   var _first = 0;
-  final _fake = Track(coverSource: 0, 
+  final _fake = Track(saved: false, coverSource: 0, 
       id: 1, path: 'stream:x', title: 't', albumKey: '', durationMs: 0, format: 'm4a', sizeBytes: 0, mtimeMs: 0,
       hasCover: false, isFavorite: false, enrichStatus: 0, userEdited: false, missing: false, ignored: false,
       kind: 2, addedAt: 0, playCount: 0);
