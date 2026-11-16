@@ -165,9 +165,11 @@ Future<CollectionPage> _readExternal(Ref ref, ExternalRef r) async {
 final chartRefetchProvider = Provider<Set<ChartRef>>((ref) => {});
 
 /// The country of a chart: the genre's own, else the chosen one, else the device's.
-String chartCountry(String chosen, ChartGenre g) =>
-    (g.fixedCountry ?? (chosen.isNotEmpty ? chosen : PlatformDispatcher.instance.locale.countryCode ?? 'US'))
-        .toUpperCase();
+String chartCountry(String chosen, ChartGenre g) {
+  final c = g.fixedCountry ?? (chosen.isNotEmpty ? chosen : PlatformDispatcher.instance.locale.countryCode ?? '');
+  // Only a 2-letter code makes a valid Apple URL (a locale may give «419»).
+  return (RegExp(r'^[A-Za-z]{2}$').hasMatch(c) ? c : 'us').toUpperCase();
+}
 
 /// A chart page: the fresh cached copy as is (RNF-02: no client call, and the matches
 /// stored with it mean no search either); else Deezer, then Deezer's fallback chart, then
@@ -176,9 +178,9 @@ Future<CollectionPage> _readChart(Ref ref, ChartRef r) async {
   final g = r.genre;
   final country = chartCountry(ref.read(settingsProvider).chartCountry, g);
   final cache = ref.read(catalogCacheProvider);
-  final key = '${g.id}:$country';
+  final key = _chartKey(g, country);
   final cached = await cache.get(CatalogKind.chart, key);
-  var json = cached?.json is Map ? cached!.json as Map : null;
+  var json = _readableChart(cached?.json) ? cached!.json as Map : null;
   var updated = cached?.storedAt;
   final refetch = ref.read(chartRefetchProvider).remove(r);
   if (json == null || cached!.expired || refetch) {
@@ -191,7 +193,7 @@ Future<CollectionPage> _readChart(Ref ref, ChartRef r) async {
       final keep = {
         if (old is Map)
           for (final t in fresh.tracks)
-            if (old[t.fingerprint] != null) t.fingerprint: old[t.fingerprint],
+            if (_matchFromJson(old[t.fingerprint]) is TrackReadyOnline) t.fingerprint: old[t.fingerprint],
       };
       json = {'apple': fresh.apple, 'tracks': [for (final t in fresh.tracks) _trackToJson(t)], 'm': keep};
       updated = DateTime.now();
@@ -214,6 +216,14 @@ Future<CollectionPage> _readChart(Ref ref, ChartRef r) async {
     chart: ChartInfo(apple: json['apple'] == true, country: country, updated: updated!),
   );
 }
+
+// Key: «genre» (Deezer follows the IP) or «genre:COUNTRY» (Apple feed or a genre with its own country).
+String _chartKey(ChartGenre g, String country) =>
+    g.fixedCountry != null || g.deezer == null ? '${g.id}:$country' : g.id;
+
+/// A cached entry that can be shown: a map with a non-empty list of well-formed tracks.
+bool _readableChart(Object? j) =>
+    j is Map && j['tracks'] is List && (j['tracks'] as List).isNotEmpty && (j['tracks'] as List).every((t) => _trackFromJson(t) != null);
 
 Future<({bool apple, List<ExternalTrack> tracks})?> _fetchChart(
     Ref ref, ChartGenre g, String country, CancelToken cancel) async {
@@ -267,7 +277,7 @@ ExternalTrack? _trackFromJson(Object? j) => j is Map && j['t'] is String
     ? ExternalTrack(
         title: j['t'] as String,
         artists: [for (final a in (j['a'] as List? ?? const [])) '$a'],
-        durationMs: j['ms'] as int?,
+        durationMs: j['ms'] is int ? j['ms'] as int : null,
         isrc: j['i'] as String?,
         key: '${j['k']}',
       )
@@ -290,7 +300,7 @@ Future<void> _saveChartMatch(Ref ref, ChartRef r, ChartInfo info, String fingerp
   };
   if (j == null) return;
   final cache = ref.read(catalogCacheProvider);
-  final key = '${r.genre.id}:${info.country}';
+  final key = _chartKey(r.genre, info.country);
   final json = (await cache.get(CatalogKind.chart, key))?.json;
   if (json is! Map) return;
   final stored = json['m'] is Map ? json['m'] as Map : const {};
@@ -334,7 +344,10 @@ Future<bool> refreshOnlineCollection(WidgetRef ref, OnlineCollectionRef r) async
         if (r is ChartRef) ref.read(chartRefetchProvider).add(r);
         // Matches already made are kept: only the unresolved rows are asked again.
         // The matches provider rebuilds by itself from the new page.
-        final _ = await ref.refresh(onlineCollectionProvider(r).future);
+        final start = DateTime.now();
+        final page = await ref.refresh(onlineCollectionProvider(r).future);
+        // No new data (the sources failed): the old copy came back.
+        if (page.chart case final c? when c.updated.isBefore(start)) return false;
     }
     return true;
   } on Object catch (e, st) {

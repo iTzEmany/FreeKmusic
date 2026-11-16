@@ -8,6 +8,7 @@ import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/library/library_genres_screen.dart';
 import 'package:codecore/ui/screens/search/genre_screen.dart';
 import 'package:codecore/data/repositories/library_queries.dart' show GenreSummary;
+import 'package:codecore/ui/widgets/empty_state.dart';
 import 'package:codecore/providers/library_providers.dart' show genresProvider;
 import 'package:codecore/ui/screens/library/library_results.dart' show LibraryResults;
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
@@ -813,6 +814,18 @@ void main() {
     await t.tap(find.text('Rock'));
     await _settle(t);
     expect(find.byType(GenreScreen), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('Generi with no genres says so instead of a blank page', (t) async {
+    final h = await Harness.create(t);
+    await h.pump(
+      t,
+      const LibraryGenresScreen(),
+      extraOverrides: [genresProvider.overrideWith((ref) => Stream.value(const []))],
+    );
+    await _settle(t);
+    expect(find.byType(EmptyState), findsOneWidget);
     await h.dispose(t);
   });
 

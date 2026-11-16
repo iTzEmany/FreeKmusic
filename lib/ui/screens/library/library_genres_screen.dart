@@ -6,6 +6,7 @@ import '../../../providers/library_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/genre_grid.dart';
 import '../search/genre_screen.dart';
 
@@ -17,6 +18,12 @@ class LibraryGenresScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final genres = ref.watch(genresProvider).value ?? const [];
+    if (genres.isEmpty) {
+      return Scaffold(
+        appBar: CcAppBar(title: l.genresTitle),
+        body: EmptyState(icon: Icons.music_note_rounded, message: l.noResults),
+      );
+    }
     return Scaffold(
       appBar: CcAppBar(title: l.genresTitle),
       body: CustomScrollView(

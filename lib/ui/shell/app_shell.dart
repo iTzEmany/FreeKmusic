@@ -116,6 +116,7 @@ class AppShell extends ConsumerWidget {
           }
           return;
         }
+        ref.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState?.popUntil((r) => r.isFirst);
         ref.read(navIndexProvider.notifier).set(NavTab.search.index);
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => ref.read(searchFocusProvider).requestFocus(),

@@ -1,7 +1,7 @@
 import 'package:codecore/providers/library_providers.dart' show searchIndexProvider;
 import 'package:codecore/providers/ui_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart' show MaterialApp;
+import 'package:flutter/material.dart' show MaterialApp, TextField;
 import 'package:flutter_test/flutter_test.dart';
 
 // On a phone the Search field lives in the dock; tests that pump only
@@ -12,8 +12,11 @@ ProviderContainer _container(WidgetTester t) =>
 void typeSearch(WidgetTester t, String text) =>
     _container(t).read(searchControllerProvider).text = text;
 
-void submitSearch(WidgetTester t) =>
-    _container(t).read(searchSubmitProvider.notifier).submit();
+// What Enter does in the field: its own submit, with the typed text.
+void submitSearch(WidgetTester t) {
+  final f = t.widget<TextField>(find.byType(TextField).first);
+  f.onSubmitted?.call(f.controller!.text);
+}
 
 /// The search index is built on another isolate, which the test clock does
 /// not wait for: pump and give the real loop a turn until it is there. A

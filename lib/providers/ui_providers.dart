@@ -15,18 +15,6 @@ final searchControllerProvider = Provider<TextEditingController>((ref) {
   return c;
 });
 
-/// Counts submits (Enter) sent to `SearchScreen` from outside its field (tests).
-class SearchSubmitNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-
-  void submit() => state++;
-}
-
-final searchSubmitProvider = NotifierProvider<SearchSubmitNotifier, int>(
-  SearchSubmitNotifier.new,
-);
-
 /// Counts the Ctrl+F requests for the Library's own search; `LibraryScreen` opens it.
 class LibrarySearchRequestNotifier extends Notifier<int> {
   @override

@@ -111,7 +111,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     ref.listen(searchPrefillProvider, (_, next) => _applyPrefill(next));
-    ref.listen(searchSubmitProvider, (_, _) => _submit(_controller.text));
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(

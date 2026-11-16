@@ -389,10 +389,14 @@ class _Settings extends SettingsNotifier {
 class _Deezer implements DeezerClient {
   int calls = 0;
   bool fail = false;
+  final asked = <int>[];
+  final empty = <int>{}; // chart ids that answer with no songs
   @override
   Future<List<DeezerTrack>> chart(int genreId, {int limit = 20, CancelToken? cancel}) async {
     calls++;
+    asked.add(genreId);
     if (fail) throw const SocketException('offline');
+    if (empty.contains(genreId)) return const [];
     return [
       for (var i = 1; i <= 2; i++) DeezerTrack(id: i, title: 'Song $i', artist: 'Band', duration: 200),
     ];
@@ -421,7 +425,7 @@ class _Apple implements AppleRssClient {
 
 void _chartTests() {
   final rock = chartGenres.firstWhere((g) => g.id == 'rock');
-  final ref = OnlineCollectionRef.chart(rock);
+  final ref = ChartRef(rock);
   var clock = DateTime(2026, 11, 16, 9);
   late CatalogCache cache;
   late _Deezer deezer;
@@ -510,5 +514,108 @@ void _chartTests() {
     deezer.fail = true;
     apple.fail = true;
     await expectLater(read(open()), throwsA(isA<CollectionUnreadable>()));
+  });
+
+  test('an expired copy with the network available is fetched again', () async {
+    await read(open());
+    clock = clock.add(const Duration(hours: 25));
+    await read(open());
+    expect(deezer.calls, 2);
+  });
+
+  test('Deezer empty for the main chart tries the fallback chart', () async {
+    final dance = chartGenres.firstWhere((g) => g.id == 'dance');
+    deezer.empty.add(dance.deezer!);
+    final c = open();
+    final r = OnlineCollectionRef.chart(dance);
+    c.listen(onlineCollectionProvider(r), (_, _) {});
+    final page = await c.read(onlineCollectionProvider(r).future);
+    expect(deezer.asked, [dance.deezer, dance.fallbackDeezer]);
+    expect(page.chart!.apple, isFalse);
+    expect(page.collection.tracks, hasLength(2));
+    expect(apple.calls, 0);
+  });
+
+  test('Deezer empty for both charts goes to Apple', () async {
+    final dance = chartGenres.firstWhere((g) => g.id == 'dance');
+    deezer.empty.addAll([dance.deezer!, dance.fallbackDeezer!]);
+    final c = open();
+    final r = OnlineCollectionRef.chart(dance);
+    c.listen(onlineCollectionProvider(r), (_, _) {});
+    final page = await c.read(onlineCollectionProvider(r).future);
+    expect(page.chart!.apple, isTrue);
+  });
+
+  for (final bad in <String, Object?>{
+    'a wrong shape': {'apple': false, 'tracks': {'x': 1}},
+    'a wrong duration type': {'apple': false, 'tracks': [{'t': 'Old', 'ms': 'x'}]},
+    'no songs': {'apple': false, 'tracks': []},
+  }.entries) {
+    test('a cached entry with ${bad.key} is fetched again, no exception', () async {
+      await cache.put(CatalogKind.chart, 'rock', bad.value);
+      final page = await read(open());
+      if (bad.key != 'a wrong duration type') {
+        expect(deezer.calls, 1);
+        expect(page.collection.tracks.map((t) => t.title), ['Song 1', 'Song 2']);
+      } else {
+        expect(page.collection.tracks.single.durationMs, isNull);
+      }
+    });
+  }
+
+  test('a Deezer chart is cached by genre alone: the country does not change the key', () async {
+    await read(open());
+    expect(await cache.get(CatalogKind.chart, 'rock'), isNotNull);
+  });
+
+  test('a locale country that is not 2 letters falls back to us', () {
+    expect(chartCountry('419', rock), 'US');
+    expect(chartCountry('it', rock), 'IT');
+  });
+
+  test('a re-read keeps the ready matches but asks again for the not-found ones', () async {
+    var c = open();
+    var sub = c.listen(onlineMatchesProvider(ref), (_, _) {});
+    await turn();
+    matcher.out.add((0, TrackReady.online(ytmSong('y1', 'Song 1'))));
+    matcher.out.add((1, const TrackNotFound()));
+    await turn();
+    sub.close();
+    c = open();
+    c.read(chartRefetchProvider).add(ref);
+    final rows = <List<TrackMatch>>[];
+    sub = c.listen(onlineMatchesProvider(ref), (_, n) => n.whenData(rows.add));
+    await turn();
+    expect(deezer.calls, 2);
+    expect(rows.last.map((m) => m.runtimeType), [TrackReadyOnline, TrackPending]);
+    expect(matcher.asked, [
+      ['Song 2']
+    ]);
+    sub.close();
+  });
+
+  testWidgets('a refresh that gets no new data says so', (tester) async {
+    late WidgetRef w;
+    await tester.runAsync(() async {
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          catalogCacheProvider.overrideWithValue(cache),
+          deezerClientProvider.overrideWithValue(deezer),
+          appleRssClientProvider.overrideWithValue(apple),
+          settingsProvider.overrideWith(_Settings.new),
+          collectionMatcherProvider.overrideWith((ref, page) => _Matcher()),
+        ],
+        child: Consumer(builder: (_, r, _) {
+          w = r;
+          r.watch(onlineCollectionProvider(ref));
+          return const SizedBox();
+        }),
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await tester.pump();
+      deezer.fail = true;
+      apple.fail = true;
+      expect(await refreshOnlineCollection(w, ref), isFalse);
+    });
   });
 }

@@ -20,6 +20,7 @@ import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:codecore/ui/shell/desktop_player_bar.dart';
 import 'package:codecore/ui/shell/desktop_sidebar.dart';
+import 'package:codecore/ui/shell/shell_nav.dart';
 import 'package:codecore/ui/shell/side_panel.dart';
 import 'package:codecore/ui/widgets/mini_player.dart';
 import 'package:codecore/ui/theme/tokens.dart';
@@ -553,6 +554,43 @@ void main() {
     await _settle(t);
     expect(find.byType(AllTracksScreen), findsNothing);
     expect(find.byKey(const ValueKey('library-search-bar')), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  Future<Harness> shellWithPageInSearch(WidgetTester t) async {
+    t.view.physicalSize = const Size(1200, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, tracks: 2);
+    await h.pump(t, const AppShell());
+    _container(t).read(navIndexProvider.notifier).set(NavTab.search.index);
+    await _settle(t);
+    _container(t)
+        .read(tabNavigatorKeysProvider)[NavTab.search.index]
+        .currentState!
+        .push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('Top 20 page'))));
+    await _settle(t);
+    expect(find.text('Top 20 page'), findsOneWidget);
+    return h;
+  }
+
+  testWidgets('Ctrl+F with a page open in Search goes back to its root', (t) async {
+    final h = await shellWithPageInSearch(t);
+    await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await t.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(t);
+    expect(find.text('Top 20 page'), findsNothing);
+    expect(_dockField(), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('«Cerca questo brano» with a page open in Search shows the Search root', (t) async {
+    final h = await shellWithPageInSearch(t);
+    ShellNav.showSearch(t.element(find.byType(AppShell)), t.element(find.byType(AppShell)) as WidgetRef);
+    await _settle(t);
+    expect(find.text('Top 20 page'), findsNothing);
+    expect(_dockField(), findsOneWidget);
     await h.dispose(t);
   });
 

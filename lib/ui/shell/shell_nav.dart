@@ -60,6 +60,8 @@ abstract final class ShellNav {
   static void showSearch(BuildContext context, WidgetRef ref) {
     final root = Navigator.of(context, rootNavigator: true);
     root.popUntil((r) => r.isFirst);
+    // A page may sit above Search: the field is on its root.
+    ref.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState?.popUntil((r) => r.isFirst);
     ref.read(navIndexProvider.notifier).set(NavTab.search.index);
   }
 }
