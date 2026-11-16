@@ -178,6 +178,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
             options: DownloadOptions(
               rateLimitKBps: s.downloadRateLimitKBps,
               format: s.downloadFormat,
+              quality: s.downloadQuality,
             ));
       },
       outDir: () async {

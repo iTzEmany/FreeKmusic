@@ -12444,6 +12444,138 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Backup automatico non riuscito'**
   String get logBackupFailed;
+
+  /// No description provided for @qualityDownload.
+  ///
+  /// In it, this message translates to:
+  /// **'Qualità download'**
+  String get qualityDownload;
+
+  /// No description provided for @qualityStream.
+  ///
+  /// In it, this message translates to:
+  /// **'Qualità streaming'**
+  String get qualityStream;
+
+  /// No description provided for @qualityHigh.
+  ///
+  /// In it, this message translates to:
+  /// **'Alta'**
+  String get qualityHigh;
+
+  /// No description provided for @qualityMedium.
+  ///
+  /// In it, this message translates to:
+  /// **'Media (~128 kbps)'**
+  String get qualityMedium;
+
+  /// No description provided for @qualityLow.
+  ///
+  /// In it, this message translates to:
+  /// **'Bassa (~64 kbps)'**
+  String get qualityLow;
+
+  /// No description provided for @freeSpaceTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Libera spazio'**
+  String get freeSpaceTitle;
+
+  /// No description provided for @freeSpaceIntro.
+  ///
+  /// In it, this message translates to:
+  /// **'Questi brani diventano in streaming: il file si cancella, restano preferiti, playlist e ascolti.'**
+  String get freeSpaceIntro;
+
+  /// No description provided for @freeSpaceStale.
+  ///
+  /// In it, this message translates to:
+  /// **'Non ascoltati da 90 giorni'**
+  String get freeSpaceStale;
+
+  /// No description provided for @freeSpaceOthers.
+  ///
+  /// In it, this message translates to:
+  /// **'Altri download'**
+  String get freeSpaceOthers;
+
+  /// No description provided for @freeSpaceAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutti i download ({n}) {size}'**
+  String freeSpaceAll(int n, String size);
+
+  /// No description provided for @freeSpaceButton.
+  ///
+  /// In it, this message translates to:
+  /// **'Libera {size}'**
+  String freeSpaceButton(String size);
+
+  /// No description provided for @freeSpaceEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun download da liberare.'**
+  String get freeSpaceEmpty;
+
+  /// No description provided for @freeSpaceBusy.
+  ///
+  /// In it, this message translates to:
+  /// **'Una scansione è in corso: riprova quando finisce.'**
+  String get freeSpaceBusy;
+
+  /// No description provided for @freeSpaceConfirmTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Liberare lo spazio?'**
+  String get freeSpaceConfirmTitle;
+
+  /// No description provided for @freeSpaceConfirmBody.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano diventa in streaming e il suo file viene cancellato.} other{{n} brani diventano in streaming e i loro file vengono cancellati.}}'**
+  String freeSpaceConfirmBody(int n);
+
+  /// No description provided for @freeSpaceDone.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano liberato} other{{n} brani liberati}}, {size}'**
+  String freeSpaceDone(int n, String size);
+
+  /// No description provided for @freeSpaceFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano non è stato liberato: il file è rimasto dov’è.} other{{n} brani non sono stati liberati: i file sono rimasti dove sono.}}'**
+  String freeSpaceFailed(int n);
+
+  /// No description provided for @keepOfflineAction.
+  ///
+  /// In it, this message translates to:
+  /// **'Tieni offline'**
+  String get keepOfflineAction;
+
+  /// No description provided for @keepOfflineQueued.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano in download} other{{n} brani in download}}'**
+  String keepOfflineQueued(int n);
+
+  /// No description provided for @keepOfflineAlready.
+  ///
+  /// In it, this message translates to:
+  /// **'Già tutti offline'**
+  String get keepOfflineAlready;
+
+  /// No description provided for @logVanishedReplaced.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano sostituito: {name}'**
+  String logVanishedReplaced(String name);
+
+  /// No description provided for @logVanishedGone.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano non più disponibile: {name}'**
+  String logVanishedGone(String name);
 }
 
 class _AppLocalizationsDelegate

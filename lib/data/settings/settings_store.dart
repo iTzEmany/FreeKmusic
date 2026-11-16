@@ -9,7 +9,7 @@ import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
 import '../../services/daylist/daylist_slots.dart';
 import '../../services/daylist/mood_table.dart';
-import '../../services/online/youtube_service.dart' show DownloadFormat;
+import '../../services/online/youtube_service.dart' show AudioQuality, DownloadFormat;
 import '../../services/recognition/track_identity.dart' show kRecogVersion;
 
 /// The equalizer curve chosen for one kind of output (speaker or headphones).
@@ -67,6 +67,8 @@ class AppSettings {
     this.downloadParallel = 2,
     this.downloadRateLimitKBps = 0,
     this.downloadFormat = DownloadFormat.m4a,
+    this.downloadQuality = AudioQuality.high,
+    this.streamQuality = AudioQuality.high,
     this.streamCacheMb = 1024,
     this.downloadLocation = '',
     this.autoBackup = false,
@@ -161,6 +163,8 @@ class AppSettings {
 
   /// M4A keeps YouTube's AAC as served; MP3 converts for players that need it.
   final DownloadFormat downloadFormat;
+  final AudioQuality downloadQuality;
+  final AudioQuality streamQuality;
 
   /// Disk space for the streaming cache, in MB (256–8192).
   final int streamCacheMb;
@@ -263,6 +267,8 @@ class AppSettings {
     int? downloadParallel,
     int? downloadRateLimitKBps,
     DownloadFormat? downloadFormat,
+    AudioQuality? downloadQuality,
+    AudioQuality? streamQuality,
     int? streamCacheMb,
     String? downloadLocation,
     bool? autoBackup,
@@ -322,6 +328,8 @@ class AppSettings {
     downloadParallel: downloadParallel ?? this.downloadParallel,
     downloadRateLimitKBps: downloadRateLimitKBps ?? this.downloadRateLimitKBps,
     downloadFormat: downloadFormat ?? this.downloadFormat,
+    downloadQuality: downloadQuality ?? this.downloadQuality,
+    streamQuality: streamQuality ?? this.streamQuality,
     streamCacheMb: streamCacheMb ?? this.streamCacheMb,
     downloadLocation: downloadLocation ?? this.downloadLocation,
     autoBackup: autoBackup ?? this.autoBackup,
@@ -486,6 +494,14 @@ class SettingsStore {
       (f) => f.name == _prefs.getString('downloadFormat'),
       orElse: () => DownloadFormat.m4a,
     ),
+    downloadQuality: AudioQuality.values.firstWhere(
+      (q) => q.name == _prefs.getString('downloadQuality'),
+      orElse: () => AudioQuality.high,
+    ),
+    streamQuality: AudioQuality.values.firstWhere(
+      (q) => q.name == _prefs.getString('streamQuality'),
+      orElse: () => AudioQuality.high,
+    ),
     importSureThreshold: _prefs.getDouble('importSureThreshold') ?? 0.80,
     importReviewThreshold: _prefs.getDouble('importReviewThreshold') ?? 0.55,
     playbackSpeed: (_prefs.getDouble('playbackSpeed') ?? 1.0).clamp(0.5, 2.0),
@@ -570,6 +586,8 @@ class SettingsStore {
     await _prefs.setInt('downloadParallel', s.downloadParallel);
     await _prefs.setInt('downloadRateLimitKBps', s.downloadRateLimitKBps);
     await _prefs.setString('downloadFormat', s.downloadFormat.name);
+    await _prefs.setString('downloadQuality', s.downloadQuality.name);
+    await _prefs.setString('streamQuality', s.streamQuality.name);
     await _prefs.setInt('streamCacheMb', s.streamCacheMb);
     await _prefs.setString('downloadLocation', s.downloadLocation);
     await _prefs.setBool('autoBackup', s.autoBackup);

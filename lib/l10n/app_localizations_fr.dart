@@ -7913,4 +7913,113 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logBackupFailed => 'Échec de la sauvegarde automatique';
+
+  @override
+  String get qualityDownload => 'Qualité des téléchargements';
+
+  @override
+  String get qualityStream => 'Qualité du streaming';
+
+  @override
+  String get qualityHigh => 'Haute';
+
+  @override
+  String get qualityMedium => 'Moyenne (~128 kbps)';
+
+  @override
+  String get qualityLow => 'Basse (~64 kbps)';
+
+  @override
+  String get freeSpaceTitle => 'Libérer de l’espace';
+
+  @override
+  String get freeSpaceIntro =>
+      'Ces titres passent en streaming : le fichier est supprimé, les favoris, les playlists et les écoutes restent.';
+
+  @override
+  String get freeSpaceStale => 'Non écoutés depuis 90 jours';
+
+  @override
+  String get freeSpaceOthers => 'Autres téléchargements';
+
+  @override
+  String freeSpaceAll(int n, String size) {
+    return 'Tous les téléchargements ($n) $size';
+  }
+
+  @override
+  String freeSpaceButton(String size) {
+    return 'Libérer $size';
+  }
+
+  @override
+  String get freeSpaceEmpty => 'Aucun téléchargement à libérer.';
+
+  @override
+  String get freeSpaceBusy =>
+      'Une analyse est en cours : réessayez quand elle sera terminée.';
+
+  @override
+  String get freeSpaceConfirmTitle => 'Libérer l’espace ?';
+
+  @override
+  String freeSpaceConfirmBody(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n titres passent en streaming et leurs fichiers sont supprimés.',
+      one: '1 titre passe en streaming et son fichier est supprimé.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String freeSpaceDone(int n, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n titres libérés',
+      one: '1 titre libéré',
+    );
+    return '$_temp0, $size';
+  }
+
+  @override
+  String freeSpaceFailed(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          '$n titres n’ont pas été libérés : leurs fichiers sont toujours là.',
+      one: '1 titre n’a pas été libéré : son fichier est toujours là.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOfflineAction => 'Garder hors ligne';
+
+  @override
+  String keepOfflineQueued(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n titres en téléchargement',
+      one: '1 titre en téléchargement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get keepOfflineAlready => 'Déjà tout hors ligne';
+
+  @override
+  String logVanishedReplaced(String name) {
+    return 'Titre remplacé : $name';
+  }
+
+  @override
+  String logVanishedGone(String name) {
+    return 'Titre plus disponible : $name';
+  }
 }

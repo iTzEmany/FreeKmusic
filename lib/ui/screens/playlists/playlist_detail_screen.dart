@@ -1,4 +1,5 @@
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/keep_offline_action.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../../core/app_log.dart';
 import '../../../providers/library_providers.dart';
@@ -108,6 +109,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         );
       case _PlaylistAction.clearCover:
         await ops.setCover(id, null);
+      case _PlaylistAction.keepOffline:
+        await keepOfflineFlow(context, ref, tracks);
       case _PlaylistAction.export:
         await exportPlaylistFlow(
           context,
@@ -222,6 +225,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             label: l.playlistRemoveCover,
             value: _PlaylistAction.clearCover,
           ),
+        CcAction(
+          icon: Icons.download_for_offline_outlined,
+          label: l.keepOfflineAction,
+          value: _PlaylistAction.keepOffline,
+        ),
         CcAction(
           icon: Icons.ios_share_rounded,
           label: l.exportPlaylist,
@@ -440,7 +448,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 }
 
-enum _PlaylistAction { sort, edit, add, cover, clearCover, export, rename, delete }
+enum _PlaylistAction { sort, edit, add, cover, clearCover, keepOffline, export, rename, delete }
 
 class _EditRow extends StatelessWidget {
   const _EditRow({

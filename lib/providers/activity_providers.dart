@@ -34,6 +34,7 @@ enum ActivityKind {
   ytDlp,
   playbackFailed,
   backup,
+  vanished,
 }
 
 /// One line of the Activity centre. [progress] is 0..1, null = indeterminate.

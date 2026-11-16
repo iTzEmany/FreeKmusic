@@ -7,6 +7,7 @@ import 'package:codecore/core/app_log.dart';
 import 'package:codecore/ui/widgets/cover_image.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
+import 'package:codecore/providers/keep_offline_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -141,6 +142,48 @@ void main() {
     final covers = tester.widgetList<CoverImage>(find.byType(CoverImage)).toList()
       ..sort((a, b) => b.size.compareTo(a.size));
     expect(covers.first.coverKey, newKey, reason: 'the header follows the new key');
+    await h.dispose(tester);
+  });
+
+  testWidgets('album menu «Tieni offline» hands the album tracks to keepOffline and says how many go', (tester) async {
+    final h = await Harness.create(tester, tracks: 4);
+    final got = <int>[];
+    const queued = 2;
+    await h.pump(
+      tester,
+      const AlbumDetailScreen(
+        album: AlbumSummary(
+          albumKey: 'artist|album 0',
+          title: 'Album 0',
+          artist: 'Artist',
+          variousArtists: false,
+          trackCount: 2,
+          durationMs: 370000,
+          year: 2019,
+          coverKey: null,
+        ),
+      ),
+      extraOverrides: [
+        keepOfflineProvider.overrideWithValue((tracks) async {
+          got.addAll([for (final t in tracks) t.id]);
+          return queued;
+        }),
+      ],
+    );
+    Future<void> settle() async {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await settle();
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tieni offline'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(got, hasLength(2));
+    expect(find.text('2 brani in download'), findsOneWidget);
     await h.dispose(tester);
   });
 }

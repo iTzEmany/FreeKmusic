@@ -66,6 +66,7 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
     youtube: ref.watch(youtubeServiceProvider),
     isMetered: () async => (await ref.read(networkProbeProvider).current()).metered,
     prefetchOnMetered: () => ref.read(settingsProvider).prefetchOnMobile,
+    quality: () => ref.read(settingsProvider).streamQuality,
     isOnline: () async => (await ref.read(networkProbeProvider).current()).online,
   );
   ref.onDispose(preparer.dispose);

@@ -143,6 +143,7 @@ void _cancel(BuildContext context, WidgetRef ref, ActivityItem a) {
     case ActivityKind.ytDlp:
     case ActivityKind.playbackFailed:
     case ActivityKind.backup:
+    case ActivityKind.vanished:
       break;
   }
 }
@@ -291,6 +292,7 @@ String activityTitle(AppLocalizations l, ActivityItem a) => switch (a.kind) {
   ActivityKind.ytDlp => l.activityYtDlp,
   ActivityKind.playbackFailed => l.logPlayFailed,
   ActivityKind.backup => l.logBackup,
+  ActivityKind.vanished => l.logVanishedGone(a.name ?? ''),
   ActivityKind.genreReread => l.logGenres,
   ActivityKind.artistCountries => l.logCountries,
   ActivityKind.enrichBackground =>
