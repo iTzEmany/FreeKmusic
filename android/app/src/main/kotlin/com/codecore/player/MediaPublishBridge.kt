@@ -49,7 +49,7 @@ object MediaPublishBridge {
                 }
                 Thread {
                     try {
-                        val done = replace(context, File(path), File(src))
+                        val done = replace(context, File(path), File(src), call.argument<String>("volume") ?: MediaStore.VOLUME_EXTERNAL_PRIMARY)
                         main.post { result.success(done) }
                     } catch (e: Exception) {
                         main.post { result.error("replace", e.message, null) }
@@ -82,9 +82,9 @@ object MediaPublishBridge {
      * (same uri and path: FUSE refuses renames and side files in Music). False
      * when no entry of this app is there: the caller falls back to a rename.
      */
-    private fun replace(context: Context, path: File, src: File): Boolean {
+    private fun replace(context: Context, path: File, src: File, volume: String): Boolean {
         val resolver = context.contentResolver
-        val base = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val base = MediaStore.Audio.Media.getContentUri(volume)
         val id = resolver.query(base, arrayOf(MediaStore.MediaColumns._ID), "${MediaStore.MediaColumns.DATA} = ?", arrayOf(path.path), null)?.use {
             if (it.moveToFirst()) it.getLong(0) else null
         } ?: return false
@@ -133,6 +133,8 @@ object MediaPublishBridge {
         resolver.query(uri, arrayOf(MediaStore.MediaColumns.DATA), null, null, null)?.use {
             if (it.moveToFirst()) return it.getString(0)
         }
+        // No DATA column: the primary Music folder, or fail (a guessed SD path would be wrong).
+        if (volume != MediaStore.VOLUME_EXTERNAL_PRIMARY) throw IllegalStateException("MediaStore gave no path")
         return File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "$rel/${src.name}").path
     }
 }

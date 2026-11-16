@@ -93,7 +93,7 @@ final downloadIndexProvider = FutureProvider<DownloadIndex>((ref) async {
 });
 
 final mediaPublisherProvider = Provider<MediaPublisher>(
-    (ref) => MediaPublisher(volume: () => ref.read(settingsProvider).downloadLocation));
+    (ref) => MediaPublisher(volume: () => effectiveLocation(ref.read(settingsProvider).downloadLocation)));
 
 /// Destination folder for downloads (`<Music>/FreeKmusic`), registered as a
 /// scanned folder. On Android it is the public folder the files are published
@@ -102,6 +102,7 @@ final mediaPublisherProvider = Provider<MediaPublisher>(
 /// [location] is the «download location» setting (D-579): on Android the app
 /// folder of an SD volume, on desktop a chosen folder; empty = the default.
 Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo, {String location = ''}) async {
+  location = await effectiveLocation(location); // a removed card falls back to internal
   final sd = isAndroid ? sdRootOf(location) : null;
   if (isAndroid && !await publishesToMediaStore()) {
     // D-567: Android 10 and older keep the 1.5.1 folder (app files, own library folder); on the SD its app folder.
@@ -114,12 +115,16 @@ Future<(Directory, Folder)?> resolveDownloadFolder(FolderRepository repo, {Strin
     (_, final l) when !isAndroid && l.isNotEmpty => (Directory(l), l),
     _ => (Directory((await resolveDefaultFolders()).downloads), (await resolveDefaultFolders()).library),
   };
-  // Inside a library folder already: it is scanned from there (no second folder, no double scan).
+  return (dir, await libraryFolderFor(repo, dir.path, library));
+}
+
+/// The library folder [dir] is scanned from: one that contains it already (no
+/// second folder, no double scan), else [library] (the parent, as the startup default would add it).
+Future<Folder> libraryFolderFor(FolderRepository repo, String dir, String library) async {
   for (final f in await repo.getAll()) {
-    if (p.isWithin(f.path, dir.path) || p.equals(f.path, dir.path)) return (dir, f);
+    if (p.isWithin(f.path, dir) || p.equals(f.path, dir)) return f;
   }
-  // No library folder yet: the parent (Music), as the startup default would add it.
-  return (dir, await repo.add(library));
+  return repo.add(library);
 }
 
 

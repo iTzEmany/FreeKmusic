@@ -25,6 +25,16 @@ class StreamCache {
       StreamCache(Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache')),
           limitBytes: limitBytes);
 
+  /// Deletes the cache folder of a volume left behind ([volumeDir] as in [inAppSupport]); nothing else.
+  static Future<void> deleteAt(String volumeDir) async {
+    final d = Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache'));
+    try {
+      if (await d.exists()) await d.delete(recursive: true);
+    } on FileSystemException catch (e, st) {
+      AppLog.w('old stream cache not removed: ${d.path}', e, st);
+    }
+  }
+
   /// Space always left free on the disk (D-84).
   static const freeMargin = 500 * _mb;
 

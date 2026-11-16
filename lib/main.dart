@@ -20,7 +20,7 @@ import 'core/app_log.dart';
 import 'core/memory_budget.dart';
 import 'core/paths.dart';
 import 'core/platform.dart';
-import 'services/online/media_publisher.dart' show sdRootOf;
+import 'services/online/media_publisher.dart' show effectiveLocation;
 import 'data/db/app_database.dart';
 import 'data/repositories/library_queries.dart';
 import 'data/repositories/play_history_repository.dart';
@@ -237,10 +237,7 @@ Future<void> main() async {
 
   if (kPerfProbe) PerfProbe.mark('deviceName', sinceMain);
   final streamCache = await StreamCache.inAppSupport(
-    volumeDir: () {
-      final loc = settingsStore.readSettings().downloadLocation;
-      return isAndroid && sdRootOf(loc) != null ? loc : '';
-    }(),
+    volumeDir: isAndroid ? await effectiveLocation(settingsStore.readSettings().downloadLocation) : '',
   );
   final container = ProviderContainer(
     overrides: [

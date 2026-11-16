@@ -12277,6 +12277,18 @@ abstract class AppLocalizations {
   /// **'Scheda SD ({name})'**
   String downloadMemorySd(String name);
 
+  /// No description provided for @downloadMemorySdMissing.
+  ///
+  /// In it, this message translates to:
+  /// **'Scheda SD non inserita ({name})'**
+  String downloadMemorySdMissing(String name);
+
+  /// No description provided for @downloadMemoryRestart.
+  ///
+  /// In it, this message translates to:
+  /// **'Il cambio vale dal prossimo avvio.'**
+  String get downloadMemoryRestart;
+
   /// No description provided for @downloadMemorySdLegacy.
   ///
   /// In it, this message translates to:

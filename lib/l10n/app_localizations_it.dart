@@ -7727,6 +7727,14 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String downloadMemorySdMissing(String name) {
+    return 'Scheda SD non inserita ($name)';
+  }
+
+  @override
+  String get downloadMemoryRestart => 'Il cambio vale dal prossimo avvio.';
+
+  @override
   String get downloadMemorySdLegacy =>
       'Sulla scheda SD in questa versione di Android i file stanno nella cartella dell\'app e spariscono se la disinstalli.';
 

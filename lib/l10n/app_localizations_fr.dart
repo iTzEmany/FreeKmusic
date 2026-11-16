@@ -7795,6 +7795,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String downloadMemorySdMissing(String name) {
+    return 'Carte SD absente ($name)';
+  }
+
+  @override
+  String get downloadMemoryRestart =>
+      'Le changement s’applique au prochain démarrage.';
+
+  @override
   String get downloadMemorySdLegacy =>
       'Sur cette version d’Android, les fichiers de la carte SD sont dans le dossier de l’appli et disparaissent si vous la désinstallez.';
 

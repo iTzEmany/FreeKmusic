@@ -6,7 +6,9 @@ import 'package:path/path.dart' as p;
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/folder_actions.dart';
-import '../../../providers/folder_ops.dart';
+import '../../../providers/database_providers.dart';
+import '../../../providers/youtube_providers.dart' show libraryFolderFor;
+import '../../../services/stream/stream_cache.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/online/media_publisher.dart';
 
@@ -18,11 +20,21 @@ final sdVolumesProvider = FutureProvider.autoDispose<List<String>>((ref) => sdVo
 class DownloadLocationTile extends ConsumerWidget {
   const DownloadLocationTile({super.key});
 
+  /// Stores the new location; the stream cache moves at the next start, so the
+  /// one left on the previous volume goes now (only that folder).
+  Future<void> _set(WidgetRef ref, String v) async {
+    final old = ref.read(settingsProvider).downloadLocation;
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: v));
+    if (!isAndroid) return;
+    final (from, to) = (await effectiveLocation(old), await effectiveLocation(v));
+    if (from != to) await StreamCache.deleteAt(from);
+  }
+
   Future<void> _pick(WidgetRef ref) async {
     final path = await FilePicker.getDirectoryPath();
     if (path == null) return;
-    ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: path));
-    await ref.read(folderOpsProvider).add(path);
+    await _set(ref, path);
+    await libraryFolderFor(ref.read(folderRepositoryProvider), path, path);
     await scanWithPermission(ref);
   }
 
@@ -30,7 +42,7 @@ class DownloadLocationTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final location = ref.watch(settingsProvider.select((s) => s.downloadLocation));
-    void set(String v) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: v));
+    void set(String v) => _set(ref, v);
     if (!isAndroid) {
       return ListTile(
         leading: const Icon(Icons.folder_outlined),
@@ -43,17 +55,23 @@ class DownloadLocationTile extends ConsumerWidget {
       );
     }
     final sds = ref.watch(sdVolumesProvider).value ?? const [];
-    if (sds.isEmpty) return const SizedBox.shrink();
+    if (sds.isEmpty && location.isEmpty) return const SizedBox.shrink();
+    // The chosen card may be gone: say so instead of showing «internal».
+    final missing = location.isNotEmpty && !sds.contains(location);
     final legacy = !(ref.watch(_mediaStoreProvider).value ?? true);
     return ListTile(
       leading: const Icon(Icons.sd_storage_outlined),
       title: Text(l.downloadMemory),
-      subtitle: location.isNotEmpty && legacy ? Text(l.downloadMemorySdLegacy) : null,
+      subtitle: Text([
+        if (location.isNotEmpty && legacy) l.downloadMemorySdLegacy,
+        l.downloadMemoryRestart,
+      ].join(' ')),
       trailing: DropdownButton<String>(
-        value: sds.contains(location) ? location : '',
+        value: location,
         underline: const SizedBox.shrink(),
         items: [
           DropdownMenuItem(value: '', child: Text(l.downloadMemoryInternal)),
+          if (missing) DropdownMenuItem(value: location, child: Text(l.downloadMemorySdMissing(p.basename(sdRootOf(location) ?? location)))),
           for (final d in sds) DropdownMenuItem(value: d, child: Text(l.downloadMemorySd(p.basename(sdRootOf(d) ?? d)))),
         ],
         onChanged: (v) => v == null ? null : set(v),
