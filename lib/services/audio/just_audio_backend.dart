@@ -49,6 +49,10 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   @override
   final Equalizer? equalizer;
 
+  // Phase 127 tasks 127.2 (Android) and 127.3 (desktop) fill this in.
+  @override
+  VoiceFilter? get voiceFilter => null;
+
   @override
   Stream<Duration> get position => _player.positionStream;
 

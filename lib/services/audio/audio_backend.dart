@@ -47,6 +47,9 @@ abstract class AudioBackend {
   /// Jam's player, previews).
   Equalizer? get equalizer;
 
+  /// The karaoke voice filter of this backend, or null where there is none.
+  VoiceFilter? get voiceFilter;
+
   /// Current position read on demand (not from the throttled stream).
   Duration get positionNow;
   Future<void> dispose();

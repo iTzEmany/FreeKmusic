@@ -120,6 +120,9 @@ class CrossfadeEngine implements AudioBackend, GaplessCapable {
   Stream<void> get advanced => _advancedC.stream;
   @override
   Equalizer? get equalizer => _mirror.isEmpty ? null : _mirror;
+  // Task 127.3 adds a MirrorVoiceFilter like the equalizer one.
+  @override
+  VoiceFilter? get voiceFilter => null;
   @override
   Duration get positionNow => _main.backend.positionNow;
 
