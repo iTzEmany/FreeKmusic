@@ -86,6 +86,16 @@ void main() {
     expect(d.imports.single.rows.single.title, 'X');
   });
 
+  test('a saved stream row with no other user data is exported; an unsaved one is not', () async {
+    for (final (key, saved) in [('s1', true), ('s2', false)]) {
+      await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: 'stream:youtube:$key', title: key, albumKey: 'stream|youtube:$key', format: '', sizeBytes: 0,
+          mtimeMs: 0, addedAt: 7, kind: const Value(2), saved: Value(saved), album: const Value('Alb')));
+    }
+    final t = (await collectUserData(db)).tracks.single;
+    expect((t.ref.streamKey, t.saved, t.album, t.addedAt), ('youtube:s1', true, 'Alb', 7));
+  });
+
   test('track genres and artist countries are collected', () async {
     final f = await db.into(db.folders).insert(FoldersCompanion.insert(path: '/m', addedAt: 1));
     final a = await db.into(db.tracks).insert(track('/m/a.mp3', 'A', f, fav: true));

@@ -591,6 +591,41 @@ void main() {
       expect(await repo.setSaved(r.indexKey, false), 1);
     });
 
+    test('saveStream keeps the fields and the album key of a row edited by hand', () async {
+      final id = await repo.ensureStreamRow(YtResult(id: 'u', title: 'T', channel: 'Ch', duration: null));
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(
+          userEdited: Value(true), artist: Value('Mine'), album: Value(''), albumKey: Value('stream|hand|pick')));
+      await repo.saveStream(YtResult(id: 'u', title: 'T', channel: 'Ch', duration: null, artists: ['Art'], album: 'Alb'));
+      final t = (await repo.getById(id))!;
+      expect([t.saved, t.artist, t.album, t.albumKey], [true, 'Mine', '', 'stream|hand|pick']);
+    });
+
+    test('saveStream takes the channel as artist when the result has no artists, and moves a hand-picked cover', () async {
+      final id = await repo.ensureStreamRow(YtResult(id: 'c', title: 'T', channel: 'Ch', duration: null));
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(
+          artist: Value(''), coverSource: Value(1), coverKey: Value('pick'), hasCover: Value(true)));
+      await repo.saveStream(YtResult(id: 'c', title: 'T', channel: 'Ch', duration: null, album: 'Alb'));
+      final t = (await repo.getById(id))!;
+      expect([t.artist, t.albumKey, t.coverSource, t.coverKey], ['Ch', 'stream|ch|alb', 0, null]);
+    });
+
+    test('favoriteStreamKeys lists favourite shadow rows only', () async {
+      await repo.ensureStreamRow(YtResult(id: 'f1', title: 'A', channel: 'Ch', duration: null));
+      await repo.ensureStreamRow(YtResult(id: 'f2', title: 'B', channel: 'Ch', duration: null));
+      await db.customStatement("UPDATE tracks SET is_favorite = 1 WHERE path = 'stream:youtube:f1'");
+      expect(await repo.favoriteStreamKeys(), {'youtube:f1'});
+    });
+
+    test('a saved row that becomes a file is no longer saved', () async {
+      final folderId = (await FolderRepository(db).add('/m')).id;
+      final id = (await repo.saveStream(YtResult(id: 'p', title: 'T', channel: 'Ch', duration: null)))!;
+      final dir = Directory.systemTemp.createTempSync('promo');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File(p.join(dir.path, 'p.mp3'))..writeAsBytesSync([1]);
+      final t = await repo.promoteStreamRow('youtube:p', file.path, folderId, file);
+      expect([t!.id, t.kind, t.saved], [id, 0, false]);
+    });
+
     test('downloading a streamed track keeps its place in the playlist', () async {
       await repo.upsertBatch([row('/a.mp3', 'A'), row('/c.mp3', 'C'), row('/b.mp3', 'B')]);
       final lib = {for (final t in await db.select(db.tracks).get()) t.title: t.id};

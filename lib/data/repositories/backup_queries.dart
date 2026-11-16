@@ -54,6 +54,8 @@ Future<UserData> collectUserData(
           ref: ref,
           favorite: t.isFavorite,
           saved: t.saved,
+          album: t.saved ? t.album : null,
+          addedAt: t.saved ? t.addedAt : null,
           edit: t.userEdited
               ? TrackEditData(
                   title: t.title,

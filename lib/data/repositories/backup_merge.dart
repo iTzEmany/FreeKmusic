@@ -17,6 +17,7 @@ import 'artist_alias_repository.dart';
 import 'artist_info_repository.dart';
 import 'credits_repository.dart';
 import 'track_genre_repository.dart';
+import 'track_kinds.dart';
 import 'track_repository.dart';
 
 class MergeReport {
@@ -79,10 +80,19 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         report.notFound.add(u.ref.title);
         continue;
       }
+      final key = u.ref.streamKey;
+      if (u.saved && key != null) {
+        final wasSaved = (await trackRepo.getById(id))?.saved ?? false;
+        // saveStream groups the row with the saved tracks of its album; the backup's date keeps it out of «recent».
+        await trackRepo.saveStream(streamResultOf(key,
+            title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs));
+        if (!wasSaved && u.addedAt != null) {
+          await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(TracksCompanion(addedAt: Value(u.addedAt!)));
+        }
+      }
       final t = await (db.select(db.tracks)..where((r) => r.id.equals(id))).getSingleOrNull();
       if (t == null) continue;
       report.recognized++;
-      if (u.saved) await trackRepo.setSaved(u.ref.streamKey!, true);
       var upd = const TracksCompanion();
       if (u.favorite && !t.isFavorite) {
         upd = upd.copyWith(isFavorite: const Value(true));
@@ -92,8 +102,9 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       if (e != null && !t.userEdited) {
         final artist = _blankToNullTrim(e.artist), album = _blankToNullTrim(e.album);
         final albumArtist = _blankToNullTrim(e.albumArtist);
-        final newKey = computeAlbumKey(
-            albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
+        final isStream = t.kind == kStreamKind;
+        final newKey = '${isStream ? 'stream|' : ''}${computeAlbumKey(
+            albumArtist: albumArtist, artist: artist, album: album, directory: isStream ? '' : p.dirname(t.path))}';
         // A row with an album pick leaves it behind when the edit moves it to another album.
         await TrackRepository(db).settleMovedCover(t, newKey);
         upd = upd.copyWith(

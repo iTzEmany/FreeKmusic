@@ -202,6 +202,7 @@ class TrackRepository {
           ),
         ),
         missing: const Value(false),
+        saved: const Value(false),
       ),
     );
     return getById(row.id);
@@ -288,7 +289,8 @@ class TrackRepository {
         : ((row.artist ?? '').isEmpty ? r.channel : row.artist);
     var key = 'stream|${computeAlbumKey(albumArtist: row.albumArtist, artist: artist, album: album, directory: '')}';
     // A generic album would lump unrelated tracks together: keep the row's own key.
-    if (key.startsWith('stream|unknown|')) key = row.albumKey;
+    // A hand-picked album key (edited row) is never overwritten.
+    if (key.startsWith('stream|unknown|') || row.userEdited) key = row.albumKey;
     await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
       TracksCompanion(
         saved: const Value(true),

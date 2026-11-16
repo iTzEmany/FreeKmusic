@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/backup_merge.dart';
 import 'package:codecore/data/repositories/backup_queries.dart';
@@ -152,9 +153,9 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       final tracks = TrackRepository(db);
       await tracks.saveStream(const YtResult(
-          id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art']));
+          id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art'], album: 'Alb'));
       await tracks.ensureStreamRow(const YtResult(id: 'v2', title: 'Unsaved', channel: 'Ch', duration: null));
-      await db.customStatement("UPDATE tracks SET is_favorite = 1, play_count = 4, last_played_at = 99 WHERE path = 'stream:youtube:v1'");
+      await db.customStatement("UPDATE tracks SET is_favorite = 1, play_count = 4, last_played_at = 99, added_at = 1234 WHERE path = 'stream:youtube:v1'");
       final pl = PlaylistRepository(db);
       final id = await pl.create('Mix');
       await pl.addStreamTracks(id, [(await tracks.streamRow('youtube:v1'))!.id]);
@@ -174,10 +175,65 @@ void main() {
       await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
       final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
       expect((row.saved, row.isFavorite, row.playCount, row.lastPlayedAt), (true, true, 4, 99));
+      expect((row.album, row.albumKey, row.addedAt), ('Alb', 'stream|art|alb', 1234));
       expect((await TrackRepository(here).streamRow('youtube:v2')), isNull);
       expect(await playlist(here, 'Mix'), await playlist(src, 'Mix'));
       final saved = await (here.select(here.tracks)..where((t) => isLibraryRow(t))).get();
       expect(saved, hasLength(1));
+    });
+
+    test('a saved row edited by hand keeps the stream| album key; a malformed saved flag reads as false', () async {
+      final data = UserData.fromJson({
+        'format': 1,
+        'createdAt': 1,
+        'tracks': [
+          {
+            'ref': {'streamKey': 'youtube:e1', 'title': 'T'},
+            'saved': true,
+            'edit': {'title': 'T', 'artist': 'Art', 'album': 'Alb'},
+          },
+          {'ref': {'streamKey': 'youtube:e2', 'title': 'U'}, 'saved': 'yes'},
+        ],
+      });
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
+      final e1 = (await TrackRepository(here).streamRow('youtube:e1'))!;
+      expect((e1.saved, e1.albumKey), (true, 'stream|art|alb'));
+      expect((await TrackRepository(here).streamRow('youtube:e2'))!.saved, false);
+    });
+
+    test('saved:true on a file ref does not abort the restore', () async {
+      final data = UserData.fromJson({
+        'format': 1,
+        'createdAt': 1,
+        'tracks': [
+          {'ref': {'folder': '/m', 'relPath': 'a.mp3', 'title': 'a'}, 'saved': true, 'favorite': true},
+        ],
+      });
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      final folder = await here.into(here.folders).insert(FoldersCompanion.insert(path: '/m', addedAt: 1));
+      await here.into(here.tracks).insert(TracksCompanion.insert(
+          path: '/m/a.mp3', title: 'a', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, folderId: Value(folder)));
+      final report = await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
+      expect(report.favoritesAdded, 1);
+    });
+
+    test('the manifest track count includes saved rows, not the unsaved ones', () async {
+      final src = await savedSource();
+      addTearDown(src.close);
+      SharedPreferences.setMockInitialValues({});
+      final zip = File(p.join(dir.path, 'c.zip'));
+      await BackupService(
+        db: src,
+        prefs: await SharedPreferences.getInstance(),
+        coversDir: Directory(p.join(dir.path, 'covers')),
+        downloadsFile: File(p.join(dir.path, 'none.json')),
+        deviceId: 'dev',
+      ).createBackup(zip.path);
+      final manifest = ZipDecoder().decodeBytes(zip.readAsBytesSync()).findFile('manifest.json')!;
+      expect((jsonDecode(utf8.decode(manifest.content as List<int>)) as Map)['trackCount'], 1);
     });
 
     test('an old backup without the field restores its stream rows as not saved', () async {
