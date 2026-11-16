@@ -4038,5 +4038,13 @@
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} ajoutés à la bibliothèque, {skipped} déjà présents ou en cours",
   "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
-  "noStreamedTracks": "Aucun titre en streaming. Utilisez « Ajouter à la bibliothèque » sur un titre en ligne."
+  "noStreamedTracks": "Aucun titre en streaming. Utilisez « Ajouter à la bibliothèque » sur un titre en ligne.",
+  "autoBackup": "Sauvegarde automatique",
+  "autoBackupHint": "Une fois par semaine, une sauvegarde est enregistrée dans le dossier choisi, en gardant les 3 dernières.",
+  "autoBackupFolder": "Dossier de la sauvegarde",
+  "autoBackupNever": "jamais",
+  "autoBackupSummary": "{folder}, dernière : {last}",
+  "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
+  "logBackup": "Sauvegarde automatique",
+  "logBackupSub": "Enregistrée dans le dossier choisi."
 }

@@ -4,11 +4,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_log.dart';
 import '../core/permissions.dart' show hasAudioPermission;
+import '../services/backup/backup_service.dart' show runAutoBackupIfDue;
 import '../services/scanner/shared_cover_fix.dart';
 import '../services/tags/mp3_length_fix.dart';
 import 'folder_actions.dart' show scanIfPermissionLate;
 import 'activity_log_providers.dart';
+import 'activity_providers.dart' show ActivityItem, ActivityKind;
+import 'backup_providers.dart';
 import 'database_providers.dart' show trackRepositoryProvider;
 import 'enrich_completer_providers.dart';
 import 'library_providers.dart' show libraryScannerProvider, scanStateProvider;
@@ -77,6 +81,54 @@ final permissionRescanProvider = Provider<void>((ref) {
       hasAudioPermission,
       () => ref.read(scanStateProvider.notifier).scanAll(),
     );
+  }
+
+  final life = AppLifecycleListener(onResume: () => unawaited(check()));
+  ref.onDispose(life.dispose);
+  ref.read(startupSettledProvider.future).then((_) {
+    if (ref.mounted) unawaited(check());
+  });
+});
+
+/// R-241: the weekly backup, checked once settled and on every resume (no background work). Watched from the root.
+final autoBackupStartProvider = Provider<void>((ref) {
+  var running = false;
+  Future<void> check() async {
+    final s = ref.read(settingsProvider);
+    if (running || !s.autoBackup) return;
+    running = true;
+    try {
+      final last = ref.read(backupLastAtProvider.notifier);
+      final log = ref.read(activityLogProvider.notifier);
+      final now = DateTime.now();
+      await runAutoBackupIfDue(
+        service: await ref.read(backupServiceProvider.future),
+        enabled: s.autoBackup,
+        folder: s.backupFolder,
+        lastAt: ref.read(backupLastAtProvider),
+        now: now,
+        saveLastAt: last.set,
+        onError: (e, _) => unawaited(
+          log.add(
+            LogEntry(
+              at: now,
+              item: ActivityItem(
+                kind: ActivityKind.backup,
+                key: 'backup-${now.microsecondsSinceEpoch}',
+                name: null,
+                running: false,
+                failed: true,
+              ),
+              detail: {'error': '$e'},
+            ),
+          ),
+        ),
+      );
+    } on Object catch (e, st) {
+      AppLog.w('automatic backup could not start', e, st);
+    } finally {
+      running = false;
+    }
   }
 
   final life = AppLifecycleListener(onResume: () => unawaited(check()));

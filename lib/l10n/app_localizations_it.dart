@@ -7801,4 +7801,28 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.';
+
+  @override
+  String get autoBackup => 'Backup automatico';
+
+  @override
+  String get autoBackupHint =>
+      'Una volta a settimana salva un backup nella cartella che scegli, tenendo gli ultimi 3.';
+
+  @override
+  String get autoBackupFolder => 'Cartella del backup';
+
+  @override
+  String get autoBackupNever => 'mai';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder · ultimo: $last';
+  }
+
+  @override
+  String get logBackup => 'Backup automatico';
+
+  @override
+  String get logBackupSub => 'Salvato nella cartella scelta.';
 }

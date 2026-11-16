@@ -7779,4 +7779,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'No streamed tracks. Use “Add to library” on an online track.';
+
+  @override
+  String get autoBackup => 'Automatic backup';
+
+  @override
+  String get autoBackupHint =>
+      'Once a week it saves a backup in the folder you choose, keeping the last 3.';
+
+  @override
+  String get autoBackupFolder => 'Backup folder';
+
+  @override
+  String get autoBackupNever => 'never';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder · last: $last';
+  }
+
+  @override
+  String get logBackup => 'Automatic backup';
+
+  @override
+  String get logBackupSub => 'Saved in the chosen folder.';
 }

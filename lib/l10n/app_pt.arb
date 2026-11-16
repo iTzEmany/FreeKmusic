@@ -4003,5 +4003,13 @@
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} adicionadas à biblioteca, {skipped} já existentes ou em curso",
   "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
-  "noStreamedTracks": "Nenhuma faixa em streaming. Use «Adicionar à biblioteca» numa faixa online."
+  "noStreamedTracks": "Nenhuma faixa em streaming. Use «Adicionar à biblioteca» numa faixa online.",
+  "autoBackup": "Backup automático",
+  "autoBackupHint": "Uma vez por semana guarda um backup na pasta que escolheres, mantendo os últimos 3.",
+  "autoBackupFolder": "Pasta do backup",
+  "autoBackupNever": "nunca",
+  "autoBackupSummary": "{folder}, último: {last}",
+  "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
+  "logBackup": "Backup automático",
+  "logBackupSub": "Guardado na pasta escolhida."
 }

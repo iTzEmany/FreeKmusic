@@ -178,15 +178,35 @@ void main() {
       await tester.tap(find.text('Avanti'));
       await _settle(tester);
       await _settle(tester); // the volumes resolve after the page
-      expect(find.byType(SwitchListTile), sd.isEmpty ? findsNothing : findsOneWidget);
+      expect(find.textContaining('Scheda SD'), sd.isEmpty ? findsNothing : findsOneWidget);
       if (sd.isNotEmpty) {
-        await tester.tap(find.byType(SwitchListTile));
+        await tester.tap(find.textContaining('Scheda SD'));
         await _settle(tester);
         expect(_settings(tester).downloadLocation, sd.first);
       }
       await h.dispose(tester);
     });
   }
+
+  testWidgets('storage step: the backup switch is off; turning it on asks for a folder and saves it', (tester) async {
+    FilePickerPlatform.instance = _FakePicker();
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const OnboardingScreen(askAudioPermission: false),
+      extraOverrides: [musicDiskSpaceProvider.overrideWith((_) async => null)],
+    );
+    await tester.tap(find.text('Avanti'));
+    await _settle(tester);
+    await tester.tap(find.text('Avanti'));
+    await _settle(tester);
+    expect(_settings(tester).autoBackup, isFalse);
+    await tester.tap(find.text('Backup automatico'));
+    await _settle(tester);
+    expect(_settings(tester).autoBackup, isTrue);
+    expect(_settings(tester).backupFolder, '/tmp/codecore-onboarding-scan');
+    await h.dispose(tester);
+  });
 
   testWidgets('adding a folder on the way does not close the guide', (tester) async {
     final h = await Harness.create(tester);

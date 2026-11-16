@@ -69,6 +69,8 @@ class AppSettings {
     this.downloadFormat = DownloadFormat.m4a,
     this.streamCacheMb = 1024,
     this.downloadLocation = '',
+    this.autoBackup = false,
+    this.backupFolder = '',
     this.storageMode = StorageMode.device,
     this.prefetchOnMobile = true,
     this.importSureThreshold = 0.80,
@@ -166,6 +168,10 @@ class AppSettings {
   /// D-579: Android = app folder of the SD volume, desktop = chosen download folder; empty = default.
   final String downloadLocation;
 
+  /// R-241: weekly backup into [backupFolder] (off by default).
+  final bool autoBackup;
+  final String backupFolder;
+
   /// Where the music lives; the onboarding sets it, older installs keep `device` (D-598).
   final StorageMode storageMode;
 
@@ -259,6 +265,8 @@ class AppSettings {
     DownloadFormat? downloadFormat,
     int? streamCacheMb,
     String? downloadLocation,
+    bool? autoBackup,
+    String? backupFolder,
     StorageMode? storageMode,
     bool? prefetchOnMobile,
     double? importSureThreshold,
@@ -316,6 +324,8 @@ class AppSettings {
     downloadFormat: downloadFormat ?? this.downloadFormat,
     streamCacheMb: streamCacheMb ?? this.streamCacheMb,
     downloadLocation: downloadLocation ?? this.downloadLocation,
+    autoBackup: autoBackup ?? this.autoBackup,
+    backupFolder: backupFolder ?? this.backupFolder,
     storageMode: storageMode ?? this.storageMode,
     prefetchOnMobile: prefetchOnMobile ?? this.prefetchOnMobile,
     importSureThreshold: importSureThreshold ?? this.importSureThreshold,
@@ -462,6 +472,8 @@ class SettingsStore {
     downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
     streamCacheMb: (_prefs.getInt('streamCacheMb') ?? 1024).clamp(256, 8192),
     downloadLocation: _prefs.getString('downloadLocation') ?? '',
+    autoBackup: _prefs.getBool('autoBackup') ?? false,
+    backupFolder: _prefs.getString('backupFolder') ?? '',
     // Absent = an install from before the choice: it keeps its files (D-598).
     storageMode: StorageMode.values.firstWhere(
       (m) => m.name == _prefs.getString('storageMode'),
@@ -560,6 +572,8 @@ class SettingsStore {
     await _prefs.setString('downloadFormat', s.downloadFormat.name);
     await _prefs.setInt('streamCacheMb', s.streamCacheMb);
     await _prefs.setString('downloadLocation', s.downloadLocation);
+    await _prefs.setBool('autoBackup', s.autoBackup);
+    await _prefs.setString('backupFolder', s.backupFolder);
     await _prefs.setString('storageMode', s.storageMode.name);
     await _prefs.setBool('prefetchOnMobile', s.prefetchOnMobile);
     await _prefs.remove('downloadOriginal');
@@ -725,6 +739,10 @@ class SettingsStore {
   int? get releasesLastRunAt => _prefs.getInt('releasesLastRunAt');
   int? get releasesRetryAt => _prefs.getInt('releasesRetryAt');
   int? get releasesLastNotifiedAt => _prefs.getInt('releasesLastNotifiedAt');
+
+  /// Time of the last automatic backup (epoch ms; null = none).
+  int? get backupLastAt => _prefs.getInt('backupLastAt');
+  Future<void> writeBackupLastAt(int ms) => _prefs.setInt('backupLastAt', ms);
 
   Future<void> writeReleasesLastRunAt(int ms) =>
       _prefs.setInt('releasesLastRunAt', ms);

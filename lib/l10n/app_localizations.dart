@@ -12372,6 +12372,48 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.'**
   String get noStreamedTracks;
+
+  /// No description provided for @autoBackup.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup automatico'**
+  String get autoBackup;
+
+  /// No description provided for @autoBackupHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Una volta a settimana salva un backup nella cartella che scegli, tenendo gli ultimi 3.'**
+  String get autoBackupHint;
+
+  /// No description provided for @autoBackupFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'Cartella del backup'**
+  String get autoBackupFolder;
+
+  /// No description provided for @autoBackupNever.
+  ///
+  /// In it, this message translates to:
+  /// **'mai'**
+  String get autoBackupNever;
+
+  /// No description provided for @autoBackupSummary.
+  ///
+  /// In it, this message translates to:
+  /// **'{folder} · ultimo: {last}'**
+  String autoBackupSummary(String folder, String last);
+
+  /// No description provided for @logBackup.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup automatico'**
+  String get logBackup;
+
+  /// No description provided for @logBackupSub.
+  ///
+  /// In it, this message translates to:
+  /// **'Salvato nella cartella scelta.'**
+  String get logBackupSub;
 }
 
 class _AppLocalizationsDelegate

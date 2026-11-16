@@ -385,4 +385,94 @@ void main() {
     );
     await expectSameUserData(fresh);
   });
+
+  group('automatic backup (R-241)', () {
+    final now = DateTime(2026, 10, 19, 12);
+    late Directory out;
+    DateTime? saved;
+    final errors = <Object>[];
+
+    String name(int daysAgo) =>
+        BackupService.fileName(now.subtract(Duration(days: daysAgo)));
+    List<String> names() =>
+        out.listSync().map((e) => p.basename(e.path)).toList()..sort();
+
+    Future<bool> run(DateTime? lastAt, {String? folder, DateTime? at}) =>
+        runAutoBackupIfDue(
+          service: service(),
+          enabled: true,
+          folder: folder ?? out.path,
+          lastAt: lastAt,
+          now: at ?? now,
+          saveLastAt: (d) async => saved = d,
+          onError: (e, _) => errors.add(e),
+        );
+
+    setUp(() {
+      out = Directory(p.join(dir.path, 'out'))..createSync();
+      saved = null;
+      errors.clear();
+    });
+
+    test('at 7 days a zip is born and the last backup time is saved', () async {
+      expect(await run(now.subtract(const Duration(days: 7))), isTrue);
+      expect(names(), [name(0)]);
+      expect(saved, now);
+    });
+
+    test('at 6 days nothing happens', () async {
+      expect(await run(now.subtract(const Duration(days: 6))), isFalse);
+      expect(names(), isEmpty);
+      expect(saved, isNull);
+    });
+
+    test('off, or without a folder, nothing happens', () async {
+      expect(
+        await runAutoBackupIfDue(
+          service: service(),
+          enabled: false,
+          folder: out.path,
+          lastAt: null,
+          now: now,
+          saveLastAt: (d) async => saved = d,
+          onError: (e, _) => errors.add(e),
+        ),
+        isFalse,
+      );
+      expect(await run(null, folder: ''), isFalse);
+      expect(names(), isEmpty);
+    });
+
+    test('the 4th oldest is deleted, other files never', () async {
+      for (final d in [7, 14, 21]) {
+        File(p.join(out.path, name(d))).writeAsStringSync('old');
+      }
+      File(p.join(out.path, 'notes.zip')).writeAsStringSync('mine');
+      File(p.join(out.path, 'freekmusic-backup-x.zip')).writeAsStringSync('mine');
+      await run(now.subtract(const Duration(days: 7)));
+      expect(names(), [
+        'freekmusic-backup-x.zip',
+        'notes.zip',
+        name(14),
+        name(7),
+        name(0),
+      ]..sort());
+    });
+
+    test('the zip just written is never deleted, even with a newer one around', () async {
+      for (final d in [-3, -2, -1]) {
+        File(p.join(out.path, name(d))).writeAsStringSync('future');
+      }
+      await run(null);
+      expect(names().contains(name(0)), isTrue);
+      expect(names().length, 3);
+    });
+
+    test('an error goes to the callback and the last time is not saved', () async {
+      final notAFolder = File(p.join(dir.path, 'file.txt'))..writeAsStringSync('x');
+      await run(null, folder: notAFolder.path);
+      expect(errors, hasLength(1));
+      expect(saved, isNull);
+    });
+  });
 }

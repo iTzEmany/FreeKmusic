@@ -1,3 +1,4 @@
+import '../settings/auto_backup_tile.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -302,6 +303,7 @@ class _StoragePageState extends ConsumerState<StoragePage> {
                 .read(settingsProvider.notifier)
                 .update((s) => s.copyWith(downloadLocation: v ? sds.first : '')),
           ),
+        const AutoBackupTile(onboarding: true),
       ],
     );
   }

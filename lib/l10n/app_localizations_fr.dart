@@ -7796,7 +7796,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get downloadMemorySdLegacy =>
-      'Sur cette version d\'Android, les fichiers de la carte SD sont dans le dossier de l\'appli et disparaissent si vous la désinstallez.';
+      'Sur cette version d’Android, les fichiers de la carte SD sont dans le dossier de l’appli et disparaissent si vous la désinstallez.';
 
   @override
   String get onboardingStorageSdHint =>
@@ -7869,4 +7869,28 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'Aucun titre en streaming. Utilisez « Ajouter à la bibliothèque » sur un titre en ligne.';
+
+  @override
+  String get autoBackup => 'Sauvegarde automatique';
+
+  @override
+  String get autoBackupHint =>
+      'Une fois par semaine, une sauvegarde est enregistrée dans le dossier choisi, en gardant les 3 dernières.';
+
+  @override
+  String get autoBackupFolder => 'Dossier de la sauvegarde';
+
+  @override
+  String get autoBackupNever => 'jamais';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder · dernière : $last';
+  }
+
+  @override
+  String get logBackup => 'Sauvegarde automatique';
+
+  @override
+  String get logBackupSub => 'Enregistrée dans le dossier choisi.';
 }

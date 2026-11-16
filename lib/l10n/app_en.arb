@@ -3817,5 +3817,13 @@
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} added to the library, {skipped} already there or in progress",
   "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
-  "noStreamedTracks": "No streamed tracks. Use “Add to library” on an online track."
+  "noStreamedTracks": "No streamed tracks. Use “Add to library” on an online track.",
+  "autoBackup": "Automatic backup",
+  "autoBackupHint": "Once a week it saves a backup in the folder you choose, keeping the last 3.",
+  "autoBackupFolder": "Backup folder",
+  "autoBackupNever": "never",
+  "autoBackupSummary": "{folder}, last: {last}",
+  "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
+  "logBackup": "Automatic backup",
+  "logBackupSub": "Saved in the chosen folder."
 }

@@ -88,7 +88,7 @@ Libera spazio                        Onboarding (aggiunte)
   - Comando mirato: `flutter test <test nuovi> test/ui/track_actions_test.dart test/ui/architecture_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi.
 
-- [ ] 126.5 Backup automatico settimanale (R-241, D-588, F-5) — `/code-review high`
+- [x] 126.5 Backup automatico settimanale (R-241, D-588, F-5) — `/code-review high`
   - File: `isBackupDue(lastAt, now)` accanto a `lib/services/releases/check_schedule.dart`, `lib/providers/startup_providers.dart`
     (all'avvio e a `onResume`), `lib/services/backup/backup_service.dart`, impostazioni (cartella, ultimo backup), voce in
     «Memoria e streaming», interruttore nell'onboarding (spento di partenza; acceso apre la scelta della cartella),
@@ -109,3 +109,4 @@ Libera spazio                        Onboarding (aggiunte)
 - **126.2, prova di yt-dlp su Linux** (video `dQw4w9WgXcQ`, 16 nov): Alta `bestaudio[ext=m4a]/bestaudio/best` -> 140 (m4a, abr 129,5);
   Bassa `bestaudio[abr<=64]/worstaudio` -> 250 (opus, abr 61). Con il tetto 128 la Media cadeva su 250 (come la Bassa, perche
   l'AAC e 129,5): tetto portato a 135, Media `bestaudio[abr<=135]/bestaudio` -> 251 (opus, abr 128,9; yt-dlp preferisce Opus all AAC a pari bitrate, 140 qualifica comunque). Da provare su youtubedl-android (Mi A3).
+- **126.5, cartella del backup su Android 11+** (16 nov): `file_picker` (android_file_picker 2.1.2) apre `ACTION_OPEN_DOCUMENT_TREE` (SAF) e restituisce un percorso di file; il manifest non ha `MANAGE_EXTERNAL_STORAGE`, quindi su Android 11+ la scrittura con `dart:io` fuori dalle cartelle dell'app (e dai media) può dare «permesso negato». Nel codice la scrittura è sempre `File` normale: l'errore va nel Registro («Compito non riuscito», kind `backup`) e in `AppLog`, `backupLastAt` non si aggiorna e si riprova al prossimo avvio. Una scrittura SAF vera (URI + `DocumentFile`) richiede codice nativo: da decidere dopo la prova sul Mi A3.

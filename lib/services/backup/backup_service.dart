@@ -13,6 +13,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_queries.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/settings/jam_secret_store.dart';
+import '../releases/check_schedule.dart' show isBackupDue;
 import '../../data/settings/settings_store.dart'
     show
         SettingsStore,
@@ -43,6 +44,9 @@ const kDeviceBoundKeys = {
   'lastUpdateCheckDay',
   'releasesRetryAt',
   'releasesLastNotifiedAt',
+  // Folder and time of the weekly backup (R-241) belong to this device.
+  'backupFolder',
+  'backupLastAt',
 };
 
 class BackupSummary {
@@ -197,6 +201,45 @@ class BackupService {
         AppLog.w('backup temp folder not removed', e);
       }
     }
+  }
+}
+
+/// How many automatic backups stay in the folder.
+const kBackupsKept = 3;
+
+final _backupName = RegExp(r'^freekmusic-backup-\d{4}-\d{2}-\d{2}\.zip$');
+
+/// R-241: when [enabled], a [folder] is chosen and [isBackupDue], writes
+/// `freekmusic-backup-<date>.zip` there and keeps the newest [kBackupsKept]
+/// (by the date in the name; the zip just written always stays, other files are
+/// never touched). Returns whether a backup was made; a failure goes to
+/// [onError] (and AppLog) and leaves [saveLastAt] uncalled, so the next start retries.
+Future<bool> runAutoBackupIfDue({
+  required BackupService service,
+  required bool enabled,
+  required String folder,
+  required DateTime? lastAt,
+  required DateTime now,
+  required Future<void> Function(DateTime) saveLastAt,
+  required void Function(Object error, StackTrace st) onError,
+}) async {
+  if (!enabled || folder.isEmpty || !isBackupDue(lastAt, now)) return false;
+  try {
+    final out = p.join(folder, BackupService.fileName(now));
+    await service.createBackup(out);
+    await saveLastAt(now);
+    final others = [
+      for (final f in Directory(folder).listSync().whereType<File>())
+        if (_backupName.hasMatch(p.basename(f.path)) && f.path != out) f,
+    ]..sort((a, b) => p.basename(b.path).compareTo(p.basename(a.path)));
+    for (final f in others.skip(kBackupsKept - 1)) {
+      await f.delete();
+    }
+    return true;
+  } on Object catch (e, st) {
+    AppLog.w('automatic backup failed', e, st);
+    onError(e, st);
+    return false;
   }
 }
 

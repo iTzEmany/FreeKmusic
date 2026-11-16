@@ -23,3 +23,19 @@ final backupServiceProvider = FutureProvider<BackupService>((ref) async {
     deviceId: await ref.watch(settingsStoreProvider).deviceId(),
   );
 }, retry: (_, _) => null);
+
+/// When the last automatic backup was made (null = never); written by [AutoBackupLast.set].
+final backupLastAtProvider = NotifierProvider<AutoBackupLast, DateTime?>(AutoBackupLast.new);
+
+class AutoBackupLast extends Notifier<DateTime?> {
+  @override
+  DateTime? build() {
+    final ms = ref.read(settingsStoreProvider).backupLastAt;
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> set(DateTime d) async {
+    await ref.read(settingsStoreProvider).writeBackupLastAt(d.millisecondsSinceEpoch);
+    if (ref.mounted) state = d;
+  }
+}

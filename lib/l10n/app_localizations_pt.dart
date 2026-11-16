@@ -7814,4 +7814,28 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'Nenhuma faixa em streaming. Use «Adicionar à biblioteca» numa faixa online.';
+
+  @override
+  String get autoBackup => 'Backup automático';
+
+  @override
+  String get autoBackupHint =>
+      'Uma vez por semana guarda um backup na pasta que escolheres, mantendo os últimos 3.';
+
+  @override
+  String get autoBackupFolder => 'Pasta do backup';
+
+  @override
+  String get autoBackupNever => 'nunca';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder · último: $last';
+  }
+
+  @override
+  String get logBackup => 'Backup automático';
+
+  @override
+  String get logBackupSub => 'Guardado na pasta escolhida.';
 }

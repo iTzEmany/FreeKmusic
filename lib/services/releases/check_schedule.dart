@@ -50,3 +50,9 @@ List<FreshRelease>? releasesToNotify({
 }
 
 bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Time between two automatic backups.
+const kBackupEvery = Duration(days: 7);
+
+/// Whether the weekly backup (R-241) is due: never made, or 7 days or more ago.
+bool isBackupDue(DateTime? lastAt, DateTime now) => lastAt == null || now.difference(lastAt) >= kBackupEvery;

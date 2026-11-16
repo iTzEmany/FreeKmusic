@@ -7835,4 +7835,28 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'Keine Streaming-Titel. Nutze „Zur Mediathek hinzufügen“ bei einem Online-Titel.';
+
+  @override
+  String get autoBackup => 'Automatisches Backup';
+
+  @override
+  String get autoBackupHint =>
+      'Einmal pro Woche wird ein Backup im gewählten Ordner gespeichert; die letzten 3 bleiben erhalten.';
+
+  @override
+  String get autoBackupFolder => 'Backup-Ordner';
+
+  @override
+  String get autoBackupNever => 'nie';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder · zuletzt: $last';
+  }
+
+  @override
+  String get logBackup => 'Automatisches Backup';
+
+  @override
+  String get logBackupSub => 'Im gewählten Ordner gespeichert.';
 }

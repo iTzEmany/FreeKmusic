@@ -7747,7 +7747,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get downloadMemory => 'Memoria de las descargas';
 
   @override
-  String get downloadMemoryInternal => 'Memoria interna';
+  String get downloadMemoryInternal => 'Almacenamiento interno';
 
   @override
   String downloadMemorySd(String name) {
@@ -7828,4 +7828,28 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get noStreamedTracks =>
       'No hay canciones en streaming. Usa «Añadir a la biblioteca» en una canción en línea.';
+
+  @override
+  String get autoBackup => 'Copia de seguridad automática';
+
+  @override
+  String get autoBackupHint =>
+      'Una vez por semana guarda una copia en la carpeta que elijas, conservando las últimas 3.';
+
+  @override
+  String get autoBackupFolder => 'Carpeta de la copia';
+
+  @override
+  String get autoBackupNever => 'nunca';
+
+  @override
+  String autoBackupSummary(String folder, String last) {
+    return '$folder · última: $last';
+  }
+
+  @override
+  String get logBackup => 'Copia de seguridad automática';
+
+  @override
+  String get logBackupSub => 'Guardada en la carpeta elegida.';
 }

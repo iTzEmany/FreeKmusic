@@ -3817,5 +3817,13 @@
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} añadidas a la biblioteca, {skipped} ya estaban o están en curso",
   "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
-  "noStreamedTracks": "No hay canciones en streaming. Usa «Añadir a la biblioteca» en una canción en línea."
+  "noStreamedTracks": "No hay canciones en streaming. Usa «Añadir a la biblioteca» en una canción en línea.",
+  "autoBackup": "Copia de seguridad automática",
+  "autoBackupHint": "Una vez por semana guarda una copia en la carpeta que elijas, conservando las últimas 3.",
+  "autoBackupFolder": "Carpeta de la copia",
+  "autoBackupNever": "nunca",
+  "autoBackupSummary": "{folder}, última: {last}",
+  "@autoBackupSummary": {"placeholders": {"folder": {"type": "String"}, "last": {"type": "String"}}},
+  "logBackup": "Copia de seguridad automática",
+  "logBackupSub": "Guardada en la carpeta elegida."
 }
