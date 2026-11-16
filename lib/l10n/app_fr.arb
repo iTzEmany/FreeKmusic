@@ -4023,5 +4023,10 @@
   "queueOfflineBanner": "Hors ligne : {count, plural, one{1 titre disponible} other{{count} titres disponibles}}",
   "addToLibrary": "Ajouter à la bibliothèque",
   "ytDownloadOnDevice": "Télécharger sur l’appareil",
-  "libraryFilterLabel": "Filtre de la bibliothèque"
+  "libraryFilterLabel": "Filtre de la bibliothèque",
+  "libraryAddFailed": "Impossible d'ajouter le titre à la bibliothèque",
+  "libraryAddedMany": "{count, plural, one{1 titre ajouté à la bibliothèque} other{{count} titres ajoutés à la bibliothèque}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} ajoutés à la bibliothèque, {skipped} déjà présents ou en cours",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
 }

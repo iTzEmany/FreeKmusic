@@ -311,12 +311,8 @@ class SmartRow extends ConsumerWidget {
     final r = row.primary;
     final pick = watchOnlinePick(ref, selectionKey, index);
     final ids = row.ids.toSet();
-    final inLibrary = ref.watch(
-      downloadIndexProvider.select(
-        (i) =>
-            ids.any((id) => i.value?.contains(id, source: r.source) ?? false),
-      ),
-    );
+    final inLibraryOf = ref.watch(inLibraryOfProvider);
+    final inLibrary = ids.any((id) => inLibraryOf(id, r.source));
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => ids.contains(x.result.id)).lastOrNull,

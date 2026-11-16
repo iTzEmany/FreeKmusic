@@ -3988,5 +3988,10 @@
   "queueOfflineBanner": "Sem rede: {count, plural, one{1 faixa disponível} other{{count} faixas disponíveis}}",
   "addToLibrary": "Adicionar à biblioteca",
   "ytDownloadOnDevice": "Transferir para o dispositivo",
-  "libraryFilterLabel": "Filtro da biblioteca"
+  "libraryFilterLabel": "Filtro da biblioteca",
+  "libraryAddFailed": "Não foi possível adicionar a música à biblioteca",
+  "libraryAddedMany": "{count, plural, one{1 música adicionada à biblioteca} other{{count} músicas adicionadas à biblioteca}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} adicionadas à biblioteca, {skipped} já existentes ou em curso",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
 }

@@ -12300,6 +12300,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Filtro della libreria'**
   String get libraryFilterLabel;
+
+  /// No description provided for @libraryAddFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non sono riuscito ad aggiungere il brano alla libreria'**
+  String get libraryAddFailed;
+
+  /// No description provided for @libraryAddedMany.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano aggiunto alla libreria} other{{count} brani aggiunti alla libreria}}'**
+  String libraryAddedMany(int count);
+
+  /// No description provided for @libraryAddedSkipped.
+  ///
+  /// In it, this message translates to:
+  /// **'{added} aggiunti alla libreria, {skipped} già presenti o in corso'**
+  String libraryAddedSkipped(int added, int skipped);
 }
 
 class _AppLocalizationsDelegate

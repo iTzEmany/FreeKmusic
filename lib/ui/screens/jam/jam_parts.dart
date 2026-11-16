@@ -157,7 +157,7 @@ class JamQueueRow extends ConsumerWidget {
             if (item.selfFetchable && !inLibrary())
               CcAction(
                 icon: Icons.download_rounded,
-                label: l.ytDownload,
+                label: l.ytDownloadOnDevice,
                 onTap: () => downloadOnline(
                   context,
                   inLibrary: inLibrary(),

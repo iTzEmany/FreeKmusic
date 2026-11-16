@@ -246,6 +246,9 @@ void main() {
     final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
     expect(rows!.where((t) => t.kind == 2 && t.saved), hasLength(1));
     expect(find.text('Aggiunto alla libreria'), findsOneWidget);
+    // The row follows the saved row: check instead of the button, and no second add.
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.byTooltip('Aggiungi alla libreria'), findsNothing);
 
     await tester.pump(const Duration(seconds: 5));
     await open();

@@ -8,6 +8,7 @@ import '../../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/import_providers.dart';
 import '../../../providers/library_overlap_providers.dart';
+import '../../../providers/library_add_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../providers/ytm_catalog_providers.dart';
 import '../../../services/import/import_options.dart';
@@ -91,11 +92,18 @@ class OnlineAlbumScreen extends ConsumerWidget {
   Future<void> _addToPlaylist(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
     final picked = await pickPlaylist(context, ref);
     if (picked == null || !context.mounted) return;
-    final downloads = ref.read(downloadsProvider.notifier);
-    for (final r in songs) {
-      downloads.add(r, tag: addToPlaylistTag(picked.id));
-    }
-    showMsg(context, context.l10n.suggestionAddWhenDownloaded(picked.name));
+    final adder = ref.read(libraryAdderProvider);
+    final l = context.l10n;
+    final done = [for (final r in songs) await adder.add(r, tag: addToPlaylistTag(picked.id))];
+    if (!context.mounted) return;
+    showMsg(
+      context,
+      done.contains(null)
+          ? l.libraryAddFailed
+          : done.contains(false)
+          ? l.suggestionAddWhenDownloaded(picked.name)
+          : l.addedToPlaylistMany(done.length, picked.name),
+    );
   }
 
   Future<void> _share(BuildContext context) async {

@@ -348,24 +348,17 @@ class LibraryFilterNotifier extends Notifier<LibraryFilter> {
 
 final libraryFilterProvider = NotifierProvider<LibraryFilterNotifier, LibraryFilter>(LibraryFilterNotifier.new);
 
-final _albumsByFilterProvider = StreamProvider.family<List<AlbumSummary>, LibraryFilter>(
-  (ref, f) => ref.watch(libraryQueriesProvider).watchAlbums(sort: ref.watch(albumSortProvider), filter: f),
+/// [albumsProvider] under the filter. One provider that re-runs when the filter changes, so the
+/// previous list stays (reloading) while the new one loads: the tab does not flash.
+final filteredAlbumsProvider = StreamProvider<List<AlbumSummary>>(
+  (ref) => ref
+      .watch(libraryQueriesProvider)
+      .watchAlbums(sort: ref.watch(albumSortProvider), filter: ref.watch(libraryFilterProvider)),
 );
 
-final _artistsByFilterProvider = StreamProvider.family<List<ArtistSummary>, LibraryFilter>(
-  (ref, f) => ref.watch(libraryQueriesProvider).watchArtists(filter: f),
+final filteredArtistsProvider = StreamProvider<List<ArtistSummary>>(
+  (ref) => ref.watch(libraryQueriesProvider).watchArtists(filter: ref.watch(libraryFilterProvider)),
 );
-
-/// [albumsProvider] under the filter: the very same one while it is «Tutti».
-final filteredAlbumsProvider = Provider<AsyncValue<List<AlbumSummary>>>((ref) {
-  final f = ref.watch(libraryFilterProvider);
-  return f == LibraryFilter.all ? ref.watch(albumsProvider) : ref.watch(_albumsByFilterProvider(f));
-});
-
-final filteredArtistsProvider = Provider<AsyncValue<List<ArtistSummary>>>((ref) {
-  final f = ref.watch(libraryFilterProvider);
-  return f == LibraryFilter.all ? ref.watch(artistsProvider) : ref.watch(_artistsByFilterProvider(f));
-});
 
 final albumsProvider = StreamProvider<List<AlbumSummary>>(
   (ref) => ref

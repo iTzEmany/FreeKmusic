@@ -7783,4 +7783,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get libraryFilterLabel => 'Bibliotheksfilter';
+
+  @override
+  String get libraryAddFailed =>
+      'Der Titel konnte nicht zur Mediathek hinzugefügt werden';
+
+  @override
+  String libraryAddedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Titel zur Mediathek hinzugefügt',
+      one: '1 Titel zur Mediathek hinzugefügt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryAddedSkipped(int added, int skipped) {
+    return '$added zur Mediathek hinzugefügt, $skipped bereits vorhanden oder in Arbeit';
+  }
 }

@@ -57,7 +57,7 @@ class SuggestionActions {
 
   final OnlineEntries? online;
   final SuggestionLog log;
-  final Future<bool> Function(YtResult result, {String? tag}) download;
+  final Future<bool?> Function(YtResult result, {String? tag}) download;
   final DislikeStore store;
   final Future<void> Function(int id) removeQueueId;
   final List<int> Function() queueIds;

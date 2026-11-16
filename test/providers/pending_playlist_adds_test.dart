@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/library_add_providers.dart';
@@ -94,10 +96,16 @@ void main() {
       });
     });
 
-    Future<ProviderContainer> container(StorageMode mode) async {
+    Future<ProviderContainer> container(
+      StorageMode mode, {
+      TrackRepository Function(AppDatabase)? repo,
+      PlaylistRepository Function(AppDatabase)? playlists,
+    }) async {
       await store.writeSettings(store.readSettings().copyWith(storageMode: mode));
       final c = ProviderContainer(overrides: [
         databaseProvider.overrideWithValue(db),
+        if (repo != null) trackRepositoryProvider.overrideWithValue(repo(db)),
+        if (playlists != null) playlistRepositoryProvider.overrideWithValue(playlists(db)),
         settingsStoreProvider.overrideWithValue(store),
         downloadsProvider.overrideWith(() => queue),
         downloadIndexProvider.overrideWith((ref) async => index),
@@ -134,7 +142,45 @@ void main() {
       expect(await savedRows(), isEmpty);
       expect(await c.read(libraryAdderProvider).saveNow(_song), isNull);
     });
+
+    test('a saved song counts as «in libreria» and a second add changes nothing', () async {
+      final c = await container(StorageMode.stream);
+      final sub = c.listen(savedStreamKeysProvider, (_, _) {});
+      addTearDown(sub.close);
+      expect(c.read(inLibraryOfProvider)('v1', MediaSource.youtube), isFalse);
+      expect(await c.read(libraryAdderProvider).add(_song), isTrue);
+      await c.read(savedStreamKeysProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.read(inLibraryOfProvider)('v1', MediaSource.youtube), isTrue);
+      expect(await c.read(libraryAdderProvider).add(_song), isTrue);
+      expect(await savedRows(), hasLength(1));
+      expect(queue.added, isEmpty);
+    });
+
+    test('a failed save is reported (null), never turned into a download', () async {
+      final c = await container(StorageMode.stream, repo: (db) => _FailingTracks(db));
+      expect(await c.read(libraryAdderProvider).add(_song), isNull);
+      expect(queue.added, isEmpty);
+    });
+
+    test('a failed put in the playlist is reported (null)', () async {
+      final c = await container(StorageMode.stream, playlists: (db) => _FailingPlaylists(db));
+      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(1)), isNull);
+      expect(queue.added, isEmpty);
+    });
   });
+}
+
+class _FailingTracks extends TrackRepository {
+  _FailingTracks(super.db);
+  @override
+  Future<int?> saveStream(YtResult r) => throw StateError('disk full');
+}
+
+class _FailingPlaylists extends PlaylistRepository {
+  _FailingPlaylists(super.db);
+  @override
+  Future<int> addStreamTracks(int playlistId, List<int> ids) => throw StateError('locked');
 }
 
 class _Queue extends DownloadsNotifier {

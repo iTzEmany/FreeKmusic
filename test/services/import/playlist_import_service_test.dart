@@ -14,7 +14,7 @@ import 'package:codecore/services/import/track_matcher.dart' show MatchThreshold
 import 'package:codecore/services/online/download_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:dio/dio.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -132,6 +132,7 @@ void main() {
   late List<ImportSteps> stepsDuringTags;
   late List<ImportEvent> events;
   late PlaylistImportService service;
+  Future<int?> Function(YtResult)? saveNowHook;
   var cancelCalls = 0;
   final coverCalls = <String>[];
   var coverFails = false;
@@ -164,6 +165,7 @@ void main() {
       playlists: playlists,
       loadLibrary: tracks.liteEntries,
       youtube: yt,
+      saveNow: (r) async => saveNowHook?.call(r),
       enqueue: (r, tag) => queued.add((r, tag)),
       cancelDownloads: (_) => cancelCalls++,
       forgetSearches: forgotten.add,
@@ -237,6 +239,7 @@ void main() {
     maxInFlight = 3;
     backoff = [];
     waits = [];
+    saveNowHook = null;
     service = build();
   });
   tearDown(() async {
@@ -531,6 +534,27 @@ void main() {
       await idle();
       expect(queued.map((q) => q.$1.id), ['b2']);
       expect((await imports.item(id, 0))!.state, ImportItemStatus.linked);
+    });
+
+    test('streaming mode: a saved row is linked, tagged, covered and enriched, nothing is queued', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      final id = await service.startFromResults('Mix', [video('a1', 'One', 'Band', 100), video('b2', 'Two', 'Band', 100)]);
+      await idle();
+      expect(queued, isEmpty);
+      final imp = (await imports.get(id))!;
+      expect(imp.state, ImportStatus.finished);
+      final ids = [
+        for (final e in await (db.select(db.playlistTracks)
+              ..where((e) => e.playlistId.equals(imp.playlistId))
+              ..orderBy([(e) => OrderingTerm.asc(e.position)]))
+            .get())
+          e.trackId,
+      ];
+      expect(ids, hasLength(2));
+      expect((await imports.item(id, 1))!.state, ImportItemStatus.linked);
+      expect((await imports.item(id, 1))!.trackId, ids[1]);
+      expect(tagged, hasLength(2), reason: 'the CSV tags go to the saved row too');
+      expect(enriched, ids);
     });
 
     test('an album import numbers the songs by their place in the album; a plain one does not', () async {

@@ -4521,5 +4521,10 @@
   },
   "addToLibrary": "Aggiungi alla libreria",
   "ytDownloadOnDevice": "Scarica sul dispositivo",
-  "libraryFilterLabel": "Filtro della libreria"
+  "libraryFilterLabel": "Filtro della libreria",
+  "libraryAddFailed": "Non sono riuscito ad aggiungere il brano alla libreria",
+  "libraryAddedMany": "{count, plural, one{1 brano aggiunto alla libreria} other{{count} brani aggiunti alla libreria}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} aggiunti alla libreria, {skipped} già presenti o in corso",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
 }

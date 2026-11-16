@@ -19,6 +19,7 @@ import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/settings_providers.dart' show settingsProvider;
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/cc_search_field.dart';
+import 'package:codecore/ui/widgets/library_filter_bar.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
@@ -153,6 +154,20 @@ void main() {
     await _settle(t);
     expect(find.text('Cloud Artist'), findsNothing);
     expect(find.text('Artist'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('switching the filter keeps the bar and the list while the new one loads', (t) async {
+    final h = await open(t);
+    await t.runAsync(() => _insertSaved(h));
+    await _settle(t);
+    await t.tap(find.text('Album').first);
+    await _settle(t);
+    await t.tap(find.text('In streaming'));
+    await t.pump(); // the new query has not answered yet
+    expect(find.byType(LibraryFilterBar), findsOneWidget);
+    expect(find.byType(Skeleton), findsNothing);
+    await _settle(t);
     await h.dispose(t);
   });
 

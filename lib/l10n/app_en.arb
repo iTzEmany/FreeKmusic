@@ -3802,5 +3802,10 @@
   "queueOfflineBanner": "Offline: {count, plural, one{1 track available} other{{count} tracks available}}",
   "addToLibrary": "Add to library",
   "ytDownloadOnDevice": "Download to the device",
-  "libraryFilterLabel": "Library filter"
+  "libraryFilterLabel": "Library filter",
+  "libraryAddFailed": "Could not add the song to the library",
+  "libraryAddedMany": "{count, plural, one{1 song added to the library} other{{count} songs added to the library}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} added to the library, {skipped} already there or in progress",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
 }

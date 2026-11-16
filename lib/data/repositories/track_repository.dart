@@ -268,6 +268,16 @@ class TrackRepository {
             ..where((t) => t.path.equals(streamPathOf(key)) & t.kind.equals(kStreamKind)))
           .write(TracksCompanion(saved: Value(saved)));
 
+  /// Cache keys (`<source>:<id>`) of the saved streamed tracks: «already in the library» for the online rows.
+  Stream<Set<String>> watchSavedStreamKeys() =>
+      (_db.selectOnly(_db.tracks)
+            ..addColumns([_db.tracks.path])
+            ..where(_db.tracks.kind.equals(kStreamKind) & _db.tracks.saved.equals(true)))
+          .watch()
+          .map((rows) => {
+                for (final r in rows) ?keyOfStreamPath(r.read(_db.tracks.path)!),
+              });
+
   /// Saves the streamed track [r] to the library: its shadow row (created when missing)
   /// becomes `saved`, grouped with the other saved tracks of its album (never a local one).
   /// Returns its id, or null when the row at that path is not a shadow row (an episode).

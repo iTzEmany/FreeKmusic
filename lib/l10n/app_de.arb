@@ -3802,5 +3802,10 @@
   "queueOfflineBanner": "Ohne Netz: {count, plural, one{1 Titel verfügbar} other{{count} Titel verfügbar}}",
   "addToLibrary": "Zur Bibliothek hinzufügen",
   "ytDownloadOnDevice": "Auf das Gerät herunterladen",
-  "libraryFilterLabel": "Bibliotheksfilter"
+  "libraryFilterLabel": "Bibliotheksfilter",
+  "libraryAddFailed": "Der Titel konnte nicht zur Mediathek hinzugefügt werden",
+  "libraryAddedMany": "{count, plural, one{1 Titel zur Mediathek hinzugefügt} other{{count} Titel zur Mediathek hinzugefügt}}",
+  "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
+  "libraryAddedSkipped": "{added} zur Mediathek hinzugefügt, {skipped} bereits vorhanden oder in Arbeit",
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
 }

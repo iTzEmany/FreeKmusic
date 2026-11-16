@@ -7728,4 +7728,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryFilterLabel => 'Library filter';
+
+  @override
+  String get libraryAddFailed => 'Could not add the song to the library';
+
+  @override
+  String libraryAddedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs added to the library',
+      one: '1 song added to the library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryAddedSkipped(int added, int skipped) {
+    return '$added added to the library, $skipped already there or in progress';
+  }
 }

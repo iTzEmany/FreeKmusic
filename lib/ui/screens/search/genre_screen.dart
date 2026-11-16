@@ -161,12 +161,7 @@ class _SuggestedRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
-    final inLibrary =
-        ref
-            .watch(downloadIndexProvider)
-            .value
-            ?.contains(result.id, source: result.source) ??
-        false;
+    final inLibrary = ref.watch(inLibraryOfProvider)(result.id, result.source);
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,

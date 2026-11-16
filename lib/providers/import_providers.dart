@@ -8,6 +8,7 @@ import '../core/paths.dart';
 import '../data/repositories/import_repository.dart';
 import '../core/constants.dart';
 import '../data/db/app_database.dart';
+import '../data/repositories/track_kinds.dart' show kStreamKind;
 import '../services/import/import_chain.dart';
 import '../services/import/playlist_import_service.dart';
 import '../services/import/track_matcher.dart' show MatchThresholds;
@@ -20,6 +21,7 @@ import 'library_add_providers.dart';
 import 'library_providers.dart';
 import 'online_providers.dart';
 import 'settings_providers.dart';
+import 'stream_providers.dart' show streamEnrichRowProvider;
 import 'youtube_providers.dart';
 
 /// Single import engine. Created at app start by the shell, which also turns
@@ -73,7 +75,15 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
           .read(coverFetcherProvider)
           .coverForAlbum(t, row.album!, row.primaryArtist, isrc: row.isrc);
     },
-    enrichLater: (id) => afterDownload(ref, id),
+    // A saved stream row has no file to tag: it is enriched like a played one.
+    enrichLater: (id) async {
+      final row = await tracks.getById(id);
+      if (row?.kind == kStreamKind) {
+        unawaited(ref.read(streamEnrichRowProvider)(id));
+      } else {
+        afterDownload(ref, id);
+      }
+    },
     pathForVideo: (v) async =>
         (await ref.read(downloadIndexProvider.future)).pathFor(v.id, source: v.source),
     applyTags: (trackId, row) async {

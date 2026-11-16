@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/track_repository.dart'
-    show SortOption;
+    show SortOption, TrackRepository;
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/providers/library_providers.dart' show libraryIndexProvider;
 import 'package:codecore/providers/selection_providers.dart';
@@ -323,4 +324,38 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets('streaming mode: the picked songs are saved (not downloaded) and the saved ones are skipped', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester);
+    final downloads = _FakeDownloads();
+    await tester.runAsync(() async {
+      await h.store.writeSettings(h.store.readSettings().copyWith(storageMode: StorageMode.stream));
+      await TrackRepository(h.db).saveStream(
+        const YtResult(id: 'v3', title: 'Clip 3', channel: 'Chan', duration: Duration(minutes: 3)),
+      );
+    });
+    await h.pump(
+      tester,
+      Scaffold(body: OnlineResults(query: 'x', submitted: 1)),
+      extraOverrides: [
+        youtubeServiceProvider.overrideWithValue(_FakeYoutube()),
+        ytmCatalogProvider.overrideWithValue(FakeCatalog((_) async => null)),
+        downloadsProvider.overrideWith(() => downloads),
+        libraryIndexProvider.overrideWith((ref) => Completer<LibraryIndex>().future),
+      ],
+    );
+    await _settle(tester);
+    await tester.longPress(find.text('Clip 0'));
+    await _settle(tester);
+    await tester.tap(find.text('Clip 3'));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Aggiungi alla libreria').first);
+    await _settle(tester);
+    expect(downloads.added, isEmpty);
+    expect(find.text('1 aggiunti alla libreria, 1 già presenti o in corso'), findsOneWidget);
+    final saved = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    expect(saved!.where((t) => t.kind == 2 && t.saved), hasLength(2));
+    await h.dispose(tester);
+  });
 }
