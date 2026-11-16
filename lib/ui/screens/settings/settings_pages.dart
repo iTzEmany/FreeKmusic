@@ -42,6 +42,7 @@ import 'trusted_devices_tiles.dart';
 import 'chinese_dictionary_tile.dart';
 import 'translation_models_tiles.dart';
 import 'update_tiles.dart';
+import 'chart_country_tile.dart';
 import 'daylist_settings.dart';
 import 'dislikes_screen.dart';
 import 'shuffle_plus_tiles.dart';
@@ -327,6 +328,7 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
       title: l.settingsOnline,
       children: [
         const EnrichLibraryTile(),
+        const ChartCountryTile(),
         SwitchListTile(
           title: Text(l.autoEnrich),
           subtitle: Text(l.autoEnrichHint),

@@ -1,17 +1,24 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
 import 'database_providers.dart' show databaseProvider, playlistRepositoryProvider, trackRepositoryProvider;
+import '../services/online/catalog_cache.dart' show CatalogKind;
+import '../services/online/chart_genres.dart';
 import '../services/online/deezer_client.dart' show DeezerCollectionReader;
 import '../services/online/external_collection.dart';
 import '../services/online/external_links.dart';
+import '../services/online/search_cache.dart' show ytResultFromJson, ytResultToJson;
 import '../services/online/short_link_resolver.dart';
 import '../services/online/spotify_embed_reader.dart';
 import '../services/online/youtube_service.dart' show PlaylistListing;
-import 'online_providers.dart' show deezerClientProvider, webClientProvider;
+import 'online_providers.dart' show appleRssClientProvider, deezerClientProvider, webClientProvider;
+import 'settings_providers.dart' show settingsProvider;
 import 'smart_search_providers.dart' show collectionMatcherProvider;
+import 'ytm_catalog_providers.dart' show catalogCacheProvider;
 import 'youtube_providers.dart';
 
 /// Where a collection page reads from.
@@ -27,6 +34,30 @@ sealed class OnlineCollectionRef {
 
   /// A share link, resolved when the page is read.
   const factory OnlineCollectionRef.shortLink(String url) = ExternalRef.short;
+
+  /// The Top 20 of a macro-genre (Deezer chart, Apple's feed as fallback).
+  const factory OnlineCollectionRef.chart(ChartGenre genre) = ChartRef;
+}
+
+class ChartRef extends OnlineCollectionRef {
+  const ChartRef(this.genre);
+  final ChartGenre genre;
+
+  @override
+  bool operator ==(Object other) => other is ChartRef && other.genre.id == genre.id;
+
+  @override
+  int get hashCode => genre.id.hashCode;
+}
+
+/// Where a chart page came from, for the line under its title.
+class ChartInfo {
+  const ChartInfo({required this.apple, required this.country, required this.updated});
+
+  /// Apple's feed (of [country]); false = Deezer, whose chart follows the caller's IP.
+  final bool apple;
+  final String country;
+  final DateTime updated;
 }
 
 class ExternalRef extends OnlineCollectionRef {
@@ -57,9 +88,12 @@ class YoutubeListingRef extends OnlineCollectionRef {
 
 /// The collection and one [TrackMatch] per track, same order.
 class CollectionPage {
-  const CollectionPage(this.collection, this.matches);
+  const CollectionPage(this.collection, this.matches, {this.chart});
   final ExternalCollection collection;
   final List<TrackMatch> matches;
+
+  /// Set on a chart page only.
+  final ChartInfo? chart;
 }
 
 CollectionPage _fromListing(String url, PlaylistListing l) => CollectionPage(
@@ -105,6 +139,7 @@ final onlineCollectionProvider =
     YoutubeListingRef(:final url) =>
       _fromListing(url, await ref.watch(playlistListingProvider(url).future)),
     ExternalRef() => await _readExternal(ref, r),
+    ChartRef() => await _readChart(ref, r),
   },
   // A failure is shown with its own «Riprova».
   retry: (_, _) => null,
@@ -126,6 +161,142 @@ Future<CollectionPage> _readExternal(Ref ref, ExternalRef r) async {
   ]);
 }
 
+/// Charts to read from the clients on the next read even if the cache is fresh (pull to refresh).
+final chartRefetchProvider = Provider<Set<ChartRef>>((ref) => {});
+
+/// The country of a chart: the genre's own, else the chosen one, else the device's.
+String chartCountry(String chosen, ChartGenre g) =>
+    (g.fixedCountry ?? (chosen.isNotEmpty ? chosen : PlatformDispatcher.instance.locale.countryCode ?? 'US'))
+        .toUpperCase();
+
+/// A chart page: the fresh cached copy as is (RNF-02: no client call, and the matches
+/// stored with it mean no search either); else Deezer, then Deezer's fallback chart, then
+/// Apple's feed; offline, the expired copy with its date.
+Future<CollectionPage> _readChart(Ref ref, ChartRef r) async {
+  final g = r.genre;
+  final country = chartCountry(ref.read(settingsProvider).chartCountry, g);
+  final cache = ref.read(catalogCacheProvider);
+  final key = '${g.id}:$country';
+  final cached = await cache.get(CatalogKind.chart, key);
+  var json = cached?.json is Map ? cached!.json as Map : null;
+  var updated = cached?.storedAt;
+  final refetch = ref.read(chartRefetchProvider).remove(r);
+  if (json == null || cached!.expired || refetch) {
+    final cancel = CancelToken();
+    ref.onDispose(cancel.cancel);
+    final fresh = await _fetchChart(ref, g, country, cancel);
+    if (fresh != null) {
+      // Matches made for the same songs stay valid.
+      final old = json?['m'];
+      final keep = {
+        if (old is Map)
+          for (final t in fresh.tracks)
+            if (old[t.fingerprint] != null) t.fingerprint: old[t.fingerprint],
+      };
+      json = {'apple': fresh.apple, 'tracks': [for (final t in fresh.tracks) _trackToJson(t)], 'm': keep};
+      updated = DateTime.now();
+      await cache.put(CatalogKind.chart, key, json);
+    } else if (json == null) {
+      throw const CollectionUnreadable();
+    }
+  }
+  final tracks = [for (final t in (json['tracks'] as List? ?? const [])) ?_trackFromJson(t)];
+  final stored = json['m'] is Map ? json['m'] as Map : const {};
+  final done = ref.read(resolvedMatchesProvider(r));
+  return CollectionPage(
+    ExternalCollection(
+      title: 'Top 20 ${g.id}', // the page titles itself from the genre label
+      kind: CollectionKind.playlist,
+      sourceUrl: 'chart:$key',
+      tracks: tracks,
+    ),
+    [for (final t in tracks) done[t.fingerprint] ?? _matchFromJson(stored[t.fingerprint]) ?? const TrackPending()],
+    chart: ChartInfo(apple: json['apple'] == true, country: country, updated: updated!),
+  );
+}
+
+Future<({bool apple, List<ExternalTrack> tracks})?> _fetchChart(
+    Ref ref, ChartGenre g, String country, CancelToken cancel) async {
+  for (final id in [?g.deezer, ?g.fallbackDeezer]) {
+    try {
+      final songs = await ref.read(deezerClientProvider).chart(id, cancel: cancel);
+      if (songs.isNotEmpty) {
+        return (
+          apple: false,
+          tracks: [
+            for (final t in songs)
+              ExternalTrack(
+                title: t.title,
+                artists: [if (t.artist.isNotEmpty) t.artist],
+                durationMs: t.duration > 0 ? t.duration * 1000 : null,
+                isrc: t.isrc,
+                key: '${t.id}',
+              ),
+          ],
+        );
+      }
+    } on Object catch (e, st) {
+      if (cancel.isCancelled) rethrow;
+      AppLog.w('chart ${g.id}: deezer $id failed', e, st);
+    }
+  }
+  try {
+    final songs = await ref
+        .read(appleRssClientProvider)
+        .mostPlayed(country, genreIds: g.appleGenreIds, cancel: cancel);
+    if (songs != null && songs.isNotEmpty) {
+      return (
+        apple: true,
+        tracks: [
+          for (final (i, t) in songs.take(20).indexed)
+            ExternalTrack(title: t.title, artists: [if (t.artist.isNotEmpty) t.artist], key: '$i'),
+        ],
+      );
+    }
+  } on Object catch (e, st) {
+    if (cancel.isCancelled) rethrow;
+    AppLog.w('chart ${g.id}: apple feed failed', e, st);
+  }
+  return null;
+}
+
+Map<String, Object?> _trackToJson(ExternalTrack t) =>
+    {'t': t.title, 'a': t.artists, 'ms': t.durationMs, 'i': t.isrc, 'k': t.key};
+
+ExternalTrack? _trackFromJson(Object? j) => j is Map && j['t'] is String
+    ? ExternalTrack(
+        title: j['t'] as String,
+        artists: [for (final a in (j['a'] as List? ?? const [])) '$a'],
+        durationMs: j['ms'] as int?,
+        isrc: j['i'] as String?,
+        key: '${j['k']}',
+      )
+    : null;
+
+/// What is stored of a settled match: a stream result or «non trovato» (a library match
+/// depends on the library, so it is asked again).
+TrackMatch? _matchFromJson(Object? j) {
+  if (j is! Map) return null;
+  if (j['nf'] == true) return const TrackNotFound();
+  final r = ytResultFromJson(j);
+  return r == null ? null : TrackReady.online(r);
+}
+
+Future<void> _saveChartMatch(Ref ref, ChartRef r, ChartInfo info, String fingerprint, TrackMatch m) async {
+  final j = switch (m) {
+    TrackReadyOnline(:final result) => ytResultToJson(result),
+    TrackNotFound(transient: false) => {'nf': true},
+    _ => null,
+  };
+  if (j == null) return;
+  final cache = ref.read(catalogCacheProvider);
+  final key = '${r.genre.id}:${info.country}';
+  final json = (await cache.get(CatalogKind.chart, key))?.json;
+  if (json is! Map) return;
+  final stored = json['m'] is Map ? json['m'] as Map : const {};
+  await cache.put(CatalogKind.chart, key, {...json, 'm': {...stored, fingerprint: j}}, keepDate: true);
+}
+
 /// The rows of an external page, again after each one the matcher settles (the
 /// page itself is [onlineCollectionProvider]). Dropping it cancels the matcher.
 final onlineMatchesProvider =
@@ -144,7 +315,9 @@ final onlineMatchesProvider =
   if (todo.isEmpty) return;
   final matcher = ref.watch(collectionMatcherProvider(r));
   await for (final (j, m) in matcher.match([for (final i in todo) page.collection.tracks[i]])) {
-    if (!(m is TrackNotFound && m.transient)) done[page.collection.tracks[todo[j]].fingerprint] = m;
+    final fingerprint = page.collection.tracks[todo[j]].fingerprint;
+    if (!(m is TrackNotFound && m.transient)) done[fingerprint] = m;
+    if (r is ChartRef) await _saveChartMatch(ref, r, page.chart!, fingerprint, m);
     matches[todo[j]] = m;
     yield List.of(matches);
   }
@@ -157,7 +330,8 @@ Future<bool> refreshOnlineCollection(WidgetRef ref, OnlineCollectionRef r) async
     switch (r) {
       case YoutubeListingRef(:final url):
         final _ = await ref.refresh(playlistListingProvider(url).future);
-      case ExternalRef():
+      case ExternalRef() || ChartRef():
+        if (r is ChartRef) ref.read(chartRefetchProvider).add(r);
         // Matches already made are kept: only the unresolved rows are asked again.
         // The matches provider rebuilds by itself from the new page.
         final _ = await ref.refresh(onlineCollectionProvider(r).future);
@@ -172,7 +346,7 @@ Future<bool> refreshOnlineCollection(WidgetRef ref, OnlineCollectionRef r) async
 /// «Riprova»: asks the source again (invalidating the page alone would reuse its error).
 void retryOnlineCollection(WidgetRef ref, OnlineCollectionRef r) => switch (r) {
       YoutubeListingRef(:final url) => ref.invalidate(playlistListingProvider(url)),
-      ExternalRef() => {ref.invalidate(onlineCollectionProvider(r)), ref.invalidate(onlineMatchesProvider(r))},
+      ExternalRef() || ChartRef() => {ref.invalidate(onlineCollectionProvider(r)), ref.invalidate(onlineMatchesProvider(r))},
     };
 
 /// «Salva in Libreria»: a playlist called like the page (« (2)», « (3)»… if the name is

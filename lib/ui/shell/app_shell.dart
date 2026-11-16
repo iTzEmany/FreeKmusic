@@ -116,8 +116,7 @@ class AppShell extends ConsumerWidget {
           }
           return;
         }
-        // Narrow windows have no page field: the dock's one opens (and focuses).
-        ref.read(searchBarProvider.notifier).open();
+        ref.read(navIndexProvider.notifier).set(NavTab.search.index);
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => ref.read(searchFocusProvider).requestFocus(),
         );
@@ -156,10 +155,12 @@ class AppShell extends ConsumerWidget {
     final l = context.l10n;
     void select(int i) {
       if (i == index) ShellNav.popToRoot(keys[i].currentState);
+      if (i != index) ref.read(navIndexProvider.notifier).set(i);
+      // The Search button also gives the field the focus (and the keyboard).
       if (i == NavTab.search.index) {
-        ref.read(searchBarProvider.notifier).open();
-      } else if (i != index) {
-        ref.read(navIndexProvider.notifier).set(i);
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => ref.read(searchFocusProvider).requestFocus(),
+        );
       }
     }
 
@@ -175,13 +176,10 @@ class AppShell extends ConsumerWidget {
     ];
     Widget tab(int i, Widget root) => Navigator(
       key: keys[i],
-      // A page opened from Search brings the tabs back, so Back pops it.
+      // A page opened from Search takes the keyboard down, and Back does not bring it up.
       observers: [
         if (i == NavTab.search.index)
-          _SearchPages(
-            onPush: ref.read(searchBarProvider.notifier).close,
-            onReturn: ref.read(searchBarProvider.notifier).reopen,
-          ),
+          _UnfocusOnPush(ref.read(searchFocusProvider).unfocus),
       ],
       onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => root),
     );
@@ -252,11 +250,10 @@ class AppShell extends ConsumerWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        // The phone's Search field with the keyboard up: Back only hides the
+        // The Search field with the keyboard up: Back only hides the
         // keyboard. (View, not MediaQuery: no rebuild on each keyboard frame.)
         if (!wide &&
             index == NavTab.search.index &&
-            ref.read(searchBarProvider) &&
             View.of(context).viewInsets.bottom > 0) {
           ref.read(searchFocusProvider).unfocus();
           return;
@@ -471,19 +468,14 @@ class _WideShell extends ConsumerWidget {
   }
 }
 
-class _SearchPages extends NavigatorObserver {
-  _SearchPages({required this.onPush, required this.onReturn});
+class _UnfocusOnPush extends NavigatorObserver {
+  _UnfocusOnPush(this.unfocus);
 
-  final VoidCallback onPush, onReturn;
+  final VoidCallback unfocus;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     // The tab's root route is pushed while the navigator builds.
-    if (previousRoute != null) onPush();
-  }
-
-  @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (previousRoute?.isFirst ?? false) onReturn();
+    if (previousRoute != null) unfocus();
   }
 }

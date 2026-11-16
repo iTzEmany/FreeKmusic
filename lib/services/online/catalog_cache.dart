@@ -83,11 +83,13 @@ class CatalogCache {
     return CatalogEntry(e.json, stored, now.difference(stored) > kind.ttl);
   }
 
-  /// [json] must be plain JSON (what the models' `toJson` give).
-  Future<void> put(CatalogKind kind, String key, Object? json) async {
+  /// [json] must be plain JSON (what the models' `toJson` give). With
+  /// [keepDate] an existing copy keeps its stored date (its freshness): used to
+  /// add to a page without renewing it.
+  Future<void> put(CatalogKind kind, String key, Object? json, {bool keepDate = false}) async {
     final m = await _load();
     final now = _now().millisecondsSinceEpoch;
-    m[_key(kind, key)] = _Stored(now, now, json);
+    m[_key(kind, key)] = _Stored(keepDate ? m[_key(kind, key)]?.storedAt ?? now : now, now, json);
     if (m.length > max) {
       final byUse = m.entries.toList()
         ..sort((a, b) => a.value.usedAt.compareTo(b.value.usedAt));

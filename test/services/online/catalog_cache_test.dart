@@ -56,6 +56,17 @@ void main() {
     expect(e.storedAt, stored);
   });
 
+  test('keepDate adds to a copy without renewing it', () async {
+    final c = make();
+    await c.put(CatalogKind.chart, 'pop:it', {'n': 1});
+    final stored = clock;
+    clock = stored.add(const Duration(hours: 5));
+    await c.put(CatalogKind.chart, 'pop:it', {'n': 2}, keepDate: true);
+    final e = (await c.get(CatalogKind.chart, 'pop:it'))!;
+    expect(e.json, {'n': 2});
+    expect(e.storedAt, stored);
+  });
+
   test('beyond the limit the least recently used page goes', () async {
     final c = make(max: 2);
     for (final k in ['a', 'b']) {

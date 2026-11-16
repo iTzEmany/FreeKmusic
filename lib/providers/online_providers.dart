@@ -24,6 +24,7 @@ import '../services/online/lyrics_ovh_client.dart';
 import '../services/online/netease_lyrics_client.dart';
 import '../services/online/curiosity_finder.dart';
 import '../services/online/curiosity_service.dart';
+import '../services/online/apple_rss_client.dart';
 import '../services/online/deezer_client.dart';
 import '../services/online/deezer_gw_client.dart';
 import '../services/online/discogs_client.dart';
@@ -69,6 +70,7 @@ final itunesClientProvider = Provider(
 final deezerClientProvider = Provider(
   (ref) => DeezerClient(ref.watch(webClientProvider)),
 );
+final appleRssClientProvider = Provider((ref) => AppleRssClient(ref.watch(webClientProvider)));
 final acoustIdClientProvider = Provider((ref) {
   final c = AcoustIdClient();
   ref.onDispose(c.close);

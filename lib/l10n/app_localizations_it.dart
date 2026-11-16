@@ -7630,4 +7630,64 @@ class AppLocalizationsIt extends AppLocalizations {
   String logPlayFailedSub(String title, String reason) {
     return '$title: $reason';
   }
+
+  @override
+  String get chartGenrePop => 'Pop';
+
+  @override
+  String get chartGenreRap => 'Rap e Hip-hop';
+
+  @override
+  String get chartGenreRock => 'Rock';
+
+  @override
+  String get chartGenreDance => 'Dance ed Elettronica';
+
+  @override
+  String get chartGenreRnb => 'R&B e Soul';
+
+  @override
+  String get chartGenreLatin => 'Latina e Reggaeton';
+
+  @override
+  String get chartGenreItalian => 'Italiana';
+
+  @override
+  String get chartGenreIndie => 'Indie e Alternative';
+
+  @override
+  String get chartGenreJazz => 'Jazz';
+
+  @override
+  String get chartGenreClassical => 'Classica';
+
+  @override
+  String get chartGenreMetal => 'Metal';
+
+  @override
+  String get chartGenreCountry => 'Country';
+
+  @override
+  String chartTitle(String genre) {
+    return 'Top 20: $genre';
+  }
+
+  @override
+  String chartSourceDeezer(String when) {
+    return 'Classifica Deezer, aggiornata $when';
+  }
+
+  @override
+  String chartSourceApple(String country, String when) {
+    return 'Classifica Apple Music, $country, aggiornata $when';
+  }
+
+  @override
+  String get chartGridTitle => 'Top 20 per genere';
+
+  @override
+  String get chartCountryTitle => 'Paese delle classifiche';
+
+  @override
+  String get chartCountryAuto => 'Automatico (regione del dispositivo)';
 }

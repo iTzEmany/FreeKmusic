@@ -8,6 +8,16 @@ const _langs = ['en', 'de', 'es', 'fr', 'pt'];
 /// Strings that may read the same as the Italian: names, formats, units and
 /// words that are the same in the other languages.
 const _sameAsItalian = {
+  'chartGenrePop',
+  'chartGenreRock',
+  'chartGenreJazz',
+  'chartGenreMetal',
+  'chartGenreCountry',
+  'chartGenreItalian', // es and pt
+  'chartGenreRap', // pt
+  'chartGenreRnb', // pt
+  'chartGenreLatin', // pt
+  'chartTitle',
   'logPlayFailedSub', // only placeholders: «{title}: {reason}»
   'podcastOriginApple',
   'podcastGenreSports',

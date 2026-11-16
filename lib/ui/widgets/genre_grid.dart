@@ -4,12 +4,14 @@ import '../theme/tokens.dart';
 import 'cc_tile.dart';
 
 /// A genre cell: [tag] is what [GenreGrid.onSelect] reports, [label] is shown
-/// with an optional [subtitle] (e.g. the number of tracks) under it.
+/// with an optional [subtitle] (e.g. the number of tracks) under it. A [color]
+/// gives the tile its own colour, with white text.
 class GenreItem {
-  const GenreItem(this.tag, this.label, {this.subtitle});
+  const GenreItem(this.tag, this.label, {this.subtitle, this.color});
 
   final String tag, label;
   final String? subtitle;
+  final Color? color;
 }
 
 /// Genres as a uniform sliver grid. [columns] (or [wideColumns] on a wide
@@ -58,7 +60,7 @@ class GenreGrid extends StatelessWidget {
           final on = g.tag == selected;
           return CcTile(
             key: ValueKey('genre-${g.tag}'),
-            color: on ? cc.accent : null,
+            color: on ? cc.accent : g.color,
             selected: on,
             semanticsLabel: g.subtitle == null
                 ? g.label
@@ -77,7 +79,7 @@ class GenreGrid extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
-                        color: on ? cc.onAccent : cc.text,
+                        color: on ? cc.onAccent : (g.color != null ? Colors.white : cc.text),
                       ),
                     ),
                     if (g.subtitle != null)

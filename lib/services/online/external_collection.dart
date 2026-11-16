@@ -32,6 +32,17 @@ class ExternalCollection {
 
   /// More songs exist than were read.
   final bool truncated;
+
+  ExternalCollection withTitle(String title) => ExternalCollection(
+        title: title,
+        kind: kind,
+        tracks: tracks,
+        sourceUrl: sourceUrl,
+        coverUrl: coverUrl,
+        owner: owner,
+        declaredTotal: declaredTotal,
+        truncated: truncated,
+      );
 }
 
 class ExternalTrack {
