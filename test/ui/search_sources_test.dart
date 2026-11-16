@@ -141,7 +141,7 @@ void main() {
     },
   );
 
-  testWidgets('submit in the dock field runs the page search once', (
+  testWidgets('the Search button of the dock focuses the field; submit runs the search once', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(400, 900);
@@ -162,10 +162,7 @@ void main() {
       find.descendant(of: find.byType(ShellDock), matching: find.text('Cerca')),
     );
     await _settle(tester);
-    final field = find.descendant(
-      of: find.byType(ShellDock),
-      matching: find.byType(TextField),
-    );
+    final field = find.byType(TextField);
     expect(
       find.text('Cerca o incolla un link'),
       findsOneWidget,

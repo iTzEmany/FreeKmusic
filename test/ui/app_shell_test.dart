@@ -15,10 +15,12 @@ import 'package:codecore/ui/widgets/cc_sheet.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
+import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:codecore/ui/shell/desktop_player_bar.dart';
 import 'package:codecore/ui/shell/desktop_sidebar.dart';
+import 'package:codecore/ui/shell/shell_nav.dart';
 import 'package:codecore/ui/shell/side_panel.dart';
 import 'package:codecore/ui/widgets/mini_player.dart';
 import 'package:codecore/ui/theme/tokens.dart';
@@ -53,8 +55,9 @@ Future<void> _settle(WidgetTester tester) async {
 ProviderContainer _container(WidgetTester t) =>
     ProviderScope.containerOf(t.element(find.byType(AppShell)));
 
+// The field is the page's own, on phone and desktop alike.
 Finder _dockField() => find.descendant(
-    of: find.byType(ShellDock), matching: find.byType(TextField));
+    of: find.byType(SearchScreen), matching: find.byType(TextField));
 
 // Hit-testable: while searching, hidden tabs hold the dock's height.
 Finder _bar(String label) => find
@@ -154,7 +157,7 @@ void main() {
     final c = _container(t);
     // What searchOnAir does: the text first, then the Search tab.
     c.read(searchPrefillProvider.notifier).set('Song 1');
-    c.read(searchBarProvider.notifier).open();
+    c.read(navIndexProvider.notifier).set(NavTab.search.index);
     await _settle(t);
     expect(c.read(navIndexProvider), NavTab.search.index);
     expect(c.read(searchControllerProvider).text, 'Song 1');
@@ -554,6 +557,43 @@ void main() {
     await h.dispose(t);
   });
 
+  Future<Harness> shellWithPageInSearch(WidgetTester t) async {
+    t.view.physicalSize = const Size(1200, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t, tracks: 2);
+    await h.pump(t, const AppShell());
+    _container(t).read(navIndexProvider.notifier).set(NavTab.search.index);
+    await _settle(t);
+    _container(t)
+        .read(tabNavigatorKeysProvider)[NavTab.search.index]
+        .currentState!
+        .push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('Top 20 page'))));
+    await _settle(t);
+    expect(find.text('Top 20 page'), findsOneWidget);
+    return h;
+  }
+
+  testWidgets('Ctrl+F with a page open in Search goes back to its root', (t) async {
+    final h = await shellWithPageInSearch(t);
+    await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await t.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(t);
+    expect(find.text('Top 20 page'), findsNothing);
+    expect(_dockField(), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('«Cerca questo brano» with a page open in Search shows the Search root', (t) async {
+    final h = await shellWithPageInSearch(t);
+    ShellNav.showSearch(t.element(find.byType(AppShell)), t.element(find.byType(AppShell)) as WidgetRef);
+    await _settle(t);
+    expect(find.text('Top 20 page'), findsNothing);
+    expect(_dockField(), findsOneWidget);
+    await h.dispose(t);
+  });
+
   testWidgets('Alt+Left goes back from a page opened in the tab', (t) async {
     t.view.physicalSize = const Size(1400, 900);
     t.view.devicePixelRatio = 1;
@@ -573,7 +613,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('Ctrl+F in a narrow window opens the dock field with focus',
+  testWidgets('Ctrl+F in a narrow window opens Search with the field focused',
       (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
@@ -584,20 +624,6 @@ void main() {
     await _settle(t);
     expect(_dockField(), findsOneWidget);
     expect(_container(t).read(searchFocusProvider).hasFocus, isTrue);
-    await h.dispose(t);
-  });
-
-  testWidgets('leaving Search by another route closes the dock field',
-      (t) async {
-    _phone(t);
-    final h = await Harness.create(t, tracks: 2);
-    await h.pump(t, const AppShell());
-    await t.tap(_bar('Cerca'));
-    await _settle(t);
-    _container(t).read(navIndexProvider.notifier).set(NavTab.library.index);
-    await _settle(t);
-    expect(_container(t).read(searchBarProvider), isFalse);
-    expect(_bar('Home'), findsOneWidget);
     await h.dispose(t);
   });
 
@@ -766,8 +792,7 @@ void main() {
     final c = _container(tester);
     c.read(searchFocusProvider).unfocus(); // keyboard dismissed, not Back
     await _settle(tester);
-    // Phase 60: the field stays, the tabs are visible with the keyboard down.
-    expect(c.read(searchBarProvider), isTrue);
+    // The field stays, the tabs are visible with the keyboard down.
     expect(_bar('Home'), findsOneWidget);
     c.read(navIndexProvider.notifier).set(NavTab.home.index);
     await _settle(tester);
@@ -792,7 +817,6 @@ void main() {
     final c = _container(t);
     expect(c.read(navIndexProvider), NavTab.search.index);
     expect(c.read(searchControllerProvider).text, isEmpty);
-    expect(c.read(searchBarProvider), isTrue);
     expect(c.read(searchFocusProvider).hasFocus, isTrue); // keyboard stays
     expect(_dockField(), findsOneWidget);
     await h.dispose(t);
@@ -828,7 +852,6 @@ void main() {
     await _settle(t);
     final c = _container(t);
     expect(c.read(navIndexProvider), NavTab.home.index);
-    expect(c.read(searchBarProvider), isFalse);
     // Leaving Search cleared it (89.4).
     await t.tap(_bar('Cerca'));
     await _settle(t);
@@ -836,7 +859,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('a page opened from Search brings the tabs back', (t) async {
+  testWidgets('a page opened from Search keeps the tabs, and Back pops it', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
     await h.pump(t, const AppShell());
@@ -846,7 +869,6 @@ void main() {
     c.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState!.push(
         MaterialPageRoute<void>(builder: (_) => const Text('Pushed page')));
     await _settle(t);
-    expect(c.read(searchBarProvider), isFalse);
     expect(_bar('Home'), findsOneWidget);
     // Back pops the page, Search stays.
     await t.binding.handlePopRoute();
@@ -856,7 +878,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('back from a page opened in Search: the field returns, no keyboard',
+  testWidgets('back from a page opened in Search: the text stays, no keyboard',
       (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
@@ -869,7 +891,6 @@ void main() {
     c.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState!.push(
         MaterialPageRoute<void>(builder: (_) => const Text('Pushed page')));
     await _settle(t);
-    expect(_dockField(), findsNothing);
     await t.binding.handlePopRoute();
     await _settle(t);
     expect(c.read(navIndexProvider), NavTab.search.index);
@@ -879,7 +900,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('keyboard lifts only the search field', (t) async {
+  testWidgets('keyboard up on Search hides the dock and leaves the field in view', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
     final rows = await t.runAsync(() => h.db.select(h.db.tracks).get());

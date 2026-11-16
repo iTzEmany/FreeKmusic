@@ -12108,6 +12108,114 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{title}: {reason}'**
   String logPlayFailedSub(String title, String reason);
+
+  /// No description provided for @chartGenrePop.
+  ///
+  /// In it, this message translates to:
+  /// **'Pop'**
+  String get chartGenrePop;
+
+  /// No description provided for @chartGenreRap.
+  ///
+  /// In it, this message translates to:
+  /// **'Rap e Hip-hop'**
+  String get chartGenreRap;
+
+  /// No description provided for @chartGenreRock.
+  ///
+  /// In it, this message translates to:
+  /// **'Rock'**
+  String get chartGenreRock;
+
+  /// No description provided for @chartGenreDance.
+  ///
+  /// In it, this message translates to:
+  /// **'Dance ed Elettronica'**
+  String get chartGenreDance;
+
+  /// No description provided for @chartGenreRnb.
+  ///
+  /// In it, this message translates to:
+  /// **'R&B e Soul'**
+  String get chartGenreRnb;
+
+  /// No description provided for @chartGenreLatin.
+  ///
+  /// In it, this message translates to:
+  /// **'Latina e Reggaeton'**
+  String get chartGenreLatin;
+
+  /// No description provided for @chartGenreItalian.
+  ///
+  /// In it, this message translates to:
+  /// **'Italiana'**
+  String get chartGenreItalian;
+
+  /// No description provided for @chartGenreIndie.
+  ///
+  /// In it, this message translates to:
+  /// **'Indie e Alternative'**
+  String get chartGenreIndie;
+
+  /// No description provided for @chartGenreJazz.
+  ///
+  /// In it, this message translates to:
+  /// **'Jazz'**
+  String get chartGenreJazz;
+
+  /// No description provided for @chartGenreClassical.
+  ///
+  /// In it, this message translates to:
+  /// **'Classica'**
+  String get chartGenreClassical;
+
+  /// No description provided for @chartGenreMetal.
+  ///
+  /// In it, this message translates to:
+  /// **'Metal'**
+  String get chartGenreMetal;
+
+  /// No description provided for @chartGenreCountry.
+  ///
+  /// In it, this message translates to:
+  /// **'Country'**
+  String get chartGenreCountry;
+
+  /// No description provided for @chartTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Top 20: {genre}'**
+  String chartTitle(String genre);
+
+  /// No description provided for @chartSourceDeezer.
+  ///
+  /// In it, this message translates to:
+  /// **'Classifica Deezer, aggiornata {when}'**
+  String chartSourceDeezer(String when);
+
+  /// No description provided for @chartSourceApple.
+  ///
+  /// In it, this message translates to:
+  /// **'Classifica Apple Music, {country}, aggiornata {when}'**
+  String chartSourceApple(String country, String when);
+
+  /// No description provided for @chartGridTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Top 20 per genere'**
+  String get chartGridTitle;
+
+  /// No description provided for @chartCountryTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Paese delle classifiche'**
+  String get chartCountryTitle;
+
+  /// No description provided for @chartCountryAuto.
+  ///
+  /// In it, this message translates to:
+  /// **'Automatico (regione del dispositivo)'**
+  String get chartCountryAuto;
 }
 
 class _AppLocalizationsDelegate

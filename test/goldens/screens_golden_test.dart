@@ -9,6 +9,10 @@ import 'package:drift/drift.dart' show Value;
 import 'package:codecore/data/repositories/play_history_repository.dart';
 import 'package:codecore/data/repositories/radio_repository.dart';
 import 'package:codecore/providers/jam_providers.dart';
+import 'package:codecore/providers/online_collection_providers.dart';
+import 'package:codecore/services/online/chart_genres.dart';
+import 'package:codecore/services/online/external_collection.dart';
+import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
 import 'package:codecore/providers/radio_providers.dart';
 import 'package:codecore/services/radio/radio_browser_client.dart';
 import 'package:codecore/services/radio/radio_catalog.dart';
@@ -347,6 +351,31 @@ void main() {
             }
             await tester.pump(const Duration(seconds: 2)); // result fade-in
             await s.expectGolden('${tag}_search_results.png');
+          }));
+
+      testWidgets('surface $tag chart_top20', (tester) => withGoldenShot(tester, size, (s) async {
+            const titles = ['Espresso', 'Birds of a Feather', 'Die With A Smile', 'Not Like Us', 'Lose Control', 'Brano senza corrispondenza'];
+            final page = CollectionPage(
+              ExternalCollection(
+                title: 'Top 20 rock',
+                kind: CollectionKind.playlist,
+                sourceUrl: 'chart:rock:IT',
+                tracks: [for (final (i, t) in titles.indexed) ExternalTrack(title: t, artists: ['Artista ${i + 1}'], key: '$i', durationMs: 200000)],
+              ),
+              [
+                for (final (i, t) in titles.indexed)
+                  i < 5 ? TrackReady.online(ytmSong('c$i', t, seconds: 200)) : const TrackNotFound(),
+              ],
+              chart: ChartInfo(apple: false, country: 'IT', updated: DateTime(2026, 11, 16, 9, 12)),
+            );
+            await s.show(
+              OnlinePlaylistScreen(OnlineCollectionRef.chart(chartGenres.firstWhere((g) => g.id == 'rock'))),
+              extra: [
+                onlineCollectionProvider.overrideWith((ref, r) async => page),
+                onlineMatchesProvider.overrideWith((ref, r) => Stream.value(page.matches)),
+              ],
+            );
+            await s.expectGolden('${tag}_chart_top20.png');
           }));
 
       testWidgets('surface $tag smart_editor', (tester) => withGoldenShot(tester, size, (s) async {

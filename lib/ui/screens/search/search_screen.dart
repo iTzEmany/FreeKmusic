@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/library_providers.dart';
+import '../../../providers/online_collection_providers.dart' show OnlineCollectionRef;
+import '../../../services/online/chart_genres.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/ui_providers.dart';
 import '../../shell/shell_nav.dart';
+import '../../theme/palette.dart' show chartGenreColors;
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/cc_search_field.dart';
@@ -15,10 +17,11 @@ import '../../widgets/genre_grid.dart';
 import '../../widgets/motion.dart' show RiseIn;
 import '../../widgets/section_header.dart';
 import '../youtube/online_results.dart';
-import 'genre_screen.dart';
+import '../online/online_playlist_screen.dart';
+import 'chart_genre_labels.dart';
 
 /// Search is online only (D-355): the library is searched from Library. Under
-/// the bar: recent searches and the library's genres.
+/// the always-visible bar: recent searches and the Top 20 genre grid.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -27,7 +30,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  // Shared with the dock's field, which is where a phone types.
+  // Shared with the shell, which clears it when Search is left.
   late final _controller = ref.read(searchControllerProvider);
   Timer? _debounce;
   late String _text = _controller.text.trim();
@@ -109,9 +112,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     ref.listen(searchPrefillProvider, (_, next) => _applyPrefill(next));
-    ref.listen(searchSubmitProvider, (_, _) => _submit(_controller.text));
-    // The phone types in the dock; only the desktop has a field on the page.
-    final showField = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Column(
@@ -136,20 +136,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ],
             ),
           ),
-          if (showField)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-              child: CcSearchField(
-                controller: _controller,
-                focusNode: ref.watch(searchFocusProvider),
-                hint: l.ytHint,
-                onSubmitted: _submit,
-                onClear: () {
-                  _controller.clear();
-                  setState(() => _text = '');
-                },
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+            child: CcSearchField(
+              controller: _controller,
+              focusNode: ref.watch(searchFocusProvider),
+              hint: l.ytHint,
+              onSubmitted: _submit,
+              onClear: () {
+                _controller.clear();
+                setState(() => _text = '');
+              },
             ),
+          ),
           Expanded(
             child: _text.isEmpty
                 ? _EmptyQuery(onRecent: _useRecent)
@@ -161,7 +160,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-/// Recent searches and the genres of the library, most tracks first (D-360).
+/// Recent searches, then the 12 macro-genres that open a Top 20 (D-591).
 class _EmptyQuery extends ConsumerWidget {
   const _EmptyQuery({required this.onRecent});
 
@@ -172,14 +171,11 @@ class _EmptyQuery extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final recents = ref.watch(settingsProvider.select((s) => s.recentSearches));
-    final genres = ref.watch(genresProvider).value ?? const [];
     return CustomScrollView(
       slivers: [
         if (recents.isNotEmpty)
           SliverToBoxAdapter(
-            // New key per open/close of the dock's field: they rise in with it.
             child: RiseIn(
-              key: ValueKey(ref.watch(searchBarProvider)),
               child: Column(
                 children: [
                   SectionHeader(l.recentSearches),
@@ -209,23 +205,21 @@ class _EmptyQuery extends ConsumerWidget {
               ),
             ),
           ),
-        if (genres.isNotEmpty) ...[
-          SliverToBoxAdapter(child: SectionHeader(l.genresTitle)),
-          GenreGrid(
-            columns: 3,
-            wideColumns: 6,
-            items: [
-              for (final g in genres)
-                GenreItem(
-                  g.name,
-                  g.name,
-                  subtitle: l.tracksCount(g.trackCount),
-                ),
-            ],
-            onSelect: (name) =>
-                ShellNav.open<void>(context, GenreScreen(genre: name)),
+        SliverToBoxAdapter(child: SectionHeader(l.chartGridTitle)),
+        GenreGrid(
+          columns: 3,
+          wideColumns: 6,
+          items: [
+            for (final g in chartGenres)
+              GenreItem(g.id, chartGenreLabel(l, g.id), color: chartGenreColors[g.id]),
+          ],
+          onSelect: (id) => ShellNav.open<void>(
+            context,
+            OnlinePlaylistScreen(
+              OnlineCollectionRef.chart(chartGenres.firstWhere((g) => g.id == id)),
+            ),
           ),
-        ],
+        ),
         SliverToBoxAdapter(
           child: SizedBox(height: 24 + context.dockInset),
         ),

@@ -81,6 +81,7 @@ class AppSettings {
     this.shufflePlusUnmeteredOnly = true,
     this.radioCountry = '',
     this.radioRegion = '',
+    this.chartCountry = '',
     this.radioOnlyCountry = false,
     this.iconFollow = IconFollow.ask,
   });
@@ -183,6 +184,9 @@ class AppSettings {
   /// region id chosen for «Vicino a te» (empty = still to ask); search only
   /// inside the country.
   final String radioCountry, radioRegion;
+
+  /// Country of the Top 20 charts (ISO code); empty = follow the device locale.
+  final String chartCountry;
   final bool radioOnlyCountry;
 
   /// The launcher icon follows the theme and accent (Android).
@@ -255,6 +259,7 @@ class AppSettings {
     bool? shufflePlusUnmeteredOnly,
     String? radioCountry,
     String? radioRegion,
+    String? chartCountry,
     bool? radioOnlyCountry,
     IconFollow? iconFollow,
   }) => AppSettings(
@@ -310,6 +315,7 @@ class AppSettings {
         shufflePlusUnmeteredOnly ?? this.shufflePlusUnmeteredOnly,
     radioCountry: radioCountry ?? this.radioCountry,
     radioRegion: radioRegion ?? this.radioRegion,
+    chartCountry: chartCountry ?? this.chartCountry,
     radioOnlyCountry: radioOnlyCountry ?? this.radioOnlyCountry,
     iconFollow: iconFollow ?? this.iconFollow,
   );
@@ -460,6 +466,7 @@ class SettingsStore {
         _prefs.getBool('shufflePlusUnmeteredOnly') ?? true,
     radioCountry: _prefs.getString('radioCountry') ?? '',
     radioRegion: _prefs.getString('radioRegion') ?? '',
+    chartCountry: _prefs.getString('chartCountry') ?? '',
     radioOnlyCountry: _prefs.getBool('radioOnlyCountry') ?? false,
     iconFollow: IconFollow.values.firstWhere(
       (f) => f.name == _prefs.getString('iconFollow'),
@@ -544,6 +551,7 @@ class SettingsStore {
     );
     await _prefs.setString('radioCountry', s.radioCountry);
     await _prefs.setString('radioRegion', s.radioRegion);
+    await _prefs.setString('chartCountry', s.chartCountry);
     await _prefs.setBool('radioOnlyCountry', s.radioOnlyCountry);
     await _prefs.setString('iconFollow', s.iconFollow.name);
     final dn = s.deviceName;

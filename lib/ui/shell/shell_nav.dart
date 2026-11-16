@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/nav_providers.dart';
-import '../../providers/ui_providers.dart';
 
 /// Opens pages inside the tab's own navigator so the mini-player and the
 /// bottom bar stay on screen.
@@ -61,6 +60,8 @@ abstract final class ShellNav {
   static void showSearch(BuildContext context, WidgetRef ref) {
     final root = Navigator.of(context, rootNavigator: true);
     root.popUntil((r) => r.isFirst);
-    ref.read(searchBarProvider.notifier).open();
+    // A page may sit above Search: the field is on its root.
+    ref.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState?.popUntil((r) => r.isFirst);
+    ref.read(navIndexProvider.notifier).set(NavTab.search.index);
   }
 }

@@ -52,6 +52,7 @@ import '../../../providers/releases_providers.dart'
     show followedArtistsProvider, releaseOptionsProvider;
 import '../releases/followed_artists_screen.dart';
 import 'review_screen.dart';
+import 'library_genres_screen.dart';
 import 'library_shortcuts.dart';
 import 'library_island.dart';
 import '../../widgets/alpha_scroller.dart';
@@ -431,6 +432,10 @@ class _LibraryShortcuts extends ConsumerWidget {
             keepWhenZero: true,
             onTap: () => open(const FollowedArtistsScreen()),
           ),
+        LibraryShortcut(
+          label: l.genresTitle,
+          onTap: () => open(const LibraryGenresScreen()),
+        ),
         LibraryShortcut(
           label: l.tagsTitle,
           count: tagCount,

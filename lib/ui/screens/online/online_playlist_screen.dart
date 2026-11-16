@@ -10,9 +10,11 @@ import '../../../providers/player_providers.dart';
 import '../../../providers/ui_providers.dart' show searchPrefillProvider;
 import '../../../services/online/external_collection.dart';
 import '../../../services/online/external_links.dart';
+import '../../../services/radio/country_names.dart' show countryNameIn;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
+import '../search/chart_genre_labels.dart';
 import '../../widgets/track_row.dart' show TrackRow;
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/empty_state.dart';
@@ -46,7 +48,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
   /// Rows a Play of this page already sent to the queue; null until Play.
   Set<int>? _queued;
 
-  bool get _external => widget.source is ExternalRef;
+  bool get _external => widget.source is! YoutubeListingRef;
 
   PlayContext _contextOf(ExternalCollection c) => PlayContext(
       c.kind == CollectionKind.album ? PlayContextKind.album : PlayContextKind.playlist, c.title);
@@ -110,15 +112,16 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
                 ? startOnlineDownloads(context, ref, songs)
                 : PlaylistSourceSheet.show(context, c.sourceUrl),
           ),
-          CcAction<String>(
-            icon: Icons.link_rounded,
-            label: l.copyLink,
-            value: 'playlist-menu-copy',
-            onTap: () async {
-              await Clipboard.setData(ClipboardData(text: c.sourceUrl));
-              if (mounted) showMsg(context, l.copied);
-            },
-          ),
+          if (widget.source is! ChartRef)
+            CcAction<String>(
+              icon: Icons.link_rounded,
+              label: l.copyLink,
+              value: 'playlist-menu-copy',
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: c.sourceUrl));
+                if (mounted) showMsg(context, l.copied);
+              },
+            ),
           CcAction<String>(
             icon: Icons.library_add_rounded,
             label: l.extSaveToLibrary,
@@ -150,7 +153,15 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
     final page = ref.watch(onlineCollectionProvider(source));
     final live = _external ? ref.watch(onlineMatchesProvider(source)).value : null;
     final first = page.value;
-    final data = first == null || live == null ? first : CollectionPage(first.collection, live);
+    final l = context.l10n;
+    // A chart titles itself from the genre label; the line under it says where it comes from.
+    final chartInfo = first?.chart;
+    final collection = source is ChartRef
+        ? first?.collection.withTitle(l.chartTitle(chartGenreLabel(l, source.genre.id)))
+        : first?.collection;
+    final data = collection == null
+        ? null
+        : CollectionPage(collection, live ?? first!.matches, chart: chartInfo);
     final c = data?.collection;
     final listKey = 'online-collection:${c?.sourceUrl ?? source.hashCode}';
     // Selection ids are places in [songs]; rows still pending or unmatched have none.
@@ -166,7 +177,6 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
     final anyReady = _external && ref.read(playerControllerProvider).inJam
         ? songs.isNotEmpty
         : data?.matches.any((m) => m is TrackReady) ?? false;
-    final l = context.l10n;
     // Exportify only helps with Spotify; a short link's service is not known yet.
     final exportify = source is ExternalRef && source.link?.service == ExternalService.spotify;
     return OnlinePageFrame(
@@ -182,6 +192,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
           SliverToBoxAdapter(
             child: _Header(
               collection: c,
+              sourceLine: chartInfo == null ? null : _chartLine(context, chartInfo),
               listKey: listKey,
               onPlay: !(_external ? anyReady : songs.isNotEmpty)
                   ? null
@@ -253,15 +264,28 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
   }
 }
 
+/// «Classifica Deezer · aggiornata …»; Apple's feed also names the country it was read for.
+String _chartLine(BuildContext context, ChartInfo info) {
+  final l = context.l10n;
+  final m = MaterialLocalizations.of(context);
+  final when = '${m.formatShortDate(info.updated)} ${m.formatTimeOfDay(TimeOfDay.fromDateTime(info.updated))}';
+  return info.apple
+      ? l.chartSourceApple(
+          countryNameIn(info.country, Localizations.localeOf(context).languageCode, info.country), when)
+      : l.chartSourceDeezer(when);
+}
+
 class _Header extends StatelessWidget {
   const _Header({
     required this.collection,
+    required this.sourceLine,
     required this.listKey,
     required this.onPlay,
     required this.onMore,
   });
 
   final ExternalCollection collection;
+  final String? sourceLine;
   final Object listKey;
   final VoidCallback? onPlay;
   final VoidCallback onMore;
@@ -304,6 +328,11 @@ class _Header extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
                         child: Text(owner,
                             maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.bodyLarge),
+                      ),
+                    if (sourceLine != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: CcDims.gap4),
+                        child: Text(sourceLine!, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
                       ),
                     Text(l.tracksCount(collection.tracks.length),
                         style: theme.bodyMedium?.copyWith(color: cc.textMuted)),

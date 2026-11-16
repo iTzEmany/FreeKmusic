@@ -9,12 +9,12 @@ Come è fatta la UI (`lib/ui/`): la shell con le schede e il dock, i token di de
 | File | Simbolo | Ruolo |
 |---|---|---|
 | `app_shell.dart` | `AppShell`, `_WideShell` | Radice dopo l'onboarding. Quattro schede in un `IndexedStack`, ognuna in `TickerMode(enabled: i == index)` e con un proprio `Navigator`. Scorciatoie da tastiera (`ShellKeys`). |
-| `bottom_bar.dart` | `ShellDock`, `DockLayers`, `_Tabs`, `_TabDot` | Dock del telefono: campo di Cerca, mini player, schede con etichetta e il pallino. |
+| `bottom_bar.dart` | `ShellDock`, `DockLayers`, `_Tabs`, `_TabDot` | Dock del telefono: mini player, schede con etichetta e il pallino (il campo di Cerca sta nella pagina, fase 124). |
 | `shell_nav.dart` | `ShellNav.open`, `popToRoot`, `openInLibrary`, `openInHome`, `showSearch` | Apre le pagine dentro il navigator della scheda, così dock e mini player restano. |
 | `desktop_sidebar.dart`, `desktop_player_bar.dart`, `side_panel.dart` | `DesktopSidebar`, `SidePanelView` | Layout largo: colonna a sinistra, barra del player, pannello a destra (coda, testo, info). |
 | `shell_keys.dart` | `ShellKeys` | Scorciatoie che reggono il cambio di focus e non rubano lo spazio ai campi di testo. |
 | `lib/providers/nav_providers.dart` | `NavTab { home, search, library, memory }`, `navIndexProvider`, `tabNavigatorKeysProvider`, `SidePanel` | Stato della navigazione. |
-| `lib/providers/ui_providers.dart` | `searchBarProvider` | Stato del campo di Cerca nel dock. |
+| `lib/providers/ui_providers.dart` | `searchFocusProvider`, `searchControllerProvider` | Fuoco e testo del campo di Cerca (in cima a `SearchScreen`); il tasto Cerca del dock chiede il fuoco, `_UnfocusOnPush` lo toglie quando da Cerca si apre una pagina. |
 
 ### Tema e token (`lib/ui/theme/`)
 | File | Simbolo | Ruolo |
@@ -75,7 +75,7 @@ La scrittura passa dagli Ops (`lib/providers/*_ops.dart`: `TrackOps`, `PlaylistO
 ### Schede e dock
 Le schede sono quattro: Home, Cerca, Libreria, Memoria (`NavTab`). Ognuna ha il suo `Navigator`, quindi una pagina aperta dentro una scheda lascia visibili dock e mini player. Si aprono pagine con `ShellNav.open`, non con un `Navigator.push` sul navigator di radice. Toccare di nuovo la scheda attiva torna alla sua radice, ma una pagina che protegge l'uscita (modifiche non salvate, job in corso) chiede prima (`popToRoot`).
 
-Sul telefono il dock è un blocco unico in fondo: il campo di Cerca (solo in Cerca), il mini player (se suona qualcosa) e le schede sempre con etichetta. Il corpo gira sotto il dock (`extendBody`): il dock dà alla pagina la sua altezza come `MediaQuery.padding.bottom`, e ogni lista la legge con `context.dockInset` (o `EdgeInsets.withDock(context)`). Con la tastiera aperta resta solo il campo.
+Sul telefono il dock è un blocco unico in fondo: il mini player (se suona qualcosa) e le schede sempre con etichetta. Il corpo gira sotto il dock (`extendBody`): il dock dà alla pagina la sua altezza come `MediaQuery.padding.bottom`, e ogni lista la legge con `context.dockInset` (o `EdgeInsets.withDock(context)`). In Cerca, con la tastiera aperta, il dock si nasconde e il campo resta in cima alla pagina.
 
 **Il pallino**: il punto d'accento in alto a destra dell'icona della scheda attiva (`_TabDot`). Salta alla nuova scheda lungo un piccolo arco; con «Riduci animazioni» la durata è zero e salta e basta. Lo stesso motivo (un punto che segue un anello) compare nel conto alla rovescia degli avvisi (`CcSnackContent`).
 

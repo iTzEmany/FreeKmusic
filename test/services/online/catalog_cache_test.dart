@@ -43,6 +43,30 @@ void main() {
     expect(await c.get(CatalogKind.album, 'a'), isNull, reason: 'the kind is part of the key');
   });
 
+  test('a chart is fresh at 23 h, expired at 25 h and still readable with its date', () async {
+    final c = make();
+    await c.put(CatalogKind.chart, 'pop:it', {'n': 1});
+    final stored = clock;
+    clock = stored.add(const Duration(hours: 23));
+    expect((await c.get(CatalogKind.chart, 'pop:it'))!.expired, isFalse);
+    clock = stored.add(const Duration(hours: 25));
+    final e = (await c.get(CatalogKind.chart, 'pop:it'))!;
+    expect(e.expired, isTrue);
+    expect(e.json, {'n': 1});
+    expect(e.storedAt, stored);
+  });
+
+  test('keepDate adds to a copy without renewing it', () async {
+    final c = make();
+    await c.put(CatalogKind.chart, 'pop:it', {'n': 1});
+    final stored = clock;
+    clock = stored.add(const Duration(hours: 5));
+    await c.put(CatalogKind.chart, 'pop:it', {'n': 2}, keepDate: true);
+    final e = (await c.get(CatalogKind.chart, 'pop:it'))!;
+    expect(e.json, {'n': 2});
+    expect(e.storedAt, stored);
+  });
+
   test('beyond the limit the least recently used page goes', () async {
     final c = make(max: 2);
     for (final k in ['a', 'b']) {

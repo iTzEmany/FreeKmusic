@@ -97,6 +97,10 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 `RadioBrowserClient.standard()` + `RadioCatalog` per il catalogo, `RadioRepository` per le stazioni salvate, `near_you` per le vicine, `icy_title` per il titolo in onda, `saved_refresh` per aggiornare le salvate. La pulizia cache non tocca le stazioni salvate.
 
+### Classifiche (Top 20 per genere)
+
+`chart_genres.dart` elenca i 12 macrogeneri (D-591) con ID Deezer (principale e ripiego) e `genreId` Apple. `ChartRef` in `online_collection_providers.dart` legge `CatalogCache` (`CatalogKind.chart`, 24 h): voce fresca = nessuna chiamata e nessuna ricerca YouTube (RNF-02). Altrimenti `DeezerClient.chart` → ripiego Deezer → `AppleRssClient.mostPlayed` filtrato per `genreId` → copia scaduta con la sua data. Gli abbinamenti `TrackReadyOnline` si scrivono nella voce (`put(keepDate:)`); i «non trovato» si richiedono a ogni rilettura. La pagina è `OnlinePlaylistScreen` come per i link Deezer/Spotify.
+
 ### Podcast
 
 `lib/services/podcast/`: `feed_fetcher` (Dio a flusso, max 20 MB, solo http/https), `podcast_service` (`refreshIfStale` a 6 ore), `episode_downloader`, `apple_podcasts` (ricerca iTunes), `ytm_podcast_sync`, `rss_parser`, `podcast_cleanup`.
@@ -144,6 +148,7 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 - Il debounce non deve ripartire a ogni evento (`debounce ??= Timer`).
 - yt-dlp su Android si aggiorna solo quando viene chiamato (`ensureInit()`).
 - Rete universitaria (UniBA): broadcast /16 che confonde le prove LAN.
+- Classifica Deezer: niente parametro paese, segue l'IP di chi chiama; la chiave di cache ha il paese solo per Apple e per «Italiana». I nomi dei generi Apple sono tradotti per paese: filtrare per `genreId`.
 - Non «correggere» un bug senza cercarlo in `decisioni.md` (es. D-155).
 
 ## Decisioni chiave

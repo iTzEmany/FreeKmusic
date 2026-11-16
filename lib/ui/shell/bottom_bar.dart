@@ -4,11 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
-import '../../l10n/l10n_ext.dart';
 import '../../providers/nav_providers.dart';
-import '../../providers/ui_providers.dart';
 import '../widgets/blurred_chrome.dart';
-import '../widgets/cc_search_field.dart';
 import '../theme/tokens.dart';
 import '../widgets/mini_player.dart';
 
@@ -26,9 +23,9 @@ const _dotSize = 6.0;
 // its top edge (no track playing).
 const _dotLift = 4.0;
 
-/// One block at the bottom: on Search the field, then the mini-player (when
-/// something plays) and the always-labelled tabs, with a dot on the active
-/// tab's icon. While the keyboard is up only the field shows.
+/// One block at the bottom: the mini-player (when something plays) and the
+/// always-labelled tabs, with a dot on the active tab's icon. On Search the
+/// dock steps aside while the keyboard is up.
 class ShellDock extends ConsumerWidget {
   const ShellDock({
     super.key,
@@ -50,31 +47,25 @@ class ShellDock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
-    final field =
-        ref.watch(searchBarProvider) && selected == NavTab.search.index;
-    // 1 dp rule between two layers of the dock.
-    final rule = [
-      Divider(
-        height: 1,
-        thickness: 1,
-        indent: CcDims.gap8,
-        endIndent: CcDims.gap8,
-        color: cc.separator,
-      ),
-      const SizedBox(height: CcDims.gap4),
-    ];
     return _DockFrame(
-      searching: field,
-      // Both children are built here, not in the frame: the keyboard moving
-      // rebuilds the frame only.
-      field: const _SearchField(),
+      searching: selected == NavTab.search.index,
       layers: DockLayers(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (field) ...rule,
             // The mini player stays with nothing playing (D-364): the dock does not jump.
-            if (showPlayer) ...[const MiniPlayer(), ...rule],
+            if (showPlayer) ...[
+              const MiniPlayer(),
+              // 1 dp rule between the two layers of the dock.
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: CcDims.gap8,
+                endIndent: CcDims.gap8,
+                color: cc.separator,
+              ),
+              const SizedBox(height: CcDims.gap4),
+            ],
             _Tabs(
               items: items,
               tabs: [
@@ -91,8 +82,7 @@ class ShellDock extends ConsumerWidget {
   }
 }
 
-/// Marks the dock's lower layers (mini player and tabs): the box the player
-/// opens from, which leaves out the Search field above.
+/// Marks the dock's layers (mini player and tabs): the box the player opens from.
 class DockLayers extends StatelessWidget {
   const DockLayers({super.key, required this.child});
 
@@ -103,83 +93,45 @@ class DockLayers extends StatelessWidget {
 }
 
 /// The only dock widget that follows the keyboard (it rebuilds on each frame
-/// of its animation): lifts the dock over it and hides the layers under the
-/// field, out of paint, taps and semantics.
+/// of its animation): on Search it hides the dock while the keyboard is up,
+/// out of paint, taps, focus and semantics.
 class _DockFrame extends StatelessWidget {
-  const _DockFrame({
-    required this.searching,
-    required this.field,
-    required this.layers,
-  });
+  const _DockFrame({required this.searching, required this.layers});
 
   final bool searching;
-  final Widget field, layers;
+  final Widget layers;
 
   @override
   Widget build(BuildContext context) {
     const m = CcDims.dockMargin;
-    // The Scaffold does not lift its bottom bar: the field clears the
-    // keyboard by itself.
-    final keyboard = searching ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        m,
-        m,
-        m,
-        CcDims.dockBottom + MediaQuery.paddingOf(context).bottom + keyboard,
-      ),
-      child: BlurredChrome(
-        radius: CcDims.dockRadius,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            CcDims.gap8,
-            CcDims.gap8,
-            CcDims.gap8,
-            6,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (searching) field,
-              // Offstage alone would leave the tabs focusable.
-              ExcludeFocus(
-                excluding: keyboard > 0,
-                child: TickerMode(
-                  enabled: keyboard == 0,
-                  child: Offstage(offstage: keyboard > 0, child: layers),
+    final hide = searching && MediaQuery.viewInsetsOf(context).bottom > 0;
+    // Offstage alone would leave the tabs focusable.
+    return Offstage(
+      offstage: hide,
+      child: ExcludeFocus(
+        excluding: hide,
+        child: TickerMode(
+          enabled: !hide,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              m,
+              m,
+              m,
+              CcDims.dockBottom + MediaQuery.paddingOf(context).bottom,
+            ),
+            child: BlurredChrome(
+              radius: CcDims.dockRadius,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.gap8,
+                  CcDims.gap8,
+                  CcDims.gap8,
+                  6,
                 ),
+                child: layers,
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The dock's top layer on Search: the shared Search field and a ✕.
-class _SearchField extends ConsumerStatefulWidget {
-  const _SearchField();
-
-  @override
-  ConsumerState<_SearchField> createState() => _SearchFieldState();
-}
-
-class _SearchFieldState extends ConsumerState<_SearchField> {
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: CcDims.bottomBarHeight),
-      // heightFactor: the bottom bar slot is as tall as the screen.
-      child: Center(
-        heightFactor: 1,
-        child: CcSearchField(
-          controller: ref.watch(searchControllerProvider),
-          focusNode: ref.watch(searchFocusProvider),
-          hint: l.ytHint,
-          bare: true,
-          onSubmitted: (_) => ref.read(searchSubmitProvider.notifier).submit(),
         ),
       ),
     );

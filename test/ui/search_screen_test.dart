@@ -1,15 +1,16 @@
 import 'dart:async';
 
-import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/providers/online_collection_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/services/online/chart_genres.dart';
+import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,21 +33,6 @@ void _size(WidgetTester tester, Size size) {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 }
-
-Future<void> _genre(Harness h, String genre, int n, int i) => h.db
-    .into(h.db.tracks)
-    .insert(
-      TracksCompanion.insert(
-        path: '/m/$genre$n$i.mp3',
-        title: '$genre $n$i',
-        albumKey: 'a|b',
-        format: 'mp3',
-        sizeBytes: 1,
-        mtimeMs: 1,
-        addedAt: i,
-        genre: Value(genre),
-      ),
-    );
 
 /// Answers only once [gate] opens, so the search stays under way.
 class _SlowYoutube extends FakeYoutube {
@@ -131,28 +117,46 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('genres are listed by number of tracks, most first', (
+  testWidgets('empty Search shows the 12 macro-genre tiles, each with a TalkBack label', (
     tester,
   ) async {
     _size(tester, const Size(400, 900));
     final h = await Harness.create(tester);
-    await _genre(h, 'Jazz', 1, 0);
-    for (var i = 0; i < 2; i++) {
-      await _genre(h, 'Pop', 2, i);
-    }
-    for (var i = 0; i < 3; i++) {
-      await _genre(h, 'Rock', 3, i);
-    }
+    final semantics = tester.ensureSemantics();
     await h.pump(tester, const SearchScreen());
     await _settle(tester);
-    final rock = tester.getTopLeft(find.byKey(const ValueKey('genre-Rock')));
-    final pop = tester.getTopLeft(find.byKey(const ValueKey('genre-Pop')));
-    final jazz = tester.getTopLeft(find.byKey(const ValueKey('genre-Jazz')));
-    expect(find.text('3 brani'), findsOneWidget);
-    expect(find.text('1 brano'), findsOneWidget);
-    expect(rock.dx, lessThan(pop.dx));
-    expect(pop.dx, lessThan(jazz.dx));
-    expect(rock.dy, jazz.dy, reason: 'three columns share the first row');
+    final tiles = find.byWidgetPredicate(
+      (w) => w.key is ValueKey && '${(w.key as ValueKey).value}'.startsWith('genre-'),
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('genre-country')),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(tiles, findsNWidgets(12));
+    for (final label in ['Pop', 'Rap e Hip-hop', 'Dance ed Elettronica', 'Italiana', 'Country']) {
+      expect(find.bySemanticsLabel(label), findsOneWidget, reason: label);
+    }
+    semantics.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('a macro-genre tile opens its Top 20 page', (tester) async {
+    _size(tester, const Size(400, 900));
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const SearchScreen(),
+      // The read never ends: only the page and its source are looked at.
+      extraOverrides: [
+        onlineCollectionProvider.overrideWith((ref, r) => Completer<CollectionPage>().future),
+      ],
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('genre-rock')));
+    await _settle(tester);
+    expect(tester.widget<OnlinePlaylistScreen>(find.byType(OnlinePlaylistScreen)).source,
+        OnlineCollectionRef.chart(chartGenres.firstWhere((g) => g.id == 'rock')));
     await h.dispose(tester);
   });
 
