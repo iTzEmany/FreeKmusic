@@ -1,3 +1,4 @@
+import '../../data/repositories/track_kinds.dart';
 import 'dart:math';
 
 import '../../core/import_row.dart';
@@ -59,7 +60,7 @@ class SeedResolver {
 List<Track> chooseSeeds(List<Track> source, {Random? random, int count = 3}) {
   final usable = [
     for (final t in source)
-      if (!t.missing && t.kind == 0) t,
+      if (!t.missing && isLibraryTrack(t)) t,
   ];
   if (usable.isEmpty) return const [];
   final counts = <String, int>{};

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'track_kinds.dart';
 import '../db/app_database.dart';
 
 /// `artist_countries` (D-390): the country of an artist, by `matchKey` of the
@@ -44,7 +45,7 @@ class ArtistCountryRepository {
   Future<List<String>> libraryArtistNames() async {
     final rows = await _db
         .customSelect(
-          "SELECT MIN(artist) AS a FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 "
+          "SELECT MIN(artist) AS a FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} "
           "AND trim(COALESCE(artist, '')) <> '' GROUP BY lower(trim(artist)) ORDER BY COUNT(*) DESC, 1",
           readsFrom: {_db.tracks},
         )

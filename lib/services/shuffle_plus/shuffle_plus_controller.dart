@@ -1,3 +1,4 @@
+import '../../data/repositories/track_kinds.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -418,7 +419,7 @@ class ShufflePlusController {
     _resetBlock();
     _sourceTracks = await loadTracks(src);
     _eligible =
-        _sourceTracks.where((t) => !t.missing && t.kind == 0).length >=
+        _sourceTracks.where((t) => !t.missing && isLibraryTrack(t)).length >=
         minSourceSize;
     final cur = _current;
     _played = cur == null || isOnlineId(cur) ? 0 : 1;

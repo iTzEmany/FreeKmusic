@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
 import 'light_tracks.dart';
+import 'track_kinds.dart';
 
 enum AlbumSort { title, artist, year }
 
@@ -125,7 +126,7 @@ class LibraryQueries {
     };
     return _db
         .customSelect(
-          '$albumSelectSql WHERE missing = 0 AND ignored = 0 AND kind = 0 GROUP BY album_key ORDER BY $order',
+          '$albumSelectSql WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} GROUP BY album_key ORDER BY $order',
           readsFrom: {_db.tracks},
         )
         .watch()
@@ -135,8 +136,8 @@ class LibraryQueries {
   Stream<List<AlbumSummary>> watchArtistAlbums(String artistKey) {
     return _db
         .customSelect(
-          '$albumSelectSql WHERE missing = 0 AND ignored = 0 AND kind = 0 AND album_key IN ('
-          "SELECT album_key FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 AND lower(trim(COALESCE(artist, ''))) = ?) "
+          '$albumSelectSql WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND album_key IN ('
+          "SELECT album_key FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND lower(trim(COALESCE(artist, ''))) = ?) "
           'GROUP BY album_key ORDER BY year DESC, album COLLATE NOCASE',
           variables: [Variable<String>(artistKey)],
           readsFrom: {_db.tracks},
@@ -154,7 +155,7 @@ class LibraryQueries {
           '''
 WITH cov AS (
   SELECT lower(trim(COALESCE(artist, ''))) AS k, cover_key, SUM(cover_source < 2) AS n
-  FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 AND cover_key IS NOT NULL GROUP BY k, cover_key
+  FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND cover_key IS NOT NULL GROUP BY k, cover_key
 ),
 best AS (
   SELECT k, cover_key FROM (
@@ -172,7 +173,7 @@ FROM (
     COUNT(*) AS track_count, COUNT(DISTINCT album_key) AS album_count,
     MAX(last_played_at) AS last_played, MAX(added_at) AS added,
     SUM(play_count) AS plays, SUM(duration_ms) AS duration
-  FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 GROUP BY k
+  FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} GROUP BY k
 ) g
 LEFT JOIN best ON best.k = g.k
 ORDER BY g.k COLLATE NOCASE
@@ -203,7 +204,7 @@ ORDER BY g.k COLLATE NOCASE
         .customSelect(
           "SELECT MIN(lower(trim(COALESCE(artist, '')))) AS k, MIN(artist) AS name, "
           'COUNT(*) AS n, COUNT(DISTINCT album_key) AS albums '
-          'FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 '
+          'FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} '
           "AND lower(trim(COALESCE(artist, ''))) = lower(trim(?))",
           variables: [Variable<String>(name)],
           readsFrom: {_db.tracks},
@@ -224,7 +225,7 @@ ORDER BY g.k COLLATE NOCASE
   Stream<List<Track>> watchArtistTracks(String artistKey) {
     return _db
         .customSelect(
-          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 '
+          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} '
           "AND lower(trim(COALESCE(artist, ''))) = ? "
           'ORDER BY album COLLATE NOCASE, disc_number, track_number, '
           'title COLLATE NOCASE',
@@ -239,7 +240,7 @@ ORDER BY g.k COLLATE NOCASE
   Stream<List<Track>> watchTopTracks({int limit = 10}) {
     return _db
         .customSelect(
-          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 AND play_count > 0 '
+          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND play_count > 0 '
           'ORDER BY play_count DESC, last_played_at DESC, title COLLATE NOCASE '
           'LIMIT ?',
           variables: [Variable<int>(limit)],
@@ -254,7 +255,7 @@ ORDER BY g.k COLLATE NOCASE
     return _db
         .customSelect(
           'SELECT trim(genre) AS g, COUNT(*) AS n FROM tracks '
-          "WHERE missing = 0 AND ignored = 0 AND kind = 0 AND genre IS NOT NULL AND trim(genre) <> '' "
+          "WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND genre IS NOT NULL AND trim(genre) <> '' "
           'GROUP BY lower(trim(genre)) ORDER BY n DESC, g COLLATE NOCASE',
           readsFrom: {_db.tracks},
         )
@@ -268,7 +269,7 @@ ORDER BY g.k COLLATE NOCASE
   Stream<List<Track>> watchGenreTracks(String genre) {
     return _db
         .customSelect(
-          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 '
+          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} '
           'AND lower(trim(genre)) = lower(trim(?)) '
           'ORDER BY artist COLLATE NOCASE, album COLLATE NOCASE, '
           'disc_number, track_number, title COLLATE NOCASE',
@@ -284,7 +285,7 @@ ORDER BY g.k COLLATE NOCASE
           ..where((t) => t.albumKey.equals(albumKey) &
               t.missing.equals(false) &
               t.ignored.equals(false) &
-              t.kind.equals(0))
+              isLibraryRow(t))
           ..orderBy([
             (t) => OrderingTerm.asc(t.discNumber),
             (t) => OrderingTerm.asc(t.trackNumber),
@@ -303,7 +304,7 @@ ORDER BY g.k COLLATE NOCASE
       final rows = await _db
           .customSelect(
             'SELECT lower(trim(genre)) AS g, COUNT(*) AS n FROM tracks '
-            "WHERE id IN (${List.filled(chunk.length, '?').join(',')}) AND missing = 0 AND ignored = 0 AND kind = 0 "
+            "WHERE id IN (${List.filled(chunk.length, '?').join(',')}) AND missing = 0 AND ignored = 0 AND ${libraryRowSql()} "
             "AND genre IS NOT NULL AND trim(genre) <> '' GROUP BY g",
             variables: [for (final id in chunk) Variable<int>(id)],
             readsFrom: {_db.tracks},
@@ -322,7 +323,7 @@ ORDER BY g.k COLLATE NOCASE
   Future<List<Track>> randomTracks({String? genre, int limit = 200}) async {
     final rows = await _db
         .customSelect(
-          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND kind = 0 '
+          'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} '
           '${genre == null ? '' : 'AND lower(trim(genre)) = lower(trim(?)) '}'
           'ORDER BY random() LIMIT ?',
           variables: [if (genre != null) Variable<String>(genre), Variable<int>(limit)],

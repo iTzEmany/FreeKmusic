@@ -83,6 +83,18 @@ void main() {
     },
   );
 
+  test('a saved shadow row is a library song, an unsaved one is not', () async {
+    await save();
+    final r = (await load(
+      change: {
+        1: (t) => t.copyWith(kind: 2, saved: true),
+        2: (t) => t.copyWith(kind: 2),
+      },
+    ))!;
+    expect(r.items.where((i) => i.track != null).map((i) => i.track!.id), contains(1));
+    expect(r.items.where((i) => i.track?.id == 2), isEmpty);
+  });
+
   test(
     'too many songs gone (under 15 left): no daylist, it is made again',
     () async {

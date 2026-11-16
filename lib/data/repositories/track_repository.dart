@@ -143,6 +143,14 @@ class TrackRepository {
     return row != null && row.kind == kStreamKind ? row : null;
   }
 
+  /// Keys of the streamed tracks (shadow rows) marked as favourites: the cache evicts them last.
+  Future<Set<String>> favoriteStreamKeys() async {
+    final rows = await (_db.select(_db.tracks)
+          ..where((t) => t.kind.equals(kStreamKind) & t.isFavorite.equals(true)))
+        .get();
+    return {for (final r in rows) ?keyOfStreamPath(r.path)};
+  }
+
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
   /// in the cache). Rows with plays stay (D-81), and so do the ones in a playlist
   /// (D-524). Returns how many went.
@@ -568,7 +576,7 @@ class TrackRepository {
       (t) =>
           t.missing.equals(false) &
           t.ignored.equals(false) &
-          t.kind.equals(kMusicKind),
+          isLibraryRow(t),
     ),
   ).get();
 
@@ -582,7 +590,7 @@ class TrackRepository {
         Expression<bool> cond =
             t.missing.equals(false) &
             t.ignored.equals(false) &
-            t.kind.equals(0);
+            isLibraryRow(t);
         if (favoritesOnly) cond = cond & t.isFavorite.equals(true);
         final text = query.trim();
         if (text.isNotEmpty) {
@@ -736,7 +744,7 @@ class TrackRepository {
     return _db
         .customSelect(
           'SELECT ${lightTrackColumns(_db)} FROM tracks WHERE missing = 0 '
-          'AND ignored = 0 AND kind = 0 AND artist IN '
+          'AND ignored = 0 AND ${libraryRowSql()} AND artist IN '
           '(${List.filled(spellings.length, '?').join(',')}) '
           'ORDER BY title COLLATE NOCASE',
           variables: [for (final s in spellings) Variable<String>(s)],
@@ -897,7 +905,7 @@ class TrackRepository {
                         t.albumKey.equals(key) &
                         t.missing.equals(false) &
                         t.ignored.equals(false) &
-                        t.kind.equals(0),
+                        isLibraryRow(t),
                   )
                   ..orderBy([
                     (t) => OrderingTerm.asc(t.discNumber),
@@ -1027,7 +1035,7 @@ class TrackRepository {
         (t) =>
             t.missing.equals(false) &
             t.ignored.equals(false) &
-            t.kind.equals(0),
+            isLibraryRow(t),
       )
       ..orderBy([
         (t) => OrderingTerm.desc(t.addedAt),
@@ -1089,7 +1097,7 @@ class TrackRepository {
     final rows = await _db
         .customSelect(
           'SELECT id, title, artist, duration_ms, path FROM tracks '
-          'WHERE missing = 0 AND ignored = 0 AND kind = 0',
+          'WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()}',
           readsFrom: {_db.tracks},
         )
         .get();
@@ -1268,7 +1276,7 @@ class TrackRepository {
     final row =
         await (_db.selectOnly(_db.tracks)
               ..addColumns([c])
-              ..where(_db.tracks.kind.equals(0)))
+              ..where(isLibraryRow(_db.tracks)))
             .getSingle();
     return row.read(c) ?? 0;
   }
@@ -1279,7 +1287,7 @@ class TrackRepository {
     return (_db.selectOnly(_db.tracks)
           ..addColumns([c])
           ..where(
-            _db.tracks.kind.equals(0) &
+            isLibraryRow(_db.tracks) &
                 _db.tracks.missing.equals(false) &
                 _db.tracks.ignored.equals(false) &
                 (favoritesOnly

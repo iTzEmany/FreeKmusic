@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
 
-/// `tracks.kind` values. Library views filter `kind = 0`; history and stats
+/// `tracks.kind` values. Library views filter [libraryRowSql] (files, and saved streams); history and stats
 /// use [listenKinds]; a shadow row (a streamed track cached for playback) is
 /// never shown in the library.
 const kMusicKind = 0;
@@ -26,6 +26,9 @@ String libraryRowSql([String? alias]) {
   final a = alias == null ? '' : '$alias.';
   return '(${a}kind = $kMusicKind OR (${a}kind = $kStreamKind AND ${a}saved = 1))';
 }
+
+/// [libraryRowSql] on a loaded row.
+bool isLibraryTrack(Track t) => t.kind == kMusicKind || (t.kind == kStreamKind && t.saved);
 
 /// The drift form of [libraryRowSql].
 Expression<bool> isLibraryRow($TracksTable t) =>

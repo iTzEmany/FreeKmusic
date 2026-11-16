@@ -64,7 +64,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | 1 | `kEpisodeKind` | Episodio podcast (`path` = indirizzo http, forse con `#cc-ep=<id>`, o `stream:youtube:<guid>`) |
 | 2 | `kStreamKind` | Riga ombra di un brano ascoltato in streaming |
 
-- Ogni vista musicale filtra `kind = 0`.
+- Ogni vista della libreria filtra `libraryRowSql` / `isLibraryRow` (`kind = 0`, oppure `kind = 2 AND saved = 1`); le righe ombra non salvate restano invisibili. Le viste che lavorano sui file (duplicati, revisione, memoria, eliminazione, generi, sincronizzazione playlist) restano `kind = 0`.
 - La riga ombra ha `path = 'stream:<key>'`, `folderId = null`, `sizeBytes = 0`, `mtimeMs = 0`.
 - Storico e statistiche usano `listenKinds = [0, 2]`.
 - Le playlist accettano 0 e 2 (D-524): `addStreamTracks` e `watchTracks` (`kind IN (0,2)` solo per le playlist).
@@ -152,7 +152,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - Il DB è la fonte di verità; i file si toccano solo col doppio consenso dei tag.
 - Mai cancellare righe utente in automatico: `missing = true`.
 - Migrazioni mai distruttive; `kSchemaVersion` e `onUpgrade` si cambiano insieme; rigenerare con build_runner.
-- Ogni vista musicale filtra `kind = 0`; storico e statistiche usano `listenKinds`.
+- Ogni vista della libreria filtra `libraryRowSql` (D-607); storico e statistiche usano `listenKinds`.
 - Ogni scrittura che cambia `album_key` passa da `settleMovedCover`.
 - `artistKey` è un formato salvato (`artist_infos`, `artist_lookups`, `artist_countries`, `dislikes.json`, backup). Lo protegge `test/services/online/artist_key_test.dart`: cambiarlo richiede una migrazione.
 - I valori di `PlayContextKind` sono solo in aggiunta (l'indice è salvato).

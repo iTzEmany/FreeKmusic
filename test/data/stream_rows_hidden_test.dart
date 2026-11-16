@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/backup_queries.dart';
 import 'package:codecore/data/repositories/duplicate_repository.dart';
+import 'package:codecore/data/repositories/filter_counts_repository.dart';
+import 'package:codecore/data/repositories/stats_queries.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/data/repositories/memory_queries.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
@@ -17,6 +19,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 // K-02: a shadow row (kind = 2) of a streamed track, even played and tagged,
 // is in no library view. Stays for phases 45-49: add the new views here.
+Future<void> _play(AppDatabase d, TrackRepository t) async => d.into(d.plays).insert(
+  PlaysCompanion.insert(
+    trackId: (await t.streamRow('youtube:abc'))!.id,
+    playedAt: DateTime.now().millisecondsSinceEpoch,
+  ),
+);
+
 void main() {
   late AppDatabase db;
   late TrackRepository tracks;
@@ -237,6 +246,47 @@ void main() {
     'review': (d, _) => ReviewQueries(d).watch().first,
     'review count': (d, _) => ReviewQueries(d).watchCount().first,
   };
+  // D-607: once the user saves a streamed track, its shadow row is a library row.
+  final saved = <String, Future<Object?> Function(AppDatabase, TrackRepository)>{
+    'watchTracks': (_, t) => t.watchTracks(query: 'shadow').first,
+    'musicLight': (_, t) => t.musicLight(),
+    'albums': (d, _) => LibraryQueries(d).watchAlbums().first,
+    'artists': (d, _) => LibraryQueries(d).watchArtists().first,
+    'artist albums': (d, _) => LibraryQueries(d).watchArtistAlbums('shadow artist').first,
+    'artist tracks': (d, _) => LibraryQueries(d).watchArtistTracks('shadow artist').first,
+    'tracksOfArtist': (_, t) => t.tracksOfArtist('Shadow Artist'),
+    'genres': (d, _) => LibraryQueries(d).watchGenres().first,
+    'genre tracks': (d, _) => LibraryQueries(d).watchGenreTracks('Pop').first,
+    'album tracks': (d, _) => LibraryQueries(d).watchAlbumTracks('stream|youtube:abc').first,
+    'genreCounts': (d, t) async => LibraryQueries(d).genreCounts([(await t.streamRow('youtube:abc'))!.id]),
+    'Home top tracks': (d, _) => LibraryQueries(d).watchTopTracks().first,
+    'Home recently added': (_, t) => t.watchRecentlyAdded().first,
+    'Shuffle+ random': (d, _) => LibraryQueries(d).randomTracks(),
+    'tracksOfAlbums': (_, t) => t.tracksOfAlbums(['stream|youtube:abc']),
+    'smart playlist': (_, t) => t.watchByRules(const RuleText('Shadow')).first,
+    'liteEntries': (_, t) => t.liteEntries(),
+    'countAll': (_, t) => t.countAll(),
+    'watchCount': (_, t) => t.watchCount().first,
+    'filter counts': (d, _) => FilterCountsRepository(d).counts(FilterList.genres),
+    'stats listens': (d, t) async {
+      await _play(d, t);
+      return StatsQueries(d).listensSince(DateTime.fromMillisecondsSinceEpoch(0));
+    },
+    'stats top artist cover': (d, t) async {
+      await _play(d, t);
+      final p = await StatsQueries(d).period(StatsPeriod.year(DateTime.now().year));
+      return [for (final a in p.topArtists) if (a.coverKey != null) a];
+    },
+  };
+  for (final e in saved.entries) {
+    test('saved shadow row is in: ${e.key}', () async {
+      await tracks.setSaved('youtube:abc', true);
+      var v = await e.value(db, tracks);
+      if (v is SizeTotals) v = v.trackCount;
+      expect(v, v is int ? 1 : isNotEmpty);
+    });
+  }
+
   for (final e in lib.entries) {
     test('not in: ${e.key}', () async {
       var v = await e.value(db, tracks);

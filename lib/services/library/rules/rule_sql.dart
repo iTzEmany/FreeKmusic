@@ -1,3 +1,4 @@
+import '../../../data/repositories/track_kinds.dart';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -31,7 +32,7 @@ RuleSql toSql(
 }) {
   final vars = <Variable>[];
   final sql = _expr(e, nowMs, vars, countryArtists);
-  return (where: 'missing = 0 AND ignored = 0 AND kind = 0 AND ($sql)', vars: vars);
+  return (where: 'missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND ($sql)', vars: vars);
 }
 
 // Every leaf is wrapped so that a NULL column reads as «no» instead of

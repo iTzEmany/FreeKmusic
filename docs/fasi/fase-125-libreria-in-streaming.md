@@ -50,7 +50,7 @@ Memoria e streaming (parte di questa fase)
 ```
 
 ## Task
-- [ ] 125.1 Schema v20 `tracks.saved` e repository (D-607, F-3, RNF-03) — `/code-review high`
+- [x] 125.1 Schema v20 `tracks.saved` e repository (D-607, F-3, RNF-03) — `/code-review high`
   - File: `lib/data/db/tables.dart`, `lib/data/db/app_database.dart` (`kSchemaVersion = 20`, blocco `if (from < 20)` con
     controllo `PRAGMA table_info` come `from < 19`), `lib/data/repositories/track_kinds.dart` (`libraryRowSql`,
     `isLibraryRow`), `lib/data/repositories/track_repository.dart` (`setSaved`, `saveStream`, `albumKey` d'album,
@@ -61,7 +61,7 @@ Memoria e streaming (parte di questa fase)
   - Comando mirato: `flutter test test/data/migration_test.dart test/data/track_repository_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; l'APK installato sopra la 1.6.2 sul Mi A3 apre la libreria con gli stessi brani.
 
-- [ ] 125.2 Query K-02 in un passo solo (R-232, D-597, F-2, D-610) — `/code-review high`
+- [x] 125.2 Query K-02 in un passo solo (R-232, D-597, F-2, D-610) — `/code-review high`
   - File: tutte le query dell'elenco § C «Query da cambiare» (schede e conteggi, Home, daylist, Shuffle+, smart,
     statistiche), `test/data/stream_rows_hidden_test.dart` (esteso).
   - Passi:
@@ -72,7 +72,7 @@ Memoria e streaming (parte di questa fase)
   - Comando mirato: `flutter test test/data/stream_rows_hidden_test.dart test/data/library_queries_test.dart test/data/home_sections_test.dart test/data/stats_queries_test.dart test/services/library/rule_sql_test.dart test/services/daylist/daylist_store_test.dart test/data/track_repository_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi e tutte le righe dell'elenco spuntate.
 
-- [ ] 125.3 Backup e ripristino delle righe salvate (R-232, F-5) — `/code-review high`
+- [x] 125.3 Backup e ripristino delle righe salvate (R-232, F-5) — `/code-review high`
   - File: `lib/data/repositories/backup_queries.dart` (`kind != 2 OR saved = 1`), `TrackUserData` (`saved`),
     `lib/data/repositories/backup_merge.dart` (`ensureStreamRow` + segno), `lib/services/backup/backup_service.dart`
     (conteggio `:148`), `test/services/backup/stream_playlist_backup_test.dart`.
@@ -81,7 +81,7 @@ Memoria e streaming (parte di questa fase)
   - Comando mirato: `flutter test test/services/backup/stream_playlist_backup_test.dart test/services/backup/user_data_test.dart test/services/backup/restore_service_test.dart test/data/backup_queries_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; «In streaming» ha lo stesso numero di brani prima e dopo il ripristino.
 
-- [ ] 125.4 «Dove tieni la musica»: impostazione, pagina «Memoria e streaming», onboarding (R-229, R-237, D-575)
+- [x] 125.4 «Dove tieni la musica»: impostazione, pagina «Memoria e streaming», onboarding (R-229, R-237, D-575)
   - File: `lib/data/settings/settings_store.dart` (`storageMode`, di serie «Sul dispositivo» se `onboardingDone`;
     `prefetchOnMobile`, di serie acceso), gruppo «Memoria e streaming» in `settings_pages.dart` (prende `StreamCacheTile`
     da `DownloadSettingsTiles`), `onboarding_pages.dart` + `onboarding_screen.dart` (pagina dopo `FoldersPage`, spazio da
@@ -126,3 +126,17 @@ Memoria e streaming (parte di questa fase)
 Niente di obbligatorio: a fase chiusa, se vuoi, prova sul tuo telefono «Aggiungi alla libreria» e l'ascolto senza rete.
 
 ## Note di deviazione
+
+### 125.2: elenco § C «Query da cambiare» (passano a `libraryRowSql`/`isLibraryRow`)
+- [x] track_repository: `watchTracks`, `musicLight`, `tracksOfArtist`, `tracksOfAlbums`, `liteEntries`, `countAll`, `watchCount`, `watchRecentlyAdded`
+- [x] library_queries: `watchAlbums`, `watchArtistAlbums`, `watchArtists` (copertine e righe), `artistNamed`, `watchArtistTracks`, `watchGenres`, `watchGenreTracks`, `watchAlbumTracks`, `genreCounts`, `watchTopTracks`, `randomTracks`
+- [x] filter_counts_repository: `_visible`
+- [x] credits_repository: brani di un accreditato
+- [x] artist_country_repository: artisti per paese
+- [x] daylist_store: `load` (brano ancora in libreria; helper `isLibraryTrack` in `track_kinds.dart`)
+- [x] seed_resolver: `chooseSeeds`
+- [x] shuffle_plus_controller: conteggio `_eligible`
+- [x] player_providers: `localCount` di `plusAllowed`
+- [x] rule_sql: `toSql` (quindi `watchByRules` e i tag)
+- [x] stats_queries: `listensSinceSql` e copertine degli artisti (`:433`/`:439` già `listenKinds`, invariati)
+- Restano `kind = 0` di proposito (non toccati): `_downloadedNoPlaylist`, `mp3LengthRows`, `duplicate_repository`, `review_queries`, `track_genre_repository`, `memory_queries` (2), `track_deleter`, `bulk_actions`, `playlist_sync_repository`, `track_actions`.

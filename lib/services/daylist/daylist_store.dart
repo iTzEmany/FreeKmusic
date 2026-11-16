@@ -1,3 +1,4 @@
+import '../../data/repositories/track_kinds.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -80,7 +81,7 @@ class DaylistStore {
       ];
       final byId = {
         for (final t in await tracksOf(ids))
-          if (t.kind == 0 && !t.missing && !t.ignored) t.id: t,
+          if (isLibraryTrack(t) && !t.missing && !t.ignored) t.id: t,
       };
       final items = <DaylistItem>[];
       for (final i in rawItems) {

@@ -152,6 +152,9 @@ void main() {
 
     test('fewer songs than the count: all of them; none: nothing', () {
       expect(chooseSeeds([track(1, 'A'), track(2, 'B')]), hasLength(2));
+      final shadow = track(3, 'S').copyWith(kind: 2);
+      expect(chooseSeeds([shadow]), isEmpty);
+      expect(chooseSeeds([shadow.copyWith(saved: true)]), hasLength(1));
       expect(chooseSeeds(const []), isEmpty);
     });
   });
