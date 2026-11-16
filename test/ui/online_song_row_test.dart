@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:codecore/app.dart';
 import 'package:codecore/data/db/app_database.dart' show Track;
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
+import 'package:codecore/services/online/download_index.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
@@ -75,11 +79,14 @@ void main() {
     WidgetTester tester, {
     bool jam = false,
     Widget? child,
+    StorageMode? mode,
+    List<Override> extra = const [],
   }) async {
     askedArtists.clear();
     ctrl = _Ctrl()..inJam = jam;
     downloads = _Downloads();
     final h = await Harness.create(tester);
+    if (mode != null) await tester.runAsync(() => h.store.writeSettings(h.store.readSettings().copyWith(storageMode: mode)));
     await h.pump(
       tester,
       child ??
@@ -87,6 +94,7 @@ void main() {
             body: OnlineSongTile(result: _r, index: 0, selectionKey: 'k'),
           ),
       extraOverrides: [
+        ...extra,
         playerControllerProvider.overrideWithValue(ctrl),
         downloadsProvider.overrideWith(() => downloads),
         artistLinkResolverProvider.overrideWithValue(
@@ -213,11 +221,59 @@ void main() {
     downloads.instant = true;
     await tester.tap(find.byTooltip('Altre opzioni'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Scarica'));
+    await tester.tap(find.text('Aggiungi alla libreria'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600)); // not settle: the snackbar ring animates until it closes
     expect(find.text('Aggiunto alla libreria'), findsOneWidget);
     await h.dispose(tester);
+  });
+
+  testWidgets('in streaming mode «Aggiungi alla libreria» saves a row without a job; «Scarica sul dispositivo» downloads', (
+    tester,
+  ) async {
+    final h = await pumpRow(tester, mode: StorageMode.stream);
+    Future<void> open() async {
+      await tester.tap(find.byTooltip('Altre opzioni'));
+      await tester.pumpAndSettle();
+    }
+
+    await open();
+    await tester.tap(find.text('Aggiungi alla libreria'));
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(downloads.adds, isEmpty);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    expect(rows!.where((t) => t.kind == 2 && t.saved), hasLength(1));
+    expect(find.text('Aggiunto alla libreria'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    await open();
+    await tester.tap(find.text('Scarica sul dispositivo'));
+    await tester.pumpAndSettle();
+    expect(downloads.adds, ['plain']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('in streaming mode a song already downloaded makes no second row', (tester) async {
+    final dir = await tester.runAsync(() => Directory.systemTemp.createTemp('adder'));
+    final file = File('${dir!.path}/a.m4a')..writeAsStringSync('x');
+    final index = DownloadIndex(File('${dir.path}/idx.json'));
+    await tester.runAsync(() => index.add('v1', file.path));
+    final h = await pumpRow(
+      tester,
+      mode: StorageMode.stream,
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+    );
+    await tester.tap(find.byTooltip('Altre opzioni'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aggiungi alla libreria'));
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    expect(rows!.where((t) => t.kind == 2), isEmpty);
+    await h.dispose(tester);
+    await tester.runAsync(() => dir.delete(recursive: true));
   });
 
   testWidgets('the ⋮ menu has the 5 actions and each runs', (tester) async {
@@ -236,17 +292,18 @@ void main() {
     for (final t in [
       'Aggiungi in coda',
       'Aggiungi a playlist…',
-      'Scarica',
+      'Aggiungi alla libreria',
     ]) {
       expect(find.text(t), findsOneWidget, reason: t);
     }
     expect(find.text('Vai all’artista'), findsOneWidget);
+    expect(find.text('Scarica sul dispositivo'), findsNothing); // the first item already downloads
     await tester.tap(find.text('Aggiungi in coda'));
     await tester.pumpAndSettle();
     expect(ctrl.calls, ['enqueue']);
 
     await open();
-    await tester.tap(find.text('Scarica'));
+    await tester.tap(find.text('Aggiungi alla libreria'));
     await tester.pumpAndSettle();
     expect(downloads.adds, ['plain']);
 

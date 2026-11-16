@@ -44,6 +44,25 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
+
+/// A saved stream row (D-607): shown with the cloud, in the «In streaming» filter only.
+Future<void> _insertSaved(Harness h) => h.db.into(h.db.tracks).insert(
+  TracksCompanion.insert(
+    path: 'stream:youtube:cloud1',
+    title: 'Cloud Song',
+    albumKey: 'stream|cloud artist|cloud album',
+    format: '',
+    sizeBytes: 0,
+    mtimeMs: 0,
+    addedAt: 100,
+    kind: const Value(2),
+    saved: const Value(true),
+    artist: const Value('Cloud Artist'),
+    album: const Value('Cloud Album'),
+    durationMs: const Value(200000),
+  ),
+);
+
 void main() {
   testWidgets('the sort button label is not truncated at 360 dp, for every criterion and language',
       (tester) async {
@@ -112,6 +131,28 @@ void main() {
     expect(find.text('Album 0'), findsOneWidget);
     expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
     expect(t.takeException(), isNull);
+    await h.dispose(t);
+  });
+
+  testWidgets('the filter narrows the Album and Artisti tabs, and stays between them', (t) async {
+    final h = await open(t);
+    await t.runAsync(() => _insertSaved(h));
+    await _settle(t);
+    await t.tap(find.text('Album').first);
+    await _settle(t);
+    expect(find.text('3 album'), findsOneWidget);
+    await t.tap(find.text('In streaming'));
+    await _settle(t);
+    expect(find.text('1 album'), findsOneWidget);
+    expect(find.text('Cloud Album'), findsOneWidget);
+    await t.tap(find.text('Artisti').first);
+    await _settle(t);
+    expect(find.text('Cloud Artist'), findsOneWidget);
+    expect(find.text('Artist'), findsNothing);
+    await t.tap(find.text('Sul dispositivo'));
+    await _settle(t);
+    expect(find.text('Cloud Artist'), findsNothing);
+    expect(find.text('Artist'), findsOneWidget);
     await h.dispose(t);
   });
 

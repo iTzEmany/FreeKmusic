@@ -7719,4 +7719,13 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'Offline: $_temp0';
   }
+
+  @override
+  String get addToLibrary => 'Add to library';
+
+  @override
+  String get ytDownloadOnDevice => 'Download to the device';
+
+  @override
+  String get libraryFilterLabel => 'Library filter';
 }

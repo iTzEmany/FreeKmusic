@@ -3799,5 +3799,8 @@
   },
   "onboardingStorageDeviceHint": "Los archivos se quedan en el dispositivo y suenan sin red.",
   "onboardingStorageStreamHint": "Ocupa poco espacio: las canciones se cargan mientras las escuchas.",
-  "queueOfflineBanner": "Sin red: {count, plural, one{1 canción disponible} other{{count} canciones disponibles}}"
+  "queueOfflineBanner": "Sin red: {count, plural, one{1 canción disponible} other{{count} canciones disponibles}}",
+  "addToLibrary": "Añadir a la biblioteca",
+  "ytDownloadOnDevice": "Descargar en el dispositivo",
+  "libraryFilterLabel": "Filtro de la biblioteca"
 }

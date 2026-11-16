@@ -8,10 +8,10 @@ import '../services/shuffle_plus/dislike_store.dart';
 import '../services/shuffle_plus/suggestion_log.dart';
 import '../services/shuffle_plus/suggestion_pool.dart' show suggestionArtistKey;
 import 'dislike_store_provider.dart';
+import 'library_add_providers.dart';
 import 'pending_playlist_adds.dart';
 import 'player_providers.dart';
 import 'shuffle_plus_providers.dart';
-import 'youtube_providers.dart';
 
 /// What [SuggestionActions.undo] needs to put a «Non mi piace» back.
 class DislikeUndo {
@@ -223,7 +223,7 @@ final suggestionActionsProvider = Provider<SuggestionActions>((ref) {
     log: ref.watch(suggestionLogProvider),
     store: ref.watch(dislikeStoreProvider),
     download: (r, {tag}) =>
-        ref.read(downloadsProvider.notifier).add(r, tag: tag),
+        ref.read(libraryAdderProvider).add(r, tag: tag),
     removeQueueId: handler.removeQueueId,
     queueIds: () => handler.queueIds,
     currentQueueId: () => handler.currentQueueId,

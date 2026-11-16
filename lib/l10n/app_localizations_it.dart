@@ -7740,4 +7740,13 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return 'Senza rete: $_temp0';
   }
+
+  @override
+  String get addToLibrary => 'Aggiungi alla libreria';
+
+  @override
+  String get ytDownloadOnDevice => 'Scarica sul dispositivo';
+
+  @override
+  String get libraryFilterLabel => 'Filtro della libreria';
 }

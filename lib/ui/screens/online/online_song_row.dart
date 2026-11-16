@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/library_add_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/download_queue.dart';
 import '../../../services/online/youtube_service.dart';
@@ -52,7 +53,7 @@ void startOnlineDownloads(
       skipped++;
       continue;
     }
-    ref.read(downloadsProvider.notifier).add(r);
+    ref.read(libraryAdderProvider).add(r);
     started++;
   }
   showMsg(
@@ -143,7 +144,7 @@ class OnlineSongTile extends ConsumerWidget {
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, result),
       onMore: () => showOnlineActions(context, ref, result),
-      onDownload: () => ref.read(downloadsProvider.notifier).add(result),
+      onDownload: () => ref.read(libraryAdderProvider).add(result),
     );
   }
 }

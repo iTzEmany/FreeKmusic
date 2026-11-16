@@ -87,6 +87,7 @@ class PlaylistImportService {
     this.trackDurationMs,
     this.fetchCover,
     this.enrichLater,
+    this.saveNow,
     this.thresholds,
     this.youtubeEnabled = true,
     this.searchGap = const Duration(milliseconds: 1500),
@@ -131,6 +132,10 @@ class PlaylistImportService {
   /// Hands a saved song over to the background enrichment (lyrics, missing
   /// tags), once the CSV tags are on it.
   final void Function(int trackId)? enrichLater;
+
+  /// Streaming mode: saves [YtResult] as a library row without a file and returns its id
+  /// (null: download it instead).
+  final Future<int?> Function(YtResult r)? saveNow;
 
   /// Cut-offs read at each search, so a change in the settings applies at once.
   final MatchThresholds Function()? thresholds;
@@ -963,6 +968,11 @@ class PlaylistImportService {
         await _link(importId, row, id);
         return;
       }
+    }
+    final saved = await saveNow?.call(r);
+    if (saved != null) {
+      await _link(importId, row, saved);
+      return;
     }
     final imp = await imports.get(importId);
     final total = imp == null || !imp.numberFiles

@@ -586,13 +586,14 @@ class TrackRepository {
     String query = '',
     SortOption sort = SortOption.defaultOrder,
     bool favoritesOnly = false,
+    LibraryFilter filter = LibraryFilter.all,
   }) {
     final q = _db.select(_db.tracks)
       ..where((t) {
         Expression<bool> cond =
             t.missing.equals(false) &
             t.ignored.equals(false) &
-            isLibraryRow(t);
+            isLibraryRow(t, filter);
         if (favoritesOnly) cond = cond & t.isFavorite.equals(true);
         final text = query.trim();
         if (text.isNotEmpty) {

@@ -7808,4 +7808,13 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return 'Hors ligne : $_temp0';
   }
+
+  @override
+  String get addToLibrary => 'Ajouter à la bibliothèque';
+
+  @override
+  String get ytDownloadOnDevice => 'Télécharger sur l’appareil';
+
+  @override
+  String get libraryFilterLabel => 'Filtre de la bibliothèque';
 }

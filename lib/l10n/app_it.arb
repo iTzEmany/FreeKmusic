@@ -4518,5 +4518,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addToLibrary": "Aggiungi alla libreria",
+  "ytDownloadOnDevice": "Scarica sul dispositivo",
+  "libraryFilterLabel": "Filtro della libreria"
 }

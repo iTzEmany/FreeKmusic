@@ -16,6 +16,7 @@ import '../services/online/cached_youtube_service.dart';
 import '../services/online/download_queue.dart';
 import '../services/online/search_cache.dart';
 import 'database_providers.dart';
+import 'library_add_providers.dart';
 import 'library_providers.dart';
 import 'online_providers.dart';
 import 'settings_providers.dart';
@@ -59,6 +60,7 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
               sure: s.importSureThreshold, review: s.importReviewThreshold)
           .clamped();
     },
+    saveNow: ref.read(libraryAdderProvider).saveNow,
     enqueue: (r, tag) => downloads.add(r, tag: tag),
     cancelDownloads: downloads.cancelWhere,
     settled: downloads.settled,

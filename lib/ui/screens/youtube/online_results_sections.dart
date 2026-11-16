@@ -10,6 +10,7 @@ import '../../../providers/library_providers.dart' show searchTracksProvider;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart'
     show ownedTracksProvider;
+import '../../../providers/library_add_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/merge_results.dart';
 import '../../../services/online/query_match.dart' show MediaKind;
@@ -338,7 +339,7 @@ class SmartRow extends ConsumerWidget {
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, r),
       onMore: () => showOnlineActions(context, ref, r),
-      onDownload: () => ref.read(downloadsProvider.notifier).add(r),
+      onDownload: () => ref.read(libraryAdderProvider).add(r),
       onArtistTap: onArtistTap == null || who < 0 || who >= r.artists.length
           ? null
           : () => onArtistTap!(

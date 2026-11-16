@@ -55,6 +55,9 @@ Future<Harness> _open(WidgetTester t, {required bool playing}) async {
     await _settle(t);
     await t.tap(find.text('Tutti i brani'));
     await _settle(t);
+    // The filter row pushes the first row down to the dock: scroll it clear.
+    await t.drag(find.byType(CustomScrollView).first, const Offset(0, -200));
+    await _settle(t);
     await t.tap(find.text('Other 0').first);
     await _settle(t);
     await t.tap(find.byIcon(Icons.arrow_back));

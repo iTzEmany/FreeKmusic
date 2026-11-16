@@ -40,7 +40,54 @@ Future<Harness> _open(
   return h;
 }
 
+
+/// A saved stream row (D-607): shown with the cloud, in the «In streaming» filter only.
+Future<void> _insertSaved(Harness h) => h.db.into(h.db.tracks).insert(
+  TracksCompanion.insert(
+    path: 'stream:youtube:cloud1',
+    title: 'Cloud Song',
+    albumKey: 'stream|cloud artist|cloud album',
+    format: '',
+    sizeBytes: 0,
+    mtimeMs: 0,
+    addedAt: 100,
+    kind: const Value(2),
+    saved: const Value(true),
+    artist: const Value('Cloud Artist'),
+    album: const Value('Cloud Album'),
+    durationMs: const Value(200000),
+  ),
+);
+
 void main() {
+  testWidgets('the filter keeps the files or the saved streams; the cloud and the filter have their words', (tester) async {
+    final sem = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await tester.runAsync(() => _insertSaved(h));
+    await h.pump(tester, const AllTracksScreen());
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsNWidgets(5));
+    expect(find.byIcon(Icons.cloud_outlined), findsOneWidget);
+    expect(find.bySemanticsLabel('Cloud Song, Cloud Artist, In streaming'), findsOneWidget);
+    expect(find.bySemanticsLabel('Filtro della libreria'), findsOneWidget);
+    await tester.tap(find.text('In streaming'));
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsOneWidget);
+    expect(find.text('Cloud Song'), findsOneWidget);
+    await tester.tap(find.text('Sul dispositivo'));
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsNWidgets(4));
+    expect(find.byIcon(Icons.cloud_outlined), findsNothing);
+    await tester.tap(find.text('Tutti'));
+    await _settle(tester);
+    expect(find.byType(TrackRow), findsNWidgets(5));
+    sem.dispose();
+    await h.dispose(tester);
+  });
+
   testWidgets('downloadedNoPlaylist lists only the matching tracks, with search', (
     tester,
   ) async {
@@ -195,7 +242,7 @@ void main() {
     final h = await _open(tester, tracks: 40, sort: SortOption.title);
     await wheel(tester, 400);
     expect(barHeight(tester), 0);
-    await tester.dragFrom(const Offset(390, 400), const Offset(0, 495));
+    await tester.dragFrom(const Offset(390, 500), const Offset(0, 395));
     await _settle(tester);
     // Title order: «Song 9» is the last row.
     expect(find.text('Song 9'), findsOneWidget);

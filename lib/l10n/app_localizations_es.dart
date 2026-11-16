@@ -7768,4 +7768,13 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return 'Sin red: $_temp0';
   }
+
+  @override
+  String get addToLibrary => 'Añadir a la biblioteca';
+
+  @override
+  String get ytDownloadOnDevice => 'Descargar en el dispositivo';
+
+  @override
+  String get libraryFilterLabel => 'Filtro de la biblioteca';
 }

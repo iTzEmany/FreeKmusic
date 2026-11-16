@@ -7774,4 +7774,13 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return 'Ohne Netz: $_temp0';
   }
+
+  @override
+  String get addToLibrary => 'Zur Bibliothek hinzufügen';
+
+  @override
+  String get ytDownloadOnDevice => 'Auf das Gerät herunterladen';
+
+  @override
+  String get libraryFilterLabel => 'Bibliotheksfilter';
 }

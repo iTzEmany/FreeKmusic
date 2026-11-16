@@ -427,14 +427,14 @@ void main() {
   );
 
   testWidgets(
-    '«Scarica»: in the menu of a streamed track, not of a local one',
+    '«Scarica» of a streamed track and «Aggiungi alla libreria» of a queue entry, not of a local one',
     (tester) async {
       var h = await openSheet(tester, (t) => t);
-      expect(find.text('Scarica'), findsNothing);
+      expect(find.text('Aggiungi alla libreria'), findsNothing);
       await h.dispose(tester);
 
       h = await openSheet(tester, (t) => t.copyWith(id: -5));
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       await h.dispose(tester);
 
       final downloads = _Downloads();
@@ -456,7 +456,7 @@ void main() {
   );
 
   testWidgets(
-    '«Scarica» goes away from the open sheet when the entry joins the library (R-93)',
+    '«Aggiungi alla libreria» goes away from the open sheet when the entry joins the library (R-93)',
     (tester) async {
       final dir = Directory.systemTemp.createTempSync('dl_idx');
       addTearDown(() => dir.deleteSync(recursive: true));
@@ -478,13 +478,13 @@ void main() {
           downloadIndexProvider.overrideWith((ref) async => index),
         ],
       );
-      expect(find.text('Scarica'), findsOneWidget);
+      expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       final file = File('${dir.path}/v1.m4a')..writeAsStringSync('x');
       await tester.runAsync(() => index.add('v1', file.path));
-      ProviderScope.containerOf(tester.element(find.text('Scarica')))
+      ProviderScope.containerOf(tester.element(find.text('Aggiungi alla libreria')))
           .invalidate(downloadIndexProvider);
       await _settle(tester);
-      expect(find.text('Scarica'), findsNothing);
+      expect(find.text('Aggiungi alla libreria'), findsNothing);
       expect(
         find.text('Aggiungi a playlist…'),
         findsOneWidget,
@@ -536,7 +536,7 @@ void main() {
           onlineEntriesProvider.overrideWithValue(online),
         ],
       );
-      await tester.tap(find.text('Scarica'));
+      await tester.tap(find.text('Aggiungi alla libreria'));
       await _settle(tester);
       expect(find.text('Aggiunto alla libreria'), findsOneWidget);
       await h.dispose(tester);

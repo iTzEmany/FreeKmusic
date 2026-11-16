@@ -3799,5 +3799,8 @@
   },
   "onboardingStorageDeviceHint": "Die Dateien bleiben auf dem Gerät und spielen auch ohne Netz.",
   "onboardingStorageStreamHint": "Braucht wenig Platz: Titel laden, während du hörst.",
-  "queueOfflineBanner": "Ohne Netz: {count, plural, one{1 Titel verfügbar} other{{count} Titel verfügbar}}"
+  "queueOfflineBanner": "Ohne Netz: {count, plural, one{1 Titel verfügbar} other{{count} Titel verfügbar}}",
+  "addToLibrary": "Zur Bibliothek hinzufügen",
+  "ytDownloadOnDevice": "Auf das Gerät herunterladen",
+  "libraryFilterLabel": "Bibliotheksfilter"
 }

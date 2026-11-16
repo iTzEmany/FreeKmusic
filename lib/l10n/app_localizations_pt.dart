@@ -7753,4 +7753,13 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return 'Sem rede: $_temp0';
   }
+
+  @override
+  String get addToLibrary => 'Adicionar à biblioteca';
+
+  @override
+  String get ytDownloadOnDevice => 'Transferir para o dispositivo';
+
+  @override
+  String get libraryFilterLabel => 'Filtro da biblioteca';
 }

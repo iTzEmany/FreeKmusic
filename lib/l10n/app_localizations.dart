@@ -12282,6 +12282,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Senza rete: {count, plural, one{1 brano disponibile} other{{count} brani disponibili}}'**
   String queueOfflineBanner(int count);
+
+  /// No description provided for @addToLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi alla libreria'**
+  String get addToLibrary;
+
+  /// No description provided for @ytDownloadOnDevice.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica sul dispositivo'**
+  String get ytDownloadOnDevice;
+
+  /// No description provided for @libraryFilterLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Filtro della libreria'**
+  String get libraryFilterLabel;
 }
 
 class _AppLocalizationsDelegate

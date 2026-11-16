@@ -118,7 +118,7 @@ class LibraryQueries {
 
   AlbumSummary _album(QueryRow r) => albumSummaryFromRow(r);
 
-  Stream<List<AlbumSummary>> watchAlbums({AlbumSort sort = AlbumSort.title}) {
+  Stream<List<AlbumSummary>> watchAlbums({AlbumSort sort = AlbumSort.title, LibraryFilter filter = LibraryFilter.all}) {
     final order = switch (sort) {
       AlbumSort.title => 'album COLLATE NOCASE',
       AlbumSort.artist => 'COALESCE(album_artist, artist) COLLATE NOCASE, album COLLATE NOCASE',
@@ -126,7 +126,7 @@ class LibraryQueries {
     };
     return _db
         .customSelect(
-          '$albumSelectSql WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} GROUP BY album_key ORDER BY $order',
+          '$albumSelectSql WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql(null, filter)} GROUP BY album_key ORDER BY $order',
           readsFrom: {_db.tracks},
         )
         .watch()
@@ -149,13 +149,13 @@ class LibraryQueries {
   /// Artists grouped by lower-cased name. The cover is the one most present
   /// among the artist's tracks, found in a single pass (a per-artist subquery
   /// scanned the whole table once per artist: 5 s at 50 000 tracks).
-  Stream<List<ArtistSummary>> watchArtists() {
+  Stream<List<ArtistSummary>> watchArtists({LibraryFilter filter = LibraryFilter.all}) {
     return _db
         .customSelect(
           '''
 WITH cov AS (
   SELECT lower(trim(COALESCE(artist, ''))) AS k, cover_key, SUM(cover_source < 2) AS n
-  FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} AND cover_key IS NOT NULL GROUP BY k, cover_key
+  FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql(null, filter)} AND cover_key IS NOT NULL GROUP BY k, cover_key
 ),
 best AS (
   SELECT k, cover_key FROM (
@@ -173,7 +173,7 @@ FROM (
     COUNT(*) AS track_count, COUNT(DISTINCT album_key) AS album_count,
     MAX(last_played_at) AS last_played, MAX(added_at) AS added,
     SUM(play_count) AS plays, SUM(duration_ms) AS duration
-  FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql()} GROUP BY k
+  FROM tracks WHERE missing = 0 AND ignored = 0 AND ${libraryRowSql(null, filter)} GROUP BY k
 ) g
 LEFT JOIN best ON best.k = g.k
 ORDER BY g.k COLLATE NOCASE

@@ -3799,5 +3799,8 @@
   },
   "onboardingStorageDeviceHint": "Files stay on the device and play without a network.",
   "onboardingStorageStreamHint": "Takes little space: tracks load while you listen.",
-  "queueOfflineBanner": "Offline: {count, plural, one{1 track available} other{{count} tracks available}}"
+  "queueOfflineBanner": "Offline: {count, plural, one{1 track available} other{{count} tracks available}}",
+  "addToLibrary": "Add to library",
+  "ytDownloadOnDevice": "Download to the device",
+  "libraryFilterLabel": "Library filter"
 }

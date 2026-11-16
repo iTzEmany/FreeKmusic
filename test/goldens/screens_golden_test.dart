@@ -203,7 +203,7 @@ void main() {
         testWidgets('selection', (tester) => withGoldenShot(tester, size, (s) async {
               await s.show(const AllTracksScreen(), textScale: scale);
               await tester.longPress(find.byType(TrackRow).at(1));
-              await tester.tap(find.byType(TrackRow).at(3));
+              await tester.tap(find.byType(TrackRow).at(2));
               await s.settle();
               await s.expectGolden('${tag}_selection.png');
             }));

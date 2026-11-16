@@ -1,5 +1,6 @@
 import 'package:codecore/core/platform.dart';
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_kinds.dart' show LibraryFilter;
 import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
 import 'package:codecore/services/online/download_index.dart';
 import 'dart:io';
@@ -662,5 +663,6 @@ class _FlakyRepo extends TrackRepository {
     String query = '',
     SortOption sort = SortOption.defaultOrder,
     bool favoritesOnly = false,
+    LibraryFilter filter = LibraryFilter.all,
   }) => fail() ? Stream.error(StateError('boom')) : Stream.value(const []);
 }

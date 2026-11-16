@@ -4020,5 +4020,8 @@
   },
   "onboardingStorageDeviceHint": "Les fichiers restent sur l’appareil et se lisent sans réseau.",
   "onboardingStorageStreamHint": "Prend peu de place : les titres se chargent pendant l’écoute.",
-  "queueOfflineBanner": "Hors ligne : {count, plural, one{1 titre disponible} other{{count} titres disponibles}}"
+  "queueOfflineBanner": "Hors ligne : {count, plural, one{1 titre disponible} other{{count} titres disponibles}}",
+  "addToLibrary": "Ajouter à la bibliothèque",
+  "ytDownloadOnDevice": "Télécharger sur l’appareil",
+  "libraryFilterLabel": "Filtre de la bibliothèque"
 }

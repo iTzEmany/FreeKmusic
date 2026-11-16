@@ -19,7 +19,10 @@ import '../../core/platform.dart';
 import '../../data/db/app_database.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/equalizer_providers.dart';
+import '../../data/settings/settings_store.dart' show StorageMode;
+import '../../providers/library_add_providers.dart';
 import '../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
+import '../../providers/settings_providers.dart' show settingsProvider;
 import '../../providers/player_providers.dart';
 import '../../providers/preview_providers.dart';
 import '../../providers/suggestion_actions.dart';
@@ -112,8 +115,8 @@ List<TrackActionGroup> onlineTrackActions(
       // Gone as soon as the entry is in the library, also with the sheet open (R-93).
       if (!entryInLibrary(ref, track.id))
         TrackAction(
-          Icons.download_rounded,
-          l.ytDownload,
+          Icons.library_add_rounded,
+          l.addToLibrary,
           () => downloadOnline(
             outer,
             inLibrary: entryInLibrary(ref, track.id),
@@ -584,6 +587,8 @@ List<TrackAction> onlineResultActions(
 ) {
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
+  bool inLibrary() =>
+      ref.read(downloadIndexProvider).value?.contains(r.id, source: r.source) ?? false;
   return [
     TrackAction(Icons.queue_rounded, l.addToQueue, () async {
       final full = ctrl.jamQueueFull;
@@ -594,7 +599,7 @@ List<TrackAction> onlineResultActions(
       final picked = await pickPlaylist(outer, ref);
       if (picked == null || !outer.mounted) return;
       final now = await ref
-          .read(downloadsProvider.notifier)
+          .read(libraryAdderProvider)
           .add(r, tag: addToPlaylistTag(picked.id));
       if (outer.mounted) {
         showMsg(
@@ -606,19 +611,17 @@ List<TrackAction> onlineResultActions(
       }
     }),
     TrackAction(
-      Icons.download_rounded,
-      l.ytDownload,
-      () => downloadOnline(
-        outer,
-        inLibrary:
-            ref
-                .read(downloadIndexProvider)
-                .value
-                ?.contains(r.id, source: r.source) ??
-            false,
-        start: () => ref.read(downloadsProvider.notifier).add(r),
-      ),
+      Icons.library_add_rounded,
+      l.addToLibrary,
+      () => downloadOnline(outer, inLibrary: inLibrary(), start: () => ref.read(libraryAdderProvider).add(r)),
     ),
+    // In device mode the first item already downloads.
+    if (ref.read(settingsProvider).storageMode == StorageMode.stream)
+      TrackAction(
+        Icons.download_rounded,
+        l.ytDownloadOnDevice,
+        () => downloadOnline(outer, inLibrary: inLibrary(), start: () => ref.read(downloadsProvider.notifier).add(r)),
+      ),
     TrackAction(
       Icons.person_outline_rounded,
       l.goToArtist,
