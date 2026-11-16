@@ -5,6 +5,10 @@ import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
+import 'package:codecore/ui/screens/library/library_genres_screen.dart';
+import 'package:codecore/ui/screens/search/genre_screen.dart';
+import 'package:codecore/data/repositories/library_queries.dart' show GenreSummary;
+import 'package:codecore/providers/library_providers.dart' show genresProvider;
 import 'package:codecore/ui/screens/library/library_results.dart' show LibraryResults;
 import 'package:codecore/ui/screens/library/library_shortcuts.dart';
 import 'package:codecore/ui/screens/library/library_island.dart';
@@ -694,9 +698,8 @@ void main() {
       expect(all.top, fav.top);
       expect(all.left, greaterThan(fav.right));
       expect(find.byIcon(Icons.favorite_rounded), findsNothing);
-      // 7 blocks here: the seventh spans both columns.
-      expect(last.left, fav.left);
-      expect(last.right, all.right);
+      // 8 blocks here (Generi included): the last pairs up, none spans both columns.
+      expect(last.left, greaterThan(fav.right));
       await h.dispose(t);
     },
   );
@@ -790,6 +793,34 @@ void main() {
     expect(find.text('Podcast'), findsOneWidget);
     expect(find.text('Radio'), findsOneWidget);
     expect(find.text('Etichette'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('Generi opens the local genres and a genre opens its tracks', (t) async {
+    t.view.physicalSize = const Size(360, 1400);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final h = await Harness.create(t);
+    await h.pump(
+      t,
+      const LibraryGenresScreen(),
+      extraOverrides: [
+        genresProvider.overrideWith((ref) => Stream.value(const [GenreSummary('Rock', 3)])),
+      ],
+    );
+    await _settle(t);
+    expect(find.text('Rock'), findsOneWidget);
+    await t.tap(find.text('Rock'));
+    await _settle(t);
+    expect(find.byType(GenreScreen), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('Library has a Generi shortcut that opens the genres screen', (t) async {
+    final h = await open(t, width: 360);
+    await t.tap(find.text('Generi'));
+    await _settle(t);
+    expect(find.byType(LibraryGenresScreen), findsOneWidget);
     await h.dispose(t);
   });
 
