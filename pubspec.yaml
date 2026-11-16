@@ -76,6 +76,10 @@ dependencies:
 dependency_overrides:
   audio_service:
     path: third_party/audio_service
+  just_audio:
+    path: third_party/just_audio
+  just_audio_media_kit:
+    path: third_party/just_audio_media_kit
 
 dev_dependencies:
   flutter_test:
