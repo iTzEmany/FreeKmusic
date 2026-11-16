@@ -4028,5 +4028,6 @@
   "libraryAddedMany": "{count, plural, one{1 titre ajouté à la bibliothèque} other{{count} titres ajoutés à la bibliothèque}}",
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} ajoutés à la bibliothèque, {skipped} déjà présents ou en cours",
-  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "Aucun titre en streaming. Utilisez « Ajouter à la bibliothèque » sur un titre en ligne."
 }

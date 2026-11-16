@@ -12318,6 +12318,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{added} aggiunti alla libreria, {skipped} già presenti o in corso'**
   String libraryAddedSkipped(int added, int skipped);
+
+  /// No description provided for @noStreamedTracks.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online.'**
+  String get noStreamedTracks;
 }
 
 class _AppLocalizationsDelegate

@@ -3807,5 +3807,6 @@
   "libraryAddedMany": "{count, plural, one{1 Titel zur Mediathek hinzugefügt} other{{count} Titel zur Mediathek hinzugefügt}}",
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} zur Mediathek hinzugefügt, {skipped} bereits vorhanden oder in Arbeit",
-  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "Keine Streaming-Titel. Nutze „Zur Mediathek hinzufügen“ bei einem Online-Titel."
 }

@@ -151,8 +151,9 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
       onShadowMerged: (shadow, keep) => ref.read(audioHandlerProvider).replaceQueueId(shadow, keep),
     ));
 
-/// Whether the device has a network now (always true off Android).
-final networkOnlineProvider = StreamProvider<bool>((ref) async* {
+/// Whether the device has a network now (always true off Android). AutoDispose: a missed
+/// `changed` event must not pin a stale value; reopening the queue re-reads the probe.
+final networkOnlineProvider = StreamProvider.autoDispose<bool>((ref) async* {
   final probe = ref.watch(networkProbeProvider);
   yield (await probe.current()).online;
   await for (final _ in probe.changes) {

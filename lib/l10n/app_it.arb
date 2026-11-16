@@ -4526,5 +4526,6 @@
   "libraryAddedMany": "{count, plural, one{1 brano aggiunto alla libreria} other{{count} brani aggiunti alla libreria}}",
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} aggiunti alla libreria, {skipped} già presenti o in corso",
-  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "Nessun brano in streaming. Usa «Aggiungi alla libreria» su un brano online."
 }

@@ -88,6 +88,20 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('the «In streaming» filter with nothing saved says so, not «scan a folder»', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 2);
+    await h.pump(tester, const AllTracksScreen());
+    await _settle(tester);
+    await tester.tap(find.text('In streaming'));
+    await _settle(tester);
+    expect(find.textContaining('Nessun brano in streaming'), findsOneWidget);
+    expect(find.textContaining('Scegli una cartella'), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets('downloadedNoPlaylist lists only the matching tracks, with search', (
     tester,
   ) async {

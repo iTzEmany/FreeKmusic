@@ -7803,4 +7803,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String libraryAddedSkipped(int added, int skipped) {
     return '$added zur Mediathek hinzugefügt, $skipped bereits vorhanden oder in Arbeit';
   }
+
+  @override
+  String get noStreamedTracks =>
+      'Keine Streaming-Titel. Nutze „Zur Mediathek hinzufügen“ bei einem Online-Titel.';
 }

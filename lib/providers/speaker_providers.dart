@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show InternetAddressType, NetworkInterface;
 
 import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,6 +71,12 @@ final speakerOfferProvider = StreamProvider<bool>((ref) {
   return c.stream;
 });
 
+/// This device's own IPv4 addresses: a Jam announced from one of them is another app here.
+final ownAddressesProvider = FutureProvider<Set<String>>((ref) async {
+  final ifaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
+  return {for (final i in ifaces) for (final a in i.addresses) a.address};
+});
+
 /// The first nearby device announcing a Jam, while this one is in none.
 final announcedJamProvider = Provider<Peer?>((ref) {
   if (ref.watch(jamProvider.select((j) => j.phase != JamPhase.idle))) {
@@ -77,8 +84,9 @@ final announcedJamProvider = Provider<Peer?>((ref) {
   }
   final peers = ref.watch(shareHubProvider.select((h) => h.peers));
   final hidden = ref.watch(jamInviteDismissedProvider);
+  final own = ref.watch(ownAddressesProvider).value ?? const <String>{};
   return peers
-      .where((p) => p.jamName != null && !hidden.contains(jamInviteKey(p)))
+      .where((p) => p.jamName != null && !own.contains(p.host) && !hidden.contains(jamInviteKey(p)))
       .firstOrNull;
 });
 

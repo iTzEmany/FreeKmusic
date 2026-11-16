@@ -3993,5 +3993,6 @@
   "libraryAddedMany": "{count, plural, one{1 música adicionada à biblioteca} other{{count} músicas adicionadas à biblioteca}}",
   "@libraryAddedMany": {"placeholders": {"count": {"type": "int"}}},
   "libraryAddedSkipped": "{added} adicionadas à biblioteca, {skipped} já existentes ou em curso",
-  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}}
+  "@libraryAddedSkipped": {"placeholders": {"added": {"type": "int"}, "skipped": {"type": "int"}}},
+  "noStreamedTracks": "Nenhuma faixa em streaming. Use «Adicionar à biblioteca» numa faixa online."
 }

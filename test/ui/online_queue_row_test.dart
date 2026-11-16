@@ -1,5 +1,6 @@
 import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/data/db/app_database.dart' show Track;
 import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import 'package:codecore/providers/stream_providers.dart';
 import 'package:codecore/services/stream/stream_cache.dart';
@@ -26,7 +27,7 @@ class _Handler implements CodecoreAudioHandler {
 
 class _Net extends NetworkProbe {
   _Net(this.kind);
-  final NetworkKind kind;
+  NetworkKind kind;
   @override
   Future<NetworkKind> current() async => kind;
 }
@@ -66,6 +67,29 @@ void main() {
     on.listen(networkOnlineProvider, (_, _) {});
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(await on.read(queueOfflineOutProvider.future), isNull);
+  });
+
+  test('the network coming back without a change event clears the offline queue on reopen', () async {
+    final net = _Net(const NetworkKind(online: false));
+    final root = await Directory.systemTemp.createTemp('offline_reopen');
+    addTearDown(() => root.delete(recursive: true));
+    final cache = StreamCache(Directory('${root.path}/c'), freeSpace: () async => null);
+    await cache.open();
+    final c = ProviderContainer(overrides: [
+      streamCacheProvider.overrideWithValue(cache),
+      audioHandlerProvider.overrideWithValue(_Handler((r) async => null)),
+      networkProbeProvider.overrideWithValue(net),
+      onlineEntriesProvider.overrideWithValue(OnlineEntries()),
+      queueProvider.overrideWith((ref) => Stream.value(<Track>[])),
+    ]);
+    addTearDown(c.dispose);
+    final open = c.listen(queueOfflineOutProvider, (_, _) {});
+    expect(await c.read(queueOfflineOutProvider.future), isEmpty);
+    open.close(); // queue closed
+    await Future<void>.delayed(Duration.zero); // autoDispose runs on the next tick
+    net.kind = const NetworkKind(online: true); // no `changed` pushed
+    c.listen(queueOfflineOutProvider, (_, _) {}); // queue reopened
+    expect(await c.read(queueOfflineOutProvider.future), isNull);
   });
 
   testWidgets(

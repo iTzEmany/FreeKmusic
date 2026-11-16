@@ -7837,4 +7837,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String libraryAddedSkipped(int added, int skipped) {
     return '$added ajoutés à la bibliothèque, $skipped déjà présents ou en cours';
   }
+
+  @override
+  String get noStreamedTracks =>
+      'Aucun titre en streaming. Utilisez « Ajouter à la bibliothèque » sur un titre en ligne.';
 }
