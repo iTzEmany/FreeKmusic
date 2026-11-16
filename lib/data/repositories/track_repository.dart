@@ -254,8 +254,9 @@ class TrackRepository {
 
   /// A saved stream row whose video vanished: the SAME row (id, playlists, plays, favourite) moves to the
   /// replacement [newKey]. A shadow row already at [newKey] is merged into it ([mergeStreamRow]); an episode
-  /// there makes this a no-op. The old cache fields go (they described the old video's file). Returns true
-  /// when the row moved. The CALLER drops the old key's cache file.
+  /// there makes this a no-op; when that row was edited by hand its title, artist, album and album key win.
+  /// A replacement that is already a downloaded FILE is the caller's check (`VanishedTracks.hasFile`: skip + log).
+  /// The old cache fields go; the old key's cache file stays and the LRU removes it. Returns true when the row moved.
   Future<bool> rekeyStream(int id, String newKey) => _db.transaction(() async {
     final row = await getById(id);
     final oldKey = row == null || row.kind != kStreamKind ? null : keyOfStreamPath(row.path);
@@ -263,17 +264,25 @@ class TrackRepository {
     final other = await byPath(streamPathOf(newKey));
     if (other != null && other.kind != kStreamKind) return false;
     await mergeStreamRow(newKey, id);
+    final keep = other != null && other.userEdited; // the existing row's hand-made metadata survives
+    // Only the row's own key follows; a shared or hand-picked album key stays.
+    final albumKey = keep ? other.albumKey : (row!.albumKey == 'stream|$oldKey' ? 'stream|$newKey' : row.albumKey);
     await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
       TracksCompanion(
         path: Value(streamPathOf(newKey)),
-        // Only the row's own key follows; a shared or hand-picked album key stays.
-        albumKey: row!.albumKey == 'stream|$oldKey' ? Value('stream|$newKey') : const Value.absent(),
+        albumKey: Value(albumKey),
+        title: keep ? Value(other.title) : const Value.absent(),
+        artist: keep ? Value(other.artist) : const Value.absent(),
+        album: keep ? Value(other.album) : const Value.absent(),
+        albumArtist: keep ? Value(other.albumArtist) : const Value.absent(),
+        userEdited: keep ? const Value(true) : const Value.absent(),
         format: const Value(''),
         sizeBytes: const Value(0),
         mtimeMs: const Value(0),
         missing: const Value(false),
       ),
     );
+    await settleMovedCover(row!, albumKey);
     return true;
   });
 

@@ -428,7 +428,7 @@ void main() {
     final repo = TrackRepository(db);
     final rowId = await repo.upsertStreamRow('youtube:v9', result('v9'), file);
     preparer.failing.add('youtube:v9');
-    preparer.failure = const YtException(YtErrorKind.unavailable);
+    preparer.failure = const YtException(YtErrorKind.unavailable, 'ERROR: [youtube] v9: Video unavailable');
     await handler.playQueue([rowId, ids[0]], 0);
     await settle();
     expect(gone, isEmpty, reason: 'a shadow row that is not saved');
@@ -437,6 +437,9 @@ void main() {
     await settle();
     expect(gone.map((t) => t.id), [rowId]);
     preparer.failure = const YtException(YtErrorKind.unavailable, 'ERROR: Sign in to confirm your age');
+    await handler.playQueue([rowId, ids[0]], 0);
+    await settle();
+    preparer.failure = const YtException(YtErrorKind.unavailable, "ERROR: [youtube] v9: This content isn't available, try again later.");
     await handler.playQueue([rowId, ids[0]], 0);
     await settle();
     preparer.failure = const YtException(YtErrorKind.network);

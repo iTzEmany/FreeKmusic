@@ -20,10 +20,12 @@ void main() {
     await add(3, 'stream:youtube:c', 2); // already downloaded
     await add(4, '/m/d.mp3', 0); // a device file
     await add(5, 'stream:youtube:e', 1); // an episode
+    await add(6, 'stream:youtube:q', 2); // already queued
     final queued = <YtResult>[];
     final n = keepOffline(
       await db.select(db.tracks).get(),
       pathForKey: (k) => k == 'youtube:c' ? '/m/c.m4a' : null,
+      inQueue: {'youtube:q'},
       download: queued.add,
     );
     expect(n, 2);

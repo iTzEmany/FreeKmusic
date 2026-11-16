@@ -13,7 +13,7 @@ import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import 'database_providers.dart';
 import 'settings_providers.dart' show settingsProvider;
 import 'smart_search_providers.dart' show linkMatchLimiterProvider, sourceCooldownProvider;
-import 'youtube_providers.dart' show youtubeServiceProvider;
+import 'youtube_providers.dart' show downloadIndexProvider, youtubeServiceProvider;
 
 /// Replaces the saved streams that YouTube dropped (R-242); `main` calls `handle` when the player reports one.
 /// The Registro line is not localized yet (shortcut: kind `vanished` shows as a plain line, a later task adds the text).
@@ -22,6 +22,7 @@ final vanishedTracksProvider = Provider<VanishedTracks>((ref) {
   final log = ActivityLogRepository(ref.watch(databaseProvider));
   return VanishedTracks(
     tracks: tracks,
+    hasFile: (key) async => (await ref.read(downloadIndexProvider.future)).pathForKey(key) != null,
     search: (row) async {
       // One matcher per search: the library is not consulted, every YouTube Music call is budgeted.
       final matcher = CollectionMatcher(

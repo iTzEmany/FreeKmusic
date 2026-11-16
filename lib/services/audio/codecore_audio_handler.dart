@@ -10,6 +10,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/play_history_repository.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
+import '../online/vanished_tracks.dart' show isVideoGone;
 import '../online/youtube_service.dart';
 import '../stream/stream_key.dart';
 import '../stream/stream_preparer.dart';
@@ -2177,7 +2178,7 @@ class _StreamNotReady extends BackendException {
   _StreamNotReady(Object cause)
     : offline = cause is YtException && cause.kind == YtErrorKind.network,
       ageRestricted = isAgeRestricted(cause),
-      gone = cause is YtException && cause.kind == YtErrorKind.unavailable && !isAgeRestricted(cause),
+      gone = isVideoGone(cause),
       super('stream not ready: $cause');
   final bool offline;
   final bool ageRestricted;

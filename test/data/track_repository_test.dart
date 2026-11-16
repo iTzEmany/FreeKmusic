@@ -146,6 +146,17 @@ void main() {
       expect((await repo.getById(id))!.path, 'stream:youtube:new');
     });
 
+    test('a hand-edited row already at the new key keeps its title, artist and album', () async {
+      final id = await saved('old');
+      final shadow = await repo.ensureStreamRow(yt('new'));
+      await (db.update(db.tracks)..where((t) => t.id.equals(shadow))).write(
+        const TracksCompanion(title: Value('Mine'), artist: Value('Me'), album: Value('Al'), userEdited: Value(true), albumKey: Value('stream|mine')),
+      );
+      expect(await repo.rekeyStream(id, 'youtube:new'), true);
+      final t = (await repo.getById(id))!;
+      expect([t.title, t.artist, t.album, t.albumKey, t.userEdited], ['Mine', 'Me', 'Al', 'stream|mine', true]);
+    });
+
     test('not a stream row, or the same key: nothing changes', () async {
       await repo.upsertBatch([row('/a.mp3', 'a')]);
       final file = (await repo.byPath('/a.mp3'))!.id;

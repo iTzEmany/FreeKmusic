@@ -2,21 +2,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart' show Track;
 import '../data/repositories/track_kinds.dart' show kStreamKind;
+import '../services/online/download_queue.dart' show DownloadStatus;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/stream/stream_key.dart';
 import 'youtube_providers.dart';
 
 /// Queues a real download for each of [tracks] that is a stream row (saved or not) with no file;
-/// [pathForKey] is the download index lookup. Returns how many were queued (D-578, R-236).
+/// [pathForKey] is the download index lookup; keys in [inQueue] are already queued or downloading (no `Title (2)`). Returns how many were queued (D-578, R-236).
 int keepOffline(
   Iterable<Track> tracks, {
   required String? Function(String key) pathForKey,
+  Set<String> inQueue = const {},
   required void Function(YtResult r) download,
 }) {
+  final skip = {...inQueue};
   var n = 0;
   for (final t in tracks) {
     final key = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
-    if (key == null || pathForKey(key) != null) continue;
+    if (key == null || pathForKey(key) != null || !skip.add(key)) continue;
     download(streamResultOfRow(key, t));
     n++;
   }
@@ -28,5 +31,7 @@ int keepOffline(
 final keepOfflineProvider = Provider<Future<int> Function(Iterable<Track> tracks)>((ref) => (tracks) async {
       final index = await ref.read(downloadIndexProvider.future);
       final downloads = ref.read(downloadsProvider.notifier);
-      return keepOffline(tracks, pathForKey: index.pathForKey, download: (r) => downloads.add(r));
+      const live = {DownloadStatus.queued, DownloadStatus.downloading, DownloadStatus.waitingRetry};
+      final inQueue = {for (final i in ref.read(downloadsProvider)) if (live.contains(i.status)) i.result.indexKey};
+      return keepOffline(tracks, pathForKey: index.pathForKey, inQueue: inQueue, download: (r) => downloads.add(r));
     });

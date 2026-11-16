@@ -109,6 +109,10 @@ class DownloadIndex {
     return _persist();
   }
 
+  /// The file at [path] is still, byte for byte in size and mtime, the one downloaded for its entry.
+  bool signatureMatchesPath(String path) =>
+      _map.entries.any((e) => e.value == path && signatureMatches(e.key, path));
+
   /// [refreshSignature] for the entry whose file is [path] (the tagger knows the path, not the key).
   Future<void> refreshSignatureByPath(String path) {
     for (final e in _map.entries) {

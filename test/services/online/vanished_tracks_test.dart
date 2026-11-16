@@ -19,8 +19,11 @@ void main() {
   YtResult? found;
   Object? searchError;
 
+  var fileFor = <String>{};
+
   VanishedTracks make() => VanishedTracks(
         tracks: repo,
+        hasFile: (k) async => fileFor.contains(k),
         search: (row) async {
           asked.add(row);
           if (searchError != null) throw searchError!;
@@ -38,6 +41,7 @@ void main() {
     logged = [];
     found = null;
     searchError = null;
+    fileFor = {};
     id = (await repo.saveStream(yt('old')))!;
     await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(playCount: Value(3)));
   });
@@ -61,12 +65,41 @@ void main() {
     expect(logged.map((e) => e.$2), [null, null, null]);
   });
 
-  test('nothing found, or the same video again: only the log entry', () async {
-    expect(await make().handle(await row()), false);
+  test('nothing found: one search and one log entry per row per session, however often it plays', () async {
+    final v = make();
+    expect(await v.handle(await row()), false);
+    expect(await v.handle(await row()), false);
+    expect(asked.length, 1);
+    expect(logged.length, 1);
+    expect((await row()).path, 'stream:youtube:old');
+  });
+
+  test('the old video as best match: not gone, nothing logged or moved', () async {
     found = yt('old');
     expect(await make().handle(await row()), false);
-    expect(logged.length, 2);
+    expect(logged, isEmpty);
+  });
+
+  test('a replacement that is already a downloaded file does not make a second row', () async {
+    found = yt('new');
+    fileFor = {'youtube:new'};
+    expect(await make().handle(await row()), false);
     expect((await row()).path, 'stream:youtube:old');
+    expect(logged.single.$2, null);
+  });
+
+  test('isVideoGone: only a definitive reason, with the real yt-dlp lines', () {
+    const u = YtErrorKind.unavailable;
+    bool gone(String s) => isVideoGone(YtException(u, s));
+    expect(gone('ERROR: [youtube] abc: Video unavailable'), true);
+    expect(gone('ERROR: [youtube] abc: Video unavailable. This video has been removed by the uploader'), true);
+    expect(gone('ERROR: [youtube] abc: Video unavailable. This video is no longer available because the YouTube account associated with this video has been terminated.'), true);
+    expect(gone('ERROR: [youtube] abc: Private video. Sign in if you\'ve been granted access to this video'), true);
+    expect(gone('ERROR: [youtube] abc: This content isn\'t available, try again later. The current session has been rate-limited by YouTube'), false);
+    expect(gone('ERROR: [youtube] abc: Video unavailable. The uploader has not made this video available in your country'), false);
+    expect(gone('ERROR: [youtube] abc: Join this channel to get access to members-only content like this video'), false);
+    expect(gone('ERROR: [youtube] abc: Sign in to confirm your age'), false);
+    expect(isVideoGone(const YtException(YtErrorKind.network, 'Video unavailable')), false);
   });
 
   test('only saved stream rows are touched', () async {
