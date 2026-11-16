@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart' show Track;
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/providers/player_providers.dart'
     show onlineEntriesProvider;
 import 'package:codecore/providers/youtube_providers.dart';
@@ -266,11 +267,13 @@ void main() {
     Track Function(Track) edit, {
     double scale = 1,
     List<Override> extra = const [],
+    StorageMode? mode,
   }) async {
     tester.view.physicalSize = const Size(360, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final h = await Harness.create(tester, tracks: 1);
+    if (mode != null) await tester.runAsync(() => h.store.writeSettings(h.store.readSettings().copyWith(storageMode: mode)));
     final t = edit(
       (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first,
     );
@@ -454,6 +457,35 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets('a saved stream row offers «Rimuovi dalla libreria»: it stops being saved, nothing else', (tester) async {
+    final h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));
+    await tester.runAsync(
+      () => h.db.customStatement("UPDATE tracks SET kind = 2, saved = 1, path = 'stream:youtube:abc' WHERE id = (SELECT MIN(id) FROM tracks)"),
+    );
+    await tester.tap(find.text('Rimuovi dalla libreria'));
+    await _settle(tester);
+    final row = (await tester.runAsync(() => TrackRepository(h.db).byPath('stream:youtube:abc')))!;
+    expect(row.saved, isFalse);
+    await h.dispose(tester);
+  });
+
+  testWidgets('an unsaved shadow row in streaming mode offers «Aggiungi alla libreria» and saves it without downloading', (tester) async {
+    final downloads = _Downloads();
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', title: 'Streamed'),
+      mode: StorageMode.stream,
+      extra: [downloadsProvider.overrideWith(() => downloads)],
+    );
+    expect(find.text('Rimuovi dalla libreria'), findsNothing);
+    await tester.tap(find.text('Aggiungi alla libreria'));
+    await _settle(tester);
+    expect(downloads.added, isEmpty);
+    final row = (await tester.runAsync(() => TrackRepository(h.db).byPath('stream:youtube:abc')))!;
+    expect(row.saved, isTrue);
+    await h.dispose(tester);
+  });
 
   testWidgets(
     '«Aggiungi alla libreria» goes away from the open sheet when the entry joins the library (R-93)',

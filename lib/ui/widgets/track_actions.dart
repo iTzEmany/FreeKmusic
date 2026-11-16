@@ -258,6 +258,21 @@ List<TrackActionGroup> trackActions(
       }, onStreamRow: true),
     ]),
     TrackActionGroup(l.groupCollection, [
+      // An unsaved shadow row (of a playlist or the history) in streaming mode joins the library without a file.
+      if (track.kind == kStreamKind &&
+          !track.saved &&
+          keyOfStreamPath(track.path) != null &&
+          ref.read(settingsProvider).storageMode == StorageMode.stream)
+        TrackAction(
+          Icons.library_add_rounded,
+          l.addToLibrary,
+          () => downloadOnline(
+            outer,
+            inLibrary: false,
+            start: () => ref.read(libraryAdderProvider).add(streamResultOfRow(keyOfStreamPath(track.path)!, track)),
+          ),
+          onStreamRow: true,
+        ),
       // A streamed shadow row: the download promotes it to a real library track.
       if (track.kind == kStreamKind &&
           keyOfStreamPath(track.path) != null &&
@@ -336,6 +351,12 @@ List<TrackActionGroup> trackActions(
       ),
     ]),
     TrackActionGroup(l.groupOther, [
+      // A saved stream leaves the library only: it stays in its playlists and the history (D-524).
+      if (track.kind == kStreamKind && track.saved && keyOfStreamPath(track.path) != null)
+        TrackAction(Icons.delete_outline_rounded, l.removeFromLibrary, () async {
+          final n = await ref.read(trackOpsProvider).removeSavedStreams([track]);
+          if (outer.mounted) showMsg(outer, l.removedManyFromLibrary(n));
+        }, onStreamRow: true),
       // From Now Playing's ⋯ (the playing track's menu), where the equalizer is.
       if (ref.read(equalizerProvider) != null &&
           ref.read(currentTrackProvider).value?.id == track.id)

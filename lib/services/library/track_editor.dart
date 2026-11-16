@@ -71,7 +71,7 @@ class TrackEditor {
   /// no folder (same format as `TrackRepository.saveStream`), so it never joins a local album.
   static String _albumKeyOf(Track t, {String? albumArtist, String? artist, String? album}) =>
       t.kind == kStreamKind
-          ? 'stream|${computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: '')}'
+          ? streamAlbumKey(albumArtist: albumArtist, artist: artist, album: album)
           : computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
 
   /// Whether [writeToFiles] would write at all.

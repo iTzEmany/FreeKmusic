@@ -115,6 +115,22 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('«Rimuovi dalla libreria» of saved streams un-saves them and leaves the selection', (tester) async {
+      final h = await Harness.create(tester, tracks: 2);
+      await tester.runAsync(() => h.db.customStatement(
+          "UPDATE tracks SET kind = 2, saved = 1, path = 'stream:youtube:v' || id"));
+      final rows = await _all(tester, h);
+      final g = await _grab(tester, h);
+      var left = 0;
+      final groups = bulkActions(g.context, g.ref, rows, const BulkContext(), done: () => left++);
+      final remove = groups.expand((x) => x.actions).firstWhere((a) => a.label == 'Rimuovi dalla libreria');
+      await tester.runAsync(remove.run);
+      await tester.pump();
+      expect([for (final t in await _all(tester, h)) t.saved], [false, false]);
+      expect(left, 1);
+      await h.dispose(tester);
+    });
+
     testWidgets('shadow rows (kind 2) in a playlist can be played, queued and removed, never tagged or favourited', (tester) async {
       final h = await Harness.create(tester, tracks: 2);
       final rows = await _all(tester, h);

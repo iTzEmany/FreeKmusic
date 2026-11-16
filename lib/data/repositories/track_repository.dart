@@ -297,7 +297,7 @@ class TrackRepository {
         : r.artists.isNotEmpty
         ? r.artists.first
         : ((row.artist ?? '').isEmpty ? r.channel : row.artist);
-    var key = 'stream|${computeAlbumKey(albumArtist: row.albumArtist, artist: artist, album: album, directory: '')}';
+    var key = streamAlbumKey(albumArtist: row.albumArtist, artist: artist, album: album);
     // A generic album would lump unrelated tracks together: keep the row's own key.
     // A hand-picked album key (edited row) is never overwritten.
     if (key.startsWith('stream|unknown|') || row.userEdited) key = row.albumKey;

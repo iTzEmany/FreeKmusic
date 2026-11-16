@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../core/text_utils.dart' show computeAlbumKey;
 import '../db/app_database.dart';
 
 /// `tracks.kind` values. Library views filter [libraryRowSql] (files, and saved streams); history and stats
@@ -49,3 +50,8 @@ Expression<bool> isLibraryRow($TracksTable t, [LibraryFilter filter = LibraryFil
     LibraryFilter.stream => stream,
   };
 }
+
+/// The album key of a stream row (saved or shadow): the `stream|` prefix and no folder,
+/// so it never joins a local album.
+String streamAlbumKey({String? albumArtist, String? artist, String? album}) =>
+    'stream|${computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: '')}';

@@ -79,7 +79,8 @@ Regole del blocco:
 
 ### Streaming
 
-- `StreamPreparer` (`setQueue`, `ready`, `start`, `restart`, `cachedFile`): scarica al massimo 2 file insieme (`maxParallel`), prefetch di tutta la coda online che segue quando la rete non è a consumo, solo dei primi 3 su rete a consumo (`meteredAhead`), 1 nuovo tentativo. Il gestore gli passa fino a 30 righe di libreria (`_lookupAhead`).
+- `StreamPreparer` (`setQueue`, `ready`, `start`, `restart`, `cachedFile`): scarica al massimo 2 file insieme (`maxParallel`), prefetch al massimo dei 3 brani dopo il corrente, per posizione in coda (`StreamItem.pos`), e su rete a consumo 0 se `prefetchOnMobile` è spento (D-609), 1 nuovo tentativo. Il gestore gli passa fino a 30 righe di libreria (`_lookupAhead`).
+- Senza rete il gestore salta al primo brano con un file (`_skipOffline`, `preparer.isOnline` dalla sonda di rete); la coda ingrigisce le righe con `queueOfflineOutProvider` (D-577).
 - Avvio rapido dall'URL (NewPipe su Android, riga yt-dlp altrove), il download in cache prosegue in parallelo, al replay si usa il file. Recupero da URL scaduto fino a 2 volte per brano (R-76), poi si aspetta il file.
 - `StreamPromoter.promote` sposta dalla cache alla cartella download; la riga ombra diventa kind 0.
 - In Jam non c'è streaming da URL: si aspetta il file in cache.

@@ -103,8 +103,9 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         final artist = _blankToNullTrim(e.artist), album = _blankToNullTrim(e.album);
         final albumArtist = _blankToNullTrim(e.albumArtist);
         final isStream = t.kind == kStreamKind;
-        final newKey = '${isStream ? 'stream|' : ''}${computeAlbumKey(
-            albumArtist: albumArtist, artist: artist, album: album, directory: isStream ? '' : p.dirname(t.path))}';
+        final newKey = isStream
+            ? streamAlbumKey(albumArtist: albumArtist, artist: artist, album: album)
+            : computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
         // A row with an album pick leaves it behind when the edit moves it to another album.
         await TrackRepository(db).settleMovedCover(t, newKey);
         upd = upd.copyWith(

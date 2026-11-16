@@ -133,6 +133,7 @@ void main() {
   late List<ImportEvent> events;
   late PlaylistImportService service;
   Future<int?> Function(YtResult)? saveNowHook;
+  var streamingMode = false;
   var cancelCalls = 0;
   final coverCalls = <String>[];
   var coverFails = false;
@@ -166,6 +167,7 @@ void main() {
       loadLibrary: tracks.liteEntries,
       youtube: yt,
       saveNow: (r) async => saveNowHook?.call(r),
+      streaming: () => streamingMode,
       enqueue: (r, tag) => queued.add((r, tag)),
       cancelDownloads: (_) => cancelCalls++,
       forgetSearches: forgotten.add,
@@ -240,6 +242,7 @@ void main() {
     backoff = [];
     waits = [];
     saveNowHook = null;
+    streamingMode = false;
     service = build();
   });
   tearDown(() async {
@@ -555,6 +558,15 @@ void main() {
       expect((await imports.item(id, 1))!.trackId, ids[1]);
       expect(tagged, hasLength(2), reason: 'the CSV tags go to the saved row too');
       expect(enriched, ids);
+    });
+
+    test('streaming mode: a song that cannot be saved fails its item and is never downloaded', () async {
+      streamingMode = true;
+      saveNowHook = (r) async => null;
+      final id = await service.startFromResults('Mix', [video('a1', 'One', 'Band', 100)]);
+      await idle();
+      expect(queued, isEmpty);
+      expect((await imports.item(id, 0))!.state, ImportItemStatus.failed);
     });
 
     test('an album import numbers the songs by their place in the album; a plain one does not', () async {

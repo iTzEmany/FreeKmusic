@@ -63,6 +63,7 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
           .clamped();
     },
     saveNow: ref.read(libraryAdderProvider).saveNow,
+    streaming: () => ref.read(libraryAdderProvider).streaming,
     enqueue: (r, tag) => downloads.add(r, tag: tag),
     cancelDownloads: downloads.cancelWhere,
     settled: downloads.settled,

@@ -26,13 +26,13 @@ class LibraryAdder {
   LibraryAdder(this._ref);
   final Ref _ref;
 
-  bool get _streaming => _ref.read(settingsProvider).storageMode == StorageMode.stream;
+  bool get streaming => _ref.read(settingsProvider).storageMode == StorageMode.stream;
 
   /// Streaming mode and not downloaded yet: saves the shadow row and returns its id.
   /// Null means the caller must download (device mode, or an already downloaded song, so no
   /// second row appears next to its file) or, in streaming mode, that saving failed (logged).
   Future<int?> saveNow(YtResult r) async {
-    if (!_streaming) return null;
+    if (!streaming) return null;
     final idx = await _ref.read(downloadIndexProvider.future);
     if (idx.contains(r.id, source: r.source)) return null;
     try {
@@ -47,7 +47,7 @@ class LibraryAdder {
   /// `DownloadsNotifier.add`), null when it could not be added. An `addto:` [tag] puts the
   /// row in that playlist right away in streaming mode.
   Future<bool?> add(YtResult r, {String? tag}) async {
-    if (!_streaming) return _ref.read(downloadsProvider.notifier).add(r, tag: tag);
+    if (!streaming) return _ref.read(downloadsProvider.notifier).add(r, tag: tag);
     final idx = await _ref.read(downloadIndexProvider.future);
     // A file is already there: the download path joins the playlist without a second copy.
     if (idx.contains(r.id, source: r.source)) return _ref.read(downloadsProvider.notifier).add(r, tag: tag);

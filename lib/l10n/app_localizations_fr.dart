@@ -7820,7 +7820,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get libraryAddFailed =>
-      'Impossible d\'ajouter le titre à la bibliothèque';
+      'Impossible d’ajouter le titre à la bibliothèque';
 
   @override
   String libraryAddedMany(int count) {

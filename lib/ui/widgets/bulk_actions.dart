@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/db/app_database.dart';
+import '../../data/repositories/track_kinds.dart' show kStreamKind;
 import '../../l10n/l10n_ext.dart';
 import '../../providers/jam_providers.dart';
 import '../../providers/player_providers.dart';
@@ -99,6 +100,17 @@ List<TrackActionGroup> bulkActions(
     done();
   }
 
+  final savedStreams = [
+    for (final t in playable)
+      if (t.kind == kStreamKind && t.saved) t,
+  ];
+
+  Future<void> removeSavedStreams() async {
+    final n = await ref.read(trackOpsProvider).removeSavedStreams(savedStreams);
+    if (outer.mounted) snack(l.removedManyFromLibrary(n));
+    done();
+  }
+
   final music = [
     for (final t in tracks)
       if (t.kind == 0) t,
@@ -168,8 +180,10 @@ List<TrackActionGroup> bulkActions(
           () => removeFromPlaylist(ctx.playlistId!),
         ),
     ]),
-    if (allMissing || music.isNotEmpty)
+    if (allMissing || music.isNotEmpty || savedStreams.isNotEmpty)
       TrackActionGroup(l.groupOther, [
+        if (savedStreams.isNotEmpty)
+          TrackAction(Icons.delete_outline_rounded, l.removeFromLibrary, removeSavedStreams),
         // Only for tracks whose file is gone: the library row has nothing left
         // to point to. Music that still exists is never removable from here.
         if (allMissing)
