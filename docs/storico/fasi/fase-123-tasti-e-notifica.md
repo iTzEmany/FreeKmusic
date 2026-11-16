@@ -26,7 +26,7 @@ Nessuna schermata nuova: cambia solo il comportamento (tendina e notifica restan
   - Fatto quando: per H1–H4 c'è una riga «confermata/smentita» con il comando che lo mostra; una causa nuova fuori da
     H1–H4 è annotata e i task 123.2–123.4 sono adattati prima di partire.
 
-- [ ] 123.2 Gestore: comandi pubblicati sempre e sessione viva in Jam (R-226, R-227, F-1, D-610) — `/code-review high`
+- [x] 123.2 Gestore: comandi pubblicati sempre e sessione viva in Jam (R-226, R-227, F-1, D-610) — `/code-review high`
   - File: `test/services/audio/handler_media_buttons_test.dart` (nuovo), `lib/services/audio/codecore_audio_handler.dart`.
   - Passi:
     1. **Prima** i test, e verificare che falliscano su `master` (annotare quali): `controls` e `systemActions` pubblicati in
@@ -54,7 +54,7 @@ Nessuna schermata nuova: cambia solo il comportamento (tendina e notifica restan
   - Fatto quando: `diff -r` fra la copia e il pacchetto originale mostra solo le righe di `MODIFICHE.md`; sul Mi A3
     in pausa keyevent 127 due volte → resta in pausa, 126 → suona, 85 → commuta.
 
-- [ ] 123.4 Chiusura della notifica dopo 30 minuti (R-228, D-589, F-1) — `/code-review high`
+- [x] 123.4 Chiusura della notifica dopo 30 minuti (R-228, D-589, F-1) — `/code-review high`
   - File: `test/services/audio/handler_idle_park_test.dart` (nuovo), `lib/services/audio/codecore_audio_handler.dart`,
     `lib/main.dart` (`stopServiceWhenIdle: true` solo su Android).
   - Passi:
@@ -87,3 +87,9 @@ e dimmi se qualcosa non risponde.
   smentita** con l'host Linux ucciso (il telefono esce da solo in ~8 s); non provato «ospite ucciso con il telefono
   host». **H4 confermata in altra forma**: dopo `am kill` in pausa, 126 rilancia il processo ma non suona (sessione
   `active=false state=0`): `play()` a freddo deve caricare la ripresa salvata. 123.2 si allarga a questo caso.
+- Prova sul Mi A3 a fase finita (16/11, APK debug della fase): tasti, Jam LAN con host Linux e parcheggio di 31 minuti
+  passano (sessione `active=true` e FreeKmusic nella tendina durante e dopo la Jam; notifica sparita dopo 31 minuti e
+  ripresa dallo stesso punto). Nessun `ForegroundServiceDidNotStartInTimeException`. **Play a freddo**: suona dal punto
+  salvato, ma dopo ~18 s (build debug, motore pronto in ~4 s) invece dei 10 s del «Fatto quando»; con «Ricevi dalla
+  rete locale» acceso `am kill` non uccide il processo (lo tiene `ReceiveService`), quindi il caso a freddo vero capita
+  solo con la condivisione spenta. Non provati: 35 minuti di Jam in pausa, Jam con i ruoli invertiti.
