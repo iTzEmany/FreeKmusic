@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/palette.dart' show chartGenreText;
 import '../theme/tokens.dart';
 import 'cc_tile.dart';
 
@@ -79,7 +80,7 @@ class GenreGrid extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
-                        color: on ? cc.onAccent : (g.color != null ? Colors.white : cc.text),
+                        color: on ? cc.onAccent : (g.color != null ? chartGenreText : cc.text),
                       ),
                     ),
                     if (g.subtitle != null)

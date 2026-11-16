@@ -9,6 +9,7 @@ import '../../../services/online/chart_genres.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/ui_providers.dart';
 import '../../shell/shell_nav.dart';
+import '../../theme/palette.dart' show chartGenreColors;
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/cc_search_field.dart';
