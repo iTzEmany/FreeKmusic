@@ -31,6 +31,17 @@ class DownloadIndex {
   /// Every indexed file path (memory only).
   Iterable<String> get paths => _map.values;
 
+  /// `<source>:<id>` -> path for every entry (bare legacy ids come back as `youtube:<id>`). Memory only.
+  Iterable<MapEntry<String, String>> get entries =>
+      _map.entries.map((e) => MapEntry(e.key.contains(':') ? e.key : 'youtube:${e.key}', e.value));
+
+  /// Forgets the download [key] (`<source>:<id>`, or the legacy bare id).
+  Future<void> remove(String key) {
+    _map.remove(key);
+    if (key.startsWith('youtube:')) _map.remove(key.substring('youtube:'.length));
+    return _persist();
+  }
+
   bool contains(String id, {MediaSource source = MediaSource.youtube}) =>
       pathFor(id, source: source) != null;
 
@@ -63,6 +74,10 @@ class DownloadIndex {
   Future<void> add(String id, String path,
       {MediaSource source = MediaSource.youtube}) {
     _map[downloadIndexKey(source, id)] = path;
+    return _persist();
+  }
+
+  Future<void> _persist() {
     return _lastWrite = _lastWrite.then((_) async {
       try {
         await _file.parent.create(recursive: true);

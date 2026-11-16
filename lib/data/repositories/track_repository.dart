@@ -208,6 +208,35 @@ class TrackRepository {
     return getById(row.id);
   }
 
+  /// «Libera spazio»: the file row [id] (downloaded from [key]) becomes a saved stream row, the inverse
+  /// of [promoteStreamRow]. The id stays, so playlists, plays, favourite and lyrics stay. Returns the
+  /// row as it was (for [restoreRow]), or null when [id] is not a file row. The CALLER deletes the file
+  /// after this returns.
+  Future<Track?> demoteToStream(int id, String key) async {
+    final row = await getById(id);
+    if (row == null || row.kind != kMusicKind) return null;
+    var albumKey = streamAlbumKey(albumArtist: row.albumArtist, artist: row.artist, album: row.album);
+    // A generic album would lump unrelated tracks together; a hand-picked key is kept.
+    if (albumKey.startsWith('stream|unknown|') || row.userEdited) albumKey = 'stream|$key';
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+      TracksCompanion(
+        path: Value(streamPathOf(key)),
+        kind: const Value(kStreamKind),
+        saved: const Value(true),
+        albumKey: Value(albumKey),
+        folderId: const Value(null),
+        sizeBytes: const Value(0),
+        mtimeMs: const Value(0),
+        missing: const Value(false),
+      ),
+    );
+    await settleMovedCover(row, albumKey);
+    return row;
+  }
+
+  /// Puts [before] (as returned by [demoteToStream]) back, when the file could not be deleted.
+  Future<void> restoreRow(Track before) => _db.update(_db.tracks).replace(before);
+
   /// A fresh download [keepId] of the track [key] was streamed before: its listens,
   /// counts, lyrics and curiosities move to [keepId] (as in `DuplicateRepository.merge`)
   /// and the shadow row goes. Returns the id of the deleted shadow row (a queue may still

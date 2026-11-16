@@ -34,6 +34,8 @@ TracksCompanion row(
   folderId: Value(folderId),
 );
 
+YtResult yt(String id) => YtResult(id: id, title: 'S\$id', channel: 'Ch', duration: null);
+
 void main() {
   late AppDatabase db;
   late TrackRepository repo;
@@ -637,6 +639,43 @@ void main() {
       await repo.mergeStreamRow('youtube:b', lib['B']!);
       expect((await pl.watchTracks(p).first).map((t) => t.id), [lib['A'], lib['B'], lib['C']]);
       expect(await repo.streamRow('youtube:b'), equals(null));
+    });
+  });
+
+  group('demoteToStream', () {
+    test('keeps id, playlist row, plays, favourite and lyrics; sets path, kind and saved', () async {
+      final folderId = (await FolderRepository(db).add('/m')).id;
+      await repo.upsertBatch([row('/m/a.mp3', 'A', folderId: folderId)]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
+        const TracksCompanion(isFavorite: Value(true), lyricsPlain: Value('la la'), artist: Value('Art'), album: Value('Alb')),
+      );
+      await db.into(db.plays).insert(PlaysCompanion.insert(trackId: id, playedAt: 7));
+      final pl = PlaylistRepository(db);
+      final plId = await pl.create('Mix');
+      await pl.addTracks(plId, [id]);
+
+      final before = await repo.demoteToStream(id, 'youtube:a');
+
+      expect(before!.path, '/m/a.mp3');
+      final t = (await repo.getById(id))!;
+      expect([t.path, t.kind, t.saved, t.folderId], ['stream:youtube:a', 2, true, null]);
+      expect(t.albumKey, startsWith('stream|'));
+      expect([t.isFavorite, t.lyricsPlain], [true, 'la la']);
+      expect(await db.select(db.plays).get(), hasLength(1));
+      expect((await pl.watchTracks(plId).first).map((x) => x.id), [id]);
+      expect(await repo.streamRow('youtube:a'), isNot(equals(null)));
+    });
+
+    test('a stream row is not demoted, and restoreRow puts the file row back', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      final shadow = await repo.ensureStreamRow(yt('s'));
+      expect(await repo.demoteToStream(shadow, 'youtube:s'), equals(null));
+      final before = (await repo.demoteToStream(id, 'youtube:a'))!;
+      await repo.restoreRow(before);
+      final t = (await repo.getById(id))!;
+      expect([t.path, t.kind, t.saved], ['/a.mp3', 0, false]);
     });
   });
 
