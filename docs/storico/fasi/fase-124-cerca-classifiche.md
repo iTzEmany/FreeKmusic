@@ -41,7 +41,7 @@ Libreria
 ```
 
 ## Task
-- [ ] 124.1 Client delle classifiche e cache di 24 ore (R-249, RNF-02, F-8)
+- [x] 124.1 Client delle classifiche e cache di 24 ore (R-249, RNF-02, F-8)
   - File: `lib/services/online/deezer_client.dart` (`chart(int genreId, {int limit = 20})`),
     `lib/services/online/apple_rss_client.dart` (nuovo, `mostPlayed(country)`), `lib/services/online/chart_genres.dart`
     (nuovo, solo costanti), `lib/services/online/catalog_cache.dart` (`CatalogKind.chart`, 24 h),
@@ -56,7 +56,7 @@ Libreria
   - Fatto quando: i client leggono le fixture; con orologio finto la voce è fresca a 23 h e scaduta a 25 h, e da
     scaduta resta leggibile con la sua data.
 
-- [ ] 124.2 Pagina «Top 20 · <genere>» (R-248, R-249, RNF-02)
+- [x] 124.2 Pagina «Top 20 · <genere>» (R-248, R-249, RNF-02)
   - File: `lib/providers/online_collection_providers.dart` (`ChartRef`, ramo in `onlineCollectionProvider` e
     `onlineMatchesProvider`, `refreshOnlineCollection`, `retryOnlineCollection`), `lib/ui/screens/online/online_playlist_screen.dart`
     (`_external` diventa `is! YoutubeListingRef`; riga «Classifica Deezer · <paese> · aggiornata …»), voce «Paese delle
@@ -70,7 +70,7 @@ Libreria
   - Fatto quando: test e golden della pagina verdi; su Linux il riquadro «Rock» apre 20 brani suonabili e riaprirlo
     nello stesso giorno non fa ricerche (log del budget).
 
-- [ ] 124.3 Barra fissa, dock e griglia dei macrogeneri (R-247, R-248, RNF-04)
+- [x] 124.3 Barra fissa, dock e griglia dei macrogeneri (R-247, R-248, RNF-04)
   - File: `lib/ui/screens/search/search_screen.dart` (`showField` sempre vero; `_EmptyQuery`: recenti, poi `GenreGrid` dei
     macrogeneri al posto dei generi locali), `lib/ui/shell/bottom_bar.dart` (via `_SearchField`), `lib/providers/ui_providers.dart`
     (via `searchBarProvider`), `lib/ui/shell/shell_nav.dart`, `lib/ui/shell/app_shell.dart`, ARB,
@@ -81,7 +81,7 @@ Libreria
   - Fatto quando: scorrendo la griglia la barra resta visibile; il tasto del dock dà il fuoco al campo; i 12 riquadri
     hanno etichette semantiche (test); sul Mi A3 la tastiera si apre dal dock.
 
-- [ ] 124.4 «Generi» in Libreria (R-250, RNF-04)
+- [x] 124.4 «Generi» in Libreria (R-250, RNF-04)
   - File: `lib/ui/screens/library/library_screen.dart` (nuova `LibraryShortcut` «Generi», elenco a `:399-446`),
     `lib/ui/screens/library/library_genres_screen.dart` (nuovo: `genresProvider` + `GenreGrid` → `GenreScreen`), ARB,
     `test/ui/library_screen_test.dart`.
@@ -94,5 +94,7 @@ Niente.
 
 ## Note di deviazione
 
-- 124.1: la classifica Deezer non ha parametro paese: `/chart/<id>/tracks` con `country=US` o con `X-Forwarded-For` ha dato gli stessi 20 id della richiesta semplice, quindi segue l'IP di chi chiama (verificato dal vivo il 16/11/2026, da qui in Italia). Il paese scelto in `chartCountry` vale quindi solo per il feed Apple; la pagina deve scrivere «Deezer · <paese dell'IP>» o evitare di promettere il paese scelto (da decidere in 124.2).
+- 124.1: la classifica Deezer non ha parametro paese: `/chart/<id>/tracks` con `country=US` o con `X-Forwarded-For` ha dato gli stessi 20 id della richiesta semplice, quindi segue l'IP di chi chiama (verificato dal vivo il 16/11/2026, da qui in Italia). Il paese scelto in `chartCountry` vale quindi solo per il feed Apple; la pagina deve scrivere «Deezer · <paese dell'IP>» o evitare di promettere il paese scelto (deciso in 124.2: «Classifica Deezer, aggiornata …» senza paese; il paese solo per Apple).
 - 124.1: i nomi dei generi del feed Apple sono tradotti per paese (feed `it`: «Latina», «Alternativa», «Elettronica»; `us`: «Latin», «Alternative»), quindi il filtro usa `genres[].genreId` (stabile: 14 Pop, 18 Hip-Hop/Rap, 21 Rock, 17 Dance, 7 Electronic, 15 R&B/Soul, 12 Latin, 20 Alternative, 2 Jazz, 5 Classical, 1153 Metal, 1152 Hard Rock, 6 Country) e non il nome. `chartCountry` è una stringa vuota = segue il locale (come `radioCountry`), non null.
+- 124.2/124.3: il separatore ` · ` non può stare negli ARB né nella UI (guardie), quindi «Top 20: Rock» e «Classifica Deezer, aggiornata …». La barra di Cerca resta nella pagina e il dock perde il campo; `searchBarProvider` e `searchSubmitProvider` tolti; aprendo una pagina da Cerca il campo perde il fuoco. Nella pagina Top 20 non c'è «Copia link».
+- Prova a fine fase (16/11): Linux in xvfb, «Rock» apre 20 brani suonabili e la seconda apertura usa la cache (stessa data, nessuna lettura); Libreria → Generi apre la griglia. Mi A3: il tasto Cerca del dock apre la tastiera (`mInputShown=true`); «Rock» apre la Top 20. Non provati sul telefono: «Cerca questo brano» (nessuna riga «non trovato» nelle classifiche aperte; coperto dai test) e lo scorrimento della griglia (sta tutta nello schermo).
