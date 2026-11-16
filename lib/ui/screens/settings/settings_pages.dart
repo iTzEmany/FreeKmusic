@@ -489,6 +489,7 @@ List<SettingsGroup> _advanced(BuildContext context, WidgetRef ref) {
         ListTile(
           leading: const Icon(Icons.description_outlined),
           title: Text(l.licenses),
+          subtitle: Text(l.aboutLicenseGpl),
           onTap: () => showLicensePage(context: context),
         ),
         ListTile(

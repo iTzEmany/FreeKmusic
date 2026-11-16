@@ -238,6 +238,7 @@
     }
   },
   "licenses": "Licenze",
+  "aboutLicenseGpl": "Licenza: GNU GPLv3",
   "personalUse": "App per uso personale",
   "missingTracksTitle": "Brani non trovati",
   "removeFromLibrary": "Rimuovi dalla libreria",

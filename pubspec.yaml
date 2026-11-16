@@ -72,6 +72,11 @@ dependencies:
   sodium: ^4.1.2
   mqtt_client: ^10.14.0
 
+# Local copy of audio_service: PLAY/PAUSE keys must not toggle (R-227, D-608).
+dependency_overrides:
+  audio_service:
+    path: third_party/audio_service
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

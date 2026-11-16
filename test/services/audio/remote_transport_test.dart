@@ -164,12 +164,12 @@ void main() {
     expect(handler.playbackState.value.controls.first, MediaControl.play);
   });
 
-  test('an empty Jam queue shows nothing', () async {
+  test('an empty Jam queue shows no item but keeps the session', () async {
     handler.attachRemote(FakeRemote(const RemoteStatus()));
     expect(handler.mediaItem.value, isNull);
     expect(
       handler.playbackState.value.processingState,
-      AudioProcessingState.idle,
+      AudioProcessingState.ready,
     );
   });
 

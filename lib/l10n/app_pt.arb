@@ -214,6 +214,7 @@
     }
   },
   "licenses": "Licenças",
+  "aboutLicenseGpl": "Licença: GNU GPLv3",
   "personalUse": "App para uso pessoal",
   "missingTracksTitle": "Faixas não encontradas",
   "removeFromLibrary": "Remover da biblioteca",

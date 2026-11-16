@@ -42,6 +42,22 @@ void main() {
     expect(q.index, 0);
   });
 
+  test('a play waiting for the restore is forgotten when nothing was saved', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final backend = FakeBackend();
+    final h = CodecoreAudioHandler(backend, PlayQueue(), TrackRepository(db), onError: (_) {});
+    addTearDown(h.dispose);
+    final id = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/m/0.mp3', title: 'S0', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 0));
+    await h.play(); // the media key came before the (empty) restore
+    await PlaybackPersistence(h, store).restore();
+    await h.restore([id], 0, Duration.zero); // e.g. the end of a Jam
+    expect(backend.playing, isFalse);
+  });
+
   test('the context is saved with the queue and a new handler resumes it with its name', () async {
     SharedPreferences.setMockInitialValues({});
     final store = SettingsStore(await SharedPreferences.getInstance());

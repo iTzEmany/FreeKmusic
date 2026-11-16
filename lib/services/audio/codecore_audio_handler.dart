@@ -58,6 +58,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     StreamPreparer? preparer,
     this.onRadioStart,
     DateTime Function()? clock,
+    this.stopServiceWhenIdle = false,
+    this.idleParkAfter = const Duration(minutes: 30),
   }) : _clock = clock ?? DateTime.now,
        _backend = backend,
        _window = backend is GaplessCapable
@@ -97,6 +99,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// A radio paused for longer has lost its stream: resuming connects again.
   static const radioResumeAfter = Duration(seconds: 30);
   static const _radioSteadyAfter = Duration(seconds: 10);
+
+  /// Android: after [idleParkAfter] paused the session goes `idle`, which stops
+  /// the service and removes the notification (R-228). Elsewhere there is no service to stop.
+  final bool stopServiceWhenIdle;
+  final Duration idleParkAfter;
 
   final AudioBackend _backend;
   final PlayHistoryRepository? history;
@@ -476,7 +483,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _source = List.of(ids);
     _queue.setItems(ids, startIndex: index, alreadyShuffled: true, userAhead: userAhead);
     _queueController.add(null);
-    await _loadCurrent(play: false, startAt: position);
+    // A play() that came first (a media key woke a killed process) is answered now.
+    await _loadCurrent(play: _playOnRestore, startAt: position);
   }
 
   /// [ended]: when the track before ended by itself (for the gap of the timing line).
@@ -487,6 +495,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }) async {
     if (_disposed) return;
     final token = ++_loadToken;
+    _playOnRestore = false;
+    _parked = false; // another track: the real state is shown, the wait starts again
     _waitingStream = false;
     _loadBusy = true;
     _loadPaused = false;
@@ -976,6 +986,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> _goIdle() async {
     if (_disposed) return;
     _waitingStream = false;
+    _parked = false;
     _url = null;
     _cancelRadioTimers();
     _radioRetries = 0;
@@ -1479,9 +1490,20 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _loadingStream = loadingNow;
     final playing = _state == BackendState.playing;
     final live = isRadio;
+    if (playing) _parked = false;
+    if (stopServiceWhenIdle &&
+        !playing &&
+        cur != null &&
+        !_waitingStream &&
+        !_parked) {
+      _idleTimer ??= Timer(idleParkAfter, _park);
+    } else {
+      _idleTimer?.cancel();
+      _idleTimer = null;
+    }
     playbackState.add(
       PlaybackState(
-        processingState: processing,
+        processingState: _parked ? AudioProcessingState.idle : processing,
         playing: playing,
         controls: [
           MediaControl.skipToPrevious,
@@ -1506,6 +1528,35 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     if (loadingChanged && cur != null) mediaItem.add(_toMediaItem(cur));
   }
 
+  /// Paused for long: `idle` makes audio_service stop the service and drop the
+  /// notification, while queue, track and place stay (R-228). Play wakes it up.
+  void _park() {
+    _idleTimer = null;
+    if (_disposed || _remote != null || _state == BackendState.playing) return;
+    _saveResume();
+    _parked = true;
+    _publish(AudioProcessingState.idle);
+  }
+
+  Timer? _idleTimer;
+  bool _parked = false;
+
+  /// A play() found nothing loaded: the queue about to be restored starts playing.
+  bool _playOnRestore = false;
+
+  /// The start-up restore found no queue: a play() that waited for it is forgotten.
+  void forgetPlayOnRestore() => _playOnRestore = false;
+
+  /// The headset and the notification's own button: «media» is one button that
+  /// toggles (85, HEADSETHOOK, widget, tile); with a Jam it goes to the Jam.
+  @override
+  Future<void> click([MediaButton button = MediaButton.media]) {
+    if (button != MediaButton.media || _remote != null) {
+      return super.click(button);
+    }
+    return _queue.currentId == null ? play() : togglePlayPause();
+  }
+
   Future<void> togglePlayPause() async {
     if (_queue.currentId == null) return;
     if (_state == BackendState.playing || (_waitingStream && _playWhenReady)) {
@@ -1519,7 +1570,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> play() async {
     final remote = _remote;
     if (remote != null) return remote.play();
-    if (_queue.currentId == null) return;
+    if (_queue.currentId == null) {
+      _playOnRestore = true;
+      return;
+    }
     _loadPaused = false;
     _playWhenReady = true;
     if (_recoverOnPlay && _url != null) {
@@ -1561,9 +1615,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> pause() {
+    _playOnRestore = false;
     if (_loadBusy) _loadPaused = true;
     if (_remote == null) _playWhenReady = false;
-    if (_waitingStream && _remote == null) {
+    // Nothing loaded: a pause must not publish a session out of nothing.
+    if ((_waitingStream || _current == null) && _remote == null) {
       return Future.value();
     }
     return _remote?.pause() ?? _backend.pause();
@@ -1862,11 +1918,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _remoteSub = null;
     if (transport != null && isRadio) _stopRadioForJam();
     _remote = transport;
+    _idleTimer?.cancel();
+    _idleTimer = null;
+    _parked = false;
+    _playOnRestore = false;
     if (transport == null) {
-      // Back to what the local player says.
+      // Back to what the local player says, not to what the Jam last said.
       final t = _current;
       mediaItem.add(t == null ? null : _toMediaItem(t));
-      _publish(_publishedProcessing);
+      _publish(t == null ? AudioProcessingState.idle : AudioProcessingState.ready);
       return;
     }
     _showRemote(transport.status);
@@ -1898,9 +1958,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     );
     playbackState.add(
       PlaybackState(
-        processingState: s.hasItem
-            ? AudioProcessingState.ready
-            : AudioProcessingState.idle,
+        // Never idle: that would end the system session for the whole Jam.
+        processingState: AudioProcessingState.ready,
         playing: s.playing,
         controls: [
           s.playing ? MediaControl.pause : MediaControl.play,
@@ -1913,9 +1972,6 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       ),
     );
   }
-
-  AudioProcessingState get _publishedProcessing =>
-      playbackState.value.processingState;
 
   /// Stores where the current track is (only if it is long enough to matter).
   void _saveResume() {
@@ -2005,6 +2061,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> dispose() async {
     _disposed = true;
+    _idleTimer?.cancel();
     _cancelRadioTimers();
     _endListen();
     await _remoteSub?.cancel();
