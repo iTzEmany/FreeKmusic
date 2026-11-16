@@ -90,6 +90,10 @@ Regole del blocco:
 - Android: `audio_service` (canale `com.freekmusic.player.audio`), Android Auto via `MediaBrowseTree`, widget 4x1 e tile (`WidgetSync` + `PrefsWidgetBridge`).
 - Linux: `MprisControls().attach`. Windows: `SmtcControls().attach` (entrambi in `main.dart`).
 - Jam: `attachRemote(RemoteTransport?)` instrada i tasti media al Jam (`hasRemote`).
+- Tasti: `click(media)` (85, HEADSETHOOK, widget, tile) → `togglePlayPause()`; 126 e 127 arrivano come `play`/`pause` dalla copia di `audio_service` (`third_party/`). `pause()` senza brano caricato non pubblica nulla.
+- Sessione viva in Jam: `_showRemote` non pubblica mai `idle`; `attachRemote(null)` ricalcola dal player locale (`idle` solo senza brano).
+- `play()` a freddo (processo ucciso, tasto cuffie): senza coda ricorda `_playOnRestore`, e il `restore()` della coda salvata parte suonando; `pause()` lo annulla.
+- Chiusura dopo 30 minuti (solo Android, `stopServiceWhenIdle`, R-228): in pausa senza Jam e senza stream in attesa `_idleTimer` (`idleParkAfter`) chiama `_park()`: salva la ripresa e pubblica `idle` (il servizio si ferma, la notifica sparisce) senza toccare coda, brano e posizione; `play()` o un Jam la riattivano (`_parked`).
 
 ### Timer di spegnimento
 

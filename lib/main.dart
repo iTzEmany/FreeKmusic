@@ -136,6 +136,7 @@ Future<void> main() async {
     tracks,
     onError: errors.add,
     online: onlineEntries,
+    stopServiceWhenIdle: isAndroid,
     onRadioStart: (station) {
       // The courtesy click for Radio Browser's own stations only.
       if (!station.id.startsWith('manual:')) {
