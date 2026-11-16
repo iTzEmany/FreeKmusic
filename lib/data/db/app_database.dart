@@ -9,7 +9,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 19;
+const kSchemaVersion = 20;
 
 @DriftDatabase(
   tables: [
@@ -210,6 +210,16 @@ class AppDatabase extends _$AppDatabase {
         };
         if (cols.isNotEmpty && !cols.contains('followed')) {
           await m.addColumn(podcasts, podcasts.followed);
+        }
+      }
+      if (from < 20) {
+        // Existing shadow rows stay hidden (default false); old test fixtures have a bare tracks table.
+        final cols = {
+          for (final c in await customSelect('PRAGMA table_info(tracks)').get())
+            c.read<String>('name'),
+        };
+        if (cols.isNotEmpty && !cols.contains('saved')) {
+          await m.addColumn(tracks, tracks.saved);
         }
       }
     },

@@ -7,7 +7,7 @@ import 'package:codecore/services/online/netease_lyrics_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track _track({int durationMs = 370000}) => Track(
+Track _track({int durationMs = 370000}) => Track(saved: false, 
   coverSource: 0,
   id: 1,
   path: '/m/a.mp3',

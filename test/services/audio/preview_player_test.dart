@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fake_backend.dart';
 
-Track track(int id, {int durationMs = 90000}) => Track(coverSource: 0, 
+Track track(int id, {int durationMs = 90000}) => Track(saved: false, coverSource: 0, 
       id: id,
       path: '/m/$id.mp3',
       title: 'T$id',

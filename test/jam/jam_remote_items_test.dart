@@ -8,7 +8,7 @@ import 'package:codecore/services/jam/jam_state.dart';
 import 'package:codecore/services/jam/remote/jam_remote_items.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track track(int id, String title) => Track(
+Track track(int id, String title) => Track(saved: false, 
   coverSource: 0,
   id: id,
   path: '/m/$id.mp3',

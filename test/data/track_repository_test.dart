@@ -552,6 +552,17 @@ void main() {
       expect((await pl.watchTracks(p).first).map((t) => t.id), [inList]);
     });
 
+    test('saveStream makes a saved shadow row with an album key, setSaved toggles, a saved row is kept', () async {
+      final r = YtResult(id: 'a', title: 'T', channel: 'Ch', duration: null, artists: ['Art'], album: 'Alb');
+      final id = await repo.saveStream(r);
+      var t = (await repo.getById(id))!;
+      expect([t.kind, t.saved, t.albumKey], [2, true, 'stream|art|alb']);
+      expect(await repo.deleteUnplayedStreamRows(), 0);
+      await repo.setSaved(r.indexKey, false);
+      expect((await repo.getById(id))!.saved, isFalse);
+      expect(await repo.deleteUnplayedStreamRows(), 1);
+    });
+
     test('downloading a streamed track keeps its place in the playlist', () async {
       await repo.upsertBatch([row('/a.mp3', 'A'), row('/c.mp3', 'C'), row('/b.mp3', 'B')]);
       final lib = {for (final t in await db.select(db.tracks).get()) t.title: t.id};

@@ -121,7 +121,7 @@ void main() {
   group('groupHistoryByDay', () {
     HistoryEntry e(DateTime at) => HistoryEntry(
         Play(id: 1, trackId: 1, playedAt: at.millisecondsSinceEpoch, msPlayed: 0),
-        Track(coverSource: 0, id: 1, path: '/a', title: 'A', albumKey: 'k', format: 'mp3',
+        Track(saved: false, coverSource: 0, id: 1, path: '/a', title: 'A', albumKey: 'k', format: 'mp3',
             sizeBytes: 1, mtimeMs: 1, isFavorite: false, enrichStatus: 0,
             userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,
             hasCover: false, durationMs: 0));

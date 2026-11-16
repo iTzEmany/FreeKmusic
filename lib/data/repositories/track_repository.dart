@@ -148,6 +148,7 @@ class TrackRepository {
       (_db.delete(_db.tracks)..where(
             (t) =>
                 t.kind.equals(kStreamKind) &
+                t.saved.equals(false) &
                 t.path.isNotIn([for (final k in keepKeys) streamPathOf(k)]) &
                 notExistsQuery(
                   _db.select(_db.plays)
@@ -248,6 +249,31 @@ class TrackRepository {
     return _db.into(_db.tracks).insert(
       _streamRow(r.indexKey, r, format: '', sizeBytes: 0, mtimeMs: 0),
     );
+  });
+
+  Future<void> setSaved(String key, bool saved) =>
+      (_db.update(_db.tracks)
+            ..where((t) => t.path.equals(streamPathOf(key)) & t.kind.equals(kStreamKind)))
+          .write(TracksCompanion(saved: Value(saved)));
+
+  /// Saves the streamed track [r] to the library: its shadow row (created when missing)
+  /// becomes `saved`, grouped with the other saved tracks of its album (never a local one).
+  Future<int> saveStream(YtResult r) => _db.transaction(() async {
+    final id = await ensureStreamRow(r);
+    final album = r.album;
+    await (_db.update(_db.tracks)
+          ..where((t) => t.id.equals(id) & t.kind.equals(kStreamKind)))
+        .write(
+      TracksCompanion(
+        saved: const Value(true),
+        albumKey: album == null || album.trim().isEmpty
+            ? const Value.absent()
+            : Value(
+                'stream|${computeAlbumKey(artist: displayArtist(r), album: album, directory: '')}',
+              ),
+      ),
+    );
+    return id;
   });
 
   TracksCompanion _streamRow(

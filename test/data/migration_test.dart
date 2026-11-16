@@ -898,6 +898,30 @@ void main() {
     await db.close();
   });
 
+  test('a v19 database gets tracks.saved, false for its shadow rows, rows otherwise unchanged', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL)',
+          );
+          raw.execute("INSERT INTO tracks (path, title, kind, album_key) VALUES ('/a.mp3', 'A', 0, 'k')");
+          raw.execute("INSERT INTO tracks (path, title, kind, album_key) VALUES ('stream:x', 'S', 2, 'stream|x')");
+          raw.userVersion = 19;
+        },
+      ),
+    );
+    final rows = await db
+        .customSelect('SELECT path, kind, album_key, saved FROM tracks ORDER BY id')
+        .get();
+    expect(rows.map((r) => [r.read<String>('path'), r.read<int>('kind'), r.read<String>('album_key'), r.read<int>('saved')]), [
+      ['/a.mp3', 0, 'k', 0],
+      ['stream:x', 2, 'stream|x', 0],
+    ]);
+    await db.close();
+  });
+
   test('the v19 step does not fail when the column already exists', () async {
     final db = AppDatabase(
       NativeDatabase.memory(

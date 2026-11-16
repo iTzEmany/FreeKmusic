@@ -105,7 +105,7 @@ class _Hub extends ShareHubNotifier {
   Future<void> releaseJam({bool remote = false}) async {}
 }
 
-Track _track(String title) => Track(
+Track _track(String title) => Track(saved: false, 
   coverSource: 0,
   id: 1,
   path: '/m/1.mp3',

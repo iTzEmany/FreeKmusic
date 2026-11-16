@@ -141,7 +141,7 @@ class _Host implements ShuffleHost {
   );
 }
 
-Track track(int id) => Track(
+Track track(int id) => Track(saved: false, 
   coverSource: 0,
   id: id,
   path: '/m/$id.mp3',

@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 
-Track _t(int i, String? title, {int plays = 0, int? last, int year = 0, int added = 0, int duration = 0, String? artist, String? album}) => Track(
+Track _t(int i, String? title, {int plays = 0, int? last, int year = 0, int added = 0, int duration = 0, String? artist, String? album}) => Track(saved: false, 
       id: i,
       path: '/$i',
       title: title ?? '',

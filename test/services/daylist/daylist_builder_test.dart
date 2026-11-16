@@ -9,7 +9,7 @@ import 'package:codecore/services/online/ytm_radio_parser.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_pool.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track track(int id, String genre, {String? artist, int plays = 0}) => Track(
+Track track(int id, String genre, {String? artist, int plays = 0}) => Track(saved: false, 
   coverSource: 0,
   id: id,
   path: '/m/$id.mp3',

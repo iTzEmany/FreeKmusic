@@ -101,7 +101,7 @@ class _NoMix implements YoutubeService {
       throw UnimplementedError('${i.memberName}');
 }
 
-Track _track(int id) => Track(
+Track _track(int id) => Track(saved: false, 
   coverSource: 0,
   id: id,
   path: '/m/$id.mp3',

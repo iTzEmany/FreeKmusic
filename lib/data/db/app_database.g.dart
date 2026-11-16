@@ -359,6 +359,19 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _savedMeta = const VerificationMeta('saved');
+  @override
+  late final GeneratedColumn<bool> saved = GeneratedColumn<bool>(
+    'saved',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("saved" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
   @override
   late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
@@ -478,6 +491,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     missing,
     ignored,
     kind,
+    saved,
     sha256,
     addedAt,
     playCount,
@@ -718,6 +732,12 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
       );
     }
+    if (data.containsKey('saved')) {
+      context.handle(
+        _savedMeta,
+        saved.isAcceptableOrUnknown(data['saved']!, _savedMeta),
+      );
+    }
     if (data.containsKey('sha256')) {
       context.handle(
         _sha256Meta,
@@ -913,6 +933,10 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         DriftSqlType.int,
         data['${effectivePrefix}kind'],
       )!,
+      saved: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}saved'],
+      )!,
       sha256: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sha256'],
@@ -992,6 +1016,9 @@ class Track extends DataClass implements Insertable<Track> {
   /// 0 music · 1 a downloaded podcast episode. Every music view filters
   /// `kind = 0`: episodes never show up in the library. Playlists hold kind 0 and 2 (shadow rows).
   final int kind;
+
+  /// A shadow row (kind 2) the user saved to the library: it shows in the library views (D-607).
+  final bool saved;
   final String? sha256;
   final int addedAt;
   final int playCount;
@@ -1038,6 +1065,7 @@ class Track extends DataClass implements Insertable<Track> {
     required this.missing,
     required this.ignored,
     required this.kind,
+    required this.saved,
     this.sha256,
     required this.addedAt,
     required this.playCount,
@@ -1113,6 +1141,7 @@ class Track extends DataClass implements Insertable<Track> {
     map['missing'] = Variable<bool>(missing);
     map['ignored'] = Variable<bool>(ignored);
     map['kind'] = Variable<int>(kind);
+    map['saved'] = Variable<bool>(saved);
     if (!nullToAbsent || sha256 != null) {
       map['sha256'] = Variable<String>(sha256);
     }
@@ -1197,6 +1226,7 @@ class Track extends DataClass implements Insertable<Track> {
       missing: Value(missing),
       ignored: Value(ignored),
       kind: Value(kind),
+      saved: Value(saved),
       sha256: sha256 == null && nullToAbsent
           ? const Value.absent()
           : Value(sha256),
@@ -1253,6 +1283,7 @@ class Track extends DataClass implements Insertable<Track> {
       missing: serializer.fromJson<bool>(json['missing']),
       ignored: serializer.fromJson<bool>(json['ignored']),
       kind: serializer.fromJson<int>(json['kind']),
+      saved: serializer.fromJson<bool>(json['saved']),
       sha256: serializer.fromJson<String?>(json['sha256']),
       addedAt: serializer.fromJson<int>(json['addedAt']),
       playCount: serializer.fromJson<int>(json['playCount']),
@@ -1298,6 +1329,7 @@ class Track extends DataClass implements Insertable<Track> {
       'missing': serializer.toJson<bool>(missing),
       'ignored': serializer.toJson<bool>(ignored),
       'kind': serializer.toJson<int>(kind),
+      'saved': serializer.toJson<bool>(saved),
       'sha256': serializer.toJson<String?>(sha256),
       'addedAt': serializer.toJson<int>(addedAt),
       'playCount': serializer.toJson<int>(playCount),
@@ -1341,6 +1373,7 @@ class Track extends DataClass implements Insertable<Track> {
     bool? missing,
     bool? ignored,
     int? kind,
+    bool? saved,
     Value<String?> sha256 = const Value.absent(),
     int? addedAt,
     int? playCount,
@@ -1381,6 +1414,7 @@ class Track extends DataClass implements Insertable<Track> {
     missing: missing ?? this.missing,
     ignored: ignored ?? this.ignored,
     kind: kind ?? this.kind,
+    saved: saved ?? this.saved,
     sha256: sha256.present ? sha256.value : this.sha256,
     addedAt: addedAt ?? this.addedAt,
     playCount: playCount ?? this.playCount,
@@ -1449,6 +1483,7 @@ class Track extends DataClass implements Insertable<Track> {
       missing: data.missing.present ? data.missing.value : this.missing,
       ignored: data.ignored.present ? data.ignored.value : this.ignored,
       kind: data.kind.present ? data.kind.value : this.kind,
+      saved: data.saved.present ? data.saved.value : this.saved,
       sha256: data.sha256.present ? data.sha256.value : this.sha256,
       addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
       playCount: data.playCount.present ? data.playCount.value : this.playCount,
@@ -1502,6 +1537,7 @@ class Track extends DataClass implements Insertable<Track> {
           ..write('missing: $missing, ')
           ..write('ignored: $ignored, ')
           ..write('kind: $kind, ')
+          ..write('saved: $saved, ')
           ..write('sha256: $sha256, ')
           ..write('addedAt: $addedAt, ')
           ..write('playCount: $playCount, ')
@@ -1547,6 +1583,7 @@ class Track extends DataClass implements Insertable<Track> {
     missing,
     ignored,
     kind,
+    saved,
     sha256,
     addedAt,
     playCount,
@@ -1591,6 +1628,7 @@ class Track extends DataClass implements Insertable<Track> {
           other.missing == this.missing &&
           other.ignored == this.ignored &&
           other.kind == this.kind &&
+          other.saved == this.saved &&
           other.sha256 == this.sha256 &&
           other.addedAt == this.addedAt &&
           other.playCount == this.playCount &&
@@ -1633,6 +1671,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
   final Value<bool> missing;
   final Value<bool> ignored;
   final Value<int> kind;
+  final Value<bool> saved;
   final Value<String?> sha256;
   final Value<int> addedAt;
   final Value<int> playCount;
@@ -1673,6 +1712,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.missing = const Value.absent(),
     this.ignored = const Value.absent(),
     this.kind = const Value.absent(),
+    this.saved = const Value.absent(),
     this.sha256 = const Value.absent(),
     this.addedAt = const Value.absent(),
     this.playCount = const Value.absent(),
@@ -1714,6 +1754,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.missing = const Value.absent(),
     this.ignored = const Value.absent(),
     this.kind = const Value.absent(),
+    this.saved = const Value.absent(),
     this.sha256 = const Value.absent(),
     required int addedAt,
     this.playCount = const Value.absent(),
@@ -1761,6 +1802,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Expression<bool>? missing,
     Expression<bool>? ignored,
     Expression<int>? kind,
+    Expression<bool>? saved,
     Expression<String>? sha256,
     Expression<int>? addedAt,
     Expression<int>? playCount,
@@ -1802,6 +1844,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       if (missing != null) 'missing': missing,
       if (ignored != null) 'ignored': ignored,
       if (kind != null) 'kind': kind,
+      if (saved != null) 'saved': saved,
       if (sha256 != null) 'sha256': sha256,
       if (addedAt != null) 'added_at': addedAt,
       if (playCount != null) 'play_count': playCount,
@@ -1845,6 +1888,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Value<bool>? missing,
     Value<bool>? ignored,
     Value<int>? kind,
+    Value<bool>? saved,
     Value<String?>? sha256,
     Value<int>? addedAt,
     Value<int>? playCount,
@@ -1886,6 +1930,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       missing: missing ?? this.missing,
       ignored: ignored ?? this.ignored,
       kind: kind ?? this.kind,
+      saved: saved ?? this.saved,
       sha256: sha256 ?? this.sha256,
       addedAt: addedAt ?? this.addedAt,
       playCount: playCount ?? this.playCount,
@@ -1993,6 +2038,9 @@ class TracksCompanion extends UpdateCompanion<Track> {
     if (kind.present) {
       map['kind'] = Variable<int>(kind.value);
     }
+    if (saved.present) {
+      map['saved'] = Variable<bool>(saved.value);
+    }
     if (sha256.present) {
       map['sha256'] = Variable<String>(sha256.value);
     }
@@ -2054,6 +2102,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
           ..write('missing: $missing, ')
           ..write('ignored: $ignored, ')
           ..write('kind: $kind, ')
+          ..write('saved: $saved, ')
           ..write('sha256: $sha256, ')
           ..write('addedAt: $addedAt, ')
           ..write('playCount: $playCount, ')
@@ -13232,6 +13281,7 @@ typedef $$TracksTableCreateCompanionBuilder = TracksCompanion Function({
   Value<bool> missing,
   Value<bool> ignored,
   Value<int> kind,
+  Value<bool> saved,
   Value<String?> sha256,
   required int addedAt,
   Value<int> playCount,
@@ -13273,6 +13323,7 @@ typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<bool> missing,
   Value<bool> ignored,
   Value<int> kind,
+  Value<bool> saved,
   Value<String?> sha256,
   Value<int> addedAt,
   Value<int> playCount,
@@ -13602,6 +13653,11 @@ class $$TracksTableFilterComposer
 
   ColumnFilters<int> get kind => $composableBuilder(
     column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get saved => $composableBuilder(
+    column: $table.saved,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14010,6 +14066,11 @@ class $$TracksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get saved => $composableBuilder(
+    column: $table.saved,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get sha256 => $composableBuilder(
     column: $table.sha256,
     builder: (column) => ColumnOrderings(column),
@@ -14176,6 +14237,9 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumn<int> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<bool> get saved =>
+      $composableBuilder(column: $table.saved, builder: (column) => column);
 
   GeneratedColumn<String> get sha256 =>
       $composableBuilder(column: $table.sha256, builder: (column) => column);
@@ -14479,6 +14543,7 @@ class $$TracksTableTableManager
                 Value<bool> missing = const Value.absent(),
                 Value<bool> ignored = const Value.absent(),
                 Value<int> kind = const Value.absent(),
+                Value<bool> saved = const Value.absent(),
                 Value<String?> sha256 = const Value.absent(),
                 Value<int> addedAt = const Value.absent(),
                 Value<int> playCount = const Value.absent(),
@@ -14519,6 +14584,7 @@ class $$TracksTableTableManager
                 missing: missing,
                 ignored: ignored,
                 kind: kind,
+                saved: saved,
                 sha256: sha256,
                 addedAt: addedAt,
                 playCount: playCount,
@@ -14561,6 +14627,7 @@ class $$TracksTableTableManager
                 Value<bool> missing = const Value.absent(),
                 Value<bool> ignored = const Value.absent(),
                 Value<int> kind = const Value.absent(),
+                Value<bool> saved = const Value.absent(),
                 Value<String?> sha256 = const Value.absent(),
                 required int addedAt,
                 Value<int> playCount = const Value.absent(),
@@ -14601,6 +14668,7 @@ class $$TracksTableTableManager
                 missing: missing,
                 ignored: ignored,
                 kind: kind,
+                saved: saved,
                 sha256: sha256,
                 addedAt: addedAt,
                 playCount: playCount,

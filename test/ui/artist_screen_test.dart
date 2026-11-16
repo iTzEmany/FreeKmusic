@@ -64,7 +64,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final h = await Harness.create(tester);
-      Track t(int id, String title) => Track(
+      Track t(int id, String title) => Track(saved: false, 
         id: id,
         path: '/$title.mp3',
         title: title,

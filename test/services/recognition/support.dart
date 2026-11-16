@@ -15,7 +15,7 @@ import 'package:dio/dio.dart' show CancelToken;
 
 Track track(String title, String? artist,
         {String path = '/m/x.mp3', int durationMs = 200000, String? isrc}) =>
-    Track(
+    Track(saved: false, 
       coverSource: 0, id: 1, path: path, title: title, artist: artist, isrc: isrc,
       albumKey: 'k', durationMs: durationMs, format: 'mp3', sizeBytes: 1, mtimeMs: 1,
       hasCover: false, isFavorite: false, enrichStatus: 0, userEdited: false,

@@ -47,7 +47,7 @@ class _Paged extends _Log {
 }
 
 final _proposal = (
-  track: Track(
+  track: Track(saved: false, 
     coverSource: 0, id: 1, path: '/m/1.mp3', title: 'Uno', artist: 'A', albumKey: 'k', durationMs: 1000,
     format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false, enrichStatus: 0,
     userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,

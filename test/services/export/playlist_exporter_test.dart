@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 Track t(int id, String path, String title, String? artist, int ms,
         {String? album, int? folderId}) =>
-    Track(coverSource: 0, 
+    Track(saved: false, coverSource: 0, 
       id: id,
       path: path,
       folderId: folderId,

@@ -4,7 +4,7 @@ import 'package:codecore/services/online/library_overlap.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Track _track(String title, {int? durationMs}) => Track(coverSource: 0, 
+Track _track(String title, {int? durationMs}) => Track(saved: false, coverSource: 0, 
       id: 1,
       path: '/m/$title.mp3',
       title: title,

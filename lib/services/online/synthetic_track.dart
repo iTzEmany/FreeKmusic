@@ -9,7 +9,7 @@ Track syntheticTrack({
   String format = '',
   int kind = 0,
 }) =>
-    Track(
+    Track(saved: false, 
       id: 0,
       path: '',
       title: title,
