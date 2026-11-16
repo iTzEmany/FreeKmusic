@@ -25,16 +25,40 @@ class StreamCache {
       StreamCache(Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache')),
           limitBytes: limitBytes);
 
-  /// [volumeDir] if its `stream_cache` folder can be created there, else '' (the internal one, logged):
-  /// a card that is mounted read-only or half-gone must not leave streamed tracks without a cache.
+  /// [volumeDir] if its `stream_cache` folder can be created, listed and written there, else ''
+  /// (the internal one, logged): a card that is read-only, half-gone or lists nothing (sdcardfs
+  /// answers errno 13 to a listing of a folder it just created) must not leave streams without a cache.
   static Future<String> usableVolume(String volumeDir) async {
     if (volumeDir.isEmpty) return '';
+    final d = Directory(p.join(volumeDir, 'stream_cache'));
     try {
-      await Directory(p.join(volumeDir, 'stream_cache')).create(recursive: true);
+      await d.create(recursive: true);
+      await d.list().drain<void>();
+      final probe = File(p.join(d.path, '.probe'));
+      await probe.writeAsString('');
+      await probe.delete();
       return volumeDir;
     } on FileSystemException catch (e, st) {
-      AppLog.w('stream cache: $volumeDir not writable, using the internal folder', e, st);
+      AppLog.w('stream cache: $volumeDir not usable, using the internal folder', e, st);
       return '';
+    }
+  }
+
+  /// An opened cache on [volumeDir] or, when it cannot be used or opened, on the internal folder;
+  /// `volume` is the one really in use ('' = internal).
+  static Future<({StreamCache cache, String volume})> openWithFallback(String volumeDir,
+      {int limitBytes = 500 * _mb}) async {
+    final volume = await usableVolume(volumeDir);
+    final cache = await inAppSupport(limitBytes: limitBytes, volumeDir: volume);
+    try {
+      await cache.open();
+      return (cache: cache, volume: volume);
+    } on FileSystemException catch (e, st) {
+      if (volume.isEmpty) rethrow;
+      AppLog.w('stream cache: $volume could not be opened, using the internal folder', e, st);
+      final internal = await inAppSupport(limitBytes: limitBytes);
+      await internal.open();
+      return (cache: internal, volume: '');
     }
   }
 

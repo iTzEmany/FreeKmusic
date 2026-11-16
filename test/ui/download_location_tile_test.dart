@@ -1,7 +1,9 @@
 import 'package:codecore/core/platform.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/storage_providers.dart' show sdVolumesProvider;
+import 'package:codecore/services/online/youtube_service.dart' show AudioQuality;
 import 'package:codecore/ui/screens/settings/download_location_tile.dart';
+import 'package:codecore/ui/screens/settings/quality_tiles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +29,19 @@ void main() {
     await tester.pumpAndSettle();
     final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
     expect(c.read(settingsProvider).downloadLocation, sd);
+    await h.dispose(tester);
+  });
+
+  testWidgets('quality tile: value as subtitle, no dropdown; a dialog changes it', (tester) async {
+    final h = await Harness.create(tester);
+    await h.pump(tester, const Scaffold(body: QualityTile(stream: false)));
+    expect(find.byType(DropdownButton<AudioQuality>), findsNothing);
+    await tester.tap(find.byType(ListTile));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Bassa'));
+    await tester.pumpAndSettle();
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    expect(c.read(settingsProvider).downloadQuality, AudioQuality.low);
     await h.dispose(tester);
   });
 }

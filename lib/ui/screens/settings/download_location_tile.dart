@@ -10,6 +10,7 @@ import '../../../providers/folder_ops.dart';
 import '../../../providers/storage_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../core/storage_volumes.dart' show sdRootOf;
+import '../../widgets/choice_dialog.dart';
 import '../../../services/online/media_publisher.dart' show publishesToMediaStore;
 
 /// D-579: where downloads (and the stream cache) go. Android: internal or the SD
@@ -64,19 +65,11 @@ class DownloadLocationTile extends ConsumerWidget {
         l.downloadMemoryRestart,
       ].join('\n')),
       onTap: () async {
-        final v = await showDialog<String>(
-          context: context,
-          builder: (c) => SimpleDialog(
-            title: Text(l.downloadMemory),
-            children: [
-              for (final d in ['', if (missing) location, ...sds])
-                ListTile(
-                  title: Text(name(d)),
-                  trailing: d == location ? const Icon(Icons.check) : null,
-                  onTap: () => Navigator.pop(c, d),
-                ),
-            ],
-          ),
+        final v = await showChoiceDialog<String>(
+          context,
+          title: l.downloadMemory,
+          current: location,
+          options: [for (final d in ['', if (missing) location, ...sds]) (value: d, label: name(d))],
         );
         if (v != null && v != location) set(v);
       },

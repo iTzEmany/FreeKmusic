@@ -267,5 +267,10 @@ void volumeTests() {
     expect(await StreamCache.usableVolume(p.join(file.path, 'sd')), '');
     expect(await StreamCache.usableVolume(root.path), root.path);
     expect(await StreamCache.usableVolume(''), '');
+    // Exists but cannot be listed (sdcardfs errno 13 on the Mi A3).
+    final sd = Directory(p.join(root.path, 'sd', 'stream_cache'))..createSync(recursive: true);
+    Process.runSync('chmod', ['000', sd.path]);
+    addTearDown(() => Process.runSync('chmod', ['755', sd.path]));
+    expect(await StreamCache.usableVolume(p.join(root.path, 'sd')), '');
   });
 }

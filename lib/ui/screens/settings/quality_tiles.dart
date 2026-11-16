@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/online/youtube_service.dart' show AudioQuality;
+import '../../widgets/choice_dialog.dart';
 import '../memory/free_space_screen.dart';
 
 String audioQualityLabel(AppLocalizations l, AudioQuality q) => switch (q) {
@@ -26,16 +27,19 @@ class QualityTile extends ConsumerWidget {
     return ListTile(
       leading: Icon(stream ? Icons.wifi_tethering : Icons.high_quality_outlined),
       title: Text(stream ? l.qualityStream : l.qualityDownload),
-      trailing: DropdownButton<AudioQuality>(
-        value: value,
-        underline: const SizedBox.shrink(),
-        items: [for (final q in AudioQuality.values) DropdownMenuItem(value: q, child: Text(audioQualityLabel(l, q)))],
-        onChanged: (q) => q == null
-            ? null
-            : ref.read(settingsProvider.notifier).update(
-                (s) => stream ? s.copyWith(streamQuality: q) : s.copyWith(downloadQuality: q),
-              ),
-      ),
+      subtitle: Text(audioQualityLabel(l, value)),
+      onTap: () async {
+        final q = await showChoiceDialog<AudioQuality>(
+          context,
+          title: stream ? l.qualityStream : l.qualityDownload,
+          current: value,
+          options: [for (final q in AudioQuality.values) (value: q, label: audioQualityLabel(l, q))],
+        );
+        if (q == null || q == value) return;
+        ref.read(settingsProvider.notifier).update(
+          (s) => stream ? s.copyWith(streamQuality: q) : s.copyWith(downloadQuality: q),
+        );
+      },
     );
   }
 }
