@@ -212,9 +212,11 @@ class TrackRepository {
   /// of [promoteStreamRow]. The id stays, so playlists, plays, favourite and lyrics stay. Returns the
   /// row as it was (for [restoreRow]), or null when [id] is not a file row. The CALLER deletes the file
   /// after this returns.
-  Future<Track?> demoteToStream(int id, String key) async {
+  Future<Track?> demoteToStream(int id, String key) => _db.transaction(() async {
     final row = await getById(id);
     if (row == null || row.kind != kMusicKind) return null;
+    // The track was streamed before: its shadow row (same path) would collide; its listens move here.
+    await mergeStreamRow(key, id);
     var albumKey = streamAlbumKey(albumArtist: row.albumArtist, artist: row.artist, album: row.album);
     // A generic album would lump unrelated tracks together; a hand-picked key is kept.
     if (albumKey.startsWith('stream|unknown|') || row.userEdited) albumKey = 'stream|$key';
@@ -225,6 +227,7 @@ class TrackRepository {
         saved: const Value(true),
         albumKey: Value(albumKey),
         folderId: const Value(null),
+        format: const Value(''),
         sizeBytes: const Value(0),
         mtimeMs: const Value(0),
         missing: const Value(false),
@@ -232,7 +235,7 @@ class TrackRepository {
     );
     await settleMovedCover(row, albumKey);
     return row;
-  }
+  });
 
   /// Puts [before] (as returned by [demoteToStream]) back, when the file could not be deleted.
   Future<void> restoreRow(Track before) => _db.update(_db.tracks).replace(before);

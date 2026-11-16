@@ -5,6 +5,7 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/free_space.dart';
 import 'package:codecore/services/library/duplicate_cleanup.dart' show FileDeleter;
 import 'package:codecore/services/online/download_index.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,8 +42,8 @@ void main() {
     return (await repo.byPath(f.path))!.id;
   }
 
-  FreeSpaceService svc({FileDeleter? deleter}) =>
-      FreeSpaceService(tracks: repo, index: index, deleter: deleter, nowMs: () => _now);
+  FreeSpaceService svc({FileDeleter? deleter, Set<int> Function()? playing, bool Function()? scan}) => FreeSpaceService(
+    tracks: repo, index: index, deleter: deleter, playingIds: playing, scanRunning: scan, nowMs: () => _now);
 
   test('candidates: only files the app downloaded, unplayed for 90 days first', () async {
     final recent = await add('recent.mp3', vid: 'r', lastPlayed: _now - 10 * _day, size: 99);
@@ -86,5 +87,67 @@ void main() {
     expect(r.freedIds, isEmpty);
     expect((await repo.getById(mine))!.kind, 0);
     expect(File((await repo.getById(mine))!.path).existsSync(), true);
+  });
+
+  test('a user file put at a stale index path is not offered nor deleted', () async {
+    final id = await add('a.mp3', vid: 'a');
+    final path = (await repo.getById(id))!.path;
+    File(path).writeAsBytesSync([1, 2, 3, 4]); // the user's own file, same name, other size
+    expect(await svc().freeSpaceCandidates(), isEmpty);
+    expect((await svc().freeSpace([id])).freedIds, isEmpty);
+    expect(File(path).existsSync(), true);
+    expect((await repo.getById(id))!.kind, 0);
+  });
+
+  test('index entries whose file is gone are dropped', () async {
+    final id = await add('a.mp3', vid: 'a');
+    File((await repo.getById(id))!.path).deleteSync();
+    await svc().freeSpaceCandidates();
+    expect(index.entries, isEmpty);
+  });
+
+  test('the playing track is excluded', () async {
+    final id = await add('a.mp3', vid: 'a');
+    final s = svc(playing: () => {id});
+    expect(await s.freeSpaceCandidates(), isEmpty);
+    expect((await s.freeSpace([id])).freedIds, isEmpty);
+  });
+
+  test('nothing is freed while a scan runs', () async {
+    final id = await add('a.mp3', vid: 'a');
+    final r = await svc(scan: () => true).freeSpace([id]);
+    expect([r.freedIds, File((await repo.getById(id))!.path).existsSync()], [isEmpty, true]);
+  });
+
+  test('a streamed copy of the same track is merged, not a failure', () async {
+    final id = await add('a.mp3', vid: 'a');
+    final shadow = await repo.ensureStreamRow(YtResult(id: 'a', title: 'S', channel: 'C', duration: null));
+    final r = await svc().freeSpace([id]);
+    expect(r.freedIds, [id]);
+    expect(await repo.getById(shadow), equals(null));
+  });
+
+  test('two index keys on one path: one candidate, both entries removed', () async {
+    final id = await add('a.mp3', vid: 'a');
+    await index.add('a2', (await repo.getById(id))!.path);
+    expect(await svc().freeSpaceCandidates(), hasLength(1));
+    await svc().freeSpace([id]);
+    expect(index.entries, isEmpty);
+  });
+
+  test('a restore that collides does not stop the rest', () async {
+    final a = await add('a.mp3', vid: 'a', size: 99);
+    final b = await add('b.mp3', vid: 'b');
+    final pathA = (await repo.getById(a))!.path;
+    final r = await svc(deleter: (f) async {
+      if (f == pathA) {
+        // a scan put a new row at the path while the file stays
+        await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: pathA, title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+        throw const FileSystemException('no');
+      }
+      await File(f).delete();
+    }).freeSpace([a, b]);
+    expect(r.freedIds, [b]);
   });
 }

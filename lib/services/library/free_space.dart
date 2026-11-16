@@ -36,6 +36,9 @@ class FreeSpaceService {
     required this.index,
     FileDeleter? deleter,
     this.platform,
+    this.playingIds,
+    this.scanRunning,
+    this.onFreed,
     int Function()? nowMs,
   }) : _deleter = deleter ?? _deleteFile,
        _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
@@ -46,6 +49,15 @@ class FreeSpaceService {
 
   /// Android: for files plain deletion is refused (returns the paths that are gone).
   final Future<List<String>> Function(List<String> paths)? platform;
+
+  /// Ids of the tracks being played: never offered, never converted (the player holds their file path).
+  final Set<int> Function()? playingIds;
+
+  /// A scan running could insert a row at a path being freed: [freeSpace] waits (frees nothing).
+  final bool Function()? scanRunning;
+
+  /// Called after files were freed (the player drops what it prepared from them).
+  final void Function()? onFreed;
   final int Function() _nowMs;
 
   static Future<void> _deleteFile(String path) => File(path).delete();
@@ -54,10 +66,16 @@ class FreeSpaceService {
   /// File rows downloaded by the app and still on disk: unplayed for 90 days first, then the biggest.
   Future<List<FreeSpaceCandidate>> freeSpaceCandidates() async {
     final limit = _nowMs() - _staleMs;
+    await index.pruneGone();
+    final playing = playingIds?.call() ?? const <int>{};
     final out = <FreeSpaceCandidate>[];
+    final seen = <int>{};
     for (final e in index.entries) {
       final t = await tracks.byPath(e.value);
-      if (t == null || t.kind != kMusicKind || !await File(e.value).exists()) continue;
+      // Only the very file the app downloaded (size and mtime as at download time): a file the user put at
+      // the same path later is not ours (D-598).
+      if (t == null || t.kind != kMusicKind || playing.contains(t.id) || !index.signatureMatches(e.key, e.value)) continue;
+      if (!seen.add(t.id)) continue;
       out.add(FreeSpaceCandidate(t, e.key, (t.lastPlayedAt ?? 0) < limit));
     }
     out.sort((a, b) {
@@ -72,14 +90,20 @@ class FreeSpaceService {
   /// «file». When the delete fails (after the platform dialog, if any) the row is put back as it was:
   /// the file and its row stay consistent and the failure is logged. Ids that are not candidates are ignored.
   Future<FreeSpaceReport> freeSpace(Iterable<int> ids) async {
+    if (scanRunning?.call() ?? false) {
+      AppLog.w('free space: a scan is running, nothing done');
+      return const FreeSpaceReport(freedIds: [], failedIds: [], freedBytes: 0);
+    }
     final wanted = ids.toSet();
     final todo = [for (final c in await freeSpaceCandidates()) if (wanted.contains(c.track.id)) c];
     final demoted = <FreeSpaceCandidate>[];
+    final notDemoted = <int>[];
     for (final c in todo) {
       try {
         if (await tracks.demoteToStream(c.track.id, c.key) == null) continue;
       } on Object catch (e, st) {
         AppLog.w('free space: row not demoted: ${c.track.path}', e, st);
+        notDemoted.add(c.track.id);
         continue;
       }
       demoted.add(c);
@@ -98,16 +122,21 @@ class FreeSpaceService {
       }
     }
     final freed = <FreeSpaceCandidate>[];
-    final back = <int>[];
+    final back = [...notDemoted];
     for (final c in demoted) {
       if (await File(c.track.path).exists()) {
-        await tracks.restoreRow(c.track);
+        try {
+          await tracks.restoreRow(c.track);
+        } on Object catch (e, st) {
+          AppLog.w('free space: row not restored: ${c.track.path}', e, st);
+        }
         back.add(c.track.id);
       } else {
         freed.add(c);
-        await index.remove(c.key);
+        await index.removeByPath(c.track.path);
       }
     }
+    if (freed.isNotEmpty) onFreed?.call();
     return FreeSpaceReport(
       freedIds: [for (final c in freed) c.track.id],
       failedIds: back,

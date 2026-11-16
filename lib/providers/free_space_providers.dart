@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/platform.dart';
 import '../services/android/media_deleter.dart';
+import 'library_providers.dart' show scanStateProvider;
+import 'player_providers.dart' show audioHandlerProvider;
 import '../services/library/free_space.dart';
 import 'database_providers.dart';
 import 'youtube_providers.dart' show downloadIndexProvider;
@@ -12,5 +16,8 @@ final freeSpaceServiceProvider = FutureProvider<FreeSpaceService>(
     tracks: ref.watch(trackRepositoryProvider),
     index: await ref.watch(downloadIndexProvider.future),
     platform: isAndroid ? deleteWithSystemDialog : null,
+    playingIds: () => {?ref.read(audioHandlerProvider).currentTrack?.id},
+    scanRunning: () => ref.read(scanStateProvider).running,
+    onFreed: () => unawaited(ref.read(audioHandlerProvider).resyncPreparer()),
   ),
 );
