@@ -19,7 +19,8 @@ import java.io.File
  * 1 -> 0, the app owns the entry and can rewrite its tags) and answers with
  * the final path, e.g. `/storage/emulated/0/Music/FreeKmusic/Song.m4a`.
  * `subdir` keeps the import's folder under `Music/FreeKmusic`. Called only on
- * Android 11+ (D-567); the work copy is deleted by the caller.
+ * Android 11+ (D-567); the work copy is deleted by the caller. `volume` (an SD
+ * card, D-579) is the MediaStore volume name; absent = the primary one.
  */
 object MediaPublishBridge {
     private const val DIR = "FreeKmusic"
@@ -58,7 +59,7 @@ object MediaPublishBridge {
             }
             Thread {
                 try {
-                    val out = publish(context, File(path), call.argument<String>("subdir") ?: "")
+                    val out = publish(context, File(path), call.argument<String>("subdir") ?: "", call.argument<String>("volume") ?: MediaStore.VOLUME_EXTERNAL_PRIMARY)
                     main.post { result.success(out) }
                 } catch (e: Exception) {
                     main.post { result.error("publish", e.message, null) }
@@ -98,8 +99,8 @@ object MediaPublishBridge {
 
     // A force-stop during publish leaves an IS_PENDING row: drop it, or the next publish becomes «(2)».
     @Suppress("DEPRECATION")
-    private fun dropOrphans(resolver: ContentResolver, rel: String, name: String) {
-        val pending = MediaStore.setIncludePending(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY))
+    private fun dropOrphans(resolver: ContentResolver, rel: String, name: String, volume: String) {
+        val pending = MediaStore.setIncludePending(MediaStore.Audio.Media.getContentUri(volume))
         resolver.delete(
             pending,
             "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.IS_PENDING} = 1",
@@ -107,7 +108,7 @@ object MediaPublishBridge {
         )
     }
 
-    private fun publish(context: Context, src: File, subdir: String): String {
+    private fun publish(context: Context, src: File, subdir: String, volume: String): String {
         val sub = subdir.split('/').filter { it.isNotEmpty() && it != "." && it != ".." }.joinToString("/")
         val rel = if (sub.isEmpty()) DIR else "$DIR/$sub"
         val mime = audioMime(src.extension)
@@ -118,8 +119,8 @@ object MediaPublishBridge {
             put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
         val resolver = context.contentResolver
-        dropOrphans(resolver, rel, src.name)
-        val uri = resolver.insert(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values)
+        dropOrphans(resolver, rel, src.name, volume)
+        val uri = resolver.insert(MediaStore.Audio.Media.getContentUri(volume), values)
             ?: throw IllegalStateException("MediaStore refused the insert")
         try {
             resolver.openOutputStream(uri)!!.use { out -> src.inputStream().use { it.copyTo(out) } }

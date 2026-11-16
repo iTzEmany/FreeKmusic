@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as pth;
 
 import '../../../core/permissions.dart';
 import '../../../l10n/l10n_ext.dart';
@@ -14,7 +15,9 @@ import '../../widgets/format_utils.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/scanner/library_scanner.dart' show ScanProgress;
 import '../../theme/tokens.dart';
+import '../../../services/online/media_publisher.dart' show sdRootOf;
 import '../import/exportify_remind_choice.dart';
+import '../settings/download_location_tile.dart' show sdVolumesProvider;
 import 'onboarding_screen.dart' show onboardingPageCount;
 
 class _Page extends StatelessWidget {
@@ -257,6 +260,8 @@ class _StoragePageState extends ConsumerState<StoragePage> {
       });
     }
     final mode = ref.watch(settingsProvider.select((s) => s.storageMode));
+    final sds = ref.watch(sdVolumesProvider).value ?? const <String>[];
+    final sdChosen = sds.contains(ref.watch(settingsProvider.select((s) => s.downloadLocation)));
     return _Page(
       index: 2,
       icon: Icons.storage_rounded,
@@ -286,6 +291,17 @@ class _StoragePageState extends ConsumerState<StoragePage> {
             ],
           ),
         ),
+        // D-579: only with a card in the device and files kept on it.
+        if (mode == StorageMode.device && sds.isNotEmpty)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.downloadMemorySd(pth.basename(sdRootOf(sds.first) ?? sds.first))),
+            subtitle: Text(l.onboardingStorageSdHint),
+            value: sdChosen,
+            onChanged: (v) => ref
+                .read(settingsProvider.notifier)
+                .update((s) => s.copyWith(downloadLocation: v ? sds.first : '')),
+          ),
       ],
     );
   }

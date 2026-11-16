@@ -68,6 +68,7 @@ class AppSettings {
     this.downloadRateLimitKBps = 0,
     this.downloadFormat = DownloadFormat.m4a,
     this.streamCacheMb = 1024,
+    this.downloadLocation = '',
     this.storageMode = StorageMode.device,
     this.prefetchOnMobile = true,
     this.importSureThreshold = 0.80,
@@ -162,6 +163,9 @@ class AppSettings {
   /// Disk space for the streaming cache, in MB (256–8192).
   final int streamCacheMb;
 
+  /// D-579: Android = app folder of the SD volume, desktop = chosen download folder; empty = default.
+  final String downloadLocation;
+
   /// Where the music lives; the onboarding sets it, older installs keep `device` (D-598).
   final StorageMode storageMode;
 
@@ -254,6 +258,7 @@ class AppSettings {
     int? downloadRateLimitKBps,
     DownloadFormat? downloadFormat,
     int? streamCacheMb,
+    String? downloadLocation,
     StorageMode? storageMode,
     bool? prefetchOnMobile,
     double? importSureThreshold,
@@ -310,6 +315,7 @@ class AppSettings {
     downloadRateLimitKBps: downloadRateLimitKBps ?? this.downloadRateLimitKBps,
     downloadFormat: downloadFormat ?? this.downloadFormat,
     streamCacheMb: streamCacheMb ?? this.streamCacheMb,
+    downloadLocation: downloadLocation ?? this.downloadLocation,
     storageMode: storageMode ?? this.storageMode,
     prefetchOnMobile: prefetchOnMobile ?? this.prefetchOnMobile,
     importSureThreshold: importSureThreshold ?? this.importSureThreshold,
@@ -455,6 +461,7 @@ class SettingsStore {
     downloadParallel: (_prefs.getInt('downloadParallel') ?? 2).clamp(1, 3),
     downloadRateLimitKBps: _prefs.getInt('downloadRateLimitKBps') ?? 0,
     streamCacheMb: (_prefs.getInt('streamCacheMb') ?? 1024).clamp(256, 8192),
+    downloadLocation: _prefs.getString('downloadLocation') ?? '',
     // Absent = an install from before the choice: it keeps its files (D-598).
     storageMode: StorageMode.values.firstWhere(
       (m) => m.name == _prefs.getString('storageMode'),
@@ -552,6 +559,7 @@ class SettingsStore {
     await _prefs.setInt('downloadRateLimitKBps', s.downloadRateLimitKBps);
     await _prefs.setString('downloadFormat', s.downloadFormat.name);
     await _prefs.setInt('streamCacheMb', s.streamCacheMb);
+    await _prefs.setString('downloadLocation', s.downloadLocation);
     await _prefs.setString('storageMode', s.storageMode.name);
     await _prefs.setBool('prefetchOnMobile', s.prefetchOnMobile);
     await _prefs.remove('downloadOriginal');

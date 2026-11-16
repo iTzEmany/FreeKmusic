@@ -167,4 +167,61 @@ void main() {
     expect([for (final f in await repo.getAll()) f.path], ['/storage/emulated/0/Music/FreeKmusic']);
     expect(res!.$2.path, '/storage/emulated/0/Music/FreeKmusic');
   });
+
+  group('SD card / chosen folder (D-579)', () {
+    const sd = '/storage/1234-5678/Android/data/com.codecore.player/files';
+    tearDown(() {
+      debugIsAndroidOverride = null;
+      debugAndroidSdk = null;
+    });
+
+    test('Android 10: the app folder on the SD, as its own library folder', () async {
+      debugIsAndroidOverride = true;
+      debugAndroidSdk = 29;
+      final tmp = await Directory.systemTemp.createTemp('sd10');
+      addTearDown(() => tmp.delete(recursive: true));
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final res = await resolveDownloadFolder(FolderRepository(db), location: p.join(tmp.path, 'files'));
+      expect(res!.$1.path, p.join(tmp.path, 'files', 'Music'));
+      expect(res.$2.path, res.$1.path);
+    });
+
+    test('Android 11+: Music/FreeKmusic on the volume, the volume Music is the library folder', () async {
+      debugIsAndroidOverride = true;
+      debugAndroidSdk = 33;
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final res = await resolveDownloadFolder(FolderRepository(db), location: sd);
+      expect(res!.$1.path, '/storage/1234-5678/Music/FreeKmusic');
+      expect(res.$2.path, '/storage/1234-5678/Music');
+    });
+
+    test('Android 11+: publish names the volume (lower case) for MediaStore', () async {
+      debugIsAndroidOverride = true;
+      debugAndroidSdk = 33;
+      const channel = MethodChannel('codecore/publish');
+      Map<Object?, Object?>? args;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (c) async {
+        args = c.arguments as Map;
+        return '/storage/ABCD-1234/Music/FreeKmusic/S.m4a';
+      });
+      addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+      final tmp = await Directory.systemTemp.createTemp('pubvol');
+      addTearDown(() => tmp.delete(recursive: true));
+      final f = File(p.join(tmp.path, 'S.m4a'))..writeAsStringSync('x');
+      await MediaPublisher(channel: channel, volume: () => '/storage/ABCD-1234/Android/data/x/files').publish(f.path);
+      expect(args!['volume'], 'abcd-1234');
+    });
+
+    test('desktop: the chosen folder, registered as a library folder', () async {
+      debugIsAndroidOverride = false;
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final repo = FolderRepository(db);
+      final res = await resolveDownloadFolder(repo, location: '/data/Songs');
+      expect(res!.$1.path, '/data/Songs');
+      expect([for (final f in await repo.getAll()) f.path], ['/data/Songs']);
+    });
+  });
 }

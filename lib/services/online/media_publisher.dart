@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/app_log.dart';
 import '../../core/paths.dart';
@@ -29,9 +30,30 @@ Future<bool> publishesToMediaStore({MethodChannel channel = const MethodChannel(
   return sdk >= 30;
 }
 
+/// Tests set the app folders of the SD volumes instead of asking path_provider.
+@visibleForTesting
+List<String>? debugSdDirs;
+
+/// App folders (`…/Android/data/<pkg>/files`) on removable volumes: the second
+/// and later `getExternalStorageDirectories`. Empty off Android or without a card.
+Future<List<String>> sdVolumeDirs() async {
+  if (debugSdDirs case final d?) return d;
+  if (!isAndroid) return const [];
+  final dirs = await getExternalStorageDirectories() ?? const [];
+  return [for (final d in dirs.skip(1)) d.path];
+}
+
+/// `/storage/1234-5678/…` -> `/storage/1234-5678`; null for any other path.
+String? sdRootOf(String location) {
+  final parts = p.split(location);
+  return parts.length > 2 && parts[1] == 'storage' ? p.joinAll(parts.take(3)) : null;
+}
+
 class MediaPublisher {
-  MediaPublisher({MethodChannel? channel}) : _channel = channel ?? const MethodChannel('codecore/publish');
+  /// [volume]: the download location setting; an SD one publishes on that volume.
+  MediaPublisher({MethodChannel? channel, this.volume}) : _channel = channel ?? const MethodChannel('codecore/publish');
   final MethodChannel _channel;
+  final String Function()? volume;
 
   /// Copies [path] into the public folder through MediaStore (keeping its
   /// subfolder under the work folder), deletes the work copy and returns the
@@ -41,7 +63,13 @@ class MediaPublisher {
     final parts = p.split(p.dirname(path));
     final i = parts.lastIndexOf(_workDirName);
     final subdir = i < 0 ? '' : parts.sublist(i + 1).join('/');
-    final out = await _channel.invokeMethod<String>('publish', {'path': path, 'subdir': subdir});
+    final root = sdRootOf(volume?.call() ?? '');
+    final out = await _channel.invokeMethod<String>('publish', {
+      'path': path,
+      'subdir': subdir,
+      // MediaStore names a volume in lower case.
+      if (root != null) 'volume': p.basename(root).toLowerCase(),
+    });
     if (out == null) throw const FileSystemException('publish returned no path');
     try {
       await File(path).delete();

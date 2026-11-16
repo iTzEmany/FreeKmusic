@@ -7707,6 +7707,34 @@ class AppLocalizationsIt extends AppLocalizations {
   String get storageModeStream => 'In streaming';
 
   @override
+  String get downloadFolder => 'Cartella dei download';
+
+  @override
+  String get downloadFolderDefault => 'Quella di Musica (predefinita)';
+
+  @override
+  String get downloadFolderReset => 'Torna alla cartella predefinita';
+
+  @override
+  String get downloadMemory => 'Memoria dei download';
+
+  @override
+  String get downloadMemoryInternal => 'Memoria interna';
+
+  @override
+  String downloadMemorySd(String name) {
+    return 'Scheda SD ($name)';
+  }
+
+  @override
+  String get downloadMemorySdLegacy =>
+      'Sulla scheda SD in questa versione di Android i file stanno nella cartella dell\'app e spariscono se la disinstalli.';
+
+  @override
+  String get onboardingStorageSdHint =>
+      'Salva i download e la cache sulla scheda SD.';
+
+  @override
   String get prefetchOnMobile =>
       'Pre-carica anche con i dati mobili (fino a 3)';
 

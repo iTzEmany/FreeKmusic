@@ -479,7 +479,7 @@ final downloadTaggerProvider = Provider<DownloadTagger>((ref) {
     sync: TrackFileSync(db, () => ref.read(safeTagWriterProvider.future)),
     reader: ref.watch(tagReaderProvider),
     downloadRoot: () async =>
-        (await resolveDownloadFolder(ref.read(folderRepositoryProvider)))?.$1.path,
+        (await resolveDownloadFolder(ref.read(folderRepositoryProvider), location: ref.read(settingsProvider).downloadLocation))?.$1.path,
     enabled: () => ref.read(settingsProvider).writeTagsAfterDownload,
     coverOf: (t) async {
       final f = t.coverKey == null ? null : covers.fileFor(t.coverKey!);

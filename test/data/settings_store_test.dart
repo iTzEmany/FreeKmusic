@@ -20,6 +20,15 @@ void main() {
     expect(store.readSettings().prefetchOnMobile, isFalse);
   });
 
+  test('downloadLocation: empty when absent, round trips', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().downloadLocation, '');
+    await store.writeSettings(store.readSettings().copyWith(downloadLocation: '/storage/1234-5678/x'));
+    store = await SettingsStore.open();
+    expect(store.readSettings().downloadLocation, '/storage/1234-5678/x');
+  });
+
   test(
     'the transliteration is on when absent and a saved off stays off',
     () async {

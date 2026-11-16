@@ -19,9 +19,11 @@ class StreamCache {
   })  : _freeSpace = freeSpace ?? (() async => (await diskSpaceOf(dir.path))?.freeBytes),
         _delete = delete ?? ((f) => f.delete());
 
-  /// `<appSupportDir>/stream_cache`, outside every music folder.
-  static Future<StreamCache> inAppSupport({int limitBytes = 500 * _mb}) async =>
-      StreamCache(Directory(p.join(await appSupportDir(), 'stream_cache')), limitBytes: limitBytes);
+  /// `<appSupportDir>/stream_cache`, outside every music folder; with [volumeDir]
+  /// (the app folder of the chosen SD volume, D-579) `<volumeDir>/stream_cache`.
+  static Future<StreamCache> inAppSupport({int limitBytes = 500 * _mb, String volumeDir = ''}) async =>
+      StreamCache(Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache')),
+          limitBytes: limitBytes);
 
   /// Space always left free on the disk (D-84).
   static const freeMargin = 500 * _mb;

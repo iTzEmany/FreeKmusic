@@ -12241,6 +12241,54 @@ abstract class AppLocalizations {
   /// **'In streaming'**
   String get storageModeStream;
 
+  /// No description provided for @downloadFolder.
+  ///
+  /// In it, this message translates to:
+  /// **'Cartella dei download'**
+  String get downloadFolder;
+
+  /// No description provided for @downloadFolderDefault.
+  ///
+  /// In it, this message translates to:
+  /// **'Quella di Musica (predefinita)'**
+  String get downloadFolderDefault;
+
+  /// No description provided for @downloadFolderReset.
+  ///
+  /// In it, this message translates to:
+  /// **'Torna alla cartella predefinita'**
+  String get downloadFolderReset;
+
+  /// No description provided for @downloadMemory.
+  ///
+  /// In it, this message translates to:
+  /// **'Memoria dei download'**
+  String get downloadMemory;
+
+  /// No description provided for @downloadMemoryInternal.
+  ///
+  /// In it, this message translates to:
+  /// **'Memoria interna'**
+  String get downloadMemoryInternal;
+
+  /// No description provided for @downloadMemorySd.
+  ///
+  /// In it, this message translates to:
+  /// **'Scheda SD ({name})'**
+  String downloadMemorySd(String name);
+
+  /// No description provided for @downloadMemorySdLegacy.
+  ///
+  /// In it, this message translates to:
+  /// **'Sulla scheda SD in questa versione di Android i file stanno nella cartella dell\'app e spariscono se la disinstalli.'**
+  String get downloadMemorySdLegacy;
+
+  /// No description provided for @onboardingStorageSdHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Salva i download e la cache sulla scheda SD.'**
+  String get onboardingStorageSdHint;
+
   /// No description provided for @prefetchOnMobile.
   ///
   /// In it, this message translates to:

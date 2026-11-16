@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart';
 import 'database_providers.dart';
+import 'settings_providers.dart';
 import 'youtube_providers.dart';
 
 /// Library folders: adding, removing and the download destination.
@@ -21,7 +22,7 @@ class FolderOps {
   Future<Map<int, String>> paths() => _ref.read(folderRepositoryProvider).pathsById();
 
   /// Where downloads go (registered as a library folder), or null if none.
-  Future<(Directory, Folder)?> downloadFolder() => resolveDownloadFolder(_ref.read(folderRepositoryProvider));
+  Future<(Directory, Folder)?> downloadFolder() => resolveDownloadFolder(_ref.read(folderRepositoryProvider), location: _ref.read(settingsProvider).downloadLocation);
 }
 
 final folderOpsProvider = Provider<FolderOps>(FolderOps.new);
