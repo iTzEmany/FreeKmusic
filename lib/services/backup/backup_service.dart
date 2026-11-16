@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:drift/drift.dart' show BooleanExpressionOperators;
 import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -145,7 +146,7 @@ class BackupService {
       );
       final trackCount = (await (db.select(
         db.tracks,
-      )..where((t) => t.kind.isNotValue(kStreamKind))).get()).length;
+      )..where((t) => t.kind.isNotValue(kStreamKind) | t.saved.equals(true))).get()).length;
       final folders = [
         for (final f in await db.select(db.folders).get()) f.path,
       ];

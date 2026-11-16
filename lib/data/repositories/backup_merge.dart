@@ -73,7 +73,8 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
   final trackRepo = TrackRepository(db);
   return db.transaction(() async {
     for (final u in data.tracks) {
-      final id = resolver.resolve(u.ref);
+      // A streamed track has no file to find: its shadow row is made here, and marked saved when the backup says so.
+      final id = u.ref.streamKey == null ? resolver.resolve(u.ref) : await _resolveItem(trackRepo, resolver, u.ref);
       if (id == null) {
         report.notFound.add(u.ref.title);
         continue;
@@ -81,6 +82,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       final t = await (db.select(db.tracks)..where((r) => r.id.equals(id))).getSingleOrNull();
       if (t == null) continue;
       report.recognized++;
+      if (u.saved) await trackRepo.setSaved(u.ref.streamKey!, true);
       var upd = const TracksCompanion();
       if (u.favorite && !t.isFavorite) {
         upd = upd.copyWith(isFavorite: const Value(true));

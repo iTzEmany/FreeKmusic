@@ -145,4 +145,54 @@ void main() {
     expect(report.playlistItemsSkipped, 2);
     expect([for (final t in await here.select(here.tracks).get()) t.path], ['stream:youtube:e1']);
   });
+
+  // D-607: a streamed track the user saved is library content and travels with its user data.
+  group('saved stream rows (D-607)', () {
+    Future<AppDatabase> savedSource() async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final tracks = TrackRepository(db);
+      await tracks.saveStream(const YtResult(
+          id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art']));
+      await tracks.ensureStreamRow(const YtResult(id: 'v2', title: 'Unsaved', channel: 'Ch', duration: null));
+      await db.customStatement("UPDATE tracks SET is_favorite = 1, play_count = 4, last_played_at = 99 WHERE path = 'stream:youtube:v1'");
+      final pl = PlaylistRepository(db);
+      final id = await pl.create('Mix');
+      await pl.addStreamTracks(id, [(await tracks.streamRow('youtube:v1'))!.id]);
+      return db;
+    }
+
+    UserData roundTrip(UserData d) =>
+        UserData.fromJson(jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>);
+
+    test('restore on an empty DB keeps saved rows with favourite, plays and playlist; unsaved ones stay out', () async {
+      final src = await savedSource();
+      addTearDown(src.close);
+      final data = roundTrip(await collectUserData(src));
+      expect(data.tracks.map((t) => t.ref.streamKey), ['youtube:v1']);
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
+      final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
+      expect((row.saved, row.isFavorite, row.playCount, row.lastPlayedAt), (true, true, 4, 99));
+      expect((await TrackRepository(here).streamRow('youtube:v2')), isNull);
+      expect(await playlist(here, 'Mix'), await playlist(src, 'Mix'));
+      final saved = await (here.select(here.tracks)..where((t) => isLibraryRow(t))).get();
+      expect(saved, hasLength(1));
+    });
+
+    test('an old backup without the field restores its stream rows as not saved', () async {
+      final old = UserData.fromJson({
+        'format': 1,
+        'createdAt': 1,
+        'tracks': [
+          {'ref': {'streamKey': 'youtube:v1', 'title': 'Stream one'}, 'favorite': true},
+        ],
+      });
+      final here = AppDatabase(NativeDatabase.memory());
+      addTearDown(here.close);
+      await mergeUserData(here, old, await PlaylistSyncRepository(here).resolver());
+      final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
+      expect((row.saved, row.isFavorite), (false, true));
+    });
+  });
 }

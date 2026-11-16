@@ -96,6 +96,7 @@ class TrackUserData {
   const TrackUserData({
     required this.ref,
     this.favorite = false,
+    this.saved = false,
     this.edit,
     this.lyricsPlain,
     this.lyricsSynced,
@@ -113,6 +114,9 @@ class TrackUserData {
 
   final TrackRef ref;
   final bool favorite;
+
+  /// A streamed track the user saved to the library (absent in older backups = false).
+  final bool saved;
   final TrackEditData? edit;
   final String? lyricsPlain, lyricsSynced, curiosities;
 
@@ -139,6 +143,7 @@ class TrackUserData {
   Map<String, Object?> toJson() => _nonNull({
         'ref': ref.toJson(),
         'favorite': favorite ? true : null,
+        'saved': saved ? true : null,
         'edit': edit?.toJson(),
         'lyricsPlain': lyricsPlain,
         'lyricsSynced': lyricsSynced,
@@ -157,6 +162,7 @@ class TrackUserData {
   factory TrackUserData.fromJson(Map<String, dynamic> j) => TrackUserData(
         ref: TrackRef.fromJson(j['ref'] as Map<String, dynamic>),
         favorite: j['favorite'] as bool? ?? false,
+        saved: j['saved'] as bool? ?? false,
         edit: j['edit'] == null
             ? null
             : TrackEditData.fromJson(j['edit'] as Map<String, dynamic>),
