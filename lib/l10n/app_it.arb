@@ -4587,5 +4587,11 @@
   "@karaokePercent": {"placeholders": {"percent": {"type": "int"}}},
   "karaokePill": "Voce {percent} %",
   "@karaokePill": {"placeholders": {"percent": {"type": "int"}}},
-  "karaokeBypassed": "Spento su episodi e radio"
+  "karaokeBypassed": "Spento su episodi e radio",
+  "karaokeJamHostOnly": "Il karaoke lo comanda l’host della Jam",
+  "karaokeGuestsAllowed": "Gli ospiti possono usare il karaoke",
+  "karaokeJamLocalNote": "Nella Jam in casa suona un solo dispositivo: il karaoke vale per tutti.",
+  "karaokeJamBox": "Karaoke acceso da {name}, voce {percent} %",
+  "@karaokeJamBox": {"placeholders": {"name": {"type": "String"}, "percent": {"type": "int"}}},
+  "karaokeJamIgnore": "Ignora per me"
 }

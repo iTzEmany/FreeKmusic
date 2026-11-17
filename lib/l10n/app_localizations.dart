@@ -12606,6 +12606,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Spento su episodi e radio'**
   String get karaokeBypassed;
+
+  /// No description provided for @karaokeJamHostOnly.
+  ///
+  /// In it, this message translates to:
+  /// **'Il karaoke lo comanda l’host della Jam'**
+  String get karaokeJamHostOnly;
+
+  /// No description provided for @karaokeGuestsAllowed.
+  ///
+  /// In it, this message translates to:
+  /// **'Gli ospiti possono usare il karaoke'**
+  String get karaokeGuestsAllowed;
+
+  /// No description provided for @karaokeJamLocalNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Nella Jam in casa suona un solo dispositivo: il karaoke vale per tutti.'**
+  String get karaokeJamLocalNote;
+
+  /// No description provided for @karaokeJamBox.
+  ///
+  /// In it, this message translates to:
+  /// **'Karaoke acceso da {name}, voce {percent} %'**
+  String karaokeJamBox(String name, int percent);
+
+  /// No description provided for @karaokeJamIgnore.
+  ///
+  /// In it, this message translates to:
+  /// **'Ignora per me'**
+  String get karaokeJamIgnore;
 }
 
 class _AppLocalizationsDelegate

@@ -7972,4 +7972,22 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get karaokeBypassed => 'Spento su episodi e radio';
+
+  @override
+  String get karaokeJamHostOnly => 'Il karaoke lo comanda l’host della Jam';
+
+  @override
+  String get karaokeGuestsAllowed => 'Gli ospiti possono usare il karaoke';
+
+  @override
+  String get karaokeJamLocalNote =>
+      'Nella Jam in casa suona un solo dispositivo: il karaoke vale per tutti.';
+
+  @override
+  String karaokeJamBox(String name, int percent) {
+    return 'Karaoke acceso da $name, voce $percent %';
+  }
+
+  @override
+  String get karaokeJamIgnore => 'Ignora per me';
 }

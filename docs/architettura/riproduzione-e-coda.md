@@ -84,6 +84,7 @@ Regole del blocco:
 - `karaokeApplierProvider` (guardato dalla radice dell'app) manda al filtro lo stato salvato (`karaokeProvider`: acceso, livello) tramite `KaraokeController`, che non rimanda lo stesso valore.
 - Bypass su episodi e radio (`karaokeBypassProvider`): il filtro riceve `null` ma il livello salvato resta, e torna sul brano successivo. Il livello sopravvive a stop e a nuova inizializzazione del player.
 - Brani mono: lasciati intatti (Android: il processore resta inattivo; Linux: il filtro entra in `af` solo con 2+ canali).
+- Nella Jam (fase 129) il backend che suona ha il suo filtro (`JustAudioBackend(withVoiceFilter: true)`, senza equalizzatore; su Linux un altro tag di `DesktopVoiceFilter`) e il livello arriva da `JamState.karaoke`, non da `karaokeProvider`: vedi `sync-backup-jam.md`.
 
 ### Streaming
 

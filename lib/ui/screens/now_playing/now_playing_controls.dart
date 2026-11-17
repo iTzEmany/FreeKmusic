@@ -20,7 +20,7 @@ import '../../widgets/seek_bar.dart';
 import '../../widgets/smooth_position.dart';
 import '../../widgets/speed_button.dart';
 import '../devices/devices_sheet.dart';
-import '../../../providers/karaoke_providers.dart' show voiceFilterProvider;
+import '../../../providers/karaoke_providers.dart' show karaokeButtonVisibleProvider;
 import '../../widgets/karaoke_sheet.dart';
 import 'queue_sheet.dart';
 import '../../widgets/shuffle_button.dart';
@@ -172,7 +172,7 @@ class NpControls extends ConsumerWidget {
     this.karaoke = false,
   });
 
-  /// The karaoke microphone (the player only; the Jam has none).
+  /// The karaoke microphone (the player and the Jam; not a radio).
   final bool karaoke;
 
   /// A radio: no shuffle and no repeat, only the stations' own previous / next.
@@ -192,10 +192,13 @@ class NpControls extends ConsumerWidget {
     final repeat = ref.watch(repeatProvider).value ?? PlayRepeat.off;
     final ctrl = ref.read(playerControllerProvider);
     final repeatOn = repeat != PlayRepeat.off;
+    final mic = karaoke && (injected || !live) && ref.watch(karaokeButtonVisibleProvider);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         if (!live) const ShuffleModeButton(),
+        // The Jam has no shuffle: an empty slot as wide as the mic keeps play centred.
+        if (live && mic) const SizedBox(width: 48),
         IconButton(
           tooltip: l.previousTrack,
           iconSize: 36,
@@ -251,7 +254,7 @@ class NpControls extends ConsumerWidget {
             ),
           ),
         // Not a SizedBox: a spaceEvenly slot would shift the other buttons.
-        if (karaoke && !live && ref.watch(voiceFilterProvider) != null)
+        if (mic)
           const KaraokeButton(),
       ],
     );

@@ -19,6 +19,7 @@ import '../../widgets/smooth_position.dart';
 import '../now_playing/now_playing_controls.dart';
 import 'jam_cards.dart';
 import 'jam_header.dart';
+import 'jam_karaoke.dart';
 import 'jam_outputs_sheet.dart';
 import 'jam_parts.dart';
 import 'jam_queue_sheet.dart';
@@ -249,6 +250,7 @@ class _JamPlayer extends ConsumerWidget {
     return Column(
       children: [
         header,
+        const JamKaraokeBox(),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
@@ -307,6 +309,7 @@ class _JamPlayer extends ConsumerWidget {
                 const SizedBox(height: 8),
                 NpControls(
                   live: true,
+                  karaoke: true,
                   playing: jam.playing,
                   // Nothing playing: the three buttons are disabled.
                   onPrevious: hasCurrent

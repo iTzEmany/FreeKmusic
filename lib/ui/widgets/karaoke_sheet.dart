@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_log.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/karaoke_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../services/karaoke/karaoke_send_throttle.dart';
 import '../theme/tokens.dart';
 import 'cc_sheet.dart';
 import '../screens/lyrics/lyrics_screen.dart';
@@ -15,21 +17,27 @@ class KaraokeButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(voiceFilterProvider) == null) return const SizedBox.shrink();
+    if (!ref.watch(karaokeButtonVisibleProvider)) return const SizedBox.shrink();
+    final jam = ref.watch(jamKaraokeProvider);
     // Bypassed (episode, radio): the filter does nothing, so the mic looks off.
-    final on = ref.watch(karaokeProvider.select((k) => k.on)) &&
-        !ref.watch(karaokeBypassProvider);
+    final on = jam != null
+        ? jam.on
+        : ref.watch(karaokeProvider.select((k) => k.on)) && !ref.watch(karaokeBypassProvider);
+    // A guest without the host's permission: off, and the reason is the tooltip.
+    final enabled = jam?.canCommand ?? true;
+    final name = enabled ? context.l10n.karaoke : context.l10n.karaokeJamHostOnly;
     final cc = context.cc;
     // One node: the state is toggled, the name stays «Karaoke».
     return Semantics(
       button: true,
       excludeSemantics: true,
+      enabled: enabled,
       toggled: on,
-      label: context.l10n.karaoke,
-      onTap: () => showKaraokeSheet(context),
+      label: name,
+      onTap: enabled ? () => showKaraokeSheet(context) : null,
       child: IconButton(
-        tooltip: context.l10n.karaoke,
-        onPressed: () => showKaraokeSheet(context),
+        tooltip: name,
+        onPressed: enabled ? () => showKaraokeSheet(context) : null,
         icon: Icon(
           on ? Icons.mic_rounded : Icons.mic_none_rounded,
           color: on ? cc.accent : cc.textMuted,
@@ -57,17 +65,43 @@ Future<void> showKaraokeSheet(BuildContext context, {bool openLyrics = true}) =>
       ),
     );
 
-class _KaraokePanel extends ConsumerWidget {
+class _KaraokePanel extends ConsumerStatefulWidget {
   const _KaraokePanel({required this.openLyrics});
 
   final bool openLyrics;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_KaraokePanel> createState() => _KaraokePanelState();
+}
+
+class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
+  // In a Jam the level comes back from the host with a delay: the thumb stays on the finger.
+  double? _drag;
+  late final _send = KaraokeSendThrottle(_sendJam);
+
+  void _sendJam(double? level) {
+    sendJamKaraoke(ref, level).then((e) {
+      if (e != null) AppLog.d('karaoke: the Jam refused the level ($e)');
+    });
+  }
+
+  @override
+  void dispose() {
+    _send.flush();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final k = ref.watch(karaokeProvider);
-    final percent = (k.level * 100).round();
-    final bypass = ref.watch(karaokeBypassProvider);
+    final jam = ref.watch(jamKaraokeProvider);
+    final bypass = jam == null && ref.watch(karaokeBypassProvider);
+    final on = jam != null ? jam.on : k.on;
+    final enabled = jam?.canCommand ?? true;
+    // Off in a Jam: the slider shows (and keeps) this device's own level.
+    final level = _drag ?? (jam?.level ?? k.level);
+    final percent = (level * 100).round();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -76,20 +110,31 @@ class _KaraokePanel extends ConsumerWidget {
             l.karaokeBypassed,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
           ),
+        if (!enabled)
+          Text(
+            l.karaokeJamHostOnly,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+          ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(l.karaoke),
-          value: k.on,
-          onChanged: (v) {
-            setKaraokeOn(ref, v);
-            final track = ref.read(currentShadowRowProvider) ??
-                ref.read(liveCurrentTrackProvider).value;
-            if (v && openLyrics && track?.lyricsSynced != null) {
-              final nav = Navigator.of(context, rootNavigator: true);
-              Navigator.of(context).pop();
-              nav.push(MaterialPageRoute<void>(builder: (_) => const LyricsScreen()));
-            }
-          },
+          value: on,
+          onChanged: !enabled
+              ? null
+              : (v) {
+                  if (jam != null) {
+                    _sendJam(v ? level : null);
+                    return;
+                  }
+                  setKaraokeOn(ref, v);
+                  final track = ref.read(currentShadowRowProvider) ??
+                      ref.read(liveCurrentTrackProvider).value;
+                  if (v && widget.openLyrics && track?.lyricsSynced != null) {
+                    final nav = Navigator.of(context, rootNavigator: true);
+                    Navigator.of(context).pop();
+                    nav.push(MaterialPageRoute<void>(builder: (_) => const LyricsScreen()));
+                  }
+                },
         ),
         Row(
           children: [
@@ -98,10 +143,24 @@ class _KaraokePanel extends ConsumerWidget {
               child: Semantics(
                 label: l.karaokeVoice,
                 child: Slider(
-                  value: k.level,
+                  value: level,
                   divisions: 20,
                   semanticFormatterCallback: (v) => l.karaokePercent((v * 100).round()),
-                  onChanged: (v) => setKaraokeLevel(ref, v),
+                  onChanged: !enabled
+                      ? null
+                      : (v) {
+                          if (jam == null) return setKaraokeLevel(ref, v);
+                          setState(() => _drag = v);
+                          if (jam.on) {
+                            _send.add(v);
+                          } else {
+                            setKaraokeLevel(ref, v);
+                          }
+                        },
+                  onChangeEnd: (_) {
+                    _send.flush();
+                    setState(() => _drag = null);
+                  },
                 ),
               ),
             ),

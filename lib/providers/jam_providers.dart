@@ -26,6 +26,7 @@ import '../services/jam/jam_online_adder.dart';
 import '../services/jam/jam_output.dart';
 import '../services/jam/jam_part_feeder.dart';
 import '../services/jam/jam_state.dart';
+import '../services/karaoke/karaoke_controller.dart';
 import '../services/jam/remote/jam_remote_items.dart';
 import '../services/online/download_index.dart';
 import '../services/online/youtube_service.dart' show YtResult;
@@ -158,7 +159,7 @@ class _SpeakerPort implements SpeakerJamPort {
 
 /// Creates the backend used for Jam playback (overridden in tests).
 final jamBackendFactoryProvider = Provider<AudioBackend Function()>(
-  (ref) => JustAudioBackend.new,
+  (ref) => () => JustAudioBackend(withVoiceFilter: true), // D-587: the Jam's karaoke
 );
 
 final jamCacheDirProvider = FutureProvider<Directory>(
@@ -242,6 +243,8 @@ class JamController extends Notifier<JamUiState> {
   @visibleForTesting
   JamGuest Function(JamHost) guestFactory = (h) => JamGuest(local: h);
   JamOutput? _output;
+  // The Jam output's voice filter (null where there is none): follows `JamState.karaoke` (D-587).
+  KaraokeController? _karaoke;
   JamClock? _clock;
   JamTransport? _transport;
   CodecoreAudioHandler? _attachedTo;
@@ -302,6 +305,11 @@ class JamController extends Notifier<JamUiState> {
         decline(req);
       }
     };
+    // «Ignora per me» changed: the filter of this device follows at once.
+    ref.listen(settingsProvider.select((s) => s.karaokeJamIgnore), (_, _) {
+      final jam = state.jam;
+      if (state.active && jam != null) _applyKaraoke(jam);
+    });
     return const JamUiState();
   }
 
@@ -682,10 +690,13 @@ class JamController extends Notifier<JamUiState> {
     _media.cache = cache;
     _failures = 0;
     final clock = _clock = _makeClock(role);
+    final backend = ref.read(jamBackendFactoryProvider)();
+    final voice = backend.voiceFilter;
+    _karaoke = voice == null ? null : KaraokeController(voice);
     _output =
         JamOutput(
             deviceId: _ownId,
-            backend: ref.read(jamBackendFactoryProvider)(),
+            backend: backend,
             resolve: _media.resolve,
             clock: clock,
             latencyMs: ref.read(settingsProvider).jamLatencyMs,
@@ -770,6 +781,7 @@ class JamController extends Notifier<JamUiState> {
       return;
     }
     unawaited(_output?.apply(s));
+    _applyKaraoke(s);
     _media.precache(s);
     _media.syncPins(s);
     _adder?.seen(s.items);
@@ -777,6 +789,14 @@ class JamController extends Notifier<JamUiState> {
     unawaited(_part.feeder?.update(s));
     // Our part moved on: what the disk keeps for a closed app follows it (D-341).
     _local.refreshAside();
+  }
+
+  /// The Jam's level, or none with «Ignora per me» (remote guests only: in a local
+  /// Jam one device plays and the karaoke is for everyone). The local setting stays.
+  /// No bypass: Jam items are songs.
+  void _applyKaraoke(JamState s) {
+    final ignore = state.remote && ref.read(settingsProvider).karaokeJamIgnore;
+    unawaited(_karaoke?.apply(on: s.karaoke != null && !ignore, level: s.karaoke ?? 1, bypass: false));
   }
 
   void _onItemFailed(int id) {
@@ -1002,6 +1022,7 @@ class JamController extends Notifier<JamUiState> {
     _transport = null;
     await _output?.dispose();
     _output = null;
+    _karaoke = null;
     _adder?.dispose();
     _adder = null;
     await _media.dispose();

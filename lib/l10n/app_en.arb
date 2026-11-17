@@ -3858,5 +3858,10 @@
   "karaokeVoice": "Voice",
   "karaokePercent": "{percent} %",
   "karaokePill": "Voice {percent} %",
-  "karaokeBypassed": "Off on episodes and radio"
+  "karaokeBypassed": "Off on episodes and radio",
+  "karaokeJamHostOnly": "Only the Jam host controls the karaoke",
+  "karaokeGuestsAllowed": "Guests can use the karaoke",
+  "karaokeJamLocalNote": "Only one device plays in the home Jam: the karaoke applies to everyone.",
+  "karaokeJamBox": "Karaoke turned on by {name}, voice {percent} %",
+  "karaokeJamIgnore": "Ignore for me"
 }

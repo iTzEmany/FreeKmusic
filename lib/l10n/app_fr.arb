@@ -4079,5 +4079,10 @@
   "karaokeVoice": "Voix",
   "karaokePercent": "{percent} %",
   "karaokePill": "Voix {percent} %",
-  "karaokeBypassed": "Désactivé sur les épisodes et la radio"
+  "karaokeBypassed": "Désactivé sur les épisodes et la radio",
+  "karaokeJamHostOnly": "Le karaoké est commandé par l’hôte de la Jam",
+  "karaokeGuestsAllowed": "Les invités peuvent utiliser le karaoké",
+  "karaokeJamLocalNote": "Dans la Jam à la maison, un seul appareil joue : le karaoké vaut pour tous.",
+  "karaokeJamBox": "Karaoké activé par {name}, voix {percent} %",
+  "karaokeJamIgnore": "Ignorer pour moi"
 }
