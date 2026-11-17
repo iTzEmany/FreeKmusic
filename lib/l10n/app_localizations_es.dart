@@ -8045,7 +8045,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Separación fallida: se queda el filtro. Toca para reintentar.';
 
   @override
-  String get karaokeBase => 'Base';
+  String get karaokeBase => 'Instrumental';
 
   @override
   String get karaokeOriginal => 'Original';

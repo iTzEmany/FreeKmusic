@@ -8087,7 +8087,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Séparation échouée : le filtre reste. Touchez pour réessayer.';
 
   @override
-  String get karaokeBase => 'Base';
+  String get karaokeBase => 'Instrumental';
 
   @override
   String get karaokeOriginal => 'Original';

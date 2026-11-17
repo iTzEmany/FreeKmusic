@@ -8030,7 +8030,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Separação falhou: o filtro continua. Toque para tentar de novo.';
 
   @override
-  String get karaokeBase => 'Base';
+  String get karaokeBase => 'Instrumental';
 
   @override
   String get karaokeOriginal => 'Original';
