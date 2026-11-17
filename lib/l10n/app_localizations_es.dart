@@ -7999,4 +7999,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get karaokeBypassed => 'Apagado en episodios y radio';
+
+  @override
+  String get karaokeJamHostOnly =>
+      'El karaoke lo controla el anfitrión de la Jam';
+
+  @override
+  String get karaokeGuestsAllowed => 'Los invitados pueden usar el karaoke';
+
+  @override
+  String get karaokeJamLocalNote =>
+      'En la Jam en casa el karaoke vale para todas las salidas que lo admiten.';
+
+  @override
+  String karaokeJamBox(String name, int percent) {
+    return 'Karaoke activado por $name, voz $percent %';
+  }
+
+  @override
+  String get karaokeJamIgnore => 'Ignorar para mí';
+
+  @override
+  String get karaokeJamForbidden =>
+      'El anfitrión ha desactivado el karaoke para los invitados.';
 }

@@ -19,19 +19,20 @@ bool streamLooksExpired(Object e) {
 
 class JustAudioBackend implements AudioBackend, GaplessCapable {
   /// [withEqualizer] (Android only) puts an `AndroidEqualizer` in the player's
-  /// audio pipeline. Only the main player asks for it, and it is also the only
-  /// one with a voice filter (previews and the Jam's player have none): on
-  /// Android the `AudioProcessor` of the just_audio copy, on Linux (only)
-  /// mpv's `af`. Every backend the crossfade creates gets its own filter.
-  factory JustAudioBackend({bool withEqualizer = false}) {
-    if (withEqualizer && Platform.isAndroid) {
-      final eq = AndroidEqualizer();
+  /// audio pipeline; only the main player asks for it. The voice filter comes with
+  /// it, or alone with [withVoiceFilter] (the Jam's player, D-587); previews have
+  /// none. On Android it is the `AudioProcessor` of the just_audio copy, on Linux
+  /// (only) mpv's `af`. Every backend the crossfade creates gets its own filter.
+  factory JustAudioBackend({bool withEqualizer = false, bool withVoiceFilter = false}) {
+    final voice = withEqualizer || withVoiceFilter;
+    if (voice && Platform.isAndroid) {
+      final eq = withEqualizer ? AndroidEqualizer() : null;
       final player = AudioPlayer(
-        audioPipeline: AudioPipeline(androidAudioEffects: [eq]),
+        audioPipeline: eq == null ? null : AudioPipeline(androidAudioEffects: [eq]),
       );
-      return JustAudioBackend._(player, _AndroidEq(eq), _AndroidVoiceFilter(player));
+      return JustAudioBackend._(player, eq == null ? null : _AndroidEq(eq), _AndroidVoiceFilter(player));
     }
-    if (withEqualizer && DesktopVoiceFilter.supported) {
+    if (voice && DesktopVoiceFilter.supported) {
       final dv = DesktopVoiceFilter();
       return JustAudioBackend._(
         AudioPlayer(

@@ -3858,5 +3858,11 @@
   "karaokeVoice": "Voz",
   "karaokePercent": "{percent} %",
   "karaokePill": "Voz {percent} %",
-  "karaokeBypassed": "Apagado en episodios y radio"
+  "karaokeBypassed": "Apagado en episodios y radio",
+  "karaokeJamHostOnly": "El karaoke lo controla el anfitrión de la Jam",
+  "karaokeGuestsAllowed": "Los invitados pueden usar el karaoke",
+  "karaokeJamLocalNote": "En la Jam en casa el karaoke vale para todas las salidas que lo admiten.",
+  "karaokeJamBox": "Karaoke activado por {name}, voz {percent} %",
+  "karaokeJamIgnore": "Ignorar para mí",
+  "karaokeJamForbidden": "El anfitrión ha desactivado el karaoke para los invitados."
 }

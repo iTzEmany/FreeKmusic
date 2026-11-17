@@ -8,6 +8,7 @@ import '../../../providers/settings_providers.dart';
 import '../../../providers/share_hub.dart';
 import '../../../services/jam/jam_models.dart';
 import '../../theme/tokens.dart';
+import 'jam_karaoke.dart';
 
 /// «Uscite e sincronia»: which devices play, the offset, the latency and the
 /// shared volume.
@@ -115,6 +116,7 @@ class JamOutputsSheet extends ConsumerWidget {
                 const Icon(Icons.volume_up_rounded),
               ],
             ),
+            const JamKaraokeHostTile(),
           ],
         ),
       ),
