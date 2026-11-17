@@ -197,6 +197,8 @@ class JamState {
     this.mode = JamMode.host,
     this.speaker = false,
     this.speakerAwaySince,
+    this.karaoke,
+    this.karaokeGuests = false,
   });
 
   final int version;
@@ -224,6 +226,12 @@ class JamState {
 
   /// Epoch ms (host clock) when the speaker disappeared; null = it is there.
   final int? speakerAwaySince;
+
+  /// Karaoke voice level 0..1 for every output; null = off (JSON `kar.l`, D-587).
+  final double? karaoke;
+
+  /// The host lets guests command the karaoke (JSON `kar.g`, absent = false).
+  final bool karaokeGuests;
 
   JamParticipant? participant(String id) =>
       participants.where((p) => p.id == id).firstOrNull;
@@ -263,6 +271,9 @@ class JamState {
     bool? speaker,
     int? speakerAwaySince,
     bool clearSpeakerAway = false,
+    double? karaoke,
+    bool clearKaraoke = false,
+    bool? karaokeGuests,
   }) =>
       JamState(
         version: version ?? this.version,
@@ -282,6 +293,8 @@ class JamState {
         speaker: speaker ?? this.speaker,
         speakerAwaySince:
             clearSpeakerAway ? null : speakerAwaySince ?? this.speakerAwaySince,
+        karaoke: clearKaraoke ? null : karaoke ?? this.karaoke,
+        karaokeGuests: karaokeGuests ?? this.karaokeGuests,
       );
 
   Map<String, Object?> toJson() => {
@@ -301,6 +314,9 @@ class JamState {
         if (mode != JamMode.host) 'mode': mode.name,
         if (speaker) 'spk': true,
         if (speakerAwaySince != null) 'spkAway': speakerAwaySince,
+        // Old versions ignore the key; `l` is absent while karaoke is off (D-587).
+        if (karaoke != null || karaokeGuests)
+          'kar': {if (karaoke != null) 'l': karaoke, if (karaokeGuests) 'g': true},
       };
 
   static JamState? tryParse(Object? j) {
@@ -335,6 +351,8 @@ class JamState {
         outputs.add(o);
       }
     }
+    final kar = j['kar'];
+    final karL = kar is Map ? kar['l'] : null;
     final cur = j['current'];
     final vol = j['volume'];
     return JamState(
@@ -356,6 +374,8 @@ class JamState {
       speakerAwaySince: j['spk'] == true && j['spkAway'] is int && (j['spkAway'] as int) >= 0
           ? j['spkAway'] as int
           : null,
+      karaoke: karL is num && karL.isFinite ? karL.toDouble().clamp(0.0, 1.0) : null,
+      karaokeGuests: kar is Map && kar['g'] == true,
     );
   }
 }
@@ -384,6 +404,9 @@ enum JamCommandType {
   offerSpeaker,
   // After `offerSpeaker`, same reason: an older host answers `invalid`.
   continueOnPhone,
+  // After `continueOnPhone`, same reason: an older host answers `invalid` (D-587).
+  karaoke,
+  karaokeGuests,
 }
 
 class JamCommand {
@@ -395,7 +418,9 @@ class JamCommand {
       this.volume,
       this.deviceId,
       this.deviceIds,
-      this.mode});
+      this.mode,
+      this.karaoke,
+      this.allowed});
 
   const JamCommand.add(JamItem item) : this._(JamCommandType.add, item: item);
   const JamCommand.remove(int itemId)
@@ -438,8 +463,18 @@ class JamCommand {
   /// Host only (D-263): stops waiting for the speaker and plays on the host's phone.
   const JamCommand.continueOnPhone() : this._(JamCommandType.continueOnPhone);
 
+  /// Karaoke level for every output; null = off (D-587). Guests need the host's permission.
+  const JamCommand.karaoke(double? level)
+      : this._(JamCommandType.karaoke, karaoke: level);
+
+  /// Host only (D-587): whether guests may command the karaoke.
+  const JamCommand.karaokeGuests(bool allowed)
+      : this._(JamCommandType.karaokeGuests, allowed: allowed);
+
   final JamCommandType type;
   final JamMode? mode;
+  final double? karaoke;
+  final bool? allowed;
   final JamItem? item;
   final int? itemId, toIndex, positionMs;
   final double? volume;
@@ -456,6 +491,8 @@ class JamCommand {
         if (deviceId != null) 'device': deviceId,
         if (deviceIds != null) 'devices': deviceIds,
         if (mode != null) 'mode': mode!.name,
+        if (karaoke != null) 'l': karaoke,
+        if (allowed != null) 'g': allowed,
       };
 
   static JamCommand? tryParse(Object? j) {
@@ -522,6 +559,13 @@ class JamCommand {
         return const JamCommand.offerSpeaker();
       case JamCommandType.continueOnPhone:
         return const JamCommand.continueOnPhone();
+      case JamCommandType.karaoke:
+        final l = j['l'];
+        if (!j.containsKey('l')) return const JamCommand.karaoke(null);
+        return l is num && l.isFinite ? JamCommand.karaoke(l.toDouble()) : null;
+      case JamCommandType.karaokeGuests:
+        final g = j['g'];
+        return g is bool ? JamCommand.karaokeGuests(g) : null;
     }
   }
 }

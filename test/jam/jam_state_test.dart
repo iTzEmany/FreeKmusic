@@ -40,6 +40,7 @@ JamError? err(JamState s, JamCommand c, String from) =>
 void main() {
   remoteTests();
   speakerTests();
+  karaokeTests();
   videoIdTests();
   togetherTests();
   unsafeIdsTests();
@@ -900,5 +901,91 @@ void remoteTests() {
     expect(jamQueueFull(filled(maxJamItems - jamManualSeats, 0)), isFalse);
     expect(jamQueueFull(filled(maxJamItems - jamManualSeats, 0), reserve: jamManualSeats), isTrue);
     expect(jamQueueFull(filled(10, 0), reserve: jamManualSeats, inFlight: maxJamItems - jamManualSeats - 10), isTrue);
+  });
+}
+
+void karaokeTests() {
+  group('karaoke (D-587)', () {
+    test('toJson writes kar only when on or guests allowed; wire format is {l, g}', () {
+      expect(start().toJson().containsKey('kar'), false);
+      final on = start().copyWith(karaoke: 0.25, karaokeGuests: true);
+      expect(on.toJson()['kar'], {'l': 0.25, 'g': true});
+      // Guests allowed with karaoke off: the permission still travels, no level.
+      expect(start().copyWith(karaokeGuests: true).toJson()['kar'], {'g': true});
+      final back = JamState.tryParse(on.toJson())!;
+      expect(back.karaoke, 0.25);
+      expect(back.karaokeGuests, true);
+    });
+
+    test('a state without kar is off; junk in kar is ignored; level clamped', () {
+      final plain = start().toJson();
+      final p = JamState.tryParse(plain)!;
+      expect(p.karaoke, isNull);
+      expect(p.karaokeGuests, false);
+      for (final junk in <Object?>['x', 3, [], {'l': 'a', 'g': 'b'}, {'l': double.nan}]) {
+        final s = JamState.tryParse({...plain, 'kar': junk})!;
+        expect(s.karaoke, isNull, reason: '$junk');
+        expect(s.karaokeGuests, false, reason: '$junk');
+      }
+      expect(JamState.tryParse({...plain, 'kar': {'l': 7}})!.karaoke, 1.0);
+      expect(JamState.tryParse({...plain, 'kar': {'l': -1}})!.karaoke, 0.0);
+    });
+
+    test('a new state parses with today parser keys untouched (old reader ignores kar)', () {
+      final j = start().copyWith(karaoke: 0.5).toJson();
+      // What an old version reads: everything but the unknown key.
+      final old = Map<String, Object?>.of(j)..remove('kar');
+      expect(JamState.tryParse(j)!.version, JamState.tryParse(old)!.version);
+      expect(j.keys.toSet().difference(old.keys.toSet()), {'kar'});
+    });
+
+    test('commands round trip; off is a command without level', () {
+      final on = JamCommand.tryParse(const JamCommand.karaoke(0.4).toJson())!;
+      expect(on.type, JamCommandType.karaoke);
+      expect(on.karaoke, 0.4);
+      expect(const JamCommand.karaoke(null).toJson(), {'cmd': 'karaoke'});
+      expect(JamCommand.tryParse({'cmd': 'karaoke'})!.karaoke, isNull);
+      expect(JamCommand.tryParse({'cmd': 'karaoke', 'l': 'x'}), isNull);
+      expect(JamCommand.tryParse({'cmd': 'karaoke', 'l': double.nan}), isNull);
+      final g = JamCommand.tryParse(const JamCommand.karaokeGuests(true).toJson())!;
+      expect(g.type, JamCommandType.karaokeGuests);
+      expect(g.allowed, true);
+      expect(JamCommand.tryParse({'cmd': 'karaokeGuests'}), isNull);
+    });
+
+    test('host always applies; version + 1; level clamped; off clears it', () {
+      var s = ok(start(), const JamCommand.karaoke(0.3), host);
+      expect(s.karaoke, 0.3);
+      expect(s.version, 1);
+      s = ok(s, const JamCommand.karaoke(5), host);
+      expect(s.karaoke, 1.0);
+      s = ok(s, const JamCommand.karaoke(null), host);
+      expect(s.karaoke, isNull);
+      expect(err(s, const JamCommand.karaoke(double.nan), host), JamError.invalid);
+    });
+
+    test('guest: refused with permission off, applied with it on', () {
+      final s = start();
+      expect(err(s, const JamCommand.karaoke(0.5), guest), JamError.forbidden);
+      final allowed = ok(s, const JamCommand.karaokeGuests(true), host);
+      final n = ok(allowed, const JamCommand.karaoke(0.5), guest);
+      expect(n.karaoke, 0.5);
+      expect(n.karaokeGuests, true);
+      expect(ok(n, const JamCommand.karaoke(null), guest).karaoke, isNull);
+    });
+
+    test('only the host changes the permission; same value is a no-op', () {
+      expect(err(start(), const JamCommand.karaokeGuests(true), guest), JamError.forbidden);
+      final on = ok(start(), const JamCommand.karaokeGuests(true), host);
+      expect(on.version, 1);
+      expect(ok(on, const JamCommand.karaokeGuests(true), host).version, 1);
+      final off = ok(on, const JamCommand.karaokeGuests(false), host);
+      expect(err(off, const JamCommand.karaoke(0.5), guest), JamError.forbidden);
+    });
+
+    test('karaoke is not blocked by a missing speaker', () {
+      final s = speakerJam(away: 10);
+      expect(err(s, const JamCommand.karaoke(0.5), host), isNull);
+    });
   });
 }

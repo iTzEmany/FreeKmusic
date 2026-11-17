@@ -289,6 +289,19 @@ JamResult applyCommand(
       if (s.speakerAwaySince == null) return const JamResult.fail(JamError.invalid);
       return commit(s.copyWith(speaker: false, clearSpeakerAway: true));
 
+    case JamCommandType.karaoke:
+      if (!isHost && !s.karaokeGuests) return const JamResult.fail(JamError.forbidden);
+      final l = cmd.karaoke;
+      if (l != null && l.isNaN) return const JamResult.fail(JamError.invalid);
+      final level = l?.clamp(0.0, 1.0);
+      if (level == s.karaoke) return JamResult.ok(s);
+      return commit(level == null ? s.copyWith(clearKaraoke: true) : s.copyWith(karaoke: level));
+
+    case JamCommandType.karaokeGuests:
+      if (!isHost) return const JamResult.fail(JamError.forbidden);
+      if (cmd.allowed == s.karaokeGuests) return JamResult.ok(s);
+      return commit(s.copyWith(karaokeGuests: cmd.allowed));
+
     case JamCommandType.end:
       if (!isHost) return const JamResult.fail(JamError.forbidden);
       return JamResult.ok(
