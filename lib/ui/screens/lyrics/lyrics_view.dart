@@ -18,7 +18,7 @@ import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lrclib_client.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/show_msg.dart';
-import '../now_playing/karaoke_sheet.dart';
+import '../../widgets/karaoke_sheet.dart';
 import 'lyrics_editor.dart';
 
 /// Synchronised lyrics that scroll by themselves (variable-height rows, the
@@ -223,7 +223,8 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               ? const SizedBox.shrink()
               : _RomanizationNotice(notice),
           if (ref.watch(voiceFilterProvider) != null &&
-              ref.watch(karaokeProvider.select((k) => k.on)))
+              ref.watch(karaokeProvider.select((k) => k.on)) &&
+              !ref.watch(karaokeBypassProvider))
             const _KaraokePill(),
           Expanded(child: list),
         ],

@@ -3857,5 +3857,6 @@
   "karaoke": "Karaoke",
   "karaokeVoice": "Stimme",
   "karaokePercent": "{percent} %",
-  "karaokePill": "Stimme {percent} %"
+  "karaokePill": "Stimme {percent} %",
+  "karaokeBypassed": "Aus bei Episoden und Radio"
 }

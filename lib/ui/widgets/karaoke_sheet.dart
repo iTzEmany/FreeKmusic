@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../l10n/l10n_ext.dart';
-import '../../../providers/karaoke_providers.dart';
-import '../../../providers/player_providers.dart';
-import '../../theme/tokens.dart';
-import '../../widgets/cc_sheet.dart';
-import '../lyrics/lyrics_screen.dart';
+import '../../l10n/l10n_ext.dart';
+import '../../providers/karaoke_providers.dart';
+import '../../providers/player_providers.dart';
+import '../theme/tokens.dart';
+import 'cc_sheet.dart';
+import '../screens/lyrics/lyrics_screen.dart';
 
 /// The microphone of «In riproduzione» (D-584): absent where the backend has no
 /// voice filter (macOS, iOS, Windows); opens [showKaraokeSheet].
@@ -16,14 +16,24 @@ class KaraokeButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(voiceFilterProvider) == null) return const SizedBox.shrink();
-    final on = ref.watch(karaokeProvider.select((k) => k.on));
+    // Bypassed (episode, radio): the filter does nothing, so the mic looks off.
+    final on = ref.watch(karaokeProvider.select((k) => k.on)) &&
+        !ref.watch(karaokeBypassProvider);
     final cc = context.cc;
-    return IconButton(
-      tooltip: context.l10n.karaoke,
-      onPressed: () => showKaraokeSheet(context),
-      icon: Icon(
-        on ? Icons.mic_rounded : Icons.mic_none_rounded,
-        color: on ? cc.accent : cc.textMuted,
+    // One node: the state is toggled, the name stays «Karaoke».
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      toggled: on,
+      label: context.l10n.karaoke,
+      onTap: () => showKaraokeSheet(context),
+      child: IconButton(
+        tooltip: context.l10n.karaoke,
+        onPressed: () => showKaraokeSheet(context),
+        icon: Icon(
+          on ? Icons.mic_rounded : Icons.mic_none_rounded,
+          color: on ? cc.accent : cc.textMuted,
+        ),
       ),
     );
   }
@@ -57,9 +67,15 @@ class _KaraokePanel extends ConsumerWidget {
     final l = context.l10n;
     final k = ref.watch(karaokeProvider);
     final percent = (k.level * 100).round();
+    final bypass = ref.watch(karaokeBypassProvider);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (bypass)
+          Text(
+            l.karaokeBypassed,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+          ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(l.karaoke),

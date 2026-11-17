@@ -23,6 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:codecore/providers/karaoke_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import '../support/app_harness.dart';
 import '../support/fake_voice_filter.dart';
 
@@ -94,7 +95,8 @@ void main() {
     await h.dispose(tester);
   });
 
-  Future<Harness> openKaraokePlayer(WidgetTester tester, {required bool voice}) async {
+  Future<Harness> openKaraokePlayer(WidgetTester tester,
+      {required bool voice, bool bypass = false}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -102,7 +104,9 @@ void main() {
     if (voice) h.backend.voiceFilter = FakeVoiceFilter();
     final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
     await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
-    await h.pump(tester, const NowPlayingScreen());
+    await h.pump(tester, const NowPlayingScreen(), extraOverrides: [
+      if (bypass) karaokeBypassProvider.overrideWithValue(true),
+    ]);
     return h;
   }
 
@@ -129,6 +133,33 @@ void main() {
     final ctx = tester.element(find.byType(Switch));
     expect(ProviderScope.containerOf(ctx).read(karaokeProvider).on, isTrue);
     sem0.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('karaoke: TalkBack reads the microphone as «Karaoke» with its on/off state',
+      (tester) async {
+    final sem0 = tester.ensureSemantics();
+    final h = await openKaraokePlayer(tester, voice: true);
+    mic() => tester.getSemantics(find.byTooltip('Karaoke'));
+    expect(mic(), isSemantics(label: 'Karaoke', hasToggledState: true, isToggled: false));
+    final c = ProviderScope.containerOf(tester.element(find.byTooltip('Karaoke')));
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: true));
+    await tester.pump();
+    expect(mic(), isSemantics(label: 'Karaoke', hasToggledState: true, isToggled: true));
+    sem0.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('karaoke: on an episode or radio the microphone looks off and the sheet says why',
+      (tester) async {
+    final h = await openKaraokePlayer(tester, voice: true, bypass: true);
+    final c = ProviderScope.containerOf(tester.element(find.byTooltip('Karaoke')));
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: true));
+    await tester.pump();
+    expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+    await tester.tap(find.byTooltip('Karaoke'));
+    await tester.pumpAndSettle();
+    expect(find.text('Spento su episodi e radio'), findsOneWidget);
     await h.dispose(tester);
   });
 

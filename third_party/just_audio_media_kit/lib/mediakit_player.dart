@@ -59,6 +59,11 @@ class MediaKitPlayer extends AudioPlayerPlatform {
   /// `setRate`/`setPitch` of media_kit overwrite `af` with `scaletempo`.
   String _voiceAf = '';
 
+  /// The track has 2+ channels (from `audio-params`); until it is known, and on
+  /// mono, the voice filter is left out (nothing to subtract, and the graph
+  /// would drop a mono track ~10 dB).
+  bool _stereo = false;
+
   MediaKitPlayer(super.id, {this.voiceTag}) {
     _player = Player(
         configuration: PlayerConfiguration(
@@ -75,6 +80,16 @@ class MediaKitPlayer extends AudioPlayerPlatform {
     }
 
     _streamSubscriptions = [
+      _player.stream.audioParams.listen((p) {
+        final stereo = (p.channelCount ?? 0) >= 2;
+        if (stereo == _stereo) return;
+        _stereo = stereo;
+        if (_voiceAf.isNotEmpty) {
+          _writeAf().catchError((Object e, StackTrace st) {
+            _logger.warning('af rewrite failed', e, st);
+          });
+        }
+      }),
       _player.stream.duration.listen((duration) {
         if (_currentMedia?.extras?['overrideDuration'] != null) return;
 
@@ -314,7 +329,7 @@ class MediaKitPlayer extends AudioPlayerPlatform {
   Future<void> applyVoiceFilter(String af, {List<String>? command}) {
     final wasOn = _voiceAf.isNotEmpty;
     _voiceAf = af;
-    if (command != null && wasOn && af.isNotEmpty) {
+    if (command != null && wasOn && af.isNotEmpty && _stereo) {
       return sendCommand(_player, command);
     }
     return _writeAf();
@@ -328,7 +343,7 @@ class MediaKitPlayer extends AudioPlayerPlatform {
         ? 'scaletempo:scale=${(s.rate / s.pitch).toStringAsFixed(8)}'
         : '';
     return setProperty(
-        _player, 'af', [tempo, _voiceAf].where((e) => e.isNotEmpty).join(','));
+        _player, 'af', [tempo, _stereo ? _voiceAf : ''].where((e) => e.isNotEmpty).join(','));
   }
 
   @override

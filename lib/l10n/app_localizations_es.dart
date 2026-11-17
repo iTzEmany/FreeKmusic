@@ -7996,4 +7996,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String karaokePill(int percent) {
     return 'Voz $percent %';
   }
+
+  @override
+  String get karaokeBypassed => 'Apagado en episodios y radio';
 }

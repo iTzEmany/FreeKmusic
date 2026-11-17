@@ -2,9 +2,9 @@
 
 ## Obiettivo
 Pulsante microfono in «In riproduzione» e nella vista testi che apre il cursore della voce 0–100 %: il filtro in tempo
-reale abbassa la voce su file locali e streaming, su Android, Linux e Windows, anche col crossfade; resta acceso fra un
-brano e l'altro, il livello si ricorda, si spegne da solo su episodi e radio. Su macOS e iOS il microfono non c'è
-(D-600). Fuori: «Alta qualità» (fase 128), Jam (fase 129), karaoke dal menu del brano (D-584).
+reale abbassa la voce su file locali e streaming, su Android e Linux, anche col crossfade; resta acceso fra un
+brano e l'altro, il livello si ricorda, si spegne da solo su episodi e radio. Su Windows, macOS e iOS il microfono non c'è
+(D-600, D-617: la libmpv di Windows non ha i filtri). Fuori: «Alta qualità» (fase 128), Jam (fase 129), karaoke dal menu del brano (D-584).
 
 ## Riferimenti
 D-583, D-584, D-586, D-600, D-603; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)

@@ -8003,4 +8003,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String karaokePill(int percent) {
     return 'Stimme $percent %';
   }
+
+  @override
+  String get karaokeBypassed => 'Aus bei Episoden und Radio';
 }

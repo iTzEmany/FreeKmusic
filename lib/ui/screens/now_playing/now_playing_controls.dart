@@ -21,7 +21,7 @@ import '../../widgets/smooth_position.dart';
 import '../../widgets/speed_button.dart';
 import '../devices/devices_sheet.dart';
 import '../../../providers/karaoke_providers.dart' show voiceFilterProvider;
-import 'karaoke_sheet.dart';
+import '../../widgets/karaoke_sheet.dart';
 import 'queue_sheet.dart';
 import '../../widgets/shuffle_button.dart';
 

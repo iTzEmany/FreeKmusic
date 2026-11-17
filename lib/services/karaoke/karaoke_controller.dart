@@ -1,4 +1,3 @@
-import '../../core/app_log.dart';
 import '../audio/equalizer.dart';
 
 /// Pushes the karaoke state to the playback backend's [VoiceFilter] (D-584).
@@ -23,11 +22,6 @@ class KaraokeController {
     if (_sent && target == _last) return;
     _sent = true;
     _last = target;
-    try {
-      await _filter.setLevel(target);
-    } on Object catch (e, st) {
-      _sent = false; // try again on the next change
-      AppLog.w('voice filter could not be applied', e, st);
-    }
+    await _filter.setLevel(target); // the backends log their own errors
   }
 }

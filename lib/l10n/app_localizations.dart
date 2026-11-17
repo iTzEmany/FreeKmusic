@@ -12600,6 +12600,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Voce {percent} %'**
   String karaokePill(int percent);
+
+  /// No description provided for @karaokeBypassed.
+  ///
+  /// In it, this message translates to:
+  /// **'Spento su episodi e radio'**
+  String get karaokeBypassed;
 }
 
 class _AppLocalizationsDelegate

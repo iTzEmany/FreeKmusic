@@ -11,6 +11,7 @@ Base: `just_audio_media_kit` 2.1.0 (pub.dev). Collegata in `pubspec.yaml` con `d
 - `lib/just_audio_media_kit.dart`: `JustAudioMediaKit.voiceFilterTag(int)` e `JustAudioMediaKit.setVoiceFilter(tag, af, {command})` (un player che fallisce è registrato e non ferma gli altri);
   `init` legge il tag da `audioLoadConfiguration.darwinLoadControl.preferredPeakBitRate` (campo inutilizzato su
   Linux/Windows) e applica il filtro già memorizzato, così un player ricreato (stop, poi nuovo brano) lo mantiene.
+- `lib/mediakit_player.dart`: il filtro della voce entra in `af` solo quando `audio-params/channel-count` (flusso `audioParams`) è ≥ 2: sui brani mono il grafo lavfi abbasserebbe di ~10 dB senza togliere la voce.
 
 ## Perché
 Filtro della voce del karaoke (R-243). L'`id` dell'`AudioPlayer` di just_audio è privato e cambia a ogni reinizializzazione:

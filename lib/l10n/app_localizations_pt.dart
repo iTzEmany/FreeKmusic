@@ -7982,4 +7982,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String karaokePill(int percent) {
     return 'Voz $percent %';
   }
+
+  @override
+  String get karaokeBypassed => 'Desligado em episódios e rádio';
 }

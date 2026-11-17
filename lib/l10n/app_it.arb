@@ -4586,5 +4586,6 @@
   "karaokePercent": "{percent} %",
   "@karaokePercent": {"placeholders": {"percent": {"type": "int"}}},
   "karaokePill": "Voce {percent} %",
-  "@karaokePill": {"placeholders": {"percent": {"type": "int"}}}
+  "@karaokePill": {"placeholders": {"percent": {"type": "int"}}},
+  "karaokeBypassed": "Spento su episodi e radio"
 }
