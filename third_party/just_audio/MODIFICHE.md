@@ -9,7 +9,7 @@ Solo Android più un metodo Dart. Il piattaforma-interface non cambia: il messag
 - `android/src/main/java/com/ryanheise/just_audio/VoiceFilterProcessor.java` (nuovo): `AudioProcessor` Media3
   (`BaseAudioProcessor`). Su stereo 16 bit o float: medio m=(L+R)/2 e laterale s=(L-R)/2; il medio passa in un
   Butterworth del 2° ordine a 150 Hz (basso e cassa); uscita `L = basso + livello*(m-basso) + s`, `R = basso +
-  livello*(m-basso) - s`. Livello 1.0 = copia identica dei byte; mono e altri formati = processore inattivo.
+  livello*(m-basso) - s`. Livello 1.0 (o null, o NaN) = copia identica dei byte, ma il passa-basso continua a seguire il medio, così abbassare il livello dopo non parte da uno stato vecchio; mono e altri formati = processore inattivo.
   Livello `volatile`, ammorbidito per frame (nessun click), cambia senza ripreparare il player.
 - `android/src/main/java/com/ryanheise/just_audio/VoiceFilterRenderersFactory.java` (nuovo): sottoclasse di
   `DefaultRenderersFactory`; `buildAudioSink` è quello di default più `setAudioProcessors({processore})`.
@@ -18,7 +18,7 @@ Solo Android più un metodo Dart. Il piattaforma-interface non cambia: il messag
 - `android/build.gradle.kts` riga 76: `testImplementation("junit:junit:4.13.2")`.
 - `android/src/test/java/com/ryanheise/just_audio/VoiceFilterProcessorTest.java` (nuovo): test JVM del processore.
 - `lib/just_audio.dart`: campo `_voiceLevel` (riga 117); `AudioPlayer.setAndroidVoiceLevel(double?)` con `_sendVoiceLevel`
-  (righe 1185-1199); righe 1679-1685 dentro `setPlatform`: dopo la creazione del player nativo rimanda il livello
+  (righe 1185-1199; NaN vale null; attivo anche sotto `flutter test`, come gli effetti, così `test/services/audio/android_voice_level_test.dart` prova il livello rimandato dopo `stop()`); righe 1679-1685 dentro `setPlatform`: dopo la creazione del player nativo rimanda il livello
   ricordato (dopo uno `stop()` il player nativo nasce con un id nuovo).
 
 ## Perché

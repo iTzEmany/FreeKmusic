@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../core/app_log.dart';
 import 'audio_backend.dart';
+import 'desktop_voice_filter.dart';
 import 'equalizer.dart';
 
 /// Whether a failed stream load is worth one more address. ExoPlayer hides the
@@ -18,19 +19,36 @@ bool streamLooksExpired(Object e) {
 
 class JustAudioBackend implements AudioBackend, GaplessCapable {
   /// [withEqualizer] (Android only) puts an `AndroidEqualizer` in the player's
-  /// audio pipeline. Only the main player asks for it.
+  /// audio pipeline. Only the main player asks for it, and it is also the only
+  /// one with a voice filter (previews and the Jam's player have none): on
+  /// Android the `AudioProcessor` of the just_audio copy, on Linux (only)
+  /// mpv's `af`. Every backend the crossfade creates gets its own filter.
   factory JustAudioBackend({bool withEqualizer = false}) {
     if (withEqualizer && Platform.isAndroid) {
       final eq = AndroidEqualizer();
+      final player = AudioPlayer(
+        audioPipeline: AudioPipeline(androidAudioEffects: [eq]),
+      );
+      return JustAudioBackend._(player, _AndroidEq(eq), _AndroidVoiceFilter(player));
+    }
+    if (withEqualizer && DesktopVoiceFilter.supported) {
+      final dv = DesktopVoiceFilter();
       return JustAudioBackend._(
-        AudioPlayer(audioPipeline: AudioPipeline(androidAudioEffects: [eq])),
-        _AndroidEq(eq),
+        AudioPlayer(
+          audioLoadConfiguration: AudioLoadConfiguration(
+            darwinLoadControl: DarwinLoadControl(
+              preferredPeakBitRate: dv.preferredPeakBitRate,
+            ),
+          ),
+        ),
+        null,
+        dv,
       );
     }
-    return JustAudioBackend._(AudioPlayer(), null);
+    return JustAudioBackend._(AudioPlayer(), null, null);
   }
 
-  JustAudioBackend._(this._player, this.equalizer) {
+  JustAudioBackend._(this._player, this.equalizer, this.voiceFilter) {
     _indexSub = _player.currentIndexStream.listen(_onIndex);
   }
 
@@ -49,12 +67,8 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   @override
   final Equalizer? equalizer;
 
-  // Android main player only (it is the one built `withEqualizer`; previews and
-  // the Jam's player have none). Uses `setAndroidVoiceLevel` of the local
-  // just_audio copy (127.2); desktop gets its own in 127.3.
   @override
-  late final VoiceFilter? voiceFilter =
-      equalizer != null ? _AndroidVoiceFilter(_player) : null;
+  final VoiceFilter? voiceFilter;
 
   @override
   Stream<Duration> get position => _player.positionStream;
@@ -222,8 +236,16 @@ class _AndroidVoiceFilter implements VoiceFilter {
 
   final AudioPlayer _player;
 
+  // The call can fail while the native player is being replaced; the new one
+  // gets the remembered level from just_audio itself, so a failure is only logged.
   @override
-  Future<void> setLevel(double? level) => _player.setAndroidVoiceLevel(level);
+  Future<void> setLevel(double? level) async {
+    try {
+      await _player.setAndroidVoiceLevel(level);
+    } catch (e, st) {
+      AppLog.w('voice filter: setLevel($level) failed', e, st);
+    }
+  }
 }
 
 class _AndroidEq implements Equalizer {

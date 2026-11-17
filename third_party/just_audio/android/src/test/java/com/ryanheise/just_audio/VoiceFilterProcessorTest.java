@@ -104,6 +104,42 @@ public class VoiceFilterProcessorTest {
     }
 
     @Test
+    public void nanLevelIsBypass() throws Exception {
+        VoiceFilterProcessor p = processor(2, C.ENCODING_PCM_16BIT);
+        p.setLevel(Double.NaN);
+        short[] in = stereo(RATE, 12000, 440, 9000, 3000);
+        assertArrayEquals(in, run(p, in));
+    }
+
+    /** Largest distance between the first second after lowering to 0 and the ideal (continuous filter) output. */
+    private static double maxErrorAfterLowering(boolean bypassFirst) throws Exception {
+        short[] bass = stereo(RATE, 8000, 60, 8000, 60);
+        // Reference: level 0 for 2 s, so its second second is the steady low band.
+        VoiceFilterProcessor ref = processor(2, C.ENCODING_PCM_16BIT);
+        ref.setLevel(0.0);
+        run(ref, bass);
+        short[] low = run(ref, bass);
+        VoiceFilterProcessor p = processor(2, C.ENCODING_PCM_16BIT);
+        if (bypassFirst) run(p, bass); // level 1: the filter state must keep following the signal
+        else run(p, new short[bass.length]); // a state that knows nothing about the bass
+        p.setLevel(0.0);
+        short[] out = run(p, bass);
+        double level = 1.0, worst = 0;
+        for (int i = 0; i < 1000; i++) {
+            level = level < 1e-4 ? 0.0 : level - level * 0.002; // the processor's ramp towards 0
+            double expected = low[2 * i] + level * (bass[2 * i] - low[2 * i]);
+            worst = Math.max(worst, Math.abs(out[2 * i] - expected));
+        }
+        return worst;
+    }
+
+    @Test
+    public void loweringTheLevelAfterBypassStartsWithoutABlip() throws Exception {
+        assertTrue(maxErrorAfterLowering(true) < 4);
+        assertTrue("the check can tell a stale state", maxErrorAfterLowering(false) > 40);
+    }
+
+    @Test
     public void halfLevelHalvesTheCentre() throws Exception {
         VoiceFilterProcessor p = processor(2, C.ENCODING_PCM_16BIT);
         p.setLevel(0.5);

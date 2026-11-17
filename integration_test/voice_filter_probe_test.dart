@@ -6,7 +6,9 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:codecore/services/audio/crossfade_engine.dart';
 import 'package:codecore/services/audio/desktop_voice_filter.dart';
+import 'package:codecore/services/audio/just_audio_backend.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:just_audio/just_audio.dart';
@@ -244,6 +246,26 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     expect(p.position, greaterThan(Duration.zero));
     await p.dispose();
+    await sub.cancel();
+    expect(logs, isEmpty);
+  });
+
+  test('CrossfadeEngine of JustAudioBackends has a voice filter and a level change does not error', () async {
+    final logs = <String>[];
+    Logger.root.level = Level.ALL;
+    final sub = Logger.root.onRecord.listen((r) {
+      if (r.level >= Level.WARNING) logs.add('${r.loggerName}: ${r.message}');
+    });
+    final engine = CrossfadeEngine(() => JustAudioBackend(withEqualizer: true));
+    expect(engine.voiceFilter, isNotNull);
+    await engine.voiceFilter!.setLevel(0.5);
+    await engine.load('${dir.path}/silent.wav');
+    await engine.play();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await engine.voiceFilter!.setLevel(0.1);
+    await engine.voiceFilter!.setLevel(null);
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await engine.dispose();
     await sub.cancel();
     expect(logs, isEmpty);
   });

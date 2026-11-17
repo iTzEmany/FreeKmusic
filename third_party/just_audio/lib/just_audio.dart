@@ -1186,8 +1186,8 @@ class AudioPlayer {
   /// processor, 0.0 (voice as low as it goes) to 1.0 (untouched); null is 1.0.
   /// Remembered and sent again when the platform player is recreated.
   Future<void> setAndroidVoiceLevel(double? level) async {
-    if (_disposed || !_isAndroid()) return;
-    _voiceLevel = level;
+    if (_disposed || (!_isAndroid() && !_isUnitTest())) return;
+    _voiceLevel = level == null || level.isNaN ? null : level;
     // An idle player has no native side yet: it gets the level when it wakes up.
     if (await _platform is _IdleAudioPlayer) return;
     await _sendVoiceLevel(_id!);

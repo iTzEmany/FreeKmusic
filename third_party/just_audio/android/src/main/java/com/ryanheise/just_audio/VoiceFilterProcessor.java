@@ -29,7 +29,7 @@ public final class VoiceFilterProcessor extends BaseAudioProcessor {
 
     /** Level 0..1 of the voice; null or 1 means untouched. */
     public void setLevel(Double newLevel) {
-        target = newLevel == null ? 1.0 : Math.max(0.0, Math.min(1.0, newLevel));
+        target = newLevel == null || newLevel.isNaN() ? 1.0 : Math.max(0.0, Math.min(1.0, newLevel));
     }
 
     @Override
@@ -61,12 +61,17 @@ public final class VoiceFilterProcessor extends BaseAudioProcessor {
         if (!input.hasRemaining()) return;
         int size = input.remaining();
         ByteBuffer out = replaceOutputBuffer(size);
+        boolean isFloat = inputAudioFormat.encoding == C.ENCODING_PCM_FLOAT;
         if (level == 1.0 && target == 1.0) {
+            // Bytes unchanged, but the low-pass keeps following the mid, so a later level change starts clean.
+            for (int i = input.position(); i < input.limit(); i += isFloat ? 8 : 4) {
+                lowPass(isFloat ? (input.getFloat(i) + input.getFloat(i + 4)) * 0.5
+                        : (input.getShort(i) + input.getShort(i + 2)) * 0.5);
+            }
             out.put(input);
             out.flip();
             return;
         }
-        boolean isFloat = inputAudioFormat.encoding == C.ENCODING_PCM_FLOAT;
         while (input.hasRemaining()) {
             if (isFloat) {
                 process(input.getFloat(), input.getFloat());
@@ -84,12 +89,17 @@ public final class VoiceFilterProcessor extends BaseAudioProcessor {
         level = Math.abs(t - level) < 1e-4 ? t : level + (t - level) * SMOOTHING;
         double m = (l + r) * 0.5;
         double s = (l - r) * 0.5;
-        double low = b0 * m + z1;
-        z1 = b1 * m - a1 * low + z2;
-        z2 = b0 * m - a2 * low;
+        double low = lowPass(m);
         double mid = low + level * (m - low);
         outL = mid + s;
         outR = mid - s;
+    }
+
+    private double lowPass(double m) {
+        double low = b0 * m + z1;
+        z1 = b1 * m - a1 * low + z2;
+        z2 = b0 * m - a2 * low;
+        return low;
     }
 
     private static short clip(double v) {
