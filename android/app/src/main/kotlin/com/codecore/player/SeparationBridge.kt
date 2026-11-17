@@ -9,6 +9,7 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.io.BufferedOutputStream
@@ -17,6 +18,7 @@ import java.io.IOException
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.Executors
+import kotlin.math.sqrt
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -29,7 +31,13 @@ object SeparationBridge {
     private class Failure(val code: String, message: String, cause: Throwable? = null) :
         Exception(message, cause)
 
-    private val executor = Executors.newSingleThreadExecutor()
+    // Background priority is inherited by the ONNX Runtime threads, so playback never underruns.
+    private val executor = Executors.newSingleThreadExecutor { r ->
+        Thread {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+            r.run()
+        }
+    }
     private val main = Handler(Looper.getMainLooper())
     private val running = AtomicBoolean(false)
     private val cancelled = AtomicBoolean(false)
@@ -76,17 +84,23 @@ object SeparationBridge {
             failure = Failure("io", e.message ?: "io error", e)
         } catch (e: OutOfMemoryError) {
             failure = Failure("io", "out of memory")
-        }
-        if (failure != null) {
-            if (failure.code != "cancelled") {
-                android.util.Log.w("Codecore", "separation failed: ${failure.code}", failure)
+        } catch (e: LinkageError) {
+            failure = Failure("model", e.message ?: "ONNX Runtime not loadable", e)
+        } catch (e: Throwable) {
+            failure = Failure("io", e.message ?: e.javaClass.simpleName, e)
+        } finally {
+            // Whatever happened, the worker thread must free the slot and answer Dart.
+            if (failure != null) {
+                if (failure.code != "cancelled") {
+                    android.util.Log.w("Codecore", "separation failed: ${failure.code}", failure)
+                }
+                File(output).delete()
             }
-            File(output).delete()
-        }
-        running.set(false)
-        main.post {
-            if (failure == null) result.success(null)
-            else result.error(failure.code, failure.message, null)
+            running.set(false)
+            val f = failure
+            main.post {
+                if (f == null) result.success(null) else result.error(f.code, f.message, null)
+            }
         }
     }
 
@@ -97,81 +111,75 @@ object SeparationBridge {
     private fun separate(
         channel: MethodChannel, input: String, output: String, vocalsPath: String, accPath: String,
     ) {
-        val (pcm, size, channels, rate) = decode(input)
-        val x = SpleeterDsp.toStereo44k(pcm, size, channels, rate)
+        // The decoded PCM is garbage as soon as it is resampled: nothing keeps it alive.
+        val x = decode(input).let { SpleeterDsp.toStereo44k(it.pcm, it.size, it.channels, it.rate) }
         val n = x[0].size
         if (n == 0) throw Failure("decode", "empty audio")
         val frames = SpleeterDsp.frameCount(n)
         val splits = (frames + SpleeterDsp.BLOCK - 1) / SpleeterDsp.BLOCK
 
         val env = OrtEnvironment.getEnvironment()
-        val options = OrtSession.SessionOptions().apply { setIntraOpNumThreads(4) }
-        val vocSession: OrtSession
-        val accSession: OrtSession
+        val options = OrtSession.SessionOptions()
+        var vocSession: OrtSession? = null
+        var accSession: OrtSession? = null
         try {
+            options.setIntraOpNumThreads(4)
             vocSession = env.createSession(vocalsPath, options)
-            accSession = try {
-                env.createSession(accPath, options)
-            } catch (e: Exception) {
-                vocSession.close()
-                throw e
-            }
-        } catch (e: OrtException) {
-            options.close()
-            throw Failure("model", e.message ?: "cannot load the models", e)
-        }
-        val out = Array(2) { FloatArray(n) }
-        try {
-            val stft = SpleeterDsp.Stft()
-            val b = SpleeterDsp.BLOCK
-            val m = SpleeterDsp.MODEL_BINS
-            val bins = SpleeterDsp.BINS
-            val re = FloatArray(2 * b * bins)
-            val im = FloatArray(2 * b * bins)
-            // Direct, so ONNX Runtime wraps it without a copy.
-            val mag = java.nio.ByteBuffer.allocateDirect(2 * b * m * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
-            val zeros = FloatArray(2 * b * m)
-            val voc = FloatArray(2 * b * m)
-            val acc = FloatArray(2 * b * m)
-            val mask = FloatArray(bins)
-            val shape = longArrayOf(2, 1, b.toLong(), m.toLong())
-            for (s in 0 until splits) {
-                checkCancelled()
-                val count = minOf(b, frames - s * b)
-                mag.clear()
-                mag.put(zeros) // the last block is zero-padded
-                for (c in 0..1) for (t in 0 until count) {
-                    val off = (c * b + t) * bins
-                    stft.analyze(x[c], s * b + t, re, im, off)
-                    for (k in 0 until m) {
-                        mag.put((c * b + t) * m + k, Math.hypot(re[off + k].toDouble(), im[off + k].toDouble()).toFloat())
+            accSession = env.createSession(accPath, options)
+            BufferedOutputStream(File(output).outputStream()).use { os ->
+                val synth = SpleeterDsp.StreamingSynth(os, n)
+                val stft = SpleeterDsp.Stft()
+                val b = SpleeterDsp.BLOCK
+                val m = SpleeterDsp.MODEL_BINS
+                val bins = SpleeterDsp.BINS
+                val re = FloatArray(2 * b * bins)
+                val im = FloatArray(2 * b * bins)
+                // Direct, so ONNX Runtime wraps it without a copy.
+                val mag = java.nio.ByteBuffer.allocateDirect(2 * b * m * 4)
+                    .order(ByteOrder.nativeOrder()).asFloatBuffer()
+                val zeros = FloatArray(2 * b * m)
+                val voc = FloatArray(2 * b * m)
+                val acc = FloatArray(2 * b * m)
+                val mask = FloatArray(bins)
+                val shape = longArrayOf(2, 1, b.toLong(), m.toLong())
+                for (s in 0 until splits) {
+                    checkCancelled()
+                    val count = minOf(b, frames - s * b)
+                    mag.clear()
+                    mag.put(zeros) // the last block is zero-padded
+                    for (c in 0..1) for (t in 0 until count) {
+                        val off = (c * b + t) * bins
+                        stft.analyze(x[c], s * b + t, re, im, off)
+                        for (k in 0 until m) {
+                            val r = re[off + k]
+                            val i = im[off + k]
+                            mag.put((c * b + t) * m + k, sqrt(r * r + i * i))
+                        }
                     }
-                }
-                mag.rewind()
-                infer(env, vocSession, mag, shape, voc)
-                mag.rewind()
-                infer(env, accSession, mag, shape, acc)
-                for (c in 0..1) for (t in 0 until count) {
-                    val off = (c * b + t) * bins
-                    SpleeterDsp.maskFrame(voc, acc, (c * b + t) * m, mask)
-                    // maskFrame reads voc and acc at the same offset: the magnitudes layout.
-                    for (k in 0 until bins) {
-                        re[off + k] *= mask[k]
-                        im[off + k] *= mask[k]
+                    mag.rewind()
+                    infer(env, vocSession!!, mag, shape, voc)
+                    mag.rewind()
+                    infer(env, accSession!!, mag, shape, acc)
+                    for (c in 0..1) for (t in 0 until count) {
+                        val off = (c * b + t) * bins
+                        // The magnitudes and the model outputs share the layout (c * b + t) * m.
+                        SpleeterDsp.maskFrame(voc, acc, (c * b + t) * m, mask)
+                        for (k in 0 until bins) {
+                            re[off + k] *= mask[k]
+                            im[off + k] *= mask[k]
+                        }
+                        synth.add(c, s * b + t, re, im, off)
                     }
-                    stft.synthesize(re, im, off, s * b + t, out[c])
+                    synth.finishBlock(s == splits - 1)
+                    val fraction = (s + 1).toDouble() / splits
+                    main.post { channel.invokeMethod("progress", mapOf("fraction" to fraction)) }
                 }
-                val fraction = (s + 1).toDouble() / splits
-                main.post { channel.invokeMethod("progress", mapOf("fraction" to fraction)) }
             }
         } finally {
-            vocSession.close()
-            accSession.close()
+            vocSession?.close()
+            accSession?.close()
             options.close()
         }
-        checkCancelled()
-        out.forEach { SpleeterDsp.normalize(it) }
-        BufferedOutputStream(File(output).outputStream()).use { SpleeterDsp.writeWav(it, out[0], out[1]) }
     }
 
     private fun infer(env: OrtEnvironment, session: OrtSession, data: FloatBuffer, shape: LongArray, into: FloatArray) {
@@ -182,7 +190,9 @@ object SeparationBridge {
         }
     }
 
-    private data class Decoded(val pcm: ShortArray, val size: Int, val channels: Int, val rate: Int)
+    private const val MAX_SECONDS = 20 * 60
+
+    private class Decoded(val pcm: ShortArray, val size: Int, val channels: Int, val rate: Int)
 
     /** Any audio file to interleaved 16-bit PCM in memory. */
     private fun decode(path: String): Decoded {
@@ -199,7 +209,18 @@ object SeparationBridge {
             } ?: throw Failure("decode", "no audio track")
             extractor.selectTrack(track)
             var format = extractor.getTrackFormat(track)
-            var pcm = ShortArray(1 shl 20)
+            val rate0 = if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE)) format.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 48000
+            val ch0 = if (format.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) format.getInteger(MediaFormat.KEY_CHANNEL_COUNT) else 2
+            // The memory of a longer track (a podcast) would not fit: refuse it up front or while decoding.
+            val maxSamples = MAX_SECONDS.toLong() * rate0 * ch0
+            if (format.containsKey(MediaFormat.KEY_DURATION) && format.getLong(MediaFormat.KEY_DURATION) > MAX_SECONDS * 1_000_000L) {
+                throw Failure("too_long", "longer than $MAX_SECONDS s")
+            }
+            val expected = if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                format.getLong(MediaFormat.KEY_DURATION) * rate0 * ch0 / 1_000_000L + (1 shl 16)
+            } else (1 shl 20).toLong()
+            var pcm = ShortArray(minOf(expected, maxSamples).toInt())
+            var idle = 0
             var size = 0
             try {
                 codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
@@ -225,6 +246,9 @@ object SeparationBridge {
                         }
                     }
                     val o = codec.dequeueOutputBuffer(info, 10_000)
+                    // ~5 s without a buffer after the end of the input: the decoder is stuck.
+                    idle = if (o < 0 && o != MediaCodec.INFO_OUTPUT_FORMAT_CHANGED && inputDone) idle + 1 else 0
+                    if (idle > 500) throw Failure("decode", "decoder stalled")
                     if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                         format = codec.outputFormat
                     } else if (o >= 0) {
@@ -234,7 +258,8 @@ object SeparationBridge {
                         val float = format.containsKey(MediaFormat.KEY_PCM_ENCODING) &&
                             format.getInteger(MediaFormat.KEY_PCM_ENCODING) == android.media.AudioFormat.ENCODING_PCM_FLOAT
                         val count = info.size / if (float) 4 else 2
-                        if (size + count > pcm.size) pcm = pcm.copyOf(maxOf(pcm.size * 2, size + count))
+                        if (size + count > maxSamples) throw Failure("too_long", "longer than $MAX_SECONDS s")
+                        if (size + count > pcm.size) pcm = pcm.copyOf(minOf(maxOf(pcm.size.toLong() * 3 / 2, (size + count).toLong()), maxSamples).toInt())
                         if (float) {
                             val f = buf.asFloatBuffer()
                             for (j in 0 until count) pcm[size + j] = (f.get() * 32767f).coerceIn(-32768f, 32767f).toInt().toShort()

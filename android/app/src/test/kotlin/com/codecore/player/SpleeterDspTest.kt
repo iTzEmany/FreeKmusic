@@ -12,22 +12,44 @@ import org.junit.Test
 
 class SpleeterDspTest {
     private fun tone(n: Int, hz: Double, rate: Int = 44100) =
-        FloatArray(n) { (0.5 * sin(2 * PI * hz * it / rate)).toFloat() }
+        ShortArray(n) { (16000 * sin(2 * PI * hz * it / rate)).toInt().toShort() }
+
+    /** Unit-mask round trip through the streaming synthesis; returns the decoded 16-bit channels. */
+    private fun roundTrip(x: ShortArray): Array<ShortArray> {
+        val bos = ByteArrayOutputStream()
+        val synth = SpleeterDsp.StreamingSynth(bos, x.size)
+        val stft = SpleeterDsp.Stft()
+        val re = FloatArray(SpleeterDsp.BINS)
+        val im = FloatArray(SpleeterDsp.BINS)
+        val splits = (synth.frames + SpleeterDsp.BLOCK - 1) / SpleeterDsp.BLOCK
+        for (s in 0 until splits) {
+            for (f in s * SpleeterDsp.BLOCK until minOf(synth.frames, (s + 1) * SpleeterDsp.BLOCK)) {
+                stft.analyze(x, f, re, im, 0)
+                for (c in 0..1) synth.add(c, f, re, im, 0)
+            }
+            synth.finishBlock(s == splits - 1)
+        }
+        val b = ByteBuffer.wrap(bos.toByteArray()).order(ByteOrder.LITTLE_ENDIAN)
+        assertEquals(44 + x.size * 4, b.capacity())
+        return Array(2) { c -> ShortArray(x.size) { b.getShort(44 + it * 4 + c * 2) } }
+    }
 
     @Test
     fun unitMaskReconstructsTheSignal() {
         val x = tone(10000, 440.0)
-        val out = FloatArray(x.size)
-        val stft = SpleeterDsp.Stft()
-        val re = FloatArray(SpleeterDsp.BINS)
-        val im = FloatArray(SpleeterDsp.BINS)
-        for (f in 0 until SpleeterDsp.frameCount(x.size)) {
-            stft.analyze(x, f, re, im, 0)
-            stft.synthesize(re, im, 0, f, out)
-        }
-        SpleeterDsp.normalize(out)
+        val y = roundTrip(x)
         var worst = 0f
-        for (i in x.indices) worst = maxOf(worst, abs(out[i] - x[i]))
+        for (c in 0..1) for (i in x.indices) worst = maxOf(worst, abs(y[c][i] - x[i]) / 32768f)
+        assertTrue("error $worst", worst < 1e-4f)
+    }
+
+    @Test
+    fun streamingAcrossBlockBoundariesReconstructsTheSignal() {
+        // Three blocks of 512 frames; the 16-bit output scale is 32767 against 32768 in.
+        val x = tone(1_300_000, 440.0)
+        val y = roundTrip(x)
+        var worst = 0f
+        for (c in 0..1) for (i in x.indices) worst = maxOf(worst, abs(y[c][i] - x[i]) / 32768f)
         assertTrue("error $worst", worst < 1e-4f)
     }
 
@@ -48,7 +70,7 @@ class SpleeterDspTest {
     @Test
     fun resamplingKeepsTheFrequency() {
         val rate = 48000
-        val pcm = ShortArray(rate) { (16000 * sin(2 * PI * 1000.0 * it / rate)).toInt().toShort() }
+        val pcm = tone(rate, 1000.0, rate)
         val out = SpleeterDsp.toStereo44k(pcm, pcm.size, 1, rate)
         assertEquals(44100, out[0].size)
         assertTrue(out[0].contentEquals(out[1]))
@@ -60,16 +82,14 @@ class SpleeterDspTest {
     @Test
     fun wavHeaderIsCorrect() {
         val bos = ByteArrayOutputStream()
-        SpleeterDsp.writeWav(bos, floatArrayOf(0f, 2f, -2f), floatArrayOf(0.5f, 0f, 0f))
+        SpleeterDsp.writeWavHeader(bos, 3)
         val b = ByteBuffer.wrap(bos.toByteArray()).order(ByteOrder.LITTLE_ENDIAN)
-        assertEquals(44 + 12, b.capacity())
+        assertEquals(44, b.capacity())
         assertEquals(0x46464952, b.getInt(0)) // "RIFF"
         assertEquals(36 + 12, b.getInt(4))
         assertEquals(2, b.getShort(22).toInt())
         assertEquals(44100, b.getInt(24))
         assertEquals(16, b.getShort(34).toInt())
         assertEquals(12, b.getInt(40))
-        assertEquals(32767, b.getShort(48).toInt()) // second frame left, clamped
-        assertEquals(-32767, b.getShort(52).toInt())
     }
 }

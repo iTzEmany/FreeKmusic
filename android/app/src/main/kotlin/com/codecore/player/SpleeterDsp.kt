@@ -1,6 +1,8 @@
 package com.codecore.player
 
 import java.io.OutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.floor
@@ -70,11 +72,11 @@ object SpleeterDsp {
         private val re = DoubleArray(N)
         private val im = DoubleArray(N)
 
-        /** Spectrum of [frame] of [x] (unpadded) into [outRe]/[outIm] at [off], BINS values each. */
-        fun analyze(x: FloatArray, frame: Int, outRe: FloatArray, outIm: FloatArray, off: Int) {
+        /** Spectrum of [frame] of the 16-bit [x] (unpadded) into [outRe]/[outIm] at [off], BINS values each. */
+        fun analyze(x: ShortArray, frame: Int, outRe: FloatArray, outIm: FloatArray, off: Int) {
             for (k in 0 until N) {
                 val i = frame * HOP + k - N
-                re[k] = if (i in x.indices) x[i] * window[k] else 0.0
+                re[k] = if (i in x.indices) x[i] / 32768.0 * window[k] else 0.0
                 im[k] = 0.0
             }
             fft.forward(re, im)
@@ -84,8 +86,8 @@ object SpleeterDsp {
             }
         }
 
-        /** Adds the windowed inverse of the BINS-bin spectrum at [off] into [out] (unpadded). */
-        fun synthesize(inRe: FloatArray, inIm: FloatArray, off: Int, frame: Int, out: FloatArray) {
+        /** Adds the windowed inverse of the BINS-bin spectrum at [off] into [out], whose index 0 is sample [base]. */
+        fun synthesize(inRe: FloatArray, inIm: FloatArray, off: Int, frame: Int, out: FloatArray, base: Int = 0) {
             for (b in 0 until BINS) {
                 re[b] = inRe[off + b].toDouble()
                 // Inverse through the forward FFT: conjugate in, conjugate out.
@@ -97,24 +99,9 @@ object SpleeterDsp {
             }
             fft.forward(re, im)
             for (k in 0 until N) {
-                val i = frame * HOP + k - N
+                val i = frame * HOP + k - N - base
                 if (i in out.indices) out[i] += (re[k] / N * window[k]).toFloat()
             }
-        }
-    }
-
-    /** Divides the overlap-added [out] by the sum of squared windows, like the reference. */
-    fun normalize(out: FloatArray) {
-        val frames = frameCount(out.size)
-        val sq = DoubleArray(N) { window[it] * window[it] }
-        for (i in out.indices) {
-            val p = i + N
-            var w = 0.0
-            for (j in 0 until N / HOP) {
-                val f = p / HOP - j
-                if (f in 0 until frames) w += sq[p - f * HOP]
-            }
-            out[i] = (out[i] / max(w, 1e-8)).toFloat()
         }
     }
 
@@ -133,12 +120,12 @@ object SpleeterDsp {
         mask.fill(s / 64, MODEL_BINS, BINS)
     }
 
-    /** Interleaved 16-bit PCM to two 44.1 kHz float channels (mono duplicated, linear resampling). */
-    fun toStereo44k(pcm: ShortArray, size: Int, channels: Int, rate: Int): Array<FloatArray> {
+    /** Interleaved 16-bit PCM to two 44.1 kHz 16-bit channels (mono duplicated, linear resampling). */
+    fun toStereo44k(pcm: ShortArray, size: Int, channels: Int, rate: Int): Array<ShortArray> {
         val frames = size / channels
         val outLen = (frames.toLong() * RATE / rate).toInt()
         val r = if (channels > 1) 1 else 0
-        val out = Array(2) { FloatArray(outLen) }
+        val out = Array(2) { ShortArray(outLen) }
         val ratio = rate.toDouble() / RATE
         for (i in 0 until outLen) {
             val pos = i * ratio
@@ -149,31 +136,73 @@ object SpleeterDsp {
                 val ch = if (c == 0) 0 else r
                 val a = pcm[i0 * channels + ch]
                 val b = pcm[i1 * channels + ch]
-                out[c][i] = (a + (b - a) * t) / 32768f
+                out[c][i] = Math.round(a + (b - a) * t).toShort()
             }
         }
         return out
     }
 
-    /** 16-bit stereo 44.1 kHz WAV, samples clamped to +-1. */
-    fun writeWav(os: OutputStream, left: FloatArray, right: FloatArray) {
-        val data = left.size * 4
-        val h = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+    /** Header of a 16-bit stereo 44.1 kHz WAV of [frames] sample frames. */
+    fun writeWavHeader(os: OutputStream, frames: Int) {
+        val data = frames * 4
+        val h = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
         h.put("RIFF".toByteArray()).putInt(36 + data).put("WAVEfmt ".toByteArray())
             .putInt(16).putShort(1).putShort(2).putInt(RATE).putInt(RATE * 4).putShort(4).putShort(16)
             .put("data".toByteArray()).putInt(data)
         os.write(h.array())
-        val buf = java.nio.ByteBuffer.allocate(8192 * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        var i = 0
-        while (i < left.size) {
-            buf.clear()
-            val end = min(left.size, i + 8192)
-            while (i < end) {
-                buf.putShort((left[i].coerceIn(-1f, 1f) * 32767f).toInt().toShort())
-                buf.putShort((right[i].coerceIn(-1f, 1f) * 32767f).toInt().toShort())
-                i++
+    }
+
+    /**
+     * Overlap-add synthesis that writes the finished samples as 16-bit WAV data while it goes,
+     * so only a few MB of float samples are alive. Feed whole blocks of BLOCK frames in order:
+     * [add] for every frame, then [finishBlock].
+     */
+    class StreamingSynth(private val os: OutputStream, private val n: Int) {
+        val frames = frameCount(n)
+        private val stft = Stft()
+        private val buf = Array(2) { FloatArray((BLOCK + N / HOP - 1) * HOP) }
+        private var base = -N // sample index of buf[.][0]
+        private var written = 0
+        private val bytes = ByteBuffer.allocate(8192 * 4).order(ByteOrder.LITTLE_ENDIAN)
+        private val sq = DoubleArray(N) { window[it] * window[it] }
+
+        init { writeWavHeader(os, n) }
+
+        fun add(channel: Int, frame: Int, re: FloatArray, im: FloatArray, off: Int) =
+            stft.synthesize(re, im, off, frame, buf[channel], base)
+
+        /** Samples before base + BLOCK * HOP get no more contributions: normalise and write them. */
+        fun finishBlock(last: Boolean) {
+            val end = if (last) n else min(n, base + BLOCK * HOP)
+            while (written < end) {
+                bytes.clear()
+                val stop = min(end, written + 8192)
+                while (written < stop) {
+                    val w = weight(written)
+                    for (c in 0..1) {
+                        val v = (buf[c][written - base] / max(w, 1e-8)).toFloat()
+                        bytes.putShort((v.coerceIn(-1f, 1f) * 32767f).toInt().toShort())
+                    }
+                    written++
+                }
+                os.write(bytes.array(), 0, bytes.position())
             }
-            os.write(buf.array(), 0, buf.position())
+            for (c in 0..1) {
+                buf[c].copyInto(buf[c], 0, BLOCK * HOP)
+                buf[c].fill(0f, buf[c].size - BLOCK * HOP)
+            }
+            base += BLOCK * HOP
+        }
+
+        /** Sum of squared windows over the frames covering sample [i]. */
+        private fun weight(i: Int): Double {
+            val p = i + N
+            var w = 0.0
+            for (j in 0 until N / HOP) {
+                val f = p / HOP - j
+                if (f in 0 until frames) w += sq[p - f * HOP]
+            }
+            return w
         }
     }
 }
