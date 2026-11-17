@@ -7,9 +7,9 @@ cache. **La fase parte solo se il passo di prova trova un modello usabile e l'ut
 elaborazione automatica dei preferiti (D-585), macOS e iOS (D-600).
 
 ## Riferimenti
-D-585, D-601, D-602, D-604, D-605, D-616; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)
+D-585, D-601, D-602, D-604, D-605, D-616; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../feature/feature-libreria-leggera-karaoke-cerca.md)
 § Stack (motore AI, modello), § Architettura D («Alta qualità»), rischio F-7. Documenti d'area:
-`../architettura/riproduzione-e-coda.md`, `../architettura/piattaforme.md`.
+`../../architettura/riproduzione-e-coda.md`, `../../architettura/piattaforme.md`.
 
 ## Mockup
 ```text
@@ -44,7 +44,7 @@ In riproduzione, foglio del karaoke con «Alta qualità»
     ha una licenza usabile o tutti superano 2 minuti per un brano di 4 minuti sul Mi A3, R-245 si rimanda, resta il filtro e
     la fase si chiude qui.
 
-- [ ] 128.2 Servizio di separazione (R-245, D-602, D-604)
+- [x] 128.2 Servizio di separazione (R-245, D-602, D-604)
   - File: `pubspec.yaml` (`flutter_onnxruntime: 1.9.0`, o componente scaricato se 128.1 lo chiede),
     `lib/services/karaoke/separation_service.dart` (nuovo), decodifica in PCM (Android `MediaCodec` in Kotlin; desktop da
     verificare), `test/services/karaoke/separation_service_test.dart` (nuovo).
@@ -54,7 +54,7 @@ In riproduzione, foglio del karaoke con «Alta qualità»
   - Comando mirato: `flutter test test/services/karaoke/separation_service_test.dart test/services/stream/stream_cache_test.dart` (più `flutter analyze`), `flutter build apk --debug`
   - Fatto quando: test verdi; sul Mi A3 la base di un brano locale finisce in cache e il tempo misurato è annotato.
 
-- [ ] 128.3 Gestore e interfaccia (R-245, D-585) — `/code-review high`
+- [x] 128.3 Gestore e interfaccia (R-245, D-585) — `/code-review high`
   - File: `lib/services/audio/codecore_audio_handler.dart` (`karaokeSource(Track)` consultato in `_nextFile`/`_loadCurrent`),
     `lib/services/karaoke/karaoke_controller.dart`, foglio del karaoke in `lib/ui/screens/now_playing/`, ARB, test in
     `test/services/audio/` e `test/ui/now_playing_test.dart`.
@@ -111,3 +111,6 @@ Quasi tutto è `libonnxruntime.so` (28,6 MB su arm64, non compresso nell'APK). B
 **Non misurato.** SDR/qualità (niente MUSDB; un brano sintetico non dice nulla); picco RAM del telefono con l'STFT in Dart; decodifica (MediaCodec) e scrittura del file della base; MDX-Net con sovrapposizione dei blocchi (UVR la usa di default al 25 %: ancora più lento); varianti fp16/int8 di Spleeter (fp16 non accelera sulla CPU del telefono senza istruzioni dedicate, int8 non provato); Windows e Linux dal prodotto (solo il PC come banco).
 
 **Raccomandazione.** Rimandare MDX-Net: anche il più piccolo (UVR_MDXNET_1_9703, 30 MB) impiega circa 14 minuti per 4 minuti di brano sul Mi A3 e 1 GB di RAM; il migliore (Inst_HQ_3) circa un'ora. Spleeter 2-stem è l'unico sotto i 2 minuti (circa 1-1,8 min per 4 minuti, con FFT fuori dal thread UI), con 39 MB di modello e 330 MB di RAM; quindi non scatta la regola di rimando (c'è un modello con licenza usabile e sotto i 2 minuti). Condizioni da far scegliere all'utente: (1) accettare il rischio di licenza dei pesi (MIT dichiarata dall'articolo dei loro autori, non dal README; issue #898 senza risposta); (2) peso del motore: +20-29 MB nell'APK per ABI, oltre la soglia di D-616, quindi o ONNX Runtime ridotto/processo a parte o accettare l'APK più grande; (3) qualità: la qualità di Spleeter 2-stem (banda a 11 kHz) non è stata misurata, da ascoltare in una prova prima della 128.2. Se l'utente non accetta (1) o (2), si rimanda R-245 e resta il filtro.
+
+### 128.2–128.3 — esito (17/11/2026)
+Modello scelto dall'utente: Spleeter 2-stem (D-618). Deviazioni: motore ONNX Runtime chiamato da Kotlin invece del plugin Dart (D-619: il plugin esegue `run` sul thread UI); solo Android (D-620); con la base pronta il cursore diventa Base/Originale (D-622). Prova sul Motorola edge 40 (il Mi A3 non era collegato), APK release: modello scaricato e brano di 4:20 separato in circa 50 s, passaggio alla base durante la riproduzione senza salto di posizione. Non misurato: Mi A3 e telefoni economici; qualità sui brani dell'utente (passo «tuo»).
