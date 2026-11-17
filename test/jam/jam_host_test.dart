@@ -130,6 +130,13 @@ void main() {
     final er = await call('POST', '${s.sid}/cmd',
         body: const JamCommand.end().toJson(), headers: auth);
     expect(er.statusCode, 403);
+    // karaoke: refused to a guest until the host allows it
+    final kar = const JamCommand.karaoke(0.5).toJson();
+    expect((await call('POST', '${s.sid}/cmd', body: kar, headers: auth)).statusCode, 403);
+    expect(host.apply(const JamCommand.karaokeGuests(true)).isOk, true);
+    final kr = await call('POST', '${s.sid}/cmd', body: kar, headers: auth);
+    expect(kr.statusCode, 200);
+    expect(host.state!.karaoke, 0.5);
     // garbage
     expect((await call('POST', '${s.sid}/cmd', body: {'cmd': 'x'}, headers: auth))
         .statusCode, 400);

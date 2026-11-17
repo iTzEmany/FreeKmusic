@@ -115,6 +115,8 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - **Della cassa**: `JamState.speaker`, `speakerAwaySince`; comandi `speakerAway`, `speakerBack`, `offerSpeaker`. Senza cassa i comandi di riproduzione sono rifiutati (`noSpeaker`, HTTP 409). Senza ospiti la Jam è «in attesa»: solo annuncio in LAN, e nasce alla prima richiesta accettata (D-226).
 - **A distanza**: l'host accende `JamBridge`, che pubblica su un broker MQTT messaggi cifrati; l'ospite remoto entra con un codice, un QR o per amicizia (`JamFriends`). Il `JamGate` filtra le richieste in LAN e sul ponte. Gli argomenti MQTT iniziano con `ccj1/` (lobby `l`, richiesta `r`, codice `c/`).
 
+- **Karaoke (D-587)**: `JamState.karaoke` (livello 0..1, `null` = spento) e `karaokeGuests`. Filo: `'kar': {'l': 0.25, 'g': true}`, scritto se il karaoke è acceso o gli ospiti sono ammessi (`l` assente = spento, `g` assente = false). Comandi `{'cmd':'karaoke','l':0.4}` (senza `l` o `l: null` = spento; livello arrotondato a passi di 0,05) e `{'cmd':'karaokeGuests','g':true}` (solo host). `applyCommand`: l'host applica sempre, l'ospite solo con `g` acceso (altrimenti `forbidden`). Compatibilità: le uscite vecchie ignorano `kar` e suonano con la voce (previsto da D-587); un host vecchio scarta il comando (in LAN risponde `invalid`, sul ponte lo lascia cadere e l'ospite remoto riceve `notFound` dopo 10 s). Nessuna modifica alla crittografia.
+
 ## Invarianti da non rompere
 - **Stringhe di protocollo con `codecore`, per scelta** (D-539: il nome visibile è cambiato, il filo no). Non vanno rinominate senza una nuova decisione, perché romperebbero la compatibilità con le versioni già installate:
   | Stringa | Dove |

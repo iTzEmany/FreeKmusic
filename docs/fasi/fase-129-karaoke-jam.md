@@ -28,7 +28,7 @@ Jam (host)                           Jam a distanza (ospite)
 ```
 
 ## Task
-- [ ] 129.1 Protocollo: campo e comando del karaoke (R-246, D-587) — review Opus del protocollo
+- [x] 129.1 Protocollo: campo e comando del karaoke (R-246, D-587) — review Opus del protocollo
   - File: `lib/services/jam/jam_models.dart` (`JamState.toJson` `:287`: `'kar': {'l': livello, 'g': ospitiAmmessi}` solo
     se acceso, come `'spk'`; `tryParse` lo legge se c'è; `JamCommandType.karaoke`), `lib/services/jam/jam_state.dart`
     (`applyCommand` `:19`), `test/jam/jam_state_test.dart`, `test/jam/remote/jam_protocol_test.dart`.
@@ -61,3 +61,4 @@ Jam (host)                           Jam a distanza (ospite)
 Niente di obbligatorio: se vuoi, a fase chiusa prova il karaoke in una Jam col tuo telefono e quello di un amico.
 
 ## Note di deviazione
+- 129.1: `'kar'` viaggia anche a karaoke spento se gli ospiti sono ammessi (`{'g': true}`, senza `l`): serve all'ospite per sapere del permesso. Il livello è arrotondato a passi di 0,05 in `applyCommand` (un trascinamento dello slider non genera una versione per decimale). Un `l` esplicitamente `null` nel comando vale «spento».

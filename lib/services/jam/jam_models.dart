@@ -404,7 +404,8 @@ enum JamCommandType {
   offerSpeaker,
   // After `offerSpeaker`, same reason: an older host answers `invalid`.
   continueOnPhone,
-  // After `continueOnPhone`, same reason: an older host answers `invalid` (D-587).
+  // After `continueOnPhone`. An older LAN host answers `invalid`; through the remote bridge it
+  // drops the command silently and the guest gets `notFound` after 10 s (D-587).
   karaoke,
   karaokeGuests,
 }
@@ -561,7 +562,7 @@ class JamCommand {
         return const JamCommand.continueOnPhone();
       case JamCommandType.karaoke:
         final l = j['l'];
-        if (!j.containsKey('l')) return const JamCommand.karaoke(null);
+        if (l == null) return const JamCommand.karaoke(null);
         return l is num && l.isFinite ? JamCommand.karaoke(l.toDouble()) : null;
       case JamCommandType.karaokeGuests:
         final g = j['g'];
