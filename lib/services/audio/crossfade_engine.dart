@@ -443,7 +443,16 @@ class MirrorVoiceFilter implements VoiceFilter {
 
   void add(VoiceFilter v) {
     _targets.add(v);
-    if (_known) unawaited(v.setLevel(_level));
+    if (_known) unawaited(_set(v, _level));
+  }
+
+  // A player that was disposed meanwhile must not stop the others.
+  Future<void> _set(VoiceFilter v, double? level) async {
+    try {
+      await v.setLevel(level);
+    } catch (e, st) {
+      AppLog.w('voice filter: level not applied', e, st);
+    }
   }
 
   @override
@@ -453,7 +462,7 @@ class MirrorVoiceFilter implements VoiceFilter {
     // A copy: the second player may join while this waits, and gets the
     // level from add().
     for (final t in List.of(_targets)) {
-      await t.setLevel(level);
+      await _set(t, level);
     }
   }
 }

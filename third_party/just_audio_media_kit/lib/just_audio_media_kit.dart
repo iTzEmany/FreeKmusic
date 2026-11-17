@@ -60,13 +60,21 @@ class JustAudioMediaKit extends JustAudioPlatform {
   /// Sets the voice filter (an mpv `af` fragment, '' = none) of the players
   /// tagged with [tag], now and whenever they are created again, and keeps it
   /// next to the `scaletempo` that the playback speed puts in `af`.
-  static Future<void> setVoiceFilter(int tag, String af) async {
+  ///
+  /// With a [command] (an mpv command, e.g. `af-command`) that turns the filter
+  /// already running into the new setting, players that have one get the
+  /// command instead of a new `af`, so mpv does not rebuild its audio chain.
+  static Future<void> setVoiceFilter(int tag, String af,
+      {List<String>? command}) async {
     _voiceAf[tag] = af;
     final platform = JustAudioPlatform.instance;
     if (platform is! JustAudioMediaKit) return;
+    // A player that fails (disposed meanwhile) must not stop the others.
     await Future.wait(platform._players.values
         .where((p) => p.voiceTag == tag)
-        .map((p) => p.applyVoiceFilter(af)));
+        .map((p) => p.applyVoiceFilter(af, command: command).catchError(
+            (Object e, StackTrace st) => _logger.warning(
+                'voice filter not applied to ${p.id}', e, st))));
   }
 
   static final _logger = Logger('JustAudioMediaKit');

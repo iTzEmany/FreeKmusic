@@ -359,7 +359,7 @@ void main() {
     expect(engine.voiceFilter, isNull);
   });
 
-  test('the second player is born with the voice level, and a change during the fade reaches both', () async {
+  test('the second player is born with the voice level, and a level change reaches both', () async {
     final voices = <_FakeVoice>[];
     final e = CrossfadeEngine(() {
       final f = FakeBackend()..voiceFilter = _FakeVoice();
@@ -374,7 +374,6 @@ void main() {
     await pump();
     expect(voices, hasLength(2));
     expect(voices[1].levels, [0.3], reason: 'the late player gets the level');
-    // The level changes while the two players overlap.
     await e.voiceFilter!.setLevel(null);
     expect(voices[0].levels.last, isNull);
     expect(voices[1].levels.last, isNull);
@@ -383,14 +382,17 @@ void main() {
     expect(voices[1].levels.last, 0.8);
   });
 
-  test('a player joining before any level was set gets no call', () async {
+  test('a player that fails does not keep the others from getting the level', () async {
     final mirror = MirrorVoiceFilter();
-    final v = _FakeVoice();
-    mirror.add(v);
-    expect(v.levels, isEmpty);
+    final broken = _FakeVoice()..fail = true;
+    final ok = _FakeVoice();
+    mirror.add(broken);
+    mirror.add(ok);
     await mirror.setLevel(0.5);
-    final late = _FakeVoice();
-    mirror.add(late);
+    expect(ok.levels, [0.5]);
+    final late = _FakeVoice()..fail = true;
+    mirror.add(late); // fails in the background: logged, not thrown
+    await pump();
     expect(late.levels, [0.5]);
   });
 
@@ -421,9 +423,13 @@ void main() {
 
 class _FakeVoice implements VoiceFilter {
   final levels = <double?>[];
+  bool fail = false;
 
   @override
-  Future<void> setLevel(double? level) async => levels.add(level);
+  Future<void> setLevel(double? level) async {
+    levels.add(level);
+    if (fail) throw StateError('disposed');
+  }
 }
 
 class _SlowEq implements Equalizer {

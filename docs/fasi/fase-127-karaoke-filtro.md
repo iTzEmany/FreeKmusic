@@ -82,14 +82,15 @@ In riproduzione, karaoke acceso      Vista dei testi
 
 ## Note di deviazione
 
-**Esito 127.1 (17/11/2026), filtro voce desktop.** Stringa (livello `l`, `k = (1-l)/2`, 4 decimali; 100 % = `af` vuoto):
-`lavfi=[asplit[o][m];[m]pan=stereo|c0=-k*c0-k*c1|c1=-k*c0-k*c1,highpass=f=150[h];[o][h]amix=inputs=2:normalize=0]`
-(il centro sopra 150 Hz, con il passa-alto, viene sottratto da entrambi i canali; sotto i 150 Hz basso e cassa restano). Un solo
-ingresso e una sola uscita, come vuole `lavfi` di mpv; con la velocità `af` diventa `scaletempo:scale=1.25,lavfi=[…]`.
-- Linux (mpv 0.37 di sistema, `xvfb-run`, uscita `ao=pcm` su file): **funziona**. Nessun errore di mpv a 0, 50, 100 %, con la
-  velocità 1,25 insieme al filtro e da `just_audio` (livello e velocità cambiati in riproduzione). Misura su un WAV
-  (1 kHz e 60 Hz al centro, 2 kHz solo a sinistra): 1 kHz 0,30 → 0,156 (50 %) → 0,064 (0 %, circa −13 dB); 60 Hz 0,30 → 0,32 → 0,34 (basso tenuto).
-  A 0 % il lato sinistro resta com'è e il destro va in controfase rispetto al lato: uscita stereo, non mono come su Android.
+**Esito 127.1 (17/11/2026), filtro voce desktop.** Stringa (livello `l`, `a = 1 - l`, 4 decimali; 100 % = `af` vuoto):
+`@kv:lavfi=[asplit=3[o][m][b];[m]pan=stereo|c0=-0.5*c0-0.5*c1|c1=-0.5*c0-0.5*c1[s];[b]pan=stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1,lowpass=f=150,lowpass=f=150[l];[o][s][l]amix=inputs=3:weights=1 a a:normalize=0]`
+(tutto il centro viene sottratto da entrambi i canali; sotto i 150 Hz il centro è rimesso con un passa-basso a 4 poli, così la fase si annulla e basso e cassa restano).
+Un solo ingresso e una sola uscita, come vuole `lavfi` di mpv; con la velocità `af` diventa `scaletempo:scale=1.25,@kv:lavfi=[…]`. Il livello si cambia
+a catena accesa con `af-command kv weights "1 a a" amix` (la catena di mpv non si ricostruisce: un solo `[af] [in]` nel log); `af` si riscrive solo
+quando il filtro si accende o si spegne.
+- Linux (mpv 0.37 di sistema, `xvfb-run`, uscita `ao=pcm` su file): **funziona**. Nessun errore di mpv a 0, 50, 100 %, con la velocità 1,25 e da `just_audio` (livello e velocità
+  cambiati in riproduzione). A livello 0 su un WAV: 300 Hz centrale −24,6 dB, 1 kHz centrale −64 dB, 60 Hz −0,2 dB, tono solo-lato (controfase) 0,0 dB; a 50 % il centro cala di 6 dB e
+  il basso di 1,7 dB al crossover. Un basso a 0 dBFS non supera mai l'ingresso (picco 0,965 a 0, 0,81 a 50 %). A 0 % l'uscita è stereo, non mono come su Android.
 - Windows: **non funziona** (verifica statica, nessun run). `media_kit_libs_windows_audio` 1.0.9 scarica
   `libmpv-win32-audio-build` 2023-09-24 (`mpv-dev-x86_64-20230924-git-652a1dd.7z`, MD5 verificato); nella DLL la riga di
   configurazione di FFmpeg ha `--disable-filters --enable-filter=overlay --enable-filter=equalizer`: mancano `pan`,

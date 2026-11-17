@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 import 'package:logging/logging.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:media_kit/media_kit.dart';
 import 'src/set_property.dart';
 
@@ -303,9 +304,19 @@ class MediaKitPlayer extends AudioPlayerPlatform {
     return SetSpeedResponse();
   }
 
-  /// Sets the voice filter (an `af` fragment such as `lavfi=[...]`, '' = none).
-  Future<void> applyVoiceFilter(String af) {
+  /// The media_kit [Player], for tests.
+  @visibleForTesting
+  Player get player => _player;
+
+  /// Sets the voice filter (an `af` fragment such as `@kv:lavfi=[...]`, '' =
+  /// none). With a [command] (an mpv command that moves the filter that is
+  /// already in `af` to the new setting) the graph is not rebuilt.
+  Future<void> applyVoiceFilter(String af, {List<String>? command}) {
+    final wasOn = _voiceAf.isNotEmpty;
     _voiceAf = af;
+    if (command != null && wasOn && af.isNotEmpty) {
+      return sendCommand(_player, command);
+    }
     return _writeAf();
   }
 
