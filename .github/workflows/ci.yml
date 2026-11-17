@@ -93,7 +93,7 @@ jobs:
         name: Android voice filter (JVM tests)
         run: |
           flutter build apk --config-only --debug  # generates the git-ignored Gradle wrapper
-          cd android && ./gradlew :just_audio:testDebugUnitTest
+          cd android && ./gradlew :just_audio:testDebugUnitTest :app:testDebugUnitTest
       # A golden that differs leaves its images here: download them to see why.
       - uses: actions/upload-artifact@v7
         if: failure() && steps.scope.outputs.docs != 'true'

@@ -101,6 +101,9 @@ kotlin {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.4")
+    // Spleeter 2-stem karaoke separation (SeparationBridge).
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.28.0")
+    testImplementation("junit:junit:4.13.2")
     // yt-dlp + Python + QuickJS (JS challenge solver) embedded in the app.
     if (!lite) {
         implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
