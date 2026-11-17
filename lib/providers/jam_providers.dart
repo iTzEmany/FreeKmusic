@@ -105,6 +105,10 @@ class JamUiState {
   bool get active => phase == JamPhase.active;
   bool get isHost => role == JamRole.host;
 
+  /// A Jam with remote guests, seen from any device: [remote] is the remote guest
+  /// itself, the inviting host and the LAN devices only see it in the roster.
+  bool get remoteJam => remote || inviting || (jam?.participants.any((p) => p.remote) ?? false);
+
   JamUiState copyWith({
     JamPhase? phase,
     JamRole? role,
@@ -791,11 +795,11 @@ class JamController extends Notifier<JamUiState> {
     _local.refreshAside();
   }
 
-  /// The Jam's level, or none with «Ignora per me» (remote guests only: in a local
-  /// Jam one device plays and the karaoke is for everyone). The local setting stays.
+  /// The Jam's level, or none with «Ignora per me» (a non-host in a remote Jam: without
+  /// remote guests the karaoke is for every output). The local setting stays.
   /// No bypass: Jam items are songs.
   void _applyKaraoke(JamState s) {
-    final ignore = state.remote && ref.read(settingsProvider).karaokeJamIgnore;
+    final ignore = !state.isHost && state.remoteJam && ref.read(settingsProvider).karaokeJamIgnore;
     unawaited(_karaoke?.apply(on: s.karaoke != null && !ignore, level: s.karaoke ?? 1, bypass: false));
   }
 

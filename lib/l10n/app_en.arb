@@ -3861,7 +3861,8 @@
   "karaokeBypassed": "Off on episodes and radio",
   "karaokeJamHostOnly": "Only the Jam host controls the karaoke",
   "karaokeGuestsAllowed": "Guests can use the karaoke",
-  "karaokeJamLocalNote": "Only one device plays in the home Jam: the karaoke applies to everyone.",
+  "karaokeJamLocalNote": "In the home Jam the karaoke applies to every output that supports it.",
   "karaokeJamBox": "Karaoke turned on by {name}, voice {percent} %",
-  "karaokeJamIgnore": "Ignore for me"
+  "karaokeJamIgnore": "Ignore for me",
+  "karaokeJamForbidden": "The host turned off karaoke for guests."
 }

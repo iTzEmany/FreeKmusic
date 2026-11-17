@@ -12622,7 +12622,7 @@ abstract class AppLocalizations {
   /// No description provided for @karaokeJamLocalNote.
   ///
   /// In it, this message translates to:
-  /// **'Nella Jam in casa suona un solo dispositivo: il karaoke vale per tutti.'**
+  /// **'Nella Jam in casa il karaoke vale per tutte le uscite che lo supportano.'**
   String get karaokeJamLocalNote;
 
   /// No description provided for @karaokeJamBox.
@@ -12636,6 +12636,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Ignora per me'**
   String get karaokeJamIgnore;
+
+  /// No description provided for @karaokeJamForbidden.
+  ///
+  /// In it, this message translates to:
+  /// **'L’host ha tolto agli ospiti il permesso di usare il karaoke.'**
+  String get karaokeJamForbidden;
 }
 
 class _AppLocalizationsDelegate

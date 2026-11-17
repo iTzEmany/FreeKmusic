@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/track_kinds.dart';
 import '../services/audio/equalizer.dart';
-import '../services/jam/jam_models.dart';
 import '../services/karaoke/karaoke_controller.dart';
 import 'jam_providers.dart';
 import 'player_providers.dart';
@@ -79,6 +78,8 @@ class JamKaraoke {
 
   /// Voice level 0..1 for every output; null = off.
   final double? level;
+
+  /// [remote]: the Jam has remote guests (this device included, see [JamUiState.remoteJam]).
   final bool guestsAllowed, isHost, remote, playsHere;
   final String hostName;
 
@@ -87,7 +88,8 @@ class JamKaraoke {
   /// The host always; a guest only when the host allowed it.
   bool get canCommand => isHost || guestsAllowed;
 
-  /// A remote guest that plays the audio can opt out («Ignora per me»).
+  /// A device that plays in a remote Jam without being its host can opt out
+  /// («Ignora per me»). A remote guest never plays (R-157), so it never can.
   bool get canIgnore => remote && !isHost && playsHere;
 }
 
@@ -100,20 +102,16 @@ final jamKaraokeProvider = Provider<JamKaraoke?>((ref) {
     level: jam.karaoke,
     guestsAllowed: jam.karaokeGuests,
     isHost: s.isHost,
-    remote: s.remote,
+    remote: s.remoteJam,
     playsHere: jam.outputs.contains(ref.read(shareHubProvider.notifier).deviceId),
     hostName: host?.name.isNotEmpty == true ? host!.name : s.peerName,
   );
 });
 
 /// Whether the microphone shows: in a Jam always, except for a host whose device
-/// cannot filter in a local Jam (it is the only one that plays).
+/// cannot filter in a Jam without remote guests (its own output is the only one).
 final karaokeButtonVisibleProvider = Provider<bool>((ref) {
   final hasFilter = ref.watch(voiceFilterProvider) != null;
   final jam = ref.watch(jamKaraokeProvider);
   return jam == null ? hasFilter : jam.remote || !jam.isHost || hasFilter;
 });
-
-/// The Jam command for [level] (null = off); the sheet throttles the drags.
-Future<JamError?> sendJamKaraoke(WidgetRef ref, double? level) =>
-    ref.read(jamProvider.notifier).send(JamCommand.karaoke(level));

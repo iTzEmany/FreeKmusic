@@ -8009,7 +8009,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get karaokeJamLocalNote =>
-      'En la Jam en casa suena un solo dispositivo: el karaoke vale para todos.';
+      'En la Jam en casa el karaoke vale para todas las salidas que lo admiten.';
 
   @override
   String karaokeJamBox(String name, int percent) {
@@ -8018,4 +8018,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get karaokeJamIgnore => 'Ignorar para mí';
+
+  @override
+  String get karaokeJamForbidden =>
+      'El anfitrión ha desactivado el karaoke para los invitados.';
 }

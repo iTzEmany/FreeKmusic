@@ -3861,7 +3861,8 @@
   "karaokeBypassed": "Aus bei Episoden und Radio",
   "karaokeJamHostOnly": "Das Karaoke steuert der Jam-Host",
   "karaokeGuestsAllowed": "Gäste dürfen das Karaoke benutzen",
-  "karaokeJamLocalNote": "In der Jam zu Hause spielt nur ein Gerät: das Karaoke gilt für alle.",
+  "karaokeJamLocalNote": "In der Jam zu Hause gilt das Karaoke für alle Ausgaben, die es unterstützen.",
   "karaokeJamBox": "Karaoke eingeschaltet von {name}, Stimme {percent} %",
-  "karaokeJamIgnore": "Für mich ignorieren"
+  "karaokeJamIgnore": "Für mich ignorieren",
+  "karaokeJamForbidden": "Der Host hat das Karaoke für Gäste ausgeschaltet."
 }

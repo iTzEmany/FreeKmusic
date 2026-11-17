@@ -27,8 +27,8 @@ abstract class Equalizer {
 
 /// The karaoke voice filter on a playback backend (D-603): lowers the voice by
 /// attenuating what sits in the centre of the stereo image, keeping the bass.
-/// Null on [AudioBackend.voiceFilter] where there is none (macOS, iOS, previews,
-/// the Jam's player).
+/// Null on [AudioBackend.voiceFilter] where there is none (macOS, iOS, Windows,
+/// previews); the Jam's player has one where the platform does (D-587).
 abstract class VoiceFilter {
   /// Voice level from 0.0 (voice as low as the filter goes) to 1.0 (untouched);
   /// null turns the filter off (exact bypass).

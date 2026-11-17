@@ -9,7 +9,7 @@ import '../../../services/jam/jam_models.dart';
 import '../../theme/tokens.dart';
 
 /// Host only, in the outputs sheet: whether guests command the karaoke (off by
-/// default), and in a local Jam why the level is for everyone (D-587).
+/// default), and in a Jam without remote guests why the level is for every output (D-587).
 class JamKaraokeHostTile extends ConsumerWidget {
   const JamKaraokeHostTile({super.key});
 
@@ -37,8 +37,8 @@ class JamKaraokeHostTile extends ConsumerWidget {
   }
 }
 
-/// The remote guest that plays the audio: who turned the karaoke on, and
-/// «Ignora per me» (this device plays without the filter; the Jam is unchanged).
+/// A guest of a remote Jam: who turned the karaoke on, and, if this device plays,
+/// «Ignora per me» (it plays without the filter; the Jam is unchanged).
 class JamKaraokeBox extends ConsumerWidget {
   const JamKaraokeBox({super.key});
 
@@ -46,7 +46,7 @@ class JamKaraokeBox extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final jam = ref.watch(jamKaraokeProvider);
     final level = jam?.level;
-    if (jam == null || level == null || !jam.canIgnore) return const SizedBox.shrink();
+    if (jam == null || level == null || jam.isHost || !jam.remote) return const SizedBox.shrink();
     final l = context.l10n;
     final cc = context.cc;
     final name = jam.hostName.isEmpty ? l.jamHostTag : jam.hostName;
@@ -65,14 +65,16 @@ class JamKaraokeBox extends ConsumerWidget {
             container: true,
             child: Text(l.karaokeJamBox(name, (level * 100).round())),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: Text(l.karaokeJamIgnore),
-            value: ref.watch(settingsProvider.select((s) => s.karaokeJamIgnore)),
-            onChanged: (v) =>
-                ref.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeJamIgnore: v)),
-          ),
+          if (jam.canIgnore)
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(l.karaokeJamIgnore),
+              value: ref.watch(settingsProvider.select((s) => s.karaokeJamIgnore)),
+              onChanged: (v) =>
+                  ref.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeJamIgnore: v)),
+            ),
+          if (!jam.canIgnore) const SizedBox(height: CcDims.gap8),
         ],
       ),
     );

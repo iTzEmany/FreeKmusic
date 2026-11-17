@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_log.dart';
 import '../../l10n/l10n_ext.dart';
+import '../../providers/jam_providers.dart';
 import '../../providers/karaoke_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../services/jam/jam_models.dart';
 import '../../services/karaoke/karaoke_send_throttle.dart';
 import '../theme/tokens.dart';
 import 'cc_sheet.dart';
@@ -75,14 +77,45 @@ class _KaraokePanel extends ConsumerStatefulWidget {
 }
 
 class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
-  // In a Jam the level comes back from the host with a delay: the thumb stays on the finger.
+  // In a Jam the level comes back from the host with a delay: the thumb stays where the finger left
+  // it until the host's state has the same level (or the Jam refuses it).
   double? _drag;
-  late final _send = KaraokeSendThrottle(_sendJam);
+  bool _dragging = false;
+  // Read once: dispose() flushes a pending send after the ref is gone.
+  late final JamController _jam;
+  late final ProviderContainer _container;
+  late ScaffoldMessengerState _messenger;
+  late String _forbiddenText;
+  late final _send = KaraokeSendThrottle(_sendLevel);
+
+  @override
+  void initState() {
+    super.initState();
+    _jam = ref.read(jamProvider.notifier);
+    _container = ProviderScope.containerOf(context, listen: false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
+    _forbiddenText = context.l10n.karaokeJamForbidden;
+  }
 
   void _sendJam(double? level) {
-    sendJamKaraoke(ref, level).then((e) {
-      if (e != null) AppLog.d('karaoke: the Jam refused the level ($e)');
+    _jam.send(JamCommand.karaoke(level)).then((e) {
+      if (e == null) return;
+      AppLog.d('karaoke: the Jam refused the level ($e)');
+      if (mounted) setState(() => _drag = null);
+      if (e == JamError.forbidden && _messenger.mounted) {
+        _messenger.showSnackBar(SnackBar(content: Text(_forbiddenText)));
+      }
     });
+  }
+
+  // A drag in flight must not turn back on a karaoke somebody else just switched off.
+  void _sendLevel(double? level) {
+    if (_container.read(jamKaraokeProvider)?.on == true) _sendJam(level);
   }
 
   @override
@@ -99,9 +132,13 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
     final bypass = jam == null && ref.watch(karaokeBypassProvider);
     final on = jam != null ? jam.on : k.on;
     final enabled = jam?.canCommand ?? true;
-    // Off in a Jam: the slider shows (and keeps) this device's own level.
+    // Jam karaoke off: the slider is disabled and shows this device's own level, which the switch sends.
     final level = _drag ?? (jam?.level ?? k.level);
     final percent = (level * 100).round();
+    ref.listen(jamKaraokeProvider.select((j) => j?.level), (_, next) {
+      final d = _drag;
+      if (!_dragging && d != null && (next == null || (next - d).abs() < 0.01)) setState(() => _drag = null);
+    });
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -146,20 +183,19 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
                   value: level,
                   divisions: 20,
                   semanticFormatterCallback: (v) => l.karaokePercent((v * 100).round()),
-                  onChanged: !enabled
+                  onChanged: !enabled || (jam != null && !jam.on)
                       ? null
                       : (v) {
                           if (jam == null) return setKaraokeLevel(ref, v);
-                          setState(() => _drag = v);
-                          if (jam.on) {
-                            _send.add(v);
-                          } else {
-                            setKaraokeLevel(ref, v);
-                          }
+                          setState(() {
+                            _drag = v;
+                            _dragging = true;
+                          });
+                          _send.add(v);
                         },
                   onChangeEnd: (_) {
+                    _dragging = false;
                     _send.flush();
-                    setState(() => _drag = null);
                   },
                 ),
               ),

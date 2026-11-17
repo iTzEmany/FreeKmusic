@@ -31,6 +31,7 @@ class _Jam extends JamController {
   }
 
   void markRemote() => state = state.copyWith(remote: true);
+  void markInviting() => state = state.copyWith(inviting: true);
 }
 
 class _Hub extends ShareHubNotifier {
@@ -45,13 +46,17 @@ void main() {
   late _Jam jam;
   late FakeVoiceFilter filter;
 
-  JamState state({double? karaoke, bool guests = false}) => JamState(
+  JamState state({double? karaoke, bool guests = false, String output = 'me', bool remoteGuest = false}) => JamState(
     version: 1,
     hostDeviceId: 'h',
-    outputDeviceId: 'me',
+    outputDeviceId: output,
     karaoke: karaoke,
     karaokeGuests: guests,
-    participants: const [JamParticipant(id: 'h', name: 'Marco'), JamParticipant(id: 'me', name: 'Io')],
+    participants: [
+      const JamParticipant(id: 'h', name: 'Marco'),
+      const JamParticipant(id: 'me', name: 'Io'),
+      if (remoteGuest) const JamParticipant(id: 'r', name: 'Lontano', remote: true),
+    ],
   );
 
   Future<void> setUpJam({bool withFilter = true}) async {
@@ -133,6 +138,38 @@ void main() {
     expect(c.read(jamKaraokeProvider)!.canCommand, isTrue);
     k = c.read(jamKaraokeProvider)!;
     expect(k.guestsAllowed, isTrue);
+  });
+
+  test('a remote guest is never an output: it still sees the Jam karaoke, but cannot ignore it', () async {
+    await setUpJam();
+    jam.markRemote();
+    await jam.debugBegin(JamRole.guest, state(karaoke: 0.1, output: 'h'));
+    final k = c.read(jamKaraokeProvider)!;
+    expect((k.level, k.remote, k.playsHere, k.canIgnore), (0.1, true, false, false));
+  });
+
+  test('the inviting host and a LAN output of a Jam with remote guests are in a remote Jam', () async {
+    await setUpJam();
+    jam.markInviting();
+    await jam.debugBegin(JamRole.host, state(karaoke: 0.1, output: 'h'));
+    expect(c.read(jamKaraokeProvider)!.remote, isTrue);
+    // Without a filter the host still has the mic: it commands the Jam.
+    expect(c.read(karaokeButtonVisibleProvider), isTrue);
+  });
+
+  test('a LAN output in a Jam with remote guests can ignore the Jam karaoke', () async {
+    await setUpJam();
+    setIgnore(true);
+    await jam.debugBegin(JamRole.guest, state(karaoke: 0.3, remoteGuest: true));
+    final k = c.read(jamKaraokeProvider)!;
+    expect((k.remote, k.playsHere, k.canIgnore), (true, true, true));
+    expect(filter.calls, [null]);
+  });
+
+  test('a host without a filter in a Jam with no remote guests has no mic', () async {
+    await setUpJam();
+    await jam.debugBegin(JamRole.host, state(karaoke: 0.1));
+    expect(c.read(karaokeButtonVisibleProvider), isFalse);
   });
 
   test('the drag sends the first level at once and then the last one every 250 ms', () async {
