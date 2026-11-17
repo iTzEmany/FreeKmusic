@@ -41,6 +41,7 @@ class KaraokeButton extends ConsumerWidget {
       label: name,
       onTap: enabled ? () => showKaraokeSheet(context) : null,
       child: IconButton(
+        visualDensity: VisualDensity.compact, // next to the sleep chip
         tooltip: name,
         onPressed: enabled ? () => showKaraokeSheet(context) : null,
         icon: Icon(

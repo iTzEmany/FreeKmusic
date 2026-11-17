@@ -287,6 +287,10 @@ class NpBottomRow extends ConsumerWidget {
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
+                  // Tight padding: «Dispositivi» fits next to the mic and sleep pair at 360 dp.
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
+                  ),
                   onPressed: onDevices ?? () => DevicesSheet.show(context),
                   icon: Icon(
                     Icons.devices_rounded,
@@ -308,6 +312,9 @@ class NpBottomRow extends ConsumerWidget {
               child: Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: CcDims.gap8),
+                  ),
                   onPressed: onQueue ?? () => showQueueSheet(context),
                   icon: Icon(
                     Icons.queue_music_rounded,
