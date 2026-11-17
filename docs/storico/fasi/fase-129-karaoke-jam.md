@@ -7,9 +7,9 @@ chi ascolta può scegliere «Ignora per me». Le versioni vecchie dell'app ignor
 se la base è sul dispositivo che suona, altrimenti il filtro (D-587).
 
 ## Riferimenti
-D-586, D-587; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)
+D-586, D-587; specifica [`../feature/feature-libreria-leggera-karaoke-cerca.md`](../feature/feature-libreria-leggera-karaoke-cerca.md)
 § Architettura D («Jam»). Area a rischio: protocollo Jam e Jam a distanza (review Opus del protocollo). Documento
-d'area: `../architettura/sync-backup-jam.md`.
+d'area: `../../architettura/sync-backup-jam.md`.
 
 ## Mockup
 ```text
