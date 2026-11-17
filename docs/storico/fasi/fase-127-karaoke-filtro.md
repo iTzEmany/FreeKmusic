@@ -7,9 +7,9 @@ brano e l'altro, il livello si ricorda, si spegne da solo su episodi e radio. Su
 (D-600, D-617: la libmpv di Windows non ha i filtri). Fuori: «Alta qualità» (fase 128), Jam (fase 129), karaoke dal menu del brano (D-584).
 
 ## Riferimenti
-D-583, D-584, D-586, D-600, D-603; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)
+D-583, D-584, D-586, D-600, D-603; specifica [`../feature/feature-libreria-leggera-karaoke-cerca.md`](../feature/feature-libreria-leggera-karaoke-cerca.md)
 § Stack (filtro Android e desktop), § Architettura D («Controller», «Motore», «UI»), flusso (c), RNF-01, RNF-04, rischi
-F-4, F-6. Documenti d'area: `../architettura/riproduzione-e-coda.md`, `../architettura/piattaforme.md`, `../architettura/ui-e-design.md`.
+F-4, F-6. Documenti d'area: `../../architettura/riproduzione-e-coda.md`, `../../architettura/piattaforme.md`, `../../architettura/ui-e-design.md`.
 
 ## Mockup
 ```text
