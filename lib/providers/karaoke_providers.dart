@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/db/app_database.dart' show Track;
 import '../data/repositories/track_kinds.dart';
+import '../services/stream/stream_key.dart';
 import '../services/audio/equalizer.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
@@ -10,7 +12,7 @@ import '../services/karaoke/karaoke_controller.dart';
 import '../services/karaoke/separation_service.dart';
 import 'stream_providers.dart' show streamCacheProvider;
 
-import 'dart:io' show Directory;
+import 'dart:io' show Directory, File, FileSystemEntityType;
 
 import 'jam_providers.dart';
 import 'player_providers.dart';
@@ -67,13 +69,16 @@ final karaokeApplierProvider = Provider<void>((ref) {
       controller.apply(
         on: k.on,
         level: k.level,
-        bypass: ref.read(karaokeBypassProvider),
+        // With the backing track playing the filter would cut the singer twice.
+        bypass: ref.read(karaokeBypassProvider) ||
+            ref.read(karaokeBaseProvider).value?.active == true,
       ),
     );
   }
 
   ref.listen(karaokeProvider, (_, _) => apply());
   ref.listen(karaokeBypassProvider, (_, _) => apply());
+  ref.listen(karaokeBaseProvider, (_, _) => apply());
   apply();
 });
 
@@ -142,4 +147,112 @@ final separationServiceProvider = Provider<SeparationService?>((ref) {
   );
   ref.onDispose(service.dispose);
   return service;
+});
+
+/// Base (true, default) or Original (false) once the backing track exists (D-622).
+class KaraokeUseBase extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void set(bool v) => state = v;
+}
+
+final karaokeUseBaseProvider = NotifierProvider<KaraokeUseBase, bool>(KaraokeUseBase.new);
+
+/// What «Alta qualità» works on for the current track: the cache [key] of its backing track and the
+/// file to separate ([input], null while a streamed track is not in the cache yet).
+class KaraokeTarget {
+  const KaraokeTarget(this.key, this.input);
+
+  final String key;
+  final String? input;
+}
+
+Future<String?> _karaokeKey(Track t, String? streamKey) async {
+  if (streamKey != null) return karaokeKeyOfStream(streamKey);
+  if (t.kind == kEpisodeKind) return null;
+  final st = await File(t.path).stat();
+  if (st.type == FileSystemEntityType.notFound) return null;
+  return karaokeKeyOfLocal(t.id, st.modified.millisecondsSinceEpoch);
+}
+
+final karaokeTargetProvider = FutureProvider<KaraokeTarget?>((ref) async {
+  final t = ref.watch(currentTrackProvider).value;
+  if (t == null || ref.watch(karaokeBypassProvider)) return null;
+  final entry = ref.watch(onlineEntriesProvider)?.entryOf(t.id);
+  final streamKey = entry?.result.indexKey ?? keyOfStreamPath(t.path);
+  final key = await _karaokeKey(t, streamKey);
+  if (key == null) return null;
+  if (streamKey == null) return KaraokeTarget(key, t.path);
+  final preparer = ref.read(audioHandlerProvider).preparer;
+  if (preparer == null) return KaraokeTarget(key, null);
+  // The file may land after this runs: the preparer's phases tell.
+  preparer.phases.addListener(ref.invalidateSelf);
+  ref.onDispose(() => preparer.phases.removeListener(ref.invalidateSelf));
+  final file = await preparer.cachedFile(streamKey, entry?.result ?? streamResultOfRow(streamKey, t));
+  return KaraokeTarget(key, file?.path);
+});
+
+/// The separation state of the current target (idle where there is no engine).
+final separationStateProvider = Provider<SeparationState>((ref) {
+  final service = ref.watch(separationServiceProvider);
+  final key = ref.watch(karaokeTargetProvider.select((t) => t.value?.key));
+  if (service == null || key == null) return SeparationState.idle;
+  service.addListener(ref.invalidateSelf);
+  ref.onDispose(() => service.removeListener(ref.invalidateSelf));
+  return service.stateOf(key);
+});
+
+/// The backing track of the current track: [path] when it exists, [active] when it is what plays.
+class KaraokeBase {
+  const KaraokeBase(this.key, this.path, this.active);
+
+  final String key;
+  final String? path;
+  final bool active;
+}
+
+bool _baseWanted(Ref ref) =>
+    ref.read(karaokeProvider).on &&
+    ref.read(karaokeUseBaseProvider) &&
+    ref.read(jamKaraokeProvider) == null;
+
+final karaokeBaseProvider = FutureProvider<KaraokeBase?>((ref) async {
+  final key = ref.watch(karaokeTargetProvider.select((t) => t.value?.key));
+  final cache = ref.read(streamCacheProvider);
+  if (key == null || ref.watch(separationServiceProvider) == null) return null;
+  ref.watch(separationStateProvider.select((s) => s.phase));
+  ref.watch(karaokeProvider.select((k) => k.on));
+  ref.watch(karaokeUseBaseProvider);
+  ref.watch(jamKaraokeProvider.select((j) => j != null));
+  final path = (await cache.fileFor(key))?.path;
+  return KaraokeBase(key, path, path != null && _baseWanted(ref));
+});
+
+/// Plugs the backing track into the player: the handler's hook, the reload at the same position
+/// when the track becomes ready or the choice changes, Base chosen when it becomes ready.
+/// Watched once, from the app root.
+final karaokeBaseApplierProvider = Provider<void>((ref) {
+  final service = ref.watch(separationServiceProvider);
+  if (service == null) return;
+  final handler = ref.watch(audioHandlerProvider);
+  handler.karaokeSource = (t, streamKey) async {
+    if (!_baseWanted(ref) || t.kind == kEpisodeKind) return null;
+    final key = await _karaokeKey(t, streamKey);
+    return key == null ? null : (await ref.read(streamCacheProvider).fileFor(key))?.path;
+  };
+  ref.onDispose(() => handler.karaokeSource = null);
+  ref.listen(separationStateProvider.select((s) => s.phase), (p, n) {
+    if (n == SeparationPhase.ready && p != SeparationPhase.ready) {
+      ref.read(karaokeUseBaseProvider.notifier).set(true);
+    }
+  });
+  ref.listen(karaokeBaseProvider, (prev, next) {
+    final b = next.value;
+    final before = prev?.value;
+    // Same track only: a track change loads by itself and asks the hook.
+    if (b == null || before == null || before.key != b.key) return;
+    final want = b.active ? b.path : null;
+    if (want != handler.karaokePath) unawaited(handler.reloadCurrent());
+  });
 });

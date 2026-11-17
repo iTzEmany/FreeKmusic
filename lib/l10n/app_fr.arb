@@ -4085,5 +4085,13 @@
   "karaokeJamLocalNote": "Dans la Jam à la maison, le karaoké vaut pour toutes les sorties qui le gèrent.",
   "karaokeJamBox": "Karaoké activé par {name}, voix {percent} %",
   "karaokeJamIgnore": "Ignorer pour moi",
-  "karaokeJamForbidden": "L’hôte a désactivé le karaoké pour les invités."
+  "karaokeJamForbidden": "L’hôte a désactivé le karaoké pour les invités.",
+  "karaokeHighQuality": "Haute qualité",
+  "karaokeHighQualityNote": "Séparation sur le téléphone, environ 1 à 2 minutes. Le filtre joue en attendant.",
+  "karaokeHighQualityModel": "Téléchargement du modèle",
+  "karaokeHighQualitySeparating": "Séparation sur le téléphone",
+  "karaokeHighQualityWaiting": "En attente du téléchargement du titre",
+  "karaokeHighQualityFailed": "Séparation échouée : le filtre reste. Touchez pour réessayer.",
+  "karaokeBase": "Base",
+  "karaokeOriginal": "Original"
 }

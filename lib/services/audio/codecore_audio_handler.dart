@@ -222,6 +222,22 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   /// Told (without waiting) when a SAVED stream row cannot play because YouTube no longer has the video.
   void Function(Track row)? onStreamGone;
+
+  /// The «Alta qualità» karaoke hook: the backing-track file to play instead of [track]'s own
+  /// (null = the normal path). [streamKey] is the stream cache key for a streamed track.
+  Future<String?> Function(Track track, String? streamKey)? karaokeSource;
+
+  /// The backing track the current item plays, or null when it plays its own file.
+  String? get karaokePath => _karaokePath;
+  String? _karaokePath;
+  ({int id, String path})? _nextKaraoke; // the one the gapless window was given
+
+  /// Loads the current item again, at the same position and play/pause state
+  /// (the karaoke source changed: base ready, Base/Originale switch).
+  Future<void> reloadCurrent() async {
+    if (_current == null || isRadio) return;
+    await _loadCurrent(play: _state == BackendState.playing, startAt: _position);
+  }
   final String? Function(Track track)? coverPathFor;
   final List<StreamSubscription<Object?>> _subs = [];
   final _trackController = StreamController<Track?>.broadcast();
@@ -589,10 +605,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     var offline = false; // the stream could not be fetched for lack of network
     var ageGated = false; // age-restricted video with no audio-only substitute
     try {
+      // A ready backing track plays instead of the file or the stream (after the «loading» state is out).
+      final karaoke = radio == null ? await karaokeSource?.call(track, streamKey) : null;
+      if (token != _loadToken) return;
+      _karaokePath = karaoke;
       if (radio != null) {
         _radioBusy = true;
         if (play) _notifyRadioStart(radio.station);
         await _backend.loadUri(_streamUri(radio.station));
+      } else if (karaoke != null) {
+        await _backend.load(karaoke);
       } else if (streamKey != null) {
         final p = preparer;
         if (p == null) throw const BackendException('no stream preparer');
@@ -1321,6 +1343,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _url = null;
     _recoverOnPlay = _errorWhileLoading = false;
     _enterTrack(prepared);
+    _karaokePath = _nextKaraoke?.id == prepared.id ? _nextKaraoke?.path : null;
     // An online entry joined from its cached file: plays count on its row.
     final entry = online?.entryOf(prepared.id);
     if (entry != null) {
@@ -1347,6 +1370,20 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// What the window may prepare for queue id [id]: a track with a file (the
   /// library's, or a streamed one in the cache), else null: a plain load (R-80).
   Future<({Track track, String path})?> _nextFile(int id) async {
+    final found = await _plainNextFile(id);
+    final hook = karaokeSource;
+    if (found == null || hook == null) return found;
+    final entry = online?.entryOf(id);
+    final key = isStreamTrack(found.track) || _isRemoteEpisode(found.track)
+        ? entry?.result.indexKey ?? keyOfStreamPath(found.track.path)
+        : null;
+    final base = await hook(found.track, key);
+    if (base == null) return found;
+    _nextKaraoke = (id: found.track.id, path: base);
+    return (track: found.track, path: base);
+  }
+
+  Future<({Track track, String path})?> _plainNextFile(int id) async {
     final cur = _current;
     if (cur != null &&
         cur.id == id &&

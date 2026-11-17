@@ -12642,6 +12642,54 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'L’host ha tolto agli ospiti il permesso di usare il karaoke.'**
   String get karaokeJamForbidden;
+
+  /// No description provided for @karaokeHighQuality.
+  ///
+  /// In it, this message translates to:
+  /// **'Alta qualità'**
+  String get karaokeHighQuality;
+
+  /// No description provided for @karaokeHighQualityNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Separazione sul telefono, circa 1–2 minuti. Intanto suona il filtro.'**
+  String get karaokeHighQualityNote;
+
+  /// No description provided for @karaokeHighQualityModel.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarico il modello'**
+  String get karaokeHighQualityModel;
+
+  /// No description provided for @karaokeHighQualitySeparating.
+  ///
+  /// In it, this message translates to:
+  /// **'Separazione sul telefono'**
+  String get karaokeHighQualitySeparating;
+
+  /// No description provided for @karaokeHighQualityWaiting.
+  ///
+  /// In it, this message translates to:
+  /// **'In attesa che il brano sia scaricato'**
+  String get karaokeHighQualityWaiting;
+
+  /// No description provided for @karaokeHighQualityFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Separazione non riuscita: resta il filtro. Tocca per riprovare.'**
+  String get karaokeHighQualityFailed;
+
+  /// No description provided for @karaokeBase.
+  ///
+  /// In it, this message translates to:
+  /// **'Base'**
+  String get karaokeBase;
+
+  /// No description provided for @karaokeOriginal.
+  ///
+  /// In it, this message translates to:
+  /// **'Originale'**
+  String get karaokeOriginal;
 }
 
 class _AppLocalizationsDelegate
