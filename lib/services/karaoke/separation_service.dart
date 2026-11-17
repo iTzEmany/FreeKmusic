@@ -129,6 +129,7 @@ class SeparationService extends ChangeNotifier {
     required this.separator,
     required this.modelsRoot,
     ModelDownloader? download,
+    this.models = spleeterModels,
   }) : _download = download ?? _dioDownload;
 
   final StreamCache cache;
@@ -136,15 +137,21 @@ class SeparationService extends ChangeNotifier {
   final Future<Directory> Function() modelsRoot;
   final ModelDownloader _download;
 
+  /// File name -> sha256 of the models [ensureModels] installs.
+  final Map<String, String> models;
+
   final _states = <String, SeparationState>{};
   int _gen = 0;
   CancelToken? _token;
   Future<void> _last = Future.value();
   bool _active = false;
+  bool _disposed = false;
+  String? _activeKey;
 
   SeparationState stateOf(String key) => _states[key] ?? SeparationState.idle;
 
   void _set(String key, SeparationState s) {
+    if (_disposed) return;
     _states[key] = s;
     notifyListeners();
   }
@@ -152,38 +159,59 @@ class SeparationService extends ChangeNotifier {
   /// Starts the job for [key] on [input] (a file path), replacing any running one.
   /// Follow it with [stateOf]; a base already in the cache makes no job.
   Future<void> request(String key, String input) async {
-    final existing = await cache.fileFor(key);
-    if (existing != null) {
-      _set(
-        key,
-        SeparationState(
-          SeparationPhase.ready,
-          fraction: 1,
-          path: existing.path,
-        ),
-      );
-      return;
-    }
-    final gen = ++_gen;
-    // Stop the old job and wait for it, so the engine is free (no `busy`).
-    _token?.cancel();
-    final previous = _last;
-    if (_active) unawaited(separator.cancel());
-    final done = Completer<void>();
-    _last = done.future;
+    if (_activeKey == key) return;
+    int? gen;
     try {
-      await previous;
-      if (gen != _gen) return;
-      await _run(key, input, gen);
+      final existing = await cache.fileFor(key);
+      if (_activeKey == key) return;
+      if (existing != null) {
+        _stop();
+        _set(
+          key,
+          SeparationState(
+            SeparationPhase.ready,
+            fraction: 1,
+            path: existing.path,
+          ),
+        );
+        return;
+      }
+      gen = ++_gen;
+      _activeKey = key;
+      // Stop the old job and wait for it, so the engine is free (no `busy`).
+      _token?.cancel();
+      final previous = _last;
+      if (_active) unawaited(separator.cancel());
+      final done = Completer<void>();
+      _last = done.future;
+      try {
+        await previous;
+        if (gen != _gen) return;
+        await _run(key, input, gen);
+      } finally {
+        done.complete();
+      }
+    } on Object catch (e, st) {
+      _fail(key, e, st);
     } finally {
-      done.complete();
+      if (gen == _gen) _activeKey = null;
     }
   }
 
-  Future<void> cancel() async {
+  void _stop() {
     _gen++;
+    _activeKey = null;
     _token?.cancel();
-    await separator.cancel();
+    if (_active) unawaited(separator.cancel());
+  }
+
+  Future<void> cancel() async => _stop();
+
+  @override
+  void dispose() {
+    _stop();
+    _disposed = true;
+    super.dispose();
   }
 
   Future<void> _run(String key, String input, int gen) async {
@@ -202,6 +230,7 @@ class SeparationService extends ChangeNotifier {
       _set(key, const SeparationState(SeparationPhase.separating));
       part = File(p.join(cache.dir.path, '${streamFileName(key)}.wav.part'));
       await cache.dir.create(recursive: true);
+      if (stale()) return _drop(key);
       await separator.separate(
         input: input,
         output: part.path,
@@ -259,9 +288,9 @@ class SeparationService extends ChangeNotifier {
     );
     await dir.create(recursive: true);
     var i = 0;
-    for (final e in spleeterModels.entries) {
+    for (final e in models.entries) {
       final file = File(p.join(dir.path, e.key));
-      final base = i++ / spleeterModels.length;
+      final base = i++ / models.length;
       if (await file.exists()) continue;
       final part = File('${file.path}.part');
       try {
@@ -269,7 +298,7 @@ class SeparationService extends ChangeNotifier {
           '$_modelBase/${e.key}',
           part.path,
           token,
-          (f) => onProgress(base + f / spleeterModels.length),
+          (f) => onProgress(base + f / models.length),
         );
         final actual = (await sha256.bind(part.openRead()).first).toString();
         if (actual != e.value) {
@@ -277,7 +306,11 @@ class SeparationService extends ChangeNotifier {
         }
         await part.rename(file.path);
       } finally {
-        if (await part.exists()) await part.delete();
+        try {
+          if (await part.exists()) await part.delete();
+        } on FileSystemException catch (err, st) {
+          AppLog.w('separation: cannot delete ${part.path}', err, st);
+        }
       }
     }
     onProgress(1);
@@ -290,11 +323,23 @@ Future<void> _dioDownload(
   String dest,
   CancelToken token,
   void Function(double) onProgress,
-) => Dio().download(
-  url,
-  dest,
-  cancelToken: token,
-  onReceiveProgress: (got, total) {
-    if (total > 0) onProgress(got / total);
-  },
-);
+) async {
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  );
+  try {
+    await dio.download(
+      url,
+      dest,
+      cancelToken: token,
+      onReceiveProgress: (got, total) {
+        if (total > 0) onProgress(got / total);
+      },
+    );
+  } finally {
+    dio.close();
+  }
+}

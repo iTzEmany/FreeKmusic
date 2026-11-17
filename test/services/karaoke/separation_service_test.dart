@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:codecore/services/karaoke/separation_service.dart';
 import 'package:codecore/services/stream/stream_cache.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -45,7 +47,7 @@ void main() {
   late FakeSeparator sep;
   var downloads = 0;
 
-  // Writes bytes whose sha256 is the expected one only when not [corrupt].
+  // Writes 'model:<name>'; that never matches the pinned hashes.
   Future<void> fakeDownload(
     String url,
     String dest,
@@ -54,6 +56,7 @@ void main() {
   ) async {
     downloads++;
     final name = url.split('/').last;
+    onProgress(0.5);
     onProgress(1);
     File(dest).writeAsStringSync('model:$name');
   }
@@ -87,8 +90,7 @@ void main() {
   });
 
   group('with valid hashes', () {
-    // The fake files can't match the pinned hashes: swap the table's check by
-    // pre-installing the models, which ensureModels trusts.
+    // Pre-installed models: ensureModels trusts files already there.
     setUp(() {
       final dir = Directory(
         p.join(root.path, 'models', 'spleeter-2stems-7001ba31'),
@@ -102,17 +104,21 @@ void main() {
       'progress is reported and the base lands in the cache under the key',
       () async {
         final s = service();
-        final seen = <SeparationPhase>[];
-        s.addListener(() => seen.add(s.stateOf('karaoke:k').phase));
+        final fractions = <double>[];
+        s.addListener(() => fractions.add(s.stateOf('karaoke:k').fraction));
         await s.request('karaoke:k', '/in.mp3');
         final st = s.stateOf('karaoke:k');
-        expect(seen, containsAll([SeparationPhase.separating]));
+        expect(fractions, contains(0.5));
         expect(st.phase, SeparationPhase.ready);
         expect((await cache.fileFor('karaoke:k'))!.path, st.path);
         expect(File(st.path!).readAsBytesSync(), [1, 2, 3]);
-        expect(downloads, 0);
       },
     );
+
+    test('installed models are not downloaded again', () async {
+      await service().request('karaoke:k', '/in.mp3');
+      expect(downloads, 0);
+    });
 
     test('a base already in the cache starts no job', () async {
       final s = service();
@@ -140,6 +146,55 @@ void main() {
       expect(s.stateOf('karaoke:a').phase, SeparationPhase.idle);
       expect(s.stateOf('karaoke:b').phase, SeparationPhase.ready);
       expect(await cache.fileFor('karaoke:a'), isNull);
+    });
+  });
+
+  group('model download', () {
+    String hash(String name) =>
+        sha256.convert(utf8.encode('model:$name')).toString();
+    SeparationService svc(ModelDownloader d) => SeparationService(
+      cache: cache,
+      separator: sep,
+      modelsRoot: () async => root,
+      download: d,
+      models: {'a.onnx': hash('a.onnx'), 'b.onnx': hash('b.onnx')},
+    );
+    Iterable<File> files() =>
+        Directory(p.join(root.path, 'models'))
+            .listSync(recursive: true)
+            .whereType<File>();
+
+    test(
+      'succeeds: both files installed, no .part, progress only goes up',
+      () async {
+        final s = svc(fakeDownload);
+        final seen = <double>[];
+        s.addListener(() {
+          final st = s.stateOf('karaoke:k');
+          if (st.phase == SeparationPhase.model) seen.add(st.fraction);
+        });
+        await s.request('karaoke:k', '/in.mp3');
+        expect(s.stateOf('karaoke:k').phase, SeparationPhase.ready);
+        expect(files().map((f) => p.basename(f.path)).toSet(), {
+          'a.onnx',
+          'b.onnx',
+        });
+        expect(seen, isNotEmpty);
+        expect(seen, orderedEquals([...seen]..sort()));
+      },
+    );
+
+    test('a cancel during the download -> idle, no .part left', () async {
+      final s = svc((url, dest, t, onProgress) async {
+        File(dest).writeAsStringSync('half');
+        throw DioException.requestCancelled(
+          requestOptions: RequestOptions(),
+          reason: 'cancelled',
+        );
+      });
+      await s.request('karaoke:k', '/in.mp3');
+      expect(s.stateOf('karaoke:k').phase, SeparationPhase.idle);
+      expect(files(), isEmpty);
     });
   });
 }
