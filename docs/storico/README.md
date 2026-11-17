@@ -155,3 +155,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 124 | Cerca con le classifiche | [`fase-124-cerca-classifiche.md`](fasi/fase-124-cerca-classifiche.md) |
 | 125 | Libreria in streaming (base) | [`fase-125-libreria-in-streaming.md`](fasi/fase-125-libreria-in-streaming.md) |
 | 126 | Libreria leggera: SD, qualità, «Libera spazio», backup | [`fase-126-libreria-spazio-e-backup.md`](fasi/fase-126-libreria-spazio-e-backup.md) |
+| 127 | Karaoke col filtro in tempo reale | [`fase-127-karaoke-filtro.md`](fasi/fase-127-karaoke-filtro.md) |

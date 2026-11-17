@@ -111,6 +111,7 @@ Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio 
 - Le animazioni si riducono con «Riduci animazioni» dell'app e con il flag di sistema.
 - Il contrasto delle combinazioni tema × accento è verificato da test; nell'editor dei temi `hasLowContrastText` avvisa, senza cambiare i colori.
 - Nei test: `tester.semantics.tap(find.semantics.byLabel(...))` e controlla l'effetto.
+- Il microfono del karaoke è un solo nodo «Karaoke» con lo stato acceso/spento (`toggled`); il cursore si legge «Voce» e il valore in percentuale.
 - Il supporto TalkBack sta sempre nel codice; le verifiche sono automatiche (test e `uiautomator`), non prove a mano.
 
 ### Localizzazione
@@ -123,6 +124,7 @@ Ogni testo visibile viene da un ARB (`context.l10n.<chiave>`). Italiano è il mo
 - **Un solo `showModalBottomSheet`** (in `cc_sheet.dart`; `car_playlists_sheet.dart` è solo esentato da `widgets_test`), **un solo `AppBar(`** (`CcAppBar`, con le varianti `SliverAppBar` e `SelectableAppBar`), **nessun `PopupMenuButton`**.
 - **Avvisi sempre da `showMsg`/`showMsgOn`.** Oggi ci sono due eccezioni che costruiscono un `SnackBar` da sé: `lib/ui/widgets/shuffle_button.dart` (spiegazione una tantum del Shuffle+, con `CcSnackContent`) e i tre avvisi globali di `lib/app.dart` (messenger di radice). Non aggiungerne altre.
 - **Ogni scheda della shell sta in `TickerMode(enabled: i == index)`.** Nessuna animazione continua deve girare fuori schermo.
+- **Il microfono del karaoke compare solo dove esiste il filtro** (`voiceFilterProvider` non nullo) e appare spento su episodi e radio.
 - **Ogni stringa visibile in tutti e sei gli ARB**, senza separatori nei letterali.
 - **Selezione solo da `selectionProvider`**, con chiavi `SelectionKey` (le chiavi con parametro sono `'<tipo>:<id>'`).
 - **Nessun valore instabile in `MediaQuery`, `Theme` o `InheritedWidget`**: ogni oggetto su misura ha `==` e `hashCode`.

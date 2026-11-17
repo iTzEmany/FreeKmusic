@@ -79,6 +79,8 @@ class AppSettings {
     this.importReviewThreshold = 0.55,
     this.playbackSpeed = 1.0,
     this.eqEnabled = false,
+    this.karaokeOn = false,
+    this.karaokeLevel = 0.2,
     this.eqSpeaker = const EqProfile(),
     this.eqHeadphones = const EqProfile(),
     this.transition = TransitionMode.normal,
@@ -191,6 +193,10 @@ class AppSettings {
 
   /// Equalizer on/off (Android) and its curve for each kind of output.
   final bool eqEnabled;
+
+  /// Karaoke voice filter (D-584): stays on across tracks; the level is 0 (voice lowest) to 1 (untouched).
+  final bool karaokeOn;
+  final double karaokeLevel;
   final EqProfile eqSpeaker, eqHeadphones;
 
   /// How one track gives way to the next, and the length of a crossfade.
@@ -279,6 +285,8 @@ class AppSettings {
     double? importReviewThreshold,
     double? playbackSpeed,
     bool? eqEnabled,
+    bool? karaokeOn,
+    double? karaokeLevel,
     EqProfile? eqSpeaker,
     EqProfile? eqHeadphones,
     TransitionMode? transition,
@@ -340,6 +348,8 @@ class AppSettings {
     importReviewThreshold: importReviewThreshold ?? this.importReviewThreshold,
     playbackSpeed: playbackSpeed ?? this.playbackSpeed,
     eqEnabled: eqEnabled ?? this.eqEnabled,
+    karaokeOn: karaokeOn ?? this.karaokeOn,
+    karaokeLevel: karaokeLevel ?? this.karaokeLevel,
     eqSpeaker: eqSpeaker ?? this.eqSpeaker,
     eqHeadphones: eqHeadphones ?? this.eqHeadphones,
     transition: transition ?? this.transition,
@@ -506,6 +516,8 @@ class SettingsStore {
     importReviewThreshold: _prefs.getDouble('importReviewThreshold') ?? 0.55,
     playbackSpeed: (_prefs.getDouble('playbackSpeed') ?? 1.0).clamp(0.5, 2.0),
     eqEnabled: _prefs.getBool('eqEnabled') ?? false,
+    karaokeOn: _prefs.getBool('karaokeOn') ?? false,
+    karaokeLevel: (_prefs.getDouble('karaokeLevel') ?? 0.2).clamp(0.0, 1.0),
     eqSpeaker: _readEq('speaker'),
     eqHeadphones: _readEq('headphones'),
     transition: TransitionMode.values.firstWhere(
@@ -599,6 +611,8 @@ class SettingsStore {
     await _prefs.setDouble('importReviewThreshold', s.importReviewThreshold);
     await _prefs.setDouble('playbackSpeed', s.playbackSpeed);
     await _prefs.setBool('eqEnabled', s.eqEnabled);
+    await _prefs.setBool('karaokeOn', s.karaokeOn);
+    await _prefs.setDouble('karaokeLevel', s.karaokeLevel);
     await _writeEq('speaker', s.eqSpeaker);
     await _writeEq('headphones', s.eqHeadphones);
     await _prefs.setString('transition', s.transition.name);

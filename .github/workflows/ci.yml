@@ -83,6 +83,17 @@ jobs:
       # Opt-in live tests skip themselves (they need CODECORE_LIVE=1).
       - if: steps.scope.outputs.docs != 'true'
         run: flutter test --reporter expanded
+      # JVM tests of the Android voice filter in third_party/just_audio (D-603).
+      - if: steps.scope.outputs.docs != 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - if: steps.scope.outputs.docs != 'true'
+        name: Android voice filter (JVM tests)
+        run: |
+          flutter build apk --config-only --debug  # generates the git-ignored Gradle wrapper
+          cd android && ./gradlew :just_audio:testDebugUnitTest
       # A golden that differs leaves its images here: download them to see why.
       - uses: actions/upload-artifact@v7
         if: failure() && steps.scope.outputs.docs != 'true'

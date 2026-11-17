@@ -141,6 +141,10 @@ class FakeBackend implements AudioBackend, GaplessCapable {
   @override
   Equalizer? equalizer;
 
+  /// A fake voice filter can be put here by tests that need one.
+  @override
+  VoiceFilter? voiceFilter;
+
   @override
   Duration get positionNow => positionValue;
   @override

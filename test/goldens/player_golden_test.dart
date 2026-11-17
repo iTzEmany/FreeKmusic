@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_shots/support/shot_harness.dart';
 import '../support/fake_stream_preparer.dart';
+import '../support/fake_voice_filter.dart';
 import 'tolerant_comparator.dart';
 
 class _Pending extends ShufflePlusPendingNotifier {
@@ -80,6 +81,23 @@ void main() {
             await s.expectGolden('${tag}_now_playing_waiting.png');
           }),
         );
+
+        if (scale == 1.0) {
+          testWidgets(
+            'now_playing_karaoke',
+            (tester) => withGoldenShot(tester, size, (s) async {
+              s.h.backend.voiceFilter = FakeVoiceFilter();
+              await tester.runAsync(() async {
+                await s.h.store.writeSettings(
+                  s.h.store.readSettings().copyWith(karaokeOn: true),
+                );
+                await s.h.handler.playQueue(s.seed.trackIds.take(3).toList(), 0);
+              });
+              await s.show(const NowPlayingScreen(), textScale: scale);
+              await s.expectGolden('${tag}_now_playing_karaoke.png');
+            }),
+          );
+        }
 
         testWidgets(
           'queue_incoming',

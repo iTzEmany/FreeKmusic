@@ -405,7 +405,7 @@ class _Player extends ConsumerWidget {
           else
             NpSeekRow(track: track),
           const SizedBox(height: 8),
-          NpControls(live: radio != null),
+          NpControls(live: radio != null, karaoke: true),
           const NpBottomRow(),
           const SizedBox(height: 8),
         ],

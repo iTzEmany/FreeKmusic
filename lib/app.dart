@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/database_providers.dart' show folderRepositoryProvider;
 import 'providers/equalizer_providers.dart';
+import 'providers/karaoke_providers.dart';
 import 'providers/folder_actions.dart' show ensureDefaultFolder, scanWithPermission;
 import 'providers/jam_providers.dart' show jamOnlineFailuresProvider;
 import 'providers/player_providers.dart';
@@ -46,6 +47,7 @@ class CodecoreApp extends ConsumerWidget {
     // Alive from the start, so the Registro has the real times of what ends.
     ref.listen(activityLogProvider, (_, _) {});
     ref.watch(equalizerApplierProvider);
+    ref.watch(karaokeApplierProvider);
     // Enriches a streamed track as soon as it has its row (D-351).
     ref.listen(streamEnrichTriggerProvider, (_, _) {});
     ref.watch(outputRouteSyncProvider);

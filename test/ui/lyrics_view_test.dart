@@ -1,3 +1,4 @@
+import 'package:codecore/providers/karaoke_providers.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/romanization_ops.dart';
 import 'package:codecore/providers/translation_providers.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
+import '../support/fake_voice_filter.dart';
 
 const _jaSynced = '[00:01.00]夜の街\n[00:05.00]君の声';
 
@@ -49,11 +51,19 @@ void main() {
     bool translated = false,
     Map<int, String> manual = const {},
     List<String>? log,
+    bool karaoke = false,
+    bool bypass = false,
   }) async {
     tester.view.physicalSize = const Size(500, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final h = await Harness.create(tester, tracks: 1);
+    if (karaoke) {
+      h.backend.voiceFilter = FakeVoiceFilter();
+      await tester.runAsync(
+        () => h.store.writeSettings(h.store.readSettings().copyWith(karaokeOn: true)),
+      );
+    }
     await tester.runAsync(() async {
       await h.db
           .update(h.db.tracks)
@@ -73,6 +83,7 @@ void main() {
       tester,
       const LyricsScreen(),
       extraOverrides: [
+        if (bypass) karaokeBypassProvider.overrideWithValue(true),
         if (translated)
           lyricsTranslationProvider.overrideWith(_FakeTranslation.new),
         romanizationOpsProvider.overrideWith(
@@ -93,6 +104,29 @@ void main() {
     'yoru no machi',
     'kimi no koe',
   ], RomanizationSource.found);
+
+  testWidgets('karaoke on: the pill shows the level and reopens the slider', (
+    tester,
+  ) async {
+    final h = await open(tester, synced: _jaSynced, karaoke: true);
+    expect(find.text('Voce 20 %'), findsOneWidget);
+    await tester.tap(find.text('Voce 20 %'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Slider), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('karaoke on but bypassed (episode, radio): no pill', (tester) async {
+    final h = await open(tester, synced: _jaSynced, karaoke: true, bypass: true);
+    expect(find.textContaining('Voce'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('karaoke off: no pill', (tester) async {
+    final h = await open(tester, synced: _jaSynced);
+    expect(find.textContaining('Voce'), findsNothing);
+    await h.dispose(tester);
+  });
 
   testWidgets(
     'synced rows show the transliteration above the translation slot',

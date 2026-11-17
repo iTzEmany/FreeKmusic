@@ -27,6 +27,7 @@ Lo stack audio, la coda (`PlayQueue`) con il blocco dell'utente, shuffle e ripet
 | Provider | `providers/player_providers.dart`, `sleep_timer_provider.dart`, `volume_zero_pause_provider.dart`, `equalizer_providers.dart`, `speaker_providers.dart`, `shuffle_plus_providers.dart`, `stream_providers.dart` |
 | Android nativo | `services/android/widget_sync.dart`, `widget_bridge.dart` (`PrefsWidgetBridge`); Kotlin `NowPlayingWidget`, `PlayTileService`, `WidgetStore`, `WidgetActionReceiver`, `VolumeBridge` |
 | Podcast | `services/podcast/` |
+| Karaoke | `services/karaoke/karaoke_controller.dart` (`KaraokeController`), `providers/karaoke_providers.dart` (`karaokeProvider`, `karaokeBypassProvider`, `karaokeApplierProvider`, `voiceFilterProvider`), `services/audio/desktop_voice_filter.dart` (filtro lavfi di Linux), `VoiceFilter` in `services/audio/equalizer.dart`; UI in `ui/widgets/karaoke_sheet.dart` |
 
 Piattaforme: Android usa ExoPlayer via just_audio; Linux e Windows usano libmpv via `just_audio_media_kit` (inizializzato in `main.dart`).
 
@@ -76,6 +77,13 @@ Regole del blocco:
 - `CrossfadeEngine` usa due backend, rampa a potenza uguale in 20 passi, scambio a metà. Brani corti (< 2x la durata) e l'opzione «stesso album» ripiegano sulla finestra gapless.
 - Un backend `GaplessCapable` riceve il prossimo con `setNext`; se la coda cambia, `NextWindow.invalidate`.
 - Gapless da URL verso un brano in cache: D-142.
+- Karaoke: `MirrorVoiceFilter` (in `crossfade_engine.dart`) manda lo stesso livello ai due player del crossfade. Una dissolvenza da un brano a un episodio resta filtrata per metà della dissolvenza: accettato.
+
+### Karaoke (fase 127, D-584, D-603)
+- `VoiceFilter.setLevel(0..1 | null)`: `null` = spento. Il backend reale ne ha uno solo dove esiste (Android, Linux; non Windows, macOS, iOS); `voiceFilterProvider` è `null` altrove e il microfono non compare.
+- `karaokeApplierProvider` (guardato dalla radice dell'app) manda al filtro lo stato salvato (`karaokeProvider`: acceso, livello) tramite `KaraokeController`, che non rimanda lo stesso valore.
+- Bypass su episodi e radio (`karaokeBypassProvider`): il filtro riceve `null` ma il livello salvato resta, e torna sul brano successivo. Il livello sopravvive a stop e a nuova inizializzazione del player.
+- Brani mono: lasciati intatti (Android: il processore resta inattivo; Linux: il filtro entra in `af` solo con 2+ canali).
 
 ### Streaming
 
@@ -159,6 +167,8 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 - `Semantics(excludeSemantics: true)` toglie il tap.
 - Movimento ridotto via adb: servono 3 impostazioni di scala.
 - Test instabili noti: `online_playback_test`, `smart_playlists_test`, `daylist_provider_test`, `shuffle_plus_test`, `seek_characterization`.
+- **Etichetta `preferredPeakBitRate` (karaoke desktop)**: lega l'`AudioPlayer` di just_audio al player di media_kit, perché l'`id` di just_audio cambia dopo uno stop. Mai su macOS e iOS (AVPlayer lo applica davvero), mai un vero `DarwinLoadControl` su desktop.
+- **`af` di mpv**: si riscrive solo quando il filtro si accende o si spegne; altrimenti `af-command` sui pesi di `amix` (ricostruire il grafo può far saltare l'audio). `setSpeed` e `setPitch` riscrivono `af` (`scaletempo` più filtro).
 - Il `done` di `mqtt_client` può dare errore dentro `runZonedGuarded` (Jam).
 
 ## Decisioni chiave

@@ -97,6 +97,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 | Cartelle predefinite (`resolveDefaultFolders`, `lib/core/platform.dart`) | libreria `/storage/emulated/0/Music`, download `Music/FreeKmusic` (MediaStore da Android 11; sotto, cartella dell'app) | Linux: `XDG_MUSIC_DIR` / `xdg-user-dir MUSIC`, ripiego `~/Music`; Windows `%USERPROFILE%\Music`; download in `<Musica>/FreeKmusic` | `~/Music`; iOS: cartella documenti |
 | Memoria dei download (D-579) | `effectiveLocation` (`lib/core/storage_volumes.dart`): scheda tolta = interna. Android 11+: `<SD>/Music/FreeKmusic` con MediaStore; Android 10: cartella dell'app sul volume | cartella scelta dall'utente, aggiunta alla libreria | non verificato |
 | Backup automatico | `Documents/FreeKmusic` (ripiego: cartella dell'app) | cartella scelta | non verificato |
+| Filtro della voce (karaoke, D-603, D-617) | `AudioProcessor` Media3 nella copia di `just_audio` | Linux: `lavfi` di mpv (`af`); Windows: assente (libmpv senza filtri) | assente (anche iOS) |
 | Orientamento | bloccato in verticale | libero | libero |
 | Scoperta in LAN (`discovery.dart`) | senza `reusePort` | `reusePort` solo su Linux | `reusePort` |
 
@@ -139,6 +140,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Rotazione dei telefoni**: l'utente la tiene spenta; una prova che forza l'orizzontale legge e poi ripristina `accelerometer_rotation` e `user_rotation`.
 - **Pausa a volume zero in secondo piano**: il tasto volume su riprende solo entro circa 2 s (limite di Android).
 - **`IndexedStack` e `TickerMode`**: vedi `ui-e-design.md`.
+- **Un filtro che mpv non sa costruire ferma la riproduzione**: per questo il filtro della voce c'è solo su Linux (`DesktopVoiceFilter.supported`); la libmpv di Windows ha `--disable-filters`.
 - **Entitlements macOS**: `macos/Runner/Release.entitlements` ha `app-sandbox`, `network.client`, `network.server` e `files.user-selected.read-write`. Un entitlement in meno e l'app sandboxed perde rete o accesso ai file.
 
 ## Decisioni chiave

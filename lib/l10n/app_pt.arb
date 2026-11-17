@@ -4039,5 +4039,10 @@
   "keepOfflineQueued": "{n, plural, one{1 música em download} other{{n} músicas em download}}",
   "keepOfflineAlready": "Já está tudo offline",
   "logVanishedReplaced": "Música substituída: {name}",
-  "logVanishedGone": "Música não está mais disponível: {name}"
+  "logVanishedGone": "Música não está mais disponível: {name}",
+  "karaoke": "Karaoke",
+  "karaokeVoice": "Voz",
+  "karaokePercent": "{percent} %",
+  "karaokePill": "Voz {percent} %",
+  "karaokeBypassed": "Desligado em episódios e rádio"
 }

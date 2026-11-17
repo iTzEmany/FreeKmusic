@@ -20,6 +20,8 @@ import '../../widgets/seek_bar.dart';
 import '../../widgets/smooth_position.dart';
 import '../../widgets/speed_button.dart';
 import '../devices/devices_sheet.dart';
+import '../../../providers/karaoke_providers.dart' show voiceFilterProvider;
+import '../../widgets/karaoke_sheet.dart';
 import 'queue_sheet.dart';
 import '../../widgets/shuffle_button.dart';
 
@@ -167,7 +169,11 @@ class NpControls extends ConsumerWidget {
     this.onPrevious,
     this.onPlayPause,
     this.onNext,
+    this.karaoke = false,
   });
+
+  /// The karaoke microphone (the player only; the Jam has none).
+  final bool karaoke;
 
   /// A radio: no shuffle and no repeat, only the stations' own previous / next.
   final bool live;
@@ -244,6 +250,9 @@ class NpControls extends ConsumerWidget {
               ],
             ),
           ),
+        // Not a SizedBox: a spaceEvenly slot would shift the other buttons.
+        if (karaoke && !live && ref.watch(voiceFilterProvider) != null)
+          const KaraokeButton(),
       ],
     );
   }

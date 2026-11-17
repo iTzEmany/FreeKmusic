@@ -4580,5 +4580,12 @@
   "logVanishedReplaced": "Brano sostituito: {name}",
   "@logVanishedReplaced": {"placeholders": {"name": {"type": "String"}}},
   "logVanishedGone": "Brano non più disponibile: {name}",
-  "@logVanishedGone": {"placeholders": {"name": {"type": "String"}}}
+  "@logVanishedGone": {"placeholders": {"name": {"type": "String"}}},
+  "karaoke": "Karaoke",
+  "karaokeVoice": "Voce",
+  "karaokePercent": "{percent} %",
+  "@karaokePercent": {"placeholders": {"percent": {"type": "int"}}},
+  "karaokePill": "Voce {percent} %",
+  "@karaokePill": {"placeholders": {"percent": {"type": "int"}}},
+  "karaokeBypassed": "Spento su episodi e radio"
 }

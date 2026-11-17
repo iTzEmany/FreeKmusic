@@ -12576,6 +12576,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Brano non più disponibile: {name}'**
   String logVanishedGone(String name);
+
+  /// No description provided for @karaoke.
+  ///
+  /// In it, this message translates to:
+  /// **'Karaoke'**
+  String get karaoke;
+
+  /// No description provided for @karaokeVoice.
+  ///
+  /// In it, this message translates to:
+  /// **'Voce'**
+  String get karaokeVoice;
+
+  /// No description provided for @karaokePercent.
+  ///
+  /// In it, this message translates to:
+  /// **'{percent} %'**
+  String karaokePercent(int percent);
+
+  /// No description provided for @karaokePill.
+  ///
+  /// In it, this message translates to:
+  /// **'Voce {percent} %'**
+  String karaokePill(int percent);
+
+  /// No description provided for @karaokeBypassed.
+  ///
+  /// In it, this message translates to:
+  /// **'Spento su episodi e radio'**
+  String get karaokeBypassed;
 }
 
 class _AppLocalizationsDelegate

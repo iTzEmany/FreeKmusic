@@ -2,14 +2,14 @@
 
 ## Obiettivo
 Pulsante microfono in «In riproduzione» e nella vista testi che apre il cursore della voce 0–100 %: il filtro in tempo
-reale abbassa la voce su file locali e streaming, su Android, Linux e Windows, anche col crossfade; resta acceso fra un
-brano e l'altro, il livello si ricorda, si spegne da solo su episodi e radio. Su macOS e iOS il microfono non c'è
-(D-600). Fuori: «Alta qualità» (fase 128), Jam (fase 129), karaoke dal menu del brano (D-584).
+reale abbassa la voce su file locali e streaming, su Android e Linux, anche col crossfade; resta acceso fra un
+brano e l'altro, il livello si ricorda, si spegne da solo su episodi e radio. Su Windows, macOS e iOS il microfono non c'è
+(D-600, D-617: la libmpv di Windows non ha i filtri). Fuori: «Alta qualità» (fase 128), Jam (fase 129), karaoke dal menu del brano (D-584).
 
 ## Riferimenti
-D-583, D-584, D-586, D-600, D-603; specifica [`../storico/feature/feature-libreria-leggera-karaoke-cerca.md`](../storico/feature/feature-libreria-leggera-karaoke-cerca.md)
+D-583, D-584, D-586, D-600, D-603; specifica [`../feature/feature-libreria-leggera-karaoke-cerca.md`](../feature/feature-libreria-leggera-karaoke-cerca.md)
 § Stack (filtro Android e desktop), § Architettura D («Controller», «Motore», «UI»), flusso (c), RNF-01, RNF-04, rischi
-F-4, F-6. Documenti d'area: `../architettura/riproduzione-e-coda.md`, `../architettura/piattaforme.md`, `../architettura/ui-e-design.md`.
+F-4, F-6. Documenti d'area: `../../architettura/riproduzione-e-coda.md`, `../../architettura/piattaforme.md`, `../../architettura/ui-e-design.md`.
 
 ## Mockup
 ```text
@@ -27,7 +27,7 @@ In riproduzione, karaoke acceso      Vista dei testi
 ```
 
 ## Task
-- [ ] 127.1 Verifica di `af`/`lavfi`/`pan` sulla libmpv di Linux e Windows (F-6)
+- [x] 127.1 Verifica di `af`/`lavfi`/`pan` sulla libmpv di Linux e Windows (F-6)
   - File: `integration_test/voice_filter_probe_test.dart` (temporaneo, tolto a fine task se non serve), esito nelle «Note
     di deviazione».
   - Passi:
@@ -40,7 +40,7 @@ In riproduzione, karaoke acceso      Vista dei testi
   - Fatto quando: per Linux e Windows c'è una riga «funziona/non funziona» con la stringa del filtro usata; se Windows
     non ha `lavfi`, sul Windows `voiceFilter` resta `null` (il microfono non compare, come su macOS).
 
-- [ ] 127.2 Filtro Android nella copia di `just_audio` (R-243, D-603, F-4) — `/code-review high`
+- [x] 127.2 Filtro Android nella copia di `just_audio` (R-243, D-603, F-4) — `/code-review high`
   - File: `third_party/just_audio/` (copia di 0.10.6, con LICENSE MIT), `third_party/just_audio/MODIFICHE.md`,
     `pubspec.yaml` (`dependency_overrides`), Java: sottoclasse di `DefaultRenderersFactory` + `AudioProcessor` Media3
     (lato L−R attenuato, medio passa-basso ~150 Hz che tiene basso e cassa), metodo `setVoiceLevel` sul canale;
@@ -53,7 +53,7 @@ In riproduzione, karaoke acceso      Vista dei testi
     livello cambia senza errori nel log e l'equalizzatore agisce ancora; `perf_device.py --playback` col filtro acceso
     entro +10 % di CPU (RNF-01).
 
-- [ ] 127.3 Filtro desktop nella copia di `just_audio_media_kit` e crossfade (R-243, D-603) — `/code-review high`
+- [x] 127.3 Filtro desktop nella copia di `just_audio_media_kit` e crossfade (R-243, D-603) — `/code-review high`
   - File: `third_party/just_audio_media_kit/` (copia di 2.1.0), `third_party/just_audio_media_kit/MODIFICHE.md`,
     `pubspec.yaml`, accesso a `setProperty('af', …)` del `Player` privato (`mediakit_player.dart:16`), `VoiceFilter` del
     backend desktop, `MirrorVoiceFilter` in `lib/services/audio/crossfade_engine.dart` (come `MirrorEqualizer`, `:393`),
@@ -63,7 +63,7 @@ In riproduzione, karaoke acceso      Vista dei testi
   - Comando mirato: `flutter test test/services/audio/crossfade_engine_test.dart test/services/audio/equalizer_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; su Linux (`xvfb-run`) il livello cambia senza errori di mpv, anche durante un crossfade.
 
-- [ ] 127.4 Controller e interfaccia (R-243, R-244, D-584, D-600, RNF-04)
+- [x] 127.4 Controller e interfaccia (R-243, R-244, D-584, D-600, RNF-04)
   - File: `lib/services/karaoke/karaoke_controller.dart` (nuovo), `lib/providers/karaoke_providers.dart` (nuovo),
     `lib/data/settings/settings_store.dart` (`karaokeOn`, `karaokeLevel`), microfono e foglio col cursore in
     `lib/ui/screens/now_playing/`, pillola in `lib/ui/screens/lyrics/lyrics_view.dart`, ARB,
@@ -81,3 +81,24 @@ In riproduzione, karaoke acceso      Vista dei testi
 - Solo se la CI non basta per il task 127.1: la stessa prova sulla tua macchina Windows.
 
 ## Note di deviazione
+
+**Esito 127.1 (17/11/2026), filtro voce desktop.** Stringa (livello `l`, `a = 1 - l`, 4 decimali; 100 % = `af` vuoto):
+`@kv:lavfi=[asplit=3[o][m][b];[m]pan=stereo|c0=-0.5*c0-0.5*c1|c1=-0.5*c0-0.5*c1[s];[b]pan=stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1,lowpass=f=150,lowpass=f=150[l];[o][s][l]amix=inputs=3:weights=1 a a:normalize=0]`
+(tutto il centro viene sottratto da entrambi i canali; sotto i 150 Hz il centro è rimesso con un passa-basso a 4 poli, così la fase si annulla e basso e cassa restano).
+Un solo ingresso e una sola uscita, come vuole `lavfi` di mpv; con la velocità `af` diventa `scaletempo:scale=1.25,@kv:lavfi=[…]`. Il livello si cambia
+a catena accesa con `af-command kv weights "1 a a" amix` (la catena di mpv non si ricostruisce: un solo `[af] [in]` nel log); `af` si riscrive solo
+quando il filtro si accende o si spegne.
+- Linux (mpv 0.37 di sistema, `xvfb-run`, uscita `ao=pcm` su file): **funziona**. Nessun errore di mpv a 0, 50, 100 %, con la velocità 1,25 e da `just_audio` (livello e velocità
+  cambiati in riproduzione). A livello 0 su un WAV: 300 Hz centrale −24,6 dB, 1 kHz centrale −64 dB, 60 Hz −0,2 dB, tono solo-lato (controfase) 0,0 dB; a 50 % il centro cala di 6 dB e
+  il basso di 1,7 dB al crossover. Un basso a 0 dBFS non supera mai l'ingresso (picco 0,965 a 0, 0,81 a 50 %). A 0 % l'uscita è stereo, non mono come su Android.
+- Windows: **non funziona** (verifica statica, nessun run). `media_kit_libs_windows_audio` 1.0.9 scarica
+  `libmpv-win32-audio-build` 2023-09-24 (`mpv-dev-x86_64-20230924-git-652a1dd.7z`, MD5 verificato); nella DLL la riga di
+  configurazione di FFmpeg ha `--disable-filters --enable-filter=overlay --enable-filter=equalizer`: mancano `pan`,
+  `asplit`, `amix`, `highpass` (nessuna traccia nelle stringhe). Su Windows `voiceFilter` resta `null`: il microfono non
+  compare. Un filtro che mpv non riesce a creare ferma la riproduzione («Audio filter initialized failed»), quindi non si prova a metà.
+- `af` e `PlayerConfiguration.pitch`: `just_audio_media_kit` usa `pitch: true` (default) e `main.dart` non lo cambia;
+  `setRate`/`setPitch` di media_kit (`real.dart:829`, `:880`) sovrascrivono tutto `af` con `scaletempo:scale=…`. Nella copia
+  `setSpeed`/`setPitch` riscrivono `af` con `scaletempo` seguito dal filtro (`MODIFICHE.md`).
+- Legame `AudioPlayer` e player media_kit: l'`id` di `just_audio` è privato e cambia a ogni reinizializzazione (dopo `stop`), quindi
+  si usa un tag nel campo `DarwinLoadControl.preferredPeakBitRate` della configurazione (inutilizzato su desktop): `DesktopVoiceFilter`
+  (`lib/services/audio/desktop_voice_filter.dart`). La prova temporanea `integration_test/voice_filter_probe_test.dart` è stata tolta in 127.4 (nessun controllo della CI la usava).

@@ -3853,5 +3853,10 @@
   "keepOfflineQueued": "{n, plural, one{1 Titel wird geladen} other{{n} Titel werden geladen}}",
   "keepOfflineAlready": "Schon alles offline",
   "logVanishedReplaced": "Titel ersetzt: {name}",
-  "logVanishedGone": "Titel nicht mehr verfügbar: {name}"
+  "logVanishedGone": "Titel nicht mehr verfügbar: {name}",
+  "karaoke": "Karaoke",
+  "karaokeVoice": "Stimme",
+  "karaokePercent": "{percent} %",
+  "karaokePill": "Stimme {percent} %",
+  "karaokeBypassed": "Aus bei Episoden und Radio"
 }

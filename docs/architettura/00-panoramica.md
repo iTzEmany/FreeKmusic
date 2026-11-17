@@ -33,6 +33,7 @@ Dipendenze ammesse: `ui` → `providers` → `services` / `data` → `core`. Mai
 | `lib/providers/` | Riverpod: collegano servizi e repository alla UI (`player_providers`, `library_providers`, `settings_providers`, ...) |
 | `lib/ui/` | `screens`, `shell`, `theme`, `widgets`. Solo presentazione |
 | `lib/l10n/` | ARB in 6 lingue (it, en, de, es, fr, pt) |
+| `third_party/` | Tre copie modificate al minimo: `just_audio` (filtro voce Android), `just_audio_media_kit` (`af` di mpv), `audio_service` (tasto 127); ognuna con `MODIFICHE.md`, collegata da `dependency_overrides`, da riallineare a mano a ogni aggiornamento (c'è anche `metadata_god`, senza `MODIFICHE.md`) |
 | `lib/main.dart`, `lib/app.dart` | Avvio e radice dell'app (`CodecoreApp`) |
 | `android/app/src/main/kotlin/com/codecore/player/` | Ponti nativi Android (widget, tile, share, volume, storage, ...) |
 | `test/` | `core, data, fixtures, goldens, jam, l10n, live, providers, services, support, theme, ui` |
@@ -162,5 +163,6 @@ Dalle vecchie trappole (ora archiviate in `../storico/gotchas.md`):
 - D-24: la UI parla solo con i provider.
 - D-539: rinomina in FreeKmusic (i nomi interni `codecore` restano: file `codecore.sqlite`, `codecore.log`, canali `codecore/*`).
 - D-541: snackbar con anello di conto alla rovescia.
+- D-603: copie modificate in `third_party/` per il filtro della voce.
 - D-542: questa documentazione per macroaree.
 - D-543: Mac nella Release e iOS 15.5 per la prova.

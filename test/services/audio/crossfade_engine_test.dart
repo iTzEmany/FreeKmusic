@@ -356,6 +356,44 @@ void main() {
 
   test('without equalizers on the players, the engine has none', () async {
     expect(engine.equalizer, isNull);
+    expect(engine.voiceFilter, isNull);
+  });
+
+  test('the second player is born with the voice level, and a level change reaches both', () async {
+    final voices = <_FakeVoice>[];
+    final e = CrossfadeEngine(() {
+      final f = FakeBackend()..voiceFilter = _FakeVoice();
+      voices.add(f.voiceFilter! as _FakeVoice);
+      return f;
+    }, ticker: ticks.ticker)
+      ..crossfade = s6;
+    addTearDown(e.dispose);
+    await e.voiceFilter!.setLevel(0.3);
+    await e.load('/m/a.mp3');
+    await e.setNext('/m/b.mp3'); // creates the second player
+    await pump();
+    expect(voices, hasLength(2));
+    expect(voices[1].levels, [0.3], reason: 'the late player gets the level');
+    await e.voiceFilter!.setLevel(null);
+    expect(voices[0].levels.last, isNull);
+    expect(voices[1].levels.last, isNull);
+    await e.voiceFilter!.setLevel(0.8);
+    expect(voices[0].levels.last, 0.8);
+    expect(voices[1].levels.last, 0.8);
+  });
+
+  test('a player that fails does not keep the others from getting the level', () async {
+    final mirror = MirrorVoiceFilter();
+    final broken = _FakeVoice()..fail = true;
+    final ok = _FakeVoice();
+    mirror.add(broken);
+    mirror.add(ok);
+    await mirror.setLevel(0.5);
+    expect(ok.levels, [0.5]);
+    final late = _FakeVoice()..fail = true;
+    mirror.add(late); // fails in the background: logged, not thrown
+    await pump();
+    expect(late.levels, [0.5]);
   });
 
   test('stop leaves both players stopped and nothing prepared', () async {
@@ -381,6 +419,17 @@ void main() {
     expect(first.enabled, [true]);
     expect(second.enabled, [true]);
   });
+}
+
+class _FakeVoice implements VoiceFilter {
+  final levels = <double?>[];
+  bool fail = false;
+
+  @override
+  Future<void> setLevel(double? level) async {
+    levels.add(level);
+    if (fail) throw StateError('disposed');
+  }
 }
 
 class _SlowEq implements Equalizer {
