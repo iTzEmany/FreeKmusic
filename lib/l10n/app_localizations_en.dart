@@ -7969,4 +7969,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get karaokeJamForbidden => 'The host turned off karaoke for guests.';
+
+  @override
+  String get karaokeHighQuality => 'High quality';
+
+  @override
+  String get karaokeHighQualityNote =>
+      'Separating on the phone, about 1–2 minutes. The filter plays meanwhile.';
+
+  @override
+  String get karaokeHighQualityModel => 'Downloading the model';
+
+  @override
+  String get karaokeHighQualitySeparating => 'Separating on the phone';
+
+  @override
+  String get karaokeHighQualityWaiting => 'Waiting for the track to download';
+
+  @override
+  String get karaokeHighQualityFailed =>
+      'Separation failed: the filter stays. Tap to retry.';
+
+  @override
+  String get karaokeBase => 'Backing';
+
+  @override
+  String get karaokeOriginal => 'Original';
 }

@@ -156,4 +156,5 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 125 | Libreria in streaming (base) | [`fase-125-libreria-in-streaming.md`](fasi/fase-125-libreria-in-streaming.md) |
 | 126 | Libreria leggera: SD, qualità, «Libera spazio», backup | [`fase-126-libreria-spazio-e-backup.md`](fasi/fase-126-libreria-spazio-e-backup.md) |
 | 127 | Karaoke col filtro in tempo reale | [`fase-127-karaoke-filtro.md`](fasi/fase-127-karaoke-filtro.md) |
+| 128 | Karaoke «Alta qualità» (Spleeter sul telefono) | [`fase-128-karaoke-alta-qualita.md`](fasi/fase-128-karaoke-alta-qualita.md) |
 | 129 | Karaoke nella Jam | [`fase-129-karaoke-jam.md`](fasi/fase-129-karaoke-jam.md) |

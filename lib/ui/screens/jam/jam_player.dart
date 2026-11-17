@@ -309,7 +309,6 @@ class _JamPlayer extends ConsumerWidget {
                 const SizedBox(height: 8),
                 NpControls(
                   live: true,
-                  karaoke: true,
                   playing: jam.playing,
                   // Nothing playing: the three buttons are disabled.
                   onPrevious: hasCurrent

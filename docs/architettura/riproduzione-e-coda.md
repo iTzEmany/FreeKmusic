@@ -85,6 +85,7 @@ Regole del blocco:
 - Bypass su episodi e radio (`karaokeBypassProvider`): il filtro riceve `null` ma il livello salvato resta, e torna sul brano successivo. Il livello sopravvive a stop e a nuova inizializzazione del player.
 - Brani mono: lasciati intatti (Android: il processore resta inattivo; Linux: il filtro entra in `af` solo con 2+ canali).
 - Nella Jam (fase 129) il backend che suona ha il suo filtro (`JustAudioBackend(withVoiceFilter: true)`, senza equalizzatore; su Linux un altro tag di `DesktopVoiceFilter`) e il livello arriva da `JamState.karaoke`, non da `karaokeProvider`: vedi `sync-backup-jam.md`.
+- **«Alta qualità» (fase 128, D-618..D-622, solo Android).** `services/karaoke/separation_service.dart`: modelli Spleeter 2-stem scaricati alla prima richiesta (Hugging Face, revisione fissa, sha256) in `models/spleeter-2stems-7001ba31/`; il lavoro va al canale `codecore/separation` (`SeparationBridge.kt`, `SpleeterDsp.kt`: decodifica MediaCodec, STFT, ONNX Runtime da Kotlin su un thread a priorità bassa, base WAV scritta a pezzi, limite 20 min). La base finisce in `StreamCache` con chiave `karaoke:<chiave stream>` o `karaoke:local:<id>:<mtime>`. Il gestore consulta l'hook `karaokeSource` in `_loadCurrent` e `_nextFile`; `karaokeChanged()` invalida la finestra gapless e ricarica il brano alla stessa posizione senza ricontare l'ascolto (`sameTrack`). Con la base attiva il filtro è in bypass e il cursore diventa Base/Originale; in una Jam la riga non c'è. Base in uso fissata (pin) nella cache. Tempo sul Motorola edge 40: circa 50 s per un brano di 4:20, compreso il primo download del modello.
 
 ### Streaming
 
@@ -168,6 +169,7 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 - `Semantics(excludeSemantics: true)` toglie il tap.
 - Movimento ridotto via adb: servono 3 impostazioni di scala.
 - Test instabili noti: `online_playback_test`, `smart_playlists_test`, `daylist_provider_test`, `shuffle_plus_test`, `seek_characterization`.
+- **Hook del karaoke in `_loadCurrent`**: va dopo la pubblicazione dello stato di caricamento, dentro il `try`; nessun `await` prima del ramo dello stream (`_waitingStream`), altrimenti `online_playback_test` si rompe (fase 128).
 - **Etichetta `preferredPeakBitRate` (karaoke desktop)**: lega l'`AudioPlayer` di just_audio al player di media_kit, perché l'`id` di just_audio cambia dopo uno stop. Mai su macOS e iOS (AVPlayer lo applica davvero), mai un vero `DarwinLoadControl` su desktop.
 - **`af` di mpv**: si riscrive solo quando il filtro si accende o si spegne; altrimenti `af-command` sui pesi di `amix` (ricostruire il grafo può far saltare l'audio). `setSpeed` e `setPitch` riscrivono `af` (`scaletempo` più filtro).
 - Il `done` di `mqtt_client` può dare errore dentro `runZonedGuarded` (Jam).

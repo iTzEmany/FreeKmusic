@@ -3864,5 +3864,13 @@
   "karaokeJamLocalNote": "In der Jam zu Hause gilt das Karaoke für alle Ausgaben, die es unterstützen.",
   "karaokeJamBox": "Karaoke eingeschaltet von {name}, Stimme {percent} %",
   "karaokeJamIgnore": "Für mich ignorieren",
-  "karaokeJamForbidden": "Der Host hat das Karaoke für Gäste ausgeschaltet."
+  "karaokeJamForbidden": "Der Host hat das Karaoke für Gäste ausgeschaltet.",
+  "karaokeHighQuality": "Hohe Qualität",
+  "karaokeHighQualityNote": "Trennung auf dem Telefon, etwa 1–2 Minuten. Bis dahin spielt der Filter.",
+  "karaokeHighQualityModel": "Modell wird geladen",
+  "karaokeHighQualitySeparating": "Trennung auf dem Telefon",
+  "karaokeHighQualityWaiting": "Wartet auf den Download des Titels",
+  "karaokeHighQualityFailed": "Trennung fehlgeschlagen: der Filter bleibt. Zum Wiederholen tippen.",
+  "karaokeBase": "Begleitung",
+  "karaokeOriginal": "Original"
 }

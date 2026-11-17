@@ -27,3 +27,6 @@
 -dontwarn java.beans.**
 -keep class org.schabi.newpipe.extractor.timeago.patterns.** { *; }
 -dontwarn jdk.dynalink.**
+
+# ONNX Runtime reads its Java classes by reflection from native code (R8 crashes in NodeInfo.<init>).
+-keep class ai.onnxruntime.** { *; }

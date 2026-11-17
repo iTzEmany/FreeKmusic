@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +10,7 @@ import '../../providers/karaoke_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../services/jam/jam_models.dart';
 import '../../services/karaoke/karaoke_send_throttle.dart';
+import '../../services/karaoke/separation_service.dart';
 import '../theme/tokens.dart';
 import 'cc_sheet.dart';
 import '../screens/lyrics/lyrics_screen.dart';
@@ -38,6 +41,7 @@ class KaraokeButton extends ConsumerWidget {
       label: name,
       onTap: enabled ? () => showKaraokeSheet(context) : null,
       child: IconButton(
+        visualDensity: VisualDensity.compact, // next to the sleep chip
         tooltip: name,
         onPressed: enabled ? () => showKaraokeSheet(context) : null,
         icon: Icon(
@@ -139,6 +143,13 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
       final d = _drag;
       if (!_dragging && d != null && (next == null || (next - d).abs() < 0.01)) setState(() => _drag = null);
     });
+    // «Alta qualità» (D-622): Android only, not in a Jam.
+    final target = ref.watch(karaokeTargetProvider).value;
+    final sep = ref.watch(separationStateProvider);
+    final base = ref.watch(karaokeBaseProvider).value;
+    final useBase = ref.watch(karaokeUseBaseProvider);
+    final highQuality = ref.watch(separationServiceProvider) != null && jam == null && on && target != null;
+    final baseReady = highQuality && base?.path != null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -173,7 +184,18 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
                   }
                 },
         ),
-        Row(
+        if (highQuality) _HighQualityRow(base: base, target: target, sep: sep),
+        if (baseReady)
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(value: true, label: Text(l.karaokeBase)),
+              ButtonSegment(value: false, label: Text(l.karaokeOriginal)),
+            ],
+            selected: {useBase},
+            onSelectionChanged: (v) => ref.read(karaokeUseBaseProvider.notifier).set(v.first),
+          ),
+        // Base chosen: the voice filter is bypassed, so its level has no meaning.
+        if (!baseReady || !useBase) Row(
           children: [
             ExcludeSemantics(child: Text(l.karaokeVoice)),
             Expanded(
@@ -204,6 +226,67 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// «Alta qualità»: starts the separation of the current track and shows its progress.
+/// Nothing while the backing track exists (the Base / Originale choice takes over).
+class _HighQualityRow extends ConsumerWidget {
+  const _HighQualityRow({required this.base, required this.target, required this.sep});
+
+  final KaraokeBase? base;
+  final KaraokeTarget? target;
+  final SeparationState sep;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final target = this.target;
+    if (target == null || base?.path != null) return const SizedBox.shrink();
+    final l = context.l10n;
+    final muted = Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted);
+    final running = sep.phase == SeparationPhase.model || sep.phase == SeparationPhase.separating;
+    if (running) {
+      final model = sep.phase == SeparationPhase.model;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text(l.karaokeHighQuality)),
+                Text(
+                  '${model ? l.karaokeHighQualityModel : l.karaokeHighQualitySeparating} '
+                  '${l.karaokePercent((sep.fraction * 100).round())}',
+                  style: muted,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            LinearProgressIndicator(value: sep.fraction > 0 ? sep.fraction : null),
+            const SizedBox(height: 6),
+            Text(l.karaokeHighQualityNote, style: muted),
+          ],
+        ),
+      );
+    }
+    final input = target.input;
+    final failed = sep.phase == SeparationPhase.failed;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(l.karaokeHighQuality),
+      subtitle: Text(
+        input == null
+            ? l.karaokeHighQualityWaiting
+            : failed
+                ? l.karaokeHighQualityFailed
+                : l.karaokeHighQualityNote,
+      ),
+      enabled: input != null,
+      onTap: input == null
+          ? null
+          : () => unawaited(ref.read(separationServiceProvider)!.request(target.key, input)),
     );
   }
 }

@@ -8028,4 +8028,30 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get karaokeJamForbidden =>
       'Der Host hat das Karaoke für Gäste ausgeschaltet.';
+
+  @override
+  String get karaokeHighQuality => 'Hohe Qualität';
+
+  @override
+  String get karaokeHighQualityNote =>
+      'Trennung auf dem Telefon, etwa 1–2 Minuten. Bis dahin spielt der Filter.';
+
+  @override
+  String get karaokeHighQualityModel => 'Modell wird geladen';
+
+  @override
+  String get karaokeHighQualitySeparating => 'Trennung auf dem Telefon';
+
+  @override
+  String get karaokeHighQualityWaiting => 'Wartet auf den Download des Titels';
+
+  @override
+  String get karaokeHighQualityFailed =>
+      'Trennung fehlgeschlagen: der Filter bleibt. Zum Wiederholen tippen.';
+
+  @override
+  String get karaokeBase => 'Begleitung';
+
+  @override
+  String get karaokeOriginal => 'Original';
 }

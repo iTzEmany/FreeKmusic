@@ -8064,4 +8064,31 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get karaokeJamForbidden =>
       'L’hôte a désactivé le karaoké pour les invités.';
+
+  @override
+  String get karaokeHighQuality => 'Haute qualité';
+
+  @override
+  String get karaokeHighQualityNote =>
+      'Séparation sur le téléphone, environ 1 à 2 minutes. Le filtre joue en attendant.';
+
+  @override
+  String get karaokeHighQualityModel => 'Téléchargement du modèle';
+
+  @override
+  String get karaokeHighQualitySeparating => 'Séparation sur le téléphone';
+
+  @override
+  String get karaokeHighQualityWaiting =>
+      'En attente du téléchargement du titre';
+
+  @override
+  String get karaokeHighQualityFailed =>
+      'Séparation échouée : le filtre reste. Touchez pour réessayer.';
+
+  @override
+  String get karaokeBase => 'Instrumental';
+
+  @override
+  String get karaokeOriginal => 'Original';
 }
