@@ -177,6 +177,8 @@ Future<String?> _karaokeKey(Track t, String? streamKey) async {
 }
 
 final karaokeTargetProvider = FutureProvider<KaraokeTarget?>((ref) async {
+  // No engine (desktop): nothing is watched or read.
+  if (ref.watch(separationServiceProvider) == null) return null;
   final t = ref.watch(currentTrackProvider).value;
   if (t == null || ref.watch(karaokeBypassProvider)) return null;
   final entry = ref.watch(onlineEntriesProvider)?.entryOf(t.id);
@@ -196,8 +198,9 @@ final karaokeTargetProvider = FutureProvider<KaraokeTarget?>((ref) async {
 /// The separation state of the current target (idle where there is no engine).
 final separationStateProvider = Provider<SeparationState>((ref) {
   final service = ref.watch(separationServiceProvider);
+  if (service == null) return SeparationState.idle;
   final key = ref.watch(karaokeTargetProvider.select((t) => t.value?.key));
-  if (service == null || key == null) return SeparationState.idle;
+  if (key == null) return SeparationState.idle;
   service.addListener(ref.invalidateSelf);
   ref.onDispose(() => service.removeListener(ref.invalidateSelf));
   return service.stateOf(key);
@@ -218,9 +221,10 @@ bool _baseWanted(Ref ref) =>
     ref.read(jamKaraokeProvider) == null;
 
 final karaokeBaseProvider = FutureProvider<KaraokeBase?>((ref) async {
+  if (ref.watch(separationServiceProvider) == null) return null;
   final key = ref.watch(karaokeTargetProvider.select((t) => t.value?.key));
   final cache = ref.read(streamCacheProvider);
-  if (key == null || ref.watch(separationServiceProvider) == null) return null;
+  if (key == null) return null;
   ref.watch(separationStateProvider.select((s) => s.phase));
   ref.watch(karaokeProvider.select((k) => k.on));
   ref.watch(karaokeUseBaseProvider);
@@ -236,12 +240,36 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
   final service = ref.watch(separationServiceProvider);
   if (service == null) return;
   final handler = ref.watch(audioHandlerProvider);
+  final cache = ref.read(streamCacheProvider);
+  final keyOfPath = <String, String>{};
+  final pinned = <String>{};
   handler.karaokeSource = (t, streamKey) async {
     if (!_baseWanted(ref) || t.kind == kEpisodeKind) return null;
     final key = await _karaokeKey(t, streamKey);
-    return key == null ? null : (await ref.read(streamCacheProvider).fileFor(key))?.path;
+    final path = key == null ? null : (await cache.fileFor(key))?.path;
+    if (path == null) return null;
+    keyOfPath[path] = key!;
+    unawaited(cache.touch(key));
+    return path;
   };
-  ref.onDispose(() => handler.karaokeSource = null);
+  // A base that plays or waits in the gapless window must not be swept out of the cache.
+  handler.onKaraokeInUse = (paths) {
+    final keys = {for (final p in paths) ?keyOfPath[p]};
+    for (final k in pinned.difference(keys)) {
+      cache.unpin(k);
+    }
+    for (final k in keys.difference(pinned)) {
+      cache.pin(k);
+    }
+    pinned
+      ..clear()
+      ..addAll(keys);
+  };
+  ref.onDispose(() {
+    handler.karaokeSource = null;
+    handler.onKaraokeInUse = null;
+    pinned.forEach(cache.unpin);
+  });
   ref.listen(separationStateProvider.select((s) => s.phase), (p, n) {
     if (n == SeparationPhase.ready && p != SeparationPhase.ready) {
       ref.read(karaokeUseBaseProvider.notifier).set(true);
@@ -252,7 +280,7 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
     final before = prev?.value;
     // Same track only: a track change loads by itself and asks the hook.
     if (b == null || before == null || before.key != b.key) return;
-    final want = b.active ? b.path : null;
-    if (want != handler.karaokePath) unawaited(handler.reloadCurrent());
+    if (before.path == b.path && before.active == b.active) return;
+    unawaited(handler.karaokeChanged(b.active ? b.path : null));
   });
 });

@@ -232,12 +232,33 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   String? _karaokePath;
   ({int id, String path})? _nextKaraoke; // the one the gapless window was given
 
-  /// Loads the current item again, at the same position and play/pause state
-  /// (the karaoke source changed: base ready, Base/Originale switch).
-  Future<void> reloadCurrent() async {
-    if (_current == null || isRadio) return;
-    await _loadCurrent(play: _state == BackendState.playing, startAt: _position);
+  /// Told which backing-track files are in use (playing or prepared), to keep them in the cache.
+  void Function(Set<String> paths)? onKaraokeInUse;
+  void _setKaraoke({Object? path = _keep, Object? next = _keep}) {
+    if (path != _keep) _karaokePath = path as String?;
+    if (next != _keep) _nextKaraoke = next as ({int id, String path})?;
+    onKaraokeInUse?.call({?_karaokePath, ?_nextKaraoke?.path});
   }
+
+  static const Object _keep = Object();
+  Duration? _loadStartAt; // startAt of the load in flight
+  bool _loadSameTrack = false;
+
+  /// The karaoke source changed for the current track (base ready, Base/Originale, karaoke on/off):
+  /// the prepared next track is made again, and the current one loads again at the same position and
+  /// play state when it plays something other than [wanted] (the base file, null = its own file).
+  Future<void> karaokeChanged(String? wanted) async {
+    _window?.invalidate();
+    unawaited(_refreshWindow());
+    if (_current == null || isRadio || wanted == _karaokePath) return;
+    final busy = _loadBusy;
+    await _loadCurrent(
+      play: busy ? _playWhenReady && !_loadPaused : _state == BackendState.playing,
+      startAt: busy ? _loadStartAt : _position,
+      sameTrack: busy ? _loadSameTrack : true,
+    );
+  }
+
   final String? Function(Track track)? coverPathFor;
   final List<StreamSubscription<Object?>> _subs = [];
   final _trackController = StreamController<Track?>.broadcast();
@@ -516,9 +537,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     required bool play,
     Duration? startAt,
     DateTime? ended,
+    bool sameTrack = false, // a reload of the playing track: its listen goes on
   }) async {
     if (_disposed) return;
     final token = ++_loadToken;
+    _loadStartAt = startAt;
+    _loadSameTrack = sameTrack;
     final back = _skipBack;
     _skipBack = false;
     _playOnRestore = false;
@@ -552,7 +576,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
     // The track we are leaving keeps its place (long tracks only).
-    _endListen();
+    if (!sameTrack) _endListen();
     _saveResume();
     _seekTo = null;
     _lastResumeSave = Duration.zero;
@@ -578,7 +602,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       ended: ended,
     );
     // A stream's line is set once its source is known (below).
-    _timing = play && radio == null && streamKey == null
+    _timing = !sameTrack && play && radio == null && streamKey == null
         ? timingOf('track:${track.id}', 'file')
         : null;
     // A saved position past the end of the track (a stale one) is not used.
@@ -597,7 +621,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _waitingStream = true;
       _playWhenReady = play;
     }
-    _enterTrack(track);
+    _enterTrack(track, keepListen: sameTrack);
     final synced = _syncPreparer();
     unawaited(synced);
     _publish(AudioProcessingState.loading);
@@ -606,15 +630,29 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     var ageGated = false; // age-restricted video with no audio-only substitute
     try {
       // A ready backing track plays instead of the file or the stream (after the «loading» state is out).
-      final karaoke = radio == null ? await karaokeSource?.call(track, streamKey) : null;
+      var karaoke = radio == null ? await karaokeSource?.call(track, streamKey) : null;
       if (token != _loadToken) return;
-      _karaokePath = karaoke;
+      var baseLoaded = false;
+      if (karaoke != null) {
+        try {
+          await _backend.load(karaoke);
+          baseLoaded = true;
+        } on BackendException catch (e, st) {
+          // A base that cannot play is not a failed track: the normal path takes over.
+          if (token != _loadToken) return;
+          AppLog.w('karaoke base failed, playing the original', e, st);
+          karaoke = null;
+        }
+      }
+      _setKaraoke(path: karaoke);
       if (radio != null) {
         _radioBusy = true;
         if (play) _notifyRadioStart(radio.station);
         await _backend.loadUri(_streamUri(radio.station));
-      } else if (karaoke != null) {
-        await _backend.load(karaoke);
+      } else if (baseLoaded) {
+        if (entry != null && streamKey != null && _shadowId == null) {
+          await _bindShadow(streamKey, entry.id, token);
+        }
       } else if (streamKey != null) {
         final p = preparer;
         if (p == null) throw const BackendException('no stream preparer');
@@ -749,7 +787,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       final j = back ? at - k : at + k;
       if ((j < 0 || j >= n) && !wrap) break;
       final i = (j % n + n) % n;
-      if (await _nextFile(items[i]) != null) return i;
+      if (await _plainNextFile(items[i]) != null) return i;
     }
     return null;
   }
@@ -1022,14 +1060,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Makes [track] the current one (state, gain, notification).
-  void _enterTrack(Track track) {
+  void _enterTrack(Track track, {bool keepListen = false}) {
     if (_disposed) return;
     _seekTo = null;
-    _playCounted = false;
-    _playedMs = 0;
-    _flushedMs = 0;
     _lastTick = null;
-    _shadowId = null;
+    if (!keepListen) {
+      _playCounted = false;
+      _playedMs = 0;
+      _flushedMs = 0;
+      _shadowId = null;
+    }
     _gainFactor = isStreamTrack(track) ? 1.0 : gainFactor(track.replayGainDb);
     if (_normalize) unawaited(_applyVolume());
     _position = Duration.zero;
@@ -1343,7 +1383,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _url = null;
     _recoverOnPlay = _errorWhileLoading = false;
     _enterTrack(prepared);
-    _karaokePath = _nextKaraoke?.id == prepared.id ? _nextKaraoke?.path : null;
+    _setKaraoke(path: _nextKaraoke?.id == prepared.id ? _nextKaraoke?.path : null, next: null);
     // An online entry joined from its cached file: plays count on its row.
     final entry = online?.entryOf(prepared.id);
     if (entry != null) {
@@ -1372,14 +1412,17 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<({Track track, String path})?> _nextFile(int id) async {
     final found = await _plainNextFile(id);
     final hook = karaokeSource;
-    if (found == null || hook == null) return found;
+    if (found == null || hook == null) {
+      if (_nextKaraoke != null) _setKaraoke(next: null);
+      return found;
+    }
     final entry = online?.entryOf(id);
     final key = isStreamTrack(found.track) || _isRemoteEpisode(found.track)
         ? entry?.result.indexKey ?? keyOfStreamPath(found.track.path)
         : null;
     final base = await hook(found.track, key);
+    _setKaraoke(next: base == null ? null : (id: found.track.id, path: base));
     if (base == null) return found;
-    _nextKaraoke = (id: found.track.id, path: base);
     return (track: found.track, path: base);
   }
 

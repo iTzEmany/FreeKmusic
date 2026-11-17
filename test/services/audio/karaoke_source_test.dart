@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/audio/audio_backend.dart';
@@ -50,14 +52,14 @@ void main() {
     backend.posC.add(const Duration(seconds: 42));
     await pumpEventQueue();
     useBase = true;
-    await handler.reloadCurrent();
+    await handler.karaokeChanged('/cache/a.wav');
     expect(backend.loaded.last, '/cache/a.wav');
     expect(backend.seeks.last, const Duration(seconds: 42));
     expect(handler.isPlaying, isTrue);
     expect(handler.karaokePath, '/cache/a.wav');
     // Originale again: the own file, same place.
     useBase = false;
-    await handler.reloadCurrent();
+    await handler.karaokeChanged(null);
     expect(backend.loaded.last, '/m/a.mp3');
     expect(handler.karaokePath, isNull);
   });
@@ -68,7 +70,7 @@ void main() {
     backend.posC.add(const Duration(seconds: 10));
     await pumpEventQueue();
     useBase = true;
-    await handler.reloadCurrent();
+    await handler.karaokeChanged('/cache/a.wav');
     expect(backend.loaded.last, '/cache/a.wav');
     expect(handler.isPlaying, isFalse);
   });
@@ -82,5 +84,51 @@ void main() {
     backend.advance();
     await pumpEventQueue();
     expect(handler.karaokePath, '/cache/b.wav');
+  });
+
+  test('a reload after 30 s does not count the play again', () async {
+    await handler.playQueue(ids, 0);
+    backend.posC.add(const Duration(seconds: 60));
+    await pumpEventQueue();
+    expect((await TrackRepository(db).getById(ids[0]))!.playCount, 1);
+    useBase = true;
+    await handler.karaokeChanged('/cache/a.wav');
+    backend.posC.add(const Duration(seconds: 61));
+    await pumpEventQueue();
+    backend.posC.add(const Duration(seconds: 62));
+    await pumpEventQueue();
+    expect((await TrackRepository(db).getById(ids[0]))!.playCount, 1);
+  });
+
+  test('karaoke off: the gapless next track goes back to its own file', () async {
+    useBase = true;
+    await handler.playQueue(ids, 0);
+    await handler.setTransition(TransitionMode.gapless);
+    await pumpEventQueue();
+    expect(backend.nextPath, '/cache/b.wav');
+    useBase = false;
+    await handler.karaokeChanged(null);
+    await pumpEventQueue();
+    expect(backend.nextPath, '/m/b.mp3');
+  });
+
+  test('a second switch during a load keeps the position and the play state', () async {
+    await handler.playQueue(ids, 0);
+    backend.posC.add(const Duration(seconds: 42));
+    await pumpEventQueue();
+    final gate = Completer<void>();
+    handler.karaokeSource = (t, _) async {
+      await gate.future;
+      return '/cache/${t.title}.wav';
+    };
+    final first = handler.karaokeChanged('/cache/a.wav');
+    await pumpEventQueue();
+    final second = handler.karaokeChanged('/cache/a.wav'); // while the first load waits
+    await pumpEventQueue();
+    gate.complete();
+    await Future.wait([first, second]);
+    expect(backend.loaded.last, '/cache/a.wav');
+    expect(backend.seeks.last, const Duration(seconds: 42));
+    expect(handler.isPlaying, isTrue);
   });
 }
