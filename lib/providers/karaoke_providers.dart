@@ -4,7 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/track_kinds.dart';
 import '../services/audio/equalizer.dart';
+import '../core/paths.dart';
+import '../core/platform.dart';
 import '../services/karaoke/karaoke_controller.dart';
+import '../services/karaoke/separation_service.dart';
+import 'stream_providers.dart' show streamCacheProvider;
+
+import 'dart:io' show Directory;
+
 import 'jam_providers.dart';
 import 'player_providers.dart';
 import 'share_hub.dart';
@@ -24,12 +31,15 @@ class KaraokeState {
 }
 
 final karaokeProvider = Provider<KaraokeState>((ref) {
-  final s = ref.watch(settingsProvider.select((s) => (s.karaokeOn, s.karaokeLevel)));
+  final s = ref.watch(
+    settingsProvider.select((s) => (s.karaokeOn, s.karaokeLevel)),
+  );
   return KaraokeState(s.$1, s.$2);
 });
 
-void setKaraokeOn(WidgetRef ref, bool on) =>
-    ref.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: on));
+void setKaraokeOn(WidgetRef ref, bool on) => ref
+    .read(settingsProvider.notifier)
+    .update((s) => s.copyWith(karaokeOn: on));
 
 void setKaraokeLevel(WidgetRef ref, double level) => ref
     .read(settingsProvider.notifier)
@@ -40,7 +50,9 @@ final karaokeBypassProvider = Provider<bool>((ref) {
   final t = ref.watch(currentTrackProvider).value;
   if (t == null) return false;
   final radio = ref.watch(onlineEntriesProvider)?.isRadioId(t.id) == true;
-  return radio || t.kind == kEpisodeKind || ref.watch(audioHandlerProvider).isRadio;
+  return radio ||
+      t.kind == kEpisodeKind ||
+      ref.watch(audioHandlerProvider).isRadio;
 });
 
 /// Keeps the voice filter in line with the saved state and the current item.
@@ -97,13 +109,17 @@ final jamKaraokeProvider = Provider<JamKaraoke?>((ref) {
   final s = ref.watch(jamProvider);
   final jam = s.jam;
   if (!s.active || jam == null) return null;
-  final host = jam.participants.where((p) => p.id == jam.hostDeviceId).firstOrNull;
+  final host = jam.participants
+      .where((p) => p.id == jam.hostDeviceId)
+      .firstOrNull;
   return JamKaraoke(
     level: jam.karaoke,
     guestsAllowed: jam.karaokeGuests,
     isHost: s.isHost,
     remote: s.remoteJam,
-    playsHere: jam.outputs.contains(ref.read(shareHubProvider.notifier).deviceId),
+    playsHere: jam.outputs.contains(
+      ref.read(shareHubProvider.notifier).deviceId,
+    ),
     hostName: host?.name.isNotEmpty == true ? host!.name : s.peerName,
   );
 });
@@ -114,4 +130,16 @@ final karaokeButtonVisibleProvider = Provider<bool>((ref) {
   final hasFilter = ref.watch(voiceFilterProvider) != null;
   final jam = ref.watch(jamKaraokeProvider);
   return jam == null ? hasFilter : jam.remote || !jam.isHost || hasFilter;
+});
+
+/// The «Alta qualità» backing-track maker; null where there is no engine (not Android).
+final separationServiceProvider = Provider<SeparationService?>((ref) {
+  if (!isAndroid) return null;
+  final service = SeparationService(
+    cache: ref.watch(streamCacheProvider),
+    separator: ChannelSeparator(),
+    modelsRoot: () async => Directory(await appSupportDir()),
+  );
+  ref.onDispose(service.dispose);
+  return service;
 });
