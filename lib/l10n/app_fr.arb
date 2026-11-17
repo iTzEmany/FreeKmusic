@@ -4074,5 +4074,9 @@
   "keepOfflineQueued": "{n, plural, one{1 titre en téléchargement} other{{n} titres en téléchargement}}",
   "keepOfflineAlready": "Déjà tout hors ligne",
   "logVanishedReplaced": "Titre remplacé : {name}",
-  "logVanishedGone": "Titre plus disponible : {name}"
+  "logVanishedGone": "Titre plus disponible : {name}",
+  "karaoke": "Karaoke",
+  "karaokeVoice": "Voix",
+  "karaokePercent": "{percent} %",
+  "karaokePill": "Voix {percent} %"
 }

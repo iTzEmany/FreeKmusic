@@ -27,7 +27,7 @@ In riproduzione, karaoke acceso      Vista dei testi
 ```
 
 ## Task
-- [ ] 127.1 Verifica di `af`/`lavfi`/`pan` sulla libmpv di Linux e Windows (F-6)
+- [x] 127.1 Verifica di `af`/`lavfi`/`pan` sulla libmpv di Linux e Windows (F-6)
   - File: `integration_test/voice_filter_probe_test.dart` (temporaneo, tolto a fine task se non serve), esito nelle «Note
     di deviazione».
   - Passi:
@@ -40,7 +40,7 @@ In riproduzione, karaoke acceso      Vista dei testi
   - Fatto quando: per Linux e Windows c'è una riga «funziona/non funziona» con la stringa del filtro usata; se Windows
     non ha `lavfi`, sul Windows `voiceFilter` resta `null` (il microfono non compare, come su macOS).
 
-- [ ] 127.2 Filtro Android nella copia di `just_audio` (R-243, D-603, F-4) — `/code-review high`
+- [x] 127.2 Filtro Android nella copia di `just_audio` (R-243, D-603, F-4) — `/code-review high`
   - File: `third_party/just_audio/` (copia di 0.10.6, con LICENSE MIT), `third_party/just_audio/MODIFICHE.md`,
     `pubspec.yaml` (`dependency_overrides`), Java: sottoclasse di `DefaultRenderersFactory` + `AudioProcessor` Media3
     (lato L−R attenuato, medio passa-basso ~150 Hz che tiene basso e cassa), metodo `setVoiceLevel` sul canale;
@@ -53,7 +53,7 @@ In riproduzione, karaoke acceso      Vista dei testi
     livello cambia senza errori nel log e l'equalizzatore agisce ancora; `perf_device.py --playback` col filtro acceso
     entro +10 % di CPU (RNF-01).
 
-- [ ] 127.3 Filtro desktop nella copia di `just_audio_media_kit` e crossfade (R-243, D-603) — `/code-review high`
+- [x] 127.3 Filtro desktop nella copia di `just_audio_media_kit` e crossfade (R-243, D-603) — `/code-review high`
   - File: `third_party/just_audio_media_kit/` (copia di 2.1.0), `third_party/just_audio_media_kit/MODIFICHE.md`,
     `pubspec.yaml`, accesso a `setProperty('af', …)` del `Player` privato (`mediakit_player.dart:16`), `VoiceFilter` del
     backend desktop, `MirrorVoiceFilter` in `lib/services/audio/crossfade_engine.dart` (come `MirrorEqualizer`, `:393`),
@@ -63,7 +63,7 @@ In riproduzione, karaoke acceso      Vista dei testi
   - Comando mirato: `flutter test test/services/audio/crossfade_engine_test.dart test/services/audio/equalizer_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; su Linux (`xvfb-run`) il livello cambia senza errori di mpv, anche durante un crossfade.
 
-- [ ] 127.4 Controller e interfaccia (R-243, R-244, D-584, D-600, RNF-04)
+- [x] 127.4 Controller e interfaccia (R-243, R-244, D-584, D-600, RNF-04)
   - File: `lib/services/karaoke/karaoke_controller.dart` (nuovo), `lib/providers/karaoke_providers.dart` (nuovo),
     `lib/data/settings/settings_store.dart` (`karaokeOn`, `karaokeLevel`), microfono e foglio col cursore in
     `lib/ui/screens/now_playing/`, pillola in `lib/ui/screens/lyrics/lyrics_view.dart`, ARB,
@@ -101,4 +101,4 @@ quando il filtro si accende o si spegne.
   `setSpeed`/`setPitch` riscrivono `af` con `scaletempo` seguito dal filtro (`MODIFICHE.md`).
 - Legame `AudioPlayer` e player media_kit: l'`id` di `just_audio` è privato e cambia a ogni reinizializzazione (dopo `stop`), quindi
   si usa un tag nel campo `DarwinLoadControl.preferredPeakBitRate` della configurazione (inutilizzato su desktop): `DesktopVoiceFilter`
-  (`lib/services/audio/desktop_voice_filter.dart`). La prova `integration_test/voice_filter_probe_test.dart` resta fino a 127.4.
+  (`lib/services/audio/desktop_voice_filter.dart`). La prova temporanea `integration_test/voice_filter_probe_test.dart` è stata tolta in 127.4 (nessun controllo della CI la usava).

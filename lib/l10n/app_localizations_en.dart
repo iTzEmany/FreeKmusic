@@ -7929,4 +7929,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String logVanishedGone(String name) {
     return 'Track no longer available: $name';
   }
+
+  @override
+  String get karaoke => 'Karaoke';
+
+  @override
+  String get karaokeVoice => 'Voice';
+
+  @override
+  String karaokePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String karaokePill(int percent) {
+    return 'Voice $percent %';
+  }
 }

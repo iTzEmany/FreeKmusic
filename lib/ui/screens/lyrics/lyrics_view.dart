@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/track_ops.dart';
+import '../../../providers/karaoke_providers.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/romanization_providers.dart';
@@ -17,6 +18,7 @@ import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lrclib_client.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/show_msg.dart';
+import '../now_playing/karaoke_sheet.dart';
 import 'lyrics_editor.dart';
 
 /// Synchronised lyrics that scroll by themselves (variable-height rows, the
@@ -220,6 +222,9 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           notice == null
               ? const SizedBox.shrink()
               : _RomanizationNotice(notice),
+          if (ref.watch(voiceFilterProvider) != null &&
+              ref.watch(karaokeProvider.select((k) => k.on)))
+            const _KaraokePill(),
           Expanded(child: list),
         ],
       );
@@ -439,6 +444,28 @@ class _RomanizationNotice extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «Voce 20 %»: reopens the karaoke slider from the lyrics.
+class _KaraokePill extends ConsumerWidget {
+  const _KaraokePill();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cc = context.cc;
+    final percent = (ref.watch(karaokeProvider.select((k) => k.level)) * 100).round();
+    return Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, 0),
+        child: ActionChip(
+          avatar: Icon(Icons.mic_rounded, size: 18, color: cc.accent),
+          label: Text(context.l10n.karaokePill(percent)),
+          onPressed: () => showKaraokeSheet(context, openLyrics: false),
         ),
       ),
     );

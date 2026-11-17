@@ -8022,4 +8022,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String logVanishedGone(String name) {
     return 'Titre plus disponible : $name';
   }
+
+  @override
+  String get karaoke => 'Karaoke';
+
+  @override
+  String get karaokeVoice => 'Voix';
+
+  @override
+  String karaokePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String karaokePill(int percent) {
+    return 'Voix $percent %';
+  }
 }

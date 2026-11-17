@@ -7980,4 +7980,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String logVanishedGone(String name) {
     return 'Canción ya no disponible: $name';
   }
+
+  @override
+  String get karaoke => 'Karaoke';
+
+  @override
+  String get karaokeVoice => 'Voz';
+
+  @override
+  String karaokePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String karaokePill(int percent) {
+    return 'Voz $percent %';
+  }
 }
