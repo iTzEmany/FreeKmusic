@@ -225,6 +225,17 @@ void main() {
   });
 
   group('karaokeLyricsQuery', () {
+    for (final (title, channel, artist, song) in [
+      ('Hello (Karaoke Version)', 'Sing King', '', 'Hello'),
+      ('Adele - Hello (Karaoke Version)', '', 'Adele', 'Hello'),
+      ('SING KING - ADELE - HELLO (KARAOKE VERSION)', 'Sing King', 'ADELE', 'HELLO'),
+      ('Sing King - Adele - Hello - Karaoke Version - Instrumental', 'Sing King', 'Adele', 'Hello'),
+    ]) {
+      test('«$title» / «$channel»', () {
+        final q = karaokeLyricsQuery(title, channel);
+        expect((q.artist, q.title), (artist, song));
+      });
+    }
     test('Sing King - Adele - Hello (Karaoke Version) is Adele / Hello', () {
       final q = karaokeLyricsQuery('Sing King - Adele - Hello (Karaoke Version)', 'Sing King');
       expect((q.artist, q.title), ('Adele', 'Hello'));

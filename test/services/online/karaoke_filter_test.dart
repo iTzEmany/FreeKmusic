@@ -18,12 +18,15 @@ void main() {
       _r('Hello (Karaoke Version)'),
       _r('Hello official video'),
       _r('Hello KARAOKE reaction'),
-      _r('Hello karaoke cover'),
+      _r('Hello - karaoke cover'),
       _r('Hello (Live) karaoke'),
+      _r('Hello - live karaoke'),
+      _r('Live Forever (Karaoke Version)'),
       _r('Hello karaoke with lyrics'),
     ]);
     expect(out.map((r) => r.primary.title), [
       'Hello (Karaoke Version)',
+      'Live Forever (Karaoke Version)',
       'Hello karaoke with lyrics',
     ]);
   });

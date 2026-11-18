@@ -349,7 +349,7 @@ void main() {
     Map<String, Object? Function()> lrclib() => {
       '/get': () => null,
       '/search': () => [
-        {'artistName': 'Adele', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+        {'artistName': 'Adele', 'trackName': 'Hello', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
       ],
     };
 
@@ -363,6 +363,21 @@ void main() {
       );
       expect(r?.synced, isNotNull);
       expect(w.asked.map((a) => a.$1), everyElement(endsWith('/search')));
+    });
+
+    test('a karaoke takes no text of another title by the same artist', () async {
+      final w = _Web({
+        '/search': () => [
+          {'artistName': 'Adele', 'trackName': 'Skyfall', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+        ],
+      });
+      final r = await LrclibClient(w).find(
+        title: 'Hello',
+        artist: 'Adele',
+        durationSec: 250,
+        ignoreDuration: true,
+      );
+      expect(r, isNull);
     });
 
     test('any other song keeps the 3 s limit', () async {

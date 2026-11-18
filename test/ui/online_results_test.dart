@@ -504,6 +504,47 @@ void main() {
   );
 
   testWidgets(
+    'back from Karaoke to Tutte asks the original text again; a text with «karaoke» is not doubled',
+    (tester) async {
+      final h = await open(tester);
+      await emit(tester, _state(best: [_song('a', 'Mother')]));
+      await tester.tap(_filter('Karaoke'));
+      await tester.pump();
+      expect(requests.last.videoOnly, isTrue);
+      await tester.tap(_filter('Tutte'));
+      await tester.pump();
+      expect(requests.last, (query: 'pink floyd', refresh: false, serial: 3, videoOnly: false));
+      await h.dispose(tester);
+
+      final h2 = await open(
+        tester,
+        page: const Scaffold(body: OnlineResults(query: 'adele KARAOKE', submitted: 1)),
+      );
+      await emit(tester, _state(best: [_song('a', 'Mother')]));
+      await tester.tap(_filter('Karaoke'));
+      await tester.pump();
+      expect(requests.last.query, 'adele KARAOKE');
+      await h2.dispose(tester);
+    },
+  );
+
+  testWidgets('Riprova under Karaoke asks the karaoke request again, with refresh', (tester) async {
+    final h = await open(tester);
+    await emit(tester, _state(best: [_song('a', 'Mother')]));
+    await tester.tap(_filter('Karaoke'));
+    await tester.pump();
+    await emit(tester, _state(error: const YtException(YtErrorKind.network, 'offline')));
+    await tester.tap(find.byKey(const ValueKey('online-retry')));
+    await tester.pump();
+    expect(
+      requests.last,
+      (query: 'pink floyd karaoke', refresh: true, serial: 3, videoOnly: true),
+    );
+    expect(_filter('Karaoke'), findsOneWidget, reason: 'the chips stay');
+    await h.dispose(tester);
+  });
+
+  testWidgets(
     'a video link plays its video once, as soon as that result arrives, and the row stays',
     (tester) async {
       final spy = _PlaySpy();

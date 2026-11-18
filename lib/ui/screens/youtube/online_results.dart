@@ -74,6 +74,11 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
   static final _selectionKey = SelectionKey.online.key;
   final _slots = <String, int>{};
   SmartSearchRequest? _request;
+
+  /// The text of the last search sent (not the one being typed), and whether
+  /// a filter was picked since: the chips then stay even with no rows.
+  String _baseQuery = '';
+  bool _filterTouched = false;
   int _serial = 0;
 
   /// The source filter and the «Altri risultati» list: both start over with
@@ -144,8 +149,13 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     if (!refresh) _autoPlayId = youtubeVideoId(q);
     setState(() {
       _slots.clear();
-      _request = (query: q, refresh: refresh, serial: ++_serial, videoOnly: false);
-      _filter = SourceFilter.all;
+      _baseQuery = q;
+      // A retry or a pull to refresh asks again under the same filter.
+      if (!refresh) {
+        _filter = SourceFilter.all;
+        _filterTouched = false;
+      }
+      _request = _requestFor(refresh: refresh);
       _othersOpen = false;
     });
     // Picks refer to rows of the old results (not while the tree is building).
@@ -227,23 +237,32 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     OnlineAlbumScreen(browseId: r.browseId, release: r),
   );
 
+  /// The request for [_baseQuery] under the current filter: Karaoke asks videos
+  /// only, with «karaoke» added unless the text already has it.
+  SmartSearchRequest _requestFor({required bool refresh}) {
+    final karaoke = _filter == SourceFilter.karaoke;
+    final q = _baseQuery;
+    return (
+      query: karaoke && !q.toLowerCase().contains('karaoke') ? '$q karaoke' : q,
+      refresh: refresh,
+      serial: ++_serial,
+      videoOnly: karaoke,
+    );
+  }
+
   void _pickFilter(SourceFilter k) {
-    if (k == _filter) return;
+    if (k == _filter || _request == null || _baseQuery.isEmpty) return;
+    // A link is not a text to add a word to.
+    if (k == SourceFilter.karaoke && classifyQuery(_baseQuery).kind != QueryKind.text) return;
     ref.read(selectionProvider(_selectionKey).notifier).clear();
     final karaokeChanges = (k == SourceFilter.karaoke) != (_filter == SourceFilter.karaoke);
-    final q = widget.query.trim();
     setState(() {
       _filter = k;
+      _filterTouched = true;
       // Karaoke is a new request (videos only); the other three look at the rows already there.
       if (karaokeChanges) {
         _slots.clear();
-        final karaoke = k == SourceFilter.karaoke;
-        _request = (
-          query: karaoke ? '$q karaoke' : q,
-          refresh: false,
-          serial: ++_serial,
-          videoOnly: karaoke,
-        );
+        _request = _requestFor(refresh: false);
       }
     });
   }
@@ -360,9 +379,11 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
                 message: l.ytSearchPrompt,
               ),
             )
-          else if (s == null && error == null)
-            const LinearProgressIndicator(minHeight: 2)
-          else ...[
+          else if (s == null && error == null) ...[
+            const LinearProgressIndicator(minHeight: 2),
+            if (_filterTouched)
+              SourceFilterChips(filter: _filter, onPick: _pickFilter),
+          ] else ...[
             // Its place is always there: the list below never jumps when it goes.
             SizedBox(
               height: 2,
@@ -371,7 +392,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
                   : null,
             ),
             if (s != null) SearchNotices(notices: s.notices),
-            if (all.isNotEmpty || _filter == SourceFilter.karaoke)
+            if (all.isNotEmpty || _filterTouched)
               SourceFilterChips(filter: _filter, onPick: _pickFilter),
             Expanded(
               child: error != null && all.isEmpty

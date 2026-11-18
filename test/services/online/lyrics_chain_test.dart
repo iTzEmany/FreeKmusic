@@ -111,14 +111,15 @@ const _synced = LyricsResult(synced: '[00:01.000] a');
 const _plain = LyricsResult(plain: 'a');
 
 void main() {
-  test('a karaoke video: cleaned title, no duration, NetEase has nothing to ask', () async {
-    final lr = _Lrclib(_synced), ne = _Ne(null);
+  test('a karaoke video: cleaned title, no duration, NetEase not asked', () async {
+    final lr = _Lrclib(_synced), ne = _Ne(_synced);
     final chain = LyricsChain(lrclib: lr, netease: ne);
     final karaoke = _track().copyWith(
       title: 'Sing King - Adele - Hello (Karaoke Version)',
       artist: const Value('Sing King'),
     );
     await chain.find(karaoke, ignoreDuration: true);
+    expect(ne.calls, 0);
     expect(lr.last, (title: 'Hello', artist: 'Adele', durationSec: null, ignoreDuration: true));
     await chain.find(_track());
     expect(lr.last!.durationSec, 370);

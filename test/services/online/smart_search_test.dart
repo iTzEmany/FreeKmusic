@@ -152,11 +152,26 @@ void main() {
     await pumpEventQueue();
     expect(youtube.songs, isEmpty);
     expect(catalog.cards, isEmpty);
+    expect(catalog.rowCalls, 0, reason: 'the artists and albums rows (YTM budget) stay out');
     expect(states.single.pending, {MediaKind.ytVideo});
     await answerVideos();
     expect(states.last.pending, isEmpty);
     expect(states.last.best.length + states.last.others.length, greaterThan(0));
     await sub.cancel();
+  });
+
+  test('the same text normal and videoOnly are two searches: neither copy serves the other', () async {
+    final first = start('lucio corsi sigarette');
+    await pumpEventQueue();
+    await answerCard();
+    await answerSongs();
+    await answerVideos();
+    await pumpEventQueue();
+    await first.sub.cancel();
+    final second = engine.run('lucio corsi sigarette', 'en', videoOnly: true).listen((_) {});
+    await pumpEventQueue();
+    expect(youtube.videos, hasLength(2), reason: 'asked again, not read from the saved copy');
+    await second.cancel();
   });
 
   test('both sources before the cap: one block with both, after the waiting state', () async {
