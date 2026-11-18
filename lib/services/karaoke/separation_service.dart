@@ -209,6 +209,9 @@ class SeparationService extends ChangeNotifier {
   /// True while a job runs or is being set up (a prefetch must not start then).
   bool get busy => _activeKey != null;
 
+  /// The key of the running (or starting) job.
+  String? get activeKey => _activeKey;
+
   SeparationState stateOf(String key) => _states[key] ?? SeparationState.idle;
 
   void _set(String key, SeparationState s) {
@@ -358,6 +361,8 @@ class SeparationService extends ChangeNotifier {
     if (level >= 0.995 || step == 20) {
       return Future.value(const MixResult(MixStatus.original));
     }
+    // A job for another track is a prefetch or a stale one: playback must not wait for it.
+    if (_activeKey != null && _activeKey != k) _stop();
     final gen = _mixGen[k] = (_mixGen[k] ?? 0) + 1;
     final separation =
         _last; // captured now: a job asked later waits for this mix instead

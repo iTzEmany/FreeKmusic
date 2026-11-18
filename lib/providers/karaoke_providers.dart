@@ -364,32 +364,47 @@ final karaokeAutoProvider = Provider<void>((ref) {
       ..addAll(keys);
   }
 
-  void start(KaraokeTarget t) => unawaited(
-    service.request(t.key, t.input!).whenComplete(() {
-      if (!disposed) unawaited(pump());
-    }),
-  );
+  // `request` takes a moment to mark its key as active: a second call for the same key meanwhile
+  // would cancel the first.
+  final requested = <String>{};
+  void start(KaraokeTarget t) {
+    if (!requested.add(t.key)) return;
+    unawaited(
+      service.request(t.key, t.input!).whenComplete(() {
+        requested.remove(t.key);
+        if (!disposed) unawaited(pump());
+      }),
+    );
+  }
 
   Future<void> step() async {
+    final target = ref.read(karaokeTargetProvider);
+    // Not known yet: the listener pumps again when it is (else a prefetch could go first).
+    if (target.isLoading) return;
+    final cur = target.value;
     if (!_baseWanted(ref)) {
-      // Off: nothing new starts; a running native job is left to finish.
+      // Off: nothing new starts; a prefetch is cancelled, the current track's job finishes.
       syncPins(const {});
+      if (service.busy && service.activeKey != cur?.key) await service.cancel();
       return;
     }
     final queued = await manualQueue();
+    if (disposed) return;
+    // The current track's stems stay too: at 100 % no player file holds them and the expiry would
+    // take them out, then the pump would separate the track again.
     syncPins({
-      for (final t in queued) ...[
+      for (final t in [?cur, ...queued]) ...[
         karaokeFileKey('base', t.key),
         karaokeFileKey('voice', t.key),
       ],
     });
-    final cur = ref.read(karaokeTargetProvider).value;
     if (cur != null) {
       final phase = service.stateOf(cur.key).phase;
       if (phase == SeparationPhase.idle) {
         // No file yet: the target changes when it lands.
         if (cur.input == null) return;
         final cost = await ref.read(karaokeDataCostProvider.future);
+        if (disposed) return;
         if (cost != null &&
             !ref.read(karaokeConfirmedProvider).contains(cur.key)) {
           return;
@@ -402,7 +417,7 @@ final karaokeAutoProvider = Provider<void>((ref) {
     }
     if (service.busy) return;
     final metered = (await ref.read(networkProbeProvider).current()).metered;
-    if (metered && await service.modelsMissing()) return;
+    if (disposed || (metered && await service.modelsMissing())) return;
     for (final t in queued) {
       if (service.stateOf(t.key).phase == SeparationPhase.idle) {
         start(t);

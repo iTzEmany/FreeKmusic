@@ -79,8 +79,9 @@ class _H {
 /// Writes the two outputs, then waits for [release]; records every input.
 class _Separator implements Separator {
   final inputs = <String>[];
-  final _gates = <Completer>[];
+  final _gates = <Completer<void>>[];
   bool hold = false;
+  int cancels = 0;
 
   void release() {
     for (final g in _gates) {
@@ -114,18 +115,29 @@ class _Separator implements Separator {
     required String output,
   }) async {}
 
+  /// Like the engine: the running job ends with [SeparationCancelled].
   @override
-  Future<void> cancel() async {}
+  Future<void> cancel() async {
+    cancels++;
+    for (final g in _gates) {
+      if (!g.isCompleted) g.completeError(const SeparationCancelled());
+    }
+  }
 }
 
 class _Service extends SeparationService {
-  _Service(StreamCache cache, Separator sep, this.modelMissing, Directory root)
-    : super(
-        cache: cache,
-        separator: sep,
-        modelsRoot: () async => root,
-        models: const {},
-      );
+  _Service(
+    StreamCache cache,
+    Separator sep,
+    this.modelMissing,
+    Directory root, {
+    super.clock,
+  }) : super(
+         cache: cache,
+         separator: sep,
+         modelsRoot: () async => root,
+         models: const {},
+       );
   final bool modelMissing;
 
   @override
@@ -158,6 +170,7 @@ void main() {
       ProviderContainer c,
       _Separator sep,
       StreamCache cache,
+      _Service svc,
       List<int> ids,
       List<String> keys,
     })
@@ -167,13 +180,14 @@ void main() {
     bool metered = false,
     bool modelMissing = false,
     bool hold = false,
+    DateTime Function()? clock,
     Set<int> missing = const {},
     bool on = false,
   }) async {
     final h = await _H.create(t, tracks: 5);
     final sep = _Separator()..hold = hold;
     final cache = StreamCache(Directory('${tmp.path}/cache'));
-    final svc = _Service(cache, sep, modelMissing, tmp);
+    final svc = _Service(cache, sep, modelMissing, tmp, clock: clock);
     final rows = (await t.runAsync(() => h.db.select(h.db.tracks).get()))!;
     final keys = <String>[];
     await t.runAsync(() async {
@@ -213,6 +227,7 @@ void main() {
       c: c,
       sep: sep,
       cache: cache,
+      svc: svc,
       ids: [for (final r in rows) r.id],
       keys: keys,
     );
@@ -315,7 +330,26 @@ void main() {
     },
   );
 
-  test('karaoke off drops the pending prefetch, not the running job', () async {
+  test('karaoke off cancels a running prefetch', () async {
+    final t = _T();
+    final s = await setup(t, on: true);
+    await t.runAsync(() async {
+      await s.h.handler.playQueue([s.ids[0]], 0);
+      await until(() => s.sep.inputs.length == 1);
+      s.sep.hold = true;
+      s.h.handler.addToQueue(s.ids[1]);
+      await until(() => s.sep.inputs.length == 2);
+      setKaraoke(s.c, false);
+      await until(() => s.sep.cancels == 1);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+    });
+    expect(s.sep.cancels, 1);
+    expect(s.sep.inputs, hasLength(2)); // nothing restarted
+    expect(s.cache.isPinned(karaokeFileKey('base', s.keys[1])), isFalse);
+    await s.h.dispose(t);
+  });
+
+  test('karaoke off leaves the current track\'s job running', () async {
     final t = _T();
     final s = await setup(t, on: true, hold: true);
     await t.runAsync(() async {
@@ -323,12 +357,95 @@ void main() {
       s.h.handler.addToQueue(s.ids[1]);
       await until(() => s.sep.inputs.length == 1);
       setKaraoke(s.c, false);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       s.sep.hold = false;
       s.sep.release();
       await Future<void>.delayed(const Duration(milliseconds: 400));
     });
+    expect(s.sep.cancels, 0);
     expect(s.sep.inputs, ['${tmp.path}/t0.mp3']);
-    expect(s.cache.isPinned(karaokeFileKey('base', s.keys[1])), isFalse);
+    await s.h.dispose(t);
+  });
+
+  test(
+    'playback of a ready track does not wait for a running prefetch',
+    () async {
+      final t = _T();
+      final s = await setup(t, on: true);
+      await t.runAsync(() async {
+        await s.h.handler.playQueue([s.ids[0]], 0);
+        await until(() => s.sep.inputs.length == 1);
+        s.sep.hold = true;
+        s.h.handler.addToQueue(s.ids[1]);
+        await until(() => s.sep.inputs.length == 2);
+        final r = await s.svc
+            .mixFor(s.keys[0], 0)
+            .timeout(const Duration(seconds: 2));
+        expect(r.status, MixStatus.file);
+        expect(s.sep.cancels, 1);
+        // The prefetch starts again afterwards.
+        await until(() => s.sep.inputs.length == 3);
+      });
+      expect(s.sep.inputs.last, '${tmp.path}/t1.mp3');
+      await s.h.dispose(t);
+    },
+  );
+
+  test('a track change during a held prefetch: the current wins, the prefetch resumes', () async {
+    final t = _T();
+    final s = await setup(t, on: true);
+    await t.runAsync(() async {
+      await s.h.handler.playQueue([s.ids[0]], 0);
+      await until(() => s.sep.inputs.length == 1);
+      s.sep.hold = true;
+      s.h.handler.addToQueue(s.ids[1]);
+      await until(() => s.sep.inputs.length == 2);
+      await s.h.handler.playQueue([s.ids[2]], 0);
+      s.h.handler.addToQueue(s.ids[1]);
+      await until(() => s.sep.inputs.length == 3);
+      s.sep.hold = false;
+      s.sep.release();
+      await until(() => s.sep.inputs.length == 4);
+    });
+    expect(s.sep.inputs.skip(1), [
+      for (final i in [1, 2, 1]) '${tmp.path}/t$i.mp3',
+    ]);
+    await s.h.dispose(t);
+  });
+
+  test('expiry while the track plays at 100 %: no new separation', () async {
+    final t = _T();
+    final s = await setup(
+      t,
+      on: true,
+      clock: () => DateTime.now().add(const Duration(hours: 1)),
+    );
+    await t.runAsync(() async {
+      await s.h.handler.playQueue([s.ids[0]], 0);
+      await until(() => s.sep.inputs.length == 1);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await s.svc.expire();
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+    });
+    expect(s.sep.inputs, hasLength(1));
+    expect(await s.cache.fileFor(karaokeFileKey('base', s.keys[0])), isNotNull);
+    await s.h.dispose(t);
+  });
+
+  test('disposing the provider releases the pins', () async {
+    final t = _T();
+    final s = await setup(t, on: true);
+    await t.runAsync(() async {
+      await s.h.handler.playQueue([s.ids[0]], 0);
+      s.h.handler.addToQueue(s.ids[1]);
+      await until(() => s.sep.inputs.length == 2);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    final queued = karaokeFileKey('base', s.keys[1]);
+    final current = karaokeFileKey('base', s.keys[0]);
+    expect(s.cache.isPinned(queued) && s.cache.isPinned(current), isTrue);
+    s.c.dispose();
+    expect(s.cache.isPinned(queued) || s.cache.isPinned(current), isFalse);
     await s.h.dispose(t);
   });
 }

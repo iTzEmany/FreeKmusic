@@ -217,10 +217,14 @@ class _SeparationRow extends ConsumerWidget {
         children: [
           if (cost.model) Text(l.karaokeCostModel, style: muted),
           if (cost.track) Text(l.karaokeCostTrack, style: muted),
-          action(
-            l.karaokeStart,
-            () => ref.read(karaokeConfirmedProvider.notifier).add(target.key),
-          ),
+          // A stream not in the cache yet has nothing to confirm: it starts once the file lands.
+          if (input == null)
+            Text(l.karaokeHighQualityWaiting, style: muted)
+          else
+            action(
+              l.karaokeStart,
+              () => ref.read(karaokeConfirmedProvider.notifier).add(target.key),
+            ),
         ],
       );
     }
