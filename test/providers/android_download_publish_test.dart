@@ -277,8 +277,8 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final res = await resolveDownloadFolder(FolderRepository(db), location: sd);
-      expect(res!.$1.path, '/storage/1234-5678/Music/FreeKmusic');
-      expect(res.$2.path, '/storage/1234-5678/Music');
+      expect(res!.$1.path.replaceAll('\\', '/'), '/storage/1234-5678/Music/FreeKmusic');
+      expect(res.$2.path.replaceAll('\\', '/'), '/storage/1234-5678/Music');
     });
 
     test('Android 11+: publish names the volume (lower case) for MediaStore', () async {
