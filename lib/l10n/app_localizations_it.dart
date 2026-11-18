@@ -7974,9 +7974,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get karaokeBypassed => 'Spento su episodi e radio';
 
   @override
-  String get karaokeHighQuality => 'Alta qualità';
-
-  @override
   String get karaokeHighQualityNote =>
       'Separazione sul telefono, circa 1–2 minuti.';
 
@@ -7992,7 +7989,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Separazione non riuscita: resta l’originale. Tocca per riprovare.';
+      'Separazione non riuscita: resta l’originale.';
 
   @override
   String get showKaraoke => 'Mostra il karaoke';
@@ -8006,4 +8003,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get karaokeCostTrack => 'Il brano va scaricato per intero';
+
+  @override
+  String get karaokeStart => 'Avvia';
+
+  @override
+  String get karaokeRetry => 'Riprova';
 }

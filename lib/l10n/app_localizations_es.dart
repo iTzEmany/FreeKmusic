@@ -8001,9 +8001,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get karaokeBypassed => 'Apagado en episodios y radio';
 
   @override
-  String get karaokeHighQuality => 'Alta calidad';
-
-  @override
   String get karaokeHighQualityNote =>
       'Separando en el teléfono, unos 1–2 minutos.';
 
@@ -8019,7 +8016,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Separación fallida: sigue el original. Toca para reintentar.';
+      'Separación fallida: sigue el original.';
 
   @override
   String get showKaraoke => 'Mostrar el karaoke';
@@ -8033,4 +8030,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get karaokeCostTrack => 'La canción debe descargarse completa';
+
+  @override
+  String get karaokeStart => 'Iniciar';
+
+  @override
+  String get karaokeRetry => 'Reintentar';
 }

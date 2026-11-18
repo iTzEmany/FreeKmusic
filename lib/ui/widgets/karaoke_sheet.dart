@@ -46,22 +46,21 @@ class KaraokeButton extends ConsumerWidget {
   }
 }
 
-/// Switch and «Alta qualità» row. Turning karaoke on keeps the sheet open.
-Future<void> showKaraokeSheet(BuildContext context) =>
-    showCcSheet<void>(
-      context: context,
-      builder: (sheet) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            CcDims.margin,
-            0,
-            CcDims.margin,
-            CcDims.margin,
-          ),
-          child: const _KaraokePanel(),
-        ),
+/// Switch, separation progress and the «Voce» slider. Turning karaoke on keeps the sheet open.
+Future<void> showKaraokeSheet(BuildContext context) => showCcSheet<void>(
+  context: context,
+  builder: (sheet) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(
+        CcDims.margin,
+        0,
+        CcDims.margin,
+        CcDims.margin,
       ),
-    );
+      child: const _KaraokePanel(),
+    ),
+  ),
+);
 
 class _KaraokePanel extends ConsumerStatefulWidget {
   const _KaraokePanel();
@@ -79,7 +78,7 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
     final k = ref.watch(karaokeProvider);
     final bypass = ref.watch(karaokeBypassProvider);
     final on = k.on;
-    // «Alta qualità» (D-622): Android only.
+    // The separation exists on Android only.
     final target = ref.watch(karaokeTargetProvider).value;
     final sep = ref.watch(separationStateProvider);
     final base = ref.watch(karaokeBaseProvider).value;
@@ -102,7 +101,7 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
           value: on,
           onChanged: (v) => setKaraokeOn(ref, v),
         ),
-        if (highQuality) _HighQualityRow(base: base, target: target, sep: sep),
+        if (highQuality) _SeparationRow(base: base, target: target, sep: sep),
         if (baseReady)
           Row(
             children: [
@@ -144,10 +143,11 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
   }
 }
 
-/// «Alta qualità»: starts the separation of the current track and shows its progress.
-/// Nothing while the stems exist (the «Voce» slider takes over).
-class _HighQualityRow extends ConsumerWidget {
-  const _HighQualityRow({
+/// The separation of the current track (it starts by itself, D-629): progress, the cost to confirm
+/// on a metered network, or the failure with its retry. Nothing while the stems exist (the «Voce»
+/// slider takes over).
+class _SeparationRow extends ConsumerWidget {
+  const _SeparationRow({
     required this.base,
     required this.target,
     required this.sep,
@@ -174,15 +174,9 @@ class _HighQualityRow extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(child: Text(l.karaokeHighQuality)),
-                Text(
-                  '${model ? l.karaokeHighQualityModel : l.karaokeHighQualitySeparating} '
-                  '${l.karaokePercent((sep.fraction * 100).round())}',
-                  style: muted,
-                ),
-              ],
+            Text(
+              '${model ? l.karaokeHighQualityModel : l.karaokeHighQualitySeparating} '
+              '${l.karaokePercent((sep.fraction * 100).round())}',
             ),
             const SizedBox(height: 6),
             LinearProgressIndicator(
@@ -195,42 +189,44 @@ class _HighQualityRow extends ConsumerWidget {
       );
     }
     final input = target.input;
-    final failed = sep.phase == SeparationPhase.failed;
-    final cost = ref.watch(karaokeDataCostProvider).value;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _startTile(context, ref, target, input, failed, cost?.track == true),
-        if (cost != null && cost.model) Text(l.karaokeCostModel, style: muted),
-      ],
+    final service = ref.read(separationServiceProvider)!;
+    Widget action(String label, VoidCallback onTap) => Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: TextButton(onPressed: onTap, child: Text(label)),
     );
-  }
-
-  Widget _startTile(
-    BuildContext context,
-    WidgetRef ref,
-    KaraokeTarget target,
-    String? input,
-    bool failed,
-    bool trackCost,
-  ) {
-    final l = context.l10n;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(l.karaokeHighQuality),
-      subtitle: Text(
-        input == null
-            ? (trackCost ? l.karaokeCostTrack : l.karaokeHighQualityWaiting)
-            : failed
-            ? l.karaokeHighQualityFailed
-            : l.karaokeHighQualityNote,
-      ),
-      enabled: input != null,
-      onTap: input == null
-          ? null
-          : () => unawaited(
-              ref.read(separationServiceProvider)!.request(target.key, input),
+    if (sep.phase == SeparationPhase.failed) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l.karaokeHighQualityFailed, style: muted),
+          if (input != null)
+            action(
+              l.karaokeRetry,
+              () => unawaited(service.request(target.key, input)),
             ),
+        ],
+      );
+    }
+    final cost = ref.watch(karaokeDataCostProvider).value;
+    final confirmed = ref.watch(
+      karaokeConfirmedProvider.select((c) => c.contains(target.key)),
     );
+    if (cost != null && !confirmed) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (cost.model) Text(l.karaokeCostModel, style: muted),
+          if (cost.track) Text(l.karaokeCostTrack, style: muted),
+          action(
+            l.karaokeStart,
+            () => ref.read(karaokeConfirmedProvider.notifier).add(target.key),
+          ),
+        ],
+      );
+    }
+    // It starts by itself; a streamed track first has to land in the cache.
+    return input == null
+        ? Text(l.karaokeHighQualityWaiting, style: muted)
+        : const SizedBox.shrink();
   }
 }

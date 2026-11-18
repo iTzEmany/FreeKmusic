@@ -12607,12 +12607,6 @@ abstract class AppLocalizations {
   /// **'Spento su episodi e radio'**
   String get karaokeBypassed;
 
-  /// No description provided for @karaokeHighQuality.
-  ///
-  /// In it, this message translates to:
-  /// **'Alta qualità'**
-  String get karaokeHighQuality;
-
   /// No description provided for @karaokeHighQualityNote.
   ///
   /// In it, this message translates to:
@@ -12640,7 +12634,7 @@ abstract class AppLocalizations {
   /// No description provided for @karaokeHighQualityFailed.
   ///
   /// In it, this message translates to:
-  /// **'Separazione non riuscita: resta l’originale. Tocca per riprovare.'**
+  /// **'Separazione non riuscita: resta l’originale.'**
   String get karaokeHighQualityFailed;
 
   /// No description provided for @showKaraoke.
@@ -12666,6 +12660,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Il brano va scaricato per intero'**
   String get karaokeCostTrack;
+
+  /// No description provided for @karaokeStart.
+  ///
+  /// In it, this message translates to:
+  /// **'Avvia'**
+  String get karaokeStart;
+
+  /// No description provided for @karaokeRetry.
+  ///
+  /// In it, this message translates to:
+  /// **'Riprova'**
+  String get karaokeRetry;
 }
 
 class _AppLocalizationsDelegate

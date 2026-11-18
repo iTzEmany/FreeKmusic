@@ -7950,9 +7950,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get karaokeBypassed => 'Off on episodes and radio';
 
   @override
-  String get karaokeHighQuality => 'High quality';
-
-  @override
   String get karaokeHighQualityNote =>
       'Separating on the phone, about 1–2 minutes.';
 
@@ -7967,7 +7964,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Separation failed: the original keeps playing. Tap to retry.';
+      'Separation failed: the original keeps playing.';
 
   @override
   String get showKaraoke => 'Show karaoke';
@@ -7981,4 +7978,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get karaokeCostTrack => 'The track has to be downloaded in full';
+
+  @override
+  String get karaokeStart => 'Start';
+
+  @override
+  String get karaokeRetry => 'Retry';
 }

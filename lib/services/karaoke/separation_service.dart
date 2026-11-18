@@ -206,6 +206,9 @@ class SeparationService extends ChangeNotifier {
   /// True while a mix is being made.
   bool get mixing => _mixing > 0;
 
+  /// True while a job runs or is being set up (a prefetch must not start then).
+  bool get busy => _activeKey != null;
+
   SeparationState stateOf(String key) => _states[key] ?? SeparationState.idle;
 
   void _set(String key, SeparationState s) {

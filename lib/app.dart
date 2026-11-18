@@ -48,6 +48,7 @@ class CodecoreApp extends ConsumerWidget {
     ref.listen(activityLogProvider, (_, _) {});
     ref.watch(equalizerApplierProvider);
     ref.watch(karaokeBaseApplierProvider);
+    ref.watch(karaokeAutoProvider);
     // Enriches a streamed track as soon as it has its row (D-351).
     ref.listen(streamEnrichTriggerProvider, (_, _) {});
     ref.watch(outputRouteSyncProvider);
