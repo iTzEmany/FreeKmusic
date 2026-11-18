@@ -158,3 +158,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 127 | Karaoke col filtro in tempo reale | [`fase-127-karaoke-filtro.md`](fasi/fase-127-karaoke-filtro.md) |
 | 128 | Karaoke «Alta qualità» (Spleeter sul telefono) | [`fase-128-karaoke-alta-qualita.md`](fasi/fase-128-karaoke-alta-qualita.md) |
 | 129 | Karaoke nella Jam | [`fase-129-karaoke-jam.md`](fasi/fase-129-karaoke-jam.md) |
+| 130 | Karaoke solo con il modello AI, voce regolabile | [`fase-130-karaoke-solo-ai.md`](fasi/fase-130-karaoke-solo-ai.md) |

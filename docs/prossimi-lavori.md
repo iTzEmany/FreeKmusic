@@ -71,3 +71,5 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 ## Qualità e rilascio
 - **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.
 - **Test di poco valore** in `settings_store_test` («blurred dock off by default and kept»): da togliere.
+- **Karaoke: ~20 s senza testo** fra il 100 % del download del modello e lo 0 % della separazione (decodifica e caricamento dei modelli): mostrare «Preparo…» (prova sul Redmi, fase 130).
+- **Android 10: scansione di `Music` negata** (`PathAccessException`, errno 13) su installazione nuova del Redmi Note 9 Pro (SDK 29): manca un ripiego sotto Android 11 (MediaStore o `requestLegacyExternalStorage`); la libreria resta vuota (prova della fase 130).
