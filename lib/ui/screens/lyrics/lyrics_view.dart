@@ -470,7 +470,7 @@ class _KaraokePill extends ConsumerWidget {
         child: ActionChip(
           avatar: Icon(Icons.mic_rounded, size: 18, color: cc.accent),
           label: Text(context.l10n.karaokePill(percent)),
-          onPressed: () => showKaraokeSheet(context, openLyrics: false),
+          onPressed: () => showKaraokeSheet(context),
         ),
       ),
     );

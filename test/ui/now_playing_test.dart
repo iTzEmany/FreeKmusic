@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/ui/screens/library/artist_screen.dart';
+import 'package:codecore/ui/screens/lyrics/lyrics_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
@@ -127,6 +128,25 @@ void main() {
     await tester.pump();
     final ctx = tester.element(find.byType(Switch));
     expect(ProviderScope.containerOf(ctx).read(karaokeProvider).on, isTrue);
+    sem0.dispose();
+    await h.dispose(tester);
+  });
+
+  testWidgets('karaoke: switching on keeps the sheet open, with no lyrics page and no «Rete» node',
+      (tester) async {
+    final sem0 = tester.ensureSemantics();
+    final h = await openKaraokePlayer(tester, voice: true);
+    await tester.runAsync(() => h.db.update(h.db.tracks).write(
+        const TracksCompanion(lyricsSynced: Value('[00:01.00]ciao'))));
+    await tester.tap(find.byTooltip('Karaoke'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(find.byType(Switch), findsOneWidget);
+    expect(find.byType(LyricsScreen), findsNothing);
+    // The barrier read «Rete» (Flutter's Italian scrimLabel): it says «Chiudi».
+    expect(find.bySemanticsLabel('Rete'), findsNothing);
+    expect(find.bySemanticsLabel('Chiudi'), findsWidgets);
     sem0.dispose();
     await h.dispose(tester);
   });
