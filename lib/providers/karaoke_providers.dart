@@ -145,6 +145,9 @@ final karaokeDataCostProvider =
       final service = ref.watch(separationServiceProvider);
       final target = ref.watch(karaokeTargetProvider).value;
       if (service == null || target == null) return null;
+      // The models land while the job runs: look again at every state change.
+      service.addListener(ref.invalidateSelf);
+      ref.onDispose(() => service.removeListener(ref.invalidateSelf));
       if (!(await ref.read(networkProbeProvider).current()).metered) {
         return null;
       }
@@ -155,8 +158,37 @@ final karaokeDataCostProvider =
       return cost.model || cost.track ? cost : null;
     });
 
-/// Makes the file for the saved voice level and tells the handler (same position); nothing when
-/// a newer call or another track came meanwhile.
+/// Which cache keys and which level step each karaoke file handed to the player stands for.
+final _karaokePathsProvider =
+    Provider<Map<String, ({List<String> keys, int step})>>((ref) => {});
+
+void _recordPath(Ref ref, String path, String key, double level) {
+  final step = (level * 20).round();
+  ref.read(_karaokePathsProvider)[path] = (
+    keys: [
+      karaokeFileKey('base', key),
+      karaokeFileKey('voice', key),
+      karaokeFileKey('mix', '$key:${step * 5}'),
+    ],
+    step: step,
+  );
+}
+
+/// The level steps of the karaoke files that play or wait in the player now (empty: the original plays).
+class KaraokeInUse extends Notifier<Set<int>> {
+  @override
+  Set<int> build() => const {};
+
+  // ignore: use_setters_to_change_properties
+  void set(Set<int> v) => state = v;
+}
+
+final karaokeInUseProvider = NotifierProvider<KaraokeInUse, Set<int>>(
+  KaraokeInUse.new,
+);
+
+/// Makes the file for the saved voice level and tells the handler (same position). A newer call,
+/// another track or a failed mix change nothing: what plays keeps playing.
 final karaokeApplyProvider = Provider<Future<void> Function()>((ref) {
   var gen = 0;
   return () async {
@@ -164,11 +196,16 @@ final karaokeApplyProvider = Provider<Future<void> Function()>((ref) {
     final key = ref.read(karaokeTargetProvider).value?.key;
     if (service == null || key == null) return;
     final mine = ++gen;
-    final path = _baseWanted(ref)
-        ? await service.mixFor(key, ref.read(karaokeProvider).level)
-        : null;
-    if (mine != gen || key != ref.read(karaokeTargetProvider).value?.key) {
-      return;
+    final level = ref.read(karaokeProvider).level;
+    var path = null as String?;
+    if (_baseWanted(ref)) {
+      final r = await service.mixFor(key, level);
+      if (mine != gen || key != ref.read(karaokeTargetProvider).value?.key) {
+        return;
+      }
+      if (r.status == MixStatus.stale || r.status == MixStatus.failed) return;
+      path = r.path;
+      if (path != null) _recordPath(ref, path, key, level);
     }
     await ref.read(audioHandlerProvider).karaokeChanged(path);
   };
@@ -180,21 +217,28 @@ final karaokeBaseProvider = FutureProvider<KaraokeBase?>((ref) async {
   final cache = ref.read(streamCacheProvider);
   if (key == null) return null;
   ref.watch(separationStateProvider.select((s) => s.phase));
+  // Files the expiry deleted: the slider must not outlive them.
+  final stems = ref.read(separationServiceProvider)!.stemsVersion;
+  stems.addListener(ref.invalidateSelf);
+  ref.onDispose(() => stems.removeListener(ref.invalidateSelf));
   ref.watch(karaokeProvider.select((k) => k.on));
   ref.watch(jamProvider.select((s) => s.active));
   final path = (await cache.fileFor(karaokeFileKey('base', key)))?.path;
   return KaraokeBase(key, path, path != null && _baseWanted(ref));
 });
 
-/// The «Voce N %» of the lyrics pill: only while the base or a mix is really playing (not while
-/// separating, after a failure, or at 100 %).
+/// The «Voce N %» of the lyrics pill: only while the base or a mix of this very level plays (not
+/// while separating or mixing, after a failure, or at 100 %).
 final karaokePillPercentProvider = Provider<int?>((ref) {
   if (!ref.watch(karaokeButtonVisibleProvider)) return null;
   final active = ref.watch(
     karaokeBaseProvider.select((b) => b.value?.active == true),
   );
   final level = ref.watch(karaokeProvider.select((k) => k.level));
-  return active && level < 0.995 ? (level * 100).round() : null;
+  final playing = ref.watch(karaokeInUseProvider);
+  return active && level < 0.995 && playing.contains((level * 20).round())
+      ? (level * 100).round()
+      : null;
 });
 
 /// Plugs the backing track into the player: the handler's hook (the mix of the saved level, null at
@@ -205,26 +249,27 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
   if (service == null) return;
   final handler = ref.watch(audioHandlerProvider);
   final cache = ref.read(streamCacheProvider);
-  final keysOfPath = <String, List<String>>{};
+  final paths = ref.read(_karaokePathsProvider);
   final pinned = <String>{};
   handler.karaokeSource = (t, streamKey) async {
     if (!_baseWanted(ref) || t.kind == kEpisodeKind) return null;
     final key = await _karaokeKey(t, streamKey);
     if (key == null) return null;
     final level = ref.read(karaokeProvider).level;
-    final path = await service.mixFor(key, level);
-    if (path == null) return null;
-    keysOfPath[path] = [
-      karaokeFileKey('base', key),
-      karaokeFileKey('voice', key),
-      karaokeFileKey('mix', '$key:${(level * 20).round() * 5}'),
-    ];
+    final path = (await service.mixFor(
+      key,
+      level,
+    )).path; // a failure: the original plays
+    if (path != null) _recordPath(ref, path, key, level);
     return path;
   };
   // Files that play or wait in the gapless window must not expire or be swept out of the cache;
   // with a mix, its base and voice stay too (the slider needs them).
-  handler.onKaraokeInUse = (paths) {
-    final keys = {for (final p in paths) ...?keysOfPath[p]};
+  handler.onKaraokeInUse = (inUse) {
+    ref.read(karaokeInUseProvider.notifier).set({
+      for (final p in inUse) ?paths[p]?.step,
+    });
+    final keys = {for (final p in inUse) ...?paths[p]?.keys};
     for (final k in pinned.difference(keys)) {
       cache.unpin(k);
       unawaited(cache.touch(k)); // playing was a use: the 15 minutes start now

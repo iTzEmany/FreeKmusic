@@ -217,9 +217,8 @@ class _HighQualityRow extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _startTile(context, ref, target, input, failed),
+        _startTile(context, ref, target, input, failed, cost?.track == true),
         if (cost != null && cost.model) Text(l.karaokeCostModel, style: muted),
-        if (cost != null && cost.track) Text(l.karaokeCostTrack, style: muted),
       ],
     );
   }
@@ -230,6 +229,7 @@ class _HighQualityRow extends ConsumerWidget {
     KaraokeTarget target,
     String? input,
     bool failed,
+    bool trackCost,
   ) {
     final l = context.l10n;
     return ListTile(
@@ -237,7 +237,7 @@ class _HighQualityRow extends ConsumerWidget {
       title: Text(l.karaokeHighQuality),
       subtitle: Text(
         input == null
-            ? l.karaokeHighQualityWaiting
+            ? (trackCost ? l.karaokeCostTrack : l.karaokeHighQualityWaiting)
             : failed
             ? l.karaokeHighQualityFailed
             : l.karaokeHighQualityNote,

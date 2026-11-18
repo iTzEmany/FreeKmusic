@@ -25,10 +25,16 @@ class _Svc extends SeparationService {
   final levels = <double>[];
 
   @override
-  Future<String?> mixFor(String k, double level) async {
+  Future<MixResult> mixFor(String k, double level) async {
     levels.add(level);
-    return null;
+    return const MixResult(MixStatus.failed);
   }
+
+  var missing = true;
+  void poke() => notifyListeners();
+
+  @override
+  Future<bool> modelsMissing() async => missing;
 }
 
 class _Net extends NetworkProbe {
@@ -188,6 +194,28 @@ void main() {
       await h.dispose(t);
     },
   );
+
+  testWidgets('the model note goes away once the models are there', (t) async {
+    final svc = _Svc();
+    final h = await open(t, metered: true, service: svc);
+    Future<void> settle() async {
+      for (var i = 0; i < 3; i++) {
+        await t.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await t.pump();
+      }
+    }
+
+    await settle();
+    expect(find.text('Scarica 78 MB la prima volta'), findsOneWidget);
+    svc
+      ..missing = false
+      ..poke();
+    await settle();
+    expect(find.textContaining('78 MB'), findsNothing);
+    await h.dispose(t);
+  });
 
   testWidgets('not metered: no data warning', (t) async {
     final h = await open(t);

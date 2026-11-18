@@ -4,6 +4,8 @@ import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/karaoke_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/stream_providers.dart'
+    show streamCacheProvider;
 import 'package:codecore/services/karaoke/separation_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:codecore/data/db/app_database.dart';
@@ -156,11 +158,70 @@ void main() {
 
     expect(await pill(), isNull); // separating / failed: no base
     base = const KaraokeBase('karaoke:k', '/b.wav', true);
+    expect(
+      await pill(),
+      isNull,
+    ); // the original still plays: nothing of this level in use
+    c.read(karaokeInUseProvider.notifier).set({4});
     expect(await pill(), 20);
+    c.read(karaokeInUseProvider.notifier).set({
+      10,
+    }); // another level plays: no stale 20 %
+    expect(await pill(), isNull);
+    c.read(karaokeInUseProvider.notifier).set({4});
     c
         .read(settingsProvider.notifier)
         .update((s) => s.copyWith(karaokeLevel: 1));
     expect(await pill(), isNull); // 100 %: the original plays
+  });
+
+  testWidgets('files in use are pinned and unpinned in balance', (
+    tester,
+  ) async {
+    final h = await Harness.create(tester, tracks: 1);
+    final dir = Directory.systemTemp.createTempSync('kar_pin');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    // Built inside runAsync: their Future.value() chains must live in the real zone.
+    late StreamCache cache;
+    late SeparationService svc;
+    late String basePath;
+    await tester.runAsync(() async {
+      cache = StreamCache(dir, freeSpace: () async => null);
+      svc = SeparationService(
+        cache: cache,
+        separator: _NoSeparator(),
+        modelsRoot: () async => dir,
+      );
+      await h.store.writeSettings(
+        h.store.readSettings().copyWith(karaokeOn: true, karaokeLevel: 0),
+      );
+      await cache.open();
+      final part = File('${dir.path}/x.wav.part')..writeAsBytesSync([1]);
+      basePath = (await cache.put('karaoke:base:s1', part)).path;
+    });
+    final c = ProviderContainer(
+      overrides: [
+        ...h.overrides,
+        streamCacheProvider.overrideWithValue(cache),
+        separationServiceProvider.overrideWithValue(svc),
+      ],
+    );
+    addTearDown(c.dispose);
+    c.read(karaokeBaseApplierProvider);
+    final track = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!
+        .first;
+    final path = await tester.runAsync(
+      () => h.handler.karaokeSource!(track, 's1'),
+    );
+    expect(path, basePath);
+    h.handler.onKaraokeInUse!({basePath});
+    expect(cache.isPinned('karaoke:base:s1'), isTrue);
+    expect(cache.isPinned('karaoke:voice:s1'), isTrue);
+    h.handler.onKaraokeInUse!({basePath}); // told again: still one pin
+    h.handler.onKaraokeInUse!({});
+    expect(cache.isPinned('karaoke:base:s1'), isFalse);
+    expect(cache.isPinned('karaoke:voice:s1'), isFalse);
+    await h.dispose(tester);
   });
 }
 

@@ -35,6 +35,17 @@ String karaokeKeyOfStream(String streamKey) => 'karaoke:$streamKey';
 String karaokeKeyOfLocal(int trackId, int mtimeMs) =>
     'karaoke:local:$trackId:$mtimeMs';
 
+/// How a [SeparationService.mixFor] ended: [original] (100 %, no file), [file] ([path]: the base or
+/// a mix), [failed] (nothing usable: keep what plays) or [stale] (a newer request replaced it).
+enum MixStatus { original, file, failed, stale }
+
+class MixResult {
+  const MixResult(this.status, [this.path]);
+
+  final MixStatus status;
+  final String? path;
+}
+
 enum SeparationPhase { idle, model, separating, ready, failed }
 
 class SeparationState {
@@ -189,6 +200,9 @@ class SeparationService extends ChangeNotifier {
   bool _disposed = false;
   String? _activeKey;
 
+  /// Bumped when the expiry deleted files: the providers that read the cache look again.
+  final stemsVersion = ValueNotifier<int>(0);
+
   /// True while a mix is being made.
   bool get mixing => _mixing > 0;
 
@@ -226,11 +240,13 @@ class SeparationService extends ChangeNotifier {
       // Stop the old job and wait for it, so the engine is free (no `busy`).
       _token?.cancel();
       final previous = _last;
+      final mixes = _mixChain; // only the mixes asked before this job: later ones wait for it
       if (_active) unawaited(separator.cancel());
       final done = Completer<void>();
       _last = done.future;
       try {
         await previous;
+        await mixes;
         if (gen != _gen) return;
         await _run(key, input, gen);
       } finally {
@@ -255,6 +271,7 @@ class SeparationService extends ChangeNotifier {
   @override
   void dispose() {
     _expiryTimer?.cancel();
+    stemsVersion.dispose();
     _stop();
     _disposed = true;
     super.dispose();
@@ -328,35 +345,42 @@ class SeparationService extends ChangeNotifier {
     }
   }
 
-  /// The file to play for [k] at voice [level] (0..1): null = the original, else the base (0 %) or
-  /// a mix, reused from the cache when it exists (levels in steps of 5 %). One mix at a time; a newer
-  /// request for the same [k] makes an older one return null (callers drop stale answers).
-  /// Null too when the stems are missing or the mix fails (logged).
-  Future<String?> mixFor(String k, double level) {
+  /// The file to play for [k] at voice [level] (0..1), see [MixResult]: original (100 %), the base
+  /// (0 %) or a mix, reused from the cache when it exists (levels in steps of 5 %). Native calls are
+  /// serialized: a mix waits for a running separation (and a new separation for earlier mixes), so
+  /// the engine never answers `busy`. A newer call for the same [k] makes an older one [MixStatus.stale].
+  /// Never throws: missing stems or a failed mix are [MixStatus.failed] (logged).
+  Future<MixResult> mixFor(String k, double level) {
     final step = (level * 20).round().clamp(0, 20);
-    if (level >= 0.995 || step == 20) return Future.value(null);
+    if (level >= 0.995 || step == 20) {
+      return Future.value(const MixResult(MixStatus.original));
+    }
     final gen = _mixGen[k] = (_mixGen[k] ?? 0) + 1;
+    final separation =
+        _last; // captured now: a job asked later waits for this mix instead
     final run = _mixChain.then((_) async {
-      if (gen != _mixGen[k]) return null;
+      if (gen != _mixGen[k]) return const MixResult(MixStatus.stale);
+      await separation;
+      if (gen != _mixGen[k]) return const MixResult(MixStatus.stale);
       try {
         return await _mix(k, step, level <= 0.005);
       } on Object catch (e, st) {
         AppLog.w('separation: mix of $k at $step/20 failed', e, st);
-        return null;
+        return const MixResult(MixStatus.failed);
       }
     });
     _mixChain = run.then((_) {});
     return run;
   }
 
-  Future<String?> _mix(String k, int step, bool baseOnly) async {
+  Future<MixResult> _mix(String k, int step, bool baseOnly) async {
     final baseKey = karaokeFileKey('base', k);
     final voiceKey = karaokeFileKey('voice', k);
     final base = await cache.fileFor(baseKey);
-    if (base == null) return null;
+    if (base == null) return const MixResult(MixStatus.failed);
     if (baseOnly || step == 0) {
       unawaited(cache.touch(baseKey));
-      return base.path;
+      return MixResult(MixStatus.file, base.path);
     }
     final mixKey = karaokeFileKey('mix', '$k:${step * 5}');
     final cached = await cache.fileFor(mixKey);
@@ -364,15 +388,18 @@ class SeparationService extends ChangeNotifier {
       for (final x in [baseKey, voiceKey, mixKey]) {
         unawaited(cache.touch(x));
       }
-      return cached.path;
+      return MixResult(MixStatus.file, cached.path);
     }
     final voice = await cache.fileFor(voiceKey);
-    if (voice == null) return null;
+    if (voice == null) return const MixResult(MixStatus.failed);
     final part = File(
       p.join(cache.dir.path, '${streamFileName(mixKey)}.wav.part'),
     );
     _mixing++;
     notifyListeners();
+    // The stems must not expire or be evicted while they are read.
+    cache.pin(baseKey);
+    cache.pin(voiceKey);
     try {
       await cache.dir.create(recursive: true);
       await separator.mix(
@@ -384,8 +411,10 @@ class SeparationService extends ChangeNotifier {
       final f = await cache.put(mixKey, part);
       unawaited(cache.touch(baseKey));
       unawaited(cache.touch(voiceKey));
-      return f.path;
+      return MixResult(MixStatus.file, f.path);
     } finally {
+      cache.unpin(baseKey);
+      cache.unpin(voiceKey);
       _mixing--;
       if (!_disposed) notifyListeners();
       try {
@@ -407,9 +436,12 @@ class SeparationService extends ChangeNotifier {
       for (final k in _states.keys.toList()) {
         if (_states[k]!.phase == SeparationPhase.ready &&
             await cache.fileFor(karaokeFileKey('base', k)) == null) {
-          _set(k, SeparationState.idle);
+          _states[k] = SeparationState.idle;
         }
       }
+      if (_disposed) return;
+      stemsVersion.value++; // stems of an earlier session are not in _states
+      notifyListeners();
     } on Object catch (e, st) {
       AppLog.w('separation: expiry failed', e, st);
     }

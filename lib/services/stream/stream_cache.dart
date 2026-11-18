@@ -201,14 +201,24 @@ class StreamCache {
   /// Deletes the unpinned files whose name starts with [stemPrefix] and were last used before
   /// [cutoff]; returns how many went. Other files are never touched.
   Future<int> expire(DateTime cutoff, {required String stemPrefix}) async {
-    final pinned = _pins.keys.map(streamFileName).toSet();
     var n = 0;
     for (final e in await _files()) {
-      if (!_stem(e.file).startsWith(stemPrefix) ||
-          pinned.contains(_stem(e.file))) {
+      if (!_stem(e.file).startsWith(stemPrefix) || !e.time.isBefore(cutoff)) {
         continue;
       }
-      if (e.time.isBefore(cutoff) && await _remove(e.file)) {
+      // Looked at again just before deleting: it may have been pinned or used meanwhile.
+      if (_pins.keys.map(streamFileName).contains(_stem(e.file))) continue;
+      try {
+        if (!(await e.file.lastModified()).isBefore(cutoff)) continue;
+      } on FileSystemException catch (err, st) {
+        AppLog.w(
+          'stream cache: cannot read the time of ${e.file.path}',
+          err,
+          st,
+        );
+        continue;
+      }
+      if (await _remove(e.file)) {
         n++;
         onEvicted?.call(e.file);
       }

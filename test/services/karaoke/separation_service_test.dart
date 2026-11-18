@@ -15,6 +15,9 @@ class FakeSeparator implements Separator {
   Completer<void>? gate;
   final cancels = <int>[];
   final mixes = <double>[];
+  Completer<void>? gate2; // holds the second separation
+  Object? mixError;
+  var _separating = false;
 
   @override
   Future<void> separate({
@@ -27,7 +30,22 @@ class FakeSeparator implements Separator {
   }) async {
     runs++;
     final run = runs;
+    _separating = true;
+    try {
+      await _separate(run, output, voiceOutput, onProgress);
+    } finally {
+      _separating = false;
+    }
+  }
+
+  Future<void> _separate(
+    int run,
+    String output,
+    String voiceOutput,
+    void Function(double)? onProgress,
+  ) async {
     onProgress?.call(0.5);
+    if (gate2 != null && run == 2) await gate2!.future;
     if (gate != null && run == 1) {
       await gate!.future;
       if (cancels.contains(run)) throw const SeparationCancelled();
@@ -44,6 +62,8 @@ class FakeSeparator implements Separator {
     required double level,
     required String output,
   }) async {
+    if (_separating) throw StateError('busy');
+    if (mixError != null) throw mixError!;
     mixes.add(level);
     File(output).writeAsBytesSync([9, level.round()]);
   }
@@ -184,14 +204,14 @@ void main() {
         final s = service();
         await s.request('karaoke:k', '/in.mp3');
         final base = (await cache.fileFor('karaoke:base:k'))!.path;
-        expect(await s.mixFor('karaoke:k', 1), isNull);
-        expect(await s.mixFor('karaoke:k', 0), base);
+        expect((await s.mixFor('karaoke:k', 1)).status, MixStatus.original);
+        expect((await s.mixFor('karaoke:k', 0)).path, base);
         expect(sep.mixes, isEmpty);
-        final mix = await s.mixFor('karaoke:k', 0.5);
+        final mix = (await s.mixFor('karaoke:k', 0.5)).path;
         expect(mix, (await cache.fileFor('karaoke:mix:k:50'))!.path);
         expect(File(mix!).readAsBytesSync(), [9, 1]);
-        expect(await s.mixFor('karaoke:k', 0.5), mix); // cached
-        expect(await s.mixFor('karaoke:k', 0.51), mix); // same 5 % step
+        expect((await s.mixFor('karaoke:k', 0.5)).path, mix); // cached
+        expect((await s.mixFor('karaoke:k', 0.51)).path, mix); // same 5 % step
         expect(sep.mixes, [0.5]);
         expect(
           cache.dir.listSync().where((e) => e.path.endsWith('.part')),
@@ -200,8 +220,58 @@ void main() {
       },
     );
 
-    test('mixFor without stems is null', () async {
-      expect(await service().mixFor('karaoke:none', 0.5), isNull);
+    test(
+      'mixFor without stems or with a failing mix is failed, not original',
+      () async {
+        final s = service();
+        expect((await s.mixFor('karaoke:none', 0.5)).status, MixStatus.failed);
+        await s.request('karaoke:k', '/in.mp3');
+        sep.mixError = StateError('io');
+        final r = await s.mixFor('karaoke:k', 0.5);
+        expect(r.status, MixStatus.failed);
+        expect(r.path, isNull);
+        expect(
+          cache.dir.listSync().where((e) => e.path.contains('mix')),
+          isEmpty,
+        );
+      },
+    );
+
+    test('a mix asked during a separation waits for it and succeeds', () async {
+      final s = service();
+      await s.request('karaoke:k', '/in.mp3');
+      sep.gate2 = Completer<void>();
+      final other = s.request('karaoke:b', '/b.mp3'); // run 2, held
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      final mix = s.mixFor('karaoke:k', 0.5);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(sep.mixes, isEmpty);
+      sep.gate2!.complete();
+      await other;
+      final r = await mix;
+      expect(
+        r.status,
+        MixStatus.file,
+      ); // the fake answers busy if they overlapped
+      expect(sep.mixes, [0.5]);
+    });
+
+    test('two quick requests for one track: the latest wins', () async {
+      final s = service();
+      await s.request('karaoke:k', '/in.mp3');
+      final first = s.mixFor('karaoke:k', 0.3);
+      final second = s.mixFor('karaoke:k', 0.5);
+      expect((await first).status, MixStatus.stale);
+      expect((await second).status, MixStatus.file);
+      expect(sep.mixes, [0.5]);
+    });
+
+    test('the stems are pinned while a mix is made and free after', () async {
+      final s = service();
+      await s.request('karaoke:k', '/in.mp3');
+      await s.mixFor('karaoke:k', 0.5);
+      expect(cache.isPinned('karaoke:base:k'), isFalse);
+      expect(cache.isPinned('karaoke:voice:k'), isFalse);
     });
 
     test('expiry deletes old unpinned karaoke files only', () async {
