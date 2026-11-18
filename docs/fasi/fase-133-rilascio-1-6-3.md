@@ -5,7 +5,9 @@ Uscita della versione 1.6.3 con il video karaoke (fase 131) e l'aggiornamento da
 sistemi verde, tag, Release completa, poi la prova reale dell'aggiornamento. Parte solo con 131 e 132 fuse (D-650).
 
 ## Riferimenti
-D-638, D-648, D-650 (come D-544 e D-553). Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md) (R-274, R-268..R-271).
+D-638, D-648, D-650, D-655, D-657, D-659, D-660 (come D-544 e D-553).
+
+**Regole della notte:** CI rossa e non riparabile → niente tag né Release, tutto pronto per il risveglio (D-657); se dopo 6 ore di lavoro questa fase non è partita, fermati prima del tag (D-659). Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md) (R-274, R-268..R-271).
 Documento d'area: `../architettura/qualita-e-rilascio.md`. Workflow: `.github/workflows/ci.yml` (job `check`,
 `test-windows`, `build-android`, `build-linux`, `build-windows`, `integration-android`, `build-apple`) e `release.yml`
 (job `linux`, `flatpak`, `android`, `windows`, `macos`, `publish`).

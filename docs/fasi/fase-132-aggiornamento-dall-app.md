@@ -7,7 +7,7 @@ il file) o apre il browser sul file (.deb, Flatpak, zip, macOS). Fuori: note for
 senza tocco, pkexec, build F-Droid.
 
 ## Riferimenti
-D-640..D-645, D-646 (Windows e AppImage). Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md)
+D-640..D-645, D-646 (Windows e AppImage), D-656. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md)
 (§ Architettura F, rischi F-7, F-8). Mockup: [`../storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](../storico/feature/mockup-karaoke-video-e-aggiornamenti.html).
 Documenti d'area: `../architettura/online.md`, `piattaforme.md`, `qualita-e-rilascio.md`.
 
@@ -30,9 +30,9 @@ Desktop: Windows/AppImage [Aggiorna]; .deb/Flatpak/zip/macOS [Scarica dal browse
   - Comando mirato: `flutter test test/services/update/update_target_test.dart test/services/online/update_checker_test.dart`
   - Fatto quando: la scelta è testata su ogni combinazione (full/lite × arm64-v8a/armeabi-v7a, Windows, AppImage, .deb, Flatpak, zip, macOS) coi nomi reali della Release v1.6.2 e la versione come segnaposto; `UpdateInfo` legge gli asset da una risposta d'esempio.
 - [ ] 132.2 Download, verifica e pulizia (R-267, R-273)
-  - File: `lib/services/update/update_installer.dart` (nuovo: `dio` in `<cache>/updates/`, avanzamento come stream, annullo, SHA-256 con `crypto` in un isolate), `lib/providers/update_providers.dart` (stato del download; pulizia della cartella dopo `startupSettledProvider`).
+  - File: `lib/services/update/update_installer.dart` (nuovo: `dio` in `<cache>/updates/`, avanzamento come stream, annullo, SHA-256 con `crypto` in un isolate), `lib/providers/update_providers.dart` (stato del download; pulizia della cartella dopo `startupSettledProvider`; su rete a consumo, `networkProbeProvider`, prima del download la dimensione e una conferma, D-656).
   - Comando mirato: `flutter test test/services/update/update_installer_test.dart test/providers/update_providers_test.dart`
-  - Fatto quando: con un server HTTP finto, digest giusto → pronto; sbagliato → file assente ed errore; interruzione → stato «Riprova»; cartella svuotata all'avvio.
+  - Fatto quando: con un server HTTP finto, digest giusto → pronto; sbagliato → file assente ed errore; interruzione → stato «Riprova»; cartella svuotata all'avvio; rete a consumo → richiesta di conferma con la dimensione prima di scaricare.
 - [ ] 132.3 Android: installer di sistema e firma (R-268, R-269; F-7) — **review Opus** (manifest e installazione)
   - File: `android/app/src/main/kotlin/com/codecore/player/UpdateChannel.kt` (nuovo: `abi`, `canInstall`, `openInstallSettings`, `sameSigner(path)` con `getPackageArchiveInfo` e i certificati di firma, `install(path)` con `FileProvider` + `ACTION_VIEW`), `MainActivity.kt` (registrazione del canale), `AndroidManifest.xml` (`REQUEST_INSTALL_PACKAGES`, `provider` con `res/xml/update_paths.xml` solo per `cache/updates`), `lib/services/update/android_update.dart`.
   - Comando mirato: `flutter test test/services/update/android_update_test.dart` + `flutter build apk --debug` (con `sorveglia.sh --pesante`)
@@ -42,7 +42,7 @@ Desktop: Windows/AppImage [Aggiorna]; .deb/Flatpak/zip/macOS [Scarica dal browse
   - Comando mirato: `flutter test test/services/update/desktop_update_test.dart`
   - Fatto quando: argomenti e comandi testati con un esecutore di processi finto; sostituzione dell'AppImage su file temporanei (permesso di esecuzione, vecchio file sostituito, cartella non scrivibile → browser).
 - [ ] 132.5 «Aggiorna» in Impostazioni e nell'avviso (R-265)
-  - File: `lib/ui/screens/settings/update_tiles.dart` (pulsante, avanzamento, «Annulla», «Riprova», messaggi d'errore, al posto di «Copia indirizzo»), `lib/app.dart` (azione «Aggiorna» nello snackbar di `updateOnStartProvider`), ARB ×6 (anche `updateOnStartHint`: oggi dice «Non scarica né installa niente»).
+  - File: `lib/ui/screens/settings/update_tiles.dart` (pulsante, avanzamento, «Annulla», «Riprova», messaggi d'errore, conferma con la dimensione sui dati mobili, al posto di «Copia indirizzo»), `lib/app.dart` (azione «Aggiorna» nello snackbar di `updateOnStartProvider`), ARB ×6 (anche `updateOnStartHint`: oggi dice «Non scarica né installa niente»).
   - Comando mirato: `flutter test test/ui/update_tiles_test.dart`
   - Fatto quando: con `UpdateStatus.newer` c'è «Aggiorna» e non il link da copiare; avanzamento ed errori come nel mockup; lo snackbar ha l'azione.
 - [ ] 132.6 Area e controllo di fine fase

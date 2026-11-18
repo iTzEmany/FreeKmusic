@@ -6,7 +6,7 @@ video muto e sincronizzato al posto di copertina e anello, e l'audio (la base) p
 Sotto, solo i testi sincronizzati. Fuori: video nella Jam, video offline, qualità a scelta, variante lite.
 
 ## Riferimenti
-D-631..D-639, D-646..D-649, D-651. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md)
+D-631..D-639, D-646..D-649, D-651, D-653..D-655, D-658. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md)
 (§ Architettura A–E, rischi F-1..F-6, F-9). Mockup: [`../storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](../storico/feature/mockup-karaoke-video-e-aggiornamenti.html).
 Documenti d'area: `../architettura/online.md`, `riproduzione-e-coda.md`, `ui-e-design.md`, `piattaforme.md`.
 
@@ -29,11 +29,15 @@ errore: copertina+anello e avviso   +------------------------------+
 ```
 
 ## Task
+- [ ] 131.0 `master` di nuovo verde (D-658)
+  - Il check «Analyze and test» è rosso dal push di #198 per un solo test: `test/goldens/screens_golden_test.dart` «phone_150 settings». Se la differenza viene da una modifica voluta (Impostazioni del karaoke, Android 10), rigenera il golden come fa il progetto (vedi il test e `docs/architettura/qualita-e-rilascio.md`); altrimenti correggi il codice.
+  - Comando mirato: `flutter test test/goldens/screens_golden_test.dart`
+  - Fatto quando: il test è verde in locale e nella CI della PR.
 - [ ] 131.1 Pacchetto video e misura dell'APK (D-637, F-1)
   - File: `pubspec.yaml` (`media_kit_video: 2.0.1`, `media_kit_libs_android_video`, `media_kit_libs_windows_video` al posto di `media_kit_libs_windows_audio`; macOS: `media_kit_libs_macos_video` o il meta-pacchetto `media_kit_libs_video` 1.0.7), `docs/architettura/piattaforme.md`.
-  - Passi: 1) misura l'APK full e lite di `master` (`flutter build apk --release --split-per-abi`, flavor come in `release.yml`); 2) aggiungi i pacchetti; 3) rimisura. **Se cresce di oltre 25 MB per ABI: fermati e chiedi all'utente** (D-637); 4) `flutter build linux` e avvio: l'audio suona come prima.
+  - Passi: 1) misura l'APK full e lite di `master` (`flutter build apk --release --split-per-abi`, flavor come in `release.yml`); 2) aggiungi i pacchetti; 3) escludi le librerie video dalla variante lite (Gradle, `packaging.jniLibs.excludes` per flavor, D-654) e controlla che la lite si avvii; 4) rimisura. **Se la full cresce di oltre 25 MB per ABI: prosegui e annota la misura** (D-653), decide l'utente; 5) `flutter build linux` e avvio: l'audio suona come prima.
   - Comando mirato: `flutter analyze`; build con `sorveglia.sh --pesante`.
-  - Fatto quando: le misure prima/dopo per ABI sono nelle «Note di deviazione»; analyze pulito; audio su Linux invariato.
+  - Fatto quando: le misure prima/dopo per ABI (full e lite) sono nelle «Note di deviazione»; la lite non cresce; analyze pulito; audio su Linux invariato.
 - [ ] 131.2 Filtro «Karaoke» in Cerca (R-251, R-252, R-253; D-631, D-646)
   - File: `lib/services/online/karaoke_filter.dart` (nuovo: `karaokeResults`, lista dei canali noti, parole escluse), `lib/ui/screens/youtube/online_results_sections.dart` (`SourceFilterChips` a quattro casi), `lib/ui/screens/youtube/online_results.dart` (`_search` con «<q> karaoke» e solo la fonte `ytVideo`; i primi tre filtri restano lato client), `lib/services/online/smart_search.dart` (richiesta con le sole fonti scelte, se non c'è già), ARB ×6.
   - Comando mirato: `flutter test test/services/online/karaoke_filter_test.dart test/ui/online_results_test.dart test/services/online/smart_search_test.dart`
@@ -55,7 +59,7 @@ errore: copertina+anello e avviso   +------------------------------+
   - Comando mirato: `flutter test test/services/online/query_cleaner_test.dart test/services/online/lyrics_chain_test.dart test/services/online/lyrics_sources_test.dart`
   - Fatto quando: «Sing King - Adele - Hello (Karaoke Version)» → «Adele» / «Hello»; un karaoke con durata diversa trova il testo da `/search`; per gli altri brani la durata vale come prima.
 - [ ] 131.7 Prove sul dispositivo (rischi F-2, F-3: D-648) e area
-  - Mi A3 via adb, **volume 0** (pausa a volume zero spenta), build debug full: Cerca → Karaoke → un brano di Sing King; 3 minuti di riproduzione con spostamenti, schermo spento e riacceso, schermo intero.
+  - Mi A3 collegato via USB con le cuffie JBL (D-655), via adb, **volume 0** (pausa a volume zero spenta), build debug full: Cerca → Karaoke → un brano di Sing King; 3 minuti di riproduzione con spostamenti, schermo spento e riacceso, schermo intero.
   - Verifiche: `adb shell dumpsys audio` senza perdita del focus di FreeKmusic quando parte il video (F-2); nel log (`AppLog`) al massimo un riallineamento ogni 10 s (F-3); risoluzione del flusso ≤ 480p nel log; video in cache e cancellato dopo 15 min.
   - Linux: `flutter run -d linux`, stesso percorso; il riquadro non è nero (F-4).
   - A fine fase: aggiorna `../architettura/online.md`, `riproduzione-e-coda.md`, `ui-e-design.md`, `piattaforme.md` e la colonna «Fase» della specifica. Ripulisci il telefono (app di debug come trovata, file temporanei, screenshot cancellati).
@@ -63,6 +67,7 @@ errore: copertina+anello e avviso   +------------------------------+
 
 ## Tocca a te
 - Provare a cantare un paio di brani sul telefono e dire se il video è a tempo con la base.
-- Windows: controllare che l'audio suoni ancora dopo il cambio delle librerie (F-5); la CI compila ma non ascolta.
+- Windows: controllare che l'audio suoni ancora dopo il cambio delle librerie (F-5); di notte vale solo la CI (D-660).
+- Se l'APK è cresciuto oltre 25 MB per ABI (D-653): decidere se tenerlo o passare a `video_player` su Android.
 
 ## Note di deviazione
