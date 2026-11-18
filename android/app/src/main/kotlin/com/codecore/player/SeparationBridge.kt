@@ -22,9 +22,10 @@ import kotlin.math.sqrt
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * `codecore/separation`: `separate {input, output, vocals, accompaniment}` writes the
- * accompaniment of [input] as a WAV (Spleeter 2-stem through ONNX Runtime), `cancel` stops it,
- * and `progress {fraction}` is pushed to Dart. It runs here, off the main thread, because the
+ * `codecore/separation`: `separate {input, output, voiceOutput, vocals, accompaniment}` writes the
+ * accompaniment of [input] to `output` and the voice to `voiceOutput`, both WAV (Spleeter 2-stem
+ * through ONNX Runtime; base + voice = original), `mix {base, voice, level, output}` writes
+ * base + level * voice, `cancel` stops a separation, and `progress {fraction}` is pushed to Dart. It runs here, off the main thread, because the
  * ONNX Runtime Flutter plugin would run inference on the UI thread.
  */
 object SeparationBridge {
@@ -49,15 +50,29 @@ object SeparationBridge {
                 "separate" -> {
                     val input = call.argument<String>("input")
                     val output = call.argument<String>("output")
+                    val voiceOutput = call.argument<String>("voiceOutput")
                     val vocals = call.argument<String>("vocals")
                     val accompaniment = call.argument<String>("accompaniment")
-                    if (input == null || output == null || vocals == null || accompaniment == null) {
+                    if (input == null || output == null || voiceOutput == null || vocals == null || accompaniment == null) {
                         result.error("io", "missing arguments", null)
                     } else if (!running.compareAndSet(false, true)) {
                         result.error("busy", "a separation is already running", null)
                     } else {
                         cancelled.set(false)
-                        executor.execute { run(channel, input, output, vocals, accompaniment, result) }
+                        executor.execute { run(channel, input, output, voiceOutput, vocals, accompaniment, result) }
+                    }
+                }
+                "mix" -> {
+                    val base = call.argument<String>("base")
+                    val voice = call.argument<String>("voice")
+                    val level = call.argument<Double>("level")
+                    val output = call.argument<String>("output")
+                    if (base == null || voice == null || level == null || output == null) {
+                        result.error("io", "missing arguments", null)
+                    } else if (!running.compareAndSet(false, true)) {
+                        result.error("busy", "a separation is already running", null)
+                    } else {
+                        executor.execute { runMix(base, voice, level.coerceIn(0.0, 1.0), output, result) }
                     }
                 }
                 "cancel" -> {
@@ -70,12 +85,12 @@ object SeparationBridge {
     }
 
     private fun run(
-        channel: MethodChannel, input: String, output: String, vocals: String,
+        channel: MethodChannel, input: String, output: String, voiceOutput: String, vocals: String,
         accompaniment: String, result: MethodChannel.Result,
     ) {
         var failure: Failure? = null
         try {
-            separate(channel, input, output, vocals, accompaniment)
+            separate(channel, input, output, voiceOutput, vocals, accompaniment)
         } catch (e: Failure) {
             failure = e
         } catch (e: OrtException) {
@@ -95,6 +110,7 @@ object SeparationBridge {
                     android.util.Log.w("Codecore", "separation failed: ${failure.code}", failure)
                 }
                 File(output).delete()
+                File(voiceOutput).delete()
             }
             running.set(false)
             val f = failure
@@ -104,12 +120,37 @@ object SeparationBridge {
         }
     }
 
+    private fun runMix(base: String, voice: String, level: Double, output: String, result: MethodChannel.Result) {
+        var failure: Failure? = null
+        try {
+            File(base).inputStream().buffered(1 shl 16).use { b ->
+                File(voice).inputStream().buffered(1 shl 16).use { v ->
+                    File(output).outputStream().buffered(1 shl 16).use { SpleeterDsp.mixWav(b, v, level, it) }
+                }
+            }
+        } catch (e: SpleeterDsp.WavFormatException) {
+            failure = Failure("decode", e.message ?: "bad WAV", e)
+        } catch (e: IOException) {
+            failure = Failure("io", e.message ?: "io error", e)
+        } catch (e: Throwable) {
+            failure = Failure("io", e.message ?: e.javaClass.simpleName, e)
+        } finally {
+            if (failure != null) {
+                android.util.Log.w("Codecore", "mix failed: ${failure.code}", failure)
+                File(output).delete()
+            }
+            running.set(false)
+            val f = failure
+            main.post { if (f == null) result.success(null) else result.error(f.code, f.message, null) }
+        }
+    }
+
     private fun checkCancelled() {
         if (cancelled.get()) throw Failure("cancelled", "cancelled")
     }
 
     private fun separate(
-        channel: MethodChannel, input: String, output: String, vocalsPath: String, accPath: String,
+        channel: MethodChannel, input: String, output: String, voiceOutput: String, vocalsPath: String, accPath: String,
     ) {
         // The decoded PCM is garbage as soon as it is resampled: nothing keeps it alive.
         val x = decode(input).let { SpleeterDsp.toStereo44k(it.pcm, it.size, it.channels, it.rate) }
@@ -127,7 +168,11 @@ object SeparationBridge {
             vocSession = env.createSession(vocalsPath, options)
             accSession = env.createSession(accPath, options)
             BufferedOutputStream(File(output).outputStream()).use { os ->
+              BufferedOutputStream(File(voiceOutput).outputStream()).use { vos ->
                 val synth = SpleeterDsp.StreamingSynth(os, n)
+                val voiceSynth = SpleeterDsp.StreamingSynth(vos, n)
+                val vre = FloatArray(SpleeterDsp.BINS)
+                val vim = FloatArray(SpleeterDsp.BINS)
                 val stft = SpleeterDsp.Stft()
                 val b = SpleeterDsp.BLOCK
                 val m = SpleeterDsp.MODEL_BINS
@@ -164,6 +209,8 @@ object SeparationBridge {
                         val off = (c * b + t) * bins
                         // The magnitudes and the model outputs share the layout (c * b + t) * m.
                         SpleeterDsp.maskFrame(voc, acc, (c * b + t) * m, mask)
+                        SpleeterDsp.voiceFrame(re, im, off, mask, vre, vim)
+                        voiceSynth.add(c, s * b + t, vre, vim, 0)
                         for (k in 0 until bins) {
                             re[off + k] *= mask[k]
                             im[off + k] *= mask[k]
@@ -171,9 +218,11 @@ object SeparationBridge {
                         synth.add(c, s * b + t, re, im, off)
                     }
                     synth.finishBlock(s == splits - 1)
+                    voiceSynth.finishBlock(s == splits - 1)
                     val fraction = (s + 1).toDouble() / splits
                     main.post { channel.invokeMethod("progress", mapOf("fraction" to fraction)) }
                 }
+              }
             }
         } finally {
             vocSession?.close()

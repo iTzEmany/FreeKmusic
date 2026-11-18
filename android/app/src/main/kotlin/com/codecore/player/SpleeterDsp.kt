@@ -1,5 +1,7 @@
 package com.codecore.player
 
+import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -118,6 +120,68 @@ object SpleeterDsp {
         var s = 0f
         for (k in MODEL_BINS - 64 until MODEL_BINS) s += mask[k]
         mask.fill(s / 64, MODEL_BINS, BINS)
+    }
+
+    /** Voice spectrum of one frame: (1 - [mask]) of the BINS bins at [off], so base + voice is the original. */
+    fun voiceFrame(re: FloatArray, im: FloatArray, off: Int, mask: FloatArray, outRe: FloatArray, outIm: FloatArray) {
+        for (k in 0 until BINS) {
+            outRe[k] = re[off + k] * (1f - mask[k])
+            outIm[k] = im[off + k] * (1f - mask[k])
+        }
+    }
+
+    /** A WAV that is not the 44-byte-header 16-bit stereo 44.1 kHz file [writeWavHeader] makes, or a pair of different lengths. */
+    class WavFormatException(message: String) : IOException(message)
+
+    /** Reads the header and returns the number of data bytes. */
+    private fun readWavHeader(ins: InputStream): Int {
+        val h = ByteArray(44)
+        var got = 0
+        while (got < 44) {
+            val r = ins.read(h, got, 44 - got)
+            if (r < 0) throw WavFormatException("truncated WAV header")
+            got += r
+        }
+        val b = ByteBuffer.wrap(h).order(ByteOrder.LITTLE_ENDIAN)
+        val ok = String(h, 0, 4) == "RIFF" && String(h, 8, 8) == "WAVEfmt " && b.getInt(16) == 16 &&
+            b.getShort(20).toInt() == 1 && b.getShort(22).toInt() == 2 && b.getInt(24) == RATE &&
+            b.getShort(34).toInt() == 16 && String(h, 36, 4) == "data"
+        val data = b.getInt(40)
+        if (!ok || data < 0 || data % 4 != 0) throw WavFormatException("unsupported WAV")
+        return data
+    }
+
+    /** Streams two [writeWavHeader] WAVs of the same length into one: base + level * voice, clamped to 16 bit. */
+    fun mixWav(base: InputStream, voice: InputStream, level: Double, out: OutputStream) {
+        val total = readWavHeader(base)
+        if (readWavHeader(voice) != total) throw WavFormatException("base and voice differ in length")
+        writeWavHeader(out, total / 4)
+        val a = ByteArray(1 shl 16)
+        val v = ByteArray(1 shl 16)
+        var left = total
+        while (left > 0) {
+            val n = min(left, a.size)
+            readFully(base, a, n)
+            readFully(voice, v, n)
+            val ab = ByteBuffer.wrap(a, 0, n).order(ByteOrder.LITTLE_ENDIAN)
+            val vb = ByteBuffer.wrap(v, 0, n).order(ByteOrder.LITTLE_ENDIAN)
+            val ob = ByteBuffer.wrap(a, 0, n).order(ByteOrder.LITTLE_ENDIAN) // overwrites the base in place
+            for (i in 0 until n / 2) {
+                val s = Math.round(ab.getShort(i * 2) + level * vb.getShort(i * 2)).toInt()
+                ob.putShort(i * 2, s.coerceIn(-32768, 32767).toShort())
+            }
+            out.write(a, 0, n)
+            left -= n
+        }
+    }
+
+    private fun readFully(ins: InputStream, buf: ByteArray, n: Int) {
+        var got = 0
+        while (got < n) {
+            val r = ins.read(buf, got, n - got)
+            if (r < 0) throw WavFormatException("truncated WAV data")
+            got += r
+        }
     }
 
     /** Interleaved 16-bit PCM to two 44.1 kHz 16-bit channels (mono duplicated, linear resampling). */
