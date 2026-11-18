@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart' show Track;
 import '../data/repositories/track_kinds.dart';
+import 'queue_tracks.dart';
 import '../services/stream/stream_key.dart';
+import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
 import '../services/karaoke/separation_service.dart';
@@ -13,6 +15,7 @@ import 'stream_providers.dart' show streamCacheProvider;
 
 import 'dart:io' show Directory, File, FileSystemEntityType;
 
+import 'database_providers.dart' show trackRepositoryProvider;
 import 'jam_providers.dart';
 import 'player_providers.dart';
 import 'settings_providers.dart';
@@ -294,4 +297,169 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
     if (before.path == b.path && before.active == b.active) return;
     unawaited(ref.read(karaokeApplyProvider)());
   });
+});
+
+/// Keys of the tracks whose data cost the user confirmed with «Avvia» (metered network, D-629).
+class KaraokeConfirmed extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void add(String key) => state = {...state, key};
+}
+
+final karaokeConfirmedProvider =
+    NotifierProvider<KaraokeConfirmed, Set<String>>(KaraokeConfirmed.new);
+
+/// Starts the separation by itself (D-629): the current track when karaoke is on (unless a metered
+/// network needs the user's «Avvia»), then the tracks queued by hand, one at a time, in queue order,
+/// and keeps their stems pinned while they stay queued. A failed track is never retried here.
+/// Watched once, from the app root.
+final karaokeAutoProvider = Provider<void>((ref) {
+  final service = ref.watch(separationServiceProvider);
+  if (service == null) return;
+  final handler = ref.watch(audioHandlerProvider);
+  final cache = ref.read(streamCacheProvider);
+  final pinned = <String>{};
+  var running = false, again = false, disposed = false;
+  late final Future<void> Function() pump;
+
+  Future<KaraokeTarget?> queuedTarget(Track t) async {
+    final online = ref.read(onlineEntriesProvider);
+    if (t.kind == kEpisodeKind || online?.isRadioId(t.id) == true) return null;
+    final entry = online?.entryOf(t.id);
+    final streamKey = entry?.result.indexKey ?? keyOfStreamPath(t.path);
+    final key = await _karaokeKey(t, streamKey);
+    if (key == null) return null;
+    if (streamKey == null) return KaraokeTarget(key, t.path);
+    // Prefetch never forces a stream download: only a file already in the cache counts.
+    final file = await handler.preparer?.cachedFile(
+      streamKey,
+      entry?.result ?? streamResultOfRow(streamKey, t),
+    );
+    return file == null ? null : KaraokeTarget(key, file.path);
+  }
+
+  Future<List<KaraokeTarget>> manualQueue() async {
+    final from = handler.currentIndex + 1;
+    final ids = handler.queueIds;
+    if (from <= 0 || handler.userAhead == 0 || from >= ids.length) return [];
+    final tracks = await queueTracks(
+      ids.sublist(from, (from + handler.userAhead).clamp(from, ids.length)),
+      ref.read(trackRepositoryProvider),
+      ref.read(onlineEntriesProvider),
+    );
+    return [for (final t in tracks) ?await queuedTarget(t)];
+  }
+
+  void syncPins(Set<String> keys) {
+    for (final k in pinned.difference(keys)) {
+      cache.unpin(k);
+      unawaited(cache.touch(k)); // leaving the queue: the 15 minutes start now
+    }
+    for (final k in keys.difference(pinned)) {
+      cache.pin(k);
+    }
+    pinned
+      ..clear()
+      ..addAll(keys);
+  }
+
+  // `request` takes a moment to mark its key as active: a second call for the same key meanwhile
+  // would cancel the first.
+  final requested = <String>{};
+  void start(KaraokeTarget t) {
+    if (!requested.add(t.key)) return;
+    unawaited(
+      service.request(t.key, t.input!).whenComplete(() {
+        requested.remove(t.key);
+        if (!disposed) unawaited(pump());
+      }),
+    );
+  }
+
+  Future<void> step() async {
+    final target = ref.read(karaokeTargetProvider);
+    // Not known yet: the listener pumps again when it is (else a prefetch could go first).
+    if (target.isLoading) return;
+    final cur = target.value;
+    if (!_baseWanted(ref)) {
+      // Off: nothing new starts; a prefetch is cancelled, the current track's job finishes.
+      syncPins(const {});
+      if (service.busy && service.activeKey != cur?.key) await service.cancel();
+      return;
+    }
+    final queued = await manualQueue();
+    if (disposed) return;
+    // The current track's stems stay too: at 100 % no player file holds them and the expiry would
+    // take them out, then the pump would separate the track again.
+    syncPins({
+      for (final t in [?cur, ...queued]) ...[
+        karaokeFileKey('base', t.key),
+        karaokeFileKey('voice', t.key),
+      ],
+    });
+    if (cur != null) {
+      final phase = service.stateOf(cur.key).phase;
+      if (phase == SeparationPhase.idle) {
+        // No file yet: the target changes when it lands.
+        if (cur.input == null) return;
+        final cost = await ref.read(karaokeDataCostProvider.future);
+        if (disposed) return;
+        if (cost != null &&
+            !ref.read(karaokeConfirmedProvider).contains(cur.key)) {
+          return;
+        }
+        if (cur.key == ref.read(karaokeTargetProvider).value?.key) start(cur);
+        return;
+      }
+      // Running, or failed: no auto retry.
+      if (phase != SeparationPhase.ready) return;
+    }
+    if (service.busy) return;
+    final metered = (await ref.read(networkProbeProvider).current()).metered;
+    if (disposed || (metered && await service.modelsMissing())) return;
+    for (final t in queued) {
+      if (service.stateOf(t.key).phase == SeparationPhase.idle) {
+        start(t);
+        return;
+      }
+    }
+  }
+
+  pump = () async {
+    if (running) {
+      again = true;
+      return;
+    }
+    running = true;
+    try {
+      do {
+        again = false;
+        await step();
+      } while (again && !disposed);
+    } on Object catch (e, st) {
+      AppLog.w('karaoke: auto separation failed', e, st);
+    } finally {
+      running = false;
+    }
+  };
+
+  // Progress ticks while a job runs are skipped: its end pumps again (see [start]).
+  void pumpListener() {
+    if (!service.busy) unawaited(pump());
+  }
+
+  service.addListener(pumpListener);
+  final queueSub = handler.queueChanges.listen((_) => unawaited(pump()));
+  ref.listen(karaokeProvider.select((k) => k.on), (_, _) => unawaited(pump()));
+  ref.listen(karaokeTargetProvider, (_, _) => unawaited(pump()));
+  ref.listen(karaokeConfirmedProvider, (_, _) => unawaited(pump()));
+  ref.listen(jamProvider.select((s) => s.active), (_, _) => unawaited(pump()));
+  ref.onDispose(() {
+    disposed = true;
+    service.removeListener(pumpListener);
+    unawaited(queueSub.cancel());
+    pinned.forEach(cache.unpin);
+  });
+  unawaited(pump());
 });

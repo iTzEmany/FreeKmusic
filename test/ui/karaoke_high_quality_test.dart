@@ -130,10 +130,7 @@ void main() {
   ) async {
     final h = await open(t, target: const KaraokeTarget('karaoke:s', null));
     expect(find.text('In attesa che il brano sia scaricato'), findsOneWidget);
-    expect(
-      t.widget<ListTile>(find.widgetWithText(ListTile, 'Alta qualità')).enabled,
-      isFalse,
-    );
+    expect(find.text('Alta qualità'), findsNothing);
     await h.dispose(t);
   });
 
@@ -191,9 +188,40 @@ void main() {
         await t.pump();
       }
       expect(find.text('Scarica 78 MB la prima volta'), findsOneWidget);
+      await t.tap(find.text('Avvia'));
+      await t.pump();
+      expect(find.text('Avvia'), findsNothing);
       await h.dispose(t);
     },
   );
+
+  testWidgets(
+    'metered, stream not in the cache: no «Avvia», it waits for the file',
+    (t) async {
+      final h = await open(
+        t,
+        metered: true,
+        target: const KaraokeTarget('karaoke:s', null),
+      );
+      for (var i = 0; i < 3; i++) {
+        await t.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await t.pump();
+      }
+      expect(find.text('Il brano va scaricato per intero'), findsOneWidget);
+      expect(find.text('In attesa che il brano sia scaricato'), findsOneWidget);
+      expect(find.text('Avvia'), findsNothing);
+      await h.dispose(t);
+    },
+  );
+
+  testWidgets('failed: a short message and «Riprova»', (t) async {
+    final h = await open(t, sep: const SeparationState(SeparationPhase.failed));
+    expect(find.textContaining('Separazione non riuscita'), findsOneWidget);
+    expect(find.text('Riprova'), findsOneWidget);
+    await h.dispose(t);
+  });
 
   testWidgets('the model note goes away once the models are there', (t) async {
     final svc = _Svc();

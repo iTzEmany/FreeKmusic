@@ -4080,14 +4080,15 @@
   "karaokePercent": "{percent} %",
   "karaokePill": "Voix {percent} %",
   "karaokeBypassed": "Désactivé sur les épisodes et la radio",
-  "karaokeHighQuality": "Haute qualité",
   "karaokeHighQualityNote": "Séparation sur le téléphone, environ 1 à 2 minutes.",
   "karaokeHighQualityModel": "Téléchargement du modèle",
   "karaokeHighQualitySeparating": "Séparation sur le téléphone",
   "karaokeHighQualityWaiting": "En attente du téléchargement du titre",
-  "karaokeHighQualityFailed": "Séparation échouée : l’original continue. Touchez pour réessayer.",
+  "karaokeHighQualityFailed": "Séparation échouée : l’original continue.",
   "showKaraoke": "Afficher le karaoké",
   "showKaraokeHint": "Le micro apparaît dans « Lecture en cours » et sur les paroles (Android).",
   "karaokeCostModel": "Télécharge 78 Mo la première fois",
-  "karaokeCostTrack": "Le titre doit être téléchargé en entier"
+  "karaokeCostTrack": "Le titre doit être téléchargé en entier",
+  "karaokeStart": "Lancer",
+  "karaokeRetry": "Réessayer"
 }

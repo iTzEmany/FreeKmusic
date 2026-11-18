@@ -3859,14 +3859,15 @@
   "karaokePercent": "{percent} %",
   "karaokePill": "Stimme {percent} %",
   "karaokeBypassed": "Aus bei Episoden und Radio",
-  "karaokeHighQuality": "Hohe Qualität",
   "karaokeHighQualityNote": "Trennung auf dem Telefon, etwa 1–2 Minuten.",
   "karaokeHighQualityModel": "Modell wird geladen",
   "karaokeHighQualitySeparating": "Trennung auf dem Telefon",
   "karaokeHighQualityWaiting": "Wartet auf den Download des Titels",
-  "karaokeHighQualityFailed": "Trennung fehlgeschlagen: das Original spielt weiter. Zum Wiederholen tippen.",
+  "karaokeHighQualityFailed": "Trennung fehlgeschlagen: das Original spielt weiter.",
   "showKaraoke": "Karaoke anzeigen",
   "showKaraokeHint": "Das Mikrofon erscheint in „Aktuelle Wiedergabe“ und bei den Songtexten (Android).",
   "karaokeCostModel": "Lädt beim ersten Mal 78 MB herunter",
-  "karaokeCostTrack": "Der Titel muss vollständig heruntergeladen werden"
+  "karaokeCostTrack": "Der Titel muss vollständig heruntergeladen werden",
+  "karaokeStart": "Starten",
+  "karaokeRetry": "Wiederholen"
 }
