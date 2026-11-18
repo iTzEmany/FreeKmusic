@@ -27,7 +27,7 @@ Future<T?> showCcSheet<T>({
     useRootNavigator: true,
     constraints: constraints,
     // Flutter's Italian scrimLabel is «Rete»: never leave the default.
-    barrierLabel: barrierLabel ?? context.l10n.close,
+    barrierLabel: barrierLabel ?? MaterialLocalizations.of(context).closeButtonLabel,
     sheetAnimationStyle: AnimationStyle(duration: d, reverseDuration: d),
   );
 }
