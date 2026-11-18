@@ -289,20 +289,6 @@ JamResult applyCommand(
       if (s.speakerAwaySince == null) return const JamResult.fail(JamError.invalid);
       return commit(s.copyWith(speaker: false, clearSpeakerAway: true));
 
-    case JamCommandType.karaoke:
-      if (!isHost && !s.karaokeGuests) return const JamResult.fail(JamError.forbidden);
-      final l = cmd.karaoke;
-      if (l != null && l.isNaN) return const JamResult.fail(JamError.invalid);
-      // Steps of 0.05: a slider drag must not make a version (and a STATE) per decimal.
-      final level = l == null ? null : (l.clamp(0.0, 1.0) * 20).round() / 20;
-      if (level == s.karaoke) return JamResult.ok(s);
-      return commit(level == null ? s.copyWith(clearKaraoke: true) : s.copyWith(karaoke: level));
-
-    case JamCommandType.karaokeGuests:
-      if (!isHost) return const JamResult.fail(JamError.forbidden);
-      if (cmd.allowed == s.karaokeGuests) return JamResult.ok(s);
-      return commit(s.copyWith(karaokeGuests: cmd.allowed));
-
     case JamCommandType.end:
       if (!isHost) return const JamResult.fail(JamError.forbidden);
       return JamResult.ok(

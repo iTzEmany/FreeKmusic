@@ -7,6 +7,8 @@ import '../../../core/constants.dart';
 import '../../../core/platform.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/karaoke_providers.dart'
+    show separationServiceProvider;
 import '../../../providers/cover_ops.dart';
 import '../../../providers/equalizer_providers.dart';
 import '../../../providers/library_providers.dart';
@@ -245,6 +247,16 @@ List<SettingsGroup> _playback(BuildContext context, WidgetRef ref) {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => ShellNav.open<void>(context, const DislikesScreen()),
         ),
+        if (ref.watch(separationServiceProvider) != null)
+          SwitchListTile(
+            key: const ValueKey('show-karaoke'),
+            title: Text(l.showKaraoke),
+            subtitle: Text(l.showKaraokeHint),
+            value: s.showKaraoke,
+            onChanged: (v) => notifier.update(
+              (c) => c.copyWith(showKaraoke: v, karaokeOn: v && c.karaokeOn),
+            ),
+          ),
         SwitchListTile(
           title: Text(l.settingsRecordHistory),
           subtitle: Text(l.settingsRecordHistoryHint),

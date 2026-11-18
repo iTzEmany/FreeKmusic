@@ -1,6 +1,8 @@
 package com.codecore.player
 
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.PI
@@ -8,6 +10,7 @@ import kotlin.math.abs
 import kotlin.math.sin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class SpleeterDspTest {
@@ -91,5 +94,76 @@ class SpleeterDspTest {
         assertEquals(44100, b.getInt(24))
         assertEquals(16, b.getShort(34).toInt())
         assertEquals(12, b.getInt(40))
+    }
+
+    private fun wav(s: ShortArray): ByteArray {
+        val bos = ByteArrayOutputStream()
+        SpleeterDsp.writeWavHeader(bos, s.size / 2)
+        val b = ByteBuffer.allocate(s.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+        s.forEach { b.putShort(it) }
+        bos.write(b.array())
+        return bos.toByteArray()
+    }
+
+    private fun mix(base: ShortArray, voice: ShortArray, level: Double): ShortArray {
+        val out = ByteArrayOutputStream()
+        SpleeterDsp.mixWav(ByteArrayInputStream(wav(base)), ByteArrayInputStream(wav(voice)), level, out)
+        val b = ByteBuffer.wrap(out.toByteArray()).order(ByteOrder.LITTLE_ENDIAN)
+        return ShortArray(base.size) { b.getShort(44 + it * 2) }
+    }
+
+    @Test
+    fun basePlusVoiceReconstructsTheOriginal() {
+        val x = tone(20000, 440.0)
+        val bBos = ByteArrayOutputStream()
+        val vBos = ByteArrayOutputStream()
+        val bs = SpleeterDsp.StreamingSynth(bBos, x.size)
+        val vs = SpleeterDsp.StreamingSynth(vBos, x.size)
+        val stft = SpleeterDsp.Stft()
+        val re = FloatArray(SpleeterDsp.BINS)
+        val im = FloatArray(SpleeterDsp.BINS)
+        val vre = FloatArray(SpleeterDsp.BINS)
+        val vim = FloatArray(SpleeterDsp.BINS)
+        // Non-trivial mask, including the extended bins above the model's.
+        val mask = FloatArray(SpleeterDsp.BINS) { 0.2f + 0.6f * (it % 7) / 6f }
+        val splits = (bs.frames + SpleeterDsp.BLOCK - 1) / SpleeterDsp.BLOCK
+        for (s in 0 until splits) {
+            for (f in s * SpleeterDsp.BLOCK until minOf(bs.frames, (s + 1) * SpleeterDsp.BLOCK)) {
+                stft.analyze(x, f, re, im, 0)
+                SpleeterDsp.voiceFrame(re, im, 0, mask, vre, vim)
+                for (k in 0 until SpleeterDsp.BINS) { re[k] *= mask[k]; im[k] *= mask[k] }
+                for (c in 0..1) { bs.add(c, f, re, im, 0); vs.add(c, f, vre, vim, 0) }
+            }
+            bs.finishBlock(s == splits - 1)
+            vs.finishBlock(s == splits - 1)
+        }
+        val b = ByteBuffer.wrap(bBos.toByteArray()).order(ByteOrder.LITTLE_ENDIAN)
+        val v = ByteBuffer.wrap(vBos.toByteArray()).order(ByteOrder.LITTLE_ENDIAN)
+        var worst = 0f
+        for (i in x.indices) for (c in 0..1) {
+            val sum = b.getShort(44 + i * 4 + c * 2) + v.getShort(44 + i * 4 + c * 2)
+            worst = maxOf(worst, abs(sum - x[i]) / 32768f)
+        }
+        assertTrue("error $worst", worst < 1e-3f)
+    }
+
+    @Test
+    fun mixAtLevelsGivesBasePlusScaledVoice() {
+        val base = shortArrayOf(100, -200, 30000, -30000)
+        val voice = shortArrayOf(10, 20, 4000, -4000)
+        assertTrue(mix(base, voice, 0.0).contentEquals(base))
+        assertTrue(mix(base, voice, 0.5).contentEquals(shortArrayOf(105, -190, 32000, -32000)))
+        // 1.0 sums and clamps to 16 bit.
+        assertTrue(mix(base, voice, 1.0).contentEquals(shortArrayOf(110, -180, 32767, -32768)))
+    }
+
+    @Test
+    fun mixOfDifferentLengthsFails() {
+        try {
+            mix(shortArrayOf(1, 2, 3, 4), shortArrayOf(1, 2), 0.5)
+            fail("expected a failure")
+        } catch (e: SpleeterDsp.WavFormatException) {
+            assertTrue(e is IOException)
+        }
     }
 }

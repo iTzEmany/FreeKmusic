@@ -8043,34 +8043,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get karaokeBypassed => 'Désactivé sur les épisodes et la radio';
 
   @override
-  String get karaokeJamHostOnly =>
-      'Le karaoké est commandé par l’hôte de la Jam';
-
-  @override
-  String get karaokeGuestsAllowed => 'Les invités peuvent utiliser le karaoké';
-
-  @override
-  String get karaokeJamLocalNote =>
-      'Dans la Jam à la maison, le karaoké vaut pour toutes les sorties qui le gèrent.';
-
-  @override
-  String karaokeJamBox(String name, int percent) {
-    return 'Karaoké activé par $name, voix $percent %';
-  }
-
-  @override
-  String get karaokeJamIgnore => 'Ignorer pour moi';
-
-  @override
-  String get karaokeJamForbidden =>
-      'L’hôte a désactivé le karaoké pour les invités.';
-
-  @override
   String get karaokeHighQuality => 'Haute qualité';
 
   @override
   String get karaokeHighQualityNote =>
-      'Séparation sur le téléphone, environ 1 à 2 minutes. Le filtre joue en attendant.';
+      'Séparation sur le téléphone, environ 1 à 2 minutes.';
 
   @override
   String get karaokeHighQualityModel => 'Téléchargement du modèle';
@@ -8084,11 +8061,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Séparation échouée : le filtre reste. Touchez pour réessayer.';
+      'Séparation échouée : l’original continue. Touchez pour réessayer.';
 
   @override
-  String get karaokeBase => 'Instrumental';
+  String get showKaraoke => 'Afficher le karaoké';
 
   @override
-  String get karaokeOriginal => 'Original';
+  String get showKaraokeHint =>
+      'Le micro apparaît dans « Lecture en cours » et sur les paroles (Android).';
+
+  @override
+  String get karaokeCostModel => 'Télécharge 78 Mo la première fois';
+
+  @override
+  String get karaokeCostTrack => 'Le titre doit être téléchargé en entier';
 }

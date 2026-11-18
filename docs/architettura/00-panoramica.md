@@ -33,7 +33,7 @@ Dipendenze ammesse: `ui` → `providers` → `services` / `data` → `core`. Mai
 | `lib/providers/` | Riverpod: collegano servizi e repository alla UI (`player_providers`, `library_providers`, `settings_providers`, ...) |
 | `lib/ui/` | `screens`, `shell`, `theme`, `widgets`. Solo presentazione |
 | `lib/l10n/` | ARB in 6 lingue (it, en, de, es, fr, pt) |
-| `third_party/` | Tre copie modificate al minimo: `just_audio` (filtro voce Android), `just_audio_media_kit` (`af` di mpv), `audio_service` (tasto 127); ognuna con `MODIFICHE.md`, collegata da `dependency_overrides`, da riallineare a mano a ogni aggiornamento (c'è anche `metadata_god`, senza `MODIFICHE.md`) |
+| `third_party/` | Una copia modificata al minimo: `audio_service` (tasto 127, D-608), con `MODIFICHE.md`, collegata da `dependency_overrides`, da riallineare a mano a ogni aggiornamento; le copie di `just_audio` e `just_audio_media_kit` sono state tolte con il filtro della voce (D-624) (c'è anche `metadata_god`, senza `MODIFICHE.md`) |
 | `lib/main.dart`, `lib/app.dart` | Avvio e radice dell'app (`CodecoreApp`) |
 | `android/app/src/main/kotlin/com/codecore/player/` | Ponti nativi Android (widget, tile, share, volume, storage, ...) |
 | `test/` | `core, data, fixtures, goldens, jam, l10n, live, providers, services, support, theme, ui` |

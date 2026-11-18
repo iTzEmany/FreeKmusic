@@ -386,9 +386,6 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// The main player's equalizer, or null where there is none.
   Equalizer? get equalizer => _backend.equalizer;
 
-  /// The main player's karaoke voice filter, or null where there is none.
-  VoiceFilter? get voiceFilter => _backend.voiceFilter;
-
   Track? get currentTrack => _current;
   Stream<Track?> get currentTrackStream => _trackController.stream;
   Stream<void> get queueChanges => _queueController.stream;

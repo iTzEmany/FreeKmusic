@@ -7950,32 +7950,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get karaokeBypassed => 'Off on episodes and radio';
 
   @override
-  String get karaokeJamHostOnly => 'Only the Jam host controls the karaoke';
-
-  @override
-  String get karaokeGuestsAllowed => 'Guests can use the karaoke';
-
-  @override
-  String get karaokeJamLocalNote =>
-      'In the home Jam the karaoke applies to every output that supports it.';
-
-  @override
-  String karaokeJamBox(String name, int percent) {
-    return 'Karaoke turned on by $name, voice $percent %';
-  }
-
-  @override
-  String get karaokeJamIgnore => 'Ignore for me';
-
-  @override
-  String get karaokeJamForbidden => 'The host turned off karaoke for guests.';
-
-  @override
   String get karaokeHighQuality => 'High quality';
 
   @override
   String get karaokeHighQualityNote =>
-      'Separating on the phone, about 1–2 minutes. The filter plays meanwhile.';
+      'Separating on the phone, about 1–2 minutes.';
 
   @override
   String get karaokeHighQualityModel => 'Downloading the model';
@@ -7988,11 +7967,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Separation failed: the filter stays. Tap to retry.';
+      'Separation failed: the original keeps playing. Tap to retry.';
 
   @override
-  String get karaokeBase => 'Backing';
+  String get showKaraoke => 'Show karaoke';
 
   @override
-  String get karaokeOriginal => 'Original';
+  String get showKaraokeHint =>
+      'The microphone appears in Now Playing and on the lyrics page (Android).';
+
+  @override
+  String get karaokeCostModel => 'Downloads 78 MB the first time';
+
+  @override
+  String get karaokeCostTrack => 'The track has to be downloaded in full';
 }

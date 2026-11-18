@@ -269,7 +269,7 @@ class NpBottomRow extends ConsumerWidget {
   /// The desktop volume row; the Jam hides it (its volume is in the outputs sheet).
   final bool volume;
 
-  /// The karaoke microphone next to the sleep chip (the player and the Jam; not a radio).
+  /// The karaoke microphone next to the sleep chip (the player; not a radio).
   final bool karaoke;
 
   @override

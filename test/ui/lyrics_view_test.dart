@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
-import '../support/fake_voice_filter.dart';
 
 const _jaSynced = '[00:01.00]夜の街\n[00:05.00]君の声';
 
@@ -59,7 +58,6 @@ void main() {
     addTearDown(tester.view.reset);
     final h = await Harness.create(tester, tracks: 1);
     if (karaoke) {
-      h.backend.voiceFilter = FakeVoiceFilter();
       await tester.runAsync(
         () => h.store.writeSettings(h.store.readSettings().copyWith(karaokeOn: true)),
       );
@@ -83,6 +81,7 @@ void main() {
       tester,
       const LyricsScreen(),
       extraOverrides: [
+        if (karaoke) karaokePillPercentProvider.overrideWithValue(20),
         if (bypass) karaokeBypassProvider.overrideWithValue(true),
         if (translated)
           lyricsTranslationProvider.overrideWith(_FakeTranslation.new),
@@ -105,14 +104,14 @@ void main() {
     'kimi no koe',
   ], RomanizationSource.found);
 
-  testWidgets('karaoke on: the pill shows the level and reopens the slider', (
+  testWidgets('karaoke on: the pill shows the level and reopens the sheet', (
     tester,
   ) async {
     final h = await open(tester, synced: _jaSynced, karaoke: true);
     expect(find.text('Voce 20 %'), findsOneWidget);
     await tester.tap(find.text('Voce 20 %'));
     await tester.pumpAndSettle();
-    expect(find.byType(Slider), findsOneWidget);
+    expect(find.byType(Switch), findsOneWidget);
     await h.dispose(tester);
   });
 

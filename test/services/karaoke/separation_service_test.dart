@@ -14,24 +14,58 @@ class FakeSeparator implements Separator {
   Object? error;
   Completer<void>? gate;
   final cancels = <int>[];
+  final mixes = <double>[];
+  Completer<void>? gate2; // holds the second separation
+  Object? mixError;
+  var _separating = false;
 
   @override
   Future<void> separate({
     required String input,
     required String output,
+    required String voiceOutput,
     required String vocals,
     required String accompaniment,
     void Function(double fraction)? onProgress,
   }) async {
     runs++;
     final run = runs;
+    _separating = true;
+    try {
+      await _separate(run, output, voiceOutput, onProgress);
+    } finally {
+      _separating = false;
+    }
+  }
+
+  Future<void> _separate(
+    int run,
+    String output,
+    String voiceOutput,
+    void Function(double)? onProgress,
+  ) async {
     onProgress?.call(0.5);
+    if (gate2 != null && run == 2) await gate2!.future;
     if (gate != null && run == 1) {
       await gate!.future;
       if (cancels.contains(run)) throw const SeparationCancelled();
     }
     if (error != null) throw error!;
     File(output).writeAsBytesSync([1, 2, 3]);
+    File(voiceOutput).writeAsBytesSync([4, 5]);
+  }
+
+  @override
+  Future<void> mix({
+    required String base,
+    required String voice,
+    required double level,
+    required String output,
+  }) async {
+    if (_separating) throw StateError('busy');
+    if (mixError != null) throw mixError!;
+    mixes.add(level);
+    File(output).writeAsBytesSync([9, level.round()]);
   }
 
   @override
@@ -110,7 +144,12 @@ void main() {
         final st = s.stateOf('karaoke:k');
         expect(fractions, contains(0.5));
         expect(st.phase, SeparationPhase.ready);
-        expect((await cache.fileFor('karaoke:k'))!.path, st.path);
+        expect((await cache.fileFor('karaoke:base:k'))!.path, st.path);
+        expect(
+          File((await cache.fileFor('karaoke:voice:k'))!.path)
+              .readAsBytesSync(),
+          [4, 5],
+        );
         expect(File(st.path!).readAsBytesSync(), [1, 2, 3]);
       },
     );
@@ -145,7 +184,122 @@ void main() {
       await first;
       expect(s.stateOf('karaoke:a').phase, SeparationPhase.idle);
       expect(s.stateOf('karaoke:b').phase, SeparationPhase.ready);
-      expect(await cache.fileFor('karaoke:a'), isNull);
+      expect(await cache.fileFor('karaoke:base:a'), isNull);
+    });
+  });
+
+  group('mix and expiry', () {
+    setUp(() {
+      final dir = Directory(
+        p.join(root.path, 'models', 'spleeter-2stems-7001ba31'),
+      )..createSync(recursive: true);
+      for (final n in spleeterModels.keys) {
+        File(p.join(dir.path, n)).writeAsStringSync('x');
+      }
+    });
+
+    test(
+      'mixFor: 100 % is the original, 0 % the base, 50 % a mix made once',
+      () async {
+        final s = service();
+        await s.request('karaoke:k', '/in.mp3');
+        final base = (await cache.fileFor('karaoke:base:k'))!.path;
+        expect((await s.mixFor('karaoke:k', 1)).status, MixStatus.original);
+        expect((await s.mixFor('karaoke:k', 0)).path, base);
+        expect(sep.mixes, isEmpty);
+        final mix = (await s.mixFor('karaoke:k', 0.5)).path;
+        expect(mix, (await cache.fileFor('karaoke:mix:k:50'))!.path);
+        expect(File(mix!).readAsBytesSync(), [9, 1]);
+        expect((await s.mixFor('karaoke:k', 0.5)).path, mix); // cached
+        expect((await s.mixFor('karaoke:k', 0.51)).path, mix); // same 5 % step
+        expect(sep.mixes, [0.5]);
+        expect(
+          cache.dir.listSync().where((e) => e.path.endsWith('.part')),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'mixFor without stems or with a failing mix is failed, not original',
+      () async {
+        final s = service();
+        expect((await s.mixFor('karaoke:none', 0.5)).status, MixStatus.failed);
+        await s.request('karaoke:k', '/in.mp3');
+        sep.mixError = StateError('io');
+        final r = await s.mixFor('karaoke:k', 0.5);
+        expect(r.status, MixStatus.failed);
+        expect(r.path, isNull);
+        expect(
+          cache.dir.listSync().where((e) => e.path.contains('mix')),
+          isEmpty,
+        );
+      },
+    );
+
+    test('a mix asked during a separation waits for it and succeeds', () async {
+      final s = service();
+      await s.request('karaoke:k', '/in.mp3');
+      sep.gate2 = Completer<void>();
+      final other = s.request('karaoke:b', '/b.mp3'); // run 2, held
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      final mix = s.mixFor('karaoke:k', 0.5);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(sep.mixes, isEmpty);
+      sep.gate2!.complete();
+      await other;
+      final r = await mix;
+      expect(
+        r.status,
+        MixStatus.file,
+      ); // the fake answers busy if they overlapped
+      expect(sep.mixes, [0.5]);
+    });
+
+    test('two quick requests for one track: the latest wins', () async {
+      final s = service();
+      await s.request('karaoke:k', '/in.mp3');
+      final first = s.mixFor('karaoke:k', 0.3);
+      final second = s.mixFor('karaoke:k', 0.5);
+      expect((await first).status, MixStatus.stale);
+      expect((await second).status, MixStatus.file);
+      expect(sep.mixes, [0.5]);
+    });
+
+    test('the stems are pinned while a mix is made and free after', () async {
+      final s = service();
+      await s.request('karaoke:k', '/in.mp3');
+      await s.mixFor('karaoke:k', 0.5);
+      expect(cache.isPinned('karaoke:base:k'), isFalse);
+      expect(cache.isPinned('karaoke:voice:k'), isFalse);
+    });
+
+    test('expiry deletes old unpinned karaoke files only', () async {
+      final now = DateTime(2026, 1, 1, 12);
+      final s = SeparationService(
+        cache: cache,
+        separator: sep,
+        modelsRoot: () async => root,
+        clock: () => now,
+      );
+      await s.request('karaoke:k', '/in.mp3');
+      await s.request('karaoke:old', '/in.mp3');
+      File(p.join(cache.dir.path, 'yt_abc.m4a')).writeAsStringSync('song');
+      for (final e in cache.dir.listSync().whereType<File>()) {
+        e.setLastModifiedSync(now.subtract(const Duration(minutes: 20)));
+      }
+      // k: base is pinned (playing), voice used 1 minute ago.
+      cache.pin('karaoke:base:k');
+      (await cache.fileFor('karaoke:voice:k'))!
+          .setLastModifiedSync(now.subtract(const Duration(minutes: 1)));
+      await s.expire();
+      expect(await cache.fileFor('karaoke:base:old'), isNull);
+      expect(await cache.fileFor('karaoke:voice:old'), isNull);
+      expect(await cache.fileFor('karaoke:base:k'), isNotNull);
+      expect(await cache.fileFor('karaoke:voice:k'), isNotNull);
+      expect(await cache.fileFor('yt:abc'), isNotNull);
+      expect(s.stateOf('karaoke:old').phase, SeparationPhase.idle);
+      expect(s.stateOf('karaoke:k').phase, SeparationPhase.ready);
     });
   });
 

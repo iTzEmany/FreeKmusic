@@ -25,7 +25,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:codecore/providers/karaoke_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import '../support/app_harness.dart';
-import '../support/fake_voice_filter.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
@@ -101,33 +100,29 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final h = await Harness.create(tester, tracks: 1);
-    if (voice) h.backend.voiceFilter = FakeVoiceFilter();
     final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
     await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
     await h.pump(tester, const NowPlayingScreen(), extraOverrides: [
+      if (voice) karaokeButtonVisibleProvider.overrideWithValue(true),
       if (bypass) karaokeBypassProvider.overrideWithValue(true),
     ]);
     return h;
   }
 
-  testWidgets('karaoke: no microphone without a voice filter', (tester) async {
+  testWidgets('karaoke: no microphone where there is no separation engine', (tester) async {
     final h = await openKaraokePlayer(tester, voice: false);
     expect(find.byTooltip('Karaoke'), findsNothing);
     await h.dispose(tester);
   });
 
-  testWidgets('karaoke: the microphone opens the sheet with switch and slider',
+  testWidgets('karaoke: the microphone opens the sheet with the switch',
       (tester) async {
     final sem0 = tester.ensureSemantics();
     final h = await openKaraokePlayer(tester, voice: true);
     await tester.tap(find.byTooltip('Karaoke'));
     await tester.pumpAndSettle();
     expect(find.byType(Switch), findsOneWidget);
-    expect(find.text('Voce'), findsOneWidget);
-    expect(find.text('20 %'), findsOneWidget);
-    // TalkBack: the slider reads «Voce» and its value.
-    expect(find.bySemanticsLabel('Voce'), findsWidgets);
-    expect(find.semantics.byValue('20 %'), findsOneWidget);
+    expect(find.text('Voce'), findsNothing);
     await tester.tap(find.byType(Switch));
     await tester.pump();
     final ctx = tester.element(find.byType(Switch));

@@ -16,14 +16,24 @@ class StreamCache {
     this.limitBytes = 500 * _mb,
     Future<int?> Function()? freeSpace,
     Future<void> Function(File)? delete,
-  })  : _freeSpace = freeSpace ?? (() async => (await diskSpaceOf(dir.path))?.freeBytes),
-        _delete = delete ?? ((f) => f.delete());
+  }) : _freeSpace =
+           freeSpace ?? (() async => (await diskSpaceOf(dir.path))?.freeBytes),
+       _delete = delete ?? ((f) => f.delete());
 
   /// `<appSupportDir>/stream_cache`, outside every music folder; with [volumeDir]
   /// (the app folder of the chosen SD volume, D-579) `<volumeDir>/stream_cache`.
-  static Future<StreamCache> inAppSupport({int limitBytes = 500 * _mb, String volumeDir = ''}) async =>
-      StreamCache(Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache')),
-          limitBytes: limitBytes);
+  static Future<StreamCache> inAppSupport({
+    int limitBytes = 500 * _mb,
+    String volumeDir = '',
+  }) async => StreamCache(
+    Directory(
+      p.join(
+        volumeDir.isEmpty ? await appSupportDir() : volumeDir,
+        'stream_cache',
+      ),
+    ),
+    limitBytes: limitBytes,
+  );
 
   /// [volumeDir] if its `stream_cache` folder can be created, listed and written there, else ''
   /// (the internal one, logged): a card that is read-only, half-gone or lists nothing (sdcardfs
@@ -39,15 +49,21 @@ class StreamCache {
       await probe.delete();
       return volumeDir;
     } on FileSystemException catch (e, st) {
-      AppLog.w('stream cache: $volumeDir not usable, using the internal folder', e, st);
+      AppLog.w(
+        'stream cache: $volumeDir not usable, using the internal folder',
+        e,
+        st,
+      );
       return '';
     }
   }
 
   /// An opened cache on [volumeDir] or, when it cannot be used or opened, on the internal folder;
   /// `volume` is the one really in use ('' = internal).
-  static Future<({StreamCache cache, String volume})> openWithFallback(String volumeDir,
-      {int limitBytes = 500 * _mb}) async {
+  static Future<({StreamCache cache, String volume})> openWithFallback(
+    String volumeDir, {
+    int limitBytes = 500 * _mb,
+  }) async {
     final volume = await usableVolume(volumeDir);
     final cache = await inAppSupport(limitBytes: limitBytes, volumeDir: volume);
     try {
@@ -55,7 +71,11 @@ class StreamCache {
       return (cache: cache, volume: volume);
     } on FileSystemException catch (e, st) {
       if (volume.isEmpty) rethrow;
-      AppLog.w('stream cache: $volume could not be opened, using the internal folder', e, st);
+      AppLog.w(
+        'stream cache: $volume could not be opened, using the internal folder',
+        e,
+        st,
+      );
       final internal = await inAppSupport(limitBytes: limitBytes);
       await internal.open();
       return (cache: internal, volume: '');
@@ -64,7 +84,12 @@ class StreamCache {
 
   /// Deletes the cache folder of a volume left behind ([volumeDir] as in [inAppSupport]); nothing else.
   static Future<void> deleteAt(String volumeDir) async {
-    final d = Directory(p.join(volumeDir.isEmpty ? await appSupportDir() : volumeDir, 'stream_cache'));
+    final d = Directory(
+      p.join(
+        volumeDir.isEmpty ? await appSupportDir() : volumeDir,
+        'stream_cache',
+      ),
+    );
     try {
       if (await d.exists()) await d.delete(recursive: true);
     } on FileSystemException catch (e, st) {
@@ -74,7 +99,10 @@ class StreamCache {
 
   /// Start-up: the cache left on the volume of the previous run ([last]) goes, once the new one is open
   /// on [current]; never the one in use. Both as [volumeDir] in [inAppSupport].
-  static Future<void> dropLeftBehind({required String? last, required String current}) async {
+  static Future<void> dropLeftBehind({
+    required String? last,
+    required String current,
+  }) async {
     if (last != null && last != current) await deleteAt(last);
   }
 
@@ -95,7 +123,8 @@ class StreamCache {
 
   /// stem -> file, refreshed by every folder scan and kept by put/remove.
   Map<String, File>? _index;
-  var _mutations = 0; // bumped by put/_remove: a scan that raced with one must not publish
+  var _mutations =
+      0; // bumped by put/_remove: a scan that raced with one must not publish
 
   /// Called with each file the cache deletes to make room (evict/clear).
   void Function(File)? onEvicted;
@@ -169,6 +198,35 @@ class StreamCache {
     onForgotten?.call(key);
   }
 
+  /// Deletes the unpinned files whose name starts with [stemPrefix] and were last used before
+  /// [cutoff]; returns how many went. Other files are never touched.
+  Future<int> expire(DateTime cutoff, {required String stemPrefix}) async {
+    var n = 0;
+    for (final e in await _files()) {
+      if (!_stem(e.file).startsWith(stemPrefix) || !e.time.isBefore(cutoff)) {
+        continue;
+      }
+      // Looked at again just before deleting: it may have been pinned or used meanwhile.
+      if (_pins.keys.map(streamFileName).contains(_stem(e.file))) continue;
+      try {
+        if (!(await e.file.lastModified()).isBefore(cutoff)) continue;
+      } on FileSystemException catch (err, st) {
+        AppLog.w(
+          'stream cache: cannot read the time of ${e.file.path}',
+          err,
+          st,
+        );
+        continue;
+      }
+      if (await _remove(e.file)) {
+        n++;
+        onEvicted?.call(e.file);
+      }
+    }
+    if (n > 0) await _measure();
+    return n;
+  }
+
   /// Marks [key] as just used.
   Future<void> touch(String key) async {
     final f = await fileFor(key);
@@ -193,7 +251,9 @@ class StreamCache {
   Future<int> effectiveLimit([int? used]) async {
     final free = await _freeSpace();
     // The cache's own bytes are free space too, so they count towards the room.
-    final room = free == null ? limitBytes : free + (used ?? usedBytes) - freeMargin;
+    final room = free == null
+        ? limitBytes
+        : free + (used ?? usedBytes) - freeMargin;
     return (room < limitBytes ? room : limitBytes).clamp(0, limitBytes);
   }
 
@@ -219,7 +279,9 @@ class StreamCache {
     final dear = {for (final k in favourites) streamFileName(k)};
     // Stable by false < true: oldest first within each group, favourites last.
     files.sort((a, b) {
-      final d = (dear.contains(_stem(a.file)) ? 1 : 0) - (dear.contains(_stem(b.file)) ? 1 : 0);
+      final d =
+          (dear.contains(_stem(a.file)) ? 1 : 0) -
+          (dear.contains(_stem(b.file)) ? 1 : 0);
       return d != 0 ? d : a.time.compareTo(b.time);
     });
     final pinned = _pins.keys.map(streamFileName).toSet();
@@ -238,7 +300,9 @@ class StreamCache {
   Future<void> clear({Set<String> keep = const {}}) async {
     final kept = {...keep, ..._pins.keys}.map(streamFileName).toSet();
     for (final e in await _files()) {
-      if (!kept.contains(_stem(e.file)) && await _remove(e.file)) onEvicted?.call(e.file);
+      if (!kept.contains(_stem(e.file)) && await _remove(e.file)) {
+        onEvicted?.call(e.file);
+      }
     }
     await _measure();
   }

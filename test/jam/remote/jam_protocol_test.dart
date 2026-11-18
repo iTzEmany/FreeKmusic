@@ -115,33 +115,17 @@ void main() {
     expect(sha(cmd), kVector['cmd']);
   });
 
-  group('karaoke field and command (D-587)', () {
-    test('command and state with kar cross the sealed channel unchanged', () {
+  group('karaoke of old versions is ignored (D-623)', () {
+    test('a karaoke command from an old version is dropped, the channel keeps working', () {
       final g = request();
       final r = host.openRequest(g.bytes, secrets, hostMs: t0)!;
-      final cmd = g.channel.seal(JamMsg.cmd, {
-        'req': 'r1',
-        'cmd': const JamCommand.karaoke(0.4).toJson(),
-      })!;
-      final back = r.channel.open(cmd)!;
-      expect(back.command!.type, JamCommandType.karaoke);
-      expect(back.command!.karaoke, 0.4);
-      final s = stateOf([item(1, 'Song')]).copyWith(karaoke: 0.4, karaokeGuests: true);
-      final got = g.channel.open(r.channel.seal(JamMsg.accept, acceptBody(s, host))!)!;
-      expect(got.state!.karaoke, 0.4);
-      expect(got.state!.karaokeGuests, true);
-    });
-
-    test('a command type from a newer version is dropped: tryParse null, no error', () {
-      expect(JamCommand.tryParse({'cmd': 'karaokeFuture', 'l': 1}), isNull);
-      final g = request();
-      final r = host.openRequest(g.bytes, secrets, hostMs: t0)!;
-      final unknown = g.channel.seal(JamMsg.cmd, {
-        'req': 'r1',
-        'cmd': {'cmd': 'karaokeFuture', 'l': 1},
-      });
-      expect(r.channel.open(unknown!), isNull);
-      // The channel is still usable afterwards.
+      for (final name in ['karaoke', 'karaokeGuests']) {
+        final old = g.channel.seal(JamMsg.cmd, {
+          'req': 'r1',
+          'cmd': {'cmd': name, 'l': 0.4, 'g': true},
+        });
+        expect(r.channel.open(old!), isNull, reason: name);
+      }
       final next = g.channel.seal(JamMsg.cmd, {
         'req': 'r2',
         'cmd': const JamCommand.play().toJson(),
@@ -149,12 +133,9 @@ void main() {
       expect(r.channel.open(next)!.command!.type, JamCommandType.play);
     });
 
-    test('an old-format state without kar still parses and is off', () {
-      final j = stateOf([item(1, 'Song')]).toJson();
-      expect(j.containsKey('kar'), false);
-      final s = JamState.tryParse(j)!;
-      expect(s.karaoke, isNull);
-      expect(s.karaokeGuests, false);
+    test('a state from an old version with kar still parses', () {
+      final j = {...stateOf([item(1, 'Song')]).toJson(), 'kar': {'l': 0.4, 'g': true}};
+      expect(JamState.tryParse(j), isNotNull);
     });
   });
 

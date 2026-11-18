@@ -80,8 +80,8 @@ class AppSettings {
     this.playbackSpeed = 1.0,
     this.eqEnabled = false,
     this.karaokeOn = false,
+    this.showKaraoke = true,
     this.karaokeLevel = 0.2,
-    this.karaokeJamIgnore = false,
     this.eqSpeaker = const EqProfile(),
     this.eqHeadphones = const EqProfile(),
     this.transition = TransitionMode.normal,
@@ -195,12 +195,13 @@ class AppSettings {
   /// Equalizer on/off (Android) and its curve for each kind of output.
   final bool eqEnabled;
 
-  /// Karaoke voice filter (D-584): stays on across tracks; the level is 0 (voice lowest) to 1 (untouched).
+  /// Karaoke: stays on across tracks; the level is the AI «Voce» slider, 0 (voice lowest) to 1 (original).
   final bool karaokeOn;
+
+  /// «Mostra il karaoke» (D-627): off hides the microphone and switches karaoke off.
+  final bool showKaraoke;
   final double karaokeLevel;
 
-  /// «Ignora per me» (D-587): in a remote Jam this device plays without the Jam's karaoke filter.
-  final bool karaokeJamIgnore;
   final EqProfile eqSpeaker, eqHeadphones;
 
   /// How one track gives way to the next, and the length of a crossfade.
@@ -290,8 +291,8 @@ class AppSettings {
     double? playbackSpeed,
     bool? eqEnabled,
     bool? karaokeOn,
+    bool? showKaraoke,
     double? karaokeLevel,
-    bool? karaokeJamIgnore,
     EqProfile? eqSpeaker,
     EqProfile? eqHeadphones,
     TransitionMode? transition,
@@ -354,8 +355,8 @@ class AppSettings {
     playbackSpeed: playbackSpeed ?? this.playbackSpeed,
     eqEnabled: eqEnabled ?? this.eqEnabled,
     karaokeOn: karaokeOn ?? this.karaokeOn,
+    showKaraoke: showKaraoke ?? this.showKaraoke,
     karaokeLevel: karaokeLevel ?? this.karaokeLevel,
-    karaokeJamIgnore: karaokeJamIgnore ?? this.karaokeJamIgnore,
     eqSpeaker: eqSpeaker ?? this.eqSpeaker,
     eqHeadphones: eqHeadphones ?? this.eqHeadphones,
     transition: transition ?? this.transition,
@@ -523,8 +524,8 @@ class SettingsStore {
     playbackSpeed: (_prefs.getDouble('playbackSpeed') ?? 1.0).clamp(0.5, 2.0),
     eqEnabled: _prefs.getBool('eqEnabled') ?? false,
     karaokeOn: _prefs.getBool('karaokeOn') ?? false,
+    showKaraoke: _prefs.getBool('showKaraoke') ?? true,
     karaokeLevel: (_prefs.getDouble('karaokeLevel') ?? 0.2).clamp(0.0, 1.0),
-    karaokeJamIgnore: _prefs.getBool('karaokeJamIgnore') ?? false,
     eqSpeaker: _readEq('speaker'),
     eqHeadphones: _readEq('headphones'),
     transition: TransitionMode.values.firstWhere(
@@ -619,8 +620,8 @@ class SettingsStore {
     await _prefs.setDouble('playbackSpeed', s.playbackSpeed);
     await _prefs.setBool('eqEnabled', s.eqEnabled);
     await _prefs.setBool('karaokeOn', s.karaokeOn);
+    await _prefs.setBool('showKaraoke', s.showKaraoke);
     await _prefs.setDouble('karaokeLevel', s.karaokeLevel);
-    await _prefs.setBool('karaokeJamIgnore', s.karaokeJamIgnore);
     await _writeEq('speaker', s.eqSpeaker);
     await _writeEq('headphones', s.eqHeadphones);
     await _prefs.setString('transition', s.transition.name);

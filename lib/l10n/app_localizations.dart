@@ -12607,42 +12607,6 @@ abstract class AppLocalizations {
   /// **'Spento su episodi e radio'**
   String get karaokeBypassed;
 
-  /// No description provided for @karaokeJamHostOnly.
-  ///
-  /// In it, this message translates to:
-  /// **'Il karaoke lo comanda l’host della Jam'**
-  String get karaokeJamHostOnly;
-
-  /// No description provided for @karaokeGuestsAllowed.
-  ///
-  /// In it, this message translates to:
-  /// **'Gli ospiti possono usare il karaoke'**
-  String get karaokeGuestsAllowed;
-
-  /// No description provided for @karaokeJamLocalNote.
-  ///
-  /// In it, this message translates to:
-  /// **'Nella Jam in casa il karaoke vale per tutte le uscite che lo supportano.'**
-  String get karaokeJamLocalNote;
-
-  /// No description provided for @karaokeJamBox.
-  ///
-  /// In it, this message translates to:
-  /// **'Karaoke acceso da {name}, voce {percent} %'**
-  String karaokeJamBox(String name, int percent);
-
-  /// No description provided for @karaokeJamIgnore.
-  ///
-  /// In it, this message translates to:
-  /// **'Ignora per me'**
-  String get karaokeJamIgnore;
-
-  /// No description provided for @karaokeJamForbidden.
-  ///
-  /// In it, this message translates to:
-  /// **'L’host ha tolto agli ospiti il permesso di usare il karaoke.'**
-  String get karaokeJamForbidden;
-
   /// No description provided for @karaokeHighQuality.
   ///
   /// In it, this message translates to:
@@ -12652,7 +12616,7 @@ abstract class AppLocalizations {
   /// No description provided for @karaokeHighQualityNote.
   ///
   /// In it, this message translates to:
-  /// **'Separazione sul telefono, circa 1–2 minuti. Intanto suona il filtro.'**
+  /// **'Separazione sul telefono, circa 1–2 minuti.'**
   String get karaokeHighQualityNote;
 
   /// No description provided for @karaokeHighQualityModel.
@@ -12676,20 +12640,32 @@ abstract class AppLocalizations {
   /// No description provided for @karaokeHighQualityFailed.
   ///
   /// In it, this message translates to:
-  /// **'Separazione non riuscita: resta il filtro. Tocca per riprovare.'**
+  /// **'Separazione non riuscita: resta l’originale. Tocca per riprovare.'**
   String get karaokeHighQualityFailed;
 
-  /// No description provided for @karaokeBase.
+  /// No description provided for @showKaraoke.
   ///
   /// In it, this message translates to:
-  /// **'Base'**
-  String get karaokeBase;
+  /// **'Mostra il karaoke'**
+  String get showKaraoke;
 
-  /// No description provided for @karaokeOriginal.
+  /// No description provided for @showKaraokeHint.
   ///
   /// In it, this message translates to:
-  /// **'Originale'**
-  String get karaokeOriginal;
+  /// **'Il microfono compare in «In riproduzione» e nei testi (Android).'**
+  String get showKaraokeHint;
+
+  /// No description provided for @karaokeCostModel.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica 78 MB la prima volta'**
+  String get karaokeCostModel;
+
+  /// No description provided for @karaokeCostTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Il brano va scaricato per intero'**
+  String get karaokeCostTrack;
 }
 
 class _AppLocalizationsDelegate
