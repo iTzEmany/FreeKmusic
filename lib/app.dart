@@ -47,7 +47,6 @@ class CodecoreApp extends ConsumerWidget {
     // Alive from the start, so the Registro has the real times of what ends.
     ref.listen(activityLogProvider, (_, _) {});
     ref.watch(equalizerApplierProvider);
-    ref.watch(karaokeApplierProvider);
     ref.watch(karaokeBaseApplierProvider);
     // Enriches a streamed track as soon as it has its row (D-351).
     ref.listen(streamEnrichTriggerProvider, (_, _) {});

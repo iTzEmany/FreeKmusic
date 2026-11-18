@@ -8008,33 +8008,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get karaokeBypassed => 'Aus bei Episoden und Radio';
 
   @override
-  String get karaokeJamHostOnly => 'Das Karaoke steuert der Jam-Host';
-
-  @override
-  String get karaokeGuestsAllowed => 'Gäste dürfen das Karaoke benutzen';
-
-  @override
-  String get karaokeJamLocalNote =>
-      'In der Jam zu Hause gilt das Karaoke für alle Ausgaben, die es unterstützen.';
-
-  @override
-  String karaokeJamBox(String name, int percent) {
-    return 'Karaoke eingeschaltet von $name, Stimme $percent %';
-  }
-
-  @override
-  String get karaokeJamIgnore => 'Für mich ignorieren';
-
-  @override
-  String get karaokeJamForbidden =>
-      'Der Host hat das Karaoke für Gäste ausgeschaltet.';
-
-  @override
   String get karaokeHighQuality => 'Hohe Qualität';
 
   @override
   String get karaokeHighQualityNote =>
-      'Trennung auf dem Telefon, etwa 1–2 Minuten. Bis dahin spielt der Filter.';
+      'Trennung auf dem Telefon, etwa 1–2 Minuten.';
 
   @override
   String get karaokeHighQualityModel => 'Modell wird geladen';
@@ -8047,7 +8025,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Trennung fehlgeschlagen: der Filter bleibt. Zum Wiederholen tippen.';
+      'Trennung fehlgeschlagen: das Original spielt weiter. Zum Wiederholen tippen.';
 
   @override
   String get karaokeBase => 'Begleitung';

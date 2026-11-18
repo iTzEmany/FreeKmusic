@@ -7987,34 +7987,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get karaokeBypassed => 'Desligado em episódios e rádio';
 
   @override
-  String get karaokeJamHostOnly =>
-      'O karaokê é controlado pelo anfitrião da Jam';
-
-  @override
-  String get karaokeGuestsAllowed => 'Os convidados podem usar o karaokê';
-
-  @override
-  String get karaokeJamLocalNote =>
-      'Na Jam em casa o karaokê vale para todas as saídas que o suportam.';
-
-  @override
-  String karaokeJamBox(String name, int percent) {
-    return 'Karaokê ativado por $name, voz $percent %';
-  }
-
-  @override
-  String get karaokeJamIgnore => 'Ignorar para mim';
-
-  @override
-  String get karaokeJamForbidden =>
-      'O anfitrião desativou o karaokê para os convidados.';
-
-  @override
   String get karaokeHighQuality => 'Alta qualidade';
 
   @override
   String get karaokeHighQualityNote =>
-      'Separando no telefone, cerca de 1–2 minutos. Enquanto isso toca o filtro.';
+      'Separando no telefone, cerca de 1–2 minutos.';
 
   @override
   String get karaokeHighQualityModel => 'Baixando o modelo';
@@ -8027,7 +8004,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get karaokeHighQualityFailed =>
-      'Separação falhou: o filtro continua. Toque para tentar de novo.';
+      'Separação falhou: continua o original. Toque para tentar de novo.';
 
   @override
   String get karaokeBase => 'Instrumental';

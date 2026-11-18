@@ -394,17 +394,6 @@ void main() {
     expect((await f).error, JamError.forbidden);
   });
 
-  test('send: a karaoke command refused by the host comes back as forbidden', () async {
-    await joined();
-    final f = guest.send(const JamCommand.karaoke(0.5));
-    await pump();
-    hostPull();
-    final cmd = inbox.singleWhere((m) => m.type == JamMsg.cmd);
-    expect(cmd.command!.type, JamCommandType.karaoke);
-    hostSend(JamMsg.result, {'req': cmd.body['req'], 'err': 'forbidden'});
-    expect((await f).error, JamError.forbidden);
-  });
-
   test('send: no RESULT in 10 s gives notFound', () async {
     await joined();
     final f = guest.send(const JamCommand.play());

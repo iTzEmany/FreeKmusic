@@ -11,7 +11,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
-import '../support/fake_voice_filter.dart';
 
 class _NoSeparator implements Separator {
   @override
@@ -27,20 +26,10 @@ class _NoSeparator implements Separator {
   Future<void> cancel() async {}
 }
 
-const _jam = JamKaraoke(
-  level: 0.5,
-  guestsAllowed: true,
-  isHost: true,
-  remote: false,
-  playsHere: true,
-  hostName: 'Marco',
-);
-
 void main() {
   Future<Harness> open(
     WidgetTester t, {
     bool service = true,
-    JamKaraoke? jam,
     KaraokeTarget? target = const KaraokeTarget('karaoke:k', '/m/a.mp3'),
     SeparationState sep = SeparationState.idle,
     String? basePath,
@@ -57,9 +46,8 @@ void main() {
           )
         : null;
     final List<Override> o = [
-      voiceFilterProvider.overrideWithValue(FakeVoiceFilter()),
       separationServiceProvider.overrideWithValue(svc),
-      jamKaraokeProvider.overrideWithValue(jam),
+      karaokeButtonVisibleProvider.overrideWithValue(true),
       karaokeTargetProvider.overrideWith((ref) async => target),
       separationStateProvider.overrideWithValue(sep),
       karaokeBaseProvider.overrideWith(
@@ -84,13 +72,6 @@ void main() {
   testWidgets('no «Alta qualità» without the engine', (t) async {
     final h = await open(t, service: false);
     expect(find.text('Alta qualità'), findsNothing);
-    expect(find.byType(Slider), findsOneWidget);
-    await h.dispose(t);
-  });
-
-  testWidgets('no «Alta qualità» in a Jam', (t) async {
-    final h = await open(t, jam: _jam);
-    expect(find.text('Alta qualità'), findsNothing);
     await h.dispose(t);
   });
 
@@ -101,27 +82,23 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('separating: percent, bar and the note; the filter slider stays', (t) async {
+  testWidgets('separating: percent, bar and the note', (t) async {
     final h = await open(t, sep: const SeparationState(SeparationPhase.separating, fraction: 0.42));
     expect(find.textContaining('42 %'), findsWidgets);
     expect(t.widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator)).value, 0.42);
-    expect(find.textContaining('Intanto suona il filtro'), findsOneWidget);
-    expect(find.byType(Slider), findsOneWidget);
+    expect(find.textContaining('circa 1–2 minuti'), findsOneWidget);
     await h.dispose(t);
   });
 
-  testWidgets('base ready: Base / Originale replaces the slider, Originale brings it back', (t) async {
+  testWidgets('base ready: Base / Originale choice, no «Alta qualità» row', (t) async {
     final h = await open(
       t,
       sep: const SeparationState(SeparationPhase.ready, fraction: 1, path: '/c/base.wav'),
       basePath: '/c/base.wav',
     );
     expect(find.text('Base'), findsOneWidget);
-    expect(find.byType(Slider), findsNothing);
+    expect(find.text('Originale'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
-    await t.tap(find.text('Originale'));
-    await t.pumpAndSettle();
-    expect(find.byType(Slider), findsOneWidget);
     await h.dispose(t);
   });
 }

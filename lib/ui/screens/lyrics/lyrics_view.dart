@@ -222,7 +222,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           notice == null
               ? const SizedBox.shrink()
               : _RomanizationNotice(notice),
-          if (ref.watch(voiceFilterProvider) != null &&
+          if (ref.watch(karaokeButtonVisibleProvider) &&
               ref.watch(karaokeProvider.select((k) => k.on)) &&
               !ref.watch(karaokeBypassProvider))
             const _KaraokePill(),

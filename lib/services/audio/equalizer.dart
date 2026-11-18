@@ -25,16 +25,6 @@ abstract class Equalizer {
   Future<void> setGains(List<double> gainsDb);
 }
 
-/// The karaoke voice filter on a playback backend (D-603): lowers the voice by
-/// attenuating what sits in the centre of the stereo image, keeping the bass.
-/// Null on [AudioBackend.voiceFilter] where there is none (macOS, iOS, Windows,
-/// previews); the Jam's player has one where the platform does (D-587).
-abstract class VoiceFilter {
-  /// Voice level from 0.0 (voice as low as the filter goes) to 1.0 (untouched);
-  /// null turns the filter off (exact bypass).
-  Future<void> setLevel(double? level);
-}
-
 enum EqPreset { flat, bass, voice, treble, custom }
 
 /// Reference curves on ten octave bands, in dB.
