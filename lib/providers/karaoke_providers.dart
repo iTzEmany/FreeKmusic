@@ -10,6 +10,7 @@ import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
 import '../services/karaoke/separation_service.dart';
+import '../services/karaoke_video/karaoke_video.dart';
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'stream_providers.dart' show streamCacheProvider;
 
@@ -51,12 +52,14 @@ final karaokeBypassProvider = Provider<bool>((ref) {
       ref.watch(audioHandlerProvider).isRadio;
 });
 
-/// Whether the microphone shows: only where the separation engine exists (Android), never in a Jam (D-623).
+/// Whether the microphone shows: only where the separation engine exists (Android), never in a Jam (D-623),
+/// never on a karaoke video (it is its own backing track).
 final karaokeButtonVisibleProvider = Provider<bool>(
   (ref) =>
       ref.watch(separationServiceProvider) != null &&
       ref.watch(settingsProvider.select((s) => s.showKaraoke)) &&
-      !ref.watch(jamProvider.select((s) => s.active)),
+      !ref.watch(jamProvider.select((s) => s.active)) &&
+      !ref.watch(currentTrackProvider.select((t) => t.value != null && isKaraokeVideo(t.value!))),
 );
 
 /// The «Alta qualità» backing-track maker; null where there is no engine (not Android).

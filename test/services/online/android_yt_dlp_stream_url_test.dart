@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:codecore/services/karaoke_video/karaoke_video_source.dart';
 import 'package:codecore/services/online/android_yt_dlp_service.dart';
+import 'package:codecore/services/online/yt_dlp_args.dart' show videoOnlyFormat;
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -117,5 +119,40 @@ void main() {
       },
     );
     expect(urls, [_ytdlpUrl]);
+  });
+
+  group('videoUrl', () {
+    Future<KaraokeVideoStream> ask(Future<Object?> Function(MethodCall) h) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_ch, h);
+      addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_ch, null));
+      return AndroidYtDlpService().videoUrl('abc');
+    }
+
+    test('NewPipe answers: its url and headers, asked at 480p at most', () async {
+      MethodCall? seen;
+      final s = await ask((c) async {
+        seen = c;
+        return {'url': '$_pipeUrl?expire=1700000000', 'headers': {'User-Agent': 'x'}};
+      });
+      expect(seen!.method, 'videoUrl');
+      expect(seen!.arguments, {'id': 'abc', 'maxHeight': 480});
+      expect(s.url.host, _pipeUrl.host);
+      expect(s.headers, {'User-Agent': 'x'});
+      expect(s.expires, isNotNull);
+    });
+
+    test('NewPipe fails: yt-dlp is asked with the video-only selector', () async {
+      MethodCall? fallback;
+      final s = await ask((c) async {
+        if (c.method == 'videoUrl') throw PlatformException(code: 'X');
+        fallback = c;
+        return '$_ytdlpUrl\n';
+      });
+      expect(fallback!.method, 'ytdlpVideoUrl');
+      expect((fallback!.arguments as Map)['selector'], videoOnlyFormat);
+      expect(s.url, _ytdlpUrl);
+    });
   });
 }

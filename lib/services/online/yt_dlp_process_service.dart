@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
+import '../karaoke_video/karaoke_video_source.dart';
 import 'yt_dlp_args.dart';
 import 'yt_dlp_version.dart';
 import 'youtube_service.dart';
@@ -401,6 +402,18 @@ class YtDlpProcessService implements YoutubeService {
       AppLog.w('yt-dlp album page output not JSON', e, st);
       throw const YtException(YtErrorKind.changed, 'bad output');
     }
+  }
+
+  /// Video-only stream of [id] for the karaoke frame (`yt-dlp -g`).
+  Future<KaraokeVideoStream> videoUrl(String id) async {
+    await _ensureTool();
+    final r = await Process.run(
+      await _exe,
+      buildVideoUrlArgs(url: 'https://www.youtube.com/watch?v=$id', jsArgs: await _jsArgs()),
+    );
+    final line = '${r.stdout}'.trim().split('\n').first.trim();
+    if (r.exitCode != 0 || line.isEmpty) throw await _explain(r.stderr);
+    return karaokeVideoStreamOf(Uri.parse(line));
   }
 
   @override

@@ -128,6 +128,17 @@ class YtDlpChannel(private val applicationContext: Context) {
                     ?: throw IllegalStateException("output file not found")
             }
             "streamUrl" -> run(result) { NewPipeUrl.streamUrl(call.argument<String>("id")!!, call.argument<Int>("capKbps")) }
+            "videoUrl" -> run(result) { NewPipeUrl.videoUrl(call.argument<String>("id")!!, call.argument<Int>("maxHeight") ?: 480) }
+            // yt-dlp fallback of videoUrl: the format selector comes from Dart (videoOnlyFormat).
+            "ytdlpVideoUrl" -> run(result) {
+                ensureInit()
+                val req = YoutubeDLRequest("https://www.youtube.com/watch?v=${call.argument<String>("id")!!}")
+                req.addOption("--no-playlist")
+                req.addOption("--no-warnings")
+                req.addOption("-g")
+                req.addOption("-f", call.argument<String>("selector")!!)
+                YoutubeDL.getInstance().execute(req).out.trim().lines().first()
+            }
             "version" -> run(result) {
                 ensureInit()
                 // The library stores a version only after a successful update: ask the bundled yt-dlp otherwise.

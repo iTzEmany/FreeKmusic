@@ -14,6 +14,7 @@ List<String> args({
         jsArgs: ['--js-runtimes', 'node']);
 
 void main() {
+  videoArgsTest();
   test('quality: high as today, medium and low cap the source bitrate', () {
     String sel(AudioQuality q) => downloadChoice(DownloadFormat.m4a, hasFfmpeg: true, quality: q).selector;
     expect(sel(AudioQuality.high), 'bestaudio[ext=m4a]/bestaudio/best');
@@ -159,5 +160,13 @@ void main() {
       final p = StreamUrlLines()..add('CODECORE_URL http://v.example/a');
       expect(p.add(hdr), isNull);
     });
+  });
+}
+
+void videoArgsTest() {
+  test('video-only stream: -g with the 480p avc1 selector', () {
+    final a = buildVideoUrlArgs(url: 'https://www.youtube.com/watch?v=abc', jsArgs: ['--js-runtimes', 'node']);
+    expect(a, containsAllInOrder(['-g', '--js-runtimes', 'node', '-f', 'bv*[height<=480][vcodec^=avc1]/bv*[height<=480]/wv']));
+    expect(a.last, 'https://www.youtube.com/watch?v=abc');
   });
 }

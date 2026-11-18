@@ -47,6 +47,12 @@ class _NoSeparator implements Separator {
   Future<void> cancel() async {}
 }
 
+Track _track(String path, String title) => Track(
+  saved: false, coverSource: 0, id: 1, path: path, title: title, artist: 'a', albumKey: 'k',
+  durationMs: 1000, format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false,
+  enrichStatus: 0, userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,
+);
+
 void main() {
   test('level is saved and read back; default 20 %, off', () async {
     SharedPreferences.setMockInitialValues({});
@@ -68,7 +74,7 @@ void main() {
   });
 
   group('microphone visibility', () {
-    Future<ProviderContainer> make({bool jam = false, bool show = true}) async {
+    Future<ProviderContainer> make({bool jam = false, bool show = true, Track? current}) async {
       SharedPreferences.setMockInitialValues({});
       final store = await SettingsStore.open();
       await store.writeSettings(
@@ -85,6 +91,7 @@ void main() {
             ),
           ),
           if (jam) jamProvider.overrideWith(_ActiveJam.new),
+          if (current != null) currentTrackProvider.overrideWith((_) => Stream.value(current)),
         ],
       );
       addTearDown(c.dispose);
@@ -93,6 +100,13 @@ void main() {
 
     test('no Jam: visible', () async {
       expect((await make()).read(karaokeButtonVisibleProvider), isTrue);
+    });
+
+    test('a karaoke video playing: hidden', () async {
+      final c = await make(current: _track('online:youtube:abc', 'Song karaoke'));
+      c.listen(currentTrackProvider, (_, _) {});
+      await c.read(currentTrackProvider.future);
+      expect(c.read(karaokeButtonVisibleProvider), isFalse);
     });
 
     test('Jam active: hidden', () async {
