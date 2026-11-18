@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box} body{margin:0}</style>
+<title>FreeKmusic, mockup fasi 131–132</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: a contact sheet of phone screens, grouped by phase, each with its requirements beside it. Colors are the app's own «Notte» (dark) and «Chiaro» (light) themes. */
+:root {
+  --bg: #FAF8FD; --s1: #F2EEF9; --s2: #E9E3F4; --s3: #DAD1EB;
+  --accent: #6A35D8; --accent-soft: #5B2BBE; --on-accent: #FFFFFF;
+  --text: #1B1427; --muted: #5C5170; --faint: #6D6280; --hero: #E6DAFA; --error: #B01B33;
+  --page: #EFEAF7; --frame: #1B1427;
+  --display: "Unbounded", "Figtree", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #07050C; --s1: #120E1C; --s2: #1D1630; --s3: #2A2140;
+  --accent: #A06BFF; --accent-soft: #D9C8FF; --on-accent: #12081F;
+  --text: #F4F0FA; --muted: #A79DB8; --faint: #887F99; --hero: #3B1F70; --error: #FF6B81;
+  --page: #0E0B16; --frame: #000000; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #07050C; --s1: #120E1C; --s2: #1D1630; --s3: #2A2140;
+  --accent: #A06BFF; --accent-soft: #D9C8FF; --on-accent: #12081F;
+  --text: #F4F0FA; --muted: #A79DB8; --faint: #887F99; --hero: #3B1F70; --error: #FF6B81;
+  --page: #0E0B16; --frame: #000000; color-scheme: dark }
+
+body { background: var(--page); color: var(--text); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: grid; gap: 8px; max-width: 70ch; margin-bottom: 28px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(22px, 4vw, 32px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 13px; }
+.legend b { color: var(--text); font-weight: 600; }
+
+section.phase { margin-top: 40px; display: grid; gap: 16px; }
+.phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; border-top: 1px solid var(--s3); padding-top: 14px; }
+.phase-head h2 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; }
+.phase-tag { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.phase-head p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 75ch; }
+
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px 20px; }
+figure.shot { margin: 0; display: grid; gap: 10px; align-content: start; min-width: 0; }
+figcaption { display: grid; gap: 2px; }
+figcaption strong { font-weight: 600; }
+figcaption .req { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+figcaption span.note { font-size: 13px; color: var(--muted); }
+
+/* phone */
+.phone { background: var(--frame); border-radius: 30px; padding: 8px; max-width: 280px; width: 100%; }
+.screen { background: var(--bg); border-radius: 23px; overflow: hidden; height: 520px; display: flex; flex-direction: column; position: relative; font-size: 12px; }
+.status { display: flex; justify-content: space-between; padding: 8px 16px 2px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.title { font-family: var(--display); font-weight: 500; font-size: 17px; padding: 6px 14px 8px; }
+.body { flex: 1; overflow: hidden; padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.dock { margin: 6px 10px 10px; background: var(--s2); border-radius: 18px; display: flex; justify-content: space-around; padding: 8px 4px; color: var(--muted); font-size: 9px; }
+.dock span { display: grid; justify-items: center; gap: 2px; }
+.dock .on { color: var(--accent); font-weight: 700; }
+.dock i { width: 16px; height: 16px; border-radius: 5px; background: currentColor; opacity: .5; display: block; }
+.dock .on i { opacity: 1; }
+
+.field { display: flex; align-items: center; gap: 8px; background: var(--s2); border-radius: 14px; padding: 9px 12px; color: var(--muted); }
+.field.focus { outline: 2px solid var(--accent); color: var(--text); }
+.label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-top: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: var(--s1); border-radius: 999px; padding: 4px 10px; font-size: 11px; }
+.chip.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tile { border-radius: 12px; padding: 8px 6px; min-height: 48px; display: flex; align-items: flex-end; font-weight: 600; font-size: 11px; background: var(--s2); }
+.tile:nth-child(3n+1) { background: var(--hero); }
+.tile:nth-child(4n+2) { background: var(--s3); }
+.row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cov { width: 34px; height: 34px; border-radius: 7px; background: var(--s3); flex: none; }
+.cov.sm { width: 28px; height: 28px; }
+.meta { display: grid; min-width: 0; flex: 1; }
+.meta b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank { width: 18px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; flex: none; }
+.dim { opacity: .38; }
+.ic { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ic.acc { color: var(--accent); }
+.btns { display: flex; gap: 6px; }
+.btn { border-radius: 999px; padding: 7px 12px; font-weight: 600; font-size: 11px; background: var(--s2); text-align: center; flex: 1; }
+.btn.pri { background: var(--accent); color: var(--on-accent); }
+.card { background: var(--s1); border-radius: 14px; padding: 10px; display: grid; gap: 6px; }
+.card.pick { outline: 2px solid var(--accent); }
+.card h4 { margin: 0; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 6px; }
+.card p { margin: 0; color: var(--muted); font-size: 11px; }
+.badge { font-size: 9px; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 1px 7px; font-weight: 700; white-space: nowrap; }
+.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--s2); }
+.set span:last-child { color: var(--muted); text-align: right; }
+.toggle { width: 26px; height: 15px; border-radius: 999px; background: var(--accent); position: relative; flex: none; }
+.toggle::after { content: ""; position: absolute; right: 2px; top: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--on-accent); }
+.toggle.off { background: var(--s3); }
+.toggle.off::after { right: auto; left: 2px; background: var(--muted); }
+.slider { height: 4px; border-radius: 4px; background: var(--s3); position: relative; margin: 8px 0; }
+.slider > i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent); }
+.slider > b { position: absolute; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+.bsheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--s1); border-radius: 20px 20px 0 0; padding: 10px 14px 16px; display: grid; gap: 8px; }
+.handle { width: 32px; height: 4px; border-radius: 4px; background: var(--s3); margin: 0 auto 4px; }
+.mi { display: flex; gap: 10px; align-items: center; padding: 5px 0; }
+.mi.strong { color: var(--accent); font-weight: 700; }
+.banner { background: var(--hero); border-radius: 12px; padding: 8px 10px; font-size: 11px; display: flex; gap: 8px; align-items: center; }
+.np-art { aspect-ratio: 1; border-radius: 16px; background: linear-gradient(140deg, var(--hero), var(--s3)); max-width: 100%; }
+.ctrl { display: flex; justify-content: space-around; align-items: center; color: var(--text); padding: 4px 0; }
+.ctrl .play { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); }
+.ctrl .mic { color: var(--accent); background: var(--s2); border-radius: 50%; padding: 6px; display: grid; }
+.lyr { display: grid; gap: 8px; font-size: 15px; font-weight: 600; color: var(--faint); padding: 8px 4px; }
+.lyr .cur { color: var(--text); font-size: 17px; }
+.pill { display: inline-flex; gap: 6px; align-items: center; background: var(--s2); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 600; }
+.progress { height: 4px; border-radius: 4px; background: var(--s3); overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 42%; background: var(--accent); }
+.note-card { background: var(--bg); border: 1px dashed var(--s3); border-radius: 16px; padding: 14px; display: grid; gap: 6px; max-width: 280px; }
+.note-card p { margin: 0; color: var(--muted); font-size: 13px; }
+.shade { background: var(--s2); border-radius: 14px; padding: 10px; display: grid; gap: 8px; }
+
+/* additions for fasi 131–132: video box (always dark, like a real video), landscape phone, desktop window */
+:root { --vid-bg: #0B0A14; --vid-ink: #F4F0FA; --vid-fill: #FFD23F; --vid-dim: #8C84A0; }
+.vid { aspect-ratio: 16 / 9; max-width: 100%; border-radius: 12px; background: radial-gradient(120% 90% at 30% 20%, #2A1F48, var(--vid-bg)); color: var(--vid-ink); display: grid; place-content: center; gap: 4px; text-align: center; position: relative; overflow: hidden; font-weight: 700; }
+.vid .l1 { font-size: 12px; } .vid .l1 em { font-style: normal; color: var(--vid-fill); }
+.vid .l2 { font-size: 10px; color: var(--vid-dim); }
+.vid .tag { position: absolute; left: 6px; top: 6px; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; background: rgba(0,0,0,.45); color: var(--vid-ink); border-radius: 999px; padding: 1px 6px; }
+.vid.big .l1 { font-size: 20px; } .vid.big .l2 { font-size: 14px; }
+.ring-wrap { display: grid; place-items: center; padding: 4px 0; }
+.ring { width: 190px; height: 190px; border-radius: 50%; border: 10px solid var(--s3); border-top-color: var(--accent); border-right-color: var(--accent); display: grid; place-items: center; }
+.ring .np-art { width: 150px; border-radius: 50%; }
+.spin { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--s3); border-top-color: var(--accent); }
+.thumb { width: 64px; aspect-ratio: 16 / 9; border-radius: 6px; background: radial-gradient(120% 90% at 30% 20%, #2A1F48, var(--vid-bg)); flex: none; position: relative; }
+.thumb::after { content: "KARAOKE"; position: absolute; inset: auto 0 3px; text-align: center; font-size: 6px; font-weight: 700; color: var(--vid-fill); letter-spacing: .08em; }
+.seg { display: flex; background: var(--s1); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg span { flex: 1; text-align: center; padding: 5px 2px; border-radius: 9px; font-size: 10px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.seg .on { background: var(--accent); color: var(--on-accent); }
+.snack { position: absolute; left: 10px; right: 10px; bottom: 70px; background: var(--text); color: var(--bg); border-radius: 12px; padding: 9px 12px; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.snack b { color: var(--accent-soft); white-space: nowrap; }
+.phone.land { max-width: 520px; }
+.phone.land .screen { height: auto; aspect-ratio: 19.5 / 9; background: var(--vid-bg); }
+.win { background: var(--frame); border-radius: 12px; padding: 22px 6px 6px; max-width: 560px; width: 100%; position: relative; }
+.win::before { content: "● ● ●"; position: absolute; left: 10px; top: 4px; font-size: 9px; color: var(--faint); letter-spacing: 2px; }
+.win .screen { height: 300px; border-radius: 7px; }
+.cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; padding: 14px; flex: 1; min-height: 0; }
+.cols > div { display: grid; gap: 8px; align-content: start; min-width: 0; }
+figure.wide { grid-column: 1 / -1; }
+.body > .meta, .cols .meta { flex: none; align-content: start; }
+.err { color: var(--error); font-weight: 600; }
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+</svg>
+<div class="wrap">
+<header class="top">
+  <h1>Video karaoke e aggiornamento dall'app</h1>
+  <p class="lede">Mockup a blocchi per le fasi 131 e 132 (kickoff del 18/11, D-631..D-651). Colori dei temi «Notte» e «Chiaro»: la pagina segue il tema del sistema. Testi ed esempi inventati.</p>
+  <div class="legend"><span><b>R-xxx</b> requisito coperto</span><span><b>Riquadro scuro</b> = il video YouTube (sempre scuro, come un vero video)</span></div>
+</header>
+
+<section class="phase">
+  <div class="phase-head"><span class="phase-tag">Fase 131</span><h2>Video karaoke</h2>
+  <p>In Cerca il quarto blocco «Karaoke» rifà la ricerca sui video YouTube. Nel player, per i brani karaoke in streaming, il video muto prende il posto di copertina e anello; l'audio (la base) parte solo quando il video è pronto. Sotto restano i testi sincronizzati.</p></div>
+  <div class="sheet">
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Cerca</div>
+        <div class="body">
+          <div class="field focus"><svg class="ic"><use href="#search"/></svg>hello adele</div>
+          <div class="seg"><span>Tutte</span><span>YT Music</span><span>YouTube</span><span class="on">Karaoke</span></div>
+          <div class="row"><span class="thumb"></span><div class="meta"><b>Adele - Hello (Karaoke Version)</b><small>Sing King · 4:56</small></div></div>
+          <div class="row"><span class="thumb"></span><div class="meta"><b>Hello - Adele | Karaoke with Lyrics</b><small>KaraFun · 4:58</small></div></div>
+          <div class="row"><span class="thumb"></span><div class="meta"><b>Hello (Karaoke Instrumental)</b><small>Karaoke Version · 4:55</small></div></div>
+          <div class="row"><span class="thumb"></span><div class="meta"><b>Adele Hello karaoke piano</b><small>PianoBasi · 5:02</small></div></div>
+          <p style="margin:0;color:var(--muted);font-size:10px">Scartati: «Hello karaoke cover», «reaction», «live».</p>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span class="on"><i></i>Cerca</span><span><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-251 · R-252 · R-253</span><strong>Cerca, filtro Karaoke</strong><span class="note">Prima i canali karaoke noti. Il tocco suona il brano come ogni brano online. Nella variante lite il blocco non c'è.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="body" style="padding-top:12px">
+          <div class="vid" role="img" aria-label="Video karaoke"><span class="tag">Karaoke</span><span class="l1"><em>Hello, it's me,</em> I was wondering</span><span class="l2">if after all these years you'd like to meet</span></div>
+          <div class="meta"><b style="font-size:15px">Adele - Hello (Karaoke Version)</b><small>Sing King</small></div>
+          <div class="slider"><i style="width:35%"></i><b style="left:33%"></b></div>
+          <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums"><span>1:43</span><span>4:56</span></div>
+          <div class="ctrl"><span>⏮</span><span class="play"></span><span>⏭</span></div>
+          <div class="card"><h4>Testo <span style="color:var(--muted);font-weight:500">sincronizzato</span></h4><p style="color:var(--text);font-weight:600">Hello, it's me</p><p>I was wondering if after all these years…</p></div>
+        </div>
+      </div></div>
+      <figcaption><span class="req">R-254 · R-255 · R-256 · R-261 · R-262 · R-264</span><strong>Player con il video</strong><span class="note">Video 16:9 muto e sincronizzato al posto di copertina e anello; la barra resta. Il microfono del karaoke AI non c'è (l'audio è già la base). Il testo si cerca col titolo ripulito («Adele», «Hello»), senza durata.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>4G 82%</span></div>
+        <div class="body" style="padding-top:12px">
+          <div class="vid" style="background:var(--s2)"><span class="spin" style="margin:auto"></span><span class="l2" style="color:var(--muted)">Carico il video…</span></div>
+          <div class="meta"><b style="font-size:15px">Adele - Hello (Karaoke Version)</b><small>Sing King</small></div>
+          <div class="slider"><i style="width:0"></i><b style="left:0"></b></div>
+          <div class="ctrl"><span>⏮</span><span class="play" style="display:grid;place-items:center"><span class="spin" style="border-top-color:var(--on-accent)"></span></span><span>⏭</span></div>
+          <div class="card"><h4>Testo</h4><p>Cerco il testo sincronizzato…</p></div>
+        </div>
+      </div></div>
+      <figcaption><span class="req">R-276 · R-258</span><strong>In attesa del video</strong><span class="note">L'audio aspetta il primo fotogramma, al massimo 10 s; dopo uno spostamento al massimo 3 s. Video a 360p anche con i dati mobili.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="body" style="padding-top:12px">
+          <div class="ring-wrap"><div class="ring"><div class="np-art"></div></div></div>
+          <div class="meta"><b style="font-size:15px">Adele - Hello (Karaoke Version)</b><small>Sing King</small></div>
+          <div class="slider"><i style="width:12%"></i><b style="left:10%"></b></div>
+          <div class="ctrl"><span>⏮</span><span class="play"></span><span>⏭</span></div>
+        </div>
+        <div class="snack"><span>Video non disponibile: suona solo la base.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-260 · R-263</span><strong>Video che non arriva, o brano offline</strong><span class="note">Dopo una seconda prova tornano copertina e anello, l'audio non si ferma. Un karaoke scaricato mostra sempre la copertina.</span></figcaption>
+    </figure>
+
+    <figure class="shot wide">
+      <div class="phone land"><div class="screen" style="display:grid">
+        <div class="vid big" style="border-radius:0;height:100%;aspect-ratio:auto"><span class="tag" style="top:10px;left:12px"><svg class="ic" style="width:10px;height:10px;vertical-align:-1px"><use href="#back"/></svg> Indietro</span><span class="l1"><em>Hello, it's me,</em> I was wondering</span><span class="l2">if after all these years you'd like to meet</span></div>
+      </div></div>
+      <figcaption><span class="req">R-257</span><strong>Schermo intero</strong><span class="note">Tocco sul video: il telefono passa in orizzontale e il video riempie lo schermo; Indietro torna al player e all'orientamento di prima. Nessun comando sopra il video.</span></figcaption>
+    </figure>
+
+    <figure class="shot wide">
+      <div class="win"><div class="screen">
+        <div class="cols">
+          <div>
+            <div class="vid"><span class="tag">Karaoke</span><span class="l1"><em>Hello, it's me,</em> I was wondering</span><span class="l2">if after all these years you'd like to meet</span></div>
+            <div class="meta"><b style="font-size:14px">Adele - Hello (Karaoke Version)</b><small>Sing King</small></div>
+            <div class="slider"><i style="width:35%"></i><b style="left:33%"></b></div>
+            <div class="ctrl"><span>⏮</span><span class="play"></span><span>⏭</span></div>
+          </div>
+          <div class="lyr" style="font-size:13px">
+            <span>There's such a difference between us</span>
+            <span class="cur" style="font-size:15px">Hello, it's me</span>
+            <span>I was wondering if after all these years</span>
+            <span>you'd like to meet, to go over everything</span>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="req">R-254 · R-257</span><strong>Desktop (Linux, Windows, macOS)</strong><span class="note">Stesso riquadro nel layout largo, testi accanto. Il tocco sul video lo allarga a tutta la finestra.</span></figcaption>
+    </figure>
+
+    <div class="note-card">
+      <strong>Senza schermata</strong>
+      <p>R-259: in background o a schermo spento il video si ferma e l'audio continua; al ritorno riparte allineato.</p>
+      <p>R-275, R-277: il video va nella smart cache e scade 15 minuti dopo l'ultimo uso. I karaoke in coda manuale lo precaricano e lo tengono finché sono in coda.</p>
+    </div>
+  </div>
+</section>
+
+<section class="phase">
+  <div class="phase-head"><span class="phase-tag">Fase 132</span><h2>Aggiornamento dall'app</h2>
+  <p>«Aggiorna» al posto del link da copiare: l'app sceglie da sola il file giusto della Release, lo scarica, lo verifica e lo installa (Android, Windows, AppImage) o apre il browser sul file (.deb, Flatpak, zip, macOS).</p></div>
+  <div class="sheet">
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Home</div>
+        <div class="body">
+          <div class="tile" style="min-height:80px;background:var(--hero)">Ascoltati di recente</div>
+          <div class="grid3"><div class="tile">Daylist</div><div class="tile">Preferiti</div><div class="tile">Mix 1</div></div>
+        </div>
+        <div class="snack"><span>Disponibile la versione 1.6.4</span><b>Aggiorna</b></div>
+        <div class="dock"><span class="on"><i></i>Home</span><span><i></i>Cerca</span><span><i></i>Libreria</span><span><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-265</span><strong>Avviso all'avvio</strong><span class="note">Il controllo di oggi (al massimo una volta al giorno, disattivabile) ora ha il pulsante «Aggiorna», che porta in Impostazioni e avvia il download.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Aggiornamenti</div>
+        <div class="body">
+          <div class="set"><span>Controlla all'avvio<br><small style="color:var(--muted)">Al più una volta al giorno.</small></span><span class="toggle"></span></div>
+          <div class="card">
+            <h4>Disponibile la versione 1.6.4 <span class="badge">nuova</span></h4>
+            <p>Hai la 1.6.3. File: freekmusic-full-arm64-v8a-release.apk, 84 MB.</p>
+            <div class="progress"><i style="width:42%"></i></div>
+            <p style="font-variant-numeric:tabular-nums">Scarico… 35 di 84 MB</p>
+            <div class="btns"><span class="btn">Annulla</span></div>
+          </div>
+          <div class="label">Prima volta su Android</div>
+          <div class="banner">Consenti a FreeKmusic di installare app: si apre l'impostazione di Android, poi torni qui.</div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span><i></i>Libreria</span><span class="on"><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-265 · R-266 · R-267 · R-268</span><strong>Impostazioni, download in corso</strong><span class="note">Il file giusto per variante e ABI. A fine download si verifica lo SHA-256 e si apre l'installer di Android, che aggiorna tenendo i dati.</span></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi 82%</span></div>
+        <div class="title">Aggiornamenti</div>
+        <div class="body">
+          <div class="card"><h4>Download interrotto</h4><p>Manca la connessione. L'app resta alla 1.6.3.</p><div class="btns"><span class="btn pri">Riprova</span></div></div>
+          <div class="card"><h4 class="err">File danneggiato</h4><p>Il file scaricato non corrisponde a quello della Release ed è stato cancellato.</p><div class="btns"><span class="btn pri">Riprova</span></div></div>
+          <div class="card"><h4 class="err">Firma diversa</h4><p>Questa copia dell'app non viene dalla Release di GitHub (build di prova o di debug): Android non può aggiornarla. Disinstallala e installa la versione della Release.</p></div>
+        </div>
+        <div class="dock"><span><i></i>Home</span><span><i></i>Cerca</span><span><i></i>Libreria</span><span class="on"><i></i>Impost.</span></div>
+      </div></div>
+      <figcaption><span class="req">R-267 · R-269</span><strong>Errori</strong><span class="note">Una scheda per caso. Nessun installer parte se il file o la firma non tornano.</span></figcaption>
+    </figure>
+
+    <figure class="shot wide">
+      <div class="win"><div class="screen">
+        <div class="title">Impostazioni › Aggiornamenti</div>
+        <div class="cols">
+          <div>
+            <div class="label">Windows</div>
+            <div class="card"><h4>Disponibile la versione 1.6.4</h4><p>FreeKmusic-Setup-1.6.4.exe, 31 MB. Al termine l'app si chiude, si aggiorna e si riapre.</p><div class="btns"><span class="btn pri">Aggiorna</span></div></div>
+            <div class="label">Linux, AppImage</div>
+            <div class="card"><h4>Disponibile la versione 1.6.4</h4><p>Sostituisce il file freekmusic-1.6.3-x86_64.AppImage e riavvia l'app.</p><div class="btns"><span class="btn pri">Aggiorna</span></div></div>
+          </div>
+          <div>
+            <div class="label">Linux .deb, Flatpak, zip · macOS</div>
+            <div class="card"><h4>Disponibile la versione 1.6.4</h4><p>Si apre il browser sul file giusto (qui freekmusic_1.6.4_amd64.deb): aprilo per installarlo.</p><div class="btns"><span class="btn pri">Scarica dal browser</span></div></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="req">R-270 · R-271 · R-272 · R-273</span><strong>Desktop</strong><span class="note">L'app capisce da sola come è installata. Il file scaricato si cancella dopo l'installazione o al prossimo avvio.</span></figcaption>
+    </figure>
+  </div>
+</section>
+</div>
+</body>
+</html>
