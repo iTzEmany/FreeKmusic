@@ -5,12 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n_ext.dart';
 import '../../providers/karaoke_providers.dart';
-import '../../providers/player_providers.dart';
 import '../../providers/settings_providers.dart';
 import '../../services/karaoke/separation_service.dart';
 import '../theme/tokens.dart';
 import 'cc_sheet.dart';
-import '../screens/lyrics/lyrics_screen.dart';
 
 /// The microphone of «In riproduzione»: only on Android and outside a Jam (D-620, D-623);
 /// opens [showKaraokeSheet].
@@ -48,9 +46,8 @@ class KaraokeButton extends ConsumerWidget {
   }
 }
 
-/// Switch and «Alta qualità» row. Turning karaoke on opens the lyrics page when the
-/// track has synced lyrics, unless [openLyrics] is false (already there).
-Future<void> showKaraokeSheet(BuildContext context, {bool openLyrics = true}) =>
+/// Switch and «Alta qualità» row. Turning karaoke on keeps the sheet open.
+Future<void> showKaraokeSheet(BuildContext context) =>
     showCcSheet<void>(
       context: context,
       builder: (sheet) => SafeArea(
@@ -61,15 +58,13 @@ Future<void> showKaraokeSheet(BuildContext context, {bool openLyrics = true}) =>
             CcDims.margin,
             CcDims.margin,
           ),
-          child: _KaraokePanel(openLyrics: openLyrics),
+          child: const _KaraokePanel(),
         ),
       ),
     );
 
 class _KaraokePanel extends ConsumerStatefulWidget {
-  const _KaraokePanel({required this.openLyrics});
-
-  final bool openLyrics;
+  const _KaraokePanel();
 
   @override
   ConsumerState<_KaraokePanel> createState() => _KaraokePanelState();
@@ -105,19 +100,7 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
           contentPadding: EdgeInsets.zero,
           title: Text(l.karaoke),
           value: on,
-          onChanged: (v) {
-            setKaraokeOn(ref, v);
-            final track =
-                ref.read(currentShadowRowProvider) ??
-                ref.read(liveCurrentTrackProvider).value;
-            if (v && widget.openLyrics && track?.lyricsSynced != null) {
-              final nav = Navigator.of(context, rootNavigator: true);
-              Navigator.of(context).pop();
-              nav.push(
-                MaterialPageRoute<void>(builder: (_) => const LyricsScreen()),
-              );
-            }
-          },
+          onChanged: (v) => setKaraokeOn(ref, v),
         ),
         if (highQuality) _HighQualityRow(base: base, target: target, sep: sep),
         if (baseReady)

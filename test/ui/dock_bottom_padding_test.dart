@@ -148,6 +148,15 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('Settings page (Playback): the last row clears the dock', (t) async {
+    final h = await _open(t, playing: true);
+    await _push(t, const SettingsScreen());
+    await t.tap(find.text('Riproduzione'));
+    await _settle(t);
+    await _expectLastAboveDock(t);
+    await h.dispose(t);
+  });
+
   testWidgets('Theme editor: the last row clears the dock', (t) async {
     final h = await _open(t, playing: false);
     await _push(

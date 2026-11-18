@@ -26,7 +26,8 @@ Future<T?> showCcSheet<T>({
     // panel and player bar (wide), so a sheet is never drawn under them.
     useRootNavigator: true,
     constraints: constraints,
-    barrierLabel: barrierLabel,
+    // Flutter's Italian scrimLabel is «Rete»: never leave the default.
+    barrierLabel: barrierLabel ?? MaterialLocalizations.of(context).closeButtonLabel,
     sheetAnimationStyle: AnimationStyle(duration: d, reverseDuration: d),
   );
 }
