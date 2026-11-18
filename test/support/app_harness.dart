@@ -14,6 +14,7 @@ import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/share_providers.dart' show systemDeviceNameProvider;
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
@@ -95,6 +96,8 @@ class Harness {
         romanizationProvider.overrideWith(
           (ref, id) => AsyncData(romanization),
         ),
+        // The hostname differs between machines and CI runners (golden phone_150 settings).
+        systemDeviceNameProvider.overrideWithValue('Test PC'),
       ];
 
   /// [overrides] with [extra] on top: a provider overridden in both keeps only the extra one
