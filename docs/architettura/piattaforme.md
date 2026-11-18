@@ -95,13 +95,14 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 | Equalizzatore | `AndroidEqualizer` (la voce compare solo se `equalizerProvider` non è nullo) | assente (il filtro `af` di mpv è di `scaletempo`) | non verificato |
 | Permessi file | `READ_MEDIA_AUDIO` (`READ_EXTERNAL_STORAGE` fino ad API 32) | nessuno | sandbox |
 | Cartelle predefinite (`resolveDefaultFolders`, `lib/core/platform.dart`) | libreria `/storage/emulated/0/Music`, download `Music/FreeKmusic` (MediaStore da Android 11; sotto, cartella dell'app) | Linux: `XDG_MUSIC_DIR` / `xdg-user-dir MUSIC`, ripiego `~/Music`; Windows `%USERPROFILE%\Music`; download in `<Musica>/FreeKmusic` | `~/Music`; iOS: cartella documenti |
-| Memoria dei download (D-579) | `effectiveLocation` (`lib/core/storage_volumes.dart`): scheda tolta = interna. Android 11+: `<SD>/Music/FreeKmusic` con MediaStore; Android 10: cartella dell'app sul volume | cartella scelta dall'utente, aggiunta alla libreria | non verificato |
+| Memoria dei download (D-579) | `effectiveLocation` (`lib/core/storage_volumes.dart`): scheda tolta = interna. Android 11+ (minimo da D-628): `<SD>/Music/FreeKmusic` con MediaStore | cartella scelta dall'utente, aggiunta alla libreria | non verificato |
 | Backup automatico | `Documents/FreeKmusic` (ripiego: cartella dell'app) | cartella scelta | non verificato |
 | Filtro della voce (karaoke, D-603, D-617) | `AudioProcessor` Media3 nella copia di `just_audio` | Linux: `lavfi` di mpv (`af`); Windows: assente (libmpv senza filtri) | assente (anche iOS) |
 | Orientamento | bloccato in verticale | libero | libero |
 | Scoperta in LAN (`discovery.dart`) | senza `reusePort` | `reusePort` solo su Linux | `reusePort` |
 
 ## Invarianti da non rompere
+- **Android minimo: 11 (`minSdk` 30, D-628).** Android 10 e precedenti non sono supportati: niente ripieghi per lo storage pre-scoped.
 - **Nessun `Platform.isX` sparso per nuove funzioni**: usa `isAndroid` e `isDesktop` di `core/platform.dart`, così i test possono forzarli. (Oggi 24 file usano ancora `Platform.is…` direttamente, per lo più in `main.dart` e nei servizi di piattaforma; il nuovo codice non li aumenta.)
 - **Nomi dei canali invariati** (`codecore/…`): Dart e Kotlin devono restare allineati; sono parte del filo (vedi `sync-backup-jam.md`).
 - **`namespace` resta `com.codecore.player`** finché le classi Kotlin stanno in quel pacchetto: cambiarlo senza spostare i file rompe la `R` e il manifest (`.MainActivity` è relativo al namespace).
