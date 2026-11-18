@@ -407,13 +407,12 @@ class YtDlpProcessService implements YoutubeService {
   /// Video-only stream of [id] for the karaoke frame (`yt-dlp -g`).
   Future<KaraokeVideoStream> videoUrl(String id) async {
     await _ensureTool();
-    final r = await Process.run(
-      await _exe,
+    final r = await _runSearch(
       buildVideoUrlArgs(url: 'https://www.youtube.com/watch?v=$id', jsArgs: await _jsArgs()),
+      timeout: const Duration(seconds: 30),
     );
-    final line = '${r.stdout}'.trim().split('\n').first.trim();
-    if (r.exitCode != 0 || line.isEmpty) throw await _explain(r.stderr);
-    return karaokeVideoStreamOf(Uri.parse(line));
+    if (r.code != 0 || r.out.trim().isEmpty) throw await _explain(r.err);
+    return karaokeVideoStreamOfOutput(r.out);
   }
 
   @override

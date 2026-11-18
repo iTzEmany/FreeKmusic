@@ -154,5 +154,19 @@ void main() {
       expect((fallback!.arguments as Map)['selector'], videoOnlyFormat);
       expect(s.url, _ytdlpUrl);
     });
+
+    test('no plugin at all (lite): toolMissing, nothing else', () async {
+      await expectLater(
+        ask((c) async => throw MissingPluginException()),
+        throwsA(isA<YtException>().having((e) => e.kind, 'kind', YtErrorKind.toolMissing)),
+      );
+    });
+
+    test('yt-dlp answers a non-https line: changed', () async {
+      await expectLater(
+        ask((c) async => c.method == 'videoUrl' ? throw PlatformException(code: 'X') : 'oops'),
+        throwsA(isA<YtException>().having((e) => e.kind, 'kind', YtErrorKind.changed)),
+      );
+    });
   });
 }

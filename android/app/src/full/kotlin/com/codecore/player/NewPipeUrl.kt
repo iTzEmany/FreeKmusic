@@ -68,6 +68,7 @@ object NewPipeUrl {
     }
     /** Video-only stream of a video for the karaoke frame: MPEG-4/avc1 first, height nearest to 360 and not over [maxHeight] (the lowest one when none fits). */
     fun videoUrl(id: String, maxHeight: Int = 480): Map<String, Any?> {
+        initMs // NewPipe.init runs once, on first read
         val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
         val all = info.videoOnlyStreams
             .filter { it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && it.content.isNotEmpty() }

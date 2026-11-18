@@ -109,6 +109,15 @@ void main() {
       expect(c.read(karaokeButtonVisibleProvider), isFalse);
     });
 
+    test('a karaoke video playing: bypass on, no separation target', () async {
+      final c = await make(current: _track('online:youtube:abc', 'Song karaoke'));
+      c.listen(currentTrackProvider, (_, _) {});
+      c.listen(karaokeBypassProvider, (_, _) {});
+      await c.read(currentTrackProvider.future);
+      expect(c.read(karaokeBypassProvider), isTrue);
+      expect(await c.read(karaokeTargetProvider.future), isNull);
+    });
+
     test('Jam active: hidden', () async {
       expect(
         (await make(jam: true)).read(karaokeButtonVisibleProvider),

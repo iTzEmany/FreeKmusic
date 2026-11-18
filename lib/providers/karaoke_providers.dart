@@ -46,6 +46,7 @@ void setKaraokeOn(WidgetRef ref, bool on) => ref
 final karaokeBypassProvider = Provider<bool>((ref) {
   final t = ref.watch(currentTrackProvider).value;
   if (t == null) return false;
+  if (isKaraokeVideo(t)) return true; // D-639: its audio is already the backing track
   final radio = ref.watch(onlineEntriesProvider)?.isRadioId(t.id) == true;
   return radio ||
       t.kind == kEpisodeKind ||

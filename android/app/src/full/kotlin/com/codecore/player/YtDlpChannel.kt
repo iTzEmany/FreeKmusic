@@ -137,7 +137,7 @@ class YtDlpChannel(private val applicationContext: Context) {
                 req.addOption("--no-warnings")
                 req.addOption("-g")
                 req.addOption("-f", call.argument<String>("selector")!!)
-                YoutubeDL.getInstance().execute(req).out.trim().lines().first()
+                YoutubeDL.getInstance().execute(req, call.argument<String>("processId")).out
             }
             "version" -> run(result) {
                 ensureInit()

@@ -66,26 +66,26 @@ class AndroidYtDlpService implements YoutubeService {
     }
   }
 
-  /// Video-only stream of [id] for the karaoke frame: NewPipe first, then yt-dlp (`-g`).
+  /// Video-only stream of [id] for the karaoke frame: NewPipe first, then yt-dlp (`-g`). Throws only [YtException].
   Future<KaraokeVideoStream> videoUrl(String id) async {
     try {
       final m = await _channel.invokeMapMethod<String, Object?>('videoUrl', {'id': id, 'maxHeight': 480});
-      final url = m?['url'];
-      if (url is! String) throw StateError('newpipe answered without a url');
-      return karaokeVideoStreamOf(Uri.parse(url), (m!['headers'] as Map?)?.cast<String, String>() ?? {});
+      final url = Uri.tryParse('${m?['url']}');
+      if (url == null || !url.isAbsolute) throw StateError('newpipe answered without a url');
+      return karaokeVideoStreamOf(url, (m!['headers'] as Map?)?.cast<String, String>() ?? {});
     } on MissingPluginException {
-      // Lite flavor has no NewPipe: yt-dlp below.
+      // Lite flavor: no NewPipe, and no yt-dlp either (below).
     } catch (e, st) {
       AppLog.w('newpipe video url failed', e, st);
     }
     try {
-      final out = await _channel.invokeMethod<String>('ytdlpVideoUrl', {'id': id, 'selector': videoOnlyFormat});
-      final line = out?.trim().split('\n').first.trim() ?? '';
-      if (line.isEmpty) throw StateError('yt-dlp answered without a url');
-      return karaokeVideoStreamOf(Uri.parse(line));
-    } on PlatformException catch (e) {
-      AppLog.w('yt-dlp video url failed: ${e.message}');
-      throw ytExceptionFromStderr(e.message ?? '');
+      return karaokeVideoStreamOfOutput(await _call(
+        {'id': id, 'selector': videoOnlyFormat},
+        method: 'ytdlpVideoUrl',
+        timeout: const Duration(seconds: 30),
+      ));
+    } on MissingPluginException {
+      throw const YtException(YtErrorKind.toolMissing, 'yt-dlp');
     }
   }
 
