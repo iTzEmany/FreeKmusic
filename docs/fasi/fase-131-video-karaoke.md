@@ -71,3 +71,15 @@ errore: copertina+anello e avviso   +------------------------------+
 - Se l'APK è cresciuto oltre 25 MB per ABI (D-653): decidere se tenerlo o passare a `video_player` su Android.
 
 ## Note di deviazione
+
+### 131.1 Misura dell'APK (D-637, D-653, D-654)
+`release.yml`: full = `flutter build apk --release --split-per-abi`; lite = `CODECORE_LITE=1` + `--dart-define=CODECORE_YOUTUBE=false` (la lite è una variabile d'ambiente, non un flavor Gradle). MB = 10^6 byte. «Prima» = `master` (fa1902ac) senza pacchetto video, «dopo» = con `media_kit_video` e `media_kit_libs_android_video`. La Release v1.6.2 (full 84,1 / 76,3 MB, lite 29,4 / 28,2 MB) non è confrontabile: da allora è entrata la separazione karaoke con onnxruntime.
+
+| Variante | ABI | Prima | Dopo | Differenza |
+|---|---|---|---|---|
+| lite | arm64-v8a | 40,19 | 40,19 | +0,00 |
+| lite | armeabi-v7a | 38,10 | 38,11 | +0,01 |
+| full | arm64-v8a | circa 94,9 (stima) | 100,62 | circa +5,7 |
+| full | armeabi-v7a | circa 86,2 (stima) | 91,66 | circa +5,5 |
+
+Il «prima» della full è stimato togliendo dal «dopo» `libmpv.so` e `libmediakitandroidhelper.so` compressi (5,72 e 5,49 MB): la build di controllo di `master` è stata uccisa da Gradle (daemon sparito). Sotto la soglia di 25 MB per ABI. La lite esclude `**/libmpv.so` e `**/libmediakitandroidhelper.so` (`packaging.jniLibs.excludes` se `CODECORE_LITE=1`) e non li contiene (verificato con `unzip -l`). Per macOS è stato scelto `media_kit_libs_macos_video` (non compilato di notte).

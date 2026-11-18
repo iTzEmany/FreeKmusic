@@ -20,6 +20,8 @@ Dove vive il codice nativo (Kotlin, C++/GTK, Swift), come si costruiscono e si p
 Fuori da `lib/services/android/`, i canali Kotlin hanno il loro lato Dart in: `lib/core/system_volume.dart` (volume), `lib/core/network_kind.dart` (rete a consumo), `lib/services/app_icon/app_icon.dart` (icona), `lib/services/memory/disk_space.dart` (spazio), `lib/services/export/save_file.dart` (salva), `lib/services/issue/link_opener.dart` (link), `lib/services/audio/output_route.dart` e `bluetooth_outputs.dart` (uscita), `lib/services/share/share_notifier.dart` (servizio di ricezione), `lib/providers/import_notification_providers.dart` (import), `lib/services/online/android_yt_dlp_service.dart` (yt-dlp), `lib/services/jam/remote/jam_beacon.dart`.
 
 ### Android (`android/`)
+Il video karaoke usa `media_kit_video` con `media_kit_libs_android_video` (libmpv, circa +5,5 MB per ABI nella full). La lite le esclude in `build.gradle.kts` (`packaging.jniLibs.excludes` di `libmpv.so` e `libmediakitandroidhelper.so` con `CODECORE_LITE=1`, D-654). Su macOS: `media_kit_libs_macos_video`.
+
 Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchetto resta `com.codecore.player`).
 
 | File | Canale / ruolo |
@@ -79,7 +81,7 @@ Le release producono un APK per ABI (`arm64-v8a`, `armeabi-v7a`), `minify` e `sh
 Widget, tile, Android Auto e orologio mandano tasti alla sessione di `audio_service`; non toccano DB o file. Dart scrive titolo, artista, copertina e stato in `FlutterSharedPreferences` (`flutter.widget.*`, tramite `widget_bridge.dart`); `CodecoreApp` ascolta `flutter.widget.stamp` e ridisegna. Non c'è un canale perché il motore avviato da `audio_service` senza attività non ha quelli di `MainActivity`. A freddo `MediaKeys.pressSurely` preme il tasto due volte (R63).
 
 ### Windows
-Backend audio libmpv (`just_audio_media_kit`), controlli di sistema SMTC (`smtc_windows`, un crate Rust compilato da cargokit). Il rilascio è un installer Inno Setup con `yt-dlp.exe` e `ffmpeg.exe` (build LGPL) accanto all'app. Nota MSVC: `permission_handler_windows` include `<experimental/coroutine>`, che con MSVC 14.51 dei runner GitHub dà l'errore STL1011; la definizione in `windows/CMakeLists.txt` lo silenzia (PR #163).
+Backend audio libmpv (`just_audio_media_kit`, librerie `media_kit_libs_windows_video` al posto di `_audio` per il video karaoke, D-637), controlli di sistema SMTC (`smtc_windows`, un crate Rust compilato da cargokit). Il rilascio è un installer Inno Setup con `yt-dlp.exe` e `ffmpeg.exe` (build LGPL) accanto all'app. Nota MSVC: `permission_handler_windows` include `<experimental/coroutine>`, che con MSVC 14.51 dei runner GitHub dà l'errore STL1011; la definizione in `windows/CMakeLists.txt` lo silenzia (PR #163).
 
 ### Linux
 Backend libmpv, MPRIS (`MprisControls`, percorso `/org/codecore/track/<id>` in `mpris_mapping.dart`). Tre pacchetti: zip e `.deb` da `package-linux.sh`, AppImage da `package-appimage.sh` (copia libmpv e le sue dipendenze, tranne quelle di ogni desktop). Il Flatpak (`org.freedesktop.Platform` 24.08) costruisce da sorgente `libplacebo` 6.338.2 e `libass` 0.17.3 perché mpv 0.38 li richiede e il runtime non li ha, poi `libmpv`; `yt-dlp` è un file fissato per hash; ffmpeg viene dall'estensione `ffmpeg-full`. Permessi: rete, audio (PulseAudio), Wayland/X11, `xdg-music`, `xdg-download`, nome MPRIS `org.mpris.MediaPlayer2.freekmusic`.
