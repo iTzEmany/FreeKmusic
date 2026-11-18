@@ -175,6 +175,36 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
   );
 }
 
+final _karaokeGroup = RegExp(
+  r'[\(\[\{][^\)\]\}]*\b(karaoke|instrumental|with lyrics)\b[^\)\]\}]*[\)\]\}]',
+  caseSensitive: false,
+);
+final _karaokeWord = RegExp(
+  r'\b(karaoke|version|instrumental|with lyrics)\b',
+  caseSensitive: false,
+);
+final _emptyBrackets = RegExp(r'[\(\[\{]\s*[\)\]\}]');
+final _edgeSeparators = RegExp(r'^[\s\-–—|:]+|[\s\-–—|:]+$');
+
+String _scrubKaraoke(String s) => s
+    .replaceAll(_karaokeGroup, ' ')
+    .replaceAll(_karaokeWord, ' ')
+    .replaceAll(_emptyBrackets, ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
+/// The query for the lyrics of a karaoke video: «Sing King - Adele - Hello
+/// (Karaoke Version)» from the channel «Sing King» is «Adele» / «Hello».
+CleanQuery karaokeLyricsQuery(String title, String channel) {
+  var t = _scrubKaraoke(_cut(title));
+  final c = _scrubKaraoke(_cut(channel));
+  if (c.isNotEmpty) {
+    t = t.replaceAll(RegExp(RegExp.escape(c), caseSensitive: false), ' ');
+  }
+  t = t.replaceAll(RegExp(r'\s+'), ' ').replaceAll(_edgeSeparators, '');
+  return cleanSearchQuery(t, '');
+}
+
 /// (artist, title) of «a - b» when the artist is not known.
 (String, String) _creditSplit(String a, String b) {
   // «Fueled By Ramen and twenty one pilots - twenty one pilots Stressed

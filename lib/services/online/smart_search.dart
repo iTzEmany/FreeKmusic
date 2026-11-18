@@ -174,14 +174,15 @@ class SmartSearch {
   /// States of the search for [query]: first the waiting one, then the first
   /// block (when both sources answered, or [cap] after the first), then one
   /// per late answer. Cancelling the subscription drops what is still coming.
-  /// [refresh] skips the saved copy.
+  /// [refresh] skips the saved copy; [videoOnly] asks YouTube videos alone.
   Stream<SmartSearchState> run(
     String query,
     String hl, {
     bool refresh = false,
+    bool videoOnly = false,
   }) {
     late final StreamController<SmartSearchState> out;
-    final search = _Run(this, query.trim(), hl, refresh);
+    final search = _Run(this, query.trim(), hl, refresh, videoOnly);
     out = StreamController<SmartSearchState>(
       onListen: () => unawaited(search.start(out)),
       onCancel: search.cancel,
@@ -223,11 +224,11 @@ class _Answer<T> {
 
 /// One search in progress.
 class _Run {
-  _Run(this.engine, this.query, this.hl, this.refresh);
+  _Run(this.engine, this.query, this.hl, this.refresh, this.videoOnly);
 
   final SmartSearch engine;
   final String query, hl;
-  final bool refresh;
+  final bool refresh, videoOnly;
   final _token = CancelToken();
   late StreamController<SmartSearchState> _out;
   bool _cancelled = false;
@@ -281,7 +282,7 @@ class _Run {
       return;
     }
     final isVideoUrl = kind.kind == QueryKind.video;
-    final key = '${matchKey(query)}|$hl';
+    final key = '${matchKey(query)}|$hl${videoOnly ? '|v' : ''}';
     if (!refresh) {
       final hit = engine._fromCache(key);
       if (hit != null) {
@@ -293,7 +294,7 @@ class _Run {
 
     final cooldown = engine.cooldown;
     for (final source in MediaKind.values) {
-      if (isVideoUrl && source == MediaKind.ytmSong) continue;
+      if ((isVideoUrl || videoOnly) && source == MediaKind.ytmSong) continue;
       if (cooldown.isPaused(source)) {
         _notices.add(SearchNotice(source, NoticeKind.rateLimited));
       } else {

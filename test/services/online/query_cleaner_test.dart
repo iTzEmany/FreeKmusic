@@ -223,4 +223,15 @@ void main() {
       expect(cleanSearchQuery('Song', 'Official').artist, 'Official');
     });
   });
+
+  group('karaokeLyricsQuery', () {
+    test('Sing King - Adele - Hello (Karaoke Version) is Adele / Hello', () {
+      final q = karaokeLyricsQuery('Sing King - Adele - Hello (Karaoke Version)', 'Sing King');
+      expect((q.artist, q.title), ('Adele', 'Hello'));
+    });
+    test('a tail «- Karaoke Version» and «with lyrics» go too', () {
+      final q = karaokeLyricsQuery('KaraFun Karaoke - Adele - Hello - Karaoke Version with lyrics', 'KaraFun Karaoke');
+      expect((q.artist, q.title), ('Adele', 'Hello'));
+    });
+  });
 }

@@ -1,0 +1,45 @@
+import 'package:codecore/services/online/karaoke_filter.dart';
+import 'package:codecore/services/online/merge_results.dart';
+import 'package:codecore/services/online/query_match.dart' show MediaKind;
+import 'package:codecore/services/online/youtube_service.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+SmartResult _r(String title, [String channel = 'Someone']) => SmartResult(
+  primary: YtResult(id: title, title: title, channel: channel, duration: null),
+  sources: {MediaKind.ytVideo},
+  alternatives: const [],
+  confidence: 0.5,
+  hasVideo: false,
+);
+
+void main() {
+  test('keeps karaoke titles, drops the rest and reactions, covers and lives', () {
+    final out = karaokeResults([
+      _r('Hello (Karaoke Version)'),
+      _r('Hello official video'),
+      _r('Hello KARAOKE reaction'),
+      _r('Hello karaoke cover'),
+      _r('Hello (Live) karaoke'),
+      _r('Hello karaoke with lyrics'),
+    ]);
+    expect(out.map((r) => r.primary.title), [
+      'Hello (Karaoke Version)',
+      'Hello karaoke with lyrics',
+    ]);
+  });
+
+  test('known channels come first, the others keep their order', () {
+    final out = karaokeResults([
+      _r('A karaoke', 'Nobody'),
+      _r('B karaoke', 'Sing King'),
+      _r('C karaoke', 'Other'),
+      _r('D karaoke', 'KaraFun Karaoke'),
+    ]);
+    expect(out.map((r) => r.primary.title), [
+      'B karaoke',
+      'D karaoke',
+      'A karaoke',
+      'C karaoke',
+    ]);
+  });
+}

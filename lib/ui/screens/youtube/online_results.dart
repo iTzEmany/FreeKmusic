@@ -10,6 +10,7 @@ import '../../../providers/selection_providers.dart';
 import '../../../data/settings/settings_store.dart' show StorageMode;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
+import '../../../services/online/karaoke_filter.dart';
 import '../../../services/online/merge_results.dart';
 import '../../../services/online/external_collection.dart';
 import '../../../services/online/external_links.dart';
@@ -77,7 +78,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
 
   /// The source filter and the «Altri risultati» list: both start over with
   /// each search.
-  MediaKind? _filter;
+  SourceFilter _filter = SourceFilter.all;
   bool _othersOpen = false;
 
   /// A pasted video link plays its video once, when the result with that id
@@ -143,8 +144,8 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     if (!refresh) _autoPlayId = youtubeVideoId(q);
     setState(() {
       _slots.clear();
-      _request = (query: q, refresh: refresh, serial: ++_serial);
-      _filter = null;
+      _request = (query: q, refresh: refresh, serial: ++_serial, videoOnly: false);
+      _filter = SourceFilter.all;
       _othersOpen = false;
     });
     // Picks refer to rows of the old results (not while the tree is building).
@@ -226,10 +227,25 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     OnlineAlbumScreen(browseId: r.browseId, release: r),
   );
 
-  void _pickFilter(MediaKind? k) {
+  void _pickFilter(SourceFilter k) {
     if (k == _filter) return;
     ref.read(selectionProvider(_selectionKey).notifier).clear();
-    setState(() => _filter = k);
+    final karaokeChanges = (k == SourceFilter.karaoke) != (_filter == SourceFilter.karaoke);
+    final q = widget.query.trim();
+    setState(() {
+      _filter = k;
+      // Karaoke is a new request (videos only); the other three look at the rows already there.
+      if (karaokeChanges) {
+        _slots.clear();
+        final karaoke = k == SourceFilter.karaoke;
+        _request = (
+          query: karaoke ? '$q karaoke' : q,
+          refresh: false,
+          serial: ++_serial,
+          videoOnly: karaoke,
+        );
+      }
+    });
   }
 
   /// Starts a download for each picked row that is not already in the library
@@ -243,7 +259,11 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     ref.read(selectionProvider(_selectionKey).notifier).clear();
   }
 
-  bool _shows(SmartResult r) => _filter == null || r.sources.contains(_filter);
+  bool _shows(SmartResult r) => switch (_filter) {
+    SourceFilter.all || SourceFilter.karaoke => true,
+    SourceFilter.ytmSong => r.sources.contains(MediaKind.ytmSong),
+    SourceFilter.ytVideo => r.sources.contains(MediaKind.ytVideo),
+  };
 
   int _slotOf(SmartResult r) {
     final slot = r.ids.map((id) => _slots[id]).nonNulls.firstOrNull ?? _slots.length;
@@ -287,13 +307,19 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     final bestEnd = bestRows.length;
     final slots = [for (final r in all) _slotOf(r)];
     // (slot, row) of what is shown under the filter.
-    final shownBest = [
-      for (var i = 0; i < bestEnd; i++)
-        if (_shows(all[i])) (slots[i], all[i]),
-    ];
+    final karaoke = _filter == SourceFilter.karaoke;
+    final shownBest = karaoke
+        ? [
+            for (final r in karaokeResults(all)) (slots[all.indexOf(r)], r),
+          ]
+        : [
+            for (var i = 0; i < bestEnd; i++)
+              if (_shows(all[i])) (slots[i], all[i]),
+          ];
     final shownOthers = [
-      for (var i = bestEnd; i < all.length; i++)
-        if (_shows(all[i])) (slots[i], all[i]),
+      if (!karaoke)
+        for (var i = bestEnd; i < all.length; i++)
+          if (_shows(all[i])) (slots[i], all[i]),
     ];
     final shownIds = [
       for (final (i, _) in shownBest) i,
@@ -345,7 +371,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
                   : null,
             ),
             if (s != null) SearchNotices(notices: s.notices),
-            if (all.isNotEmpty)
+            if (all.isNotEmpty || _filter == SourceFilter.karaoke)
               SourceFilterChips(filter: _filter, onPick: _pickFilter),
             Expanded(
               child: error != null && all.isEmpty

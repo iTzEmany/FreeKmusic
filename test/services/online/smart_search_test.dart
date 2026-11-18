@@ -146,6 +146,19 @@ void main() {
 
   const song = 'InRdKLk1BTU'; // the same video in both lists
 
+  test('videoOnly asks YouTube videos alone: no songs, no card, no waiting for them', () async {
+    final states = <SmartSearchState>[];
+    final sub = engine.run('lucio corsi karaoke', 'en', videoOnly: true).listen(states.add);
+    await pumpEventQueue();
+    expect(youtube.songs, isEmpty);
+    expect(catalog.cards, isEmpty);
+    expect(states.single.pending, {MediaKind.ytVideo});
+    await answerVideos();
+    expect(states.last.pending, isEmpty);
+    expect(states.last.best.length + states.last.others.length, greaterThan(0));
+    await sub.cancel();
+  });
+
   test('both sources before the cap: one block with both, after the waiting state', () async {
     final run = start('lucio corsi sigarette');
     await pumpEventQueue();

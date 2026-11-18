@@ -27,13 +27,16 @@ class LrclibClient {
     int? durationSec,
     CancelToken? cancel,
     bool strict = false,
+    bool ignoreDuration = false,
   }) async {
     if (artist.trim().isEmpty) return null;
+    // A karaoke video runs a different length from the song: /search, no duration.
+    if (ignoreDuration) durationSec = null;
     final primary = extractPrimaryArtist(artist);
     final core = coreTitle(title);
     final attempts = <(String, String)>[(artist, title)];
     if (primary != artist || core != title) attempts.add((primary, core));
-    for (final (a, t) in attempts) {
+    for (final (a, t) in ignoreDuration ? const <(String, String)>[] : attempts) {
       final get = await _web.getJson(
         '$_base/get',
         query: {

@@ -46,7 +46,7 @@ class _FakeChain implements LyricsChain {
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
   @override
-  Future<LyricsChainResult> find(Track t, {bool wantSynced = true, cancel}) async {
+  Future<LyricsChainResult> find(Track t, {bool wantSynced = true, cancel, bool ignoreDuration = false}) async {
     calls++;
     if (fail) throw StateError('down');
     return LyricsChainResult(lyrics: const LyricsResult(plain: 'parole remote'), limited: limited);
