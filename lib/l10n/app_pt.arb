@@ -4051,6 +4051,8 @@
   "karaokeHighQualitySeparating": "Separando no telefone",
   "karaokeHighQualityWaiting": "Aguardando o download da faixa",
   "karaokeHighQualityFailed": "Separação falhou: continua o original. Toque para tentar de novo.",
-  "karaokeBase": "Instrumental",
-  "karaokeOriginal": "Original"
+  "showKaraoke": "Mostrar o karaokê",
+  "showKaraokeHint": "O microfone aparece em «A tocar» e na letra (Android).",
+  "karaokeCostModel": "Baixa 78 MB na primeira vez",
+  "karaokeCostTrack": "A faixa precisa ser baixada por inteiro"
 }

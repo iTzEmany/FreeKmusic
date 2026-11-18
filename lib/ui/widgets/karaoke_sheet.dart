@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/karaoke_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../providers/settings_providers.dart';
 import '../../services/karaoke/separation_service.dart';
 import '../theme/tokens.dart';
 import 'cc_sheet.dart';
@@ -18,9 +19,13 @@ class KaraokeButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(karaokeButtonVisibleProvider)) return const SizedBox.shrink();
+    if (!ref.watch(karaokeButtonVisibleProvider)) {
+      return const SizedBox.shrink();
+    }
     // Bypassed (episode, radio): there is no backing track, so the mic looks off.
-    final on = ref.watch(karaokeProvider.select((k) => k.on)) && !ref.watch(karaokeBypassProvider);
+    final on =
+        ref.watch(karaokeProvider.select((k) => k.on)) &&
+        !ref.watch(karaokeBypassProvider);
     final name = context.l10n.karaoke;
     final cc = context.cc;
     // One node: the state is toggled, the name stays «Karaoke».
@@ -71,6 +76,8 @@ class _KaraokePanel extends ConsumerStatefulWidget {
 }
 
 class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
+  double? _drag; // the slider value while it is held
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -81,8 +88,9 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
     final target = ref.watch(karaokeTargetProvider).value;
     final sep = ref.watch(separationStateProvider);
     final base = ref.watch(karaokeBaseProvider).value;
-    final useBase = ref.watch(karaokeUseBaseProvider);
-    final highQuality = ref.watch(separationServiceProvider) != null && on && target != null;
+    final mixing = ref.watch(karaokeMixingProvider);
+    final highQuality =
+        ref.watch(separationServiceProvider) != null && on && target != null;
     final baseReady = highQuality && base?.path != null;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -90,7 +98,8 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
         if (bypass)
           Text(
             l.karaokeBypassed,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: context.cc.textMuted),
           ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -98,24 +107,54 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
           value: on,
           onChanged: (v) {
             setKaraokeOn(ref, v);
-            final track = ref.read(currentShadowRowProvider) ??
+            final track =
+                ref.read(currentShadowRowProvider) ??
                 ref.read(liveCurrentTrackProvider).value;
             if (v && widget.openLyrics && track?.lyricsSynced != null) {
               final nav = Navigator.of(context, rootNavigator: true);
               Navigator.of(context).pop();
-              nav.push(MaterialPageRoute<void>(builder: (_) => const LyricsScreen()));
+              nav.push(
+                MaterialPageRoute<void>(builder: (_) => const LyricsScreen()),
+              );
             }
           },
         ),
         if (highQuality) _HighQualityRow(base: base, target: target, sep: sep),
         if (baseReady)
-          SegmentedButton<bool>(
-            segments: [
-              ButtonSegment(value: true, label: Text(l.karaokeBase)),
-              ButtonSegment(value: false, label: Text(l.karaokeOriginal)),
+          Row(
+            children: [
+              Text(l.karaokeVoice),
+              Expanded(
+                child: Slider(
+                  value: _drag ?? k.level,
+                  label: l.karaokePercent(((_drag ?? k.level) * 100).round()),
+                  divisions: 20,
+                  onChanged: (v) => setState(() => _drag = v),
+                  onChangeEnd: (v) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .update((s) => s.copyWith(karaokeLevel: v));
+                    setState(() => _drag = null);
+                    unawaited(ref.read(karaokeApplyProvider)());
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 44,
+                child: mixing
+                    ? const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : Text(
+                        l.karaokePercent(((_drag ?? k.level) * 100).round()),
+                        textAlign: TextAlign.end,
+                      ),
+              ),
             ],
-            selected: {useBase},
-            onSelectionChanged: (v) => ref.read(karaokeUseBaseProvider.notifier).set(v.first),
           ),
       ],
     );
@@ -123,9 +162,13 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
 }
 
 /// «Alta qualità»: starts the separation of the current track and shows its progress.
-/// Nothing while the backing track exists (the Base / Originale choice takes over).
+/// Nothing while the stems exist (the «Voce» slider takes over).
 class _HighQualityRow extends ConsumerWidget {
-  const _HighQualityRow({required this.base, required this.target, required this.sep});
+  const _HighQualityRow({
+    required this.base,
+    required this.target,
+    required this.sep,
+  });
 
   final KaraokeBase? base;
   final KaraokeTarget? target;
@@ -136,8 +179,11 @@ class _HighQualityRow extends ConsumerWidget {
     final target = this.target;
     if (target == null || base?.path != null) return const SizedBox.shrink();
     final l = context.l10n;
-    final muted = Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted);
-    final running = sep.phase == SeparationPhase.model || sep.phase == SeparationPhase.separating;
+    final muted = Theme.of(context).textTheme.bodySmall
+        ?.copyWith(color: context.cc.textMuted);
+    final running =
+        sep.phase == SeparationPhase.model ||
+        sep.phase == SeparationPhase.separating;
     if (running) {
       final model = sep.phase == SeparationPhase.model;
       return Padding(
@@ -156,7 +202,9 @@ class _HighQualityRow extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 6),
-            LinearProgressIndicator(value: sep.fraction > 0 ? sep.fraction : null),
+            LinearProgressIndicator(
+              value: sep.fraction > 0 ? sep.fraction : null,
+            ),
             const SizedBox(height: 6),
             Text(l.karaokeHighQualityNote, style: muted),
           ],
@@ -165,6 +213,25 @@ class _HighQualityRow extends ConsumerWidget {
     }
     final input = target.input;
     final failed = sep.phase == SeparationPhase.failed;
+    final cost = ref.watch(karaokeDataCostProvider).value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _startTile(context, ref, target, input, failed),
+        if (cost != null && cost.model) Text(l.karaokeCostModel, style: muted),
+        if (cost != null && cost.track) Text(l.karaokeCostTrack, style: muted),
+      ],
+    );
+  }
+
+  Widget _startTile(
+    BuildContext context,
+    WidgetRef ref,
+    KaraokeTarget target,
+    String? input,
+    bool failed,
+  ) {
+    final l = context.l10n;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(l.karaokeHighQuality),
@@ -172,13 +239,15 @@ class _HighQualityRow extends ConsumerWidget {
         input == null
             ? l.karaokeHighQualityWaiting
             : failed
-                ? l.karaokeHighQualityFailed
-                : l.karaokeHighQualityNote,
+            ? l.karaokeHighQualityFailed
+            : l.karaokeHighQualityNote,
       ),
       enabled: input != null,
       onTap: input == null
           ? null
-          : () => unawaited(ref.read(separationServiceProvider)!.request(target.key, input)),
+          : () => unawaited(
+              ref.read(separationServiceProvider)!.request(target.key, input),
+            ),
     );
   }
 }

@@ -80,6 +80,7 @@ class AppSettings {
     this.playbackSpeed = 1.0,
     this.eqEnabled = false,
     this.karaokeOn = false,
+    this.showKaraoke = true,
     this.karaokeLevel = 0.2,
     this.eqSpeaker = const EqProfile(),
     this.eqHeadphones = const EqProfile(),
@@ -196,6 +197,9 @@ class AppSettings {
 
   /// Karaoke: stays on across tracks; the level is the AI «Voce» slider, 0 (voice lowest) to 1 (original).
   final bool karaokeOn;
+
+  /// «Mostra il karaoke» (D-627): off hides the microphone and switches karaoke off.
+  final bool showKaraoke;
   final double karaokeLevel;
 
   final EqProfile eqSpeaker, eqHeadphones;
@@ -287,6 +291,7 @@ class AppSettings {
     double? playbackSpeed,
     bool? eqEnabled,
     bool? karaokeOn,
+    bool? showKaraoke,
     double? karaokeLevel,
     EqProfile? eqSpeaker,
     EqProfile? eqHeadphones,
@@ -350,6 +355,7 @@ class AppSettings {
     playbackSpeed: playbackSpeed ?? this.playbackSpeed,
     eqEnabled: eqEnabled ?? this.eqEnabled,
     karaokeOn: karaokeOn ?? this.karaokeOn,
+    showKaraoke: showKaraoke ?? this.showKaraoke,
     karaokeLevel: karaokeLevel ?? this.karaokeLevel,
     eqSpeaker: eqSpeaker ?? this.eqSpeaker,
     eqHeadphones: eqHeadphones ?? this.eqHeadphones,
@@ -518,6 +524,7 @@ class SettingsStore {
     playbackSpeed: (_prefs.getDouble('playbackSpeed') ?? 1.0).clamp(0.5, 2.0),
     eqEnabled: _prefs.getBool('eqEnabled') ?? false,
     karaokeOn: _prefs.getBool('karaokeOn') ?? false,
+    showKaraoke: _prefs.getBool('showKaraoke') ?? true,
     karaokeLevel: (_prefs.getDouble('karaokeLevel') ?? 0.2).clamp(0.0, 1.0),
     eqSpeaker: _readEq('speaker'),
     eqHeadphones: _readEq('headphones'),
@@ -613,6 +620,7 @@ class SettingsStore {
     await _prefs.setDouble('playbackSpeed', s.playbackSpeed);
     await _prefs.setBool('eqEnabled', s.eqEnabled);
     await _prefs.setBool('karaokeOn', s.karaokeOn);
+    await _prefs.setBool('showKaraoke', s.showKaraoke);
     await _prefs.setDouble('karaokeLevel', s.karaokeLevel);
     await _writeEq('speaker', s.eqSpeaker);
     await _writeEq('headphones', s.eqHeadphones);

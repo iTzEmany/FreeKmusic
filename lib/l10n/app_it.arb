@@ -4594,6 +4594,8 @@
   "karaokeHighQualitySeparating": "Separazione sul telefono",
   "karaokeHighQualityWaiting": "In attesa che il brano sia scaricato",
   "karaokeHighQualityFailed": "Separazione non riuscita: resta l’originale. Tocca per riprovare.",
-  "karaokeBase": "Base",
-  "karaokeOriginal": "Originale"
+  "showKaraoke": "Mostra il karaoke",
+  "showKaraokeHint": "Il microfono compare in «In riproduzione» e nei testi (Android).",
+  "karaokeCostModel": "Scarica 78 MB la prima volta",
+  "karaokeCostTrack": "Il brano va scaricato per intero"
 }

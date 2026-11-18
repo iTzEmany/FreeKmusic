@@ -8064,8 +8064,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Séparation échouée : l’original continue. Touchez pour réessayer.';
 
   @override
-  String get karaokeBase => 'Instrumental';
+  String get showKaraoke => 'Afficher le karaoké';
 
   @override
-  String get karaokeOriginal => 'Original';
+  String get showKaraokeHint =>
+      'Le micro apparaît dans « Lecture en cours » et sur les paroles (Android).';
+
+  @override
+  String get karaokeCostModel => 'Télécharge 78 Mo la première fois';
+
+  @override
+  String get karaokeCostTrack => 'Le titre doit être téléchargé en entier';
 }

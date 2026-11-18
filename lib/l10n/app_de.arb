@@ -3865,6 +3865,8 @@
   "karaokeHighQualitySeparating": "Trennung auf dem Telefon",
   "karaokeHighQualityWaiting": "Wartet auf den Download des Titels",
   "karaokeHighQualityFailed": "Trennung fehlgeschlagen: das Original spielt weiter. Zum Wiederholen tippen.",
-  "karaokeBase": "Begleitung",
-  "karaokeOriginal": "Original"
+  "showKaraoke": "Karaoke anzeigen",
+  "showKaraokeHint": "Das Mikrofon erscheint in „Aktuelle Wiedergabe“ und bei den Songtexten (Android).",
+  "karaokeCostModel": "Lädt beim ersten Mal 78 MB herunter",
+  "karaokeCostTrack": "Der Titel muss vollständig heruntergeladen werden"
 }

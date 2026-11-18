@@ -4086,6 +4086,8 @@
   "karaokeHighQualitySeparating": "Séparation sur le téléphone",
   "karaokeHighQualityWaiting": "En attente du téléchargement du titre",
   "karaokeHighQualityFailed": "Séparation échouée : l’original continue. Touchez pour réessayer.",
-  "karaokeBase": "Instrumental",
-  "karaokeOriginal": "Original"
+  "showKaraoke": "Afficher le karaoké",
+  "showKaraokeHint": "Le micro apparaît dans « Lecture en cours » et sur les paroles (Android).",
+  "karaokeCostModel": "Télécharge 78 Mo la première fois",
+  "karaokeCostTrack": "Le titre doit être téléchargé en entier"
 }

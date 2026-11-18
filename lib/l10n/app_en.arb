@@ -3865,6 +3865,8 @@
   "karaokeHighQualitySeparating": "Separating on the phone",
   "karaokeHighQualityWaiting": "Waiting for the track to download",
   "karaokeHighQualityFailed": "Separation failed: the original keeps playing. Tap to retry.",
-  "karaokeBase": "Backing",
-  "karaokeOriginal": "Original"
+  "showKaraoke": "Show karaoke",
+  "showKaraokeHint": "The microphone appears in Now Playing and on the lyrics page (Android).",
+  "karaokeCostModel": "Downloads 78 MB the first time",
+  "karaokeCostTrack": "The track has to be downloaded in full"
 }

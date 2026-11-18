@@ -12643,17 +12643,29 @@ abstract class AppLocalizations {
   /// **'Separazione non riuscita: resta l’originale. Tocca per riprovare.'**
   String get karaokeHighQualityFailed;
 
-  /// No description provided for @karaokeBase.
+  /// No description provided for @showKaraoke.
   ///
   /// In it, this message translates to:
-  /// **'Base'**
-  String get karaokeBase;
+  /// **'Mostra il karaoke'**
+  String get showKaraoke;
 
-  /// No description provided for @karaokeOriginal.
+  /// No description provided for @showKaraokeHint.
   ///
   /// In it, this message translates to:
-  /// **'Originale'**
-  String get karaokeOriginal;
+  /// **'Il microfono compare in «In riproduzione» e nei testi (Android).'**
+  String get showKaraokeHint;
+
+  /// No description provided for @karaokeCostModel.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica 78 MB la prima volta'**
+  String get karaokeCostModel;
+
+  /// No description provided for @karaokeCostTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Il brano va scaricato per intero'**
+  String get karaokeCostTrack;
 }
 
 class _AppLocalizationsDelegate

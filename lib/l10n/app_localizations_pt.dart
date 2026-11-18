@@ -8007,8 +8007,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Separação falhou: continua o original. Toque para tentar de novo.';
 
   @override
-  String get karaokeBase => 'Instrumental';
+  String get showKaraoke => 'Mostrar o karaokê';
 
   @override
-  String get karaokeOriginal => 'Original';
+  String get showKaraokeHint =>
+      'O microfone aparece em «A tocar» e na letra (Android).';
+
+  @override
+  String get karaokeCostModel => 'Baixa 78 MB na primeira vez';
+
+  @override
+  String get karaokeCostTrack => 'A faixa precisa ser baixada por inteiro';
 }

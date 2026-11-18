@@ -7995,8 +7995,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Separazione non riuscita: resta l’originale. Tocca per riprovare.';
 
   @override
-  String get karaokeBase => 'Base';
+  String get showKaraoke => 'Mostra il karaoke';
 
   @override
-  String get karaokeOriginal => 'Originale';
+  String get showKaraokeHint =>
+      'Il microfono compare in «In riproduzione» e nei testi (Android).';
+
+  @override
+  String get karaokeCostModel => 'Scarica 78 MB la prima volta';
+
+  @override
+  String get karaokeCostTrack => 'Il brano va scaricato per intero';
 }

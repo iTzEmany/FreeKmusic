@@ -222,8 +222,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           notice == null
               ? const SizedBox.shrink()
               : _RomanizationNotice(notice),
-          if (ref.watch(karaokeButtonVisibleProvider) &&
-              ref.watch(karaokeProvider.select((k) => k.on)) &&
+          if (ref.watch(karaokePillPercentProvider) != null &&
               !ref.watch(karaokeBypassProvider))
             const _KaraokePill(),
           Expanded(child: list),
@@ -458,11 +457,16 @@ class _KaraokePill extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cc = context.cc;
-    final percent = (ref.watch(karaokeProvider.select((k) => k.level)) * 100).round();
+    final percent = ref.watch(karaokePillPercentProvider) ?? 0;
     return Align(
       alignment: AlignmentDirectional.centerEnd,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.margin, 0),
+        padding: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          CcDims.gap8,
+          CcDims.margin,
+          0,
+        ),
         child: ActionChip(
           avatar: Icon(Icons.mic_rounded, size: 18, color: cc.accent),
           label: Text(context.l10n.karaokePill(percent)),

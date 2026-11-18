@@ -8028,8 +8028,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Trennung fehlgeschlagen: das Original spielt weiter. Zum Wiederholen tippen.';
 
   @override
-  String get karaokeBase => 'Begleitung';
+  String get showKaraoke => 'Karaoke anzeigen';
 
   @override
-  String get karaokeOriginal => 'Original';
+  String get showKaraokeHint =>
+      'Das Mikrofon erscheint in „Aktuelle Wiedergabe“ und bei den Songtexten (Android).';
+
+  @override
+  String get karaokeCostModel => 'Lädt beim ersten Mal 78 MB herunter';
+
+  @override
+  String get karaokeCostTrack =>
+      'Der Titel muss vollständig heruntergeladen werden';
 }

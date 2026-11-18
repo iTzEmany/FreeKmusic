@@ -81,7 +81,7 @@ void main() {
       tester,
       const LyricsScreen(),
       extraOverrides: [
-        if (karaoke) karaokeButtonVisibleProvider.overrideWithValue(true),
+        if (karaoke) karaokePillPercentProvider.overrideWithValue(20),
         if (bypass) karaokeBypassProvider.overrideWithValue(true),
         if (translated)
           lyricsTranslationProvider.overrideWith(_FakeTranslation.new),

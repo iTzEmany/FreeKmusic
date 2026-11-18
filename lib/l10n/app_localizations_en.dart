@@ -7970,8 +7970,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Separation failed: the original keeps playing. Tap to retry.';
 
   @override
-  String get karaokeBase => 'Backing';
+  String get showKaraoke => 'Show karaoke';
 
   @override
-  String get karaokeOriginal => 'Original';
+  String get showKaraokeHint =>
+      'The microphone appears in Now Playing and on the lyrics page (Android).';
+
+  @override
+  String get karaokeCostModel => 'Downloads 78 MB the first time';
+
+  @override
+  String get karaokeCostTrack => 'The track has to be downloaded in full';
 }
