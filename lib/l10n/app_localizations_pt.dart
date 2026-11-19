@@ -3752,7 +3752,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get updateOnStartHint =>
-      'No máximo uma vez por dia. Não descarrega nem instala nada.';
+      'No máximo uma vez por dia. Se houver uma versão nova, podes atualizar a partir do aviso.';
 
   @override
   String get updateChecking => 'A verificar…';
@@ -3776,10 +3776,58 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não consigo ler a última versão. Verifica a ligação.';
 
   @override
-  String get updateCopyLink => 'Copiar endereço';
+  String get updateDo => 'Atualizar';
 
   @override
-  String get updateLinkCopied => 'Endereço copiado';
+  String get updateFromBrowser => 'Descarregar pelo navegador';
+
+  @override
+  String updateFile(String name, int size) {
+    return 'Ficheiro: $name, $size MB';
+  }
+
+  @override
+  String updateProgress(int done, int total) {
+    return '$done de $total MB';
+  }
+
+  @override
+  String updateMeteredAsk(int size) {
+    return 'Estás numa rede com limite de dados. O ficheiro tem $size MB: descarregá-lo?';
+  }
+
+  @override
+  String get updateDownload => 'Descarregar';
+
+  @override
+  String get updateInterruptedTitle => 'Transferência interrompida';
+
+  @override
+  String get updateInterruptedBody => 'Falta a ligação. A app fica como está.';
+
+  @override
+  String get updateCorruptTitle => 'Ficheiro danificado';
+
+  @override
+  String get updateCorruptBody =>
+      'O ficheiro descarregado não corresponde ao da Release e foi apagado.';
+
+  @override
+  String get updateDifferentSignerTitle => 'Assinatura diferente';
+
+  @override
+  String get updateDifferentSignerBody =>
+      'Esta cópia da app não vem da Release do GitHub (compilação de teste ou de depuração): o Android não a pode atualizar. Desinstala-a e instala a versão da Release.';
+
+  @override
+  String get updateInstallFailed => 'Não foi possível iniciar a instalação.';
+
+  @override
+  String get updatePermissionBody =>
+      'Permite que o FreeKmusic instale apps: abre-se a definição do Android e depois voltas aqui.';
+
+  @override
+  String get updateInstalling => 'A instalar…';
 
   @override
   String get backupSection => 'Cópia de segurança';

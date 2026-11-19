@@ -43,8 +43,32 @@ class _Version {
   }
 }
 
+/// A file attached to a release; [sha256] comes from the API's `digest`.
+class UpdateAsset {
+  const UpdateAsset({required this.name, required this.url, required this.size, this.sha256});
+
+  final String name;
+  final Uri url;
+  final int size;
+  final String? sha256;
+}
+
+List<UpdateAsset> _assetsOf(Object? raw) => [
+  if (raw is List)
+    for (final a in raw)
+      if (a is Map && a['name'] is String && a['browser_download_url'] is String)
+        UpdateAsset(
+          name: a['name'] as String,
+          url: Uri.parse(a['browser_download_url'] as String),
+          size: a['size'] is int ? a['size'] as int : 0,
+          sha256: a['digest'] is String && (a['digest'] as String).startsWith('sha256:')
+              ? (a['digest'] as String).substring(7).trim().toLowerCase()
+              : null,
+        ),
+];
+
 class UpdateInfo {
-  const UpdateInfo({required this.version, required this.url, this.notes = ''});
+  const UpdateInfo({required this.version, required this.url, this.notes = '', this.assets = const []});
 
   /// Without the leading `v`.
   final String version;
@@ -52,6 +76,7 @@ class UpdateInfo {
   /// The release page, to copy.
   final String url;
   final String notes;
+  final List<UpdateAsset> assets;
 }
 
 enum UpdateStatus { newer, upToDate, rateLimited, failed }
@@ -97,6 +122,7 @@ class UpdateChecker {
         version: tag.replaceFirst(RegExp('^[vV]'), ''),
         url: json['html_url'] is String ? json['html_url'] as String : 'https://github.com/$repo/releases',
         notes: json['body'] is String ? (json['body'] as String).trim() : '',
+        assets: _assetsOf(json['assets']),
       );
       final newer = compareVersions(info.version, current) > 0;
       return UpdateResult(newer ? UpdateStatus.newer : UpdateStatus.upToDate, info);
