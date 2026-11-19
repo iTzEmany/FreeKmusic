@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/app_log.dart';
+import 'core/constants.dart' show kEnableYoutube;
 import 'core/memory_budget.dart';
 import 'core/paths.dart';
 import 'core/platform.dart';
@@ -295,7 +296,7 @@ Future<void> main() async {
   // A saved stream the video of which vanished from YouTube gets its replacement (R-242).
   handler.onStreamGone = (t) => unawaited(container.read(vanishedTracksProvider).handle(t));
   // The karaoke video holds the audio's start, so it is plugged in from the beginning (D-647).
-  container.read(karaokeVideoProvider);
+  if (kEnableYoutube) container.read(karaokeVideoProvider);
   // The player downloads streamed tracks through the preparer (45.4); before
   // the queue comes back, so a restored streamed track finds it.
   if (cacheOpened) {

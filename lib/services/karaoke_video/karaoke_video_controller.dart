@@ -71,8 +71,8 @@ abstract interface class KaraokeVideoPort {
 
 bool _mediaKitReady = false;
 
-/// A media_kit player with no sound: the stream is video-only, the volume is 0 and nothing asks for
-/// audio focus (F-2).
+/// A media_kit player with no sound: the stream is video-only, the volume is 0, the audio track is
+/// off and nothing asks for audio focus (F-2). One per load: `waitUntilFirstFrameRendered` lives as long as its controller.
 class MediaKitVideoPort implements KaraokeVideoPort {
   MediaKitVideoPort() {
     if (!_mediaKitReady) {
@@ -81,6 +81,11 @@ class MediaKitVideoPort implements KaraokeVideoPort {
     }
     _player = Player(configuration: const PlayerConfiguration(muted: true, bufferSize: 8 * 1024 * 1024));
     unawaited(_player.setVolume(0));
+    unawaited(
+      (_player.platform as NativePlayer).setProperty('aid', 'no').onError((Object e, StackTrace st) {
+        AppLog.w('karaoke video: audio track not switched off', e, st);
+      }),
+    );
     video = VideoController(_player);
   }
   late final Player _player;
@@ -106,7 +111,7 @@ class MediaKitVideoPort implements KaraokeVideoPort {
   Future<void> dispose() => _player.dispose();
 }
 
-/// The video of the current karaoke track (D-646, D-647): created with the first one, closed when a
+/// The video of the current karaoke track (D-646, D-647): a silent player per load, closed when a
 /// normal track starts. It follows the audio and never touches it, except by holding the start (the gate).
 class KaraokeVideoController implements KaraokeVideoGate {
   KaraokeVideoController({
@@ -121,6 +126,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
     required this.onState,
     KaraokeVideoPort Function()? createPort,
     DateTime Function()? clock,
+    this.loadTimeout = const Duration(seconds: 10), // the audio handler's wait
   }) : _createPort = createPort ?? MediaKitVideoPort.new,
        _clock = clock ?? DateTime.now {
     _audioPlaying = audioPlaying();
@@ -146,6 +152,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
   final Stream<bool> playing;
   final bool Function() audioPlaying;
   final void Function(KaraokeVideoState state) onState;
+  final Duration loadTimeout;
   final KaraokeVideoPort Function() _createPort;
   final DateTime Function() _clock;
 
@@ -153,12 +160,13 @@ class KaraokeVideoController implements KaraokeVideoGate {
   List<StreamSubscription<Object?>> _portSubs = const [];
   KaraokeVideoPort? _port;
   String? _id;
+  String? _pinned; // the id whose cache file is fixed for us: released once
   KaraokeVideoStream? _stream;
   var _status = KaraokeVideoStatus.none;
-  var _gen = 0; // one per video id: what a late answer checks
-  var _attempt = 0;
+  var _gen = 0; // one per track change
+  var _attempt = 0; // one per load of a video
   var _failedAttempt = -1;
-  var _errors = 0;
+  var _errors = 0; // in a row, without a ready between
   Completer<void> _ready = Completer<void>()..complete();
   var _videoPlaying = false;
   var _background = false;
@@ -182,24 +190,44 @@ class KaraokeVideoController implements KaraokeVideoGate {
     AppLog.w('karaoke video $what failed', e, st);
   });
 
-  void _track(Track? t) {
+  void _unpin() {
+    final id = _pinned;
+    _pinned = null;
+    if (id != null) release(id);
+  }
+
+  void _closePort() {
+    for (final s in _portSubs) {
+      unawaited(s.cancel());
+    }
+    _portSubs = const [];
+    final port = _port;
+    _port = null;
+    _videoPlaying = false;
+    if (port != null) unawaited(_guard(port.dispose(), 'dispose'));
+  }
+
+  void _track(Track? t, {bool retry = false}) {
     final id = t != null && isKaraokeVideo(t) ? karaokeVideoId(t) : null;
-    if (id == _id) return;
-    final old = _id;
+    if (id == _id) {
+      if (id != null && retry && _status == KaraokeVideoStatus.failed) _restart(); // played again after a failure
+      return;
+    }
     _gen++;
+    _attempt++; // the answers of the old track's load are void
     _id = id;
     _stream = null;
-    _videoPlaying = false;
     _done();
-    if (old != null) release(old);
+    _unpin();
+    _closePort();
     if (id == null) {
-      final port = _port;
-      _port = null;
-      _cancelPortSubs();
-      if (port != null) unawaited(_guard(port.dispose(), 'dispose'));
       _emit(KaraokeVideoStatus.none);
       return;
     }
+    _restart();
+  }
+
+  void _restart() {
     _errors = 0;
     _ready = Completer<void>();
     _emit(KaraokeVideoStatus.loading);
@@ -210,64 +238,73 @@ class KaraokeVideoController implements KaraokeVideoGate {
     final gen = _gen;
     final id = _id!;
     final attempt = ++_attempt;
+    bool stale() => attempt != _attempt || gen != _gen || _status == KaraokeVideoStatus.failed;
+    _closePort();
     try {
-      final port = _port ??= _newPort();
-      final file = first ? await cached(id) : null;
-      if (gen != _gen) {
-        if (file != null) release(id);
-        return;
-      }
-      if (file != null) {
-        await port.open(file.path, const {});
-      } else {
-        final s = await source.videoUrl(id);
-        if (gen != _gen) return;
-        _stream = s;
-        if (first) download(id, s);
-        await port.open(s.url.toString(), s.headers);
-      }
-      await port.firstFrame().timeout(const Duration(seconds: 15));
-      if (gen != _gen) return;
-      _videoPlaying = false;
-      _videoPos = _audioPos;
-      if (_audioPos > _driftLimit) await port.seek(_audioPos);
-      if (gen != _gen) return;
+      await _open(id, first, gen, stale).timeout(loadTimeout);
+      if (stale()) return;
+      _errors = 0;
       _emit(KaraokeVideoStatus.ready);
       _done();
       _tick();
     } on Object catch (e, st) {
-      if (gen != _gen) return;
+      if (stale()) return;
       AppLog.w('karaoke video load failed', e, st);
       _onError(attempt);
     }
   }
 
-  void _cancelPortSubs() {
-    for (final s in _portSubs) {
-      unawaited(s.cancel());
-    }
-    _portSubs = const [];
-  }
-
-  KaraokeVideoPort _newPort() {
+  Future<void> _open(String id, bool first, int gen, bool Function() stale) async {
     final port = _createPort();
+    _port = port;
+    final attempt = _attempt;
     _portSubs = [
       port.errors.listen((m) {
         AppLog.w('karaoke video player error: $m');
-        _onError(_attempt);
+        _onError(attempt);
       }),
       port.position.listen((p) => _videoPos = p),
     ];
-    return port;
+    final file = first ? await cached(id) : null;
+    if (file != null) {
+      // Fixed in the cache by now: a track change that came first found nothing of ours to release.
+      if (gen == _gen) {
+        _pinned = id;
+      } else {
+        release(id);
+      }
+    }
+    if (stale()) return;
+    if (file != null) {
+      _stream = null;
+      await port.open(file.path, const {});
+    } else {
+      final s = await source.videoUrl(id);
+      if (stale()) return;
+      _stream = s;
+      if (first) {
+        _pinned = id;
+        download(id, s);
+      }
+      await port.open(s.url.toString(), s.headers);
+    }
+    if (stale()) return;
+    await port.firstFrame();
+    if (stale()) return;
+    _videoPos = Duration.zero;
+    _lastSeek = null;
+    if (_audioPos > _driftLimit) {
+      await port.seek(_audioPos);
+      _videoPos = _audioPos;
+    }
   }
 
-  /// The first error asks the address again; the second gives up (the audio goes on as it was).
+  /// The first error asks the address again; two in a row (no frame between) give up, the audio goes on as it was.
   void _onError(int attempt) {
-    if (attempt == _failedAttempt || _id == null) return; // one failure, one count
+    if (attempt != _attempt || attempt == _failedAttempt || _id == null || _status == KaraokeVideoStatus.failed) return;
     _failedAttempt = attempt;
     if (++_errors >= 2) {
-      final port = _port;
-      if (port != null) unawaited(_guard(port.pause(), 'pause'));
+      _closePort();
       _emit(KaraokeVideoStatus.failed);
       _done();
       return;
@@ -307,9 +344,12 @@ class KaraokeVideoController implements KaraokeVideoGate {
   }
 
   @override
-  Future<void>? beforePlay(Track t) {
-    _track(t);
-    return _id == null ? null : _ready.future;
+  Future<void>? beforePlay(Track t, Duration start) {
+    _audioPos = start;
+    _track(t, retry: true);
+    if (_id == null) return null;
+    if (_status == KaraokeVideoStatus.ready && (start - _videoPos).abs() > _driftLimit) _tick(user: true);
+    return _background ? null : _ready.future; // in the background nobody sees it: it joins the audio on return
   }
 
   @override
@@ -321,23 +361,27 @@ class KaraokeVideoController implements KaraokeVideoGate {
     if (_status != KaraokeVideoStatus.ready) return null;
     _lastSeek = _clock();
     _videoPos = pos;
-    return _guard(port.seek(pos), 'seek');
+    // Done when the video's own clock is there, not when the command returns.
+    return _guard(
+      port.seek(pos).then((_) => port.position.firstWhere((p) => (p - pos).abs() <= _driftLimit)).then<void>((_) {}),
+      'seek',
+    );
   }
 
   /// The app goes to the background: the video stops, the audio does not. Back: it joins the audio again.
   void onLifecycle(AppLifecycleState s) {
-    final port = _port;
-    if (port == null) return;
     if (s == AppLifecycleState.paused || s == AppLifecycleState.hidden) {
       _background = true;
       _videoPlaying = false;
-      unawaited(_guard(port.pause(), 'pause'));
+      final port = _port;
+      if (port != null) unawaited(_guard(port.pause(), 'pause'));
     } else if (s == AppLifecycleState.resumed && _background) {
       _background = false;
-      if (_status != KaraokeVideoStatus.ready) return;
+      final port = _port;
+      if (port == null || _status != KaraokeVideoStatus.ready) return;
       final expires = _stream?.expires;
       if (expires != null && !_clock().isBefore(expires)) {
-        _status = KaraokeVideoStatus.loading; // the address ran out meanwhile: a new one, not an error
+        // The address ran out meanwhile: a new one, not an error.
         _ready = Completer<void>();
         _emit(KaraokeVideoStatus.loading);
         unawaited(_load(first: false));
@@ -355,13 +399,11 @@ class KaraokeVideoController implements KaraokeVideoGate {
     for (final s in _subs) {
       unawaited(s.cancel());
     }
-    final id = _id;
     _id = null;
     _gen++;
+    _attempt++;
     _done();
-    if (id != null) release(id);
-    _cancelPortSubs();
-    await _port?.dispose();
-    _port = null;
+    _unpin();
+    _closePort();
   }
 }

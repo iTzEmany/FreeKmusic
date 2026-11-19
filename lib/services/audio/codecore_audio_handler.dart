@@ -20,6 +20,7 @@ import 'crossfade_engine.dart';
 import 'equalizer.dart';
 import '../radio/icy_title.dart';
 import '../radio/radio_station.dart';
+import '../karaoke_video/karaoke_video.dart' show isKaraokeVideo;
 import '../karaoke_video/karaoke_video_gate.dart';
 import 'next_window.dart';
 import 'online_entries.dart';
@@ -207,6 +208,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
 
   /// A load is under way; a pause meanwhile must stick (the old track is not the one to pause).
   bool _loadBusy = false, _loadPaused = false;
+  int _seekGen = 0; // a newer seek or load makes the older seek's wait give way
+  bool _seekHold = false;
 
   /// Shadow row of the online entry now playing, once the preparer made it.
   int? _shadowId;
@@ -542,6 +545,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }) async {
     if (_disposed) return;
     final token = ++_loadToken;
+    _seekGen++;
+    _seekHold = false;
     _loadStartAt = startAt;
     _loadSameTrack = sameTrack;
     final back = _skipBack;
@@ -708,14 +713,22 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       }
       _consecutiveErrors = 0;
       _noSaveId = null;
-      // A backend that was playing keeps playing a newly loaded file.
       if (playNow && !_loadPaused) {
-        // A karaoke video starts together with the audio: wait for its first frame (D-647).
-        final hold = videoGate?.beforePlay(track);
+        // A karaoke video starts together with the audio (D-647): the wait looks like a stream
+        // load, so a pause or ▶ meanwhile only sets the wish.
+        final hold = videoGate?.beforePlay(track, start ?? Duration.zero);
         if (hold != null) {
+          _waitingStream = true;
+          _publish(AudioProcessingState.loading);
           await hold.timeout(const Duration(seconds: 10), onTimeout: () => AppLog.w('karaoke video late, playing anyway'));
           if (token != _loadToken) return;
+          _waitingStream = false;
+          _publish(AudioProcessingState.ready);
+          playNow = _playWhenReady;
         }
+      }
+      // A backend that was playing keeps playing a newly loaded file.
+      if (playNow && !_loadPaused) {
         await _backend.play();
       } else {
         await _backend.pause();
@@ -1182,6 +1195,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   void _onBackendState(BackendState s) {
+    // The pause of a seek that waits for the karaoke video is not the user's (it is told when the wait ends).
+    if (_seekHold && (s == BackendState.paused || s == BackendState.playing)) return;
     final wasPlaying = _state == BackendState.playing;
     final wasLive = wasPlaying || _state == BackendState.loading;
     _state = s;
@@ -1421,7 +1436,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final hook = karaokeSource;
     if (found == null || hook == null) {
       if (_nextKaraoke != null) _setKaraoke(next: null);
-      return found;
+      // A karaoke video waits for its first frame: it goes through _loadCurrent, not the gapless window.
+      return found != null && videoGate != null && isKaraokeVideo(found.track) ? null : found;
     }
     final entry = online?.entryOf(id);
     final key = isStreamTrack(found.track) || _isRemoteEpisode(found.track)
@@ -1803,6 +1819,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _position = position;
     final wasPlaying = _state == BackendState.playing;
     final token = _loadToken;
+    final gen = ++_seekGen;
     try {
       await _backend.seek(position);
     } on Object {
@@ -1810,12 +1827,25 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _position = before;
       rethrow;
     }
-    // The karaoke video catches up with the new place before the audio goes on (D-647).
+    // The karaoke video catches up with the new place before the audio goes on (D-647). While it does,
+    // the state shown stays «playing» (no pause/play flicker, no resume point saved).
     final hold = videoGate?.afterSeek(position);
     if (wasPlaying && hold != null) {
-      await _backend.pause();
-      await hold.timeout(const Duration(seconds: 3), onTimeout: () => AppLog.w('karaoke video seek late, playing anyway'));
-      if (token == _loadToken && _playWhenReady) await _backend.play();
+      _seekHold = true;
+      try {
+        await _backend.pause();
+        await hold.timeout(const Duration(seconds: 3), onTimeout: () => AppLog.w('karaoke video seek late, playing anyway'));
+      } finally {
+        if (gen == _seekGen) _seekHold = false;
+      }
+      // A newer seek or load took over: it is the one to go on.
+      if (gen == _seekGen && token == _loadToken) {
+        if (_playWhenReady) {
+          await _backend.play();
+        } else {
+          _onBackendState(BackendState.paused); // the user paused meanwhile: show it now
+        }
+      }
     }
     _publish(playbackState.value.processingState);
   }
