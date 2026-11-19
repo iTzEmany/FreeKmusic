@@ -41,31 +41,51 @@ class DesktopUpdate {
   static Future<void> _startDetached(String exe, List<String> args) =>
       Process.start(exe, args, mode: ProcessStartMode.detached);
 
-  /// [fallback] (the asset URL) is opened in the browser whenever the
-  /// package cannot install itself, e.g. a read-only AppImage folder.
-  Future<void> install(File f, UpdateTarget t, {Uri? fallback}) async {
-    switch (t.kind) {
-      case UpdateKind.windows:
-        await _start(f.path, [
-          '/SILENT',
-          '/SUPPRESSMSGBOXES',
-          '/NORESTART',
-          '/CLOSEAPPLICATIONS',
-        ]);
-        _exit(0);
-      case UpdateKind.appImage:
-        if (await _replaceAppImage(f)) return;
-        if (fallback != null) await openBrowser(fallback);
-      default:
-        if (fallback != null) await openBrowser(fallback);
+  /// True when the update started (the app then exits); false when it fell
+  /// back to the browser ([fallback], the asset URL) or could not run.
+  Future<bool> install(File f, UpdateTarget t, {Uri? fallback}) async {
+    var done = false;
+    if (t.kind == UpdateKind.windows) {
+      // /CLOSEAPPLICATIONS: running yt-dlp/ffmpeg children may stay locked (to try on Windows).
+      done = await _launch(f.path, const [
+        '/SILENT',
+        '/SUPPRESSMSGBOXES',
+        '/NORESTART',
+        '/CLOSEAPPLICATIONS',
+      ]);
+    } else if (t.kind == UpdateKind.appImage) {
+      done = await _replaceAppImage(f);
+    }
+    if (done) {
+      _exit(0);
+      return true;
+    }
+    if (fallback != null) await openBrowser(fallback);
+    return false;
+  }
+
+  /// False when nothing could open [url]; never throws. On Android/iOS no
+  /// process is started (the caller uses LinkOpener).
+  Future<bool> openBrowser(Uri url) => Platform.isAndroid || Platform.isIOS
+      ? Future.value(false)
+      : _launch(
+          _browser,
+          _browser == 'rundll32'
+              ? ['url.dll,FileProtocolHandler', url.toString()]
+              : [url.toString()],
+        );
+
+  Future<bool> _launch(String exe, List<String> args) async {
+    try {
+      await _start(exe, args);
+      return true;
+    } on Object catch (e, st) {
+      AppLog.w('starting $exe failed', e, st);
+      return false;
     }
   }
 
-  Future<void> openBrowser(Uri url) => _browser == 'rundll32'
-      ? _start(_browser, ['url.dll,FileProtocolHandler', url.toString()])
-      : _start(_browser, [url.toString()]);
-
-  /// False when the swap could not be done (nothing was changed).
+  /// False when the swap or the restart did not happen.
   Future<bool> _replaceAppImage(File downloaded) async {
     final current = _env['APPIMAGE'];
     if (current == null || current.isEmpty) return false;
@@ -80,8 +100,7 @@ class DesktopUpdate {
       if (await staged.exists()) await staged.delete();
       return false;
     }
-    await _start(current, const []);
-    _exit(0);
-    return true;
+    // shortcut: la vecchia AppImage è già sostituita se la nuova non parte; ripristino se servirà
+    return _launch(current, const []);
   }
 }

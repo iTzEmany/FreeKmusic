@@ -30,7 +30,7 @@ void main() {
 
   test('windows starts the silent setup and exits', () async {
     final setup = File('${dir.path}/setup.exe')..writeAsStringSync('x');
-    await make().install(setup, target(UpdateKind.windows));
+    expect(await make().install(setup, target(UpdateKind.windows)), isTrue);
     expect(started.single, [
       setup.path,
       '/SILENT',
@@ -64,8 +64,9 @@ void main() {
     final fresh = File('${dir.path}/new')..writeAsStringSync('new');
     await Process.run('chmod', ['555', ro.path]);
     try {
-      await make(env: {'APPIMAGE': old.path})
+      final ok = await make(env: {'APPIMAGE': old.path})
           .install(fresh, target(UpdateKind.appImage), fallback: url);
+      expect(ok, isFalse);
     } finally {
       await Process.run('chmod', ['755', ro.path]);
     }
@@ -88,5 +89,15 @@ void main() {
       browser: 'open',
     ).install(File('${dir.path}/x'), target(UpdateKind.macos), fallback: url);
     expect(started.single, ['open', url.toString()]);
+  });
+
+  test('openBrowser returns false when the process cannot start', () async {
+    final d = DesktopUpdate(
+      start: (exe, args) => throw const ProcessException('xdg-open', []),
+      exitApp: exits.add,
+      env: const {},
+      browserCommand: 'xdg-open',
+    );
+    expect(await d.openBrowser(url), isFalse);
   });
 }
