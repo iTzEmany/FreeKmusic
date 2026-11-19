@@ -62,7 +62,7 @@ List<UpdateAsset> _assetsOf(Object? raw) => [
           url: Uri.parse(a['browser_download_url'] as String),
           size: a['size'] is int ? a['size'] as int : 0,
           sha256: a['digest'] is String && (a['digest'] as String).startsWith('sha256:')
-              ? (a['digest'] as String).substring(7).toLowerCase()
+              ? (a['digest'] as String).substring(7).trim().toLowerCase()
               : null,
         ),
 ];

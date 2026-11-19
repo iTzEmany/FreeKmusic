@@ -69,5 +69,29 @@ void main() {
     expect(await kind({}, '/opt/freekmusic/freekmusic'), UpdateKind.deb);
     expect(await kind({}, '/usr/local/bin/other'), UpdateKind.linuxZip);
     expect(await kind({}, '/home/u/freekmusic/freekmusic'), UpdateKind.linuxZip);
+    expect(await kind({}, '/usr/bin/freekmusic'), UpdateKind.deb);
+    expect(await kind({}, '/usr/bin/firefox'), UpdateKind.linuxZip);
+    expect(await kind({}, '/usr/lib/firefox/firefox'), UpdateKind.linuxZip);
+    expect(await kind({'FLATPAK_ID': '', 'APPIMAGE': ''}, '/home/u/f/freekmusic'), UpdateKind.linuxZip);
+    expect(await kind({'APPIMAGE': '/x/a.AppImage', 'FLATPAK_ID': 'com.freekmusic.player'}, '/app/freekmusic'), UpdateKind.flatpak);
   }, skip: !Platform.isLinux);
+
+  test('APPDIR is matched as a folder: a sibling prefix, "/" or empty do not count', () async {
+    Future<UpdateKind?> kind(String appDir, String exe) async =>
+        (await detectUpdateTarget(env: {'APPIMAGE': '/x/a.AppImage', 'APPDIR': appDir}, executable: exe))?.kind;
+    expect(await kind('/home/u/app', '/home/u/app/usr/bin/freekmusic'), UpdateKind.appImage);
+    expect(await kind('/home/u/app', '/home/u/app-other/freekmusic'), UpdateKind.linuxZip);
+    expect(await kind('/', '/home/u/freekmusic'), UpdateKind.linuxZip);
+    expect(await kind('', '/home/u/freekmusic'), UpdateKind.linuxZip);
+  }, skip: !Platform.isLinux);
+
+  test('side files of a release are not picked', () {
+    final extra = [
+      for (final n in ['freekmusic.flatpak.sha256', 'FreeKmusic-Setup-1.exe.blockmap', 'freekmusic_1_amd64.deb.asc'])
+        UpdateAsset(name: n, url: Uri.parse('https://x/$n'), size: 1),
+    ];
+    for (final k in [UpdateKind.flatpak, UpdateKind.windows, UpdateKind.deb]) {
+      expect(pickUpdateAsset(extra, UpdateTarget(kind: k)), isNull);
+    }
+  });
 }

@@ -72,7 +72,7 @@ class UpdateInstaller {
         );
         // A release without a digest cannot be verified: not installed.
         final want = asset.sha256;
-        if (want == null || await _hashInIsolate(file.path) != want) {
+        if (want == null || await _hashInIsolate(file.path) != want.trim().toLowerCase()) {
           throw const UpdateException(UpdateFailure.corrupt);
         }
         if (cancel.isCancelled) throw const UpdateException(UpdateFailure.cancelled);

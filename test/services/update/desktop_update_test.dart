@@ -17,10 +17,10 @@ void main() {
   });
   tearDown(() => dir.deleteSync(recursive: true));
 
-  DesktopUpdate make({Map<String, String> env = const {}, String? browser}) =>
+  DesktopUpdate make({Map<String, String> env = const {}, String? browser, ProcessRunner? run}) =>
       DesktopUpdate(
         start: (exe, args) async => started.add([exe, ...args]),
-        run: (exe, args) => Process.run(exe, args),
+        run: run ?? (exe, args) => Process.run(exe, args),
         exitApp: exits.add,
         env: env,
         browserCommand: browser ?? 'xdg-open',
@@ -99,5 +99,32 @@ void main() {
       browserCommand: 'xdg-open',
     );
     expect(await d.openBrowser(url), isFalse);
+  });
+
+  test('chmod fails: old AppImage untouched, no .new left, browser opens', () async {
+    final old = File('${dir.path}/App.AppImage')..writeAsStringSync('old');
+    final fresh = File('${dir.path}/new')..writeAsStringSync('new');
+    final ok = await make(env: {'APPIMAGE': old.path}, run: (e, a) async => ProcessResult(0, 1, '', 'no'))
+        .install(fresh, target(UpdateKind.appImage), fallback: url);
+    expect(ok, isFalse);
+    expect(old.readAsStringSync(), 'old');
+    expect(File('${old.path}.new').existsSync(), isFalse);
+    expect(started.single, ['xdg-open', url.toString()]);
+    expect(exits, isEmpty);
+  });
+
+  test('APPIMAGE missing or empty: browser, nothing written next to the cwd', () async {
+    final fresh = File('${dir.path}/new')..writeAsStringSync('new');
+    for (final env in [<String, String>{}, {'APPIMAGE': ''}]) {
+      expect(await make(env: env).install(fresh, target(UpdateKind.appImage), fallback: url), isFalse);
+    }
+    expect(started, everyElement(['xdg-open', url.toString()]));
+    expect(started, hasLength(2));
+    expect(File('.new').existsSync(), isFalse);
+  });
+
+  test('Windows browser is rundll32 with the file protocol handler', () async {
+    await make(browser: 'rundll32').openBrowser(url);
+    expect(started.single, ['rundll32', 'url.dll,FileProtocolHandler', url.toString()]);
   });
 }

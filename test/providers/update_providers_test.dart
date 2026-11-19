@@ -17,19 +17,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Probe extends NetworkProbe {
-  _Probe(this.metered);
+  _Probe(this.metered, {this.boom = false});
   final bool metered;
+  final bool boom;
   @override
-  Future<NetworkKind> current() async => NetworkKind(metered: metered);
+  Future<NetworkKind> current() async {
+    if (boom) throw StateError('probe');
+    return NetworkKind(metered: metered);
+  }
 }
 
 class _Installer extends UpdateInstaller {
   _Installer(this.file);
   final File file;
   int downloads = 0;
+  CancelToken? token;
+
+  /// Replaces the normal two events; may throw an [UpdateException].
+  Stream<UpdateProgress> Function()? script;
   @override
   Stream<UpdateProgress> download(UpdateAsset asset, CancelToken cancel) async* {
     downloads++;
+    token = cancel;
+    if (script != null) {
+      yield* script!();
+      return;
+    }
     yield const UpdateProgress(5, 10);
     yield UpdateProgress(10, 10, file: file);
   }
@@ -40,10 +53,14 @@ class _Android implements AndroidUpdate {
   AndroidInstallResult result;
   final calls = <String>[];
   bool allowed = true;
+  bool boom = false;
+  Completer<bool>? gate;
   @override
   Future<String> abi() async => 'arm64-v8a';
   @override
-  Future<bool> canInstall() async => allowed;
+  Future<bool> canInstall() async {
+    return gate == null ? allowed : gate!.future;
+  }
   @override
   Future<bool> openInstallSettings() async {
     calls.add('settings');
@@ -52,16 +69,20 @@ class _Android implements AndroidUpdate {
   @override
   Future<AndroidInstallResult> install(String path) async {
     calls.add('install:$path');
+    if (boom) throw StateError('install');
     return result;
   }
 }
 
 class _Desktop implements DesktopUpdate {
   final calls = <String>[];
+  bool ok = true;
+  Uri? fallback;
   @override
   Future<bool> install(File f, UpdateTarget t, {Uri? fallback}) async {
     calls.add('install:${f.path}');
-    return true;
+    this.fallback = fallback;
+    return ok;
   }
   @override
   Future<bool> openBrowser(Uri url) async {
@@ -73,10 +94,12 @@ class _Desktop implements DesktopUpdate {
 class _Link extends LinkOpener {
   _Link(this.ok);
   final bool ok;
+  bool boom = false;
   final opened = <String>[];
   @override
   Future<bool> open(String url) async {
     opened.add(url);
+    if (boom) throw StateError('link');
     return ok;
   }
 }
@@ -93,7 +116,7 @@ void main() {
   late _Android android;
   late _Link link;
 
-  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started, File? file, bool linkOk = true}) {
+  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started, File? file, bool linkOk = true, bool probeBoom = false}) {
     link = _Link(linkOk);
     installer = _Installer(file ?? File('/tmp/$apk'));
     desktop = _Desktop();
@@ -101,7 +124,7 @@ void main() {
     final c = ProviderContainer(overrides: [
       updateTargetProvider.overrideWith((_) => UpdateTarget(kind: kind, abi: 'arm64-v8a')),
       updateInstallerProvider.overrideWithValue(installer),
-      networkProbeProvider.overrideWithValue(_Probe(metered)),
+      networkProbeProvider.overrideWithValue(_Probe(metered, boom: probeBoom)),
       androidUpdateProvider.overrideWithValue(android),
       desktopUpdateProvider.overrideWithValue(desktop),
       linkOpenerProvider.overrideWithValue(link),
@@ -216,5 +239,172 @@ void main() {
     await c.read(startupSettledProvider.future);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(d.existsSync(), isFalse);
+  });
+
+  File tmpFile(String name) {
+    final d = Directory.systemTemp.createTempSync('updp');
+    addTearDown(() => d.deleteSync(recursive: true));
+    return File('${d.path}/$name')..writeAsStringSync('x');
+  }
+
+  test('cancel at the size question goes back to idle', () async {
+    final c = make(UpdateKind.androidFull, metered: true);
+    final n = c.read(updateDownloadProvider.notifier);
+    await n.start(info);
+    n.cancel();
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.idle);
+  });
+
+  test('confirm outside the size question downloads nothing', () async {
+    final c = make(UpdateKind.androidFull);
+    await c.read(updateDownloadProvider.notifier).confirm();
+    expect(installer.downloads, 0);
+  });
+
+  test('cancel while downloading cancels the token', () async {
+    final c = make(UpdateKind.androidFull);
+    final gate = Completer<void>();
+    installer.script = () async* {
+      yield const UpdateProgress(1, 10);
+      await gate.future;
+    };
+    final run = c.read(updateDownloadProvider.notifier).start(info);
+    await Future<void>.delayed(Duration.zero);
+    c.read(updateDownloadProvider.notifier).cancel();
+    expect(installer.token!.isCancelled, isTrue);
+    gate.complete();
+    await run;
+  });
+
+  test('download failures: corrupt and interrupted are errors, cancelled is idle', () async {
+    final expected = {
+      UpdateFailure.corrupt: UpdatePhase.error,
+      UpdateFailure.interrupted: UpdatePhase.error,
+      UpdateFailure.cancelled: UpdatePhase.idle,
+    };
+    for (final e in expected.entries) {
+      final c = make(UpdateKind.androidFull);
+      installer.script = () => Stream.error(UpdateException(e.key));
+      await c.read(updateDownloadProvider.notifier).start(info);
+      final s = c.read(updateDownloadProvider);
+      expect(s.phase, e.value, reason: '${e.key}');
+      if (e.value == UpdatePhase.error) expect(s.failure, e.key);
+    }
+  });
+
+  test('the install fails or throws: error installFailed', () async {
+    var c = make(UpdateKind.androidFull, r: AndroidInstallResult.failed);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).failure, UpdateFailure.installFailed);
+    c = make(UpdateKind.androidFull);
+    android.boom = true;
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.error);
+  });
+
+  test('desktop install false: error; the fallback is the file URL', () async {
+    final c = make(UpdateKind.windows);
+    desktop.ok = false;
+    final w = UpdateAsset(name: 'FreeKmusic-Setup-9.9.9.exe', url: Uri.parse('https://x/s.exe'), size: 10, sha256: 'ab');
+    await c.read(updateDownloadProvider.notifier).start(UpdateInfo(version: '9.9.9', url: 'u', assets: [w]));
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.error);
+    expect(desktop.fallback, w.url);
+  });
+
+  test('the network probe or the browser throw: error, nothing escapes', () async {
+    var c = make(UpdateKind.androidFull, probeBoom: true);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.error);
+    c = make(UpdateKind.deb);
+    link.boom = true;
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.error);
+  });
+
+  test('retry after an error downloads again', () async {
+    final c = make(UpdateKind.androidFull);
+    installer.script = () => Stream.error(const UpdateException(UpdateFailure.interrupted));
+    final n = c.read(updateDownloadProvider.notifier);
+    await n.start(info);
+    installer.script = null;
+    await n.retry();
+    expect(installer.downloads, 2);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.ready);
+  });
+
+  test('resumeInstall from idle does nothing', () async {
+    final c = make(UpdateKind.androidFull);
+    await c.read(updateDownloadProvider.notifier).resumeInstall();
+    expect(android.calls, isEmpty);
+    expect(installer.downloads, 0);
+  });
+
+  test('resumeInstall with the file gone downloads again', () async {
+    final file = tmpFile(apk);
+    final c = make(UpdateKind.androidFull, r: AndroidInstallResult.needsPermission, file: file);
+    final n = c.read(updateDownloadProvider.notifier);
+    await n.start(info);
+    file.deleteSync();
+    await n.resumeInstall();
+    expect(installer.downloads, 2);
+  });
+
+  test('two resumeInstall at once install once', () async {
+    final file = tmpFile(apk);
+    final c = make(UpdateKind.androidFull, r: AndroidInstallResult.needsPermission, file: file);
+    final n = c.read(updateDownloadProvider.notifier);
+    await n.start(info);
+    android.calls.clear();
+    android.result = AndroidInstallResult.started;
+    final gate = android.gate = Completer<bool>();
+    final both = Future.wait([n.resumeInstall(), n.resumeInstall()]);
+    gate.complete(true);
+    await both;
+    expect(android.calls.where((x) => x.startsWith('install')), hasLength(1));
+  });
+
+  test('the notifier disposed during a download cancels it and stays quiet', () async {
+    final c = make(UpdateKind.androidFull);
+    final gate = Completer<void>();
+    installer.script = () async* {
+      yield const UpdateProgress(1, 10);
+      await gate.future;
+    };
+    final run = c.read(updateDownloadProvider.notifier).start(info);
+    await Future<void>.delayed(Duration.zero);
+    c.dispose();
+    expect(installer.token!.isCancelled, isTrue);
+    gate.complete();
+    await run;
+    expect(android.calls, isEmpty);
+  });
+
+  test('the updates folder is left alone while a start is in progress', () async {
+    final tmp = await Directory.systemTemp.createTemp('updc2');
+    final d = Directory('${tmp.path}/updates')..createSync();
+    final settled = Completer<void>();
+    final gate = Completer<void>();
+    final c = make(UpdateKind.androidFull);
+    final c2 = ProviderContainer(overrides: [
+      startupSettledProvider.overrideWith((_) => settled.future),
+      updatesDirProvider.overrideWithValue(() async => d),
+      updateTargetProvider.overrideWith((_) async {
+        await gate.future;
+        return null;
+      }),
+      linkOpenerProvider.overrideWithValue(_Link(true)),
+    ]);
+    c.dispose();
+    addTearDown(() async {
+      c2.dispose();
+      await tmp.delete(recursive: true);
+    });
+    c2.read(updatesCleanupProvider);
+    final run = c2.read(updateDownloadProvider.notifier).start(info);
+    settled.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(d.existsSync(), isTrue);
+    gate.complete();
+    await run;
   });
 }

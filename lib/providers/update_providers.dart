@@ -80,7 +80,7 @@ final updateTargetProvider = FutureProvider<UpdateTarget?>((ref) async {
 final updatesCleanupProvider = Provider<void>((ref) {
   ref.read(startupSettledProvider.future).then((_) {
     // Not while a download or an install is going on.
-    if (ref.mounted && ref.read(updateDownloadProvider).phase == UpdatePhase.idle) {
+    if (ref.mounted && !ref.read(updateDownloadProvider.notifier).busy) {
       unawaited(clearUpdatesDir(ref.read(updatesDirProvider)));
     }
   }, onError: (Object e, StackTrace st) => AppLog.w('updates cleanup skipped', e, st));
@@ -107,15 +107,25 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
   CancelToken? _cancel;
   File? _file;
   bool _starting = false;
+  bool _resuming = false;
+
+  /// A flow is going on (or starting): the updates folder must be left alone.
+  bool get busy => _starting || state.phase != UpdatePhase.idle;
 
   @override
-  UpdateDownloadState build() => const UpdateDownloadState(UpdatePhase.idle);
+  UpdateDownloadState build() {
+    ref.onDispose(() => _cancel?.cancel());
+    return const UpdateDownloadState(UpdatePhase.idle);
+  }
 
   Future<void> start(UpdateInfo info) async {
     if (_starting || state.phase == UpdatePhase.downloading) return;
     _starting = true;
     try {
       await _start(info);
+    } on Object catch (e, st) {
+      AppLog.w('update start failed', e, st);
+      if (ref.mounted) state = const UpdateDownloadState(UpdatePhase.error, failure: UpdateFailure.installFailed);
     } finally {
       _starting = false;
     }
@@ -162,10 +172,15 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
   Future<void> resumeInstall() async {
     final a = state.asset;
     final f = _file;
-    if (state.phase != UpdatePhase.needsPermission || a == null) return;
-    if (!await ref.read(androidUpdateProvider).canInstall()) return;
-    if (f != null && f.existsSync()) return _install(a, f);
-    await retry();
+    if (_resuming || state.phase != UpdatePhase.needsPermission || a == null) return;
+    _resuming = true;
+    try {
+      if (!await ref.read(androidUpdateProvider).canInstall() || !ref.mounted) return;
+      if (f != null && f.existsSync()) return await _install(a, f);
+      await retry();
+    } finally {
+      _resuming = false;
+    }
   }
 
   Future<void> _download(UpdateAsset asset) async {
@@ -202,19 +217,23 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
     try {
       if (target.kind == UpdateKind.androidFull || target.kind == UpdateKind.androidLite) {
         final android = ref.read(androidUpdateProvider);
-        state = switch (await android.install(file.path)) {
+        final r = await android.install(file.path);
+        if (!ref.mounted) return;
+        state = switch (r) {
           AndroidInstallResult.started => done(UpdatePhase.ready),
           AndroidInstallResult.needsPermission => done(UpdatePhase.needsPermission),
           AndroidInstallResult.differentSigner => done(UpdatePhase.differentSigner),
           AndroidInstallResult.failed => done(UpdatePhase.error, UpdateFailure.installFailed),
         };
-        if (state.phase == UpdatePhase.needsPermission) await android.openInstallSettings();
+        if (ref.mounted && state.phase == UpdatePhase.needsPermission) await android.openInstallSettings();
       } else {
         final ok = await ref.read(desktopUpdateProvider).install(file, target, fallback: asset.url);
+        if (!ref.mounted) return;
         state = ok ? done(UpdatePhase.ready) : done(UpdatePhase.error, UpdateFailure.installFailed);
       }
     } on Object catch (e, st) {
       AppLog.w('update install failed', e, st);
+      if (!ref.mounted) return;
       state = done(UpdatePhase.error, UpdateFailure.installFailed);
     }
   }

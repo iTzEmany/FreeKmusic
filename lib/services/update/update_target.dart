@@ -33,11 +33,13 @@ Future<UpdateTarget?> detectUpdateTarget({
   // An inherited $APPIMAGE (another app's) must not make us replace that app's file.
   final appDir = e['APPDIR'] ?? '';
   if ((e['APPIMAGE'] ?? '').isNotEmpty &&
-      (exe.startsWith('/tmp/.mount_') || (appDir.isNotEmpty && exe.startsWith(appDir)))) {
+      (exe.startsWith('/tmp/.mount_') ||
+          (appDir.isNotEmpty && appDir != '/' && (exe == appDir || exe.startsWith('$appDir/'))))) {
     return const UpdateTarget(kind: UpdateKind.appImage);
   }
   if ((e['FLATPAK_ID'] ?? '').isNotEmpty) return const UpdateTarget(kind: UpdateKind.flatpak);
-  if (exe.startsWith('/usr/lib/') || exe.startsWith('/usr/bin/') || exe.startsWith('/opt/freekmusic/')) {
+  // The .deb installs /opt/freekmusic/freekmusic, linked from /usr/bin/freekmusic.
+  if (exe == '/usr/bin/freekmusic' || exe.startsWith('/usr/lib/freekmusic/') || exe.startsWith('/opt/freekmusic/')) {
     return const UpdateTarget(kind: UpdateKind.deb);
   }
   return const UpdateTarget(kind: UpdateKind.linuxZip);

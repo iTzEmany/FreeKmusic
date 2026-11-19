@@ -94,4 +94,33 @@ void main() {
     await clearUpdatesDir(() async => d);
     expect(d.existsSync(), isFalse);
   });
+
+  test('no digest: corrupt and no file', () async {
+    await expectLater(
+      installer.download(asset(null), CancelToken()),
+      emitsThrough(emitsError(isA<UpdateException>().having((e) => e.kind, 'kind', UpdateFailure.corrupt))),
+    );
+    expect(File('${tmp.path}/updates/a.apk').existsSync(), isFalse);
+  });
+
+  test('digest with spaces and capitals still matches', () async {
+    final sha = ' ${sha256.convert(body).toString().toUpperCase()} ';
+    expect((await installer.download(asset(sha), CancelToken()).toList()).last.file, isNotNull);
+  });
+
+  test('a name with ../ stays inside the updates folder', () async {
+    final a = UpdateAsset(
+      name: '../evil.apk',
+      url: Uri.parse('http://127.0.0.1:${server.port}/a.apk'),
+      size: body.length,
+      sha256: sha256.convert(body).toString(),
+    );
+    await installer.download(a, CancelToken()).toList();
+    expect(File('${tmp.path}/updates/evil.apk').existsSync(), isTrue);
+    expect(File('${tmp.path}/evil.apk').existsSync(), isFalse);
+  });
+
+  test('clearUpdatesDir on a missing folder does not throw', () async {
+    await clearUpdatesDir(() async => Directory('${tmp.path}/none'));
+  });
 }

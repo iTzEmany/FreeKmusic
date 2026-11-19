@@ -14,8 +14,17 @@ class AndroidUpdate {
 
   Future<String> abi() async => (await _channel.invokeMethod<String>('abi'))!;
 
-  Future<bool> canInstall() async =>
-      (await _channel.invokeMethod<bool>('canInstall')) ?? false;
+  /// False when it cannot be told; never throws.
+  Future<bool> canInstall() async {
+    try {
+      return (await _channel.invokeMethod<bool>('canInstall')) ?? false;
+    } on PlatformException catch (e, st) {
+      AppLog.w('install permission unknown', e, st);
+    } on MissingPluginException catch (e, st) {
+      AppLog.w('install permission unknown', e, st);
+    }
+    return false;
+  }
 
   Future<bool> openInstallSettings() async {
     try {

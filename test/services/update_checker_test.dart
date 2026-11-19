@@ -110,7 +110,7 @@ void main() {
             {
               'name': 'freekmusic-full-arm64-v8a-release.apk',
               'size': 84081714,
-              'digest': 'sha256:00385C8F382705EA5215323201B4CDABFD2F44E3A49C8439AF019ACC294E2D71',
+              'digest': 'sha256: 00385C8F382705EA5215323201B4CDABFD2F44E3A49C8439AF019ACC294E2D71',
               'browser_download_url': 'https://github.com/iTzEmany/FreeKmusic/releases/download/v1.6.2/freekmusic-full-arm64-v8a-release.apk',
             },
             {'name': 'old.bin', 'size': 3, 'digest': null, 'browser_download_url': 'https://example.com/old.bin'},
