@@ -4,12 +4,13 @@ import 'merge_results.dart';
 const kKnownKaraokeChannels = ['sing king', 'karafun', 'karaoke version', 'stingray'];
 
 final _isKaraoke = RegExp('karaoke', caseSensitive: false);
-final _reaction = RegExp(r'\breaction\b', caseSensitive: false);
+final _reaction = RegExp(r'\breactions?\b', caseSensitive: false);
 
-/// «cover» / «live» only as a tag: in brackets or after a separator, so
-/// «Live Forever (Karaoke Version)» stays.
+/// «cover» / «live» only as a tag: in brackets, or as a whole segment after a
+/// separator («- Live», «| Live karaoke»), so «Live Forever» and «Cover Me»
+/// stay.
 final _tagged = RegExp(
-  r'[\(\[][^\)\]]*\b(cover|live)\b|(?:\s[-–—|]\s).*\b(cover|live)\b',
+  r'[\(\[][^\)\]]*\b(cover|live)\b|(?:\s[-–—|]\s|\|)\s*(?:karaoke\s+)?(?:cover|live)(?:\s+karaoke)?(?:\s+version)?(?=\s*(?:$|[-–—|(\[]))',
   caseSensitive: false,
 );
 

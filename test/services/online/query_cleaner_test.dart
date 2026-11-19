@@ -240,6 +240,18 @@ void main() {
       final q = karaokeLyricsQuery('Sing King - Adele - Hello (Karaoke Version)', 'Sing King');
       expect((q.artist, q.title), ('Adele', 'Hello'));
     });
+    for (final (title, channel, artist, song) in [
+      ('The Beatles - Together (Karaoke Version)', 'The', 'The Beatles', 'Together'),
+      ('Sing King - Lovely Day (Karaoke Version)', 'Love', 'Sing King', 'Lovely Day'),
+      ('Adele - Hello (Karaoke Version)', 'Adele', 'Adele', 'Hello'),
+      ('{Karaoke} Sing King - Adele - Hello', 'Sing King', 'Adele', 'Hello'),
+      ('Adele - Hello - Sing King', 'Sing King', 'Adele', 'Hello'),
+    ]) {
+      test('the channel goes only as a whole segment: «$title» / «$channel»', () {
+        final q = karaokeLyricsQuery(title, channel);
+        expect((q.artist, q.title), (artist, song));
+      });
+    }
     test('a tail «- Karaoke Version» and «with lyrics» go too', () {
       final q = karaokeLyricsQuery('KaraFun Karaoke - Adele - Hello - Karaoke Version with lyrics', 'KaraFun Karaoke');
       expect((q.artist, q.title), ('Adele', 'Hello'));

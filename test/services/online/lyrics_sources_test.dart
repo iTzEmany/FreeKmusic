@@ -388,5 +388,35 @@ void main() {
       );
       expect(r, isNull);
     });
+
+    for (final (want, got, ok) in [
+      ('Hello', 'Hello Goodbye', false),
+      ('Love', 'Lovesong', false),
+      ('Don\u2019t Stop', "Don't Stop", true),
+      ('Mr. Brightside', 'Mr Brightside', true),
+      ('Rock & Roll', 'Rock and Roll', true),
+      ('Hello', 'Hello (Live)', true),
+      ('Hello', 'HELLO (Remastered)', true),
+    ]) {
+      test('a karaoke title «$want» vs «$got» is ${ok ? 'taken' : 'refused'}', () async {
+        final w = _Web({
+          '/search': () => [
+            {'artistName': 'Adele', 'trackName': got, 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+          ],
+        });
+        final r = await LrclibClient(w).find(title: want, artist: 'Adele', durationSec: 250, ignoreDuration: true);
+        expect(r != null, ok);
+      });
+    }
+
+    test('a karaoke takes no text of another artist', () async {
+      final w = _Web({
+        '/search': () => [
+          {'artistName': 'Someone', 'trackName': 'Hello', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+        ],
+      });
+      final r = await LrclibClient(w).find(title: 'Hello', artist: 'Adele', durationSec: 250, ignoreDuration: true);
+      expect(r, isNull);
+    });
   });
 }

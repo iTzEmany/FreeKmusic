@@ -45,4 +45,25 @@ void main() {
       'C karaoke',
     ]);
   });
+
+  test('a song title that starts with live or cover is kept', () {
+    final titles = [
+      'Oasis - Live Forever (Karaoke Version)',
+      'Sing King - Live and Let Die (Karaoke Version)',
+      'Sing King - Cover Me (Karaoke)',
+    ];
+    expect(karaokeResults([for (final t in titles) _r(t)]).length, 3);
+  });
+
+  test('cover and live tags are dropped in any separator or bracket', () {
+    final out = karaokeResults([
+      _r('Hello | Live karaoke'),
+      _r('Hello – Live (Karaoke)'),
+      _r('Hello — cover karaoke'),
+      _r('Hello [Live] karaoke'),
+      _r('Hello [Cover] karaoke'),
+      _r('Hello karaoke reactions'),
+    ]);
+    expect(out, isEmpty);
+  });
 }

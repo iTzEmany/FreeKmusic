@@ -89,9 +89,9 @@ class LrclibClient {
       return null;
     }
     if (title != null) {
-      final got = normalize(coreTitle('${item['trackName'] ?? ''}'));
-      final want = normalize(coreTitle(title));
-      if (want.isEmpty || !got.contains(want)) return null;
+      final got = _titleKey('${item['trackName'] ?? ''}');
+      final want = _titleKey(title);
+      if (want.isEmpty || got != want) return null;
     }
     final d = item['duration'];
     if (durationSec != null && d is num) {
@@ -104,3 +104,11 @@ class LrclibClient {
     return result.isEmpty ? null : result;
   }
 }
+
+final _remaster = RegExp(r'[\(\[][^\)\]]*remaster[^\)\]]*[\)\]]', caseSensitive: false);
+final _nonAlnum = RegExp(r'[^\p{L}\p{N}]', unicode: true);
+
+/// Letters and digits only, «&» as «and»: «Mr. Brightside» = «Mr Brightside».
+String _titleKey(String t) => normalize(
+  coreTitle(t.replaceAll(_remaster, ' ')),
+).replaceAll('&', 'and').replaceAll(_nonAlnum, '');
