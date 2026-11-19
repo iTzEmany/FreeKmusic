@@ -36,6 +36,7 @@ SnackBar updateSnackBar(BuildContext context, UpdateInfo info, Duration duration
   final l = context.l10n;
   return SnackBar(
     duration: duration,
+    persist: false, // D-541: every snackbar times out
     content: CcSnackContent(l.updateAvailable(info.version), duration),
     action: SnackBarAction(
       label: l.updateDo,
@@ -60,7 +61,13 @@ class _UpdateDialogState extends ConsumerState<UpdateDialog> {
       : ref.read(updateCheckerProvider)?.check() ?? Future.value(const UpdateResult(UpdateStatus.failed));
 
   // Back from Android's unknown-sources setting: go on with the file already downloaded.
-  late final _lifecycle = AppLifecycleListener(onResume: () => ref.read(updateDownloadProvider.notifier).resumeInstall());
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: () => ref.read(updateDownloadProvider.notifier).resumeInstall());
+  }
 
   @override
   void dispose() {
@@ -149,11 +156,16 @@ class _UpdateProgress extends ConsumerWidget {
           UpdatePhase.downloading => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LinearProgressIndicator(value: asset == null || asset.size <= 0 ? null : s.received / asset.size),
+              LinearProgressIndicator(
+                value: asset == null || asset.size <= 0 ? null : s.received / asset.size,
+                semanticsLabel: l.updateProgress(_mb(s.received), _mb(asset?.size ?? 0)),
+              ),
               const SizedBox(height: 4),
-              Text(
-                l.updateProgress(_mb(s.received), _mb(asset?.size ?? 0)),
-                style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+              ExcludeSemantics(
+                child: Text(
+                  l.updateProgress(_mb(s.received), _mb(asset?.size ?? 0)),
+                  style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                ),
               ),
             ],
           ),
@@ -204,7 +216,9 @@ class _UpdateActions extends ConsumerWidget {
       ),
       UpdatePhase.downloading => TextButton(onPressed: n.cancel, child: Text(l.cancel)),
       UpdatePhase.error => TextButton(onPressed: n.retry, child: Text(l.retry)),
-      _ => const SizedBox.shrink(),
+      // Whoever cancels the system installer, or comes back with the dialog closed, can start again.
+      UpdatePhase.ready || UpdatePhase.needsPermission => TextButton(onPressed: n.retry, child: Text(l.updateDo)),
+      UpdatePhase.differentSigner => const SizedBox.shrink(),
     };
   }
 }

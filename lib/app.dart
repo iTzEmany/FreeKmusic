@@ -23,6 +23,7 @@ import 'providers/update_providers.dart';
 import 'providers/youtube_providers.dart' show promoteErrorsProvider;
 import 'providers/activity_log_providers.dart';
 import 'providers/import_notification_providers.dart';
+import 'core/app_log.dart';
 import 'l10n/l10n_ext.dart';
 import 'ui/screens/onboarding/onboarding_gate.dart';
 import 'providers/dislike_store_provider.dart' show dislikeStoreProvider;
@@ -78,7 +79,11 @@ class CodecoreApp extends ConsumerWidget {
       final info = next.value;
       if (info == null) return;
       final c = _navigatorKey.currentState?.overlay?.context;
-      if (c != null) _messengerKey.currentState?.showSnackBar(updateSnackBar(c, info, _updateSnack));
+      if (c == null) {
+        AppLog.w('no navigator to show the update notice on');
+        return;
+      }
+      _messengerKey.currentState?.showSnackBar(updateSnackBar(c, info, _updateSnack));
     });
     ref.listen(promoteErrorsProvider, (_, next) {
       final e = next.value;

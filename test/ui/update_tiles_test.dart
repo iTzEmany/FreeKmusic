@@ -29,6 +29,8 @@ class _Flow extends UpdateDownloadNotifier {
   @override
   void cancel() => calls.add('cancel');
   @override
+  Future<void> resumeInstall() async => calls.add('resume');
+  @override
   Future<void> retry() async => calls.add('retry');
 }
 
@@ -112,6 +114,33 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('back in the foreground: the install goes on with the downloaded file', (tester) async {
+    final h = await open(tester, UpdateDownloadState(UpdatePhase.needsPermission, asset: apk));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    expect(flow.calls, ['resume']);
+    await h.dispose(tester);
+  });
+
+  for (final phase in [UpdatePhase.ready, UpdatePhase.needsPermission]) {
+    testWidgets('$phase: «Aggiorna» starts again', (tester) async {
+      final h = await open(tester, UpdateDownloadState(phase, asset: apk));
+      await tester.tap(find.text('Aggiorna'));
+      expect(flow.calls, ['retry']);
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('the progress bar reads out the same text', (tester) async {
+    final h = await open(tester, UpdateDownloadState(UpdatePhase.downloading, asset: apk, received: 35 * _mb));
+    expect(tester.getSemantics(find.byType(LinearProgressIndicator)).label, '35 di 84 MB');
+    await h.dispose(tester);
+  });
+
   testWidgets('the start-up notice has «Aggiorna», which opens the update dialog', (tester) async {
     final h = await Harness.create(tester);
     await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
@@ -128,6 +157,22 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('File: $_apk, 84 MB'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the start-up notice times out', (tester) async {
+    final h = await Harness.create(tester);
+    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
+      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+      child: const Text('go'),
+    ))));
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('Disponibile la versione 9.9.9'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Disponibile la versione 9.9.9'), findsNothing);
     await h.dispose(tester);
   });
 }
