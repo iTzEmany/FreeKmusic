@@ -32,17 +32,18 @@ void main() {
   late StreamCache cache;
   late _Adapter adapter;
   late List<String> resolved;
-  var metered = false;
+  var metered = false, failUrl = false, probeThrows = false;
   final now = DateTime.now(); // touch() stamps the real time
 
   KaraokeVideoCache make() => KaraokeVideoCache(
     cache: cache,
     source: KaraokeVideoSource((id) async {
       resolved.add(id);
+      if (failUrl) throw StateError('no url');
       return (url: Uri.parse('https://v/$id'), headers: {'h': '1'}, expires: null);
     }),
     dio: Dio()..httpClientAdapter = adapter,
-    canPrefetch: () async => !metered,
+    canPrefetch: () async => probeThrows ? throw StateError('probe') : !metered,
     clock: () => now,
   );
 
@@ -68,6 +69,7 @@ void main() {
     adapter = _Adapter();
     resolved = [];
     metered = false;
+    failUrl = probeThrows = false;
   });
   tearDown(() => root.delete(recursive: true));
 
@@ -83,6 +85,7 @@ void main() {
     await put('a', const Duration(hours: 2));
     final c = make();
     expect(await c.cached('a'), isNotNull);
+    expect(cache.isPinned('karaoke:video:youtube:a'), isTrue);
     await c.expire();
     expect(await has('a'), isTrue);
   });
@@ -152,5 +155,80 @@ void main() {
     await (await cache.fileFor('karaoke:video:youtube:k1'))!.setLastModified(now.subtract(const Duration(minutes: 16)));
     await c.expire();
     expect(await has('k1'), isFalse);
+  });
+
+  test('the same id twice in the queue is fixed once: leaving the queue frees it and it expires', () async {
+    await put('k1', const Duration(hours: 1));
+    final c = make();
+    c.prefetchQueue([track('online:youtube:k1', 'a karaoke'), track('online:youtube:k1', 'a karaoke')]);
+    c.prefetchQueue([]);
+    await until(() async => !cache.isPinned('karaoke:video:youtube:k1'));
+    expect(cache.isPinned('karaoke:video:youtube:k1'), isFalse);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await (await cache.fileFor('karaoke:video:youtube:k1'))!.setLastModified(now.subtract(const Duration(hours: 1)));
+    await c.expire();
+    expect(await has('k1'), isFalse);
+  });
+
+  test('a video already in the cache is not downloaded again, by the player or by the prefetch', () async {
+    await put('a', const Duration(minutes: 1));
+    final c = make();
+    c.download('a', (url: Uri.parse('https://v/a'), headers: {}, expires: null));
+    c.prefetchQueue([track('online:youtube:a', 'a karaoke')]);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(adapter.sent, isEmpty);
+    expect(resolved, isEmpty);
+  });
+
+  test('the prefetch evicts nothing, the player download does', () async {
+    await put('old', const Duration(minutes: 5));
+    cache.limitBytes = 3; // `old` (1 byte) plus a video (3 bytes) do not fit
+    final c = make();
+    c.prefetchQueue([track('online:youtube:k1', 'a karaoke')]);
+    await until(() => has('k1'));
+    expect(await has('old'), isTrue);
+    c.download('a', (url: Uri.parse('https://v/a'), headers: {}, expires: null));
+    await until(() => has('a'));
+    expect(await has('old'), isFalse);
+  });
+
+  test('an id that failed is tried again once it is taken out of the queue and put back', () async {
+    failUrl = true;
+    final c = make();
+    final k1 = track('online:youtube:k1', 'a karaoke');
+    c.prefetchQueue([k1]);
+    await until(() async => resolved.isNotEmpty);
+    c.prefetchQueue([k1]); // still queued: a failure is not retried
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(resolved, ['k1']);
+    c.prefetchQueue([]);
+    failUrl = false;
+    c.prefetchQueue([k1]);
+    await until(() => has('k1'));
+    expect(resolved, ['k1', 'k1']);
+  });
+
+  test('a failing network check is not a failed video: the next queue change asks again', () async {
+    probeThrows = true;
+    final c = make();
+    final k1 = track('online:youtube:k1', 'a karaoke');
+    c.prefetchQueue([k1]);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(resolved, isEmpty);
+    probeThrows = false;
+    c.prefetchQueue([k1]);
+    await until(() => has('k1'));
+    expect(await has('k1'), isTrue);
+  });
+
+  test('startExpiry deletes by itself, now and on its timer', () async {
+    await put('old', const Duration(minutes: 20));
+    final c = make()..startExpiry(every: const Duration(milliseconds: 30));
+    await until(() async => !await has('old'));
+    expect(await has('old'), isFalse);
+    await put('old2', const Duration(minutes: 20));
+    await until(() async => !await has('old2'));
+    expect(await has('old2'), isFalse);
+    c.dispose();
   });
 }

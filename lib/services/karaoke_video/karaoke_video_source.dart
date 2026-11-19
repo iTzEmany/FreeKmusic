@@ -8,14 +8,16 @@ KaraokeVideoStream karaokeVideoStreamOf(Uri url, [Map<String, String> headers = 
   return (
     url: url,
     headers: headers,
-    expires: secs == null ? null : DateTime.fromMillisecondsSinceEpoch(secs * 1000, isUtc: true),
+    expires: secs == null || secs <= 0 || secs > 8640000000000 // DateTime's range, in s
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(secs * 1000, isUtc: true),
   );
 }
 
 /// The first line of a yt-dlp `-g` output as a stream; anything but an absolute https address is a changed output.
 KaraokeVideoStream karaokeVideoStreamOfOutput(String? out) {
   final u = Uri.tryParse(out?.trim().split('\n').first.trim() ?? '');
-  if (u == null || !u.isAbsolute || u.scheme != 'https') {
+  if (u == null || !u.isAbsolute || u.scheme != 'https' || u.host.isEmpty) {
     throw const YtException(YtErrorKind.changed, 'bad output');
   }
   return karaokeVideoStreamOf(u);

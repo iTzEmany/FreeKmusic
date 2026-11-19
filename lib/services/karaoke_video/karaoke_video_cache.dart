@@ -26,7 +26,7 @@ class KaraokeVideoCache {
     this.canPrefetch = _yes,
     this.clock = DateTime.now,
     this.lifetime = const Duration(minutes: 15),
-  }) : _dio = dio ?? Dio();
+  }) : _dio = dio ?? Dio(BaseOptions(connectTimeout: const Duration(seconds: 8), receiveTimeout: const Duration(seconds: 30)));
 
   final StreamCache cache;
   final KaraokeVideoSource source;
@@ -43,20 +43,21 @@ class KaraokeVideoCache {
   final _tried = <String>{};
   Timer? _timer;
   Future<void>? _worker;
+  var _again = false;
 
   /// The cached video of [id] or null; a hit is touched and fixed until [release].
   Future<File?> cached(String id) async {
     final f = await cache.fileFor(_keyOf(id));
     if (f == null) return null;
+    cache.pin(_keyOf(id)); // before any await: the expiry must not take it
     await cache.touch(_keyOf(id));
-    cache.pin(_keyOf(id));
     return f;
   }
 
   /// The player is done with [id]: the 15 minutes can start.
   void release(String id) {
-    cache.unpin(_keyOf(id));
-    unawaited(cache.touch(_keyOf(id)));
+    // Touch first, then unpin: the expiry never sees it unpinned and old.
+    unawaited(cache.touch(_keyOf(id)).whenComplete(() => cache.unpin(_keyOf(id))));
   }
 
   /// Downloads the stream of [id] in the background, fixed until [release]. One download per id.
@@ -98,12 +99,16 @@ class KaraokeVideoCache {
     }
   }
 
-  void dispose() => _timer?.cancel();
+  void dispose() {
+    _timer?.cancel();
+    _queued.forEach(release);
+    _queued.clear();
+  }
 
   /// The karaoke videos of the manual queue [userAhead] are fetched in order, one at a time, and stay
   /// fixed while queued; the ones that left it are released.
   void prefetchQueue(List<Track> userAhead) {
-    final ids = [for (final t in userAhead) if (isKaraokeVideo(t)) karaokeVideoId(t)!];
+    final ids = {for (final t in userAhead) if (isKaraokeVideo(t)) karaokeVideoId(t)!}.toList();
     for (final id in _queued.where((i) => !ids.contains(i)).toList()) {
       _queued.remove(id);
       _tried.remove(id);
@@ -114,20 +119,35 @@ class KaraokeVideoCache {
     }
     _queued
       ..clear()
-      ..addAll(ids.toSet());
-    _worker ??= _prefetchAll().whenComplete(() => _worker = null);
+      ..addAll(ids);
+    if (_worker != null) {
+      _again = true; // the running pass may be on its way out: it looks again
+      return;
+    }
+    _worker = _prefetchAll().whenComplete(() => _worker = null);
   }
 
   Future<void> _prefetchAll() async {
     String? next() => _queued.where((i) => !_tried.contains(i)).firstOrNull;
+    do {
+      _again = false;
+      await _pass(next);
+    } while (_again);
+  }
+
+  Future<void> _pass(String? Function() next) async {
     for (var id = next(); id != null; id = next()) {
       try {
         if (!await canPrefetch()) return; // asked again at the next queue change
-        _tried.add(id);
+      } on Object catch (e, st) {
+        AppLog.w('karaoke video: prefetch check failed', e, st);
+        return; // not tried: the next queue change asks again
+      }
+      _tried.add(id);
+      try {
         if (await cache.fileFor(_keyOf(id)) != null) continue;
         await _fetch(id, await source.videoUrl(id), trim: false);
       } on Object catch (e, st) {
-        _tried.add(id);
         AppLog.w('karaoke video $id: prefetch failed', e, st);
       }
     }
