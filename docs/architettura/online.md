@@ -27,6 +27,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 | Nuove uscite | `releases/` (`ReleaseCheckController`, `release_checker`, `check_schedule`, `auto_follow_service`, `release_diff`, `release_notification_text`) |
 | Radio | `radio/` (`RadioBrowserClient`, `RadioCatalog`, `radio_prefs`, `near_you`, `icy_title`, `saved_refresh`), `data/repositories/radio_repository.dart` |
 | Provider enrich | `providers/enrich_completer_providers`, `recognition_providers`, `second_opinion_providers` |
+| Aggiornamento dall'app | `update/update_target.dart` (`detectUpdateTarget`, `pickUpdateAsset`, `selfInstalls`), `update/update_installer.dart`, `update/android_update.dart`, `update/desktop_update.dart`; `providers/update_providers.dart`; `online/update_checker.dart` (`UpdateInfo`, `UpdateAsset` con nome, URL, dimensione, `digest`) |
 | Android | `android/app/src/{full,lite}/kotlin/com/codecore/player/YtDlpChannel.kt`, `full/.../NewPipeUrl.kt`, `main/.../IncomingBridge.kt` |
 
 ## Come funziona
@@ -116,6 +117,18 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 - **Tag dei download che sopravvivono a un riavvio**: `DownloadTagger.markPending` registra il file in `pending-tags.json` (`PendingTags`) appena il brano è pronto; il file esce dall'elenco quando la scrittura finisce (riuscita o rifiutata, così un errore non si ripete a ogni avvio). All'avvio `resumePending` (da `ImportEventListener`) rimette in coda i file ancora elencati; i download vecchi, mai elencati, non vengono toccati.
 
+### Aggiornamento dall'app (fase 132, D-640..D-646, D-656)
+
+«Aggiorna» (Impostazioni › Aggiornamenti e azione dello snackbar all'avvio, che apre lo stesso dialog) sostituisce il link da copiare.
+
+- **File giusto**: `detectUpdateTarget` dà `UpdateTarget(kind, abi)` (Android full/lite + ABI dal canale `codecore/update`; Windows; macOS; su Linux AppImage, Flatpak, `.deb` o zip). `pickUpdateAsset` sceglie l'asset per nome (i nomi di `release.yml`); `selfInstalls` dice se l'app si installa da sola (Android, Windows, AppImage) o se si apre il browser (`.deb`, Flatpak, zip, macOS, via `LinkOpener`).
+- **Download**: `UpdateInstaller` con `dio` in `<cache>/updates/`, avanzamento a flusso, annullabile; SHA-256 (`crypto`, in un isolate) confrontato con il `digest` di GitHub, normalizzato (`sha256:` e maiuscole). File diverso: cancellato ed errore. Asset senza `digest`: non si installa, si apre il browser.
+- **Rete a consumo** (`networkProbeProvider`): prima del download una conferma con la dimensione (D-656).
+- **Android** (`AndroidUpdate`): prima `sameSigner` (firma dell'APK uguale a quella installata, altrimenti «Firma diversa» e nessun installer), poi `canInstall`; senza permesso si aprono le impostazioni (`openInstallSettings`, restituisce bool, non lancia) e al ritorno nell'app si riprova. Poi `install` con `FileProvider` + `ACTION_VIEW`.
+- **Windows** (`DesktopUpdate.install`): setup in modalità silenziosa (`/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS`) staccato, poi l'app esce; la riga `[Run]` del `.iss` la riapre.
+- **AppImage**: la nuova si copia accanto a `$APPIMAGE` (`.new`), `chmod 755`, rinomina sopra la vecchia, avvio staccato e uscita; cartella non scrivibile o errore → browser. Si riconosce solo se `$APPIMAGE` è impostata e l'eseguibile sta sotto `APPDIR` o in `/tmp/.mount_`.
+- **Pulizia**: `updatesCleanupProvider` svuota `<cache>/updates/` all'avvio (dopo `startupSettledProvider`) solo se nessun aggiornamento è in corso.
+
 ## Invarianti da non rompere
 
 - Ogni chiamata YTM passa da `budgetedYtm`; un 429 deve far scattare il `SourceCooldown`.
@@ -127,6 +140,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - `artistKey` non cambia senza migrazione.
 - Gli id negativi non finiscono nella coda salvata.
 - Nel flavor lite le funzioni YouTube restano spente (`kEnableYoutube`).
+- Un aggiornamento si installa solo con il `digest` verificato, e su Android solo con firma uguale (controllata prima del permesso). Niente installazione senza l'azione dell'utente.
 
 ## Come si estende
 
@@ -156,6 +170,10 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 - Rete universitaria (UniBA): broadcast /16 che confonde le prove LAN.
 - Classifica Deezer: niente parametro paese, segue l'IP di chi chiama; la chiave di cache ha il paese solo per Apple e per «Italiana». I nomi dei generi Apple sono tradotti per paese: filtrare per `genreId`.
 - Non «correggere» un bug senza cercarlo in `decisioni.md` (es. D-155).
+- **Aggiornamento, firma su Android 9–10**: `getPackageArchiveInfo` legge i certificati di un APK non installato solo con `GET_SIGNATURES`, anche se si chiede `GET_SIGNING_CERTIFICATES`; il canale usa entrambi i flag.
+- **Aggiornamento, `$APPIMAGE` ereditato**: un'app lanciata da un'altra AppImage eredita la sua `$APPIMAGE`; per questo si sostituisce il file solo se l'eseguibile è sotto `APPDIR` o `/tmp/.mount_`.
+- **Aggiornamento, SnackBar con azione**: senza `persist: false` non scade mai (Flutter 3.47); l'avviso all'avvio lo imposta.
+- **Aggiornamento, `late final` di `AppLifecycleListener`**: non lo crea finché nessuno lo legge; va creato esplicitamente (il ritorno dalle impostazioni del permesso dipende da lui).
 
 ## Decisioni chiave
 

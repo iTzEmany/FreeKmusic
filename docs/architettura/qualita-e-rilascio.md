@@ -95,6 +95,11 @@ I test in `test/live/*` parlano con servizi veri e partono solo con `CODECORE_LI
 | `macos` | `.app` non firmato in `FreeKmusic-<versione>-macos.zip` (D-543). Senza yt-dlp né ffmpeg. |
 | `publish` | Solo su tag `v*`. Scarica gli artefatti e li pubblica con `softprops/action-gh-release` e note generate. Dipende da tutti i job sopra. |
 
+### Aggiornamento dall'app e Release
+- L'aggiornamento dall'app funziona solo con APK firmati con la chiave della Release (D-569): una build di debug o locale dà «Firma diversa» e non si installa.
+- Funziona solo con asset che hanno il `digest` (SHA-256) nella Release di GitHub; senza, l'app apre il browser.
+- I nomi degli asset in `release.yml` sono un contratto con `pickUpdateAsset` (`lib/services/update/update_target.dart`): `freekmusic-{full,lite}-<abi>-release.apk`, `FreeKmusic-Setup-*.exe`, `freekmusic-*-x86_64.AppImage`, `freekmusic_*_amd64.deb`, `freekmusic.flatpak`, `freekmusic-linux-x64.zip`, `FreeKmusic-*-macos.zip`. Cambiarli rompe l'aggiornamento: aggiorna anche `test/services/update/update_target_test.dart`.
+
 ### Versionamento e tag
 
 1. Alza `version` in `pubspec.yaml` e `kAppVersion` in `lib/core/app_info.dart` (devono coincidere).

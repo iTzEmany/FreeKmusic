@@ -34,6 +34,7 @@ Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchett
 | `SaveFileBridge.kt` | `codecore/save`: copia a flusso verso un file scelto dall'utente. |
 | `MediaDeleteBridge.kt` | `codecore/media`: elimina dal dispositivo. |
 | `MediaPublishBridge.kt` | `codecore/publish`: `sdk`, `publish` (copia in `Music/FreeKmusic` con `MediaStore.Audio`, `IS_PENDING`, MIME audio, sottocartelle), `replace` (riscrive un file pubblicato con "wt", per i tag). Accetta `volume` (nome MediaStore del volume SD): `publish` fallisce sulla SD se manca `DATA`. Solo da Android 11 (D-567). Dart: `lib/services/online/media_publisher.dart`. |
+| `UpdateChannel.kt` | `codecore/update`: `abi` (`SUPPORTED_ABIS[0]`), `canInstall`, `openInstallSettings`, `sameSigner(path)`, `install(path)` (`FileProvider` + `ACTION_VIEW`). Dart: `lib/services/update/android_update.dart`. |
 | `NotifyBridge.kt` | `codecore/notify`: notifica «Nuove uscite», `takeLaunchTarget`. |
 | `LinkBridge.kt` | `codecore/link`: `openUrl`, `deviceInfo`. |
 | `JamBeaconBridge.kt` | `codecore/jam_beacon`: annuncio e scansione BLE della Jam a distanza. |
@@ -77,6 +78,13 @@ Le release producono un APK per ABI (`arm64-v8a`, `armeabi-v7a`), `minify` e `sh
 
 ### La sessione media è l'unico punto di comando
 Widget, tile, Android Auto e orologio mandano tasti alla sessione di `audio_service`; non toccano DB o file. Dart scrive titolo, artista, copertina e stato in `FlutterSharedPreferences` (`flutter.widget.*`, tramite `widget_bridge.dart`); `CodecoreApp` ascolta `flutter.widget.stamp` e ridisegna. Non c'è un canale perché il motore avviato da `audio_service` senza attività non ha quelli di `MainActivity`. A freddo `MediaKeys.pressSurely` preme il tasto due volte (R63).
+
+### Aggiornamento dall'app per piattaforma (fase 132)
+Dettagli in `online.md`; qui solo cosa tocca la piattaforma.
+- **Android**: permesso `REQUEST_INSTALL_PACKAGES` e `provider` `androidx.core.content.FileProvider` con autorità `${applicationId}.updates`, che espone solo `cache/updates` (`res/xml/update_paths.xml`). Anche la lite ha l'aggiornamento. In una build F-Droid va spento (firma diversa; nota in `packaging/fdroid/com.freekmusic.player.yml`).
+- **Windows**: il setup parte silenzioso con `/CLOSEAPPLICATIONS`; la riga `[Run]` di `freekmusic.iss` con `Check: WizardSilent` riapre l'app. Da provare su Windows: se i figli `yt-dlp.exe`/`ffmpeg.exe` in corso tengono bloccati i file (prova nella 133.3).
+- **Linux**: AppImage (`$APPIMAGE` con eseguibile sotto `APPDIR` o `/tmp/.mount_`) si sostituisce da sola; `.deb` si riconosce solo da `/usr/bin/freekmusic`, `/usr/lib/freekmusic/`, `/opt/freekmusic/`; Flatpak da `$FLATPAK_ID`; il resto è lo zip. `.deb`, Flatpak e zip aprono il browser.
+- **macOS**: solo browser sullo zip.
 
 ### Windows
 Backend audio libmpv (`just_audio_media_kit`), controlli di sistema SMTC (`smtc_windows`, un crate Rust compilato da cargokit). Il rilascio è un installer Inno Setup con `yt-dlp.exe` e `ffmpeg.exe` (build LGPL) accanto all'app. Nota MSVC: `permission_handler_windows` include `<experimental/coroutine>`, che con MSVC 14.51 dei runner GitHub dà l'errore STL1011; la definizione in `windows/CMakeLists.txt` lo silenzia (PR #163).
