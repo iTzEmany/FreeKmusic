@@ -43,6 +43,7 @@ Name: "{autodesktop}\FreeKmusic"; Filename: "{app}\freekmusic.exe"; Tasks: deskt
 
 [Run]
 Filename: "{app}\freekmusic.exe"; Description: "{cm:LaunchProgram,FreeKmusic}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\freekmusic.exe"; Flags: nowait runasoriginaluser; Check: WizardSilent
 
 [Code]
 // The user's data (library database, covers, downloads index) lives in
