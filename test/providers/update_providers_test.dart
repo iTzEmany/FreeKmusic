@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/core/network_kind.dart';
+import 'package:codecore/providers/issue_providers.dart' show linkOpenerProvider;
+import 'package:codecore/services/issue/link_opener.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/providers/update_providers.dart';
@@ -68,6 +70,17 @@ class _Desktop implements DesktopUpdate {
   }
 }
 
+class _Link extends LinkOpener {
+  _Link(this.ok);
+  final bool ok;
+  final opened = <String>[];
+  @override
+  Future<bool> open(String url) async {
+    opened.add(url);
+    return ok;
+  }
+}
+
 void main() {
   const apk = 'freekmusic-full-arm64-v8a-release.apk';
   final info = UpdateInfo(version: '9.9.9', url: 'https://x/rel', assets: [
@@ -78,8 +91,10 @@ void main() {
   late _Installer installer;
   late _Desktop desktop;
   late _Android android;
+  late _Link link;
 
-  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started, File? file}) {
+  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started, File? file, bool linkOk = true}) {
+    link = _Link(linkOk);
     installer = _Installer(file ?? File('/tmp/$apk'));
     desktop = _Desktop();
     android = _Android(r);
@@ -89,6 +104,7 @@ void main() {
       networkProbeProvider.overrideWithValue(_Probe(metered)),
       androidUpdateProvider.overrideWithValue(android),
       desktopUpdateProvider.overrideWithValue(desktop),
+      linkOpenerProvider.overrideWithValue(link),
     ]);
     addTearDown(c.dispose);
     return c;
@@ -153,14 +169,35 @@ void main() {
   test('.deb opens the browser on the file, with no download', () async {
     final c = make(UpdateKind.deb);
     await c.read(updateDownloadProvider.notifier).start(info);
-    expect(desktop.calls, ['browser:https://x/d.deb']);
+    expect(link.opened, ['https://x/d.deb']);
     expect(installer.downloads, 0);
   });
 
   test('no file in the release: the release page opens', () async {
     final c = make(UpdateKind.macos);
     await c.read(updateDownloadProvider.notifier).start(info);
-    expect(desktop.calls, ['browser:https://x/rel']);
+    expect(link.opened, ['https://x/rel']);
+  });
+
+  test('the browser cannot open: error state', () async {
+    final c = make(UpdateKind.deb, linkOk: false);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.error);
+  });
+
+  test('two taps at once download once', () async {
+    final c = make(UpdateKind.androidFull);
+    final n = c.read(updateDownloadProvider.notifier);
+    await Future.wait([n.start(info), n.start(info)]);
+    expect(installer.downloads, 1);
+  });
+
+  test('no digest: the browser opens on the file, nothing is downloaded', () async {
+    final c = make(UpdateKind.androidFull);
+    final nd = UpdateInfo(version: '9', url: 'u', assets: [UpdateAsset(name: apk, url: Uri.parse('https://x/$apk'), size: 10)]);
+    await c.read(updateDownloadProvider.notifier).start(nd);
+    expect(link.opened, ['https://x/$apk']);
+    expect(installer.downloads, 0);
   });
 
   test('the updates folder is emptied once the app has settled', () async {

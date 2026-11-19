@@ -42,10 +42,9 @@ Future<void> clearUpdatesDir([Future<Directory> Function()? dir]) async {
   }
 }
 
-String _sha256Of(String path) => crypto.sha256.convert(File(path).readAsBytesSync()).toString();
-
-// Top level so the isolate closure captures the path only.
-Future<String> _hashInIsolate(String path) => Isolate.run(() => _sha256Of(path));
+// Top level so the isolate closure captures the path only; streamed, the file is ~100 MB.
+Future<String> _hashInIsolate(String path) =>
+    Isolate.run(() async => (await crypto.sha256.bind(File(path).openRead()).first).toString());
 
 class UpdateInstaller {
   UpdateInstaller({Dio? dio, Future<Directory> Function()? dir})
@@ -76,6 +75,7 @@ class UpdateInstaller {
         if (want == null || await _hashInIsolate(file.path) != want) {
           throw const UpdateException(UpdateFailure.corrupt);
         }
+        if (cancel.isCancelled) throw const UpdateException(UpdateFailure.cancelled);
         out.add(UpdateProgress(asset.size, asset.size, file: file));
       } on Object catch (e, st) {
         if (file != null && await file.exists()) await file.delete();

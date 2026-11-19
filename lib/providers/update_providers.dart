@@ -11,6 +11,7 @@ import '../services/update/android_update.dart';
 import '../services/update/desktop_update.dart';
 import '../services/update/update_installer.dart';
 import '../services/update/update_target.dart';
+import 'issue_providers.dart' show linkOpenerProvider;
 import 'online_providers.dart';
 import 'settings_providers.dart';
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
@@ -78,8 +79,11 @@ final updateTargetProvider = FutureProvider<UpdateTarget?>((ref) async {
 /// Empties the updates folder once the app has settled. Watch it from the app root.
 final updatesCleanupProvider = Provider<void>((ref) {
   ref.read(startupSettledProvider.future).then((_) {
-    if (ref.mounted) unawaited(clearUpdatesDir(ref.read(updatesDirProvider)));
-  });
+    // Not while a download or an install is going on.
+    if (ref.mounted && ref.read(updateDownloadProvider).phase == UpdatePhase.idle) {
+      unawaited(clearUpdatesDir(ref.read(updatesDirProvider)));
+    }
+  }, onError: (Object e, StackTrace st) => AppLog.w('updates cleanup skipped', e, st));
 });
 
 enum UpdatePhase { idle, confirmSize, downloading, ready, error, differentSigner, needsPermission }
@@ -102,29 +106,39 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
   UpdateTarget? _target;
   CancelToken? _cancel;
   File? _file;
+  bool _starting = false;
 
   @override
   UpdateDownloadState build() => const UpdateDownloadState(UpdatePhase.idle);
 
   Future<void> start(UpdateInfo info) async {
-    if (state.phase == UpdatePhase.downloading) return;
+    if (_starting || state.phase == UpdatePhase.downloading) return;
+    _starting = true;
+    try {
+      await _start(info);
+    } finally {
+      _starting = false;
+    }
+  }
+
+  Future<void> _start(UpdateInfo info) async {
     _info = info;
     final target = _target = await ref.read(updateTargetProvider.future);
     final asset = target == null ? null : pickUpdateAsset(info.assets, target);
-    final desktop = ref.read(desktopUpdateProvider);
-    if (asset == null) {
-      await desktop.openBrowser(Uri.parse(info.url));
-      return;
-    }
-    if (!selfInstalls(target!.kind)) {
-      await desktop.openBrowser(asset.url);
-      return;
-    }
+    if (asset == null) return _browse(info.url, null);
+    // Without a digest the file cannot be checked: no point in downloading it.
+    if (!selfInstalls(target!.kind) || asset.sha256 == null) return _browse(asset.url.toString(), asset);
     if ((await ref.read(networkProbeProvider).current()).metered) {
       state = UpdateDownloadState(UpdatePhase.confirmSize, asset: asset);
       return;
     }
     await _download(asset);
+  }
+
+  Future<void> _browse(String url, UpdateAsset? asset) async {
+    if (!await ref.read(linkOpenerProvider).open(url) && ref.mounted) {
+      state = UpdateDownloadState(UpdatePhase.error, asset: asset, failure: UpdateFailure.installFailed);
+    }
   }
 
   /// After [UpdatePhase.confirmSize].
@@ -158,11 +172,18 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
     final cancel = _cancel = CancelToken();
     state = UpdateDownloadState(UpdatePhase.downloading, asset: asset);
     File? file;
+    final clock = Stopwatch()..start();
+    var shown = 0;
     try {
       await for (final e in ref.read(updateInstallerProvider).download(asset, cancel)) {
         if (!ref.mounted) return;
         file = e.file;
-        if (file == null) state = UpdateDownloadState(UpdatePhase.downloading, asset: asset, received: e.received);
+        // Not a rebuild of the UI at every chunk.
+        if (file == null && (clock.elapsedMilliseconds >= 250 || e.received - shown >= e.total / 100)) {
+          shown = e.received;
+          clock.reset();
+          state = UpdateDownloadState(UpdatePhase.downloading, asset: asset, received: e.received);
+        }
       }
     } on UpdateException catch (e) {
       if (!ref.mounted) return;

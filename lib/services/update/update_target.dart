@@ -29,10 +29,17 @@ Future<UpdateTarget?> detectUpdateTarget({
   if (Platform.isMacOS) return const UpdateTarget(kind: UpdateKind.macos);
   if (!Platform.isLinux) return null;
   final e = env ?? Platform.environment;
-  if ((e['APPIMAGE'] ?? '').isNotEmpty) return const UpdateTarget(kind: UpdateKind.appImage);
-  if ((e['FLATPAK_ID'] ?? '').isNotEmpty) return const UpdateTarget(kind: UpdateKind.flatpak);
   final exe = executable ?? Platform.resolvedExecutable;
-  if (exe.startsWith('/usr/') || exe.startsWith('/opt/')) return const UpdateTarget(kind: UpdateKind.deb);
+  // An inherited $APPIMAGE (another app's) must not make us replace that app's file.
+  final appDir = e['APPDIR'] ?? '';
+  if ((e['APPIMAGE'] ?? '').isNotEmpty &&
+      (exe.startsWith('/tmp/.mount_') || (appDir.isNotEmpty && exe.startsWith(appDir)))) {
+    return const UpdateTarget(kind: UpdateKind.appImage);
+  }
+  if ((e['FLATPAK_ID'] ?? '').isNotEmpty) return const UpdateTarget(kind: UpdateKind.flatpak);
+  if (exe.startsWith('/usr/lib/') || exe.startsWith('/usr/bin/') || exe.startsWith('/opt/freekmusic/')) {
+    return const UpdateTarget(kind: UpdateKind.deb);
+  }
   return const UpdateTarget(kind: UpdateKind.linuxZip);
 }
 

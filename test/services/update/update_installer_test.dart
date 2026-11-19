@@ -75,6 +75,19 @@ void main() {
     expect(File('${tmp.path}/updates/a.apk').existsSync(), isFalse);
   });
 
+  test('cancelled while downloading: cancelled and no file', () async {
+    final token = CancelToken();
+    final s = installer.download(asset(sha256.convert(body).toString()), token);
+    await expectLater(
+      s.map((e) {
+        token.cancel();
+        return e;
+      }),
+      emitsThrough(emitsError(isA<UpdateException>().having((e) => e.kind, 'kind', UpdateFailure.cancelled))),
+    );
+    expect(File('${tmp.path}/updates/a.apk').existsSync(), isFalse);
+  });
+
   test('clearUpdatesDir empties the folder', () async {
     final d = Directory('${tmp.path}/updates')..createSync();
     File('${d.path}/x').writeAsStringSync('1');

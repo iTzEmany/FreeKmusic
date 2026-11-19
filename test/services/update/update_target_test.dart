@@ -42,6 +42,10 @@ void main() {
     }
   }
 
+  test('an ABI the release does not carry gives null', () {
+    expect(pickUpdateAsset(_release('1.6.2'), const UpdateTarget(kind: UpdateKind.androidFull, abi: 'x86_64')), isNull);
+  });
+
   test('a release without the file gives null', () {
     expect(pickUpdateAsset(_release('1.6.2').where((a) => !a.name.endsWith('.deb')).toList(), const UpdateTarget(kind: UpdateKind.deb)), isNull);
   });
@@ -58,10 +62,12 @@ void main() {
   test('on Linux: AppImage, Flatpak, system path, otherwise the zip', () async {
     Future<UpdateKind?> kind(Map<String, String> env, String exe) async =>
         (await detectUpdateTarget(env: env, executable: exe))?.kind;
-    expect(await kind({'APPIMAGE': '/x/a.AppImage'}, '/tmp/.mount/freekmusic'), UpdateKind.appImage);
+    expect(await kind({'APPIMAGE': '/x/a.AppImage'}, '/tmp/.mount_freekAbc/usr/bin/freekmusic'), UpdateKind.appImage);
+    expect(await kind({'APPIMAGE': '/x/vscode.AppImage'}, '/home/u/freekmusic/freekmusic'), UpdateKind.linuxZip);
     expect(await kind({'FLATPAK_ID': 'com.freekmusic.player'}, '/app/freekmusic'), UpdateKind.flatpak);
     expect(await kind({}, '/usr/lib/freekmusic/freekmusic'), UpdateKind.deb);
     expect(await kind({}, '/opt/freekmusic/freekmusic'), UpdateKind.deb);
+    expect(await kind({}, '/usr/local/bin/other'), UpdateKind.linuxZip);
     expect(await kind({}, '/home/u/freekmusic/freekmusic'), UpdateKind.linuxZip);
   }, skip: !Platform.isLinux);
 }
