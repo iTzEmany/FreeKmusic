@@ -237,6 +237,9 @@ void main() {
       () => h.handler.karaokeSource!(track, 's1'),
     );
     expect(path, basePath);
+    // A karaoke video (a video with its own backing track) is never separated or mixed.
+    final video = track.copyWith(path: 'online:youtube:abc', title: 'Hello (Karaoke Version)');
+    expect(await tester.runAsync(() => h.handler.karaokeSource!(video, 's1')), isNull);
     h.handler.onKaraokeInUse!({basePath});
     expect(cache.isPinned('karaoke:base:s1'), isTrue);
     expect(cache.isPinned('karaoke:voice:s1'), isTrue);

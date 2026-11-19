@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
-import '../data/db/app_database.dart' show Track;
 import '../services/karaoke_video/karaoke_video_cache.dart';
 import '../services/karaoke_video/karaoke_video_source.dart';
 import '../services/online/android_yt_dlp_service.dart';
@@ -38,16 +37,11 @@ final karaokeVideoCacheProvider = Provider<KaraokeVideoCache>((ref) {
 
   var disposed = false, running = false, again = false;
   Future<void> step() async {
-    final from = handler.currentIndex + 1;
-    final ids = handler.queueIds;
-    final n = handler.userAhead;
-    final tracks = from <= 0 || n == 0 || from >= ids.length
-        ? const <Track>[]
-        : await queueTracks(
-            ids.sublist(from, (from + n).clamp(from, ids.length)),
-            ref.read(trackRepositoryProvider),
-            ref.read(onlineEntriesProvider),
-          );
+    final tracks = await manualQueueTracks(
+      handler,
+      ref.read(trackRepositoryProvider),
+      ref.read(onlineEntriesProvider),
+    );
     if (!disposed) cache.prefetchQueue(tracks);
   }
 

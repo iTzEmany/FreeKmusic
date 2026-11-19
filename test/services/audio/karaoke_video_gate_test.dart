@@ -178,6 +178,16 @@ void main() {
     expect(backend.nextPath, isNull);
   });
 
+  test('with a karaoke hook too, the gapless window does not take a karaoke video', () async {
+    final (h, online) = streaming();
+    h.karaokeSource = (t, _) async => null;
+    final karaoke = online.register(video('Hello (Karaoke Version)'));
+    await h.playQueue([ids[1], karaoke], 0);
+    await h.setTransition(TransitionMode.gapless);
+    await pumpEventQueue();
+    expect(backend.nextPath, isNull);
+  });
+
   test('a normal track does not wait', () async {
     await handler.playQueue(ids, 1);
     expect(backend.played, ['/m/b.mp3']);
@@ -275,6 +285,18 @@ void main() {
       await seeking;
       expect(backend.played.length, plays);
       expect(backend.loaded.last, '/m/b.mp3');
+    });
+
+    test('a seek with no video while an older one waits: the audio goes on', () async {
+      final s1 = handler.seek(const Duration(seconds: 30));
+      await pumpEventQueue();
+      expect(backend.playing, isFalse);
+      gate.noVideo = true;
+      await handler.seek(const Duration(seconds: 60));
+      expect(backend.playing, isTrue);
+      gate.seekHold.complete();
+      await s1;
+      expect(backend.playing, isTrue);
     });
 
     test('a pause during the wait stays a pause', () async {

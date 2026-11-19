@@ -49,12 +49,12 @@ void main() {
 
   // A video of [id] as the cache would hold it, last used [ago] ago.
   Future<void> put(String id, Duration ago) async {
-    final part = File(p.join(root.path, 'karaoke_video_youtube_$id.mp4.part'))..writeAsBytesSync([1]);
-    final f = await cache.put('karaoke:video:youtube:$id', part);
+    final part = File(p.join(root.path, 'video_karaoke_youtube_$id.mp4.part'))..writeAsBytesSync([1]);
+    final f = await cache.put('video:karaoke:youtube:$id', part);
     await f.setLastModified(now.subtract(ago));
   }
 
-  Future<bool> has(String id) async => await cache.fileFor('karaoke:video:youtube:$id') != null;
+  Future<bool> has(String id) async => await cache.fileFor('video:karaoke:youtube:$id') != null;
 
   Future<void> until(Future<bool> Function() ok) async {
     for (var i = 0; i < 100 && !await ok(); i++) {
@@ -85,7 +85,7 @@ void main() {
     await put('a', const Duration(hours: 2));
     final c = make();
     expect(await c.cached('a'), isNotNull);
-    expect(cache.isPinned('karaoke:video:youtube:a'), isTrue);
+    expect(cache.isPinned('video:karaoke:youtube:a'), isTrue);
     await c.expire();
     expect(await has('a'), isTrue);
   });
@@ -109,15 +109,23 @@ void main() {
     expect(adapter.sent, hasLength(1));
     expect(adapter.sent.single.headers['h'], '1');
     expect(await has('a'), isTrue);
-    await (await cache.fileFor('karaoke:video:youtube:a'))!.setLastModified(now.subtract(const Duration(hours: 1)));
+    await (await cache.fileFor('video:karaoke:youtube:a'))!.setLastModified(now.subtract(const Duration(hours: 1)));
     await c.expire();
     expect(await has('a'), isTrue); // two pins: still held
     c.release('a');
     c.release('a');
     await Future<void>.delayed(const Duration(milliseconds: 50)); // release touches the file
-    await (await cache.fileFor('karaoke:video:youtube:a'))!.setLastModified(now.subtract(const Duration(hours: 1)));
+    await (await cache.fileFor('video:karaoke:youtube:a'))!.setLastModified(now.subtract(const Duration(hours: 1)));
     await c.expire();
     expect(await has('a'), isFalse);
+  });
+
+  test('the expiry leaves a separation base alone', () async {
+    final part = File(p.join(root.path, 'karaoke_base_x.wav.part'))..writeAsBytesSync([1]);
+    final f = await cache.put('karaoke:base:x', part);
+    await f.setLastModified(now.subtract(const Duration(hours: 1)));
+    await make().expire();
+    expect(await cache.fileFor('karaoke:base:x'), isNotNull);
   });
 
   test('the manual queue prefetches its two karaoke videos, not the plain track', () async {
@@ -145,14 +153,14 @@ void main() {
     final c = make();
     c.prefetchQueue([track('online:youtube:k1', 'Song Karaoke')]);
     await until(() => has('k1'));
-    await (await cache.fileFor('karaoke:video:youtube:k1'))!.setLastModified(now.subtract(const Duration(hours: 1)));
+    await (await cache.fileFor('video:karaoke:youtube:k1'))!.setLastModified(now.subtract(const Duration(hours: 1)));
     await c.expire();
     expect(await has('k1'), isTrue); // queued: fixed
     c.prefetchQueue([]);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     await c.expire();
     expect(await has('k1'), isTrue); // release touched it: the 15 minutes start now
-    await (await cache.fileFor('karaoke:video:youtube:k1'))!.setLastModified(now.subtract(const Duration(minutes: 16)));
+    await (await cache.fileFor('video:karaoke:youtube:k1'))!.setLastModified(now.subtract(const Duration(minutes: 16)));
     await c.expire();
     expect(await has('k1'), isFalse);
   });
@@ -162,10 +170,10 @@ void main() {
     final c = make();
     c.prefetchQueue([track('online:youtube:k1', 'a karaoke'), track('online:youtube:k1', 'a karaoke')]);
     c.prefetchQueue([]);
-    await until(() async => !cache.isPinned('karaoke:video:youtube:k1'));
-    expect(cache.isPinned('karaoke:video:youtube:k1'), isFalse);
+    await until(() async => !cache.isPinned('video:karaoke:youtube:k1'));
+    expect(cache.isPinned('video:karaoke:youtube:k1'), isFalse);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    await (await cache.fileFor('karaoke:video:youtube:k1'))!.setLastModified(now.subtract(const Duration(hours: 1)));
+    await (await cache.fileFor('video:karaoke:youtube:k1'))!.setLastModified(now.subtract(const Duration(hours: 1)));
     await c.expire();
     expect(await has('k1'), isFalse);
   });

@@ -228,6 +228,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
   }
 
   void _restart() {
+    _unpin();
     _errors = 0;
     _ready = Completer<void>();
     _emit(KaraokeVideoStatus.loading);

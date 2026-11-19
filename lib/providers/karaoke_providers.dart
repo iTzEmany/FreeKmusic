@@ -259,7 +259,7 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
   final paths = ref.read(_karaokePathsProvider);
   final pinned = <String>{};
   handler.karaokeSource = (t, streamKey) async {
-    if (!_baseWanted(ref) || t.kind == kEpisodeKind) return null;
+    if (!_baseWanted(ref) || t.kind == kEpisodeKind || isKaraokeVideo(t)) return null;
     final key = await _karaokeKey(t, streamKey);
     if (key == null) return null;
     final level = ref.read(karaokeProvider).level;
@@ -329,7 +329,7 @@ final karaokeAutoProvider = Provider<void>((ref) {
 
   Future<KaraokeTarget?> queuedTarget(Track t) async {
     final online = ref.read(onlineEntriesProvider);
-    if (t.kind == kEpisodeKind || online?.isRadioId(t.id) == true) return null;
+    if (t.kind == kEpisodeKind || isKaraokeVideo(t) || online?.isRadioId(t.id) == true) return null;
     final entry = online?.entryOf(t.id);
     final streamKey = entry?.result.indexKey ?? keyOfStreamPath(t.path);
     final key = await _karaokeKey(t, streamKey);
@@ -344,11 +344,8 @@ final karaokeAutoProvider = Provider<void>((ref) {
   }
 
   Future<List<KaraokeTarget>> manualQueue() async {
-    final from = handler.currentIndex + 1;
-    final ids = handler.queueIds;
-    if (from <= 0 || handler.userAhead == 0 || from >= ids.length) return [];
-    final tracks = await queueTracks(
-      ids.sublist(from, (from + handler.userAhead).clamp(from, ids.length)),
+    final tracks = await manualQueueTracks(
+      handler,
       ref.read(trackRepositoryProvider),
       ref.read(onlineEntriesProvider),
     );

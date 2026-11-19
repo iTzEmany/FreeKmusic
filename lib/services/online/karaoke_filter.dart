@@ -1,7 +1,5 @@
+import 'karaoke_channels.dart';
 import 'merge_results.dart';
-
-/// Channels that publish real karaoke backing tracks (lowercase).
-const kKnownKaraokeChannels = ['sing king', 'karafun', 'karaoke version', 'stingray'];
 
 final _isKaraoke = RegExp('karaoke', caseSensitive: false);
 final _reaction = RegExp(r'\breactions?\b', caseSensitive: false);

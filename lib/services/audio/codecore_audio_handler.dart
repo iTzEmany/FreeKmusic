@@ -1433,11 +1433,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// library's, or a streamed one in the cache), else null: a plain load (R-80).
   Future<({Track track, String path})?> _nextFile(int id) async {
     final found = await _plainNextFile(id);
+    // A karaoke video waits for its first frame: it goes through _loadCurrent, not the gapless window.
+    if (found != null && videoGate != null && isKaraokeVideo(found.track)) {
+      if (_nextKaraoke != null) _setKaraoke(next: null);
+      return null;
+    }
     final hook = karaokeSource;
     if (found == null || hook == null) {
       if (_nextKaraoke != null) _setKaraoke(next: null);
-      // A karaoke video waits for its first frame: it goes through _loadCurrent, not the gapless window.
-      return found != null && videoGate != null && isKaraokeVideo(found.track) ? null : found;
+      return found;
     }
     final entry = online?.entryOf(id);
     final key = isStreamTrack(found.track) || _isRemoteEpisode(found.track)
@@ -1830,6 +1834,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // The karaoke video catches up with the new place before the audio goes on (D-647). While it does,
     // the state shown stays «playing» (no pause/play flicker, no resume point saved).
     final hold = videoGate?.afterSeek(position);
+    // An older seek's wait may still hold the audio paused: this one has nothing to wait for.
+    if (hold == null && _seekHold) {
+      _seekHold = false;
+      if (_playWhenReady && gen == _seekGen && token == _loadToken) await _backend.play();
+    }
     if (wasPlaying && hold != null) {
       _seekHold = true;
       try {

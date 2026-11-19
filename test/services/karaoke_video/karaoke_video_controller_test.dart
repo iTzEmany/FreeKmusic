@@ -388,6 +388,21 @@ void main() {
         expect(port.opened, isEmpty);
       });
 
+      test('a new try after a failure keeps the pins in balance', () async {
+        autoFrame = false;
+        tracks.add(karaoke);
+        await pumpEventQueue();
+        port.errorsC.add('boom');
+        await pumpEventQueue();
+        port.errorsC.add('boom');
+        await pumpEventQueue();
+        expect(last, KaraokeVideoStatus.failed);
+        unawaited(c.beforePlay(karaoke, Duration.zero));
+        await pumpEventQueue();
+        await c.dispose();
+        expect(cache.where((e) => e.startsWith('download')).length, cache.where((e) => e.startsWith('release')).length);
+      });
+
       test('closing releases the current video', () async {
         await startKaraoke();
         await c.dispose();

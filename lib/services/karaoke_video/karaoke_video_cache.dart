@@ -11,9 +11,9 @@ import '../stream/stream_key.dart';
 import 'karaoke_video.dart';
 
 /// Stem prefix of every karaoke video in the cache: what the expiry looks at.
-final _stemPrefix = streamFileName('karaoke:video:');
+final _stemPrefix = streamFileName('video:karaoke:');
 
-String _keyOf(String id) => 'karaoke:video:youtube:$id';
+String _keyOf(String id) => 'video:karaoke:youtube:$id';
 
 /// The low-quality video-only streams of karaoke videos, kept in the smart cache (D-649): 15 minutes
 /// after their last use, on every platform; fixed while playing (`cached`/`download` until `release`)

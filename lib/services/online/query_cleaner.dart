@@ -1,4 +1,4 @@
-import 'karaoke_filter.dart' show kKnownKaraokeChannels;
+import 'karaoke_channels.dart';
 import '../../core/text_utils.dart';
 import '../../core/artist_key.dart';
 
