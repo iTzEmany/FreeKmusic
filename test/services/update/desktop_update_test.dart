@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:codecore/services/update/desktop_update.dart';
 import 'package:codecore/services/update/update_target.dart';
 
+// File modes and read-only folders are POSIX: the AppImage path runs on Linux only.
+final Object _posixOnly = Platform.isWindows ? 'POSIX file modes' : false;
+
 void main() {
   late Directory dir;
   late List<List<String>> started;
@@ -56,6 +59,7 @@ void main() {
       expect(started.single, [old.path]);
       expect(exits, [0]);
     },
+    skip: _posixOnly,
   );
 
   test('appImage in a read-only folder opens the browser', () async {
@@ -73,8 +77,7 @@ void main() {
     expect(old.readAsStringSync(), 'old');
     expect(started.single, ['xdg-open', url.toString()]);
     expect(exits, isEmpty);
-  });
-
+  }, skip: _posixOnly);
   test('deb, flatpak and zip open the browser', () async {
     final f = File('${dir.path}/x')..writeAsStringSync('x');
     for (final k in [UpdateKind.deb, UpdateKind.flatpak, UpdateKind.linuxZip]) {

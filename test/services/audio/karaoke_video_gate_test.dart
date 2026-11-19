@@ -150,7 +150,10 @@ void main() {
     final (h, online) = streaming();
     final id = online.register(video('Song v1'));
     final started = h.playQueue([id], 0);
-    await pumpEventQueue();
+    // Resolving the stream touches files and the DB: slower on Windows runners.
+    for (var i = 0; i < 200 && backend.loaded.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
     expect(backend.loaded, isNotEmpty);
     expect(backend.played, isEmpty);
     await h.pause();
