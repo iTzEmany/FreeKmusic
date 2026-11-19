@@ -1,5 +1,6 @@
 # Draft F-Droid recipe for the `lite` build. NOT submitted: see docs/PROGRESS.md (26.7)
 # for why it would not be accepted as it is.
+# In an F-Droid build the in-app update must be switched off (different signer, and F-Droid does not want self-updates).
 Categories:
   - Multimedia
 License: Unlicense   # placeholder: the project has no public licence yet

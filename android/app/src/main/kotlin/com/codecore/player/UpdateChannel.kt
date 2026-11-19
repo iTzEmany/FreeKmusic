@@ -97,7 +97,15 @@ object UpdateChannel {
         } else {
             @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES
         }
-        val archive = pm.getPackageArchiveInfo(apk.path, flags) ?: return false
+        // Android 9-10 fill an archive's signingInfo only when GET_SIGNATURES is also asked.
+        @Suppress("DEPRECATION")
+        val archiveFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            flags or PackageManager.GET_SIGNATURES
+        } else {
+            flags
+        }
+        val archive = pm.getPackageArchiveInfo(apk.path, archiveFlags) ?: return false
+        // A different package name (e.g. the perf build) also counts as "different signer".
         if (archive.packageName != context.packageName) return false
         val installed = pm.getPackageInfo(context.packageName, flags)
         val mine = signers(installed)
