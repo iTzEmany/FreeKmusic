@@ -251,6 +251,19 @@ void main() {
         expect(last, KaraokeVideoStatus.ready);
       });
 
+      test('the first load failed before an address: the retry downloads it, once', () async {
+        urlGate = Completer<void>();
+        await startKaraoke();
+        port.errorsC.add('boom');
+        await pumpEventQueue();
+        urlGate!.complete();
+        await pumpEventQueue();
+        expect(last, KaraokeVideoStatus.ready);
+        expect(cache, ['download abc']);
+        await c.dispose();
+        expect(cache, ['download abc', 'release abc']);
+      });
+
       test('error, ready, error: not failed', () async {
         await startKaraoke();
         port.errorsC.add('1');

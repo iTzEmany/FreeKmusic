@@ -283,8 +283,8 @@ class KaraokeVideoController implements KaraokeVideoGate {
       final s = await source.videoUrl(id);
       if (stale()) return;
       _stream = s;
-      if (first) {
-        _pinned = id;
+      if (_pinned == null) {
+        _pinned = id; // the first address of this track, whichever attempt got it
         download(id, s);
       }
       await port.open(s.url.toString(), s.headers);
@@ -338,6 +338,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
         _videoPlaying = false;
         unawaited(_guard(port.pause(), 'pause'));
       case SyncAction.seek:
+        if (!user) AppLog.d('karaoke video seek: drift ${(_audioPos - _videoPos).inMilliseconds.abs()} ms');
         _lastSeek = now;
         _videoPos = step.seekTo!;
         unawaited(_guard(port.seek(step.seekTo!), 'seek'));

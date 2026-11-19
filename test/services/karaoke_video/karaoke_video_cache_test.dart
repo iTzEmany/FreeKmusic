@@ -10,10 +10,15 @@ import 'package:path/path.dart' as p;
 
 class _Adapter implements HttpClientAdapter {
   final sent = <RequestOptions>[];
+  var failures = 0; // the next requests that fail
   @override
   Future<ResponseBody> fetch(RequestOptions o, Stream<List<int>>? s, Future<void>? c) async {
     sent.add(o);
     await Future<void>.delayed(const Duration(milliseconds: 20));
+    if (failures > 0) {
+      failures--;
+      throw StateError('network');
+    }
     return ResponseBody.fromBytes([1, 2, 3], 200);
   }
 
@@ -98,6 +103,16 @@ void main() {
     await c.expire();
     expect(await c.cached('a'), isNotNull);
     expect(await cache.fileFor('youtube:x'), isNotNull);
+  });
+
+  test('a failed download is retried with the newer address of a second call, never two at once', () async {
+    final c = make();
+    adapter.failures = 1;
+    c.download('a', (url: Uri.parse('https://v/old'), headers: {'h': '1'}, expires: null));
+    c.download('a', (url: Uri.parse('https://v/new'), headers: {'h': '1'}, expires: null));
+    await until(() => has('a'));
+    expect(adapter.sent.map((o) => o.uri.toString()), ['https://v/old', 'https://v/new']);
+    expect(await has('a'), isTrue);
   });
 
   test('downloading the same id twice makes one request, and the file stays fixed until release', () async {

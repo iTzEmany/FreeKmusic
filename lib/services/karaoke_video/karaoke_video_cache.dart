@@ -39,6 +39,7 @@ class KaraokeVideoCache {
   static Future<bool> _yes() async => true;
 
   final _inflight = <String, Future<void>>{};
+  final _latest = <String, KaraokeVideoStream>{}; // newest address asked while a download ran
   final _queued = <String>[]; // manual-queue ids, in order, each pinned
   final _tried = <String>{};
   Timer? _timer;
@@ -66,10 +67,23 @@ class KaraokeVideoCache {
     unawaited(_fetch(id, s, trim: true).catchError((Object e, StackTrace st) => AppLog.w('karaoke video $id: download failed', e, st)));
   }
 
-  Future<void> _fetch(String id, KaraokeVideoStream s, {required bool trim}) =>
-      _inflight[id] ??= _download(id, s, trim).whenComplete(() {
-        _inflight.remove(id); // a block: a returned future would be awaited
-      });
+  Future<void> _fetch(String id, KaraokeVideoStream s, {required bool trim}) {
+    final running = _inflight[id];
+    if (running != null) {
+      _latest[id] = s;
+      return running;
+    }
+    return _inflight[id] = _download(id, s, trim)
+        .catchError((Object e, StackTrace st) {
+          final next = _latest.remove(id); // failed: retry once with the newest address, if one came
+          if (next == null) Error.throwWithStackTrace(e, st);
+          return _download(id, next, trim);
+        })
+        .whenComplete(() {
+          _latest.remove(id);
+          _inflight.remove(id); // a block: a returned future would be awaited
+        });
+  }
 
   Future<void> _download(String id, KaraokeVideoStream s, bool trim) async {
     final key = _keyOf(id);
