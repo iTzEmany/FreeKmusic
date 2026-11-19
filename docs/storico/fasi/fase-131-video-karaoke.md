@@ -6,8 +6,8 @@ video muto e sincronizzato al posto di copertina e anello, e l'audio (la base) p
 Sotto, solo i testi sincronizzati. Fuori: video nella Jam, video offline, qualità a scelta, variante lite.
 
 ## Riferimenti
-D-631..D-639, D-646..D-649, D-651, D-653..D-655, D-658. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md)
-(§ Architettura A–E, rischi F-1..F-6, F-9). Mockup: [`../storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](../storico/feature/mockup-karaoke-video-e-aggiornamenti.html).
+D-631..D-639, D-646..D-649, D-651, D-653..D-655, D-658. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../feature/feature-karaoke-video-e-aggiornamenti.md)
+(§ Architettura A–E, rischi F-1..F-6, F-9). Mockup: [`../storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](../feature/mockup-karaoke-video-e-aggiornamenti.html).
 Documenti d'area: `../architettura/online.md`, `riproduzione-e-coda.md`, `ui-e-design.md`, `piattaforme.md`.
 
 ## Mockup

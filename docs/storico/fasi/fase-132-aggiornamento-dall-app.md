@@ -7,8 +7,8 @@ il file) o apre il browser sul file (.deb, Flatpak, zip, macOS). Fuori: note for
 senza tocco, pkexec, build F-Droid.
 
 ## Riferimenti
-D-640..D-645, D-646 (Windows e AppImage), D-656. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md)
-(§ Architettura F, rischi F-7, F-8). Mockup: [`../storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](../storico/feature/mockup-karaoke-video-e-aggiornamenti.html).
+D-640..D-645, D-646 (Windows e AppImage), D-656. Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../feature/feature-karaoke-video-e-aggiornamenti.md)
+(§ Architettura F, rischi F-7, F-8). Mockup: [`../storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](../feature/mockup-karaoke-video-e-aggiornamenti.html).
 Documenti d'area: `../architettura/online.md`, `piattaforme.md`, `qualita-e-rilascio.md`.
 
 ## Mockup

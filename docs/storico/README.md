@@ -159,3 +159,5 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 128 | Karaoke «Alta qualità» (Spleeter sul telefono) | [`fase-128-karaoke-alta-qualita.md`](fasi/fase-128-karaoke-alta-qualita.md) |
 | 129 | Karaoke nella Jam | [`fase-129-karaoke-jam.md`](fasi/fase-129-karaoke-jam.md) |
 | 130 | Karaoke solo con il modello AI, voce regolabile | [`fase-130-karaoke-solo-ai.md`](fasi/fase-130-karaoke-solo-ai.md) |
+| 131 | Video karaoke | [`fase-131-video-karaoke.md`](fasi/fase-131-video-karaoke.md) |
+| 132 | Aggiornamento dall'app | [`fase-132-aggiornamento-dall-app.md`](fasi/fase-132-aggiornamento-dall-app.md) |
