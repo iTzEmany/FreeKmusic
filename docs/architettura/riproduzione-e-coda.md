@@ -27,6 +27,7 @@ Lo stack audio, la coda (`PlayQueue`) con il blocco dell'utente, shuffle e ripet
 | Provider | `providers/player_providers.dart`, `sleep_timer_provider.dart`, `volume_zero_pause_provider.dart`, `equalizer_providers.dart`, `speaker_providers.dart`, `shuffle_plus_providers.dart`, `stream_providers.dart` |
 | Android nativo | `services/android/widget_sync.dart`, `widget_bridge.dart` (`PrefsWidgetBridge`); Kotlin `NowPlayingWidget`, `PlayTileService`, `WidgetStore`, `WidgetActionReceiver`, `VolumeBridge` |
 | Podcast | `services/podcast/` |
+| Video karaoke | `services/karaoke_video/` (`KaraokeVideoGate`, `KaraokeVideoController`, `syncStep`, `KaraokeVideoPort`/`MediaKitVideoPort`), `providers/karaoke_video_providers.dart` (`karaokeVideoProvider`); nel gestore `videoGate`, `_seekHold`, `_seekGen` |
 | Karaoke | `providers/karaoke_providers.dart` (`karaokeProvider`, `karaokeBypassProvider`, `karaokeButtonVisibleProvider`, base e separazione), `services/karaoke/separation_service.dart`; UI in `ui/widgets/karaoke_sheet.dart` |
 
 Piattaforme: Android usa ExoPlayer via just_audio; Linux e Windows usano libmpv via `just_audio_media_kit` (inizializzato in `main.dart`).
@@ -79,8 +80,16 @@ Regole del blocco:
 - Gapless da URL verso un brano in cache: D-142.
 
 ### Karaoke (fasi 128 e 130, D-618..D-624)
-- Il filtro della voce in tempo reale è stato tolto (D-624, fase 130): niente `VoiceFilter`, `KaraokeController`, copie di `just_audio` in `third_party/` (tornano i pacchetti di pub.dev). Resta solo la separazione AI («Alta qualità», sotto), che c'è solo su Android; il microfono (`karaokeButtonVisibleProvider`) compare solo dove c'è il motore e mai in una Jam (D-623). Bypass su episodi e radio (`karaokeBypassProvider`): nessuna base.
+- Il filtro della voce in tempo reale è stato tolto (D-624, fase 130): niente `VoiceFilter`, `KaraokeController`, copie di `just_audio` in `third_party/` (tornano i pacchetti di pub.dev). Resta solo la separazione AI («Alta qualità», sotto), che c'è solo su Android; il microfono (`karaokeButtonVisibleProvider`) compare solo dove c'è il motore e mai in una Jam (D-623). Bypass su episodi, radio e video karaoke (`karaokeBypassProvider`): nessuna base (l'audio del video è già la base, D-639), compresi hook `karaokeSource` e precarico.
 - **«Alta qualità» (fase 128, D-618..D-622, solo Android).** `services/karaoke/separation_service.dart`: modelli Spleeter 2-stem scaricati alla prima richiesta (Hugging Face, revisione fissa, sha256) in `models/spleeter-2stems-7001ba31/`; il lavoro va al canale `codecore/separation` (`SeparationBridge.kt`, `SpleeterDsp.kt`: decodifica MediaCodec, STFT, ONNX Runtime da Kotlin su un thread a priorità bassa, base WAV scritta a pezzi, limite 20 min). La base finisce in `StreamCache` con chiave `karaoke:<chiave stream>` o `karaoke:local:<id>:<mtime>`. Il gestore consulta l'hook `karaokeSource` in `_loadCurrent` e `_nextFile`; `karaokeChanged()` invalida la finestra gapless e ricarica il brano alla stessa posizione senza ricontare l'ascolto (`sameTrack`). Fase 130 (D-625..D-627): la separazione salva base e voce (`karaoke:base:…`, `karaoke:voice:…`; base + voce = originale); il cursore «Voce» al rilascio chiede `mixFor` (mix nativo `mix` = base + livello × voce, chiave `karaoke:mix:…:<passo di 5 %>`, 100 % = originale, 0 % = base) e il gestore ricarica alla stessa posizione. Le chiamate native passano da una sola coda in Dart (un mix aspetta la separazione); `MixResult` distingue originale, file, fallito, superato: un mix fallito lascia suonare ciò che c'è. File del karaoke fissati (pin) mentre suonano o si mescolano, e cancellati 15 minuti dopo l'ultimo uso (`StreamCache.expire`, controllo ogni 2 min). «Mostra il karaoke» (Impostazioni › Riproduzione) spento nasconde il microfono e spegne il karaoke; con rete a consumo il foglio avvisa del download del modello o del brano da scaricare per intero. **Avvio automatico (D-629):** accendere il karaoke separa subito il brano in ascolto e a ogni cambio brano riparte da solo (la riga «Alta qualità» non c'è più; in caso di errore il foglio dà un messaggio e «Riprova», senza ripetizioni automatiche). Con rete a consumo, se serve il modello o il brano intero, il foglio mostra il costo e «Avvia» (`karaokeConfirmedProvider`). `karaokeAutoProvider` (radice dell'app) poi separa uno alla volta, in ordine, i brani messi in coda a mano (`handler.userAhead` dopo `currentIndex`) che hanno già un file locale o in cache, e ne fissa base e voce finché restano in coda; spento, non parte altro ma il lavoro nativo in corso finisce. Tempi: Motorola edge 40 circa 50 s per 4:20 (con il primo download del modello); Redmi Note 9 Pro (Snapdragon 720G) circa 38 s di separazione per 4 min più ~20 s di preparazione, cambio di livello sotto 1 s.
+
+### Video karaoke (fase 131, D-632, D-646, D-647)
+- L'audio resta quello di sempre (coda, notifica, cuffie, Android Auto). Il video è un secondo player media_kit muto (`aid=no`), uno per caricamento, che segue l'audio, unico orologio (D-156): `syncStep` fa seek del video oltre 300 ms di scarto, al più uno ogni 2 s; un seek dell'utente passa sempre.
+- Il gestore parla col video solo tramite `KaraokeVideoGate`, collegato da `karaokeVideoProvider` (letto in `main.dart` se `kEnableYoutube`).
+- `beforePlay(track, start)` in `_loadCurrent`, prima di `play()`: se risponde un Future il gestore mostra `loading` (`_waitingStream`) e aspetta il primo fotogramma al massimo 10 s, poi suona comunque; pausa o ▶ nel frattempo cambiano solo il desiderio. Brano senza video: null, nessuna attesa.
+- `afterSeek(pos)`: se suonava, pausa del backend, attesa del video al massimo 3 s e ripresa. Intanto `_seekHold` fa ignorare a `_onBackendState` pausa e play (stato mostrato «in riproduzione», nessun punto di ripresa salvato); `_seekGen` fa cedere l'attesa a un seek o a un caricamento più nuovo.
+- Un brano karaoke non entra mai nella finestra gapless (`_nextFile`), anche con `karaokeSource`.
+- In background il video si ferma e l'audio no; al ritorno si riallinea o chiede un indirizzo nuovo se `expire` è passato. Un errore: nuovo indirizzo; due errori di fila (contatore azzerato a `ready`): `failed`, suona solo l'audio con l'avviso.
 
 ### Streaming
 
@@ -138,6 +147,7 @@ Gli episodi sono `kind = 1`. Soglie: `kEpisodeEdge` 10 s, `kEpisodeHeardAt` 0.95
 - `savedQueue` non contiene id online (negativi).
 - Nessun lavoro pesante sul thread UI.
 - Aggiungere campi a `PlayerController` richiede di aggiornare gli spy dei test (vedi trappole).
+- Il video non comanda mai l'audio, salvo l'attesa del gate, sempre con un limite di tempo. Ogni nuovo ingresso al karaoke AI deve saltare `isKaraokeVideo`.
 
 ## Come si estende
 
@@ -166,6 +176,10 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 - Test instabili noti: `online_playback_test`, `smart_playlists_test`, `daylist_provider_test`, `shuffle_plus_test`, `seek_characterization`.
 - **Hook del karaoke in `_loadCurrent`**: va dopo la pubblicazione dello stato di caricamento, dentro il `try`; nessun `await` prima del ramo dello stream (`_waitingStream`), altrimenti `online_playback_test` si rompe (fase 128).
 - Il `done` di `mqtt_client` può dare errore dentro `runZonedGuarded` (Jam).
+- **`waitUntilFirstFrameRendered` di un `VideoController` si completa una volta sola per tutta la sua vita**: Player e VideoController nuovi a ogni caricamento.
+- **`volume 0` e `muted` non bastano per il video: serve `aid=no`** (F-2).
+- **Test del gestore con `karaokeSource` impostato**: la finestra gapless va provata con l'hook che risponde null (il caso reale di Android).
+- **Test di cache e controller del video**: niente attese a tempo dove si può (`StreamCache.touch` usa l'orologio vero).
 
 ## Decisioni chiave
 
@@ -180,3 +194,4 @@ Link a `../decisioni.md`:
 - D-86 / D-94: Shuffle+.
 - D-534: shuffle della lista.
 - D-541: snackbar.
+- D-632, D-646, D-647: video muto sincronizzato e attesa dell'audio.

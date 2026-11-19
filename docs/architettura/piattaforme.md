@@ -20,7 +20,7 @@ Dove vive il codice nativo (Kotlin, C++/GTK, Swift), come si costruiscono e si p
 Fuori da `lib/services/android/`, i canali Kotlin hanno il loro lato Dart in: `lib/core/system_volume.dart` (volume), `lib/core/network_kind.dart` (rete a consumo), `lib/services/app_icon/app_icon.dart` (icona), `lib/services/memory/disk_space.dart` (spazio), `lib/services/export/save_file.dart` (salva), `lib/services/issue/link_opener.dart` (link), `lib/services/audio/output_route.dart` e `bluetooth_outputs.dart` (uscita), `lib/services/share/share_notifier.dart` (servizio di ricezione), `lib/providers/import_notification_providers.dart` (import), `lib/services/online/android_yt_dlp_service.dart` (yt-dlp), `lib/services/jam/remote/jam_beacon.dart`.
 
 ### Android (`android/`)
-Il video karaoke usa `media_kit_video` con `media_kit_libs_android_video` (libmpv, circa +5,5 MB per ABI nella full). La lite le esclude in `build.gradle.kts` (`packaging.jniLibs.excludes` di `libmpv.so` e `libmediakitandroidhelper.so` con `CODECORE_LITE=1`, D-654). Su macOS: `media_kit_libs_macos_video`.
+Il video karaoke usa `media_kit_video` con `media_kit_libs_android_video` (libmpv, circa +5,5 MB per ABI nella full). La lite le esclude in `build.gradle.kts` (`packaging.jniLibs.excludes` di `libmpv.so` e `libmediakitandroidhelper.so` con `CODECORE_LITE=1`, D-654). Su macOS: `media_kit_libs_macos_video`. Le librerie sono solo l'estensione della libmpv per il video: l'audio resta ExoPlayer. La lite (`CODECORE_LITE=1`, `kEnableYoutube` falso) non ha YouTube né video: `videoUrl` non esiste nel canale e `karaokeVideoProvider` non viene letto in `main.dart`.
 
 Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchetto resta `com.codecore.player`).
 
@@ -87,7 +87,7 @@ Backend audio libmpv (`just_audio_media_kit`, librerie `media_kit_libs_windows_v
 Backend libmpv, MPRIS (`MprisControls`, percorso `/org/codecore/track/<id>` in `mpris_mapping.dart`). Tre pacchetti: zip e `.deb` da `package-linux.sh`, AppImage da `package-appimage.sh` (copia libmpv e le sue dipendenze, tranne quelle di ogni desktop). Il Flatpak (`org.freedesktop.Platform` 24.08) costruisce da sorgente `libplacebo` 6.338.2 e `libass` 0.17.3 perché mpv 0.38 li richiede e il runtime non li ha, poi `libmpv`; `yt-dlp` è un file fissato per hash; ffmpeg viene dall'estensione `ffmpeg-full`. Permessi: rete, audio (PulseAudio), Wayland/X11, `xdg-music`, `xdg-download`, nome MPRIS `org.mpris.MediaPlayer2.freekmusic`.
 
 ### macOS
-Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_media_kit` si inizializza solo su Linux e Windows, quindi su macOS suona il backend nativo di `just_audio`. La CI lo compila con `flutter build macos --debug` nel job `build-apple` (solo a mano). La release (D-543) ha il job `macos`: `flutter build macos --release` e `.app` in zip non firmato (`FreeKmusic-<versione>-macos.zip`), senza yt-dlp né ffmpeg dentro. Niente firma né notarizzazione.
+Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_media_kit` si inizializza solo su Linux e Windows, quindi su macOS suona il backend nativo di `just_audio`. La CI lo compila con `flutter build macos --debug` nel job `build-apple` (solo a mano). La release (D-543) ha il job `macos`: `flutter build macos --release` e `.app` in zip non firmato (`FreeKmusic-<versione>-macos.zip`), senza yt-dlp né ffmpeg dentro. Niente firma né notarizzazione. Il video karaoke usa media_kit direttamente (`MediaKit.ensureInitialized` alla prima creazione del player video, non in `main.dart`).
 
 ### Differenze per piattaforma
 | Aspetto | Android | Windows / Linux | macOS |
@@ -100,7 +100,8 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 | Memoria dei download (D-579) | `effectiveLocation` (`lib/core/storage_volumes.dart`): scheda tolta = interna. Android 11+: `<SD>/Music/FreeKmusic` con MediaStore; Android 10: cartella dell'app sul volume | cartella scelta dall'utente, aggiunta alla libreria | non verificato |
 | Backup automatico | `Documents/FreeKmusic` (ripiego: cartella dell'app) | cartella scelta | non verificato |
 | Filtro della voce (karaoke, D-603, D-617) | `AudioProcessor` Media3 nella copia di `just_audio` | Linux: `lavfi` di mpv (`af`); Windows: assente (libmpv senza filtri) | assente (anche iOS) |
-| Orientamento | bloccato in verticale | libero | libero |
+| Orientamento | bloccato in verticale, salvo lo schermo intero del video karaoke (orizzontale e immersivo, poi ripristinato) | libero | libero |
+| Video karaoke (D-632, D-637) | libmpv da `media_kit_libs_android_video`, nella full (circa +5,6 MB per ABI), assente nella lite | Windows: `media_kit_libs_windows_video`; Linux: libmpv di sistema | `media_kit_libs_macos_video` (compilato solo in CI); iOS: nessuna libreria, non supportato |
 | Scoperta in LAN (`discovery.dart`) | senza `reusePort` | `reusePort` solo su Linux | `reusePort` |
 
 ## Invarianti da non rompere
@@ -109,7 +110,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Nomi dei canali invariati** (`codecore/…`): Dart e Kotlin devono restare allineati; sono parte del filo (vedi `sync-backup-jam.md`).
 - **`namespace` resta `com.codecore.player`** finché le classi Kotlin stanno in quel pacchetto: cambiarlo senza spostare i file rompe la `R` e il manifest (`.MainActivity` è relativo al namespace).
 - **`applicationId` e `appLabel` dipendono da `perf`**: la build di misura non deve mai poter sovrascrivere l'app vera.
-- **Le due metà della variante lite** (`CODECORE_LITE` e `CODECORE_YOUTUBE=false`) vanno sempre insieme; ogni funzione di YouTube sta dietro `kEnableYoutube`.
+- **La variante lite ha tre parti da tenere insieme**: `CODECORE_LITE=1` (sorgenti `src/lite`, niente yt-dlp, esclusione di `libmpv.so` e `libmediakitandroidhelper.so`), `--dart-define=CODECORE_YOUTUBE=false`, e ogni funzione di YouTube dietro `kEnableYoutube`. Il video karaoke non deve mai poter partire dove la libmpv non c'è.
 - **Il cambio dell'icona avviene in background** (`IconBridge.apply`): cambiare l'alias attivo mentre l'utente guarda può far chiudere l'app al launcher.
 - **Un nuovo canale usato anche dal servizio senza attività** non può passare da `MainActivity`: va su `FlutterSharedPreferences` come i widget.
 - **Nessun lavoro pesante nel thread UI**; sui ponti, risultati rapidi o asincroni.
@@ -144,6 +145,8 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Pausa a volume zero in secondo piano**: il tasto volume su riprende solo entro circa 2 s (limite di Android).
 - **`IndexedStack` e `TickerMode`**: vedi `ui-e-design.md`.
 - **Un filtro che mpv non sa costruire ferma la riproduzione**: per questo il filtro della voce c'è solo su Linux (`DesktopVoiceFilter.supported`); la libmpv di Windows ha `--disable-filters`.
+- **Un APK full senza libmpv cade al primo `Player()`** (`UnsatisfiedLinkError`): l'esclusione in `build.gradle.kts` vale solo con `CODECORE_LITE=1`. Dopo una build lite, `unzip -l app-*-release.apk | grep libmpv` non deve trovare nulla.
+- **iOS non ha le librerie video**; macOS e i pacchetti Linux (AppImage, `.deb`, Flatpak) con `media_kit_video` non sono ancora provati fuori dalla CI.
 - **Entitlements macOS**: `macos/Runner/Release.entitlements` ha `app-sandbox`, `network.client`, `network.server` e `files.user-selected.read-write`. Un entitlement in meno e l'app sandboxed perde rete o accesso ai file.
 
 ## Decisioni chiave
@@ -156,3 +159,4 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 | [D-538](../decisioni.md) | v1.4.0 senza release (build Windows MSVC 14.51, Flatpak); si pubblica v1.4.1. |
 | [D-539](../decisioni.md) | Nome FreeKmusic, `applicationId` `com.freekmusic.player`, pacchetto Dart e `namespace` invariati. |
 | [D-540](../decisioni.md) | Verifica di compatibilità con `ci.yml` lanciato a mano su tutte le piattaforme. |
+| [D-637](../decisioni.md), [D-654](../decisioni.md) | Librerie video di media_kit per piattaforma; esclusione dalla lite. |
