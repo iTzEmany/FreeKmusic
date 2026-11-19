@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../widgets/karaoke_video_view.dart';
+import '../../../providers/karaoke_video_providers.dart';
+import '../../widgets/karaoke_video_surface.dart';
 
 /// The karaoke video over the whole screen (R-257). Android turns landscape and immersive,
 /// and goes back to portrait on exit; on desktop the video just fills the window.
 class KaraokeVideoFullscreen extends ConsumerStatefulWidget {
-  const KaraokeVideoFullscreen({super.key, required this.controller});
-
-  final VideoController controller;
+  const KaraokeVideoFullscreen({super.key});
 
   @override
   ConsumerState<KaraokeVideoFullscreen> createState() =>
@@ -40,23 +38,38 @@ class _KaraokeVideoFullscreenState
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      // The app sets no UI mode elsewhere: back to the default, bars shown.
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
     }
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.black,
-    body: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.of(context).maybePop(),
-      child: Semantics(
-        label: context.l10n.karaokeVideoLabel,
-        child: SizedBox.expand(
-          child: ref.watch(karaokeVideoBuilderProvider)(widget.controller),
+  Widget build(BuildContext context) {
+    // The state always holds the current controller (a new one per track), never keep an old one.
+    ref.listen(karaokeVideoProvider.select((v) => v.status), (_, s) {
+      if (s == KaraokeVideoStatus.none || s == KaraokeVideoStatus.failed) {
+        Navigator.of(context).maybePop();
+      }
+    });
+    final c = ref.watch(karaokeVideoProvider).controller;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).maybePop(),
+        child: Semantics(
+          label: context.l10n.karaokeVideoLabel,
+          child: SizedBox.expand(
+            child: c == null
+                ? const SizedBox()
+                : ref.watch(karaokeVideoBuilderProvider)(c),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

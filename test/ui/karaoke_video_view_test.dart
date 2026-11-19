@@ -5,6 +5,7 @@ import 'package:codecore/providers/karaoke_video_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/ui/screens/now_playing/karaoke_video_fullscreen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
+import 'package:codecore/ui/widgets/karaoke_video_surface.dart';
 import 'package:codecore/ui/widgets/karaoke_video_view.dart';
 import 'package:codecore/ui/widgets/ring_progress.dart';
 import 'package:drift/drift.dart' show Value;
@@ -196,54 +197,78 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('Android full screen: landscape in, portrait back on exit', (
-    tester,
-  ) async {
-    debugIsAndroidOverride = true;
-    addTearDown(() => debugIsAndroidOverride = null);
-    final calls = <String>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (c) async {
-        if (c.method == 'SystemChrome.setPreferredOrientations') {
-          calls.add('${c.arguments}');
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+  testWidgets(
+    'Android full screen: landscape and immersive in; state failed closes it, portrait and bars back',
+    (tester) async {
+      debugIsAndroidOverride = true;
+      addTearDown(() => debugIsAndroidOverride = null);
+      final calls = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
-        null,
-      ),
-    );
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          karaokeVideoBuilderProvider.overrideWithValue(
-            (_) => const SizedBox(),
-          ),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: Builder(
-            builder: (c) => TextButton(
-              onPressed: () => Navigator.of(c).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => KaraokeVideoFullscreen(controller: _ctrl),
-                ),
+        (c) async {
+          if (c.method.startsWith('SystemChrome.set')) {
+            calls.add('${c.method} ${c.arguments}');
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            karaokeVideoProvider.overrideWith(
+              () => _FakeVideo(
+                KaraokeVideoState(KaraokeVideoStatus.ready, _ctrl),
               ),
-              child: const Text('go'),
+            ),
+            karaokeVideoBuilderProvider.overrideWithValue(
+              (_) => const SizedBox(),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: Builder(
+              builder: (c) => TextButton(
+                onPressed: () => Navigator.of(c).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const KaraokeVideoFullscreen(),
+                  ),
+                ),
+                child: const Text('go'),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.tap(find.text('go'));
-    await tester.pumpAndSettle();
-    expect(calls.single, contains('landscapeLeft'));
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(calls.last, contains('portraitUp'));
-  });
+      );
+      await tester.tap(find.text('go'));
+      await tester.pumpAndSettle();
+      expect(
+        calls.join('|'),
+        allOf(contains('landscapeLeft'), contains('immersiveSticky')),
+      );
+      calls.clear();
+      final c = ProviderScope.containerOf(
+        tester.element(find.byType(KaraokeVideoFullscreen)),
+      );
+      (c.read(karaokeVideoProvider.notifier) as _FakeVideo).set(
+        const KaraokeVideoState(KaraokeVideoStatus.failed),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(KaraokeVideoFullscreen), findsNothing);
+      expect(
+        calls.join('|'),
+        allOf(
+          contains('portraitUp'),
+          contains('setEnabledSystemUIOverlays'),
+          contains('SystemUiOverlay.top'),
+        ),
+      );
+      expect(calls.join('|'), isNot(contains('edgeToEdge')));
+    },
+  );
 }

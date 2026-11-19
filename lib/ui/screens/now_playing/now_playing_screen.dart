@@ -14,16 +14,16 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/radio/radio_station.dart' show RadioStation;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/karaoke_video_providers.dart';
 import '../../../services/audio/online_entries.dart' show isOnlineId;
+import '../../../services/karaoke_video/karaoke_video.dart' show isKaraokeVideo;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../widgets/artist_links.dart';
 import '../../widgets/empty_player.dart';
+import '../../widgets/karaoke_video_view.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/track_art.dart';
 import 'suggested_info.dart';
-import '../../../providers/karaoke_video_providers.dart';
-import '../../../services/karaoke_video/karaoke_video.dart' show isKaraokeVideo;
-import '../../widgets/karaoke_video_view.dart';
 import 'queue_sheet.dart' show showQueueSheet;
 import '../../widgets/show_msg.dart';
 import '../../../providers/radio_providers.dart' show onAirProvider;
@@ -153,9 +153,7 @@ Future<void> playMixedAndOpen(
   Object? listKey,
 }) => _playAndOpen(
   context,
-  ref
-      .read(playerControllerProvider)
-      .playMixed(items, context: playContext, listKey: listKey),
+  ref.read(playerControllerProvider).playMixed(items, context: playContext, listKey: listKey),
 );
 
 Future<void> _playAndOpen(BuildContext context, Future<void> playing) {
@@ -637,10 +635,7 @@ class _TitleRow extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                MarqueeText(
-                  texts?.title ?? track.title,
-                  style: theme.titleLarge,
-                ),
+                MarqueeText(texts?.title ?? track.title, style: theme.titleLarge),
                 if (radio == null)
                   ArtistLinks(
                     track,
