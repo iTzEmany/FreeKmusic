@@ -5,6 +5,7 @@ import 'package:codecore/services/online/lyrics_chain.dart';
 import 'package:codecore/services/online/lyrics_ovh_client.dart';
 import 'package:codecore/services/online/netease_lyrics_client.dart';
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
 Track _track({int durationMs = 370000}) => Track(saved: false, 
@@ -34,6 +35,7 @@ class _Lrclib extends LrclibClient {
   final LyricsResult? result;
   final Object? error;
   int calls = 0;
+  ({String title, String artist, int? durationSec, bool ignoreDuration})? last;
   @override
   Future<LyricsResult?> find({
     required String title,
@@ -42,8 +44,15 @@ class _Lrclib extends LrclibClient {
     int? durationSec,
     CancelToken? cancel,
     bool strict = false,
+    bool ignoreDuration = false,
   }) async {
     calls++;
+    last = (
+      title: title,
+      artist: artist,
+      durationSec: durationSec,
+      ignoreDuration: ignoreDuration,
+    );
     if (error != null) throw error!;
     return result;
   }
@@ -102,6 +111,21 @@ const _synced = LyricsResult(synced: '[00:01.000] a');
 const _plain = LyricsResult(plain: 'a');
 
 void main() {
+  test('a karaoke video: cleaned title, no duration, NetEase not asked', () async {
+    final lr = _Lrclib(_synced), ne = _Ne(_synced);
+    final chain = LyricsChain(lrclib: lr, netease: ne);
+    final karaoke = _track().copyWith(
+      title: 'Sing King - Adele - Hello (Karaoke Version)',
+      artist: const Value('Sing King'),
+    );
+    await chain.find(karaoke, ignoreDuration: true);
+    expect(ne.calls, 0);
+    expect(lr.last, (title: 'Hello', artist: 'Adele', durationSec: null, ignoreDuration: true));
+    await chain.find(_track());
+    expect(lr.last!.durationSec, 370);
+    expect(lr.last!.ignoreDuration, isFalse);
+  });
+
   test(
     'LRCLIB answering 503 rests: the next track does not ask it again',
     () async {

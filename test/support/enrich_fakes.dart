@@ -215,6 +215,7 @@ class FakeChain extends LyricsChain {
     Track t, {
     bool wantSynced = true,
     CancelToken? cancel,
+    bool ignoreDuration = false,
   }) async {
     calls++;
     askedWith.add('${t.title}|${t.artist}');

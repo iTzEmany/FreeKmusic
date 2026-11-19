@@ -1,3 +1,4 @@
+import 'karaoke_channels.dart';
 import '../../core/text_utils.dart';
 import '../../core/artist_key.dart';
 
@@ -173,6 +174,50 @@ CleanQuery cleanSearchQuery(String rawTitle, String rawArtist) {
     artist.trim(),
     tagged: tagged,
   );
+}
+
+final _karaokeGroup = RegExp(
+  r'[\(\[\{][^\)\]\}]*\b(karaoke|instrumental|with lyrics)\b[^\)\]\}]*[\)\]\}]',
+  caseSensitive: false,
+);
+final _karaokeWord = RegExp(
+  r'\b(karaoke|version|instrumental|with lyrics)\b',
+  caseSensitive: false,
+);
+final _emptyBrackets = RegExp(r'[\(\[\{]\s*[\)\]\}]');
+final _edgeSeparators = RegExp(r'^[\s\-–—|:]+|[\s\-–—|:]+$');
+
+String _scrubKaraoke(String s) => s
+    .replaceAll(_karaokeGroup, ' ')
+    .replaceAll(_karaokeWord, ' ')
+    .replaceAll(_emptyBrackets, ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
+/// The query for the lyrics of a karaoke video: «Sing King - Adele - Hello
+/// (Karaoke Version)» from the channel «Sing King» is «Adele» / «Hello».
+CleanQuery karaokeLyricsQuery(String title, String channel) {
+  var t = _scrubKaraoke(_cut(title));
+  final c = _scrubKaraoke(_cut(channel));
+  if (c.isNotEmpty) {
+    // The channel goes only as a whole edge segment, never inside a word or
+    // the song; in «Adele - Hello» an artist equal to the channel stays
+    // unless the channel is a known karaoke one.
+    final parts = t.split(RegExp(r'\s+[-–—|]\s+|\s*\|\s*'));
+    bool isC(String p) => p.trim().toLowerCase() == c.toLowerCase();
+    final lead = parts.length > 1 && isC(parts.first) &&
+        (parts.length > 2 || kKnownKaraokeChannels.contains(c.toLowerCase()));
+    final trail = parts.length > 1 && isC(parts.last);
+    if (lead || trail) {
+      final seps = RegExp(r'\s+[-–—|]\s+|\s*\|\s*').allMatches(t).toList();
+      var from = 0, to = t.length;
+      if (lead) from = seps.first.end;
+      if (trail) to = seps.last.start;
+      t = t.substring(from, to);
+    }
+  }
+  t = t.replaceAll(RegExp(r'\s+'), ' ').replaceAll(_edgeSeparators, '');
+  return cleanSearchQuery(t, '');
 }
 
 /// (artist, title) of «a - b» when the artist is not known.

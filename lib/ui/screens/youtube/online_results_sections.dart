@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants.dart' show kEnableYoutube;
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../data/db/app_database.dart' show Track;
@@ -129,7 +130,11 @@ class OwnedHiddenNote extends StatelessWidget {
   }
 }
 
-/// «Tutte, YouTube Music, YouTube»: a filter on the rows already there.
+/// The source filter: the first three look at the rows already there, the
+/// fourth asks for karaoke videos.
+enum SourceFilter { all, ytmSong, ytVideo, karaoke }
+
+/// «Tutte, YouTube Music, YouTube, Karaoke».
 class SourceFilterChips extends StatelessWidget {
   const SourceFilterChips({
     super.key,
@@ -137,28 +142,30 @@ class SourceFilterChips extends StatelessWidget {
     required this.onPick,
   });
 
-  final MediaKind? filter;
-  final ValueChanged<MediaKind?> onPick;
+  final SourceFilter filter;
+  final ValueChanged<SourceFilter> onPick;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-      child: SegmentedBlocks<MediaKind?>(
+      child: SegmentedBlocks<SourceFilter>(
         compact: true,
         selected: filter,
         onChanged: onPick,
         items: [
-          BlockItem(value: null, label: l.onlineFilterAll),
+          BlockItem(value: SourceFilter.all, label: l.onlineFilterAll),
           BlockItem(
-            value: MediaKind.ytmSong,
+            value: SourceFilter.ytmSong,
             label: sourceName(l, MediaKind.ytmSong),
           ),
           BlockItem(
-            value: MediaKind.ytVideo,
+            value: SourceFilter.ytVideo,
             label: sourceName(l, MediaKind.ytVideo),
           ),
+          if (kEnableYoutube)
+            BlockItem(value: SourceFilter.karaoke, label: l.karaoke),
         ],
       ),
     );

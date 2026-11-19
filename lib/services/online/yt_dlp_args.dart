@@ -144,3 +144,10 @@ class StreamUrlLines {
     }
   }
 }
+
+/// Video-only format of the karaoke frame (D-635): 360p, 480p at most, avc1 first; `bv`, not `bv*`: never a format with audio.
+const videoOnlyFormat = 'bv[height<=360][vcodec^=avc1]/bv[height<=480][vcodec^=avc1]/bv[height<=480]/wv';
+
+/// Prints only the address of the video-only stream of [url] (desktop `yt-dlp`).
+List<String> buildVideoUrlArgs({required String url, List<String> jsArgs = const []}) =>
+    ['--no-playlist', '--no-warnings', '-g', ...jsArgs, '-f', videoOnlyFormat, url];

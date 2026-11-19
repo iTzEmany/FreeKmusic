@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../../core/app_log.dart';
 import 'yt_dlp_args.dart';
 import 'yt_dlp_process_service.dart';
+import '../karaoke_video/karaoke_video_source.dart';
 import 'youtube_service.dart';
 
 /// yt-dlp embedded in the Android app (see MainActivity.kt).
@@ -62,6 +63,29 @@ class AndroidYtDlpService implements YoutubeService {
     } catch (e, st) {
       AppLog.w('newpipe stream url failed', e, st);
       _offerUrl(pid, 'newpipe', null);
+    }
+  }
+
+  /// Video-only stream of [id] for the karaoke frame: NewPipe first, then yt-dlp (`-g`). Throws only [YtException].
+  Future<KaraokeVideoStream> videoUrl(String id) async {
+    try {
+      final m = await _channel.invokeMapMethod<String, Object?>('videoUrl', {'id': id, 'maxHeight': 480});
+      final url = Uri.tryParse('${m?['url']}');
+      if (url == null || !url.isAbsolute) throw StateError('newpipe answered without a url');
+      return karaokeVideoStreamOf(url, (m!['headers'] as Map?)?.cast<String, String>() ?? {});
+    } on MissingPluginException {
+      // Lite flavor: no NewPipe, and no yt-dlp either (below).
+    } catch (e, st) {
+      AppLog.w('newpipe video url failed', e, st);
+    }
+    try {
+      return karaokeVideoStreamOfOutput(await _call(
+        {'id': id, 'selector': videoOnlyFormat},
+        method: 'ytdlpVideoUrl',
+        timeout: const Duration(seconds: 30),
+      ));
+    } on MissingPluginException {
+      throw const YtException(YtErrorKind.toolMissing, 'yt-dlp');
     }
   }
 

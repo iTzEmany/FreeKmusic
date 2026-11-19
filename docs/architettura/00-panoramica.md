@@ -29,7 +29,7 @@ Dipendenze ammesse: `ui` → `providers` → `services` / `data` → `core`. Mai
 | `lib/data/db/` | drift: `tables.dart`, `app_database.dart` (`kSchemaVersion`, migrazioni) |
 | `lib/data/repositories/` | Query e scritture sul DB (`TrackRepository`, `PlaylistRepository`, ...). Espongono `Stream` drift |
 | `lib/data/settings/` | `SettingsStore` (SharedPreferences), `AppSettings`, segreti Jam |
-| `lib/services/` | Logica senza UI: `audio`, `scanner`, `tags`, `import`, `backup`, `online`, `stream`, `recognition`, `shuffle_plus`, `jam`, `share`, `radio`, `podcast`, `releases`, `lyrics`, `daylist`, `memory`, `android` |
+| `lib/services/` | Logica senza UI: `audio`, `scanner`, `tags`, `import`, `backup`, `online`, `stream`, `recognition`, `shuffle_plus`, `jam`, `share`, `radio`, `podcast`, `releases`, `lyrics`, `daylist`, `memory`, `android`, `karaoke_video` |
 | `lib/providers/` | Riverpod: collegano servizi e repository alla UI (`player_providers`, `library_providers`, `settings_providers`, ...) |
 | `lib/ui/` | `screens`, `shell`, `theme`, `widgets`. Solo presentazione |
 | `lib/l10n/` | ARB in 6 lingue (it, en, de, es, fr, pt) |

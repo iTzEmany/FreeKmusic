@@ -11,10 +11,10 @@ import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/providers/ytm_catalog_providers.dart';
-import 'package:codecore/services/online/query_match.dart' show MediaKind;
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
+import 'package:codecore/ui/screens/youtube/online_results_sections.dart' show SourceFilter;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -197,11 +197,11 @@ void main() {
       await _settle(tester);
       expect(
         tester
-            .widget<SegmentedBlocks<MediaKind?>>(
-              find.byType(SegmentedBlocks<MediaKind?>),
+            .widget<SegmentedBlocks<SourceFilter>>(
+              find.byType(SegmentedBlocks<SourceFilter>),
             )
             .selected,
-        isNull,
+        SourceFilter.all,
       );
       expect(
         svc.calls,
@@ -263,7 +263,7 @@ void main() {
     (tester) async {
       await open(tester);
       await searchOnline(tester, 'daft punk');
-      final chips = find.byType(SegmentedBlocks<MediaKind?>);
+      final chips = find.byType(SegmentedBlocks<SourceFilter>);
       expect(chips, findsOneWidget);
       expect(
         find.descendant(of: chips, matching: find.byType(Icon)),
@@ -321,6 +321,6 @@ void main() {
 
 /// A block of the source filter (the rows carry the same words).
 Finder _filter(String label) => find.descendant(
-  of: find.byType(SegmentedBlocks<MediaKind?>),
+  of: find.byType(SegmentedBlocks<SourceFilter>),
   matching: find.text(label),
 );

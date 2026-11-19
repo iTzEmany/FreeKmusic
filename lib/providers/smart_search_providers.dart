@@ -68,7 +68,7 @@ final smartSearchEngineProvider = Provider<SmartSearch>((ref) => SmartSearch(
 /// request (the page counts them); with `refresh` the saved copy is skipped.
 /// Leaving a request (the page asks for another one) disposes it, which
 /// cancels the stream and so drops the answers still on their way.
-typedef SmartSearchRequest = ({String query, bool refresh, int serial});
+typedef SmartSearchRequest = ({String query, bool refresh, int serial, bool videoOnly});
 
 final smartSearchProvider = StreamProvider.autoDispose
     .family<SmartSearchState, SmartSearchRequest>((ref, request) {
@@ -76,6 +76,7 @@ final smartSearchProvider = StreamProvider.autoDispose
         request.query,
         ref.read(ytmLanguageProvider),
         refresh: request.refresh,
+        videoOnly: request.videoOnly,
       );
 });
 

@@ -58,6 +58,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - Nessun lavoro aperto in backlog. Le prove a mano rimaste di Jam e broker sono nelle fasi archiviate (`storico/fasi/fase-84-broker-e-debito-jam.md`); su UniBA la scoperta con la maschera vera va riprovata (vedi le Trappole di [`sync-backup-jam.md`](architettura/sync-backup-jam.md)).
 
 ## Piattaforme
+- **Video karaoke senza librerie** (fase 131): iOS non ha le librerie video; macOS e i pacchetti Linux (AppImage, `.deb`, Flatpak) con `media_kit_video` sono provati solo dalla CI. Da provare a mano. Poi un controllo in CI che la lite non contenga `libmpv.so` e la full sì.
 - (10/11) Database desktop in `<Documenti>/codecore.sqlite`, condiviso con Codecore e fuori dalla cartella dell'app: spostarlo in `appSupportDir` con una migrazione all'avvio (copia se manca), poi aggiornare D-539 e `piattaforme.md`.
 - **Runtime Flatpak `org.freedesktop.Platform/ffmpeg-full` 24.08 a fine vita**: passare a 25.08.
 - **Accessibilità TalkBack, minori** (8 nov, prova fase 105): risultati di ricerca omonimi («Blue In Green, Artista» ×4) senza altro dettaglio; campo di Cerca e campo dell'editor del testo con `content-desc` vuoto (il suggerimento è un nodo a parte); chip del filtro di Cerca con un nodo cliccabile esterno senza etichetta accanto a quello interno.
@@ -69,6 +70,16 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **`libraryEntriesProvider`** tiene vive fino a 64 combinazioni (scheda, ordine, verso) che si riordinano sul thread UI a ogni cambio della libreria; tenerle è voluto. Rimedio: tenere viva solo l'ultima combinazione per scheda.
 - **`PlaylistOrder.apply`** viene chiamato dentro `build`.
 - **`app_fr.arb` con chiavi duplicate** (`dislikeSheet*`, `dislikeArtistDone`, `artistBlockedLabel`, già su master): vale l'ultima, da ripulire.
+
+## Online, video karaoke (fase 131)
+- **Dipendenza fra cartelle** online → `karaoke_video` → online: spostare `KaraokeVideoStream` in `online/`, mettere `videoUrl` in `YoutubeService` con default `toolMissing`, togliere `KaraokeVideoSource` e il cast `yt as YtDlpProcessService`.
+- **Doppio scarico dello stesso flusso video** (player dall'URL e download in cache): con i dati mobili il traffico raddoppia. Suonare dal file a download finito, o niente cache sui dati mobili.
+- **Sequenza Dio + `.part` + rename in tre posti** (`SeparationService`, `JamCache`, `KaraokeVideoCache`): un helper comune.
+- **Scadenza ripetuta** per prefisso: `StreamCache.expireEvery(prefix, idle)`.
+- **Test con attese reali** in `karaoke_video_cache_test` e `karaoke_video_controller_test`: orologio iniettabile in `StreamCache`, `release()` che restituisce un Future.
+- **Costante unica per i 10 s di attesa** (oggi nel gestore e nel controller).
+- **Precarico fallito**: non riparte finché il brano resta in coda.
+- **Avviso «Video non disponibile»** quando il player si apre con lo stato già `failed`.
 
 ## Qualità e rilascio
 - **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.

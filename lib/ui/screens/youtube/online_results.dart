@@ -10,6 +10,7 @@ import '../../../providers/selection_providers.dart';
 import '../../../data/settings/settings_store.dart' show StorageMode;
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart';
+import '../../../services/online/karaoke_filter.dart';
 import '../../../services/online/merge_results.dart';
 import '../../../services/online/external_collection.dart';
 import '../../../services/online/external_links.dart';
@@ -73,11 +74,16 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
   static final _selectionKey = SelectionKey.online.key;
   final _slots = <String, int>{};
   SmartSearchRequest? _request;
+
+  /// The text of the last search sent (not the one being typed), and whether
+  /// a filter was picked since: the chips then stay even with no rows.
+  String _baseQuery = '';
+  bool _filterTouched = false;
   int _serial = 0;
 
   /// The source filter and the «Altri risultati» list: both start over with
   /// each search.
-  MediaKind? _filter;
+  SourceFilter _filter = SourceFilter.all;
   bool _othersOpen = false;
 
   /// A pasted video link plays its video once, when the result with that id
@@ -143,8 +149,13 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     if (!refresh) _autoPlayId = youtubeVideoId(q);
     setState(() {
       _slots.clear();
-      _request = (query: q, refresh: refresh, serial: ++_serial);
-      _filter = null;
+      _baseQuery = q;
+      // A retry or a pull to refresh asks again under the same filter.
+      if (!refresh) {
+        _filter = SourceFilter.all;
+        _filterTouched = false;
+      }
+      _request = _requestFor(refresh: refresh);
       _othersOpen = false;
     });
     // Picks refer to rows of the old results (not while the tree is building).
@@ -226,10 +237,34 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     OnlineAlbumScreen(browseId: r.browseId, release: r),
   );
 
-  void _pickFilter(MediaKind? k) {
-    if (k == _filter) return;
+  /// The request for [_baseQuery] under the current filter: Karaoke asks videos
+  /// only, with «karaoke» added unless the text already has it.
+  SmartSearchRequest _requestFor({required bool refresh}) {
+    final karaoke = _filter == SourceFilter.karaoke;
+    final q = _baseQuery;
+    return (
+      query: karaoke && !q.toLowerCase().contains('karaoke') ? '$q karaoke' : q,
+      refresh: refresh,
+      serial: ++_serial,
+      videoOnly: karaoke,
+    );
+  }
+
+  void _pickFilter(SourceFilter k) {
+    if (k == _filter || _request == null || _baseQuery.isEmpty) return;
+    // A link is not a text to add a word to.
+    if (k == SourceFilter.karaoke && classifyQuery(_baseQuery).kind != QueryKind.text) return;
     ref.read(selectionProvider(_selectionKey).notifier).clear();
-    setState(() => _filter = k);
+    final karaokeChanges = (k == SourceFilter.karaoke) != (_filter == SourceFilter.karaoke);
+    setState(() {
+      _filter = k;
+      _filterTouched = true;
+      // Karaoke is a new request (videos only); the other three look at the rows already there.
+      if (karaokeChanges) {
+        _slots.clear();
+        _request = _requestFor(refresh: false);
+      }
+    });
   }
 
   /// Starts a download for each picked row that is not already in the library
@@ -243,7 +278,11 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     ref.read(selectionProvider(_selectionKey).notifier).clear();
   }
 
-  bool _shows(SmartResult r) => _filter == null || r.sources.contains(_filter);
+  bool _shows(SmartResult r) => switch (_filter) {
+    SourceFilter.all || SourceFilter.karaoke => true,
+    SourceFilter.ytmSong => r.sources.contains(MediaKind.ytmSong),
+    SourceFilter.ytVideo => r.sources.contains(MediaKind.ytVideo),
+  };
 
   int _slotOf(SmartResult r) {
     final slot = r.ids.map((id) => _slots[id]).nonNulls.firstOrNull ?? _slots.length;
@@ -287,13 +326,19 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     final bestEnd = bestRows.length;
     final slots = [for (final r in all) _slotOf(r)];
     // (slot, row) of what is shown under the filter.
-    final shownBest = [
-      for (var i = 0; i < bestEnd; i++)
-        if (_shows(all[i])) (slots[i], all[i]),
-    ];
+    final karaoke = _filter == SourceFilter.karaoke;
+    final shownBest = karaoke
+        ? [
+            for (final r in karaokeResults(all)) (slots[all.indexOf(r)], r),
+          ]
+        : [
+            for (var i = 0; i < bestEnd; i++)
+              if (_shows(all[i])) (slots[i], all[i]),
+          ];
     final shownOthers = [
-      for (var i = bestEnd; i < all.length; i++)
-        if (_shows(all[i])) (slots[i], all[i]),
+      if (!karaoke)
+        for (var i = bestEnd; i < all.length; i++)
+          if (_shows(all[i])) (slots[i], all[i]),
     ];
     final shownIds = [
       for (final (i, _) in shownBest) i,
@@ -334,9 +379,11 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
                 message: l.ytSearchPrompt,
               ),
             )
-          else if (s == null && error == null)
-            const LinearProgressIndicator(minHeight: 2)
-          else ...[
+          else if (s == null && error == null) ...[
+            const LinearProgressIndicator(minHeight: 2),
+            if (_filterTouched)
+              SourceFilterChips(filter: _filter, onPick: _pickFilter),
+          ] else ...[
             // Its place is always there: the list below never jumps when it goes.
             SizedBox(
               height: 2,
@@ -345,7 +392,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
                   : null,
             ),
             if (s != null) SearchNotices(notices: s.notices),
-            if (all.isNotEmpty)
+            if (all.isNotEmpty || _filterTouched)
               SourceFilterChips(filter: _filter, onPick: _pickFilter),
             Expanded(
               child: error != null && all.isEmpty

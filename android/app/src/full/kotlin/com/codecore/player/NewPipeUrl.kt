@@ -66,4 +66,22 @@ object NewPipeUrl {
             "ms" to ms,
         )
     }
+    /** Video-only stream of a video for the karaoke frame: MPEG-4/avc1 first, height nearest to 360 and not over [maxHeight] (the lowest one when none fits). */
+    fun videoUrl(id: String, maxHeight: Int = 480): Map<String, Any?> {
+        initMs // NewPipe.init runs once, on first read
+        val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
+        val all = info.videoOnlyStreams
+            .filter { it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && it.content.isNotEmpty() }
+        val fit = all.filter { it.height <= maxHeight }
+        val best = (if (fit.isNotEmpty()) fit else listOfNotNull(all.minByOrNull { it.height }))
+            .sortedWith(compareByDescending<org.schabi.newpipe.extractor.stream.VideoStream> {
+                it.codec?.startsWith("avc1") == true
+            }.thenBy { Math.abs(it.height - 360) }.thenBy { it.height })
+            .firstOrNull() ?: throw IllegalStateException("no progressive video stream")
+        return mapOf(
+            "url" to best.content,
+            "headers" to mapOf("User-Agent" to UA),
+            "height" to best.height,
+        )
+    }
 }

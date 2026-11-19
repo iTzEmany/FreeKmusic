@@ -63,9 +63,15 @@ class LyricsChain {
     Track t, {
     bool wantSynced = true,
     CancelToken? cancel,
+    bool ignoreDuration = false,
   }) async {
-    final c = cleanSearchQuery(t.title, t.artist ?? '');
-    final sec = t.durationMs > 0 ? (t.durationMs / 1000).round() : null;
+    // A karaoke video: its title is cleaned as one and its length proves nothing.
+    final c = ignoreDuration
+        ? karaokeLyricsQuery(t.title, t.artist ?? '')
+        : cleanSearchQuery(t.title, t.artist ?? '');
+    final sec = t.durationMs > 0 && !ignoreDuration
+        ? (t.durationMs / 1000).round()
+        : null;
     var failed = false, limited = false;
     Future<LyricsResult?> fallback(Future<LyricsResult?> Function() f) async {
       try {
@@ -96,6 +102,7 @@ class LyricsChain {
                 durationSec: sec,
                 cancel: cancel,
                 strict: true,
+                ignoreDuration: ignoreDuration,
               );
             } on WebUnavailableException catch (e) {
               if ((e.statusCode ?? 0) >= 500) {

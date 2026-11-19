@@ -8607,6 +8607,24 @@ abstract class AppLocalizations {
   /// **'Caricamento…'**
   String get playerLoading;
 
+  /// No description provided for @karaokeVideoLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Video karaoke'**
+  String get karaokeVideoLabel;
+
+  /// No description provided for @karaokeVideoLoading.
+  ///
+  /// In it, this message translates to:
+  /// **'Carico il video…'**
+  String get karaokeVideoLoading;
+
+  /// No description provided for @karaokeVideoFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Video non disponibile: suona solo la base.'**
+  String get karaokeVideoFailed;
+
   /// No description provided for @ytmAlbumQueue.
   ///
   /// In it, this message translates to:
