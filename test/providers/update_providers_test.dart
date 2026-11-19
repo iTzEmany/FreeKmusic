@@ -1,0 +1,157 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:codecore/core/network_kind.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
+import 'package:codecore/providers/startup_providers.dart';
+import 'package:codecore/providers/update_providers.dart';
+import 'package:codecore/services/online/update_checker.dart';
+import 'package:codecore/services/update/android_update.dart';
+import 'package:codecore/services/update/desktop_update.dart';
+import 'package:codecore/services/update/update_installer.dart';
+import 'package:codecore/services/update/update_target.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+class _Probe extends NetworkProbe {
+  _Probe(this.metered);
+  final bool metered;
+  @override
+  Future<NetworkKind> current() async => NetworkKind(metered: metered);
+}
+
+class _Installer extends UpdateInstaller {
+  _Installer(this.file);
+  final File file;
+  int downloads = 0;
+  @override
+  Stream<UpdateProgress> download(UpdateAsset asset, CancelToken cancel) async* {
+    downloads++;
+    yield const UpdateProgress(5, 10);
+    yield UpdateProgress(10, 10, file: file);
+  }
+}
+
+class _Android implements AndroidUpdate {
+  _Android(this.result);
+  final AndroidInstallResult result;
+  final calls = <String>[];
+  @override
+  Future<String> abi() async => 'arm64-v8a';
+  @override
+  Future<bool> canInstall() async => true;
+  @override
+  Future<bool> openInstallSettings() async {
+    calls.add('settings');
+    return true;
+  }
+  @override
+  Future<AndroidInstallResult> install(String path) async {
+    calls.add('install:$path');
+    return result;
+  }
+}
+
+class _Desktop implements DesktopUpdate {
+  final calls = <String>[];
+  @override
+  Future<void> install(File f, UpdateTarget t, {Uri? fallback}) async => calls.add('install:${f.path}');
+  @override
+  Future<void> openBrowser(Uri url) async => calls.add('browser:$url');
+}
+
+void main() {
+  const apk = 'freekmusic-full-arm64-v8a-release.apk';
+  final info = UpdateInfo(version: '9.9.9', url: 'https://x/rel', assets: [
+    UpdateAsset(name: apk, url: Uri.parse('https://x/$apk'), size: 10, sha256: 'ab'),
+    UpdateAsset(name: 'freekmusic_9.9.9_amd64.deb', url: Uri.parse('https://x/d.deb'), size: 10, sha256: 'ab'),
+  ]);
+
+  late _Installer installer;
+  late _Desktop desktop;
+  late _Android android;
+
+  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started}) {
+    installer = _Installer(File('/tmp/$apk'));
+    desktop = _Desktop();
+    android = _Android(r);
+    final c = ProviderContainer(overrides: [
+      updateTargetProvider.overrideWith((_) => UpdateTarget(kind: kind, abi: 'arm64-v8a')),
+      updateInstallerProvider.overrideWithValue(installer),
+      networkProbeProvider.overrideWithValue(_Probe(metered)),
+      androidUpdateProvider.overrideWithValue(android),
+      desktopUpdateProvider.overrideWithValue(desktop),
+    ]);
+    addTearDown(c.dispose);
+    return c;
+  }
+
+  test('metered network: asks with the size, downloads only after confirm', () async {
+    final c = make(UpdateKind.androidFull, metered: true);
+    final n = c.read(updateDownloadProvider.notifier);
+    await n.start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.confirmSize);
+    expect(c.read(updateDownloadProvider).asset!.size, 10);
+    expect(installer.downloads, 0);
+    await n.confirm();
+    expect(installer.downloads, 1);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.ready);
+  });
+
+  test('Android: downloaded file goes to the system installer', () async {
+    final c = make(UpdateKind.androidFull);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(android.calls, ['install:/tmp/$apk']);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.ready);
+  });
+
+  test('Android: missing permission opens the settings; other signer is reported', () async {
+    var c = make(UpdateKind.androidFull, r: AndroidInstallResult.needsPermission);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.needsPermission);
+    expect(android.calls, ['install:/tmp/$apk', 'settings']);
+    c = make(UpdateKind.androidFull, r: AndroidInstallResult.differentSigner);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.differentSigner);
+    expect(android.calls, ['install:/tmp/$apk']);
+  });
+
+  test('desktop self-install: the installer is handed the file', () async {
+    final c = make(UpdateKind.windows);
+    final w = UpdateAsset(name: 'FreeKmusic-Setup-9.9.9.exe', url: Uri.parse('https://x/s.exe'), size: 10, sha256: 'ab');
+    await c.read(updateDownloadProvider.notifier).start(UpdateInfo(version: '9.9.9', url: 'u', assets: [w]));
+    expect(desktop.calls, ['install:/tmp/$apk']);
+  });
+
+  test('.deb opens the browser on the file, with no download', () async {
+    final c = make(UpdateKind.deb);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(desktop.calls, ['browser:https://x/d.deb']);
+    expect(installer.downloads, 0);
+  });
+
+  test('no file in the release: the release page opens', () async {
+    final c = make(UpdateKind.macos);
+    await c.read(updateDownloadProvider.notifier).start(info);
+    expect(desktop.calls, ['browser:https://x/rel']);
+  });
+
+  test('the updates folder is emptied once the app has settled', () async {
+    final tmp = await Directory.systemTemp.createTemp('updc');
+    final d = Directory('${tmp.path}/updates')..createSync();
+    File('${d.path}/old.apk').writeAsStringSync('1');
+    final c = ProviderContainer(overrides: [
+      startupSettledProvider.overrideWith((_) async {}),
+      updatesDirProvider.overrideWithValue(() async => d),
+    ]);
+    addTearDown(() async {
+      c.dispose();
+      await tmp.delete(recursive: true);
+    });
+    c.read(updatesCleanupProvider);
+    await c.read(startupSettledProvider.future);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(d.existsSync(), isFalse);
+  });
+}

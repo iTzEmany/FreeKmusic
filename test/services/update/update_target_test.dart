@@ -1,0 +1,67 @@
+import 'dart:io';
+
+import 'package:codecore/services/online/update_checker.dart';
+import 'package:codecore/services/update/update_target.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+List<UpdateAsset> _release(String v) => [
+  for (final n in [
+    'FreeKmusic-$v-macos.zip',
+    'freekmusic-$v-x86_64.AppImage',
+    'freekmusic-full-arm64-v8a-release.apk',
+    'freekmusic-full-armeabi-v7a-release.apk',
+    'freekmusic-linux-x64.zip',
+    'freekmusic-lite-arm64-v8a-release.apk',
+    'freekmusic-lite-armeabi-v7a-release.apk',
+    'FreeKmusic-Setup-$v.exe',
+    'freekmusic.flatpak',
+    'freekmusic_${v}_amd64.deb',
+  ])
+    UpdateAsset(name: n, url: Uri.parse('https://x/$n'), size: 1),
+];
+
+void main() {
+  final cases = <(UpdateTarget, String Function(String))>[
+    (const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a'), (v) => 'freekmusic-full-arm64-v8a-release.apk'),
+    (const UpdateTarget(kind: UpdateKind.androidFull, abi: 'armeabi-v7a'), (v) => 'freekmusic-full-armeabi-v7a-release.apk'),
+    (const UpdateTarget(kind: UpdateKind.androidLite, abi: 'arm64-v8a'), (v) => 'freekmusic-lite-arm64-v8a-release.apk'),
+    (const UpdateTarget(kind: UpdateKind.androidLite, abi: 'armeabi-v7a'), (v) => 'freekmusic-lite-armeabi-v7a-release.apk'),
+    (const UpdateTarget(kind: UpdateKind.windows), (v) => 'FreeKmusic-Setup-$v.exe'),
+    (const UpdateTarget(kind: UpdateKind.appImage), (v) => 'freekmusic-$v-x86_64.AppImage'),
+    (const UpdateTarget(kind: UpdateKind.deb), (v) => 'freekmusic_${v}_amd64.deb'),
+    (const UpdateTarget(kind: UpdateKind.flatpak), (v) => 'freekmusic.flatpak'),
+    (const UpdateTarget(kind: UpdateKind.linuxZip), (v) => 'freekmusic-linux-x64.zip'),
+    (const UpdateTarget(kind: UpdateKind.macos), (v) => 'FreeKmusic-$v-macos.zip'),
+  ];
+
+  for (final v in ['1.6.2', '2.10.0']) {
+    for (final (t, name) in cases) {
+      test('${t.kind} ${t.abi ?? ''} picks its file in $v', () {
+        expect(pickUpdateAsset(_release(v), t)?.name, name(v));
+      });
+    }
+  }
+
+  test('a release without the file gives null', () {
+    expect(pickUpdateAsset(_release('1.6.2').where((a) => !a.name.endsWith('.deb')).toList(), const UpdateTarget(kind: UpdateKind.deb)), isNull);
+  });
+
+  test('only Android, Windows and AppImage install by themselves', () {
+    expect([for (final k in UpdateKind.values) if (selfInstalls(k)) k], [
+      UpdateKind.androidFull,
+      UpdateKind.androidLite,
+      UpdateKind.windows,
+      UpdateKind.appImage,
+    ]);
+  });
+
+  test('on Linux: AppImage, Flatpak, system path, otherwise the zip', () async {
+    Future<UpdateKind?> kind(Map<String, String> env, String exe) async =>
+        (await detectUpdateTarget(env: env, executable: exe))?.kind;
+    expect(await kind({'APPIMAGE': '/x/a.AppImage'}, '/tmp/.mount/freekmusic'), UpdateKind.appImage);
+    expect(await kind({'FLATPAK_ID': 'com.freekmusic.player'}, '/app/freekmusic'), UpdateKind.flatpak);
+    expect(await kind({}, '/usr/lib/freekmusic/freekmusic'), UpdateKind.deb);
+    expect(await kind({}, '/opt/freekmusic/freekmusic'), UpdateKind.deb);
+    expect(await kind({}, '/home/u/freekmusic/freekmusic'), UpdateKind.linuxZip);
+  }, skip: !Platform.isLinux);
+}
