@@ -3742,7 +3742,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateOnStartHint =>
-      'At most once a day. Downloads and installs nothing.';
+      'At most once a day. If there is a new version, you can update from the notice.';
 
   @override
   String get updateChecking => 'Checking…';
@@ -3765,10 +3765,59 @@ class AppLocalizationsEn extends AppLocalizations {
       'I can’t read the latest version. Check your connection.';
 
   @override
-  String get updateCopyLink => 'Copy address';
+  String get updateDo => 'Update';
 
   @override
-  String get updateLinkCopied => 'Address copied';
+  String get updateFromBrowser => 'Download from the browser';
+
+  @override
+  String updateFile(String name, int size) {
+    return 'File: $name ($size MB)';
+  }
+
+  @override
+  String updateProgress(int done, int total) {
+    return '$done of $total MB';
+  }
+
+  @override
+  String updateMeteredAsk(int size) {
+    return 'You are on a metered network. The file is $size MB: download it?';
+  }
+
+  @override
+  String get updateDownload => 'Download';
+
+  @override
+  String get updateInterruptedTitle => 'Download interrupted';
+
+  @override
+  String get updateInterruptedBody =>
+      'The connection is missing. The app stays as it is.';
+
+  @override
+  String get updateCorruptTitle => 'Damaged file';
+
+  @override
+  String get updateCorruptBody =>
+      'The downloaded file does not match the one in the Release and was deleted.';
+
+  @override
+  String get updateDifferentSignerTitle => 'Different signature';
+
+  @override
+  String get updateDifferentSignerBody =>
+      'This copy of the app does not come from the GitHub Release (test or debug build): Android cannot update it. Uninstall it and install the Release version.';
+
+  @override
+  String get updateInstallFailed => 'Could not start the installation.';
+
+  @override
+  String get updatePermissionBody =>
+      'Allow FreeKmusic to install apps: the Android setting opens, then come back here.';
+
+  @override
+  String get updateInstalling => 'Installing…';
 
   @override
   String get backupSection => 'Backup';

@@ -24,7 +24,7 @@ class LinkOpener {
       if (Platform.isWindows) {
         await Process.start('rundll32', ['url.dll,FileProtocolHandler', url]);
       } else {
-        await Process.start('xdg-open', [url]);
+        await Process.start(Platform.isMacOS ? 'open' : 'xdg-open', [url]);
       }
       return true;
     } on Object catch (e, st) {

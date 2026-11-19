@@ -3745,7 +3745,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get updateOnStartHint =>
-      'Al più una volta al giorno. Non scarica né installa niente.';
+      'Al più una volta al giorno. Se c’è una versione nuova, puoi aggiornare dall’avviso.';
 
   @override
   String get updateChecking => 'Controllo in corso…';
@@ -3769,10 +3769,60 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non riesco a leggere l’ultima versione. Controlla la connessione.';
 
   @override
-  String get updateCopyLink => 'Copia indirizzo';
+  String get updateDo => 'Aggiorna';
 
   @override
-  String get updateLinkCopied => 'Indirizzo copiato';
+  String get updateFromBrowser => 'Scarica dal browser';
+
+  @override
+  String updateFile(String name, int size) {
+    return 'File: $name, $size MB';
+  }
+
+  @override
+  String updateProgress(int done, int total) {
+    return '$done di $total MB';
+  }
+
+  @override
+  String updateMeteredAsk(int size) {
+    return 'Sei su una rete a consumo. Il file pesa $size MB: scaricarlo?';
+  }
+
+  @override
+  String get updateDownload => 'Scarica';
+
+  @override
+  String get updateInterruptedTitle => 'Download interrotto';
+
+  @override
+  String get updateInterruptedBody =>
+      'Manca la connessione. L’app resta com’è.';
+
+  @override
+  String get updateCorruptTitle => 'File danneggiato';
+
+  @override
+  String get updateCorruptBody =>
+      'Il file scaricato non corrisponde a quello della Release ed è stato cancellato.';
+
+  @override
+  String get updateDifferentSignerTitle => 'Firma diversa';
+
+  @override
+  String get updateDifferentSignerBody =>
+      'Questa copia dell’app non viene dalla Release di GitHub (build di prova o di debug): Android non può aggiornarla. Disinstallala e installa la versione della Release.';
+
+  @override
+  String get updateInstallFailed =>
+      'Non sono riuscito ad avviare l’installazione.';
+
+  @override
+  String get updatePermissionBody =>
+      'Consenti a FreeKmusic di installare app: si apre l’impostazione di Android, poi torni qui.';
+
+  @override
+  String get updateInstalling => 'Installazione in corso…';
 
   @override
   String get backupSection => 'Backup';

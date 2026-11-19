@@ -3757,7 +3757,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get updateOnStartHint =>
-      'Como máximo una vez al día. No descarga ni instala nada.';
+      'Como máximo una vez al día. Si hay una versión nueva, puedes actualizar desde el aviso.';
 
   @override
   String get updateChecking => 'Comprobando…';
@@ -3780,10 +3780,59 @@ class AppLocalizationsEs extends AppLocalizations {
       'No puedo leer la última versión. Revisa la conexión.';
 
   @override
-  String get updateCopyLink => 'Copiar dirección';
+  String get updateDo => 'Actualizar';
 
   @override
-  String get updateLinkCopied => 'Dirección copiada';
+  String get updateFromBrowser => 'Descargar desde el navegador';
+
+  @override
+  String updateFile(String name, int size) {
+    return 'Archivo: $name, $size MB';
+  }
+
+  @override
+  String updateProgress(int done, int total) {
+    return '$done de $total MB';
+  }
+
+  @override
+  String updateMeteredAsk(int size) {
+    return 'Estás en una red de datos limitados. El archivo pesa $size MB: ¿descargarlo?';
+  }
+
+  @override
+  String get updateDownload => 'Descargar';
+
+  @override
+  String get updateInterruptedTitle => 'Descarga interrumpida';
+
+  @override
+  String get updateInterruptedBody =>
+      'Falta la conexión. La app se queda como está.';
+
+  @override
+  String get updateCorruptTitle => 'Archivo dañado';
+
+  @override
+  String get updateCorruptBody =>
+      'El archivo descargado no coincide con el de la Release y se ha borrado.';
+
+  @override
+  String get updateDifferentSignerTitle => 'Firma distinta';
+
+  @override
+  String get updateDifferentSignerBody =>
+      'Esta copia de la app no viene de la Release de GitHub (compilación de prueba o de depuración): Android no puede actualizarla. Desinstálala e instala la versión de la Release.';
+
+  @override
+  String get updateInstallFailed => 'No se pudo iniciar la instalación.';
+
+  @override
+  String get updatePermissionBody =>
+      'Permite que FreeKmusic instale apps: se abre el ajuste de Android y luego vuelves aquí.';
+
+  @override
+  String get updateInstalling => 'Instalando…';
 
   @override
   String get backupSection => 'Copia de seguridad';
