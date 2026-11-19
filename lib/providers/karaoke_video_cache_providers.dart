@@ -1,0 +1,62 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../core/app_log.dart';
+import '../services/karaoke_video/karaoke_video_cache.dart';
+import '../services/karaoke_video/karaoke_video_source.dart';
+import '../services/online/android_yt_dlp_service.dart';
+import '../services/online/yt_dlp_process_service.dart';
+import 'database_providers.dart' show trackRepositoryProvider;
+import 'player_providers.dart';
+import 'queue_tracks.dart';
+import 'settings_providers.dart';
+import 'shuffle_plus_providers.dart' show networkProbeProvider;
+import 'stream_providers.dart' show streamCacheProvider;
+import 'youtube_providers.dart' show ytDlpServiceProvider;
+
+/// The cache of karaoke videos (D-649): its 15-minute expiry runs from the start, on every platform,
+/// and the karaoke videos of the manual queue are prefetched (D-651).
+final karaokeVideoCacheProvider = Provider<KaraokeVideoCache>((ref) {
+  final yt = ref.watch(ytDlpServiceProvider); // the platform's service, as the preparer's youtube
+  final handler = ref.watch(audioHandlerProvider);
+  final cache = KaraokeVideoCache(
+    cache: ref.watch(streamCacheProvider),
+    source: KaraokeVideoSource(
+      (id) => yt is AndroidYtDlpService
+          ? yt.videoUrl(id)
+          : (yt as YtDlpProcessService).videoUrl(id),
+    ),
+    canPrefetch: () async =>
+        !(await ref.read(networkProbeProvider).current()).metered ||
+        ref.read(settingsProvider).prefetchOnMobile,
+  )..startExpiry();
+
+  var disposed = false;
+  Future<void> sync() async {
+    try {
+      final from = handler.currentIndex + 1;
+      final ids = handler.queueIds;
+      final n = handler.userAhead;
+      final tracks = from <= 0 || n == 0 || from >= ids.length
+          ? const <Never>[]
+          : await queueTracks(
+              ids.sublist(from, (from + n).clamp(from, ids.length)),
+              ref.read(trackRepositoryProvider),
+              ref.read(onlineEntriesProvider),
+            );
+      if (!disposed) cache.prefetchQueue(tracks);
+    } on Object catch (e, st) {
+      AppLog.w('karaoke video: queue prefetch failed', e, st);
+    }
+  }
+
+  final sub = handler.queueChanges.listen((_) => unawaited(sync()));
+  ref.onDispose(() {
+    disposed = true;
+    unawaited(sub.cancel());
+    cache.dispose();
+  });
+  unawaited(sync());
+  return cache;
+});
