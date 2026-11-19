@@ -2032,7 +2032,7 @@
   "updateCheck": "Buscar actualizaciones",
   "updateCheckHint": "Pregunta a GitHub por la última versión, solo cuando lo pides.",
   "updateOnStart": "Comprobar al iniciar",
-  "updateOnStartHint": "Como máximo una vez al día. No descarga ni instala nada.",
+  "updateOnStartHint": "Como máximo una vez al día. Si hay una versión nueva, puedes actualizar desde el aviso.",
   "updateChecking": "Comprobando…",
   "updateAvailable": "Hay una versión {version} disponible",
   "@updateAvailable": {
@@ -2052,8 +2052,48 @@
   },
   "updateRateLimited": "GitHub pide esperar: inténtalo más tarde.",
   "updateFailed": "No puedo leer la última versión. Revisa la conexión.",
-  "updateCopyLink": "Copiar dirección",
-  "updateLinkCopied": "Dirección copiada",
+  "updateDo": "Actualizar",
+  "updateFromBrowser": "Descargar desde el navegador",
+  "updateFile": "Archivo: {name}, {size} MB",
+  "@updateFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateProgress": "{done} de {total} MB",
+  "@updateProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "updateMeteredAsk": "Estás en una red de datos limitados. El archivo pesa {size} MB: ¿descargarlo?",
+  "@updateMeteredAsk": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateDownload": "Descargar",
+  "updateInterruptedTitle": "Descarga interrumpida",
+  "updateInterruptedBody": "Falta la conexión. La app se queda como está.",
+  "updateCorruptTitle": "Archivo dañado",
+  "updateCorruptBody": "El archivo descargado no coincide con el de la Release y se ha borrado.",
+  "updateDifferentSignerTitle": "Firma distinta",
+  "updateDifferentSignerBody": "Esta copia de la app no viene de la Release de GitHub (compilación de prueba o de depuración): Android no puede actualizarla. Desinstálala e instala la versión de la Release.",
+  "updateInstallFailed": "No se pudo iniciar la instalación.",
+  "updatePermissionBody": "Permite que FreeKmusic instale apps: se abre el ajuste de Android y luego vuelves aquí.",
+  "updateInstalling": "Instalando…",
   "backupSection": "Copia de seguridad",
   "backupCreate": "Crear copia",
   "backupCreateHint": "Listas, favoritos, letras y ediciones en un zip. Sin música.",

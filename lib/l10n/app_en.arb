@@ -2032,7 +2032,7 @@
   "updateCheck": "Check for updates",
   "updateCheckHint": "Asks GitHub for the latest version, only when you ask.",
   "updateOnStart": "Check at start-up",
-  "updateOnStartHint": "At most once a day. Downloads and installs nothing.",
+  "updateOnStartHint": "At most once a day. If there is a new version, you can update from the notice.",
   "updateChecking": "Checking…",
   "updateAvailable": "Version {version} is available",
   "@updateAvailable": {
@@ -2052,8 +2052,48 @@
   },
   "updateRateLimited": "GitHub asks you to wait: try again later.",
   "updateFailed": "I can’t read the latest version. Check your connection.",
-  "updateCopyLink": "Copy address",
-  "updateLinkCopied": "Address copied",
+  "updateDo": "Update",
+  "updateFromBrowser": "Download from the browser",
+  "updateFile": "File: {name} ({size} MB)",
+  "@updateFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateProgress": "{done} of {total} MB",
+  "@updateProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "updateMeteredAsk": "You are on a metered network. The file is {size} MB: download it?",
+  "@updateMeteredAsk": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateDownload": "Download",
+  "updateInterruptedTitle": "Download interrupted",
+  "updateInterruptedBody": "The connection is missing. The app stays as it is.",
+  "updateCorruptTitle": "Damaged file",
+  "updateCorruptBody": "The downloaded file does not match the one in the Release and was deleted.",
+  "updateDifferentSignerTitle": "Different signature",
+  "updateDifferentSignerBody": "This copy of the app does not come from the GitHub Release (test or debug build): Android cannot update it. Uninstall it and install the Release version.",
+  "updateInstallFailed": "Could not start the installation.",
+  "updatePermissionBody": "Allow FreeKmusic to install apps: the Android setting opens, then come back here.",
+  "updateInstalling": "Installing…",
   "backupSection": "Backup",
   "backupCreate": "Create backup",
   "backupCreateHint": "Playlists, favourites, lyrics and edits in a zip file. No music inside.",

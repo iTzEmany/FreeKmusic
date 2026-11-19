@@ -2032,7 +2032,7 @@
   "updateCheck": "Nach Updates suchen",
   "updateCheckHint": "Fragt GitHub nach der neuesten Version, nur auf Anfrage.",
   "updateOnStart": "Beim Start prüfen",
-  "updateOnStartHint": "Höchstens einmal am Tag. Lädt nichts herunter und installiert nichts.",
+  "updateOnStartHint": "Höchstens einmal am Tag. Gibt es eine neue Version, kannst du über den Hinweis aktualisieren.",
   "updateChecking": "Prüfe…",
   "updateAvailable": "Version {version} ist verfügbar",
   "@updateAvailable": {
@@ -2052,8 +2052,48 @@
   },
   "updateRateLimited": "GitHub bittet um Geduld: versuche es später erneut.",
   "updateFailed": "Die neueste Version lässt sich nicht lesen. Prüfe die Verbindung.",
-  "updateCopyLink": "Adresse kopieren",
-  "updateLinkCopied": "Adresse kopiert",
+  "updateDo": "Aktualisieren",
+  "updateFromBrowser": "Im Browser herunterladen",
+  "updateFile": "Datei: {name}, {size} MB",
+  "@updateFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateProgress": "{done} von {total} MB",
+  "@updateProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "updateMeteredAsk": "Du bist in einem Netz mit Datenlimit. Die Datei ist {size} MB groß: herunterladen?",
+  "@updateMeteredAsk": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateDownload": "Herunterladen",
+  "updateInterruptedTitle": "Download unterbrochen",
+  "updateInterruptedBody": "Die Verbindung fehlt. Die App bleibt, wie sie ist.",
+  "updateCorruptTitle": "Beschädigte Datei",
+  "updateCorruptBody": "Die heruntergeladene Datei stimmt nicht mit der aus dem Release überein und wurde gelöscht.",
+  "updateDifferentSignerTitle": "Andere Signatur",
+  "updateDifferentSignerBody": "Diese Kopie der App stammt nicht aus dem GitHub-Release (Test- oder Debug-Build): Android kann sie nicht aktualisieren. Deinstalliere sie und installiere die Release-Version.",
+  "updateInstallFailed": "Die Installation konnte nicht gestartet werden.",
+  "updatePermissionBody": "Erlaube FreeKmusic, Apps zu installieren: Die Android-Einstellung öffnet sich, danach kommst du hierher zurück.",
+  "updateInstalling": "Installation läuft…",
   "backupSection": "Backup",
   "backupCreate": "Backup erstellen",
   "backupCreateHint": "Playlists, Favoriten, Texte und Änderungen in einer Zip-Datei. Ohne Musik.",

@@ -62,8 +62,7 @@ void main() {
     expect(web.calls, 1);
     expect(find.text('Disponibile la versione 9.0.0'), findsOneWidget);
     expect(find.text('Novità della release'), findsOneWidget);
-    expect(find.text('https://github.com/me/codecore/releases/tag/v9.0.0'), findsOneWidget);
-    expect(find.text('Copia indirizzo'), findsOneWidget);
+    expect(find.text('Copia indirizzo'), findsNothing);
     await h.dispose(tester);
   });
 

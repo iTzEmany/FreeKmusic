@@ -27,6 +27,7 @@ import 'l10n/l10n_ext.dart';
 import 'ui/screens/onboarding/onboarding_gate.dart';
 import 'providers/dislike_store_provider.dart' show dislikeStoreProvider;
 import 'providers/releases_providers.dart' show releaseCheckControllerProvider;
+import 'ui/screens/settings/update_tiles.dart' show updateSnackBar;
 import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_icon_sync.dart';
 import 'ui/widgets/user_activity_scope.dart';
@@ -37,6 +38,7 @@ import 'ui/widgets/show_msg.dart' show CcSnackContent;
 const _updateSnack = Duration(seconds: 8);
 
 final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 class CodecoreApp extends ConsumerWidget {
   const CodecoreApp({super.key});
@@ -69,21 +71,14 @@ class CodecoreApp extends ConsumerWidget {
     ref.watch(genreRereadStartProvider);
     // Looks up where the library's artists come from, only with the enrichment on (starts once settled).
     ref.watch(artistCountryStartProvider);
+    // Empties the folder of downloaded updates (starts once settled).
+    ref.watch(updatesCleanupProvider);
     // A new version, at most once a day and only if the user asked for it.
     ref.listen(updateOnStartProvider, (_, next) {
       final info = next.value;
       if (info == null) return;
-      _messengerKey.currentState?.showSnackBar(
-        SnackBar(
-          duration: _updateSnack,
-          content: Builder(
-            builder: (c) => CcSnackContent(
-              c.l10n.updateAvailable(info.version),
-              _updateSnack,
-            ),
-          ),
-        ),
-      );
+      final c = _navigatorKey.currentState?.overlay?.context;
+      if (c != null) _messengerKey.currentState?.showSnackBar(updateSnackBar(c, info, _updateSnack));
     });
     ref.listen(promoteErrorsProvider, (_, next) {
       final e = next.value;
@@ -128,6 +123,7 @@ class CodecoreApp extends ConsumerWidget {
     return MaterialApp(
       title: 'FreeKmusic',
       scaffoldMessengerKey: _messengerKey,
+      navigatorKey: _navigatorKey,
       scrollBehavior: const AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
       theme: buildThemeFromColors(

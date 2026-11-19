@@ -35,12 +35,13 @@ class _Installer extends UpdateInstaller {
 
 class _Android implements AndroidUpdate {
   _Android(this.result);
-  final AndroidInstallResult result;
+  AndroidInstallResult result;
   final calls = <String>[];
+  bool allowed = true;
   @override
   Future<String> abi() async => 'arm64-v8a';
   @override
-  Future<bool> canInstall() async => true;
+  Future<bool> canInstall() async => allowed;
   @override
   Future<bool> openInstallSettings() async {
     calls.add('settings');
@@ -56,9 +57,15 @@ class _Android implements AndroidUpdate {
 class _Desktop implements DesktopUpdate {
   final calls = <String>[];
   @override
-  Future<void> install(File f, UpdateTarget t, {Uri? fallback}) async => calls.add('install:${f.path}');
+  Future<bool> install(File f, UpdateTarget t, {Uri? fallback}) async {
+    calls.add('install:${f.path}');
+    return true;
+  }
   @override
-  Future<void> openBrowser(Uri url) async => calls.add('browser:$url');
+  Future<bool> openBrowser(Uri url) async {
+    calls.add('browser:$url');
+    return true;
+  }
 }
 
 void main() {
@@ -72,8 +79,8 @@ void main() {
   late _Desktop desktop;
   late _Android android;
 
-  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started}) {
-    installer = _Installer(File('/tmp/$apk'));
+  ProviderContainer make(UpdateKind kind, {bool metered = false, AndroidInstallResult r = AndroidInstallResult.started, File? file}) {
+    installer = _Installer(file ?? File('/tmp/$apk'));
     desktop = _Desktop();
     android = _Android(r);
     final c = ProviderContainer(overrides: [
@@ -115,6 +122,25 @@ void main() {
     await c.read(updateDownloadProvider.notifier).start(info);
     expect(c.read(updateDownloadProvider).phase, UpdatePhase.differentSigner);
     expect(android.calls, ['install:/tmp/$apk']);
+  });
+
+  test('back from the permission setting: installs the same file once allowed, no new download', () async {
+    final tmp = await Directory.systemTemp.createTemp('updr');
+    addTearDown(() => tmp.delete(recursive: true));
+    final file = File('${tmp.path}/$apk')..writeAsStringSync('x');
+    final c = make(UpdateKind.androidFull, r: AndroidInstallResult.needsPermission, file: file);
+    final n = c.read(updateDownloadProvider.notifier);
+    android.allowed = false;
+    await n.start(info);
+    android.calls.clear();
+    await n.resumeInstall();
+    expect(android.calls, isEmpty, reason: 'still not allowed: nothing happens');
+    android.allowed = true;
+    android.result = AndroidInstallResult.started;
+    await n.resumeInstall();
+    expect(android.calls, ['install:${file.path}']);
+    expect(installer.downloads, 1);
+    expect(c.read(updateDownloadProvider).phase, UpdatePhase.ready);
   });
 
   test('desktop self-install: the installer is handed the file', () async {

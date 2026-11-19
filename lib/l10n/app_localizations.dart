@@ -5857,7 +5857,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateOnStartHint.
   ///
   /// In it, this message translates to:
-  /// **'Al più una volta al giorno. Non scarica né installa niente.'**
+  /// **'Al più una volta al giorno. Se c’è una versione nuova, puoi aggiornare dall’avviso.'**
   String get updateOnStartHint;
 
   /// No description provided for @updateChecking.
@@ -5890,17 +5890,95 @@ abstract class AppLocalizations {
   /// **'Non riesco a leggere l’ultima versione. Controlla la connessione.'**
   String get updateFailed;
 
-  /// No description provided for @updateCopyLink.
+  /// No description provided for @updateDo.
   ///
   /// In it, this message translates to:
-  /// **'Copia indirizzo'**
-  String get updateCopyLink;
+  /// **'Aggiorna'**
+  String get updateDo;
 
-  /// No description provided for @updateLinkCopied.
+  /// No description provided for @updateFromBrowser.
   ///
   /// In it, this message translates to:
-  /// **'Indirizzo copiato'**
-  String get updateLinkCopied;
+  /// **'Scarica dal browser'**
+  String get updateFromBrowser;
+
+  /// No description provided for @updateFile.
+  ///
+  /// In it, this message translates to:
+  /// **'File: {name}, {size} MB'**
+  String updateFile(String name, int size);
+
+  /// No description provided for @updateProgress.
+  ///
+  /// In it, this message translates to:
+  /// **'{done} di {total} MB'**
+  String updateProgress(int done, int total);
+
+  /// No description provided for @updateMeteredAsk.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei su una rete a consumo. Il file pesa {size} MB: scaricarlo?'**
+  String updateMeteredAsk(int size);
+
+  /// No description provided for @updateDownload.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica'**
+  String get updateDownload;
+
+  /// No description provided for @updateInterruptedTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Download interrotto'**
+  String get updateInterruptedTitle;
+
+  /// No description provided for @updateInterruptedBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Manca la connessione. L’app resta com’è.'**
+  String get updateInterruptedBody;
+
+  /// No description provided for @updateCorruptTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'File danneggiato'**
+  String get updateCorruptTitle;
+
+  /// No description provided for @updateCorruptBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Il file scaricato non corrisponde a quello della Release ed è stato cancellato.'**
+  String get updateCorruptBody;
+
+  /// No description provided for @updateDifferentSignerTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Firma diversa'**
+  String get updateDifferentSignerTitle;
+
+  /// No description provided for @updateDifferentSignerBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Questa copia dell’app non viene dalla Release di GitHub (build di prova o di debug): Android non può aggiornarla. Disinstallala e installa la versione della Release.'**
+  String get updateDifferentSignerBody;
+
+  /// No description provided for @updateInstallFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non sono riuscito ad avviare l’installazione.'**
+  String get updateInstallFailed;
+
+  /// No description provided for @updatePermissionBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Consenti a FreeKmusic di installare app: si apre l’impostazione di Android, poi torni qui.'**
+  String get updatePermissionBody;
+
+  /// No description provided for @updateInstalling.
+  ///
+  /// In it, this message translates to:
+  /// **'Installazione in corso…'**
+  String get updateInstalling;
 
   /// No description provided for @backupSection.
   ///

@@ -2190,7 +2190,7 @@
   "updateCheck": "Rechercher des mises à jour",
   "updateCheckHint": "Demande à GitHub la dernière version, seulement quand tu le demandes.",
   "updateOnStart": "Vérifier au démarrage",
-  "updateOnStartHint": "Au plus une fois par jour. Ne télécharge ni n’installe rien.",
+  "updateOnStartHint": "Au plus une fois par jour. S’il y a une nouvelle version, tu peux mettre à jour depuis l’avis.",
   "updateChecking": "Vérification…",
   "updateAvailable": "La version {version} est disponible",
   "@updateAvailable": {
@@ -2210,8 +2210,48 @@
   },
   "updateRateLimited": "GitHub demande d’attendre : réessaie plus tard.",
   "updateFailed": "Impossible de lire la dernière version. Vérifie la connexion.",
-  "updateCopyLink": "Copier l’adresse",
-  "updateLinkCopied": "Adresse copiée",
+  "updateDo": "Mettre à jour",
+  "updateFromBrowser": "Télécharger depuis le navigateur",
+  "updateFile": "Fichier : {name}, {size} Mo",
+  "@updateFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateProgress": "{done} sur {total} Mo",
+  "@updateProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "updateMeteredAsk": "Tu es sur un réseau limité. Le fichier fait {size} Mo : le télécharger ?",
+  "@updateMeteredAsk": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateDownload": "Télécharger",
+  "updateInterruptedTitle": "Téléchargement interrompu",
+  "updateInterruptedBody": "La connexion manque. L’appli reste comme elle est.",
+  "updateCorruptTitle": "Fichier endommagé",
+  "updateCorruptBody": "Le fichier téléchargé ne correspond pas à celui de la Release et a été supprimé.",
+  "updateDifferentSignerTitle": "Signature différente",
+  "updateDifferentSignerBody": "Cette copie de l’appli ne vient pas de la Release GitHub (build de test ou de débogage) : Android ne peut pas la mettre à jour. Désinstalle-la et installe la version de la Release.",
+  "updateInstallFailed": "Impossible de lancer l’installation.",
+  "updatePermissionBody": "Autorise FreeKmusic à installer des applis : le réglage d’Android s’ouvre, puis tu reviens ici.",
+  "updateInstalling": "Installation en cours…",
   "backupSection": "Sauvegarde",
   "backupCreate": "Créer une sauvegarde",
   "backupCreateHint": "Playlists, favoris, paroles et modifications dans un zip. Sans musique.",

@@ -101,6 +101,7 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
   UpdateInfo? _info;
   UpdateTarget? _target;
   CancelToken? _cancel;
+  File? _file;
 
   @override
   UpdateDownloadState build() => const UpdateDownloadState(UpdatePhase.idle);
@@ -111,8 +112,14 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
     final target = _target = await ref.read(updateTargetProvider.future);
     final asset = target == null ? null : pickUpdateAsset(info.assets, target);
     final desktop = ref.read(desktopUpdateProvider);
-    if (asset == null) return desktop.openBrowser(Uri.parse(info.url));
-    if (!selfInstalls(target!.kind)) return desktop.openBrowser(asset.url);
+    if (asset == null) {
+      await desktop.openBrowser(Uri.parse(info.url));
+      return;
+    }
+    if (!selfInstalls(target!.kind)) {
+      await desktop.openBrowser(asset.url);
+      return;
+    }
     if ((await ref.read(networkProbeProvider).current()).metered) {
       state = UpdateDownloadState(UpdatePhase.confirmSize, asset: asset);
       return;
@@ -136,6 +143,17 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
     if (i != null) await start(i);
   }
 
+  /// Back from the unknown-sources setting: installs the file already
+  /// downloaded once the permission is granted, else starts over.
+  Future<void> resumeInstall() async {
+    final a = state.asset;
+    final f = _file;
+    if (state.phase != UpdatePhase.needsPermission || a == null) return;
+    if (!await ref.read(androidUpdateProvider).canInstall()) return;
+    if (f != null && f.existsSync()) return _install(a, f);
+    await retry();
+  }
+
   Future<void> _download(UpdateAsset asset) async {
     final cancel = _cancel = CancelToken();
     state = UpdateDownloadState(UpdatePhase.downloading, asset: asset);
@@ -157,6 +175,7 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
   }
 
   Future<void> _install(UpdateAsset asset, File file) async {
+    _file = file;
     final target = _target!;
     UpdateDownloadState done(UpdatePhase p, [UpdateFailure? f]) => UpdateDownloadState(p, asset: asset, failure: f);
     try {
@@ -170,8 +189,8 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
         };
         if (state.phase == UpdatePhase.needsPermission) await android.openInstallSettings();
       } else {
-        await ref.read(desktopUpdateProvider).install(file, target, fallback: asset.url);
-        state = done(UpdatePhase.ready);
+        final ok = await ref.read(desktopUpdateProvider).install(file, target, fallback: asset.url);
+        state = ok ? done(UpdatePhase.ready) : done(UpdatePhase.error, UpdateFailure.installFailed);
       }
     } on Object catch (e, st) {
       AppLog.w('update install failed', e, st);

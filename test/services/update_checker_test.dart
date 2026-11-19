@@ -102,5 +102,29 @@ void main() {
       await UpdateChecker(web, repo: 'me/codecore', current: '1.1.0').check();
       expect(web.urls.single, 'https://api.github.com/repos/me/codecore/releases?per_page=10');
     });
+    test('the release assets: name, url, size and the sha256 of the digest', () async {
+      final web = _Web(() => [
+        {
+          'tag_name': 'v1.6.2',
+          'assets': [
+            {
+              'name': 'freekmusic-full-arm64-v8a-release.apk',
+              'size': 84081714,
+              'digest': 'sha256:00385C8F382705EA5215323201B4CDABFD2F44E3A49C8439AF019ACC294E2D71',
+              'browser_download_url': 'https://github.com/iTzEmany/FreeKmusic/releases/download/v1.6.2/freekmusic-full-arm64-v8a-release.apk',
+            },
+            {'name': 'old.bin', 'size': 3, 'digest': null, 'browser_download_url': 'https://example.com/old.bin'},
+            {'name': 'no-url'},
+          ],
+        },
+      ]);
+      final assets = (await UpdateChecker(web, repo: 'a/b', current: '1.0.0').check()).info!.assets;
+      expect(assets, hasLength(2));
+      expect(assets[0].name, 'freekmusic-full-arm64-v8a-release.apk');
+      expect(assets[0].size, 84081714);
+      expect(assets[0].sha256, '00385c8f382705ea5215323201b4cdabfd2f44e3a49c8439af019acc294e2d71');
+      expect(assets[0].url.host, 'github.com');
+      expect(assets[1].sha256, isNull);
+    });
   });
 }

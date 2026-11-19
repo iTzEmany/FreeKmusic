@@ -3761,7 +3761,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get updateOnStartHint =>
-      'Höchstens einmal am Tag. Lädt nichts herunter und installiert nichts.';
+      'Höchstens einmal am Tag. Gibt es eine neue Version, kannst du über den Hinweis aktualisieren.';
 
   @override
   String get updateChecking => 'Prüfe…';
@@ -3785,10 +3785,60 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die neueste Version lässt sich nicht lesen. Prüfe die Verbindung.';
 
   @override
-  String get updateCopyLink => 'Adresse kopieren';
+  String get updateDo => 'Aktualisieren';
 
   @override
-  String get updateLinkCopied => 'Adresse kopiert';
+  String get updateFromBrowser => 'Im Browser herunterladen';
+
+  @override
+  String updateFile(String name, int size) {
+    return 'Datei: $name, $size MB';
+  }
+
+  @override
+  String updateProgress(int done, int total) {
+    return '$done von $total MB';
+  }
+
+  @override
+  String updateMeteredAsk(int size) {
+    return 'Du bist in einem Netz mit Datenlimit. Die Datei ist $size MB groß: herunterladen?';
+  }
+
+  @override
+  String get updateDownload => 'Herunterladen';
+
+  @override
+  String get updateInterruptedTitle => 'Download unterbrochen';
+
+  @override
+  String get updateInterruptedBody =>
+      'Die Verbindung fehlt. Die App bleibt, wie sie ist.';
+
+  @override
+  String get updateCorruptTitle => 'Beschädigte Datei';
+
+  @override
+  String get updateCorruptBody =>
+      'Die heruntergeladene Datei stimmt nicht mit der aus dem Release überein und wurde gelöscht.';
+
+  @override
+  String get updateDifferentSignerTitle => 'Andere Signatur';
+
+  @override
+  String get updateDifferentSignerBody =>
+      'Diese Kopie der App stammt nicht aus dem GitHub-Release (Test- oder Debug-Build): Android kann sie nicht aktualisieren. Deinstalliere sie und installiere die Release-Version.';
+
+  @override
+  String get updateInstallFailed =>
+      'Die Installation konnte nicht gestartet werden.';
+
+  @override
+  String get updatePermissionBody =>
+      'Erlaube FreeKmusic, Apps zu installieren: Die Android-Einstellung öffnet sich, danach kommst du hierher zurück.';
+
+  @override
+  String get updateInstalling => 'Installation läuft…';
 
   @override
   String get backupSection => 'Backup';
