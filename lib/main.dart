@@ -33,6 +33,7 @@ import 'data/settings/settings_store.dart';
 import 'providers/database_providers.dart';
 import 'providers/youtube_providers.dart'
     show createYtDlpService, ytDlpServiceProvider;
+import 'providers/karaoke_video_providers.dart';
 import 'providers/library_providers.dart';
 import 'providers/player_providers.dart';
 import 'providers/stream_providers.dart';
@@ -293,6 +294,8 @@ Future<void> main() async {
   handler.libraryIdOf = container.read(playerControllerProvider).libraryIdOf;
   // A saved stream the video of which vanished from YouTube gets its replacement (R-242).
   handler.onStreamGone = (t) => unawaited(container.read(vanishedTracksProvider).handle(t));
+  // The karaoke video holds the audio's start, so it is plugged in from the beginning (D-647).
+  container.read(karaokeVideoProvider);
   // The player downloads streamed tracks through the preparer (45.4); before
   // the queue comes back, so a restored streamed track finds it.
   if (cacheOpened) {

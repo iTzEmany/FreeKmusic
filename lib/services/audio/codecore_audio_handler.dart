@@ -20,6 +20,7 @@ import 'crossfade_engine.dart';
 import 'equalizer.dart';
 import '../radio/icy_title.dart';
 import '../radio/radio_station.dart';
+import '../karaoke_video/karaoke_video_gate.dart';
 import 'next_window.dart';
 import 'online_entries.dart';
 import 'media_browse_tree.dart';
@@ -226,6 +227,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// The «Alta qualità» karaoke hook: the backing-track file to play instead of [track]'s own
   /// (null = the normal path). [streamKey] is the stream cache key for a streamed track.
   Future<String?> Function(Track track, String? streamKey)? karaokeSource;
+
+  /// The karaoke video's hold on the audio (D-647): null, or a null answer, means no wait.
+  KaraokeVideoGate? videoGate;
 
   /// The backing track the current item plays, or null when it plays its own file.
   String? get karaokePath => _karaokePath;
@@ -706,6 +710,12 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _noSaveId = null;
       // A backend that was playing keeps playing a newly loaded file.
       if (playNow && !_loadPaused) {
+        // A karaoke video starts together with the audio: wait for its first frame (D-647).
+        final hold = videoGate?.beforePlay(track);
+        if (hold != null) {
+          await hold.timeout(const Duration(seconds: 10), onTimeout: () => AppLog.w('karaoke video late, playing anyway'));
+          if (token != _loadToken) return;
+        }
         await _backend.play();
       } else {
         await _backend.pause();
@@ -1791,12 +1801,21 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     final c = _current;
     if (c != null && _isRemoteEpisode(c)) _seekTo = position;
     _position = position;
+    final wasPlaying = _state == BackendState.playing;
+    final token = _loadToken;
     try {
       await _backend.seek(position);
     } on Object {
       _seekTo = null;
       _position = before;
       rethrow;
+    }
+    // The karaoke video catches up with the new place before the audio goes on (D-647).
+    final hold = videoGate?.afterSeek(position);
+    if (wasPlaying && hold != null) {
+      await _backend.pause();
+      await hold.timeout(const Duration(seconds: 3), onTimeout: () => AppLog.w('karaoke video seek late, playing anyway'));
+      if (token == _loadToken && _playWhenReady) await _backend.play();
     }
     _publish(playbackState.value.processingState);
   }
