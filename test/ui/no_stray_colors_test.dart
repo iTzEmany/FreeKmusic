@@ -12,6 +12,8 @@ void main() {
     'lib/ui/screens/jam/jam_remote_sheets.dart',
     // The picker paints the hue/saturation/brightness gradients of the colour being chosen.
     'lib/ui/widgets/color_picker.dart',
+    // The full-screen video sits on black in every theme.
+    'lib/ui/screens/now_playing/karaoke_video_fullscreen.dart',
   };
   final literal = RegExp(r'Color\(\s*0x|Colors\.(?!transparent\b)[a-zA-Z]');
 

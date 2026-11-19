@@ -36,6 +36,7 @@ class _Lrclib implements LrclibClient {
     int? durationSec,
     dynamic cancel,
     bool strict = false,
+    bool ignoreDuration = false,
   }) async =>
       result;
 }

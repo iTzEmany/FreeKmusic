@@ -62,6 +62,8 @@ android {
         jniLibs {
             // yt-dlp's Python and QuickJS are executed from the native lib dir.
             useLegacyPackaging = true
+            // Lite plays through just_audio only: media_kit's libmpv is video-only weight (D-654).
+            if (lite) excludes += listOf("**/libmpv.so", "**/libmediakitandroidhelper.so")
         }
     }
 

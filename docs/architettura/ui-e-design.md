@@ -44,6 +44,7 @@ Come è fatta la UI (`lib/ui/`): la shell con le schede e il dock, i token di de
 | `growRoute` | `grow_route.dart` | Il player che cresce dal mini player. |
 | `ShrinkingHeader`, `CollectionHeader`, `AlphaScroller`, `SelectionBar` | file omonimi | Intestazioni che scorrono, indice alfabetico, barra di selezione. |
 | `createPlaylistFlow`, `createTagFlow` | `create_flows.dart` | L'unico «crea playlist/tag». |
+| `KaraokeVideoView`, `karaokeVideoBuilderProvider`, `KaraokeVideoFullscreen` | `widgets/karaoke_video_view.dart`, `widgets/karaoke_video_surface.dart`, `screens/now_playing/karaoke_video_fullscreen.dart` | Riquadro 16:9 del brano karaoke al posto di copertina e anello (`_PlayerCover`) e schermo intero. |
 
 La scrittura passa dagli Ops (`lib/providers/*_ops.dart`: `TrackOps`, `PlaylistOps`, `TagOps`, `FolderOps`, `FollowOps`, `RadioOps`, `PodcastOps`, `RomanizationOps`, `BackupOps`, `CoverOps`); la selezione da `selectionProvider` e `SelectionKey` (`lib/providers/selection_providers.dart`).
 
@@ -60,7 +61,7 @@ La scrittura passa dagli Ops (`lib/providers/*_ops.dart`: `TrackOps`, `PlaylistO
 | Test | Regola |
 |---|---|
 | `test/ui/architecture_test.dart` | `lib/ui` non usa `databaseProvider`, `*RepositoryProvider`, `*QueriesProvider` (D-24); niente `PopupMenuButton` né `showMenu(`: i menu sono fogli. |
-| `test/ui/no_stray_colors_test.dart` | Niente `Color(0x…)` né `Colors.<nome>` fuori da `lib/ui/theme/` (eccezioni: QR in `send_tab.dart` e `jam_remote_sheets.dart`, `color_picker.dart`). Il secondo test dice se un'eccezione non serve più. |
+| `test/ui/no_stray_colors_test.dart` | Niente `Color(0x…)` né `Colors.<nome>` fuori da `lib/ui/theme/` (eccezioni: QR in `send_tab.dart` e `jam_remote_sheets.dart`, `color_picker.dart`, `karaoke_video_fullscreen.dart` con lo sfondo nero in ogni tema). Il secondo test dice se un'eccezione non serve più. |
 | `test/ui/no_separator_literals_test.dart` | Niente ` · `, `•`, `→`, `▾` nei letterali di `lib/` (fuori da `lib/l10n/` e dai parser di YouTube Music). |
 | `test/ui/widgets_test.dart` | Niente `showModalBottomSheet` fuori da `cc_sheet.dart` e `car_playlists_sheet.dart`. |
 | `test/l10n/arb_test.dart` | Stesse chiavi e segnaposto in tutte le lingue, niente stringhe vuote, apostrofo `’` in francese e portoghese, niente separatori, plurali con «other». |
@@ -112,6 +113,7 @@ Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio 
 - Il contrasto delle combinazioni tema × accento è verificato da test; nell'editor dei temi `hasLowContrastText` avvisa, senza cambiare i colori.
 - Nei test: `tester.semantics.tap(find.semantics.byLabel(...))` e controlla l'effetto.
 - Il microfono del karaoke è un solo nodo «Karaoke» con lo stato acceso/spento (`toggled`); il cursore si legge «Voce» e il valore in percentuale.
+- Il riquadro del video karaoke è un nodo «Video karaoke», `button` solo quando il video è pronto (tocco: schermo intero; un altro tocco o Indietro: esce).
 - Il supporto TalkBack sta sempre nel codice; le verifiche sono automatiche (test e `uiautomator`), non prove a mano.
 
 ### Localizzazione
@@ -124,7 +126,8 @@ Ogni testo visibile viene da un ARB (`context.l10n.<chiave>`). Italiano è il mo
 - **Un solo `showModalBottomSheet`** (in `cc_sheet.dart`; `car_playlists_sheet.dart` è solo esentato da `widgets_test`), **un solo `AppBar(`** (`CcAppBar`, con le varianti `SliverAppBar` e `SelectableAppBar`), **nessun `PopupMenuButton`**.
 - **Avvisi sempre da `showMsg`/`showMsgOn`.** Oggi ci sono due eccezioni che costruiscono un `SnackBar` da sé: `lib/ui/widgets/shuffle_button.dart` (spiegazione una tantum del Shuffle+, con `CcSnackContent`) e i tre avvisi globali di `lib/app.dart` (messenger di radice). Non aggiungerne altre.
 - **Ogni scheda della shell sta in `TickerMode(enabled: i == index)`.** Nessuna animazione continua deve girare fuori schermo.
-- **Il microfono del karaoke compare solo dove esiste il filtro** (`voiceFilterProvider` non nullo) e appare spento su episodi e radio.
+- **Il microfono del karaoke compare solo dove c'è il motore** (`karaokeButtonVisibleProvider`: Android, impostazione attiva, mai in una Jam, mai con un video karaoke) ed è spento su episodi, radio e video karaoke.
+- **La UI non crea mai un player video**: legge `karaokeVideoProvider` e costruisce la superficie con `karaokeVideoBuilderProvider` (i test lo sostituiscono: nei test non c'è libmpv).
 - **Ogni stringa visibile in tutti e sei gli ARB**, senza separatori nei letterali.
 - **Selezione solo da `selectionProvider`**, con chiavi `SelectionKey` (le chiavi con parametro sono `'<tipo>:<id>'`).
 - **Nessun valore instabile in `MediaQuery`, `Theme` o `InheritedWidget`**: ogni oggetto su misura ha `==` e `hashCode`.
@@ -152,6 +155,9 @@ Ogni testo visibile viene da un ARB (`context.l10n.<chiave>`). Italiano è il mo
 - **`SemanticsData.hasFlag` è deprecato**: `flutter analyze` dà un info che fa fallire il check; usa `getSemanticsData().flagsCollection.<flag>`.
 - **`MarqueeText` e `pumpAndSettle`**: un titolo lungo scorre in un ciclo infinito, quindi un test con un brano dal titolo lungo in riproduzione va in timeout. Usa `pump(durata)`.
 - **Snackbar e `pumpAndSettle` (D-541)**: l'anello si anima per tutta la durata, quindi `pumpAndSettle` dopo un avviso aspetta 3–8 s e un `expect` sul testo fallisce. Dopo un avviso: `await tester.pump(); await tester.pump(const Duration(milliseconds: 600));`.
+- **Il riquadro del video karaoke in `loading` ha un `CircularProgressIndicator`**: `pumpAndSettle` va in timeout, usa `pump(durata)`.
+- **Lo schermo intero del video cambia orientamento e barre solo su Android** e li ripristina in `dispose` (verticale, barre visibili, senza forzare edge-to-edge); si chiude da solo se il video va a `none` o `failed`.
+- **Il filtro di Cerca ha quattro blocchi** (`SourceFilter`): i primi tre guardano le righe presenti, il quarto fa una richiesta nuova; la riga dei blocchi resta anche senza risultati dopo una scelta (`_filterTouched`).
 - **Un `StreamProvider<void>` non notifica oltre il primo evento**: emetti un contatore `int`.
 - **Un `ref.listen` su uno stato che emette due valori di fila** vede solo l'ultimo; e un provider derivato letto dentro il listener può avere ancora il valore vecchio: leggi la fonte diretta.
 - **Un `FutureProvider` di Riverpod 3 ritenta da solo fino a 10 volte** (backoff 200 ms…6,4 s) su ogni eccezione che non sia `Error`: un provider che spende budget prima della richiesta lo consuma a ogni tentativo. I provider di rete del catalogo hanno `retry: (_, _) => null`.

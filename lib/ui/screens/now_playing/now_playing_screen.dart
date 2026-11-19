@@ -14,10 +14,13 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/radio/radio_station.dart' show RadioStation;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/karaoke_video_providers.dart';
 import '../../../services/audio/online_entries.dart' show isOnlineId;
+import '../../../services/karaoke_video/karaoke_video.dart' show isKaraokeVideo;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../widgets/artist_links.dart';
 import '../../widgets/empty_player.dart';
+import '../../widgets/karaoke_video_view.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/track_art.dart';
 import 'suggested_info.dart';
@@ -525,6 +528,21 @@ class _PlayerCover extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ctrl = ref.read(playerControllerProvider);
     final loading = ref.watch(streamLoadingProvider).value ?? false;
+    final karaoke = isKaraokeVideo(track);
+    final videoStatus = karaoke
+        ? ref.watch(karaokeVideoProvider.select((v) => v.status))
+        : KaraokeVideoStatus.none;
+    if (karaoke) {
+      ref.listen(karaokeVideoProvider.select((v) => v.status), (_, s) {
+        if (s == KaraokeVideoStatus.failed) {
+          showMsg(context, context.l10n.karaokeVideoFailed);
+        }
+      });
+    }
+    // none/failed: cover and ring as for any track (R-263).
+    final video =
+        videoStatus == KaraokeVideoStatus.loading ||
+        videoStatus == KaraokeVideoStatus.ready;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -540,6 +558,11 @@ class _PlayerCover extends ConsumerWidget {
             final s = (c.biggest.shortestSide).clamp(80.0, 460.0);
             const stroke = 12.0;
             final inner = RingProgress.innerSize(s, stroke: stroke);
+            if (video) {
+              return Center(
+                child: KaraokeVideoView(track: track, width: c.maxWidth),
+              );
+            }
             return Center(
               child: RingProgress(
                 size: s,

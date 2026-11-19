@@ -285,6 +285,7 @@ void main() {
       await s.request('karaoke:k', '/in.mp3');
       await s.request('karaoke:old', '/in.mp3');
       File(p.join(cache.dir.path, 'yt_abc.m4a')).writeAsStringSync('song');
+      File(p.join(cache.dir.path, 'video_karaoke_youtube_v.mp4')).writeAsStringSync('video');
       for (final e in cache.dir.listSync().whereType<File>()) {
         e.setLastModifiedSync(now.subtract(const Duration(minutes: 20)));
       }
@@ -298,6 +299,7 @@ void main() {
       expect(await cache.fileFor('karaoke:base:k'), isNotNull);
       expect(await cache.fileFor('karaoke:voice:k'), isNotNull);
       expect(await cache.fileFor('yt:abc'), isNotNull);
+      expect(await cache.fileFor('video:karaoke:youtube:v'), isNotNull); // a karaoke video is not a stem
       expect(s.stateOf('karaoke:old').phase, SeparationPhase.idle);
       expect(s.stateOf('karaoke:k').phase, SeparationPhase.ready);
     });

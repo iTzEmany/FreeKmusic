@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import 'http_client.dart';
 import 'query_cleaner.dart';
+import '../../core/text_utils.dart' show normalize;
 import '../../core/artist_key.dart';
 
 class LyricsResult {
@@ -27,26 +28,30 @@ class LrclibClient {
     int? durationSec,
     CancelToken? cancel,
     bool strict = false,
+    bool ignoreDuration = false,
   }) async {
     if (artist.trim().isEmpty) return null;
     final primary = extractPrimaryArtist(artist);
     final core = coreTitle(title);
     final attempts = <(String, String)>[(artist, title)];
     if (primary != artist || core != title) attempts.add((primary, core));
-    for (final (a, t) in attempts) {
-      final get = await _web.getJson(
-        '$_base/get',
-        query: {
-          'artist_name': a,
-          'track_name': t,
-          if (album != null && album.isNotEmpty) 'album_name': album,
-          if (durationSec != null) 'duration': '$durationSec',
-        },
-        cancel: cancel,
-        strict: strict,
-      );
-      final direct = _validated(get, artist, durationSec);
-      if (direct != null) return direct;
+    // A karaoke video runs a different length from the song: only /search, no duration.
+    if (!ignoreDuration) {
+      for (final (a, t) in attempts) {
+        final get = await _web.getJson(
+          '$_base/get',
+          query: {
+            'artist_name': a,
+            'track_name': t,
+            if (album != null && album.isNotEmpty) 'album_name': album,
+            if (durationSec != null) 'duration': '$durationSec',
+          },
+          cancel: cancel,
+          strict: strict,
+        );
+        final direct = _validated(get, artist, durationSec);
+        if (direct != null) return direct;
+      }
     }
     for (final (a, t) in attempts) {
       final search = await _web.getJson(
@@ -57,7 +62,12 @@ class LrclibClient {
       );
       if (search is List) {
         for (final item in search) {
-          final ok = _validated(item, artist, durationSec);
+          final ok = _validated(
+            item,
+            artist,
+            ignoreDuration ? null : durationSec,
+            title: ignoreDuration ? t : null,
+          );
           if (ok != null) return ok;
         }
       }
@@ -65,12 +75,23 @@ class LrclibClient {
     return null;
   }
 
-  LyricsResult? _validated(Object? item, String artist, int? durationSec) {
+  /// [title]: with no duration to check, the title must be the one asked for.
+  LyricsResult? _validated(
+    Object? item,
+    String artist,
+    int? durationSec, {
+    String? title,
+  }) {
     if (item is! Map) return null;
     final by = '${item['artistName'] ?? ''}'.toLowerCase().trim();
     final want = artist.toLowerCase().trim();
     if (by.isEmpty || !(by == want || by.contains(want) || want.contains(by))) {
       return null;
+    }
+    if (title != null) {
+      final got = _titleKey('${item['trackName'] ?? ''}');
+      final want = _titleKey(title);
+      if (want.isEmpty || got != want) return null;
     }
     final d = item['duration'];
     if (durationSec != null && d is num) {
@@ -83,3 +104,11 @@ class LrclibClient {
     return result.isEmpty ? null : result;
   }
 }
+
+final _remaster = RegExp(r'[\(\[][^\)\]]*remaster[^\)\]]*[\)\]]', caseSensitive: false);
+final _nonAlnum = RegExp(r'[^\p{L}\p{N}]', unicode: true);
+
+/// Letters and digits only, «&» as «and»: «Mr. Brightside» = «Mr Brightside».
+String _titleKey(String t) => normalize(
+  coreTitle(t.replaceAll(_remaster, ' ')),
+).replaceAll('&', 'and').replaceAll(_nonAlnum, '');

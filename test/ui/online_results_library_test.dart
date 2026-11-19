@@ -15,6 +15,7 @@ import 'package:codecore/services/online/smart_search.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
+import 'package:codecore/ui/screens/youtube/online_results_sections.dart' show SourceFilter;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,7 +86,7 @@ class _FakeDownloads extends DownloadsNotifier {
 }
 
 Finder _sourceFilter(String label) =>
-    find.descendant(of: find.byType(SegmentedBlocks<MediaKind?>), matching: find.text(label));
+    find.descendant(of: find.byType(SegmentedBlocks<SourceFilter>), matching: find.text(label));
 
 void main() {
   late StreamController<SmartSearchState> engine;

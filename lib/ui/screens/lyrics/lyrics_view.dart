@@ -13,6 +13,7 @@ import '../../../providers/settings_providers.dart';
 import '../../../providers/translation_providers.dart';
 import '../../../services/lyrics/lyrics_shown.dart';
 import '../../../services/lyrics/romanization_resolver.dart';
+import '../../../services/karaoke_video/karaoke_video.dart' show isKaraokeVideo;
 import '../../../services/online/http_client.dart';
 import '../../../services/online/lrc_parser.dart';
 import '../../../services/online/lrclib_client.dart';
@@ -133,7 +134,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     LyricsResult? found;
     var unavailable = false;
     try {
-      final r = await ref.read(lyricsChainProvider).find(t);
+      final r = await ref.read(lyricsChainProvider).find(t, ignoreDuration: isKaraokeVideo(t));
       found = r.lyrics;
       unavailable = r.failed;
     } on RateLimitedException {

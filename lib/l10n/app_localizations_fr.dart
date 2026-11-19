@@ -5634,6 +5634,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get playerLoading => 'Chargement…';
 
   @override
+  String get karaokeVideoLabel => 'Vidéo karaoké';
+
+  @override
+  String get karaokeVideoLoading => 'Chargement de la vidéo…';
+
+  @override
+  String get karaokeVideoFailed =>
+      'Vidéo indisponible : seule la bande instrumentale joue.';
+
+  @override
   String get ytmAlbumQueue => 'Ajouter l’album à la file';
 
   @override

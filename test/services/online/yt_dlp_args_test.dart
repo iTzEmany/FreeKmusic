@@ -160,4 +160,12 @@ void main() {
       expect(p.add(hdr), isNull);
     });
   });
+
+  test('video-only stream: -g with the 360p/480p avc1 selector', () {
+    final a = buildVideoUrlArgs(url: 'https://www.youtube.com/watch?v=abc', jsArgs: ['--js-runtimes', 'node']);
+    expect(a, containsAllInOrder(['-g', '--js-runtimes', 'node', '-f', 'bv[height<=360][vcodec^=avc1]/bv[height<=480][vcodec^=avc1]/bv[height<=480]/wv']));
+    expect(a, contains('--no-playlist'));
+    expect(videoOnlyFormat, isNot(contains('bv*')));
+    expect(a.last, 'https://www.youtube.com/watch?v=abc');
+  });
 }

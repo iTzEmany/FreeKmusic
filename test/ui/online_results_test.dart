@@ -21,6 +21,7 @@ import 'package:codecore/ui/screens/online/online_album_screen.dart';
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/ui/screens/youtube/online_results.dart';
+import 'package:codecore/ui/screens/youtube/online_results_sections.dart' show SourceFilter;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -402,11 +403,11 @@ void main() {
         _state(error: const YtException(YtErrorKind.network, 'offline')),
       );
       expect(find.text('Rete non disponibile'), findsOneWidget);
-      expect(requests.single, (query: 'pink floyd', refresh: false, serial: 1));
+      expect(requests.single, (query: 'pink floyd', refresh: false, serial: 1, videoOnly: false));
 
       await tester.tap(find.byKey(const ValueKey('online-retry')));
       await tester.pump();
-      expect(requests.last, (query: 'pink floyd', refresh: true, serial: 2));
+      expect(requests.last, (query: 'pink floyd', refresh: true, serial: 2, videoOnly: false));
       await h.dispose(tester);
     },
   );
@@ -469,6 +470,79 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets(
+    'Karaoke asks «<q> karaoke» on videos only, lists the karaoke titles and a tap plays one',
+    (tester) async {
+      final spy = _PlaySpy();
+      final h = await open(
+        tester,
+        more: [playerControllerProvider.overrideWithValue(spy)],
+      );
+      await emit(tester, _state(best: [_song('a', 'Mother')]));
+      await tester.tap(_filter('Karaoke'));
+      await tester.pump();
+      expect(
+        requests.last,
+        (query: 'pink floyd karaoke', refresh: false, serial: 2, videoOnly: true),
+      );
+      await emit(
+        tester,
+        _state(
+          best: [
+            _video('r', 'Mother reaction'),
+            _video('k', 'Mother (Karaoke Version)'),
+          ],
+        ),
+      );
+      expect(find.text('Mother reaction'), findsNothing);
+      await tester.tap(find.text('Mother (Karaoke Version)'));
+      await tester.pump();
+      expect(spy.played, ['k']);
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets(
+    'back from Karaoke to Tutte asks the original text again; a text with «karaoke» is not doubled',
+    (tester) async {
+      final h = await open(tester);
+      await emit(tester, _state(best: [_song('a', 'Mother')]));
+      await tester.tap(_filter('Karaoke'));
+      await tester.pump();
+      expect(requests.last.videoOnly, isTrue);
+      await tester.tap(_filter('Tutte'));
+      await tester.pump();
+      expect(requests.last, (query: 'pink floyd', refresh: false, serial: 3, videoOnly: false));
+      await h.dispose(tester);
+
+      final h2 = await open(
+        tester,
+        page: const Scaffold(body: OnlineResults(query: 'adele KARAOKE', submitted: 1)),
+      );
+      await emit(tester, _state(best: [_song('a', 'Mother')]));
+      await tester.tap(_filter('Karaoke'));
+      await tester.pump();
+      expect(requests.last.query, 'adele KARAOKE');
+      await h2.dispose(tester);
+    },
+  );
+
+  testWidgets('Riprova under Karaoke asks the karaoke request again, with refresh', (tester) async {
+    final h = await open(tester);
+    await emit(tester, _state(best: [_song('a', 'Mother')]));
+    await tester.tap(_filter('Karaoke'));
+    await tester.pump();
+    await emit(tester, _state(error: const YtException(YtErrorKind.network, 'offline')));
+    await tester.tap(find.byKey(const ValueKey('online-retry')));
+    await tester.pump();
+    expect(
+      requests.last,
+      (query: 'pink floyd karaoke', refresh: true, serial: 3, videoOnly: true),
+    );
+    expect(_filter('Karaoke'), findsOneWidget, reason: 'the chips stay');
+    await h.dispose(tester);
+  });
 
   testWidgets(
     'a video link plays its video once, as soon as that result arrives, and the row stays',
@@ -574,7 +648,7 @@ void main() {
 
 /// A block of the source filter (the rows carry the same words).
 Finder _filter(String label) => find.descendant(
-  of: find.byType(SegmentedBlocks<MediaKind?>),
+  of: find.byType(SegmentedBlocks<SourceFilter>),
   matching: find.text(label),
 );
 

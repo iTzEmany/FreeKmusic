@@ -420,6 +420,8 @@ void main() {
           for (final t in store.tracks) t.videoId,
         ], unorderedEquals(['a', 'b']));
         expect(store.artistBlocked('k'), isTrue);
+        // Windows cannot delete the folder while the debounced write is open.
+        await store.flush();
       },
     );
 

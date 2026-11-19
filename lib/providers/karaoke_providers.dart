@@ -10,6 +10,7 @@ import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
 import '../services/karaoke/separation_service.dart';
+import '../services/karaoke_video/karaoke_video.dart';
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'stream_providers.dart' show streamCacheProvider;
 
@@ -45,18 +46,21 @@ void setKaraokeOn(WidgetRef ref, bool on) => ref
 final karaokeBypassProvider = Provider<bool>((ref) {
   final t = ref.watch(currentTrackProvider).value;
   if (t == null) return false;
+  if (isKaraokeVideo(t)) return true; // D-639: its audio is already the backing track
   final radio = ref.watch(onlineEntriesProvider)?.isRadioId(t.id) == true;
   return radio ||
       t.kind == kEpisodeKind ||
       ref.watch(audioHandlerProvider).isRadio;
 });
 
-/// Whether the microphone shows: only where the separation engine exists (Android), never in a Jam (D-623).
+/// Whether the microphone shows: only where the separation engine exists (Android), never in a Jam (D-623),
+/// never on a karaoke video (it is its own backing track).
 final karaokeButtonVisibleProvider = Provider<bool>(
   (ref) =>
       ref.watch(separationServiceProvider) != null &&
       ref.watch(settingsProvider.select((s) => s.showKaraoke)) &&
-      !ref.watch(jamProvider.select((s) => s.active)),
+      !ref.watch(jamProvider.select((s) => s.active)) &&
+      !ref.watch(currentTrackProvider.select((t) => t.value != null && isKaraokeVideo(t.value!))),
 );
 
 /// The «Alta qualità» backing-track maker; null where there is no engine (not Android).
@@ -255,7 +259,7 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
   final paths = ref.read(_karaokePathsProvider);
   final pinned = <String>{};
   handler.karaokeSource = (t, streamKey) async {
-    if (!_baseWanted(ref) || t.kind == kEpisodeKind) return null;
+    if (!_baseWanted(ref) || t.kind == kEpisodeKind || isKaraokeVideo(t)) return null;
     final key = await _karaokeKey(t, streamKey);
     if (key == null) return null;
     final level = ref.read(karaokeProvider).level;
@@ -325,7 +329,7 @@ final karaokeAutoProvider = Provider<void>((ref) {
 
   Future<KaraokeTarget?> queuedTarget(Track t) async {
     final online = ref.read(onlineEntriesProvider);
-    if (t.kind == kEpisodeKind || online?.isRadioId(t.id) == true) return null;
+    if (t.kind == kEpisodeKind || isKaraokeVideo(t) || online?.isRadioId(t.id) == true) return null;
     final entry = online?.entryOf(t.id);
     final streamKey = entry?.result.indexKey ?? keyOfStreamPath(t.path);
     final key = await _karaokeKey(t, streamKey);
@@ -340,11 +344,8 @@ final karaokeAutoProvider = Provider<void>((ref) {
   }
 
   Future<List<KaraokeTarget>> manualQueue() async {
-    final from = handler.currentIndex + 1;
-    final ids = handler.queueIds;
-    if (from <= 0 || handler.userAhead == 0 || from >= ids.length) return [];
-    final tracks = await queueTracks(
-      ids.sublist(from, (from + handler.userAhead).clamp(from, ids.length)),
+    final tracks = await manualQueueTracks(
+      handler,
       ref.read(trackRepositoryProvider),
       ref.read(onlineEntriesProvider),
     );

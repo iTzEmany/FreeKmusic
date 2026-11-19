@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:codecore/services/online/http_client.dart';
+import 'package:codecore/services/online/lrclib_client.dart';
 import 'package:codecore/services/online/lyrics_ovh_client.dart';
 import 'package:codecore/services/online/netease_lyrics_client.dart';
 import 'package:dio/dio.dart';
@@ -341,6 +342,81 @@ void main() {
         throwsA(isA<WebUnavailableException>()),
       );
       expect(await _dio(503).getJson('https://x/a'), isNull);
+    });
+  });
+
+  group('LRCLIB duration', () {
+    Map<String, Object? Function()> lrclib() => {
+      '/get': () => null,
+      '/search': () => [
+        {'artistName': 'Adele', 'trackName': 'Hello', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+      ],
+    };
+
+    test('a karaoke goes to /search and takes a text of another length', () async {
+      final w = _Web(lrclib());
+      final r = await LrclibClient(w).find(
+        title: 'Hello',
+        artist: 'Adele',
+        durationSec: 250,
+        ignoreDuration: true,
+      );
+      expect(r?.synced, isNotNull);
+      expect(w.asked.map((a) => a.$1), everyElement(endsWith('/search')));
+    });
+
+    test('a karaoke takes no text of another title by the same artist', () async {
+      final w = _Web({
+        '/search': () => [
+          {'artistName': 'Adele', 'trackName': 'Skyfall', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+        ],
+      });
+      final r = await LrclibClient(w).find(
+        title: 'Hello',
+        artist: 'Adele',
+        durationSec: 250,
+        ignoreDuration: true,
+      );
+      expect(r, isNull);
+    });
+
+    test('any other song keeps the 3 s limit', () async {
+      final r = await LrclibClient(_Web(lrclib())).find(
+        title: 'Hello',
+        artist: 'Adele',
+        durationSec: 250,
+      );
+      expect(r, isNull);
+    });
+
+    for (final (want, got, ok) in [
+      ('Hello', 'Hello Goodbye', false),
+      ('Love', 'Lovesong', false),
+      ('Don\u2019t Stop', "Don't Stop", true),
+      ('Mr. Brightside', 'Mr Brightside', true),
+      ('Rock & Roll', 'Rock and Roll', true),
+      ('Hello', 'Hello (Live)', true),
+      ('Hello', 'HELLO (Remastered)', true),
+    ]) {
+      test('a karaoke title «$want» vs «$got» is ${ok ? 'taken' : 'refused'}', () async {
+        final w = _Web({
+          '/search': () => [
+            {'artistName': 'Adele', 'trackName': got, 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+          ],
+        });
+        final r = await LrclibClient(w).find(title: want, artist: 'Adele', durationSec: 250, ignoreDuration: true);
+        expect(r != null, ok);
+      });
+    }
+
+    test('a karaoke takes no text of another artist', () async {
+      final w = _Web({
+        '/search': () => [
+          {'artistName': 'Someone', 'trackName': 'Hello', 'duration': 200, 'syncedLyrics': '[00:01.00]a'},
+        ],
+      });
+      final r = await LrclibClient(w).find(title: 'Hello', artist: 'Adele', durationSec: 250, ignoreDuration: true);
+      expect(r, isNull);
     });
   });
 }

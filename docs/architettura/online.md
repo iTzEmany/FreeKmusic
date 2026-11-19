@@ -13,17 +13,18 @@ Tutti in `lib/services/` salvo diversa indicazione.
 | Cosa | Dove |
 |---|---|
 | Servizio YouTube | `online/youtube_service.dart` (`YoutubeService`, `YtResult` con `indexKey`, `MediaSource {youtube, soundcloud}`), `createYtDlpService()`, `ytDlpServiceProvider`, `youtubeServiceProvider` (`DirectSearchService(ytDlp, InnerTubeClient, catalog: ytmCatalog)`), `CachedYoutubeService` |
-| yt-dlp | `online/android_yt_dlp_service.dart` (canale `codecore/ytdlp`, `searchTimeout` 45 s), `YtDlpProcessService` (desktop), `yt_dlp_updater`, `yt_dlp_args`, `yt_dlp_version`, `update_checker` |
+| yt-dlp | `online/android_yt_dlp_service.dart` (canale `codecore/ytdlp`, `searchTimeout` 45 s), `YtDlpProcessService` (desktop), `yt_dlp_updater`, `yt_dlp_args`, `yt_dlp_version`, `update_checker`; `videoUrl` (Android: `NewPipeUrl.videoUrl`, poi canale `ytdlpVideoUrl` con `videoOnlyFormat`; desktop: `buildVideoUrlArgs`) |
 | Catalogo YTM | `InnerTubeClient`, `YtmCatalog`, `CatalogCache`, `SearchCache` |
 | Limiti | `online/request_budget.dart` (`WindowLimiter`), `source_cooldown.dart` (`SourceCooldown`), `budgeted_call.dart` (`budgetedYtm`), `retry_policy`, `shuffle_plus/radio_gate.dart` (`RadioGate`) |
-| Ricerca | `online/smart_search.dart` (`SmartSearch`, `SearchNotice`), `query_intent.dart` (`QueryKind {listing, video, album, text, external}`), `youtube_urls.dart`, `merge_results`, `query_match`, `query_cleaner` |
+| Ricerca | `online/smart_search.dart` (`SmartSearch`, `SearchNotice`), `query_intent.dart` (`QueryKind {listing, video, album, text, external}`), `youtube_urls.dart`, `merge_results`, `query_match`, `query_cleaner`; `SmartSearch.run(videoOnly:)` |
 | Link | `online/external_links.dart` (`ExternalService {deezer, spotify}`, `parseExternalLink`, `isShortLink`), `short_link_resolver`, `external_collection.dart` (`ExternalCollection`, `ExternalTrack`, `ExternalReader`, `TrackMatch`), `spotify_embed_reader`, `deezer_client` (`DeezerCollectionReader`), `deezer_gw_client`, `collection_matcher.dart` (`CollectionMatcher`), `shared_text.dart` (`routeSharedText`) |
 | Provider link/Shazam | `providers/online_collection_providers.dart` (`OnlineCollectionRef`, `onlineCollectionProvider`, `CollectionPage`), `providers/shazam_providers.dart` |
 | Stream e cache | `stream/` (`stream_preparer`, `stream_promoter`, `stream_cache`, `stream_key`, `stream_enrich_trigger`), `online/download_index.dart` |
 | Arricchimento | `online/enrich_parts`, `enrich_gather`, `enrich_engine`, `enrich_commit`, `enrich_runner`, `enrich_completer`, `enrich_writer`, `enrichment_service`, `quiet_enricher`, `metadata_resolver`, `cover_fetcher`, `second_opinion`, `credits_enricher`, `curiosity_service`, `curiosity_finder` |
 | Client dati | `wikipedia_client`, `itunes_client`, `deezer_client`, `musicbrainz_client`, `discogs_client`, `acoustid_client` |
 | Riconoscimento | `recognition/` (`TrackRecognizer`, `track_identity`, `channel_detector`, `cover_detector`, `video_id`) |
-| Testi | `online/lyrics_chain.dart` (`LyricsChain`), `lyrics/` (`lrc_parser`, `lyrics_translator(_mlkit)`, `romanization_resolver`, `hangul_romanizer`, `pinyin_dictionary`, `cedict_download`) |
+| Testi | `online/lyrics_chain.dart` (`LyricsChain`), `lyrics/` (`lrc_parser`, `lyrics_translator(_mlkit)`, `romanization_resolver`, `hangul_romanizer`, `pinyin_dictionary`, `cedict_download`); `karaokeLyricsQuery`, `LyricsChain.find(ignoreDuration:)` |
+| Video karaoke | `karaoke_video/` (`karaoke_video.dart`: `isKaraokeVideo`, `karaokeVideoId`; `karaoke_video_source.dart`: `KaraokeVideoStream`, `KaraokeVideoSource`; `karaoke_video_cache.dart`: `KaraokeVideoCache`), `online/karaoke_filter.dart` (`karaokeResults`), `online/karaoke_channels.dart` (`kKnownKaraokeChannels`), `providers/karaoke_video_cache_providers.dart` |
 | Nuove uscite | `releases/` (`ReleaseCheckController`, `release_checker`, `check_schedule`, `auto_follow_service`, `release_diff`, `release_notification_text`) |
 | Radio | `radio/` (`RadioBrowserClient`, `RadioCatalog`, `radio_prefs`, `near_you`, `icy_title`, `saved_refresh`), `data/repositories/radio_repository.dart` |
 | Provider enrich | `providers/enrich_completer_providers`, `recognition_providers`, `second_opinion_providers` |
@@ -95,6 +96,13 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 `LyricsChain`: LRCLIB, poi NetEase per i sincronizzati (`romalrc` per la romanizzazione), poi lyrics.ovh (D-111). Romanizzazione in `services/lyrics/` (hangul, pinyin con CC-CEDICT scaricato al primo uso dalla release `data-cedict-2026-11-08`). Traduzione con `google_mlkit_translation`. `handWrittenLyrics` non equivale a `byUser` (D-482).
 
+### Video karaoke (fase 131, D-631..D-639, D-646, D-649, D-651, D-661)
+- **Cerca**: quarto filtro `SourceFilter.karaoke`, solo con `kEnableYoutube`. Fa una richiesta nuova (`SmartSearch.run(videoOnly:)`, «karaoke» aggiunto alla query, chiave di cache con `|v`); gli altri tre guardano le righe già presenti. `karaokeResults` tiene i titoli con «karaoke», toglie reaction e cover/live solo se sono un'etichetta e non una parola del titolo, e mette prima i canali noti (`kKnownKaraokeChannels` in `online/karaoke_channels.dart`). Un link incollato non si filtra.
+- **Riconoscimento**: è un video karaoke un brano in streaming YouTube (`online:youtube:<id>` o riga ombra `stream:youtube:<id>`) con «karaoke» nel titolo (`isKaraokeVideo`, `karaokeVideoId`). YTM e video condividono `youtube:`: anche un «... karaoke» di YTM mostra il video (D-646). Scaricato o locale: niente video (D-636).
+- **Indirizzo**: `videoUrl` dà solo il video, 360p e al massimo 480p, avc1 se c'è. Android: NewPipe (`NewPipeUrl.videoUrl`), poi yt-dlp `-g` dal canale `ytdlpVideoUrl` con `videoOnlyFormat`. Desktop: yt-dlp (`buildVideoUrlArgs`). `expires` viene dal parametro `expire`. Nel lite risponde `toolMissing`.
+- **Cache**: `KaraokeVideoCache` scarica con `dio` in `StreamCache` con chiave `video:karaoke:youtube:<id>` (D-661). `pin` mentre suona o sta nella coda manuale; cancellato 15 minuti dopo l'ultimo uso su ogni piattaforma, controllo ogni 2 min. Precarico dei video dei brani in coda a mano, uno alla volta, con `prefetchOnMobile`.
+- **Testi**: `LyricsChain.find(ignoreDuration: true)`: query da `karaokeLyricsQuery`, LRCLIB solo `/search`, senza durata, con il titolo identico dopo la normalizzazione.
+
 ### Nuove uscite
 
 `ReleaseCheckController` (tenuto vivo da `CodecoreApp`) controlla a giri di 24 h (`check_schedule`). `auto_follow_service` segue gli artisti più ascoltati negli ultimi 90 giorni, con memoria delle ricerche di 30 giorni. `release_diff` confronta, `release_notification_text` compone la notifica. Tabelle `followed_artists`, `artist_releases`, `artist_lookups`.
@@ -140,6 +148,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - `artistKey` non cambia senza migrazione.
 - Gli id negativi non finiscono nella coda salvata.
 - Nel flavor lite le funzioni YouTube restano spente (`kEnableYoutube`).
+- Il video karaoke sta solo in streaming e in `StreamCache` tramite `KaraokeVideoCache` (i download dei brani sono solo audio, D-636) e il flusso video non contiene mai audio. Nessun codice scrive in `StreamCache` file con prefisso `karaoke_` fuori da `SeparationService`.
 - Un aggiornamento si installa solo con il `digest` verificato, e su Android solo con firma uguale (controllata prima del permesso). Niente installazione senza l'azione dell'utente.
 
 ## Come si estende
@@ -170,6 +179,9 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 - Rete universitaria (UniBA): broadcast /16 che confonde le prove LAN.
 - Classifica Deezer: niente parametro paese, segue l'IP di chi chiama; la chiave di cache ha il paese solo per Apple e per «Italiana». I nomi dei generi Apple sono tradotti per paese: filtrare per `genreId`.
 - Non «correggere» un bug senza cercarlo in `decisioni.md` (es. D-155).
+- **Formato yt-dlp del video: `bv[...]`, mai `bv*`** (`bv*` accetta anche formati con audio).
+- **LRCLIB `/get` con la durata scarta i karaoke** (il video dura più della canzone): per i karaoke solo `/search` e titolo identico.
+- **La scadenza della cache lavora per prefisso dello stem**: la chiave del video (`video:karaoke:...`) non comincia con `karaoke:` (quello della separazione) apposta, così le due scadenze non si toccano.
 - **Aggiornamento, firma su Android 9–10**: `getPackageArchiveInfo` legge i certificati di un APK non installato solo con `GET_SIGNATURES`, anche se si chiede `GET_SIGNING_CERTIFICATES`; il canale usa entrambi i flag.
 - **Aggiornamento, `$APPIMAGE` ereditato**: un'app lanciata da un'altra AppImage eredita la sua `$APPIMAGE`; per questo si sostituisce il file solo se l'eseguibile è sotto `APPDIR` o `/tmp/.mount_`.
 - **Aggiornamento, SnackBar con azione**: senza `persist: false` non scade mai (Flutter 3.47); l'avviso all'avvio lo imposta.
@@ -179,6 +191,7 @@ Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 
 Link a `../decisioni.md`:
 
+- D-631..D-639, D-646, D-649, D-651, D-661: filtro, riconoscimento, indirizzo e cache del video karaoke.
 - D-111: catena dei testi (LRCLIB, NetEase, lyrics.ovh).
 - D-131: `WebClient` con `strict`.
 - D-298: `kApiContact`.
