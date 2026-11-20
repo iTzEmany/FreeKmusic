@@ -19,4 +19,18 @@ void main() {
     expect(saved, {for (var i = 1; i < 40; i += 2) '/m/$i.mp3'});
     expect(dir.listSync().map((e) => p.basename(e.path)), ['pending.json']);
   });
+
+  test('an add and a remove of one path asked before the first read are applied in that order', () async {
+    final dir = Directory.systemTemp.createTempSync('pending');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final file = File(p.join(dir.path, 'pending.json'));
+    var calls = 0;
+    // The first read is the slowest: before the fix the remove's own read won the race.
+    final pending = PendingTags(() async {
+      if (calls++ == 0) await Future<void>.delayed(const Duration(milliseconds: 50));
+      return file;
+    });
+    await Future.wait([pending.add('/m/a.mp3'), pending.remove('/m/a.mp3')]);
+    expect(await pending.paths(), isEmpty);
+  });
 }

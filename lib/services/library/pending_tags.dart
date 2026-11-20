@@ -11,11 +11,15 @@ class PendingTags {
 
   final Future<File> Function() _file;
   Set<String>? _paths;
+  // One read shared by every caller: they resume in call order, so an add and
+  // a remove of the same path are applied in the order they were asked.
+  Future<Set<String>>? _loading;
   // Saves run one after another: two writers on one file would interleave.
   Future<void> _writing = Future.value();
 
-  Future<Set<String>> _load() async {
-    if (_paths != null) return _paths!;
+  Future<Set<String>> _load() => _loading ??= _read();
+
+  Future<Set<String>> _read() async {
     final s = <String>{};
     try {
       final f = await _file();
@@ -25,7 +29,7 @@ class PendingTags {
     } on Object catch (e, st) {
       AppLog.w('pending tags unreadable', e, st);
     }
-    return _paths ??= s;
+    return _paths = s;
   }
 
   Future<List<String>> paths() async => (await _load()).toList();
