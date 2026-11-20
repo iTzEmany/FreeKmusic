@@ -16,7 +16,10 @@ permissions:
 jobs:
   linux:
     name: Linux (zip, .deb, AppImage)
-    runs-on: ubuntu-latest
+    # Pinned: the AppImage bundles libmpv's libraries from the runner, so the
+    # runner's glibc is the oldest one the AppImage runs on (ubuntu-latest moved
+    # to glibc 2.43 and 1.6.3 did not start on Ubuntu 24.04).
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7

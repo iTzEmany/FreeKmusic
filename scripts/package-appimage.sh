@@ -22,8 +22,8 @@ cp assets/icon/icon.png build/FreeKmusic.AppDir/freekmusic.png
 sed 's|@EXEC@|freekmusic|' packaging/linux/freekmusic.desktop > build/FreeKmusic.AppDir/freekmusic.desktop
 
 # libmpv and what it needs, except what every desktop has (glibc, X11, GL, ...):
-# the AppImage excludelist, abridged.
-skip='^(libc|libm|libdl|libpthread|librt|libresolv|libutil|ld-linux|libGL|libEGL|libGLX|libGLdispatch|libOpenGL|libX11|libxcb|libXext|libXrender|libXau|libXdmcp|libdrm|libgbm|libwayland|libasound|libpulse|libgtk|libgdk|libglib|libgobject|libgio|libgmodule|libpango|libcairo|libatk|libharfbuzz|libfontconfig|libfreetype|libstdc\+\+|libgcc_s|libz)\.'
+# the AppImage excludelist, abridged («libglib-2.0.so.0»: name, then «.» or «-»).
+skip='^(libc|libm|libdl|libpthread|librt|libresolv|libutil|ld-linux|libGL|libEGL|libGLX|libGLdispatch|libOpenGL|libX11|libxcb|libXext|libXrender|libXau|libXdmcp|libdrm|libgbm|libwayland|libasound|libpulse|libgtk|libgdk|libglib|libgobject|libgio|libgmodule|libpango|libpangocairo|libpangoft2|libgdk_pixbuf|libcairo|libatk|libharfbuzz|libfontconfig|libfreetype|libstdc\+\+|libgcc_s|libz)[.-]'
 mpv=$(ldconfig -p | awk '/libmpv\.so\.2 /{print $NF; exit}')
 [ -n "$mpv" ] || { echo "libmpv.so.2 non trovata: installa il pacchetto libmpv2 (solo per costruire)" >&2; exit 1; }
 cp -L "$mpv" build/FreeKmusic.AppDir/usr/lib/
