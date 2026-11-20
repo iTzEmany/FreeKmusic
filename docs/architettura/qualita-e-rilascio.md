@@ -100,6 +100,11 @@ I test in `test/live/*` parlano con servizi veri e partono solo con `CODECORE_LI
 - Funziona solo con asset che hanno il `digest` (SHA-256) nella Release di GitHub; senza, l'app apre il browser.
 - I nomi degli asset in `release.yml` sono un contratto con `pickUpdateAsset` (`lib/services/update/update_target.dart`): `freekmusic-{full,lite}-<abi>-release.apk`, `FreeKmusic-Setup-*.exe`, `freekmusic-*-x86_64.AppImage`, `freekmusic_*_amd64.deb`, `freekmusic.flatpak`, `freekmusic-linux-x64.zip`, `FreeKmusic-*-macos.zip`. Cambiarli rompe l'aggiornamento: aggiorna anche `test/services/update/update_target_test.dart`.
 
+### Linux: la glibc del runner è il minimo (fase 134)
+- L'AppImage include le librerie di libmpv prese dal sistema che la costruisce: la glibc del runner diventa la più vecchia su cui parte. Per questo i job Linux di `release.yml` e `ci.yml` sono fissati su `ubuntu-24.04` (glibc 2.39), non `ubuntu-latest`: la 1.6.3, costruita su glibc 2.43, non partiva su Ubuntu 24.04. Non scendere sotto 24.04: lì `libmpv.so.2` non c'è.
+- `scripts/package-appimage.sh` non include le librerie che ogni desktop ha (glibc, X11, GL, GTK, glib, pango, cairo…): la lista confronta il nome seguito da `.` o `-` (`libglib-2.0.so.0`). Zip e .deb non includono librerie di sistema.
+- Controllo rapido prima di pubblicare: `for f in <AppDir>/usr/lib/*; do objdump -T "$f" | grep -o 'GLIBC_2\.[0-9]*'; done | sort -t. -k2 -n -u | tail -1` deve dare al massimo `GLIBC_2.39`.
+
 ### Versionamento e tag
 
 1. Alza `version` in `pubspec.yaml` e `kAppVersion` in `lib/core/app_info.dart` (devono coincidere).

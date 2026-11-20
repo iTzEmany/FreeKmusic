@@ -179,7 +179,7 @@ jobs:
     name: Linux (zip and .deb)
     needs: check
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # same as release.yml's linux job
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7

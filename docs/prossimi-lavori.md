@@ -82,7 +82,6 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **Avviso «Video non disponibile»** quando il player si apre con lo stato già `failed`.
 
 ## Qualità e rilascio
-- **Linux della Release legato a glibc 2.43** (trovato nella 133.3): i job Linux di `release.yml` (e `ci.yml`) girano su `ubuntu-latest`, ora con glibc 2.43; l'AppImage 1.6.3 non parte su Ubuntu 24.04 (`GLIBC_2.43 not found` per libglib, liblcms2, libaom, libjxl, libmp3lame) e probabilmente anche zip e .deb. Fissare `runs-on: ubuntu-24.04` (o più vecchio) nei job Linux, provare l'AppImage su una distro più vecchia, poi una 1.6.4.
 - **Aggiornamento Android: firma controllata dopo il download** (96 MB scaricati per poi dire «Firma diversa»): confrontare prima la firma installata con quella della Release (certificato noto), se si vuole evitarlo.
 - **`StreamCache`**: default del costruttore 500 MB contro impostazione 1024 MB (vale l'impostazione): allineare.
 - **Test di poco valore** in `settings_store_test` («blurred dock off by default and kept»): da togliere.
