@@ -7,8 +7,8 @@ sistemi verde, tag, Release completa, poi la prova reale dell'aggiornamento. Par
 ## Riferimenti
 D-638, D-648, D-650, D-655, D-657, D-659, D-660 (come D-544 e D-553).
 
-**Regole della notte:** CI rossa e non riparabile → niente tag né Release, tutto pronto per il risveglio (D-657); se dopo 6 ore di lavoro questa fase non è partita, fermati prima del tag (D-659). Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../storico/feature/feature-karaoke-video-e-aggiornamenti.md) (R-274, R-268..R-271).
-Documento d'area: `../architettura/qualita-e-rilascio.md`. Workflow: `.github/workflows/ci.yml` (job `check`,
+**Regole della notte:** CI rossa e non riparabile → niente tag né Release, tutto pronto per il risveglio (D-657); se dopo 6 ore di lavoro questa fase non è partita, fermati prima del tag (D-659). Specifica: [`../storico/feature/feature-karaoke-video-e-aggiornamenti.md`](../feature/feature-karaoke-video-e-aggiornamenti.md) (R-274, R-268..R-271).
+Documento d'area: `../../architettura/qualita-e-rilascio.md`. Workflow: `.github/workflows/ci.yml` (job `check`,
 `test-windows`, `build-android`, `build-linux`, `build-windows`, `integration-android`, `build-apple`) e `release.yml`
 (job `linux`, `flatpak`, `android`, `windows`, `macos`, `publish`).
 
@@ -38,5 +38,6 @@ Documento d'area: `../architettura/qualita-e-rilascio.md`. Workflow: `.github/wo
 - 133.3: la build «finta 1.6.2» non si fa con `--build-name`: il controllo confronta `kAppVersion`, quindi le build di prova sono state fatte dal master prima del cambio di versione (b66d97f6).
 - 133.3 Android, «Firma diversa» (build debug 1.6.2 sul Mi A3): trovata la 1.6.3, «Aggiorna» scarica l'APK full arm64 (96 MB, ~20 min con rete lenta), poi «Firma diversa» col testo previsto. Nota: la firma dell'archivio si può leggere solo a download finito; avanzamento e riga del file stanno sotto le note lunghe e vanno cercati scorrendo.
 - 133.3 Android, aggiornamento vero: **non fatto**. Dopo `pm uninstall -k` della build debug, l'APK firmato con la chiave della Release viene rifiutato (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`: i dati tenuti restano legati alla firma debug); una disinstallazione completa cancellerebbe la musica del telefono di prova. Rimessa la build debug (dati intatti). Resta in «Tocca a te».
-- 133.3 Linux: AppImage 1.6.2 di prova (cartella e HOME di prova, Xvfb) → «Aggiorna» → download in ~80 s, il file è diventato la 1.6.3 (sha256 uguale al digest della Release); l'app si è chiusa ma non è ripartita, perché **l'AppImage 1.6.3 della Release non parte su Ubuntu 24.04 (glibc 2.39)**: le librerie incluse vogliono `GLIBC_2.43` (il job Linux di `release.yml` gira su `ubuntu-latest`, ora con glibc 2.43). Da correggere (vedi `../prossimi-lavori.md`).
+- 133.3 Linux: AppImage 1.6.2 di prova (cartella e HOME di prova, Xvfb) → «Aggiorna» → download in ~80 s, il file è diventato la 1.6.3 (sha256 uguale al digest della Release); l'app si è chiusa ma non è ripartita, perché **l'AppImage 1.6.3 della Release non parte su Ubuntu 24.04 (glibc 2.39)**: le librerie incluse vogliono `GLIBC_2.43` (il job Linux di `release.yml` gira su `ubuntu-latest`, ora con glibc 2.43). Da correggere (vedi `../../prossimi-lavori.md`).
 
+- Seguito (fase 134): la 1.6.4 su `ubuntu-24.04` parte su Ubuntu 24.04 e «Aggiorna» da un'AppImage 1.6.3 locale arriva alla 1.6.4 e riavvia l'app (`fase-134-rilascio-1-6-4.md`). La prova Android vera resta da fare.
