@@ -161,3 +161,5 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 130 | Karaoke solo con il modello AI, voce regolabile | [`fase-130-karaoke-solo-ai.md`](fasi/fase-130-karaoke-solo-ai.md) |
 | 131 | Video karaoke | [`fase-131-video-karaoke.md`](fasi/fase-131-video-karaoke.md) |
 | 132 | Aggiornamento dall'app | [`fase-132-aggiornamento-dall-app.md`](fasi/fase-132-aggiornamento-dall-app.md) |
+| 133 | Rilascio 1.6.3 | [`fase-133-rilascio-1-6-3.md`](fasi/fase-133-rilascio-1-6-3.md) |
+| 134 | Rilascio 1.6.4 (Linux su glibc 2.39) | [`fase-134-rilascio-1-6-4.md`](fasi/fase-134-rilascio-1-6-4.md) |
