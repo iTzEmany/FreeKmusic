@@ -66,7 +66,7 @@ La coda di riproduzione è separata dalla lista mostrata: la UI passa uno **snap
 
 ### Impostazioni
 
-`settingsProvider` espone `AppSettings` immutabile (`copyWith`) e scrive su `SettingsStore` con un debounce di 400 ms. Dettagli in `libreria-e-dati.md`.
+`settingsProvider` espone `AppSettings` immutabile (`copyWith`) e scrive su `SettingsStore` con un debounce di 400 ms (salvo `karaokeOn`, scritto subito: D-664). Dettagli in `libreria-e-dati.md`.
 
 ### Thread
 
@@ -91,7 +91,7 @@ La coda di riproduzione è separata dalla lista mostrata: la UI passa uno **snap
 
 Override del container: `databaseProvider`, `settingsStoreProvider`, `audioHandlerProvider`, `radioClientProvider`, `ytDlpServiceProvider`, `playbackPersistenceProvider`, `playerErrorsProvider`, `coversDirProvider`, `streamCacheProvider`, `systemDeviceNameProvider`, `systemDeviceModelProvider`.
 
-`CodecoreApp` (`lib/app.dart`) tiene vivi dalla radice i provider di servizio: `shareAutoStartProvider`, `activityLogProvider`, `equalizerApplierProvider`, `streamEnrichTriggerProvider`, `outputRouteSyncProvider`, `volumeZeroPauseProvider`, `importNotificationProvider`, `releaseCheckControllerProvider`, `dislikeStoreProvider`, `enrichCompleterStartProvider`, `mp3LengthFixStartProvider`, `podcastOrphansStartProvider`, `genreRereadStartProvider`, `artistCountryStartProvider`, `updateOnStartProvider`, `promoteErrorsProvider`, `jamOnlineFailuresProvider`. Un nuovo servizio in background si aggancia qui.
+`CodecoreApp` (`lib/app.dart`) tiene vivi dalla radice i provider di servizio: `shareAutoStartProvider`, `activityLogProvider`, `equalizerApplierProvider`, `streamEnrichTriggerProvider`, `outputRouteSyncProvider`, `volumeZeroPauseProvider`, `importNotificationProvider`, `releaseCheckControllerProvider`, `dislikeStoreProvider`, `enrichCompleterStartProvider`, `mp3LengthFixStartProvider`, `podcastOrphansStartProvider`, `genreRereadStartProvider`, `artistCountryStartProvider`, `updateOnStartProvider`, `promoteErrorsProvider`, `jamOnlineFailuresProvider`, `audioPermissionProvider` (D-678). Un nuovo servizio in background si aggancia qui.
 
 ### Log
 

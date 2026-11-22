@@ -57,6 +57,11 @@ D-665, D-666, D-674, D-690, D-675, D-598 (superata in parte da D-665), D-662, D-
   - Passi: 1) l'export include le righe stream con il link YouTube Music (m3u8, csv, json); 2) Android Auto mostra e riproduce i brani in streaming se c'è rete; 3) test.
   - Comando mirato: `flutter test test/services/export/ test/services/audio/browse_handler_test.dart`
   - Fatto quando: l'export di una playlist mista contiene tutte le righe; l'albero di Auto include gli stream.
+- [ ] 140.10b Uscita unica dei caricamenti falliti nell'handler (review di architettura della fase 135, punti 4-5) — review: `/code-review high`
+  - File: `lib/services/audio/codecore_audio_handler.dart` (`_loadCurrent`, `_failAndSkip`, `_skipOffline`, `_jumpToAvailable`, `_stayStill`, `quiet()`), test in `test/services/audio/`.
+  - Passi: 1) una sola `_onLoadFailure(reason, track, token)` che decide fra restare fermo (ripristino a freddo, con `cold` legato al token: `_coldToken == token`), permesso negato e salto; 2) `_skipOffline` senza bool posizionali; 3) un solo punto che azzera `_consecutiveErrors` per le scelte dell'utente; 4) nessun cambio di comportamento: i test della fase 135 restano verdi senza modifiche.
+  - Comando mirato: `flutter test test/services/audio/` + `flutter analyze`
+  - Fatto quando: i test di `test/services/audio/` passano invariati; `grep -c "_consecutiveErrors = 0"` ≤ 3.
 - [ ] 140.11 Area e controllo di fine fase
   - Aggiorna `../architettura/online.md` (streaming per prima, cartella unica), `libreria-e-dati.md` (v22, `browseId`), `sync-backup-jam.md` (Jam: salvare; LAN con stream), `piattaforme.md` (Android Auto); «Trappole»: `lite` resta `device`. Annota in `../decisioni.md` solo deroghe nuove.
 

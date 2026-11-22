@@ -55,6 +55,12 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
 - [ ] 146.10 Area e controllo di fine fase
   - Aggiorna `../architettura/sync-backup-jam.md` (relazione «miei», tombstone, rotte nuove, lista bianca delle impostazioni), `libreria-e-dati.md` (v24); «Trappole»: i tombstone non cancellano mai file; D-668 è l'unica eccezione all'invariante.
 
+- [ ] 146.11 Debounce delle impostazioni alla chiusura (review di architettura della fase 135, punto 7)
+  - File: `lib/providers/settings_providers.dart`, `test/data/settings_store_test.dart`.
+  - Passi: 1) quando l'app va in `paused`/`detached` il debounce si svuota subito per tutte le impostazioni; 2) tolto il caso speciale di `karaokeOn` (D-664 resta vera); 3) test: un `update` seguito dalla chiusura è scritto.
+  - Comando mirato: `flutter test test/data/settings_store_test.dart test/providers/karaoke_providers_test.dart`
+  - Fatto quando: nessun caso speciale per campo in `SettingsNotifier.update`; il test della chiusura passa.
+
 ## Tocca a te
 - [ ] Decidere la proposta di 146.9.
 - [ ] Per la prova reale (147) servono due dispositivi dell'utente accesi sulla stessa rete e associati come «miei»; i telefoni di test (Mi A3, Redmi) servono per le prove, non toccare i file del Motorola.
