@@ -258,7 +258,7 @@ void main() {
     await s.h.dispose(t);
   });
 
-  test('characterization: D-664 will change this: a restored, stopped track is separated as soon as the provider starts', () async {
+  test('a restored, stopped track is not separated until something plays (D-664)', () async {
     final t = _T();
     final h = await _H.create(t, tracks: 5);
     final sep = _Separator();
@@ -287,6 +287,9 @@ void main() {
     });
     setKaraoke(c, true);
     c.listen(karaokeAutoProvider, (_, _) {});
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    expect(sep.inputs, isEmpty);
+    await t.runAsync(() => h.handler.play());
     await t.runAsync(() => until(() => sep.inputs.isNotEmpty));
     expect(sep.inputs, ['${tmp.path}/t0.mp3']);
     await h.dispose(t);

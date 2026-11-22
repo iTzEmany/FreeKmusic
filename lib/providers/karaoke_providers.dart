@@ -325,6 +325,8 @@ final karaokeAutoProvider = Provider<void>((ref) {
   final cache = ref.read(streamCacheProvider);
   final pinned = <String>{};
   var running = false, again = false, disposed = false;
+  // D-664: a restored, stopped track is not separated until something plays.
+  var played = handler.playbackState.value.playing;
   late final Future<void> Function() pump;
 
   Future<KaraokeTarget?> queuedTarget(Track t) async {
@@ -389,6 +391,7 @@ final karaokeAutoProvider = Provider<void>((ref) {
       if (service.busy && service.activeKey != cur?.key) await service.cancel();
       return;
     }
+    if (!played) return;
     final queued = await manualQueue();
     if (disposed) return;
     // The current track's stems stay too: at 100 % no player file holds them and the expiry would
@@ -452,6 +455,12 @@ final karaokeAutoProvider = Provider<void>((ref) {
 
   service.addListener(pumpListener);
   final queueSub = handler.queueChanges.listen((_) => unawaited(pump()));
+  final playSub = played
+      ? null
+      : handler.playbackState.where((s) => s.playing).listen((_) {
+          played = true;
+          unawaited(pump());
+        });
   ref.listen(karaokeProvider.select((k) => k.on), (_, _) => unawaited(pump()));
   ref.listen(karaokeTargetProvider, (_, _) => unawaited(pump()));
   ref.listen(karaokeConfirmedProvider, (_, _) => unawaited(pump()));
@@ -460,7 +469,38 @@ final karaokeAutoProvider = Provider<void>((ref) {
     disposed = true;
     service.removeListener(pumpListener);
     unawaited(queueSub.cancel());
+    unawaited(playSub?.cancel());
     pinned.forEach(cache.unpin);
   });
   unawaited(pump());
 });
+
+/// How long karaoke may stay on unused before the reminder (D-685).
+const kKaraokeIdleReminder = Duration(minutes: 20);
+
+/// Bumps (count + 1) each time karaoke has been on for 20 minutes in a row with no karaoke file in
+/// use (D-685): the UI listens, shows «Spegni» and needs no acknowledgement. One bump per idle
+/// period; the timer restarts when use resumes or karaoke goes off. Watched from the app root.
+final karaokeReminderProvider = NotifierProvider<KaraokeReminder, int>(
+  KaraokeReminder.new,
+);
+
+class KaraokeReminder extends Notifier<int> {
+  Timer? _timer;
+
+  @override
+  int build() {
+    ref.onDispose(() => _timer?.cancel());
+    void check() {
+      _timer?.cancel();
+      final idle =
+          ref.read(karaokeProvider).on && ref.read(karaokeInUseProvider).isEmpty;
+      if (idle) _timer = Timer(kKaraokeIdleReminder, () => state++);
+    }
+
+    ref.listen(karaokeProvider.select((k) => k.on), (_, _) => check());
+    ref.listen(karaokeInUseProvider, (_, _) => check());
+    check();
+    return 0;
+  }
+}

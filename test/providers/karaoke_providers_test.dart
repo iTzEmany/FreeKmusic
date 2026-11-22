@@ -11,6 +11,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:codecore/services/stream/stream_cache.dart';
+// ignore: depend_on_referenced_packages
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -248,6 +250,56 @@ void main() {
     expect(cache.isPinned('karaoke:base:s1'), isFalse);
     expect(cache.isPinned('karaoke:voice:s1'), isFalse);
     await h.dispose(tester);
+  });
+
+  group('idle reminder (D-685)', () {
+    ProviderContainer make(SettingsStore store) {
+      final c = ProviderContainer(
+        overrides: [settingsStoreProvider.overrideWithValue(store)],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    Future<SettingsStore> storeOn() async {
+      SharedPreferences.setMockInitialValues({'karaokeOn': true});
+      return SettingsStore.open();
+    }
+
+    test('20 minutes on and unused: one reminder, not repeated; use then idle again restarts it', () async {
+      final store = await storeOn();
+      fakeAsync((fa) {
+        final c = make(store);
+        c.listen(karaokeReminderProvider, (_, _) {});
+        fa.elapse(const Duration(minutes: 19));
+        expect(c.read(karaokeReminderProvider), 0);
+        fa.elapse(const Duration(minutes: 2));
+        expect(c.read(karaokeReminderProvider), 1);
+        fa.elapse(const Duration(hours: 1));
+        expect(c.read(karaokeReminderProvider), 1);
+        c.read(karaokeInUseProvider.notifier).set({5});
+        fa.elapse(const Duration(hours: 1));
+        expect(c.read(karaokeReminderProvider), 1);
+        c.read(karaokeInUseProvider.notifier).set(const {});
+        fa.elapse(const Duration(minutes: 21));
+        expect(c.read(karaokeReminderProvider), 2);
+      });
+    });
+
+    test('in use, or switched off: no reminder', () async {
+      final store = await storeOn();
+      fakeAsync((fa) {
+        final c = make(store);
+        c.listen(karaokeReminderProvider, (_, _) {});
+        c.read(karaokeInUseProvider.notifier).set({5});
+        fa.elapse(const Duration(hours: 1));
+        c.read(karaokeInUseProvider.notifier).set(const {});
+        fa.elapse(const Duration(minutes: 10));
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: false));
+        fa.elapse(const Duration(hours: 1));
+        expect(c.read(karaokeReminderProvider), 0);
+      });
+    });
   });
 }
 
