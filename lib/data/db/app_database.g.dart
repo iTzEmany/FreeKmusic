@@ -10907,6 +10907,20 @@ class $TrackEnrichTable extends TrackEnrich
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _instrumentalMeta = const VerificationMeta(
+    'instrumental',
+  );
+  @override
+  late final GeneratedColumn<bool> instrumental = GeneratedColumn<bool>(
+    'instrumental',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("instrumental" IN (0, 1))',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     trackId,
@@ -10919,6 +10933,7 @@ class $TrackEnrichTable extends TrackEnrich
     curioNoneAt,
     creditsNoneAt,
     lyricsByUser,
+    instrumental,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11010,6 +11025,15 @@ class $TrackEnrichTable extends TrackEnrich
         ),
       );
     }
+    if (data.containsKey('instrumental')) {
+      context.handle(
+        _instrumentalMeta,
+        instrumental.isAcceptableOrUnknown(
+          data['instrumental']!,
+          _instrumentalMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -11059,6 +11083,10 @@ class $TrackEnrichTable extends TrackEnrich
         DriftSqlType.bool,
         data['${effectivePrefix}lyrics_by_user'],
       )!,
+      instrumental: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}instrumental'],
+      ),
     );
   }
 
@@ -11079,6 +11107,9 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
   final int? curioNoneAt;
   final int? creditsNoneAt;
   final bool lyricsByUser;
+
+  /// Null = unknown; true = instrumental (no lyrics to look for).
+  final bool? instrumental;
   const TrackEnrichData({
     required this.trackId,
     this.details,
@@ -11090,6 +11121,7 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
     this.curioNoneAt,
     this.creditsNoneAt,
     required this.lyricsByUser,
+    this.instrumental,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -11120,6 +11152,9 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
       map['credits_none_at'] = Variable<int>(creditsNoneAt);
     }
     map['lyrics_by_user'] = Variable<bool>(lyricsByUser);
+    if (!nullToAbsent || instrumental != null) {
+      map['instrumental'] = Variable<bool>(instrumental);
+    }
     return map;
   }
 
@@ -11149,6 +11184,9 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
           ? const Value.absent()
           : Value(creditsNoneAt),
       lyricsByUser: Value(lyricsByUser),
+      instrumental: instrumental == null && nullToAbsent
+          ? const Value.absent()
+          : Value(instrumental),
     );
   }
 
@@ -11168,6 +11206,7 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
       curioNoneAt: serializer.fromJson<int?>(json['curioNoneAt']),
       creditsNoneAt: serializer.fromJson<int?>(json['creditsNoneAt']),
       lyricsByUser: serializer.fromJson<bool>(json['lyricsByUser']),
+      instrumental: serializer.fromJson<bool?>(json['instrumental']),
     );
   }
   @override
@@ -11184,6 +11223,7 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
       'curioNoneAt': serializer.toJson<int?>(curioNoneAt),
       'creditsNoneAt': serializer.toJson<int?>(creditsNoneAt),
       'lyricsByUser': serializer.toJson<bool>(lyricsByUser),
+      'instrumental': serializer.toJson<bool?>(instrumental),
     };
   }
 
@@ -11198,6 +11238,7 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
     Value<int?> curioNoneAt = const Value.absent(),
     Value<int?> creditsNoneAt = const Value.absent(),
     bool? lyricsByUser,
+    Value<bool?> instrumental = const Value.absent(),
   }) => TrackEnrichData(
     trackId: trackId ?? this.trackId,
     details: details.present ? details.value : this.details,
@@ -11211,6 +11252,7 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
         ? creditsNoneAt.value
         : this.creditsNoneAt,
     lyricsByUser: lyricsByUser ?? this.lyricsByUser,
+    instrumental: instrumental.present ? instrumental.value : this.instrumental,
   );
   TrackEnrichData copyWithCompanion(TrackEnrichCompanion data) {
     return TrackEnrichData(
@@ -11236,6 +11278,9 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
       lyricsByUser: data.lyricsByUser.present
           ? data.lyricsByUser.value
           : this.lyricsByUser,
+      instrumental: data.instrumental.present
+          ? data.instrumental.value
+          : this.instrumental,
     );
   }
 
@@ -11251,7 +11296,8 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
           ..write('syncedNoneAt: $syncedNoneAt, ')
           ..write('curioNoneAt: $curioNoneAt, ')
           ..write('creditsNoneAt: $creditsNoneAt, ')
-          ..write('lyricsByUser: $lyricsByUser')
+          ..write('lyricsByUser: $lyricsByUser, ')
+          ..write('instrumental: $instrumental')
           ..write(')'))
         .toString();
   }
@@ -11268,6 +11314,7 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
     curioNoneAt,
     creditsNoneAt,
     lyricsByUser,
+    instrumental,
   );
   @override
   bool operator ==(Object other) =>
@@ -11282,7 +11329,8 @@ class TrackEnrichData extends DataClass implements Insertable<TrackEnrichData> {
           other.syncedNoneAt == this.syncedNoneAt &&
           other.curioNoneAt == this.curioNoneAt &&
           other.creditsNoneAt == this.creditsNoneAt &&
-          other.lyricsByUser == this.lyricsByUser);
+          other.lyricsByUser == this.lyricsByUser &&
+          other.instrumental == this.instrumental);
 }
 
 class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
@@ -11296,6 +11344,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
   final Value<int?> curioNoneAt;
   final Value<int?> creditsNoneAt;
   final Value<bool> lyricsByUser;
+  final Value<bool?> instrumental;
   const TrackEnrichCompanion({
     this.trackId = const Value.absent(),
     this.details = const Value.absent(),
@@ -11307,6 +11356,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
     this.curioNoneAt = const Value.absent(),
     this.creditsNoneAt = const Value.absent(),
     this.lyricsByUser = const Value.absent(),
+    this.instrumental = const Value.absent(),
   });
   TrackEnrichCompanion.insert({
     this.trackId = const Value.absent(),
@@ -11319,6 +11369,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
     this.curioNoneAt = const Value.absent(),
     this.creditsNoneAt = const Value.absent(),
     this.lyricsByUser = const Value.absent(),
+    this.instrumental = const Value.absent(),
   });
   static Insertable<TrackEnrichData> custom({
     Expression<int>? trackId,
@@ -11331,6 +11382,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
     Expression<int>? curioNoneAt,
     Expression<int>? creditsNoneAt,
     Expression<bool>? lyricsByUser,
+    Expression<bool>? instrumental,
   }) {
     return RawValuesInsertable({
       if (trackId != null) 'track_id': trackId,
@@ -11343,6 +11395,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
       if (curioNoneAt != null) 'curio_none_at': curioNoneAt,
       if (creditsNoneAt != null) 'credits_none_at': creditsNoneAt,
       if (lyricsByUser != null) 'lyrics_by_user': lyricsByUser,
+      if (instrumental != null) 'instrumental': instrumental,
     });
   }
 
@@ -11357,6 +11410,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
     Value<int?>? curioNoneAt,
     Value<int?>? creditsNoneAt,
     Value<bool>? lyricsByUser,
+    Value<bool?>? instrumental,
   }) {
     return TrackEnrichCompanion(
       trackId: trackId ?? this.trackId,
@@ -11369,6 +11423,7 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
       curioNoneAt: curioNoneAt ?? this.curioNoneAt,
       creditsNoneAt: creditsNoneAt ?? this.creditsNoneAt,
       lyricsByUser: lyricsByUser ?? this.lyricsByUser,
+      instrumental: instrumental ?? this.instrumental,
     );
   }
 
@@ -11405,6 +11460,9 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
     if (lyricsByUser.present) {
       map['lyrics_by_user'] = Variable<bool>(lyricsByUser.value);
     }
+    if (instrumental.present) {
+      map['instrumental'] = Variable<bool>(instrumental.value);
+    }
     return map;
   }
 
@@ -11420,7 +11478,8 @@ class TrackEnrichCompanion extends UpdateCompanion<TrackEnrichData> {
           ..write('syncedNoneAt: $syncedNoneAt, ')
           ..write('curioNoneAt: $curioNoneAt, ')
           ..write('creditsNoneAt: $creditsNoneAt, ')
-          ..write('lyricsByUser: $lyricsByUser')
+          ..write('lyricsByUser: $lyricsByUser, ')
+          ..write('instrumental: $instrumental')
           ..write(')'))
         .toString();
   }
@@ -21208,6 +21267,7 @@ typedef $$TrackEnrichTableCreateCompanionBuilder =
       Value<int?> curioNoneAt,
       Value<int?> creditsNoneAt,
       Value<bool> lyricsByUser,
+      Value<bool?> instrumental,
     });
 typedef $$TrackEnrichTableUpdateCompanionBuilder =
     TrackEnrichCompanion Function({
@@ -21221,6 +21281,7 @@ typedef $$TrackEnrichTableUpdateCompanionBuilder =
       Value<int?> curioNoneAt,
       Value<int?> creditsNoneAt,
       Value<bool> lyricsByUser,
+      Value<bool?> instrumental,
     });
 
 final class $$TrackEnrichTableReferences
@@ -21296,6 +21357,11 @@ class $$TrackEnrichTableFilterComposer
 
   ColumnFilters<bool> get lyricsByUser => $composableBuilder(
     column: $table.lyricsByUser,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get instrumental => $composableBuilder(
+    column: $table.instrumental,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21377,6 +21443,11 @@ class $$TrackEnrichTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get instrumental => $composableBuilder(
+    column: $table.instrumental,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TracksTableOrderingComposer get trackId {
     final $$TracksTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -21449,6 +21520,11 @@ class $$TrackEnrichTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get instrumental => $composableBuilder(
+    column: $table.instrumental,
+    builder: (column) => column,
+  );
+
   $$TracksTableAnnotationComposer get trackId {
     final $$TracksTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -21511,6 +21587,7 @@ class $$TrackEnrichTableTableManager
                 Value<int?> curioNoneAt = const Value.absent(),
                 Value<int?> creditsNoneAt = const Value.absent(),
                 Value<bool> lyricsByUser = const Value.absent(),
+                Value<bool?> instrumental = const Value.absent(),
               }) => TrackEnrichCompanion(
                 trackId: trackId,
                 details: details,
@@ -21522,6 +21599,7 @@ class $$TrackEnrichTableTableManager
                 curioNoneAt: curioNoneAt,
                 creditsNoneAt: creditsNoneAt,
                 lyricsByUser: lyricsByUser,
+                instrumental: instrumental,
               ),
           createCompanionCallback:
               ({
@@ -21535,6 +21613,7 @@ class $$TrackEnrichTableTableManager
                 Value<int?> curioNoneAt = const Value.absent(),
                 Value<int?> creditsNoneAt = const Value.absent(),
                 Value<bool> lyricsByUser = const Value.absent(),
+                Value<bool?> instrumental = const Value.absent(),
               }) => TrackEnrichCompanion.insert(
                 trackId: trackId,
                 details: details,
@@ -21546,6 +21625,7 @@ class $$TrackEnrichTableTableManager
                 curioNoneAt: curioNoneAt,
                 creditsNoneAt: creditsNoneAt,
                 lyricsByUser: lyricsByUser,
+                instrumental: instrumental,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -988,4 +988,31 @@ void main() {
     expect(idx, hasLength(1));
     await db.close();
   });
+
+  test('a v20 database gets track_enrich.instrumental, null, rows unchanged', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, '
+            'saved INTEGER NOT NULL DEFAULT 0)',
+          );
+          raw.execute(
+            'CREATE TABLE track_enrich (track_id INTEGER NOT NULL PRIMARY KEY REFERENCES tracks (id) ON DELETE CASCADE, '
+            'details TEXT NULL, deezer_id INTEGER NULL, mbid TEXT NULL, meta_none_at INTEGER NULL, '
+            'lyrics_none_at INTEGER NULL, synced_none_at INTEGER NULL, curio_none_at INTEGER NULL, '
+            'credits_none_at INTEGER NULL, lyrics_by_user INTEGER NOT NULL DEFAULT 0)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title, album_key) VALUES (1, '/a.mp3', 'A', 'k')");
+          raw.execute("INSERT INTO track_enrich (track_id, mbid, meta_none_at, lyrics_by_user) VALUES (1, 'm', 7, 1)");
+          raw.userVersion = 20;
+        },
+      ),
+    );
+    final r = (await db.customSelect('SELECT * FROM track_enrich').getSingle()).data;
+    expect(r['instrumental'], isNull);
+    expect([r['track_id'], r['mbid'], r['meta_none_at'], r['lyrics_by_user']], [1, 'm', 7, 1]);
+    await db.close();
+  });
 }

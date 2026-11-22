@@ -1288,6 +1288,18 @@ class TrackRepository {
         );
       });
 
+  /// Marks a track as instrumental (or not); null in the column means unknown.
+  Future<void> setInstrumental(int id, bool value) => _db
+      .into(_db.trackEnrich)
+      .insertOnConflictUpdate(
+        TrackEnrichCompanion(trackId: Value(id), instrumental: Value(value)),
+      );
+
+  Future<bool?> isInstrumental(int id) async =>
+      (await (_db.select(_db.trackEnrich)..where((e) => e.trackId.equals(id)))
+              .getSingleOrNull())
+          ?.instrumental;
+
   /// Stores the «curiosities» text of one track (null clears it).
   Future<void> setCuriosities(int id, String? text) =>
       (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
