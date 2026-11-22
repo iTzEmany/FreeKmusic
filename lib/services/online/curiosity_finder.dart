@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/app_log.dart';
 import 'discogs_client.dart';
+import 'enrich_gather.dart' show memoPerTrack;
 import 'http_client.dart';
 import 'musicbrainz_client.dart';
 import 'query_cleaner.dart';
@@ -160,12 +161,15 @@ class CuriosityFinder {
       final main = extractPrimaryArtist(artist);
       final byIsrc = isrc == null
           ? const <MbRecording>[]
-          : await musicBrainz.recordingsByIsrc(
-              isrc,
-              durationMs,
-              title: title,
-              artist: artist,
-              cancel: cancel,
+          : await memoPerTrack(
+              'isrc:$isrc',
+              () => musicBrainz.recordingsByIsrc(
+                isrc,
+                durationMs,
+                title: title,
+                artist: artist,
+                cancel: cancel,
+              ),
             );
       if (main.isNotEmpty || byIsrc.isNotEmpty) {
         final recs = byIsrc.isNotEmpty

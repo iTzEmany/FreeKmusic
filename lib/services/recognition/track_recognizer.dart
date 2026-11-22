@@ -8,6 +8,7 @@ import '../online/acoustid_client.dart';
 import '../online/innertube_client.dart';
 import '../online/ytm_song_parser.dart' show YtmSong, ytmMatches;
 import '../online/metadata_resolver.dart' show ResolvedMeta;
+import '../online/enrich_gather.dart' show memoPerTrack;
 import '../online/http_client.dart' show RateLimitedException;
 import '../online/musicbrainz_client.dart';
 import '../online/query_cleaner.dart';
@@ -255,13 +256,15 @@ class TrackRecognizer {
       }
     }
     if (isrc != null) {
-      final recs = await musicBrainz.recordingsByIsrc(
-        isrc,
-        t.durationMs,
-        title: query?.title,
-        artist: query?.artist,
-        cancel: cancel,
-        strict: true,
+      final recs = await memoPerTrack(
+        'isrc:$isrc',
+        () => musicBrainz.recordingsByIsrc(
+          isrc!,
+          t.durationMs,
+          title: query?.title,
+          artist: query?.artist,
+          cancel: cancel,
+        ),
       );
       got();
       final r = recs.where((r) => close(r.length)).firstOrNull;

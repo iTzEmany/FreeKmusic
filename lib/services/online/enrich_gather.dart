@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../../core/app_log.dart';
@@ -56,6 +58,19 @@ class EnrichGather {
     if (o == PartOutcome.none) marks[p] = now;
   }
 }
+
+/// One track's answers already asked (136.4): the recognizer, the credits and
+/// the curiosities all want the same `recordingsByIsrc`, and the credits and
+/// the metadata the same Deezer hit. Carried by the zone so no signature grows.
+/// shortcut: first asker's title/artist filter wins, same ISRC = same song.
+Future<T> memoPerTrack<T>(String key, Future<T> Function() ask) {
+  final m = Zone.current[#trackMemo] as Map<String, Future<Object?>>?;
+  return m == null ? ask() : m.putIfAbsent(key, ask) as Future<T>;
+}
+
+/// Runs [body] with a fresh per-track memo for [memoPerTrack].
+Future<T> withTrackMemo<T>(Future<T> Function() body) =>
+    runZoned(body, zoneValues: {#trackMemo: <String, Future<Object?>>{}});
 
 /// One source of a gather: its answer, or `failed` (logged) when it threw,
 /// timed out or was refused. A cancellation escapes.

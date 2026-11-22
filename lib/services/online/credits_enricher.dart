@@ -10,6 +10,7 @@ import 'credits.dart';
 import 'deezer_client.dart';
 import 'deezer_gw_client.dart';
 import 'deezer_models.dart';
+import 'enrich_gather.dart' show memoPerTrack;
 import 'http_client.dart' show RateLimitedException;
 import 'metadata_resolver.dart';
 import 'musicbrainz_client.dart';
@@ -92,6 +93,9 @@ class CreditsEnricher {
       } on RateLimitedException catch (e) {
         AppLog.w('credits source $name refused', e);
         limited = true;
+      } on MusicBrainzUnavailable catch (e) {
+        AppLog.w('credits source $name resting', e); // 503: the runner must stop (D-683)
+        limited = true;
       } catch (e, st) {
         AppLog.w('credits source $name failed', e, st);
       }
@@ -155,13 +159,15 @@ class CreditsEnricher {
         final recs = await source(
           'musicbrainz',
           'musicbrainz isrc',
-          () => mb.recordingsByIsrc(
-            isrc,
-            t.durationMs,
-            title: t.title,
-            artist: t.artist ?? '',
-            cancel: cancel,
-            strict: true,
+          () => memoPerTrack(
+            'isrc:$isrc',
+            () => mb.recordingsByIsrc(
+              isrc,
+              t.durationMs,
+              title: t.title,
+              artist: t.artist ?? '',
+              cancel: cancel,
+            ),
           ),
         );
         id = recs?.firstOrNull?.id;
