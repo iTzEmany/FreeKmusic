@@ -8,6 +8,21 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 
 - **Feature «Video karaoke, aggiornamento dall'app, rilascio 1.6.3»** (kickoff del 18/11): fasi 131–133 in [`fasi/`](fasi/README.md), specifica in [`storico/feature/feature-karaoke-video-e-aggiornamenti.md`](storico/feature/feature-karaoke-video-e-aggiornamenti.md), mockup in [`storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](storico/feature/mockup-karaoke-video-e-aggiornamenti.html), decisioni D-631..D-651.
 
+- **Grande revisione** (22/11, D-662..D-699, analisi in [`refactor/grande-revisione/analisi.md`](refactor/grande-revisione/analisi.md), rete di test in [`rete.md`](refactor/grande-revisione/rete.md)): fasi 135-147 in [`fasi/`](fasi/README.md), una per riga:
+  - Fase 135 «riproduzione affidabile»: [`fasi/fase-135-riproduzione-affidabile.md`](fasi/fase-135-riproduzione-affidabile.md)
+  - Fase 136 «arricchimento unico»: [`fasi/fase-136-arricchimento-unico.md`](fasi/fase-136-arricchimento-unico.md)
+  - Fase 137 «backup, ripristino, aggiornamento»: [`fasi/fase-137-backup-ripristino-aggiornamento.md`](fasi/fase-137-backup-ripristino-aggiornamento.md)
+  - Fase 138 «ritocchi di UI»: [`fasi/fase-138-ritocchi-ui.md`](fasi/fase-138-ritocchi-ui.md)
+  - Fase 139 «stato del brano e download»: [`fasi/fase-139-stato-brano-download.md`](fasi/fase-139-stato-brano-download.md)
+  - Fase 140 «streaming per prima»: [`fasi/fase-140-streaming-per-prima.md`](fasi/fase-140-streaming-per-prima.md)
+  - Fase 141 «collezioni»: [`fasi/fase-141-collezioni.md`](fasi/fase-141-collezioni.md)
+  - Fase 142 «Riprendi a griglia»: [`fasi/fase-142-riprendi-a-griglia.md`](fasi/fase-142-riprendi-a-griglia.md)
+  - Fase 143 «registro e segnalazioni»: [`fasi/fase-143-registro-e-segnalazioni.md`](fasi/fase-143-registro-e-segnalazioni.md)
+  - Fase 144 «modelli e dizionari»: [`fasi/fase-144-modelli-e-dizionari.md`](fasi/fase-144-modelli-e-dizionari.md)
+  - Fase 145 «condivisione esterna»: [`fasi/fase-145-condivisione-esterna.md`](fasi/fase-145-condivisione-esterna.md)
+  - Fase 146 «sincronizzazione tra dispositivi»: [`fasi/fase-146-sincronizzazione-dispositivi.md`](fasi/fase-146-sincronizzazione-dispositivi.md)
+  - Fase 147 «verifica finale sul telefono»: [`fasi/fase-147-verifica-finale.md`](fasi/fase-147-verifica-finale.md)
+
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).
 - **`m.createIndex` prima della v15 senza IF NOT EXISTS** (6 nov): dopo un ritorno a una build più vecchia e un nuovo aggiornamento l'avvio fallisce. Rimedio: un helper unico per gli indici con IF NOT EXISTS.
