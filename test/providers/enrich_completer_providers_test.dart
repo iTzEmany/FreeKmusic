@@ -82,6 +82,33 @@ class _ActiveJam extends JamController {
   JamUiState build() => const JamUiState(phase: JamPhase.active, role: JamRole.host);
 }
 
+class _Jam extends JamController {
+  @override
+  JamUiState build() => const JamUiState();
+
+  void put(bool on) =>
+      state = on ? const JamUiState(phase: JamPhase.active, role: JamRole.host) : const JamUiState();
+}
+
+/// A network the test moves by hand.
+class _MovingNet extends NetworkProbe {
+  _MovingNet() : super(android: false);
+
+  NetworkKind kind = const NetworkKind(metered: true);
+  final moved = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get changes => moved.stream;
+
+  @override
+  Future<NetworkKind> current() async => kind;
+
+  void move(NetworkKind k) {
+    kind = k;
+    moved.add(null);
+  }
+}
+
 class _Job extends EnrichJobNotifier {
   @override
   EnrichJobState build() => const EnrichJobState(running: true);
@@ -490,5 +517,65 @@ void main() {
   test('the run does not start during a Jam, even with «enrichOnMetered» on (D-683)', () async {
     await meteredRun(jam: true, onMetered: true);
     expect(r.chain.calls, 0);
+  });
+
+  /// The start provider over a network and a Jam the test moves; one idle track per [tracks].
+  Future<(_MovingNet, ProviderSubscription<void>)> wired(NetworkKind kind, {int tracks = 1}) async {
+    user = UserActivity(); // idle
+    final net = _MovingNet()..kind = kind;
+    addTearDown(net.moved.close);
+    c = open(extra: [networkProbeProvider.overrideWithValue(net), jamProvider.overrideWith(_Jam.new)]);
+    for (var i = 0; i < tracks; i++) {
+      await track();
+    }
+    final sub = c.listen(enrichCompleterStartProvider, (_, _) {});
+    addTearDown(sub.close);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return (net, sub);
+  }
+
+  test('offline: the run does not start (D-683)', () async {
+    await wired(const NetworkKind(online: false));
+    expect(r.chain.calls, 0);
+  });
+
+  test('the network coming back, or leaving the metered one, starts the run again', () async {
+    final (net, _) = await wired(const NetworkKind(online: false));
+    expect(r.chain.calls, 0);
+    net.move(const NetworkKind(metered: true));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(r.chain.calls, 0, reason: 'metered with the switch off');
+    net.move(const NetworkKind());
+    await until(() => r.chain.calls == 1);
+  });
+
+  test('the end of a Jam starts the run again', () async {
+    await wired(const NetworkKind());
+    await until(() => r.chain.calls == 1); // the settled start
+    await track();
+    (c.read(jamProvider.notifier) as _Jam).put(true);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(r.chain.calls, 1, reason: 'during the Jam');
+    (c.read(jamProvider.notifier) as _Jam).put(false);
+    await until(() => r.chain.calls == 2);
+  });
+
+  test('a Jam that begins mid-run stops it', () async {
+    user = UserActivity();
+    final net = _MovingNet()..kind = const NetworkKind();
+    addTearDown(net.moved.close);
+    c = open(extra: [networkProbeProvider.overrideWithValue(net), jamProvider.overrideWith(_Jam.new)]);
+    for (var i = 0; i < 3; i++) {
+      await track();
+    }
+    r.chain.hold = Completer<void>();
+    final sub = c.listen(enrichCompleterStartProvider, (_, _) {});
+    addTearDown(sub.close);
+    await until(() => r.chain.calls == 1);
+    (c.read(jamProvider.notifier) as _Jam).put(true);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    r.chain.hold!.complete();
+    await until(() => !state().running);
+    expect(r.chain.calls, 1);
   });
 }

@@ -76,10 +76,11 @@ final streamEnrichRowProvider = Provider<Future<void> Function(int rowId)>((ref)
   final running = <int, Future<void>>{};
   return (id) => running[id] ??=
       // The one engine (D-683): status, «nothing» marks, empty fields only, the auto switches.
-      ref
-          .read(enrichEngineProvider)
-          .completeOne(id, autoParts(ref.read(settingsProvider)))
-          .then<void>((_) {})
+      // No switch on: nothing to ask (completeOne would still run the recognition).
+      Future.sync(() async {
+            final parts = autoParts(ref.read(settingsProvider));
+            if (parts.isNotEmpty) await ref.read(enrichEngineProvider).completeOne(id, parts);
+          })
           .whenComplete(() {
             running.remove(id); // a block body: returning the Future would make it wait for itself
           });

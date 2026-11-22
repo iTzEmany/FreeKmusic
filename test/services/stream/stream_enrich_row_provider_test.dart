@@ -1,4 +1,7 @@
+import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_kinds.dart';
+import 'package:codecore/services/recognition/track_recognizer.dart';
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/online_providers.dart';
@@ -88,6 +91,34 @@ void main() {
     expect(rig.chain.calls, 0);
     expect(rig.web.urls, isEmpty);
   });
+
+  test('with the switches off the recognition is not asked either', () async {
+    final rec = _Counting();
+    final rig = EnrichRig(recognizer: rec);
+    addTearDown(rig.dispose);
+    final c = ProviderContainer(overrides: [
+      enrichEngineProvider.overrideWithValue(rig.engine),
+      settingsProvider.overrideWith(_Off.new),
+      trackRepositoryProvider.overrideWithValue(rig.repo),
+    ]);
+    addTearDown(c.dispose);
+    final row = await rig.add(kind: kStreamKind, path: 'youtube:v1');
+    await c.read(streamEnrichRowProvider)(row);
+    expect(rec.calls, 0);
+  });
+}
+
+class _Counting implements TrackRecognizer {
+  int calls = 0;
+
+  @override
+  Future<RecogOutcome> recognize(Track t, {required TextProbe? textProbe, CancelToken? cancel}) async {
+    calls++;
+    return const RecogOutcome();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation i) => throw UnimplementedError('${i.memberName}');
 }
 
 class _On extends SettingsNotifier {

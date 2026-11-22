@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
 import '../core/clock.dart';
+import '../core/network_kind.dart';
 import '../data/db/app_database.dart';
 import '../data/repositories/recog_pass_query.dart';
 import '../services/online/enrich_completer.dart';
@@ -161,12 +162,23 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
     });
   }
 
+  bool _blocked(NetworkKind net) =>
+      ref.read(jamProvider).active || !net.online || (net.metered && !ref.read(settingsProvider).enrichOnMetered);
+
+  /// A Jam, the network or «enrichOnMetered» changed: stops a run that may no longer go on, or starts one that may.
+  Future<void> recheck() async {
+    final blocked = _blocked(await ref.read(networkProbeProvider).current());
+    if (!ref.mounted) return;
+    if (!blocked) return start();
+    if (state.running) cancel();
+  }
+
   Future<void> _go() async {
     _halt = false;
     try {
       // Same rules as the artist countries (D-683): no Jam, no metered network unless the user allows it.
       final net = await ref.read(networkProbeProvider).current();
-      if (!ref.mounted || ref.read(jamProvider).active || !net.online || (net.metered && !ref.read(settingsProvider).enrichOnMetered)) return;
+      if (!ref.mounted || _blocked(net)) return;
       final c = await ref
           .read(creditsRepositoryProvider)
           .enrichCounts(

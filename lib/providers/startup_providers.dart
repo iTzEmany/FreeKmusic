@@ -17,6 +17,8 @@ import '../core/platform.dart' show isAndroid;
 import 'backup_providers.dart';
 import 'database_providers.dart' show trackRepositoryProvider;
 import 'enrich_completer_providers.dart';
+import 'jam_providers.dart' show jamProvider;
+import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'library_providers.dart' show libraryScannerProvider, scanStateProvider;
 import 'online_providers.dart' show autoParts;
 import 'settings_providers.dart';
@@ -46,6 +48,11 @@ final enrichCompleterStartProvider = Provider<void>((ref) {
     settingsProvider.select((s) => autoParts(s).map((p) => p.name).join(',')),
     (_, _) => unawaited(completer.start()),
   );
+  // Same triggers as the artist countries (D-683): the run leaves early on a Jam or a bad network and must come back.
+  ref.listen(jamProvider.select((s) => s.active), (_, _) => unawaited(completer.recheck()));
+  ref.listen(settingsProvider.select((s) => s.enrichOnMetered), (_, _) => unawaited(completer.recheck()));
+  final net = ref.watch(networkProbeProvider).changes.listen((_) => unawaited(completer.recheck()));
+  ref.onDispose(net.cancel);
   ref.read(startupSettledProvider.future).then((_) {
     if (ref.mounted && !ref.read(scanStateProvider).running) {
       unawaited(completer.start());
