@@ -129,6 +129,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Nuova funzione solo Android**: il Dart passa da `isAndroid`; il test imposta `debugIsAndroidOverride = true`.
 - **Nuova funzione solo desktop**: `isDesktop`; il test imposta `debugIsDesktopOverride = false` per vedere il layout telefono.
 - **Nuova funzione legata a YouTube**: dietro `kEnableYoutube`, e una versione vuota in `src/lite/kotlin` se tocca `YtDlpChannel`.
+- **Permesso audio (fase 135, D-678)**: `lib/core/permissions.dart` chiede `Permission.audio` (Android 13+, `READ_MEDIA_AUDIO`) e `Permission.storage` (prima); `hasAudioPermission` vale se uno dei due è concesso (permission_handler dà negato quello che non esiste in quella versione). Il permesso può sparire senza che l'utente lo tocchi (successo sul Motorola il 21/11): l'handler lo ricontrolla quando un file locale non si apre, e `audioPermissionProvider` a ogni ritorno nell'app. File caricati via adb appartengono alla shell: senza il permesso non si leggono, e i tag non si scrivono comunque (scoped storage).
 - **Nuovo permesso Android**: in `AndroidManifest.xml` e nella richiesta runtime lato `MainActivity`; se il servizio è in primo piano, aggiungi il tipo corretto.
 - **Nuovo widget o tile**: un `AppWidgetProvider` o `TileService` che legge solo `WidgetStore`; i dati li scrive `widget_sync.dart`.
 - **Nuovo pacchetto Linux/Windows**: nuovo script in `scripts/` o `packaging/`, poi un job in `release.yml` (vedi `qualita-e-rilascio.md`).
