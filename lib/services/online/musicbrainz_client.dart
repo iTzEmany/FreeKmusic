@@ -64,7 +64,7 @@ class MbArtistOrigin {
   final String? country, wikidata;
 }
 
-/// MusicBrainz did not answer (503 or network), or the client is resting after a 503.
+/// MusicBrainz refused (503, 429, 403), or the client is resting after a 503.
 class MusicBrainzUnavailable implements Exception {
   const MusicBrainzUnavailable(this.what);
 
@@ -109,7 +109,8 @@ class MusicBrainzClient {
   DateTime? _last, _restUntil;
   var _strikes = 0;
   Future<void> _tail = Future<void>.value();
-  // shortcut: never pruned, a few KB per song; upgrade if the app runs for days on a huge library.
+  /// Most answers kept; LinkedHashMap order is the use order, the oldest goes first.
+  static const cacheMax = 500;
   final _cache = <String, ({DateTime at, Map? value})>{};
 
   /// When the resting after a 503 ends; null when the client is not resting.
@@ -129,9 +130,16 @@ class MusicBrainzClient {
   }
 
   Future<Map?> _fetch(String path, Map<String, String> query, CancelToken? cancel) async {
+    // Cancelled while queued: no request (as dio does).
+    if (cancel != null && cancel.isCancelled) {
+      throw cancel.cancelError ?? DioException.requestCancelled(requestOptions: RequestOptions(), reason: 'cancelled');
+    }
     final key = '$path?${(query.entries.toList()..sort((a, b) => a.key.compareTo(b.key))).map((e) => '${e.key}=${e.value}').join('&')}';
-    final hit = _cache[key];
-    if (hit != null && Zone.current[#mbFresh] != true && _now().difference(hit.at) < cacheTtl) return hit.value;
+    final hit = _cache.remove(key);
+    if (hit != null && _now().difference(hit.at) < cacheTtl) {
+      _cache[key] = hit; // reinserted: most recently used
+      if (Zone.current[#mbFresh] != true) return hit.value;
+    }
     final until = restUntil;
     if (until != null) throw MusicBrainzUnavailable('$path (resting until $until)');
     final last = _last;
@@ -148,16 +156,30 @@ class MusicBrainzClient {
         strict: true,
       );
       _strikes = 0;
-      final value = res is Map ? res : null;
-      _cache[key] = (at: _now(), value: value);
-      return value;
+      return _remember(key, res is Map ? res : null);
     } on WebUnavailableException catch (e) {
-      final rest = rests[_strikes < rests.length ? _strikes : rests.length - 1];
-      _strikes++;
-      _restUntil = _now().add(rest);
-      AppLog.w('musicbrainz $path: $e, resting ${rest.inMinutes} min');
-      throw MusicBrainzUnavailable(path);
+      if (e.statusCode == 400) return _remember(key, null); // a query it does not take: «not found»
+      if (e.statusCode != 503) rethrow; // timeout, network, other 5xx: the caller's error, no rest
+      throw _rest(path, e);
+    } on RateLimitedException catch (e) {
+      throw _rest(path, e);
     }
+  }
+
+  Map? _remember(String key, Map? value) {
+    _cache.remove(key);
+    _cache[key] = (at: _now(), value: value);
+    if (_cache.length > cacheMax) _cache.remove(_cache.keys.first);
+    return value;
+  }
+
+  /// 503, 429 and 403: rest 1-5-15 minutes and tell the caller.
+  MusicBrainzUnavailable _rest(String path, Object e) {
+    final rest = rests[_strikes < rests.length ? _strikes : rests.length - 1];
+    _strikes++;
+    _restUntil = _now().add(rest);
+    AppLog.w('musicbrainz $path: $e, resting ${rest.inMinutes} min');
+    return MusicBrainzUnavailable(path);
   }
 
   /// The credits of recording [mbid] in one request. Empty when unknown;

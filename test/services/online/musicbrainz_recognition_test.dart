@@ -52,7 +52,7 @@ void main() {
 
   // D-683: no retry at 2 s any more; a 503 is MusicBrainzUnavailable and the client rests.
   test('recordingById: a 503 is MusicBrainzUnavailable at once, and the client rests', () async {
-    final w = _Web([const WebUnavailableException('503'), 'recording_imagine_work']);
+    final w = _Web([const WebUnavailableException('u', 503), 'recording_imagine_work']);
     final mb = _mb(w);
     await expectLater(mb.recordingById('x'), throwsA(isA<MusicBrainzUnavailable>()));
     expect(w.asked, hasLength(1));

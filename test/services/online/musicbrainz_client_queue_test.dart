@@ -1,7 +1,7 @@
 import 'package:codecore/core/clock.dart';
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/musicbrainz_client.dart';
-import 'package:dio/dio.dart' show CancelToken;
+import 'package:dio/dio.dart' show CancelToken, DioException;
 import 'package:flutter_test/flutter_test.dart';
 
 class _Web implements WebClient {
@@ -9,6 +9,8 @@ class _Web implements WebClient {
   var inFlight = 0, maxInFlight = 0;
   bool down = false;
   Object? answer = {'artists': []};
+  Object? fail; // thrown instead of an answer
+  final failOn = <String, Object>{}; // thrown for a url holding the key
 
   @override
   Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
@@ -17,6 +19,10 @@ class _Web implements WebClient {
     await Future<void>.delayed(const Duration(milliseconds: 5));
     inFlight--;
     if (down) throw WebUnavailableException(url, 503);
+    if (fail != null) throw fail!;
+    for (final e in failOn.entries) {
+      if (url.contains(e.key)) throw e.value;
+    }
     return answer;
   }
 
@@ -108,5 +114,88 @@ void main() {
     await expectLater(c.artistWikidata('a1'), throwsA(isA<MusicBrainzUnavailable>()));
     expect(c.restUntil, DateTime.fromMillisecondsSinceEpoch(1000 + 60000));
     expect(c.resting, isTrue);
+  });
+
+  test('a 400 is «not found» (cached), no rest', () async {
+    web.fail = const WebUnavailableException('u', 400);
+    expect(await mb.artistWikidata('a1'), isNull);
+    expect(mb.resting, isFalse);
+    web.fail = null;
+    await mb.artistWikidata('a1');
+    expect(web.asked, hasLength(1));
+  });
+
+  test('a 429 or 403 rests like a 503', () async {
+    web.fail = const RateLimitedException(429);
+    await expectLater(mb.artistWikidata('a1'), throwsA(isA<MusicBrainzUnavailable>()));
+    expect(mb.restUntil!.difference(t), const Duration(minutes: 1));
+  });
+
+  test('a 500 or a timeout reaches the caller with no rest and no cache', () async {
+    web.fail = const WebUnavailableException('u', 500);
+    await expectLater(mb.artistWikidata('a1'), throwsA(isA<WebUnavailableException>()));
+    expect(mb.resting, isFalse);
+    web.fail = null;
+    await mb.artistWikidata('a1');
+    expect(web.asked, hasLength(2));
+  });
+
+  test('calls are served in call order', () async {
+    await Future.wait([for (final a in ['a1', 'a2', 'a3']) mb.artistWikidata(a)]);
+    expect(web.asked.map((u) => u.split('/').last), ['a1', 'a2', 'a3']);
+  });
+
+  test('an error in the middle of the queue does not block the next calls', () async {
+    web.failOn['a2'] = const WebUnavailableException('u', 500);
+    final r = await Future.wait([
+      for (final a in ['a1', 'a2', 'a3']) mb.artistWikidata(a).then<Object?>((v) => v, onError: (Object e) => e),
+    ]);
+    expect(r[1], isA<WebUnavailableException>());
+    expect(web.asked, hasLength(3));
+  });
+
+  test('fresh asks again what the cache would have served', () async {
+    await mb.artistWikidata('a1');
+    await MusicBrainzClient.fresh(() => mb.artistWikidata('a1'));
+    expect(web.asked, hasLength(2));
+  });
+
+  test('between two requests the pause is at least 1.1 s', () async {
+    final pauses = <Duration>[];
+    final c = MusicBrainzClient(web, now: () => t, pause: (d) async => pauses.add(d));
+    await c.artistWikidata('a1');
+    await c.artistWikidata('a2');
+    expect(pauses.single, greaterThanOrEqualTo(const Duration(milliseconds: 1100)));
+  });
+
+  test('the cache holds up to 6 hours, not a moment more', () async {
+    await mb.artistWikidata('a1');
+    t = t.add(MusicBrainzClient.cacheTtl - const Duration(milliseconds: 1));
+    await mb.artistWikidata('a1');
+    expect(web.asked, hasLength(1));
+    t = t.add(const Duration(milliseconds: 1));
+    await mb.artistWikidata('a1');
+    expect(web.asked, hasLength(2));
+  });
+
+  test('beyond the cap the oldest answer goes', () async {
+    for (var i = 0; i <= MusicBrainzClient.cacheMax; i++) {
+      await mb.artistWikidata('a$i');
+    }
+    final n = web.asked.length;
+    await mb.artistWikidata('a${MusicBrainzClient.cacheMax}');
+    expect(web.asked, hasLength(n), reason: 'the newest is kept');
+    await mb.artistWikidata('a0');
+    expect(web.asked, hasLength(n + 1), reason: 'the oldest is gone');
+  });
+
+  test('a request cancelled while queued never reaches the network', () async {
+    final token = CancelToken();
+    final first = mb.artistWikidata('a1');
+    final second = mb.artistWikidata('a2', cancel: token);
+    token.cancel();
+    await first;
+    await expectLater(second, throwsA(predicate((e) => e is DioException && CancelToken.isCancel(e))));
+    expect(web.asked, hasLength(1));
   });
 }

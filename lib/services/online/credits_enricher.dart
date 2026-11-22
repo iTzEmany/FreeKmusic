@@ -160,7 +160,7 @@ class CreditsEnricher {
           'musicbrainz',
           'musicbrainz isrc',
           () => memoPerTrack(
-            'isrc:$isrc',
+            'isrc:$isrc:${t.title}:${t.artist ?? ''}',
             () => mb.recordingsByIsrc(
               isrc,
               t.durationMs,

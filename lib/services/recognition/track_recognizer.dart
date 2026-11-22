@@ -257,7 +257,7 @@ class TrackRecognizer {
     }
     if (isrc != null) {
       final recs = await memoPerTrack(
-        'isrc:$isrc',
+        'isrc:$isrc:${query?.title}:${query?.artist}',
         () => musicBrainz.recordingsByIsrc(
           isrc!,
           t.durationMs,

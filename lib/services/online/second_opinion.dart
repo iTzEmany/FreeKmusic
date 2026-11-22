@@ -161,7 +161,7 @@ class SecondOpinion {
     final fields = <EnrichField>{};
     var limited = false;
     final resultArtist = r.artists.firstOrNull;
-    final artist = (t.artist ?? '').trim().isEmpty && !t.userEdited
+    var artist = (t.artist ?? '').trim().isEmpty && !t.userEdited
         ? resultArtist
         : null;
     if (artist != null) fields.add(EnrichField.artist);
@@ -216,11 +216,10 @@ class SecondOpinion {
             isrc: t.isrc,
             cancel: cancel,
           );
-        } on MusicBrainzUnavailable catch (e) {
+        } on Exception catch (e) {
+          // MusicBrainz resting, refusing or down never stops the check.
+          if (e is DioException && CancelToken.isCancel(e)) rethrow;
           AppLog.w('second opinion genre skipped: $e');
-        } on DioException catch (e) {
-          if (CancelToken.isCancel(e)) rethrow;
-          AppLog.w('second opinion genre failed: $e');
         }
         if (genre != null) fields.add(EnrichField.genre);
       }
@@ -243,14 +242,25 @@ class SecondOpinion {
     // The user may have edited the track meanwhile: drop what is filled now.
     final cur = await tracks.getById(t.id);
     if (cur != null) {
+      if (cur.userEdited || (cur.artist ?? '').trim().isNotEmpty) {
+        fields.remove(EnrichField.artist);
+        artist = null;
+      }
+      if (cur.userEdited || cur.album != null) {
+        fields.remove(EnrichField.album);
+        album = null;
+      }
+      if (cur.trackNumber != null) fields.remove(EnrichField.trackNumber);
+      if (cur.hasCover) fields.remove(EnrichField.cover);
       if (cur.year != null) fields.remove(EnrichField.year);
       if (cur.genre != null) fields.remove(EnrichField.genre);
       if (cur.lyricsPlain != null || cur.lyricsSynced != null) {
         fields.remove(EnrichField.lyrics);
       }
     }
+    var wrote = false;
     try {
-      await _write(t, fields, artist, album, year, number, genre, cover, lyrics, cancel);
+      wrote = await _write(t, fields, artist, album, year, number, genre, cover, lyrics, cancel);
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) rethrow;
       AppLog.w('second opinion write failed: $e');
@@ -264,14 +274,14 @@ class SecondOpinion {
     );
     return SecondOpinionOutcome(
       limited ? SecondOpinionKind.throttled : SecondOpinionKind.confirmed,
-      written: fields,
+      written: wrote ? fields : const {},
       videoId: r.id,
     );
   }
 
   /// Writes through the engine's committer: the artist first (the commit only
   /// fills the empty fields of the row), the rest as one gather (D-683).
-  Future<void> _write(
+  Future<bool> _write(
     Track t,
     Set<EnrichField> fields,
     String? artist,
@@ -283,16 +293,19 @@ class SecondOpinion {
     String? lyrics,
     CancelToken? cancel,
   ) async {
-    if (fields.isEmpty) return;
+    if (fields.isEmpty) return false;
     final writer = EnrichWriter(engine.db, tracks);
-    if (artist != null) {
+    // The row as it is now: the user may have edited it since [t] was read.
+    var cur = await tracks.getById(t.id);
+    if (cur == null) return false; // deleted meanwhile
+    if (artist != null && !cur.userEdited && (cur.artist ?? '').trim().isEmpty) {
       await writer.writeFields(
-        t,
-        EnrichmentProposal(track: t, meta: ItunesMatch(title: t.title, artist: artist)),
+        cur,
+        EnrichmentProposal(track: cur, meta: ItunesMatch(title: cur.title, artist: artist)),
         {EnrichField.artist},
       );
+      cur = await tracks.getById(t.id) ?? cur;
     }
-    final cur = await tracks.getById(t.id) ?? t;
     final g = EnrichGather(t.id, {EnrichPart.meta: PartOutcome.found})
       ..track = cur
       ..now = nowMs()
@@ -316,6 +329,8 @@ class SecondOpinion {
       g.cover = await engine.covers.fetch(key, coverUrl, cancel: cancel);
       g.coverAlbum = key;
     }
-    await engine.commit([g]);
+    final r = (await engine.commit([g])).single;
+    // Lost write, or the track gone meanwhile (every part skipped): nothing was filled.
+    return !r.lost && r.out[EnrichPart.meta] != PartOutcome.skipped;
   }
 }

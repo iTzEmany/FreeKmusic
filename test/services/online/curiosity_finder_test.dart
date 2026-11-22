@@ -1,6 +1,7 @@
 import 'package:codecore/providers/online_providers.dart' show ytmQuiet;
 import 'package:codecore/services/online/youtube_service.dart' show YtException, YtErrorKind;
 import 'package:codecore/services/online/curiosity_finder.dart';
+import 'package:codecore/services/online/enrich_gather.dart' show withTrackMemo;
 import 'package:codecore/services/online/discogs_client.dart';
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/musicbrainz_client.dart';
@@ -10,9 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// All three services behind one fake: it answers by address and records the calls.
 class _World implements WebClient {
-  _World({this.mb = true, this.mbRecordings = const [], this.work, this.artistQ, this.songQ, this.sitelinks = const {}, this.pages = const {}, this.wikipediaLimited = false, this.discogsNotes});
+  _World({this.mb = true, this.mbRecordings = const [], this.work, this.artistQ, this.songQ, this.sitelinks = const {}, this.pages = const {}, this.wikipediaLimited = false, this.discogsNotes, this.mbDown = false});
 
-  final bool mb;
+  final bool mb, mbDown;
   final List<Map<String, Object?>> mbRecordings;
   final String? work, artistQ, songQ;
   final Map<String, Map<String, String>> sitelinks; // Q -> lang -> title
@@ -30,7 +31,9 @@ class _World implements WebClient {
     final host = Uri.parse(url).host;
     final path = Uri.parse(url).path;
     if (host == 'musicbrainz.org') {
+      if (mbDown) throw WebUnavailableException(url, 503);
       if (!mb) return null;
+      if (path.contains('/isrc/')) return {'recordings': mbRecordings};
       if (path.endsWith('/recording')) return {'recordings': mbRecordings};
       if (path.contains('/release-group/')) {
         return {'relations': [{'type': 'discogs', 'url': {'resource': 'https://www.discogs.com/master/26600'}}]};
@@ -163,6 +166,22 @@ void main() {
     final r = await _finder(w).find('Whatever', 'Nobody', 'it');
     expect(r.artist!.source.toString(), 'https://it.wikipedia.org/wiki/Nobody');
     expect(w.calls.any((c) => c.startsWith('musicbrainz.org/ws/2/artist')), isTrue);
+  });
+
+  test('MusicBrainz resting is an error of the track, not «nothing found»', () async {
+    final r = await _finder(_World(mbDown: true)).find('Dirty Work', 'Steely Dan', 'it', isrc: 'X1');
+    expect(r.songError, isA<MusicBrainzUnavailable>());
+    expect(r.artistError, isA<MusicBrainzUnavailable>());
+  });
+
+  test('inside one track memo an ISRC shared by two titles gives each its own recording', () async {
+    final w = _World(mbRecordings: [_rec('r1', 'Song One', 'A1', 'a1'), _rec('r2', 'Song Two', 'A2', 'a2')]);
+    final f = _finder(w);
+    await withTrackMemo(() async {
+      final one = await f.find('Song One', 'A1', 'it', isrc: 'X1');
+      final two = await f.find('Song Two', 'A2', 'it', isrc: 'X1');
+      expect([one.recordingId, two.recordingId], ['r1', 'r2']);
+    });
   });
 
   test('Wikipedia refusing is reported per part and the finder does not throw', () async {
