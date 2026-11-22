@@ -254,7 +254,7 @@ class TrackCorrections {
   }
 
   Future<TagFileOutcome> _toFile(Track t, TrackEdit edit, {bool backup = true}) async {
-    if (!_editor.writesFiles) return TagFileOutcome.none; // option off: nothing to block or to tell
+    if (t.kind == kStreamKind || !_editor.writesFiles) return TagFileOutcome.none; // no file, or option off: nothing to block or to tell
     final why = await _fileBlock(t.path);
     if (why != null) return TagFileOutcome(attempted: 1, failures: {t.id: why});
     return _editor.writeToFiles([t], (_) => edit.toChanges(), backup: backup);

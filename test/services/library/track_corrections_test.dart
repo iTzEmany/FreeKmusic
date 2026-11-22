@@ -348,6 +348,37 @@ void main() {
     expect((await log()).map((e) => e.failed), [0]);
   });
 
+  test('reverting a correction on a streaming row asks nothing and tells nothing', () async {
+    fileWrites = true;
+    final id = await r.add(title: 'Junk', artist: 'Channel', path: 'stream:youtube:abc', kind: kStreamKind);
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    asked = 0;
+    expect(await corrections.revert((await log()).first), isTrue);
+    expect(asked, 0);
+    expect((await log()).map((e) => e.failed), everyElement(0));
+  });
+
+  for (final byUser in [false, true]) {
+    test('a failing file check (byUser $byUser): ids not read, the failure is told only for the user', () async {
+      fileWrites = true;
+      blockError = StateError('no storage');
+      var reads = 0;
+      editor.onFileIds = (_) async => reads++;
+      final id = await track();
+      expect(await corrections.apply(await row(id), _rec(), byUser: byUser), isTrue);
+      expect(reads, 0);
+      expect((await log()).where((e) => e.failed != 0), byUser ? hasLength(1) : isEmpty);
+    });
+  }
+
+  test('a hand correction on the playing file writes it all the same', () async {
+    fileWrites = true;
+    final id = await track();
+    playing = (await row(id)).path;
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect(writer.writes, isNotEmpty);
+  });
+
   test('a blocked file: its ids are not read', () async {
     fileWrites = true;
     blocked = TagWriteReason.readOnly;
