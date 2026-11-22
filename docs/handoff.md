@@ -1,12 +1,12 @@
 # Handoff
-Aggiornato: 2026-11-22 · Stato: fase 135 fusa (#210: permesso audio revocato, errori senza raffica, karaoke alla riapertura, correzioni sulle righe stream); fasi 136-147 in `docs/fasi/`; schema DB v20, ultima decisione D-699.
+Aggiornato: 2026-11-22 · Stato: fasi 135 (#210, riproduzione affidabile) e 136 (#212: MusicBrainz in coda con pausa 1-5-15 e cache, righe stream sul motore unico, completer che rispetta Jam e rete a consumo, brani strumentali) fuse; fasi 137-147 in `docs/fasi/`; schema DB v21, ultima decisione D-700.
 
 ## Prossima sessione
-Prompt di avvio: `/obiettivo fase 136`
+Prompt di avvio: `/obiettivo fase 137` (in una chat nuova: costa molto meno)
 
 ## Prossimi obiettivi
-1. Fase 136 «Arricchimento unico e leggero» (MusicBrainz in coda con cooldown, righe stream sul motore unico, strumentali, migrazione v21); poi 137 → 147 nell'ordine di D-672 (una PR per fase, un commit per task). Dalla 135 restano due task aggiunti: 140.10b (uscita unica dei caricamenti falliti) e 146.11 (debounce alla chiusura).
-1b. Per vedere la 135 sul Motorola serve una nuova versione: la prova completa è nella 147, ma una Release intermedia (1.6.5) si può chiedere quando vuoi.
+1. Fase 137 «Backup, ripristino, aggiornamento» (brani non trovati nel merge, riavvio dopo «Sostituisci», tocco sul popup della nuova versione); poi 138 → 147 nell'ordine di D-672 (una PR per fase, un commit per task). Dalla 135 restano due task aggiunti: 140.10b (uscita unica dei caricamenti falliti) e 146.11 (debounce alla chiusura).
+1b. Per vedere 135 e 136 sul Motorola serve una nuova versione: la prova completa è nella 147, ma una Release intermedia (1.6.5) si può chiedere quando vuoi.
 2. Le fasi 143, 145 e 146 hanno task «proponi all'utente prima di decidere» (dove vive il Worker; pagina statica e limite m3u8; sync automatico e MQTT); la 147 chiede come mettere la build sul Motorola.
 
 ## Tocca a te
