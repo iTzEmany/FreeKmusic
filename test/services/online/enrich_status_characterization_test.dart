@@ -204,4 +204,20 @@ void main() {
     expect(await r.svc.apply(proposal, <EnrichField>{}), isTrue);
     expect(await statusOf(id), 0);
   });
+
+  group('completeOne as the engine runs it today', () {
+    test('found: status 1; nothing: status 2 and a second call within the window asks nothing', () async {
+      final a = await r.add(path: '/a.mp3');
+      await r.engine.completeOne(a, {EnrichPart.meta});
+      expect(await statusOf(a), 1);
+
+      r.web.itunes = ItunesMode.empty;
+      final b = await r.add(path: '/b.mp3');
+      await r.engine.completeOne(b, {EnrichPart.meta});
+      expect(await statusOf(b), 2);
+      final asked = r.web.count('itunes');
+      await r.engine.completeOne(b, {EnrichPart.meta});
+      expect(r.web.count('itunes'), asked, reason: 'the «nothing» mark holds: no new request');
+    });
+  });
 }

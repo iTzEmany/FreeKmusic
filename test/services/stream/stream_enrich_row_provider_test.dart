@@ -39,4 +39,39 @@ void main() {
     await pumpEventQueue();
     expect(identical(enrich(row), first), isFalse);
   });
+
+  Future<(EnrichRig, ProviderContainer)> open() async {
+    final rig = EnrichRig();
+    addTearDown(rig.dispose);
+    final c = ProviderContainer(overrides: [
+      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      trackRepositoryProvider.overrideWithValue(rig.repo),
+    ]);
+    addTearDown(c.dispose);
+    return (rig, c);
+  }
+
+  test('characterization: D-683 will change this: the stream row also rewrites title and artist', () async {
+    final (rig, c) = await open();
+    final row = await rig.add(kind: kStreamKind, path: 'youtube:v1', title: 'song', artist: 'band');
+    await c.read(streamEnrichRowProvider)(row);
+    final t = (await rig.repo.getById(row))!;
+    expect([t.title, t.artist, t.album], ['Song', 'Band', 'New Album']);
+    expect(t.enrichStatus, 1);
+  });
+
+  test('characterization: D-683 will change this: nothing found keeps status untried, a second listen asks again', () async {
+    final (rig, c) = await open();
+    rig.web.itunes = ItunesMode.empty;
+    rig.chain.result = null;
+    final row = await rig.add(kind: kStreamKind, path: 'youtube:v1');
+    final enrich = c.read(streamEnrichRowProvider);
+    await enrich(row);
+    await pumpEventQueue();
+    final first = (rig.web.count('itunes'), rig.chain.calls);
+    expect((await rig.repo.getById(row))!.enrichStatus, 0);
+    await enrich(row);
+    expect((rig.web.count('itunes'), rig.chain.calls), (first.$1 * 2, first.$2 * 2));
+    expect(first.$1, greaterThan(0));
+  });
 }

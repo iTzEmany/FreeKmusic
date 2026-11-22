@@ -1,16 +1,20 @@
 import 'dart:async';
 
+import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/data/repositories/activity_log_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/enrich_completer_providers.dart';
+import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/providers/user_activity_provider.dart';
 import 'package:codecore/services/online/lrclib_client.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:codecore/services/recognition/track_identity.dart' show kRecogVersion;
@@ -73,12 +77,18 @@ class _Watched extends UserActivity {
   }
 }
 
+class _ActiveJam extends JamController {
+  @override
+  JamUiState build() => const JamUiState(phase: JamPhase.active, role: JamRole.host);
+}
+
 class _Job extends EnrichJobNotifier {
   @override
   EnrichJobState build() => const EnrichJobState(running: true);
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late EnrichRig r;
   late UserActivity user;
   late ProviderContainer c;
@@ -447,5 +457,21 @@ void main() {
     );
     await until(() => r.chain.calls == 1);
     await until(() => !state().running);
+  });
+
+  test('characterization: D-683 will change this: the run works on a metered network during a Jam', () async {
+    const channel = MethodChannel('codecore/net-completer');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async => {'metered': true, 'online': true});
+    addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null));
+    user = UserActivity(); // idle
+    c = open(extra: [
+      networkProbeProvider.overrideWithValue(NetworkProbe(channel: channel, android: true)),
+      jamProvider.overrideWith(_ActiveJam.new),
+    ]);
+    await track();
+    await completer().start();
+    expect(r.chain.calls, 1, reason: 'the completer reads neither the network kind nor the Jam');
   });
 }
