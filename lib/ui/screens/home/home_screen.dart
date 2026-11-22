@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'audio_permission_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/home_sections.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_providers.dart';
+import '../../../providers/permission_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
@@ -19,6 +19,7 @@ import 'home_blocks.dart';
 import 'home_bottom_rows.dart';
 import 'resume_rows.dart';
 import '../../widgets/cc_app_bar.dart';
+import 'audio_permission_banner.dart';
 
 /// The clock of the greeting; tests override it to be independent of the time of day.
 final clockProvider = Provider<DateTime Function()>((_) => DateTime.now);
@@ -115,7 +116,7 @@ class HomeScreen extends ConsumerWidget {
                 return ListView(
                   children: [
                     header,
-                    const AudioPermissionBanner(),
+                    if (!ref.watch(audioPermissionProvider)) const AudioPermissionBanner(),
                     if (wide) ...[
                       // Desktop (mockup): invite and counters left, Riprendi right.
                       Row(
