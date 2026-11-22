@@ -119,6 +119,7 @@ void main() {
   late TrackCorrections corrections;
   late _HookEditor editor;
   TagWriteReason? blocked;
+  var asked = 0;
   Object? blockError;
   late bool fileWrites;
   String? playing;
@@ -159,6 +160,7 @@ void main() {
       editor,
       r.credits,
       fileBlock: (_) async {
+        asked++;
         if (blockError != null) throw blockError!;
         return blocked;
       },
@@ -319,7 +321,7 @@ void main() {
     expect((await log()).map((e) => e.failed), [0]);
   });
 
-  test('characterization: D-686 will change this: a blocked file on an automatic correction leaves no failure line', () async {
+  test('a blocked file on an automatic correction leaves no failure line', () async {
     fileWrites = true;
     blocked = TagWriteReason.readOnly;
     final id = await track();
@@ -329,27 +331,33 @@ void main() {
     expect((await log()).map((e) => e.failed), [0]);
   });
 
-  test('characterization: D-686 will change this: a streaming row is still tried as a file, the failure goes in the Registro for the user', () async {
+  test('a streaming row has no file: no failure line, no question to fileBlock, the DB is corrected', () async {
     fileWrites = true;
-    blocked = TagWriteReason
-        .unsupported; // what the real check says of a path that is no file
+    blocked = TagWriteReason.unsupported;
+    asked = 0;
     final id = await r.add(
       title: 'Junk',
       artist: 'Channel',
       path: 'stream:youtube:abc',
       kind: kStreamKind,
     );
-    expect(
-      await corrections.apply(await row(id), _rec(), byUser: true),
-      isTrue,
-    );
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
     expect((await row(id)).title, 'Real Title');
     expect(writer.writes, isEmpty);
+    expect(asked, 0);
+    expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('a blocked file: its ids are not read', () async {
+    fileWrites = true;
+    blocked = TagWriteReason.readOnly;
+    var reads = 0;
+    editor.onFileIds = (_) async => reads++;
+    final id = await track();
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect(reads, 0);
     final failed = (await log()).where((e) => e.failed != 0).single;
-    expect(
-      [failed.kind, (jsonDecode(failed.detail!) as Map)['file']],
-      ['correction', 'unsupported'],
-    );
+    expect((jsonDecode(failed.detail!) as Map)['file'], 'readOnly');
   });
 
   test('with the file writes off a blocked file is not asked about and nothing is told', () async {
