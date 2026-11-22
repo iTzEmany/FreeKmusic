@@ -343,6 +343,67 @@ void main() {
       expect(errors.map((e) => e.reason), [PlaybackFailureReason.permissionDenied, PlaybackFailureReason.permissionDenied]);
     });
 
+    test('an unplayable file without the permission is reported as permissionDenied', () async {
+      await withPermission(() async => false);
+      backend.failMessages['/m/a.mp3'] = 'boom';
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.single.reason, PlaybackFailureReason.permissionDenied);
+    });
+
+    test('after the refusal: stopped once, bookmark kept, a ▶ loads the track again', () async {
+      var granted = false;
+      await withPermission(() async => granted);
+      await repo.setResumePosition(ids[0], 600000);
+      backend.failing.add('/m/a.mp3');
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(backend.playing, isFalse);
+      expect(backend.stopCalls, 1);
+      expect((await repo.getById(ids[0]))!.resumePositionMs, 600000);
+      granted = true;
+      backend.failing.clear();
+      await handler.play();
+      await settle();
+      expect(backend.loaded.last, '/m/a.mp3');
+    });
+
+    test('a load replaced while the permission is being asked reports nothing', () async {
+      final gate = Completer<bool>();
+      await withPermission(() => gate.future);
+      backend.failing.add('/m/a.mp3');
+      final first = handler.playQueue(ids, 0);
+      await settle();
+      await handler.playQueue(ids, 1);
+      await settle();
+      gate.complete(false);
+      await first;
+      await settle();
+      expect(errors, isEmpty);
+      expect(backend.stopCalls, 0);
+      expect(backend.loaded.last, '/m/b.mp3');
+    });
+
+    test('a failing permission check counts as an ordinary load error', () async {
+      await withPermission(() async => throw StateError('channel'));
+      backend.failing.add('/m/a.mp3');
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.single.reason, PlaybackFailureReason.fileMissing);
+      expect(backend.loaded.last, '/m/b.mp3');
+    });
+
+    test('a cold restore with the permission denied is silent and keeps the bookmark', () async {
+      await withPermission(() async => false);
+      await repo.setResumePosition(ids[0], 600000);
+      backend.failing.add('/m/a.mp3');
+      await handler.restore(ids, 0, Duration.zero);
+      await settle();
+      expect(errors, isEmpty);
+      expect(handler.playbackState.value.processingState, isNot(AudioProcessingState.loading));
+      expect((await repo.getById(ids[0]))!.resumePositionMs, 600000);
+    });
+
     test('with the permission granted a failing file behaves as before', () async {
       await withPermission(() async => true);
       backend.failing.add('/m/a.mp3');
@@ -351,6 +412,23 @@ void main() {
       expect(errors.single.reason, PlaybackFailureReason.fileMissing);
       expect(backend.loaded.last, '/m/b.mp3');
     });
+  });
+
+  test('a track chosen by hand after the limit starts a new series', () async {
+    final xs = await addTracks(8);
+    for (var i = 0; i < 8; i++) {
+      backend.failing.add('/x/$i.mp3');
+    }
+    await handler.playQueue(xs, 0);
+    await settle();
+    errors.clear();
+    await handler.skipToQueueItem(4);
+    await settle();
+    expect(errors.map((e) => e.streak), [1, 2, 3]);
+  });
+
+  test('a PlaybackFailure built without a streak counts one', () {
+    expect(const PlaybackFailure('t', PlaybackFailureReason.unplayable).streak, 1);
   });
 
   test('a load interrupted by a newer one is not a failure', () async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/play_history_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
@@ -697,6 +698,53 @@ void main() {
     expect(failures, isEmpty);
     expect(handler.queueIds, [bad, ids[0]]);
     expect(handler.currentIndex, 0);
+    expect(backend.playing, isFalse);
+  });
+
+  group('cold restore of a saved stream row, offline (D-679)', () {
+    Future<int> streamRow() => db.into(db.tracks).insert(TracksCompanion.insert(
+        path: 'stream:youtube:v1', title: 'S', albumKey: 'k', format: 'm4a',
+        sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: const Value(kStreamKind), saved: const Value(true)));
+
+    test('with a file after it, the queue stays on the stream row', () async {
+      final s = await streamRow();
+      preparer.isOnline = () async => false;
+      await handler.restore([s, ids[0]], 0, Duration.zero);
+      await settle();
+      expect(failures, isEmpty);
+      expect(handler.currentIndex, 0);
+      expect(backend.loaded, isEmpty);
+      expect(handler.playbackState.value.processingState, isNot(AudioProcessingState.loading));
+    });
+
+    test('alone, the track is not cleared and nothing is reported', () async {
+      final s = await streamRow();
+      preparer.isOnline = () async => false;
+      await handler.restore([s], 0, Duration.zero);
+      await settle();
+      expect(failures, isEmpty);
+      expect(handler.currentIndex, 0);
+      expect(handler.playbackState.value.processingState, isNot(AudioProcessingState.loading));
+    });
+
+    test('a ▶ pressed while it loads makes the failure normal again', () async {
+      final s = await streamRow();
+      final gate = preparer.gates['youtube:v1'] = Completer<void>();
+      preparer.failing.add('youtube:v1');
+      final r = handler.restore([s, ids[0]], 0, Duration.zero);
+      await settle();
+      await handler.play();
+      gate.complete();
+      await r;
+      await settle();
+      expect(failures.first.reason, PlaybackFailureReason.onlineUnavailable);
+    });
+  });
+
+  test('a cold restore whose current track is gone from the library stays quiet', () async {
+    await handler.restore([9999, ids[0]], 0, Duration.zero);
+    await settle();
+    expect(failures, isEmpty);
     expect(backend.playing, isFalse);
   });
 
