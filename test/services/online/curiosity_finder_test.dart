@@ -192,7 +192,7 @@ void main() {
       }, now: () => t);
       await mb.recordings('Mother', 'Pink Floyd');
       await mb.artistWikidata('a1');
-      await mb.artistWikidata('a1');
+      await mb.artistWikidata('a2'); // the same request would come from the cache (D-683)
       expect(pauses, [MusicBrainzClient.gap, MusicBrainzClient.gap]);
     });
 
@@ -206,13 +206,13 @@ void main() {
       expect(recs.map((r) => r.id), ['r3']);
     });
 
-    test('a non-answer is tried once more, then given up as nothing', () async {
+    test('a null answer (404) is final: asked once, no retry (D-683)', () async {
       final w = _World(mb: false);
       final pauses = <Duration>[];
       final mb = MusicBrainzClient(w, pause: (d) async => pauses.add(d));
       expect(await mb.recordings('Mother', 'Pink Floyd'), isEmpty);
-      expect(w.calls.where((c) => c.contains('/recording')), hasLength(2));
-      expect(pauses, contains(const Duration(seconds: 2)));
+      expect(w.calls.where((c) => c.contains('/recording')), hasLength(1));
+      expect(pauses, isEmpty);
     });
 
     test('an artist is taken only on an exact name with a high score', () async {

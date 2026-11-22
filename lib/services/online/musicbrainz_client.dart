@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import 'credits.dart';
 import 'http_client.dart';
 import 'wikipedia_client.dart';
@@ -61,7 +64,7 @@ class MbArtistOrigin {
   final String? country, wikidata;
 }
 
-/// MusicBrainz did not answer (503 or network) even after the second try.
+/// MusicBrainz did not answer (503 or network), or the client is resting after a 503.
 class MusicBrainzUnavailable implements Exception {
   const MusicBrainzUnavailable(this.what);
 
@@ -81,7 +84,7 @@ class MusicBrainzClient {
     Future<void> Function(Duration)? pause,
     DateTime Function()? now,
   }) : _pause = pause ?? Future<void>.delayed,
-       _now = now ?? DateTime.now;
+       _now = now ?? (() => DateTime.fromMillisecondsSinceEpoch(nowMs()));
 
   final WebClient _web;
   final Future<void> Function(Duration) _pause;
@@ -91,45 +94,75 @@ class MusicBrainzClient {
 
   /// A little over one second between two requests.
   static const gap = Duration(milliseconds: 1100);
-  DateTime? _last;
 
-  Future<Map?> _get(
-    String path,
-    Map<String, String> query,
-    CancelToken? cancel, {
-    bool retry = true,
-    bool strict = false,
-  }) async {
-    // The service answers 503 now and then; a non-answer is tried once more.
-    for (var attempt = 0; attempt < (retry ? 2 : 1); attempt++) {
-      final last = _last;
-      if (last != null) {
-        final wait = gap - _now().difference(last);
-        if (!wait.isNegative && wait > Duration.zero) await _pause(wait);
-      }
-      _last = _now();
-      Object? res;
-      try {
-        res = await _web.getJson(
-          '$_base/$path',
-          query: {...query, 'fmt': 'json'},
-          cancel: cancel,
-          strict: strict,
-        );
-        if (strict && res == null) return null; // strict: null is a 404, final
-      } on WebUnavailableException catch (e) {
-        if (attempt == (retry ? 1 : 0)) throw MusicBrainzUnavailable(path);
-        AppLog.w('musicbrainz $path: $e');
-      }
-      if (res is Map) return res;
-      if (attempt == 0) await _pause(const Duration(seconds: 2));
+  /// Rest after the 1st, 2nd, 3rd (and later) 503 in a row (D-683).
+  static const rests = [Duration(minutes: 1), Duration(minutes: 5), Duration(minutes: 15)];
+
+  /// How long an answer, «not found» included, is remembered.
+  static const cacheTtl = Duration(hours: 6);
+
+  /// Runs [body] with the cache skipped for reading (the answers still refresh it): a forced
+  /// or manual refresh must see MusicBrainz as it is now. Zone value, so it reaches every call inside.
+  static Future<T> fresh<T>(Future<T> Function() body) =>
+      runZoned(body, zoneValues: {#mbFresh: true});
+
+  DateTime? _last, _restUntil;
+  var _strikes = 0;
+  Future<void> _tail = Future<void>.value();
+  // shortcut: never pruned, a few KB per song; upgrade if the app runs for days on a huge library.
+  final _cache = <String, ({DateTime at, Map? value})>{};
+
+  /// When the resting after a 503 ends; null when the client is not resting.
+  DateTime? get restUntil {
+    final until = _restUntil;
+    return until != null && _now().isBefore(until) ? until : null;
+  }
+
+  bool get resting => restUntil != null;
+
+  /// One request at a time, in call order; throws [MusicBrainzUnavailable] on a 503 / no network
+  /// and while resting. Null is a 404.
+  Future<Map?> _get(String path, Map<String, String> query, CancelToken? cancel) {
+    final turn = _tail.then((_) => _fetch(path, query, cancel));
+    _tail = turn.then<void>((_) {}, onError: (_) {}); // the error goes to the caller, not the queue
+    return turn;
+  }
+
+  Future<Map?> _fetch(String path, Map<String, String> query, CancelToken? cancel) async {
+    final key = '$path?${(query.entries.toList()..sort((a, b) => a.key.compareTo(b.key))).map((e) => '${e.key}=${e.value}').join('&')}';
+    final hit = _cache[key];
+    if (hit != null && Zone.current[#mbFresh] != true && _now().difference(hit.at) < cacheTtl) return hit.value;
+    final until = restUntil;
+    if (until != null) throw MusicBrainzUnavailable('$path (resting until $until)');
+    final last = _last;
+    if (last != null) {
+      final wait = gap - _now().difference(last);
+      if (wait > Duration.zero) await _pause(wait);
     }
-    return null;
+    _last = _now();
+    try {
+      final res = await _web.getJson(
+        '$_base/$path',
+        query: {...query, 'fmt': 'json'},
+        cancel: cancel,
+        strict: true,
+      );
+      _strikes = 0;
+      final value = res is Map ? res : null;
+      _cache[key] = (at: _now(), value: value);
+      return value;
+    } on WebUnavailableException catch (e) {
+      final rest = rests[_strikes < rests.length ? _strikes : rests.length - 1];
+      _strikes++;
+      _restUntil = _now().add(rest);
+      AppLog.w('musicbrainz $path: $e, resting ${rest.inMinutes} min');
+      throw MusicBrainzUnavailable(path);
+    }
   }
 
   /// The credits of recording [mbid] in one request. Empty when unknown;
   /// throws [MusicBrainzUnavailable] when the service does not answer after
-  /// the retry (network, timeout, 5xx); an unknown mbid (404) is just empty.
+  /// a 503 or while resting (network, timeout, 5xx); an unknown mbid (404) is just empty.
   Future<List<TrackCredit>> recordingCredits(
     String mbid, {
     CancelToken? cancel,
@@ -138,7 +171,6 @@ class MusicBrainzClient {
       'recording/$mbid',
       {'inc': 'artist-rels+work-rels+work-level-rels'},
       cancel,
-      strict: true,
     );
     return data == null
         ? const []
@@ -206,20 +238,12 @@ class MusicBrainzClient {
     String? title,
     String? artist,
     CancelToken? cancel,
-    bool strict = false,
+    @Deprecated('every request is strict now') bool strict = false,
   }) async {
     final code = isrc.trim().toUpperCase();
     if (code.isEmpty) return const [];
-    // 404 means an unknown ISRC: no retry. With [strict] (credits) a network
-    // error or 5xx throws MusicBrainzUnavailable while 404 is just «nothing
-    // found», so «nothing found» is never remembered by mistake.
-    final data = await _get(
-      'isrc/$code',
-      {'inc': 'artist-credits'},
-      cancel,
-      retry: false,
-      strict: strict,
-    );
+    // A 404 is an unknown ISRC (empty); a 503 throws, so «nothing found» is never remembered by mistake.
+    final data = await _get('isrc/$code', {'inc': 'artist-credits'}, cancel);
     final list = data?['recordings'];
     if (list is! List) return const [];
     // Without a [title] and an [artist] (dirty tags) nothing is filtered out.
@@ -274,7 +298,6 @@ class MusicBrainzClient {
       'recording/$mbid',
       {'inc': 'isrcs+artist-credits+releases+work-rels'},
       cancel,
-      strict: true,
     );
     if (r == null || r['id'] is! String || r['title'] is! String) return null;
     final credit = r['artist-credit'];
@@ -327,7 +350,6 @@ class MusicBrainzClient {
       'recording',
       {'work': workId, 'inc': 'artist-credits+work-rels', 'limit': '100'},
       cancel,
-      strict: true,
     );
     final list = data?['recordings'];
     if (list is! List) return null;
@@ -483,7 +505,6 @@ class MusicBrainzClient {
         'artist',
         {'query': 'artist:"$n"', 'limit': '5'},
         cancel,
-        strict: true,
       ),
       n,
     );
@@ -501,7 +522,6 @@ class MusicBrainzClient {
       'artist/${a['id']}',
       {'inc': 'url-rels'},
       cancel,
-      strict: true,
     );
     return MbArtistOrigin(wikidata: _wikidataOf(links));
   }

@@ -50,15 +50,13 @@ void main() {
     expect(w.asked, hasLength(1));
   });
 
-  test('recordingById: 503 once, then the answer', () async {
+  // D-683: no retry at 2 s any more; a 503 is MusicBrainzUnavailable and the client rests.
+  test('recordingById: a 503 is MusicBrainzUnavailable at once, and the client rests', () async {
     final w = _Web([const WebUnavailableException('503'), 'recording_imagine_work']);
-    expect((await _mb(w).recordingById('x'))?.title, 'Imagine');
-    expect(w.asked, hasLength(2));
-  });
-
-  test('recordingById: 503 twice is MusicBrainzUnavailable', () async {
-    final w = _Web([const WebUnavailableException('503'), const WebUnavailableException('503')]);
-    expect(_mb(w).recordingById('x'), throwsA(isA<MusicBrainzUnavailable>()));
+    final mb = _mb(w);
+    await expectLater(mb.recordingById('x'), throwsA(isA<MusicBrainzUnavailable>()));
+    expect(w.asked, hasLength(1));
+    expect(mb.resting, isTrue);
   });
 
   test('recordingById: the cover attribute of the performance is kept on the work link', () async {
