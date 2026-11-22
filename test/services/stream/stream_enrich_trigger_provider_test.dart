@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/providers/database_providers.dart';
@@ -28,7 +30,8 @@ void main() {
     container = ProviderContainer(overrides: [
       currentTrackProvider.overrideWith((ref) => cur.stream),
       onlineEntriesProvider.overrideWithValue(online),
-      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      enrichEngineProvider.overrideWithValue(rig.engine),
+      settingsProvider.overrideWith(_On.new),
       trackRepositoryProvider.overrideWithValue(rig.repo),
     ]);
     container.listen(streamEnrichTriggerProvider, (_, _) {});
@@ -79,4 +82,9 @@ void main() {
     await play(track(row, kind: kStreamKind));
     expect(rig.chain.calls, 1);
   });
+}
+
+class _On extends SettingsNotifier {
+  @override
+  AppSettings build() => AppSettings(autoEnrich: true, autoLyrics: true, autoCuriosities: true);
 }

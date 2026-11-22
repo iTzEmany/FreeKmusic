@@ -9,11 +9,8 @@ import '../data/repositories/track_kinds.dart';
 import '../services/audio/codecore_audio_handler.dart' show CodecoreAudioHandler;
 import '../services/audio/online_entries.dart' show isOnlineId;
 import '../services/online/youtube_service.dart' show YtResult;
-import '../services/online/enrich_parts.dart' show EnrichStatus;
 import '../services/online/media_publisher.dart';
-import '../services/online/synthetic_track.dart';
 import '../services/stream/stream_enrich_trigger.dart';
-import '../services/online/enrichment_service.dart';
 import '../services/stream/stream_cache.dart';
 import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import '../services/stream/stream_preparer.dart';
@@ -73,39 +70,16 @@ final streamPreparerProvider = Provider<StreamPreparer>((ref) {
   return preparer;
 });
 
-/// Enriches a shadow row (tags, lyrics, cover) as soon as its row exists (D-351).
-Future<void> enrichStreamRow(EnrichmentService enrichment, TrackRepository tracks, int rowId) async {
-  final row = await tracks.getById(rowId);
-  if (row == null || row.kind != kStreamKind || row.enrichStatus != EnrichStatus.untried.code) return;
-  final proposal = await enrichment.propose(syntheticTrack(
-    title: row.title,
-    artist: row.artist,
-    album: row.album,
-    durationMs: row.durationMs,
-    kind: kStreamKind,
-  ));
-  if (proposal.limited) return; // a refusal is not «nothing found»: next listen retries
-  await enrichment.apply(
-    EnrichmentProposal(
-      track: row,
-      meta: proposal.meta,
-      lyrics: proposal.lyrics,
-      curiosity: proposal.curiosity,
-      disc: proposal.disc,
-      isrc: proposal.isrc,
-      source: proposal.source,
-    ),
-    EnrichField.values.toSet(),
-  );
-  await enrichment.saveCredits(row.id, proposal.credits);
-}
-
 /// What the trigger runs for a row; a provider so a test can watch the calls.
 /// One run per row at a time: the trigger and Shuffle+'s block share it (D-353).
 final streamEnrichRowProvider = Provider<Future<void> Function(int rowId)>((ref) {
   final running = <int, Future<void>>{};
   return (id) => running[id] ??=
-      enrichStreamRow(ref.read(enrichmentServiceProvider), ref.read(trackRepositoryProvider), id)
+      // The one engine (D-683): status, «nothing» marks, empty fields only, the auto switches.
+      ref
+          .read(enrichEngineProvider)
+          .completeOne(id, autoParts(ref.read(settingsProvider)))
+          .then<void>((_) {})
           .whenComplete(() {
             running.remove(id); // a block body: returning the Future would make it wait for itself
           });

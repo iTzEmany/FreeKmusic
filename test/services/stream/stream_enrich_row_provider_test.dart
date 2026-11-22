@@ -1,6 +1,8 @@
 import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/online_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/stream_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +14,8 @@ void main() {
     final rig = EnrichRig();
     addTearDown(rig.dispose);
     final c = ProviderContainer(overrides: [
-      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      enrichEngineProvider.overrideWithValue(rig.engine),
+      settingsProvider.overrideWith(_On.new),
       trackRepositoryProvider.overrideWithValue(rig.repo),
     ]);
     addTearDown(c.dispose);
@@ -28,7 +31,8 @@ void main() {
     final rig = EnrichRig();
     addTearDown(rig.dispose);
     final c = ProviderContainer(overrides: [
-      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      enrichEngineProvider.overrideWithValue(rig.engine),
+      settingsProvider.overrideWith(_On.new),
       trackRepositoryProvider.overrideWithValue(rig.repo),
     ]);
     addTearDown(c.dispose);
@@ -37,30 +41,33 @@ void main() {
     final first = enrich(row);
     await first;
     await pumpEventQueue();
-    expect(identical(enrich(row), first), isFalse);
+    final second = enrich(row);
+    expect(identical(second, first), isFalse);
+    await second;
   });
 
-  Future<(EnrichRig, ProviderContainer)> open() async {
+  Future<(EnrichRig, ProviderContainer)> open({bool on = true}) async {
     final rig = EnrichRig();
     addTearDown(rig.dispose);
     final c = ProviderContainer(overrides: [
-      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      enrichEngineProvider.overrideWithValue(rig.engine),
+      settingsProvider.overrideWith(on ? _On.new : _Off.new),
       trackRepositoryProvider.overrideWithValue(rig.repo),
     ]);
     addTearDown(c.dispose);
     return (rig, c);
   }
 
-  test('characterization: D-683 will change this: the stream row also rewrites title and artist', () async {
+  test('D-683: a stream row keeps its title and artist, only empty fields are filled', () async {
     final (rig, c) = await open();
     final row = await rig.add(kind: kStreamKind, path: 'youtube:v1', title: 'song', artist: 'band');
     await c.read(streamEnrichRowProvider)(row);
     final t = (await rig.repo.getById(row))!;
-    expect([t.title, t.artist, t.album], ['Song', 'Band', 'New Album']);
+    expect([t.title, t.artist], ['song', 'band']);
     expect(t.enrichStatus, 1);
   });
 
-  test('characterization: D-683 will change this: nothing found keeps status untried, a second listen asks again', () async {
+  test('D-683: nothing found marks the row, a second listen asks nothing', () async {
     final (rig, c) = await open();
     rig.web.itunes = ItunesMode.empty;
     rig.chain.result = null;
@@ -68,10 +75,27 @@ void main() {
     final enrich = c.read(streamEnrichRowProvider);
     await enrich(row);
     await pumpEventQueue();
-    final first = (rig.web.count('itunes'), rig.chain.calls);
-    expect((await rig.repo.getById(row))!.enrichStatus, 0);
-    await enrich(row);
-    expect((rig.web.count('itunes'), rig.chain.calls), (first.$1 * 2, first.$2 * 2));
+    final first = (rig.web.urls.length, rig.chain.calls);
     expect(first.$1, greaterThan(0));
+    await enrich(row);
+    expect((rig.web.urls.length, rig.chain.calls), first);
   });
+
+  test('D-683: with the automatic switches off a stream row asks nothing', () async {
+    final (rig, c) = await open(on: false);
+    final row = await rig.add(kind: kStreamKind, path: 'youtube:v1');
+    await c.read(streamEnrichRowProvider)(row);
+    expect(rig.chain.calls, 0);
+    expect(rig.web.urls, isEmpty);
+  });
+}
+
+class _On extends SettingsNotifier {
+  @override
+  AppSettings build() => AppSettings(autoEnrich: true, autoLyrics: true, autoCuriosities: true);
+}
+
+class _Off extends SettingsNotifier {
+  @override
+  AppSettings build() => helpersOff();
 }

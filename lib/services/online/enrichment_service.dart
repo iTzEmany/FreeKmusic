@@ -97,11 +97,11 @@ class EnrichmentService {
     final cu = results[2] as Curiosity?;
     if (m != null) AppLog.i('enrichment: track ${t.id} metadata from ${m.source}');
     // After the other parts: it reuses their Deezer hit and can never abort them.
-    final cp = _creditsOn && (t.id <= 0 || await _creditsDue(t))
+    final cp = _creditsOn && await _creditsDue(t)
         ? await creditsEnricher!.fetch(t, m?.hit, cancel)
         : null;
-    // The only place credits are saved for a stored track, even if the preview is cancelled.
-    if (t.id > 0) await saveCredits(t.id, cp);
+    // The only place credits are saved, even if the preview is cancelled.
+    await saveCredits(t.id, cp);
     return EnrichmentProposal(
         track: t,
         meta: m?.match,
