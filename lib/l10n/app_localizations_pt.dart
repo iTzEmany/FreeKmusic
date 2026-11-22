@@ -8110,4 +8110,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get enrichOnMeteredHint =>
       'Por padrão, o enriquecimento em segundo plano espera por uma rede sem limite de dados.';
+
+  @override
+  String get instrumentalTrack => 'Faixa instrumental';
 }

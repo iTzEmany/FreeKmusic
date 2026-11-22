@@ -380,6 +380,14 @@ void main() {
       expect(r, isNull);
     });
 
+    test('instrumental: true is an answer of its own, not «not found»', () async {
+      final w = _Web({
+        '/get': () => {'artistName': 'Adele', 'trackName': 'Hello', 'duration': 250, 'instrumental': true},
+      });
+      final r = await LrclibClient(w).find(title: 'Hello', artist: 'Adele', durationSec: 250);
+      expect(r?.instrumental, isTrue);
+    });
+
     test('any other song keeps the 3 s limit', () async {
       final r = await LrclibClient(_Web(lrclib())).find(
         title: 'Hello',

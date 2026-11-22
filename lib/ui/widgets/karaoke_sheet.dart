@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n_ext.dart';
 import '../../providers/karaoke_providers.dart';
+import '../../providers/player_providers.dart' show currentTrackProvider;
 import '../../providers/settings_providers.dart';
 import '../../services/karaoke/separation_service.dart';
 import '../theme/tokens.dart';
@@ -101,6 +102,13 @@ class _KaraokePanelState extends ConsumerState<_KaraokePanel> {
           value: on,
           onChanged: (v) => setKaraokeOn(ref, v),
         ),
+        if (ref.watch(currentTrackProvider).value case final t?
+            when ref.watch(instrumentalProvider(t)).value == true)
+          Text(
+            l.instrumentalTrack,
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: context.cc.textMuted),
+          ),
         if (highQuality) _SeparationRow(base: base, target: target, sep: sep),
         if (baseReady)
           Row(

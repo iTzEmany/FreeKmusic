@@ -38,6 +38,14 @@ enum EnrichField {
 /// credits card «Aggiorna» uses it.
 enum AskMode { due, retryNone, force }
 
+final _instrumentalTitle = RegExp(
+  r'[(\[]\s*instrumental\s*[)\]]|instrumental version|-\s*instrumental\b',
+  caseSensitive: false,
+);
+
+/// Fallback when LRCLIB did not say: the title announces an instrumental (D-684).
+bool isInstrumentalTitle(String title) => _instrumentalTitle.hasMatch(title);
+
 /// A «searched, nothing» answer is asked again after this long.
 const retryNoneAfter = Duration(days: 30);
 
@@ -57,6 +65,11 @@ bool isDue(
   AskMode mode = AskMode.due,
 }) {
   final byUser = enrich?.lyricsByUser ?? false;
+  // An instrumental has no text to look for.
+  if ((part == EnrichPart.lyrics || part == EnrichPart.synced) &&
+      (enrich?.instrumental == true || isInstrumentalTitle(track.title))) {
+    return false;
+  }
   final (empty, noneAt) = switch (part) {
     EnrichPart.meta => (
       fillableFields(track).intersection(_metaFields).isNotEmpty ||
@@ -112,7 +125,9 @@ String dueSql(Set<EnrichPart> parts, AskMode mode) {
   String due(String empty, String mark) => mode == AskMode.due
       ? '($empty AND (e.$mark IS NULL OR e.$mark < ?1))'
       : '($empty)';
-  const byUser = 'COALESCE(e.lyrics_by_user, 0) = 0';
+  // The title heuristic is approximate here; [isDue] and the engine decide again.
+  const askable = "COALESCE(e.lyrics_by_user, 0) = 0 AND COALESCE(e.instrumental, 0) = 0 "
+      "AND LOWER(t.title) NOT LIKE '%instrumental%'";
   return [
     for (final p in parts)
       switch (p) {
@@ -122,11 +137,11 @@ String dueSql(Set<EnrichPart> parts, AskMode mode) {
           'meta_none_at',
         ),
         EnrichPart.lyrics => due(
-          '$byUser AND t.lyrics_plain IS NULL AND t.lyrics_synced IS NULL',
+          '$askable AND t.lyrics_plain IS NULL AND t.lyrics_synced IS NULL',
           'lyrics_none_at',
         ),
         EnrichPart.synced => due(
-          '$byUser AND t.lyrics_plain IS NOT NULL AND t.lyrics_synced IS NULL',
+          '$askable AND t.lyrics_plain IS NOT NULL AND t.lyrics_synced IS NULL',
           'synced_none_at',
         ),
         EnrichPart.curio => due(

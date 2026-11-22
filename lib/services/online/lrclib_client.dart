@@ -6,9 +6,12 @@ import '../../core/text_utils.dart' show normalize;
 import '../../core/artist_key.dart';
 
 class LyricsResult {
-  const LyricsResult({this.plain, this.synced});
+  const LyricsResult({this.plain, this.synced, this.instrumental = false});
 
   final String? plain, synced;
+
+  /// LRCLIB says the track has no lyrics because it is instrumental (D-684).
+  final bool instrumental;
 
   bool get isEmpty =>
       (plain == null || plain!.isEmpty) && (synced == null || synced!.isEmpty);
@@ -96,6 +99,9 @@ class LrclibClient {
     final d = item['duration'];
     if (durationSec != null && d is num) {
       if ((d - durationSec).abs() > 3) return null;
+    }
+    if (item['instrumental'] == true) {
+      return const LyricsResult(instrumental: true);
     }
     final result = LyricsResult(
       plain: item['plainLyrics'] as String?,

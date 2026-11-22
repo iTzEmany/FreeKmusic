@@ -289,6 +289,7 @@ class EnrichEngine {
     if (lyrF != null) {
       final r = await lyrF;
       final res = r.value;
+      if (res?.instrumental ?? false) await tracks.setInstrumental(t.id, true);
       final text = res?.lyrics;
       final hasPlain = text?.plain?.isNotEmpty ?? false;
       final hasSynced = text?.synced?.isNotEmpty ?? false;

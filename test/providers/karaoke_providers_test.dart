@@ -120,6 +120,13 @@ void main() {
       expect(await c.read(karaokeTargetProvider.future), isNull);
     });
 
+    test('an instrumental track: no separation target', () async {
+      final c = await make(current: _track('/m/a.mp3', 'Song (Instrumental)'));
+      c.listen(currentTrackProvider, (_, _) {});
+      await c.read(currentTrackProvider.future);
+      expect(await c.read(karaokeTargetProvider.future), isNull);
+    });
+
     test('Jam active: hidden', () async {
       expect(
         (await make(jam: true)).read(karaokeButtonVisibleProvider),

@@ -126,6 +126,18 @@ void main() {
     expect(lr.last!.ignoreDuration, isFalse);
   });
 
+  test('LRCLIB says instrumental: the chain stops and reports it', () async {
+    final ne = _Ne(_synced), ovh = _Ovh(_plain);
+    final r = await LyricsChain(
+      lrclib: _Lrclib(const LyricsResult(instrumental: true)),
+      netease: ne,
+      ovh: ovh,
+    ).find(_track());
+    expect(r.instrumental, isTrue);
+    expect(r.lyrics, isNull);
+    expect([ne.calls, ovh.calls], [0, 0]);
+  });
+
   test(
     'LRCLIB answering 503 rests: the next track does not ask it again',
     () async {

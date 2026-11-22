@@ -4147,5 +4147,6 @@
   "karaokeIdleReminder": "Karaoké activé depuis 20 minutes sans être utilisé",
   "karaokeTurnOff": "Désactiver",
   "enrichOnMetered": "Enrichir aussi sur un réseau limité",
-  "enrichOnMeteredHint": "Par défaut, l'enrichissement en arrière-plan attend un réseau illimité."
+  "enrichOnMeteredHint": "Par défaut, l'enrichissement en arrière-plan attend un réseau illimité.",
+  "instrumentalTrack": "Morceau instrumental"
 }

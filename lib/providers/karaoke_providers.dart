@@ -10,7 +10,9 @@ import '../services/stream/stream_key.dart';
 import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../core/platform.dart';
+import '../data/repositories/track_repository.dart' show TrackRepository;
 import '../services/karaoke/separation_service.dart';
+import '../services/online/enrich_parts.dart' show isInstrumentalTitle;
 import '../services/karaoke_video/karaoke_video.dart';
 import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'stream_providers.dart' show streamCacheProvider;
@@ -42,6 +44,14 @@ final karaokeProvider = Provider<KaraokeState>((ref) {
 void setKaraokeOn(WidgetRef ref, bool on) => ref
     .read(settingsProvider.notifier)
     .update((s) => s.copyWith(karaokeOn: on));
+
+/// An instrumental track: LRCLIB said so, or its title does (D-684). No lyrics search, no karaoke.
+Future<bool> isInstrumentalTrack(TrackRepository Function() repo, Track t) async =>
+    isInstrumentalTitle(t.title) || await repo().isInstrumental(t.id) == true;
+
+final instrumentalProvider = FutureProvider.autoDispose.family<bool, Track>(
+  (ref, t) => isInstrumentalTrack(() => ref.read(trackRepositoryProvider), t),
+);
 
 /// True while an episode or a radio plays: there is no backing track.
 final karaokeBypassProvider = Provider<bool>((ref) {
@@ -97,7 +107,10 @@ final karaokeTargetProvider = FutureProvider<KaraokeTarget?>((ref) async {
   // No engine (desktop): nothing is watched or read.
   if (ref.watch(separationServiceProvider) == null) return null;
   final t = ref.watch(currentTrackProvider).value;
-  if (t == null || ref.watch(karaokeBypassProvider)) return null;
+  if (t == null || isInstrumentalTitle(t.title) || ref.watch(karaokeBypassProvider)) {
+    return null;
+  }
+  if (await isInstrumentalTrack(() => ref.read(trackRepositoryProvider), t)) return null;
   final entry = ref.watch(onlineEntriesProvider)?.entryOf(t.id);
   final streamKey = entry?.result.indexKey ?? keyOfStreamPath(t.path);
   final key = await _karaokeKey(t, streamKey);
@@ -263,6 +276,7 @@ final karaokeBaseApplierProvider = Provider<void>((ref) {
   final pinned = <String>{};
   handler.karaokeSource = (t, streamKey) async {
     if (!_baseWanted(ref) || t.kind == kEpisodeKind || isKaraokeVideo(t)) return null;
+    if (await isInstrumentalTrack(() => ref.read(trackRepositoryProvider), t)) return null;
     final key = await _karaokeKey(t, streamKey);
     if (key == null) return null;
     final level = ref.read(karaokeProvider).level;
@@ -335,6 +349,7 @@ final karaokeAutoProvider = Provider<void>((ref) {
   Future<KaraokeTarget?> queuedTarget(Track t) async {
     final online = ref.read(onlineEntriesProvider);
     if (t.kind == kEpisodeKind || isKaraokeVideo(t) || online?.isRadioId(t.id) == true) return null;
+    if (await isInstrumentalTrack(() => ref.read(trackRepositoryProvider), t)) return null;
     final entry = online?.entryOf(t.id);
     final streamKey = entry?.result.indexKey ?? keyOfStreamPath(t.path);
     final key = await _karaokeKey(t, streamKey);

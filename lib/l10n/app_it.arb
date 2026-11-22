@@ -4655,5 +4655,6 @@
   "karaokeIdleReminder": "Karaoke acceso da 20 minuti senza usarlo",
   "karaokeTurnOff": "Spegni",
   "enrichOnMetered": "Arricchisci anche con rete a consumo",
-  "enrichOnMeteredHint": "Di default l'arricchimento in background aspetta una rete senza limiti."
+  "enrichOnMeteredHint": "Di default l'arricchimento in background aspetta una rete senza limiti.",
+  "instrumentalTrack": "Brano strumentale"
 }

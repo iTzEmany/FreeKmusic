@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/database_providers.dart' show trackRepositoryProvider;
 import '../../../providers/track_ops.dart';
 import '../../../providers/karaoke_providers.dart';
 import '../../../providers/online_providers.dart';
@@ -137,6 +138,11 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       final r = await ref.read(lyricsChainProvider).find(t, ignoreDuration: isKaraokeVideo(t));
       found = r.lyrics;
       unavailable = r.failed;
+      if (r.instrumental) {
+        await ref.read(trackRepositoryProvider).setInstrumental(t.id, true);
+        ref.invalidate(instrumentalProvider(t));
+        return;
+      }
     } on RateLimitedException {
       unavailable = true;
     } finally {
@@ -274,6 +280,14 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
               ),
             ],
           ],
+        ),
+      );
+    }
+    if (ref.watch(instrumentalProvider(track)).value == true) {
+      return Center(
+        child: Text(
+          l.instrumentalTrack,
+          style: theme.bodyLarge?.copyWith(color: cc.textMuted),
         ),
       );
     }

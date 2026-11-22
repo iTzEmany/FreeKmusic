@@ -12810,6 +12810,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Di default l\'arricchimento in background aspetta una rete senza limiti.'**
   String get enrichOnMeteredHint;
+
+  /// No description provided for @instrumentalTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano strumentale'**
+  String get instrumentalTrack;
 }
 
 class _AppLocalizationsDelegate

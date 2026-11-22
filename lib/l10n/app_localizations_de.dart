@@ -8135,4 +8135,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get enrichOnMeteredHint =>
       'Standardmäßig wartet die Hintergrundanreicherung auf ein ungetaktetes Netz.';
+
+  @override
+  String get instrumentalTrack => 'Instrumentalstück';
 }

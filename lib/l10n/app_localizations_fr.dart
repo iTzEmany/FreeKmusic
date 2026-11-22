@@ -8169,4 +8169,7 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get enrichOnMeteredHint =>
       'Par défaut, l\'enrichissement en arrière-plan attend un réseau illimité.';
+
+  @override
+  String get instrumentalTrack => 'Morceau instrumental';
 }

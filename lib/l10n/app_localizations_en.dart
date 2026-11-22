@@ -8075,4 +8075,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get enrichOnMeteredHint =>
       'By default background enrichment waits for an unmetered network.';
+
+  @override
+  String get instrumentalTrack => 'Instrumental track';
 }

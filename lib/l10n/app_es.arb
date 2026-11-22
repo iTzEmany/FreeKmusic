@@ -3926,5 +3926,6 @@
   "karaokeIdleReminder": "Karaoke activado desde hace 20 minutos sin usarlo",
   "karaokeTurnOff": "Apagar",
   "enrichOnMetered": "Enriquecer también con red de datos limitados",
-  "enrichOnMeteredHint": "Por defecto, el enriquecimiento en segundo plano espera una red sin límite de datos."
+  "enrichOnMeteredHint": "Por defecto, el enriquecimiento en segundo plano espera una red sin límite de datos.",
+  "instrumentalTrack": "Pista instrumental"
 }
