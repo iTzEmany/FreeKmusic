@@ -286,6 +286,28 @@ void main() {
       });
     });
 
+    test('exact boundary; track changes with fresh empty sets do not restart it; no timer left after dispose', () async {
+      final store = await storeOn();
+      fakeAsync((fa) {
+        final c = make(store);
+        c.listen(karaokeReminderProvider, (_, _) {});
+        fa.elapse(const Duration(minutes: 19, seconds: 59));
+        expect(c.read(karaokeReminderProvider), 0);
+        fa.elapse(const Duration(seconds: 1));
+        expect(c.read(karaokeReminderProvider), 1);
+        c.dispose();
+        expect(fa.nonPeriodicTimerCount, 0);
+        final c2 = make(store);
+        c2.listen(karaokeReminderProvider, (_, _) {});
+        for (var i = 0; i < 8; i++) {
+          fa.elapse(const Duration(minutes: 4));
+          c2.read(karaokeInUseProvider.notifier).set(<int>{});
+        }
+        fa.elapse(const Duration(minutes: 1));
+        expect(c2.read(karaokeReminderProvider), 1);
+      });
+    });
+
     test('in use, or switched off: no reminder', () async {
       final store = await storeOn();
       fakeAsync((fa) {

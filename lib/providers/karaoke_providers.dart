@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/db/app_database.dart' show Track;
@@ -186,8 +187,10 @@ class KaraokeInUse extends Notifier<Set<int>> {
   @override
   Set<int> build() => const {};
 
-  // ignore: use_setters_to_change_properties
-  void set(Set<int> v) => state = v;
+  // A new set with the same steps is no change (it would restart the reminder).
+  void set(Set<int> v) {
+    if (!setEquals(state, v)) state = v;
+  }
 }
 
 final karaokeInUseProvider = NotifierProvider<KaraokeInUse, Set<int>>(
@@ -391,7 +394,8 @@ final karaokeAutoProvider = Provider<void>((ref) {
       if (service.busy && service.activeKey != cur?.key) await service.cancel();
       return;
     }
-    if (!played) return;
+    // An explicit «Avvia» on a metered network counts as a gesture: no wait for play.
+    if (!played && !ref.read(karaokeConfirmedProvider).contains(cur?.key)) return;
     final queued = await manualQueue();
     if (disposed) return;
     // The current track's stems stay too: at 100 % no player file holds them and the expiry would
@@ -455,12 +459,14 @@ final karaokeAutoProvider = Provider<void>((ref) {
 
   service.addListener(pumpListener);
   final queueSub = handler.queueChanges.listen((_) => unawaited(pump()));
-  final playSub = played
-      ? null
-      : handler.playbackState.where((s) => s.playing).listen((_) {
-          played = true;
-          unawaited(pump());
-        });
+  StreamSubscription<void>? playSub;
+  if (!played) {
+    playSub = handler.playbackState.where((s) => s.playing).listen((_) {
+      played = true;
+      unawaited(playSub?.cancel());
+      unawaited(pump());
+    });
+  }
   ref.listen(karaokeProvider.select((k) => k.on), (_, _) => unawaited(pump()));
   ref.listen(karaokeTargetProvider, (_, _) => unawaited(pump()));
   ref.listen(karaokeConfirmedProvider, (_, _) => unawaited(pump()));
@@ -499,7 +505,7 @@ class KaraokeReminder extends Notifier<int> {
     }
 
     ref.listen(karaokeProvider.select((k) => k.on), (_, _) => check());
-    ref.listen(karaokeInUseProvider, (_, _) => check());
+    ref.listen(karaokeInUseProvider.select((s) => s.isEmpty), (_, _) => check());
     check();
     return 0;
   }
