@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/activity_log_repository.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
+import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:codecore/services/library/track_corrections.dart';
 import 'package:codecore/services/library/track_editor.dart';
 import 'package:codecore/services/library/track_file_sync.dart';
@@ -118,6 +119,7 @@ void main() {
   late TrackCorrections corrections;
   late _HookEditor editor;
   TagWriteReason? blocked;
+  var asked = 0;
   Object? blockError;
   late bool fileWrites;
   String? playing;
@@ -158,6 +160,7 @@ void main() {
       editor,
       r.credits,
       fileBlock: (_) async {
+        asked++;
         if (blockError != null) throw blockError!;
         return blocked;
       },
@@ -316,6 +319,76 @@ void main() {
     await enrich(id);
     expect((await row(id)).title, 'Real Title');
     expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('a blocked file on an automatic correction leaves no failure line', () async {
+    fileWrites = true;
+    blocked = TagWriteReason.readOnly;
+    final id = await track();
+    await enrich(id);
+    expect((await row(id)).title, 'Real Title');
+    expect(writer.writes, isEmpty);
+    expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('a streaming row has no file: no failure line, no question to fileBlock, the DB is corrected', () async {
+    fileWrites = true;
+    blocked = TagWriteReason.unsupported;
+    asked = 0;
+    final id = await r.add(
+      title: 'Junk',
+      artist: 'Channel',
+      path: 'stream:youtube:abc',
+      kind: kStreamKind,
+    );
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect((await row(id)).title, 'Real Title');
+    expect(writer.writes, isEmpty);
+    expect(asked, 0);
+    expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('reverting a correction on a streaming row asks nothing and tells nothing', () async {
+    fileWrites = true;
+    final id = await r.add(title: 'Junk', artist: 'Channel', path: 'stream:youtube:abc', kind: kStreamKind);
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    asked = 0;
+    expect(await corrections.revert((await log()).first), isTrue);
+    expect(asked, 0);
+    expect((await log()).map((e) => e.failed), everyElement(0));
+  });
+
+  for (final byUser in [false, true]) {
+    test('a failing file check (byUser $byUser): ids not read, the failure is told only for the user', () async {
+      fileWrites = true;
+      blockError = StateError('no storage');
+      var reads = 0;
+      editor.onFileIds = (_) async => reads++;
+      final id = await track();
+      expect(await corrections.apply(await row(id), _rec(), byUser: byUser), isTrue);
+      expect(reads, 0);
+      expect((await log()).where((e) => e.failed != 0), byUser ? hasLength(1) : isEmpty);
+    });
+  }
+
+  test('a hand correction on the playing file writes it all the same', () async {
+    fileWrites = true;
+    final id = await track();
+    playing = (await row(id)).path;
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect(writer.writes, isNotEmpty);
+  });
+
+  test('a blocked file: its ids are not read', () async {
+    fileWrites = true;
+    blocked = TagWriteReason.readOnly;
+    var reads = 0;
+    editor.onFileIds = (_) async => reads++;
+    final id = await track();
+    expect(await corrections.apply(await row(id), _rec(), byUser: true), isTrue);
+    expect(reads, 0);
+    final failed = (await log()).where((e) => e.failed != 0).single;
+    expect((jsonDecode(failed.detail!) as Map)['file'], 'readOnly');
   });
 
   test('with the file writes off a blocked file is not asked about and nothing is told', () async {

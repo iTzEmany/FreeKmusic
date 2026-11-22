@@ -8103,4 +8103,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get karaokeRetry => 'Wiederholen';
+
+  @override
+  String get grantPermission => 'Erlauben';
+
+  @override
+  String get audioPermissionBanner =>
+      'Ohne die Berechtigung zum Lesen von Audio sieht FreeKmusic deine Musik nicht.';
+
+  @override
+  String playbackErrorsInRow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Titel können nicht abgespielt werden',
+      one: '1 Titel kann nicht abgespielt werden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get karaokeIdleReminder =>
+      'Karaoke seit 20 Minuten an, ohne genutzt zu werden';
+
+  @override
+  String get karaokeTurnOff => 'Ausschalten';
 }

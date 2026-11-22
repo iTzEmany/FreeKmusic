@@ -8068,4 +8068,28 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get karaokeRetry => 'Riprova';
+
+  @override
+  String get grantPermission => 'Concedi';
+
+  @override
+  String get audioPermissionBanner =>
+      'Senza il permesso di leggere l’audio, FreeKmusic non vede la tua musica.';
+
+  @override
+  String playbackErrorsInRow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brani non riproducibili',
+      one: '1 brano non riproducibile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get karaokeIdleReminder => 'Karaoke acceso da 20 minuti senza usarlo';
+
+  @override
+  String get karaokeTurnOff => 'Spegni';
 }

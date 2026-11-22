@@ -10,5 +10,6 @@ String playbackReasonText(AppLocalizations l, PlaybackFailureReason? r) => switc
   PlaybackFailureReason.ageRestricted => l.reasonAgeRestricted,
   PlaybackFailureReason.networkUnavailable => l.ytErrNetwork,
   PlaybackFailureReason.radioUnavailable => l.reasonRadioUnavailable,
+  PlaybackFailureReason.permissionDenied => l.permissionDenied,
   PlaybackFailureReason.unplayable || null => l.reasonUnplayable,
 };

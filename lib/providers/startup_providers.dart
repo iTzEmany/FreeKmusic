@@ -9,6 +9,7 @@ import '../core/permissions.dart' show hasAudioPermission;
 import '../services/backup/backup_service.dart' show AutoBackupRunner, isBackupDue;
 import '../services/scanner/shared_cover_fix.dart';
 import '../services/tags/mp3_length_fix.dart';
+import 'permission_providers.dart';
 import 'folder_actions.dart' show scanIfPermissionLate;
 import 'activity_log_providers.dart';
 import 'activity_providers.dart' show ActivityItem, ActivityKind;
@@ -73,7 +74,7 @@ final mp3LengthFixStartProvider = Provider<void>((ref) {
 });
 
 /// Android: scans when the audio permission is granted after the last scan was skipped for it: at start
-/// (once settled) and on every resume (the user comes back from the system settings). Watched from the root.
+/// (once settled) and when [audioPermissionProvider] turns true (the user comes back from the system settings). Watched from the root.
 final permissionRescanProvider = Provider<void>((ref) {
   Future<void> check() async {
     if (ref.read(scanStateProvider).running) return;
@@ -84,8 +85,9 @@ final permissionRescanProvider = Provider<void>((ref) {
     );
   }
 
-  final life = AppLifecycleListener(onResume: () => unawaited(check()));
-  ref.onDispose(life.dispose);
+  ref.listen(audioPermissionProvider, (was, now) {
+    if (was == false && now) unawaited(check());
+  });
   ref.read(startupSettledProvider.future).then((_) {
     if (ref.mounted) unawaited(check());
   });

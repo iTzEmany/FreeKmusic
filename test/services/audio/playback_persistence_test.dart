@@ -171,4 +171,99 @@ void main() {
   test('current online with an empty block saves 0', () {
     expect(savedQueue([5, -1, 6], 1).userAhead, 0);
   });
+
+  test(
+    'restore puts back queue, index and position without starting playback',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ids = [
+        for (var i = 0; i < 3; i++)
+          await db
+              .into(db.tracks)
+              .insert(
+                TracksCompanion.insert(
+                  path: '/m/$i.mp3',
+                  title: 'S$i',
+                  albumKey: 'k',
+                  format: 'mp3',
+                  sizeBytes: 1,
+                  mtimeMs: 1,
+                  addedAt: i,
+                ),
+              ),
+      ];
+      SharedPreferences.setMockInitialValues({
+        'lastQueueIds': [for (final id in ids) '$id'],
+        'lastIndex': 1,
+        'lastPositionMs': 42000,
+      });
+      final backend = FakeBackend();
+      final h = CodecoreAudioHandler(
+        backend,
+        PlayQueue(),
+        TrackRepository(db),
+        onError: (_) {},
+      );
+      addTearDown(h.dispose);
+      await PlaybackPersistence(
+        h,
+        SettingsStore(await SharedPreferences.getInstance()),
+      ).restore();
+      await pumpEventQueue();
+      expect(h.queueIds, ids);
+      expect(h.currentIndex, 1);
+      expect(backend.loaded.last, '/m/1.mp3');
+      expect(backend.seeks.last, const Duration(milliseconds: 42000));
+      expect(backend.playing, isFalse);
+      expect(h.isPlaying, isFalse);
+    },
+  );
+
+  test(
+    'a restored track that fails stays put: logged, no error event, no skip (D-679)',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final ids = [
+        for (var i = 0; i < 3; i++)
+          await db
+              .into(db.tracks)
+              .insert(
+                TracksCompanion.insert(
+                  path: '/m/$i.mp3',
+                  title: 'S$i',
+                  albumKey: 'k',
+                  format: 'mp3',
+                  sizeBytes: 1,
+                  mtimeMs: 1,
+                  addedAt: i,
+                ),
+              ),
+      ];
+      SharedPreferences.setMockInitialValues({
+        'lastQueueIds': [for (final id in ids) '$id'],
+        'lastIndex': 1,
+        'lastPositionMs': 42000,
+      });
+      final backend = FakeBackend()..failing.add('/m/1.mp3');
+      final errors = <PlaybackFailure>[];
+      final h = CodecoreAudioHandler(
+        backend,
+        PlayQueue(),
+        TrackRepository(db),
+        onError: errors.add,
+      );
+      addTearDown(h.dispose);
+      await PlaybackPersistence(
+        h,
+        SettingsStore(await SharedPreferences.getInstance()),
+      ).restore();
+      await pumpEventQueue();
+      expect(errors, isEmpty);
+      expect(h.currentIndex, 1);
+      expect(backend.loaded, isEmpty);
+      expect(backend.playing, isFalse);
+    },
+  );
 }

@@ -246,6 +246,191 @@ void main() {
     expect(backend.loaded.last, '/m/c.mp3');
   });
 
+  Future<List<int>> addTracks(int n) async {
+    for (var i = 0; i < n; i++) {
+      await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/x/$i.mp3',
+              title: 'x$i',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+            ),
+          );
+    }
+    return (await db.select(db.tracks).get())
+        .where((t) => t.path.startsWith('/x/'))
+        .map((t) => t.id)
+        .toList();
+  }
+
+  test('a failed load emits a PlaybackFailure with the reason and moves to the next track', () async {
+    backend.failMessages['/m/a.mp3'] = 'boom';
+    await handler.playQueue(ids, 0);
+    await settle();
+    expect(errors.single.title, 'a');
+    expect(errors.single.reason, isNot(PlaybackFailureReason.fileMissing));
+    expect(handler.currentTrack!.title, 'b');
+    expect(backend.loaded.last, '/m/b.mp3');
+  });
+
+  test('five unreadable tracks: three attempts, three errors with a growing streak, then idle (D-679)', () async {
+    final xs = await addTracks(5);
+    for (var i = 0; i < 5; i++) {
+      backend.failing.add('/x/$i.mp3');
+    }
+    await handler.playQueue(xs, 0);
+    await settle();
+    expect(errors.length, CodecoreAudioHandler.maxConsecutiveErrors);
+    expect(errors.map((e) => e.title), ['x0', 'x1', 'x2']);
+    expect(errors.map((e) => e.streak), [1, 2, 3]);
+    expect(backend.loaded, isEmpty);
+    expect(handler.currentTrack, isNull);
+    expect(handler.isPlaying, false);
+  });
+
+  test(
+    'the consecutive error count restarts after a track that loaded',
+    () async {
+      final xs = await addTracks(6);
+      // 2 bad, 1 good, 2 bad, 1 good: 4 errors in all, never 3 in a row.
+      for (final i in [0, 1, 3, 4]) {
+        backend.failing.add('/x/$i.mp3');
+      }
+      await handler.playQueue(xs, 0);
+      await settle();
+      expect(handler.currentTrack!.title, 'x2');
+      backend.stateC.add(BackendState.completed);
+      await settle();
+      expect(handler.currentTrack!.title, 'x5');
+      expect(errors.length, 4);
+    },
+  );
+
+  group('audio permission revoked (D-678)', () {
+    Future<void> withPermission(Future<bool> Function() ask) async {
+      await handler.dispose();
+      handler = CodecoreAudioHandler(backend, PlayQueue(), repo, onError: errors.add, audioPermission: ask);
+    }
+
+    test('a local file that fails without the permission stops the queue and says so once', () async {
+      var granted = false;
+      await withPermission(() async => granted);
+      backend.failing.addAll(['/m/a.mp3', '/m/b.mp3']);
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.map((e) => e.reason), [PlaybackFailureReason.permissionDenied]);
+      expect(backend.loaded, isEmpty); // no skip to b or c
+      expect(handler.isPlaying, false);
+      // A second try with the permission still denied does not repeat the event.
+      await handler.play();
+      await settle();
+      expect(errors.length, 1);
+      // Once a load succeeds, the next denial is reported again.
+      granted = true;
+      backend.failing.clear();
+      await handler.play();
+      await settle();
+      expect(backend.loaded.last, '/m/a.mp3');
+      granted = false;
+      backend.failing.add('/m/b.mp3');
+      await handler.skipToNext();
+      await settle();
+      expect(errors.map((e) => e.reason), [PlaybackFailureReason.permissionDenied, PlaybackFailureReason.permissionDenied]);
+    });
+
+    test('an unplayable file without the permission is reported as permissionDenied', () async {
+      await withPermission(() async => false);
+      backend.failMessages['/m/a.mp3'] = 'boom';
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.single.reason, PlaybackFailureReason.permissionDenied);
+    });
+
+    test('after the refusal: stopped once, bookmark kept, a ▶ loads the track again', () async {
+      var granted = false;
+      await withPermission(() async => granted);
+      await repo.setResumePosition(ids[0], 600000);
+      backend.failing.add('/m/a.mp3');
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(backend.playing, isFalse);
+      expect(backend.stopCalls, 1);
+      expect((await repo.getById(ids[0]))!.resumePositionMs, 600000);
+      granted = true;
+      backend.failing.clear();
+      await handler.play();
+      await settle();
+      expect(backend.loaded.last, '/m/a.mp3');
+    });
+
+    test('a load replaced while the permission is being asked reports nothing', () async {
+      final gate = Completer<bool>();
+      await withPermission(() => gate.future);
+      backend.failing.add('/m/a.mp3');
+      final first = handler.playQueue(ids, 0);
+      await settle();
+      await handler.playQueue(ids, 1);
+      await settle();
+      gate.complete(false);
+      await first;
+      await settle();
+      expect(errors, isEmpty);
+      expect(backend.stopCalls, 0);
+      expect(backend.loaded.last, '/m/b.mp3');
+    });
+
+    test('a failing permission check counts as an ordinary load error', () async {
+      await withPermission(() async => throw StateError('channel'));
+      backend.failing.add('/m/a.mp3');
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.single.reason, PlaybackFailureReason.fileMissing);
+      expect(backend.loaded.last, '/m/b.mp3');
+    });
+
+    test('a cold restore with the permission denied is silent and keeps the bookmark', () async {
+      await withPermission(() async => false);
+      await repo.setResumePosition(ids[0], 600000);
+      backend.failing.add('/m/a.mp3');
+      await handler.restore(ids, 0, Duration.zero);
+      await settle();
+      expect(errors, isEmpty);
+      expect(handler.playbackState.value.processingState, isNot(AudioProcessingState.loading));
+      expect((await repo.getById(ids[0]))!.resumePositionMs, 600000);
+    });
+
+    test('with the permission granted a failing file behaves as before', () async {
+      await withPermission(() async => true);
+      backend.failing.add('/m/a.mp3');
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.single.reason, PlaybackFailureReason.fileMissing);
+      expect(backend.loaded.last, '/m/b.mp3');
+    });
+  });
+
+  test('a track chosen by hand after the limit starts a new series', () async {
+    final xs = await addTracks(8);
+    for (var i = 0; i < 8; i++) {
+      backend.failing.add('/x/$i.mp3');
+    }
+    await handler.playQueue(xs, 0);
+    await settle();
+    errors.clear();
+    await handler.skipToQueueItem(4);
+    await settle();
+    expect(errors.map((e) => e.streak), [1, 2, 3]);
+  });
+
+  test('a PlaybackFailure built without a streak counts one', () {
+    expect(const PlaybackFailure('t', PlaybackFailureReason.unplayable).streak, 1);
+  });
+
   test('a load interrupted by a newer one is not a failure', () async {
     final slow = Completer<void>();
     final b = _SlowBackend('/m/a.mp3', slow.future);
@@ -271,7 +456,7 @@ void main() {
     expect(backend.loaded.last, '/m/b.mp3');
   });
 
-  test('more than 3 consecutive errors stop playback', () async {
+  test('3 consecutive errors stop playback (D-679)', () async {
     final extra = <int>[];
     for (var i = 0; i < 5; i++) {
       final id = await db.into(db.tracks).insert(TracksCompanion.insert(
@@ -288,7 +473,7 @@ void main() {
     }
     await handler.playQueue(extra, 0);
     await settle();
-    expect(errors.length, 4);
+    expect(errors.length, CodecoreAudioHandler.maxConsecutiveErrors);
     expect(handler.currentTrack, isNull);
   });
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureType;
 
@@ -11,6 +12,9 @@ import '../../core/constants.dart' show kEnableYoutube;
 import '../../core/platform.dart';
 import '../../providers/library_providers.dart';
 import '../../providers/nav_providers.dart';
+import '../../providers/karaoke_providers.dart' show karaokeReminderProvider, setKaraokeOn;
+import '../../providers/permission_providers.dart';
+import '../../services/audio/codecore_audio_handler.dart' show PlaybackFailureReason;
 import '../../providers/player_providers.dart';
 import '../../providers/pending_playlist_adds.dart';
 import '../../providers/preview_providers.dart';
@@ -302,8 +306,35 @@ class AppShell extends ConsumerWidget {
       final f = next.value;
       if (f == null) return;
       final l = context.l10n;
-      final reason = playbackReasonText(l, f.reason);
-      showMsg(context, l.playbackError(reason, f.title ?? ''));
+      if (f.reason == PlaybackFailureReason.permissionDenied) {
+        unawaited(ref.read(audioPermissionProvider.notifier).refresh());
+        showMsg(
+          context,
+          l.permissionDenied,
+          action: SnackBarAction(
+            label: l.grantPermission,
+            onPressed: ref.read(audioPermissionProvider.notifier).grant,
+          ),
+        );
+        return;
+      }
+      // Errors in a row replace one another: the count, not a popup each (D-679).
+      showMsg(
+        context,
+        f.streak >= 2
+            ? l.playbackErrorsInRow(f.streak)
+            : l.playbackError(playbackReasonText(l, f.reason), f.title ?? ''),
+      );
+    });
+    // D-685: karaoke on for 20 minutes without being used.
+    ref.listen(karaokeReminderProvider, (prev, next) {
+      if (next <= (prev ?? 0)) return;
+      final l = context.l10n;
+      showMsg(
+        context,
+        l.karaokeIdleReminder,
+        action: SnackBarAction(label: l.karaokeTurnOff, onPressed: () => setKaraokeOn(ref, false)),
+      );
     });
     // Shuffle+ runs while the shell is up; a suggestion downloaded "into a
     // playlist" joins it when the file lands.

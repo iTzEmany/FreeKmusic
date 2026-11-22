@@ -12768,6 +12768,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Riprova'**
   String get karaokeRetry;
+
+  /// No description provided for @grantPermission.
+  ///
+  /// In it, this message translates to:
+  /// **'Concedi'**
+  String get grantPermission;
+
+  /// No description provided for @audioPermissionBanner.
+  ///
+  /// In it, this message translates to:
+  /// **'Senza il permesso di leggere l’audio, FreeKmusic non vede la tua musica.'**
+  String get audioPermissionBanner;
+
+  /// No description provided for @playbackErrorsInRow.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano non riproducibile} other{{count} brani non riproducibili}}'**
+  String playbackErrorsInRow(int count);
+
+  /// No description provided for @karaokeIdleReminder.
+  ///
+  /// In it, this message translates to:
+  /// **'Karaoke acceso da 20 minuti senza usarlo'**
+  String get karaokeIdleReminder;
+
+  /// No description provided for @karaokeTurnOff.
+  ///
+  /// In it, this message translates to:
+  /// **'Spegni'**
+  String get karaokeTurnOff;
 }
 
 class _AppLocalizationsDelegate

@@ -247,6 +247,54 @@ void main() {
     await s.h.dispose(t);
   });
 
+  test('with karaoke on, a playing track is separated', () async {
+    final t = _T();
+    final s = await setup(t, on: true);
+    await t.runAsync(() async {
+      await s.h.handler.playQueue([s.ids[0]], 0);
+      await until(() => s.sep.inputs.isNotEmpty);
+    });
+    expect(s.sep.inputs, ['${tmp.path}/t0.mp3']);
+    await s.h.dispose(t);
+  });
+
+  test('a restored, stopped track is not separated until something plays (D-664)', () async {
+    final t = _T();
+    final h = await _H.create(t, tracks: 5);
+    final sep = _Separator();
+    final cache = StreamCache(Directory('${tmp.path}/cache'));
+    final svc = _Service(cache, sep, false, tmp);
+    final rows = (await t.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    await t.runAsync(() async {
+      final f = File('${tmp.path}/t0.mp3')..writeAsBytesSync([0]);
+      await (h.db.update(h.db.tracks)..where((r) => r.id.equals(rows[0].id)))
+          .write(TracksCompanion(path: Value(f.path)));
+      // Restored, not playing: loaded and paused.
+      await h.handler.playQueue([rows[0].id], 0);
+      await h.handler.pause();
+    });
+    final c = ProviderContainer(
+      overrides: [
+        ...h.overrides,
+        separationServiceProvider.overrideWithValue(svc),
+        streamCacheProvider.overrideWithValue(cache),
+        networkProbeProvider.overrideWithValue(_Net(false)),
+      ],
+    );
+    addTearDown(() {
+      sep.release();
+      c.dispose();
+    });
+    setKaraoke(c, true);
+    c.listen(karaokeAutoProvider, (_, _) {});
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    expect(sep.inputs, isEmpty);
+    await t.runAsync(() => h.handler.play());
+    await t.runAsync(() => until(() => sep.inputs.isNotEmpty));
+    expect(sep.inputs, ['${tmp.path}/t0.mp3']);
+    await h.dispose(t);
+  });
+
   test('a track change separates the new track', () async {
     final t = _T();
     final s = await setup(t, on: true);

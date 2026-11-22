@@ -31,15 +31,19 @@ class SettingsNotifier extends Notifier<AppSettings> {
         AppLog.w('save settings failed', e, st);
       });
     }
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
+    void save() {
       ref.read(settingsStoreProvider).writeSettings(state).catchError((
         Object e,
         StackTrace st,
       ) {
         AppLog.w('save settings failed', e, st);
       });
-    });
+    }
+
+    _debounce?.cancel();
+    // karaokeOn is saved at once: a debounced write is lost when the app is closed (D-664).
+    if (before.karaokeOn != state.karaokeOn) return save();
+    _debounce = Timer(const Duration(milliseconds: 400), save);
   }
 }
 

@@ -7,12 +7,12 @@ import 'package:flutter/services.dart' show LogicalKeyboardKey;
 
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../../data/repositories/library_entries.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
+import '../../../providers/permission_providers.dart';
 import '../../../providers/podcast_providers.dart';
 import '../../../providers/ui_providers.dart'
     show librarySearchRequestProvider, searchPrefillProvider;
@@ -175,7 +175,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final built = ref.watch(libraryEntriesProvider((_kind, sort, ascending)));
     final folders = ref.watch(foldersProvider).value;
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
-    final denied = ref.watch(permissionDeniedProvider);
+    final denied = !ref.watch(audioPermissionProvider);
 
     // The list starts under the island, which floats above it.
     final rows = LibraryIslandRows.of(context);
@@ -190,7 +190,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         icon: Icons.lock,
         message: l.permissionExplain,
         actionLabel: l.openSettings,
-        onAction: openAppSettings,
+        onAction: ref.read(audioPermissionProvider.notifier).grant,
       );
     } else if (error != null) {
       body = LoadError(

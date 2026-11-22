@@ -5,6 +5,7 @@ import '../../core/clock.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/activity_log_repository.dart';
 import '../../data/repositories/credits_repository.dart';
+import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/track_repository.dart';
 import '../recognition/track_identity.dart';
 import '../tags/tag_writer.dart';
@@ -56,9 +57,19 @@ class TrackCorrections {
     final first = await TrackRepository(_db).getById(track.id);
     if (id == null || id.title.trim().isEmpty || first == null || first.userEdited) return null;
     final toFile = _fileWanted(first, byUser: byUser);
-    // What the file has, to put back.
-    final ids = toFile && changedBy(first, id) ? await _editor.fileIds(first) : null;
+    // What the file has, to put back; a blocked file is not read (D-686).
+    final ids = toFile && changedBy(first, id) && await _canRead(first.path) ? await _editor.fileIds(first) : null;
     return (trackId: track.id, rec: rec, toFile: toFile, ids: ids);
+  }
+
+  /// True when the file is not blocked; a failing check counts as blocked ([_writeFile] reports it).
+  Future<bool> _canRead(String path) async {
+    try {
+      return await _fileBlock(path) == null;
+    } on Object catch (e, st) {
+      AppLog.w('file check of $path failed', e, st);
+      return false;
+    }
   }
 
   /// The DB part of [apply], to run inside a transaction; null when the row
@@ -214,8 +225,9 @@ class TrackCorrections {
     detail: jsonEncode({'trackId': t.id, 'file': why}),
   );
 
-  /// Whether the file of [t] is to be rewritten: a hand decision always, an automatic one not on the playing file.
+  /// Whether the file of [t] is to be rewritten: a hand decision always, an automatic one not on the playing file; a streaming row has no file.
   bool _fileWanted(Track t, {required bool byUser}) {
+    if (t.kind == kStreamKind) return false;
     if (!_editor.writesFiles) return false;
     if (!byUser && _playingPath() == t.path) {
       AppLog.i('correction of ${t.path}: file left alone, it is playing');
@@ -242,7 +254,7 @@ class TrackCorrections {
   }
 
   Future<TagFileOutcome> _toFile(Track t, TrackEdit edit, {bool backup = true}) async {
-    if (!_editor.writesFiles) return TagFileOutcome.none; // option off: nothing to block or to tell
+    if (t.kind == kStreamKind || !_editor.writesFiles) return TagFileOutcome.none; // no file, or option off: nothing to block or to tell
     final why = await _fileBlock(t.path);
     if (why != null) return TagFileOutcome(attempted: 1, failures: {t.id: why});
     return _editor.writeToFiles([t], (_) => edit.toChanges(), backup: backup);

@@ -12,6 +12,7 @@ import '../../../providers/karaoke_providers.dart'
 import '../../../providers/cover_ops.dart';
 import '../../../providers/equalizer_providers.dart';
 import '../../../providers/library_providers.dart';
+import '../../../providers/permission_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/confirm.dart';
@@ -289,10 +290,20 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
   final folders = ref.watch(foldersProvider).value ?? const [];
   final missing = ref.watch(missingTracksProvider).value ?? const [];
   final settings = ref.watch(settingsProvider);
+  final hasPermission = ref.watch(audioPermissionProvider);
   return [
     SettingsGroup(
       title: l.settingsLibrary,
       children: [
+        if (!hasPermission)
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: Text(l.audioPermissionBanner),
+            trailing: TextButton(
+              onPressed: ref.read(audioPermissionProvider.notifier).grant,
+              child: Text(l.grantPermission),
+            ),
+          ),
         for (final f in folders)
           ListTile(
             leading: const Icon(Icons.folder),

@@ -8,11 +8,12 @@ import '../core/platform.dart';
 import '../data/repositories/folder_repository.dart';
 import 'folder_ops.dart';
 import 'library_providers.dart';
+import 'permission_providers.dart';
 
 /// Scans every folder, after the audio permission (the denial is remembered).
 Future<void> scanWithPermission(WidgetRef ref) async {
   final ok = await ensureAudioPermission();
-  ref.read(permissionDeniedProvider.notifier).set(!ok);
+  await ref.read(audioPermissionProvider.notifier).refresh();
   final prefs = await SharedPreferences.getInstance();
   if (!ok) {
     await prefs.setBool(kScanNeedsPermission, true);
