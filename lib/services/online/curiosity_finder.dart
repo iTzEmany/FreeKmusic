@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/app_log.dart';
 import 'discogs_client.dart';
+import 'enrich_gather.dart' show memoPerTrack;
 import 'http_client.dart';
 import 'musicbrainz_client.dart';
 import 'query_cleaner.dart';
@@ -69,7 +70,13 @@ class CuriosityFinder {
     CancelToken? cancel,
   }) async {
     final langs = lang == 'en' ? ['en'] : [lang, 'en'];
-    final ids = await _identify(title, artist, langs, cancel, isrc, durationMs);
+    final ({Map<String, String>? song, Map<String, String>? artist, String? recordingId}) ids;
+    try {
+      ids = await _identify(title, artist, langs, cancel, isrc, durationMs);
+    } on MusicBrainzUnavailable catch (e) {
+      // Not «nothing found»: an error of the track, so no 30-day «none» mark.
+      return CuriosityPair(songError: e, artistError: artist.isNotEmpty ? e : null);
+    }
 
     Object? songError, artistError;
     Curiosity? song, art;
@@ -160,12 +167,15 @@ class CuriosityFinder {
       final main = extractPrimaryArtist(artist);
       final byIsrc = isrc == null
           ? const <MbRecording>[]
-          : await musicBrainz.recordingsByIsrc(
-              isrc,
-              durationMs,
-              title: title,
-              artist: artist,
-              cancel: cancel,
+          : await memoPerTrack(
+              'isrc:$isrc:$title:$artist',
+              () => musicBrainz.recordingsByIsrc(
+                isrc,
+                durationMs,
+                title: title,
+                artist: artist,
+                cancel: cancel,
+              ),
             );
       if (main.isNotEmpty || byIsrc.isNotEmpty) {
         final recs = byIsrc.isNotEmpty
@@ -198,6 +208,8 @@ class CuriosityFinder {
         artist: artistQ == null ? null : links[artistQ],
         recordingId: recordingId,
       );
+    } on MusicBrainzUnavailable {
+      rethrow;
     } on Object catch (e, st) {
       if (e is DioException && CancelToken.isCancel(e)) rethrow;
       AppLog.w('musicbrainz lookup failed, falling back to names', e, st);

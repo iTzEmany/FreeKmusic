@@ -1,5 +1,8 @@
 import 'package:codecore/data/repositories/track_kinds.dart';
 import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/data/repositories/track_repository.dart';
+import 'package:codecore/providers/database_providers.dart' show trackRepositoryProvider;
+import 'package:drift/native.dart';
 import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/karaoke_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
@@ -76,7 +79,7 @@ void main() {
   });
 
   group('microphone visibility', () {
-    Future<ProviderContainer> make({bool jam = false, bool show = true, Track? current}) async {
+    Future<ProviderContainer> make({bool jam = false, bool show = true, Track? current, TrackRepository? repo}) async {
       SharedPreferences.setMockInitialValues({});
       final store = await SettingsStore.open();
       await store.writeSettings(
@@ -92,6 +95,7 @@ void main() {
               modelsRoot: () async => Directory.systemTemp,
             ),
           ),
+          if (repo != null) ...[trackRepositoryProvider.overrideWithValue(repo), onlineEntriesProvider.overrideWithValue(null), karaokeBypassProvider.overrideWithValue(false)],
           if (jam) jamProvider.overrideWith(_ActiveJam.new),
           if (current != null) currentTrackProvider.overrideWith((_) => Stream.value(current)),
         ],
@@ -117,6 +121,29 @@ void main() {
       c.listen(karaokeBypassProvider, (_, _) {});
       await c.read(currentTrackProvider.future);
       expect(c.read(karaokeBypassProvider), isTrue);
+      expect(await c.read(karaokeTargetProvider.future), isNull);
+    });
+
+    test('an instrumental track: no separation target', () async {
+      final c = await make(current: _track('/m/a.mp3', 'Song (Instrumental)'));
+      c.listen(currentTrackProvider, (_, _) {});
+      await c.read(currentTrackProvider.future);
+      expect(await c.read(karaokeTargetProvider.future), isNull);
+    });
+
+    test('the instrumental flag in the DB (normal title): no separation target', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final id = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/m/a.mp3', title: 'Song', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+      final repo = TrackRepository(db);
+      final t = (await repo.getById(id))!;
+      expect(await isInstrumentalTrack(() => repo, t), isFalse);
+      await repo.setInstrumental(id, true);
+      expect(await isInstrumentalTrack(() => repo, t), isTrue);
+      final c = await make(current: t, repo: repo);
+      c.listen(currentTrackProvider, (_, _) {});
+      await c.read(currentTrackProvider.future);
       expect(await c.read(karaokeTargetProvider.future), isNull);
     });
 

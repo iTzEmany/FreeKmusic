@@ -420,6 +420,12 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
               notifier.update((c) => c.copyWith(autoCuriosities: v)),
         ),
         SwitchListTile(
+          title: Text(l.enrichOnMetered),
+          subtitle: Text(l.enrichOnMeteredHint),
+          value: s.enrichOnMetered,
+          onChanged: (v) => notifier.update((c) => c.copyWith(enrichOnMetered: v)),
+        ),
+        SwitchListTile(
           title: Text(l.deezerMeta),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

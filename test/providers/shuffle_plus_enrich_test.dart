@@ -13,6 +13,9 @@ import 'package:codecore/services/stream/stream_preparer.dart' show StreamPhase;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/settings_providers.dart';
+
 import '../support/enrich_fakes.dart';
 import '../support/fake_stream_preparer.dart';
 
@@ -30,7 +33,8 @@ void main() {
     dir = Directory.systemTemp.createTempSync('sp_enrich');
     preparer = FakeStreamPreparer(rig.repo, dir);
     c = ProviderContainer(overrides: [
-      enrichmentServiceProvider.overrideWithValue(rig.svc),
+      enrichEngineProvider.overrideWithValue(rig.engine),
+      settingsProvider.overrideWith(_On.new),
       trackRepositoryProvider.overrideWithValue(rig.repo),
       onlineEntriesProvider.overrideWithValue(online),
       streamPreparerProvider.overrideWithValue(preparer),
@@ -81,4 +85,9 @@ void main() {
     await c.read(shufflePlusEnrichProvider)([id], const Duration(milliseconds: 100)).timeout(const Duration(seconds: 3));
     expect(rig.chain.calls, 0);
   });
+}
+
+class _On extends SettingsNotifier {
+  @override
+  AppSettings build() => AppSettings(autoEnrich: true, autoLyrics: true, autoCuriosities: true);
 }

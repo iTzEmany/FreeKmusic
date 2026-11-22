@@ -5,6 +5,7 @@ import '../../data/db/app_database.dart';
 import 'deezer_client.dart';
 import 'deezer_match.dart';
 import 'deezer_models.dart';
+import 'enrich_gather.dart' show memoPerTrack;
 import 'http_client.dart';
 import 'itunes_client.dart';
 import 'query_cleaner.dart';
@@ -122,7 +123,11 @@ class MetadataResolver {
 
   /// The Deezer track [t] is, by ISRC or else by text; null when Deezer does
   /// not confirm it. Throws what the client throws.
-  Future<DeezerTrack?> deezerHit(Track t, CancelToken? cancel, [CleanQuery? clean]) async {
+  Future<DeezerTrack?> deezerHit(Track t, CancelToken? cancel, [CleanQuery? clean]) =>
+      memoPerTrack('deezer:${t.id}:${t.isrc}:${t.title}:${t.artist}',
+          () => _deezerHit(t, cancel, clean));
+
+  Future<DeezerTrack?> _deezerHit(Track t, CancelToken? cancel, CleanQuery? clean) async {
     final dz = deezer!;
     final c = clean ?? cleanSearchQuery(t.title, t.artist ?? '');
     DeezerWant wantOf(CleanQuery q) => DeezerWant(

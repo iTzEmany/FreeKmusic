@@ -17,6 +17,7 @@ import 'enrich_parts.dart';
 import 'enrich_writer.dart';
 import 'http_client.dart' show RateLimiter;
 import 'lyrics_chain.dart';
+import 'musicbrainz_client.dart' show MusicBrainzClient;
 import 'metadata_resolver.dart';
 import 'query_cleaner.dart';
 import '../recognition/channel_detector.dart' show tagsDubious;
@@ -112,12 +113,14 @@ class EnrichEngine {
     for (var w = _inFlight[trackId]; w != null; w = _inFlight[trackId]) {
       await w.done.future;
     }
-    final g = await gather(
+    Future<EnrichGather> read() => gather(
       trackId,
       parts,
       mode: force ? AskMode.force : AskMode.due,
       cancel: cancel,
     );
+    // A forced run must not be answered from the MusicBrainz cache (D-683).
+    final g = await (force ? MusicBrainzClient.fresh(read) : read());
     return (await commit([g])).single.out;
   }
 
@@ -148,7 +151,7 @@ class EnrichEngine {
       done: Completer<void>(),
     ); // before the first await
     try {
-      await _gather(g, parts, mode, cancel);
+      await withTrackMemo(() => _gather(g, parts, mode, cancel));
     } on Object {
       _release(g);
       rethrow;
@@ -286,6 +289,7 @@ class EnrichEngine {
     if (lyrF != null) {
       final r = await lyrF;
       final res = r.value;
+      if (res?.instrumental ?? false) g.instrumental = true;
       final text = res?.lyrics;
       final hasPlain = text?.plain?.isNotEmpty ?? false;
       final hasSynced = text?.synced?.isNotEmpty ?? false;

@@ -6,9 +6,12 @@ import '../../core/text_utils.dart' show normalize;
 import '../../core/artist_key.dart';
 
 class LyricsResult {
-  const LyricsResult({this.plain, this.synced});
+  const LyricsResult({this.plain, this.synced, this.instrumental = false});
 
   final String? plain, synced;
+
+  /// LRCLIB says the track has no lyrics because it is instrumental (D-684).
+  final bool instrumental;
 
   bool get isEmpty =>
       (plain == null || plain!.isEmpty) && (synced == null || synced!.isEmpty);
@@ -67,6 +70,7 @@ class LrclibClient {
             artist,
             ignoreDuration ? null : durationSec,
             title: ignoreDuration ? t : null,
+            flagTitle: t,
           );
           if (ok != null) return ok;
         }
@@ -81,6 +85,7 @@ class LrclibClient {
     String artist,
     int? durationSec, {
     String? title,
+    String? flagTitle,
   }) {
     if (item is! Map) return null;
     final by = '${item['artistName'] ?? ''}'.toLowerCase().trim();
@@ -96,6 +101,13 @@ class LrclibClient {
     final d = item['duration'];
     if (durationSec != null && d is num) {
       if ((d - durationSec).abs() > 3) return null;
+    }
+    if (item['instrumental'] == true) {
+      // From /search the flag counts only for the same title (D-700): an interlude is not the song.
+      if (flagTitle != null && _titleKey('${item['trackName'] ?? ''}') != _titleKey(flagTitle)) {
+        return null;
+      }
+      return const LyricsResult(instrumental: true);
     }
     final result = LyricsResult(
       plain: item['plainLyrics'] as String?,

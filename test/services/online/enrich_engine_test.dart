@@ -1,3 +1,4 @@
+import 'package:codecore/providers/online_providers.dart' show autoParts;
 import 'package:codecore/services/online/enrich_engine.dart' show GatherSignal;
 import 'package:codecore/services/online/enrich_parts.dart';
 import 'package:codecore/services/online/enrich_runner.dart';
@@ -46,6 +47,41 @@ void main() {
       expect(r.chain.calls, 1);
       expect((await r.engine.gather(id, lyrics)).signal, GatherSignal.askedNothing,
           reason: 'filled by the first');
+    });
+  });
+
+  group('what completeOne writes today', () {
+    const meta = {EnrichPart.meta};
+
+    test('only the empty fields: a filled album and year stay, the empty genre is filled', () async {
+      final id = await r.add(album: 'Mine', year: 1999);
+      await r.engine.completeOne(id, meta);
+      final t = (await r.repo.getById(id))!;
+      expect([t.album, t.year, t.genre], ['Mine', 1999, 'Rock']);
+    });
+
+    test('all switches off: no part, no request', () async {
+      final id = await r.add();
+      expect(autoParts(helpersOff()), isEmpty);
+      await r.engine.completeOne(id, autoParts(helpersOff()));
+      expect([r.web.urls, r.chain.calls, r.finder.calls], [isEmpty, 0, 0]);
+    });
+
+    test('only autoLyrics on: lyrics are asked, metadata is not', () async {
+      final id = await r.add();
+      await r.engine.completeOne(id, autoParts(helpersOff(autoLyrics: true)));
+      expect(r.chain.calls, 1);
+      expect(r.web.count('itunes'), 0);
+    });
+
+    test('nothing found leaves the «nothing» marks on the asked parts only', () async {
+      r.web.itunes = ItunesMode.empty;
+      r.chain.result = null;
+      final id = await r.add();
+      await r.engine.completeOne(id, {EnrichPart.meta, EnrichPart.lyrics});
+      final e = (await r.enrichOf(id))!;
+      expect([e.metaNoneAt, e.lyricsNoneAt], [isNotNull, isNotNull]);
+      expect([e.curioNoneAt, e.syncedNoneAt], [isNull, isNull]);
     });
   });
 

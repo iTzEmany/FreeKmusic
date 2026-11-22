@@ -48,14 +48,14 @@ void main() {
       t = t.add(d);
     });
     await mb.recordingCredits(mbid);
-    await mb.recordingCredits(mbid);
+    await mb.recordingCredits('another-$mbid'); // the same request would come from the cache (D-683)
     expect(waits.fold(Duration.zero, (a, b) => a + b), greaterThanOrEqualTo(MusicBrainzClient.gap));
   });
 
-  test('no answer twice (503): an error, not an empty list', () async {
+  test('no answer (503): an error, not an empty list', () async {
     final w = _Web(null);
     await expectLater(MusicBrainzClient(w, pause: (_) async {}).recordingCredits(mbid),
         throwsA(isA<MusicBrainzUnavailable>()));
-    expect(w.asked, hasLength(2));
+    expect(w.asked, hasLength(1), reason: 'D-683: no retry, the client rests instead');
   });
 }

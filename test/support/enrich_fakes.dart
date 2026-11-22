@@ -39,6 +39,7 @@ class EnrichWeb implements WebClient {
   bool deezerDown = false;
   bool deezerLimited = false;
   bool musicBrainzLimited = false;
+  bool musicBrainz503 = false;
   bool itunesGenre = true; // false: the iTunes hit has no genre
   bool coverDown = false; // network error
   bool coverMissing = false; // 404
@@ -66,6 +67,7 @@ class EnrichWeb implements WebClient {
     if (musicBrainzLimited && url.contains('musicbrainz')) {
       throw const RateLimitedException(429);
     }
+    if (musicBrainz503 && url.contains('musicbrainz')) throw WebUnavailableException(url, 503);
     if (deezerLimited && url.contains('deezer')) {
       throw const RateLimitedException(429);
     }
@@ -196,6 +198,7 @@ class FakeChain extends LyricsChain {
   bool limited = false;
   bool resting = false; // «limited» because LRCLIB rests, not because of a quota
   bool syncedFailed = false;
+  bool instrumental = false; // LRCLIB flags the track instrumental
   bool? wantSyncedSeen;
 
   /// The answer for one track, instead of [result].
@@ -236,6 +239,7 @@ class FakeChain extends LyricsChain {
         limited: true,
       );
     }
+    if (instrumental) return const LyricsChainResult(instrumental: true);
     return failed
         ? const LyricsChainResult(failed: true, syncedFailed: true)
         : LyricsChainResult(

@@ -4,7 +4,8 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/covers/cover_store.dart';
-import 'package:codecore/services/online/enrichment_service.dart';
+import 'package:codecore/services/online/enrich_engine.dart';
+import 'package:codecore/services/online/enrichment_service.dart' show EnrichField;
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/itunes_client.dart';
@@ -29,11 +30,13 @@ class _Web implements WebClient {
   final recordingGenres = <Map<String, Object?>>[];
   final asked = <String>[];
   var mbLimited = false;
+  Object? mbError; // thrown by every MusicBrainz call
 
   @override
   Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
     asked.add(Uri.parse(url).path);
-    if (mbLimited && url.contains('musicbrainz')) throw const RateLimitedException(429);
+    if (mbError != null && url.contains('musicbrainz')) throw mbError!;
+    if (mbLimited && url.contains('musicbrainz')) throw WebUnavailableException(url, 503);
     if (!url.contains('musicbrainz')) return null;
     if (url.endsWith('/recording')) return _fixture('recording_search_official');
     if (url.contains('/recording/')) return {'genres': recordingGenres};
@@ -46,7 +49,10 @@ class _Web implements WebClient {
 }
 
 class _Client extends InnerTubeClient {
-  _Client(this.results, {this.lyricsText, this.searchError}) : super(Dio());
+  _Client(this.results, {this.lyricsText, this.searchError, this.during}) : super(Dio());
+
+  /// Runs while the search is out: the user edits the track meanwhile.
+  final Future<void> Function()? during;
 
   final List<YtResult> results;
   final String? lyricsText;
@@ -56,6 +62,7 @@ class _Client extends InnerTubeClient {
   @override
   Future<List<YtResult>> searchSongs(String query, {int limit = 5, CancelToken? cancel}) async {
     searches++;
+    await during?.call();
     if (searchError != null) throw searchError!;
     return results;
   }
@@ -91,7 +98,7 @@ void main() {
   late AppDatabase db;
   late Directory tmp;
   late _Web web;
-  late EnrichmentService enrichment;
+  late EnrichEngine engine;
   late TrackRepository repo;
 
   setUp(() {
@@ -110,7 +117,7 @@ void main() {
       language: () => 'it',
       limiter: RateLimiter(minGap: Duration.zero),
     );
-    enrichment = enrichmentStack.svc;
+    engine = enrichmentStack.engine;
   });
   tearDown(() async {
     await db.close();
@@ -161,7 +168,7 @@ void main() {
   SecondOpinion opinion(_Client client) => SecondOpinion(
         client: client,
         catalog: _Catalog(albumPage),
-        enrichment: enrichment,
+        engine: engine,
         musicBrainz: MusicBrainzClient(web, pause: (_) async {}),
         tracks: repo,
         hl: () => 'it',
@@ -278,7 +285,7 @@ void main() {
     expect((await repo.getById(t.id))!.hasCover, isFalse);
   });
 
-  test('after a MusicBrainz 429 the genre is not asked again for a while', () async {
+  test('after a MusicBrainz 503 the genre is not asked again for a while', () async {
     web.mbLimited = true;
     final t = await add();
     final op = opinion(_Client([_hit()]));
@@ -287,5 +294,42 @@ void main() {
     expect(first, 1);
     await op.check(t);
     expect(web.asked.where((a) => a.contains('/ws/2')).length, first);
+  });
+
+  test('a 429 from MusicBrainz does not stop the check', () async {
+    web.mbError = const RateLimitedException(429);
+    final t = await add();
+    final out = await opinion(_Client([_hit()])).check(t);
+    expect(out.kind, SecondOpinionKind.confirmed);
+    expect(out.written, contains(EnrichField.album));
+  });
+
+  test('a user who sets the artist during the check keeps it', () async {
+    final t = await add(artist: null);
+    final out = await opinion(_Client([_hit()], during: () async {
+      await (db.update(db.tracks)..where((x) => x.id.equals(t.id)))
+          .write(const TracksCompanion(artist: Value('Mio'), userEdited: Value(true)));
+    })).check(t);
+    final got = (await repo.getById(t.id))!;
+    expect(got.artist, 'Mio');
+    expect(out.written, isNot(contains(EnrichField.artist)));
+  });
+
+  test('a field filled during the check is not written and the status stays', () async {
+    final t = await add(year: 2008, genre: 'Rock', lyrics: 'la', trackNumber: 4, hasCover: true);
+    final out = await opinion(_Client([_hit()], during: () async {
+      await (db.update(db.tracks)..where((x) => x.id.equals(t.id)))
+          .write(const TracksCompanion(album: Value('Altro')));
+    })).check(t);
+    expect(out.written, isEmpty);
+    final got = (await repo.getById(t.id))!;
+    expect(got.album, 'Altro');
+    expect(got.enrichStatus, 2);
+  });
+
+  test('a track deleted during the check declares nothing written', () async {
+    final t = await add(artist: null);
+    final out = await opinion(_Client([_hit()], during: () => repo.deleteTrack(t.id))).check(t);
+    expect(out.written, isEmpty);
   });
 }

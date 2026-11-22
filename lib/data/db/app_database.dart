@@ -9,7 +9,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 20;
+const kSchemaVersion = 21;
 
 @DriftDatabase(
   tables: [
@@ -220,6 +220,16 @@ class AppDatabase extends _$AppDatabase {
         };
         if (cols.isNotEmpty && !cols.contains('saved')) {
           await m.addColumn(tracks, tracks.saved);
+        }
+      }
+      if (from < 21) {
+        // createTable (v15) already uses the current definition, so older databases have the column.
+        final cols = {
+          for (final c in await customSelect('PRAGMA table_info(track_enrich)').get())
+            c.read<String>('name'),
+        };
+        if (cols.isNotEmpty && !cols.contains('instrumental')) {
+          await m.addColumn(trackEnrich, trackEnrich.instrumental);
         }
       }
     },

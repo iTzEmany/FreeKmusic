@@ -31,6 +31,7 @@ class _Scan extends ScanNotifier {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late EnrichRig r;
   late ProviderContainer c;
 

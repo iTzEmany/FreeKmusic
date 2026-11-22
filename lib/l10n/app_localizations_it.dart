@@ -8092,4 +8092,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get karaokeTurnOff => 'Spegni';
+
+  @override
+  String get enrichOnMetered => 'Arricchisci anche con rete a consumo';
+
+  @override
+  String get enrichOnMeteredHint =>
+      'Di default l\'arricchimento in background aspetta una rete senza limiti.';
+
+  @override
+  String get instrumentalTrack => 'Brano strumentale';
 }

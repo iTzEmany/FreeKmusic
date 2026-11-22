@@ -70,7 +70,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - `SourceCooldown`: 5 min di pausa dopo un 429, per `MediaKind`.
 - `budgetedYtm(cooldown, limiter, run, cost)`: restituisce null se non c'è budget o la fonte è in pausa; un 429 fa scattare la pausa (D-425).
 - Radio: `RadioGate` ha una politica sua. Podcast: `kPodcastRequestsPerMinute`.
-- Deezer: al massimo 10 richieste al secondo e 5 s di pausa su «too many requests» (D-523). MusicBrainz: almeno 1,1 s tra le richieste. AcoustID: al massimo 3 al secondo.
+- Deezer: al massimo 10 richieste al secondo e 5 s di pausa su «too many requests» (D-523). MusicBrainz (`MusicBrainzClient`, D-683): una sola coda per tutti i chiamanti, almeno 1,1 s tra le richieste; dopo un 503 pausa di 1, 5, poi 15 min (azzerata da un successo), durante la quale ogni richiesta lancia `MusicBrainzUnavailable` senza rete (`resting`, `restUntil`); cache in memoria di 6 h, anche dei «non trovato»; un giro forzato passa da `MusicBrainzClient.fresh` e salta la cache. AcoustID: al massimo 3 al secondo.
 - La corrispondenza dei link ha una finestra propria da 40/min (D-526).
 
 ### Pagine da link
@@ -90,11 +90,14 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - Cascata di `TrackRecognizer`: 1) ISRC o MBID nei tag → MusicBrainz; 1b) id video YouTube → YTM; 2) ricerca testuale con tag affidabili; 3) AcoustID con impronta (`Fingerprinter`; non per Opus/WebM; punteggio ≥ 0,9 e durata ±10 s); 4) YTM `searchSongs`. Soglie D-300..D-311.
 - Il risultato (`rec`, JSON in `track_enrich`, versione `kRecogVersion`) è una proposta. Le correzioni passano solo da `TrackCorrections` → `TrackEditor` → Registro (`activity_log`).
 - Arricchimento: `enrich_parts` (`isDue`, `dueSql`, `eligibleSql`, `fillableFields`, `statusAfter`, `AskMode`) decide cosa fare; gather/engine/commit/runner/completer lo eseguono; `enrich_writer` è l'**unico** a scrivere `tracks.enrich_status`. Parte quando l'utente è inattivo e dopo `startupSettledProvider`.
+- Motore unico (D-683, chiude D-280): completer, runner, righe in streaming (ascolto, Shuffle+, import: `streamEnrichRowProvider` → `EnrichEngine.completeOne`) e seconda opinione (`engine.commit`) scrivono tutti dal motore: solo campi vuoti, segni «niente», status, switch automatici. Titolo e artista di una riga stream non si sovrascrivono; un secondo ascolto non chiede nulla.
+- Per brano: `withTrackMemo`/`memoPerTrack` (`enrich_gather`) fanno una sola richiesta `recordingsByIsrc` e una sola ricerca Deezer, condivise da riconoscimento, crediti e curiosità.
+- `MusicBrainzUnavailable` (503 o pausa) vale `PartOutcome.limited`: il giro si ferma. Il finder dei paesi si ferma se il client è in pausa. Il completer non parte durante una Jam, senza rete o su rete a consumo, salvo l'impostazione `enrichOnMetered` (spenta di default).
 - Segnali di stato nel backup: `recogPassAfter/Done`, `enrichMarkKey` sono legati al dispositivo.
 
 ### Testi
 
-`LyricsChain`: LRCLIB, poi NetEase per i sincronizzati (`romalrc` per la romanizzazione), poi lyrics.ovh (D-111). Romanizzazione in `services/lyrics/` (hangul, pinyin con CC-CEDICT scaricato al primo uso dalla release `data-cedict-2026-11-08`). Traduzione con `google_mlkit_translation`. `handWrittenLyrics` non equivale a `byUser` (D-482).
+`LyricsChain`: LRCLIB, poi NetEase per i sincronizzati (`romalrc` per la romanizzazione), poi lyrics.ovh (D-111). Romanizzazione in `services/lyrics/` (hangul, pinyin con CC-CEDICT scaricato al primo uso dalla release `data-cedict-2026-11-08`). Traduzione con `google_mlkit_translation`. Brani strumentali (`track_enrich.instrumental`, da LRCLIB `instrumental: true` o dal titolo, D-684): niente ricerca dei testi né separazione karaoke, la vista mostra «Brano strumentale». `handWrittenLyrics` non equivale a `byUser` (D-482).
 
 ### Video karaoke (fase 131, D-631..D-639, D-646, D-649, D-651, D-661)
 - **Cerca**: quarto filtro `SourceFilter.karaoke`, solo con `kEnableYoutube`. Fa una richiesta nuova (`SmartSearch.run(videoOnly:)`, «karaoke» aggiunto alla query, chiave di cache con `|v`); gli altri tre guardano le righe già presenti. `karaokeResults` tiene i titoli con «karaoke», toglie reaction e cover/live solo se sono un'etichetta e non una parola del titolo, e mette prima i canali noti (`kKnownKaraokeChannels` in `online/karaoke_channels.dart`). Un link incollato non si filtra.
@@ -164,6 +167,8 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 ## Trappole
 
+- **`EnrichmentService` serve solo all'anteprima** (`propose` in sola lettura, `apply` dal suo «Accetta»): ogni altra scrittura passa da `EnrichEngine` (D-683).
+- **Cache di MusicBrainz e «Aggiorna»**: un giro forzato deve stare dentro `MusicBrainzClient.fresh`, altrimenti riceve le risposte in cache.
 - Deezer gw (`gw-light.php`) vuole un corpo JSON `{}` anche per `deezer.getUserData`: senza risponde 400. Il `checkForm` vale con il cookie `sid` della stessa sessione.
 Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 

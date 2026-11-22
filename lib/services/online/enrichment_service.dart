@@ -6,6 +6,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/track_repository.dart';
 import 'cover_fetcher.dart';
 import 'credits_enricher.dart';
+import 'enrich_gather.dart' show withTrackMemo;
 import 'enrich_parts.dart';
 import 'enrich_writer.dart';
 import 'enrichment_proposal.dart';
@@ -62,12 +63,15 @@ class EnrichmentService {
   final RateLimiter _limiter;
   final EnrichWriter _writer;
 
-  /// The pause between online lookups, shared with the second opinion.
+  /// The pause between online lookups (the preview's; the engine has its own).
   RateLimiter get limiter => _limiter;
 
   /// Reads only: nothing is written until [apply]. A source that answered
   /// «too many requests» is not an error: the proposal says [EnrichmentProposal.limited].
-  Future<EnrichmentProposal> propose(Track t, {CancelToken? cancel}) async {
+  Future<EnrichmentProposal> propose(Track t, {CancelToken? cancel}) =>
+      withTrackMemo(() => _propose(t, cancel));
+
+  Future<EnrichmentProposal> _propose(Track t, CancelToken? cancel) async {
     final c = cleanSearchQuery(t.title, t.artist ?? '');
     var limited = false;
     // Independent services run in parallel; a slow one cannot block the others.
@@ -97,11 +101,11 @@ class EnrichmentService {
     final cu = results[2] as Curiosity?;
     if (m != null) AppLog.i('enrichment: track ${t.id} metadata from ${m.source}');
     // After the other parts: it reuses their Deezer hit and can never abort them.
-    final cp = _creditsOn && (t.id <= 0 || await _creditsDue(t))
+    final cp = _creditsOn && await _creditsDue(t)
         ? await creditsEnricher!.fetch(t, m?.hit, cancel)
         : null;
-    // The only place credits are saved for a stored track, even if the preview is cancelled.
-    if (t.id > 0) await saveCredits(t.id, cp);
+    // The only place credits are saved, even if the preview is cancelled.
+    await saveCredits(t.id, cp);
     return EnrichmentProposal(
         track: t,
         meta: m?.match,
@@ -125,7 +129,8 @@ class EnrichmentService {
     );
   }
 
-  /// Writes only [fields]; `userEdited` tracks keep title/artist/album.
+  /// Writes only [fields]: the preview's «Accetta», the user's decision (the engine writes the rest).
+  /// `userEdited` tracks keep title/artist/album.
   /// True when the proposal had something (not that a field changed).
   Future<bool> apply(EnrichmentProposal p, Set<EnrichField> fields,
           {CancelToken? cancel, bool replaceCover = false}) async =>

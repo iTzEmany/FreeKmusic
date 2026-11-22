@@ -56,6 +56,24 @@ void main() {
     },
   );
 
+  test('instrumental titles are recognised', () {
+    for (final t in ['Song (Instrumental)', 'Song [instrumental]', 'Song Instrumental Version', 'Song - Instrumental']) {
+      expect(isInstrumentalTitle(t), isTrue, reason: t);
+    }
+    expect(isInstrumentalTitle('Instrumentality'), isFalse);
+    expect(isInstrumentalTitle('Song'), isFalse);
+  });
+
+  test('an instrumental (flag or title) has no lyrics or synced part due', () async {
+    final t = await track(plain: 'x');
+    final flagged = TrackEnrichData(trackId: t.id, lyricsByUser: false, instrumental: true);
+    expect(isDue(EnrichPart.synced, t, null, _at(0)), isTrue); // the control
+    for (final p in [EnrichPart.lyrics, EnrichPart.synced]) {
+      expect(isDue(p, t, flagged, _at(0)), isFalse);
+      expect(isDue(p, t.copyWith(title: 'Song (Instrumental)'), null, _at(0)), isFalse);
+    }
+  });
+
   test('a filled part is never due', () async {
     final t = await track(plain: 'la la');
     expect(isDue(EnrichPart.lyrics, t, null, _at(99)), isFalse);

@@ -10,6 +10,7 @@ import 'package:codecore/services/online/credits.dart';
 import 'package:codecore/services/online/deezer_client.dart';
 import 'package:codecore/services/online/deezer_gw_client.dart';
 import 'package:codecore/services/online/enrich_engine.dart';
+import 'package:codecore/services/online/enrich_gather.dart' show withTrackMemo;
 import 'package:codecore/services/online/enrichment_service.dart';
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/itunes_client.dart';
@@ -197,6 +198,19 @@ void main() {
   Future<Map<EnrichPart, PartOutcome>> run(int id) =>
       engine.completeOne(id, {EnrichPart.meta, EnrichPart.credits});
 
+  test('one pass asks Deezer by ISRC once (propose) and MusicBrainz by ISRC at most once (engine)',
+      () async {
+    deezerMeta = true;
+    final id = await add();
+    final track = await (db.select(db.tracks)..where((t) => t.id.equals(id))).getSingle();
+    await svc.propose(track);
+    expect(web.urls.where((u) => u.contains('/track/isrc:')), hasLength(1));
+    web.urls.clear();
+    await run(id);
+    expect(web.urls.where((u) => u.contains('musicbrainz.org/ws/2/isrc/')).length,
+        lessThanOrEqualTo(1));
+  });
+
   test('option off: neither credit client is called, Deezer is asked as before',
       () async {
     creditsOn = false;
@@ -328,6 +342,24 @@ void main() {
     final id = await add();
     await run(id);
     expect((await creditsRepo.enrichOf(id))!.creditsNoneAt, isNull);
+  });
+
+  test('MusicBrainz resting (503): the credits come out limited, not failed (D-683)',
+      () async {
+    web.mbIsrcDown = true;
+    gw.result = const DeezerContributors([]);
+    final id = await add();
+    expect((await run(id))[EnrichPart.credits], PartOutcome.limited);
+  });
+
+  test('one track, one ISRC lookup for every part that wants it (136.4)', () async {
+    final id = await add();
+    final t = (await repo.getById(id))!;
+    await withTrackMemo(() async {
+      await svc.creditsEnricher!.fetch(t, null, null);
+      await svc.creditsEnricher!.fetch(t, null, null);
+    });
+    expect(web.count('musicbrainz.org/ws/2/isrc/'), 1);
   });
 
   test('the track deleted during the lookup: nothing is saved, nothing throws',

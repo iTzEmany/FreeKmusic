@@ -137,6 +137,10 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       final r = await ref.read(lyricsChainProvider).find(t, ignoreDuration: isKaraokeVideo(t));
       found = r.lyrics;
       unavailable = r.failed;
+      if (r.instrumental) {
+        await setInstrumentalFlag(ref, t, true);
+        return;
+      }
     } on RateLimitedException {
       unavailable = true;
     } finally {
@@ -148,6 +152,8 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       return;
     }
     final result = found;
+    // A text the user found clears a wrong instrumental flag (D-700).
+    await setInstrumentalFlag(ref, t, false);
     // The user asked for this text: the automatic searches never replace it.
     await ref
         .read(trackOpsProvider)
@@ -282,7 +288,8 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            l.noLyrics,
+            // The flag only informs: «Cerca testo» and «Scrivi» stay open (D-700).
+            ref.watch(instrumentalProvider(track)).value == true ? l.instrumentalTrack : l.noLyrics,
             style: theme.bodyLarge?.copyWith(color: cc.textMuted),
           ),
           const SizedBox(height: 12),

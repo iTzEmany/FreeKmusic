@@ -5,16 +5,20 @@ import '../../core/import_row.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/track_repository.dart';
 import '../import/track_matcher.dart';
-import 'enrichment_service.dart';
-import 'http_client.dart';
+import '../covers/cover_store.dart' show TrackOwnCover;
+import 'enrich_engine.dart';
+import 'enrich_parts.dart';
+import 'enrich_writer.dart';
+import 'enrichment_proposal.dart';
+import 'metadata_resolver.dart' show ResolvedMeta;
 import 'innertube_client.dart';
 import 'itunes_client.dart';
-import 'lrclib_client.dart';
 import 'musicbrainz_client.dart';
 import 'youtube_service.dart';
 import 'ytm_song_parser.dart' show ytmMatches;
 import 'ytm_catalog.dart';
 import '../../core/artist_key.dart';
+import '../../core/clock.dart';
 
 enum SecondOpinionKind {
   /// YouTube Music answered and nothing in it is sure to be this song.
@@ -53,7 +57,7 @@ class SecondOpinion {
   SecondOpinion({
     required this.client,
     required this.catalog,
-    required this.enrichment,
+    required this.engine,
     required this.musicBrainz,
     required this.tracks,
     required this.hl,
@@ -61,13 +65,10 @@ class SecondOpinion {
 
   final InnerTubeClient client;
   final YtmCatalog catalog;
-  final EnrichmentService enrichment;
+  final EnrichEngine engine;
   final MusicBrainzClient musicBrainz;
   final TrackRepository tracks;
   final String Function() hl;
-
-  /// MusicBrainz answered «too many requests»: no genre lookups until then.
-  DateTime? _mbRestUntil;
 
   static const _maxDuration = Duration(minutes: 20);
   static const _durationSlack = Duration(seconds: 3);
@@ -79,7 +80,7 @@ class SecondOpinion {
     }
     final List<YtResult> results;
     try {
-      await enrichment.limiter.wait();
+      await engine.limiter.wait();
       final artist = (t.artist ?? '').trim();
       results = await client.searchSongs(
         '${t.title} $artist'.trim(),
@@ -160,7 +161,7 @@ class SecondOpinion {
     final fields = <EnrichField>{};
     var limited = false;
     final resultArtist = r.artists.firstOrNull;
-    final artist = (t.artist ?? '').trim().isEmpty && !t.userEdited
+    var artist = (t.artist ?? '').trim().isEmpty && !t.userEdited
         ? resultArtist
         : null;
     if (artist != null) fields.add(EnrichField.artist);
@@ -206,9 +207,7 @@ class SecondOpinion {
       if (year != null) fields.add(EnrichField.year);
       if (cover != null) fields.add(EnrichField.cover);
       if (number != null) fields.add(EnrichField.trackNumber);
-      final mbRest = _mbRestUntil;
-      if (t.genre == null &&
-          (mbRest == null || DateTime.now().isAfter(mbRest))) {
+      if (t.genre == null && !musicBrainz.resting) {
         try {
           genre = await musicBrainz.genreFor(
             t.title,
@@ -217,18 +216,16 @@ class SecondOpinion {
             isrc: t.isrc,
             cancel: cancel,
           );
-        } on RateLimitedException catch (e) {
-          _mbRestUntil = DateTime.now().add(const Duration(minutes: 10));
+        } on Exception catch (e) {
+          // MusicBrainz resting, refusing or down never stops the check.
+          if (e is DioException && CancelToken.isCancel(e)) rethrow;
           AppLog.w('second opinion genre skipped: $e');
-        } on DioException catch (e) {
-          if (CancelToken.isCancel(e)) rethrow;
-          AppLog.w('second opinion genre failed: $e');
         }
         if (genre != null) fields.add(EnrichField.genre);
       }
       if (t.lyricsPlain == null && t.lyricsSynced == null && !limited) {
         try {
-          await enrichment.limiter.wait();
+          await engine.limiter.wait();
           lyrics = await client.lyrics(r.id, cancel: cancel);
         } on YtException catch (e) {
           limited = e.kind == YtErrorKind.rateLimited;
@@ -245,27 +242,25 @@ class SecondOpinion {
     // The user may have edited the track meanwhile: drop what is filled now.
     final cur = await tracks.getById(t.id);
     if (cur != null) {
+      if (cur.userEdited || (cur.artist ?? '').trim().isNotEmpty) {
+        fields.remove(EnrichField.artist);
+        artist = null;
+      }
+      if (cur.userEdited || cur.album != null) {
+        fields.remove(EnrichField.album);
+        album = null;
+      }
+      if (cur.trackNumber != null) fields.remove(EnrichField.trackNumber);
+      if (cur.hasCover) fields.remove(EnrichField.cover);
       if (cur.year != null) fields.remove(EnrichField.year);
       if (cur.genre != null) fields.remove(EnrichField.genre);
       if (cur.lyricsPlain != null || cur.lyricsSynced != null) {
         fields.remove(EnrichField.lyrics);
       }
     }
-    final proposal = EnrichmentProposal(
-      track: t,
-      meta: ItunesMatch(
-        title: t.title,
-        artist: artist ?? t.artist ?? '',
-        album: album,
-        year: year,
-        genre: genre,
-        trackNumber: number,
-        artworkUrl: cover,
-      ),
-      lyrics: lyrics == null ? null : LyricsResult(plain: lyrics),
-    );
+    var wrote = false;
     try {
-      await enrichment.apply(proposal, fields, cancel: cancel);
+      wrote = await _write(t, fields, artist, album, year, number, genre, cover, lyrics, cancel);
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) rethrow;
       AppLog.w('second opinion write failed: $e');
@@ -279,8 +274,63 @@ class SecondOpinion {
     );
     return SecondOpinionOutcome(
       limited ? SecondOpinionKind.throttled : SecondOpinionKind.confirmed,
-      written: fields,
+      written: wrote ? fields : const {},
       videoId: r.id,
     );
+  }
+
+  /// Writes through the engine's committer: the artist first (the commit only
+  /// fills the empty fields of the row), the rest as one gather (D-683).
+  Future<bool> _write(
+    Track t,
+    Set<EnrichField> fields,
+    String? artist,
+    String? album,
+    int? year,
+    int? number,
+    String? genre,
+    String? coverUrl,
+    String? lyrics,
+    CancelToken? cancel,
+  ) async {
+    if (fields.isEmpty) return false;
+    final writer = EnrichWriter(engine.db, tracks);
+    // The row as it is now: the user may have edited it since [t] was read.
+    var cur = await tracks.getById(t.id);
+    if (cur == null) return false; // deleted meanwhile
+    if (artist != null && !cur.userEdited && (cur.artist ?? '').trim().isEmpty) {
+      await writer.writeFields(
+        cur,
+        EnrichmentProposal(track: cur, meta: ItunesMatch(title: cur.title, artist: artist)),
+        {EnrichField.artist},
+      );
+      cur = await tracks.getById(t.id) ?? cur;
+    }
+    final g = EnrichGather(t.id, {EnrichPart.meta: PartOutcome.found})
+      ..track = cur
+      ..now = nowMs()
+      ..plain = lyrics;
+    if (album != null || year != null || number != null || genre != null || coverUrl != null) {
+      g.meta = ResolvedMeta(
+        ItunesMatch(
+          title: cur.title,
+          artist: cur.artist ?? '',
+          album: album,
+          year: year,
+          genre: genre,
+          trackNumber: number,
+          artworkUrl: coverUrl,
+        ),
+        'ytm',
+      );
+    }
+    if (coverUrl != null && !cur.hasOwnCover && cur.coverSource == 0) {
+      final key = writer.albumKeyOf(cur, null, album);
+      g.cover = await engine.covers.fetch(key, coverUrl, cancel: cancel);
+      g.coverAlbum = key;
+    }
+    final r = (await engine.commit([g])).single;
+    // Lost write, or the track gone meanwhile (every part skipped): nothing was filled.
+    return !r.lost && r.out[EnrichPart.meta] != PartOutcome.skipped;
   }
 }

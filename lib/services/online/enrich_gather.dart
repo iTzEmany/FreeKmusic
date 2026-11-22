@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../../core/app_log.dart';
@@ -8,6 +10,7 @@ import 'curiosity_service.dart';
 import 'enrich_parts.dart';
 import 'http_client.dart';
 import 'metadata_resolver.dart';
+import 'musicbrainz_client.dart' show MusicBrainzUnavailable;
 import '../recognition/track_identity.dart';
 
 /// How a [EnrichGather] went, for the runner's «nobody answers» count: the
@@ -37,6 +40,7 @@ class EnrichGather {
   bool metaAsked = false; // meta asked without failing; settled in commit
   AskMode mode = AskMode.due;
   String? plain, synced;
+  bool instrumental = false; // LRCLIB said so; written in commit (D-684)
   CreditsPart? credits;
   CuriosityLookup? curio;
   Recognition? rec; // freshly recognized, to write; null when saved already or lost
@@ -57,6 +61,19 @@ class EnrichGather {
   }
 }
 
+/// One track's answers already asked (136.4): the recognizer, the credits and
+/// the curiosities all want the same `recordingsByIsrc`, and the credits and
+/// the metadata the same Deezer hit. Carried by the zone so no signature grows.
+/// shortcut: first asker's title/artist filter wins, same ISRC = same song.
+Future<T> memoPerTrack<T>(String key, Future<T> Function() ask) {
+  final m = Zone.current[#trackMemo] as Map<String, Future<Object?>>?;
+  return m == null ? ask() : m.putIfAbsent(key, ask) as Future<T>;
+}
+
+/// Runs [body] with a fresh per-track memo for [memoPerTrack].
+Future<T> withTrackMemo<T>(Future<T> Function() body) =>
+    runZoned(body, zoneValues: {#trackMemo: <String, Future<Object?>>{}});
+
 /// One source of a gather: its answer, or `failed` (logged) when it threw,
 /// timed out or was refused. A cancellation escapes.
 Future<({T? value, bool failed, bool limited})> attemptSource<T>(
@@ -73,6 +90,9 @@ Future<({T? value, bool failed, bool limited})> attemptSource<T>(
     );
   } on RateLimitedException catch (e) {
     AppLog.w('completion: $what refused', e);
+    return (value: null, failed: true, limited: true);
+  } on MusicBrainzUnavailable catch (e) {
+    AppLog.w('completion: $what resting', e); // 503 or resting: the round stops (D-683)
     return (value: null, failed: true, limited: true);
   } on Object catch (e, st) {
     if (e is DioException && CancelToken.isCancel(e)) rethrow;

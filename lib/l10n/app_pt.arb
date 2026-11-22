@@ -4110,5 +4110,8 @@
     }
   },
   "karaokeIdleReminder": "Karaoke ligado há 20 minutos sem ser usado",
-  "karaokeTurnOff": "Desligar"
+  "karaokeTurnOff": "Desligar",
+  "enrichOnMetered": "Enriquecer também em rede com limite de dados",
+  "enrichOnMeteredHint": "Por padrão, o enriquecimento em segundo plano espera por uma rede sem limite de dados.",
+  "instrumentalTrack": "Faixa instrumental"
 }

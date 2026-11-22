@@ -16,7 +16,9 @@ Object _fixture(String name) =>
 
 /// MusicBrainz and Wikidata answering from the fixtures; [refuseAt] is the request that gets a 429.
 class _Web implements WebClient {
-  _Web({this.cityOnly = false, this.refuseAt});
+  _Web({this.cityOnly = false, this.refuseAt, this.unavailable = false});
+
+  final bool unavailable;
 
   /// The search finds an artist whose area is a city (no country): Wikidata has to answer.
   final bool cityOnly;
@@ -26,6 +28,7 @@ class _Web implements WebClient {
   @override
   Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
     asked.add(url);
+    if (unavailable) throw WebUnavailableException(url, 503);
     if (refuseAt != null && asked.length >= refuseAt!) throw const RateLimitedException(429);
     if (url.endsWith('/artist')) return _fixture(cityOnly ? 'artist_search_city_only' : 'artist_search_coldplay');
     if (url.contains('/artist/')) return _fixture('artist_urlrels_wikidata');
@@ -133,6 +136,17 @@ void main() {
     final r = await finder(web, allowed: () async => false).run();
     expect(web.asked, isEmpty);
     expect((r.checked, r.stopped), (0, true));
+  });
+
+  test('MusicBrainz resting after a 503: the run stops and does not ask again per artist (D-683)', () async {
+    await add('Coldplay');
+    await add('Elvis Presley');
+    final web = _Web(unavailable: true);
+    final f = finder(web);
+    final r = await f.run();
+    expect((r.checked, r.stopped, web.asked.length), (0, true, 1));
+    expect((await f.run()).stopped, isTrue);
+    expect(web.asked.length, 1, reason: 'the client rests: no new request');
   });
 
   test('allowed only with the enrichment on, no Jam and a network that is online and not metered', () async {

@@ -51,6 +51,7 @@ class AppSettings {
     this.creditsDetails = true,
     this.romanization = true,
     this.autoCuriosities = true,
+    this.enrichOnMetered = false,
     this.showUndoSnackbar = true,
     this.deviceName,
     this.jamLatencyMs = 0,
@@ -128,6 +129,9 @@ class AppSettings {
 
   /// Deezer as a metadata source (data only); on unless the user turned it off.
   final bool deezerMeta, acoustId, creditsDetails, autoCuriosities;
+
+  /// The background completion may also run on a metered network (D-683); off by default.
+  final bool enrichOnMetered;
 
   /// Transliteration under CJK lyrics (D-459, D-475): on unless the user turned it off.
   final bool romanization;
@@ -262,6 +266,7 @@ class AppSettings {
     bool? creditsDetails,
     bool? romanization,
     bool? autoCuriosities,
+    bool? enrichOnMetered,
     bool? showUndoSnackbar,
     String? deviceName,
     int? jamLatencyMs,
@@ -326,6 +331,7 @@ class AppSettings {
     creditsDetails: creditsDetails ?? this.creditsDetails,
     romanization: romanization ?? this.romanization,
     autoCuriosities: autoCuriosities ?? this.autoCuriosities,
+    enrichOnMetered: enrichOnMetered ?? this.enrichOnMetered,
     showUndoSnackbar: showUndoSnackbar ?? this.showUndoSnackbar,
     deviceName: deviceName ?? this.deviceName,
     jamLatencyMs: jamLatencyMs ?? this.jamLatencyMs,
@@ -480,6 +486,7 @@ class SettingsStore {
     creditsDetails: _prefs.getBool('creditsDetails') ?? true,
     romanization: _prefs.getBool('romanization') ?? true,
     autoCuriosities: _prefs.getBool('autoCuriosities') ?? true,
+    enrichOnMetered: _prefs.getBool('enrichOnMetered') ?? false,
     showUndoSnackbar: _prefs.getBool('showUndoSnackbar') ?? true,
     deviceName: _prefs.getString('deviceName'),
     normalizeVolume: _prefs.getBool('normalizeVolume') ?? false,
@@ -586,6 +593,7 @@ class SettingsStore {
     await _prefs.setBool('creditsDetails', s.creditsDetails);
     await _prefs.setBool('romanization', s.romanization);
     await _prefs.setBool('autoCuriosities', s.autoCuriosities);
+    await _prefs.setBool('enrichOnMetered', s.enrichOnMetered);
     await _prefs.setBool('showUndoSnackbar', s.showUndoSnackbar);
     await _prefs.setBool('normalizeVolume', s.normalizeVolume);
     await _prefs.setBool('receiveFromLan', s.receiveFromLan);

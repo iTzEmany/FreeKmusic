@@ -503,6 +503,9 @@ class TrackEnrich extends Table {
   IntColumn get creditsNoneAt => integer().nullable()();
   BoolColumn get lyricsByUser => boolean().withDefault(const Constant(false))();
 
+  /// Null = unknown; true = instrumental (no lyrics to look for).
+  BoolColumn get instrumental => boolean().nullable()();
+
   @override
   Set<Column> get primaryKey => {trackId};
 }

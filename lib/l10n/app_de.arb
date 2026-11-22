@@ -3924,5 +3924,8 @@
     }
   },
   "karaokeIdleReminder": "Karaoke seit 20 Minuten an, ohne genutzt zu werden",
-  "karaokeTurnOff": "Ausschalten"
+  "karaokeTurnOff": "Ausschalten",
+  "enrichOnMetered": "Auch im getakteten Netz anreichern",
+  "enrichOnMeteredHint": "Standardmäßig wartet die Hintergrundanreicherung auf ein ungetaktetes Netz.",
+  "instrumentalTrack": "Instrumentalstück"
 }

@@ -16,9 +16,13 @@ class LyricsChainResult {
     this.syncedFailed = false,
     this.limited = false,
     this.source,
+    this.instrumental = false,
   });
 
   final LyricsResult? lyrics;
+
+  /// LRCLIB flagged the track instrumental: no text exists, and none is asked again (D-684).
+  final bool instrumental;
 
   /// A fallback source errored and there is no text, so «nothing found» must not be remembered.
   final bool failed;
@@ -114,6 +118,9 @@ class LyricsChain {
               rethrow;
             }
           });
+    if (lr?.instrumental ?? false) {
+      return const LyricsChainResult(instrumental: true);
+    }
     var plain = lr?.plain, synced = lr?.synced;
     String? source = lr == null || lr.isEmpty ? null : 'lrclib';
     final ne = netease;
