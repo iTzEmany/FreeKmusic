@@ -163,3 +163,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 132 | Aggiornamento dall'app | [`fase-132-aggiornamento-dall-app.md`](fasi/fase-132-aggiornamento-dall-app.md) |
 | 133 | Rilascio 1.6.3 | [`fase-133-rilascio-1-6-3.md`](fasi/fase-133-rilascio-1-6-3.md) |
 | 134 | Rilascio 1.6.4 (Linux su glibc 2.39) | [`fase-134-rilascio-1-6-4.md`](fasi/fase-134-rilascio-1-6-4.md) |
+| 135 | Riproduzione affidabile (#210) | [`fase-135-riproduzione-affidabile.md`](fasi/fase-135-riproduzione-affidabile.md) |

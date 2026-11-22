@@ -9,7 +9,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 - **Feature «Video karaoke, aggiornamento dall'app, rilascio 1.6.3»** (kickoff del 18/11): fasi 131–133 in [`fasi/`](fasi/README.md), specifica in [`storico/feature/feature-karaoke-video-e-aggiornamenti.md`](storico/feature/feature-karaoke-video-e-aggiornamenti.md), mockup in [`storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](storico/feature/mockup-karaoke-video-e-aggiornamenti.html), decisioni D-631..D-651.
 
 - **Grande revisione** (22/11, D-662..D-699, analisi in [`refactor/grande-revisione/analisi.md`](refactor/grande-revisione/analisi.md), rete di test in [`rete.md`](refactor/grande-revisione/rete.md)): fasi 135-147 in [`fasi/`](fasi/README.md), una per riga:
-  - Fase 135 «riproduzione affidabile»: [`fasi/fase-135-riproduzione-affidabile.md`](fasi/fase-135-riproduzione-affidabile.md)
+  - ~~Fase 135 «riproduzione affidabile»~~ fatta (#210): [`storico/fasi/fase-135-riproduzione-affidabile.md`](storico/fasi/fase-135-riproduzione-affidabile.md)
   - Fase 136 «arricchimento unico»: [`fasi/fase-136-arricchimento-unico.md`](fasi/fase-136-arricchimento-unico.md)
   - Fase 137 «backup, ripristino, aggiornamento»: [`fasi/fase-137-backup-ripristino-aggiornamento.md`](fasi/fase-137-backup-ripristino-aggiornamento.md)
   - Fase 138 «ritocchi di UI»: [`fasi/fase-138-ritocchi-ui.md`](fasi/fase-138-ritocchi-ui.md)
