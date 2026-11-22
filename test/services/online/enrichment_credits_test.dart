@@ -198,6 +198,19 @@ void main() {
   Future<Map<EnrichPart, PartOutcome>> run(int id) =>
       engine.completeOne(id, {EnrichPart.meta, EnrichPart.credits});
 
+  test('one pass asks Deezer by ISRC once (propose) and MusicBrainz by ISRC at most once (engine)',
+      () async {
+    deezerMeta = true;
+    final id = await add();
+    final track = await (db.select(db.tracks)..where((t) => t.id.equals(id))).getSingle();
+    await svc.propose(track);
+    expect(web.urls.where((u) => u.contains('/track/isrc:')), hasLength(1));
+    web.urls.clear();
+    await run(id);
+    expect(web.urls.where((u) => u.contains('musicbrainz.org/ws/2/isrc/')).length,
+        lessThanOrEqualTo(1));
+  });
+
   test('option off: neither credit client is called, Deezer is asked as before',
       () async {
     creditsOn = false;

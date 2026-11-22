@@ -6,6 +6,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/track_repository.dart';
 import 'cover_fetcher.dart';
 import 'credits_enricher.dart';
+import 'enrich_gather.dart' show withTrackMemo;
 import 'enrich_parts.dart';
 import 'enrich_writer.dart';
 import 'enrichment_proposal.dart';
@@ -67,7 +68,10 @@ class EnrichmentService {
 
   /// Reads only: nothing is written until [apply]. A source that answered
   /// «too many requests» is not an error: the proposal says [EnrichmentProposal.limited].
-  Future<EnrichmentProposal> propose(Track t, {CancelToken? cancel}) async {
+  Future<EnrichmentProposal> propose(Track t, {CancelToken? cancel}) =>
+      withTrackMemo(() => _propose(t, cancel));
+
+  Future<EnrichmentProposal> _propose(Track t, CancelToken? cancel) async {
     final c = cleanSearchQuery(t.title, t.artist ?? '');
     var limited = false;
     // Independent services run in parallel; a slow one cannot block the others.
