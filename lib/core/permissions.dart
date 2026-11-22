@@ -2,6 +2,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'platform.dart';
 
+Future<bool> openAudioPermissionSettings() => openAppSettings();
+
 /// True when audio files can be read. Desktop needs no permission.
 Future<bool> ensureAudioPermission() async {
   if (!isAndroid) return true;

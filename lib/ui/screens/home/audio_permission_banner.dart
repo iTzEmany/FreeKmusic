@@ -5,13 +5,12 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/permission_providers.dart';
 import '../../theme/tokens.dart';
 
-/// «Permesso audio mancante» with «Concedi»; nothing while the permission is there.
+/// «Permesso audio mancante» with «Concedi».
 class AudioPermissionBanner extends ConsumerWidget {
   const AudioPermissionBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(audioPermissionProvider)) return const SizedBox.shrink();
     final l = context.l10n;
     final cc = context.cc;
     return Padding(

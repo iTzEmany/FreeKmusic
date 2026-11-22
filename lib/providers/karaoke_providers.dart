@@ -486,7 +486,7 @@ const kKaraokeIdleReminder = Duration(minutes: 20);
 
 /// Bumps (count + 1) each time karaoke has been on for 20 minutes in a row with no karaoke file in
 /// use (D-685): the UI listens, shows «Spegni» and needs no acknowledgement. One bump per idle
-/// period; the timer restarts when use resumes or karaoke goes off. Watched from the app root.
+/// period; the timer restarts when use resumes or karaoke goes off. Listened to by AppShell.
 final karaokeReminderProvider = NotifierProvider<KaraokeReminder, int>(
   KaraokeReminder.new,
 );

@@ -21,18 +21,13 @@ class _Perm extends AudioPermission {
 }
 
 void main() {
-  testWidgets('banner shows only without permission and «Concedi» grants', (tester) async {
+  testWidgets('banner «Concedi» grants', (tester) async {
     final h = await Harness.create(tester);
     final missing = _Perm(false);
     await h.pump(tester, const Scaffold(body: AudioPermissionBanner()),
         extraOverrides: [audioPermissionProvider.overrideWith(() => missing)]);
     await tester.tap(find.text('Concedi'));
     expect(missing.grants, 1);
-    await h.dispose(tester);
-
-    await h.pump(tester, const Scaffold(body: AudioPermissionBanner()),
-        extraOverrides: [audioPermissionProvider.overrideWith(() => _Perm(true))]);
-    expect(find.text('Concedi'), findsNothing);
     await h.dispose(tester);
   });
 

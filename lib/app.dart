@@ -67,7 +67,7 @@ class CodecoreApp extends ConsumerWidget {
     // Corrects once the lengths of mp3 files read wrong before (starts once settled).
     ref.watch(mp3LengthFixStartProvider);
     ref.watch(permissionRescanProvider);
-    ref.watch(audioPermissionProvider);
+    ref.listen(audioPermissionProvider, (_, _) {});
     ref.watch(autoBackupStartProvider);
     ref.watch(podcastOrphansStartProvider);
     // Reads the genres of the existing library again, in the background (starts once settled).

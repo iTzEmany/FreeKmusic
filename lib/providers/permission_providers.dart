@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../core/permissions.dart';
 
@@ -27,7 +26,7 @@ class AudioPermission extends Notifier<bool> {
   /// The one «Concedi»: asks; if the system will not ask again, opens the app's settings.
   Future<void> grant() async {
     if (await isAudioPermissionPermanentlyDenied()) {
-      await openAppSettings();
+      await openAudioPermissionSettings();
     } else {
       state = await ensureAudioPermission();
     }

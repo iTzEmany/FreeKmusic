@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureType;
 
@@ -306,6 +307,7 @@ class AppShell extends ConsumerWidget {
       if (f == null) return;
       final l = context.l10n;
       if (f.reason == PlaybackFailureReason.permissionDenied) {
+        unawaited(ref.read(audioPermissionProvider.notifier).refresh());
         showMsg(
           context,
           l.permissionDenied,
