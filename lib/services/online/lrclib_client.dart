@@ -70,6 +70,7 @@ class LrclibClient {
             artist,
             ignoreDuration ? null : durationSec,
             title: ignoreDuration ? t : null,
+            flagTitle: t,
           );
           if (ok != null) return ok;
         }
@@ -84,6 +85,7 @@ class LrclibClient {
     String artist,
     int? durationSec, {
     String? title,
+    String? flagTitle,
   }) {
     if (item is! Map) return null;
     final by = '${item['artistName'] ?? ''}'.toLowerCase().trim();
@@ -101,6 +103,10 @@ class LrclibClient {
       if ((d - durationSec).abs() > 3) return null;
     }
     if (item['instrumental'] == true) {
+      // From /search the flag counts only for the same title (D-700): an interlude is not the song.
+      if (flagTitle != null && _titleKey('${item['trackName'] ?? ''}') != _titleKey(flagTitle)) {
+        return null;
+      }
       return const LyricsResult(instrumental: true);
     }
     final result = LyricsResult(

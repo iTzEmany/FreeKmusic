@@ -39,12 +39,22 @@ enum EnrichField {
 enum AskMode { due, retryNone, force }
 
 final _instrumentalTitle = RegExp(
-  r'[(\[]\s*instrumental\s*[)\]]|instrumental version|-\s*instrumental\b',
+  r'[(\[]instrumental[)\]]|instrumental version|[-–] ?instrumental(?=$|[ ),\]])',
   caseSensitive: false,
 );
 
 /// Fallback when LRCLIB did not say: the title announces an instrumental (D-684).
 bool isInstrumentalTitle(String title) => _instrumentalTitle.hasMatch(title);
+
+/// [isInstrumentalTitle] in SQL (LIKE has no regex): same patterns, no spaces inside brackets.
+final _instrumentalSql = [
+  "LOWER(t.title) LIKE '%(instrumental)%'",
+  "LOWER(t.title) LIKE '%[instrumental]%'",
+  "LOWER(t.title) LIKE '%instrumental version%'",
+  for (final dash in ['-', '–', '- ', '– '])
+    for (final end in ['', ' %', ')%', ']%', ',%'])
+      "LOWER(t.title) LIKE '%${dash}instrumental$end'",
+].join(' OR ');
 
 /// A «searched, nothing» answer is asked again after this long.
 const retryNoneAfter = Duration(days: 30);
@@ -66,7 +76,8 @@ bool isDue(
 }) {
   final byUser = enrich?.lyricsByUser ?? false;
   // An instrumental has no text to look for.
-  if ((part == EnrichPart.lyrics || part == EnrichPart.synced) &&
+  if (mode != AskMode.force &&
+      (part == EnrichPart.lyrics || part == EnrichPart.synced) &&
       (enrich?.instrumental == true || isInstrumentalTitle(track.title))) {
     return false;
   }
@@ -122,12 +133,13 @@ const eligibleSql =
 /// due. `?1` is the instant before which a «nothing» mark no longer holds
 /// (now minus [retryNoneAfter] in milliseconds); not used outside [AskMode.due].
 String dueSql(Set<EnrichPart> parts, AskMode mode) {
+  final force = mode == AskMode.force;
   String due(String empty, String mark) => mode == AskMode.due
       ? '($empty AND (e.$mark IS NULL OR e.$mark < ?1))'
       : '($empty)';
   // The title heuristic is approximate here; [isDue] and the engine decide again.
-  const askable = "COALESCE(e.lyrics_by_user, 0) = 0 AND COALESCE(e.instrumental, 0) = 0 "
-      "AND LOWER(t.title) NOT LIKE '%instrumental%'";
+  final askable = "COALESCE(e.lyrics_by_user, 0) = 0 ${force ? '' : 'AND COALESCE(e.instrumental, 0) = 0'} "
+      "AND NOT (${force ? '0' : _instrumentalSql})";
   return [
     for (final p in parts)
       switch (p) {

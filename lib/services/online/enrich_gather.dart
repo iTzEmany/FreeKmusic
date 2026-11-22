@@ -40,6 +40,7 @@ class EnrichGather {
   bool metaAsked = false; // meta asked without failing; settled in commit
   AskMode mode = AskMode.due;
   String? plain, synced;
+  bool instrumental = false; // LRCLIB said so; written in commit (D-684)
   CreditsPart? credits;
   CuriosityLookup? curio;
   Recognition? rec; // freshly recognized, to write; null when saved already or lost

@@ -388,6 +388,19 @@ void main() {
       expect(r?.instrumental, isTrue);
     });
 
+    test('/search: an instrumental interlude with another title is skipped (D-700)', () async {
+      final w = _Web({
+        '/get': () => null,
+        '/search': () => [
+          {'artistName': 'Adele', 'trackName': 'Hello (Interlude)', 'duration': 250, 'instrumental': true},
+          {'artistName': 'Adele', 'trackName': 'Hello', 'duration': 250, 'plainLyrics': 'hi'},
+        ],
+      });
+      final r = await LrclibClient(w).find(title: 'Hello', artist: 'Adele', durationSec: 250);
+      expect(r?.plain, 'hi');
+      expect(r?.instrumental, isFalse);
+    });
+
     test('any other song keeps the 3 s limit', () async {
       final r = await LrclibClient(_Web(lrclib())).find(
         title: 'Hello',

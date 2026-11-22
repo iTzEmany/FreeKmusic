@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/database_providers.dart' show trackRepositoryProvider;
 import '../../../providers/track_ops.dart';
 import '../../../providers/karaoke_providers.dart';
 import '../../../providers/online_providers.dart';
@@ -139,8 +138,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       found = r.lyrics;
       unavailable = r.failed;
       if (r.instrumental) {
-        await ref.read(trackRepositoryProvider).setInstrumental(t.id, true);
-        ref.invalidate(instrumentalProvider(t));
+        await setInstrumentalFlag(ref, t, true);
         return;
       }
     } on RateLimitedException {
@@ -154,6 +152,8 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       return;
     }
     final result = found;
+    // A text the user found clears a wrong instrumental flag (D-700).
+    await setInstrumentalFlag(ref, t, false);
     // The user asked for this text: the automatic searches never replace it.
     await ref
         .read(trackOpsProvider)
@@ -283,20 +283,13 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
         ),
       );
     }
-    if (ref.watch(instrumentalProvider(track)).value == true) {
-      return Center(
-        child: Text(
-          l.instrumentalTrack,
-          style: theme.bodyLarge?.copyWith(color: cc.textMuted),
-        ),
-      );
-    }
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            l.noLyrics,
+            // The flag only informs: «Cerca testo» and «Scrivi» stay open (D-700).
+            ref.watch(instrumentalProvider(track)).value == true ? l.instrumentalTrack : l.noLyrics,
             style: theme.bodyLarge?.copyWith(color: cc.textMuted),
           ),
           const SizedBox(height: 12),

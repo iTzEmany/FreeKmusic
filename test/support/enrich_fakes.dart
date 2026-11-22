@@ -198,6 +198,7 @@ class FakeChain extends LyricsChain {
   bool limited = false;
   bool resting = false; // «limited» because LRCLIB rests, not because of a quota
   bool syncedFailed = false;
+  bool instrumental = false; // LRCLIB flags the track instrumental
   bool? wantSyncedSeen;
 
   /// The answer for one track, instead of [result].
@@ -238,6 +239,7 @@ class FakeChain extends LyricsChain {
         limited: true,
       );
     }
+    if (instrumental) return const LyricsChainResult(instrumental: true);
     return failed
         ? const LyricsChainResult(failed: true, syncedFailed: true)
         : LyricsChainResult(

@@ -6,6 +6,7 @@ import '../../data/repositories/credits_repository.dart'
     show CreditsRepository, decodeRec, mergeDetails;
 import '../recognition/track_identity.dart';
 import '../../data/repositories/track_repository.dart';
+import '../../data/repositories/track_kinds.dart';
 import '../covers/cover_store.dart';
 import 'cover_fetcher.dart';
 import 'credits_enricher.dart';
@@ -276,7 +277,8 @@ class EnrichCommitter {
     }
     c.raw = mergeDetails(c.raw, rec: rec);
     c.rawDirty = true;
-    if (fixes && auto && onSure != null) {
+    // A stream row keeps its title and artist (D-683).
+    if (fixes && auto && onSure != null && c.f.kind != kStreamKind) {
       // Same title by matchKey: the correction fills the artist and keeps the track's title.
       c.correct = found
           ? rec.copyWith(
@@ -311,7 +313,7 @@ class EnrichCommitter {
   /// The «searched, nothing» marks (and their clearing) of the parts that settled.
   Future<void> _writeMarks(_Commit c) async {
     final marks = c.g.marks;
-    if (marks.isEmpty && !c.rawDirty) return;
+    if (marks.isEmpty && !c.rawDirty && !c.g.instrumental) return;
     // A MBID the credits just saved is not «empty».
     final mbid = c.credited && c.g.credits?.mbid != null ? null : c.mbid;
     Value<int?> mark(EnrichPart p) =>
@@ -324,6 +326,7 @@ class EnrichCommitter {
       lyricsNoneAt: mark(EnrichPart.lyrics),
       syncedNoneAt: mark(EnrichPart.synced),
       curioNoneAt: mark(EnrichPart.curio),
+      instrumental: c.g.instrumental ? const Value(true) : const Value.absent(),
     );
     await db.into(db.trackEnrich).insert(row, onConflict: DoUpdate((_) => row));
   }
