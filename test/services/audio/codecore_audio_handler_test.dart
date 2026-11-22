@@ -246,6 +246,71 @@ void main() {
     expect(backend.loaded.last, '/m/c.mp3');
   });
 
+  Future<List<int>> addTracks(int n) async {
+    for (var i = 0; i < n; i++) {
+      await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/x/$i.mp3',
+              title: 'x$i',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+            ),
+          );
+    }
+    return (await db.select(db.tracks).get())
+        .where((t) => t.path.startsWith('/x/'))
+        .map((t) => t.id)
+        .toList();
+  }
+
+  test('a failed load emits a PlaybackFailure with the reason and moves to the next track', () async {
+    backend.failMessages['/m/a.mp3'] = 'boom';
+    await handler.playQueue(ids, 0);
+    await settle();
+    expect(errors.single.title, 'a');
+    expect(errors.single.reason, isNot(PlaybackFailureReason.fileMissing));
+    expect(handler.currentTrack!.title, 'b');
+    expect(backend.loaded.last, '/m/b.mp3');
+  });
+
+  test('five unreadable tracks: four attempts, four errors, then idle (limit is >, not >=)', () async {
+    // characterization: D-679 will change this
+    final xs = await addTracks(5);
+    for (var i = 0; i < 5; i++) {
+      backend.failing.add('/x/$i.mp3');
+    }
+    await handler.playQueue(xs, 0);
+    await settle();
+    expect(errors.length, CodecoreAudioHandler.maxConsecutiveErrors + 1);
+    expect(errors.map((e) => e.title), ['x0', 'x1', 'x2', 'x3']);
+    expect(backend.loaded, isEmpty);
+    expect(handler.currentTrack, isNull);
+    expect(handler.isPlaying, false);
+  });
+
+  test(
+    'the consecutive error count restarts after a track that loaded',
+    () async {
+      final xs = await addTracks(8);
+      // 3 bad, 1 good, 3 bad, 1 good: 6 errors in all, never 4 in a row.
+      for (final i in [0, 1, 2, 4, 5, 6]) {
+        backend.failing.add('/x/$i.mp3');
+      }
+      await handler.playQueue(xs, 0);
+      await settle();
+      expect(handler.currentTrack!.title, 'x3');
+      backend.stateC.add(BackendState.completed);
+      await settle();
+      expect(handler.currentTrack!.title, 'x7');
+      expect(errors.length, 6);
+    },
+  );
+
   test('a load interrupted by a newer one is not a failure', () async {
     final slow = Completer<void>();
     final b = _SlowBackend('/m/a.mp3', slow.future);
