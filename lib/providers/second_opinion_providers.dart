@@ -17,7 +17,7 @@ final secondOpinionProvider = Provider<SecondOpinion>(
   (ref) => SecondOpinion(
     client: ref.watch(innerTubeClientProvider),
     catalog: ref.watch(ytmCatalogProvider),
-    enrichment: ref.watch(enrichmentServiceProvider),
+    engine: ref.watch(enrichEngineProvider),
     musicBrainz: ref.watch(musicBrainzClientProvider),
     tracks: ref.watch(trackRepositoryProvider),
     hl: () => ref.read(ytmLanguageProvider),

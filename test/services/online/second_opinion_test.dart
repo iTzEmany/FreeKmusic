@@ -4,7 +4,8 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/covers/cover_store.dart';
-import 'package:codecore/services/online/enrichment_service.dart';
+import 'package:codecore/services/online/enrich_engine.dart';
+import 'package:codecore/services/online/enrichment_service.dart' show EnrichField;
 import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/innertube_client.dart';
 import 'package:codecore/services/online/itunes_client.dart';
@@ -33,7 +34,7 @@ class _Web implements WebClient {
   @override
   Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
     asked.add(Uri.parse(url).path);
-    if (mbLimited && url.contains('musicbrainz')) throw const RateLimitedException(429);
+    if (mbLimited && url.contains('musicbrainz')) throw WebUnavailableException(url, 503);
     if (!url.contains('musicbrainz')) return null;
     if (url.endsWith('/recording')) return _fixture('recording_search_official');
     if (url.contains('/recording/')) return {'genres': recordingGenres};
@@ -91,7 +92,7 @@ void main() {
   late AppDatabase db;
   late Directory tmp;
   late _Web web;
-  late EnrichmentService enrichment;
+  late EnrichEngine engine;
   late TrackRepository repo;
 
   setUp(() {
@@ -110,7 +111,7 @@ void main() {
       language: () => 'it',
       limiter: RateLimiter(minGap: Duration.zero),
     );
-    enrichment = enrichmentStack.svc;
+    engine = enrichmentStack.engine;
   });
   tearDown(() async {
     await db.close();
@@ -161,7 +162,7 @@ void main() {
   SecondOpinion opinion(_Client client) => SecondOpinion(
         client: client,
         catalog: _Catalog(albumPage),
-        enrichment: enrichment,
+        engine: engine,
         musicBrainz: MusicBrainzClient(web, pause: (_) async {}),
         tracks: repo,
         hl: () => 'it',
@@ -278,7 +279,7 @@ void main() {
     expect((await repo.getById(t.id))!.hasCover, isFalse);
   });
 
-  test('after a MusicBrainz 429 the genre is not asked again for a while', () async {
+  test('after a MusicBrainz 503 the genre is not asked again for a while', () async {
     web.mbLimited = true;
     final t = await add();
     final op = opinion(_Client([_hit()]));

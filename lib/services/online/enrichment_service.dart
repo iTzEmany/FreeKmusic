@@ -63,7 +63,7 @@ class EnrichmentService {
   final RateLimiter _limiter;
   final EnrichWriter _writer;
 
-  /// The pause between online lookups, shared with the second opinion.
+  /// The pause between online lookups (the preview's; the engine has its own).
   RateLimiter get limiter => _limiter;
 
   /// Reads only: nothing is written until [apply]. A source that answered
@@ -129,7 +129,8 @@ class EnrichmentService {
     );
   }
 
-  /// Writes only [fields]; `userEdited` tracks keep title/artist/album.
+  /// Writes only [fields]: the preview's «Accetta», the user's decision (the engine writes the rest).
+  /// `userEdited` tracks keep title/artist/album.
   /// True when the proposal had something (not that a field changed).
   Future<bool> apply(EnrichmentProposal p, Set<EnrichField> fields,
           {CancelToken? cancel, bool replaceCover = false}) async =>
