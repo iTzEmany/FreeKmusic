@@ -4133,5 +4133,17 @@
   "karaokeCostModel": "Télécharge 78 Mo la première fois",
   "karaokeCostTrack": "Le titre doit être téléchargé en entier",
   "karaokeStart": "Lancer",
-  "karaokeRetry": "Réessayer"
+  "karaokeRetry": "Réessayer",
+  "grantPermission": "Autoriser",
+  "audioPermissionBanner": "Sans l’autorisation de lire l’audio, FreeKmusic ne voit pas votre musique.",
+  "playbackErrorsInRow": "{count, plural, one{1 titre illisible} other{{count} titres illisibles}}",
+  "@playbackErrorsInRow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "karaokeIdleReminder": "Karaoké activé depuis 20 minutes sans être utilisé",
+  "karaokeTurnOff": "Désactiver"
 }

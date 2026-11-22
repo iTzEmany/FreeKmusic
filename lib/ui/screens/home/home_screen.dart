@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'audio_permission_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/home_sections.dart';
@@ -114,6 +115,7 @@ class HomeScreen extends ConsumerWidget {
                 return ListView(
                   children: [
                     header,
+                    const AudioPermissionBanner(),
                     if (wide) ...[
                       // Desktop (mockup): invite and counters left, Riprendi right.
                       Row(

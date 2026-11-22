@@ -3912,5 +3912,17 @@
   "karaokeCostModel": "Downloads 78 MB the first time",
   "karaokeCostTrack": "The track has to be downloaded in full",
   "karaokeStart": "Start",
-  "karaokeRetry": "Retry"
+  "karaokeRetry": "Retry",
+  "grantPermission": "Grant",
+  "audioPermissionBanner": "Without permission to read audio, FreeKmusic cannot see your music.",
+  "playbackErrorsInRow": "{count, plural, one{1 song cannot be played} other{{count} songs cannot be played}}",
+  "@playbackErrorsInRow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "karaokeIdleReminder": "Karaoke on for 20 minutes without being used",
+  "karaokeTurnOff": "Turn off"
 }

@@ -27,6 +27,7 @@ import 'core/app_log.dart';
 import 'l10n/l10n_ext.dart';
 import 'ui/screens/onboarding/onboarding_gate.dart';
 import 'providers/dislike_store_provider.dart' show dislikeStoreProvider;
+import 'providers/permission_providers.dart';
 import 'providers/releases_providers.dart' show releaseCheckControllerProvider;
 import 'ui/screens/settings/update_tiles.dart' show updateSnackBar;
 import 'ui/shell/app_shell.dart';
@@ -66,6 +67,7 @@ class CodecoreApp extends ConsumerWidget {
     // Corrects once the lengths of mp3 files read wrong before (starts once settled).
     ref.watch(mp3LengthFixStartProvider);
     ref.watch(permissionRescanProvider);
+    ref.watch(audioPermissionProvider);
     ref.watch(autoBackupStartProvider);
     ref.watch(podcastOrphansStartProvider);
     // Reads the genres of the existing library again, in the background (starts once settled).
