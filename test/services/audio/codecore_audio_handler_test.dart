@@ -278,16 +278,16 @@ void main() {
     expect(backend.loaded.last, '/m/b.mp3');
   });
 
-  test('five unreadable tracks: four attempts, four errors, then idle (limit is >, not >=)', () async {
-    // characterization: D-679 will change this
+  test('five unreadable tracks: three attempts, three errors with a growing streak, then idle (D-679)', () async {
     final xs = await addTracks(5);
     for (var i = 0; i < 5; i++) {
       backend.failing.add('/x/$i.mp3');
     }
     await handler.playQueue(xs, 0);
     await settle();
-    expect(errors.length, CodecoreAudioHandler.maxConsecutiveErrors + 1);
-    expect(errors.map((e) => e.title), ['x0', 'x1', 'x2', 'x3']);
+    expect(errors.length, CodecoreAudioHandler.maxConsecutiveErrors);
+    expect(errors.map((e) => e.title), ['x0', 'x1', 'x2']);
+    expect(errors.map((e) => e.streak), [1, 2, 3]);
     expect(backend.loaded, isEmpty);
     expect(handler.currentTrack, isNull);
     expect(handler.isPlaying, false);
@@ -296,20 +296,62 @@ void main() {
   test(
     'the consecutive error count restarts after a track that loaded',
     () async {
-      final xs = await addTracks(8);
-      // 3 bad, 1 good, 3 bad, 1 good: 6 errors in all, never 4 in a row.
-      for (final i in [0, 1, 2, 4, 5, 6]) {
+      final xs = await addTracks(6);
+      // 2 bad, 1 good, 2 bad, 1 good: 4 errors in all, never 3 in a row.
+      for (final i in [0, 1, 3, 4]) {
         backend.failing.add('/x/$i.mp3');
       }
       await handler.playQueue(xs, 0);
       await settle();
-      expect(handler.currentTrack!.title, 'x3');
+      expect(handler.currentTrack!.title, 'x2');
       backend.stateC.add(BackendState.completed);
       await settle();
-      expect(handler.currentTrack!.title, 'x7');
-      expect(errors.length, 6);
+      expect(handler.currentTrack!.title, 'x5');
+      expect(errors.length, 4);
     },
   );
+
+  group('audio permission revoked (D-678)', () {
+    Future<void> withPermission(Future<bool> Function() ask) async {
+      await handler.dispose();
+      handler = CodecoreAudioHandler(backend, PlayQueue(), repo, onError: errors.add, audioPermission: ask);
+    }
+
+    test('a local file that fails without the permission stops the queue and says so once', () async {
+      var granted = false;
+      await withPermission(() async => granted);
+      backend.failing.addAll(['/m/a.mp3', '/m/b.mp3']);
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.map((e) => e.reason), [PlaybackFailureReason.permissionDenied]);
+      expect(backend.loaded, isEmpty); // no skip to b or c
+      expect(handler.isPlaying, false);
+      // A second try with the permission still denied does not repeat the event.
+      await handler.play();
+      await settle();
+      expect(errors.length, 1);
+      // Once a load succeeds, the next denial is reported again.
+      granted = true;
+      backend.failing.clear();
+      await handler.play();
+      await settle();
+      expect(backend.loaded.last, '/m/a.mp3');
+      granted = false;
+      backend.failing.add('/m/b.mp3');
+      await handler.skipToNext();
+      await settle();
+      expect(errors.map((e) => e.reason), [PlaybackFailureReason.permissionDenied, PlaybackFailureReason.permissionDenied]);
+    });
+
+    test('with the permission granted a failing file behaves as before', () async {
+      await withPermission(() async => true);
+      backend.failing.add('/m/a.mp3');
+      await handler.playQueue(ids, 0);
+      await settle();
+      expect(errors.single.reason, PlaybackFailureReason.fileMissing);
+      expect(backend.loaded.last, '/m/b.mp3');
+    });
+  });
 
   test('a load interrupted by a newer one is not a failure', () async {
     final slow = Completer<void>();
@@ -336,7 +378,7 @@ void main() {
     expect(backend.loaded.last, '/m/b.mp3');
   });
 
-  test('more than 3 consecutive errors stop playback', () async {
+  test('3 consecutive errors stop playback (D-679)', () async {
     final extra = <int>[];
     for (var i = 0; i < 5; i++) {
       final id = await db.into(db.tracks).insert(TracksCompanion.insert(
@@ -353,7 +395,7 @@ void main() {
     }
     await handler.playQueue(extra, 0);
     await settle();
-    expect(errors.length, 4);
+    expect(errors.length, CodecoreAudioHandler.maxConsecutiveErrors);
     expect(handler.currentTrack, isNull);
   });
 

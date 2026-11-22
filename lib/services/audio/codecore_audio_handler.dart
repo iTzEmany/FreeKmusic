@@ -38,13 +38,17 @@ enum PlaybackFailureReason {
   ageRestricted,
   networkUnavailable,
   radioUnavailable,
+  permissionDenied,
 }
 
 class PlaybackFailure {
-  const PlaybackFailure(this.title, this.reason);
+  const PlaybackFailure(this.title, this.reason, [this.streak = 1]);
 
   final String? title;
   final PlaybackFailureReason reason;
+
+  /// Failures in a row so far (D-679): the UI shows one «N tracks cannot play» message, not one per track.
+  final int streak;
 }
 
 class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -60,6 +64,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     this.online,
     StreamPreparer? preparer,
     this.onRadioStart,
+    this.audioPermission,
     DateTime Function()? clock,
     this.stopServiceWhenIdle = false,
     this.idleParkAfter = const Duration(minutes: 30),
@@ -223,6 +228,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   final PlayQueue _queue;
   final TrackRepository _tracks;
   final void Function(PlaybackFailure failure) onError;
+
+  /// Whether audio files may be read now (null = always, desktop). Asked when a local file fails to load (D-678).
+  final Future<bool> Function()? audioPermission;
+  bool _permissionReported = false;
 
   /// Told (without waiting) when a SAVED stream row cannot play because YouTube no longer has the video.
   void Function(Track row)? onStreamGone;
@@ -533,7 +542,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _queue.setItems(ids, startIndex: index, alreadyShuffled: true, userAhead: userAhead);
     _queueController.add(null);
     // A play() that came first (a media key woke a killed process) is answered now.
-    await _loadCurrent(play: _playOnRestore, startAt: position);
+    await _loadCurrent(play: _playOnRestore, startAt: position, cold: !_playOnRestore);
   }
 
   /// [ended]: when the track before ended by itself (for the gap of the timing line).
@@ -542,6 +551,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     Duration? startAt,
     DateTime? ended,
     bool sameTrack = false, // a reload of the playing track: its listen goes on
+    bool cold = false, // start-up restore: a failure is logged, not skipped nor shown (D-679)
   }) async {
     if (_disposed) return;
     final token = ++_loadToken;
@@ -712,6 +722,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         _position = start; // a paused backend emits no position
       }
       _consecutiveErrors = 0;
+      _permissionReported = false;
       _noSaveId = null;
       if (playNow && !_loadPaused) {
         // A karaoke video starts together with the audio (D-647): the wait looks like a stream
@@ -758,8 +769,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         if (e.gone && track.kind == kStreamKind && track.saved) onStreamGone?.call(track);
         playNow = _playWhenReady;
       }
-      await _failAndSkip(
-        offline
+      final reason = offline
             ? PlaybackFailureReason.networkUnavailable
             : ageGated
             ? PlaybackFailureReason.ageRestricted
@@ -769,11 +779,22 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
             ? PlaybackFailureReason.onlineUnavailable
             : e.fileMissing
             ? PlaybackFailureReason.fileMissing
-            : PlaybackFailureReason.unplayable,
-        track,
-        token,
-        play: playNow,
-      );
+            : PlaybackFailureReason.unplayable;
+      final local = reason == PlaybackFailureReason.fileMissing || reason == PlaybackFailureReason.unplayable;
+      final ask = audioPermission;
+      if (local && !cold && ask != null && !await ask()) {
+        if (token != _loadToken) return;
+        // D-678: no permission is not a bad file: stay paused on it, say so once.
+        _noSaveId = track.id;
+        _playWhenReady = false;
+        if (!_permissionReported) {
+          _permissionReported = true;
+          onError(PlaybackFailure(track.title, PlaybackFailureReason.permissionDenied));
+        }
+        await _backend.stop(); // idle, so the next ▶ loads it again
+        return;
+      }
+      await _failAndSkip(reason, track, token, play: playNow, cold: cold);
     } finally {
       if (token == _loadToken) {
         _waitingStream = _loadBusy = false;
@@ -1114,14 +1135,20 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     Track? track,
     int token, {
     bool play = true,
+    bool cold = false,
   }) async {
     if (_disposed) return;
+    if (cold) {
+      _noSaveId = track?.id;
+      AppLog.w('restored track not loaded: ${track?.title} ($reason)');
+      return;
+    }
     _consecutiveErrors++;
     // What the failed track reports from here on (position 0, a seek never reached) is not a place
     // somebody listened to: its bookmark stays as it was until it plays again.
     _noSaveId = track?.id;
-    onError(PlaybackFailure(track?.title, reason));
-    if (_consecutiveErrors > maxConsecutiveErrors) {
+    onError(PlaybackFailure(track?.title, reason, _consecutiveErrors));
+    if (_consecutiveErrors >= maxConsecutiveErrors) {
       await _goIdle();
       return;
     }

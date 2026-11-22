@@ -221,9 +221,8 @@ void main() {
   );
 
   test(
-    'a restored track that fails reports the error and skips to the next',
+    'a restored track that fails stays put: logged, no error event, no skip (D-679)',
     () async {
-      // characterization: D-679 will change this
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
       final ids = [
@@ -261,9 +260,9 @@ void main() {
         SettingsStore(await SharedPreferences.getInstance()),
       ).restore();
       await pumpEventQueue();
-      expect(errors.single.title, 'S1');
-      expect(h.currentIndex, 2);
-      expect(backend.loaded.last, '/m/2.mp3');
+      expect(errors, isEmpty);
+      expect(h.currentIndex, 1);
+      expect(backend.loaded, isEmpty);
       expect(backend.playing, isFalse);
     },
   );

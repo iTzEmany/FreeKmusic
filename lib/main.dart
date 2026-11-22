@@ -20,6 +20,7 @@ import 'core/app_log.dart';
 import 'core/constants.dart' show kEnableYoutube;
 import 'core/memory_budget.dart';
 import 'core/paths.dart';
+import 'core/permissions.dart' show hasAudioPermission;
 import 'core/platform.dart';
 import 'core/storage_volumes.dart' show effectiveLocation;
 import 'data/db/app_database.dart';
@@ -163,6 +164,7 @@ Future<void> main() async {
     PlayQueue(),
     tracks,
     onError: errors.add,
+    audioPermission: isAndroid ? hasAudioPermission : null,
     online: onlineEntries,
     stopServiceWhenIdle: isAndroid,
     onRadioStart: (station) {

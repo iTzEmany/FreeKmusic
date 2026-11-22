@@ -285,7 +285,7 @@ void main() {
     preparer.failing.addAll([for (final n in ['1', '2', '3', '4', '5']) 'youtube:$n']);
     await handler.playQueue([...bad, ids[0]], 0);
     await settle();
-    expect(failures.length, CodecoreAudioHandler.maxConsecutiveErrors + 1);
+    expect(failures.length, CodecoreAudioHandler.maxConsecutiveErrors); // D-679
     expect(failures.first.reason, PlaybackFailureReason.onlineUnavailable);
     expect(handler.playbackState.value.processingState, AudioProcessingState.idle);
     expect(backend.loaded, isEmpty);
@@ -689,12 +689,14 @@ void main() {
     await started;
   });
 
-  test('a failed restore while paused does not start the next track', () async {
+  test('a failed cold restore stays on its track: no skip, no failure event (D-679)', () async {
     final bad = online.register(result('v1'));
     preparer.failing.add('youtube:v1');
     await handler.restore([bad, ids[0]], 0, Duration.zero);
     await settle();
-    expect(handler.currentTrack?.id, ids[0]);
+    expect(failures, isEmpty);
+    expect(handler.queueIds, [bad, ids[0]]);
+    expect(handler.currentIndex, 0);
     expect(backend.playing, isFalse);
   });
 
