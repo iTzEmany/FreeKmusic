@@ -8162,4 +8162,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get karaokeTurnOff => 'Désactiver';
+
+  @override
+  String get enrichOnMetered => 'Enrichir aussi sur un réseau limité';
+
+  @override
+  String get enrichOnMeteredHint =>
+      'Par défaut, l\'enrichissement en arrière-plan attend un réseau illimité.';
 }

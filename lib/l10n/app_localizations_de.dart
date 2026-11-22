@@ -8128,4 +8128,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get karaokeTurnOff => 'Ausschalten';
+
+  @override
+  String get enrichOnMetered => 'Auch im getakteten Netz anreichern';
+
+  @override
+  String get enrichOnMeteredHint =>
+      'Standardmäßig wartet die Hintergrundanreicherung auf ein ungetaktetes Netz.';
 }

@@ -12798,6 +12798,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Spegni'**
   String get karaokeTurnOff;
+
+  /// No description provided for @enrichOnMetered.
+  ///
+  /// In it, this message translates to:
+  /// **'Arricchisci anche con rete a consumo'**
+  String get enrichOnMetered;
+
+  /// No description provided for @enrichOnMeteredHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Di default l\'arricchimento in background aspetta una rete senza limiti.'**
+  String get enrichOnMeteredHint;
 }
 
 class _AppLocalizationsDelegate

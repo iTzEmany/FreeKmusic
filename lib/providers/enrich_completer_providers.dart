@@ -12,8 +12,10 @@ import '../services/recognition/track_identity.dart' show kRecogVersion;
 import 'activity_log_providers.dart';
 import 'activity_providers.dart';
 import 'database_providers.dart';
+import 'jam_providers.dart';
 import 'online_providers.dart';
 import 'settings_providers.dart';
+import 'shuffle_plus_providers.dart' show networkProbeProvider;
 import 'user_activity_provider.dart';
 
 /// How long the user must leave the app alone before the next track.
@@ -162,6 +164,9 @@ class EnrichCompleterNotifier extends Notifier<EnrichCompleterState> {
   Future<void> _go() async {
     _halt = false;
     try {
+      // Same rules as the artist countries (D-683): no Jam, no metered network unless the user allows it.
+      final net = await ref.read(networkProbeProvider).current();
+      if (!ref.mounted || ref.read(jamProvider).active || !net.online || (net.metered && !ref.read(settingsProvider).enrichOnMetered)) return;
       final c = await ref
           .read(creditsRepositoryProvider)
           .enrichCounts(

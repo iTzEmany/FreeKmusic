@@ -459,19 +459,36 @@ void main() {
     await until(() => !state().running);
   });
 
-  test('characterization: D-683 will change this: the run works on a metered network during a Jam', () async {
+  Future<void> meteredRun({bool jam = false, bool onMetered = false}) async {
     const channel = MethodChannel('codecore/net-completer');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async => {'metered': true, 'online': true});
     addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null));
     user = UserActivity(); // idle
-    c = open(extra: [
-      networkProbeProvider.overrideWithValue(NetworkProbe(channel: channel, android: true)),
-      jamProvider.overrideWith(_ActiveJam.new),
-    ]);
+    c = open(
+      settings: helpersOff(autoLyrics: true).copyWith(enrichOnMetered: onMetered),
+      extra: [
+        networkProbeProvider.overrideWithValue(NetworkProbe(channel: channel, android: true)),
+        if (jam) jamProvider.overrideWith(_ActiveJam.new),
+      ],
+    );
     await track();
     await completer().start();
-    expect(r.chain.calls, 1, reason: 'the completer reads neither the network kind nor the Jam');
+  }
+
+  test('the run does not start on a metered network unless «enrichOnMetered» is on (D-683)', () async {
+    await meteredRun();
+    expect(r.chain.calls, 0);
+  });
+
+  test('the run starts on a metered network with «enrichOnMetered» on (D-683)', () async {
+    await meteredRun(onMetered: true);
+    expect(r.chain.calls, 1);
+  });
+
+  test('the run does not start during a Jam, even with «enrichOnMetered» on (D-683)', () async {
+    await meteredRun(jam: true, onMetered: true);
+    expect(r.chain.calls, 0);
   });
 }

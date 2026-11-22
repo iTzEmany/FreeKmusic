@@ -10,6 +10,7 @@ import 'curiosity_service.dart';
 import 'enrich_parts.dart';
 import 'http_client.dart';
 import 'metadata_resolver.dart';
+import 'musicbrainz_client.dart' show MusicBrainzUnavailable;
 import '../recognition/track_identity.dart';
 
 /// How a [EnrichGather] went, for the runner's «nobody answers» count: the
@@ -88,6 +89,9 @@ Future<({T? value, bool failed, bool limited})> attemptSource<T>(
     );
   } on RateLimitedException catch (e) {
     AppLog.w('completion: $what refused', e);
+    return (value: null, failed: true, limited: true);
+  } on MusicBrainzUnavailable catch (e) {
+    AppLog.w('completion: $what resting', e); // 503 or resting: the round stops (D-683)
     return (value: null, failed: true, limited: true);
   } on Object catch (e, st) {
     if (e is DioException && CancelToken.isCancel(e)) rethrow;

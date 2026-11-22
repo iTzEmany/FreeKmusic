@@ -47,6 +47,18 @@ void main() {
     expect(r.web.count('musicbrainz'), greaterThan(0));
   });
 
+  test('MusicBrainz 503 counts as limited: the round stops and MB is not asked again (D-683)', () async {
+    r.web.musicBrainz503 = true;
+    r.web.deezerDown = true; // no Deezer credits: MB is the only source
+    final ids = [for (var i = 0; i < 4; i++) await r.add(path: '/$i.mp3')];
+    final round = await r.runManual(ids, parts: {EnrichPart.credits});
+    final asked = r.web.count('musicbrainz');
+    expect([round.limited, round.allRefused], [true, true]);
+    expect(asked, greaterThan(0));
+    expect(round.processed, 1);
+    expect(r.web.count('musicbrainz'), asked);
+  });
+
   test('every part refused before the list is used up: the round says so', () async {
     r.web.itunes = ItunesMode.limited;
     r.chain.limited = true;

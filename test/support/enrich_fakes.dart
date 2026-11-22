@@ -39,6 +39,7 @@ class EnrichWeb implements WebClient {
   bool deezerDown = false;
   bool deezerLimited = false;
   bool musicBrainzLimited = false;
+  bool musicBrainz503 = false;
   bool itunesGenre = true; // false: the iTunes hit has no genre
   bool coverDown = false; // network error
   bool coverMissing = false; // 404
@@ -66,6 +67,7 @@ class EnrichWeb implements WebClient {
     if (musicBrainzLimited && url.contains('musicbrainz')) {
       throw const RateLimitedException(429);
     }
+    if (musicBrainz503 && url.contains('musicbrainz')) throw WebUnavailableException(url, 503);
     if (deezerLimited && url.contains('deezer')) {
       throw const RateLimitedException(429);
     }

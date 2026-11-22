@@ -3924,5 +3924,7 @@
     }
   },
   "karaokeIdleReminder": "Karaoke on for 20 minutes without being used",
-  "karaokeTurnOff": "Turn off"
+  "karaokeTurnOff": "Turn off",
+  "enrichOnMetered": "Enrich on metered networks too",
+  "enrichOnMeteredHint": "By default background enrichment waits for an unmetered network."
 }

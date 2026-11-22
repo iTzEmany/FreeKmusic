@@ -8119,4 +8119,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get karaokeTurnOff => 'Apagar';
+
+  @override
+  String get enrichOnMetered => 'Enriquecer también con red de datos limitados';
+
+  @override
+  String get enrichOnMeteredHint =>
+      'Por defecto, el enriquecimiento en segundo plano espera una red sin límite de datos.';
 }

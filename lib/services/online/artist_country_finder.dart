@@ -73,7 +73,8 @@ class ArtistCountryFinder {
     for (var i = 0; i < due.length; i += batch) {
       await waitIdle();
       for (final e in due.skip(i).take(batch)) {
-        if (cancelled() || !await allowed()) {
+        // Resting after a 503 (D-683): asking now only fails; the next trigger starts again.
+        if (cancelled() || mb.resting || !await allowed()) {
           return ArtistCountryReport(
             checked: checked,
             found: found,

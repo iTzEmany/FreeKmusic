@@ -8068,4 +8068,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get karaokeTurnOff => 'Turn off';
+
+  @override
+  String get enrichOnMetered => 'Enrich on metered networks too';
+
+  @override
+  String get enrichOnMeteredHint =>
+      'By default background enrichment waits for an unmetered network.';
 }
