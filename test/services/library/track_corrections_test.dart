@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/activity_log_repository.dart';
 import 'package:codecore/data/repositories/credits_repository.dart';
+import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:codecore/services/library/track_corrections.dart';
 import 'package:codecore/services/library/track_editor.dart';
 import 'package:codecore/services/library/track_file_sync.dart';
@@ -316,6 +317,39 @@ void main() {
     await enrich(id);
     expect((await row(id)).title, 'Real Title');
     expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('characterization: D-686 will change this: a blocked file on an automatic correction leaves no failure line', () async {
+    fileWrites = true;
+    blocked = TagWriteReason.readOnly;
+    final id = await track();
+    await enrich(id);
+    expect((await row(id)).title, 'Real Title');
+    expect(writer.writes, isEmpty);
+    expect((await log()).map((e) => e.failed), [0]);
+  });
+
+  test('characterization: D-686 will change this: a streaming row is still tried as a file, the failure goes in the Registro for the user', () async {
+    fileWrites = true;
+    blocked = TagWriteReason
+        .unsupported; // what the real check says of a path that is no file
+    final id = await r.add(
+      title: 'Junk',
+      artist: 'Channel',
+      path: 'stream:youtube:abc',
+      kind: kStreamKind,
+    );
+    expect(
+      await corrections.apply(await row(id), _rec(), byUser: true),
+      isTrue,
+    );
+    expect((await row(id)).title, 'Real Title');
+    expect(writer.writes, isEmpty);
+    final failed = (await log()).where((e) => e.failed != 0).single;
+    expect(
+      [failed.kind, (jsonDecode(failed.detail!) as Map)['file']],
+      ['correction', 'unsupported'],
+    );
   });
 
   test('with the file writes off a blocked file is not asked about and nothing is told', () async {
