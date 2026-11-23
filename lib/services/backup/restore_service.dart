@@ -267,9 +267,14 @@ Future<bool> applyPendingRestore({
       dbFile.renameSync(backup.path);
       movedOriginal = true;
     }
-    for (final ext in ['-wal', '-shm']) {
+    // A hot -journal left by a killed process would be replayed onto the restored
+    // database by SQLite: it travels with the old one instead.
+    for (final ext in ['-journal', '-wal', '-shm']) {
       final side = File('${dbFile.path}$ext');
-      if (side.existsSync()) side.deleteSync();
+      if (!side.existsSync()) continue;
+      final kept = File('${backup.path}$ext');
+      if (kept.existsSync()) kept.deleteSync();
+      side.renameSync(kept.path);
     }
     stagedDb.renameSync(dbFile.path);
     // The restored rows may be older: the recognition pass must run again.

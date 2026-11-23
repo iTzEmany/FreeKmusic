@@ -7,17 +7,30 @@ void main() {
 
   late List<String> started;
   late List<int> exits;
+  late List<String> events;
   setUp(() {
     started = [];
     exits = [];
+    events = [];
   });
+
+  void mockChannel(Future<Object?> Function(MethodCall) h) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('codecore/restart'), h);
+    addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('codecore/restart'), null));
+  }
 
   DesktopRestart make(Map<String, String> env, {bool throws = false}) => DesktopRestart(
     start: (exe, args) async {
       if (throws) throw const ProcessExceptionStub();
       started.add(exe);
+      events.add('start');
     },
-    exitApp: exits.add,
+    exitApp: (c) {
+      exits.add(c);
+      events.add('exit');
+    },
     env: env,
     executable: '/opt/app/codecore',
   );
@@ -26,10 +39,21 @@ void main() {
     expect(await AndroidRestart(channel: const MethodChannel('nope')).restart(), isFalse);
   });
 
+  test('Android: the channel answer is passed on; null and PlatformException give false', () async {
+    final r = AndroidRestart();
+    mockChannel((_) async => true);
+    expect(await r.restart(), isTrue);
+    mockChannel((_) async => null);
+    expect(await r.restart(), isFalse);
+    mockChannel((_) async => throw PlatformException(code: 'x'));
+    expect(await r.restart(), isFalse);
+  });
+
   test('desktop: starts \$APPIMAGE when set, then exits 0', () async {
     expect(await make({'APPIMAGE': '/tmp/a.AppImage'}).restart(), isTrue);
     expect(started, ['/tmp/a.AppImage']);
     expect(exits, [0]);
+    expect(events, ['start', 'exit']);
   });
 
   test('desktop: falls back to the resolved executable', () async {

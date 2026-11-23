@@ -243,6 +243,14 @@ void main() {
       expect(staging.existsSync(), isFalse);
     });
 
+    test('a hot -journal next to the database moves with the old one, none stays next to the new one', () async {
+      File('${dbFile.path}-journal').writeAsBytesSync([1]);
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect(File('${dbFile.path}-journal').existsSync(), isFalse);
+      expect(File('${dbFile.path}.before-restore-journal').existsSync(), isTrue);
+    });
+
     test('unsyncedLyrics is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
       await prefs.setStringList('unsyncedLyrics', ['9']);
       await stageFullRestore(await makeBackup(['n1']), staging);

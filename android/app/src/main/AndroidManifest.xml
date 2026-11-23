@@ -266,6 +266,10 @@
                 android:value="Receive music files offered by nearby devices on the local network" />
         </service>
         <receiver android:name=".ShareActionReceiver" android:exported="false" />
+        <activity android:name=".RestartActivity"
+            android:process=":restart"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <service android:name=".ImportService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
