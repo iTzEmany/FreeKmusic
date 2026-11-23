@@ -5428,12 +5428,6 @@ abstract class AppLocalizations {
   /// **'Sono {count} video: ci vorrà {time}.'**
   String playlistSourceLong(int count, String time);
 
-  /// No description provided for @playlistSourceNone.
-  ///
-  /// In it, this message translates to:
-  /// **'Nessuno'**
-  String get playlistSourceNone;
-
   /// No description provided for @playlistSourceEmpty.
   ///
   /// In it, this message translates to:
@@ -12864,6 +12858,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Elenco copiato negli appunti'**
   String get restoreListCopied;
+
+  /// No description provided for @deselectAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Deseleziona tutto'**
+  String get deselectAll;
 }
 
 class _AppLocalizationsDelegate

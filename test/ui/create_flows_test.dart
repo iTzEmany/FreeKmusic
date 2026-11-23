@@ -50,6 +50,13 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('new playlist sheet: the name field has no focus on open', (tester) async {
+    final h = await _open(tester, (c, ref) => createPlaylistFlow(c, ref, onSmart: () {}));
+    expect(tester.widget<TextField>(find.byType(TextField)).autofocus, isFalse);
+    expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<TextField>(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('new playlist sheet: a duplicate name makes a second playlist; close creates nothing', (tester) async {
     final h = await _open(tester, (c, ref) => createPlaylistFlow(c, ref));
     await _submit(tester, 'Mix', 'Crea');

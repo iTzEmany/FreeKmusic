@@ -34,3 +34,4 @@ D-671, D-689, D-687, D-692, D-693, D-699. Rilievo F-36 in [`../refactor/grande-r
 - Nessuna cosa in questa fase.
 
 ## Note di deviazione
+- Dalla review della fase 138: `theme_editor_screen.dart` è 555 righe e `ThemePreview.build` supera ~120 righe: estrarre la colonna dell'anteprima in un file proprio quando si tocca l'area del tema.

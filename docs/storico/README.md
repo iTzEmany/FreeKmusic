@@ -165,3 +165,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 134 | Rilascio 1.6.4 (Linux su glibc 2.39) | [`fase-134-rilascio-1-6-4.md`](fasi/fase-134-rilascio-1-6-4.md) |
 | 135 | Riproduzione affidabile (#210) | [`fase-135-riproduzione-affidabile.md`](fasi/fase-135-riproduzione-affidabile.md) |
 | 136 | Arricchimento unico e leggero (#212) | [`fase-136-arricchimento-unico.md`](fasi/fase-136-arricchimento-unico.md) |
+| 137 | Backup, ripristino, aggiornamento (#214) | [`fase-137-backup-ripristino-aggiornamento.md`](fasi/fase-137-backup-ripristino-aggiornamento.md) |

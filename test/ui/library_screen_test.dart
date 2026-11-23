@@ -188,7 +188,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('the lens opens a focused search with grouped results; Back closes it', (t) async {
+  testWidgets('the lens opens a search without the keyboard with grouped results; Back closes it', (t) async {
     final sem = t.ensureSemantics();
     final h = await open(t, width: 900);
     expect(find.bySemanticsLabel(RegExp('^Ordina per')), findsOneWidget);
@@ -196,7 +196,7 @@ void main() {
     await t.tap(find.byIcon(Icons.search_rounded));
     await _settle(t);
     expect(find.byType(CcSearchField), findsOneWidget);
-    expect(t.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
+    expect(t.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isFalse);
     // The field sits in the title row, where the title was; nothing else of it answers.
     expect(find.text('Libreria').hitTestable(), findsNothing);
     expect(find.bySemanticsLabel('Libreria'), findsNothing);

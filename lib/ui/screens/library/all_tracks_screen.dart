@@ -257,10 +257,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
       controller: _scroll,
       itemExtent: rowHeight,
       topInset: () => _header.visible,
-      start: () {
-        _header.hide();
-        return _header.extent;
-      },
+      start: () => _header.extent,
       letters: [
         if (byTitle || byArtist)
           for (final t in shown) leadingLetter(byTitle ? t.title : t.artist),
@@ -270,7 +267,6 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
         slivers: [
           ShrinkingHeader(
             controller: _header,
-            color: context.cc.bg,
             child: Column(
               children: [
                 Padding(
@@ -295,20 +291,13 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                   ),
                   child: SegmentedBlocks<SortOption>(
                     items: [
-                      for (final (o, icon) in const [
-                        (
-                          SortOption.defaultOrder,
-                          Icons.format_list_numbered_rounded,
-                        ),
-                        (SortOption.title, Icons.sort_by_alpha_rounded),
-                        (SortOption.artist, Icons.person_rounded),
-                        (SortOption.addedAt, Icons.schedule_rounded),
+                      for (final o in const [
+                        SortOption.defaultOrder,
+                        SortOption.title,
+                        SortOption.artist,
+                        SortOption.addedAt,
                       ])
-                        BlockItem(
-                          value: o,
-                          icon: icon,
-                          label: _sortLabel(context, o),
-                        ),
+                        BlockItem(value: o, label: _sortLabel(context, o)),
                     ],
                     selected: query.sort,
                     onChanged: (o) => _query.update((q) => q.copyWith(sort: o)),

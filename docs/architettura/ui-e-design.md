@@ -90,7 +90,7 @@ Sul desktop e sulle finestre larghe (`CcDims.wideBreakpoint`, 840) la shell dive
 - **Registro**: con un tema con immagine o gradiente l'intestazione fissa dei giorni non dipinge `cc.bg` ma sfoca la pagina sotto. Gli errori di riproduzione sono una voce `playbackFailed`, una sola se lo stesso brano fallisce di fila. Il testo del motivo viene da `playbackReasonText`.
 
 ### Fogli, dialoghi, menu
-Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio per le scelte** (elenchi, azioni, selettori). Ogni foglio si apre con `showCcSheet` (sempre sul navigator di radice, così copre dock e sidebar, 250 ms, zero con «Riduci animazioni»). I menu sono `showCcActionSheet` con `CcAction`.
+Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio per le scelte** (elenchi, azioni, selettori). Ogni foglio si apre con `showCcSheet` (sempre sul navigator di radice, così copre dock e sidebar, 250 ms, zero con «Riduci animazioni»). I menu sono `showCcActionSheet` con `CcAction`. Dalla fase 138 un foglio senza `constraints` propri occupa `min(560, larghezza)` (`minWidth` in `showCcSheet`, un solo punto): un foglio con poco contenuto non resta stretto al centro. I campi di ricerca e il nome di una playlist non prendono il focus da soli (D-667): la tastiera si apre solo al tocco; Ctrl+F resta su desktop.
 
 ### Token
 - **Colori**: `context.cc` (`CcColors`: `bg`, `surface1..3`, `accent`, `accentSoft`, `onAccent`, `text`, `textMuted`, `textFaint`, `heroBase`, `error`, `separator`). Un tema dell'utente può avere qualsiasi colore, quindi nessun widget ne tiene uno proprio.
@@ -99,6 +99,7 @@ Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio 
 - **Attese che non sono movimento**: `CcTiming` (`debounce`, `poll`, `msg` 4 s, `msgAction` 3 s, `msgLong` 5 s…). Non seguono la scala del movimento.
 - **Testo**: `buildTextTheme` e `ccStyle` (Figtree e Unbounded, entrambi variabili: il peso va in `fontWeight` e in `fontVariations`). Una dimensione fuori dal tema solo con `.sized()`.
 - **Aspetto**: l'anello è l'unico segno grafico che porta lo stato; superfici piatte, niente gradienti né ombre.
+- **Superfici della home (D-687)**: ogni sezione è un `HomeBlock(header:)` con l'intestazione dentro la superficie, anche «Aggiunti da poco». Le testate (`ShrinkingHeader`, `CollectionScaffold`/`SliverAppBar`) non hanno un colore proprio: dietro si vede `AppBackground` (immagine del tema compresa). `ShrinkingHeader` ricresce solo in cima alla lista (D-705). L'anteprima dell'editor dei temi usa lo stesso `AppBackground`.
 
 ### Avvisi (D-541)
 `showMsg(context, testo, {action, persist})` mostra un solo avviso alla volta (cancella quello corrente e la coda) ed è sicuro dopo un `await`. Con `showMsgOn(messenger, …)` si usa un messenger catturato prima, per avvisi dopo la chiusura di un foglio. Ogni avviso si chiude da solo: 4 s semplice, 3 s con azione, 5 s con azione e `persist: true`. Ha un conto alla rovescia, un anello sottile d'accento che si svuota in senso orario (`CcSnackContent`), escluso da TalkBack e fermo con «Riduci animazioni».
@@ -148,6 +149,7 @@ Ogni testo visibile viene da un ARB (`context.l10n.<chiave>`). Italiano è il mo
 11. Prima del push lancia `scripts/guardie.sh`.
 
 ## Trappole
+- **Testate con `color: cc.bg`** coprono l'immagine di sfondo del tema (F-26): una testata non dipinge un colore opaco e non è flottante: ricresce solo quando la lista torna in cima (D-705), così nessuna riga le passa sotto. Un `Colors.transparent` fisso su `Scaffold`/`SliverAppBar` invece toglie lo sfondo nei temi senza immagine: si lascia il colore del tema.
 - **Un `TextScaler` su misura deve avere `==` e `hashCode`.** Senza, ogni rebuild passa a `MediaQuery` un valore «diverso» e ogni `Text` rifà il layout (Pallino schede dal 3 % al 12 % sul Mi A3, fase 40). Vale per ogni valore in `MediaQuery`, `Theme` o `InheritedWidget`.
 - **`IndexedStack`/`Offstage` non fermano i ticker** delle schede nascoste: la rotella dell'`ActivityButton` girava fuori schermo (~100 frame/s a schermo fermo). Per questo `TickerMode` e un `RepaintBoundary` sulla rotella. Effetto: le animazioni d'ingresso di una scheda partono quando la si apre (nei test servono un paio di `pump` dopo il tocco).
 - **Le notifiche di scroll dei fogli e delle route sopra la shell non arrivano a un listener in `AppShell`**: ciò che deve vedere ogni scroll sta in `MaterialApp.builder`, sopra il Navigator.

@@ -82,7 +82,6 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final cc = context.cc;
     final actions = [
       if (widget.onPlay != null) PlayPill(onPressed: widget.onPlay),
       if (widget.shuffleIds != null)
@@ -94,7 +93,6 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
       ?widget.menu,
     ];
     return Scaffold(
-      backgroundColor: cc.bg,
       body: Stack(
         children: [
           Positioned.fill(
@@ -103,7 +101,6 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
               slivers: [
                 SliverAppBar(
                   pinned: true,
-                  backgroundColor: cc.bg,
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
                   title: AnimatedOpacity(

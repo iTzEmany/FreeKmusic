@@ -3420,9 +3420,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get playlistSourceNone => 'Keines';
-
-  @override
   String get playlistSourceEmpty =>
       'Hier gibt es keine Videos zum Herunterladen.';
 
@@ -8165,4 +8162,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Liste in die Zwischenablage kopiert';
+
+  @override
+  String get deselectAll => 'Alle abwählen';
 }

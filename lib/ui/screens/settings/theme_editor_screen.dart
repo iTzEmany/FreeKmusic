@@ -416,119 +416,135 @@ class ThemePreview extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colors.bg,
-                gradient: themeGradient(colors, background),
                 border: Border.all(color: colors.surface3),
                 borderRadius: BorderRadius.circular(CcDims.rCard),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(CcDims.gap12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l.tokenText, style: text.titleMedium),
-                    const SizedBox(height: 8),
-                    Row(
+              // The same background as the app (picture, blur, dim, gradient).
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: AppBackground(
+                      colors: colors,
+                      background: background,
+                      child: const SizedBox.shrink(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(CcDims.gap12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(l.tokenText, style: text.titleMedium),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: colors.surface3,
+                                borderRadius: BorderRadius.circular(
+                                  CcDims.rList,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.music_note_rounded,
+                                color: colors.accent,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(l.tokenText, style: text.bodyLarge),
+                                  Text(
+                                    l.tokenTextMuted,
+                                    style: text.bodyMedium,
+                                  ),
+                                  Text(
+                                    l.tokenTextFaint,
+                                    style: text.bodySmall?.copyWith(
+                                      color: colors.textFaint,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: colors.surface3,
-                            borderRadius: BorderRadius.circular(CcDims.rList),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CcDims.gap12,
+                            vertical: CcDims.gap8,
                           ),
-                          child: Icon(
-                            Icons.music_note_rounded,
-                            color: colors.accent,
+                          decoration: BoxDecoration(
+                            color: colors.surface1,
+                            borderRadius: BorderRadius.circular(CcDims.rCard),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  l.tokenSurface1,
+                                  style: text.bodyMedium,
+                                ),
+                              ),
+                              Switch(value: true, onChanged: (_) {}),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CcDims.gap12,
+                            vertical: CcDims.gap8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surface2,
+                            borderRadius: BorderRadius.circular(CcDims.rCard),
+                          ),
+                          child: Row(
                             children: [
-                              Text(l.tokenText, style: text.bodyLarge),
-                              Text(l.tokenTextMuted, style: text.bodyMedium),
-                              Text(
-                                l.tokenTextFaint,
-                                style: text.bodySmall?.copyWith(
-                                  color: colors.textFaint,
+                              Expanded(
+                                child: Text(
+                                  l.tokenSurface2,
+                                  style: text.bodyMedium,
                                 ),
+                              ),
+                              Text(
+                                l.tokenError,
+                                style: TextStyle(color: colors.error),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: CcDims.gap12,
-                        vertical: CcDims.gap8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surface1,
-                        borderRadius: BorderRadius.circular(CcDims.rCard),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l.tokenSurface1,
-                              style: text.bodyMedium,
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton(
+                              onPressed: () {},
+                              child: Text(l.tokenOnAccent),
                             ),
-                          ),
-                          Switch(value: true, onChanged: (_) {}),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: CcDims.gap12,
-                        vertical: CcDims.gap8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surface2,
-                        borderRadius: BorderRadius.circular(CcDims.rCard),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l.tokenSurface2,
-                              style: text.bodyMedium,
+                            OutlinedButton(
+                              onPressed: () {},
+                              child: Text(l.tokenAccent),
                             ),
-                          ),
-                          Text(
-                            l.tokenError,
-                            style: TextStyle(color: colors.error),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton(
-                          onPressed: () {},
-                          child: Text(l.tokenOnAccent),
-                        ),
-                        OutlinedButton(
-                          onPressed: () {},
-                          child: Text(l.tokenAccent),
-                        ),
-                        Chip(
-                          label: Text(l.tokenAccentSoft),
-                          backgroundColor: colors.surface3,
-                          labelStyle: TextStyle(color: colors.accentSoft),
-                          side: BorderSide.none,
+                            Chip(
+                              label: Text(l.tokenAccentSoft),
+                              backgroundColor: colors.surface3,
+                              labelStyle: TextStyle(color: colors.accentSoft),
+                              side: BorderSide.none,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );

@@ -96,17 +96,25 @@ class HomeRow extends StatelessWidget {
 
 /// The box of a block (Riprendi, Più ascoltati…): [CcColors.surface1], no lines.
 class HomeBlock extends StatelessWidget {
-  const HomeBlock({super.key, required this.children});
+  const HomeBlock({super.key, this.header, required this.children});
+
+  /// The section title, drawn inside the surface (D-687).
+  final Widget? header;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+    padding: const EdgeInsets.fromLTRB(
+      CcDims.margin,
+      CcDims.gap12,
+      CcDims.margin,
+      0,
+    ),
     child: Material(
       color: context.cc.surface1,
       borderRadius: BorderRadius.circular(CcDims.rCard),
       clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
+      child: Column(children: [?header, ...children]),
     ),
   );
 }

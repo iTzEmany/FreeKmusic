@@ -289,12 +289,16 @@ class LogEntryCard extends StatelessWidget {
     super.key,
     required this.row,
     required this.onTap,
+    this.onHow,
     this.expanded = false,
     this.selected,
   });
 
   final LogRow row;
   final VoidCallback onTap;
+
+  /// «Come risolvere»: its own action, apart from the tap on the row (F-31).
+  final VoidCallback? onHow;
 
   /// For a group of downloads: the song names are shown.
   final bool expanded;
@@ -400,7 +404,7 @@ class LogEntryCard extends StatelessWidget {
                   if (text.how.isNotEmpty)
                     TextButton.icon(
                       style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                      onPressed: onTap,
+                      onPressed: onHow ?? onTap,
                       icon: const Icon(Icons.info_outline_rounded),
                       label: Text(l.logHowTitle),
                     ),

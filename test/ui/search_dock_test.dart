@@ -107,21 +107,14 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('the dock button opens Search and focuses the field, again on a second tap',
-      (t) async {
+  testWidgets('the dock button opens Search without focusing the field (D-667)', (t) async {
     final h = await _shell(t);
     final c = _container(t);
-    expect(c.read(searchFocusProvider).hasFocus, isFalse);
     await t.tap(_tab('Cerca'));
     await _settle(t);
     expect(c.read(navIndexProvider), NavTab.search.index);
-    expect(c.read(searchFocusProvider).hasFocus, isTrue);
-    expect(t.testTextInput.isVisible, isTrue);
-    c.read(searchFocusProvider).unfocus();
-    await _settle(t);
-    await t.tap(_tab('Cerca'));
-    await _settle(t);
-    expect(c.read(searchFocusProvider).hasFocus, isTrue);
+    expect(c.read(searchFocusProvider).hasFocus, isFalse);
+    expect(t.testTextInput.isVisible, isFalse);
     await h.dispose(t);
   });
 

@@ -218,7 +218,7 @@ void main() {
   double barHeight(WidgetTester t) =>
       t.renderObject<RenderSliver>(find.byType(ShrinkingHeader, skipOffstage: false)).geometry!.paintExtent;
 
-  testWidgets('the search block follows the scroll 1:1 and returns going up', (
+  testWidgets('the search block follows the scroll 1:1 and returns only at the top', (
     tester,
   ) async {
     final h = await _open(tester, tracks: 40);
@@ -231,7 +231,9 @@ void main() {
     // The fixed row stays while the block is gone.
     expect(find.byType(PlayCircleButton), findsOneWidget);
     await wheel(tester, -60);
-    expect(barHeight(tester), 60);
+    expect(barHeight(tester), 0); // no overlay on the rows
+    await wheel(tester, -1000);
+    expect(barHeight(tester), full);
     await h.dispose(tester);
   });
 

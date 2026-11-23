@@ -3419,9 +3419,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get playlistSourceNone => 'Ninguno';
-
-  @override
   String get playlistSourceEmpty => 'Aquí no hay vídeos para descargar.';
 
   @override
@@ -8156,4 +8153,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Lista copiada al portapapeles';
+
+  @override
+  String get deselectAll => 'Deseleccionar todo';
 }

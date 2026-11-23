@@ -149,7 +149,6 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
                 Expanded(
                   child: TextField(
                     controller: _name,
-                    autofocus: true,
                     maxLength: 60,
                     buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                     textCapitalization: TextCapitalization.sentences,

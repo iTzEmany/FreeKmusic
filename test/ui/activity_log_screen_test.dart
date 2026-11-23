@@ -156,6 +156,15 @@ void main() {
     expect(find.textContaining('Riprendi'), findsOneWidget);
   });
 
+  testWidgets('desktop: «Come risolvere» opens the guide even on the row already picked', (tester) async {
+    await pump(tester, size: const Size(1200, 800));
+    await tapFilter(tester, 'Errori 1');
+    expect(find.byType(BottomSheet), findsNothing);
+    await tester.tap(find.widgetWithText(TextButton, 'Come risolvere'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(BottomSheet), findsOneWidget);
+  });
+
   testWidgets('«Pulisci registro» asks first; Annulla keeps the lines', (tester) async {
     await pump(tester);
     await tester.tap(find.byIcon(Icons.more_vert_rounded));

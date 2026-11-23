@@ -11,7 +11,6 @@ Future<void> _open(
   bool disableAnimations = false,
   Widget header = const SizedBox(height: _max),
   void Function(String)? onTap,
-  Color? color,
 }) async {
   final c = ScrollController();
   addTearDown(c.dispose);
@@ -23,7 +22,7 @@ Future<void> _open(
           body: CustomScrollView(
             controller: c,
             slivers: [
-              ShrinkingHeader(color: color, child: header),
+              ShrinkingHeader(child: header),
               SliverFixedExtentList(
                 itemExtent: 50,
                 delegate: SliverChildBuilderDelegate(
@@ -72,23 +71,22 @@ void main() {
     expect(_height(t), 0);
   });
 
-  testWidgets('going up brings it back by the same delta, far from the top', (t) async {
+  testWidgets('going up a little far from the top leaves it away: no row under its area', (t) async {
     await _open(t);
     await _wheel(t, 1000);
     await _wheel(t, -30);
-    expect(_height(t), 30);
-    await _wheel(t, -50);
-    expect(_height(t), 80);
-    await _wheel(t, -500);
+    expect(_height(t), 0);
+    await _wheel(t, -2000);
     expect(_height(t), _max);
+    // Back at the top the header pushes the rows down instead of overlapping them.
+    expect(t.getTopLeft(find.text('row 0')).dy, _max);
   });
 
   testWidgets('with reduced motion nothing snaps after the scroll stops', (t) async {
     await _open(t, disableAnimations: true);
-    await _wheel(t, 1000);
-    await _wheel(t, -30);
+    await _wheel(t, 30);
     await t.pumpAndSettle();
-    expect(_height(t), 30);
+    expect(_height(t), _max - 30);
   });
 
   // Two 50 dp blocks, each a button.
@@ -103,7 +101,7 @@ void main() {
     ],
   );
 
-  testWidgets('it is painted where it is laid out, and back at 0 going up', (t) async {
+  testWidgets('it is painted where it is laid out, and back at 0 at the top', (t) async {
     await _open(t, header: twoBlocks((_) {}));
     await _wheel(t, 30);
     expect(t.getTopLeft(find.widgetWithText(ElevatedButton, 'A')).dy, -30);
@@ -137,17 +135,10 @@ void main() {
     expect(taps, ['top']);
   });
 
-  testWidgets('a coloured header is an opaque box over its whole drawn height', (t) async {
-    const bg = Color(0xFF123456);
-    await _open(t, color: bg);
-    await _wheel(t, 1000);
-    await _wheel(t, -30);
-    final box = find.descendant(of: find.byType(ShrinkingHeader), matching: find.byType(ColoredBox));
-    expect(t.widget<ColoredBox>(box).color, bg);
-    expect(t.widget<ColoredBox>(box).color.a, 1);
-    final r = t.getRect(box);
-    // 30 dp are shown: the box reaches the bottom of them, and is as tall as the header.
-    expect(r.bottom, 30);
-    expect(r.height, _max);
+  testWidgets('the header has no background and clips what scrolled away', (t) async {
+    await _open(t);
+    final h = find.byType(ShrinkingHeader);
+    expect(find.descendant(of: h, matching: find.byType(ColoredBox)), findsNothing);
+    expect(find.descendant(of: h, matching: find.byType(ClipRect)), findsOneWidget);
   });
 }

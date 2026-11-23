@@ -221,7 +221,6 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
                 key: const ValueKey('podcast-lens-field'),
                 controller: _term,
                 hint: l.podcastSearchHint,
-                autofocus: true,
                 onQuery: (q) => setState(() => _query = q),
                 onCloseEmpty: _closeSearch,
               )

@@ -1807,7 +1807,6 @@
       }
     }
   },
-  "playlistSourceNone": "Ninguno",
   "playlistSourceEmpty": "Aquí no hay vídeos para descargar.",
   "playlistSourceGo": "Descargar en una lista ({count})",
   "@playlistSourceGo": {
@@ -3935,5 +3934,6 @@
   "backupImportPlaylistsHint": "Desde un archivo de lista (CSV).",
   "restoreRestarting": "Listo: la app se reinicia para completar la restauración.",
   "restoreSearchOnline": "Buscar en línea",
-  "restoreListCopied": "Lista copiada al portapapeles"
+  "restoreListCopied": "Lista copiada al portapapeles",
+  "deselectAll": "Deseleccionar todo"
 }
