@@ -55,6 +55,7 @@ D-667, D-687, D-692, D-693, D-698, D-699. Rilievi F-25..F-31, F-33 in [`../refac
 
 ## Note di deviazione
 - 138.1: `app_theme.dart` non toccato: il `minWidth` sta in `showCcSheet`; i fogli con `constraints` propri (es. `artist_picker_sheet`) restano come sono.
-- 138.3: `library_filter_bar.dart` non serviva; le testate delle collezioni seguono il colore del tema invece di un trasparente fisso (che toglieva lo sfondo nei temi senza immagine).
+- 138.2: tolto anche l'`autofocus` della lente dei podcast (sfuggito all'elenco); il tasto Cerca del dock apre la ricerca senza focus anche su desktop (Ctrl+F lo dà).
+- 138.3: testata di Tutti i brani non più flottante (D-705: trasparente, ricresceva sopra le righe). `library_filter_bar.dart` non serviva; le testate delle collezioni seguono il colore del tema invece di un trasparente fisso (che toglieva lo sfondo nei temi senza immagine).
 - 138.4: golden rigenerati anche `phone_100_home_fan_open`, `phone_*_mini_dock` (mostrano la home).
 - 138.8: in `import_plan_screen` le righe non spuntate si saltano (`skip`) prima di avviare.

@@ -50,6 +50,16 @@ D-676, D-677, D-688, D-694, D-687, D-675, D-662, D-699. Rilievi F-34, F-35, F-37
 - [ ] 141.9 Area e controllo di fine fase
   - Aggiorna `../architettura/ui-e-design.md` (testata a icone, scorrimento), `libreria-e-dati.md` (v23, `FavoriteCollections`), `sync-backup-jam.md` (backup con i preferiti di collezione); «Trappole»: «Condividi» arriva con la 145. `scripts/guardie.sh` (golden) prima del push.
 
+## Da allineare (review di architettura della fase 138)
+- Testate e `Scaffold` con `cc.bg` opaco che coprono l'immagine del tema (D-687), da decidere una per una: `online/online_page_frame.dart:51,83`, `lyrics/lyrics_screen.dart:50`, `lyrics/lyrics_editor.dart:109`, `lyrics/lyrics_romanization_editor.dart:89`, `onboarding/onboarding_screen.dart:72`, `shell/desktop_sidebar.dart:63`, `activity/activity_log_screen.dart:318` (solo senza backdrop); `car/car_mode_screen.dart:64` probabilmente voluto.
+- `SectionHeader` fuori da una superficie: `releases/top_artists_card.dart` (bordi `cc.separator`), `stats_screen.dart:333`, `memory_screen.dart`, `podcasts_screen.dart:122,276`, `radio_sections.dart`, `artist_screen.dart`, `online_results*.dart`, `search_screen.dart:181,208`, `queue_sheet.dart`: liste di pagina (D-687, senza sfondo) o blocchi, da decidere caso per caso.
+- Larghezza dei fogli: costante `CcDims.sheetMaxWidth` al posto dei quattro `560` (`cc_sheet.dart:31`, `app_theme.dart:151`, `onboarding_screen.dart:76`); `devices_sheet` usa il default di `showCcSheet` (oggi lo copia) e ha un test sulla larghezza.
+- `ShrinkingHeader` dopo D-705 è quasi un `SliverToBoxAdapter` con un controller: togliere il `ClipRect` (commento inesatto) e il test che ne controlla solo la presenza, o rinominarlo.
+- `LogEntryCard.onHow` diventa `required` (un solo chiamante; `onHow ?? onTap` riapre F-31).
+- `autofocus: true` nei campi dei dialoghi (`prompt_name.dart:61`, `move_to_album_dialog.dart:98`, `jam_remote_sheets.dart:189` che è un foglio, `jam_remote_settings.dart:187`, `pairing_dialogs.dart:79`): decidere se D-667 vale anche lì (per il foglio della Jam sì).
+- Focus alla ricerca col clic su «Cerca» nella barra laterale su desktop (tolto in 138.2 insieme al telefono): rimetterlo solo su desktop se serve.
+- Test deboli: `create_flows_test.dart:~53` (flag `autofocus`, basta il focus effettivo); nessun test che il tasto Cerca della shell non dia focus.
+
 ## Tocca a te
 - Nessuna cosa in questa fase.
 
