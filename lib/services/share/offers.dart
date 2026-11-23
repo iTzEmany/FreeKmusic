@@ -8,6 +8,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
+import '../stream/stream_key.dart' show isStreamKey;
 import 'lan_server.dart';
 import 'offer_node.dart' show callerFingerprint;
 import 'track_meta.dart';
@@ -108,6 +109,42 @@ class OfferItem {
       artist == null || artist!.isEmpty ? title : '$artist - $title');
 }
 
+/// A saved stream offered without a file (D-674): the receiver saves the row.
+/// Travels in the optional `streams` list, which older versions never read.
+class StreamOffer {
+  const StreamOffer({required this.key, required this.title, this.artist, this.album, this.durationMs = 0, this.meta});
+
+  final String key, title;
+  final String? artist, album;
+  final int durationMs;
+  final TrackMeta? meta;
+
+  Map<String, Object?> toJson() => {
+        'key': key,
+        'title': title,
+        'artist': artist,
+        'album': album,
+        'durationMs': durationMs,
+        if (meta != null) 'meta': meta!.toJson(),
+      };
+
+  /// Strict parsing of untrusted input; null for anything odd.
+  static StreamOffer? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final key = raw['key'], title = raw['title'], dur = raw['durationMs'];
+    if (key is! String || title is! String || key.length > 200 || !isStreamKey(key)) return null;
+    String? clip(Object? v) => v is String ? (v.length > 200 ? v.substring(0, 200) : v) : null;
+    return StreamOffer(
+      key: key,
+      title: clip(title) ?? '',
+      artist: clip(raw['artist']),
+      album: clip(raw['album']),
+      durationMs: dur is int && dur >= 0 ? dur : 0,
+      meta: TrackMeta.tryParse(raw['meta']),
+    );
+  }
+}
+
 enum OfferStatus { pending, accepted, declined, cancelled, expired, done, failed }
 
 class IncomingOffer {
@@ -121,6 +158,7 @@ class IncomingOffer {
     this.callerFingerprint,
     required this.token,
     required this.items,
+    this.streams = const [],
     DateTime? receivedAt,
   }) : receivedAt = receivedAt ?? DateTime.now();
 
@@ -137,6 +175,9 @@ class IncomingOffer {
   /// Set by the hub: the signer is a paired device with the id it claims.
   bool trusted = false;
   final List<OfferItem> items;
+
+  /// Saved streams of the offer: no file, so they are not in [items] nor in [received].
+  final List<StreamOffer> streams;
   final DateTime receivedAt;
   OfferStatus status = OfferStatus.pending;
   int received = 0; // files already stored
@@ -244,17 +285,32 @@ class OfferService {
         'token': o.token,
         'items': [
           for (final e in o.entries.values)
-            OfferItem(
-              id: e.id,
-              title: e.title,
-              artist: e.artist,
-              album: e.album,
-              sizeBytes: e.sizeBytes,
-              ext: e.ext,
-              meta: e.meta,
-              hasCover: e.coverPath != null,
-            ).toJson(),
+            if (e.streamKey == null)
+              OfferItem(
+                id: e.id,
+                title: e.title,
+                artist: e.artist,
+                album: e.album,
+                sizeBytes: e.sizeBytes,
+                ext: e.ext,
+                meta: e.meta,
+                hasCover: e.coverPath != null,
+              ).toJson(),
         ],
+        // Optional: an older receiver ignores it and sees only the files.
+        if (o.entries.values.any((e) => e.streamKey != null))
+          'streams': [
+            for (final e in o.entries.values)
+              if (e.streamKey != null)
+                StreamOffer(
+                  key: e.streamKey!,
+                  title: e.title,
+                  artist: e.artist,
+                  album: e.album,
+                  durationMs: e.durationMs,
+                  meta: e.meta,
+                ).toJson(),
+          ],
       };
 
   // ---- HTTP ----------------------------------------------------------------
@@ -304,6 +360,13 @@ class OfferService {
       final fromName = body['fromName'], port = body['port'];
       final token = body['token'], rawItems = body['items'];
       final tlsRaw = body['tlsPort'];
+      // Optional and lenient: a bad entry is skipped, an absent list is no streams.
+      final rawStreams = body['streams'];
+      final streams = <StreamOffer>[
+        if (rawStreams is List)
+          for (final raw in rawStreams.take(maxOfferItems))
+            ?StreamOffer.tryParse(raw),
+      ];
       final tlsPort = tlsRaw is int && tlsRaw > 0 && tlsRaw < 65536 ? tlsRaw : null;
       if (offerId is! String ||
           fromId is! String ||
@@ -317,7 +380,7 @@ class OfferService {
           token.length > 64 ||
           port < 1 ||
           port > 65535 ||
-          rawItems.isEmpty ||
+          (rawItems.isEmpty && streams.isEmpty) ||
           rawItems.length > maxOfferItems) {
         return Response(400, body: 'bad request');
       }
@@ -345,6 +408,7 @@ class OfferService {
         callerFingerprint: callerFingerprint(r),
         token: token,
         items: items,
+        streams: streams,
         receivedAt: _now(),
       );
       incoming[offerId] = offer;

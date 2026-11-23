@@ -204,6 +204,29 @@ void main() {
       expect(offer.status, OfferStatus.done);
     });
 
+    test('a mixed offer carries the stream in `streams`, not in items', () async {
+      final e1 = entry(1, 'one.mp3', [1, 2, 3]);
+      const s = ShareEntry(
+          id: 2, path: '', streamKey: 'youtube:abcdefghijk', title: 'Live', artist: 'Band', sizeBytes: 0, durationMs: 5000, ext: '');
+      final offer = sender.createOutgoing(toId: 'b', toName: 'R', entries: [e1, s]);
+      final payload = sender.offerPayload(offer, senderNode.port!);
+      // What an older receiver reads: items with files only, the extra field is ignored.
+      expect((payload['items'] as List).length, 1);
+      await LanClient().sendOffer('127.0.0.1', receiverNode.port!, payload);
+      final inc = receiver.incoming[offer.offerId]!;
+      expect(inc.items.single.id, 1);
+      expect(inc.streams.single.key, 'youtube:abcdefghijk');
+      expect(inc.streams.single.durationMs, 5000);
+    });
+
+    test('an offer without `streams` (older sender) parses as before', () async {
+      final offer = sender.createOutgoing(toId: 'b', toName: 'R', entries: [entry(1, 'one.mp3', [1])]);
+      final payload = sender.offerPayload(offer, senderNode.port!);
+      expect(payload.containsKey('streams'), false);
+      await LanClient().sendOffer('127.0.0.1', receiverNode.port!, payload);
+      expect(receiver.incoming[offer.offerId]!.streams, isEmpty);
+    });
+
     test('decline leaves the sender informed and files locked', () async {
       final client = LanClient();
       final e1 = entry(1, 'one.mp3', [1, 2, 3]);

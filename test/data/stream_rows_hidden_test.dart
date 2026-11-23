@@ -349,7 +349,7 @@ void main() {
       expect((await TrackGenreRepository(db).musicGenres()).keys, contains(id));
     });
 
-    test('a share offer leaves it out: it has no file to send', () async {
+    test('a share offer carries a saved stream by key, no file', () async {
       final c = ProviderContainer(overrides: [
         databaseProvider.overrideWithValue(db),
         coversDirProvider.overrideWithValue(tmp),
@@ -359,7 +359,9 @@ void main() {
       final local = await db.into(db.tracks).insert(TracksCompanion.insert(
             path: '/m/a.mp3', title: 'Local', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
       final entries = await buildShareEntries(c.read(_refProvider), [row, (await tracks.getByIds([local])).single]);
-      expect(entries.map((e) => e.id), [local]);
+      expect(entries.map((e) => e.id), [row.id, local]);
+      expect((entries.first.streamKey, entries.first.path), ('youtube:abc', ''));
+      expect(entries.last.streamKey, isNull);
     });
   });
 

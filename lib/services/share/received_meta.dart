@@ -4,6 +4,9 @@ import '../../core/app_log.dart';
 import '../../data/repositories/credits_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
+import '../online/youtube_service.dart' show YtResult;
+import '../stream/stream_key.dart' show streamResultOf;
+import 'offers.dart' show StreamOffer;
 import 'track_meta.dart';
 
 typedef ReceivedCover = ({Uint8List bytes, String mime});
@@ -35,4 +38,29 @@ Future<void> applyReceivedPackage(
   } on Object catch (e, st) {
     AppLog.w('received metadata not applied: $path', e, st);
   }
+}
+
+/// Saves each offered stream as a «saved in streaming» row (D-674), skipping the ones
+/// [hasFile] says are already on the device. Returns how many were saved. Never throws.
+Future<int> saveReceivedStreams(
+  TrackRepository tracks,
+  List<StreamOffer> streams, {
+  required bool Function(YtResult) hasFile,
+  CreditsRepository? credits,
+}) async {
+  var n = 0;
+  for (final s in streams) {
+    try {
+      final r = streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs);
+      if (hasFile(r)) continue;
+      final id = await tracks.saveStream(r);
+      if (id == null) continue;
+      n++;
+      final m = s.meta;
+      if (m != null && credits != null) await credits.saveIfNone(id, m.credits, m.details);
+    } on Object catch (e, st) {
+      AppLog.w('received stream not saved: ${s.key}', e, st);
+    }
+  }
+  return n;
 }

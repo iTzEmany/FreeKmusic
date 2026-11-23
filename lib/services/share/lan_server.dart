@@ -23,6 +23,7 @@ class ShareEntry {
     required this.ext,
     this.coverPath,
     this.meta,
+    this.streamKey,
   });
 
   final int id;
@@ -34,6 +35,9 @@ class ShareEntry {
 
   /// Built once from the library row; travels with the track.
   final TrackMeta? meta;
+
+  /// `<source>:<id>` of a saved stream: there is no file, only the key and metadata travel (D-674).
+  final String? streamKey;
 
   Map<String, Object?> toManifestJson() => {
         'id': id,
@@ -107,6 +111,8 @@ Handler buildShareHandler({
   void Function()? onActivity,
   String Function(Request)? clientIp,
 }) {
+  // The PIN browse mode serves files only: a stream entry has none.
+  entries = [for (final e in entries) if (e.streamKey == null) e];
   final byId = {for (final e in entries) e.id: e};
   final router = Router();
 

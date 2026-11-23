@@ -7,6 +7,7 @@ import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/covers/cover_store.dart';
+import 'package:codecore/services/share/offers.dart' show StreamOffer;
 import 'package:codecore/services/share/received_meta.dart';
 import 'package:codecore/services/share/track_meta.dart';
 import 'package:drift/drift.dart' show Value;
@@ -209,5 +210,15 @@ void main() {
         fetchCover: () async => (bytes: Uint8List.fromList([1, 2, 3]), mime: 'image/png'));
     final t = (await repo.byPath('/a/x.mp3'))!;
     expect([t.coverKey, t.coverSource], ['manual:track:1:1', 2]);
+  });
+
+  test('received streams become saved stream rows; the ones with a file are skipped', () async {
+    const a = StreamOffer(key: 'youtube:abcdefghijk', title: 'Live', artist: 'Band', durationMs: 5000);
+    const b = StreamOffer(key: 'youtube:bbbbbbbbbbb', title: 'Has file');
+    final n = await saveReceivedStreams(repo, [a, b], hasFile: (r) => r.id == 'bbbbbbbbbbb');
+    expect(n, 1);
+    final row = (await repo.byPath('stream:youtube:abcdefghijk'))!;
+    expect((row.kind, row.saved, row.title, row.artist), (2, true, 'Live', 'Band'));
+    expect(await repo.byPath('stream:youtube:bbbbbbbbbbb'), isNull);
   });
 }

@@ -613,6 +613,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
           if (row != null) afterReceive(ref.read, row.id);
         }
       }
+      if (o.streams.isNotEmpty) {
+        final index = await ref.read(downloadIndexProvider.future);
+        await saveReceivedStreams(
+          ref.read(trackRepositoryProvider),
+          o.streams,
+          hasFile: (r) => index.contains(r.id, source: r.source),
+          credits: ref.read(creditsRepositoryProvider),
+        );
+      }
       o.status = o.received == o.items.length
           ? OfferStatus.done
           : OfferStatus.failed;
