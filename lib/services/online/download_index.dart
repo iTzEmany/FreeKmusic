@@ -78,9 +78,9 @@ class DownloadIndex {
   /// must not wipe the index). Without this, a user's own file later put at the same path would look
   /// like the download.
   Future<void> pruneGone() async {
-    final gone = [
-      for (final e in _map.entries)
-        if (!File(e.value).existsSync() && Directory(p.dirname(e.value)).existsSync()) e.key,
+    final gone = <String>[
+      for (final e in _map.entries.toList())
+        if (!await File(e.value).exists() && await Directory(p.dirname(e.value)).exists()) e.key,
     ];
     if (gone.isEmpty) return;
     gone.forEach(_forget);
@@ -90,11 +90,11 @@ class DownloadIndex {
   /// The file at [path] is still the one downloaded for [key]: size and mtime as recorded at download
   /// time. Entries without a signature (older index, restored backup) never match, and neither does a
   /// file edited since (shortcut: tags written after the download also break it; see [refreshSignature]).
-  bool signatureMatches(String key, String path) {
+  Future<bool> signatureMatches(String key, String path) async {
     final sig = _sig[key] ?? (key.startsWith('youtube:') ? _sig[key.substring('youtube:'.length)] : null);
     if (sig == null) return false;
     try {
-      final st = File(path).statSync();
+      final st = await File(path).stat();
       return st.type == FileSystemEntityType.file && st.size == sig[0] && st.modified.millisecondsSinceEpoch == sig[1];
     } on Object catch (e, st) {
       AppLog.w('download signature unreadable: $path', e, st);
@@ -110,8 +110,12 @@ class DownloadIndex {
   }
 
   /// The file at [path] is still, byte for byte in size and mtime, the one downloaded for its entry.
-  bool signatureMatchesPath(String path) =>
-      _map.entries.any((e) => e.value == path && signatureMatches(e.key, path));
+  Future<bool> signatureMatchesPath(String path) async {
+    for (final e in _map.entries.toList()) {
+      if (e.value == path && await signatureMatches(e.key, path)) return true;
+    }
+    return false;
+  }
 
   /// [refreshSignature] for the entry whose file is [path] (the tagger knows the path, not the key).
   Future<void> refreshSignatureByPath(String path) {
@@ -137,16 +141,23 @@ class DownloadIndex {
   bool contains(String id, {MediaSource source = MediaSource.youtube}) =>
       pathFor(id, source: source) != null;
 
-  /// Where the video was downloaded, if the file is still there.
+  /// Where the video was downloaded, per the index (memory only: the UI reads it while building).
+  /// [pruneGone] drops what left the disk; use [existingPathFor] before opening the file.
   String? pathFor(String id, {MediaSource source = MediaSource.youtube}) =>
       pathForKey(downloadIndexKey(source, id));
 
   /// Like [pathFor] from the `<source>:<id>` key.
-  String? pathForKey(String key) {
-    final path = _map[key] ??
-        (key.startsWith('youtube:') ? _map[key.substring('youtube:'.length)] : null);
-    return path != null && File(path).existsSync() ? path : null;
+  String? pathForKey(String key) =>
+      _map[key] ?? (key.startsWith('youtube:') ? _map[key.substring('youtube:'.length)] : null);
+
+  /// [pathForKey] checked on disk: for what is about to open the file (playback, Jam, import).
+  Future<String?> existingPathForKey(String key) async {
+    final path = pathForKey(key);
+    return path != null && await File(path).exists() ? path : null;
   }
+
+  Future<String?> existingPathFor(String id, {MediaSource source = MediaSource.youtube}) =>
+      existingPathForKey(downloadIndexKey(source, id));
 
   /// The YouTube video id [path] was downloaded from. Memory only (no disk
   /// access), so it also answers for files that are gone.

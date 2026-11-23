@@ -243,6 +243,15 @@ void main() {
     expect(handler.currentTrack?.id, ids[0]);
   });
 
+  test('deleting the row an entry is bound to leaves the entry unbound, still in the queue', () async {
+    final id = online.register(result('v1'));
+    online.bindRow(id, ids[1]);
+    await handler.playQueue([ids[0], id], 0);
+    await handler.removeTracks({ids[1]});
+    expect(online[id]?.trackId, isNull);
+    expect(handler.queueIds, [ids[0], id]);
+  });
+
   test('resyncPreparer drops an entry downloaded after it was queued', () async {
     final e = [online.register(result('v1')), online.register(result('v2'))];
     await handler.playQueue([ids[0], ...e], 0);

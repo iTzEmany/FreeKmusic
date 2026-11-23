@@ -326,7 +326,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   Future<void> _joinPlaylist(YtResult r, int? playlistId) async {
     if (playlistId == null) return;
     try {
-      final path = (await ref.read(downloadIndexProvider.future)).pathFor(r.id, source: r.source);
+      final path = await (await ref.read(downloadIndexProvider.future)).existingPathFor(r.id, source: r.source);
       final id = path == null ? null : await ref.read(trackRepositoryProvider).idForPath(path);
       if (id != null) await ref.read(playlistRepositoryProvider).addTracks(playlistId, [id]);
     } on Object catch (e, st) {

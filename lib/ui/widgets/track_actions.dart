@@ -98,7 +98,7 @@ bool Function(String) _inLibrary(WidgetRef ref) =>
 
 bool entryInLibrary(WidgetRef ref, int id) {
   final r = ref.read(onlineEntriesProvider)?[id]?.result;
-  return r != null && ref.read(inLibraryOfProvider)(r.id, r.source);
+  return r != null && ref.read(trackStateProvider(r.indexKey)) != TrackState.online;
 }
 
 /// Streamed (online) entries are not library rows: no favourites, tags,
@@ -247,6 +247,7 @@ List<TrackActionGroup> trackActions(
   WidgetRef ref,
   Track track, {
   Track? row,
+  bool isDownloadedFile = false,
 }) {
   final radio = radioOfTrackRead(ref, track);
   if (radio != null) return radioTrackActions(outer, ref, track, radio);
@@ -287,7 +288,7 @@ List<TrackActionGroup> trackActions(
       !track.missing &&
       playingId != track.id &&
       playingRow != track.id &&
-      (ref.read(downloadIndexProvider).value?.signatureMatchesPath(track.path) ?? false);
+      isDownloadedFile;
 
   final groups = [
     TrackActionGroup(l.groupQueue, [
@@ -482,27 +483,47 @@ Future<void> showTrackActions(
   WidgetRef ref,
   Track track, {
   TrackAction? lead,
-}) {
+}) async {
   // The menu follows the state of the song, not the Track it was opened with: a download
   // or a save swaps it for the library row and the groups are rebuilt (D-697).
   final entryKey = ref.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
   final key = trackStateKey(track, streamKey: entryKey);
+  // The caller (a row) may be unmounted while the sheet is open (its list changed): the sheet listens and
+  // reads through the container, and builds with its own context and ref once the caller is gone.
+  final container = ProviderScope.containerOf(context);
+  BuildContext? sheetContext;
+  WidgetRef? sheetRef;
   var live = track;
   Track? liveRow; // the library row behind an online entry (negative id), once saved or downloaded
-  List<TrackActionGroup> build() => [
-    if (lead != null) TrackActionGroup('', [lead]),
-    ...trackActions(context, ref, live, row: liveRow),
-  ];
+  // «Libera spazio» needs the file to be the very one downloaded: checked off the UI thread, not while building.
+  Future<bool> pristine() async =>
+      (await container.read(downloadIndexProvider.future)).signatureMatchesPath(live.path);
+  var isDownloadedFile = await pristine();
+  if (!context.mounted) return;
+  List<TrackActionGroup> build() {
+    final alive = context.mounted;
+    return [
+      if (lead != null) TrackActionGroup('', [lead]),
+      ...trackActions(
+        alive ? context : sheetContext!,
+        alive ? ref : sheetRef!,
+        live,
+        row: liveRow,
+        isDownloadedFile: isDownloadedFile,
+      ),
+    ];
+  }
+
   late List<TrackActionGroup> last;
-  // The caller may be gone while the sheet is open: keep the last groups then.
-  List<TrackActionGroup> groups() => context.mounted ? last = build() : last;
+  // Until the sheet is on screen only the caller can build; afterwards the sheet can, whoever is alive.
+  List<TrackActionGroup> groups() => context.mounted || sheetContext?.mounted == true ? last = build() : last;
   final changed = ValueNotifier(0);
   var closed = false;
   var calls = 0; // only the last call counts: an older lookup finishing late must not undo a newer one
   Future<void> follow() async {
     final n = ++calls;
     try {
-      final row = await ref.read(trackRowLookupProvider)(track, key);
+      final row = await container.read(trackRowLookupProvider)(track, key);
       if (n != calls) return;
       // An online entry (negative id) stays itself: the library row is another thing to act on.
       if (row != null) {
@@ -512,6 +533,8 @@ Future<void> showTrackActions(
           live = row;
         }
       }
+      isDownloadedFile = await pristine();
+      if (n != calls) return;
     } on Object catch (e, st) {
       AppLog.w('track menu: row of $key not reloaded', e, st);
     }
@@ -522,15 +545,21 @@ Future<void> showTrackActions(
   // A `#<id>` key with a negative id (a radio) has no row to follow.
   final sub = key.startsWith('#') && isOnlineId(track.id)
       ? null
-      : ref.listenManual(trackStateProvider(key), (_, _) => follow());
+      : container.listen(trackStateProvider(key), (_, _) => follow());
   // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
-  final indexSub = ref.listenManual(downloadIndexProvider, (_, _) => follow());
+  final indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
   last = build();
   if (ref.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow()); // the row of an entry saved before the sheet opened
   return showTrackActionGroups(
     context,
     last,
-    header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
+    header: Consumer(
+      builder: (c, r, _) {
+        sheetContext = c;
+        sheetRef = r;
+        return _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key);
+      },
+    ),
     refresh: changed,
     regroup: groups,
   ).whenComplete(() {

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/library_add_providers.dart';
+import '../../../providers/track_state_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../data/settings/settings_store.dart' show StorageMode;
@@ -124,7 +125,7 @@ class OnlineSongTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pick = watchOnlinePick(ref, selectionKey, index);
-    final inLibrary = ownedLocally || ref.watch(inLibraryOfProvider)(result.id, result.source);
+    final inLibrary = ownedLocally || ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,

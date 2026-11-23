@@ -18,4 +18,17 @@ void main() {
     expect(again.pathFor('id4'), song.path);
     expect(again.pathForKey('youtube:id0'), song.path);
   });
+
+  test('the state reads the index without touching the disk; the file check is explicit', () async {
+    final tmp = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => tmp.deleteSync(recursive: true));
+    final song = File(p.join(tmp.path, 's.m4a'))..writeAsStringSync('x');
+    final idx = DownloadIndex(File(p.join(tmp.path, 'downloads.json')));
+    await idx.add('id', song.path);
+    song.deleteSync();
+    expect(idx.pathForKey('youtube:id'), song.path, reason: 'memory is the truth for the UI');
+    expect(await idx.existingPathForKey('youtube:id'), isNull, reason: 'playback checks the file');
+    await idx.pruneGone();
+    expect(idx.pathForKey('youtube:id'), isNull);
+  });
 }

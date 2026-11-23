@@ -7,6 +7,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/shuffle_plus_providers.dart';
 import '../../../providers/library_add_providers.dart';
+import '../../../providers/track_state_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../services/shuffle_plus/genre_mix.dart';
@@ -161,7 +162,7 @@ class _SuggestedRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
-    final inLibrary = ref.watch(inLibraryOfProvider)(result.id, result.source);
+    final inLibrary = ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,

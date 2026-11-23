@@ -834,8 +834,8 @@ final playerControllerProvider = Provider<PlayerController>((ref) {
     similarFill: ref.read(similarFillProvider),
     libraryMatchIdOf: ref.read(libraryMatchIdProvider),
     libraryIdOf: (r) async {
-      final path = (await ref.read(downloadIndexProvider.future))
-          .pathFor(r.id, source: r.source);
+      final path = await (await ref.read(downloadIndexProvider.future))
+          .existingPathFor(r.id, source: r.source);
       return path == null
           ? null
           : ref.read(trackRepositoryProvider).idForPath(path);

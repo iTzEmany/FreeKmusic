@@ -35,10 +35,13 @@ import '../support/app_harness.dart';
 import '../support/fake_backend.dart';
 
 Future<void> _settle(WidgetTester tester) async {
-  await tester.runAsync(
-    () => Future<void>.delayed(const Duration(milliseconds: 150)),
-  );
-  await tester.pump(const Duration(milliseconds: 300));
+  // Two rounds: the menu's reload is a chain of real I/O steps (DB, then the file signature).
+  for (var i = 0; i < 2; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 150)),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+  }
   await tester.pump(const Duration(milliseconds: 300));
 }
 
@@ -271,6 +274,7 @@ void main() {
     double scale = 1,
     List<Override> extra = const [],
     StorageMode? mode,
+    ValueNotifier<bool>? opener,
   }) async {
     tester.view.physicalSize = const Size(360, 900);
     tester.view.devicePixelRatio = 1;
@@ -288,11 +292,17 @@ void main() {
       MediaQuery(
         data: MediaQueryData(textScaler: TextScaler.linear(scale)),
         child: Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) => TextButton(
-              onPressed: () => showTrackActions(context, ref, t),
-              child: const Text('open'),
-            ),
+          // [opener] false takes the row that opened the sheet out of the tree.
+          body: ValueListenableBuilder<bool>(
+            valueListenable: opener ?? ValueNotifier(true),
+            builder: (_, shown, _) => !shown
+                ? const SizedBox()
+                : Consumer(
+                    builder: (context, ref, _) => TextButton(
+                      onPressed: () => showTrackActions(context, ref, t),
+                      child: const Text('open'),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -542,6 +552,32 @@ void main() {
     await _settle(tester);
     expect(find.text('Scarica'), findsNothing);
     expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget, reason: 'the menu of the file now');
+    await h.dispose(tester);
+  });
+
+  testWidgets('the open menu keeps following the song after the row that opened it is gone', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final opener = ValueNotifier(true);
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+      opener: opener,
+    );
+    expect(find.text('Scarica'), findsOneWidget);
+    opener.value = false; // the list changed: the row is unmounted, the sheet stays
+    await tester.pump();
+    expect(find.text('open'), findsNothing);
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => h.db.customStatement("UPDATE tracks SET kind = 0, saved = 0, path = '${file.path}' WHERE id = (SELECT MIN(id) FROM tracks)"));
+    await tester.runAsync(() => index.add('abc', file.path));
+    ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider);
+    await _settle(tester);
+    expect(find.text('Scarica'), findsNothing);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 

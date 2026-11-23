@@ -224,7 +224,7 @@ String? jamCacheKey(JamItem i) {
 Future<String?> jamLocalFile(JamItem item, StreamCache cache, TrackRepository tracks,
     {DownloadIndex? index}) async {
   final key = jamCacheKey(item);
-  if (key != null) return (await cache.fileFor(key))?.path ?? index?.pathForKey(key);
+  if (key != null) return (await cache.fileFor(key))?.path ?? await index?.existingPathForKey(key);
   final id = int.tryParse(item.ref ?? '');
   return id == null ? null : (await tracks.getById(id))?.path;
 }

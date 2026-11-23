@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/shuffle_plus_providers.dart';
 import '../../../providers/library_add_providers.dart';
+import '../../../providers/track_state_providers.dart';
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../../services/shuffle_plus/suggestion_log.dart';
@@ -107,7 +108,7 @@ class _SuggestionRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final result = suggestionResult(record);
-    final inLibrary = ref.watch(inLibraryOfProvider)(result.id, result.source);
+    final inLibrary = ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
     final item = ref.watch(downloadsProvider.select((d) => d.where((x) => x.result.id == result.id).lastOrNull));
     return OnlineSongRow(
       result: result,

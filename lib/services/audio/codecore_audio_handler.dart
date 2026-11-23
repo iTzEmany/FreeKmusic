@@ -2011,6 +2011,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// file that is open cannot be deleted.
   Future<void> removeTracks(Set<int> ids) async {
     if (ids.isEmpty) return;
+    online?.unbindRows(ids);
     _source = _source?.where((id) => !ids.contains(id)).toList();
     final items = _queue.items;
     final currentGone = _current != null && ids.contains(_current!.id);

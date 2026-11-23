@@ -64,7 +64,7 @@ void main() {
     expect((await svc().freeSpaceCandidates()).map((e) => e.track.id), [id]);
     final reloaded = DownloadIndex(File(p.join(dir.path, 'downloads.json')));
     await reloaded.load();
-    expect(reloaded.signatureMatches('youtube:t', path), true, reason: 'persisted');
+    expect(await reloaded.signatureMatches('youtube:t', path), true, reason: 'persisted');
   });
 
   test('a legacy entry without a signature (a user file at that path) is never a candidate', () async {
