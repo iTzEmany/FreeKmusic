@@ -285,7 +285,7 @@ class OnlineSongRow extends StatelessWidget {
                 ),
                 ?listen,
                 _DownloadState(
-                  entryKey: result.indexKey,
+                  entryKey: item?.result.indexKey ?? result.indexKey,
                   item: item,
                   inLibrary: inLibrary,
                   onDownload: onDownload,

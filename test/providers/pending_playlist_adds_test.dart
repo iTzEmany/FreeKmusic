@@ -132,6 +132,7 @@ void main() {
       await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(1));
       expect(queue.added, ['v1:addto:1']);
       expect(await savedRows(), isEmpty);
+      expect(await c.read(libraryAdderProvider).saveNow(_song), isNull, reason: 'device mode saves nothing before the download');
     });
 
     test('a song already downloaded makes no second row in streaming mode', () async {

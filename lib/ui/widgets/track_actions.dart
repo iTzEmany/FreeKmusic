@@ -52,6 +52,7 @@ import 'radio_now.dart';
 import '../screens/radio/radio_actions.dart';
 import '../../providers/radio_providers.dart' show savedRadioIdsProvider;
 import '../../services/radio/radio_station.dart';
+import 'confirm.dart';
 import 'delete_tracks.dart';
 import 'favorite_actions.dart';
 import 'format_utils.dart';
@@ -242,12 +243,15 @@ List<TrackActionGroup> trackActions(
   final streaming = ref.read(settingsProvider).storageMode == StorageMode.stream;
   // A shadow row not saved yet keeps the short menu; a saved one has the full menu (D-696).
   final unsavedShadow = streamKey != null && state == TrackState.online;
+  // The same rule as `freeSpaceCandidates`: the very file the app downloaded, not the one playing.
   final inDownloads = state == TrackState.downloaded &&
-      (ref.read(downloadIndexProvider).value?.entries.any((e) => e.value == track.path) ?? false);
+      track.kind == kMusicKind &&
+      ref.read(audioHandlerProvider).currentTrack?.id != track.id &&
+      (ref.read(downloadIndexProvider).value?.signatureMatchesPath(track.path) ?? false);
 
   final groups = [
     TrackActionGroup(l.groupQueue, [
-      if (isDesktop)
+      if (isDesktop && track.kind != kStreamKind)
         TrackAction(Icons.hearing_rounded, l.previewTrack, () async {
           await ref.read(previewProvider.notifier).start(track);
         }),
@@ -295,6 +299,14 @@ List<TrackActionGroup> trackActions(
       // Only a file the app downloaded itself (a user's mp3 is never touched).
       if (inDownloads)
         TrackAction(Icons.cleaning_services_rounded, l.freeSpaceTitle, () async {
+          final ok = await showConfirm(
+            outer,
+            title: l.freeSpaceConfirmTitle,
+            body: l.freeSpaceConfirmBody(1),
+            confirmLabel: l.freeSpaceTitle,
+            destructive: true,
+          );
+          if (!ok || !outer.mounted) return;
           final report = await (await ref.read(freeSpaceServiceProvider.future)).freeSpace([track.id]);
           if (!outer.mounted) return;
           showMsg(
@@ -378,11 +390,12 @@ List<TrackActionGroup> trackActions(
         TrackAction(Icons.equalizer_rounded, l.equalizer, () async {
           ShellNav.open<void>(outer, const EqualizerScreen());
         }),
-      TrackAction(
-        Icons.devices_rounded,
-        l.shareMenu,
-        () async => DevicesSheet.show(outer, trackIds: [track.id]),
-      ),
+      if (track.kind != kStreamKind)
+        TrackAction(
+          Icons.devices_rounded,
+          l.shareMenu,
+          () async => DevicesSheet.show(outer, trackIds: [track.id]),
+        ),
       TrackAction(Icons.info_outline_rounded, l.details, () async {
         showDialog<void>(
           context: outer,
@@ -436,7 +449,7 @@ Future<void> showTrackActions(
     if (lead != null) TrackActionGroup('', [lead]),
     ...trackActions(context, ref, live),
   ];
-  var last = build();
+  late List<TrackActionGroup> last;
   // The caller may be gone while the sheet is open: keep the last groups then.
   List<TrackActionGroup> groups() => context.mounted ? last = build() : last;
   final changed = ValueNotifier(0);
@@ -444,16 +457,19 @@ Future<void> showTrackActions(
   Future<void> follow() async {
     try {
       final row = await ref.read(trackRowLookupProvider)(track, key);
-      if (row != null) live = row;
+      // An online entry (negative id) stays itself: the library row is another thing to act on.
+      if (row != null && !isOnlineId(track.id)) live = row;
     } on Object catch (e, st) {
       AppLog.w('track menu: row of $key not reloaded', e, st);
     }
     if (!closed) changed.value++;
   }
 
+  // Listeners before the first build: an autoDispose provider read with none would build twice (a flicker).
   final sub = ref.listenManual(trackStateProvider(key), (_, _) => follow());
   // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
   final indexSub = ref.listenManual(downloadIndexProvider, (_, _) => follow());
+  last = build();
   return showTrackActionGroups(
     context,
     last,

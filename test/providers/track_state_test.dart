@@ -14,6 +14,7 @@ import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -121,5 +122,37 @@ void main() {
     await index.add(_r.id, file.path);
     player.invalidate(downloadIndexProvider);
     expect(await state(player, k), TrackState.downloaded);
+  });
+
+  test('a `#id` key reads online for an unsaved stream row, an episode and a missing row', () async {
+    final shadow = await tracks.ensureStreamRow(_r); // streamed, never saved
+    final episode = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: 'https://x/e.mp3', title: 'Ep', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1, kind: const Value(1)));
+    for (final id in [shadow, episode, 9999]) {
+      c.listen(trackStateProvider('#$id'), (_, _) {});
+      await pumpEventQueue();
+      expect(c.read(trackStateProvider('#$id')), TrackState.online, reason: '#$id');
+    }
+  });
+
+  test('trackStateKey: the given stream key wins, else the stream key of the path, else #id', () async {
+    final id = (await tracks.saveStream(_r))!;
+    final row = (await tracks.getById(id))!;
+    expect(trackStateKey(row), key);
+    expect(trackStateKey(row, streamKey: 'other:k'), 'other:k');
+    await tracks.promoteStreamRow(key, file.path, 1, file);
+    expect(trackStateKey((await tracks.getById(id))!), '#$id');
+  });
+
+  test('the row lookup of a menu follows a stream key to the downloaded file, and a `#id` key to its row', () async {
+    final id = (await tracks.saveStream(_r))!;
+    final shadow = (await tracks.getById(id))!;
+    final lookup = c.read(trackRowLookupProvider);
+    expect((await lookup(shadow, key))!.path, 'stream:$key', reason: 'not downloaded: the shadow row');
+    expect((await lookup(shadow, '#$id'))!.id, id);
+
+    await tracks.promoteStreamRow(key, file.path, 1, file);
+    await index.add(_r.id, file.path);
+    expect((await lookup(shadow, key))!.path, file.path);
   });
 }

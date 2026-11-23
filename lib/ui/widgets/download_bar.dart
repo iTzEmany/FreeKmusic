@@ -49,6 +49,16 @@ class _DownloadBarState extends ConsumerState<DownloadBar> {
       all.where((x) => x.result.indexKey == widget.entryKey).lastOrNull;
 
   @override
+  void didUpdateWidget(DownloadBar old) {
+    super.didUpdateWidget(old);
+    // Another song took the slot: its «Scaricato» is not the previous one's.
+    if (old.entryKey != widget.entryKey) {
+      _doneTimer?.cancel();
+      _showDone = false;
+    }
+  }
+
+  @override
   void dispose() {
     _doneTimer?.cancel();
     super.dispose();
@@ -66,11 +76,8 @@ class _DownloadBarState extends ConsumerState<DownloadBar> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<List<DownloadItem>>(
-      downloadsProvider,
-      (a, b) => _onChange(_latest(a ?? const []), _latest(b)),
-    );
-    final item = _latest(ref.watch(downloadsProvider));
+    ref.listen<DownloadItem?>(downloadsProvider.select(_latest), _onChange);
+    final item = ref.watch(downloadsProvider.select(_latest));
     final l = context.l10n;
     final cc = context.cc;
     if (_active(item?.status)) {

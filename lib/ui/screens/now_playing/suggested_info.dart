@@ -30,7 +30,16 @@ class SuggestedInfo extends ConsumerWidget {
     final seed = entry?.seedTitle;
     final actions = ref.read(suggestionActionsProvider);
     ref.watch(downloadIndexProvider); // a promotion refreshes it
-    if (entryInLibrary(ref, track.id)) return const SizedBox.shrink();
+    if (entryInLibrary(ref, track.id)) {
+      // The library row appears before the download reports «done»: keep the bar up to show it.
+      final key = entry?.result.indexKey;
+      return key == null
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: npEdge + CcDims.gap4),
+              child: DownloadBar(entryKey: key),
+            );
+    }
     final suggested = entry?.suggested ?? false;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: npEdge),

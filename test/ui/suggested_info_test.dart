@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/l10n/app_localizations.dart';
@@ -7,7 +8,7 @@ import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/providers/youtube_providers.dart'
     show downloadIndexProvider, downloadsProvider, DownloadsNotifier;
-import 'package:codecore/services/online/download_queue.dart' show DownloadItem;
+import 'package:codecore/services/online/download_queue.dart' show DownloadItem, DownloadStatus;
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -26,6 +27,13 @@ class _Track implements Track {
 }
 
 class _Actions implements SuggestionActions {
+  final downloaded = <int>[];
+  @override
+  Future<bool?> downloadEntry(int id) async {
+    downloaded.add(id);
+    return true;
+  }
+
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
@@ -33,9 +41,29 @@ class _Actions implements SuggestionActions {
 class _Downloads extends DownloadsNotifier {
   @override
   List<DownloadItem> build() => [];
+  void put(DownloadStatus s, [double p = 0]) => state = [DownloadItem(id: 1, result: _yt, status: s, progress: p)];
 }
 
+const _yt = YtResult(id: 'v1', title: 'Oroscopo', channel: 'ch', duration: null, artists: ['Calcutta']);
+
 void main() {
+  late _Actions actions;
+  late StreamController<Set<String>> saved;
+  late _Downloads downloads;
+  late Directory dir;
+  late DownloadIndex index;
+  setUp(() {
+    actions = _Actions();
+    saved = StreamController<Set<String>>();
+    dir = Directory.systemTemp.createTempSync('suggested');
+    index = DownloadIndex(File('${dir.path}/downloads.json'));
+    downloads = _Downloads();
+  });
+  tearDown(() {
+    saved.close();
+    dir.deleteSync(recursive: true);
+  });
+
   Future<void> open(
     WidgetTester tester, {
     required bool suggested,
@@ -43,13 +71,7 @@ void main() {
   }) async {
     final entries = OnlineEntries();
     final id = entries.register(
-      const YtResult(
-        id: 'v1',
-        title: 'Oroscopo',
-        channel: 'ch',
-        duration: null,
-        artists: ['Calcutta'],
-      ),
+      _yt,
       seedTitle: 'Nella stanza 2',
       suggested: suggested,
     );
@@ -57,12 +79,10 @@ void main() {
       ProviderScope(
         overrides: [
           onlineEntriesProvider.overrideWithValue(entries),
-          downloadsProvider.overrideWith(_Downloads.new),
-          suggestionActionsProvider.overrideWithValue(_Actions()),
-          savedStreamKeysProvider.overrideWith((ref) => Stream.value(const <String>{})),
-          downloadIndexProvider.overrideWith(
-            (ref) => Completer<DownloadIndex>().future,
-          ),
+          downloadsProvider.overrideWith(() => downloads),
+          suggestionActionsProvider.overrideWithValue(actions),
+          savedStreamKeysProvider.overrideWith((ref) => saved.stream),
+          downloadIndexProvider.overrideWith((ref) async => index),
         ],
         child: MaterialApp(
           locale: const Locale('it'),
@@ -113,8 +133,29 @@ void main() {
     tester,
   ) async {
     await open(tester, suggested: false);
-    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
     expect(find.text('Scarica'), findsNothing);
     expect(find.text('Aggiungi a playlist…'), findsOneWidget);
+    await tester.tap(find.text('Aggiungi alla libreria'));
+    await tester.pump();
+    expect(actions.downloaded, hasLength(1));
+  });
+
+  testWidgets('the «Scaricato» line shows even though the song joins the library just before the download is done (D-697)', (tester) async {
+    await open(tester, suggested: false);
+    downloads.put(DownloadStatus.downloading, 0.5);
+    await tester.pump();
+    // The download is promoted: the index is invalidated before the queue says «done».
+    final file = File('${dir.path}/v1.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => index.add('v1', file.path));
+    ProviderScope.containerOf(tester.element(find.byType(SuggestedInfo))).invalidate(downloadIndexProvider);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Aggiungi a playlist…'), findsNothing, reason: 'in the library: the tiles are gone');
+    downloads.put(DownloadStatus.done, 1);
+    await tester.pump();
+    expect(find.text('Scaricato'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.text('Scaricato'), findsNothing);
   });
 }

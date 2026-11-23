@@ -1,6 +1,9 @@
 import 'dart:io';
 
-import 'package:codecore/data/db/app_database.dart' show Track;
+import 'dart:async';
+
+import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
+import 'package:codecore/ui/widgets/download_bar.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
@@ -8,7 +11,7 @@ import 'package:codecore/providers/player_providers.dart'
     show onlineEntriesProvider;
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/audio/online_entries.dart';
-import 'package:codecore/services/online/download_queue.dart' show DownloadItem;
+import 'package:codecore/services/online/download_queue.dart' show DownloadItem, DownloadStatus;
 import 'package:codecore/services/online/download_index.dart'
     show DownloadIndex;
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
@@ -532,11 +535,13 @@ void main() {
     );
     expect(find.text('Scarica'), findsOneWidget);
     final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    // The download finished: the saved-stream row is promoted to the file, the index knows it.
+    await tester.runAsync(() => h.db.customStatement("UPDATE tracks SET kind = 0, saved = 0, path = '${file.path}' WHERE id = (SELECT MIN(id) FROM tracks)"));
     await tester.runAsync(() => index.add('abc', file.path));
     ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider);
     await _settle(tester);
     expect(find.text('Scarica'), findsNothing);
-    expect(find.text('Aggiungi a playlist…', skipOffstage: false), findsOneWidget);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget, reason: 'the menu of the file now');
     await h.dispose(tester);
   });
 
@@ -548,12 +553,11 @@ void main() {
     expect(find.text('Libera spazio', skipOffstage: false), findsNothing, reason: 'a user file');
     await h.dispose(tester);
 
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => index.add('abc', file.path));
     h = await openSheet(
       tester,
-      (t) {
-        index.add('abc', t.path);
-        return t;
-      },
+      (t) => t.copyWith(path: file.path),
       extra: [downloadIndexProvider.overrideWith((ref) async => index)],
     );
     expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget);
@@ -676,6 +680,114 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets('an online entry keeps its own menu when a library row appears at its file: no «Elimina dal dispositivo»', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final online = OnlineEntries();
+    final id = online.register(const YtResult(id: 'v1', title: 'Streamed', channel: 'Chan', duration: null));
+    final h = await openSheet(
+      tester,
+      (_) => online.trackOf(id)!,
+      extra: [onlineEntriesProvider.overrideWithValue(online), downloadIndexProvider.overrideWith((ref) async => index)],
+    );
+    final file = File('${dir.path}/v1.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => index.add('v1', file.path));
+    await tester.runAsync(() => (h.db.update(h.db.tracks)..where((t) => t.id.equals(1))).write(TracksCompanion(path: Value(file.path))));
+    ProviderScope.containerOf(tester.element(find.text('Aggiungi a playlist…'))).invalidate(downloadIndexProvider);
+    await _settle(tester);
+    expect(find.text('Rimuovi dalla coda', skipOffstage: false), findsOneWidget);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
+    await h.dispose(tester);
+  });
+
+  // A file row of the library the app downloaded: [file] is in the index with its signature.
+  Future<Harness> openDownloaded(
+    WidgetTester tester, {
+    List<Override> extra = const [],
+    bool stale = false,
+  }) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => index.add('abc', file.path));
+    if (stale) file.writeAsStringSync('another file');
+    return openSheet(
+      tester,
+      (t) => t.copyWith(path: file.path),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index), ...extra],
+    );
+  }
+
+  testWidgets('«Libera spazio» asks to confirm, then frees the file', (tester) async {
+    final h = await openDownloaded(tester);
+    await tester.tap(find.text('Libera spazio'));
+    await _settle(tester);
+    expect(find.text('Liberare lo spazio?'), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Libera spazio')));
+    await _settle(tester);
+    await _settle(tester);
+    final row = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    expect(row.kind, kStreamKind);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Libera spazio» is not offered for the playing track nor for a file that is not the downloaded one', (tester) async {
+    var h = await openDownloaded(tester, stale: true);
+    expect(find.text('Libera spazio', skipOffstage: false), findsNothing, reason: 'signature does not match');
+    await h.dispose(tester);
+
+    h = await openDownloaded(tester);
+    await tester.runAsync(() => h.handler.playQueue([1], 0));
+    ProviderScope.containerOf(tester.element(find.text('Aggiungi a playlist…'))).invalidate(downloadIndexProvider); // rebuilds the menu
+    await _settle(tester);
+    expect(find.text('Libera spazio', skipOffstage: false), findsNothing, reason: 'it is playing');
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Libera spazio» is not offered while the index is loading, nor on a stream row whose key is indexed', (tester) async {
+    var h = await openSheet(tester, (t) => t, extra: [downloadIndexProvider.overrideWith((ref) => Completer<DownloadIndex>().future)]);
+    expect(find.text('Libera spazio', skipOffstage: false), findsNothing);
+    await h.dispose(tester);
+
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => index.add('abc', file.path));
+    h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+    );
+    expect(find.text('Libera spazio', skipOffstage: false), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a saved stream row has no «Mostra nella cartella», no preview and no share', (tester) async {
+    final h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));
+    for (final t in ['Mostra nella cartella', 'Anteprima 20 s', 'Condividi…']) {
+      expect(find.text(t, skipOffstage: false), findsNothing, reason: t);
+    }
+    await h.dispose(tester);
+  });
+
+  testWidgets('the menu header shows the download bar while the song downloads', (tester) async {
+    final downloads = _Downloads();
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadsProvider.overrideWith(() => downloads)],
+    );
+    expect(find.byType(DownloadBar), findsOneWidget);
+    expect(find.text('Scarico… 40%'), findsNothing);
+    downloads.put(const YtResult(id: 'abc', title: 'S', channel: 'c', duration: null), DownloadStatus.downloading, 0.4);
+    await tester.pump();
+    expect(find.text('Scarico… 40%'), findsOneWidget);
+    await h.dispose(tester);
+  });
 }
 
 class _Downloads extends DownloadsNotifier {
@@ -683,6 +795,7 @@ class _Downloads extends DownloadsNotifier {
   bool instant = false;
   @override
   List<DownloadItem> build() => [];
+  void put(YtResult r, DownloadStatus s, [double p = 0]) => state = [DownloadItem(id: 1, result: r, status: s, progress: p)];
   @override
   Future<bool> add(YtResult r, {String? tag}) async {
     added.add(r);
