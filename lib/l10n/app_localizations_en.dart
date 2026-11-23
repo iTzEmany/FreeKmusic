@@ -8113,4 +8113,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Downloading… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Also download the files';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Songs are normally saved for streaming, with no file. When on, they are also downloaded to the device.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'Songs you download go to the FreeKmusic folder, inside the folder you pick here.';
 }

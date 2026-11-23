@@ -8137,4 +8137,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Scarico… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Scarica anche i file';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Di norma i brani si salvano in streaming, senza file. Accesa, li scarica anche sul dispositivo.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.';
 }

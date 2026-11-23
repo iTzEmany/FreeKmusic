@@ -8,6 +8,7 @@ class ImportOptions {
     this.folderPath,
     this.numberFiles = false,
     this.fetchCovers = false,
+    this.downloadToo = false,
   });
 
   /// Link what the library has, search and download nothing.
@@ -24,6 +25,9 @@ class ImportOptions {
 
   /// Look the album cover up after each download.
   final bool fetchCovers;
+
+  /// «Scarica anche»: besides saving the songs in streaming, download their files (D-665).
+  final bool downloadToo;
 }
 
 /// Short codes kept in `playlist_import_items.note`; the UI turns them into text.

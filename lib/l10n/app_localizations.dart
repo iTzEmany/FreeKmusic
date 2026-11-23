@@ -12876,6 +12876,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Scarico… {percent}%'**
   String downloadBarProgress(int percent);
+
+  /// No description provided for @csvImportDownloadToo.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica anche i file'**
+  String get csvImportDownloadToo;
+
+  /// No description provided for @csvImportDownloadTooHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Di norma i brani si salvano in streaming, senza file. Accesa, li scarica anche sul dispositivo.'**
+  String get csvImportDownloadTooHint;
+
+  /// No description provided for @onboardingFoldersDownloadsNote.
+  ///
+  /// In it, this message translates to:
+  /// **'I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.'**
+  String get onboardingFoldersDownloadsNote;
 }
 
 class _AppLocalizationsDelegate

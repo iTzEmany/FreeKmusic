@@ -278,6 +278,7 @@ class PlaylistImportService {
         planFirst: options.planFirst,
         fetchCovers: options.fetchCovers,
       );
+      if (options.downloadToo) _downloadToo.add(id);
       first ??= id;
       if (previous != null) {
         // Waits for the block before it: the playlist order stays right.
@@ -329,6 +330,7 @@ class PlaylistImportService {
           ),
       },
     );
+    if (options.downloadToo) _downloadToo.add(id);
     _eta(id).start();
     if (rows.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
@@ -366,6 +368,10 @@ class PlaylistImportService {
   /// Import -> the block that starts when it finishes (lost on restart: the
   /// blocks are then paused, and resumed by hand like any paused import).
   final _nextBlock = <int, int>{};
+
+  /// Imports whose rows are also downloaded (D-665, «scarica anche»). Not stored: after a restart the
+  /// import goes on saving in streaming, never downloading what nobody asked for again.
+  final _downloadToo = <int>{};
 
   // ---- sync ---------------------------------------------------------------
 
@@ -479,6 +485,7 @@ class PlaylistImportService {
     await playlists.reorderBy(playlistId, {
       for (final k in diff.kept) k.old.trackId!: k.fresh.index,
     });
+    if (options.downloadToo) _downloadToo.add(id);
     _eta(id).start();
     if (diff.added.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
@@ -990,12 +997,13 @@ class PlaylistImportService {
         return;
       }
     }
-    final saved = await saveNow?.call(r);
+    // Without «scarica anche» the row is saved (streaming), with it the file is downloaded as always.
+    final saved = _downloadToo.contains(importId) ? null : await saveNow?.call(r);
     if (saved != null) {
       await _tagSaved(importId, row, saved);
       return;
     }
-    if (streaming?.call() ?? false) {
+    if (!_downloadToo.contains(importId) && (streaming?.call() ?? false)) {
       AppLog.w('import: ${r.indexKey} could not be saved in streaming mode, item failed');
       await imports.setItem(importId, row.index, status: ImportItemStatus.failed);
       return;

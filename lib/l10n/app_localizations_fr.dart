@@ -8208,4 +8208,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Téléchargement… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Télécharger aussi les fichiers';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Les titres sont normalement enregistrés en streaming, sans fichier. Activé, ils sont aussi téléchargés sur l’appareil.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'Les titres que vous téléchargez vont dans le dossier FreeKmusic, à l’intérieur du dossier choisi ici.';
 }

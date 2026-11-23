@@ -8173,4 +8173,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Lade herunter… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Dateien auch herunterladen';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Titel werden normalerweise nur zum Streamen gespeichert, ohne Datei. Eingeschaltet werden sie auch auf das Gerät geladen.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'Heruntergeladene Titel landen im Ordner FreeKmusic, innerhalb des hier gewählten Ordners.';
 }

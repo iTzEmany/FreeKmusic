@@ -8148,4 +8148,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'A transferir… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Transferir também os ficheiros';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Normalmente as músicas são guardadas para streaming, sem ficheiro. Ligado, também são transferidas para o dispositivo.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'As músicas que transferir vão para a pasta FreeKmusic, dentro da pasta que escolher aqui.';
 }

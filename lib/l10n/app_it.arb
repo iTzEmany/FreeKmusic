@@ -4673,5 +4673,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "csvImportDownloadToo": "Scarica anche i file",
+  "csvImportDownloadTooHint": "Di norma i brani si salvano in streaming, senza file. Accesa, li scarica anche sul dispositivo.",
+  "onboardingFoldersDownloadsNote": "I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui."
 }

@@ -560,6 +560,18 @@ void main() {
       expect(enriched, ids);
     });
 
+    test('«scarica anche» (D-665): the songs are downloaded, not saved as shadow rows', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      await service.startFromResults(
+        'Mix',
+        [video('a1', 'One', 'Band', 100)],
+        options: const ImportOptions(downloadToo: true),
+      );
+      await idle();
+      expect(queued.map((q) => q.$1.id), ['a1']);
+      expect(await db.select(db.tracks).get(), isEmpty);
+    });
+
     test('streaming mode: a song that cannot be saved fails its item and is never downloaded', () async {
       streamingMode = true;
       saveNowHook = (r) async => null;
