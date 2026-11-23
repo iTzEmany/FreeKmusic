@@ -638,7 +638,7 @@ class LiveTrackRow extends ConsumerWidget {
     );
     final isCurrent = current ?? byId;
     final playing = isCurrent && (ref.watch(isPlayingProvider).value ?? false);
-    void actions() => showTrackActions(context, ref, track, lead: lead);
+    void actions() => showTrackActions(context, track, lead: lead);
     final sel = selection;
     final (active, position) = sel == null
         ? (false, -1)

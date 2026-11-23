@@ -21,7 +21,6 @@ import '../../core/platform.dart';
 import '../../data/db/app_database.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/equalizer_providers.dart';
-import '../../providers/external_share_actions.dart';
 import '../../services/share/share_fragment.dart' show SharedKind;
 import '../../data/settings/settings_store.dart' show StorageMode;
 import '../../providers/library_add_providers.dart';
@@ -62,6 +61,7 @@ import 'favorite_actions.dart';
 import 'format_utils.dart';
 import 'quality_tag.dart';
 import '../../services/jam/jam_models.dart' show jamFullResult;
+import 'share_collection.dart';
 import 'show_msg.dart';
 
 /// One entry of the track menu.
@@ -104,14 +104,15 @@ bool entryInLibrary(WidgetRef ref, int id) {
 }
 
 /// Streamed (online) entries are not library rows: no favourites, tags,
-/// playlists by id, edit, lyrics, share, details of a file or deletion. They
-/// can be downloaded, downloaded into a playlist, disliked or taken out of
+/// playlists by id, edit, lyrics, details of a file or deletion. They can be
+/// shared (the link of the video), downloaded, downloaded into a playlist, disliked or taken out of
 /// the queue.
 List<TrackActionGroup> onlineTrackActions(
   BuildContext outer,
   WidgetRef ref,
   Track track, {
   Track? row,
+  Rect? anchor,
 }) {
   final l = outer.l10n;
   final actions = ref.read(suggestionActionsProvider);
@@ -173,6 +174,11 @@ List<TrackActionGroup> onlineTrackActions(
         ),
       ),
     ]),
+    // Not saved yet: the entry's own video link; with a row, its «Condividi» is merged in below.
+    if (row == null && entry != null)
+      TrackActionGroup(l.groupOther, [
+        _shareAction(outer, ref, track.copyWith(kind: kStreamKind, path: 'stream:${entry.result.indexKey}'), anchor),
+      ]),
     TrackActionGroup(l.groupQueue, [
       if (ref.read(onlineEntriesProvider)?[track.id]?.suggested ?? false)
         TrackAction(
@@ -190,7 +196,7 @@ List<TrackActionGroup> onlineTrackActions(
   if (row == null) return groups;
   // The row's own actions that neither touch the queue nor delete a file; same-titled groups merge.
   final extra = [
-    for (final g in trackActions(outer, ref, row))
+    for (final g in trackActions(outer, ref, row, anchor: anchor))
       TrackActionGroup(g.title, [for (final a in g.actions) if (a.onOnlineEntry) a]),
   ].where((g) => g.actions.isNotEmpty);
   return [
@@ -203,6 +209,14 @@ List<TrackActionGroup> onlineTrackActions(
       if (!groups.any((g) => g.title == x.title)) x,
   ];
 }
+
+TrackAction _shareAction(BuildContext outer, WidgetRef ref, Track track, Rect? anchor) => TrackAction(
+  Icons.share_rounded,
+  outer.l10n.shareAction,
+  () => shareTracks(outer, ref, SharedKind.track, track.title, [track], subtitle: track.artist, origin: anchor),
+  onStreamRow: true,
+  onOnlineEntry: true,
+);
 
 /// A radio in the queue is not a track: it can be saved in «Le mie radio» (or
 /// taken out), the song on air looked up, and the station taken out of the
@@ -254,7 +268,7 @@ List<TrackActionGroup> trackActions(
 }) {
   final radio = radioOfTrackRead(ref, track);
   if (radio != null) return radioTrackActions(outer, ref, track, radio);
-  if (isOnlineId(track.id)) return onlineTrackActions(outer, ref, track, row: row);
+  if (isOnlineId(track.id)) return onlineTrackActions(outer, ref, track, row: row, anchor: anchor);
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
 
@@ -437,19 +451,7 @@ List<TrackActionGroup> trackActions(
         TrackAction(Icons.equalizer_rounded, l.equalizer, () async {
           ShellNav.openOnTop<void>(outer, ref, const EqualizerScreen());
         }),
-      TrackAction(
-        Icons.share_rounded,
-        l.shareAction,
-        () async => ref.read(externalShareActionsProvider).share(
-          SharedKind.track,
-          track.title,
-          [track],
-          subtitle: track.artist,
-          origin: anchor,
-        ),
-        onStreamRow: true,
-        onOnlineEntry: true,
-      ),
+      _shareAction(outer, ref, track, anchor),
       if (track.kind != kStreamKind)
         TrackAction(
           Icons.devices_rounded,
@@ -530,15 +532,17 @@ class _TrackMenuHostState extends ConsumerState<TrackMenuHost> {
 /// [context] is the row: its rectangle anchors a share sheet (iPad, desktop); the rest runs on [TrackMenuHost].
 Future<void> showTrackActions(
   BuildContext context,
-  WidgetRef _,
   Track track, {
   TrackAction? lead,
 }) async {
   final host = _host;
-  if (host == null) AppLog.w('track menu: no TrackMenuHost mounted, menu not opened');
-  if (host == null || !host.mounted || !context.mounted || _opening) return;
+  if (host == null || !host.mounted) {
+    AppLog.w('track menu: no TrackMenuHost mounted, menu not opened');
+    return;
+  }
+  if (!context.mounted || _opening) return;
   final box = context.findRenderObject();
-  final anchor = box is RenderBox && box.attached ? box.localToGlobal(Offset.zero) & box.size : null;
+  final anchor = box is RenderBox && box.attached && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
   final container = ProviderScope.containerOf(host.context, listen: false);
   _opening = true;
   var isDownloadedFile = false;

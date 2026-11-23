@@ -1,38 +1,37 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../providers/external_share_actions.dart';
-import '../../../services/share/share_fragment.dart' show SharedKind;
 import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart' show Track;
-import '../../../data/repositories/track_repository.dart';
-import '../../../l10n/l10n_ext.dart';
 import '../../../data/repositories/library_queries.dart' show AlbumSummary;
 import '../../../data/repositories/playlist_repository.dart' show PlaylistSummary;
+import '../../../data/repositories/track_repository.dart';
+import '../../../l10n/l10n_ext.dart';
 import '../../../providers/favorite_collections_providers.dart';
 import '../../../providers/library_providers.dart';
-import '../../../providers/selection_providers.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../../services/share/share_fragment.dart' show SharedKind;
+import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/collection_header.dart';
-import '../../shell/shell_nav.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/section_header.dart';
-import '../playlists/playlist_detail_screen.dart';
-import '../../widgets/async_body.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/playlist_cover.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
+import '../../widgets/share_collection.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
+import '../playlists/playlist_detail_screen.dart';
 import 'album_detail_screen.dart' show AlbumDetailScreen, collectionMeta;
 import 'all_tracks_screen.dart';
-import '../../widgets/motion.dart';
-import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// The favourites as a collection page (pinned in the Library).
 class FavoritesScreen extends ConsumerStatefulWidget {
@@ -137,7 +136,7 @@ SliverToBoxAdapter(
         downloadTracks: list,
         onShare: list.isEmpty
             ? null
-            : (r) => ref.read(externalShareActionsProvider).share(SharedKind.playlist, l.navFavorites, list, origin: r),
+            : (r) => shareTracks(context, ref, SharedKind.playlist, l.navFavorites, list, origin: r),
         scrollerCount: albums.length + playlists.length + list.length,
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,

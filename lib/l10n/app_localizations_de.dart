@@ -822,6 +822,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareAction => 'Teilen';
 
   @override
+  String get shareCopied => 'Text in die Zwischenablage kopiert';
+
+  @override
   String get sendToDeviceMenu => 'An ein Gerät senden';
 
   @override

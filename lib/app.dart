@@ -158,15 +158,17 @@ class CodecoreApp extends ConsumerWidget {
           child: UserActivityScope(child: child ?? const SizedBox.shrink()),
         ),
       ),
-      home: TrackMenuHost(child: AppIconSync(
-        child: OnboardingGate(
-          ensureFolder: () => ensureDefaultFolder(
-            ref.read(folderRepositoryProvider),
-            () => scanWithPermission(ref),
+      home: TrackMenuHost(
+        child: AppIconSync(
+          child: OnboardingGate(
+            ensureFolder: () => ensureDefaultFolder(
+              ref.read(folderRepositoryProvider),
+              () => scanWithPermission(ref),
+            ),
+            child: const AppShell(),
           ),
-          child: const AppShell(),
         ),
-      )),
+      ),
     );
   }
 }

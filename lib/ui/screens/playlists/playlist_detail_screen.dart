@@ -1,49 +1,45 @@
-
-import '../../widgets/cc_sheet.dart';
-import '../../widgets/cc_search_field.dart';
-import '../../../providers/external_share_actions.dart';
-import '../../../services/share/share_fragment.dart' show SharedKind;
-import '../devices/devices_sheet.dart';
-import '../../../data/repositories/track_kinds.dart' show kStreamKind;
-import '../../../core/app_log.dart';
-import '../../../providers/favorite_collections_providers.dart';
-import '../../../providers/library_providers.dart';
-import '../../../core/text_utils.dart';
-import '../../widgets/cover_picker_sheet.dart';
-
 import 'package:flutter/material.dart';
-
-import '../../widgets/prompt_name.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
+import '../../../core/text_utils.dart';
 import '../../../data/db/app_database.dart';
+import '../../../data/repositories/track_kinds.dart' show kStreamKind;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
-import '../../../providers/playlist_ops.dart';
+import '../../../providers/favorite_collections_providers.dart';
+import '../../../providers/library_providers.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/playlist_ops.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../../services/share/share_fragment.dart' show SharedKind;
+import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
-import '../../widgets/collection_header.dart';
-import '../../shell/shell_nav.dart';
 import '../../widgets/bulk_actions.dart';
+import '../../widgets/cc_search_field.dart';
+import '../../widgets/cc_sheet.dart';
+import '../../widgets/collection_header.dart';
 import '../../widgets/confirm.dart';
+import '../../widgets/cover_picker_sheet.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/playlist_cover.dart';
-import '../../widgets/track_actions.dart';
+import '../../widgets/prompt_name.dart';
 import '../../widgets/selection_bar.dart';
+import '../../widgets/share_collection.dart';
+import '../../widgets/sort_sheet.dart';
+import '../../widgets/track_actions.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
+import '../devices/devices_sheet.dart';
 import '../import/import_banner.dart';
 import '../library/album_detail_screen.dart' show collectionMeta;
 import 'add_tracks_screen.dart';
 import 'export_dialog.dart';
 import 'playlist_order.dart';
-import '../../widgets/sort_sheet.dart';
-import '../../widgets/motion.dart';
-import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({super.key, required this.playlist});
@@ -409,7 +405,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         downloadTracks: tracks,
         onShare: tracks.isEmpty
             ? null
-            : (r) => ref.read(externalShareActionsProvider).share(SharedKind.playlist, _name, tracks, origin: r),
+            : (r) => shareTracks(context, ref, SharedKind.playlist, _name, tracks, origin: r),
         scrollerCount: tracks.length,
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         shuffleKey: shuffleKey,

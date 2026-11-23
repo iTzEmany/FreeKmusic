@@ -280,6 +280,7 @@
   "shareHint": "Im selben WLAN auf dem anderen Gerät „Empfangen“ öffnen und Adresse und PIN eingeben.",
   "shareMenu": "Teilen…",
   "shareAction": "Teilen",
+  "shareCopied": "Text in die Zwischenablage kopiert",
   "sendToDeviceMenu": "An ein Gerät senden",
   "shareDeviceName": "Gerätename",
   "sleepTimer": "Schlaftimer",

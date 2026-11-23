@@ -280,6 +280,7 @@
   "shareHint": "On the same Wi‑Fi, open “Receive” on the other device and enter address and PIN.",
   "shareMenu": "Share…",
   "shareAction": "Share",
+  "shareCopied": "Text copied to the clipboard",
   "sendToDeviceMenu": "Send to a device",
   "shareDeviceName": "Device name",
   "sleepTimer": "Sleep timer",

@@ -23,9 +23,7 @@ class SharePlusExternalShare implements ExternalShare {
   const SharePlusExternalShare() : _run = null;
 
   /// Test seam: replaces the native call.
-  const SharePlusExternalShare.withRunner(
-    Future<Object?> Function(ShareParams) run,
-  ) : _run = run;
+  const SharePlusExternalShare.withRunner(Future<Object?> Function(ShareParams) run) : _run = run;
 
   final Future<Object?> Function(ShareParams)? _run;
 
@@ -39,12 +37,14 @@ class SharePlusExternalShare implements ExternalShare {
 
   @override
   Future<void> shareText(String text, {String? subject, Rect? origin}) =>
-      _share(
-        ShareParams(text: text, subject: subject, sharePositionOrigin: origin),
-      );
+      _share(ShareParams(text: text, subject: subject, sharePositionOrigin: origin));
 
   @override
   Future<void> shareFile(String path, {String? text, Rect? origin}) => _share(
-    ShareParams(files: [XFile(path)], text: text, sharePositionOrigin: origin),
+    ShareParams(
+      files: [XFile(path, mimeType: 'audio/x-mpegurl')],
+      text: text,
+      sharePositionOrigin: origin,
+    ),
   );
 }

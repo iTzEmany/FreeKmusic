@@ -280,6 +280,7 @@
   "shareHint": "En la misma Wi‑Fi, abre «Recibir» en el otro dispositivo e introduce dirección y PIN.",
   "shareMenu": "Compartir…",
   "shareAction": "Compartir",
+  "shareCopied": "Texto copiado al portapapeles",
   "sendToDeviceMenu": "Enviar a un dispositivo",
   "shareDeviceName": "Nombre del dispositivo",
   "sleepTimer": "Temporizador de apagado",

@@ -390,6 +390,7 @@
   "shareHint": "Sur le même Wi‑Fi, ouvrez « Recevoir » sur l’autre appareil et saisissez l’adresse et le PIN.",
   "shareMenu": "Partager…",
   "shareAction": "Partager",
+  "shareCopied": "Texte copié dans le presse-papiers",
   "sendToDeviceMenu": "Envoyer à un appareil",
   "shareDeviceName": "Nom de l’appareil",
   "sleepTimer": "Minuteur d’arrêt",

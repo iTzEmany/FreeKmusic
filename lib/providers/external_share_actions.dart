@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' show Rect;
 
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -15,22 +16,50 @@ import 'external_share_provider.dart';
 
 /// «Condividi» (D-677): the system share sheet with readable text and links, or an m3u8 above the limit (D-702).
 class ExternalShareActions {
-  ExternalShareActions(this._share, this._tempDir);
+  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles})
+    : _canShareFiles = canShareFiles ?? !(Platform.isLinux || Platform.isWindows);
 
   final ExternalShare _share;
   final Future<Directory> Function() _tempDir;
 
-  /// [origin] anchors the sheet on iPad and desktop.
-  Future<void> share(SharedKind kind, String title, List<Track> tracks, {String? subtitle, Rect? origin}) async {
+  /// Linux and Windows have no sheet that takes a file: the text goes to the clipboard.
+  final bool _canShareFiles;
+  bool _busy = false;
+
+  /// [origin] anchors the sheet on iPad and desktop. True when the text was copied to the clipboard
+  /// instead of shared (the caller says so); false when shared, or when another share is in progress.
+  Future<bool> share(SharedKind kind, String title, List<Track> tracks, {String? subtitle, Rect? origin}) async {
+    if (_busy) return false;
+    _busy = true;
+    String? text;
     try {
       if (exceedsShareLimit(tracks)) {
-        final file = await writeShareM3u8(Directory(p.join((await _tempDir()).path, 'share')), title, tracks);
+        text = shareM3u8Body(title, tracks);
+        if (!_canShareFiles) return await _copy(text);
+        // A folder of our own: only it is emptied before a new file is written.
+        final dir = Directory(p.join((await _tempDir()).path, 'freekmusic_share'));
+        final file = await writeShareM3u8(dir, title, tracks);
         await _share.shareFile(file.path, text: title, origin: origin);
       } else {
-        await _share.shareText(buildShareText(kind, title, tracks, subtitle: subtitle), subject: title, origin: origin);
+        text = buildShareText(kind, title, tracks, subtitle: subtitle);
+        await _share.shareText(text, subject: title, origin: origin);
       }
+      return false;
     } on Object catch (e, st) {
       AppLog.w('external share failed', e, st);
+      return text != null && await _copy(text);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  Future<bool> _copy(String text) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: text));
+      return true;
+    } on Object catch (e, st) {
+      AppLog.w('share: text not copied', e, st);
+      return false;
     }
   }
 }

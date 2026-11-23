@@ -822,6 +822,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareAction => 'Compartir';
 
   @override
+  String get shareCopied => 'Texto copiado al portapapeles';
+
+  @override
   String get sendToDeviceMenu => 'Enviar a un dispositivo';
 
   @override

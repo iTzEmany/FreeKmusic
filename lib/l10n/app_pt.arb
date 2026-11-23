@@ -390,6 +390,7 @@
   "shareHint": "Na mesma rede Wi‑Fi, abra «Receber» no outro dispositivo e introduza o endereço e o PIN.",
   "shareMenu": "Partilhar…",
   "shareAction": "Partilhar",
+  "shareCopied": "Texto copiado para a área de transferência",
   "sendToDeviceMenu": "Enviar para um dispositivo",
   "shareDeviceName": "Nome do dispositivo",
   "sleepTimer": "Temporizador de repouso",

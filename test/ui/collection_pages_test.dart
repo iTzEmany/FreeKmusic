@@ -1,6 +1,8 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
+import 'package:codecore/providers/external_share_provider.dart';
+import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:codecore/providers/favorite_collections_providers.dart' show resolveFavoriteAlbums;
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/providers/keep_offline_providers.dart' show keepOfflineProvider;
@@ -16,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
+import '../support/fake_share.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.runAsync(
@@ -362,6 +365,57 @@ void main() {
     await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('playlist page of streamed rows only: no «Invia a un dispositivo»', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 2);
+    final id = await tester.runAsync(() async {
+      final rows = await h.db.select(h.db.tracks).get();
+      for (final t in rows) {
+        await h.db.update(h.db.tracks).replace(t.copyWith(kind: kStreamKind, path: 'stream:youtube:abcdefghij${t.id}'));
+      }
+      final repo = PlaylistRepository(h.db);
+      final id = await repo.create('Notte');
+      await repo.addTracks(id, [for (final t in rows) t.id]);
+      return id;
+    });
+    await h.pump(tester, PlaylistDetailScreen(playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.pumpAndSettle();
+    expect(find.text('Invia a un dispositivo'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('album page: Condividi shares the album text from the icon rectangle', (tester) async {
+    _phone(tester);
+    final fake = FakeShare();
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, AlbumDetailScreen(album: album('Album 0')), extraOverrides: [externalShareProvider.overrideWithValue(fake)]);
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Condividi'));
+    await _settle(tester);
+    expect(fake.texts.single, startsWith('Album 0 - Artist\n1. '));
+    expect(fake.origins.single, tester.getRect(find.byTooltip('Condividi')));
+    await h.dispose(tester);
+  });
+
+  testWidgets('favourites page: Condividi shares the favourite tracks from the icon rectangle', (tester) async {
+    _phone(tester);
+    final fake = FakeShare();
+    final h = await Harness.create(tester, tracks: 2);
+    await tester.runAsync(() async {
+      final t = (await h.db.select(h.db.tracks).get()).first;
+      await h.db.update(h.db.tracks).replace(t.copyWith(isFavorite: true));
+    });
+    await h.pump(tester, const FavoritesScreen(), extraOverrides: [externalShareProvider.overrideWithValue(fake)]);
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Condividi'));
+    await _settle(tester);
+    expect(fake.texts.single, startsWith('Preferiti\n1. '));
+    expect(fake.origins.single, tester.getRect(find.byTooltip('Condividi')));
     await h.dispose(tester);
   });
 

@@ -823,6 +823,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareAction => 'Partilhar';
 
   @override
+  String get shareCopied => 'Texto copiado para a área de transferência';
+
+  @override
   String get sendToDeviceMenu => 'Enviar para um dispositivo';
 
   @override

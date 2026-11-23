@@ -820,6 +820,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareAction => 'Condividi';
 
   @override
+  String get shareCopied => 'Testo copiato negli appunti';
+
+  @override
   String get sendToDeviceMenu => 'Invia a un dispositivo';
 
   @override

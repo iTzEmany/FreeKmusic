@@ -507,7 +507,7 @@ class _TrackWeight extends ConsumerWidget {
     subtitle: subtitle,
     bytes: bytes,
     fraction: fraction,
-    onTap: () => showTrackActions(context, ref, track),
+    onTap: () => showTrackActions(context, track),
   );
 }
 

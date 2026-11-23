@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show Rect;
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/external_share_actions.dart';
 import 'package:codecore/services/share/external_share.dart';
 import 'package:codecore/services/share/external_share_text.dart';
 import 'package:codecore/services/share/share_fragment.dart';
+import 'package:codecore/services/share/share_m3u8.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/fake_share.dart';
 
 Track _t(int i, {bool stream = true, String? album}) => Track(
   saved: false, coverSource: 0, id: i,
@@ -17,26 +21,6 @@ Track _t(int i, {bool stream = true, String? album}) => Track(
   kind: stream ? 2 : 0, addedAt: 1, playCount: 0,
   albumBrowseId: album == null ? null : 'MPREb_x',
 );
-
-class FakeShare implements ExternalShare {
-  final texts = <String>[];
-  final files = <String>[];
-  final origins = <Rect?>[];
-  String? fileBody;
-
-  @override
-  Future<void> shareText(String text, {String? subject, Rect? origin}) async {
-    texts.add(text);
-    origins.add(origin);
-  }
-
-  @override
-  Future<void> shareFile(String path, {String? text, Rect? origin}) async {
-    files.add(path);
-    fileBody = File(path).readAsStringSync();
-    origins.add(origin);
-  }
-}
 
 void main() {
   test('track: label, YouTube Music link and page link with the id in the fragment', () {
@@ -62,6 +46,23 @@ void main() {
     expect(text, isNot(contains('http')));
   });
 
+  test('an id that is not 11 valid characters is left out: text without the page line', () {
+    final short = _t(1).copyWith(path: 'stream:youtube:abc');
+    final text = buildShareText(SharedKind.track, 'Song 1', [short]);
+    expect(text, isNot(contains(kSharePageUrl)));
+    expect(sharedIds([short, _t(2)]), ['abcdefgh0_2']);
+  });
+
+  test('a file name from a title with / and .. stays inside the folder', () async {
+    final dir = Directory.systemTemp.createTempSync('share_name');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    for (final name in ['a/../../b', '..', '../x/..', '/']) {
+      final f = await writeShareM3u8(Directory('${dir.path}/own'), name, [_t(1)]);
+      expect(f.parent.path, '${dir.path}/own', reason: name);
+      expect(f.path, endsWith('.m3u8'));
+    }
+  });
+
   group('limit', () {
     late Directory tmp;
     late FakeShare fake;
@@ -69,7 +70,7 @@ void main() {
     setUp(() {
       tmp = Directory.systemTemp.createTempSync('share_test');
       fake = FakeShare();
-      actions = ExternalShareActions(fake, () async => tmp);
+      actions = ExternalShareActions(fake, () async => tmp, canShareFiles: true);
     });
     tearDown(() => tmp.deleteSync(recursive: true));
 
@@ -83,13 +84,69 @@ void main() {
     }
 
     test('file: streamed rows only with their links; an older share file is deleted', () async {
-      final old = File('${tmp.path}/share/old.m3u8')..createSync(recursive: true);
+      final old = File('${tmp.path}/freekmusic_share/old.m3u8')..createSync(recursive: true);
       final tracks = [for (var i = 0; i < 51; i++) _t(i), _t(99, stream: false)];
       await actions.share(SharedKind.playlist, 'Mix', tracks);
       expect(old.existsSync(), isFalse);
       expect(fake.files.single, endsWith('Mix.m3u8'));
       expect(fake.fileBody, contains('https://music.youtube.com/watch?v=abcdefgh0_1'));
       expect(fake.fileBody, isNot(contains('/m/99.mp3')));
+    });
+
+    test('only the folder of its own is emptied: a sibling of the temp folder is kept', () async {
+      final other = File('${tmp.path}/share/other.txt')..createSync(recursive: true);
+      await actions.share(SharedKind.playlist, 'Mix', [for (var i = 0; i < 51; i++) _t(i)]);
+      expect(other.existsSync(), isTrue);
+      expect(fake.files.single, contains('freekmusic_share'));
+    });
+
+    test('51 rows but fewer than 51 streamed: text, not a file', () async {
+      await actions.share(SharedKind.playlist, 'Mix', [for (var i = 0; i < 51; i++) _t(i, stream: i < 30)]);
+      expect(fake.texts.length, 1);
+      expect(fake.files, isEmpty);
+    });
+
+    group('clipboard', () {
+      final copied = <String>[];
+      setUp(() {
+        TestWidgetsFlutterBinding.ensureInitialized();
+        copied.clear();
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+          return null;
+        });
+      });
+      tearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+
+      test('the sheet fails: the text is copied and the caller is told', () async {
+        fake.error = const ExternalShareUnavailable('no mail client');
+        expect(await actions.share(SharedKind.playlist, 'Mix', [_t(1)]), isTrue);
+        expect(copied.single, startsWith('Mix'));
+      });
+
+      test('the sheet works: nothing is copied', () async {
+        expect(await actions.share(SharedKind.playlist, 'Mix', [_t(1)]), isFalse);
+        expect(copied, isEmpty);
+      });
+
+      test('no file sheet (Linux, Windows): the m3u8 text is copied, no file is written', () async {
+        final desktop = ExternalShareActions(fake, () async => tmp, canShareFiles: false);
+        expect(await desktop.share(SharedKind.playlist, 'Mix', [for (var i = 0; i < 51; i++) _t(i)]), isTrue);
+        expect(copied.single, startsWith('#EXTM3U'));
+        expect(fake.files, isEmpty);
+        expect(Directory('${tmp.path}/freekmusic_share').existsSync(), isFalse);
+      });
+
+      test('a share in progress: the second call does nothing', () async {
+        fake.gate = Completer<void>();
+        final first = actions.share(SharedKind.playlist, 'Mix', [_t(1)]);
+        expect(await actions.share(SharedKind.playlist, 'Mix', [_t(2)]), isFalse);
+        fake.gate!.complete();
+        await first;
+        expect(fake.texts.length, 1);
+        await actions.share(SharedKind.playlist, 'Mix', [_t(3)]);
+        expect(fake.texts.length, 2);
+      });
     });
   });
 }

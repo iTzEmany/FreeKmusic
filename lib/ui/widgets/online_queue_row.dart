@@ -68,7 +68,7 @@ class OnlineQueueRow extends ConsumerWidget {
         ref.watch(onlineEntriesProvider)?[track.id]?.suggested ?? false;
     return InkWell(
       onTap: onTap,
-      onLongPress: () => showTrackActions(context, ref, track),
+      onLongPress: () => showTrackActions(context, track),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
         child: Row(
@@ -141,7 +141,7 @@ class OnlineQueueRow extends ConsumerWidget {
             IconButton(
               tooltip: l.moreOptions,
               visualDensity: ccIconDensity,
-              onPressed: () => showTrackActions(context, ref, track),
+              onPressed: () => showTrackActions(context, track),
               icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
             ),
             if (i != null)

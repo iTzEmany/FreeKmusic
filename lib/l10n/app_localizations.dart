@@ -1450,6 +1450,12 @@ abstract class AppLocalizations {
   /// **'Condividi'**
   String get shareAction;
 
+  /// No description provided for @shareCopied.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo copiato negli appunti'**
+  String get shareCopied;
+
   /// No description provided for @sendToDeviceMenu.
   ///
   /// In it, this message translates to:
