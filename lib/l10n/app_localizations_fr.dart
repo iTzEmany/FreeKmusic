@@ -822,6 +822,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareMenu => 'Partager…';
 
   @override
+  String get sendToDeviceMenu => 'Envoyer à un appareil';
+
+  @override
   String get shareDeviceName => 'Nom de l’appareil';
 
   @override

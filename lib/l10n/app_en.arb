@@ -279,6 +279,7 @@
   "shareFirewall": "Windows may ask for firewall permission the first time.",
   "shareHint": "On the same Wi‑Fi, open “Receive” on the other device and enter address and PIN.",
   "shareMenu": "Share…",
+  "sendToDeviceMenu": "Send to a device",
   "shareDeviceName": "Device name",
   "sleepTimer": "Sleep timer",
   "sleepMinutes": "{count} minutes",

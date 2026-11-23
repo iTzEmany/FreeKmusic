@@ -1444,6 +1444,12 @@ abstract class AppLocalizations {
   /// **'Condividi…'**
   String get shareMenu;
 
+  /// No description provided for @sendToDeviceMenu.
+  ///
+  /// In it, this message translates to:
+  /// **'Invia a un dispositivo'**
+  String get sendToDeviceMenu;
+
   /// No description provided for @shareDeviceName.
   ///
   /// In it, this message translates to:

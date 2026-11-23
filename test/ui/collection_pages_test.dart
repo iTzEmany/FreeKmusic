@@ -1,5 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
+import 'package:codecore/providers/favorite_collections_providers.dart' show resolveFavoriteAlbums;
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
 import 'package:codecore/ui/screens/library/artist_screen.dart';
@@ -355,6 +357,60 @@ void main() {
     expect(find.byTooltip('Riproduci'), findsNothing);
     expect(find.byIcon(Icons.shuffle_rounded), findsNothing);
     expect(find.byTooltip('Altre azioni'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  test('favourite album keys: canonical finds the stream spelling, the file one wins, gone keys drop', () {
+    AlbumSummary a(String key) => AlbumSummary(
+        albumKey: key, title: 't', artist: 'a', variousArtists: false, trackCount: 1, durationMs: 1, year: null, coverKey: null);
+    expect(resolveFavoriteAlbums(['x|y', 'gone|z'], [a('stream|x|y')]).map((e) => e.albumKey), ['stream|x|y']);
+    expect(resolveFavoriteAlbums(['x|y'], [a('stream|x|y'), a('x|y')]).single.albumKey, 'x|y');
+  });
+
+  testWidgets('album page: Scarica icon, «Invia a un dispositivo» and the heart in the menu; the album shows in Preferiti and leaves it',
+      (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, AlbumDetailScreen(album: album('Album 0')));
+    await _settle(tester);
+    expect(find.byIcon(Icons.download_rounded), findsOneWidget);
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.pumpAndSettle();
+    expect(find.text('Invia a un dispositivo'), findsOneWidget);
+    await tester.tap(find.text('Aggiungi ai preferiti'));
+    await _settle(tester);
+    final repo = FavoriteCollectionsRepository(h.db);
+    expect(await tester.runAsync(() => repo.isFavoriteNow('album', 'artist|album 0')), isTrue);
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.pumpAndSettle();
+    expect(find.text('Togli dai preferiti'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('favourites page: a favourite album and playlist show in sections and leave when removed',
+      (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 2);
+    final repo = FavoriteCollectionsRepository(h.db);
+    final uuid = await tester.runAsync(() async {
+      final pr = PlaylistRepository(h.db);
+      final id = await pr.create('Notte');
+      await repo.add('album', 'artist|album 0');
+      final u = (await pr.uuidOf(id))!;
+      await repo.add('playlist', u);
+      return u;
+    });
+    await h.pump(tester, const FavoritesScreen());
+    await _settle(tester);
+    expect(find.text('Album 0'), findsOneWidget);
+    expect(find.text('Notte'), findsOneWidget);
+    await tester.runAsync(() => repo.remove('album', 'artist|album 0'));
+    await _settle(tester);
+    expect(find.text('Album 0'), findsNothing);
+    expect(find.text('Notte'), findsOneWidget);
+    await tester.runAsync(() => repo.remove('playlist', uuid!));
+    await _settle(tester);
+    expect(find.text('Notte'), findsNothing);
     await h.dispose(tester);
   });
 }

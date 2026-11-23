@@ -148,7 +148,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('album menu «Tieni offline» hands the album tracks to keepOffline and says how many go', (tester) async {
+  testWidgets('album «Scarica» icon hands the album tracks to keepOffline and says how many go', (tester) async {
     final h = await Harness.create(tester, tracks: 4);
     final got = <int>[];
     const queued = 2;
@@ -180,9 +180,7 @@ void main() {
     }
 
     await settle();
-    await tester.tap(find.byTooltip('Altre azioni'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tieni offline'));
+    await tester.tap(find.byTooltip('Scarica'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(got, hasLength(2));
