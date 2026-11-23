@@ -6446,6 +6446,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get logClearMenu => 'Vider le journal';
 
   @override
+  String get logPauseAll => 'Tout mettre en pause';
+
+  @override
+  String get logCancelAll => 'Tout annuler';
+
+  @override
+  String get logCancelAllTitle => 'Annuler toutes les importations ?';
+
+  @override
+  String get logCancelAllBody =>
+      'Les importations en cours s’arrêtent définitivement. Les titres déjà téléchargés restent.';
+
+  @override
+  String get logCancelAllConfirm => 'Tout annuler';
+
+  @override
   String get logClearTitle => 'Vider le journal ?';
 
   @override

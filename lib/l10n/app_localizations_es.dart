@@ -6410,6 +6410,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get logClearMenu => 'Vaciar registro';
 
   @override
+  String get logPauseAll => 'Pausar todo';
+
+  @override
+  String get logCancelAll => 'Cancelar todo';
+
+  @override
+  String get logCancelAllTitle => '¿Cancelar todas las importaciones?';
+
+  @override
+  String get logCancelAllBody =>
+      'Las importaciones en curso se detienen para siempre. Las canciones ya descargadas se quedan.';
+
+  @override
+  String get logCancelAllConfirm => 'Cancelar todo';
+
+  @override
   String get logClearTitle => '¿Vaciar el registro?';
 
   @override

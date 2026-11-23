@@ -1002,6 +1002,19 @@ void main() {
           reason: 'the second one does not wake the old blocks');
     });
 
+    test('pauseAll and cancelAll act on every import in progress', () async {
+      final a = await service.start(rows250(),
+          options: const ImportOptions(planFirst: true), blockSize: 100);
+      final b = await service.start(rows250(),
+          options: const ImportOptions(planFirst: true), blockSize: 100);
+      await service.pauseAll();
+      for (final id in [a, b]) {
+        expect((await imports.get(id))!.state, ImportStatus.paused);
+      }
+      await service.cancelAll();
+      expect(await imports.watchUnfinished().first, isEmpty);
+    });
+
     test('pause, resume and cancel act on the whole import, from any block', () async {
       final first = await service.start(rows250(),
           options: const ImportOptions(planFirst: true), blockSize: 100);

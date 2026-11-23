@@ -10,6 +10,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../providers/activity_providers.dart' show ActivityKind;
+import '../../../providers/import_providers.dart';
 import '../../../providers/recognition_providers.dart';
 import '../../../services/recognition/track_identity.dart'
     show Recognition, RecogSource;
@@ -128,6 +129,19 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     await ref.read(activityLogProvider.notifier).clear();
   }
 
+  Future<void> _cancelAll() async {
+    final l = context.l10n;
+    final ok = await showConfirm(
+      context,
+      title: l.logCancelAllTitle,
+      body: l.logCancelAllBody,
+      confirmLabel: l.logCancelAllConfirm,
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    await ref.read(playlistImportServiceProvider).cancelAll();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -213,8 +227,34 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     final showPending =
         proposals.isNotEmpty &&
         (_filter == LogFilter.all || _filter == LogFilter.correction);
+    final importing = ref.watch(unfinishedImportsProvider).value?.isNotEmpty ?? false;
     return CustomScrollView(
       slivers: [
+        if (importing)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    key: const ValueKey('pause-all'),
+                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    icon: const Icon(Icons.pause_rounded),
+                    label: Text(l.logPauseAll),
+                    onPressed: () => ref.read(playlistImportServiceProvider).pauseAll(),
+                  ),
+                  TextButton.icon(
+                    key: const ValueKey('cancel-all'),
+                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    icon: const Icon(Icons.close_rounded),
+                    label: Text(l.logCancelAll),
+                    onPressed: _cancelAll,
+                  ),
+                ],
+              ),
+            ),
+          ),
         if (log.entries.isNotEmpty)
           SliverToBoxAdapter(
             child: _Filters(

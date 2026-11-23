@@ -1283,6 +1283,20 @@ class PlaylistImportService {
     }
   }
 
+  /// One chain at a time: [act] on the first block of every unfinished import.
+  Future<void> _eachChain(Future<void> Function(int id) act) async {
+    final open = await imports.watchUnfinished().first;
+    for (final c in groupImportChains(open)) {
+      await act(c.first.id);
+    }
+  }
+
+  /// «Ferma tutto»: pauses every import in progress.
+  Future<void> pauseAll() => _eachChain(pauseChain);
+
+  /// «Annulla tutto»: cancels every import in progress; what was downloaded stays.
+  Future<void> cancelAll() => _eachChain(cancelChain);
+
   void _emit(ImportEvent e) {
     if (!_events.isClosed) _events.add(e);
   }

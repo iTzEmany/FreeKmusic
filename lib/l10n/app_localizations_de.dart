@@ -6419,6 +6419,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get logClearMenu => 'Protokoll leeren';
 
   @override
+  String get logPauseAll => 'Alle anhalten';
+
+  @override
+  String get logCancelAll => 'Alle abbrechen';
+
+  @override
+  String get logCancelAllTitle => 'Alle Importe abbrechen?';
+
+  @override
+  String get logCancelAllBody =>
+      'Laufende Importe werden endgültig beendet. Bereits geladene Titel bleiben erhalten.';
+
+  @override
+  String get logCancelAllConfirm => 'Alle abbrechen';
+
+  @override
   String get logClearTitle => 'Protokoll leeren?';
 
   @override

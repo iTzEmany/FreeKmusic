@@ -10087,6 +10087,36 @@ abstract class AppLocalizations {
   /// **'Pulisci registro'**
   String get logClearMenu;
 
+  /// No description provided for @logPauseAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Ferma tutto'**
+  String get logPauseAll;
+
+  /// No description provided for @logCancelAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Annulla tutto'**
+  String get logCancelAll;
+
+  /// No description provided for @logCancelAllTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Annullare tutte le importazioni?'**
+  String get logCancelAllTitle;
+
+  /// No description provided for @logCancelAllBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Le importazioni in corso si fermano per sempre. I brani già scaricati restano.'**
+  String get logCancelAllBody;
+
+  /// No description provided for @logCancelAllConfirm.
+  ///
+  /// In it, this message translates to:
+  /// **'Annulla tutto'**
+  String get logCancelAllConfirm;
+
   /// No description provided for @logClearTitle.
   ///
   /// In it, this message translates to:

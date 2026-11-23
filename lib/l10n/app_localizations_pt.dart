@@ -6398,6 +6398,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get logClearMenu => 'Limpar registo';
 
   @override
+  String get logPauseAll => 'Pausar tudo';
+
+  @override
+  String get logCancelAll => 'Cancelar tudo';
+
+  @override
+  String get logCancelAllTitle => 'Cancelar todas as importações?';
+
+  @override
+  String get logCancelAllBody =>
+      'As importações em curso param para sempre. As faixas já descarregadas ficam.';
+
+  @override
+  String get logCancelAllConfirm => 'Cancelar tudo';
+
+  @override
   String get logClearTitle => 'Limpar o registo?';
 
   @override

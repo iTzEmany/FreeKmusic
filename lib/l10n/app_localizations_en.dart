@@ -6375,6 +6375,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logClearMenu => 'Clear log';
 
   @override
+  String get logPauseAll => 'Pause all';
+
+  @override
+  String get logCancelAll => 'Cancel all';
+
+  @override
+  String get logCancelAllTitle => 'Cancel all imports?';
+
+  @override
+  String get logCancelAllBody =>
+      'Imports in progress stop for good. Tracks already downloaded stay.';
+
+  @override
+  String get logCancelAllConfirm => 'Cancel all';
+
+  @override
   String get logClearTitle => 'Clear the log?';
 
   @override
