@@ -680,6 +680,16 @@ void main() {
       expect(await titles(dbFile), ['old']);
     });
 
+    test('a complete extraction leaves the ready marker; a zip without a database removes the staging folder', () async {
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(File(p.join(staging.path, 'ready')).existsSync(), isTrue);
+      expect(File(p.join(staging.path, 'codecore.sqlite')).existsSync(), isTrue);
+      final zip = File(p.join(dir.path, 'nodb2.zip'))
+        ..writeAsBytesSync(ZipEncoder().encode(Archive()..addFile(ArchiveFile.bytes('settings.json', [123, 125]))));
+      await expectLater(stageFullRestore(zip, staging), throwsA(isA<RestoreException>()));
+      expect(staging.existsSync(), isFalse);
+    });
+
     test('a zip without a database cannot be staged; unexpected entries are never extracted', () async {
       final a = Archive()
         ..addFile(ArchiveFile.bytes('manifest.json', [1]))

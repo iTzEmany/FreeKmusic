@@ -284,6 +284,25 @@ void main() {
     expect((await db.select(db.tracks).get()).length, before);
   });
 
+  test('a local track the library lacks is not created and its title is reported', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: ref('ghost'), favorite: true)]));
+    expect(r.notFound, ['ghost']);
+    expect(await (db.select(db.tracks)..where((t) => t.title.equals('ghost'))).get(), isEmpty);
+  });
+
+  test('a playlist already here keeps its tracks and their order', () async {
+    final id = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
+    final uuid = (await (db.select(db.playlists)..where((p) => p.id.equals(id))).getSingle()).uuid;
+    for (final (pos, t) in [(0, 3), (1, 1)]) {
+      await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: id, trackId: t, position: pos));
+    }
+    await merge(UserData(createdAt: 1, playlists: [
+      PlaylistData(name: 'Mix', uuid: uuid, createdAt: 1, items: [ref('a'), ref('c')]),
+    ]));
+    final items = await (db.select(db.playlistTracks)..orderBy([(t) => OrderingTerm.asc(t.position)])).get();
+    expect(items.map((i) => i.trackId), [3, 1]);
+  });
+
   group('saved radio stations', () {
     RadioData radio(String id, String name, {String url = 'http://s'}) =>
         RadioData(stationId: id, name: name, streamUrl: '$url/$id', tags: 'pop,rock', bitrate: 128, hls: id == 'b');

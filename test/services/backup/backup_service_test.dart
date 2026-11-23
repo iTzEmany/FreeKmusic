@@ -124,6 +124,17 @@ void main() {
     );
   }
 
+  test('the playlists travel inside the zip, with their tracks in order', () async {
+    final out = p.join(dir.path, 'pl.zip');
+    await service().createBackup(out);
+    final zip = ZipDecoder().decodeBytes(File(out).readAsBytesSync());
+    final j = jsonDecode(utf8.decode(zip.findFile('user_data.json')!.content as List<int>)) as Map;
+    final pls = j['playlists'] as List;
+    expect(pls, hasLength(1));
+    expect(pls.single['name'], 'Mix');
+    expect([for (final i in pls.single['items'] as List) i['title']], ['T0', 'T2', 'T1']);
+  });
+
   test('the file name carries the date', () {
     expect(
       BackupService.fileName(DateTime(2026, 3, 7)),
