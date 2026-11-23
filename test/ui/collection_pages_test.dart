@@ -347,6 +347,24 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('playlist page: Condividi icon and «Invia a un dispositivo» in the menu', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 2);
+    final id = await tester.runAsync(() async {
+      final repo = PlaylistRepository(h.db);
+      final id = await repo.create('Notte');
+      await repo.addTracks(id, [1, 2]);
+      return id;
+    });
+    await h.pump(tester, PlaylistDetailScreen(playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
+    await _settle(tester);
+    expect(find.byTooltip('Condividi'), findsOneWidget);
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.pumpAndSettle();
+    expect(find.text('Invia a un dispositivo'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('empty collection hides the pills, keeps the menu', (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 1);
@@ -380,6 +398,7 @@ void main() {
     await h.pump(tester, AlbumDetailScreen(album: album('Album 0')));
     await _settle(tester);
     expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
+    expect(find.byTooltip('Condividi'), findsOneWidget);
     await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsOneWidget);

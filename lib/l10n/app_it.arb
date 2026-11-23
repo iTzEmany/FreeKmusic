@@ -413,6 +413,7 @@
   "shareFirewall": "Windows può chiedere il permesso del firewall alla prima condivisione.",
   "shareHint": "Sullo stesso Wi‑Fi, apri «Ricevi» sull’altro dispositivo e inserisci indirizzo e PIN.",
   "shareMenu": "Condividi…",
+  "shareAction": "Condividi",
   "sendToDeviceMenu": "Invia a un dispositivo",
   "shareDeviceName": "Nome dispositivo",
   "sleepTimer": "Timer di spegnimento",

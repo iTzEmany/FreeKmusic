@@ -389,6 +389,7 @@
   "shareFirewall": "Windows peut demander l’autorisation du pare-feu lors du premier partage.",
   "shareHint": "Sur le même Wi‑Fi, ouvrez « Recevoir » sur l’autre appareil et saisissez l’adresse et le PIN.",
   "shareMenu": "Partager…",
+  "shareAction": "Partager",
   "sendToDeviceMenu": "Envoyer à un appareil",
   "shareDeviceName": "Nom de l’appareil",
   "sleepTimer": "Minuteur d’arrêt",

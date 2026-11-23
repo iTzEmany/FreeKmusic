@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
+import 'package:codecore/providers/external_share_provider.dart';
+import '../services/share/external_share_text_test.dart' show FakeShare;
 import 'package:codecore/ui/widgets/download_bar.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart'
@@ -441,7 +443,7 @@ void main() {
       expect(find.text('Dettagli'), findsOneWidget);
       for (final gone in [
         'Modifica info',
-        'Condividi…',
+        'Invia a un dispositivo',
         'Anteprima 20 s',
         'Aggiungi a playlist…',
         'Scarica',
@@ -1058,9 +1060,20 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a saved stream row has no «Mostra nella cartella», no preview and no share', (tester) async {
+  testWidgets('«Condividi» in the track menu shares through ExternalShare with the row rectangle', (tester) async {
+    final fake = FakeShare();
+    final h = await openSheet(tester, (t) => t, extra: [externalShareProvider.overrideWithValue(fake)]);
+    await tester.tap(find.text('Condividi', skipOffstage: false));
+    await _settle(tester);
+    expect(fake.texts.single, startsWith('Artist - Song 0'));
+    expect(fake.origins.single, isNotNull);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a saved stream row has no «Mostra nella cartella», no preview and no send to a device', (tester) async {
     final h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));
-    for (final t in ['Mostra nella cartella', 'Anteprima 20 s', 'Condividi…']) {
+    expect(find.text('Condividi', skipOffstage: false), findsOneWidget);
+    for (final t in ['Mostra nella cartella', 'Anteprima 20 s', 'Invia a un dispositivo']) {
       expect(find.text(t, skipOffstage: false), findsNothing, reason: t);
     }
     await h.dispose(tester);

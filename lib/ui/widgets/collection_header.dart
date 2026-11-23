@@ -27,6 +27,7 @@ class CollectionScaffold extends ConsumerStatefulWidget {
     this.menu,
     this.onPlay,
     this.downloadTracks,
+    this.onShare,
     this.scrollerCount,
     this.shuffleIds,
     this.shuffleKey,
@@ -55,6 +56,9 @@ class CollectionScaffold extends ConsumerStatefulWidget {
   /// The tracks «Scarica» keeps offline: the icon shows only when one of them is a stream (a page of files
   /// has nothing to download); null hides it.
   final List<Track>? downloadTracks;
+
+  /// «Condividi»: gets the icon's rectangle (it anchors the share sheet on iPad and desktop); null hides it.
+  final ValueChanged<Rect?>? onShare;
 
   /// How many rows the page lists: past [alphaScrollerMinItems] a by-position
   /// scroll bar is laid over the page; null: none.
@@ -114,6 +118,20 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
             onPressed: () => keepOfflineFlow(context, ref, widget.downloadTracks!),
             tooltip: context.l10n.ytDownload,
             icon: const Icon(Icons.download_rounded),
+          ),
+        ),
+      if (widget.onShare != null)
+        SizedBox.square(
+          dimension: 48,
+          child: Builder(
+            builder: (ctx) => IconButton(
+              onPressed: () {
+                final box = ctx.findRenderObject();
+                widget.onShare!(box is RenderBox ? box.localToGlobal(Offset.zero) & box.size : null);
+              },
+              tooltip: context.l10n.shareAction,
+              icon: const Icon(Icons.share_rounded),
+            ),
           ),
         ),
       if (widget.menu != null)

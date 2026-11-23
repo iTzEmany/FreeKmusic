@@ -21,6 +21,8 @@ import '../../core/platform.dart';
 import '../../data/db/app_database.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/equalizer_providers.dart';
+import '../../providers/external_share_actions.dart';
+import '../../services/share/share_fragment.dart' show SharedKind;
 import '../../data/settings/settings_store.dart' show StorageMode;
 import '../../providers/library_add_providers.dart';
 import '../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
@@ -435,10 +437,23 @@ List<TrackActionGroup> trackActions(
         TrackAction(Icons.equalizer_rounded, l.equalizer, () async {
           ShellNav.openOnTop<void>(outer, ref, const EqualizerScreen());
         }),
+      TrackAction(
+        Icons.share_rounded,
+        l.shareAction,
+        () async => ref.read(externalShareActionsProvider).share(
+          SharedKind.track,
+          track.title,
+          [track],
+          subtitle: track.artist,
+          origin: anchor,
+        ),
+        onStreamRow: true,
+        onOnlineEntry: true,
+      ),
       if (track.kind != kStreamKind)
         TrackAction(
           Icons.devices_rounded,
-          l.shareMenu,
+          l.sendToDeviceMenu,
           () async => DevicesSheet.show(outer, trackIds: [track.id]),
         ),
       TrackAction(Icons.info_outline_rounded, l.details, () async {
@@ -520,6 +535,7 @@ Future<void> showTrackActions(
   TrackAction? lead,
 }) async {
   final host = _host;
+  if (host == null) AppLog.w('track menu: no TrackMenuHost mounted, menu not opened');
   if (host == null || !host.mounted || !context.mounted || _opening) return;
   final box = context.findRenderObject();
   final anchor = box is RenderBox && box.attached ? box.localToGlobal(Offset.zero) & box.size : null;
@@ -599,8 +615,9 @@ Future<void> showTrackActions(
     indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
     // The row of an entry saved before the sheet opened, and a later change of «Libera spazio».
     if (track.kind == kMusicKind || container.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow());
+    if (!sheetContext.mounted) return;
     await showTrackActionGroups(
-      sheetContext, // ignore: use_build_context_synchronously
+      sheetContext,
       build(),
       header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
       refresh: changed,

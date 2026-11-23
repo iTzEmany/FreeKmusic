@@ -389,6 +389,7 @@
   "shareFirewall": "O Windows pode pedir autorização da firewall na primeira partilha.",
   "shareHint": "Na mesma rede Wi‑Fi, abra «Receber» no outro dispositivo e introduza o endereço e o PIN.",
   "shareMenu": "Partilhar…",
+  "shareAction": "Partilhar",
   "sendToDeviceMenu": "Enviar para um dispositivo",
   "shareDeviceName": "Nome do dispositivo",
   "sleepTimer": "Temporizador de repouso",

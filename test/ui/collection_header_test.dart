@@ -83,7 +83,7 @@ void main() {
   }
 
   group('icon row', () {
-    Future<Harness> pumpScaffold(WidgetTester tester, {int? kind}) async {
+    Future<Harness> pumpScaffold(WidgetTester tester, {int? kind, ValueChanged<Rect?>? onShare}) async {
       final h = await Harness.create(tester, tracks: 0);
       final downloadTracks = kind == null
           ? null
@@ -100,11 +100,24 @@ void main() {
           onPlay: () {},
           shuffleIds: const [1, 2],
           downloadTracks: downloadTracks,
+          onShare: onShare,
           menu: const SizedBox.square(dimension: 48),
         ),
       );
       return h;
     }
+
+    testWidgets('Condividi icon: 48 dp, tooltip, hands its rectangle to onShare; hidden without onShare', (tester) async {
+      Rect? got;
+      var h = await pumpScaffold(tester, onShare: (r) => got = r);
+      expect(tester.getSize(find.byTooltip('Condividi')), const Size.square(48));
+      await tester.tap(find.byTooltip('Condividi'));
+      expect(got, tester.getRect(find.byTooltip('Condividi')));
+      await h.dispose(tester);
+      h = await pumpScaffold(tester);
+      expect(find.byTooltip('Condividi'), findsNothing);
+      await h.dispose(tester);
+    });
 
     testWidgets('sizes, labels and tooltips', (tester) async {
       final sem = tester.ensureSemantics();

@@ -1,3 +1,6 @@
+
+import '../../../providers/external_share_actions.dart';
+import '../../../services/share/share_fragment.dart' show SharedKind;
 import '../../../core/app_log.dart';
 import '../../widgets/cc_sheet.dart';
 import 'package:flutter/material.dart';
@@ -171,6 +174,9 @@ EntranceScope(
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,
         downloadTracks: list,
+        onShare: list.isEmpty
+            ? null
+            : (r) => ref.read(externalShareActionsProvider).share(SharedKind.album, name, list, subtitle: album.artist, origin: r),
         scrollerCount: list.length,
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [

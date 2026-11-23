@@ -1,6 +1,9 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../providers/external_share_actions.dart';
+import '../../../services/share/share_fragment.dart' show SharedKind;
 import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/track_repository.dart';
@@ -132,6 +135,9 @@ SliverToBoxAdapter(
                 listKey: shuffleKey,
               ),
         downloadTracks: list,
+        onShare: list.isEmpty
+            ? null
+            : (r) => ref.read(externalShareActionsProvider).share(SharedKind.playlist, l.navFavorites, list, origin: r),
         scrollerCount: albums.length + playlists.length + list.length,
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,

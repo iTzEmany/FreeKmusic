@@ -817,6 +817,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenu => 'Condividi…';
 
   @override
+  String get shareAction => 'Condividi';
+
+  @override
   String get sendToDeviceMenu => 'Invia a un dispositivo';
 
   @override

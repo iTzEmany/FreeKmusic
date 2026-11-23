@@ -1444,6 +1444,12 @@ abstract class AppLocalizations {
   /// **'Condividi…'**
   String get shareMenu;
 
+  /// No description provided for @shareAction.
+  ///
+  /// In it, this message translates to:
+  /// **'Condividi'**
+  String get shareAction;
+
   /// No description provided for @sendToDeviceMenu.
   ///
   /// In it, this message translates to:
