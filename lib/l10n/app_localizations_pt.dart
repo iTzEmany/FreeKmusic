@@ -820,6 +820,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenu => 'Partilhar…';
 
   @override
+  String get sendToDeviceMenu => 'Enviar para um dispositivo';
+
+  @override
   String get shareDeviceName => 'Nome do dispositivo';
 
   @override

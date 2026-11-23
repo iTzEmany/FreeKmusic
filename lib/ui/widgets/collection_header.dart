@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/db/app_database.dart' show Track;
+import '../../data/repositories/track_kinds.dart' show kStreamKind;
 
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
+import 'alpha_scroller.dart';
+import 'keep_offline_action.dart';
 import 'play_buttons.dart';
 import 'shuffle_button.dart';
 
 /// Page of one collection (album, artist, playlist, favourites): a pinned bar
 /// whose title appears while scrolling, the cover at the left of name and meta
 /// (above them when the text is large), then the actions and the page's slivers.
-class CollectionScaffold extends StatefulWidget {
+class CollectionScaffold extends ConsumerStatefulWidget {
   const CollectionScaffold({
     super.key,
     required this.title,
@@ -20,6 +26,8 @@ class CollectionScaffold extends StatefulWidget {
     this.meta,
     this.menu,
     this.onPlay,
+    this.downloadTracks,
+    this.scrollerCount,
     this.shuffleIds,
     this.shuffleKey,
     this.shufflePlus = true,
@@ -44,6 +52,14 @@ class CollectionScaffold extends StatefulWidget {
   final Widget? menu;
   final VoidCallback? onPlay;
 
+  /// The tracks «Scarica» keeps offline: the icon shows only when one of them is a stream (a page of files
+  /// has nothing to download); null hides it.
+  final List<Track>? downloadTracks;
+
+  /// How many rows the page lists: past [alphaScrollerMinItems] a by-position
+  /// scroll bar is laid over the page; null: none.
+  final int? scrollerCount;
+
   /// The ids the «Casuale» pill cycles Shuffle+ for; null: no pill.
   final List<int>? shuffleIds;
 
@@ -58,10 +74,10 @@ class CollectionScaffold extends StatefulWidget {
   final Widget? selectionBar;
 
   @override
-  State<CollectionScaffold> createState() => _CollectionScaffoldState();
+  ConsumerState<CollectionScaffold> createState() => _CollectionScaffoldState();
 }
 
-class _CollectionScaffoldState extends State<CollectionScaffold> {
+class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
   final _scroll = ScrollController();
   bool _showTitle = false;
 
@@ -83,51 +99,71 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      if (widget.onPlay != null) PlayPill(onPressed: widget.onPlay),
+      if (widget.onPlay != null) PlayCircleButton(onPressed: widget.onPlay),
       if (widget.shuffleIds != null)
         ShufflePill(
+          iconOnly: true,
           ids: widget.shuffleIds!,
           listKey: widget.shuffleKey,
           plus: widget.shufflePlus,
         ),
-      ?widget.menu,
+      if (widget.downloadTracks?.any((t) => t.kind == kStreamKind) ?? false)
+        SizedBox.square(
+          dimension: 48,
+          child: IconButton(
+            onPressed: () => keepOfflineFlow(context, ref, widget.downloadTracks!),
+            tooltip: context.l10n.ytDownload,
+            icon: const Icon(Icons.download_rounded),
+          ),
+        ),
+      if (widget.menu != null)
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: widget.menu,
+        ),
     ];
+    final scroll = CustomScrollView(
+      controller: _scroll,
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          title: AnimatedOpacity(
+            duration: ccDuration(context, CcMotion.press),
+            opacity: _showTitle ? 1 : 0,
+            child: Text(
+              widget.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          actions: widget.barActions,
+        ),
+        SliverToBoxAdapter(
+          child: CollectionHeader(
+            cover: widget.cover,
+            name: widget.name,
+            subtitle: widget.subtitle,
+            meta: widget.meta,
+            actions: actions,
+          ),
+        ),
+        ...widget.slivers,
+        SliverToBoxAdapter(child: SizedBox(height: 24 + context.dockInset)),
+      ],
+    );
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
-            child: CustomScrollView(
+            // Always wrapped: a changing tree would remount the scroll view.
+            child: AlphaScroller(
               controller: _scroll,
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  title: AnimatedOpacity(
-                    duration: ccDuration(context, CcMotion.press),
-                    opacity: _showTitle ? 1 : 0,
-                    child: Text(
-                      widget.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  actions: widget.barActions,
-                ),
-                SliverToBoxAdapter(
-                  child: CollectionHeader(
-                    cover: widget.cover,
-                    name: widget.name,
-                    subtitle: widget.subtitle,
-                    meta: widget.meta,
-                    actions: actions,
-                  ),
-                ),
-                ...widget.slivers,
-                SliverToBoxAdapter(
-                  child: SizedBox(height: 24 + context.dockInset),
-                ),
-              ],
+              itemCount: widget.scrollerCount ?? 0,
+              topInset: () =>
+                  MediaQuery.paddingOf(context).top + kToolbarHeight,
+              child: scroll,
             ),
           ),
           if (widget.selectionBar != null)
@@ -286,7 +322,12 @@ class DiscHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, CcDims.gap4),
+    padding: const EdgeInsets.fromLTRB(
+      CcDims.margin,
+      CcDims.gap16,
+      CcDims.margin,
+      CcDims.gap4,
+    ),
     child: Text(
       context.l10n.discN(disc),
       style: Theme.of(context).textTheme.labelLarge

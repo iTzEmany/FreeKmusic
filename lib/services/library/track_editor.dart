@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/favorite_collections_repository.dart';
 import '../../data/repositories/track_genre_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../tags/tag_reader.dart';
@@ -134,6 +135,8 @@ class TrackEditor {
       if (genre != track.genre) {
         await TrackGenreRepository(_db).replace(track.id, splitGenres([genre]));
       }
+      await FavoriteCollectionsRepository(_db)
+          .followAlbumKey(track.albumKey, key);
     });
     await TrackRepository(_db).settleMovedCover(track, key);
   }
@@ -170,6 +173,8 @@ class TrackEditor {
             coverSource: withCover ? Value(source) : const Value.absent(),
           ),
         );
+        await FavoriteCollectionsRepository(_db)
+            .followAlbumKey(t.albumKey, key);
         if (cover == null) await repo.settleMovedCover(t, key);
       }
     });
@@ -178,7 +183,9 @@ class TrackEditor {
 
   /// Undoes [saveMany]: [before] are the tracks as it returned them.
   Future<void> restoreMany(List<Track> before) => _db.transaction(() async {
+    final favs = FavoriteCollectionsRepository(_db);
     for (final t in before) {
+      final now = await (_db.select(_db.tracks)..where((r) => r.id.equals(t.id))).getSingleOrNull();
       await (_db.update(_db.tracks)..where((r) => r.id.equals(t.id))).write(
         TracksCompanion(
           album: Value(t.album),
@@ -190,6 +197,8 @@ class TrackEditor {
           coverSource: Value(t.coverSource),
         ),
       );
+      // shortcut: the favourite moves back only once no visible track keeps the merged key (no snapshot of it).
+      if (now != null) await favs.followAlbumKey(now.albumKey, t.albumKey);
     }
   });
 
@@ -218,6 +227,7 @@ class TrackEditor {
         ),
       );
       await TrackGenreRepository(_db).replace(track.id, t.genres);
+      await FavoriteCollectionsRepository(_db).followAlbumKey(track.albumKey, key);
     });
     await TrackRepository(_db).settleMovedCover(track, key);
   }

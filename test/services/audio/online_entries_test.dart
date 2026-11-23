@@ -43,4 +43,19 @@ void main() {
   test('trackOf of an unknown id is null', () {
     expect(OnlineEntries().trackOf(-7), isNull);
   });
+
+  test(
+    'rebindRow moves every entry bound to the merged row, and only those',
+    () {
+      final e = OnlineEntries();
+      final a = e.register(result('a'));
+      final b = e.register(result('b'));
+      final c = e.register(result('c'));
+      e.bindRow(a, 10);
+      e.bindRow(b, 10);
+      e.bindRow(c, 11);
+      e.rebindRow(10, 20);
+      expect([e[a]!.trackId, e[b]!.trackId, e[c]!.trackId], [20, 20, 11]);
+    },
+  );
 }

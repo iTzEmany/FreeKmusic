@@ -137,6 +137,7 @@ Gli episodi sono `kind = 1`. Soglie: `kEpisodeEdge` 10 s, `kEpisodeHeardAt` 0.95
 ### Ascolti e radio
 
 - Conteggio ascolti: `_beginListen`, `_tickPlayed`, `_endListen` scrivono in `plays`.
+- `_shadowId` (la riga ombra a cui vanno gli ascolti di un brano online in coda) segue `replaceQueueId` (riga ombra fusa in una scaricata: gli ascolti contano sulla riga tenuta) e si azzera in `removeTracks` (la riga cancellata non riceve ascolti).
 - Radio: `playStations`, ritentativi e riconnessione, titolo in onda da ICY. Le stazioni sono `RadioEntry` con id negativo.
 
 ## Invarianti da non rompere

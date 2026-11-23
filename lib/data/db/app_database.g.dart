@@ -13122,6 +13122,268 @@ class ArtistNotSameCompanion extends UpdateCompanion<ArtistNotSameData> {
   }
 }
 
+class $FavoriteCollectionsTable extends FavoriteCollections
+    with TableInfo<$FavoriteCollectionsTable, FavoriteCollection> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FavoriteCollectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<int> addedAt = GeneratedColumn<int>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: nowMs,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [kind, key, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'favorite_collections';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FavoriteCollection> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {kind, key};
+  @override
+  FavoriteCollection map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FavoriteCollection(
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $FavoriteCollectionsTable createAlias(String alias) {
+    return $FavoriteCollectionsTable(attachedDatabase, alias);
+  }
+}
+
+class FavoriteCollection extends DataClass
+    implements Insertable<FavoriteCollection> {
+  /// `album` or `playlist`.
+  final String kind;
+  final String key;
+  final int addedAt;
+  const FavoriteCollection({
+    required this.kind,
+    required this.key,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['kind'] = Variable<String>(kind);
+    map['key'] = Variable<String>(key);
+    map['added_at'] = Variable<int>(addedAt);
+    return map;
+  }
+
+  FavoriteCollectionsCompanion toCompanion(bool nullToAbsent) {
+    return FavoriteCollectionsCompanion(
+      kind: Value(kind),
+      key: Value(key),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory FavoriteCollection.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FavoriteCollection(
+      kind: serializer.fromJson<String>(json['kind']),
+      key: serializer.fromJson<String>(json['key']),
+      addedAt: serializer.fromJson<int>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'kind': serializer.toJson<String>(kind),
+      'key': serializer.toJson<String>(key),
+      'addedAt': serializer.toJson<int>(addedAt),
+    };
+  }
+
+  FavoriteCollection copyWith({String? kind, String? key, int? addedAt}) =>
+      FavoriteCollection(
+        kind: kind ?? this.kind,
+        key: key ?? this.key,
+        addedAt: addedAt ?? this.addedAt,
+      );
+  FavoriteCollection copyWithCompanion(FavoriteCollectionsCompanion data) {
+    return FavoriteCollection(
+      kind: data.kind.present ? data.kind.value : this.kind,
+      key: data.key.present ? data.key.value : this.key,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FavoriteCollection(')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, key, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FavoriteCollection &&
+          other.kind == this.kind &&
+          other.key == this.key &&
+          other.addedAt == this.addedAt);
+}
+
+class FavoriteCollectionsCompanion extends UpdateCompanion<FavoriteCollection> {
+  final Value<String> kind;
+  final Value<String> key;
+  final Value<int> addedAt;
+  final Value<int> rowid;
+  const FavoriteCollectionsCompanion({
+    this.kind = const Value.absent(),
+    this.key = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FavoriteCollectionsCompanion.insert({
+    required String kind,
+    required String key,
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : kind = Value(kind),
+       key = Value(key);
+  static Insertable<FavoriteCollection> custom({
+    Expression<String>? kind,
+    Expression<String>? key,
+    Expression<int>? addedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (kind != null) 'kind': kind,
+      if (key != null) 'key': key,
+      if (addedAt != null) 'added_at': addedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FavoriteCollectionsCompanion copyWith({
+    Value<String>? kind,
+    Value<String>? key,
+    Value<int>? addedAt,
+    Value<int>? rowid,
+  }) {
+    return FavoriteCollectionsCompanion(
+      kind: kind ?? this.kind,
+      key: key ?? this.key,
+      addedAt: addedAt ?? this.addedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<int>(addedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FavoriteCollectionsCompanion(')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13160,6 +13422,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ArtistAliasesTable artistAliases = $ArtistAliasesTable(this);
   late final $ArtistNotSameTable artistNotSame = $ArtistNotSameTable(this);
+  late final $FavoriteCollectionsTable favoriteCollections =
+      $FavoriteCollectionsTable(this);
   late final Index tracksAlbumKey = Index(
     'tracks_album_key',
     'CREATE INDEX tracks_album_key ON tracks (album_key)',
@@ -13249,6 +13513,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     artistCountries,
     artistAliases,
     artistNotSame,
+    favoriteCollections,
     tracksAlbumKey,
     tracksArtist,
     tracksFavorite,
@@ -22853,6 +23118,195 @@ typedef $$ArtistNotSameTableProcessedTableManager =
       ArtistNotSameData,
       PrefetchHooks Function()
     >;
+typedef $$FavoriteCollectionsTableCreateCompanionBuilder =
+    FavoriteCollectionsCompanion Function({
+      required String kind,
+      required String key,
+      Value<int> addedAt,
+      Value<int> rowid,
+    });
+typedef $$FavoriteCollectionsTableUpdateCompanionBuilder =
+    FavoriteCollectionsCompanion Function({
+      Value<String> kind,
+      Value<String> key,
+      Value<int> addedAt,
+      Value<int> rowid,
+    });
+
+class $$FavoriteCollectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $FavoriteCollectionsTable> {
+  $$FavoriteCollectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FavoriteCollectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FavoriteCollectionsTable> {
+  $$FavoriteCollectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FavoriteCollectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FavoriteCollectionsTable> {
+  $$FavoriteCollectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<int> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+}
+
+class $$FavoriteCollectionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FavoriteCollectionsTable,
+          FavoriteCollection,
+          $$FavoriteCollectionsTableFilterComposer,
+          $$FavoriteCollectionsTableOrderingComposer,
+          $$FavoriteCollectionsTableAnnotationComposer,
+          $$FavoriteCollectionsTableCreateCompanionBuilder,
+          $$FavoriteCollectionsTableUpdateCompanionBuilder,
+          (
+            FavoriteCollection,
+            BaseReferences<
+              _$AppDatabase,
+              $FavoriteCollectionsTable,
+              FavoriteCollection
+            >,
+          ),
+          FavoriteCollection,
+          PrefetchHooks Function()
+        > {
+  $$FavoriteCollectionsTableTableManager(
+    _$AppDatabase db,
+    $FavoriteCollectionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FavoriteCollectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FavoriteCollectionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$FavoriteCollectionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> kind = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<int> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FavoriteCollectionsCompanion(
+                kind: kind,
+                key: key,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String kind,
+                required String key,
+                Value<int> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FavoriteCollectionsCompanion.insert(
+                kind: kind,
+                key: key,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$FavoriteCollectionsTable, FavoriteCollection>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $FavoriteCollectionsTable,
+                    FavoriteCollection
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FavoriteCollectionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FavoriteCollectionsTable,
+      FavoriteCollection,
+      $$FavoriteCollectionsTableFilterComposer,
+      $$FavoriteCollectionsTableOrderingComposer,
+      $$FavoriteCollectionsTableAnnotationComposer,
+      $$FavoriteCollectionsTableCreateCompanionBuilder,
+      $$FavoriteCollectionsTableUpdateCompanionBuilder,
+      (
+        FavoriteCollection,
+        BaseReferences<
+          _$AppDatabase,
+          $FavoriteCollectionsTable,
+          FavoriteCollection
+        >,
+      ),
+      FavoriteCollection,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -22905,4 +23359,6 @@ class $AppDatabaseManager {
       $$ArtistAliasesTableTableManager(_db, _db.artistAliases);
   $$ArtistNotSameTableTableManager get artistNotSame =>
       $$ArtistNotSameTableTableManager(_db, _db.artistNotSame);
+  $$FavoriteCollectionsTableTableManager get favoriteCollections =>
+      $$FavoriteCollectionsTableTableManager(_db, _db.favoriteCollections);
 }

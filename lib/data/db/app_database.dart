@@ -9,7 +9,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 22;
+const kSchemaVersion = 23;
 
 @DriftDatabase(
   tables: [
@@ -37,6 +37,7 @@ const kSchemaVersion = 22;
     ArtistCountries,
     ArtistAliases,
     ArtistNotSame,
+    FavoriteCollections,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -242,6 +243,7 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(tracks, tracks.albumBrowseId);
         }
       }
+      if (from < 23) await m.createTable(favoriteCollections);
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

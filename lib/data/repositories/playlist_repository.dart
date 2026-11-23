@@ -4,6 +4,7 @@ import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../core/playlist_order.dart';
 import '../db/app_database.dart';
+import 'favorite_collections_repository.dart';
 import 'hidden_playlists.dart';
 import 'light_tracks.dart';
 import 'track_kinds.dart';
@@ -57,8 +58,13 @@ class PlaylistRepository {
       (_db.update(_db.playlists)..where((p) => p.id.equals(playlistId)))
           .write(PlaylistsCompanion(updatedAt: Value(nowMs())));
 
-  Future<void> delete(int id) =>
-      (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
+  Future<void> delete(int id) => _db.transaction(() async {
+        final uuid = await uuidOf(id);
+        if (uuid != null) {
+          await FavoriteCollectionsRepository(_db).remove(FavoriteCollectionsRepository.playlist, uuid);
+        }
+        await (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
+      });
 
   /// Ids of the playlists that already hold every one of [trackIds].
   Future<Set<int>> containing(List<int> trackIds) async {

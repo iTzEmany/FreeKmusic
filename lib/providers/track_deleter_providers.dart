@@ -14,6 +14,11 @@ final trackDeleterProvider = Provider<TrackDeleter>(
     removeFromQueue: ref.read(playerControllerProvider).removeTracks,
     db: ref.watch(databaseProvider),
     platform: isAndroid ? deleteWithSystemDialog : null,
-    onDeleted: () => ref.invalidate(downloadIndexProvider),
+    onDeleted: (gone) async {
+      // Forget the deleted files before the index reloads (its writes are chained, so the reload sees them).
+      final index = await ref.read(downloadIndexProvider.future);
+      await index.removeByPaths([for (final t in gone) t.path]);
+      ref.invalidate(downloadIndexProvider);
+    },
   ),
 );

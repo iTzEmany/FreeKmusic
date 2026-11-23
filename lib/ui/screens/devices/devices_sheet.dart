@@ -2,7 +2,6 @@ import '../../../providers/track_ops.dart';
 import '../../widgets/cc_sheet.dart';
 
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,12 +35,12 @@ class DevicesSheet extends ConsumerStatefulWidget {
       showCcSheet<void>(
         context: context,
         isScrollControlled: true,
-        constraints: BoxConstraints(
-          minWidth: min(560, MediaQuery.sizeOf(context).width),
-          maxWidth: 560,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        builder: (_) => ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+          ),
+          child: DevicesSheet(trackIds: trackIds),
         ),
-        builder: (_) => DevicesSheet(trackIds: trackIds),
       );
 
   @override

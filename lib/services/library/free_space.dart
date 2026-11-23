@@ -79,7 +79,7 @@ class FreeSpaceService {
       final t = await tracks.byPath(e.value);
       // Only the very file the app downloaded (size and mtime as at download time): a file the user put at
       // the same path later is not ours (D-598).
-      if (t == null || t.kind != kMusicKind || playing.contains(t.id) || active.contains(e.key) || !index.signatureMatches(e.key, e.value)) continue;
+      if (t == null || t.kind != kMusicKind || playing.contains(t.id) || active.contains(e.key) || !await index.signatureMatches(e.key, e.value)) continue;
       if (!seen.add(t.id)) continue;
       out.add(FreeSpaceCandidate(t, e.key, (t.lastPlayedAt ?? 0) < limit));
     }

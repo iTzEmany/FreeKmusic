@@ -16,6 +16,7 @@ import 'backup_merge_tables.dart';
 import 'artist_alias_repository.dart';
 import 'artist_info_repository.dart';
 import 'credits_repository.dart';
+import 'favorite_collections_repository.dart';
 import 'track_genre_repository.dart';
 import 'track_kinds.dart';
 import 'track_repository.dart';
@@ -257,6 +258,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     await _mergeArtistCountries(db, data.artistCountries);
     await _mergeArtistAliases(db, data);
     await _mergeArtistImages(db, data.artistImages, coversDir);
+    await _mergeFavoriteCollections(db, data.favoriteCollections);
     return report;
   });
 }
@@ -387,6 +389,18 @@ Future<void> _mergeArtistAliases(AppDatabase db, UserData data) async {
     } catch (e) {
       AppLog.w('backup: "different" pair skipped: $e');
     }
+  }
+}
+
+/// Union by (kind, key): a favourite already here is left alone. A playlist favourite is
+/// kept only if that uuid exists here (the playlist merge keeps the backup's uuid when free).
+Future<void> _mergeFavoriteCollections(AppDatabase db, List<FavoriteCollectionData> items) async {
+  if (items.isEmpty) return;
+  final repo = FavoriteCollectionsRepository(db);
+  final uuids = {for (final p in await db.select(db.playlists).get()) ?p.uuid};
+  for (final f in items) {
+    if (f.kind == 'playlist' && !uuids.contains(f.key)) continue;
+    await repo.add(f.kind, f.key, addedAt: f.addedAt);
   }
 }
 

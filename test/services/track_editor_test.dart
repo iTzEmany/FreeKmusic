@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/track_editor.dart';
@@ -55,6 +56,38 @@ void main() {
     expect(await genres.of(t.id), ['Rock', 'Pop', 'Soul']);
     await editor.save(again, const TrackEdit(title: 'Orig again'));
     expect(await genres.of(t.id), isEmpty);
+  });
+
+  test('a favourite album follows its rename; with another track still on the old album it stays', () async {
+    await repo.upsertBatch([
+      row('One').copyWith(path: const Value('/m/1.mp3')),
+      row('Two').copyWith(path: const Value('/m/2.mp3')),
+    ]);
+    final favs = FavoriteCollectionsRepository(db);
+    var all = await db.select(db.tracks).get();
+    await editor.save(
+      all[0],
+      const TrackEdit(title: 'One', artist: 'Joy', album: 'Alb'),
+    );
+    await editor.save(
+      all[1],
+      const TrackEdit(title: 'Two', artist: 'Joy', album: 'Alb'),
+    );
+    await favs.add('album', 'joy|alb');
+    all = await db.select(db.tracks).get();
+    await editor.save(
+      all[0],
+      const TrackEdit(title: 'One', artist: 'Joy', album: 'Alb (Deluxe)'),
+    );
+    expect(await favs.watch('album').first, ['joy|alb']);
+    await editor.save(
+      all[1],
+      const TrackEdit(title: 'Two', artist: 'Joy', album: 'Alb (Deluxe)'),
+    );
+    expect(await favs.watch('album').first, ['joy|alb (deluxe)']);
+    all = await db.select(db.tracks).get();
+    await editor.saveMany(all, album: 'Other', albumArtist: 'Joy');
+    expect(await favs.watch('album').first, ['joy|other']);
   });
 
   test('edit survives rescan (unchanged and modified file)', () async {
@@ -161,6 +194,17 @@ void main() {
       expect(after.map((t) => t.userEdited), everyElement(isFalse));
     });
 
+    test('Undo of a move puts the favourite back on the old album', () async {
+      await repo.upsertBatch([album('/m/1.mp3', 'One', 'Queen', 'A')]);
+      final before = await all();
+      final favs = FavoriteCollectionsRepository(db);
+      await favs.add('album', before.single.albumKey);
+      final snapshot = await editor.saveMany(before, album: 'B', albumArtist: 'Queen');
+      expect(await favs.watch('album').first, [(await all()).single.albumKey]);
+      await editor.restoreMany(snapshot);
+      expect(await favs.watch('album').first, [before.single.albumKey]);
+    });
+
     test('an edit made this way survives a rescan', () async {
       await repo.upsertBatch([album('/m/1.mp3', 'One', 'Band', 'Old')]);
       await editor.saveMany(await all(), album: 'New', albumArtist: 'Band');
@@ -210,6 +254,14 @@ void main() {
     });
     String keyOf(String artist, String album) =>
         computeAlbumKey(albumArtist: null, artist: artist, album: album, directory: '/m');
+
+    test('restoreFromFile: the favourite follows the album key the file tags give', () async {
+      await repo.upsertBatch([r('/m/1.mp3', 'x')]);
+      final favs = FavoriteCollectionsRepository(db);
+      await favs.add('album', 'x');
+      await editor.restoreFromFile(await at('/m/1.mp3'));
+      expect(await favs.watch('album').first, [keyOf('File Artist', 'File Album')]);
+    });
 
     test('restoreFromFile moves an album-cover row out of the album and leaves the pick behind', () async {
       await repo.upsertBatch([r('/m/1.mp3', 'x', cover: 'auto-x'), r('/m/2.mp3', 'x', cover: 'auto-x')]);

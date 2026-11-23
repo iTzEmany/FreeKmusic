@@ -102,6 +102,7 @@ Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `us
 - temi personalizzati uniti per id (limite 20, gli scartati sono contati);
 - ascolti (doppioni per trackId+playedAt; i non riconosciuti sono saltati e contati; quelli in streaming solo su righe ombra già presenti, D-546);
 - brani salvati in streaming: `TrackUserData.saved/album/addedAt`; `collectUserData` prende `kind != 2 OR saved = 1`; il ripristino ricrea la riga con `saveStream`;
+- preferiti di collezione (fase 141, `UserData.favoriteCollections`, campo opzionale `{kind, key, addedAt}`): unione per `(kind, key)` senza doppioni; un preferito di playlist entra solo se quell'uuid esiste qui (il merge delle playlist conserva l'uuid del backup quando è libero). «Sostituisci» li riporta con il `codecore.sqlite`. Un backup senza il campo si legge uguale, una voce malformata si scarta;
 - copertine automatiche, tag, playlist smart, podcast e puntate, letti in sola lettura dal `codecore.sqlite` del backup.
 
 Dopo l'unione i provider vengono ricaricati. Lo zip non porta `downloads.sig.json`.

@@ -1,7 +1,7 @@
 import '../../widgets/cc_sheet.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../../core/app_log.dart';
+import '../../../providers/favorite_collections_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../core/text_utils.dart';
 import '../../widgets/cover_picker_sheet.dart';
@@ -109,8 +109,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         );
       case _PlaylistAction.clearCover:
         await ops.setCover(id, null);
-      case _PlaylistAction.keepOffline:
-        await keepOfflineFlow(context, ref, tracks);
+      case _PlaylistAction.favorite:
+        final uuid = widget.playlist.uuid;
+        if (uuid != null) await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, uuid);
       case _PlaylistAction.export:
         await exportPlaylistFlow(
           context,
@@ -194,7 +195,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 
-  List<List<CcAction<_PlaylistAction>>> _menuGroups(bool hasCustomCover, bool personal) {
+  List<List<CcAction<_PlaylistAction>>> _menuGroups(bool hasCustomCover, bool personal, bool fav) {
     final l = context.l10n;
     return [
       [
@@ -225,11 +226,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             label: l.playlistRemoveCover,
             value: _PlaylistAction.clearCover,
           ),
-        CcAction(
-          icon: Icons.download_for_offline_outlined,
-          label: l.keepOfflineAction,
-          value: _PlaylistAction.keepOffline,
-        ),
+        if (widget.playlist.uuid != null)
+          CcAction(
+            icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
+            value: _PlaylistAction.favorite,
+          ),
         CcAction(
           icon: Icons.ios_share_rounded,
           label: l.exportPlaylist,
@@ -285,6 +287,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         .firstOrNull;
     final custom = summary?.playlist.coverKey;
     final compact = ref.watch(settingsProvider).compactMode;
+    final fav = widget.playlist.uuid != null &&
+        (ref.watch(isFavoriteCollectionProvider((kind: favoritePlaylistKind, key: widget.playlist.uuid!))).value ?? false);
     final ctrl = ref.read(playerControllerProvider);
     final playCtx = PlayContext(PlayContextKind.playlist, _name);
     // The mosaic follows the personal order, never the view order (D-424).
@@ -393,6 +397,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 context: playCtx,
                 listKey: shuffleKey,
               ),
+        downloadTracks: tracks,
+        scrollerCount: tracks.length,
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         shuffleKey: shuffleKey,
         menu: IconButton(
@@ -401,7 +407,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           onPressed: () async {
             final v = await showCcActionSheet<_PlaylistAction>(
               context: context,
-              groups: _menuGroups(custom != null, personal && !searching),
+              groups: _menuGroups(custom != null, personal && !searching, fav),
             );
             if (v != null) _onAction(v, id, key, tracks);
           },
@@ -448,7 +454,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 }
 
-enum _PlaylistAction { sort, edit, add, cover, clearCover, keepOffline, export, rename, delete }
+enum _PlaylistAction { sort, edit, add, cover, clearCover, favorite, export, rename, delete }
 
 class _EditRow extends StatelessWidget {
   const _EditRow({

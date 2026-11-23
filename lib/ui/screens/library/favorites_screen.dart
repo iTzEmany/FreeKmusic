@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../data/repositories/library_queries.dart' show AlbumSummary;
+import '../../../data/repositories/playlist_repository.dart' show PlaylistSummary;
+import '../../../providers/favorite_collections_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/player_providers.dart';
@@ -13,13 +17,16 @@ import '../../theme/tokens.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/collection_header.dart';
 import '../../shell/shell_nav.dart';
+import '../../widgets/cover_image.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/section_header.dart';
+import '../playlists/playlist_detail_screen.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
-import 'album_detail_screen.dart' show collectionMeta;
+import 'album_detail_screen.dart' show AlbumDetailScreen, collectionMeta;
 import 'all_tracks_screen.dart';
 import '../../widgets/motion.dart';
 import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
@@ -58,6 +65,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final list = tracks.value ?? const [];
+    for (final p in [favoriteAlbumsProvider, favoritePlaylistsProvider]) {
+      ref.listen(p, (_, n) {
+        if (n.hasError) AppLog.w('favourite collections failed', n.error, n.stackTrace);
+      });
+    }
+    final albums = ref.watch(favoriteAlbumsProvider).value ?? const <AlbumSummary>[];
+    final playlists = ref.watch(favoritePlaylistsProvider).value ?? const <PlaylistSummary>[];
     const playCtx = PlayContext(PlayContextKind.favorites);
     final durationMs = list.fold<int>(0, (a, t) => a + t.durationMs);
     final extent = trackRowExtentOf(context, compact);
@@ -117,6 +131,8 @@ SliverToBoxAdapter(
                 context: playCtx,
                 listKey: shuffleKey,
               ),
+        downloadTracks: list,
+        scrollerCount: albums.length + playlists.length + list.length,
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,
         menu: IconButton(
@@ -146,11 +162,42 @@ SliverToBoxAdapter(
           },
         ),
         slivers: [
+          if (albums.isNotEmpty) ...[
+            SliverToBoxAdapter(child: SectionHeader(l.albums, count: '${albums.length}')),
+            SliverList.builder(
+              itemCount: albums.length,
+              itemBuilder: (_, i) => ListTile(
+                leading: CoverImage(coverKey: albums[i].coverKey, size: 48, radius: CcDims.rGrid),
+                title: Text(albums[i].title ?? l.unknownAlbum, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(albums[i].variousArtists ? l.variousArtists : albums[i].artist ?? l.unknownArtist,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                onTap: () => ShellNav.open<void>(context, AlbumDetailScreen(album: albums[i])),
+              ),
+            ),
+          ],
+          if (playlists.isNotEmpty) ...[
+            SliverToBoxAdapter(child: SectionHeader(l.navPlaylists, count: '${playlists.length}')),
+            SliverList.builder(
+              itemCount: playlists.length,
+              itemBuilder: (_, i) => ListTile(
+                leading: PlaylistCover(
+                  size: 48,
+                  coverKeys: playlistCoverKeys(playlists[i].playlist.coverKey, [playlists[i].autoCoverKey]),
+                  radius: CcDims.rGrid,
+                ),
+                title: Text(playlists[i].playlist.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(l.tracksCount(playlists[i].trackCount)),
+                onTap: () => ShellNav.open<void>(context, PlaylistDetailScreen(playlist: playlists[i].playlist)),
+              ),
+            ),
+          ],
+          if (list.isNotEmpty && (albums.isNotEmpty || playlists.isNotEmpty))
+            SliverToBoxAdapter(child: SectionHeader(l.tracks, count: '${list.length}')),
           SliverAsyncBody(
             value: tracks,
             onRetry: () => ref.invalidate(tracksProvider(query)),
             loading: rows,
-            data: (_) => list.isEmpty ? emptyState : rows,
+            data: (_) => list.isEmpty && albums.isEmpty && playlists.isEmpty ? emptyState : rows,
           ),
         ],
       ),

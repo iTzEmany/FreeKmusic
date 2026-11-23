@@ -104,6 +104,8 @@ class TagTracksScreen extends ConsumerWidget {
         title: name,
         name: name,
         meta: collectionMeta(l, tracks: tracks.length, durationMs: durationMs),
+        downloadTracks: tracks,
+        scrollerCount: tracks.length,
         onPlay: tracks.isEmpty
             ? null
             : () => ctrl.playAll(

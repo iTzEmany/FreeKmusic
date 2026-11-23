@@ -219,16 +219,15 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a tag page is a collection: name, count, play pills, no round button', (tester) async {
+  testWidgets('a tag page is a collection: name, count, play icons', (tester) async {
     await open(tester, const SizedBox());
     await tagWith(tester, 'Live', [0, 1]);
     await h.pump(tester, const TagTracksScreen(name: 'Live'));
     await _settle(tester);
     expect(find.text('Live'), findsWidgets);
     expect(find.textContaining('2 brani'), findsOneWidget);
-    expect(find.byType(PlayPill), findsOneWidget);
+    expect(find.byType(PlayCircleButton), findsOneWidget);
     expect(find.byType(ShufflePill), findsOneWidget);
-    expect(find.byType(PlayCircleButton), findsNothing);
     expect(_row('Song 0'), findsOneWidget);
     await h.dispose(tester);
   });
@@ -240,7 +239,7 @@ void main() {
     await _settle(tester);
     expect(find.byType(EmptyState), findsOneWidget);
     expect(find.text('Nessun brano'), findsWidgets);
-    expect(find.byType(PlayPill), findsNothing, reason: 'no pills without tracks');
+    expect(find.byType(PlayCircleButton), findsNothing, reason: 'no play without tracks');
     await h.dispose(tester);
   });
 }

@@ -168,3 +168,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 137 | Backup, ripristino, aggiornamento (#214) | [`fase-137-backup-ripristino-aggiornamento.md`](fasi/fase-137-backup-ripristino-aggiornamento.md) |
 | 138 | Ritocchi di UI (#215) | [`fase-138-ritocchi-ui.md`](fasi/fase-138-ritocchi-ui.md) |
 | 139 | Stato vivo del brano e download (#216) | [`fase-139-stato-brano-download.md`](fasi/fase-139-stato-brano-download.md) |
+| 140 | Streaming per prima (#217) | [`fase-140-streaming-per-prima.md`](fasi/fase-140-streaming-per-prima.md) |

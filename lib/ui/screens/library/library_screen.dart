@@ -1,10 +1,8 @@
-
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
-
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -81,7 +79,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   // How far the island has retracted, 1:1 with the scroll (D-407). Only the
   // island listens, so a scroll frame does not rebuild the list.
   final _shrink = ValueNotifier<double>(0);
-  double _tabsHeight = libraryIslandTabsHeight; // tabs + scan status, reported by the island
+  double _tabsHeight =
+      libraryIslandTabsHeight; // tabs + scan status, reported by the island
 
   @override
   void dispose() {
@@ -116,13 +115,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   void _setSettings({LibrarySort? sort, bool? ascending, bool? grid}) {
-    ref.read(settingsProvider.notifier).update(
-      (s) => s.copyWith(
-        librarySort: sort?.name,
-        librarySortAscending: ascending,
-        libraryGrid: grid,
-      ),
-    );
+    ref
+        .read(settingsProvider.notifier)
+        .update(
+          (s) => s.copyWith(
+            librarySort: sort?.name,
+            librarySortAscending: ascending,
+            libraryGrid: grid,
+          ),
+        );
   }
 
   bool _onScroll(ScrollNotification n, double max) {
@@ -170,8 +171,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         : settings.librarySortAscending ?? sort.defaultAscending;
     final playlists = ref.watch(playlistsProvider);
     final filtered = _kind == LibraryKind.album || _kind == LibraryKind.artist;
-    final albums = ref.watch(filtered ? filteredAlbumsProvider : albumsProvider);
-    final artists = ref.watch(filtered ? filteredArtistsProvider : artistsProvider);
+    final albums = ref.watch(
+      filtered ? filteredAlbumsProvider : albumsProvider,
+    );
+    final artists = ref.watch(
+      filtered ? filteredArtistsProvider : artistsProvider,
+    );
     final built = ref.watch(libraryEntriesProvider((_kind, sort, ascending)));
     final folders = ref.watch(foldersProvider).value;
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
@@ -179,8 +184,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     // The list starts under the island, which floats above it.
     final rows = LibraryIslandRows.of(context);
-    final inset =
-        CcDims.gap12 + rows.fullHeight(_tabsHeight) + CcDims.gap8;
+    final inset = CcDims.gap12 + rows.fullHeight(_tabsHeight) + CcDims.gap8;
     Widget body;
     var isList = false;
     var count = l.libraryItemsCount(0);
@@ -251,7 +255,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             );
     }
 
-    if (!isList) body = Padding(padding: EdgeInsets.only(top: inset), child: body);
+    if (!isList) {
+      body = Padding(
+        padding: EdgeInsets.only(top: inset),
+        child: body,
+      );
+    }
 
     ref.listen(librarySearchRequestProvider, (_, _) {
       if (!_searching) _setSearching(true);
@@ -335,7 +344,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   kind: _kind,
                   onKind: (k) {
                     ref
-                        .read(selectionProvider(SelectionKey.search.key).notifier)
+                        .read(
+                          selectionProvider(SelectionKey.search.key).notifier,
+                        )
                         .clear();
                     setState(() {
                       _kind = k;
@@ -400,7 +411,8 @@ class _LibraryShortcuts extends ConsumerWidget {
       reviewCountProvider.select((c) => c.value ?? 0),
     );
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
-    final downloadedCount = ref.watch(downloadedNoPlaylistCountProvider).value ?? 0;
+    final downloadedCount =
+        ref.watch(downloadedNoPlaylistCountProvider).value ?? 0;
     void open(Widget w) => ShellNav.open<void>(context, w);
     return LibraryShortcuts(
       items: [
@@ -609,34 +621,40 @@ class _LibraryList extends StatelessWidget {
         ],
       ),
     );
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: SizedBox(height: topInset)),
-        if (header != null) SliverToBoxAdapter(child: header),
-        SliverVariedExtentList.builder(
-          itemCount: rows.length,
-          itemExtentBuilder: (i, _) => rows[i] is String
-              ? 40 * textScale
-              : trackRowExtentOf(context, false),
-          itemBuilder: (_, i) {
-            final r = rows[i];
-            if (r is LibraryEntry) return entryRow(r);
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CcDims.margin,
-                CcDims.gap16,
-                CcDims.margin,
-                CcDims.gap4,
-              ),
-              child: Text(
-                r as String,
-                style: theme.titleSmall?.copyWith(color: cc.accentSoft),
-              ),
-            );
-          },
-        ),
-        SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
-      ],
+    // Letter rows make the extent vary: the strip goes by position.
+    return PositionScroller(
+      itemCount: entries.length,
+      topInset: () => topInset,
+      builder: (controller) => CustomScrollView(
+        controller: controller,
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: topInset)),
+          if (header != null) SliverToBoxAdapter(child: header),
+          SliverVariedExtentList.builder(
+            itemCount: rows.length,
+            itemExtentBuilder: (i, _) => rows[i] is String
+                ? 40 * textScale
+                : trackRowExtentOf(context, false),
+            itemBuilder: (_, i) {
+              final r = rows[i];
+              if (r is LibraryEntry) return entryRow(r);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  CcDims.gap16,
+                  CcDims.margin,
+                  CcDims.gap4,
+                ),
+                child: Text(
+                  r as String,
+                  style: theme.titleSmall?.copyWith(color: cc.accentSoft),
+                ),
+              );
+            },
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
+        ],
+      ),
     );
   }
 }
@@ -694,24 +712,28 @@ class _LibraryGrid extends StatelessWidget {
       );
     }
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: SizedBox(height: topInset)),
-        if (header != null) SliverToBoxAdapter(child: header),
-        SliverPadding(
-          padding: const EdgeInsets.all(CcDims.margin - 6),
-          sliver: SliverGrid.builder(
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 180,
-              childAspectRatio: 0.8,
+    return PositionScroller(
+      itemCount: entries.length,
+      topInset: () => topInset,
+      builder: (controller) => CustomScrollView(
+        controller: controller,
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: topInset)),
+          if (header != null) SliverToBoxAdapter(child: header),
+          SliverPadding(
+            padding: const EdgeInsets.all(CcDims.margin - 6),
+            sliver: SliverGrid.builder(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 180,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: entries.length,
+              itemBuilder: (_, i) => tile(entries[i]),
             ),
-            itemCount: entries.length,
-            itemBuilder: (_, i) => tile(entries[i]),
           ),
-        ),
-        SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
-      ],
+          SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
+        ],
+      ),
     );
   }
 }
-

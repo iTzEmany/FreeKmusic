@@ -255,13 +255,13 @@ void main() {
   testWidgets('the A-Z strip reaches the last letter with the block gone', (
     tester,
   ) async {
-    final h = await _open(tester, tracks: 40, sort: SortOption.title);
+    final h = await _open(tester, tracks: 120, sort: SortOption.title);
     await wheel(tester, 400);
     expect(barHeight(tester), 0);
     await tester.dragFrom(const Offset(390, 500), const Offset(0, 395));
     await _settle(tester);
-    // Title order: «Song 9» is the last row.
-    expect(find.text('Song 9'), findsOneWidget);
+    // Title order: «Song 99» is the last row.
+    expect(find.text('Song 99'), findsOneWidget);
     await h.dispose(tester);
   });
 

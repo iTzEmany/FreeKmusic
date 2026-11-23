@@ -19,6 +19,7 @@ import 'duplicate_repository.dart';
 import 'artist_info_repository.dart' show ArtistInfoRepository;
 import 'hidden_playlists.dart';
 import 'light_tracks.dart';
+import 'favorite_collections_repository.dart';
 import 'track_genre_repository.dart';
 import 'track_kinds.dart';
 
@@ -219,7 +220,11 @@ class TrackRepository {
     await mergeStreamRow(key, id);
     var albumKey = streamAlbumKey(albumArtist: row.albumArtist, artist: row.artist, album: row.album);
     // A generic album would lump unrelated tracks together; a hand-picked key is kept.
-    if (albumKey.startsWith('stream|unknown|') || row.userEdited) albumKey = 'stream|$key';
+    if (row.userEdited) {
+      albumKey = 'stream|${favoriteAlbumKey(row.albumKey)}';
+    } else if (albumKey.startsWith('stream|unknown|')) {
+      albumKey = 'stream|$key';
+    }
     await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
       TracksCompanion(
         path: Value(streamPathOf(key)),
@@ -233,12 +238,17 @@ class TrackRepository {
         missing: const Value(false),
       ),
     );
+    await FavoriteCollectionsRepository(_db).followAlbumKey(row.albumKey, albumKey);
     await settleMovedCover(row, albumKey);
     return row;
   });
 
   /// Puts [before] (as returned by [demoteToStream]) back, when the file could not be deleted.
-  Future<void> restoreRow(Track before) => _db.update(_db.tracks).replace(before);
+  Future<void> restoreRow(Track before) => _db.transaction(() async {
+    final now = await getById(before.id);
+    await _db.update(_db.tracks).replace(before);
+    if (now != null) await FavoriteCollectionsRepository(_db).followAlbumKey(now.albumKey, before.albumKey);
+  });
 
   /// A fresh download [keepId] of the track [key] was streamed before: its listens,
   /// counts, lyrics and curiosities move to [keepId] (as in `DuplicateRepository.merge`)
@@ -248,6 +258,12 @@ class TrackRepository {
     final shadow = await streamRow(key);
     if (shadow == null || shadow.id == keepId) return null;
     await DuplicateRepository(_db).merge(keepId, [shadow.id]);
+    // The album's YouTube Music id: the kept row's own value wins, the shadow's fills a gap.
+    final id = shadow.albumBrowseId;
+    if (id != null) {
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(keepId) & t.albumBrowseId.isNull() & t.userEdited.equals(false)))
+          .write(TracksCompanion(albumBrowseId: Value(id)));
+    }
     await (_db.delete(_db.tracks)..where((t) => t.id.equals(shadow.id))).go();
     return shadow.id;
   }

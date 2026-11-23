@@ -186,7 +186,6 @@ class _JamJoinSheetState extends ConsumerState<JamJoinSheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _code,
-              autofocus: true,
               textCapitalization: TextCapitalization.characters,
               inputFormatters: [
                 TextInputFormatter.withFunction((o, n) => n.copyWith(text: n.text.toUpperCase())),

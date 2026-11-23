@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/data/repositories/hidden_playlists.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
@@ -688,6 +689,32 @@ void main() {
     });
   });
 
+  group('albumBrowseId survives', () {
+    test('mergeStreamRow: the shadow fills a gap, the kept value is not overwritten', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A'), row('/b.mp3', 'B')]);
+      final lib = {for (final t in await db.select(db.tracks).get()) t.title: t.id};
+      await repo.ensureStreamRow(yt('a'));
+      await repo.ensureStreamRow(yt('b'));
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREa' WHERE path = 'stream:youtube:a'");
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREb' WHERE path = 'stream:youtube:b'");
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREmine' WHERE title = 'B'");
+      await repo.mergeStreamRow('youtube:a', lib['A']!);
+      await repo.mergeStreamRow('youtube:b', lib['B']!);
+      expect((await repo.getById(lib['A']!))!.albumBrowseId, 'MPREa');
+      expect((await repo.getById(lib['B']!))!.albumBrowseId, 'MPREmine');
+    });
+
+    test('mergeStreamRow leaves a user-edited row alone', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await repo.ensureStreamRow(yt('a'));
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREa' WHERE path = 'stream:youtube:a'");
+      await db.customStatement('UPDATE tracks SET user_edited = 1 WHERE id = $id');
+      await repo.mergeStreamRow('youtube:a', id);
+      expect((await repo.getById(id))!.albumBrowseId, null);
+    });
+  });
+
   group('demoteToStream', () {
     test('keeps id, playlist row, plays, favourite and lyrics; sets path, kind and saved', () async {
       final folderId = (await FolderRepository(db).add('/m')).id;
@@ -713,6 +740,17 @@ void main() {
       expect(await repo.streamRow('youtube:a'), isNot(equals(null)));
     });
 
+    test('a favourite album follows the row to its stream album key', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await db.customStatement("UPDATE tracks SET user_edited = 1, album_key = 'hand' WHERE id = $id");
+      await FavoriteCollectionsRepository(db).add('album', 'hand');
+      await repo.demoteToStream(id, 'youtube:a');
+      // The hand-picked key stays (with the stream prefix): the album does not split and the favourite stays.
+      expect((await repo.getById(id))!.albumKey, 'stream|hand');
+      expect(await FavoriteCollectionsRepository(db).watch('album').first, ['hand']);
+    });
+
     test('a stream row is not demoted, and restoreRow puts the file row back', () async {
       await repo.upsertBatch([row('/a.mp3', 'A')]);
       final id = (await db.select(db.tracks).getSingle()).id;
@@ -722,6 +760,17 @@ void main() {
       await repo.restoreRow(before);
       final t = (await repo.getById(id))!;
       expect([t.path, t.kind, t.saved], ['/a.mp3', 0, false]);
+    });
+
+    test('restoreRow puts the favourite back on the file album', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      final favs = FavoriteCollectionsRepository(db);
+      await favs.add('album', 'k');
+      final before = (await repo.demoteToStream(id, 'youtube:a'))!; // no artist or album: the key becomes stream|youtube:a
+      expect(await favs.watch('album').first, ['youtube:a']);
+      await repo.restoreRow(before);
+      expect(await favs.watch('album').first, ['k']);
     });
   });
 

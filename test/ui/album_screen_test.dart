@@ -148,8 +148,9 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('album menu «Tieni offline» hands the album tracks to keepOffline and says how many go', (tester) async {
+  testWidgets('album «Scarica» icon hands the album tracks to keepOffline and says how many go', (tester) async {
     final h = await Harness.create(tester, tracks: 4);
+    await tester.runAsync(() => h.db.update(h.db.tracks).write(const TracksCompanion(kind: Value(2), saved: Value(true))));
     final got = <int>[];
     const queued = 2;
     await h.pump(
@@ -180,13 +181,40 @@ void main() {
     }
 
     await settle();
-    await tester.tap(find.byTooltip('Altre azioni'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tieni offline'));
+    await tester.tap(find.byTooltip('Scarica'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(got, hasLength(2));
     expect(find.text('2 brani in download'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('an album page opened on a stream key follows the album when a download rewrites it', (tester) async {
+    final h = await Harness.create(tester, tracks: 0);
+    final id = (await tester.runAsync(() => h.db.into(h.db.tracks).insert(TracksCompanion.insert(
+        path: 'stream:youtube:s', title: 'Streamed song', albumKey: 'stream|art|alb', format: '', sizeBytes: 0, mtimeMs: 0, addedAt: 1,
+        kind: const Value(2), saved: const Value(true)))))!;
+    await h.pump(
+      tester,
+      const AlbumDetailScreen(
+        album: AlbumSummary(
+            albumKey: 'stream|art|alb', title: 'Alb', artist: 'Art', variousArtists: false, trackCount: 1, durationMs: 1, year: null, coverKey: null),
+      ),
+    );
+    Future<void> settle() async {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await settle();
+    expect(find.text('Streamed song'), findsOneWidget);
+    expect(find.byTooltip('Scarica'), findsOneWidget);
+    await tester.runAsync(() => (h.db.update(h.db.tracks)..where((t) => t.id.equals(id)))
+        .write(const TracksCompanion(albumKey: Value('art|alb'), kind: Value(0), saved: Value(false))));
+    await settle();
+    expect(find.text('Streamed song'), findsOneWidget, reason: 'the page follows the album to its file key');
+    expect(find.byTooltip('Scarica'), findsNothing, reason: 'files only: nothing left to download');
     await h.dispose(tester);
   });
 

@@ -38,4 +38,60 @@ void main() {
     await tester.pump();
     expect(c.offset, greaterThan(1000));
   });
+
+  Widget byPosition(ScrollController c, int n) => MaterialApp(
+    home: Scaffold(
+      body: AlphaScroller(
+        controller: c,
+        itemCount: n,
+        child: ListView.builder(
+          controller: c,
+          itemExtent: 50,
+          itemCount: n,
+          itemBuilder: (_, i) => Text('row $i'),
+        ),
+      ),
+    ),
+  );
+
+  testWidgets('the bar is absent under 100 items and present from 100', (tester) async {
+    final c = ScrollController();
+    await tester.pumpWidget(byPosition(c, 99));
+    expect(find.byKey(const ValueKey('scroller-handle')), findsNothing);
+    await tester.pumpWidget(byPosition(c, 100));
+    expect(find.byKey(const ValueKey('scroller-handle')), findsOneWidget);
+  });
+
+  testWidgets('touching widens the handle, releasing narrows it', (tester) async {
+    final c = ScrollController();
+    await tester.pumpWidget(byPosition(c, 200));
+    double width() => tester.getSize(find.descendant(
+        of: find.byKey(const ValueKey('scroller-handle')),
+        matching: find.byType(AnimatedContainer))).width;
+    expect(width(), lessThan(6));
+    final g = await tester.startGesture(const Offset(790, 300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(width(), greaterThanOrEqualTo(12));
+    expect(tester.getSize(find.byKey(const ValueKey('scroller-handle'))).height, 48);
+    await g.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(width(), lessThan(6));
+  });
+
+  testWidgets('dragging by position maps the fraction to the scroll extent', (tester) async {
+    final c = ScrollController();
+    await tester.pumpWidget(byPosition(c, 200));
+    final size = tester.getSize(find.byType(Scaffold));
+    final g = await tester.startGesture(Offset(size.width - 10, 10));
+    await g.moveTo(Offset(size.width - 10, size.height / 2));
+    await tester.pump();
+    final f = (size.height / 2) / size.height;
+    expect(c.offset, closeTo(f * c.position.maxScrollExtent, 0.5));
+    expect(find.text('${(f * 199).round() + 1} / 200'), findsOneWidget);
+    await g.up();
+    await tester.pump();
+    expect(find.textContaining(' / 200'), findsNothing);
+  });
 }

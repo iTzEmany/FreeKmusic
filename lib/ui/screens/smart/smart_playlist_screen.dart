@@ -111,6 +111,8 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
           tracks: tracks.length,
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
+        downloadTracks: tracks,
+        scrollerCount: shown.length,
         onPlay: tracks.isEmpty
             ? null
             : () => ctrl.playAll(

@@ -250,12 +250,13 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
   ) {
     final l = context.l10n;
     final rowHeight = trackRowExtentOf(context, compact);
-    // The A–Z strip only makes sense when the order is alphabetical.
+    // The A–Z strip only makes sense when the order is alphabetical; otherwise by position.
     final byTitle = query.sort == SortOption.title;
     final byArtist = query.sort == SortOption.artist;
     return AlphaScroller(
       controller: _scroll,
       itemExtent: rowHeight,
+      itemCount: shown.length,
       topInset: () => _header.visible,
       start: () => _header.extent,
       letters: [

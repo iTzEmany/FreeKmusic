@@ -86,6 +86,8 @@ class ArtistDetailScreen extends ConsumerWidget {
         ),
         meta: meta,
         menu: _ArtistMenu(artist: artist, picked: picked != null),
+        downloadTracks: list,
+        scrollerCount: top.length + list.length,
         onPlay: list.isEmpty
             ? null
             : () => ctrl.playAll(

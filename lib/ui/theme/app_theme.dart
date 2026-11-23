@@ -148,7 +148,7 @@ ThemeData buildThemeFromColors(
       surfaceTintColor: Colors.transparent,
       modalBackgroundColor: c.surface1,
       showDragHandle: true,
-      constraints: const BoxConstraints(maxWidth: 560),
+      constraints: const BoxConstraints(maxWidth: CcDims.sheetMaxWidth),
       dragHandleColor: c.surface3,
       shape: top(CcDims.rSheet),
     ),

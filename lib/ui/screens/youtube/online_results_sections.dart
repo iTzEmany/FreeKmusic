@@ -12,6 +12,8 @@ import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_search_providers.dart'
     show ownedTracksProvider;
 import '../../../providers/library_add_providers.dart';
+import '../../../providers/track_state_providers.dart';
+import '../../../services/online/youtube_service.dart' show downloadIndexKey;
 import '../../../providers/youtube_providers.dart';
 import '../../../services/online/merge_results.dart';
 import '../../../services/online/query_match.dart' show MediaKind;
@@ -318,8 +320,7 @@ class SmartRow extends ConsumerWidget {
     final r = row.primary;
     final pick = watchOnlinePick(ref, selectionKey, index);
     final ids = row.ids.toSet();
-    final inLibraryOf = ref.watch(inLibraryOfProvider);
-    final inLibrary = ids.any((id) => inLibraryOf(id, r.source));
+    final inLibrary = ids.any((id) => ref.watch(trackStateProvider(downloadIndexKey(r.source, id))) != TrackState.online);
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => ids.contains(x.result.id)).lastOrNull,

@@ -1,9 +1,15 @@
+import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_kinds.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:flutter/rendering.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/collection_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/app_harness.dart';
 
 ThemeData _theme(AppThemeId id) => buildThemeFromColors(
     buildPalette(id, accentFromName('')), false);
@@ -75,4 +81,107 @@ void main() {
       expect(seg.backgroundColor!.resolve({}), cc.surface2);
     });
   }
+
+  group('icon row', () {
+    Future<Harness> pumpScaffold(WidgetTester tester, {int? kind}) async {
+      final h = await Harness.create(tester, tracks: 0);
+      final downloadTracks = kind == null
+          ? null
+          : [
+              await tester.runAsync(() => h.db.into(h.db.tracks).insertReturning(TracksCompanion.insert(
+                  path: 'x', title: 'x', albumKey: 'k', format: '', sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: Value(kind)))) as Track,
+            ];
+      await h.pump(
+        tester,
+        CollectionScaffold(
+          title: 'T',
+          name: 'Nome',
+          slivers: const [],
+          onPlay: () {},
+          shuffleIds: const [1, 2],
+          downloadTracks: downloadTracks,
+          menu: const SizedBox.square(dimension: 48),
+        ),
+      );
+      return h;
+    }
+
+    testWidgets('sizes, labels and tooltips', (tester) async {
+      final sem = tester.ensureSemantics();
+      final h = await pumpScaffold(tester, kind: kStreamKind);
+      expect(tester.getSize(find.byType(PlayCircleButton)), const Size(56, 56));
+      expect(tester.getSize(find.byIcon(Icons.shuffle_rounded).hitTestable()).width, lessThan(48));
+      expect(find.bySemanticsLabel('Riproduci'), findsOneWidget);
+      expect(find.byTooltip('Riproduci'), findsOneWidget);
+      // IconButton hands its tooltip to the semantics node as its name.
+      expect(find.byTooltip('Scarica'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('[Cc]asuale|[Ss]huffle|mescol', caseSensitive: false)), findsWidgets);
+      final shuffle = tester.getSize(find.ancestor(
+          of: find.byIcon(Icons.shuffle_rounded), matching: find.byType(SizedBox)).first);
+      expect(shuffle, const Size(48, 48));
+      expect(tester.getSize(find.ancestor(
+          of: find.byIcon(Icons.download_rounded), matching: find.byType(SizedBox)).first),
+          const Size(48, 48));
+      sem.dispose();
+      await h.dispose(tester);
+    });
+
+    testWidgets('a small menu is padded to 48 dp', (tester) async {
+      final h = await Harness.create(tester, tracks: 0);
+      await h.pump(
+        tester,
+        const CollectionScaffold(
+          title: 'T',
+          name: 'Nome',
+          slivers: [],
+          menu: SizedBox.square(key: ValueKey('menu'), dimension: 20),
+        ),
+      );
+      final box = tester.getSize(find.ancestor(
+          of: find.byKey(const ValueKey('menu')),
+          matching: find.byType(ConstrainedBox)).first);
+      expect(box, const Size(48, 48));
+      await h.dispose(tester);
+    });
+
+    testWidgets('scrollerCount changes keep the offset and toggle the bar', (tester) async {
+      final h = await Harness.create(tester, tracks: 0);
+      Future<void> show(int? n) => h.pump(
+            tester,
+            CollectionScaffold(
+              title: 'T',
+              name: 'Nome',
+              scrollerCount: n,
+              slivers: [
+                SliverList.builder(
+                  itemCount: 200,
+                  itemBuilder: (_, i) => SizedBox(height: 56, child: Text('r$i')),
+                ),
+              ],
+            ),
+          );
+      final handle = find.byKey(const ValueKey('scroller-handle'));
+      await show(null);
+      final c = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+      c.jumpTo(500);
+      await tester.pump();
+      expect(handle, findsNothing);
+      await show(150);
+      expect(c.offset, 500);
+      expect(handle, findsOneWidget);
+      await show(50);
+      expect(c.offset, 500);
+      expect(handle, findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('the download icon shows only when a stream is among the tracks', (tester) async {
+      var h = await pumpScaffold(tester);
+      expect(find.byIcon(Icons.download_rounded), findsNothing);
+      await h.dispose(tester);
+      h = await pumpScaffold(tester, kind: kMusicKind);
+      expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
+      await h.dispose(tester);
+    });
+  });
 }

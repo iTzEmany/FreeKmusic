@@ -100,6 +100,21 @@ class OnlineEntries {
     _bound.add(id);
   }
 
+  /// The row [from] was merged into [to]: its entries follow.
+  void rebindRow(int from, int to) {
+    for (final e in _entries.values.toList()) {
+      if (e.trackId == from) bindRow(e.id, to);
+    }
+  }
+
+  /// The rows [ids] were deleted: entries bound to them are streams again, not tied to a dead id.
+  void unbindRows(Set<int> ids) {
+    for (final e in _entries.values.toList()) {
+      if (e.trackId == null || !ids.contains(e.trackId)) continue;
+      _entries[e.id] = OnlineEntry(id: e.id, result: e.result, addedAt: e.addedAt, seedTitle: e.seedTitle, suggested: e.suggested);
+    }
+  }
+
   OnlineEntry? operator [](int id) => _entries[id];
 
   /// The ids of the stream entries registered for [r] (one video can be

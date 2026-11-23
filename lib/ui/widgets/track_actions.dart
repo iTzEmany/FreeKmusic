@@ -98,7 +98,7 @@ bool Function(String) _inLibrary(WidgetRef ref) =>
 
 bool entryInLibrary(WidgetRef ref, int id) {
   final r = ref.read(onlineEntriesProvider)?[id]?.result;
-  return r != null && ref.read(inLibraryOfProvider)(r.id, r.source);
+  return r != null && ref.read(trackStateProvider(r.indexKey)) != TrackState.online;
 }
 
 /// Streamed (online) entries are not library rows: no favourites, tags,
@@ -247,6 +247,7 @@ List<TrackActionGroup> trackActions(
   WidgetRef ref,
   Track track, {
   Track? row,
+  bool isDownloadedFile = false,
 }) {
   final radio = radioOfTrackRead(ref, track);
   if (radio != null) return radioTrackActions(outer, ref, track, radio);
@@ -287,7 +288,7 @@ List<TrackActionGroup> trackActions(
       !track.missing &&
       playingId != track.id &&
       playingRow != track.id &&
-      (ref.read(downloadIndexProvider).value?.signatureMatchesPath(track.path) ?? false);
+      isDownloadedFile;
 
   final groups = [
     TrackActionGroup(l.groupQueue, [
@@ -487,22 +488,80 @@ Future<void> showTrackActions(
   // or a save swaps it for the library row and the groups are rebuilt (D-697).
   final entryKey = ref.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
   final key = trackStateKey(track, streamKey: entryKey);
+  // The caller (a row) may be unmounted while the sheet is open (its list changed), and the sheet itself is
+  // gone once an action runs: a host in the root overlay, kept until the action is done, gives them a live
+  // context and ref (a dialog and a delete after the confirm).
+  final container = ProviderScope.containerOf(context, listen: false);
+  BuildContext? hostContext;
+  WidgetRef? hostRef;
+  final host = OverlayEntry(
+    builder: (_) => Consumer(
+      builder: (c, r, _) {
+        hostContext = c;
+        hostRef = r;
+        return const SizedBox.shrink();
+      },
+    ),
+  );
+  Overlay.maybeOf(context, rootOverlay: true)?.insert(host);
+  var hostGone = false;
+  void dropHost() {
+    if (hostGone) return;
+    hostGone = true;
+    host.remove();
+    host.dispose();
+  }
+
   var live = track;
   Track? liveRow; // the library row behind an online entry (negative id), once saved or downloaded
-  List<TrackActionGroup> build() => [
-    if (lead != null) TrackActionGroup('', [lead]),
-    ...trackActions(context, ref, live, row: liveRow),
+  // «Libera spazio» needs the file to be the very one downloaded: checked off the UI thread, not while building.
+  Future<bool> pristine() async =>
+      (await container.read(downloadIndexProvider.future)).signatureMatchesPath(live.path);
+  var isDownloadedFile = false;
+  List<TrackActionGroup> build() {
+    final alive = context.mounted;
+    return [
+      if (lead != null) TrackActionGroup('', [lead]),
+      ...trackActions(
+        alive ? context : hostContext!,
+        alive ? ref : hostRef!,
+        live,
+        row: liveRow,
+        isDownloadedFile: isDownloadedFile,
+      ),
+    ];
+  }
+
+  // An action runs once the sheet is closed, maybe with the caller gone since the groups were built:
+  // it is then taken again from a build with the host's context and ref.
+  List<TrackActionGroup> lazy(List<TrackActionGroup> gs) => [
+    for (final g in gs)
+      TrackActionGroup(g.title, [
+        for (final a in g.actions)
+          TrackAction(
+            a.icon,
+            a.label,
+            () {
+              if (context.mounted || hostRef == null) return a.run();
+              final fresh = [for (final g in build()) ...g.actions].where((x) => x.label == a.label).firstOrNull;
+              return (fresh ?? a).run();
+            },
+            destructive: a.destructive,
+            onStreamRow: a.onStreamRow,
+            onOnlineEntry: a.onOnlineEntry,
+          ),
+      ]),
   ];
+
   late List<TrackActionGroup> last;
-  // The caller may be gone while the sheet is open: keep the last groups then.
-  List<TrackActionGroup> groups() => context.mounted ? last = build() : last;
+  List<TrackActionGroup> groups() => context.mounted || hostContext?.mounted == true ? last = lazy(build()) : last;
   final changed = ValueNotifier(0);
   var closed = false;
   var calls = 0; // only the last call counts: an older lookup finishing late must not undo a newer one
   Future<void> follow() async {
     final n = ++calls;
     try {
-      final row = await ref.read(trackRowLookupProvider)(track, key);
+      final row = await container.read(trackRowLookupProvider)(track, key);
       if (n != calls) return;
       // An online entry (negative id) stays itself: the library row is another thing to act on.
       if (row != null) {
@@ -512,6 +571,9 @@ Future<void> showTrackActions(
           live = row;
         }
       }
+      final ok = await pristine();
+      if (n != calls) return;
+      isDownloadedFile = ok;
     } on Object catch (e, st) {
       AppLog.w('track menu: row of $key not reloaded', e, st);
     }
@@ -522,18 +584,22 @@ Future<void> showTrackActions(
   // A `#<id>` key with a negative id (a radio) has no row to follow.
   final sub = key.startsWith('#') && isOnlineId(track.id)
       ? null
-      : ref.listenManual(trackStateProvider(key), (_, _) => follow());
+      : container.listen(trackStateProvider(key), (_, _) => follow());
   // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
-  final indexSub = ref.listenManual(downloadIndexProvider, (_, _) => follow());
-  last = build();
-  if (ref.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow()); // the row of an entry saved before the sheet opened
+  final indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
+  last = lazy(build());
+  // The row of an entry saved before the sheet opened, and «Libera spazio» for a file (its check is async).
+  if (track.kind == kMusicKind || ref.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow());
   return showTrackActionGroups(
     context,
     last,
     header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
     refresh: changed,
     regroup: groups,
-  ).whenComplete(() {
+    onActionDone: dropHost,
+  ).then((chosen) {
+    if (chosen == null) dropHost(); // closed without an action
+  }).whenComplete(() {
     closed = true;
     sub?.close();
     indexSub.close();
@@ -556,13 +622,14 @@ Future<void> downloadOnline(
 }
 
 /// Shows [groups] as an action sheet; the chosen action runs once it is closed.
-Future<void> showTrackActionGroups(
+Future<TrackAction?> showTrackActionGroups(
   BuildContext context,
   List<TrackActionGroup> groups, {
   Widget? header,
   String? title,
   Listenable? refresh,
   List<TrackActionGroup> Function()? regroup,
+  VoidCallback? onActionDone,
 }) {
   List<List<CcAction<TrackAction>>> rows(List<TrackActionGroup> gs) => [
     for (final g in gs)
@@ -573,7 +640,13 @@ Future<void> showTrackActionGroups(
             label: a.label,
             value: a,
             destructive: a.destructive,
-            onTap: () => a.run(),
+            onTap: () async {
+              try {
+                await a.run();
+              } finally {
+                onActionDone?.call();
+              }
+            },
           ),
       ],
   ];
@@ -751,7 +824,7 @@ List<TrackAction> onlineResultActions(
         // A saved stream is no file: only a downloaded one blocks it.
         () => downloadOnline(
           outer,
-          inLibrary: ref.read(downloadIndexProvider).value?.contains(r.id, source: r.source) ?? false,
+          inLibrary: ref.read(trackStateProvider(r.indexKey)) == TrackState.downloaded,
           start: () => ref.read(libraryAdderProvider).download(r),
         ),
       ),

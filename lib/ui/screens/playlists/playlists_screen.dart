@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
+import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/cover_image.dart';
 import '../import/import_flow.dart';
@@ -44,7 +45,10 @@ class PlaylistsScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(playlistsProvider),
         data: (items) => items.isEmpty
             ? EmptyState(icon: Icons.queue_music, message: l.noPlaylists)
-            : ListView.builder(
+            : PositionScroller(
+                itemCount: items.length,
+                builder: (controller) => ListView.builder(
+                controller: controller,
                 padding: EdgeInsets.zero.withDock(context),
                 itemExtent: 64,
                 itemCount: items.length,
@@ -66,6 +70,7 @@ class PlaylistsScreen extends ConsumerWidget {
                     ),
                   );
                 },
+              ),
               ),
       ),
     );

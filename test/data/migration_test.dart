@@ -1060,4 +1060,27 @@ void main() {
     expect(rows.single.read<String?>('album_browse_id'), 'MPRE1');
     await db.close();
   });
+
+  test('a v22 database gets an empty favorite_collections table, no row changed', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, '
+            'saved INTEGER NOT NULL DEFAULT 0, album_browse_id TEXT)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title, album_key, album_browse_id) VALUES (1, '/a.mp3', 'A', 'k', 'MPRE1')");
+          raw.userVersion = 22;
+        },
+      ),
+    );
+    expect(await db.customSelect('SELECT COUNT(*) AS n FROM favorite_collections').map((r) => r.read<int>('n')).getSingle(), 0);
+    final rows = await db.customSelect('SELECT path, title, album_browse_id FROM tracks').get();
+    expect(rows.map((r) => [r.data['path'], r.data['title'], r.data['album_browse_id']]), [
+      ['/a.mp3', 'A', 'MPRE1'],
+    ]);
+    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), kSchemaVersion);
+    await db.close();
+  });
 }

@@ -17,6 +17,7 @@ import '../../widgets/track_row.dart';
 import '../settings/settings_screen.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/async_body.dart';
+import '../../widgets/alpha_scroller.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../theme/tokens.dart';
 
@@ -138,29 +139,33 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               for (var i = 0; i < items.length; i++) {
                 if (items[i] is HistoryEntry) trackIndex[i] = next++;
               }
-              return ListView.builder(
+              return AlphaScroller(
                 controller: _scroll,
-                padding: EdgeInsets.zero.withDock(context),
-                itemCount: items.length,
-                itemExtentBuilder: (i, _) =>
-                    items[i] is HistoryEntry ? extent : _headerExtent,
-                itemBuilder: (_, i) {
-                  final it = items[i];
-                  if (it is DateTime) {
-                    return SectionHeader(_dayLabel(context, it));
-                  }
-                  final e = it as HistoryEntry;
-                  return LiveTrackRow(
-                    track: e.track,
-                    compact: compact,
-                    subtitleSuffix: time.format(e.at),
-                    onTap: () => ctrl.playFromList(
-                      tracks,
-                      trackIndex[i]!,
-                      context: const PlayContext(PlayContextKind.library),
-                    ),
-                  );
-                },
+                itemCount: entries.length,
+                child: ListView.builder(
+                  controller: _scroll,
+                  padding: EdgeInsets.zero.withDock(context),
+                  itemCount: items.length,
+                  itemExtentBuilder: (i, _) =>
+                      items[i] is HistoryEntry ? extent : _headerExtent,
+                  itemBuilder: (_, i) {
+                    final it = items[i];
+                    if (it is DateTime) {
+                      return SectionHeader(_dayLabel(context, it));
+                    }
+                    final e = it as HistoryEntry;
+                    return LiveTrackRow(
+                      track: e.track,
+                      compact: compact,
+                      subtitleSuffix: time.format(e.at),
+                      onTap: () => ctrl.playFromList(
+                        tracks,
+                        trackIndex[i]!,
+                        context: const PlayContext(PlayContextKind.library),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           ),

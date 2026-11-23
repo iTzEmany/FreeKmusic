@@ -145,8 +145,8 @@ class JamMedia {
     final key = jamCacheKey(item);
     final id = int.tryParse(item.ref ?? '');
     if (key != null) {
-      final path = (await _ref().read(downloadIndexProvider.future))
-          .pathForKey(key);
+      final path = await (await _ref().read(downloadIndexProvider.future))
+          .existingPathForKey(key);
       final row =
           await tracks.streamRow(key) ??
           (path == null ? null : await tracks.byPath(path));

@@ -279,6 +279,7 @@
   "shareFirewall": "Windows fragt beim ersten Mal ggf. nach der Firewall-Freigabe.",
   "shareHint": "Im selben WLAN auf dem anderen Gerät „Empfangen“ öffnen und Adresse und PIN eingeben.",
   "shareMenu": "Teilen…",
+  "sendToDeviceMenu": "An ein Gerät senden",
   "shareDeviceName": "Gerätename",
   "sleepTimer": "Schlaftimer",
   "sleepMinutes": "{count} Minuten",

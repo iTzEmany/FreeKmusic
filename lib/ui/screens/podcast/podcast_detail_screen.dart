@@ -154,7 +154,44 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
       ),
       subtitle: podcast.author == null ? null : Text(podcast.author!),
       meta: when,
-      menu: const SpeedButton(),
+      menu: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SpeedButton(minTarget: 48),
+          IconButton(
+            key: const ValueKey('podcast-menu'),
+            tooltip: l.moreActions,
+            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: () async {
+              final v = await showCcActionSheet<_PodcastAction>(
+                context: context,
+                title: podcast.title,
+                groups: [
+                  [
+                    CcAction(
+                      icon: Icons.bookmark_remove_outlined,
+                      label: l.podcastUnfollowLabel(podcast.title),
+                      value: _PodcastAction.unfollow,
+                    ),
+                    CcAction(
+                      icon: Icons.delete_outline_rounded,
+                      label: l.podcastUnsubscribe,
+                      value: _PodcastAction.unsubscribe,
+                      destructive: true,
+                    ),
+                  ],
+                ],
+              );
+              if (v == _PodcastAction.unfollow && context.mounted) {
+                await unfollowPodcast(context, ref, podcast.id);
+              }
+              if (v == _PodcastAction.unsubscribe) {
+                _unsubscribe(podcast, downloadedCount);
+              }
+            },
+          ),
+        ],
+      ),
       barActions: [
         if (_refreshing)
           const Padding(
@@ -172,38 +209,6 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _refresh,
           ),
-        IconButton(
-          key: const ValueKey('podcast-menu'),
-          tooltip: l.moreActions,
-          icon: const Icon(Icons.more_vert_rounded),
-          onPressed: () async {
-            final v = await showCcActionSheet<_PodcastAction>(
-              context: context,
-              title: podcast.title,
-              groups: [
-                [
-                  CcAction(
-                    icon: Icons.bookmark_remove_outlined,
-                    label: l.podcastUnfollowLabel(podcast.title),
-                    value: _PodcastAction.unfollow,
-                  ),
-                  CcAction(
-                    icon: Icons.delete_outline_rounded,
-                    label: l.podcastUnsubscribe,
-                    value: _PodcastAction.unsubscribe,
-                    destructive: true,
-                  ),
-                ],
-              ],
-            );
-            if (v == _PodcastAction.unfollow && context.mounted) {
-              await unfollowPodcast(context, ref, podcast.id);
-            }
-            if (v == _PodcastAction.unsubscribe) {
-              _unsubscribe(podcast, downloadedCount);
-            }
-          },
-        ),
       ],
       slivers: [
         SliverToBoxAdapter(child: _AutoDelete(podcast: podcast)),

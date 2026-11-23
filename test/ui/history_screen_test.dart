@@ -3,6 +3,7 @@ import 'package:codecore/data/repositories/play_history_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/ui/screens/history/history_screen.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
+import 'package:codecore/ui/widgets/alpha_scroller.dart' show alphaScrollerMinItems;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,7 +21,7 @@ void main() {
   late Harness h;
   late List<Track> tracks;
 
-  Future<void> open(WidgetTester tester, {bool withData = true, bool recordHistory = true}) async {
+  Future<void> open(WidgetTester tester, {bool withData = true, bool recordHistory = true, int extra = 0}) async {
     tester.view.physicalSize = const Size(400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -35,6 +36,9 @@ void main() {
         await repo.start(tracks[1].id, _ms(today.subtract(const Duration(hours: 2))));
         await repo.start(tracks[2].id, _ms(today.subtract(const Duration(days: 3, hours: -10))));
         await repo.start(tracks[0].id, _ms(today.subtract(const Duration(days: 3, hours: -9))));
+        for (var i = 0; i < extra; i++) {
+          await repo.start(tracks[0].id, _ms(today.add(Duration(minutes: 10 + i))));
+        }
       });
     }
     await h.store.writeSettings(AppSettings(recordHistory: recordHistory));
@@ -51,6 +55,7 @@ void main() {
     expect(find.text('Song 0'), findsNWidgets(2));
     expect(find.text('Song 1'), findsOneWidget);
     expect(find.text('Song 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('scroller-handle')), findsNothing, reason: 'few entries');
     expect(find.textContaining('00:05'), findsOneWidget);
 
     // Today above yesterday above the older day.
@@ -58,6 +63,12 @@ void main() {
     final yesterday = tester.getTopLeft(find.text('Ieri')).dy;
     expect(today, lessThan(yesterday));
     expect(tester.getTopLeft(find.text('Song 1')).dy, greaterThan(yesterday));
+    await h.dispose(tester);
+  });
+
+  testWidgets('from alphaScrollerMinItems listens on the scroll strip shows', (tester) async {
+    await open(tester, extra: alphaScrollerMinItems);
+    expect(find.byKey(const ValueKey('scroller-handle')), findsOneWidget);
     await h.dispose(tester);
   });
 

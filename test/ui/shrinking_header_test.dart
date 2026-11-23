@@ -135,10 +135,9 @@ void main() {
     expect(taps, ['top']);
   });
 
-  testWidgets('the header has no background and clips what scrolled away', (t) async {
+  testWidgets('the header has no background', (t) async {
     await _open(t);
     final h = find.byType(ShrinkingHeader);
     expect(find.descendant(of: h, matching: find.byType(ColoredBox)), findsNothing);
-    expect(find.descendant(of: h, matching: find.byType(ClipRect)), findsOneWidget);
   });
 }

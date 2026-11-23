@@ -9,6 +9,7 @@ import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/providers/library_add_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/track_deleter_providers.dart';
 import 'package:codecore/providers/track_state_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/online/download_queue.dart' show DownloadItem;
@@ -91,6 +92,20 @@ void main() {
     final report = await (await c.read(freeSpaceServiceProvider.future)).freeSpace([id]);
     expect(report.freedIds, [id]);
     expect(await state(c, key), TrackState.savedStream);
+  });
+
+  test('«Elimina dal dispositivo» forgets the download: the key reads online again', () async {
+    c.listen(trackStateProvider(key), (_, _) {});
+    final id = (await tracks.saveStream(_r))!;
+    await tracks.promoteStreamRow(key, file.path, 1, file);
+    await index.add(_r.id, file.path);
+    c.invalidate(downloadIndexProvider);
+    expect(await state(c, key), TrackState.downloaded);
+
+    final report = await c.read(trackDeleterProvider).deleteTracks([(await tracks.getById(id))!]);
+    expect(report.deleted, hasLength(1));
+    expect(await state(c, key), TrackState.online);
+    expect(index.pathForKey(key), isNull);
   });
 
   test('a row key follows the row; a missing file is not downloaded', () async {

@@ -2011,6 +2011,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// file that is open cannot be deleted.
   Future<void> removeTracks(Set<int> ids) async {
     if (ids.isEmpty) return;
+    online?.unbindRows(ids);
+    if (ids.contains(_shadowId)) _shadowId = null; // its listens would go to a deleted row
     _source = _source?.where((id) => !ids.contains(id)).toList();
     final items = _queue.items;
     final currentGone = _current != null && ids.contains(_current!.id);
@@ -2051,6 +2053,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// downloaded) at the same place of the queue. The entry now playing keeps
   /// streaming. Returns whether anything changed.
   bool replaceQueueId(int oldId, int newId) {
+    // A merged shadow row: its listens count on the kept row.
+    if (_shadowId == oldId) {
+      _shadowId = newId;
+    }
     if (_queue.replaceId(oldId, newId) == 0) return false;
     _queueController.add(null);
     unawaited(_refreshWindow());

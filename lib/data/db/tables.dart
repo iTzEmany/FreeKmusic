@@ -478,6 +478,18 @@ class ArtistAliases extends Table {
   Set<Column> get primaryKey => {aliasId};
 }
 
+/// Albums and playlists the user marked as favourite (schema v23). [key] is the
+/// `albumKey` of an album or the `Playlists.uuid` of a playlist (stable across devices).
+class FavoriteCollections extends Table {
+  /// `album` or `playlist`.
+  TextColumn get kind => text()();
+  TextColumn get key => text()();
+  IntColumn get addedAt => integer().clientDefault(nowMs)();
+
+  @override
+  Set<Column> get primaryKey => {kind, key};
+}
+
 /// Two profiles the user said are different artists (D-414), never proposed
 /// to merge again. [a] < [b] (string order), so a pair has one row.
 class ArtistNotSame extends Table {

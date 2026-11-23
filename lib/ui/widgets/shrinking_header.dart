@@ -22,10 +22,8 @@ class ShrinkingHeaderController {
 ///
 /// A part that must stay on screen goes outside the scroll view, above it.
 class ShrinkingHeader extends SingleChildRenderObjectWidget {
-  /// No background of its own: the app background shows through. The part
-  /// scrolled away is clipped.
-  ShrinkingHeader({super.key, required Widget child, this.controller})
-    : super(child: ClipRect(child: child));
+  /// No background of its own: the app background shows through.
+  const ShrinkingHeader({super.key, required super.child, this.controller});
 
   final ShrinkingHeaderController? controller;
 

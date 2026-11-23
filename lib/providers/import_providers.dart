@@ -87,7 +87,7 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
       }
     },
     pathForVideo: (v) async =>
-        (await ref.read(downloadIndexProvider.future)).pathFor(v.id, source: v.source),
+        (await ref.read(downloadIndexProvider.future)).existingPathFor(v.id, source: v.source),
     applyTags: (trackId, row) async {
       final t = await tracks.getById(trackId);
       if (t == null) return;

@@ -243,7 +243,7 @@ void main() {
     await tester.tap(find.text('Song 1'));
     await settle();
     expect(await queue(), want);
-    await tester.tap(find.widgetWithText(FilledButton, 'Riproduci'));
+    await tester.tap(find.byTooltip('Riproduci'));
     await settle();
     expect(await queue(), want);
     await h.dispose(tester);

@@ -70,3 +70,12 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
 - La lista bianca delle impostazioni (146.6) non deve includere le chiavi `importDownloadToo.*` (restano sul dispositivo, come nel backup).
 
 ## Note di deviazione
+
+## Da sapere sui preferiti di collezione (review di architettura della fase 141)
+- Tombstone solo in `FavoriteCollectionsRepository.remove`/`toggle` e `PlaylistRepository.delete`; mai in `followAlbumKey` (le chiavi degli album dipendono dai tag di ciascun dispositivo).
+- `followAlbumKey` usa `UPDATE OR IGNORE`: se entrambi gli album erano preferiti resta una riga orfana con la chiave vecchia; cancellarla dopo l'update.
+- `_mergeFavoriteCollections` scarta i preferiti di playlist il cui uuid non c'è ancora: applicare prima le playlist, o tenere in attesa quei preferiti.
+- Solo `addedAt`, niente `updatedAt`: «vince il più recente» va fatto confrontando `deletedAt` con `addedAt` (orologi diversi).
+- Chiavi non trasferibili: `unknown|<cartella>` (percorso locale) e chiavi per brano; escluderle o sincronizzare la coppia (artista, album).
+- Preferiti di album spariti restano nel DB (filtrati in lettura) ed escono nel backup: potarli o mostrarli.
+- Confine di fiducia: `FavoriteCollectionData.tryParse` deve limitare la lunghezza della chiave e il numero di voci per la LAN.

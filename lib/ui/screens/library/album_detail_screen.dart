@@ -1,7 +1,6 @@
 import '../../../core/app_log.dart';
 import '../../widgets/cc_sheet.dart';
 import 'package:flutter/material.dart';
-import '../../widgets/keep_offline_action.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
@@ -9,6 +8,7 @@ import '../../../data/repositories/library_queries.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/selection_providers.dart';
+import '../../../providers/favorite_collections_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/player_providers.dart';
@@ -170,6 +170,8 @@ EntranceScope(
               ),
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,
+        downloadTracks: list,
+        scrollerCount: list.length,
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [
           SliverAsyncBody(
@@ -306,6 +308,7 @@ class _AlbumMenu extends ConsumerWidget {
     final l = context.l10n;
     final list = tracks;
     final ctrl = ref.read(playerControllerProvider);
+    final fav = ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: album.albumKey))).value ?? false;
     return IconButton(
       tooltip: l.moreActions,
       icon: const Icon(Icons.more_vert_rounded),
@@ -317,8 +320,12 @@ class _AlbumMenu extends ConsumerWidget {
             [
               CcAction(icon: Icons.queue_music_rounded, label: l.addToQueue, value: _AlbumAction.queue),
               CcAction(icon: Icons.playlist_add_rounded, label: l.addToPlaylist, value: _AlbumAction.playlist),
-              CcAction(icon: Icons.download_for_offline_outlined, label: l.keepOfflineAction, value: _AlbumAction.keepOffline),
-              CcAction(icon: Icons.share_rounded, label: l.shareMenu, value: _AlbumAction.share),
+              CcAction(
+                icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
+                value: _AlbumAction.favorite,
+              ),
+              CcAction(icon: Icons.share_rounded, label: l.sendToDeviceMenu, value: _AlbumAction.share),
               CcAction(icon: Icons.auto_fix_high_rounded, label: l.enrichAlbum, value: _AlbumAction.enrich),
               CcAction(icon: Icons.image_outlined, label: l.coverChange, value: _AlbumAction.cover),
               if (list.any((t) => t.coverSource == 1))
@@ -342,8 +349,8 @@ class _AlbumMenu extends ConsumerWidget {
             if (context.mounted) showQueued(context, (added: added, full: full), wanted: list.length);
           case _AlbumAction.playlist:
             showAddToPlaylistSheet(context, ref, list);
-          case _AlbumAction.keepOffline:
-            await keepOfflineFlow(context, ref, list);
+          case _AlbumAction.favorite:
+            await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
           case _AlbumAction.share:
             DevicesSheet.show(context, trackIds: [for (final t in list) t.id]);
           case _AlbumAction.enrich:
@@ -382,4 +389,4 @@ class _AlbumMenu extends ConsumerWidget {
   }
 }
 
-enum _AlbumAction { queue, playlist, keepOffline, share, enrich, cover, restoreCover, merge }
+enum _AlbumAction { queue, playlist, favorite, share, enrich, cover, restoreCover, merge }

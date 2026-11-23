@@ -243,6 +243,48 @@ void main() {
     expect(handler.currentTrack?.id, ids[0]);
   });
 
+  test('deleting the row an entry is bound to leaves the entry unbound, still in the queue', () async {
+    final id = online.register(result('v1'));
+    online.bindRow(id, ids[1]);
+    await handler.playQueue([ids[0], id], 0);
+    await handler.removeTracks({ids[1]});
+    expect(online[id]?.trackId, isNull);
+    expect(handler.queueIds, [ids[0], id]);
+  });
+
+  test('deleting the shadow row of the playing entry: no listen is counted on the dead id', () async {
+    final id = online.register(result('v1'));
+    preparer.urls['youtube:v1'] = (addr, const {});
+    await handler.playQueue([id], 0);
+    await settle();
+    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    expect(online[id]?.trackId, shadow);
+    backend.stateC.add(BackendState.playing);
+    await settle();
+    await handler.removeTracks({shadow});
+    await TrackRepository(db).deleteTracks([shadow]);
+    expect(online[id]?.trackId, isNull, reason: 'the entry is a stream again');
+    final lines = await timingLines(() => listenTo(100));
+    expect(lines.where((l) => l.contains('registerPlay failed')), isEmpty);
+    expect(await db.select(db.plays).get(), isEmpty);
+  });
+
+  test('after the shadow of the playing entry is merged, the listen counts on the kept row', () async {
+    final id = online.register(result('v1'));
+    preparer.urls['youtube:v1'] = (Uri.parse('https://rr1.googlevideo.com/v1'), const {});
+    await handler.playQueue([id], 0);
+    await settle();
+    backend.stateC.add(BackendState.playing);
+    await settle();
+    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    final kept = ids.first;
+    await TrackRepository(db).mergeStreamRow('youtube:v1', kept);
+    handler.replaceQueueId(shadow, kept);
+    await listenTo(100);
+    await settle();
+    expect([for (final p in await db.select(db.plays).get()) p.trackId], [kept]);
+  });
+
   test('resyncPreparer drops an entry downloaded after it was queued', () async {
     final e = [online.register(result('v1')), online.register(result('v2'))];
     await handler.playQueue([ids[0], ...e], 0);

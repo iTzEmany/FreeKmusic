@@ -117,7 +117,9 @@ void main() {
       final idx = DownloadIndex(file);
       await idx.add('abc', f.path);
       f.deleteSync();
-      expect(idx.contains('abc'), isFalse);
+      // contains() reads memory only (no sync I/O on the UI thread); the disk check is async.
+      expect(await idx.existingPathFor('abc'), isNull);
+      expect(await idx.containsOnDisk('abc'), isFalse);
     });
   });
 }

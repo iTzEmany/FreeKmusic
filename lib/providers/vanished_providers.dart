@@ -21,7 +21,7 @@ final vanishedTracksProvider = Provider<VanishedTracks>((ref) {
   final log = ActivityLogRepository(ref.watch(databaseProvider));
   return VanishedTracks(
     tracks: tracks,
-    hasFile: (key) async => (await ref.read(downloadIndexProvider.future)).pathForKey(key) != null,
+    hasFile: (key) async => await (await ref.read(downloadIndexProvider.future)).existingPathForKey(key) != null,
     search: (row) async {
       // One matcher per search: the library is not consulted, every YouTube Music call is budgeted.
       final matcher = CollectionMatcher(

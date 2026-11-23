@@ -45,3 +45,6 @@ D-698, D-691, D-669, D-662, D-699. Rilievi F-32, F-40 in [`../refactor/grande-re
 - [ ] Rispondere alla proposta di 143.4 (dove vive il Worker) e, dopo 143.6, pubblicare il Worker (`wrangler login` e `wrangler deploy`), poi comunicare l'indirizzo per `lib/core/constants.dart`.
 
 ## Note di deviazione
+
+## Da allineare (review di architettura della fase 141)
+- `demoteToStream` (`track_repository.dart:220`) e `rekeyStream` (`:274`) scartano l'id restituito da `mergeStreamRow`: `_shadowId` e le voci online possono restare legati a una riga cancellata. `replaceQueueId` dell'audio handler chiami da sé `online?.rebindRow(old, new)` (come `removeTracks` con `unbindRows`) e lo si invochi da tutti i percorsi di fusione (oggi sparsi fra handler, `stream_providers.dart:129`, `youtube_providers.dart:255`).
