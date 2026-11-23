@@ -138,7 +138,7 @@ IssueDraft buildIssue({
   bool ok(String body) => fits != null ? fits(t, body) : _url(repo, t, body, kind).length <= maxUrl;
   var desc = description.trim();
   String compose(int? logLines, String note) {
-    final parts = [desc];
+    final parts = ['Tipo: ${kind == IssueKind.bug ? 'Bug' : 'Idea'}', desc];
     if (info != null) parts.add('---\n${info.render(maxLogLines: logLines)}');
     if (note.isNotEmpty) parts.add(note);
     return parts.join('\n\n');

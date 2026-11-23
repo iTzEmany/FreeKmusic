@@ -5465,11 +5465,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportAnonNote =>
-      'Anonymer Versand: Der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.';
+      'Anonymer Versand: Er erstellt sofort ein öffentliches Issue auf GitHub; der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.';
 
   @override
   String reportWhyDisabled(int n) {
     return 'Zum Senden einen Titel und eine Beschreibung mit mindestens $n Zeichen schreiben.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Zum Kopieren einen Titel und eine Beschreibung mit mindestens $n Zeichen schreiben.';
   }
 
   @override

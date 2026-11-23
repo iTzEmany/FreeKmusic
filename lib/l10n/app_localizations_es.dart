@@ -5456,11 +5456,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportAnonNote =>
-      'Envío anónimo: el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.';
+      'Envío anónimo: crea al instante una incidencia pública en GitHub; el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.';
 
   @override
   String reportWhyDisabled(int n) {
     return 'Para enviar, escribe un título y una descripción de al menos $n caracteres.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Para copiar, escribe un título y una descripción de al menos $n caracteres.';
   }
 
   @override

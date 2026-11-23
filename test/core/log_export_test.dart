@@ -15,6 +15,20 @@ void main() {
     expect(redactLog('/Users/marco/x', home: '/nope'), '/Users/<utente>/x');
   });
 
+  test('user names under /media and /run/media disappear', () {
+    expect(r('/run/media/marco/SD/a.mp3'), '/run/media/<utente>/SD/a.mp3');
+    expect(r('/media/marco/SD/a.mp3'), '/media/<utente>/SD/a.mp3');
+  });
+
+  test('bare tokens and removable or app storage paths', () {
+    expect(r('x ghp_abcdefghijklmnopqrstuvwxyz0123456789 y'), 'x *** y');
+    expect(r('t github_pat_11AAAA_bbbbCCCC22 z'), 't *** z');
+    expect(r('retry with Bearer abc.def-123 now'), 'retry with Bearer *** now');
+    expect(r('/sdcard/Music/a.mp3'), '<archivio>/Music/a.mp3');
+    expect(r('/storage/1234-ABCD/Music/a.mp3'), '<archivio>/Music/a.mp3');
+    expect(r('/data/data/com.codecore.player/files/x'), '<archivio>/com.codecore.player/files/x');
+  });
+
   test('IPv4 and IPv6 addresses', () {
     expect(r('offer from 192.168.1.23:8080 ok'), 'offer from <ip>:8080 ok');
     expect(r('fe80::1c2b:3d4e:5f60:7182%wlan0 up'), '<ip> up');

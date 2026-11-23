@@ -2978,9 +2978,17 @@
   "reportLogShortened": "The log was shortened to fit the sending limits.",
   "reportSendRateLimited": "Too many reports lately: try again in an hour, or copy the text.",
   "reportSendUnsure": "No answer: the report may already have arrived. Check on GitHub before trying again, or copy the text.",
-  "reportAnonNote": "Anonymous sending: the intermediary service sees your IP address (GitHub does not), no account needed.",
+  "reportAnonNote": "Anonymous sending: it immediately creates a public issue on GitHub; the intermediary service sees your IP address (GitHub does not), no account needed.",
   "reportWhyDisabled": "To send, write a title and a description of at least {n} characters.",
   "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "To copy, write a title and a description of at least {n} characters.",
+  "@reportWhyDisabledCopy": {
     "placeholders": {
       "n": {
         "type": "int"

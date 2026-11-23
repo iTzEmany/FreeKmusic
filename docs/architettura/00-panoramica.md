@@ -2,7 +2,7 @@
 
 ## Scopo
 
-FreeKmusic (ex Codecore) è un lettore musicale **standalone**: nessun backend, tutto sul dispositivo.
+FreeKmusic (ex Codecore) è un lettore musicale **standalone**: nessun backend, tutto sul dispositivo, salvo i servizi esterni di D-669: il Worker delle segnalazioni (`tools/report-worker/`) e, dalla 145, Pages (dettagli in `online.md`).
 Una sola codebase Flutter/Dart per Android, Windows, Linux (macOS ha un job di release con zip non firmato, D-543; iOS è solo una build di prova in CI, `ci.yml`).
 
 Questo documento dà la visione d'insieme. Le aree hanno un documento ciascuna:
@@ -25,6 +25,7 @@ Dipendenze ammesse: `ui` → `providers` → `services` / `data` → `core`. Mai
 
 | Cartella | Cosa contiene |
 |---|---|
+| `tools/` | Fuori dall'app: `report-worker/` (Cloudflare Worker delle segnalazioni anonime, test con `node --test`) |
 | `lib/core/` | Utilità senza stato di app: `app_log`, `clock` (`nowMs()`, `nowMsOverride`), `constants` (`kEnableYoutube`), `paths`, `platform` (`isAndroid`, `isDesktop`), `storage_volumes` (volumi SD, `effectiveLocation`), `artist_key`, `text_utils`, `memory_budget`, `network_kind`, `system_volume`, `uuid`, `playlist_order` |
 | `lib/data/db/` | drift: `tables.dart`, `app_database.dart` (`kSchemaVersion`, migrazioni) |
 | `lib/data/repositories/` | Query e scritture sul DB (`TrackRepository`, `PlaylistRepository`, ...). Espongono `Stream` drift |

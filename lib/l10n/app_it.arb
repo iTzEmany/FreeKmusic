@@ -3511,9 +3511,17 @@
   "reportLogShortened": "Il log è stato accorciato per stare nei limiti dell'invio.",
   "reportSendRateLimited": "Troppi invii di recente: riprova fra un'ora, oppure copia il testo.",
   "reportSendUnsure": "Nessuna risposta: la segnalazione potrebbe essere già arrivata. Controlla su GitHub prima di riprovare, oppure copia il testo.",
-  "reportAnonNote": "Invio anonimo: il servizio intermedio vede l'indirizzo IP (GitHub no), nessun account richiesto.",
+  "reportAnonNote": "Invio anonimo: crea subito una segnalazione pubblica su GitHub; il servizio intermedio vede l'indirizzo IP (GitHub no), nessun account richiesto.",
   "reportWhyDisabled": "Per inviare scrivi un titolo e una descrizione di almeno {n} caratteri.",
   "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Per copiare scrivi un titolo e una descrizione di almeno {n} caratteri.",
+  "@reportWhyDisabledCopy": {
     "placeholders": {
       "n": {
         "type": "int"

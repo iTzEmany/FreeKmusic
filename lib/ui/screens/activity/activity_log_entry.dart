@@ -507,8 +507,8 @@ class LogDetail extends ConsumerWidget {
               onPressed: () => ShellNav.open<void>(
                 context,
                 ReportIssueScreen(
-                  title: _redact(ref, group.isEmpty ? text.title : l.logDlGroup(group.length)),
-                  details: _redact(ref, [text.detail, ?sources, ?text.tech].where((s) => s.isNotEmpty).join('\n')),
+                  title: redactForReport(ref, group.isEmpty ? text.title : l.logDlGroup(group.length)),
+                  details: redactForReport(ref, [text.detail, ?sources, ?text.tech].where((s) => s.isNotEmpty).join('\n')),
                 ),
               ),
               icon: const Icon(Icons.bug_report_outlined),
@@ -522,5 +522,5 @@ class LogDetail extends ConsumerWidget {
 }
 
 /// Text of an entry for a report, redacted like «Esporta log».
-String _redact(WidgetRef ref, String text) =>
+String redactForReport(WidgetRef ref, String text) =>
     redactLog(text, home: logHome(), deviceName: ref.read(deviceNameProvider));

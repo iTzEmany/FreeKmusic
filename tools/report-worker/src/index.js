@@ -27,8 +27,6 @@ function bucket(ip) {
 }
 
 function rateLimited(ip, now) {
-  if (day.reset <= now) day = { n: 0, reset: now + DAY_MS };
-  if (day.n >= cfg.dailyCap) return true;
   if (hits.size > CLEAN_ABOVE) for (const [k, v] of hits) if (v.reset <= now) hits.delete(k);
   const key = bucket(ip);
   if (!hits.has(key) && hits.size >= MAP_CAP) return true;
@@ -36,9 +34,15 @@ function rateLimited(ip, now) {
   if (e.reset <= now) { e.n = 0; e.reset = now + WINDOW_MS; }
   e.n += 1;
   hits.set(key, e);
-  if (e.n > LIMIT) return true;
-  day.n += 1; // only requests that pass the per-IP limit use the shared cap: one IP cannot burn it for everyone
-  return false;
+  return e.n > LIMIT;
+}
+
+// Shared daily cap, taken just before the GitHub call: invalid or per-IP-refused requests never use it.
+function takeDaily(now) {
+  if (day.reset <= now) day = { n: 0, reset: now + DAY_MS };
+  if (day.n >= cfg.dailyCap) return false;
+  day.n += 1;
+  return true;
 }
 
 // For tests only: module state is shared across requests.
@@ -91,6 +95,7 @@ export default {
       return reply(400, { error: 'invalid fields' });
     }
 
+    if (!takeDaily(Date.now())) return reply(429, { error: 'too many requests' });
     try {
       const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/issues`, {
         method: 'POST',
@@ -112,7 +117,7 @@ export default {
       if (typeof issue?.html_url !== 'string') return reply(502, { error: 'upstream error' });
       return reply(201, { url: issue.html_url });
     } catch {
-      return reply(502, { error: 'upstream error' });
+      return reply(504, { error: 'upstream timeout' }); // no answer from GitHub: the issue may exist
     }
   },
 };

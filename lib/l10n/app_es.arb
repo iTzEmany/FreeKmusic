@@ -2978,9 +2978,17 @@
   "reportLogShortened": "El registro se acortó para ajustarse a los límites de envío.",
   "reportSendRateLimited": "Demasiados envíos recientes: vuelve a intentarlo en una hora o copia el texto.",
   "reportSendUnsure": "Sin respuesta: puede que el informe ya haya llegado. Compruébalo en GitHub antes de volver a intentarlo, o copia el texto.",
-  "reportAnonNote": "Envío anónimo: el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.",
+  "reportAnonNote": "Envío anónimo: crea al instante una incidencia pública en GitHub; el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.",
   "reportWhyDisabled": "Para enviar, escribe un título y una descripción de al menos {n} caracteres.",
   "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Para copiar, escribe un título y una descripción de al menos {n} caracteres.",
+  "@reportWhyDisabledCopy": {
     "placeholders": {
       "n": {
         "type": "int"

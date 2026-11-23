@@ -14,6 +14,13 @@ const _info = TechInfo(
 );
 
 void main() {
+  test('the body starts with the kind, so the service-created issue says it too', () {
+    for (final (k, label) in [(IssueKind.bug, 'Bug'), (IssueKind.idea, 'Idea')]) {
+      final d = buildIssue(repo: 'o/r', kind: k, title: 't', description: 'desc');
+      expect(d.body, startsWith('Tipo: $label\n\ndesc'));
+    }
+  });
+
   test('URL carries encoded title, body and the label of the kind', () {
     final d = buildIssue(
       repo: 'o/r',
@@ -56,7 +63,7 @@ void main() {
       title: 't',
       description: 'd',
     );
-    expect(without.body, 'd');
+    expect(without.body, 'Tipo: Bug\n\nd');
   });
 
   test('log lines are sanitized: only W/E, no user name, no IP, no token', () {
@@ -166,7 +173,7 @@ void main() {
       description: 'd' * 12000,
       fits: (t, b) => fitsReportService(t, b, '1.0.0'),
     );
-    expect(d.body.length, 12000, reason: 'not cut: the service takes it whole');
+    expect(d.body.length, 12000 + 'Tipo: Bug\n\n'.length, reason: 'not cut: the service takes it whole');
     expect(d.logTruncated, isFalse);
   });
 

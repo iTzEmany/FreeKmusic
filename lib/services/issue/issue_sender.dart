@@ -51,6 +51,10 @@ class HttpIssueSender implements IssueSender {
         AppLog.w('report not sent: rate limited');
         return const IssueSendResult(IssueSendStatus.rateLimited);
       }
+      if (r.statusCode == 504) {
+        AppLog.w('report not sent: no answer from GitHub');
+        return const IssueSendResult(IssueSendStatus.unsure);
+      }
       if (r.statusCode != 201) {
         AppLog.w('report not sent: HTTP ${r.statusCode}');
         return const IssueSendResult(IssueSendStatus.rejected);
@@ -65,7 +69,7 @@ class HttpIssueSender implements IssueSender {
       final url = data is Map ? data['url'] : null;
       return IssueSendResult(
         IssueSendStatus.sent,
-        url is String && url.startsWith('https://') ? url : kIssuesListUrl,
+        url is String && url.startsWith('$kIssuesListUrl/') ? url : kIssuesListUrl,
       );
     } on DioException catch (e, st) {
       AppLog.w('report not sent', e, st);

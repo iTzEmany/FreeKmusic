@@ -103,9 +103,9 @@ test('json null, array and number are 400', async () => {
   for (const v of ['null', '[]', '5']) assert.equal((await send(v)).status, 400);
 });
 
-test('fetch that throws, 2xx without html_url, and GitHub error body stay generic 502', async () => {
+test('fetch that throws is 504 (unsure); 2xx without html_url and GitHub error body stay generic 502', async () => {
   globalThis.fetch = async () => { throw new Error('boom'); };
-  assert.equal((await send(ok)).status, 502);
+  assert.equal((await send(ok)).status, 504);
   globalThis.fetch = async () => new Response('{}', { status: 201 });
   assert.equal((await send(ok)).status, 502);
   globalThis.fetch = async () => new Response('SECRET-DETAIL', { status: 500 });
@@ -168,6 +168,12 @@ test('requests refused per IP do not use the daily cap', async () => {
   const addr = ip();
   for (let i = 0; i < 20; i++) await send(ok, { addr }); // 5 pass, 15 refused
   for (let i = 0; i < 95; i++) assert.equal((await send(ok)).status, 201); // the 100th use of the cap
+  assert.equal((await send(ok)).status, 429);
+});
+
+test('invalid requests from many IPs do not use the daily cap', async () => {
+  for (let i = 0; i < 20; i++) for (let j = 0; j < 5; j++) assert.equal((await send({ title: '' })).status, 400);
+  for (let i = 0; i < 100; i++) assert.equal((await send(ok)).status, 201);
   assert.equal((await send(ok)).status, 429);
 });
 

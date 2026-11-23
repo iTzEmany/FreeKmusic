@@ -1,6 +1,6 @@
 # FreeKmusic (Flutter)
 
-Lettore musicale personale, standalone (nessun backend), per **Android, Linux e Windows**.
+Lettore musicale personale, standalone (nessun backend, salvo i servizi esterni di D-669: Worker delle segnalazioni e, dalla 145, Pages), per **Android, Linux e Windows**.
 Italiano, English, Deutsch, Español.
 
 - Piano di lavoro: [`docs/00-INDICE.md`](docs/00-INDICE.md) · fasi chiuse: [`docs/storico/`](docs/storico/README.md)

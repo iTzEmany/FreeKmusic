@@ -5479,11 +5479,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportLogShortened =>
-      'Le journal a été raccourci pour respecter les limites d\'\'envoi.';
+      'Le journal a été raccourci pour respecter les limites d’envoi.';
 
   @override
   String get reportSendRateLimited =>
-      'Trop d\'\'envois récents : réessaie dans une heure, ou copie le texte.';
+      'Trop d’envois récents : réessaie dans une heure, ou copie le texte.';
 
   @override
   String get reportSendUnsure =>
@@ -5491,11 +5491,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportAnonNote =>
-      'Envoi anonyme : le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.';
+      'Envoi anonyme : crée aussitôt un ticket public sur GitHub ; le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.';
 
   @override
   String reportWhyDisabled(int n) {
     return 'Pour envoyer, écrivez un titre et une description d’au moins $n caractères.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Pour copier, écrivez un titre et une description d’au moins $n caractères.';
   }
 
   @override
@@ -6486,7 +6491,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logImportsActionFailed =>
-      'L\'\'opération a échoué sur certaines importations (détails dans le journal)';
+      'L’opération a échoué sur certaines importations (détails dans le journal)';
 
   @override
   String get logCancelAllTitle => 'Annuler toutes les importations ?';

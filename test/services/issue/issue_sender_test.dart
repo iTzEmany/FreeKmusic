@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:codecore/core/app_info.dart' show kReleaseRepo;
 import 'package:codecore/services/issue/issue_sender.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Adapter implements HttpClientAdapter {
-  _Adapter({this.status = 201, this.body = '{"url":"https://github.com/o/r/issues/7"}', this.error});
+  _Adapter({this.status = 201, this.body = '{"url":"https://github.com/$kReleaseRepo/issues/7"}', this.error});
   final int status;
   final String body;
   final DioException? error;
@@ -39,7 +40,7 @@ void main() {
   test('posts the report as JSON and returns the issue address', () async {
     final (r, a) = await _send();
     expect(r.status, IssueSendStatus.sent);
-    expect(r.url, 'https://github.com/o/r/issues/7');
+    expect(r.url, 'https://github.com/$kReleaseRepo/issues/7');
     expect(a.seen!.headers['content-type'], contains('application/json'));
     expect(a.seen!.data, {'title': 't', 'body': 'b', 'version': '1.0'});
   });
@@ -50,6 +51,9 @@ void main() {
       expect(r.status, IssueSendStatus.sent, reason: body);
       expect(r.url, kIssuesListUrl, reason: body);
     }
+    // Only an issue link of this repository is shown to the user.
+    final (r, _) = await _send(adapter: _Adapter(body: '{"url":"https://evil.test/x"}'));
+    expect(r.url, kIssuesListUrl);
   });
 
   test('429 is rate limited, other answers are rejected', () async {
@@ -61,6 +65,10 @@ void main() {
   test('a network error is unsure (the issue may exist)', () async {
     final e = DioException(requestOptions: RequestOptions(), type: DioExceptionType.receiveTimeout);
     expect((await _send(adapter: _Adapter(error: e))).$1.status, IssueSendStatus.unsure);
+  });
+
+  test('504 (the service had no answer from GitHub) is unsure', () async {
+    expect((await _send(adapter: _Adapter(status: 504))).$1.status, IssueSendStatus.unsure);
   });
 
   test('an empty endpoint sends nothing', () async {

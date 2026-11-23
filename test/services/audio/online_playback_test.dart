@@ -329,6 +329,18 @@ void main() {
     expect([for (final p in await db.select(db.plays).get()) p.trackId], [ids[1]]);
   });
 
+  test('merging the library track now playing tells the listeners the new id', () async {
+    await handler.playQueue([ids[0]], 0);
+    await settle();
+    final seen = <int?>[];
+    final sub = handler.currentTrackStream.listen((t) => seen.add(t?.id));
+    handler.replaceQueueId(ids[0], ids[1]);
+    await settle();
+    await sub.cancel();
+    expect(seen, [ids[1]]);
+    expect(handler.mediaItem.value?.id, '${ids[1]}');
+  });
+
   test('resyncPreparer drops an entry downloaded after it was queued', () async {
     final e = [online.register(result('v1')), online.register(result('v2'))];
     await handler.playQueue([ids[0], ...e], 0);

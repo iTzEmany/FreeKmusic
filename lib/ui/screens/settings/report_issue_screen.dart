@@ -160,6 +160,7 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
                 decoration: InputDecoration(
                   labelText: l.reportDescLabel,
                   helperText: l.reportDescHelper(kIssueMinDescription),
+                  helperMaxLines: 2,
                   alignLabelWithHint: true,
                   border: const OutlineInputBorder(),
                 ),
@@ -219,7 +220,7 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: CcDims.gap8),
                     child: Text(
-                      l.reportWhyDisabled(kIssueMinDescription),
+                      (canSend ? l.reportWhyDisabled : l.reportWhyDisabledCopy)(kIssueMinDescription),
                       key: const ValueKey('report-why-disabled'),
                       style: small,
                     ),

@@ -17,13 +17,15 @@ final _secretParam = RegExp(
 final _authHeader = RegExp(
     r'''(authorization["']?\s*[:=]\s*)(?:(?:bearer|basic)\s+)?[^\s,;"']+''',
     caseSensitive: false);
-final _androidPath = RegExp(r'/(?:storage/emulated|data/user)/\d+');
+final _androidPath = RegExp(r'/(?:storage/(?:emulated/\d+|[\w-]+)|data/user/\d+|data/data|sdcard)');
+// Tokens outside any header or parameter (GitHub tokens, `Bearer x`).
+final _bareToken = RegExp(r'\b(?:gh[pousr]_\w{20,}|github_pat_\w{10,})|(?<=Bearer )[\w.~+/=-]+', caseSensitive: false);
 final _secretJson = RegExp(
     r'''("(?:[\w-]*token|pin|sig|signature|key|password|authorization)"\s*:\s*)"[^"]*"''',
     caseSensitive: false);
 final _jamHeader =
     RegExp(r'''(x-jam-file["']?\s*[:=]\s*)[^\s,;"']+''', caseSensitive: false);
-final _posixUser = RegExp(r'(/(?:home|Users)/)[^/\s]+');
+final _posixUser = RegExp(r'(/(?:home|Users|media|run/media)/)[^/\s]+');
 final _winUser = RegExp(r'([A-Za-z]:[\\/]+Users[\\/]+)[^\\/\s]+');
 
 /// The home folder for [redactLog] (empty when the platform has none).
@@ -41,6 +43,7 @@ String redactLog(String text, {required String home, String? deviceName}) {
   s = s.replaceAllMapped(_posixUser, (m) => '${m[1]}<utente>');
   s = s.replaceAllMapped(_winUser, (m) => '${m[1]}<utente>');
   s = s.replaceAll(_androidPath, '<archivio>');
+  s = s.replaceAll(_bareToken, '***');
   s = s.replaceAllMapped(_authHeader, (m) => '${m[1]}***');
   s = s.replaceAllMapped(_secretParam, (m) => '${m[1]}=***');
   s = s.replaceAllMapped(_secretJson, (m) => '${m[1]}"***"');

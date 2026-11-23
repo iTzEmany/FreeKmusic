@@ -2978,9 +2978,17 @@
   "reportLogShortened": "Das Protokoll wurde gekürzt, damit es in die Sendegrenzen passt.",
   "reportSendRateLimited": "Zu viele Meldungen in letzter Zeit: Versuche es in einer Stunde erneut oder kopiere den Text.",
   "reportSendUnsure": "Keine Antwort: Die Meldung könnte schon angekommen sein. Prüfe auf GitHub, bevor du es erneut versuchst, oder kopiere den Text.",
-  "reportAnonNote": "Anonymer Versand: Der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.",
+  "reportAnonNote": "Anonymer Versand: Er erstellt sofort ein öffentliches Issue auf GitHub; der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.",
   "reportWhyDisabled": "Zum Senden einen Titel und eine Beschreibung mit mindestens {n} Zeichen schreiben.",
   "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Zum Kopieren einen Titel und eine Beschreibung mit mindestens {n} Zeichen schreiben.",
+  "@reportWhyDisabledCopy": {
     "placeholders": {
       "n": {
         "type": "int"

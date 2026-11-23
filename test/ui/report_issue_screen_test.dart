@@ -111,7 +111,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('report-copy')));
     await tester.pump();
-    expect(clip, startsWith('Si ferma\n\nLa musica si ferma'));
+    expect(clip, startsWith('Si ferma\n\nTipo: Bug\n\nLa musica si ferma'));
     expect(clip, contains('Mi A3'));
 
     await tester.tap(find.byKey(const ValueKey('report-attach')));
@@ -199,7 +199,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('report-send')));
     await tester.pump();
     await tester.pump();
-    expect(sender.sent.single, startsWith('Si ferma|La musica'));
+    expect(sender.sent.single, startsWith('Si ferma|Tipo: Bug\n\nLa musica'));
     expect(find.text('https://github.com/o/r/issues/7'), findsOneWidget);
     expect(find.byKey(const ValueKey('report-copy')), findsNothing);
     await h.dispose(tester);

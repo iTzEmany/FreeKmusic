@@ -3199,9 +3199,17 @@
   "reportLogShortened": "Le journal a été raccourci pour respecter les limites d’envoi.",
   "reportSendRateLimited": "Trop d’envois récents : réessaie dans une heure, ou copie le texte.",
   "reportSendUnsure": "Pas de réponse : le signalement est peut-être déjà arrivé. Vérifie sur GitHub avant de réessayer, ou copie le texte.",
-  "reportAnonNote": "Envoi anonyme : le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.",
+  "reportAnonNote": "Envoi anonyme : crée aussitôt un ticket public sur GitHub ; le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.",
   "reportWhyDisabled": "Pour envoyer, écrivez un titre et une description d’au moins {n} caractères.",
   "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Pour copier, écrivez un titre et une description d’au moins {n} caractères.",
+  "@reportWhyDisabledCopy": {
     "placeholders": {
       "n": {
         "type": "int"

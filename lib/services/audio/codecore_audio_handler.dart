@@ -2062,7 +2062,11 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     // Only a library row (id > 0) is merged under the playing track; an online entry keeps streaming under its id.
     final merged = oldId > 0;
     final cur = _current;
-    if (merged && cur != null && cur.id == oldId) _current = cur.copyWith(id: newId); // the listen counts on the kept row
+    if (merged && cur != null && cur.id == oldId) {
+      _current = cur.copyWith(id: newId); // the listen counts on the kept row
+      _trackController.add(_current);
+      mediaItem.add(_toMediaItem(_current!));
+    }
     if (_queue.replaceId(oldId, newId, includeCurrent: merged) == 0) return false;
     _queueController.add(null);
     unawaited(_refreshWindow());

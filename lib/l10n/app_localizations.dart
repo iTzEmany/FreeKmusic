@@ -8442,7 +8442,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportAnonNote.
   ///
   /// In it, this message translates to:
-  /// **'Invio anonimo: il servizio intermedio vede l\'indirizzo IP (GitHub no), nessun account richiesto.'**
+  /// **'Invio anonimo: crea subito una segnalazione pubblica su GitHub; il servizio intermedio vede l\'indirizzo IP (GitHub no), nessun account richiesto.'**
   String get reportAnonNote;
 
   /// No description provided for @reportWhyDisabled.
@@ -8450,6 +8450,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Per inviare scrivi un titolo e una descrizione di almeno {n} caratteri.'**
   String reportWhyDisabled(int n);
+
+  /// No description provided for @reportWhyDisabledCopy.
+  ///
+  /// In it, this message translates to:
+  /// **'Per copiare scrivi un titolo e una descrizione di almeno {n} caratteri.'**
+  String reportWhyDisabledCopy(int n);
 
   /// No description provided for @reportNoLog.
   ///
