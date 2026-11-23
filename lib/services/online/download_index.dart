@@ -75,15 +75,17 @@ class DownloadIndex {
   }
 
   /// Drops the entries whose file is gone (only where the folder is still there: an unplugged card
-  /// must not wipe the index). Without this, a user's own file later put at the same path would look
+  /// must not wipe the index; a folder removed with its last file is covered by [removeByPath]). Without this, a user's own file later put at the same path would look
   /// like the download.
   Future<void> pruneGone() async {
-    final gone = <String>[
+    final gone = <MapEntry<String, String>>[
       for (final e in _map.entries.toList())
-        if (!await File(e.value).exists() && await Directory(p.dirname(e.value)).exists()) e.key,
+        if (!await File(e.value).exists() && await Directory(p.dirname(e.value)).exists()) e,
     ];
-    if (gone.isEmpty) return;
-    gone.forEach(_forget);
+    // A download that landed meanwhile at the same key keeps its entry.
+    final still = [for (final e in gone) if (_map[e.key] == e.value) e.key];
+    if (still.isEmpty) return;
+    still.forEach(_forget);
     await _persist();
   }
 

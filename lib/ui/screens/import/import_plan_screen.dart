@@ -5,7 +5,7 @@ import '../../../data/db/app_database.dart';
 import '../../../data/repositories/import_repository.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/import_providers.dart';
-import '../../../providers/youtube_providers.dart';
+import '../../../providers/track_state_providers.dart' show TrackState, trackStateProvider;
 import '../../../services/import/import_candidate.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../theme/tokens.dart';
@@ -148,7 +148,7 @@ class _PlanTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
-    final known = ref.watch(downloadIndexProvider).value;
+    bool known(ImportCandidate c) => ref.watch(trackStateProvider(downloadIndexKey(c.source, c.id))) == TrackState.downloaded;
     final svc = ref.read(playlistImportServiceProvider);
     final candidates = decodeCandidates(it.candidates);
     final chosen =
@@ -165,9 +165,7 @@ class _PlanTile extends ConsumerWidget {
         '${c.source == MediaSource.soundcloud ? '${l.searchSourceSoundcloud}, ' : ''}'
         '${c.channel}, ${formatDuration((c.durationSec ?? 0) * 1000)}'
         '${diffOf(c)}, ${(c.score * 100).round()}%';
-    final alreadyHere =
-        chosen != null &&
-        known?.pathFor(chosen.id, source: chosen.source) != null;
+    final alreadyHere = chosen != null && known(chosen);
     return ExpansionTile(
       leading: Semantics(
         label: '${it.title}, ${it.artistList.join(', ')}',
@@ -216,7 +214,7 @@ class _PlanTile extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(
-                    '${line(c)}${known?.pathFor(c.id, source: c.source) != null ? ', ${l.csvImportPlanKnown}' : ''}',
+                    '${line(c)}${known(c) ? ', ${l.csvImportPlanKnown}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

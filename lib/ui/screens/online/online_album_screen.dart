@@ -9,7 +9,7 @@ import '../../../providers/selection_providers.dart';
 import '../../../providers/import_providers.dart';
 import '../../../providers/library_overlap_providers.dart';
 import '../../../providers/library_add_providers.dart';
-import '../../../providers/youtube_providers.dart';
+import '../../../providers/track_state_providers.dart' show TrackState, trackStateProvider;
 import '../../../providers/ytm_catalog_providers.dart';
 import '../../../services/import/import_options.dart';
 import '../../../services/import/playlist_import_service.dart' show ytmAlbumSourceKind;
@@ -46,10 +46,9 @@ class OnlineAlbumScreen extends ConsumerWidget {
 
   Future<void> _downloadAlbum(BuildContext context, WidgetRef ref, YtmAlbum album) async {
     final l = context.l10n;
-    final index = ref.read(downloadIndexProvider).value;
     // What the import links instead of downloading: the songs it already has.
     final plan = albumDownloadPlan(
-        album, (r) => index?.contains(r.id, source: r.source) ?? false);
+        album, (r) => ref.read(trackStateProvider(r.indexKey)) == TrackState.downloaded);
     if (plan.tracks.isEmpty) return;
     final body = [
       l.ytmAlbumConfirmBody(plan.tracks.length, l.durationMinutes(plan.duration.inMinutes),

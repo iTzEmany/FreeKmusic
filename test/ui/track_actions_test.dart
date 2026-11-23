@@ -581,6 +581,23 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('«Elimina dal dispositivo» still deletes after the row that opened the menu is gone', (tester) async {
+    final opener = ValueNotifier(true);
+    final h = await openSheet(tester, (t) => t, opener: opener);
+    opener.value = false; // the row is unmounted, the sheet stays
+    await tester.pump();
+    await tester.ensureVisible(find.text('Elimina dal dispositivo'));
+    await tester.pump();
+    await tester.tap(find.text('Elimina dal dispositivo'));
+    await _settle(tester);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Elimina')));
+    await _settle(tester);
+    await _settle(tester);
+    expect(await tester.runAsync(() => h.db.select(h.db.tracks).get()), isEmpty);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('«Libera spazio» only for a file the app downloaded (it is in the download index)', (tester) async {
     final dir = Directory.systemTemp.createTempSync('dl_idx');
     addTearDown(() => dir.deleteSync(recursive: true));

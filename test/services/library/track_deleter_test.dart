@@ -158,7 +158,7 @@ void main() {
       tracks: repo,
       removeFromQueue: (_) async {},
       deleter: (_) async => throw const FileSystemException('denied'),
-      onDeleted: () => calls++,
+      onDeleted: (_) async => calls++,
     );
     final stuck = await track('stuck.mp3');
     await d().deleteTracks([stuck]);

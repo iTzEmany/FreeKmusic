@@ -2012,6 +2012,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> removeTracks(Set<int> ids) async {
     if (ids.isEmpty) return;
     online?.unbindRows(ids);
+    if (ids.contains(_shadowId)) _shadowId = null; // its listens would go to a deleted row
     _source = _source?.where((id) => !ids.contains(id)).toList();
     final items = _queue.items;
     final currentGone = _current != null && ids.contains(_current!.id);

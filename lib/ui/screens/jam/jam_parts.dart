@@ -9,11 +9,12 @@ import '../../../providers/jam_providers.dart' show jamProvider, jamTrackCoverPr
 import '../../../providers/library_providers.dart' show artistsProvider;
 import '../../../providers/share_hub.dart';
 import '../../../providers/library_add_providers.dart' show libraryAdderProvider;
+import '../../../providers/track_state_providers.dart' show TrackState, trackStateProvider;
 import '../../../providers/youtube_providers.dart' show downloadIndexProvider;
 import '../../../services/jam/jam_models.dart';
 import '../../../services/jam/jam_online_adder.dart' show jamYtResult;
 import '../../../services/online/artist_link_resolver.dart';
-import '../../../services/online/youtube_service.dart' show smallVideoThumbnail;
+import '../../../services/online/youtube_service.dart' show MediaSource, downloadIndexKey, smallVideoThumbnail;
 import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
@@ -153,7 +154,7 @@ class JamQueueRow extends ConsumerWidget {
   /// The ⋮ sheet; «Scarica» (as the player's) follows the download index while open (D-181).
   void _openMenu(BuildContext context, WidgetRef ref, List<ArtistName> artists) {
     final l = context.l10n;
-    bool inLibrary() => ref.read(downloadIndexProvider).value?.contains(item.videoId!) ?? false;
+    bool inLibrary() => ref.read(trackStateProvider(downloadIndexKey(MediaSource.youtube, item.videoId!))) == TrackState.downloaded;
     final canSave = ref.read(jamSaverProvider).canSave(item, ref.read(shareHubProvider.notifier).deviceId ?? '');
     List<List<CcAction<String>>> build() => [
           [

@@ -90,6 +90,7 @@ final ytDlpStatusProvider = FutureProvider<YtDlpStatus>((ref) async {
 final downloadIndexProvider = FutureProvider<DownloadIndex>((ref) async {
   final idx = DownloadIndex(DownloadIndex.defaultFile(await appSupportDir()));
   await idx.load();
+  await idx.pruneGone(); // files deleted outside the app
   return idx;
 });
 

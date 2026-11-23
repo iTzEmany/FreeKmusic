@@ -100,6 +100,13 @@ class OnlineEntries {
     _bound.add(id);
   }
 
+  /// The row [from] was merged into [to]: its entries follow.
+  void rebindRow(int from, int to) {
+    for (final e in _entries.values.toList()) {
+      if (e.trackId == from) bindRow(e.id, to);
+    }
+  }
+
   /// The rows [ids] were deleted: entries bound to them are streams again, not tied to a dead id.
   void unbindRows(Set<int> ids) {
     for (final e in _entries.values.toList()) {
