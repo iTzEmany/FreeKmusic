@@ -32,6 +32,7 @@ Come è fatta la UI (`lib/ui/`): la shell con le schede e il dock, i token di de
 | `showMsg`, `showMsgOn`, `showQueued`, `CcSnackContent` | `show_msg.dart` | Ogni avviso. |
 | `showCcSheet`, `showCcActionSheet`, `CcAction` | `cc_sheet.dart` | Ogni foglio e ogni menu. |
 | `showConfirm`, `promptName` | `confirm.dart`, `prompt_name.dart` | Dialoghi di conferma e «scegli un nome». |
+| `DownloadBar` | `download_bar.dart` | L'unica barra di avanzamento di un download (`entryKey` = `<source>:<id>`): avanzamento, poi «Scaricato» per qualche secondo (D-697), poi il pulsante `idle`. |
 | `CcAppBar` | `cc_app_bar.dart` | Barra della pagina (l'unico `AppBar(`). |
 | `AsyncBody<T>`, `RowsLoading`, `LoadError` | `async_body.dart`, `error_state.dart` | Caricamento, vuoto, errore, dati. |
 | `Skeleton`, `EmptyState`, `ErrorState` | `skeleton.dart`, `empty_state.dart`, `error_state.dart` | Segnaposto e stati. |
