@@ -26,6 +26,7 @@ class _Player implements PlayerController {
   bool? shuffle;
   int? index;
   Object? listKey;
+  PlayContext? context;
 
   @override
   Future<void> playMixed(
@@ -36,6 +37,7 @@ class _Player implements PlayerController {
     Object? listKey,
   }) async {
     this.listKey = listKey;
+    this.context = context;
     this.items = items;
     this.shuffle = shuffle;
     this.index = index;
@@ -263,6 +265,7 @@ void main() {
     expect(player.items, hasLength(DaylistBuilder.size));
     // The page's mode decides (D-534), not the Play itself.
     expect(player.listKey, daylistListKey);
+    expect(player.context?.kind, PlayContextKind.daylist);
     expect(player.shuffle, isNull);
     final online = player.items!.where((i) => i.online != null);
     expect(online, hasLength(15));

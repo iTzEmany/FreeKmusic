@@ -391,7 +391,7 @@ class DaylistActions {
         .playMixed(
           items,
           index: startIndex == null ? null : at.clamp(0, items.length - 1),
-          context: const PlayContext(PlayContextKind.library),
+          context: const PlayContext(PlayContextKind.daylist),
           shuffle: startIndex == null ? null : false,
           listKey: daylistListKey,
         );

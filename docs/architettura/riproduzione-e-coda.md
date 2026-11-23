@@ -45,7 +45,7 @@ Piattaforme: Android usa ExoPlayer via just_audio; Linux e Windows usano libmpv 
 7. **Ripristino a freddo** (`restore` senza un play in attesa, `cold`): un brano che non si carica (file illeggibile, riga sparita dal DB, stream senza rete) resta selezionato, va solo nel log, nessun salto né messaggio; lo stato torna `idle`. Un ▶ premuto durante l'attesa toglie `cold` (D-679).
 8. **Permesso audio revocato** (Android, D-678): quando un file locale non si apre l'handler chiede la callback `audioPermission` (da `main.dart`, `hasAudioPermission`); se manca, coda ferma sul brano, un solo `PlaybackFailure(permissionDenied)` fino al prossimo caricamento riuscito. La UI legge `audioPermissionProvider` (`providers/permission_providers.dart`, riletto a ogni ritorno nell'app): banner in home, voce in Impostazioni › Libreria, snackbar con «Concedi» (`grant()`: richiesta, o impostazioni di sistema se negato per sempre).
 
-`PlayContextKind {album, artist, playlist, favorites, library, search, podcast, radio}` è solo in aggiunta: l'indice è salvato.
+`PlayContextKind {album, artist, playlist, favorites, library, search, podcast, radio, daylist}` è solo in aggiunta: l'indice è salvato.
 
 ### `PlayQueue` e blocco utente
 
@@ -164,6 +164,7 @@ Gli episodi sono `kind = 1`. Soglie: `kEpisodeEdge` 10 s, `kEpisodeHeardAt` 0.95
 
 ## Trappole
 
+- **`PlayContextKind` solo in coda (fase 142)**: l'indice è salvato (prefs `lastContextKind`, `plays.context`); un valore sconosciuto (da una versione più nuova) si legge come `library` (`playContextOf`). La daylist suona con `daylist`.
 - **Limite errori e ripristino a freddo (fase 135)**: il limite è `>=` (prima `>` lasciava 4 errori); ogni ramo che salta o mostra un errore in `_loadCurrent` (anche `_skipOffline`, `_jumpToAvailable`, `notInLibrary`) deve rispettare `cold`, e ogni ramo che esce senza caricare deve ripubblicare `idle` (altrimenti lo spinner resta acceso).
 - **Promemoria karaoke**: `karaokeInUseProvider` riceve un Set nuovo a ogni brano; chi lo ascolta per un timer usa `.select((s) => s.isEmpty)` (fase 135).
 

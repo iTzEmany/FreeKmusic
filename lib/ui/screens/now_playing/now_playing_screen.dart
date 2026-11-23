@@ -60,6 +60,7 @@ String? playContextName(AppLocalizations l, PlayContext? c) {
     PlayContextKind.favorites => l.navFavorites,
     PlayContextKind.library => l.allTracks,
     PlayContextKind.search => l.playContextSearch,
+    PlayContextKind.daylist => l.daylistTitle,
   };
 }
 
