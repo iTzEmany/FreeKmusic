@@ -210,6 +210,11 @@ Future<UserData> collectUserData(
         for (final e in (await ArtistInfoRepository(db).images()).entries)
           ArtistImageData(artistKey: e.key, coverKey: e.value),
       ],
+      favoriteCollections: [
+        for (final r in await (db.select(db.favoriteCollections)
+              ..orderBy([(r) => OrderingTerm.asc(r.kind), (r) => OrderingTerm.asc(r.key)])).get())
+          FavoriteCollectionData(kind: r.kind, key: r.key, addedAt: r.addedAt),
+      ],
       artistNotSame: [
         for (final r in await (db.select(db.artistNotSame)..orderBy([(r) => OrderingTerm.asc(r.a), (r) => OrderingTerm.asc(r.b)])).get())
           [r.a, r.b],

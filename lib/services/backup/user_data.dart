@@ -464,6 +464,22 @@ class ArtistImageData {
       : null;
 }
 
+/// A favourite album (`kind` 'album', [key] = album key) or playlist ('playlist', [key] = playlist uuid).
+class FavoriteCollectionData {
+  const FavoriteCollectionData({required this.kind, required this.key, this.addedAt});
+
+  final String kind, key;
+  final int? addedAt;
+
+  Map<String, Object?> toJson() => _nonNull({'kind': kind, 'key': key, 'addedAt': addedAt});
+
+  /// Null for a malformed entry or an unknown kind: it is dropped, the backup still reads.
+  static FavoriteCollectionData? tryParse(Object? j) =>
+      j is Map && (j['kind'] == 'album' || j['kind'] == 'playlist') && j['key'] is String && (j['key'] as String).isNotEmpty
+          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: (j['addedAt'] as num?)?.toInt())
+          : null;
+}
+
 class UserData {
   const UserData({
     required this.createdAt,
@@ -476,6 +492,7 @@ class UserData {
     this.artistAliases = const [],
     this.artistNotSame = const [],
     this.artistImages = const [],
+    this.favoriteCollections = const [],
   });
 
   final int createdAt;
@@ -500,6 +517,9 @@ class UserData {
   /// Artist images picked by hand (absent in older backups = none).
   final List<ArtistImageData> artistImages;
 
+  /// Favourite albums and playlists (absent in older backups = none).
+  final List<FavoriteCollectionData> favoriteCollections;
+
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -513,6 +533,7 @@ class UserData {
         if (artistAliases.isNotEmpty) 'artistAliases': [for (final a in artistAliases) a.toJson()],
         if (artistNotSame.isNotEmpty) 'artistNotSame': artistNotSame,
         if (artistImages.isNotEmpty) 'artistImages': [for (final a in artistImages) a.toJson()],
+        if (favoriteCollections.isNotEmpty) 'favoriteCollections': [for (final f in favoriteCollections) f.toJson()],
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -557,6 +578,9 @@ class UserData {
       ],
       artistImages: [
         for (final a in (j['artistImages'] as List? ?? const [])) ?ArtistImageData.tryParse(a),
+      ],
+      favoriteCollections: [
+        for (final f in (j['favoriteCollections'] as List? ?? const [])) ?FavoriteCollectionData.tryParse(f),
       ],
     );
   }

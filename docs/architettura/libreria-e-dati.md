@@ -31,7 +31,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 
 - `AppDatabase.production()` apre `driftDatabase(name: 'codecore')`. `beforeOpen` imposta `PRAGMA foreign_keys = ON`.
 - Tabelle registrate: `Tracks, Folders, Playlists, PlaylistTracks, PlaylistImports, PlaylistImportItems, Plays, SmartPlaylists, UserTags, TrackTags, Podcasts, PodcastEpisodes, ArtistInfos, RadioStations, FollowedArtists, ArtistReleases, ArtistLookups, TrackCredits, TrackEnrich, ActivityLogRows, TrackGenres, ArtistCountries, ArtistAliases, ArtistNotSame`.
-- `kSchemaVersion = 22`. `onUpgrade` ha un `if (from < N)` per ogni salto:
+- `kSchemaVersion = 23`. `onUpgrade` ha un `if (from < N)` per ogni salto:
 
 | v | Cambio |
 |---|---|
@@ -55,7 +55,9 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | 20 | `tracks.saved` (D-607) |
 | 21 | `track_enrich.instrumental` nullabile (D-675, D-684; non entra nel backup) |
 | 22 | `tracks.albumBrowseId` (pagina dell'album online di un brano in streaming; entra nel backup dei brani salvati, validato in lettura; D-675) |
+| 23 | `FavoriteCollections` (`kind` album o playlist, `key`, `addedAt`; chiave primaria `(kind, key)`): preferiti di album e playlist (fase 141). Chiave dell'album = `albumKey`, della playlist = `Playlists.uuid` (non l'id). Il passo crea solo la tabella, nessuna riga cambia |
 
+- Repository: `favorite_collections_repository.dart`. Cancellare una playlist toglie il suo preferito (stessa transazione); un album che sparisce si filtra in lettura, la riga resta.
 - I passi 18 e 19 sono ripetibili: controllano `PRAGMA table_info('podcasts')` prima di `addColumn`; i passi 20 e 22 fanno lo stesso con `PRAGMA table_info('tracks')` (D-607).
 - Dopo ogni modifica alle tabelle: `dart run build_runner build --delete-conflicting-outputs`.
 

@@ -248,6 +248,12 @@ class TrackRepository {
     final shadow = await streamRow(key);
     if (shadow == null || shadow.id == keepId) return null;
     await DuplicateRepository(_db).merge(keepId, [shadow.id]);
+    // The album's YouTube Music id: the kept row's own value wins, the shadow's fills a gap.
+    final id = shadow.albumBrowseId;
+    if (id != null) {
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(keepId) & t.albumBrowseId.isNull()))
+          .write(TracksCompanion(albumBrowseId: Value(id)));
+    }
     await (_db.delete(_db.tracks)..where((t) => t.id.equals(shadow.id))).go();
     return shadow.id;
   }

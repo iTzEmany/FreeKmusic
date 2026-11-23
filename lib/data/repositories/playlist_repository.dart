@@ -57,8 +57,13 @@ class PlaylistRepository {
       (_db.update(_db.playlists)..where((p) => p.id.equals(playlistId)))
           .write(PlaylistsCompanion(updatedAt: Value(nowMs())));
 
-  Future<void> delete(int id) =>
-      (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
+  Future<void> delete(int id) => _db.transaction(() async {
+        final uuid = await uuidOf(id);
+        if (uuid != null) {
+          await (_db.delete(_db.favoriteCollections)..where((r) => r.kind.equals('playlist') & r.key.equals(uuid))).go();
+        }
+        await (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
+      });
 
   /// Ids of the playlists that already hold every one of [trackIds].
   Future<Set<int>> containing(List<int> trackIds) async {

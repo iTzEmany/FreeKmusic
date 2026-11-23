@@ -688,6 +688,31 @@ void main() {
     });
   });
 
+  group('albumBrowseId survives', () {
+    test('mergeStreamRow: the shadow fills a gap, the kept value is not overwritten', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A'), row('/b.mp3', 'B')]);
+      final lib = {for (final t in await db.select(db.tracks).get()) t.title: t.id};
+      await repo.ensureStreamRow(yt('a'));
+      await repo.ensureStreamRow(yt('b'));
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREa' WHERE path = 'stream:youtube:a'");
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREb' WHERE path = 'stream:youtube:b'");
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREmine' WHERE title = 'B'");
+      await repo.mergeStreamRow('youtube:a', lib['A']!);
+      await repo.mergeStreamRow('youtube:b', lib['B']!);
+      expect((await repo.getById(lib['A']!))!.albumBrowseId, 'MPREa');
+      expect((await repo.getById(lib['B']!))!.albumBrowseId, 'MPREmine');
+    });
+
+    test('demoteToStream keeps the row value', () async {
+      final folderId = (await FolderRepository(db).add('/m')).id;
+      await repo.upsertBatch([row('/m/a.mp3', 'A', folderId: folderId)]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREa' WHERE id = $id");
+      await repo.demoteToStream(id, 'youtube:a');
+      expect((await repo.getById(id))!.albumBrowseId, 'MPREa');
+    });
+  });
+
   group('demoteToStream', () {
     test('keeps id, playlist row, plays, favourite and lyrics; sets path, kind and saved', () async {
       final folderId = (await FolderRepository(db).add('/m')).id;

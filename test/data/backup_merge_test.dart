@@ -9,7 +9,9 @@ import 'package:codecore/data/repositories/backup_queries.dart';
 import 'package:codecore/data/repositories/artist_alias_repository.dart';
 import 'package:codecore/data/repositories/artist_info_repository.dart';
 import 'package:codecore/data/repositories/artist_country_repository.dart';
+import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/follow_repository.dart';
+import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
@@ -664,5 +666,49 @@ void main() {
       await mergeUserData(db, d, await PlaylistSyncRepository(db).resolver(), coversDir: covers);
     }
     expect(await repo.images(), {'queen': 'theirs', 'abba': 'other'});
+  });
+
+  group('favourite albums and playlists (v23)', () {
+    test('they survive collect -> json -> merge, without duplicates; a playlist missing here is skipped', () async {
+      final pl = await PlaylistRepository(db).create('Mix');
+      final uuid = (await PlaylistRepository(db).uuidOf(pl))!;
+      final repo = FavoriteCollectionsRepository(db);
+      await repo.add('album', 'k1');
+      await repo.add('album', 'k2');
+      await repo.add('playlist', uuid);
+      final data = UserData.fromJson(jsonDecode(jsonEncode((await collectUserData(db)).toJson())) as Map<String, dynamic>);
+      expect(data.favoriteCollections, hasLength(3));
+      await merge(data);
+      await merge(data);
+      expect((await db.select(db.favoriteCollections).get()).map((r) => '${r.kind}:${r.key}').toSet(),
+          {'album:k1', 'album:k2', 'playlist:$uuid'});
+      await db.delete(db.playlists).go();
+      await db.delete(db.favoriteCollections).go();
+      // The playlist travels with the backup: it comes back under its uuid, so its favourite does too.
+      await merge(data);
+      expect(await db.select(db.favoriteCollections).get(), hasLength(3));
+      await db.delete(db.favoriteCollections).go();
+      await merge(UserData(createdAt: 1, favoriteCollections: [
+        const FavoriteCollectionData(kind: 'album', key: 'k1'),
+        const FavoriteCollectionData(kind: 'playlist', key: 'not-here'),
+      ]));
+      expect((await db.select(db.favoriteCollections).get()).map((r) => r.key), ['k1']);
+    });
+
+    test('a backup without the field reads and merges; a bad entry is dropped', () async {
+      expect(UserData.fromJson({'format': 1, 'createdAt': 1}).favoriteCollections, isEmpty);
+      final d = UserData.fromJson({
+        'format': 1,
+        'favoriteCollections': [
+          {'kind': 'album', 'key': 'k'},
+          {'kind': 'x', 'key': 'k'},
+          {'kind': 'album'},
+          5,
+        ],
+      });
+      expect(d.favoriteCollections.map((f) => f.key), ['k']);
+      await merge(d);
+      expect(await db.select(db.favoriteCollections).get(), hasLength(1));
+    });
   });
 }
