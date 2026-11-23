@@ -59,6 +59,34 @@ void main() {
     expect(albums.firstWhere((a) => a.artist == 'Queen').trackCount, 2);
   });
 
+  test('today: the album page lists only library rows (files and saved streams), never unsaved shadow rows', () async {
+    final repo = TrackRepository(db);
+    const key = 'queen|greatest hits';
+    Future<void> stream(String id, {required bool saved}) async {
+      final rowId = await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: 'stream:youtube:$id',
+            title: 'S$id',
+            albumKey: key,
+            format: 'm4a',
+            sizeBytes: 0,
+            mtimeMs: 0,
+            addedAt: 1,
+            kind: const Value(2),
+            album: const Value('Greatest Hits'),
+            artist: const Value('Queen'),
+          ));
+      if (saved) await repo.setSaved('youtube:$id', true);
+      expect(rowId, isPositive);
+    }
+
+    await stream('saved', saved: true);
+    await stream('listened', saved: false);
+    final tr = await q.watchAlbumTracks(key).first;
+    expect(tr.map((e) => e.path), containsAll(['/1', '/2', 'stream:youtube:saved']));
+    expect(tr.map((e) => e.path), isNot(contains('stream:youtube:listened')));
+    expect(tr, hasLength(3));
+  });
+
   test('artists and album tracks order', () async {
     final artists = await q.watchArtists().first;
     expect(artists.map((a) => a.key), ['a', 'abba', 'b', 'queen']);
