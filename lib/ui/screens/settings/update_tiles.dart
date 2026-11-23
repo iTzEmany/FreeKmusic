@@ -34,14 +34,20 @@ List<Widget> updateTiles(BuildContext context, WidgetRef ref) {
 /// The start-up notice: «Aggiorna» opens the dialog on the release found.
 SnackBar updateSnackBar(BuildContext context, UpdateInfo info, Duration duration) {
   final l = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  void open() {
+    messenger.hideCurrentSnackBar();
+    showDialog<void>(context: context, builder: (_) => UpdateDialog(info: info));
+  }
+
   return SnackBar(
     duration: duration,
     persist: false, // D-541: every snackbar times out
-    content: CcSnackContent(l.updateAvailable(info.version), duration),
-    action: SnackBarAction(
-      label: l.updateDo,
-      onPressed: () => showDialog<void>(context: context, builder: (_) => UpdateDialog(info: info)),
+    content: Semantics(
+      button: true,
+      child: InkWell(onTap: open, child: CcSnackContent(l.updateAvailable(info.version), duration)),
     ),
+    action: SnackBarAction(label: l.updateDo, onPressed: open),
   );
 }
 

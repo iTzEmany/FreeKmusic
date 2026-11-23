@@ -54,8 +54,9 @@ final updateOnStartProvider = FutureProvider<UpdateInfo?>(
     final store = ref.read(settingsStoreProvider);
     final today = _epochDay(DateTime.now());
     if (store.readLastUpdateCheckDay() == today) return null;
-    await store.writeLastUpdateCheckDay(today);
     final r = await checker.check();
+    // A failed or rate-limited check leaves the day alone, so the next start tries again.
+    if (r.status == UpdateStatus.newer || r.status == UpdateStatus.upToDate) await store.writeLastUpdateCheckDay(today);
     return r.status == UpdateStatus.newer ? r.info : null;
   },
   retry: (_, _) => null,

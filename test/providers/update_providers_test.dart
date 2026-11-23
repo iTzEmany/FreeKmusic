@@ -5,8 +5,11 @@ import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/providers/issue_providers.dart' show linkOpenerProvider;
 import 'package:codecore/services/issue/link_opener.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/providers/update_providers.dart';
+import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/update_checker.dart';
 import 'package:codecore/services/update/android_update.dart';
 import 'package:codecore/services/update/desktop_update.dart';
@@ -15,6 +18,19 @@ import 'package:codecore/services/update/update_target.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _NoWeb implements WebClient {
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+class _Checker extends UpdateChecker {
+  _Checker(this.status) : super(_NoWeb(), repo: 'x/y', current: '1.0.0');
+  final UpdateStatus status;
+  @override
+  Future<UpdateResult> check() async => UpdateResult(status);
+}
 
 class _Probe extends NetworkProbe {
   _Probe(this.metered, {this.boom = false});
@@ -407,4 +423,24 @@ void main() {
     gate.complete();
     await run;
   });
+
+  for (final (status, written) in [
+    (UpdateStatus.failed, false),
+    (UpdateStatus.rateLimited, false),
+    (UpdateStatus.upToDate, true),
+    (UpdateStatus.newer, true),
+  ]) {
+    test('start-up check $status: the day is ${written ? '' : 'not '}recorded', () async {
+      SharedPreferences.setMockInitialValues({'checkUpdatesOnStart': true});
+      final store = SettingsStore(await SharedPreferences.getInstance());
+      final c = ProviderContainer(overrides: [
+        settingsStoreProvider.overrideWithValue(store),
+        startupSettledProvider.overrideWith((_) async {}),
+        updateCheckerProvider.overrideWithValue(_Checker(status)),
+      ]);
+      addTearDown(c.dispose);
+      await c.read(updateOnStartProvider.future);
+      expect(store.readLastUpdateCheckDay() != 0, written);
+    });
+  }
 }
