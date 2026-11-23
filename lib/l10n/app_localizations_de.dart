@@ -8173,4 +8173,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Lade herunter… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Dateien auch herunterladen';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Titel werden normalerweise nur zum Streamen gespeichert, ohne Datei. Eingeschaltet werden sie auch auf das Gerät geladen.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'Heruntergeladene Titel landen im Ordner FreeKmusic, innerhalb des hier gewählten Ordners.';
+
+  @override
+  String get albumMissingTitle => 'Weitere Titel des Albums';
+
+  @override
+  String incomingStreams(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Streaming-Titel',
+      one: '1 Streaming-Titel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Titel',
+      one: '1 Titel',
+    );
+    return 'Du bist in einem getakteten Netz. $_temp0, etwa $mb MB: herunterladen?';
+  }
 }

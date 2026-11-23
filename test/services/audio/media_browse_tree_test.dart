@@ -62,15 +62,17 @@ void main() {
     expect(items.first.id, 'track:${ids.first}@playlist:$list');
   });
 
-  test('a playlist with a streamed row counts and lists only the library tracks', () async {
+  test('a playlist with a streamed row counts and lists it too (D-674)', () async {
     await seed(2);
     final ids = [for (final p in ['T0', 'T1']) (await tracks.idForPath('/m/$p.mp3'))!];
     final shadow = await tracks.ensureStreamRow(YtResult(id: 'v1', title: 'S', channel: 'Ch', duration: Duration.zero));
     final list = await playlists.create('Road');
     await playlists.addStreamTracks(list, [ids[0], shadow, ids[1]]);
 
-    expect((await tree.children('playlists')).single.artist, '2');
-    expect((await tree.children('playlist:$list')).map((i) => i.title), ['T0', 'T1']);
+    expect((await tree.children('playlists')).single.artist, '3');
+    final items = await tree.children('playlist:$list');
+    expect(items.map((i) => i.title), ['T0', 'S', 'T1']);
+    expect(items.every((i) => i.playable == true), isTrue);
   });
 
   test('choosing a track of an album queues the album from that track', () async {

@@ -271,7 +271,9 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     _platform.showOffer(
       offerId: o.offerId,
       title: o.trusted ? l.incomingTrustedTitle(o.fromName) : l.incomingTitle(o.fromName),
-      body: l.incomingBody(o.items.length, mb),
+      body: o.items.isEmpty && o.streams.isNotEmpty
+          ? l.incomingStreams(o.streams.length)
+          : l.incomingBody(o.items.length, mb),
       accept: l.accept,
       decline: l.decline,
     );
@@ -562,15 +564,18 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     final saved = <String>[];
     final savedItems = <String, OfferItem>{};
     try {
-      final base = await resolveDownloadFolder(
-        ref.read(folderRepositoryProvider),
-        location: ref.read(settingsProvider).downloadLocation,
-      );
-      if (base == null) {
+      // Only files need a folder: an offer of streams alone saves rows.
+      final base = o.items.isEmpty
+          ? null
+          : await resolveDownloadFolder(
+              ref.read(folderRepositoryProvider),
+              location: ref.read(settingsProvider).downloadLocation,
+            );
+      if (base == null && o.items.isNotEmpty) {
         AppLog.w('offer: no destination folder');
         throw const LanException(LanError.failed);
       }
-      final out = Directory(p.join(base.$1.path, 'Ricevuti'));
+      final out = Directory(p.join(base?.$1.path ?? '', 'Ricevuti'));
       for (final item in o.items) {
         if (cancel.isCancelled) break;
         await for (final e in client.downloadOfferItem(
@@ -590,7 +595,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         o.received++;
         _service?.notify();
       }
-      if (saved.isNotEmpty) {
+      if (saved.isNotEmpty && base != null) {
         await ref
             .read(libraryScannerProvider)
             .scanFiles(base.$2, saved)
@@ -612,6 +617,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
               await ref.read(trackRepositoryProvider).byPath(entry.key);
           if (row != null) afterReceive(ref.read, row.id);
         }
+      }
+      if (o.streams.isNotEmpty && !cancel.isCancelled) {
+        final index = await ref.read(downloadIndexProvider.future);
+        await saveReceivedStreams(
+          ref.read(trackRepositoryProvider),
+          o.streams,
+          hasFile: (r) => index.contains(r.id, source: r.source),
+          credits: ref.read(creditsRepositoryProvider),
+        );
       }
       o.status = o.received == o.items.length
           ? OfferStatus.done

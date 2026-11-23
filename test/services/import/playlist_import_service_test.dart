@@ -17,6 +17,7 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Answers searches from a map; records how many searches were made.
 class FakeYoutube implements YoutubeService {
@@ -134,6 +135,7 @@ void main() {
   late PlaylistImportService service;
   Future<int?> Function(YtResult)? saveNowHook;
   var streamingMode = false;
+  String? existingFile;
   var cancelCalls = 0;
   final coverCalls = <String>[];
   var coverFails = false;
@@ -174,7 +176,7 @@ void main() {
       trackDurationMs: (id) async => (await tracks.getById(id))?.durationMs,
       settled: settled.stream,
       trackIdForPath: tracks.idForPath,
-      pathForVideo: (_) async => null,
+      pathForVideo: (_) async => existingFile,
       applyTags: (id, r) async {
         tagged.add('$id:${r.title}');
         trackNumbers.add(r.trackNumber);
@@ -221,6 +223,7 @@ void main() {
       (await playlists.watchTracks(playlistId).first).map((t) => t.title).toList();
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     db = AppDatabase(NativeDatabase.memory());
     imports = ImportRepository(db);
     playlists = PlaylistRepository(db);
@@ -243,6 +246,7 @@ void main() {
     waits = [];
     saveNowHook = null;
     streamingMode = false;
+    existingFile = null;
     service = build();
   });
   tearDown(() async {
@@ -491,6 +495,20 @@ void main() {
       expect((await imports.get(id))!.state, ImportStatus.running);
     });
 
+    test('«scarica anche» survives the restart and is forgotten when the import is cancelled', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      final id = await cutImport(ImportStatus.running);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('importDownloadToo.$id', true); // what the first run wrote
+      rebuild();
+      await service.recoverAfterRestart();
+      await idle();
+      expect(queued.single.$2, importTag(id, 0), reason: 'downloaded, not saved in streaming');
+      expect(await db.select(db.tracks).get(), isEmpty);
+      await service.cancel(id);
+      expect(prefs.getBool('importDownloadToo.$id'), isNull);
+    });
+
     test('a pause chosen by the user stays paused', () async {
       final id = await cutImport(ImportStatus.paused);
       await service.recoverAfterRestart();
@@ -558,6 +576,40 @@ void main() {
       expect((await imports.item(id, 1))!.trackId, ids[1]);
       expect(tagged, hasLength(2), reason: 'the CSV tags go to the saved row too');
       expect(enriched, ids);
+    });
+
+    test('an exported row naming a stream missing from the library is saved as is: no search, no download', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      final id = await service.start(ImportedPlaylist(name: 'Mix', rows: [
+        ImportRow(index: 0, title: 'One', artists: const ['Band'], durationMs: 100000, location: 'stream:youtube:abcdefghi12'),
+      ]));
+      await idle();
+      expect(yt.searches, 0);
+      expect(queued, isEmpty);
+      expect((await imports.item(id, 0))!.state, ImportItemStatus.linked);
+      expect((await db.select(db.tracks).get()).single.path, 'stream:youtube:abcdefghi12');
+    });
+
+    test('«scarica anche» (D-665): the songs are downloaded, not saved as shadow rows', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      await service.startFromResults(
+        'Mix',
+        [video('a1', 'One', 'Band', 100)],
+        options: const ImportOptions(downloadToo: true),
+      );
+      await idle();
+      expect(queued.map((q) => q.$1.id), ['a1']);
+      expect(await db.select(db.tracks).get(), isEmpty);
+    });
+
+    test('streaming mode: a file in the index but not yet in the library is not an error: the download path links it', () async {
+      streamingMode = true;
+      existingFile = '/nowhere/a1.m4a';
+      saveNowHook = (r) async => null;
+      final id = await service.startFromResults('Mix', [video('a1', 'One', 'Band', 100)]);
+      await idle();
+      expect(queued.map((q) => q.$1.id), ['a1']);
+      expect((await imports.item(id, 0))!.state, isNot(ImportItemStatus.failed));
     });
 
     test('streaming mode: a song that cannot be saved fails its item and is never downloaded', () async {
@@ -1315,5 +1367,40 @@ void main() {
     expect(parseImportTag('other'), isNull);
     expect(parseImportTag('import:x:1'), isNull);
     expect(parseImportTag(null), isNull);
+  });
+
+  group('«scarica anche» outlives the import finishing', () {
+    test('a row picked by hand and a retry, after the finish, still download', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      yt.songs['one'] = [topic('v1', 'One', 'Band', 200)];
+      final id = await service.start(csv([row(0, 'One', 'Band', 200), row(1, 'Zzz', 'Nobody', 100)]),
+          options: const ImportOptions(downloadToo: true));
+      await idle();
+      await finish(importTag(id, 0), '/m/one.mp3');
+      expect((await imports.get(id))!.state, ImportStatus.finished);
+      await service.download(id, 1, topic('v9', 'Zzz', 'Nobody', 100));
+      await idle();
+      expect(queued.map((q) => q.$1.id), ['v1', 'v9']);
+      expect(await tracks.streamRow('youtube:v9'), isNull, reason: 'downloaded, not saved as a stream');
+    });
+
+    test('cancelling the import forgets the choice', () async {
+      final id = await service.start(csv([row(0, 'One', 'Band', 200)]), options: const ImportOptions(downloadToo: true));
+      await idle();
+      await service.cancel(id);
+      expect((await SharedPreferences.getInstance()).getKeys().where((k) => k.contains('importDownloadToo')), isEmpty);
+    });
+  });
+
+  test('a stream: location survives a base folder and links the saved row', () async {
+    final r = YtResult(id: 'abcdefghi12', title: 'Hey', channel: 'Band', duration: const Duration(seconds: 100));
+    final rid = await tracks.saveStream(r);
+    final id = await service.start(ImportedPlaylist(
+      name: 'M',
+      baseDir: '/base',
+      rows: [ImportRow(index: 0, title: 'Hey', artists: const ['Band'], durationMs: 100000, location: 'stream:youtube:abcdefghi12')],
+    ));
+    await idle();
+    expect((await imports.item(id, 0))!.trackId, rid);
   });
 }

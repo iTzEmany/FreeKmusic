@@ -244,6 +244,18 @@ void main() {
     },
   );
 
+  test('«scarica anche» keys of the imports never travel in a backup, neither written nor applied', () async {
+    SharedPreferences.setMockInitialValues({'importDownloadToo.4': true, 'theme': 'oled'});
+    final json = settingsToJson(await SharedPreferences.getInstance());
+    expect(json.keys, ['theme']);
+    SharedPreferences.setMockInitialValues({});
+    final fresh = await SharedPreferences.getInstance();
+    await applySettingsJson(fresh, {
+      'importDownloadToo.9': {'t': 'bool', 'v': true},
+    });
+    expect(fresh.getKeys(), isEmpty);
+  });
+
   /// A library with the same three tracks as [db] and none of its user data.
   Future<AppDatabase> freshLibrary() async {
     final fresh = AppDatabase(NativeDatabase.memory());

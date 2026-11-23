@@ -218,6 +218,7 @@ Future<void> main() async {
 
   if (kPerfProbe) PerfProbe.mark('platformControls', sinceMain);
   final settingsStore = await SettingsStore.open();
+  await settingsStore.migrateStorageModeD665();
   if (kPerfBuild) await PerfProbe.prepareSettings(settingsStore);
   final persistence = PlaybackPersistence(handler, settingsStore);
 

@@ -373,6 +373,10 @@ class TrackRepository {
         album: Value(album),
         artist: Value(artist),
         albumKey: Value(key),
+        // Kept once known: the page it came from may differ next time (a single, a radio).
+        albumBrowseId: (r.albumId ?? '').isEmpty || row.albumBrowseId != null || row.userEdited
+            ? const Value.absent()
+            : Value(r.albumId),
         // A track listened to before enters the library now: it is a recent addition.
         addedAt: row.saved ? const Value.absent() : Value(nowMs()),
       ),

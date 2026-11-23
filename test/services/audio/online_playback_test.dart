@@ -741,6 +741,64 @@ void main() {
     });
   });
 
+  group('a stream that cannot be fetched although the probe said online', () {
+    const down = YtException(YtErrorKind.network, 'down');
+
+    test('cold restore: the queue stays on it, no skip, no event', () async {
+      final bad = online.register(result('v1'));
+      preparer.failing.add('youtube:v1');
+      preparer.failure = down;
+      await handler.restore([bad, ids[0]], 0, Duration.zero);
+      await settle();
+      expect(failures, isEmpty);
+      expect(handler.currentIndex, 0);
+      expect(backend.loaded, isEmpty);
+    });
+
+    test('played: it moves on to the next file and plays it', () async {
+      final bad = online.register(result('v1'));
+      preparer.failing.add('youtube:v1');
+      preparer.failure = down;
+      await handler.playQueue([bad, ids[0]], 0);
+      await settle();
+      expect(failures, isEmpty);
+      expect(handler.currentIndex, 1);
+      expect(backend.loaded, ['/m/a.mp3']);
+      expect(backend.playing, isTrue);
+    });
+
+    test('paused while it loads: the next file loads paused', () async {
+      final bad = online.register(result('v1'));
+      preparer.failing.add('youtube:v1');
+      preparer.failure = down;
+      final gate = preparer.gates['youtube:v1'] = Completer<void>();
+      final r = handler.playQueue([bad, ids[0]], 0);
+      await settle();
+      await handler.pause();
+      gate.complete();
+      await r;
+      await settle();
+      expect(handler.currentIndex, 1);
+      expect(backend.loaded, ['/m/a.mp3']);
+      expect(backend.playing, isFalse);
+    });
+  });
+
+  test('a stream that fails while paused (not cold): the error is told and the next file loads paused', () async {
+    final bad = online.register(result('v1'));
+    preparer.failing.add('youtube:v1');
+    final gate = preparer.gates['youtube:v1'] = Completer<void>();
+    final r = handler.playQueue([bad, ids[0]], 0);
+    await settle();
+    await handler.pause();
+    gate.complete();
+    await r;
+    await settle();
+    expect(failures.first.reason, PlaybackFailureReason.onlineUnavailable);
+    expect(handler.currentIndex, 1);
+    expect(backend.playing, isFalse);
+  });
+
   test('a cold restore whose current track is gone from the library stays quiet', () async {
     await handler.restore([9999, ids[0]], 0, Duration.zero);
     await settle();

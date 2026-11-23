@@ -13,6 +13,7 @@ import '../services/share/lan_client.dart';
 import '../services/share/received_meta.dart';
 import '../services/share/lan_server.dart';
 import '../services/share/track_meta.dart';
+import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import '../services/share/trusted_devices.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
@@ -88,12 +89,15 @@ Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async {
   final entries = <ShareEntry>[];
   final extra = await credits.portableOfMany([for (final t in tracks) t.id]);
   for (final t in tracks) {
-    // A saved stream row has no file to send.
-    if (t.missing || t.kind == kStreamKind) continue;
+    // A saved stream has no file: only its key and metadata travel (D-674); a shadow row is not offered.
+    final streamKey = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
+    // Only YouTube keys travel: a SoundCloud id has no link the receiver can replay.
+    if (t.missing || (t.kind == kStreamKind && (!t.saved || streamKey == null || !streamKey.startsWith('youtube:')))) continue;
     final c = extra[t.id]!;
     entries.add(ShareEntry(
       id: t.id,
-      path: t.path,
+      path: streamKey == null ? t.path : '',
+      streamKey: streamKey,
       title: t.title,
       artist: t.artist,
       album: t.album,

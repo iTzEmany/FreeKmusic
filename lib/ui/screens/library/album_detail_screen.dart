@@ -21,7 +21,14 @@ import '../../widgets/cover_image.dart';
 import '../../widgets/cover_picker_sheet.dart';
 import '../../../providers/cover_ops.dart';
 import '../../widgets/async_body.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
+import '../../../core/constants.dart' show kEnableYoutube;
+import '../../../data/settings/settings_store.dart' show StorageMode;
+import '../../../services/online/ytm_artist.dart' show YtmAlbumTrack;
+import '../online/online_selection_scope.dart';
+import '../online/online_song_row.dart';
+import '../../../providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
 import '../devices/devices_sheet.dart';
@@ -140,7 +147,9 @@ EntranceScope(
 
     final shuffleKey = listKeyOf([for (final t in list) t.id]);
 
-    return SelectionScope(
+    return _AlbumMissing(
+      albumKey: album.albumKey,
+      builder: (section) => SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
       child: CollectionScaffold(
@@ -169,8 +178,84 @@ EntranceScope(
             loading: rows,
             data: (_) => rows,
           ),
+          section,
         ],
       ),
+    ),
+    );
+  }
+}
+
+/// F-22 / D-706: the album's songs that are not in the library, from the online album; they play and save
+/// like any online row. In streaming mode they load by themselves; in device mode a row asks first (no
+/// network without a tap); in the lite flavour there is nothing. [builder] gets the sliver to show.
+class _AlbumMissing extends ConsumerStatefulWidget {
+  const _AlbumMissing({required this.albumKey, required this.builder});
+
+  final String albumKey;
+  final Widget Function(Widget section) builder;
+
+  @override
+  ConsumerState<_AlbumMissing> createState() => _AlbumMissingState();
+}
+
+class _AlbumMissingState extends ConsumerState<_AlbumMissing> {
+  late bool _asked = ref.read(settingsProvider).storageMode == StorageMode.stream;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kEnableYoutube) return widget.builder(const SliverToBoxAdapter(child: SizedBox.shrink()));
+    final l = context.l10n;
+    final async = _asked ? ref.watch(albumMissingTracksProvider(widget.albumKey)) : null;
+    final songs = async?.value ?? const <YtmAlbumTrack>[];
+    final selectionKey = 'album-missing:${widget.albumKey}';
+    final Widget section;
+    if (songs.isNotEmpty) {
+      section = SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(child: SectionHeader(l.albumMissingTitle, count: l.tracksCount(songs.length))),
+          SliverList.builder(
+            itemCount: songs.length,
+            itemBuilder: (_, i) => OnlineSongTile(
+              result: songs[i].result,
+              index: i,
+              selectionKey: selectionKey,
+              number: songs[i].number,
+            ),
+          ),
+        ],
+      );
+    } else if (!_asked || (async?.isLoading ?? false)) {
+      section = SliverToBoxAdapter(
+        child: ListTile(
+          title: Text(l.albumMissingTitle),
+          trailing: _asked
+              ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.chevron_right_rounded),
+          onTap: _asked ? null : () => setState(() => _asked = true),
+        ),
+      );
+    } else {
+      section = const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return OnlineSelectionScope(
+      selectionKey: selectionKey,
+      overlay: true,
+      ids: [for (var i = 0; i < songs.length; i++) i],
+      actions: (picked) => [
+        IconButton(
+          tooltip: ref.read(settingsProvider).storageMode == StorageMode.stream ? l.addToLibrary : l.ytDownload,
+          icon: const Icon(Icons.download_rounded),
+          onPressed: () {
+            startOnlineDownloads(context, ref, [
+              for (final i in picked.orderedIds)
+                if (i < songs.length) songs[i].result,
+            ]);
+            ref.read(selectionProvider(selectionKey).notifier).clear();
+          },
+        ),
+      ],
+      child: widget.builder(section),
     );
   }
 }

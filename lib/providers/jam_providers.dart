@@ -634,6 +634,9 @@ class JamController extends Notifier<JamUiState> {
 
   String? seenName(String id) => _seenNames[id];
 
+  /// The Jam's file cache while a Jam runs (read by «Aggiungi alla libreria», D-690).
+  JamCache? get cache => _media.cache;
+
   /// The guest's own queue (or a host's shuffle mode) from before the Jam.
   late final _local = JamLocalQueue(() => ref, () => _part.unplayed(state.jam));
 

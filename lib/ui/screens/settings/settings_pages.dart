@@ -345,27 +345,32 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
     SettingsGroup(
       title: l.storageGroupTitle,
       children: [
-        ListTile(
-          leading: const Icon(Icons.storage_rounded),
-          title: Text(l.storageWhere),
-          trailing: Text(
-            settings.storageMode == StorageMode.device ? l.storageModeDevice : l.storageModeStream,
+        if (kEnableYoutube)
+          ListTile(
+            leading: const Icon(Icons.storage_rounded),
+            title: Text(l.storageWhere),
+            trailing: Text(
+              settings.storageMode == StorageMode.device
+                  ? l.storageModeDevice
+                  : l.storageModeStream,
+            ),
+            onTap: () async {
+              final m = await showChoiceDialog<StorageMode>(
+                context,
+                title: l.storageWhere,
+                options: [
+                  (value: StorageMode.device, label: l.storageModeDevice),
+                  (value: StorageMode.stream, label: l.storageModeStream),
+                ],
+                current: settings.storageMode,
+              );
+              if (m != null) {
+                ref
+                    .read(settingsProvider.notifier)
+                    .update((c) => c.copyWith(storageMode: m));
+              }
+            },
           ),
-          onTap: () async {
-            final m = await showChoiceDialog<StorageMode>(
-              context,
-              title: l.storageWhere,
-              options: [
-                (value: StorageMode.device, label: l.storageModeDevice),
-                (value: StorageMode.stream, label: l.storageModeStream),
-              ],
-              current: settings.storageMode,
-            );
-            if (m != null) {
-              ref.read(settingsProvider.notifier).update((c) => c.copyWith(storageMode: m));
-            }
-          },
-        ),
         const DownloadLocationTile(),
         const StreamCacheTile(),
         const QualityTile(stream: false),
@@ -422,7 +427,8 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
           title: Text(l.enrichOnMetered),
           subtitle: Text(l.enrichOnMeteredHint),
           value: s.enrichOnMetered,
-          onChanged: (v) => notifier.update((c) => c.copyWith(enrichOnMetered: v)),
+          onChanged: (v) =>
+              notifier.update((c) => c.copyWith(enrichOnMetered: v)),
         ),
         SwitchListTile(
           title: Text(l.deezerMeta),

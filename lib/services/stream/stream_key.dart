@@ -40,6 +40,7 @@ YtResult streamResultOf(
   String? artist,
   String? album,
   int durationMs = 0,
+  String? albumId,
 }) {
   final sep = key.indexOf(':');
   final source = MediaSource.values.firstWhere(
@@ -52,13 +53,24 @@ YtResult streamResultOf(
     channel: artist ?? '',
     artists: artist == null ? const [] : [artist],
     album: album,
+    albumId: albumId,
     duration: durationMs > 0 ? Duration(milliseconds: durationMs) : null,
     source: source,
   );
 }
 
-/// True for a well-formed `<source>:<id>` stream key (what [streamResultOf] needs).
+final ytIdRe = RegExp(r'^[A-Za-z0-9_-]{11}$');
+final _scIdRe = RegExp(r'^\d{1,20}$');
+
+/// True for a well-formed `<source>:<id>` stream key (what [streamResultOf] needs): the id is
+/// checked per source, since it ends up in a yt-dlp address and in a cache file name.
 bool isStreamKey(String key) {
   final sep = key.indexOf(':');
-  return sep > 0 && sep < key.length - 1 && MediaSource.values.any((m) => m.name == key.substring(0, sep));
+  if (sep <= 0) return false;
+  final id = key.substring(sep + 1);
+  return switch (key.substring(0, sep)) {
+    'youtube' => ytIdRe.hasMatch(id),
+    'soundcloud' => _scIdRe.hasMatch(id),
+    _ => false,
+  };
 }

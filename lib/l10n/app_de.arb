@@ -3944,5 +3944,28 @@
         "type": "int"
       }
     }
+  },
+  "csvImportDownloadToo": "Dateien auch herunterladen",
+  "csvImportDownloadTooHint": "Titel werden normalerweise nur zum Streamen gespeichert, ohne Datei. Eingeschaltet werden sie auch auf das Gerät geladen.",
+  "onboardingFoldersDownloadsNote": "Heruntergeladene Titel landen im Ordner FreeKmusic, innerhalb des hier gewählten Ordners.",
+  "albumMissingTitle": "Weitere Titel des Albums",
+  "incomingStreams": "{n, plural, one{1 Streaming-Titel} other{{n} Streaming-Titel}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOfflineMeteredAsk": "Du bist in einem getakteten Netz. {n, plural, one{1 Titel} other{{n} Titel}}, etwa {mb} MB: herunterladen?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

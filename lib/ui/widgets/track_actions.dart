@@ -714,7 +714,7 @@ List<TrackAction> onlineResultActions(
 ) {
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
-  bool inLibrary() => ref.read(inLibraryOfProvider)(r.id, r.source);
+  bool inLibrary() => ref.read(libraryAdderProvider).alreadyThere(r.id, r.source);
   return [
     TrackAction(Icons.queue_rounded, l.addToQueue, () async {
       final full = ctrl.jamQueueFull;

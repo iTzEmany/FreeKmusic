@@ -60,6 +60,13 @@ D-676, D-677, D-688, D-694, D-687, D-675, D-662, D-699. Rilievi F-34, F-35, F-37
 - Focus alla ricerca col clic su «Cerca» nella barra laterale su desktop (tolto in 138.2 insieme al telefono): rimetterlo solo su desktop se serve.
 - Test deboli: `create_flows_test.dart:~53` (flag `autofocus`, basta il focus effettivo); nessun test che il tasto Cerca della shell non dia focus.
 
+## Da allineare (review fase 140)
+- Dalla fase 139 (spostati qui): menu del brano che suona con la voce online legata a una riga salvata (`entry.trackId`; `TrackDeleter.removeFromQueue` toglie anche le voci online degli id cancellati); stato del brano calcolato in quattro modi (`inLibraryOfProvider`, `entryInLibrary`, `downloadIndex.contains`, ramo `#` di `trackStateProvider`) da ridurre a `trackStateProvider(key)`; I/O sincrono dell'indice dei download (`pathForKey` → `existsSync`, `signatureMatchesPath`, `pruneGone`) da spostare fuori dal thread UI; menu ⋮ che si blocca se il widget che l'ha aperto viene smontato (foglio come `Consumer` con il proprio `ref`, test).
+- Stato unico del brano (punto 4 della review 140) e I/O sincrono dell'indice (punto 5): vedi sopra, si fanno insieme.
+- `albumBrowseId` perso in `mergeStreamRow` e `demoteToStream`: conservarlo quando la riga viene fusa o declassata.
+- Le preferenze iniettate in `PlaylistImportService` e il parametro `streaming` ormai morto (D-665: l'import salva sempre in streaming): toglierli.
+- `OnlineSelectionScope` doppio nella pagina album (141.5): lasciarne uno solo.
+
 ## Tocca a te
 - Nessuna cosa in questa fase.
 

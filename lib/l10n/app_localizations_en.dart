@@ -8113,4 +8113,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Downloading… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Also download the files';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Songs are normally saved for streaming, with no file. When on, they are also downloaded to the device.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'Songs you download go to the FreeKmusic folder, inside the folder you pick here.';
+
+  @override
+  String get albumMissingTitle => 'More songs from the album';
+
+  @override
+  String incomingStreams(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n streamed songs',
+      one: '1 streamed song',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tracks',
+      one: '1 track',
+    );
+    return 'You are on a metered network. $_temp0, about $mb MB: download?';
+  }
 }

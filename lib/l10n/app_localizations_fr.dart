@@ -8208,4 +8208,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'Téléchargement… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Télécharger aussi les fichiers';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Les titres sont normalement enregistrés en streaming, sans fichier. Activé, ils sont aussi téléchargés sur l’appareil.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'Les titres que vous téléchargez vont dans le dossier FreeKmusic, à l’intérieur du dossier choisi ici.';
+
+  @override
+  String get albumMissingTitle => 'Autres titres de l’album';
+
+  @override
+  String incomingStreams(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n titres en streaming',
+      one: '1 titre en streaming',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n titres',
+      one: '1 titre',
+    );
+    return 'Tu es sur un réseau limité. $_temp0, environ $mb Mo : télécharger ?';
+  }
 }

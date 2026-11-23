@@ -3944,5 +3944,28 @@
         "type": "int"
       }
     }
+  },
+  "csvImportDownloadToo": "Descargar también los archivos",
+  "csvImportDownloadTooHint": "Normalmente las canciones se guardan para streaming, sin archivo. Activado, también se descargan al dispositivo.",
+  "onboardingFoldersDownloadsNote": "Las canciones que descargues van a la carpeta FreeKmusic, dentro de la carpeta que elijas aquí.",
+  "albumMissingTitle": "Más canciones del álbum",
+  "incomingStreams": "{n, plural, one{1 canción en streaming} other{{n} canciones en streaming}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOfflineMeteredAsk": "Estás en una red de uso medido. {n, plural, one{1 canción} other{{n} canciones}}, unos {mb} MB: ¿descargar?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

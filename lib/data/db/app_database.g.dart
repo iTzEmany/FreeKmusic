@@ -458,6 +458,17 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _albumBrowseIdMeta = const VerificationMeta(
+    'albumBrowseId',
+  );
+  @override
+  late final GeneratedColumn<String> albumBrowseId = GeneratedColumn<String>(
+    'album_browse_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -500,6 +511,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     lastPlayedAt,
     isrc,
     coverSource,
+    albumBrowseId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -800,6 +812,15 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         ),
       );
     }
+    if (data.containsKey('album_browse_id')) {
+      context.handle(
+        _albumBrowseIdMeta,
+        albumBrowseId.isAcceptableOrUnknown(
+          data['album_browse_id']!,
+          _albumBrowseIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -969,6 +990,10 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         DriftSqlType.int,
         data['${effectivePrefix}cover_source'],
       )!,
+      albumBrowseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album_browse_id'],
+      ),
     );
   }
 
@@ -1034,6 +1059,10 @@ class Track extends DataClass implements Insertable<Track> {
 
   /// 0 automatic · 1 chosen by hand for the album · 2 chosen by hand for the track.
   final int coverSource;
+
+  /// YouTube Music `browseId` of the album a saved stream row came from (D-675): opens the whole
+  /// album from the library page. Null on local rows and on rows saved without an album page.
+  final String? albumBrowseId;
   const Track({
     required this.id,
     required this.path,
@@ -1075,6 +1104,7 @@ class Track extends DataClass implements Insertable<Track> {
     this.lastPlayedAt,
     this.isrc,
     required this.coverSource,
+    this.albumBrowseId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1161,6 +1191,9 @@ class Track extends DataClass implements Insertable<Track> {
       map['isrc'] = Variable<String>(isrc);
     }
     map['cover_source'] = Variable<int>(coverSource);
+    if (!nullToAbsent || albumBrowseId != null) {
+      map['album_browse_id'] = Variable<String>(albumBrowseId);
+    }
     return map;
   }
 
@@ -1244,6 +1277,9 @@ class Track extends DataClass implements Insertable<Track> {
           : Value(lastPlayedAt),
       isrc: isrc == null && nullToAbsent ? const Value.absent() : Value(isrc),
       coverSource: Value(coverSource),
+      albumBrowseId: albumBrowseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(albumBrowseId),
     );
   }
 
@@ -1293,6 +1329,7 @@ class Track extends DataClass implements Insertable<Track> {
       lastPlayedAt: serializer.fromJson<int?>(json['lastPlayedAt']),
       isrc: serializer.fromJson<String?>(json['isrc']),
       coverSource: serializer.fromJson<int>(json['coverSource']),
+      albumBrowseId: serializer.fromJson<String?>(json['albumBrowseId']),
     );
   }
   @override
@@ -1339,6 +1376,7 @@ class Track extends DataClass implements Insertable<Track> {
       'lastPlayedAt': serializer.toJson<int?>(lastPlayedAt),
       'isrc': serializer.toJson<String?>(isrc),
       'coverSource': serializer.toJson<int>(coverSource),
+      'albumBrowseId': serializer.toJson<String?>(albumBrowseId),
     };
   }
 
@@ -1383,6 +1421,7 @@ class Track extends DataClass implements Insertable<Track> {
     Value<int?> lastPlayedAt = const Value.absent(),
     Value<String?> isrc = const Value.absent(),
     int? coverSource,
+    Value<String?> albumBrowseId = const Value.absent(),
   }) => Track(
     id: id ?? this.id,
     path: path ?? this.path,
@@ -1426,6 +1465,9 @@ class Track extends DataClass implements Insertable<Track> {
     lastPlayedAt: lastPlayedAt.present ? lastPlayedAt.value : this.lastPlayedAt,
     isrc: isrc.present ? isrc.value : this.isrc,
     coverSource: coverSource ?? this.coverSource,
+    albumBrowseId: albumBrowseId.present
+        ? albumBrowseId.value
+        : this.albumBrowseId,
   );
   Track copyWithCompanion(TracksCompanion data) {
     return Track(
@@ -1501,6 +1543,9 @@ class Track extends DataClass implements Insertable<Track> {
       coverSource: data.coverSource.present
           ? data.coverSource.value
           : this.coverSource,
+      albumBrowseId: data.albumBrowseId.present
+          ? data.albumBrowseId.value
+          : this.albumBrowseId,
     );
   }
 
@@ -1546,7 +1591,8 @@ class Track extends DataClass implements Insertable<Track> {
           ..write('resumePositionMs: $resumePositionMs, ')
           ..write('lastPlayedAt: $lastPlayedAt, ')
           ..write('isrc: $isrc, ')
-          ..write('coverSource: $coverSource')
+          ..write('coverSource: $coverSource, ')
+          ..write('albumBrowseId: $albumBrowseId')
           ..write(')'))
         .toString();
   }
@@ -1593,6 +1639,7 @@ class Track extends DataClass implements Insertable<Track> {
     lastPlayedAt,
     isrc,
     coverSource,
+    albumBrowseId,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1637,7 +1684,8 @@ class Track extends DataClass implements Insertable<Track> {
           other.resumePositionMs == this.resumePositionMs &&
           other.lastPlayedAt == this.lastPlayedAt &&
           other.isrc == this.isrc &&
-          other.coverSource == this.coverSource);
+          other.coverSource == this.coverSource &&
+          other.albumBrowseId == this.albumBrowseId);
 }
 
 class TracksCompanion extends UpdateCompanion<Track> {
@@ -1681,6 +1729,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
   final Value<int?> lastPlayedAt;
   final Value<String?> isrc;
   final Value<int> coverSource;
+  final Value<String?> albumBrowseId;
   const TracksCompanion({
     this.id = const Value.absent(),
     this.path = const Value.absent(),
@@ -1722,6 +1771,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.lastPlayedAt = const Value.absent(),
     this.isrc = const Value.absent(),
     this.coverSource = const Value.absent(),
+    this.albumBrowseId = const Value.absent(),
   });
   TracksCompanion.insert({
     this.id = const Value.absent(),
@@ -1764,6 +1814,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.lastPlayedAt = const Value.absent(),
     this.isrc = const Value.absent(),
     this.coverSource = const Value.absent(),
+    this.albumBrowseId = const Value.absent(),
   }) : path = Value(path),
        title = Value(title),
        albumKey = Value(albumKey),
@@ -1812,6 +1863,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Expression<int>? lastPlayedAt,
     Expression<String>? isrc,
     Expression<int>? coverSource,
+    Expression<String>? albumBrowseId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1854,6 +1906,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       if (lastPlayedAt != null) 'last_played_at': lastPlayedAt,
       if (isrc != null) 'isrc': isrc,
       if (coverSource != null) 'cover_source': coverSource,
+      if (albumBrowseId != null) 'album_browse_id': albumBrowseId,
     });
   }
 
@@ -1898,6 +1951,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Value<int?>? lastPlayedAt,
     Value<String?>? isrc,
     Value<int>? coverSource,
+    Value<String?>? albumBrowseId,
   }) {
     return TracksCompanion(
       id: id ?? this.id,
@@ -1940,6 +1994,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       isrc: isrc ?? this.isrc,
       coverSource: coverSource ?? this.coverSource,
+      albumBrowseId: albumBrowseId ?? this.albumBrowseId,
     );
   }
 
@@ -2066,6 +2121,9 @@ class TracksCompanion extends UpdateCompanion<Track> {
     if (coverSource.present) {
       map['cover_source'] = Variable<int>(coverSource.value);
     }
+    if (albumBrowseId.present) {
+      map['album_browse_id'] = Variable<String>(albumBrowseId.value);
+    }
     return map;
   }
 
@@ -2111,7 +2169,8 @@ class TracksCompanion extends UpdateCompanion<Track> {
           ..write('resumePositionMs: $resumePositionMs, ')
           ..write('lastPlayedAt: $lastPlayedAt, ')
           ..write('isrc: $isrc, ')
-          ..write('coverSource: $coverSource')
+          ..write('coverSource: $coverSource, ')
+          ..write('albumBrowseId: $albumBrowseId')
           ..write(')'))
         .toString();
   }
@@ -13350,6 +13409,7 @@ typedef $$TracksTableCreateCompanionBuilder = TracksCompanion Function({
   Value<int?> lastPlayedAt,
   Value<String?> isrc,
   Value<int> coverSource,
+  Value<String?> albumBrowseId,
 });
 typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<int> id,
@@ -13392,6 +13452,7 @@ typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<int?> lastPlayedAt,
   Value<String?> isrc,
   Value<int> coverSource,
+  Value<String?> albumBrowseId,
 });
 
 final class $$TracksTableReferences
@@ -13758,6 +13819,11 @@ class $$TracksTableFilterComposer
 
   ColumnFilters<int> get coverSource => $composableBuilder(
     column: $table.coverSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get albumBrowseId => $composableBuilder(
+    column: $table.albumBrowseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14170,6 +14236,11 @@ class $$TracksTableOrderingComposer
     column: $table.coverSource,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get albumBrowseId => $composableBuilder(
+    column: $table.albumBrowseId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TracksTableAnnotationComposer
@@ -14330,6 +14401,11 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumn<int> get coverSource => $composableBuilder(
     column: $table.coverSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get albumBrowseId => $composableBuilder(
+    column: $table.albumBrowseId,
     builder: (column) => column,
   );
 
@@ -14612,6 +14688,7 @@ class $$TracksTableTableManager
                 Value<int?> lastPlayedAt = const Value.absent(),
                 Value<String?> isrc = const Value.absent(),
                 Value<int> coverSource = const Value.absent(),
+                Value<String?> albumBrowseId = const Value.absent(),
               }) => TracksCompanion(
                 id: id,
                 path: path,
@@ -14653,6 +14730,7 @@ class $$TracksTableTableManager
                 lastPlayedAt: lastPlayedAt,
                 isrc: isrc,
                 coverSource: coverSource,
+                albumBrowseId: albumBrowseId,
               ),
           createCompanionCallback:
               ({
@@ -14696,6 +14774,7 @@ class $$TracksTableTableManager
                 Value<int?> lastPlayedAt = const Value.absent(),
                 Value<String?> isrc = const Value.absent(),
                 Value<int> coverSource = const Value.absent(),
+                Value<String?> albumBrowseId = const Value.absent(),
               }) => TracksCompanion.insert(
                 id: id,
                 path: path,
@@ -14737,6 +14816,7 @@ class $$TracksTableTableManager
                 lastPlayedAt: lastPlayedAt,
                 isrc: isrc,
                 coverSource: coverSource,
+                albumBrowseId: albumBrowseId,
               ),
           withReferenceMapper: (p0) => p0
               .map(

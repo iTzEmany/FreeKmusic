@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_log.dart';
+import '../../core/constants.dart' show kEnableYoutube;
 import '../../services/audio/audio_backend.dart' show TransitionMode;
 import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
@@ -32,6 +33,10 @@ enum IconFollow { ask, on, off }
 /// Where the user keeps the music: files on the device, or saved tracks played
 /// from the net (D-575).
 enum StorageMode { device, stream }
+
+/// D-665: streaming first for everyone (also an install from before the choice, when nothing was stored);
+/// the `lite` build has no yt-dlp, so it stays on the device. A stored choice always wins.
+const kDefaultStorageMode = kEnableYoutube ? StorageMode.stream : StorageMode.device;
 
 class AppSettings {
   const AppSettings({
@@ -74,7 +79,7 @@ class AppSettings {
     this.downloadLocation = '',
     this.autoBackup = false,
     this.backupFolder = '',
-    this.storageMode = StorageMode.device,
+    this.storageMode = kDefaultStorageMode,
     this.prefetchOnMobile = true,
     this.importSureThreshold = 0.80,
     this.importReviewThreshold = 0.55,
@@ -432,6 +437,9 @@ const recogPassDoneKey = 'recogPassDone';
 const genreRereadAfterKey = 'genreRereadAfter';
 const genreRereadDoneKey = 'genreRereadDone';
 
+/// D-665 one-off step done on this device (device-bound: a restored backup neither repeats nor blocks it).
+const storageModeD665Key = 'storageModeD665';
+
 class SettingsStore {
   SettingsStore(this._prefs);
 
@@ -439,6 +447,14 @@ class SettingsStore {
 
   static Future<SettingsStore> open() async =>
       SettingsStore(await SharedPreferences.getInstance());
+
+  /// D-665, once per device: an install from before streaming-first has `device` stored by [writeSettings];
+  /// it moves to `stream`. Only the preference changes: no file is touched, nothing is downloaded.
+  Future<void> migrateStorageModeD665() async {
+    if (!kEnableYoutube || _prefs.getBool(storageModeD665Key) == true) return;
+    await _prefs.setString('storageMode', StorageMode.stream.name);
+    await _prefs.setBool(storageModeD665Key, true);
+  }
 
   Map<String, String> _readPlaylistSorts() {
     final raw = _prefs.get('playlistSorts');
@@ -506,11 +522,13 @@ class SettingsStore {
     downloadLocation: _prefs.getString('downloadLocation') ?? '',
     autoBackup: _prefs.getBool('autoBackup') ?? false,
     backupFolder: _prefs.getString('backupFolder') ?? '',
-    // Absent = an install from before the choice: it keeps its files (D-598).
-    storageMode: StorageMode.values.firstWhere(
-      (m) => m.name == _prefs.getString('storageMode'),
-      orElse: () => StorageMode.device,
-    ),
+    // Absent = streaming first (D-665); the lite build has no streaming, whatever was stored (a restored backup).
+    storageMode: !kEnableYoutube
+        ? StorageMode.device
+        : StorageMode.values.firstWhere(
+            (m) => m.name == _prefs.getString('storageMode'),
+            orElse: () => kDefaultStorageMode,
+          ),
     prefetchOnMobile: _prefs.getBool('prefetchOnMobile') ?? true,
     // The old «downloadOriginal» switch is not read: MP3 was only ever the
     // default, so everyone moves to M4A.

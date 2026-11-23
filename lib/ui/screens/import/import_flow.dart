@@ -66,9 +66,7 @@ Future<void> continueImport(
     return;
   }
   final csv = picked as ImportedPlaylist;
-  final library = LibraryIndex(
-    await ref.read(trackOpsProvider).liteEntries(),
-  );
+  final library = LibraryIndex(await ref.read(trackOpsProvider).liteEntries());
   final known = csv.rows
       .where((r) => library.find(r, baseDir: csv.baseDir) != null)
       .length;

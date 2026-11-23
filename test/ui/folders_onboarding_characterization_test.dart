@@ -3,6 +3,11 @@
 //
 // The system picker is replaced by a fake that answers with a fixed path.
 import 'package:codecore/data/repositories/folder_repository.dart';
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/youtube_providers.dart' show libraryFolderFor;
+import 'package:drift/native.dart';
+import 'package:codecore/data/db/app_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/ui/screens/library/folders_sheet.dart';
 import 'package:codecore/ui/screens/onboarding/onboarding_screen.dart';
@@ -38,6 +43,24 @@ class _FakePicker extends FilePickerPlatform {
 
 void main() {
   setUp(() => FilePickerPlatform.instance = _FakePicker());
+
+  test('fresh settings are stream mode (D-665) with no download folder chosen (the fixed one applies, D-666)', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = SettingsStore(await SharedPreferences.getInstance()).readSettings();
+    expect(s.storageMode, StorageMode.stream);
+    expect(s.downloadLocation, isEmpty);
+  });
+
+  test('today: libraryFolderFor reuses a containing scanned folder, else adds the given library folder', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = FolderRepository(db);
+    final music = await repo.add('/m/Music');
+    expect((await libraryFolderFor(repo, '/m/Music/FreeKmusic', '/x')).id, music.id);
+    final other = await libraryFolderFor(repo, '/elsewhere/dl', '/lib');
+    expect(other.path, '/lib');
+    expect((await repo.getAll()).map((f) => f.path), ['/m/Music', '/lib']);
+  });
 
   group('onboarding', () {
     testWidgets('a folder added on the folders page is scanned straight away', (tester) async {

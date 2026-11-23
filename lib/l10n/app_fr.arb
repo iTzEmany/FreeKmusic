@@ -4165,5 +4165,28 @@
         "type": "int"
       }
     }
+  },
+  "csvImportDownloadToo": "Télécharger aussi les fichiers",
+  "csvImportDownloadTooHint": "Les titres sont normalement enregistrés en streaming, sans fichier. Activé, ils sont aussi téléchargés sur l’appareil.",
+  "onboardingFoldersDownloadsNote": "Les titres que vous téléchargez vont dans le dossier FreeKmusic, à l’intérieur du dossier choisi ici.",
+  "albumMissingTitle": "Autres titres de l’album",
+  "incomingStreams": "{n, plural, one{1 titre en streaming} other{{n} titres en streaming}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOfflineMeteredAsk": "Tu es sur un réseau limité. {n, plural, one{1 titre} other{{n} titres}}, environ {mb} Mo : télécharger ?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

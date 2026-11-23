@@ -140,6 +140,16 @@ void main() {
       expect([for (final t in await c.read(playlistOpsProvider).tracksOf(id)) t.id], ids);
     });
 
+    test('delete also forgets the «scarica anche» key of the playlist import', () async {
+      final id = await c.read(playlistOpsProvider).create('Imported');
+      final imp = await db.into(db.playlistImports).insert(PlaylistImportsCompanion.insert(
+          playlistId: id, sourceName: 'x', createdAt: 1));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('importDownloadToo.$imp', true);
+      await c.read(playlistOpsProvider).delete(id);
+      expect(prefs.getKeys().where((k) => k.startsWith('importDownloadToo.')), isEmpty);
+    });
+
     test('removeTracks undo restores the original order', () async {
       final ids = [for (final t in await rows()) t.id];
       final o = c.read(playlistOpsProvider);

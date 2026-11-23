@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
@@ -9,6 +10,7 @@ import '../../data/repositories/hidden_playlists.dart' show ytmAlbumSourceKind;
 import '../../data/repositories/import_repository.dart';
 import '../../data/repositories/playlist_repository.dart';
 import '../online/download_queue.dart';
+import '../stream/stream_key.dart' show isStreamKey, keyOfStreamPath, streamResultOf;
 import '../online/query_cleaner.dart';
 import '../online/youtube_service.dart';
 import 'exportify_reader.dart';
@@ -278,6 +280,7 @@ class PlaylistImportService {
         planFirst: options.planFirst,
         fetchCovers: options.fetchCovers,
       );
+      if (options.downloadToo) await _rememberDownloadToo(id);
       first ??= id;
       if (previous != null) {
         // Waits for the block before it: the playlist order stays right.
@@ -329,6 +332,7 @@ class PlaylistImportService {
           ),
       },
     );
+    if (options.downloadToo) await _rememberDownloadToo(id);
     _eta(id).start();
     if (rows.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
@@ -366,6 +370,19 @@ class PlaylistImportService {
   /// Import -> the block that starts when it finishes (lost on restart: the
   /// blocks are then paused, and resumed by hand like any paused import).
   final _nextBlock = <int, int>{};
+
+  /// Imports whose rows are also downloaded (D-665, «scarica anche»): kept in the preferences, one key per
+  /// import, so a restart does not turn the choice into plain streaming. Removed when the import is cancelled.
+  static String _downloadTooKey(int id) => '$importDownloadTooPrefix$id';
+
+  Future<void> _rememberDownloadToo(int id) async =>
+      (await SharedPreferences.getInstance()).setBool(_downloadTooKey(id), true);
+
+  Future<bool> _wantsDownloadToo(int id) async =>
+      (await SharedPreferences.getInstance()).getBool(_downloadTooKey(id)) ?? false;
+
+  Future<void> _forgetDownloadToo(int id) async =>
+      (await SharedPreferences.getInstance()).remove(_downloadTooKey(id));
 
   // ---- sync ---------------------------------------------------------------
 
@@ -479,6 +496,7 @@ class PlaylistImportService {
     await playlists.reorderBy(playlistId, {
       for (final k in diff.kept) k.old.trackId!: k.fresh.index,
     });
+    if (options.downloadToo) await _rememberDownloadToo(id);
     _eta(id).start();
     if (diff.added.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
@@ -496,7 +514,7 @@ class PlaylistImportService {
     if (base == null) return list.rows;
     return [
       for (final r in list.rows)
-        r.location != null && !isAbsoluteLocalPath(r.location!)
+        r.location != null && !r.location!.startsWith('stream:') && !isAbsoluteLocalPath(r.location!)
             ? r.withLocation(
                 p.posix.normalize(
                   '${base.replaceAll(r'\', '/')}/${r.location}',
@@ -559,6 +577,7 @@ class PlaylistImportService {
   Future<void> cancel(int importId) async {
     _nextBlock.remove(importId);
     await imports.setStatus(importId, ImportStatus.cancelled);
+    await _forgetDownloadToo(importId);
     cancelDownloads((i) => parseImportTag(i.tag)?.$1 == importId);
     _wakeUp();
   }
@@ -705,6 +724,22 @@ class PlaylistImportService {
         status: ImportItemStatus.notFound,
         note: Value(
           youtubeEnabled ? ImportNote.linkOnly : ImportNote.youtubeOff,
+        ),
+      );
+      return;
+    }
+    // An export of this app names the stream (`stream:<key>`): saved as is, no search and no network.
+    final key = item.location == null ? null : keyOfStreamPath(item.location!);
+    if (key != null && isStreamKey(key)) {
+      await _queueDownload(
+        row,
+        importId,
+        streamResultOf(
+          key,
+          title: row.title,
+          artist: row.artists.isEmpty ? null : row.artists.join(', '),
+          album: row.album,
+          durationMs: row.durationMs ?? 0,
         ),
       );
       return;
@@ -990,12 +1025,15 @@ class PlaylistImportService {
         return;
       }
     }
-    final saved = await saveNow?.call(r);
+    // Without «scarica anche» the row is saved (streaming), with it the file is downloaded as always. A file
+    // the index has but no row (scan pending) cannot be saved as a stream: the download path links it.
+    final downloadToo = existing != null || await _wantsDownloadToo(importId);
+    final saved = downloadToo ? null : await saveNow?.call(r);
     if (saved != null) {
       await _tagSaved(importId, row, saved);
       return;
     }
-    if (streaming?.call() ?? false) {
+    if (!downloadToo && (streaming?.call() ?? false)) {
       AppLog.w('import: ${r.indexKey} could not be saved in streaming mode, item failed');
       await imports.setItem(importId, row.index, status: ImportItemStatus.failed);
       return;

@@ -8,6 +8,9 @@ import 'package:codecore/ui/widgets/cover_image.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
 import 'package:codecore/providers/keep_offline_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
+import 'package:codecore/services/online/ytm_artist.dart' show YtmAlbumTrack;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -186,4 +189,45 @@ void main() {
     expect(find.text('2 brani in download'), findsOneWidget);
     await h.dispose(tester);
   });
+
+  // D-706: no network on its own outside the streaming mode.
+  for (final stream in [false, true]) {
+    testWidgets('missing album songs: ${stream ? 'streaming loads them by itself' : 'device mode asks with a row first'}',
+        (tester) async {
+      final h = await Harness.create(tester, tracks: 4, streamDefault: stream);
+      var asked = 0;
+      await h.pump(
+        tester,
+        const AlbumDetailScreen(
+          album: AlbumSummary(
+              albumKey: 'artist|album 0', title: 'Album 0', artist: 'Artist', variousArtists: false, trackCount: 2, durationMs: 370000, year: null, coverKey: null),
+        ),
+        extraOverrides: [
+          albumMissingTracksProvider.overrideWith((ref, _) async {
+            asked++;
+            return [
+              const YtmAlbumTrack(
+                  9, YtResult(id: 'm1', title: 'Missing One', channel: 'Artist', duration: Duration(minutes: 3))),
+            ];
+          }),
+        ],
+      );
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 300));
+      if (stream) {
+        expect(find.text('Missing One'), findsOneWidget);
+      } else {
+        expect(asked, 0);
+        expect(find.text('Missing One'), findsNothing);
+        await tester.scrollUntilVisible(find.text("Altri brani dell'album"), 200, scrollable: find.byType(Scrollable).first);
+        await tester.tap(find.text("Altri brani dell'album"));
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.scrollUntilVisible(find.text('Missing One'), 200, scrollable: find.byType(Scrollable).first);
+        expect(find.text('Missing One'), findsOneWidget);
+      }
+      expect(asked, 1);
+      await h.dispose(tester);
+    });
+  }
 }

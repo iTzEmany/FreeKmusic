@@ -62,8 +62,9 @@ final playlistImportServiceProvider = Provider<PlaylistImportService>((ref) {
               sure: s.importSureThreshold, review: s.importReviewThreshold)
           .clamped();
     },
-    saveNow: ref.read(libraryAdderProvider).saveNow,
-    streaming: () => ref.read(libraryAdderProvider).streaming,
+    // D-665: an import saves in streaming whatever the global mode; files only with «scarica anche».
+    saveNow: ref.read(libraryAdderProvider).saveStreamNow,
+    streaming: () => true,
     enqueue: (r, tag) => downloads.add(r, tag: tag),
     cancelDownloads: downloads.cancelWhere,
     settled: downloads.settled,

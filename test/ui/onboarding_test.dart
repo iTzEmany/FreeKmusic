@@ -122,12 +122,9 @@ void main() {
     await h.dispose(tester);
   });
 
-  for (final (free, label, mode) in [
-    (3 * 1024 * 1024 * 1024, 'below 4 GB', StorageMode.stream),
-    (50 * 1024 * 1024 * 1024, '4 GB or more', StorageMode.device),
-  ]) {
-    testWidgets('storage step, $label free: preselects ${mode.name} and the choice reaches the settings', (tester) async {
-      final h = await Harness.create(tester);
+  for (final free in [3 * 1024 * 1024 * 1024, 50 * 1024 * 1024 * 1024]) {
+    testWidgets('storage step, $free bytes free: stream stays the default (D-665) and device can be chosen', (tester) async {
+      final h = await Harness.create(tester, streamDefault: true);
       await h.pump(
         tester,
         const OnboardingScreen(askAudioPermission: false),
@@ -142,8 +139,10 @@ void main() {
       expect(find.text('Dove tieni la musica?'), findsOneWidget);
       await _settle(tester);
       expect(find.textContaining('Spazio libero'), findsOneWidget);
-      expect(_settings(tester).storageMode, mode);
-      expect(tester.widget<RadioGroup<StorageMode>>(find.byType(RadioGroup<StorageMode>)).groupValue, mode);
+      expect(_settings(tester).storageMode, StorageMode.stream);
+      await tester.tap(find.text('Sul dispositivo'));
+      await _settle(tester);
+      expect(_settings(tester).storageMode, StorageMode.device);
       await h.dispose(tester);
     });
   }
@@ -178,6 +177,8 @@ void main() {
       await tester.tap(find.text('Avanti'));
       await _settle(tester);
       await _settle(tester); // the volumes resolve after the page
+      await tester.tap(find.text('Sul dispositivo')); // the SD choice is for files kept on the device; stream is the default (D-665)
+      await _settle(tester);
       expect(find.textContaining('Scheda SD'), sd.isEmpty ? findsNothing : findsOneWidget);
       if (sd.isNotEmpty) {
         await tester.tap(find.textContaining('Scheda SD'));

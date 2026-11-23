@@ -159,11 +159,15 @@ void main() {
   });
 
   test('download starts only with the setting on', () async {
-    await add(container());
+    await store.writeSettings(store.readSettings().copyWith(storageMode: StorageMode.device)); // stream is the default (D-665)
+    final dir = await Directory.systemTemp.createTemp('shz');
+    addTearDown(() => dir.delete(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/i.json')); // device mode saves the row first, so it reads the index
+    await add(container(index: index));
     expect(downloads.added, isEmpty);
     await store.writeShazamAutoDownload(true);
     match = TrackReady.online(ytmSong('y3', 'New', artist: 'Else'));
-    await add(container());
+    await add(container(index: index));
     expect(downloads.added, ['y3']);
   });
 

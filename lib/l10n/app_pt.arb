@@ -4130,5 +4130,28 @@
         "type": "int"
       }
     }
+  },
+  "csvImportDownloadToo": "Transferir também os ficheiros",
+  "csvImportDownloadTooHint": "Normalmente as músicas são guardadas para streaming, sem ficheiro. Ligado, também são transferidas para o dispositivo.",
+  "onboardingFoldersDownloadsNote": "As músicas que transferir vão para a pasta FreeKmusic, dentro da pasta que escolher aqui.",
+  "albumMissingTitle": "Mais músicas do álbum",
+  "incomingStreams": "{n, plural, one{1 música em streaming} other{{n} músicas em streaming}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOfflineMeteredAsk": "Estás numa rede com tráfego limitado. {n, plural, one{1 faixa} other{{n} faixas}}, cerca de {mb} MB: descarregar?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

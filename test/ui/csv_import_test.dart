@@ -70,6 +70,44 @@ void main() {
     await h.dispose(tester);
   }, skip: _noYoutube);
 
+  testWidgets('«Scarica anche i file» is always shown (D-665): off by default, folder and numbering appear with it, and it goes in the options', (tester) async {
+    tester.view.physicalSize = const Size(600, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    ImportChoice? picked;
+    await h.pump(
+        tester,
+        Builder(
+            builder: (context) => Scaffold(
+                body: TextButton(
+                    onPressed: () async => picked = await showDialog<ImportChoice>(
+                        context: context,
+                        builder: (_) => ImportPreviewDialog(csv: fixture(), known: 1, existing: const {})),
+                    child: const Text('open')))));
+    Future<void> open() async {
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    await open();
+    expect(find.text('Scarica anche i file'), findsOneWidget);
+    expect(find.text('Numera i file'), findsNothing);
+    await tester.tap(find.text('Importa'));
+    await tester.pumpAndSettle();
+    expect(picked!.options.downloadToo, isFalse);
+
+    await open();
+    await tester.tap(find.text('Scarica anche i file'));
+    await tester.pump();
+    expect(find.text('Numera i file'), findsOneWidget);
+    expect(find.text('Cartella per questa playlist'), findsOneWidget);
+    await tester.tap(find.text('Importa'));
+    await tester.pumpAndSettle();
+    expect(picked!.options.downloadToo, isTrue);
+    await h.dispose(tester);
+  }, skip: _noYoutube);
+
   testWidgets('same-name playlist offers update or new and returns the choice',
       (tester) async {
     tester.view.physicalSize = const Size(600, 1600);

@@ -65,14 +65,28 @@ void main() {
       ]);
     });
 
-    test('a shadow row (kind 2) has no file: left out of both renderings', () {
+    test('a shadow row (kind 2) is exported with its YouTube Music link, in every format', () {
       final all = [...tracks, t(3, 'stream:youtube:v1', 'Streamed', 'Band', 1000).copyWith(kind: 2)];
+      const url = 'https://music.youtube.com/watch?v=v1';
       final abs = toM3u8('Mix', all);
-      expect(abs, isNot(contains('Streamed')));
-      expect(abs, isNot(contains('stream:')));
+      expect(abs, contains('#EXTINF:1,Band - Streamed\n$url\n'));
       final rel = renderPlaylist(ExportFormat.m3u8, name: 'Mix', createdAt: 1, tracks: all, relativePaths: true);
-      expect(rel, isNot(contains('stream:')));
+      expect(rel, contains('\n$url\n'));
       expect(rel, contains('one.mp3'));
+      final csv = parseCsv(renderPlaylist(ExportFormat.csv, name: 'Mix', createdAt: 1, tracks: all));
+      expect(csv, hasLength(4));
+      expect(csv.last.first, url);
+      final json = renderPlaylist(ExportFormat.json, name: 'Mix', createdAt: 1, tracks: all);
+      expect(json, contains('youtube:v1'));
+    });
+
+    test('streamUrlOf: a YouTube row has a page address, a SoundCloud row none (and is left out)', () {
+      final yt = t(3, 'stream:youtube:v1', 'Y', 'Band', 1000).copyWith(kind: 2);
+      final sc = t(4, 'stream:soundcloud:123', 'Cloud', 'Band', 1000).copyWith(kind: 2);
+      expect(streamUrlOf(yt), 'https://music.youtube.com/watch?v=v1');
+      expect(streamUrlOf(sc), isNull);
+      expect(streamUrlOf(tracks.first), isNull);
+      expect(toM3u8('Mix', [sc]), isNot(contains('Cloud')));
     });
 
     test('paths relative to the playlist folder', () {

@@ -83,6 +83,47 @@ void main() {
       expect(seen.single.status, OfferStatus.pending);
     });
 
+    test('an offer of streams alone (items: []) is accepted; hostile stream entries are dropped', () async {
+      const good = {'key': 'youtube:abcdefghijk', 'title': 'Live', 'durationMs': 5000};
+      final r = await post('/', {
+        ...offerBody(items: []),
+        'streams': [
+          good,
+          {'key': 'youtube:../../x', 'title': 'Evil'},
+          {'key': 'youtube:abcdefghijk&x=1', 'title': 'Evil'},
+          {'key': 'youtube:bbbbbbbbbbb', 'title': ''},
+          5,
+        ],
+      });
+      expect(r.statusCode, 202);
+      expect(seen.single.items, isEmpty);
+      expect(seen.single.streams.map((s) => s.key), ['youtube:abcdefghijk']);
+      // Nothing valid and no files: nothing to offer.
+      expect((await post('/', {...offerBody(id: 'o2', items: []), 'streams': [5, 'x']})).statusCode, 400);
+    });
+
+    test('items and streams together stay within maxOfferItems', () async {
+      Map<String, Object?> body(int items, int streams) => {
+            ...offerBody(items: [
+              for (var i = 0; i < items; i++) {'id': i, 'title': 't', 'sizeBytes': 1, 'ext': 'mp3'},
+            ]),
+            'streams': [
+              for (var i = 0; i < streams; i++) {'key': 'soundcloud:$i', 'title': 't'},
+            ],
+          };
+      expect((await post('/', body(maxOfferItems - 1, 1))).statusCode, 202);
+      expect((await post('/', {...body(maxOfferItems - 1, 2), 'offerId': 'o2'})).statusCode, 400);
+    });
+
+    test('StreamOffer.tryParse clips text, keeps a sane duration only', () {
+      final o = StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 'x' * 500, 'artist': 'a' * 500, 'durationMs': 3600000})!;
+      expect((o.title.length, o.artist!.length, o.durationMs), (200, 200, 3600000));
+      for (final d in [-1, 24 * 3600 * 1000 + 1, 1e30, 'x']) {
+        expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'durationMs': d})!.durationMs, 0, reason: '$d');
+      }
+      expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'durationMs': 24 * 3600 * 1000})!.durationMs, 24 * 3600 * 1000);
+    });
+
     test('public address refused', () async {
       ip = '8.8.8.8';
       expect((await post('/', offerBody())).statusCode, 403);
@@ -202,6 +243,29 @@ void main() {
       await client.offerAction('127.0.0.1', senderNode.port!, offer.offerId,
           'done', inc.token);
       expect(offer.status, OfferStatus.done);
+    });
+
+    test('a mixed offer carries the stream in `streams`, not in items', () async {
+      final e1 = entry(1, 'one.mp3', [1, 2, 3]);
+      const s = ShareEntry(
+          id: 2, path: '', streamKey: 'youtube:abcdefghijk', title: 'Live', artist: 'Band', sizeBytes: 0, durationMs: 5000, ext: '');
+      final offer = sender.createOutgoing(toId: 'b', toName: 'R', entries: [e1, s]);
+      final payload = sender.offerPayload(offer, senderNode.port!);
+      // What an older receiver reads: items with files only, the extra field is ignored.
+      expect((payload['items'] as List).length, 1);
+      await LanClient().sendOffer('127.0.0.1', receiverNode.port!, payload);
+      final inc = receiver.incoming[offer.offerId]!;
+      expect(inc.items.single.id, 1);
+      expect(inc.streams.single.key, 'youtube:abcdefghijk');
+      expect(inc.streams.single.durationMs, 5000);
+    });
+
+    test('an offer without `streams` (older sender) parses as before', () async {
+      final offer = sender.createOutgoing(toId: 'b', toName: 'R', entries: [entry(1, 'one.mp3', [1])]);
+      final payload = sender.offerPayload(offer, senderNode.port!);
+      expect(payload.containsKey('streams'), false);
+      await LanClient().sendOffer('127.0.0.1', receiverNode.port!, payload);
+      expect(receiver.incoming[offer.offerId]!.streams, isEmpty);
     });
 
     test('decline leaves the sender informed and files locked', () async {

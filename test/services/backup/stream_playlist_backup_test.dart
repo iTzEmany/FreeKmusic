@@ -34,15 +34,15 @@ void main() {
   Future<int> idOf(AppDatabase db, String title) async =>
       (await (db.select(db.tracks)..where((t) => t.title.equals(title))).getSingle()).id;
 
-  /// Library a, c; the playlist is [a, shadow v1, c, shadow v2].
+  /// Library a, c; the playlist is [a, shadow vvvvvvvvvv1, c, shadow vvvvvvvvvv2].
   Future<AppDatabase> source() async {
     final db = AppDatabase(NativeDatabase.memory());
     await addLibrary(db, 'a');
     await addLibrary(db, 'c');
     final tracks = TrackRepository(db);
     final s1 = await tracks.ensureStreamRow(const YtResult(
-        id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art']));
-    final s2 = await tracks.ensureStreamRow(const YtResult(id: 'v2', title: 'Stream two', channel: 'Ch', duration: null));
+        id: 'vvvvvvvvvv1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art']));
+    final s2 = await tracks.ensureStreamRow(const YtResult(id: 'vvvvvvvvvv2', title: 'Stream two', channel: 'Ch', duration: null));
     final pl = PlaylistRepository(db);
     final id = await pl.create('Saved');
     await pl.addStreamTracks(id, [await idOf(db, 'a'), s1, await idOf(db, 'c'), s2]);
@@ -76,7 +76,7 @@ void main() {
     expect(report.playlistsCreated, 1);
     expect(report.playlistItemsSkipped, 0);
     expect(await playlist(here, 'Saved'), await playlist(src, 'Saved'));
-    final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
+    final row = (await TrackRepository(here).streamRow('youtube:vvvvvvvvvv1'))!;
     expect((row.kind, row.title, row.artist, row.durationMs), (kStreamKind, 'Stream one', 'Art', 90000));
   });
 
@@ -134,17 +134,17 @@ void main() {
   test('a key with an unknown source leaves no stray shadow row; an episode path is skipped', () async {
     final here = AppDatabase(NativeDatabase.memory());
     addTearDown(here.close);
-    await TrackRepository(here).ensureStreamRow(YtResult(id: 'e1', title: 'Ep', channel: 'C', duration: Duration.zero));
-    await here.customStatement("UPDATE tracks SET kind = 1 WHERE path = 'stream:youtube:e1'");
+    await TrackRepository(here).ensureStreamRow(YtResult(id: 'eeeeeeeeee1', title: 'Ep', channel: 'C', duration: Duration.zero));
+    await here.customStatement("UPDATE tracks SET kind = 1 WHERE path = 'stream:youtube:eeeeeeeeee1'");
     final data = UserData(createdAt: 1, playlists: [
       const PlaylistData(name: 'X', createdAt: 1, uuid: 'u1', items: [
         TrackRef(title: 'x', streamKey: 'spotify:abc'),
-        TrackRef(title: 'ep', streamKey: 'youtube:e1'),
+        TrackRef(title: 'ep', streamKey: 'youtube:eeeeeeeeee1'),
       ]),
     ]);
     final report = await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
     expect(report.playlistItemsSkipped, 2);
-    expect([for (final t in await here.select(here.tracks).get()) t.path], ['stream:youtube:e1']);
+    expect([for (final t in await here.select(here.tracks).get()) t.path], ['stream:youtube:eeeeeeeeee1']);
   });
 
   // D-607: a streamed track the user saved is library content and travels with its user data.
@@ -153,30 +153,42 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       final tracks = TrackRepository(db);
       await tracks.saveStream(const YtResult(
-          id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art'], album: 'Alb'));
-      await tracks.ensureStreamRow(const YtResult(id: 'v2', title: 'Unsaved', channel: 'Ch', duration: null));
-      await db.customStatement("UPDATE tracks SET is_favorite = 1, play_count = 4, last_played_at = 99, added_at = 1234 WHERE path = 'stream:youtube:v1'");
+          id: 'vvvvvvvvvv1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art'], album: 'Alb', albumId: 'MPREb_x'));
+      await tracks.ensureStreamRow(const YtResult(id: 'vvvvvvvvvv2', title: 'Unsaved', channel: 'Ch', duration: null));
+      await db.customStatement("UPDATE tracks SET is_favorite = 1, play_count = 4, last_played_at = 99, added_at = 1234 WHERE path = 'stream:youtube:vvvvvvvvvv1'");
       final pl = PlaylistRepository(db);
       final id = await pl.create('Mix');
-      await pl.addStreamTracks(id, [(await tracks.streamRow('youtube:v1'))!.id]);
+      await pl.addStreamTracks(id, [(await tracks.streamRow('youtube:vvvvvvvvvv1'))!.id]);
       return db;
     }
 
     UserData roundTrip(UserData d) =>
         UserData.fromJson(jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>);
 
+    test('an album browse id that is not a plain id is dropped when a backup is read', () {
+      Map<String, dynamic> j(Object id) => {
+            'ref': {'streamKey': 'youtube:vvvvvvvvvv1'},
+            'albumBrowseId': id,
+          };
+      expect(TrackUserData.fromJson(j('MPREb_x-1')).albumBrowseId, 'MPREb_x-1');
+      for (final bad in ['a/b', 'x y', '', 'a' * 65]) {
+        expect(TrackUserData.fromJson(j(bad)).albumBrowseId, isNull, reason: bad);
+      }
+    });
+
     test('restore on an empty DB keeps saved rows with favourite, plays and playlist; unsaved ones stay out', () async {
       final src = await savedSource();
       addTearDown(src.close);
       final data = roundTrip(await collectUserData(src));
-      expect(data.tracks.map((t) => t.ref.streamKey), ['youtube:v1']);
+      expect(data.tracks.map((t) => t.ref.streamKey), ['youtube:vvvvvvvvvv1']);
       final here = AppDatabase(NativeDatabase.memory());
       addTearDown(here.close);
       await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
-      final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
+      final row = (await TrackRepository(here).streamRow('youtube:vvvvvvvvvv1'))!;
       expect((row.saved, row.isFavorite, row.playCount, row.lastPlayedAt), (true, true, 4, 99));
       expect((row.album, row.albumKey, row.addedAt), ('Alb', 'stream|art|alb', 1234));
-      expect((await TrackRepository(here).streamRow('youtube:v2')), isNull);
+      expect(row.albumBrowseId, 'MPREb_x');
+      expect((await TrackRepository(here).streamRow('youtube:vvvvvvvvvv2')), isNull);
       expect(await playlist(here, 'Mix'), await playlist(src, 'Mix'));
       final saved = await (here.select(here.tracks)..where((t) => isLibraryRow(t))).get();
       expect(saved, hasLength(1));
@@ -188,19 +200,19 @@ void main() {
         'createdAt': 1,
         'tracks': [
           {
-            'ref': {'streamKey': 'youtube:e1', 'title': 'T'},
+            'ref': {'streamKey': 'youtube:eeeeeeeeee1', 'title': 'T'},
             'saved': true,
             'edit': {'title': 'T', 'artist': 'Art', 'album': 'Alb'},
           },
-          {'ref': {'streamKey': 'youtube:e2', 'title': 'U'}, 'saved': 'yes'},
+          {'ref': {'streamKey': 'youtube:eeeeeeeeee2', 'title': 'U'}, 'saved': 'yes'},
         ],
       });
       final here = AppDatabase(NativeDatabase.memory());
       addTearDown(here.close);
       await mergeUserData(here, data, await PlaylistSyncRepository(here).resolver());
-      final e1 = (await TrackRepository(here).streamRow('youtube:e1'))!;
-      expect((e1.saved, e1.albumKey), (true, 'stream|art|alb'));
-      expect((await TrackRepository(here).streamRow('youtube:e2'))!.saved, false);
+      final eeeeeeeeee1 = (await TrackRepository(here).streamRow('youtube:eeeeeeeeee1'))!;
+      expect((eeeeeeeeee1.saved, eeeeeeeeee1.albumKey), (true, 'stream|art|alb'));
+      expect((await TrackRepository(here).streamRow('youtube:eeeeeeeeee2'))!.saved, false);
     });
 
     test('saved:true on a file ref does not abort the restore', () async {
@@ -241,13 +253,13 @@ void main() {
         'format': 1,
         'createdAt': 1,
         'tracks': [
-          {'ref': {'streamKey': 'youtube:v1', 'title': 'Stream one'}, 'favorite': true},
+          {'ref': {'streamKey': 'youtube:vvvvvvvvvv1', 'title': 'Stream one'}, 'favorite': true},
         ],
       });
       final here = AppDatabase(NativeDatabase.memory());
       addTearDown(here.close);
       await mergeUserData(here, old, await PlaylistSyncRepository(here).resolver());
-      final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
+      final row = (await TrackRepository(here).streamRow('youtube:vvvvvvvvvv1'))!;
       expect((row.saved, row.isFavorite), (false, true));
     });
   });

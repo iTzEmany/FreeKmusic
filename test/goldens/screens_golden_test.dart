@@ -28,7 +28,9 @@ import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/import_providers.dart' show searchCacheCountProvider;
 import 'package:codecore/providers/youtube_providers.dart';
-import 'package:codecore/providers/ytm_catalog_providers.dart' show ytmCatalogProvider;
+import 'package:codecore/providers/ytm_catalog_providers.dart' show albumMissingTracksProvider, ytmCatalogProvider;
+import 'package:codecore/services/online/ytm_artist.dart' show YtmAlbumTrack;
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart' show clockProvider;
 import 'package:codecore/ui/screens/jam/jam_screen.dart';
@@ -165,6 +167,8 @@ void main() {
               final rows = await tester.runAsync(() => s.h.db.customSelect(
                   "SELECT album_key FROM tracks WHERE album = 'The Wall' LIMIT 1").get());
               final key = rows!.first.read<String>('album_key');
+              // Streaming mode: the songs the library lacks load by themselves (D-706).
+              await s.h.store.writeSettings(s.h.store.readSettings().copyWith(storageMode: StorageMode.stream));
               await s.show(
                   AlbumDetailScreen(
                       album: AlbumSummary(
@@ -176,6 +180,14 @@ void main() {
                           durationMs: 1000000,
                           year: 1979,
                           coverKey: s.seed.coverKeys[key])),
+                  // The songs of the album that the library lacks (F-22).
+                  extra: [
+                    albumMissingTracksProvider(key).overrideWith((ref) async => [
+                          YtmAlbumTrack(9, ytmSong('w1', 'Run Like Hell', seconds: 262)),
+                          YtmAlbumTrack(10, ytmSong('w2', 'Waiting for the Worms', seconds: 244)),
+                          YtmAlbumTrack(11, ytmSong('w3', 'Hey You', seconds: 282)),
+                        ]),
+                  ],
                   textScale: scale);
               await s.expectGolden('${tag}_album.png');
             }));

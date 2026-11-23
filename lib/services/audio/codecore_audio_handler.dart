@@ -288,6 +288,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   // Tap-to-first-sound timing of the load in flight (logged once, see _onPosition).
   _Timing? _timing;
   int _consecutiveErrors = 0;
+
+  /// The token of a start-up restore load (D-679); -1 when the last load was not one.
+  int _coldToken = -1;
   bool _skipBack = false; // the skip that loads the next track goes backwards (Previous)
   // The current streamed track plays from its address (not the cached file): an
   // error there asks the preparer for a new start (R-76).
@@ -442,9 +445,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _leaveRadioMode();
     _source = List.of(ids);
     _queue.setItems(ids, startIndex: index, keepUser: true);
-    _consecutiveErrors = 0;
     _queueController.add(null);
-    await _loadCurrent(play: true);
+    await _loadChosen();
   }
 
   /// Plays [stations] from [index]: the queue is that list, so next and
@@ -459,9 +461,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _queue.repeat = PlayRepeat.off;
     _source = List.of(ids);
     _queue.setItems(ids, startIndex: index);
-    _consecutiveErrors = 0;
     _queueController.add(null);
-    await _loadCurrent(play: true);
+    await _loadChosen();
   }
 
   void _leaveRadioMode() {
@@ -535,6 +536,15 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
+  /// A track played, advanced by itself or was chosen: the run of failures starts over.
+  void _resetErrors() => _consecutiveErrors = 0;
+
+  /// A track chosen by the user starts a new series of failures.
+  Future<void> _loadChosen() {
+    _resetErrors();
+    return _loadCurrent(play: true);
+  }
+
   /// Loads the queue paused, at [position] (used to resume after a restart).
   Future<void> restore(List<int> ids, int index, Duration position, {int userAhead = 0}) async {
     _leaveRadioMode();
@@ -577,7 +587,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
     // A cold restore that fails is only logged, unless a ▶ came meanwhile (D-679).
-    bool quiet() => cold && !_playWhenReady;
+    _coldToken = cold ? token : -1;
     final isOnline = isOnlineId(id);
     var entry = isOnline ? online?.entryOf(id) : null;
     final radio = isOnline ? online?.radioOf(id) : null;
@@ -590,7 +600,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         (isOnline ? online?.trackOf(id) : await _tracks.getById(id));
     if (token != _loadToken) return;
     if (track == null) {
-      await _failAndSkip(PlaybackFailureReason.notInLibrary, null, token, play: play, cold: quiet());
+      await _onLoadFailure(PlaybackFailureReason.notInLibrary, null, token, play: play);
       return;
     }
     // The track we are leaving keeps its place (long tracks only).
@@ -683,7 +693,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await synced;
         if (token != _loadToken) return;
         final res = entry?.result ?? streamResultOfRow(streamKey, track);
-        if (await _skipOffline(p, streamKey, res, play, token, back, quiet())) return;
+        if (await _skipOffline(p, streamKey, res, play: play, token: token, back: back)) return;
         final began = await _asStream(streamKey, p.start(streamKey, res));
         if (token != _loadToken) return;
         playNow = _playWhenReady;
@@ -723,7 +733,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         await _backend.seek(start);
         _position = start; // a paused backend emits no position
       }
-      _consecutiveErrors = 0;
+      _resetErrors();
       _permissionReported = false;
       _noSaveId = null;
       if (playNow && !_loadPaused) {
@@ -766,7 +776,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       if (streamKey != null && e is _StreamNotReady) {
         offline = e.offline;
         // The probe said online but the fetch found no network: pass over it like an offline skip.
-        if (offline && !quiet() && await _jumpToAvailable(back: back, play: _playWhenReady, token: token)) return;
+        if (offline && !_isQuiet(token) && await _jumpToAvailable(back: back, play: _playWhenReady, token: token)) return;
         ageGated = e.ageRestricted;
         if (e.gone && track.kind == kStreamKind && track.saved) onStreamGone?.call(track);
         playNow = _playWhenReady;
@@ -782,31 +792,10 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
             : e.fileMissing
             ? PlaybackFailureReason.fileMissing
             : PlaybackFailureReason.unplayable;
-      final local = reason == PlaybackFailureReason.fileMissing || reason == PlaybackFailureReason.unplayable;
-      final ask = audioPermission;
-      var denied = false;
-      if (local && !quiet() && ask != null) {
-        try {
-          denied = !await ask();
-        } on Object catch (err, st2) {
-          AppLog.w('audio permission check failed', err, st2);
-        }
-      }
-      if (denied) {
-        if (token != _loadToken) return;
-        // D-678: no permission is not a bad file: stay paused on it, say so once.
-        _noSaveId = track.id;
-        _playWhenReady = false;
-        if (!_permissionReported) {
-          _permissionReported = true;
-          onError(PlaybackFailure(track.title, PlaybackFailureReason.permissionDenied));
-        }
-        await _backend.stop(); // idle, so the next ▶ loads it again
-        _stayStill('audio permission denied');
-        return;
-      }
-      await _failAndSkip(reason, track, token, play: playNow, cold: quiet());
+      await _onLoadFailure(reason, track, token, play: playNow);
     } finally {
+      // The cold restore is over: later cuts and stream restarts are a normal playback's (D-679).
+      if (_coldToken == token) _coldToken = -1;
       if (token == _loadToken) {
         _waitingStream = _loadBusy = false;
         if (_errorWhileLoading && _url != null) _onUrlError();
@@ -818,14 +807,14 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// With no network (the probe's state: no network I/O here), a stream not in the
   /// cache is passed over to the nearest queue entry that can play (D-577); true
   /// when it was. With none left the player stops with one network failure.
-  Future<bool> _skipOffline(StreamPreparer p, String key, YtResult res, bool play, int token, bool back, bool quiet) async {
+  Future<bool> _skipOffline(StreamPreparer p, String key, YtResult res, {required bool play, required int token, required bool back}) async {
     if (await p.cachedFile(key, res) != null || await p.isOnline()) return false;
     if (token != _loadToken) return true;
-    if (quiet) {
+    if (_isQuiet(token)) {
       _stayStill('restored stream not cached and offline');
       return true;
     }
-    if (await _jumpToAvailable(back: back, play: play, token: token)) return true;
+    if (await _jumpToAvailable(back: back, play: _playWhenReady, token: token)) return true;
     if (token != _loadToken) return true;
     onError(PlaybackFailure(_current?.title, PlaybackFailureReason.networkUnavailable));
     await _goIdle();
@@ -1152,18 +1141,46 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _publish(AudioProcessingState.idle);
   }
 
-  Future<void> _failAndSkip(
+  /// A cold restore that fails is only logged, unless a ▶ came meanwhile (D-679).
+  bool _isQuiet(int token) => _coldToken == token && !_playWhenReady;
+
+  /// The one exit of a failed load: stay still (cold restore), stay paused (no audio
+  /// permission), or tell the user and move on (or go idle after a run of failures).
+  Future<void> _onLoadFailure(
     PlaybackFailureReason reason,
     Track? track,
     int token, {
     bool play = true,
-    bool cold = false,
   }) async {
     if (_disposed) return;
-    if (cold) {
+    if (_isQuiet(token)) {
       _noSaveId = track?.id;
       _stayStill('restored track not loaded: ${track?.title} ($reason)');
       return;
+    }
+    final ask = audioPermission;
+    if (track != null &&
+        ask != null &&
+        (reason == PlaybackFailureReason.fileMissing || reason == PlaybackFailureReason.unplayable)) {
+      var denied = false;
+      try {
+        denied = !await ask();
+      } on Object catch (err, st) {
+        AppLog.w('audio permission check failed', err, st);
+      }
+      if (token != _loadToken) return;
+      if (denied) {
+        // D-678: no permission is not a bad file: stay paused on it, say so once.
+        _noSaveId = track.id;
+        _playWhenReady = false;
+        if (!_permissionReported) {
+          _permissionReported = true;
+          onError(PlaybackFailure(track.title, PlaybackFailureReason.permissionDenied));
+        }
+        await _backend.stop(); // idle, so the next ▶ loads it again
+        _stayStill('audio permission denied');
+        return;
+      }
     }
     _consecutiveErrors++;
     // What the failed track reports from here on (position 0, a seek never reached) is not a place
@@ -1338,7 +1355,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       AppLog.w('stream $key could not be restarted', e, st);
       if (token == _loadToken) {
         _waitingStream = false;
-        await _failAndSkip(
+        await _onLoadFailure(
           e is _StreamNotReady && e.offline
               ? PlaybackFailureReason.networkUnavailable
               : _current?.kind == kEpisodeKind
@@ -1390,7 +1407,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> _failCut(Track t) async {
     AppLog.w('episode "${t.title}" stopped early at $_position');
     _saveResume();
-    await _failAndSkip(
+    await _onLoadFailure(
       PlaybackFailureReason.episodeUnavailable,
       t,
       _loadToken,
@@ -1446,7 +1463,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       if (stay) _pausedAtTrackEnd.add(null);
       return;
     }
-    _consecutiveErrors = 0;
+    _resetErrors();
     _lastResumeSave = Duration.zero;
     // The old load's late callbacks (a file arriving, a recovery) are not the new track's.
     _loadToken++;
@@ -1936,8 +1953,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       await _goIdle();
       return;
     }
-    _consecutiveErrors = 0; // a track chosen by hand starts a new series
-    await _loadCurrent(play: true);
+    await _loadChosen();
   }
 
   @override
@@ -1966,8 +1982,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       }
     }
     _queueController.add(null); // the block follows the new current entry
-    _consecutiveErrors = 0;
-    await _loadCurrent(play: true);
+    await _loadChosen();
   }
 
   @override
@@ -1975,8 +1990,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
     _queue.jumpTo(index);
     // The block moved behind the new current entry: lists must see the new order.
     _queueController.add(null);
-    _consecutiveErrors = 0;
-    await _loadCurrent(play: true);
+    await _loadChosen();
   }
 
   Future<void> removeFromQueue(int index) async {

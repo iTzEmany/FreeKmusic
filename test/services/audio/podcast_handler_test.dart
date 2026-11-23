@@ -391,6 +391,20 @@ void main() {
       expect(backend.loaded, ['/m/song.mp3']);
     });
 
+    test('a restored stream that played and was paused fails loudly afterwards, not in silence (D-679)', () async {
+      final failures = await fresh();
+      await handler.restore([remoteId, songId], 0, Duration.zero);
+      await settle();
+      await handler.play();
+      await settle();
+      await handler.pause();
+      await at(const Duration(minutes: 8));
+      backend.stateC.add(BackendState.error);
+      await settle();
+      expect(failures.map((f) => f.reason), [PlaybackFailureReason.episodeUnavailable]);
+      expect(backend.loaded, ['/m/song.mp3']);
+    });
+
     test('marked as heard by hand while playing: the place is forgotten and not written again', () async {
       final resumed = <int>[];
       await fresh(resumed: resumed.add);

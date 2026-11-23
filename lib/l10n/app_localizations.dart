@@ -12876,6 +12876,42 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Scarico… {percent}%'**
   String downloadBarProgress(int percent);
+
+  /// No description provided for @csvImportDownloadToo.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica anche i file'**
+  String get csvImportDownloadToo;
+
+  /// No description provided for @csvImportDownloadTooHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Di norma i brani si salvano in streaming, senza file. Accesa, li scarica anche sul dispositivo.'**
+  String get csvImportDownloadTooHint;
+
+  /// No description provided for @onboardingFoldersDownloadsNote.
+  ///
+  /// In it, this message translates to:
+  /// **'I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.'**
+  String get onboardingFoldersDownloadsNote;
+
+  /// No description provided for @albumMissingTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Altri brani dell\'album'**
+  String get albumMissingTitle;
+
+  /// No description provided for @incomingStreams.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano in streaming} other{{n} brani in streaming}}'**
+  String incomingStreams(int n);
+
+  /// No description provided for @keepOfflineMeteredAsk.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei su una rete a consumo. {n, plural, one{1 brano} other{{n} brani}}, circa {mb} MB: scaricare?'**
+  String keepOfflineMeteredAsk(int n, int mb);
 }
 
 class _AppLocalizationsDelegate

@@ -66,6 +66,10 @@ class Tracks extends Table {
 
   /// 0 automatic · 1 chosen by hand for the album · 2 chosen by hand for the track.
   IntColumn get coverSource => integer().withDefault(const Constant(0))();
+
+  /// YouTube Music `browseId` of the album a saved stream row came from (D-675): opens the whole
+  /// album from the library page. Null on local rows and on rows saved without an album page.
+  TextColumn get albumBrowseId => text().nullable()();
 }
 
 class Folders extends Table {

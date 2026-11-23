@@ -50,6 +50,9 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - [ ] 147.9 Area e controllo di fine fase
   - Aggiorna i documenti d'area toccati dalle fasi 135-146 se qualcosa è rimasto indietro (`../architettura/00-panoramica.md`, `qualita-e-rilascio.md` con il risultato delle misure); `../decisioni.md` per le scelte prese in 147.1 e nelle proposte di 143, 145, 146.
 
+## Da provare sul telefono (review fase 140)
+- `JamSaver` (l'ospite salva un brano dell'host) nella cartella pubblica su Android 11+: verificare che la copia finisca dove la scansione la trova, sul Mi A3 o sul Redmi (solo l'app, mai i file già presenti).
+
 ## Tocca a te
 - [ ] Telefono collegato (Motorola ZY22HKD85K, e i telefoni di test per le prove distruttive) con debug USB e schermo sbloccabile.
 - [ ] Concedere/togliere il permesso `READ_MEDIA_AUDIO` dal telefono quando richiesto (L1/L2); farlo dall'agente non è previsto.

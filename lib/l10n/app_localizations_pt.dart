@@ -8148,4 +8148,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String downloadBarProgress(int percent) {
     return 'A transferir… $percent%';
   }
+
+  @override
+  String get csvImportDownloadToo => 'Transferir também os ficheiros';
+
+  @override
+  String get csvImportDownloadTooHint =>
+      'Normalmente as músicas são guardadas para streaming, sem ficheiro. Ligado, também são transferidas para o dispositivo.';
+
+  @override
+  String get onboardingFoldersDownloadsNote =>
+      'As músicas que transferir vão para a pasta FreeKmusic, dentro da pasta que escolher aqui.';
+
+  @override
+  String get albumMissingTitle => 'Mais músicas do álbum';
+
+  @override
+  String incomingStreams(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n músicas em streaming',
+      one: '1 música em streaming',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n faixas',
+      one: '1 faixa',
+    );
+    return 'Estás numa rede com tráfego limitado. $_temp0, cerca de $mb MB: descarregar?';
+  }
 }

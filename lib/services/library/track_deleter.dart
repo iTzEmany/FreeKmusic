@@ -5,6 +5,8 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/hidden_playlists.dart';
 import '../../data/repositories/track_repository.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../import/import_options.dart' show forgetImportDownloadToo;
 import 'duplicate_cleanup.dart';
 
 /// Deletes files through the platform (Android's system dialog); returns the
@@ -140,7 +142,9 @@ class TrackDeleter {
     ).get();
     for (final row in ids) {
       final id = row.read<int>('id');
+      final imports = await (db.select(db.playlistImports)..where((i) => i.playlistId.equals(id))).get();
       await (db.delete(db.playlistImports)..where((i) => i.playlistId.equals(id))).go();
+      await forgetImportDownloadToo(await SharedPreferences.getInstance(), [for (final i in imports) i.id]);
       await (db.delete(db.playlists)..where((pl) => pl.id.equals(id))).go();
     }
   }

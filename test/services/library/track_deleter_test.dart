@@ -9,6 +9,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late AppDatabase db;
@@ -190,8 +191,9 @@ void main() {
     final lists = PlaylistRepository(db);
     final tech = await lists.create('Album');
     await lists.addTracks(tech, [id]);
-    await db.into(db.playlistImports).insert(PlaylistImportsCompanion.insert(
+    final imp = await db.into(db.playlistImports).insert(PlaylistImportsCompanion.insert(
         playlistId: tech, sourceName: 'Album', createdAt: 1, sourceKind: const Value('ytm-album')));
+    SharedPreferences.setMockInitialValues({'importDownloadToo.$imp': true});
     final other = await lists.create('Mine');
 
     await deleter().deleteTracks([(await repo.getById(id))!]);
@@ -200,5 +202,6 @@ void main() {
     expect(Directory(root).existsSync(), isTrue, reason: 'a library root stays');
     expect(await db.select(db.playlistImports).get(), isEmpty);
     expect((await db.select(db.playlists).get()).map((x) => x.id), [other]);
+    expect((await SharedPreferences.getInstance()).getKeys(), isEmpty, reason: 'its «scarica anche» key goes too');
   });
 }

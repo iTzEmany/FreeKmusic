@@ -1,4 +1,16 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/import_row.dart';
+
+/// Preference key prefix of «scarica anche» (D-665), one key per import: device state, never in a backup.
+const importDownloadTooPrefix = 'importDownloadToo.';
+
+/// Drops the «scarica anche» key of each import in [importIds] (cancelled, or deleted with its playlist).
+Future<void> forgetImportDownloadToo(SharedPreferences prefs, Iterable<int> importIds) async {
+  for (final id in importIds) {
+    await prefs.remove('$importDownloadTooPrefix$id');
+  }
+}
 
 /// What the user chose in the preview, stored with the import.
 class ImportOptions {
@@ -8,6 +20,7 @@ class ImportOptions {
     this.folderPath,
     this.numberFiles = false,
     this.fetchCovers = false,
+    this.downloadToo = false,
   });
 
   /// Link what the library has, search and download nothing.
@@ -24,6 +37,9 @@ class ImportOptions {
 
   /// Look the album cover up after each download.
   final bool fetchCovers;
+
+  /// «Scarica anche»: besides saving the songs in streaming, download their files (D-665).
+  final bool downloadToo;
 }
 
 /// Short codes kept in `playlist_import_items.note`; the UI turns them into text.

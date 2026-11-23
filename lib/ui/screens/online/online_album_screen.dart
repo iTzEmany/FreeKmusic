@@ -68,7 +68,7 @@ class OnlineAlbumScreen extends ConsumerWidget {
       final id = await ref.read(playlistImportServiceProvider).startFromResults(
             plan.importName,
             plan.tracks,
-            options: ImportOptions(folderPath: plan.folder, fetchCovers: true),
+            options: ImportOptions(folderPath: plan.folder, fetchCovers: true, downloadToo: true),
             sourceKind: ytmAlbumSourceKind,
           );
       if (!context.mounted) return;

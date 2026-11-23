@@ -4673,5 +4673,28 @@
         "type": "int"
       }
     }
+  },
+  "csvImportDownloadToo": "Scarica anche i file",
+  "csvImportDownloadTooHint": "Di norma i brani si salvano in streaming, senza file. Accesa, li scarica anche sul dispositivo.",
+  "onboardingFoldersDownloadsNote": "I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.",
+  "albumMissingTitle": "Altri brani dell'album",
+  "incomingStreams": "{n, plural, one{1 brano in streaming} other{{n} brani in streaming}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOfflineMeteredAsk": "Sei su una rete a consumo. {n, plural, one{1 brano} other{{n} brani}}, circa {mb} MB: scaricare?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }
