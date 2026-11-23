@@ -2058,6 +2058,9 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _shadowId = newId;
     }
     online?.rebindRow(oldId, newId);
+    _source = _source?.map((i) => i == oldId ? newId : i).toList(); // like removeTracks, «Svuota» keeps following
+    final cur = _current;
+    if (cur != null && cur.id == oldId) _current = cur.copyWith(id: newId); // the listen counts on the kept row
     if (_queue.replaceId(oldId, newId) == 0) return false;
     _queueController.add(null);
     unawaited(_refreshWindow());

@@ -279,21 +279,24 @@ void main() {
     final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
     final kept = ids.first;
     await TrackRepository(db).mergeStreamRow('youtube:v1', kept);
+    expect(online[id]?.trackId, shadow);
     handler.replaceQueueId(shadow, kept);
+    expect(online[id]?.trackId, kept, reason: 'the online entries follow');
     await listenTo(100);
     await settle();
     expect([for (final p in await db.select(db.plays).get()) p.trackId], [kept]);
   });
 
-  test('replaceQueueId rebinds the online entries of the merged shadow row', () async {
-    final id = online.register(result('v1'));
-    preparer.urls['youtube:v1'] = (Uri.parse('https://rr1.googlevideo.com/v1'), const {});
-    await handler.playQueue([id], 0);
+  test('replaceQueueId also follows the list playback started from, and the library track now playing', () async {
+    await handler.playQueue([ids[0]], 0);
     await settle();
-    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
-    expect(online[id]?.trackId, shadow);
-    handler.replaceQueueId(shadow, ids.first);
-    expect(online[id]?.trackId, ids.first);
+    backend.stateC.add(BackendState.playing);
+    await settle();
+    handler.replaceQueueId(ids[0], ids[1]);
+    expect(handler.sourceIds, [ids[1]]);
+    await listenTo(100);
+    await settle();
+    expect([for (final p in await db.select(db.plays).get()) p.trackId], [ids[1]]);
   });
 
   test('resyncPreparer drops an entry downloaded after it was queued', () async {

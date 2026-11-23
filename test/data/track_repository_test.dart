@@ -147,6 +147,14 @@ void main() {
       expect(merged, [(shadow, id)]);
     });
 
+    test('a callback that throws after the merge does not undo it nor fail the call', () async {
+      final id = await saved('old');
+      final shadow = await repo.ensureStreamRow(yt('new'));
+      expect(await repo.rekeyStream(id, 'youtube:new', onMerged: (g, k) => throw StateError('boom')), true);
+      expect(await repo.getById(shadow), null);
+      expect((await repo.getById(id))!.path, 'stream:youtube:new');
+    });
+
     test('a shadow row already at the new key is merged into the moved row', () async {
       final id = await saved('old');
       final shadow = await repo.ensureStreamRow(yt('new'));
@@ -755,6 +763,15 @@ void main() {
       final merged = <(int, int)>[];
       await repo.demoteToStream(id, 'youtube:a', onMerged: (g, k) => merged.add((g, k)));
       expect(merged, [(shadow, id)]);
+    });
+
+    test('a callback that throws after the merge does not undo it nor fail the call', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      final shadow = await repo.ensureStreamRow(yt('a'));
+      expect(await repo.demoteToStream(id, 'youtube:a', onMerged: (g, k) => throw StateError('boom')), isA<Track>());
+      expect(await repo.getById(shadow), null);
+      expect((await repo.getById(id))!.kind, 2);
     });
 
     test('a favourite album follows the row to its stream album key', () async {

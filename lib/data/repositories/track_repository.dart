@@ -244,7 +244,13 @@ class TrackRepository {
     await settleMovedCover(row, albumKey);
     return row;
     });
-    if (gone != null) onMerged?.call(gone!, id);
+    if (gone != null) {
+      try {
+        onMerged?.call(gone!, id);
+      } on Object catch (e, st) {
+        AppLog.w('shadow merge callback failed', e, st); // the merge is committed: the caller goes on
+      }
+    }
     return before;
   }
 
@@ -309,7 +315,13 @@ class TrackRepository {
     await settleMovedCover(row!, albumKey);
     return true;
     });
-    if (gone != null) onMerged?.call(gone!, id);
+    if (gone != null) {
+      try {
+        onMerged?.call(gone!, id);
+      } on Object catch (e, st) {
+        AppLog.w('shadow merge callback failed', e, st); // the merge is committed: the caller goes on
+      }
+    }
     return moved;
   }
 
