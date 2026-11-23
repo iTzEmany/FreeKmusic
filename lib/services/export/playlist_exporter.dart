@@ -8,24 +8,37 @@ import '../../data/repositories/track_kinds.dart';
 import '../../data/repositories/backup_queries.dart' show trackRefFor;
 import '../../core/text_utils.dart';
 import '../backup/user_data.dart';
+import '../stream/stream_key.dart' show keyOfStreamPath;
 import '../import/csv_parser.dart';
 
+/// The YouTube Music page of a streamed row (`kind = 2`, D-524/D-674), or null for any other row.
+/// shortcut: a SoundCloud row keeps no page address, so it has none; fix with the first SoundCloud stream.
+String? streamUrlOf(Track t) {
+  final key = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
+  const youtube = 'youtube:';
+  return key != null && key.startsWith(youtube)
+      ? 'https://music.youtube.com/watch?v=${key.substring(youtube.length)}'
+      : null;
+}
+
 /// M3U8 (UTF-8). Paths are absolute, or relative to [relativeTo] with `/`. A streamed
-/// track (`kind = 2`, D-524) has no file: it is left out.
+/// track has no file: its line carries the YouTube Music link (D-674).
 String toM3u8(String name, List<Track> tracks, {String? relativeTo}) {
   final b = StringBuffer('#EXTM3U\n#PLAYLIST:$name\n');
-  final files = tracks.where((t) => t.kind != kStreamKind).toList();
-  if (files.length != tracks.length) {
-    AppLog.i('m3u: ${tracks.length - files.length} streamed tracks not exported');
-  }
-  for (final t in files) {
+  for (final t in tracks) {
+    final url = streamUrlOf(t);
+    if (t.kind == kStreamKind && url == null) {
+      AppLog.i('m3u: streamed track without a page address not exported');
+      continue;
+    }
     final secs = t.durationMs > 0 ? (t.durationMs / 1000).round() : -1;
     final label = t.artist == null || t.artist!.isEmpty
         ? t.title
         : '${t.artist} - ${t.title}';
-    final path = relativeTo == null
-        ? t.path
-        : p.relative(t.path, from: relativeTo).replaceAll(r'\', '/');
+    final path = url ??
+        (relativeTo == null
+            ? t.path
+            : p.relative(t.path, from: relativeTo).replaceAll(r'\', '/'));
     b.write('#EXTINF:$secs,$label\n$path\n');
   }
   return b.toString();
@@ -46,7 +59,7 @@ String toExportifyCsv(List<Track> tracks, Map<int, String> isrcByTrack) =>
       exportifyHeader,
       for (final t in tracks)
         [
-          '',
+          streamUrlOf(t) ?? '',
           t.title,
           t.album ?? '',
           t.artist ?? '',
