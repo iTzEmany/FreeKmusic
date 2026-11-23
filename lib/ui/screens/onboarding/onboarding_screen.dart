@@ -66,7 +66,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final cc = context.cc;
     final askPermission = widget.askAudioPermission ?? isAndroid;
     return Scaffold(
-      backgroundColor: cc.bg,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

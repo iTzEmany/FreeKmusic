@@ -278,6 +278,7 @@ void main() {
     List<Override> extra = const [],
     StorageMode? mode,
     ValueNotifier<bool>? opener,
+    bool settle = true,
   }) async {
     tester.view.physicalSize = const Size(360, 900);
     tester.view.devicePixelRatio = 1;
@@ -311,7 +312,7 @@ void main() {
       ),
     );
     await tester.tap(find.text('open'));
-    await _settle(tester);
+    if (settle) await _settle(tester);
     return h;
   }
 
@@ -601,6 +602,36 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('an action whose label changed while the menu was open still runs, row gone', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final opener = ValueNotifier(true);
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+      opener: opener,
+    );
+    opener.value = false;
+    await tester.pump();
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => h.db.customStatement("UPDATE tracks SET kind = 0, saved = 0, path = '${file.path}' WHERE id = (SELECT MIN(id) FROM tracks)"));
+    await tester.runAsync(() => index.add('abc', file.path));
+    ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider);
+    await _settle(tester); // the labels changed: «Scarica» gone, «Elimina dal dispositivo» in
+    await tester.ensureVisible(find.text('Elimina dal dispositivo'));
+    await tester.pump();
+    await tester.tap(find.text('Elimina dal dispositivo'));
+    await _settle(tester);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Elimina')));
+    await _settle(tester);
+    await _settle(tester);
+    expect(await tester.runAsync(() => h.db.select(h.db.tracks).get()), isEmpty);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('the overlay host of the menu is removed when it closes, with or without an action', (tester) async {
     final downloads = _Downloads();
     final h = await openSheet(
@@ -808,6 +839,7 @@ void main() {
     WidgetTester tester, {
     List<Override> extra = const [],
     bool stale = false,
+    bool settle = true,
   }) async {
     final dir = Directory.systemTemp.createTempSync('dl_idx');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -819,6 +851,7 @@ void main() {
       tester,
       (t) => t.copyWith(path: file.path),
       extra: [downloadIndexProvider.overrideWith((ref) async => index), ...extra],
+      settle: settle,
     );
   }
 
@@ -875,6 +908,148 @@ void main() {
     await _settle(tester);
     final row = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
     expect(row.kind, kStreamKind);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Libera spazio» is there from the first frame of the menu, and a double tap opens one sheet', (tester) async {
+    final h = await openDownloaded(tester, settle: false);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100))); // the pre-check (a stat)
+    await tester.pump(); // one frame: the sheet's first
+    expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5)); // the barrier
+    await _settle(tester);
+    await tester.tap(find.text('open'));
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget, reason: 'a second sheet would list it twice');
+    await h.dispose(tester);
+  });
+
+  testWidgets('two rows tapped within the download check open one sheet', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 2);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final loading = Completer<DownloadIndex>();
+    await h.pump(
+      tester,
+      extraOverrides: [downloadIndexProvider.overrideWith((ref) => loading.future)],
+      Scaffold(
+        body: Consumer(
+          builder: (context, ref, _) => Column(
+            children: [
+              for (final t in rows)
+                TextButton(onPressed: () => showTrackActions(context, ref, t), child: Text('open${t.id}')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open${rows[0].id}'));
+    await tester.tap(find.text('open${rows[1].id}')); // another row, the check of the first still running
+    await _settle(tester);
+    await _settle(tester); // past the 500 ms timeout
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a call from a row already unmounted neither opens a sheet nor locks the menu', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 1);
+    final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    final shown = ValueNotifier(true);
+    BuildContext? gone;
+    WidgetRef? goneRef;
+    await h.pump(
+      tester,
+      ValueListenableBuilder<bool>(
+        valueListenable: shown,
+        builder: (_, s, _) => !s
+            ? const SizedBox()
+            : Consumer(builder: (c, r, _) {
+                gone = c;
+                goneRef = r;
+                return const Text('row');
+              }),
+      ),
+    );
+    shown.value = false;
+    await tester.pump();
+    try {
+      await showTrackActions(gone!, goneRef!, t);
+    } on Object {
+      // either outcome is fine; what matters is below
+    }
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
+    await h.pump(
+      tester,
+      Scaffold(body: Consumer(builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, r, t), child: const Text('open')))),
+    );
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget, reason: 'the guard was not left taken');
+    await h.dispose(tester);
+  });
+
+  testWidgets('a row inside a nested overlay opens the sheet, its host goes to the root overlay and leaves with it', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 1);
+    final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Overlay(
+          initialEntries: [
+            OverlayEntry(
+              builder: (_) => Consumer(
+                builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, r, t), child: const Text('open')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    final base = find.byType(Consumer, skipOffstage: false).evaluate().length;
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, greaterThan(base), reason: 'the host is in the tree');
+    await tester.tapAt(const Offset(5, 5));
+    await _settle(tester);
+    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, base, reason: 'closed without an action: host removed');
+    await h.dispose(tester);
+  });
+
+  testWidgets('a failing download index does not lock the menu: it reopens', (tester) async {
+    final h = await openSheet(tester, (t) => t, extra: [downloadIndexProvider.overrideWith((ref) async => throw StateError('boom'))]);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5)); // the barrier
+    await _settle(tester);
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the row unmounted during the download check: the menu opens anyway', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final loading = Completer<DownloadIndex>();
+    final opener = ValueNotifier(true);
+    final h = await openSheet(
+      tester,
+      (t) => t,
+      extra: [downloadIndexProvider.overrideWith((ref) => loading.future)],
+      opener: opener,
+      settle: false,
+    );
+    opener.value = false;
+    await tester.pump();
+    loading.complete(index);
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 

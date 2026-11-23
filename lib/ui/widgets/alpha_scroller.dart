@@ -180,7 +180,12 @@ class _AlphaScrollerState extends State<AlphaScroller>
     final reduced = MediaQuery.disableAnimationsOf(context);
     return Stack(
       children: [
-        widget.child,
+        // The strip is the scrollbar: the desktop Material one would double it.
+        // Always wrapped: the child keeps its place in the tree when the list crosses the threshold.
+        ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: _count >= alphaScrollerMinItems ? false : null),
+          child: widget.child,
+        ),
         // Few items, or empty letters (not alphabetical, loading): no strip, so
         // touches on the right edge scroll the list.
         if (_count >= alphaScrollerMinItems)

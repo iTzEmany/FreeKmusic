@@ -61,3 +61,9 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - [ ] Decidere come mettere la build sul Motorola (147.1) e la versione di rilascio.
 
 ## Note di deviazione
+
+## Da controllare (review e scheggia della fase 142)
+- Riquadro Radio del Riprendi: se la stazione sta già suonando il tocco la riavvia (`playStations`); Android Auto mette il contesto a null (`codecore_audio_handler.dart:525,531`), quindi radio e album avviati dall'auto compaiono come «Brano».
+- Riquadro Daylist visibile per 90 giorni anche quando la daylist non può partire (`daylist_providers.dart:374`: ritorno silenzioso): nasconderlo o avvisare.
+- Griglia a 3 colonne: la soglia è sulla larghezza del blocco (560 dp); su desktop serve una finestra di circa 1324 dp. La metrica 147.1 va misurata sul blocco, o la soglia rivista.
+- Log `discovery: socket error | Network is unreachable` ogni 2 s su Android offline.

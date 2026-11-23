@@ -1,4 +1,6 @@
+import 'package:codecore/app.dart' show AppScrollBehavior;
 import 'package:codecore/ui/widgets/alpha_scroller.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -93,5 +95,63 @@ void main() {
     await g.up();
     await tester.pump();
     expect(find.textContaining(' / 200'), findsNothing);
+  });
+
+  testWidgets('desktop: the Material scrollbar is off where the strip is active, on below the threshold', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    Widget app(int n) => MaterialApp(
+      scrollBehavior: const AppScrollBehavior(),
+      home: Scaffold(
+        body: AlphaScroller(
+          controller: ScrollController(),
+          itemCount: n,
+          child: ListView.builder(itemExtent: 50, itemCount: n, itemBuilder: (_, i) => Text('row $i')),
+        ),
+      ),
+    );
+    try {
+      await tester.pumpWidget(app(alphaScrollerMinItems));
+      expect(find.byType(Scrollbar), findsNothing);
+      await tester.pumpWidget(app(alphaScrollerMinItems - 1));
+      expect(find.byType(Scrollbar), findsOneWidget);
+    } finally {
+      debugDefaultTargetPlatformOverride = null; // must be unset before the test ends
+    }
+  });
+
+  testWidgets('desktop: the same list keeps its scroll position when the count crosses the threshold', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    final scroll = ScrollController();
+    final list = ListView.builder(controller: scroll, itemExtent: 50, itemCount: 500, itemBuilder: (_, i) => Text('row $i'));
+    late StateSetter set;
+    var n = alphaScrollerMinItems;
+    await tester.pumpWidget(
+      MaterialApp(
+        scrollBehavior: const AppScrollBehavior(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (_, setState) {
+              set = setState;
+              return AlphaScroller(controller: scroll, itemCount: n, child: list);
+            },
+          ),
+        ),
+      ),
+    );
+    try {
+      scroll.jumpTo(1000);
+      await tester.pump();
+      expect(find.byType(Scrollbar), findsNothing);
+      set(() => n = alphaScrollerMinItems - 1);
+      await tester.pump();
+      expect(scroll.offset, 1000);
+      expect(find.byType(Scrollbar), findsOneWidget);
+      set(() => n = alphaScrollerMinItems);
+      await tester.pump();
+      expect(scroll.offset, 1000);
+      expect(find.byType(Scrollbar), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }

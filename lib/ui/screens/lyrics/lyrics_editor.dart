@@ -106,7 +106,6 @@ class _LyricsEditorScreenState extends ConsumerState<LyricsEditorScreen> {
     return UnsavedChangesGuard(
       dirty: _ctrl.text != _initial,
       child: Scaffold(
-        backgroundColor: cc.bg,
         appBar: CcAppBar(
           title: l.lyricsEditorTitle,
           actions: [

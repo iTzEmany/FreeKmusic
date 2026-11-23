@@ -79,3 +79,6 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
 - Chiavi non trasferibili: `unknown|<cartella>` (percorso locale) e chiavi per brano; escluderle o sincronizzare la coppia (artista, album).
 - Preferiti di album spariti restano nel DB (filtrati in lettura) ed escono nel backup: potarli o mostrarli.
 - Confine di fiducia: `FavoriteCollectionData.tryParse` deve limitare la lunghezza della chiave e il numero di voci per la LAN.
+
+## Da sapere su `PlayContextKind` (review di architettura della fase 142)
+- È un formato salvato (coda, `Plays.context`) ma vive in `providers/`: spostarlo nel livello dati con `PlayContextKind.fromIndex(int?)` e una sola decodifica (oggi duplicata in `player_providers.dart` `playContextOf` e `resume_providers.dart`); `lastPerArea` riceva il tipo e non l'area già calcolata. Gli ascolti sincronizzati da versioni diverse arrivano con indici che questa versione può non conoscere (letti come `library`).

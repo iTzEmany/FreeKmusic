@@ -9,6 +9,7 @@ import '../../providers/database_providers.dart';
 import '../../providers/library_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/playlist_ops.dart';
+import '../../providers/ui_providers.dart';
 import '../../providers/track_ops.dart';
 import '../screens/library/favorites_screen.dart';
 import '../screens/playlists/playlist_detail_screen.dart';
@@ -31,7 +32,6 @@ class DesktopSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final cc = context.cc;
     final index = ref.watch(navIndexProvider);
     final keys = ref.watch(tabNavigatorKeysProvider);
     void select(NavTab t) {
@@ -40,6 +40,12 @@ class DesktopSidebar extends ConsumerWidget {
         ShellNav.popToRoot(keys[t.index].currentState);
       }
       if (index != t.index) ref.read(navIndexProvider.notifier).set(t.index);
+      // Desktop only (D-667): the phone's Search button opens without the keyboard.
+      if (t == NavTab.search) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => ref.read(searchFocusProvider).requestFocus(),
+        );
+      }
     }
 
     Widget item(
@@ -60,7 +66,7 @@ class DesktopSidebar extends ConsumerWidget {
     return SizedBox(
       width: collapsed ? CcDims.sidebarCollapsedWidth : CcDims.sidebarWidth,
       child: Material(
-        color: cc.bg,
+        color: Colors.transparent,
         child: Column(
           children: [
             const SizedBox(height: 12),

@@ -1362,6 +1362,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get greetingEvening => 'Boa noite';
 
   @override
+  String get resumeAreaTrack => 'Faixa';
+
+  @override
   String get homeResume => 'Retomar';
 
   @override

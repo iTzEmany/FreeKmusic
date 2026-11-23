@@ -112,6 +112,25 @@ AlbumSummary albumSummaryFromRow(QueryRow r) {
   );
 }
 
+/// The latest play of a `Plays.context` value ([context] is the raw column).
+class LastPlay {
+  const LastPlay(this.context, this.track, this.at, {this.contextName});
+  final int? context;
+
+  /// `Plays.contextName` (the album or playlist name), when set.
+  final String? contextName;
+  final Track track;
+  final int at;
+}
+
+/// [LibraryQueries.watchLastPlayPerContext]. SQLite gives the bare columns (t.*, p.context_name) of the row
+/// holding the MAX. `CROSS JOIN` fixes the order: the period first through `plays_at` (as in `listensSinceSql`).
+final lastPlayPerContextSql =
+    'SELECT p.context AS context, p.context_name AS context_name, MAX(p.played_at) AS at, t.* FROM plays p '
+    'CROSS JOIN tracks t ON t.id = p.track_id '
+    "WHERE p.played_at >= ? AND t.missing = 0 AND t.ignored = 0 AND ${libraryRowSql('t')} "
+    'GROUP BY p.context';
+
 class LibraryQueries {
   LibraryQueries(this._db);
 
@@ -235,6 +254,34 @@ ORDER BY g.k COLLATE NOCASE
         )
         .watch()
         .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
+  }
+
+  /// The latest play of each `Plays.context` value of the last 90 days (the
+  /// `plays_at` index; no migration), with its track (home «Riprendi», D-671).
+  /// Missing or ignored tracks are filtered before the grouping, so the
+  /// context falls back to its latest valid play.
+  Stream<List<LastPlay>> watchLastPlayPerContext() {
+    final since = DateTime.now()
+        .subtract(const Duration(days: 90))
+        .millisecondsSinceEpoch;
+    return _db
+        .customSelect(
+          lastPlayPerContextSql,
+          variables: [Variable<int>(since)],
+          readsFrom: {_db.plays, _db.tracks},
+        )
+        .watch()
+        .map(
+          (rows) => [
+            for (final r in rows)
+              LastPlay(
+                r.read<int?>('context'),
+                _db.tracks.map(r.data),
+                r.read<int>('at'),
+                contextName: r.read<String?>('context_name'),
+              ),
+          ],
+        );
   }
 
   /// The most played tracks (never-played ones excluded).

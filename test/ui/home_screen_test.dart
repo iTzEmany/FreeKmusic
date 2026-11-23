@@ -75,7 +75,10 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(PlayCircleButton), findsOneWidget);
     // displaySmall is 36 sp: at 2.0 one line is ~86 px, so >100 means it wrapped.
-    expect(tester.getSize(find.text('Casuale su tutto')).height, greaterThan(100));
+    expect(
+      tester.getSize(find.text('Casuale su tutto')).height,
+      greaterThan(100),
+    );
     await h.dispose(tester);
   });
 
@@ -112,7 +115,9 @@ void main() {
       reason: 'the library is not playing: only its own mode changes (D-534)',
     );
     expect(h.handler.queueIds, isEmpty, reason: 'nothing starts');
-    final c = ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
+    final c = ProviderScope.containerOf(
+      tester.element(find.byType(HomeScreen)),
+    );
     expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
     await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
@@ -218,7 +223,10 @@ void main() {
       SemanticsAction.tap,
     );
     await _settle(tester);
-    expect(find.bySemanticsLabel(RegExp('Mostra i brani aggiunti da poco')), findsNothing);
+    expect(
+      find.bySemanticsLabel(RegExp('Mostra i brani aggiunti da poco')),
+      findsNothing,
+    );
     await tester.tap(find.byKey(const ValueKey('fan-cover-0')));
     await _settle(tester);
     expect(find.byType(AlbumDetailScreen), findsOneWidget);
@@ -258,7 +266,7 @@ void main() {
     final h = await openHome(tester);
     await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
-    final row = find.byKey(const ValueKey('resume-queue'));
+    final row = find.byKey(const ValueKey('resume-track'));
     expect(row, findsOneWidget);
     expect(
       find.descendant(
@@ -368,26 +376,15 @@ void main() {
   );
 
   testWidgets(
-    '«Riprendi» orders the queue, then tracks left in the middle, then albums',
+    '«Riprendi» shows one tile per area: the queue wins its own, albums apart',
     (tester) async {
       final h = await openRanked(tester);
       await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await _settle(tester);
-      final queue = y(tester, find.byKey(const ValueKey('resume-queue')));
-      final track = y(
-        tester,
-        find.byWidgetPredicate(
-          (w) => w.key.toString().contains('resume-track-'),
-        ),
-      );
-      final entry = y(
-        tester,
-        find.byWidgetPredicate(
-          (w) => w.key.toString().contains('resume-entry-'),
-        ),
-      );
-      expect(track, greaterThan(queue));
-      expect(entry, greaterThan(track));
+      expect(find.byKey(const ValueKey('resume-track')), findsOneWidget);
+      expect(find.byKey(const ValueKey('resume-album')), findsOneWidget);
+      expect(find.byKey(const ValueKey('resume-podcast')), findsNothing);
+      expect(find.byKey(const ValueKey('resume-radio')), findsNothing);
       await h.dispose(tester);
     },
   );

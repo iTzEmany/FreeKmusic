@@ -1362,6 +1362,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get greetingEvening => 'Buenas noches';
 
   @override
+  String get resumeAreaTrack => 'Canción';
+
+  @override
   String get homeResume => 'Continuar';
 
   @override

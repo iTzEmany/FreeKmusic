@@ -33,7 +33,7 @@ class LyricsScreen extends ConsumerWidget {
         ref.watch(liveCurrentTrackProvider).value;
     if (track == null) {
       return Scaffold(
-        backgroundColor: embedded ? Colors.transparent : context.cc.bg,
+        backgroundColor: embedded ? Colors.transparent : null,
         appBar: embedded ? null : CcAppBar(title: l.lyrics),
         body: Center(child: Text(l.nothingPlaying)),
       );
@@ -47,7 +47,6 @@ class LyricsScreen extends ConsumerWidget {
     final plain = lyricsPlainText(track);
     final theme = Theme.of(context).textTheme;
     return Scaffold(
-      backgroundColor: context.cc.bg,
       appBar: CcAppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,

@@ -169,3 +169,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 138 | Ritocchi di UI (#215) | [`fase-138-ritocchi-ui.md`](fasi/fase-138-ritocchi-ui.md) |
 | 139 | Stato vivo del brano e download (#216) | [`fase-139-stato-brano-download.md`](fasi/fase-139-stato-brano-download.md) |
 | 140 | Streaming per prima (#217) | [`fase-140-streaming-per-prima.md`](fasi/fase-140-streaming-per-prima.md) |
+| 141 | Collezioni: preferiti di album e playlist, testata a icone, scorrimento (#218) | [`fase-141-collezioni.md`](fasi/fase-141-collezioni.md) |

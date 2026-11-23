@@ -93,7 +93,7 @@ void main() {
     expect(third.queueIds, [ids[0]]);
     expect(playContextOf(third), isNull);
 
-    // A kind this version does not know is dropped, the queue is restored all the same.
+    // A kind this version does not know reads as library, the queue is restored all the same.
     for (final kind in [-1, PlayContextKind.values.length, 9999]) {
       SharedPreferences.setMockInitialValues({
         'lastQueueIds': ['${ids[0]}'],
@@ -104,8 +104,27 @@ void main() {
       addTearDown(h.dispose);
       await PlaybackPersistence(h, SettingsStore(await SharedPreferences.getInstance())).restore();
       expect(h.queueIds, [ids[0]]);
-      expect(playContextOf(h), isNull);
+      expect(playContextOf(h)?.kind, PlayContextKind.library);
     }
+
+    // Kind 0 (album) is a real kind, not the «unknown» fallback.
+    SharedPreferences.setMockInitialValues({
+      'lastQueueIds': ['${ids[0]}'],
+      'lastContextKind': 0,
+      'lastContextName': 'Disco',
+    });
+    final album = open();
+    addTearDown(album.dispose);
+    await PlaybackPersistence(album, SettingsStore(await SharedPreferences.getInstance())).restore();
+    expect(playContextOf(album)?.kind, PlayContextKind.album);
+    expect(playContextOf(album)?.name, 'Disco');
+
+    // Stored indexes never move: new kinds only go last.
+    expect(PlayContextKind.values.take(8), [
+      PlayContextKind.album, PlayContextKind.artist, PlayContextKind.playlist, PlayContextKind.favorites,
+      PlayContextKind.library, PlayContextKind.search, PlayContextKind.podcast, PlayContextKind.radio,
+    ]);
+    expect(PlayContextKind.daylist.index, 8);
   });
 
   // Meant to stay green after 108.3: a missing `lastQueueUser` key means 0

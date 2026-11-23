@@ -67,6 +67,7 @@ enum PlayContextKind {
   search,
   podcast,
   radio,
+  daylist,
 }
 
 class PlayContext {
@@ -78,12 +79,12 @@ class PlayContext {
   final String? name;
 }
 
-/// The context the handler holds (saved with the queue); null for none or an unknown kind.
+/// The context the handler holds (saved with the queue); null for none, `library` for a kind from a newer version.
 PlayContext? playContextOf(CodecoreAudioHandler h) {
   final c = h.playContext;
-  return c == null || c.kind < 0 || c.kind >= PlayContextKind.values.length
-      ? null
-      : PlayContext(PlayContextKind.values[c.kind], c.name);
+  if (c == null) return null;
+  final known = c.kind >= 0 && c.kind < PlayContextKind.values.length;
+  return PlayContext(known ? PlayContextKind.values[c.kind] : PlayContextKind.library, c.name);
 }
 
 /// The handler's context, followed live (restore, a list started, Android Auto clearing it).
