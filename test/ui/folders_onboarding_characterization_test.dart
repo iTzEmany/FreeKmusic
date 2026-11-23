@@ -44,10 +44,10 @@ class _FakePicker extends FilePickerPlatform {
 void main() {
   setUp(() => FilePickerPlatform.instance = _FakePicker());
 
-  test('today: fresh settings are device mode with no download folder chosen (140.3/140.4 change it)', () async {
+  test('fresh settings are stream mode (D-665) with no download folder chosen (the fixed one applies, D-666)', () async {
     SharedPreferences.setMockInitialValues({});
     final s = SettingsStore(await SharedPreferences.getInstance()).readSettings();
-    expect(s.storageMode, StorageMode.device);
+    expect(s.storageMode, StorageMode.stream);
     expect(s.downloadLocation, isEmpty);
   });
 

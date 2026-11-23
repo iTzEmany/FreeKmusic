@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_log.dart';
+import '../../core/constants.dart' show kEnableYoutube;
 import '../../services/audio/audio_backend.dart' show TransitionMode;
 import '../../services/audio/equalizer.dart';
 import '../../services/audio/play_queue.dart';
@@ -32,6 +33,10 @@ enum IconFollow { ask, on, off }
 /// Where the user keeps the music: files on the device, or saved tracks played
 /// from the net (D-575).
 enum StorageMode { device, stream }
+
+/// D-665: streaming first for everyone (also an install from before the choice, when nothing was stored);
+/// the `lite` build has no yt-dlp, so it stays on the device. A stored choice always wins.
+const kDefaultStorageMode = kEnableYoutube ? StorageMode.stream : StorageMode.device;
 
 class AppSettings {
   const AppSettings({
@@ -74,7 +79,7 @@ class AppSettings {
     this.downloadLocation = '',
     this.autoBackup = false,
     this.backupFolder = '',
-    this.storageMode = StorageMode.device,
+    this.storageMode = kDefaultStorageMode,
     this.prefetchOnMobile = true,
     this.importSureThreshold = 0.80,
     this.importReviewThreshold = 0.55,
@@ -509,7 +514,7 @@ class SettingsStore {
     // Absent = an install from before the choice: it keeps its files (D-598).
     storageMode: StorageMode.values.firstWhere(
       (m) => m.name == _prefs.getString('storageMode'),
-      orElse: () => StorageMode.device,
+      orElse: () => kDefaultStorageMode,
     ),
     prefetchOnMobile: _prefs.getBool('prefetchOnMobile') ?? true,
     // The old «downloadOriginal» switch is not read: MP3 was only ever the

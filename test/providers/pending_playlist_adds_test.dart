@@ -127,11 +127,11 @@ void main() {
       expect((await c.read(playlistRepositoryProvider).watchTracks(pid).first).map((t) => t.id), [rows.single.id]);
     });
 
-    test('device mode goes to the download queue and saves no row', () async {
+    test('device mode saves the row, then downloads it keeping the addto: tag (D-695)', () async {
       final c = await container(StorageMode.device);
       await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(1));
       expect(queue.added, ['v1:addto:1']);
-      expect(await savedRows(), isEmpty);
+      expect(await savedRows(), hasLength(1));
       expect(await c.read(libraryAdderProvider).saveNow(_song), isNull, reason: 'device mode saves nothing before the download');
     });
 

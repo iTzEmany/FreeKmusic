@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as pth;
 
 import '../../../core/permissions.dart';
+import '../../../core/platform.dart' show isAndroid;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/exportify_providers.dart';
 import '../../../providers/folder_actions.dart';
@@ -161,6 +162,14 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
     if (mounted) setState(() => _granted = ok);
   }
 
+  /// D-666: on desktop the downloads go in `FreeKmusic` inside the first folder chosen here (Android: always `Music/FreeKmusic`).
+  Future<void> _addFolder() async {
+    final path = await addFolderAndScan(ref);
+    if (path == null || isAndroid || ref.read(settingsProvider).downloadLocation.isNotEmpty) return;
+    if (!mounted) return;
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: pth.join(path, 'FreeKmusic')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -172,6 +181,7 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
       title: l.onboardingFoldersTitle,
       children: [
         _body(context, l.onboardingFoldersBody),
+        _body(context, l.onboardingFoldersDownloadsNote),
         if (widget.askAudioPermission) ...[
           // Said before Android asks, so the system prompt is not a surprise.
           _body(context, l.permissionExplain),
@@ -194,7 +204,7 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
           const SizedBox(height: 12),
         ],
         FilledButton.icon(
-          onPressed: () => addFolderAndScan(ref),
+          onPressed: _addFolder,
           icon: const Icon(Icons.create_new_folder_rounded),
           label: Text(l.addFolder),
         ),
@@ -231,9 +241,6 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
   }
 }
 
-/// Under this much free space the guide suggests streaming (D-575).
-const _lowSpaceBytes = 4 * 1024 * 1024 * 1024;
-
 /// «Dove tieni la musica?»: files on the device or saved tracks in streaming.
 class StoragePage extends ConsumerStatefulWidget {
   const StoragePage({super.key});
@@ -243,8 +250,6 @@ class StoragePage extends ConsumerStatefulWidget {
 }
 
 class _StoragePageState extends ConsumerState<StoragePage> {
-  bool _preselected = false;
-
   void _set(StorageMode m) =>
       ref.read(settingsProvider.notifier).update((s) => s.copyWith(storageMode: m));
 
@@ -252,14 +257,6 @@ class _StoragePageState extends ConsumerState<StoragePage> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final free = ref.watch(musicDiskSpaceProvider).value?.freeBytes;
-    if (free != null && !_preselected) {
-      _preselected = true;
-      final m = free < _lowSpaceBytes ? StorageMode.stream : StorageMode.device;
-      // After the frame: a provider cannot change while the tree is building.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _set(m);
-      });
-    }
     final mode = ref.watch(settingsProvider.select((s) => s.storageMode));
     final sds = ref.watch(sdVolumesProvider).value ?? const <String>[];
     final sdChosen = sds.contains(ref.watch(settingsProvider.select((s) => s.downloadLocation)));

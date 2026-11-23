@@ -42,9 +42,11 @@ class Harness {
   /// Overridable before `pump`: where cover files are looked up.
   Directory coversDir = Directory.systemTemp;
 
-  static Future<Harness> create(WidgetTester tester, {int tracks = 0, bool radio = false, bool onlineOff = true}) async {
+  static Future<Harness> create(WidgetTester tester, {int tracks = 0, bool radio = false, bool onlineOff = true, bool streamDefault = false}) async {
     // D-563 turned the online helpers on by default; widget tests start with them off (no network, no timers).
+    // Most widget tests were written for files on the device; the app default is stream (D-665), asked with [streamDefault].
     SharedPreferences.setMockInitialValues({
+      if (!streamDefault) 'storageMode': 'device',
       if (onlineOff) ...{'autoEnrich': false, 'autoLyrics': false, 'autoCuriosities': false, 'creditsDetails': false},
     });
     final store = await SettingsStore.open();

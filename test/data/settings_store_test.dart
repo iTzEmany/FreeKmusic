@@ -9,10 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('storageMode: an install from before the choice reads device; the choice and prefetchOnMobile round trip', () async {
+  test('storageMode: nothing stored reads stream (D-665, even an install from before the choice); a stored choice wins; the choice and prefetchOnMobile round trip', () async {
     SharedPreferences.setMockInitialValues({'onboardingFinished': true});
     var store = await SettingsStore.open();
-    expect(store.readSettings().storageMode, StorageMode.device);
+    expect(store.readSettings().storageMode, kDefaultStorageMode);
+    expect(kDefaultStorageMode, StorageMode.stream);
     expect(store.readSettings().prefetchOnMobile, isTrue);
     await store.writeSettings(
       store.readSettings().copyWith(storageMode: StorageMode.stream, prefetchOnMobile: false),
