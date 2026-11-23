@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/import_providers.dart';
+import '../../../providers/jam_save.dart';
 import '../../../providers/jam_providers.dart' show jamProvider, jamTrackCoverProvider;
 import '../../../providers/library_providers.dart' show artistsProvider;
 import '../../../providers/share_hub.dart';
-import '../../../providers/youtube_providers.dart' show downloadIndexProvider, downloadsProvider;
+import '../../../providers/library_add_providers.dart' show libraryAdderProvider;
+import '../../../providers/youtube_providers.dart' show downloadIndexProvider;
 import '../../../services/jam/jam_models.dart';
 import '../../../services/jam/jam_online_adder.dart' show jamYtResult;
 import '../../../services/online/artist_link_resolver.dart';
@@ -16,6 +18,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/net_thumbnail.dart';
+import '../../widgets/show_msg.dart';
 import '../../widgets/track_actions.dart' show downloadOnline;
 import '../../widgets/track_artists_sheet.dart';
 
@@ -151,6 +154,7 @@ class JamQueueRow extends ConsumerWidget {
   void _openMenu(BuildContext context, WidgetRef ref, List<ArtistName> artists) {
     final l = context.l10n;
     bool inLibrary() => ref.read(downloadIndexProvider).value?.contains(item.videoId!) ?? false;
+    final canSave = ref.read(jamSaverProvider).canSave(item, ref.read(shareHubProvider.notifier).deviceId ?? '');
     List<List<CcAction<String>>> build() => [
           [
             CcAction(icon: Icons.near_me_outlined, label: l.jamJumpHere, onTap: onJump),
@@ -161,8 +165,17 @@ class JamQueueRow extends ConsumerWidget {
                 onTap: () => downloadOnline(
                   context,
                   inLibrary: inLibrary(),
-                  start: () => ref.read(downloadsProvider.notifier).add(jamYtResult(item)),
+                  start: () => ref.read(libraryAdderProvider).download(jamYtResult(item)),
                 ),
+              ),
+            if (canSave)
+              CcAction(
+                icon: Icons.library_add_outlined,
+                label: l.addToLibrary,
+                onTap: () async {
+                  final ok = await ref.read(jamSaverProvider).save(item);
+                  if (context.mounted) showMsg(context, ok ? l.libraryAddedMany(1) : l.libraryAddFailed);
+                },
               ),
             if (artists.isNotEmpty)
               CcAction(
