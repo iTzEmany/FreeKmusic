@@ -12864,6 +12864,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Deseleziona tutto'**
   String get deselectAll;
+
+  /// No description provided for @downloadBarDone.
+  ///
+  /// In it, this message translates to:
+  /// **'Scaricato'**
+  String get downloadBarDone;
+
+  /// No description provided for @downloadBarProgress.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarico… {percent}%'**
+  String downloadBarProgress(int percent);
 }
 
 class _AppLocalizationsDelegate

@@ -46,6 +46,7 @@ class TrackDeleter {
     FileDeleter? deleter,
     this.platform,
     this.db,
+    this.onDeleted,
   }) : _deleter = deleter ?? _deleteFile;
 
   final TrackRepository tracks;
@@ -60,6 +61,9 @@ class TrackDeleter {
 
   /// Only on Android: for the files plain deletion is not allowed to touch.
   final PlatformDeleter? platform;
+
+  /// Called after rows were removed (the download state of those tracks changed).
+  final void Function()? onDeleted;
 
   /// Podcast episodes (`kind != 0`) are skipped: they have their own cleanup.
   Future<TrackDeleteReport> deleteTracks(List<Track> input) async {
@@ -109,6 +113,7 @@ class TrackDeleter {
     }
     await tracks.deleteTracks([for (final t in gone) t.id]);
     await _tidy(gone);
+    if (gone.isNotEmpty) onDeleted?.call();
     return TrackDeleteReport(deleted: gone, failed: failed, refused: refused);
   }
 

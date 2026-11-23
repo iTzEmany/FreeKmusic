@@ -173,6 +173,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - **Nuovo tipo di dato ripulibile**: valore in `AppDataKind`, poi decidere se entra in `clearableKinds`.
 
 ## Trappole
+- **Id dopo il download** (fase 139): con il flusso in cache la riga ombra viene promossa (stesso id, kind 2 → 0); senza cache nasce una riga nuova e `_mergeShadowRow` lega coda (`replaceQueueId`) e voce online (`bindRow`) al nuovo id. La voce che sta suonando tiene il suo id negativo.
 
 Dalle vecchie trappole (archivio `../storico/gotchas.md`):
 

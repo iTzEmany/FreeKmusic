@@ -63,6 +63,7 @@ class _Downloads extends DownloadsNotifier {
   bool instant = false;
   @override
   List<DownloadItem> build() => [];
+  void put(List<DownloadItem> x) => state = x;
   @override
   Future<bool> add(YtResult r, {String? tag}) async {
     adds.add(tag ?? 'plain');
@@ -115,7 +116,7 @@ void main() {
     tester,
   ) async {
     final h = await pumpRow(tester);
-    expect(find.byTooltip('Scarica'), findsOneWidget);
+    expect(find.byTooltip('Aggiungi alla libreria'), findsOneWidget);
     await tester.tap(find.text('Online song'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -213,6 +214,24 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets('«Aggiungi alla libreria» in the row calls the adder; while it downloads the bar takes its place', (
+    tester,
+  ) async {
+    final sem = tester.ensureSemantics();
+    final h = await pumpRow(tester);
+    await tester.tap(find.byTooltip('Aggiungi alla libreria'));
+    await tester.pump();
+    expect(downloads.adds, ['plain']);
+    downloads.put([
+      const DownloadItem(id: 1, result: _r, status: DownloadStatus.downloading, progress: 0.4),
+    ]);
+    await tester.pump();
+    expect(find.byTooltip('Aggiungi alla libreria'), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Scarico… 40%')), findsOneWidget);
+    sem.dispose();
+    await h.dispose(tester);
+  });
 
   testWidgets('«Scarica» of an instant promotion says it joined the library', (
     tester,

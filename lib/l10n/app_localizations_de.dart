@@ -8165,4 +8165,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deselectAll => 'Alle abwählen';
+
+  @override
+  String get downloadBarDone => 'Heruntergeladen';
+
+  @override
+  String downloadBarProgress(int percent) {
+    return 'Lade herunter… $percent%';
+  }
 }

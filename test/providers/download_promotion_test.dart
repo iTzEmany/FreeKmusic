@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
@@ -23,7 +24,8 @@ const _r = YtResult(id: 'abc', title: 'Song', channel: 'Chan', duration: Duratio
 
 class _Yt implements YoutubeService {
   @override
-  dynamic noSuchMethod(Invocation i) => throw UnimplementedError();
+  dynamic noSuchMethod(Invocation i) =>
+      i.memberName == #download ? Completer<String>().future : throw UnimplementedError(); // never ends
 }
 
 class _Settings extends SettingsNotifier {
@@ -129,6 +131,14 @@ void main() {
     promoter.result = false;
     expect(await c.read(downloadsProvider.notifier).add(_r), isFalse);
     expect(c.read(downloadsProvider), isNotEmpty);
+  });
+
+  test('the same song added twice while it is queued or downloading makes one job', () async {
+    promoter.result = false;
+    final n = c.read(downloadsProvider.notifier);
+    await n.add(_r);
+    await n.add(_r);
+    expect(c.read(downloadsProvider), hasLength(1));
   });
 
   test('a failed promotion falls back to the queue', () async {

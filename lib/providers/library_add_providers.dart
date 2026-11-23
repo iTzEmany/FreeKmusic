@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
 import '../data/settings/settings_store.dart' show StorageMode;
+import '../data/db/app_database.dart' show Track;
 import '../services/online/youtube_service.dart';
+import '../services/stream/stream_key.dart' show streamPathOf;
 import 'database_providers.dart';
 import 'pending_playlist_adds.dart';
 import 'settings_providers.dart';
@@ -35,12 +37,24 @@ class LibraryAdder {
     if (!streaming) return null;
     final idx = await _ref.read(downloadIndexProvider.future);
     if (idx.contains(r.id, source: r.source)) return null;
+    return _save(r);
+  }
+
+  Future<int?> _save(YtResult r) async {
     try {
       return await _ref.read(trackRepositoryProvider).saveStream(r);
     } on Object catch (e, st) {
       AppLog.w('library add: could not save ${r.indexKey}', e, st);
       return null;
     }
+  }
+
+  /// «Scarica»: downloading is saving (D-695), so the row is saved first, in either mode; a failed save is
+  /// logged and the download goes on. Same result as `DownloadsNotifier.add`.
+  Future<bool?> download(YtResult r) async {
+    final idx = await _ref.read(downloadIndexProvider.future);
+    if (!idx.contains(r.id, source: r.source)) await _save(r);
+    return _ref.read(downloadsProvider.notifier).add(r);
   }
 
   /// True when the song joined the library at once, false when a download started (as
@@ -69,3 +83,14 @@ class LibraryAdder {
 }
 
 final libraryAdderProvider = Provider<LibraryAdder>(LibraryAdder.new);
+
+/// The current library row of the song behind a `trackStateKey` [key] (the row of [track] for a `#<id>` key, else the
+/// row at the download's path or the shadow row), or null: what the open track menu is rebuilt from.
+final trackRowLookupProvider = Provider<Future<Track?> Function(Track track, String key)>((ref) {
+  return (track, key) async {
+    final repo = ref.read(trackRepositoryProvider);
+    if (key.startsWith('#')) return repo.getById(track.id);
+    final path = (await ref.read(downloadIndexProvider.future)).pathForKey(key);
+    return repo.byPath(path ?? streamPathOf(key));
+  };
+});

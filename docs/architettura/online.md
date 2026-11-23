@@ -49,6 +49,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 ### Streaming, cache e righe ombra
 
 - Un brano online riceve un id negativo (`OnlineEntries`). Chiave: `downloadIndexKey(source, id)` (`<source>:<id>`).
+- **Stato del brano** (fase 139, D-695): `trackStateProvider(trackStateKey(track))` dice `online`, `savedStream` o `downloaded`. La chiave è `<source>:<id>` per i brani in streaming (anche il `Track` sintetico online, ricavata dal path `online:`), `#id` per le righe locali; si aggiorna da `downloadIndexProvider` (invalidato da download, «Libera spazio», «Elimina dal dispositivo»), `savedStreamKeysProvider` e la riga. Il player tiene l'id negativo anche a download finito: lo stato del brano corrente si legge dalla chiave, non dall'id. Scaricare salva (`LibraryAdder.download`: salva, poi scarica, in ogni modalità): non esiste un «scaricato non salvato». Nelle viste online il pulsante è «Aggiungi alla libreria»; «Scarica» (per un brano salvato in streaming, «Scarica sul dispositivo») e «Aggiungi alla playlist» stanno nel menu ⋮, anche per il brano che suona (id negativo, voci della riga incluse se legato).
 - `StreamPreparer` avvia dall'URL e scarica in `StreamCache` in parallelo; riproduzione lato audio in `riproduzione-e-coda.md`.
 - Il primo ascolto crea la riga ombra (`kind = 2`, `path = 'stream:<key>'`); il download la fonde in una riga reale (`mergeStreamRow`). Dettagli e pulizia in `libreria-e-dati.md`.
 - Lo streaming funziona anche a consumo (D-68).
@@ -166,6 +167,8 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - **Nuovo `MediaSource`**: in `YtResult`/`downloadIndexKey`, con la chiave in `downloads.json`.
 
 ## Trappole
+- **Il menu ⋮ non cattura il `Track`** (fase 139): `showTrackActions` ascolta lo stato e l'indice e ricarica la riga viva, ma per un brano online (id negativo) resta il menu online anche a download finito: con la riga locale «Elimina dal dispositivo» cancellerebbe il file che suona lasciandolo in coda.
+- **`downloadIndexProvider` è mutato sul posto**: chi aggiunge o toglie file deve fare `ref.invalidate(downloadIndexProvider)`, altrimenti lo stato del brano resta vecchio.
 
 - **`EnrichmentService` serve solo all'anteprima** (`propose` in sola lettura, `apply` dal suo «Accetta»): ogni altra scrittura passa da `EnrichEngine` (D-683).
 - **Cache di MusicBrainz e «Aggiorna»**: un giro forzato deve stare dentro `MusicBrainzClient.fresh`, altrimenti riceve le risposte in cache.

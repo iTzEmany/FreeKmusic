@@ -214,8 +214,8 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
         if (item != null) {
           final idx = await ref.read(downloadIndexProvider.future);
           await idx.add(item.result.id, path, source: item.result.source);
-          ref.invalidate(downloadIndexProvider);
           await _mergeShadowRow(item.result, path);
+          ref.invalidate(downloadIndexProvider); // after the merge: the menu reads the row it leaves
           _resyncPlayer();
         }
         // An import enriches its songs itself, after putting the CSV tags on.
@@ -249,13 +249,12 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       final tracks = ref.read(trackRepositoryProvider);
       final id = await tracks.idForPath(path);
       final gone = id == null ? null : await tracks.mergeStreamRow(r.indexKey, id);
-      if (gone != null) {
-        ref.read(audioHandlerProvider).replaceQueueId(gone, id!);
-        // The entry now playing keeps streaming: point it at the library row.
-        final online = ref.read(onlineEntriesProvider);
-        for (final e in online?.idsOf(r) ?? const <int>[]) {
-          online!.bindRow(e, id);
-        }
+      if (id == null) return;
+      if (gone != null) ref.read(audioHandlerProvider).replaceQueueId(gone, id);
+      // The entry now playing keeps streaming: point it at the library row, also when no shadow row existed.
+      final online = ref.read(onlineEntriesProvider);
+      for (final e in online?.idsOf(r) ?? const <int>[]) {
+        online!.bindRow(e, id);
       }
     } on Object catch (e, st) {
       AppLog.w('merge of the stream row failed for ${r.indexKey}', e, st);
@@ -291,11 +290,16 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       if (playlist != null) unawaited(_joinPlaylist(r, playlist));
       return false;
     }
+    // The same song already queued or downloading: never a second job (it would write the file back later).
+    if (tag == null && _queue.items.any((e) => e.result.indexKey == r.indexKey && _isActive(e.status))) return false;
     if (!_promoting.add(r.indexKey)) return false; // double tap while it is moving
     return _promoteOrQueue(r, tag).whenComplete(() => _promoting.remove(r.indexKey));
   }
 
   final _promoting = <String>{};
+
+  static bool _isActive(DownloadStatus s) =>
+      s == DownloadStatus.queued || s == DownloadStatus.downloading || s == DownloadStatus.waitingRetry;
 
   Future<bool> _promoteOrQueue(YtResult r, String? tag) async {
     try {
@@ -313,7 +317,8 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     } on Object catch (e, st) {
       AppLog.w('promotion failed, downloading instead', e, st);
     }
-    if (ref.mounted) _queue.add(r, tag: tag);
+    final queued = _queue.items.any((e) => e.result.indexKey == r.indexKey && _isActive(e.status));
+    if (ref.mounted && !(tag == null && queued)) _queue.add(r, tag: tag);
     return false;
   }
 

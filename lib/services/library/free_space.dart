@@ -37,6 +37,7 @@ class FreeSpaceService {
     FileDeleter? deleter,
     this.platform,
     this.playingIds,
+    this.activeKeys,
     this.scanRunning,
     this.onFreed,
     int Function()? nowMs,
@@ -53,6 +54,9 @@ class FreeSpaceService {
   /// Ids of the tracks being played: never offered, never converted (the player holds their file path).
   final Set<int> Function()? playingIds;
 
+  /// Keys with a download queued or running: never freed (the download would write the file back).
+  final Set<String> Function()? activeKeys;
+
   /// A scan running could insert a row at a path being freed: [freeSpace] waits (frees nothing).
   final bool Function()? scanRunning;
 
@@ -68,13 +72,14 @@ class FreeSpaceService {
     final limit = _nowMs() - _staleMs;
     await index.pruneGone();
     final playing = playingIds?.call() ?? const <int>{};
+    final active = activeKeys?.call() ?? const <String>{};
     final out = <FreeSpaceCandidate>[];
     final seen = <int>{};
     for (final e in index.entries) {
       final t = await tracks.byPath(e.value);
       // Only the very file the app downloaded (size and mtime as at download time): a file the user put at
       // the same path later is not ours (D-598).
-      if (t == null || t.kind != kMusicKind || playing.contains(t.id) || !index.signatureMatches(e.key, e.value)) continue;
+      if (t == null || t.kind != kMusicKind || playing.contains(t.id) || active.contains(e.key) || !index.signatureMatches(e.key, e.value)) continue;
       if (!seen.add(t.id)) continue;
       out.add(FreeSpaceCandidate(t, e.key, (t.lastPlayedAt ?? 0) < limit));
     }

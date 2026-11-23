@@ -16,6 +16,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/track_actions.dart' show showOnlineActions;
 import '../../widgets/track_row.dart' show SwipeToQueue;
 import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
+import '../../widgets/download_bar.dart';
 import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/format_utils.dart';
 import '../../widgets/net_thumbnail.dart';
@@ -284,6 +285,7 @@ class OnlineSongRow extends StatelessWidget {
                 ),
                 ?listen,
                 _DownloadState(
+                  entryKey: item?.result.indexKey ?? result.indexKey,
                   item: item,
                   inLibrary: inLibrary,
                   onDownload: onDownload,
@@ -313,11 +315,13 @@ class OnlineSongRow extends StatelessWidget {
 
 class _DownloadState extends ConsumerWidget {
   const _DownloadState({
+    required this.entryKey,
     required this.item,
     required this.inLibrary,
     required this.onDownload,
   });
 
+  final String entryKey;
   final DownloadItem? item;
   final bool inLibrary;
   final VoidCallback onDownload;
@@ -328,24 +332,7 @@ class _DownloadState extends ConsumerWidget {
     final cc = context.cc;
     final st = item?.status;
     final Widget trailing;
-    if (st == DownloadStatus.queued ||
-        st == DownloadStatus.downloading ||
-        st == DownloadStatus.waitingRetry) {
-      // As wide as a button: the download state keeps the width of the button.
-      trailing = SizedBox(
-        width: 48,
-        child: Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              value: st == DownloadStatus.downloading ? item!.progress : null,
-            ),
-          ),
-        ),
-      );
-    } else if (st == DownloadStatus.done || inLibrary) {
+    if (st == DownloadStatus.done || inLibrary) {
       trailing = SizedBox(
         width: 48,
         child: Center(
@@ -360,12 +347,13 @@ class _DownloadState extends ConsumerWidget {
       );
     } else {
       trailing = IconButton(
-        tooltip: ref.watch(settingsProvider).storageMode == StorageMode.stream ? l.addToLibrary : l.ytDownload,
-        icon: const Icon(Icons.download_rounded),
+        tooltip: l.addToLibrary,
+        icon: const Icon(Icons.library_add_rounded),
         onPressed: onDownload,
       );
     }
-    return trailing;
+    // While it downloads the bar takes the button's place.
+    return DownloadBar(entryKey: entryKey, compact: true, idle: trailing);
   }
 }
 

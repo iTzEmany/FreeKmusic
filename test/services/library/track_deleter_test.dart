@@ -151,6 +151,24 @@ void main() {
     expect(await rows(), 1);
   });
 
+  test('onDeleted is called once when something went, never when nothing did', () async {
+    var calls = 0;
+    TrackDeleter d() => TrackDeleter(
+      tracks: repo,
+      removeFromQueue: (_) async {},
+      deleter: (_) async => throw const FileSystemException('denied'),
+      onDeleted: () => calls++,
+    );
+    final stuck = await track('stuck.mp3');
+    await d().deleteTracks([stuck]);
+    expect(calls, 0, reason: 'the delete failed');
+
+    final gone = await track('gone.mp3', onDisk: false);
+    final gone2 = await track('gone2.mp3', onDisk: false);
+    await d().deleteTracks([gone, gone2]);
+    expect(calls, 1);
+  });
+
   test('podcast episodes are left alone', () async {
     final ep = await track('ep.mp3', kind: 1);
 
