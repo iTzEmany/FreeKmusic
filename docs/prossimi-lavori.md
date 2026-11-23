@@ -12,7 +12,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
   - ~~Fase 135 «riproduzione affidabile»~~ fatta (#210): [`storico/fasi/fase-135-riproduzione-affidabile.md`](storico/fasi/fase-135-riproduzione-affidabile.md)
   - ~~Fase 136 «arricchimento unico»~~ fatta (#212): [`storico/fasi/fase-136-arricchimento-unico.md`](storico/fasi/fase-136-arricchimento-unico.md)
   - ~~Fase 137 «backup, ripristino, aggiornamento»~~ fatta (#214): [`storico/fasi/fase-137-backup-ripristino-aggiornamento.md`](storico/fasi/fase-137-backup-ripristino-aggiornamento.md)
-  - Fase 138 «ritocchi di UI»: [`fasi/fase-138-ritocchi-ui.md`](fasi/fase-138-ritocchi-ui.md)
+  - ~~Fase 138 «ritocchi di UI»~~ fatta (#215): [`storico/fasi/fase-138-ritocchi-ui.md`](storico/fasi/fase-138-ritocchi-ui.md)
   - Fase 139 «stato del brano e download»: [`fasi/fase-139-stato-brano-download.md`](fasi/fase-139-stato-brano-download.md)
   - Fase 140 «streaming per prima»: [`fasi/fase-140-streaming-per-prima.md`](fasi/fase-140-streaming-per-prima.md)
   - Fase 141 «collezioni»: [`fasi/fase-141-collezioni.md`](fasi/fase-141-collezioni.md)
