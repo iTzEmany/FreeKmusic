@@ -353,6 +353,33 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('menu entries by state: local, online unsaved, saved stream, downloaded', (tester) async {
+    // Local (kind 0) and downloaded rows are the same today: the full menu, no «Scarica».
+    var h = await openSheet(tester, (t) => t);
+    for (final t in ['Aggiungi in coda', 'Aggiungi a playlist…', 'Modifica info', 'Elimina dal dispositivo']) {
+      expect(find.text(t, skipOffstage: false), findsOneWidget, reason: 'local: $t');
+    }
+    for (final t in ['Scarica', 'Aggiungi alla libreria', 'Rimuovi dalla libreria']) {
+      expect(find.text(t), findsNothing, reason: 'local: $t');
+    }
+    await h.dispose(tester);
+
+    // Online entry not saved: «Aggiungi alla libreria», no destructive or library-removal row.
+    h = await openSheet(tester, (t) => t.copyWith(id: -5));
+    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
+    expect(find.text('Rimuovi dalla libreria'), findsNothing);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
+    await h.dispose(tester);
+
+    // Saved stream row: «Scarica» + «Rimuovi dalla libreria», never «Aggiungi alla libreria».
+    h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));
+    expect(find.text('Scarica'), findsOneWidget);
+    expect(find.text('Rimuovi dalla libreria', skipOffstage: false), findsOneWidget);
+    expect(find.text('Aggiungi alla libreria'), findsNothing);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
+    await h.dispose(tester);
+  });
+
   testWidgets(
     '«Cambia copertina» is in every library menu, «Ripristina» only with a hand-picked cover, never online',
     (tester) async {
