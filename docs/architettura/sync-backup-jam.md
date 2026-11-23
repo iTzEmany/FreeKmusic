@@ -112,6 +112,8 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 
 ### Jam
 - Un solo dispositivo suona; l'altro è telecomando. Stato autoritativo sull'host (`JamState.version`), comandi validati da `applyCommand`.
+- L'ospite salva (fase 140, D-690): dal menu della coda un brano online diventa un brano salvato in streaming; un brano locale dell'HOST già nella `JamCache` viene copiato (su `.part`, nome ≤ 200 byte) nella cartella dei download e scansionato. Tutto locale: nessun messaggio del protocollo cambia, l'host non vede nulla (`JamSaver`, `lib/providers/jam_save.dart`).
+- Condivisione in LAN (fase 140, D-674): l'offerta porta un campo opzionale `streams` (chiave, titolo, artista, album, durata, crediti): il ricevente li salva come brani in streaming (`saveReceivedStreams`), senza file. Un ricevente vecchio ignora il campo; un'offerta di soli stream a un ricevente vecchio fallisce con errore di invio.
 - I brani restano sul proprietario e si leggono in streaming con `Range` e token di sessione, solo se sono in coda.
 - La Jam usa un `AudioBackend` proprio: `PlayQueue` non si tocca e la riproduzione locale va in pausa.
 - **Della cassa**: `JamState.speaker`, `speakerAwaySince`; comandi `speakerAway`, `speakerBack`, `offerSpeaker`. Senza cassa i comandi di riproduzione sono rifiutati (`noSpeaker`, HTTP 409). Senza ospiti la Jam è «in attesa»: solo annuncio in LAN, e nasce alla prima richiesta accettata (D-226).
@@ -152,6 +154,7 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - **Nuovo file grande verso l'utente**: `saveFileAt`, mai `Uint8List` sul canale.
 
 ## Trappole
+- **Le chiavi degli stream ricevute in LAN sono input non fidato** (fase 140): `StreamOffer.tryParse` le valida con `isStreamKey` prima che finiscano nell'URL di yt-dlp o nel nome di un file.
 - **`SystemNavigator.pop()` non chiude il processo** su Android (chiude solo l'Activity): un ripristino preparato non si applica finché il processo vive. Per ripartire davvero c'è `AppRestart` (fase 137).
 - **Ucciso a metà scrittura, SQLite lascia un `-journal` caldo** (il DB è in `journal_mode` DELETE): se resta accanto a un DB diverso, al prossimo avvio viene applicato a quello. Va spostato insieme al file a cui appartiene.
 - **`JamUiState.remote` è solo l'ospite remoto**: l'host che invita ha `inviting`, e un'uscita in LAN di una Jam mista vede i remoti solo nel roster. Dove serve «Jam con ospiti remoti» (karaoke, microfono, nota dell'host) usa `JamUiState.remoteJam` (`remote || inviting || roster con un remoto`), mai `remote` da solo.
