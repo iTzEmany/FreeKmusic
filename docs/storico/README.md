@@ -167,3 +167,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 136 | Arricchimento unico e leggero (#212) | [`fase-136-arricchimento-unico.md`](fasi/fase-136-arricchimento-unico.md) |
 | 137 | Backup, ripristino, aggiornamento (#214) | [`fase-137-backup-ripristino-aggiornamento.md`](fasi/fase-137-backup-ripristino-aggiornamento.md) |
 | 138 | Ritocchi di UI (#215) | [`fase-138-ritocchi-ui.md`](fasi/fase-138-ritocchi-ui.md) |
+| 139 | Stato vivo del brano e download (#216) | [`fase-139-stato-brano-download.md`](fasi/fase-139-stato-brano-download.md) |
