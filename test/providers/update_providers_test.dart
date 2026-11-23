@@ -26,10 +26,15 @@ class _NoWeb implements WebClient {
 }
 
 class _Checker extends UpdateChecker {
-  _Checker(this.status) : super(_NoWeb(), repo: 'x/y', current: '1.0.0');
+  _Checker(this.status, this.info) : super(_NoWeb(), repo: 'x/y', current: '1.0.0');
   final UpdateStatus status;
+  final UpdateInfo info;
+  int calls = 0;
   @override
-  Future<UpdateResult> check() async => UpdateResult(status);
+  Future<UpdateResult> check() async {
+    calls++;
+    return UpdateResult(status, status == UpdateStatus.newer ? info : null);
+  }
 }
 
 class _Probe extends NetworkProbe {
@@ -424,6 +429,20 @@ void main() {
     await run;
   });
 
+  Future<(ProviderContainer, SettingsStore, _Checker)> startup(UpdateStatus status, {int day = 0}) async {
+    SharedPreferences.setMockInitialValues({'checkUpdatesOnStart': true, if (day != 0) 'lastUpdateCheckDay': day});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    final checker = _Checker(status, info);
+    final c = ProviderContainer(overrides: [
+      settingsStoreProvider.overrideWithValue(store),
+      startupSettledProvider.overrideWith((_) async {}),
+      updateCheckerProvider.overrideWithValue(checker),
+    ]);
+    addTearDown(c.dispose);
+    return (c, store, checker);
+  }
+
+  final today = DateTime.now().toUtc().millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
   for (final (status, written) in [
     (UpdateStatus.failed, false),
     (UpdateStatus.rateLimited, false),
@@ -431,16 +450,16 @@ void main() {
     (UpdateStatus.newer, true),
   ]) {
     test('start-up check $status: the day is ${written ? '' : 'not '}recorded', () async {
-      SharedPreferences.setMockInitialValues({'checkUpdatesOnStart': true});
-      final store = SettingsStore(await SharedPreferences.getInstance());
-      final c = ProviderContainer(overrides: [
-        settingsStoreProvider.overrideWithValue(store),
-        startupSettledProvider.overrideWith((_) async {}),
-        updateCheckerProvider.overrideWithValue(_Checker(status)),
-      ]);
-      addTearDown(c.dispose);
-      await c.read(updateOnStartProvider.future);
-      expect(store.readLastUpdateCheckDay() != 0, written);
+      final (c, store, _) = await startup(status);
+      final r = await c.read(updateOnStartProvider.future);
+      expect(store.readLastUpdateCheckDay(), written ? today : 0);
+      expect(r == null, status != UpdateStatus.newer);
     });
   }
+
+  test('start-up check already made today: no new check', () async {
+    final (c, _, checker) = await startup(UpdateStatus.newer, day: today);
+    expect(await c.read(updateOnStartProvider.future), isNull);
+    expect(checker.calls, 0);
+  });
 }

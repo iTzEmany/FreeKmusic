@@ -175,6 +175,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('File: $_apk, 84 MB'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1)); // the snack bar's exit animation
+    expect(find.byType(SnackBar), findsNothing); // the dialog repeats the text, so look for the snack bar itself
     await h.dispose(tester);
   });
 
