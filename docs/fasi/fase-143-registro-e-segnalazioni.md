@@ -22,7 +22,7 @@ D-698, D-691, D-669, D-662, D-699. Rilievi F-32, F-40 in [`../refactor/grande-re
   - Passi: 1) pulsanti che vanno a capo (`Wrap`); 2) anteprima con altezza massima e scorrimento; 3) `buildIssue` solo all'invio o con debounce; 4) testo che spiega perché il tasto è disabilitato; 5) `maxWidth` su desktop; 6) nota che l'IP è visibile al servizio intermedio; 7) test di widget.
   - Comando mirato: `flutter test test/ui/report_issue_screen_test.dart test/ui/architecture_test.dart test/ui/no_separator_literals_test.dart`
   - Fatto quando: nessun overflow a 320 dp e a 1280 dp (test), il tasto disabilitato ha la spiegazione.
-- [ ] 143.4 Proposta all'utente: dove vive il codice del Worker (D-669) — **chiedere prima, non decidere**
+- [x] 143.4 Proposta all'utente: dove vive il codice del Worker (D-669) — **chiedere prima, non decidere**
   - File: nessuno da scrivere. Documenti letti: `analisi.md` (sezione «Arrivo», «Servizi esterni»), `ricerca-condivisione-segnalazioni.md`.
   - Passi: 1) scrivere all'utente (testo nel terminale, opzioni numerate): (a) cartella `tools/report-worker/` in questo repo, (b) repo a parte, (c) Web3Forms al posto del Worker (D-669 lo ammette come ripiego più semplice); con pro e contro (deploy, segreti, CI, manutenzione); 2) registrare la risposta in `../decisioni.md` come D-xxx; 3) non procedere a 143.5 e 143.6 senza risposta.
   - Comando mirato: `python3 scripts/check_docs_links.py`
