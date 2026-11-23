@@ -50,7 +50,7 @@ jobs:
             while IFS= read -r f; do
               # Agent tooling and dev scripts never reach the app or the suite
               # (integration_test/perf_test.dart uses scripts/, but only on a manual run).
-              case "$f" in docs/*|*.md|.claude/*|.githooks/*|scripts/*) ;; *) docs=false ;; esac
+              case "$f" in docs/site/*) docs=false ;; docs/*|*.md|.claude/*|.githooks/*|scripts/*) ;; *) docs=false ;; esac
             done <<< "$files"
           fi
           echo "docs=$docs" >> "$GITHUB_OUTPUT"
@@ -80,6 +80,8 @@ jobs:
       # node is preinstalled on ubuntu-latest.
       - name: Report Worker tests
         run: node --test tools/report-worker/test/*.test.js
+      - name: Share page tests
+        run: node --test docs/site/fragment.test.mjs
       # Covers lib, test, test/live, test_shots and integration_test.
       - if: steps.scope.outputs.docs != 'true'
         run: flutter analyze

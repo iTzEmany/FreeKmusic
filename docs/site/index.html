@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>FreeKmusic</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1a1a1f; --mut:#55555f; --link:#0b57d0; --card:#f3f3f7; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14141a; --fg:#ececf1; --mut:#b4b4c0; --link:#8ab4f8; --card:#22222b; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui,sans-serif; }
+  main { max-width:40rem; margin:0 auto; padding:1.5rem 1rem 3rem; }
+  a { color:var(--link); }
+  .btn { display:inline-block; padding:.7rem 1.2rem; border-radius:.5rem; background:var(--link); color:var(--bg); font-weight:600; text-decoration:none; }
+  .muted { color:var(--mut); }
+  ol { padding-left:1.5rem; } li { margin:.35rem 0; }
+  .card { background:var(--card); border-radius:.75rem; padding:1rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">FreeKmusic</h1>
+  <p id="kind" class="muted"></p>
+  <p id="intro">FreeKmusic è un lettore musicale gratuito per Android, Windows e Linux. Questa pagina mostra un brano, un album o una playlist condivisi con un link di FreeKmusic: aprine uno per vederne il contenuto.</p>
+  <ol id="list"></ol>
+  <p id="open" hidden><a id="openBtn" class="btn" href="#">Apri in FreeKmusic</a></p>
+  <p class="card">Non hai l'app? <a href="https://github.com/iTzEmany/FreeKmusic/releases/latest">Scarica FreeKmusic</a>.</p>
+</main>
+<script type="module">
+import { decodeFragment } from './fragment.js';
+const KINDS = { t: 'Brano', a: 'Album', p: 'Playlist' };
+const $ = (id) => document.getElementById(id);
+if (location.hash.length > 1) {
+  try {
+    const { type, title, ids } = await decodeFragment(location.hash);
+    document.title = title + ' - FreeKmusic';
+    $('title').textContent = title;
+    $('kind').textContent = KINDS[type] + ' condiviso con FreeKmusic, ' + ids.length + (ids.length === 1 ? ' brano' : ' brani');
+    $('intro').hidden = true;
+    ids.forEach((id, i) => {
+      const a = document.createElement('a');
+      a.href = 'https://music.youtube.com/watch?v=' + id;
+      a.textContent = 'Brano ' + (i + 1) + ' su YouTube Music';
+      a.rel = 'noopener noreferrer';
+      const li = document.createElement('li');
+      li.appendChild(a);
+      $('list').appendChild(li);
+    });
+    // Same https URL: Android's App Link opens the installed app, otherwise this page again.
+    $('openBtn').href = location.href;
+    $('open').hidden = false;
+  } catch (e) {
+    $('kind').textContent = 'Il link non è valido o è incompleto.';
+  }
+}
+</script>
+</body>
+</html>
