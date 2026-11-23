@@ -3191,7 +3191,20 @@
   "reportCopied": "Texte copié",
   "reportGithubNote": "Un compte GitHub est nécessaire ; sinon, copiez le texte et envoyez-le comme vous voulez.",
   "reportOpenFailed": "Impossible d’ouvrir le navigateur : le texte a été copié",
-  "reportLogShortened": "Le journal sera raccourci pour tenir dans l’adresse",
+  "reportSend": "Envoyer",
+  "reportSending": "Envoi en cours",
+  "reportSent": "Signalement envoyé, merci. Vous le trouvez ici :",
+  "reportOpenSent": "Ouvrir le signalement",
+  "reportSendFailed": "Échec de l’envoi. Copiez le texte, ou ouvrez-le sur GitHub.",
+  "reportAnonNote": "Envoi anonyme : le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.",
+  "reportWhyDisabled": "Pour envoyer, écrivez un titre et une description d’au moins {n} caractères.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Aucun avertissement ni erreur récente dans le journal",
   "reportUnknown": "Inconnu",
   "iconAskTitle": "Changer aussi l’icône de l’app ?",

@@ -8391,11 +8391,47 @@ abstract class AppLocalizations {
   /// **'Impossibile aprire il browser: il testo è stato copiato'**
   String get reportOpenFailed;
 
-  /// No description provided for @reportLogShortened.
+  /// No description provided for @reportSend.
   ///
   /// In it, this message translates to:
-  /// **'Il log verrà accorciato per stare nell\'indirizzo'**
-  String get reportLogShortened;
+  /// **'Invia'**
+  String get reportSend;
+
+  /// No description provided for @reportSending.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio in corso'**
+  String get reportSending;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In it, this message translates to:
+  /// **'Segnalazione inviata, grazie. La trovi qui:'**
+  String get reportSent;
+
+  /// No description provided for @reportOpenSent.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri la segnalazione'**
+  String get reportOpenSent;
+
+  /// No description provided for @reportSendFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio non riuscito. Copia il testo, oppure aprilo su GitHub.'**
+  String get reportSendFailed;
+
+  /// No description provided for @reportAnonNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio anonimo: il servizio intermedio vede l\'indirizzo IP (GitHub no), nessun account richiesto.'**
+  String get reportAnonNote;
+
+  /// No description provided for @reportWhyDisabled.
+  ///
+  /// In it, this message translates to:
+  /// **'Per inviare scrivi un titolo e una descrizione di almeno {n} caratteri.'**
+  String reportWhyDisabled(int n);
 
   /// No description provided for @reportNoLog.
   ///

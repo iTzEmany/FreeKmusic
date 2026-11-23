@@ -5418,8 +5418,29 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível abrir o navegador: o texto foi copiado';
 
   @override
-  String get reportLogShortened =>
-      'O registo será encurtado para caber no endereço';
+  String get reportSend => 'Enviar';
+
+  @override
+  String get reportSending => 'A enviar';
+
+  @override
+  String get reportSent => 'Relatório enviado, obrigado. Encontra-o aqui:';
+
+  @override
+  String get reportOpenSent => 'Abrir o relatório';
+
+  @override
+  String get reportSendFailed =>
+      'Falha no envio. Copie o texto, ou abra-o no GitHub.';
+
+  @override
+  String get reportAnonNote =>
+      'Envio anónimo: o serviço intermediário vê o seu endereço IP (o GitHub não), sem conta necessária.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Para enviar, escreva um título e uma descrição de pelo menos $n caracteres.';
+  }
 
   @override
   String get reportNoLog => 'Sem avisos nem erros recentes no registo';

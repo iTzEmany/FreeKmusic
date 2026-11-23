@@ -2970,7 +2970,20 @@
   "reportCopied": "Text copied",
   "reportGithubNote": "A GitHub account is required; without one, copy the text and send it however you like.",
   "reportOpenFailed": "Couldn't open the browser: the text was copied",
-  "reportLogShortened": "The log will be shortened to fit in the address",
+  "reportSend": "Send",
+  "reportSending": "Sending",
+  "reportSent": "Report sent, thank you. You can find it here:",
+  "reportOpenSent": "Open the report",
+  "reportSendFailed": "Sending failed. Copy the text, or open it on GitHub.",
+  "reportAnonNote": "Anonymous sending: the intermediary service sees your IP address (GitHub does not), no account needed.",
+  "reportWhyDisabled": "To send, write a title and a description of at least {n} characters.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "No recent warnings or errors in the log",
   "reportUnknown": "Unknown",
   "iconAskTitle": "Change the app icon too?",

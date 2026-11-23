@@ -5462,8 +5462,29 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’ouvrir le navigateur : le texte a été copié';
 
   @override
-  String get reportLogShortened =>
-      'Le journal sera raccourci pour tenir dans l’adresse';
+  String get reportSend => 'Envoyer';
+
+  @override
+  String get reportSending => 'Envoi en cours';
+
+  @override
+  String get reportSent => 'Signalement envoyé, merci. Vous le trouvez ici :';
+
+  @override
+  String get reportOpenSent => 'Ouvrir le signalement';
+
+  @override
+  String get reportSendFailed =>
+      'Échec de l’envoi. Copiez le texte, ou ouvrez-le sur GitHub.';
+
+  @override
+  String get reportAnonNote =>
+      'Envoi anonyme : le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Pour envoyer, écrivez un titre et une description d’au moins $n caractères.';
+  }
 
   @override
   String get reportNoLog =>

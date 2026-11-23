@@ -5400,8 +5400,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t open the browser: the text was copied';
 
   @override
-  String get reportLogShortened =>
-      'The log will be shortened to fit in the address';
+  String get reportSend => 'Send';
+
+  @override
+  String get reportSending => 'Sending';
+
+  @override
+  String get reportSent => 'Report sent, thank you. You can find it here:';
+
+  @override
+  String get reportOpenSent => 'Open the report';
+
+  @override
+  String get reportSendFailed =>
+      'Sending failed. Copy the text, or open it on GitHub.';
+
+  @override
+  String get reportAnonNote =>
+      'Anonymous sending: the intermediary service sees your IP address (GitHub does not), no account needed.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'To send, write a title and a description of at least $n characters.';
+  }
 
   @override
   String get reportNoLog => 'No recent warnings or errors in the log';

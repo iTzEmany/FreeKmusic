@@ -8,11 +8,19 @@ import '../core/app_log.dart';
 import '../core/constants.dart';
 import '../core/issue_report.dart';
 import '../core/paths.dart';
+import '../services/issue/issue_sender.dart';
 import '../services/issue/link_opener.dart';
 import 'settings_providers.dart';
 import 'share_providers.dart';
 
 final linkOpenerProvider = Provider<LinkOpener>((ref) => LinkOpener());
+
+/// Where reports are sent; empty = no anonymous sending.
+final issueEndpointProvider = Provider<String>((ref) => kReportEndpoint);
+
+final issueSenderProvider = Provider<IssueSender>(
+  (ref) => HttpIssueSender(ref.watch(issueEndpointProvider)),
+);
 
 /// What «Segnala un problema» would attach, with the log already redacted.
 final issueTechInfoProvider = FutureProvider.autoDispose<TechInfo>((ref) async {

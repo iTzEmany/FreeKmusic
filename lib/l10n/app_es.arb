@@ -2970,7 +2970,20 @@
   "reportCopied": "Texto copiado",
   "reportGithubNote": "Hace falta una cuenta de GitHub; sin ella, copia el texto y envíalo como prefieras.",
   "reportOpenFailed": "No se pudo abrir el navegador: el texto se copió",
-  "reportLogShortened": "El registro se acortará para caber en la dirección",
+  "reportSend": "Enviar",
+  "reportSending": "Enviando",
+  "reportSent": "Informe enviado, gracias. Lo encuentras aquí:",
+  "reportOpenSent": "Abrir el informe",
+  "reportSendFailed": "No se pudo enviar. Copia el texto o ábrelo en GitHub.",
+  "reportAnonNote": "Envío anónimo: el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.",
+  "reportWhyDisabled": "Para enviar, escribe un título y una descripción de al menos {n} caracteres.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Sin avisos ni errores recientes en el registro",
   "reportUnknown": "Desconocido",
   "iconAskTitle": "¿Cambiar también el icono de la app?",

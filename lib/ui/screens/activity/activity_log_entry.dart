@@ -1,7 +1,10 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/log_export.dart' show redactLog;
 import '../../../core/platform.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
@@ -16,6 +19,8 @@ import '../../widgets/tag_write_ui.dart' show tagReasonText;
 import '../../widgets/cc_tile.dart';
 import '../../widgets/playback_reason_text.dart';
 import '../import/import_labels.dart' show importStopText;
+import '../../shell/shell_nav.dart';
+import '../settings/report_issue_screen.dart';
 import '../../widgets/action_button.dart';
 import '../now_playing/proposal_card.dart' show identLabel;
 
@@ -495,8 +500,30 @@ class LogDetail extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.tonal(onPressed: onOpen, child: Text(l.logOpenSongs)),
           ],
+          if (entry.failed || entry.stopped) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              key: const ValueKey('log-report'),
+              onPressed: () => ShellNav.open<void>(
+                context,
+                ReportIssueScreen(
+                  title: group.isEmpty ? text.title : l.logDlGroup(group.length),
+                  details: _reportDetails(text, sources),
+                ),
+              ),
+              icon: const Icon(Icons.bug_report_outlined),
+              label: Text(l.reportIssue),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+/// The detail lines of an entry for a report, redacted like «Esporta log».
+String _reportDetails(LogText text, String? sources) {
+  final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
+  final lines = [text.detail, ?sources, ?text.tech].where((s) => s.isNotEmpty).join('\n');
+  return redactLog(lines, home: home);
 }

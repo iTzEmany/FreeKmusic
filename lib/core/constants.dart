@@ -5,3 +5,8 @@ const bool kEnableYoutube = bool.fromEnvironment('CODECORE_YOUTUBE', defaultValu
 
 /// Pause before a search or a list reloads while the user types (CcTiming.debounce).
 const kInputDebounce = Duration(milliseconds: 250);
+
+/// Address of the anonymous-report service (tools/report-worker, D-669/D-701).
+/// Empty until it is deployed: the report screen then offers only «Copia testo»
+/// and the GitHub page.
+const kReportEndpoint = '';

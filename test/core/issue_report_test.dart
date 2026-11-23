@@ -111,4 +111,30 @@ void main() {
     expect(d.url.length, lessThanOrEqualTo(kMaxIssueUrl));
     expect(d.body, contains('Testo accorciato'));
   });
+
+  test('fits: a huge log is shortened to the report service limits', () {
+    final big = TechInfo(
+      appVersion: '1',
+      buildNumber: '1',
+      platform: 'linux',
+      osVersion: '1',
+      deviceModel: 'x',
+      flavor: 'lite',
+      transition: 'n',
+      shufflePlus: false,
+      language: 'it',
+      logLines: List.filled(500, 'è' * 200),
+    );
+    final d = buildIssue(
+      repo: 'o/r',
+      kind: IssueKind.bug,
+      title: 't',
+      description: 'd',
+      info: big,
+      fits: (t, b) => fitsReportService(t, b, '1.0.0'),
+    );
+    expect(d.logTruncated, isTrue);
+    expect(fitsReportService(d.title, d.body, '1.0.0'), isTrue);
+    expect(d.body, contains('Log accorciato'));
+  });
 }

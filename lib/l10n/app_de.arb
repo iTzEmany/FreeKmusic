@@ -2970,7 +2970,20 @@
   "reportCopied": "Text kopiert",
   "reportGithubNote": "Ein GitHub-Konto ist nötig; ohne Konto den Text kopieren und beliebig weitergeben.",
   "reportOpenFailed": "Browser konnte nicht geöffnet werden: Der Text wurde kopiert",
-  "reportLogShortened": "Das Protokoll wird gekürzt, damit es in die Adresse passt",
+  "reportSend": "Senden",
+  "reportSending": "Wird gesendet",
+  "reportSent": "Meldung gesendet, danke. Du findest sie hier:",
+  "reportOpenSent": "Meldung öffnen",
+  "reportSendFailed": "Senden fehlgeschlagen. Kopiere den Text oder öffne ihn auf GitHub.",
+  "reportAnonNote": "Anonymer Versand: Der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.",
+  "reportWhyDisabled": "Zum Senden einen Titel und eine Beschreibung mit mindestens {n} Zeichen schreiben.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Keine aktuellen Warnungen oder Fehler im Protokoll",
   "reportUnknown": "Unbekannt",
   "iconAskTitle": "Auch das App-Symbol ändern?",

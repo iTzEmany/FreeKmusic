@@ -5436,8 +5436,29 @@ class AppLocalizationsDe extends AppLocalizations {
       'Browser konnte nicht geöffnet werden: Der Text wurde kopiert';
 
   @override
-  String get reportLogShortened =>
-      'Das Protokoll wird gekürzt, damit es in die Adresse passt';
+  String get reportSend => 'Senden';
+
+  @override
+  String get reportSending => 'Wird gesendet';
+
+  @override
+  String get reportSent => 'Meldung gesendet, danke. Du findest sie hier:';
+
+  @override
+  String get reportOpenSent => 'Meldung öffnen';
+
+  @override
+  String get reportSendFailed =>
+      'Senden fehlgeschlagen. Kopiere den Text oder öffne ihn auf GitHub.';
+
+  @override
+  String get reportAnonNote =>
+      'Anonymer Versand: Der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Zum Senden einen Titel und eine Beschreibung mit mindestens $n Zeichen schreiben.';
+  }
 
   @override
   String get reportNoLog =>

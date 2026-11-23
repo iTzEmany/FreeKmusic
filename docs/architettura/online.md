@@ -142,11 +142,15 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - **AppImage**: la nuova si copia accanto a `$APPIMAGE` (`.new`), `chmod 755`, rinomina sopra la vecchia, avvio staccato e uscita; cartella non scrivibile o errore → browser. Si riconosce solo se `$APPIMAGE` è impostata e l'eseguibile sta sotto `APPDIR` o in `/tmp/.mount_`.
 - **Pulizia**: `updatesCleanupProvider` svuota `<cache>/updates/` all'avvio (dopo `startupSettledProvider`) solo se nessun aggiornamento è in corso.
 
+### Segnalazioni anonime (D-669, D-691, D-701)
+
+Unico servizio esterno nostro, eccezione a «nessun backend»: il Worker in `tools/report-worker/` crea la issue GitHub (token solo nel Worker). L'app lo chiama con `IssueSender` (`lib/services/issue/issue_sender.dart`, POST JSON titolo, corpo, versione) all'indirizzo `kReportEndpoint` (`lib/core/constants.dart`, vuoto finché il Worker non è online: allora la schermata offre solo «Copia testo» e la pagina GitHub). `buildIssue(fits: fitsReportService)` accorcia il log per stare nei limiti del Worker (titolo 120, corpo 20000, JSON 30000 byte). Qualsiasi risposta diversa da 201 o errore di rete: «Copia testo»; invio riuscito: link della issue. Il servizio intermedio vede l'IP, GitHub no.
+
 ## Invarianti da non rompere
 
 - Ogni chiamata YTM passa da `budgetedYtm`; un 429 deve far scattare il `SourceCooldown`.
 - Timeout e User-Agent propri su ogni richiesta; contatto in `kApiContact` (D-298).
-- Niente richieste web non richieste dall'utente o dall'arricchimento opt-in. Niente telemetria.
+- Niente richieste web non richieste dall'utente o dall'arricchimento opt-in. Niente telemetria. L'invio di una segnalazione parte solo dal tasto «Invia», mai da solo.
 - `enrich_writer` è l'unico scrittore di `tracks.enrich_status`.
 - Le correzioni ai brani passano da `TrackEditor` e finiscono nel Registro.
 - Spotify: una sola GET, nessun ritentativo (D-521).
@@ -168,6 +172,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 - **Nuovo `MediaSource`**: in `YtResult`/`downloadIndexKey`, con la chiave in `downloads.json`.
 
 ## Trappole
+- **La segnalazione si costruisce solo ai tasti**: `buildIssue` non gira a ogni lettera e nulla chiama `IssueSender` fuori da «Invia»; l'unica chiamata di rete della segnalazione è quella.
 - **Il menu ⋮ non cattura il `Track`** (fase 139): `showTrackActions` ascolta lo stato e l'indice e ricarica la riga viva, ma per un brano online (id negativo) resta il menu online anche a download finito: con la riga locale «Elimina dal dispositivo» cancellerebbe il file che suona lasciandolo in coda.
 - **`downloadIndexProvider` è mutato sul posto**: chi aggiunge o toglie file deve fare `ref.invalidate(downloadIndexProvider)`, altrimenti lo stato del brano resta vecchio.
 

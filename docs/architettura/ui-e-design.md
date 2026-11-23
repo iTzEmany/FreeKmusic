@@ -109,6 +109,10 @@ Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio 
 ### Avvisi (D-541)
 `showMsg(context, testo, {action, persist})` mostra un solo avviso alla volta (cancella quello corrente e la coda) ed è sicuro dopo un `await`. Con `showMsgOn(messenger, …)` si usa un messenger catturato prima, per avvisi dopo la chiusura di un foglio. Ogni avviso si chiude da solo: 4 s semplice, 3 s con azione, 5 s con azione e `persist: true`. Ha un conto alla rovescia, un anello sottile d'accento che si svuota in senso orario (`CcSnackContent`), escluso da TalkBack e fermo con «Riduci animazioni».
 
+### Segnalazione (`ReportIssueScreen`, fase 143)
+
+Larghezza massima 600 dp, scelta Bug/Idea senza icone, descrizione da 4 a 6 righe, anteprima delle informazioni tecniche alta al massimo 132 dp con scorrimento (nascosta finché non sono lette). Pulsanti in `Wrap` («Invia» solo con `kReportEndpoint` non vuoto, «Copia testo», «Apri su GitHub»); a campi incompleti una riga spiega perché sono spenti. Si apre vuota dalle Impostazioni o precompilata (`title:`, `details:`) dal tasto «Segnala un problema» di `LogDetail` (voci fallite o fermate, dettagli redatti con `redactLog`). Dopo l'invio riuscito mostra il link della issue.
+
 ### Accessibilità e TalkBack
 - Ogni controllo è un solo nodo con il suo nome (`label` o `tooltip`). Le copertine stanno fuori dalla semantica salvo `semanticLabel` (`coverSemantics` in `cover_image.dart`).
 - Un `Semantics` con `excludeSemantics: true` (come le schede del dock) **deve avere lo stesso `onTap`** (e `onLongPress`) del figlio, altrimenti il nome c'è ma il doppio tocco non fa nulla.
