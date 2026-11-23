@@ -57,7 +57,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | 22 | `tracks.albumBrowseId` (pagina dell'album online di un brano in streaming; entra nel backup dei brani salvati, validato in lettura; D-675) |
 | 23 | `FavoriteCollections` (`kind` album o playlist, `key`, `addedAt`; chiave primaria `(kind, key)`): preferiti di album e playlist (fase 141). Chiave dell'album = `albumKey` senza il prefisso `stream|` (`favoriteAlbumKey`, normalizzata dal repository in add/remove/toggle/lettura e dal merge del backup: promuovere o declassare un brano riscrive la chiave e il preferito resta), della playlist = `Playlists.uuid` (non l'id). Il passo crea solo la tabella, nessuna riga cambia |
 
-- Repository: `favorite_collections_repository.dart`. Cancellare una playlist toglie il suo preferito (stessa transazione); un album che sparisce si filtra in lettura, la riga resta; modificare i tag che cambiano `albumKey` lascia il preferito sulla chiave vecchia (accettato).
+- Repository: `favorite_collections_repository.dart`. Cancellare una playlist toglie il suo preferito (stessa transazione); un album che sparisce si filtra in lettura, la riga resta; il preferito segue la rinomina dell'album (`followAlbumKey`, nella transazione di `TrackEditor.save`/`saveMany` e di `demoteToStream`) solo se nessun brano ha più la chiave vecchia; scan e arricchimento che cambiano `albumKey` non lo spostano (limite accettato). Una chiave vuota (`stream|`) non è un preferito.
 - I passi 18 e 19 sono ripetibili: controllano `PRAGMA table_info('podcasts')` prima di `addColumn`; i passi 20 e 22 fanno lo stesso con `PRAGMA table_info('tracks')` (D-607).
 - Dopo ogni modifica alle tabelle: `dart run build_runner build --delete-conflicting-outputs`.
 

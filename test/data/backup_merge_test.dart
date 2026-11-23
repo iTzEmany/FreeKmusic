@@ -712,5 +712,32 @@ void main() {
       await merge(d);
       expect(await db.select(db.favoriteCollections).get(), hasLength(1));
     });
+
+    test('addedAt of the wrong type: the entry stays, without a date; the right one round-trips in order', () async {
+      final d = UserData.fromJson({
+        'format': 1,
+        'favoriteCollections': [
+          {'kind': 'album', 'key': 'k', 'addedAt': 'soon'},
+          {'kind': 'album', 'key': 'nan', 'addedAt': double.nan},
+        ],
+      });
+      expect(d.favoriteCollections.map((f) => (f.key, f.addedAt)), [('k', null), ('nan', null)]);
+      final repo = FavoriteCollectionsRepository(db);
+      await repo.add('album', 'old', addedAt: 10);
+      await repo.add('album', 'new', addedAt: 20);
+      final back = UserData.fromJson(jsonDecode(jsonEncode((await collectUserData(db)).toJson())) as Map<String, dynamic>);
+      await db.delete(db.favoriteCollections).go();
+      await merge(back);
+      expect(await repo.watch('album').first, ['new', 'old']);
+    });
+
+    test('an empty key is dropped and a tie on addedAt is ordered by key', () async {
+      await merge(UserData(createdAt: 1, favoriteCollections: [
+        const FavoriteCollectionData(kind: 'album', key: 'stream|'),
+        const FavoriteCollectionData(kind: 'album', key: 'b', addedAt: 5),
+        const FavoriteCollectionData(kind: 'album', key: 'a', addedAt: 5),
+      ]));
+      expect(await FavoriteCollectionsRepository(db).watch('album').first, ['a', 'b']);
+    });
   });
 }

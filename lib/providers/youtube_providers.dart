@@ -285,7 +285,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       return false;
     }
     final idx = ref.read(downloadIndexProvider).value;
-    if (idx != null && idx.contains(r.id, source: r.source)) {
+    if (idx != null && await idx.containsOnDisk(r.id, source: r.source)) {
       // Already a library file: never a second copy (`Title (2).m4a`).
       final playlist = parseAddToPlaylistTag(tag);
       if (playlist != null) unawaited(_joinPlaylist(r, playlist));

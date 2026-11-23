@@ -5,11 +5,14 @@ import 'dart:async';
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
 import 'package:codecore/ui/widgets/download_bar.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
-import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
+import 'package:codecore/data/repositories/track_kinds.dart'
+    show kMusicKind, kStreamKind;
 import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/providers/player_providers.dart'
     show onlineEntriesProvider;
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/providers/library_add_providers.dart'
+    show trackRowLookupProvider;
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/download_queue.dart' show DownloadItem, DownloadStatus;
 import 'package:codecore/services/online/download_index.dart'
@@ -595,6 +598,51 @@ void main() {
     await _settle(tester);
     expect(await tester.runAsync(() => h.db.select(h.db.tracks).get()), isEmpty);
     expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the overlay host of the menu is removed when it closes, with or without an action', (tester) async {
+    final downloads = _Downloads();
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', title: 'Streamed'),
+      mode: StorageMode.stream,
+      extra: [downloadsProvider.overrideWith(() => downloads)],
+    );
+    int hosts() => find.byType(Consumer, skipOffstage: false).evaluate().length;
+    await tester.tapAt(const Offset(5, 5)); // the barrier: closed without an action
+    await _settle(tester);
+    expect(find.text('Aggiungi alla libreria'), findsNothing);
+    final base = hosts();
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(hosts(), greaterThan(base));
+    await tester.tap(find.text('Aggiungi alla libreria')); // closed by an action
+    await _settle(tester);
+    expect(hosts(), base);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a late, older row lookup does not undo the newer one', (tester) async {
+    final lookups = <Completer<Track?>>[];
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [trackRowLookupProvider.overrideWithValue((track, key) => (lookups..add(Completer<Track?>())).last.future)],
+    );
+    ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider); // a newer reload
+    await _settle(tester);
+    expect(lookups.length, greaterThan(1));
+    final row = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    final older = lookups.sublist(0, lookups.length - 1);
+    lookups.last.complete(row);
+    await _settle(tester);
+    for (final c in older) {
+      c.complete(row.copyWith(kind: kMusicKind, saved: false, path: '/m/file.mp3')); // answer last, but are older
+    }
+    await _settle(tester);
+    expect(find.text('Scarica'), findsOneWidget);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
     await h.dispose(tester);
   });
 

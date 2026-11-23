@@ -259,12 +259,30 @@ void main() {
     await settle();
     final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
     expect(online[id]?.trackId, shadow);
+    backend.stateC.add(BackendState.playing);
+    await settle();
     await handler.removeTracks({shadow});
     await TrackRepository(db).deleteTracks([shadow]);
     expect(online[id]?.trackId, isNull, reason: 'the entry is a stream again');
     final lines = await timingLines(() => listenTo(100));
     expect(lines.where((l) => l.contains('registerPlay failed')), isEmpty);
     expect(await db.select(db.plays).get(), isEmpty);
+  });
+
+  test('after the shadow of the playing entry is merged, the listen counts on the kept row', () async {
+    final id = online.register(result('v1'));
+    preparer.urls['youtube:v1'] = (Uri.parse('https://rr1.googlevideo.com/v1'), const {});
+    await handler.playQueue([id], 0);
+    await settle();
+    backend.stateC.add(BackendState.playing);
+    await settle();
+    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    final kept = ids.first;
+    await TrackRepository(db).mergeStreamRow('youtube:v1', kept);
+    handler.replaceQueueId(shadow, kept);
+    await listenTo(100);
+    await settle();
+    expect([for (final p in await db.select(db.plays).get()) p.trackId], [kept]);
   });
 
   test('resyncPreparer drops an entry downloaded after it was queued', () async {

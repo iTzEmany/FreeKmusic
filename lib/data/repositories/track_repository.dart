@@ -19,6 +19,7 @@ import 'duplicate_repository.dart';
 import 'artist_info_repository.dart' show ArtistInfoRepository;
 import 'hidden_playlists.dart';
 import 'light_tracks.dart';
+import 'favorite_collections_repository.dart';
 import 'track_genre_repository.dart';
 import 'track_kinds.dart';
 
@@ -233,6 +234,7 @@ class TrackRepository {
         missing: const Value(false),
       ),
     );
+    await FavoriteCollectionsRepository(_db).followAlbumKey(row.albumKey, albumKey);
     await settleMovedCover(row, albumKey);
     return row;
   });

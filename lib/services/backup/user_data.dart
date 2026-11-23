@@ -476,9 +476,12 @@ class FavoriteCollectionData {
   /// Null for a malformed entry or an unknown kind: it is dropped, the backup still reads.
   static FavoriteCollectionData? tryParse(Object? j) =>
       j is Map && (j['kind'] == 'album' || j['kind'] == 'playlist') && j['key'] is String && (j['key'] as String).isNotEmpty
-          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: (j['addedAt'] as num?)?.toInt())
+          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: _finiteInt(j['addedAt']))
           : null;
 }
+
+/// A JSON number as int; anything else (wrong type, NaN, infinity) is null.
+int? _finiteInt(Object? v) => v is num && v.isFinite ? v.toInt() : null;
 
 class UserData {
   const UserData({

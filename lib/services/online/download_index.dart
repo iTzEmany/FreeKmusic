@@ -67,8 +67,12 @@ class DownloadIndex {
   }
 
   /// Forgets every entry (whatever its key) that points at [path].
-  Future<void> removeByPath(String path) {
-    for (final k in [for (final e in _map.entries) if (e.value == path) e.key]) {
+  Future<void> removeByPath(String path) => removeByPaths([path]);
+
+  /// [removeByPath] for many files with one write.
+  Future<void> removeByPaths(Iterable<String> paths) {
+    final set = paths.toSet();
+    for (final k in [for (final e in _map.entries) if (set.contains(e.value)) e.key]) {
       _forget(k);
     }
     return _persist();
@@ -83,7 +87,8 @@ class DownloadIndex {
         if (!await File(e.value).exists() && await Directory(p.dirname(e.value)).exists()) e,
     ];
     // A download that landed meanwhile at the same key keeps its entry.
-    final still = [for (final e in gone) if (_map[e.key] == e.value) e.key];
+    // A file put back at the same path meanwhile (re-downloaded) stays too.
+    final still = [for (final e in gone) if (_map[e.key] == e.value && !await File(e.value).exists()) e.key];
     if (still.isEmpty) return;
     still.forEach(_forget);
     await _persist();
@@ -160,6 +165,16 @@ class DownloadIndex {
 
   Future<String?> existingPathFor(String id, {MediaSource source = MediaSource.youtube}) =>
       existingPathForKey(downloadIndexKey(source, id));
+
+  /// [contains] checked on disk, for deciding not to download: a file deleted outside the app is forgotten
+  /// (only where its folder is still there, as in [pruneGone]) and counts as not downloaded.
+  Future<bool> containsOnDisk(String id, {MediaSource source = MediaSource.youtube}) async {
+    final path = pathFor(id, source: source);
+    if (path == null) return false;
+    if (await File(path).exists()) return true;
+    if (await Directory(p.dirname(path)).exists()) await removeByPaths([path]);
+    return false;
+  }
 
   /// The YouTube video id [path] was downloaded from. Memory only (no disk
   /// access), so it also answers for files that are gone.

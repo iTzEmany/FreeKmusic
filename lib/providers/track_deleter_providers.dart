@@ -17,9 +17,7 @@ final trackDeleterProvider = Provider<TrackDeleter>(
     onDeleted: (gone) async {
       // Forget the deleted files before the index reloads (its writes are chained, so the reload sees them).
       final index = await ref.read(downloadIndexProvider.future);
-      for (final t in gone) {
-        await index.removeByPath(t.path);
-      }
+      await index.removeByPaths([for (final t in gone) t.path]);
       ref.invalidate(downloadIndexProvider);
     },
   ),

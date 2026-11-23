@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/favorite_collections_repository.dart';
 import '../../data/repositories/track_genre_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../tags/tag_reader.dart';
@@ -134,6 +135,8 @@ class TrackEditor {
       if (genre != track.genre) {
         await TrackGenreRepository(_db).replace(track.id, splitGenres([genre]));
       }
+      await FavoriteCollectionsRepository(_db)
+          .followAlbumKey(track.albumKey, key);
     });
     await TrackRepository(_db).settleMovedCover(track, key);
   }
@@ -170,6 +173,8 @@ class TrackEditor {
             coverSource: withCover ? Value(source) : const Value.absent(),
           ),
         );
+        await FavoriteCollectionsRepository(_db)
+            .followAlbumKey(t.albumKey, key);
         if (cover == null) await repo.settleMovedCover(t, key);
       }
     });

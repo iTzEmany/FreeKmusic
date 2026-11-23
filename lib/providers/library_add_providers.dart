@@ -48,7 +48,7 @@ class LibraryAdder {
   /// already there or saving failed (logged).
   Future<int?> saveStreamNow(YtResult r) async {
     final idx = await _ref.read(downloadIndexProvider.future);
-    return idx.contains(r.id, source: r.source) ? null : _save(r);
+    return await idx.containsOnDisk(r.id, source: r.source) ? null : _save(r);
   }
 
   Future<int?> _save(YtResult r) async {
@@ -64,7 +64,7 @@ class LibraryAdder {
   /// logged and the download goes on. Same result as `DownloadsNotifier.add`.
   Future<bool?> download(YtResult r, {String? tag}) async {
     final idx = await _ref.read(downloadIndexProvider.future);
-    if (!idx.contains(r.id, source: r.source)) await _save(r);
+    if (!await idx.containsOnDisk(r.id, source: r.source)) await _save(r);
     return _ref.read(downloadsProvider.notifier).add(r, tag: tag);
   }
 
@@ -75,7 +75,7 @@ class LibraryAdder {
     if (!streaming) return download(r, tag: tag); // device mode: save, then download (D-695), keeping the tag
     final idx = await _ref.read(downloadIndexProvider.future);
     // A file is already there: the download path joins the playlist without a second copy.
-    if (idx.contains(r.id, source: r.source)) return _ref.read(downloadsProvider.notifier).add(r, tag: tag);
+    if (await idx.containsOnDisk(r.id, source: r.source)) return _ref.read(downloadsProvider.notifier).add(r, tag: tag);
     final playlist = parseAddToPlaylistTag(tag);
     final saved = _ref.read(savedStreamKeysProvider).value;
     if (playlist == null && (saved?.contains(r.indexKey) ?? false)) return true;

@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/library/track_editor.dart';
@@ -55,6 +56,38 @@ void main() {
     expect(await genres.of(t.id), ['Rock', 'Pop', 'Soul']);
     await editor.save(again, const TrackEdit(title: 'Orig again'));
     expect(await genres.of(t.id), isEmpty);
+  });
+
+  test('a favourite album follows its rename; with another track still on the old album it stays', () async {
+    await repo.upsertBatch([
+      row('One').copyWith(path: const Value('/m/1.mp3')),
+      row('Two').copyWith(path: const Value('/m/2.mp3')),
+    ]);
+    final favs = FavoriteCollectionsRepository(db);
+    var all = await db.select(db.tracks).get();
+    await editor.save(
+      all[0],
+      const TrackEdit(title: 'One', artist: 'Joy', album: 'Alb'),
+    );
+    await editor.save(
+      all[1],
+      const TrackEdit(title: 'Two', artist: 'Joy', album: 'Alb'),
+    );
+    await favs.add('album', 'joy|alb');
+    all = await db.select(db.tracks).get();
+    await editor.save(
+      all[0],
+      const TrackEdit(title: 'One', artist: 'Joy', album: 'Alb (Deluxe)'),
+    );
+    expect(await favs.watch('album').first, ['joy|alb']);
+    await editor.save(
+      all[1],
+      const TrackEdit(title: 'Two', artist: 'Joy', album: 'Alb (Deluxe)'),
+    );
+    expect(await favs.watch('album').first, ['joy|alb (deluxe)']);
+    all = await db.select(db.tracks).get();
+    await editor.saveMany(all, album: 'Other', albumArtist: 'Joy');
+    expect(await favs.watch('album').first, ['joy|other']);
   });
 
   test('edit survives rescan (unchanged and modified file)', () async {

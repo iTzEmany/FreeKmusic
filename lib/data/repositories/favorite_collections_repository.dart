@@ -19,10 +19,27 @@ class FavoriteCollectionsRepository {
   static String _canon(String kind, String key) => kind == album ? favoriteAlbumKey(key) : key;
 
   /// Idempotent: a second add keeps the first `addedAt`.
-  Future<void> add(String kind, String key, {int? addedAt}) => _db.into(_db.favoriteCollections).insert(
-        FavoriteCollectionsCompanion.insert(kind: kind, key: _canon(kind, key), addedAt: addedAt == null ? const Value.absent() : Value(addedAt)),
-        mode: InsertMode.insertOrIgnore,
-      );
+  Future<void> add(String kind, String key, {int? addedAt}) async {
+    final k = _canon(kind, key);
+    if (k.isEmpty) return; // e.g. a bare 'stream|': no album to favourite
+    await _db.into(_db.favoriteCollections).insert(
+          FavoriteCollectionsCompanion.insert(kind: kind, key: k, addedAt: addedAt == null ? const Value.absent() : Value(addedAt)),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
+  /// The album [oldKey] became [newKey] (tags edited, row demoted): its favourite follows, unless a track
+  /// still has the old key. Call it after the rows are written, in their transaction.
+  Future<void> followAlbumKey(String oldKey, String newKey) async {
+    final o = favoriteAlbumKey(oldKey), n = favoriteAlbumKey(newKey);
+    if (o == n || n.isEmpty) return;
+    await _db.customUpdate(
+      'UPDATE OR IGNORE favorite_collections SET key = ? WHERE kind = ? AND key = ? '
+      'AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_key IN (?, ?))',
+      variables: [Variable(n), const Variable(album), Variable(o), Variable(o), Variable('$_streamPrefix$o')],
+      updates: {_db.favoriteCollections},
+    );
+  }
 
   Future<void> remove(String kind, String key) =>
       (_db.delete(_db.favoriteCollections)..where((r) => r.kind.equals(kind) & r.key.equals(_canon(kind, key)))).go();

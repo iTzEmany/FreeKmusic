@@ -97,6 +97,17 @@ void main() {
     },
   );
 
+  test('onDeleted that throws: the report is there anyway', () async {
+    final t = await track('a.mp3');
+    final r = await TrackDeleter(
+      tracks: repo,
+      removeFromQueue: (ids) async {},
+      onDeleted: (gone) async => throw StateError('boom'),
+    ).deleteTracks([t]);
+    expect(r.deleted.map((x) => x.id), [t.id]);
+    expect(await repo.getById(t.id), isNull);
+  });
+
   test('a failure keeps that row with the reason; the others go on', () async {
     final bad = await track('bad.mp3');
     final good = await track('good.mp3');

@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/data/repositories/hidden_playlists.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
@@ -737,6 +738,15 @@ void main() {
       expect(await db.select(db.plays).get(), hasLength(1));
       expect((await pl.watchTracks(plId).first).map((x) => x.id), [id]);
       expect(await repo.streamRow('youtube:a'), isNot(equals(null)));
+    });
+
+    test('a favourite album follows the row to its stream album key', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      await db.customStatement("UPDATE tracks SET user_edited = 1, album_key = 'hand' WHERE id = $id");
+      await FavoriteCollectionsRepository(db).add('album', 'hand');
+      await repo.demoteToStream(id, 'youtube:a');
+      expect(await FavoriteCollectionsRepository(db).watch('album').first, ['youtube:a']);
     });
 
     test('a stream row is not demoted, and restoreRow puts the file row back', () async {

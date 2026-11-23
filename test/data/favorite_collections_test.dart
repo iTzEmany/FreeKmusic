@@ -1,6 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -50,6 +51,24 @@ void main() {
     await repo.add('album', 'stream|art|alb');
     expect(await repo.watch('album').first, ['art|alb']);
     await repo.remove('album', 'stream|art|alb');
+    expect(await repo.watch('album').first, isEmpty);
+  });
+
+  Future<void> row(String path, String albumKey) => db.into(db.tracks).insert(TracksCompanion.insert(
+      path: path, title: path, albumKey: albumKey, format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+
+  test('followAlbumKey moves the favourite when no track keeps the old key, else leaves it', () async {
+    await repo.add('album', 'art|alb');
+    await row('/a', 'art|alb');
+    await repo.followAlbumKey('art|alb', 'art|alb (deluxe)');
+    expect(await repo.watch('album').first, ['art|alb'], reason: 'a track still has the old key');
+    await db.update(db.tracks).write(const TracksCompanion(albumKey: Value('art|alb (deluxe)')));
+    await repo.followAlbumKey('art|alb', 'art|alb (deluxe)');
+    expect(await repo.watch('album').first, ['art|alb (deluxe)']);
+  });
+
+  test('a stream| album key is empty after the prefix: it is not a favourite', () async {
+    await repo.add('album', 'stream|');
     expect(await repo.watch('album').first, isEmpty);
   });
 }

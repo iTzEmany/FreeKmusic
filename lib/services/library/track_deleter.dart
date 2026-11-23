@@ -116,7 +116,13 @@ class TrackDeleter {
     }
     await tracks.deleteTracks([for (final t in gone) t.id]);
     await _tidy(gone);
-    if (gone.isNotEmpty) await onDeleted?.call(gone);
+    if (gone.isNotEmpty) {
+      try {
+        await onDeleted?.call(gone);
+      } on Object catch (e, st) {
+        AppLog.w('onDeleted failed', e, st);
+      }
+    }
     return TrackDeleteReport(deleted: gone, failed: failed, refused: refused);
   }
 
