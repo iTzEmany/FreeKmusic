@@ -67,3 +67,9 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - Riquadro Daylist visibile per 90 giorni anche quando la daylist non può partire (`daylist_providers.dart:374`: ritorno silenzioso): nasconderlo o avvisare.
 - Griglia a 3 colonne: la soglia è sulla larghezza del blocco (560 dp); su desktop serve una finestra di circa 1324 dp. La metrica 147.1 va misurata sul blocco, o la soglia rivista.
 - Log `discovery: socket error | Network is unreachable` ogni 2 s su Android offline.
+
+## Da controllare (review e scheggia della fase 144)
+- Finestra fra `SeparationService.deleteModels` e un `request()` in arrivo (separazione che parte dopo `await _last`): ricontrollare `_activeKey` in ciclo o contare la separazione nella sezione esclusiva; provare sul Mi A3 «Elimina» del karaoke con una separazione in corso.
+- Test di contratto app↔Worker: oggi solo i limiti; aggiungere 201 con `url`, 504 incerto, 429 e le chiavi della richiesta (`title`, `body`, `version`).
+- Cancellazione di molte lingue di traduzione: ogni `delete` rilegge le 20 lingue da ML Kit; misurare sul Mi A3 e, se pesa, una sola lettura per selezione. Provare la cancellazione reale ML Kit e il ritardo di `isModelReady`.
+- Download del dizionario avviato dal testo di un brano cinese con pinyin: la riga CC-CEDICT della pagina deve mostrare «In scaricamento…» e l'avanzamento.
