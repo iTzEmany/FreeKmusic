@@ -116,7 +116,8 @@ class HomeScreen extends ConsumerWidget {
                 return ListView(
                   children: [
                     header,
-                    if (!ref.watch(audioPermissionProvider)) const AudioPermissionBanner(),
+                    if (!ref.watch(audioPermissionProvider))
+                      const AudioPermissionBanner(),
                     if (wide) ...[
                       // Desktop (mockup): invite and counters left, Riprendi right.
                       Row(
@@ -136,7 +137,11 @@ class HomeScreen extends ConsumerWidget {
                           SizedBox(width: 48),
                           Expanded(
                             child: Column(
-                              children: [ResumeList(), DaylistCard()],
+                              children: [
+                                ResumeList(),
+                                NewReleasesBlock(),
+                                DaylistCard(),
+                              ],
                             ),
                           ),
                         ],
@@ -144,6 +149,7 @@ class HomeScreen extends ConsumerWidget {
                     ] else ...[
                       ...lead,
                       const ResumeList(),
+                      const NewReleasesBlock(),
                       const DaylistCard(),
                       const AddedLately(),
                     ],

@@ -112,6 +112,14 @@ AlbumSummary albumSummaryFromRow(QueryRow r) {
   );
 }
 
+/// The latest play of a `Plays.context` value ([context] is the raw column).
+class LastPlay {
+  const LastPlay(this.context, this.track, this.at);
+  final int? context;
+  final Track track;
+  final int at;
+}
+
 class LibraryQueries {
   LibraryQueries(this._db);
 
@@ -235,6 +243,37 @@ ORDER BY g.k COLLATE NOCASE
         )
         .watch()
         .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
+  }
+
+  /// The latest play of each `Plays.context` value, with its track (home
+  /// «Riprendi», D-671). A track gone missing or ignored drops out.
+  Stream<List<LastPlay>> watchLastPlayPerContext() {
+    return _db
+        .customSelect(
+          // SQLite gives the bare column of the row holding the MAX.
+          'SELECT context, track_id, MAX(played_at) AS at FROM plays GROUP BY context',
+          readsFrom: {_db.plays},
+        )
+        .watch()
+        .asyncMap((rows) async {
+          final ids = [for (final r in rows) r.read<int>('track_id')];
+          final tracks = {
+            for (final t
+                in await (_db.select(_db.tracks)..where(
+                      (t) =>
+                          t.id.isIn(ids) &
+                          t.missing.equals(false) &
+                          t.ignored.equals(false),
+                    ))
+                    .get())
+              t.id: t,
+          };
+          return [
+            for (final r in rows)
+              if (tracks[r.read<int>('track_id')] case final t?)
+                LastPlay(r.read<int?>('context'), t, r.read<int>('at')),
+          ];
+        });
   }
 
   /// The most played tracks (never-played ones excluded).

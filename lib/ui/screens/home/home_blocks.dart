@@ -9,6 +9,9 @@ import '../../../providers/database_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/memory_providers.dart';
 import '../../../providers/radio_providers.dart';
+import '../../../providers/releases_providers.dart';
+import '../../../core/constants.dart';
+import '../releases/new_releases_screen.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_tile.dart';
@@ -210,6 +213,31 @@ class AddedLately extends ConsumerWidget {
         },
       ),
       children: [CoverFan(albums: albums)],
+    );
+  }
+}
+
+/// «Nuove uscite»: its own block, only while there are new releases (D-671).
+class NewReleasesBlock extends ConsumerWidget {
+  const NewReleasesBlock({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = kEnableYoutube
+        ? (ref.watch(newReleasesCountProvider).value ?? 0)
+        : 0;
+    if (n <= 0) return const SizedBox.shrink();
+    final l = context.l10n;
+    return HomeBlock(
+      header: SectionHeader(l.newReleasesTitle, count: '$n'),
+      children: [
+        HomeRow(
+          key: const ValueKey('resume-releases'),
+          cover: const HomeIconCover(Icons.new_releases_outlined),
+          title: l.showAll,
+          onTap: () => ShellNav.open<void>(context, const NewReleasesScreen()),
+        ),
+      ],
     );
   }
 }

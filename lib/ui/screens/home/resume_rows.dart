@@ -1,181 +1,141 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants.dart';
 import '../../../data/db/app_database.dart';
-import '../../../data/repositories/library_entries.dart';
+import '../../../data/repositories/home_sections.dart';
+import '../../../data/repositories/radio_repository.dart';
 import '../../../data/repositories/track_kinds.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/library_providers.dart';
+import '../../../providers/daylist_providers.dart';
 import '../../../providers/player_providers.dart';
-import '../../../providers/releases_providers.dart';
+import '../../../providers/resume_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
-import '../../widgets/cover_image.dart';
 import '../../widgets/format_utils.dart';
-import '../../widgets/playlist_cover.dart';
 import '../../widgets/section_header.dart';
 import '../library/album_detail_screen.dart';
 import '../now_playing/now_playing_screen.dart' show playContextName;
 import '../playlists/playlist_detail_screen.dart';
-import '../releases/new_releases_screen.dart';
 import 'home_row.dart';
 
-/// One line of «Riprendi».
-sealed class ResumeRow {
-  const ResumeRow();
-}
-
-/// What is playing now, with its place in the queue.
-class QueueResume extends ResumeRow {
-  const QueueResume(this.track, this.index, this.length, this.source);
-  final Track track;
-  final int index, length;
-  final PlayContext? source;
-}
-
-/// A track left in the middle.
-class TrackResume extends ResumeRow {
-  const TrackResume(this.track);
-  final Track track;
-}
-
-/// An album or playlist played lately.
-class EntryResume extends ResumeRow {
-  const EntryResume(this.entry);
-  final LibraryEntry entry;
-}
-
-class ReleasesResume extends ResumeRow {
-  const ReleasesResume();
-}
-
-const _maxRows = 4;
-
-List<ResumeRow> buildResumeRows({
-  Track? current,
-  List<Track> queue = const [],
-  PlayContext? source,
-  List<Track> resumable = const [],
-  List<LibraryEntry> entries = const [],
-  bool hasNewReleases = false,
-}) {
-  final index = current == null
-      ? -1
-      : queue.indexWhere((t) => t.id == current.id);
-  final queued = current != null && index >= 0;
-  final recent = entries.where((e) => e.lastPlayedAt != null).toList()
-    ..sort((a, b) => b.lastPlayedAt!.compareTo(a.lastPlayedAt!));
-  return [
-    if (hasNewReleases) const ReleasesResume(),
-    if (queued) QueueResume(current, index, queue.length, source),
-    for (final t in resumable)
-      if (!queued || t.id != current.id) TrackResume(t),
-    for (final e in recent) EntryResume(e),
-  ].take(_maxRows).toList();
-}
-
-/// «Riprendi»: the rows of [buildResumeRows]. Hidden when empty.
+/// «Riprendi»: a grid with the latest item of each area (2 columns on a
+/// phone, 3 from [CcDims.wideBreakpoint] on). Hidden when empty.
 class ResumeList extends ConsumerWidget {
   const ResumeList({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final newReleases =
-        kEnableYoutube && (ref.watch(newReleasesCountProvider).value ?? 0) > 0;
-    final rows = buildResumeRows(
-      current: ref.watch(currentTrackProvider).value,
-      queue: ref.watch(queueProvider).value ?? const [],
-      source: ref.watch(playContextProvider),
-      resumable: ref.watch(resumableTracksProvider).value ?? const [],
-      entries: ref.watch(recentEntriesProvider),
-      hasNewReleases: newReleases,
-    );
-    if (rows.isEmpty) return const SizedBox.shrink();
+    final items = ref.watch(resumeItemsProvider);
+    if (items.isEmpty) return const SizedBox.shrink();
+    final source = ref.watch(playContextProvider);
+    final playing = ref.watch(isPlayingProvider).value ?? false;
     final ctrl = ref.read(playerControllerProvider);
+    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
+    final columns = wide ? 3 : 2;
 
-    return Column(
+    Widget tile(ResumeItem r) {
+      final t = r.track, e = r.entry;
+      final (icon, areaLabel) = switch (r.area) {
+        ResumeArea.track => (Icons.music_note_rounded, l.resumeAreaTrack),
+        ResumeArea.podcast => (Icons.podcasts_rounded, l.podcastsTitle),
+        ResumeArea.album => (Icons.album_rounded, l.albums),
+        ResumeArea.playlist => (Icons.queue_music, l.navPlaylists),
+        ResumeArea.radio => (Icons.radio, l.radioTitle),
+        ResumeArea.daylist => (Icons.auto_awesome, l.daylistTitle),
+      };
+      final title = switch (r.area) {
+        ResumeArea.track || ResumeArea.podcast => t!.title,
+        ResumeArea.album => e!.title ?? l.unknownAlbum,
+        ResumeArea.playlist => e!.title ?? l.navPlaylists,
+        ResumeArea.radio => r.radio!.name,
+        ResumeArea.daylist => l.daylistTitle,
+      };
+      final subtitle = switch (r.area) {
+        _ when r.queueIndex != null => _queueSubtitle(context, r, source),
+        ResumeArea.track || ResumeArea.podcast =>
+          t!.resumePositionMs != null
+              ? _trackSubtitle(context, t)
+              : (t.artist ?? l.unknownArtist),
+        ResumeArea.album =>
+          e!.variousArtists ? l.variousArtists : (e.artist ?? l.unknownArtist),
+        ResumeArea.playlist => l.tracksCount(e!.count),
+        ResumeArea.radio || ResumeArea.daylist => areaLabel,
+      };
+      return _ResumeTile(
+        key: ValueKey('resume-${r.area.name}'),
+        icon: icon,
+        areaLabel: areaLabel,
+        title: title,
+        subtitle: subtitle,
+        now: r.queueIndex != null,
+        progress: t == null
+            ? null
+            : _fraction(t.resumePositionMs, t.durationMs),
+        onTap: switch (r.area) {
+          ResumeArea.track || ResumeArea.podcast =>
+            r.queueIndex != null
+                ? (playing ? null : ctrl.togglePlayPause)
+                : () => ctrl.playFromList([t!], 0),
+          ResumeArea.album => () => ShellNav.open<void>(
+            context,
+            AlbumDetailScreen(album: e!.album!),
+          ),
+          ResumeArea.playlist =>
+            () => e!.playlist == null
+                ? null
+                : ShellNav.open<void>(
+                    context,
+                    PlaylistDetailScreen(playlist: e.playlist!.playlist),
+                  ),
+          ResumeArea.radio => () => ctrl.playStations(
+            [r.radio!.toStation()],
+            0,
+            context: PlayContext(PlayContextKind.radio, r.radio!.name),
+          ),
+          ResumeArea.daylist => () => ref.read(daylistActionsProvider).play(),
+        },
+      );
+    }
+
+    return HomeBlock(
+      header: SectionHeader(l.homeResume),
       children: [
-        HomeBlock(
-          header: SectionHeader(l.homeResume),
-          children: [
-            for (final r in rows)
-              switch (r) {
-                ReleasesResume() => HomeRow(
-                  key: const ValueKey('resume-releases'),
-                  cover: const HomeIconCover(Icons.new_releases_outlined),
-                  title: l.newReleasesTitle,
-                  onTap: () =>
-                      ShellNav.open<void>(context, const NewReleasesScreen()),
-                ),
-                QueueResume() => _QueueRow(
-                  r,
-                  subtitle: _queueSubtitle(context, r),
-                ),
-                TrackResume() => HomeRow(
-                  key: ValueKey('resume-track-${r.track.id}'),
-                  cover: CoverImage(
-                    coverKey: r.track.coverKey,
-                    size: kHomeCover,
-                    radius: CcDims.rList,
-                  ),
-                  title: r.track.title,
-                  subtitle: _trackSubtitle(context, r.track),
-                  progress: _fraction(
-                    r.track.resumePositionMs,
-                    r.track.durationMs,
-                  ),
-                  onTap: () => ctrl.playFromList([r.track], 0),
-                ),
-                EntryResume() => HomeRow(
-                  key: ValueKey(
-                    'resume-entry-${r.entry.kind.name}-${r.entry.id}',
-                  ),
-                  cover: r.entry.kind == LibraryKind.playlist
-                      ? PlaylistCover(
-                          size: kHomeCover,
-                          radius: CcDims.rList,
-                          coverKeys: playlistCoverKeys(null, [
-                            r.entry.coverKey,
-                          ]),
-                        )
-                      : CoverImage(
-                          coverKey: r.entry.coverKey,
-                          size: kHomeCover,
-                          radius: CcDims.rList,
-                        ),
-                  title: r.entry.title ?? l.unknownAlbum,
-                  subtitle: r.entry.kind == LibraryKind.playlist
-                      ? l.tracksCount(r.entry.count)
-                      : (r.entry.variousArtists
-                            ? l.variousArtists
-                            : (r.entry.artist ?? l.unknownArtist)),
-                  onTap: () => r.entry.kind == LibraryKind.playlist
-                      ? ShellNav.open<void>(
-                          context,
-                          PlaylistDetailScreen(
-                            playlist: r.entry.playlist!.playlist,
-                          ),
-                        )
-                      : ShellNav.open<void>(
-                          context,
-                          AlbumDetailScreen(album: r.entry.album!),
-                        ),
-                ),
-              },
-          ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CcDims.gap12,
+            0,
+            CcDims.gap12,
+            CcDims.gap12,
+          ),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final w = (box.maxWidth - (columns - 1) * CcDims.gap8) / columns;
+              return Wrap(
+                spacing: CcDims.gap8,
+                runSpacing: CcDims.gap8,
+                children: [
+                  for (final r in items) SizedBox(width: w, child: tile(r)),
+                ],
+              );
+            },
+          ),
         ),
       ],
     );
   }
 
-  String _queueSubtitle(BuildContext context, QueueResume r) {
+  String _queueSubtitle(
+    BuildContext context,
+    ResumeItem r,
+    PlayContext? source,
+  ) {
     final l = context.l10n;
-    final from = playContextName(l, r.source);
+    final from = playContextName(l, source);
+    final n = r.queueIndex! + 1, m = r.queueLength!;
     return from == null
-        ? l.homeResumeQueue(r.index + 1, r.length)
-        : l.homeResumeQueueFrom(from, r.index + 1, r.length);
+        ? l.homeResumeQueue(n, m)
+        : l.homeResumeQueueFrom(from, n, m);
   }
 
   /// An episode names its podcast (the artist column) and where it was left.
@@ -200,30 +160,92 @@ class ResumeList extends ConsumerWidget {
       : (position / duration).clamp(0.0, 1.0);
 }
 
-/// Watches play/pause itself so the list above does not rebuild on it.
-class _QueueRow extends ConsumerWidget {
-  const _QueueRow(this.row, {required this.subtitle});
+/// A tile of the grid: [CcColors.surface2], radius 12, the area's icon, two
+/// lines; at least 48 dp tall. [now] marks what the queue plays.
+class _ResumeTile extends StatelessWidget {
+  const _ResumeTile({
+    super.key,
+    required this.icon,
+    required this.areaLabel,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.now = false,
+    this.progress,
+  });
 
-  final QueueResume row;
-  final String subtitle;
+  final IconData icon;
+  final String areaLabel, title, subtitle;
+  final bool now;
+  final double? progress;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final playing = ref.watch(isPlayingProvider).value ?? false;
-    return HomeRow(
-      key: const ValueKey('resume-queue'),
-      cover: CoverImage(
-        coverKey: row.track.coverKey,
-        size: kHomeCover,
-        radius: CcDims.rList,
+  Widget build(BuildContext context) {
+    final cc = context.cc;
+    final theme = Theme.of(context).textTheme;
+    return Semantics(
+      button: onTap != null,
+      label: '$areaLabel, $title, $subtitle',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Material(
+        color: cc.surface2,
+        borderRadius: BorderRadius.circular(CcDims.rCard),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(CcDims.gap12),
+                  child: Row(
+                    children: [
+                      Icon(icon, color: cc.accentSoft),
+                      const SizedBox(width: CcDims.gap12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.bodyLarge?.copyWith(
+                                color: now ? cc.accentSoft : null,
+                              ),
+                            ),
+                            Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (progress != null && progress! > 0)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 3,
+                      backgroundColor: cc.surface3,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
-      title: row.track.title,
-      subtitle: subtitle,
-      now: true,
-      // shortcut: a playing row does nothing, open Now Playing if it feels dead.
-      onTap: playing
-          ? null
-          : ref.read(playerControllerProvider).togglePlayPause,
     );
   }
 }

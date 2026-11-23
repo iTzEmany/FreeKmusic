@@ -2374,6 +2374,12 @@ abstract class AppLocalizations {
   /// **'Buonasera'**
   String get greetingEvening;
 
+  /// No description provided for @resumeAreaTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano'**
+  String get resumeAreaTrack;
+
   /// No description provided for @homeResume.
   ///
   /// In it, this message translates to:
