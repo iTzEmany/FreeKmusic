@@ -8196,11 +8196,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Prêt : l’app redémarre pour terminer la restauration.';
 
   @override
-  String restoreMissingRow(String title, String artist) {
-    return '$title · $artist';
-  }
-
-  @override
   String get restoreSearchOnline => 'Chercher en ligne';
 
   @override

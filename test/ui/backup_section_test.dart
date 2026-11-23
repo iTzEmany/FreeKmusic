@@ -111,7 +111,8 @@ void main() {
       await _open(tester, h, (c, _) => showMergeReport(c, report), const []);
       expect(find.byType(ListTile), findsNWidgets(3));
       expect(find.text('Cerca online'), findsNWidgets(3));
-      expect(find.text('Uno · A'), findsOneWidget);
+      expect(find.text('Uno'), findsOneWidget);
+      expect(find.text('A'), findsOneWidget);
       expect(find.text('Due'), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Cerca online: Uno')), findsOneWidget);
       sem.dispose();
@@ -123,7 +124,7 @@ void main() {
       await _open(tester, h, (c, _) => showMergeReport(c, report), const []);
       await tester.tap(find.text('Copia elenco'));
       await tester.pump();
-      expect(clip, 'Uno · A\nDue\nTre');
+      expect(clip, 'Uno - A\nDue\nTre');
       await h.dispose(tester);
     });
 
@@ -138,7 +139,7 @@ void main() {
       await tester.tap(find.text('Cerca online').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(clip, 'Uno · A\nDue\nTre');
+      expect(clip, 'Uno - A\nDue\nTre');
       expect(find.text('Elenco copiato negli appunti'), findsOneWidget);
       expect(ProviderScope.containerOf(tester.element(find.text('open'))).read(searchPrefillProvider), 'A Uno');
       await h.dispose(tester);

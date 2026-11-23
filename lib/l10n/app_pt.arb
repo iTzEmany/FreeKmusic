@@ -4120,17 +4120,6 @@
   "backupImportPlaylists": "Importar playlists",
   "backupImportPlaylistsHint": "De um ficheiro de playlist (CSV).",
   "restoreRestarting": "Pronto: a app reinicia para concluir o restauro.",
-  "restoreMissingRow": "{title} · {artist}",
-  "@restoreMissingRow": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      },
-      "artist": {
-        "type": "String"
-      }
-    }
-  },
   "restoreSearchOnline": "Pesquisar online",
   "restoreListCopied": "Lista copiada para a área de transferência"
 }

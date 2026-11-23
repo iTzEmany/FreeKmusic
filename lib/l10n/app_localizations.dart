@@ -12853,12 +12853,6 @@ abstract class AppLocalizations {
   /// **'Pronto: l’app si riavvia per completare il ripristino.'**
   String get restoreRestarting;
 
-  /// No description provided for @restoreMissingRow.
-  ///
-  /// In it, this message translates to:
-  /// **'{title} · {artist}'**
-  String restoreMissingRow(String title, String artist);
-
   /// No description provided for @restoreSearchOnline.
   ///
   /// In it, this message translates to:

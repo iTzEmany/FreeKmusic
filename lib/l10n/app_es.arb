@@ -3934,17 +3934,6 @@
   "backupImportPlaylists": "Importar listas",
   "backupImportPlaylistsHint": "Desde un archivo de lista (CSV).",
   "restoreRestarting": "Listo: la app se reinicia para completar la restauración.",
-  "restoreMissingRow": "{title} · {artist}",
-  "@restoreMissingRow": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      },
-      "artist": {
-        "type": "String"
-      }
-    }
-  },
   "restoreSearchOnline": "Buscar en línea",
   "restoreListCopied": "Lista copiada al portapapeles"
 }

@@ -23,7 +23,7 @@ class _MergeReportDialog extends ConsumerWidget {
     final r = report;
     final theme = Theme.of(context);
     String label(MissingTrack t) =>
-        t.artist == null || t.artist!.isEmpty ? t.title : l.restoreMissingRow(t.title, t.artist!);
+        t.artist == null || t.artist!.isEmpty ? t.title : '${t.title} - ${t.artist}';
     final all = r.notFound.map(label).join('\n');
 
     return AlertDialog(
@@ -54,9 +54,10 @@ class _MergeReportDialog extends ConsumerWidget {
                   return ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(label(t), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    title: Text(t.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: t.artist == null || t.artist!.isEmpty ? null : Text(t.artist!, maxLines: 1, overflow: TextOverflow.ellipsis),
                     trailing: Semantics(
-                      label: '${l.restoreSearchOnline}: ${label(t)}',
+                      label: '${l.restoreSearchOnline}: ${t.title}${t.artist == null || t.artist!.isEmpty ? '' : ', ${t.artist}'}',
                       button: true,
                       excludeSemantics: true,
                       child: TextButton(
