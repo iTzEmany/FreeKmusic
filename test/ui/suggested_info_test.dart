@@ -6,7 +6,8 @@ import 'package:codecore/providers/library_add_providers.dart' show savedStreamK
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/providers/youtube_providers.dart'
-    show downloadIndexProvider;
+    show downloadIndexProvider, downloadsProvider, DownloadsNotifier;
+import 'package:codecore/services/online/download_queue.dart' show DownloadItem;
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -27,6 +28,11 @@ class _Track implements Track {
 class _Actions implements SuggestionActions {
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+class _Downloads extends DownloadsNotifier {
+  @override
+  List<DownloadItem> build() => [];
 }
 
 void main() {
@@ -51,6 +57,7 @@ void main() {
       ProviderScope(
         overrides: [
           onlineEntriesProvider.overrideWithValue(entries),
+          downloadsProvider.overrideWith(_Downloads.new),
           suggestionActionsProvider.overrideWithValue(_Actions()),
           savedStreamKeysProvider.overrideWith((ref) => Stream.value(const <String>{})),
           downloadIndexProvider.overrideWith(
@@ -100,5 +107,14 @@ void main() {
       final shape = b.style!.shape!.resolve({}) as RoundedRectangleBorder;
       expect(shape.borderRadius, BorderRadius.circular(CcDims.rCard));
     }
+  });
+
+  testWidgets('the first tile is «Aggiungi alla libreria» and calls the action', (
+    tester,
+  ) async {
+    await open(tester, suggested: false);
+    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
+    expect(find.text('Scarica'), findsNothing);
+    expect(find.text('Aggiungi a playlist…'), findsOneWidget);
   });
 }

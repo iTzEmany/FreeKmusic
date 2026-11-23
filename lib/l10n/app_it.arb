@@ -4664,5 +4664,14 @@
   "restoreRestarting": "Pronto: l’app si riavvia per completare il ripristino.",
   "restoreSearchOnline": "Cerca online",
   "restoreListCopied": "Elenco copiato negli appunti",
-  "deselectAll": "Deseleziona tutto"
+  "deselectAll": "Deseleziona tutto",
+  "downloadBarDone": "Scaricato",
+  "downloadBarProgress": "Scarico… {percent}%",
+  "@downloadBarProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  }
 }

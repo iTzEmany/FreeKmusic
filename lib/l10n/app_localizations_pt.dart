@@ -8140,4 +8140,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deselectAll => 'Desmarcar tudo';
+
+  @override
+  String get downloadBarDone => 'Transferido';
+
+  @override
+  String downloadBarProgress(int percent) {
+    return 'A transferir… $percent%';
+  }
 }

@@ -6,6 +6,7 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/suggestion_actions.dart';
 import '../../../providers/youtube_providers.dart' show downloadIndexProvider;
+import '../../widgets/download_bar.dart';
 import '../../widgets/track_actions.dart' show entryInLibrary;
 import '../../theme/tokens.dart';
 import '../playlists/playlist_picker.dart';
@@ -61,42 +62,54 @@ class SuggestedInfo extends ConsumerWidget {
           // Equal tiles filling the title's width: one axis for header and actions.
           Row(
             children: [
-              _Tile(
-                icon: Icons.download_rounded,
-                label: l.ytDownload,
-                onPressed: () async {
-                  final now = await actions.downloadEntry(track.id);
-                  if (now != null && context.mounted) {
-                    showMsg(
-                      context,
-                      now ? l.addedToLibrary : l.suggestionDownloadStarted,
-                    );
-                  }
-                },
+              _slot(
+                entry?.result.indexKey,
+                _Tile(
+                  icon: Icons.library_add_rounded,
+                  label: l.addToLibrary,
+                  onPressed: () async {
+                    final now = await actions.downloadEntry(track.id);
+                    if (now != null && context.mounted) {
+                      showMsg(
+                        context,
+                        now ? l.addedToLibrary : l.suggestionDownloadStarted,
+                      );
+                    }
+                  },
+                ),
               ),
-              _Tile(
-                icon: Icons.playlist_add_rounded,
-                label: l.addToPlaylist,
-                onPressed: () async {
-                  final picked = await pickPlaylist(context, ref);
-                  if (picked == null || !context.mounted) return;
-                  final now = await actions.addToPlaylist(track.id, picked.id);
-                  if (now != null && context.mounted) {
-                    showMsg(
-                      context,
-                      now
-                          ? l.addedToPlaylist(picked.name)
-                          : l.suggestionAddWhenDownloaded(picked.name),
+              _slot(
+                null,
+                _Tile(
+                  icon: Icons.playlist_add_rounded,
+                  label: l.addToPlaylist,
+                  onPressed: () async {
+                    final picked = await pickPlaylist(context, ref);
+                    if (picked == null || !context.mounted) return;
+                    final now = await actions.addToPlaylist(
+                      track.id,
+                      picked.id,
                     );
-                  }
-                },
+                    if (now != null && context.mounted) {
+                      showMsg(
+                        context,
+                        now
+                            ? l.addedToPlaylist(picked.name)
+                            : l.suggestionAddWhenDownloaded(picked.name),
+                      );
+                    }
+                  },
+                ),
               ),
               if (suggested)
-                _Tile(
-                  icon: Icons.thumb_down_outlined,
-                  label: l.suggestionDislike,
-                  semanticLabel: l.dislikePlayerLabel,
-                  onPressed: onDislike,
+                _slot(
+                  null,
+                  _Tile(
+                    icon: Icons.thumb_down_outlined,
+                    label: l.suggestionDislike,
+                    semanticLabel: l.dislikePlayerLabel,
+                    onPressed: onDislike,
+                  ),
                 ),
             ],
           ),
@@ -105,6 +118,17 @@ class SuggestedInfo extends ConsumerWidget {
     );
   }
 }
+
+/// One of the equal blocks; [downloadKey] lets the download bar take its place.
+Widget _slot(String? downloadKey, Widget tile) => Expanded(
+  // 8 px between the blocks, as the mockup's `.tiles`.
+  child: Padding(
+    padding: const EdgeInsets.symmetric(horizontal: CcDims.gap4),
+    child: downloadKey == null
+        ? tile
+        : DownloadBar(entryKey: downloadKey, idle: tile),
+  ),
+);
 
 class _Tile extends StatelessWidget {
   const _Tile({
@@ -120,41 +144,35 @@ class _Tile extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    // 8 px between the blocks, as the mockup's `.tiles`.
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CcDims.gap4),
-      child: Semantics(
-        label: semanticLabel,
-        excludeSemantics: semanticLabel != null,
-        button: semanticLabel != null,
-        enabled: onPressed != null,
-        onTap: semanticLabel != null ? onPressed : null,
-        child: TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            backgroundColor: context.cc.surface2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(CcDims.rCard),
-            ),
-            minimumSize: const Size(0, 64),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => Semantics(
+    label: semanticLabel,
+    excludeSemantics: semanticLabel != null,
+    button: semanticLabel != null,
+    enabled: onPressed != null,
+    onTap: semanticLabel != null ? onPressed : null,
+    child: TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        backgroundColor: context.cc.surface2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(CcDims.rCard),
         ),
+        minimumSize: const Size(0, 64),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 22),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+        ],
       ),
     ),
   );

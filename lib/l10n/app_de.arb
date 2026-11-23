@@ -3935,5 +3935,14 @@
   "restoreRestarting": "Bereit: Die App startet neu, um die Wiederherstellung abzuschließen.",
   "restoreSearchOnline": "Online suchen",
   "restoreListCopied": "Liste in die Zwischenablage kopiert",
-  "deselectAll": "Alle abwählen"
+  "deselectAll": "Alle abwählen",
+  "downloadBarDone": "Heruntergeladen",
+  "downloadBarProgress": "Lade herunter… {percent}%",
+  "@downloadBarProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  }
 }

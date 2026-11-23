@@ -4156,5 +4156,14 @@
   "restoreRestarting": "Prêt : l’app redémarre pour terminer la restauration.",
   "restoreSearchOnline": "Chercher en ligne",
   "restoreListCopied": "Liste copiée dans le presse-papiers",
-  "deselectAll": "Tout désélectionner"
+  "deselectAll": "Tout désélectionner",
+  "downloadBarDone": "Téléchargé",
+  "downloadBarProgress": "Téléchargement… {percent}%",
+  "@downloadBarProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  }
 }
