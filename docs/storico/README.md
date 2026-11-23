@@ -172,3 +172,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 141 | Collezioni: preferiti di album e playlist, testata a icone, scorrimento (#218) | [`fase-141-collezioni.md`](fasi/fase-141-collezioni.md) |
 | 142 | Home: Riprendi a griglia, Nuove uscite, daylist con il suo contesto (#219) | [`fase-142-riprendi-a-griglia.md`](fasi/fase-142-riprendi-a-griglia.md) |
 | 143 | Registro e segnalazioni: Ferma/Annulla tutto, Segnala, invio anonimo tramite Worker (#220) | [`fase-143-registro-e-segnalazioni.md`](fasi/fase-143-registro-e-segnalazioni.md) |
+| 144 | Modelli e dizionari: catalogo unico, pagina con scarica ed elimina (#221) | [`fase-144-modelli-e-dizionari.md`](fasi/fase-144-modelli-e-dizionari.md) |
