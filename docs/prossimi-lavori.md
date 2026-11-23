@@ -16,7 +16,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
   - ~~Fase 139 «stato del brano e download»~~ fatta (#216): [`storico/fasi/fase-139-stato-brano-download.md`](storico/fasi/fase-139-stato-brano-download.md)
   - ~~Fase 140 «streaming per prima»~~ fatta (#217): [`storico/fasi/fase-140-streaming-per-prima.md`](storico/fasi/fase-140-streaming-per-prima.md)
   - Fase 141 «collezioni»: [`storico/fasi/fase-141-collezioni.md`](storico/fasi/fase-141-collezioni.md)
-  - Fase 142 «Riprendi a griglia»: [`fasi/fase-142-riprendi-a-griglia.md`](fasi/fase-142-riprendi-a-griglia.md)
+  - Fase 142 «Riprendi a griglia»: [`storico/fasi/fase-142-riprendi-a-griglia.md`](storico/fasi/fase-142-riprendi-a-griglia.md)
   - Fase 143 «registro e segnalazioni»: [`fasi/fase-143-registro-e-segnalazioni.md`](fasi/fase-143-registro-e-segnalazioni.md)
   - Fase 144 «modelli e dizionari»: [`fasi/fase-144-modelli-e-dizionari.md`](fasi/fase-144-modelli-e-dizionari.md)
   - Fase 145 «condivisione esterna»: [`fasi/fase-145-condivisione-esterna.md`](fasi/fase-145-condivisione-esterna.md)
