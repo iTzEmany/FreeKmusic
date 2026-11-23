@@ -3928,7 +3928,7 @@
   "enrichOnMetered": "Auch im getakteten Netz anreichern",
   "enrichOnMeteredHint": "Standardmäßig wartet die Hintergrundanreicherung auf ein ungetaktetes Netz.",
   "instrumentalTrack": "Instrumentalstück",
-  "backupContents": "Das Backup enthält: Bibliothek, Playlists und Favoriten, Wiedergaben, Tags, Songtexte, Einstellungen und Designs. Die Musik selbst ist nicht dabei.",
+  "backupContents": "Das Backup enthält: Bibliothek, Cover, Playlists (auch intelligente) und Favoriten, Wiedergaben, Tags, Songtexte, Radios, Podcasts, gefolgte Künstler, Einstellungen und Designs. Die Musik selbst ist nicht dabei.",
   "backupExportPlaylists": "Playlists exportieren",
   "backupExportPlaylistsHint": "Eine Datei pro Playlist, zur Nutzung anderswo.",
   "backupImportPlaylists": "Playlists importieren",
@@ -3945,15 +3945,6 @@
       }
     }
   },
-  "restoreSaveStream": "Als Stream speichern",
   "restoreSearchOnline": "Online suchen",
-  "restoreSaveAll": "Alle speichern",
-  "restoreSavedCount": "{count, plural, one{1 Titel gespeichert} other{{count} Titel gespeichert}}",
-  "@restoreSavedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  }
+  "restoreListCopied": "Liste in die Zwischenablage kopiert"
 }

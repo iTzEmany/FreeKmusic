@@ -4149,7 +4149,7 @@
   "enrichOnMetered": "Enrichir aussi sur un réseau limité",
   "enrichOnMeteredHint": "Par défaut, l’enrichissement en arrière-plan attend un réseau illimité.",
   "instrumentalTrack": "Morceau instrumental",
-  "backupContents": "La sauvegarde contient : bibliothèque, playlists et favoris, écoutes, étiquettes, paroles, réglages et thèmes. La musique n’y est pas.",
+  "backupContents": "La sauvegarde contient : bibliothèque, pochettes, playlists (intelligentes aussi) et favoris, écoutes, étiquettes, paroles, radios, podcasts, artistes suivis, réglages et thèmes. La musique n’y est pas.",
   "backupExportPlaylists": "Exporter les playlists",
   "backupExportPlaylistsHint": "Un fichier par playlist, à utiliser ailleurs.",
   "backupImportPlaylists": "Importer des playlists",
@@ -4166,15 +4166,6 @@
       }
     }
   },
-  "restoreSaveStream": "Enregistrer en streaming",
   "restoreSearchOnline": "Chercher en ligne",
-  "restoreSaveAll": "Tout enregistrer",
-  "restoreSavedCount": "{count, plural, one{1 titre enregistré} other{{count} titres enregistrés}}",
-  "@restoreSavedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  }
+  "restoreListCopied": "Liste copiée dans le presse-papiers"
 }

@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/backup_merge.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/library_add_providers.dart';
-import '../../../services/stream/stream_key.dart';
 import '../../shell/shazam_share.dart';
 import '../../widgets/show_msg.dart';
 
@@ -19,15 +17,6 @@ class _MergeReportDialog extends ConsumerWidget {
   /// The screen under the dialog: the search tab opens from it once the dialog is gone.
   final BuildContext host;
 
-  Future<int> _save(WidgetRef ref, Iterable<MissingTrack> tracks) async {
-    var saved = 0;
-    for (final t in tracks) {
-      final r = streamResultOf(t.streamKey!, title: t.title, artist: t.artist);
-      if (await ref.read(libraryAdderProvider).add(r) != null) saved++;
-    }
-    return saved;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -35,16 +24,12 @@ class _MergeReportDialog extends ConsumerWidget {
     final theme = Theme.of(context);
     String label(MissingTrack t) =>
         t.artist == null || t.artist!.isEmpty ? t.title : l.restoreMissingRow(t.title, t.artist!);
-    final streamable = r.notFound.where((t) => t.streamKey != null).toList();
-    Future<void> saveAndTell(Iterable<MissingTrack> tracks) async {
-      final n = await _save(ref, tracks);
-      if (host.mounted) showMsg(host, l.restoreSavedCount(n));
-    }
+    final all = r.notFound.map(label).join('\n');
 
     return AlertDialog(
       content: SizedBox(
         width: 400,
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.restoreMergeDone(r.recognized, r.notFound.length, r.playlistsCreated, r.favoritesAdded)),
           for (final line in [
             if (r.backupDbUnreadable) l.restoreMergeDbUnreadable,
@@ -59,42 +44,45 @@ class _MergeReportDialog extends ConsumerWidget {
           if (r.notFound.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(l.restoreNotFound, style: theme.textTheme.titleSmall),
-            Flexible(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 280),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: r.notFound.length,
-                  itemBuilder: (_, i) {
-                    final t = r.notFound[i];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(label(t), maxLines: 2, overflow: TextOverflow.ellipsis),
-                      trailing: TextButton(
-                        onPressed: () {
-                          if (t.streamKey != null) {
-                            saveAndTell([t]);
-                            return;
-                          }
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 280),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: r.notFound.length,
+                itemBuilder: (_, i) {
+                  final t = r.notFound[i];
+                  return ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(label(t), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    trailing: Semantics(
+                      label: '${l.restoreSearchOnline}: ${label(t)}',
+                      button: true,
+                      excludeSemantics: true,
+                      child: TextButton(
+                        onPressed: () async {
+                          // The dialog closes: keep the whole list for later.
+                          await Clipboard.setData(ClipboardData(text: all));
+                          if (!context.mounted) return;
                           Navigator.pop(context);
-                          if (host.mounted) openSearchWith(host, ref, '${t.artist ?? ''} ${t.title}'.trim());
+                          if (!host.mounted) return;
+                          showMsg(host, l.restoreListCopied);
+                          openSearchWith(host, ref, '${t.artist ?? ''} ${t.title}'.trim());
                         },
-                        child: Text(t.streamKey != null ? l.restoreSaveStream : l.restoreSearchOnline),
+                        child: Text(l.restoreSearchOnline),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
-        ]),
+        ])),
       ),
       actions: [
-        if (streamable.isNotEmpty) TextButton(onPressed: () => saveAndTell(streamable), child: Text(l.restoreSaveAll)),
         if (r.notFound.isNotEmpty)
           TextButton(
-            onPressed: () => Clipboard.setData(ClipboardData(text: r.notFound.map(label).join('\n'))),
+            onPressed: () => Clipboard.setData(ClipboardData(text: all)),
             child: Text(l.restoreCopyList),
           ),
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.close)),

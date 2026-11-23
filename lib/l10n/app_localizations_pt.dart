@@ -8116,7 +8116,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backupContents =>
-      'O backup contém: biblioteca, playlists e favoritos, reproduções, etiquetas, letras, definições e temas. A música não está incluída.';
+      'O backup contém: biblioteca, capas, playlists (também inteligentes) e favoritos, reproduções, etiquetas, letras, rádios, podcasts, artistas seguidos, definições e temas. A música não está incluída.';
 
   @override
   String get backupExportPlaylists => 'Exportar playlists';
@@ -8141,22 +8141,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get restoreSaveStream => 'Guardar em streaming';
-
-  @override
   String get restoreSearchOnline => 'Pesquisar online';
 
   @override
-  String get restoreSaveAll => 'Guardar todos';
-
-  @override
-  String restoreSavedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count músicas guardadas',
-      one: '1 música guardada',
-    );
-    return '$_temp0';
-  }
+  String get restoreListCopied => 'Lista copiada para a área de transferência';
 }

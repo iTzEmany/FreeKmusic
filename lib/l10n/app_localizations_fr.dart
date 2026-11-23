@@ -8175,7 +8175,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backupContents =>
-      'La sauvegarde contient : bibliothèque, playlists et favoris, écoutes, étiquettes, paroles, réglages et thèmes. La musique n’y est pas.';
+      'La sauvegarde contient : bibliothèque, pochettes, playlists (intelligentes aussi) et favoris, écoutes, étiquettes, paroles, radios, podcasts, artistes suivis, réglages et thèmes. La musique n’y est pas.';
 
   @override
   String get backupExportPlaylists => 'Exporter les playlists';
@@ -8201,22 +8201,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get restoreSaveStream => 'Enregistrer en streaming';
-
-  @override
   String get restoreSearchOnline => 'Chercher en ligne';
 
   @override
-  String get restoreSaveAll => 'Tout enregistrer';
-
-  @override
-  String restoreSavedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count titres enregistrés',
-      one: '1 titre enregistré',
-    );
-    return '$_temp0';
-  }
+  String get restoreListCopied => 'Liste copiée dans le presse-papiers';
 }

@@ -12820,7 +12820,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupContents.
   ///
   /// In it, this message translates to:
-  /// **'Il backup contiene: libreria, playlist e preferiti, ascolti, etichette, testi, impostazioni e temi. La musica non c’è.'**
+  /// **'Il backup contiene: libreria, copertine, playlist (anche intelligenti) e preferiti, ascolti, etichette, testi, radio, podcast, artisti seguiti, impostazioni e temi. La musica non c’è.'**
   String get backupContents;
 
   /// No description provided for @backupExportPlaylists.
@@ -12859,29 +12859,17 @@ abstract class AppLocalizations {
   /// **'{title} · {artist}'**
   String restoreMissingRow(String title, String artist);
 
-  /// No description provided for @restoreSaveStream.
-  ///
-  /// In it, this message translates to:
-  /// **'Salva in streaming'**
-  String get restoreSaveStream;
-
   /// No description provided for @restoreSearchOnline.
   ///
   /// In it, this message translates to:
   /// **'Cerca online'**
   String get restoreSearchOnline;
 
-  /// No description provided for @restoreSaveAll.
+  /// No description provided for @restoreListCopied.
   ///
   /// In it, this message translates to:
-  /// **'Salva tutti'**
-  String get restoreSaveAll;
-
-  /// No description provided for @restoreSavedCount.
-  ///
-  /// In it, this message translates to:
-  /// **'{count, plural, one{1 brano salvato} other{{count} brani salvati}}'**
-  String restoreSavedCount(int count);
+  /// **'Elenco copiato negli appunti'**
+  String get restoreListCopied;
 }
 
 class _AppLocalizationsDelegate

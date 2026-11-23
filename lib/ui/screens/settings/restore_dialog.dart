@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/app_restart_provider.dart';
+import '../../../core/app_log.dart';
+import '../../../providers/backup_ops.dart';
 import '../../../services/backup/restore_service.dart';
 
 enum RestoreChoice { replace, merge }
@@ -46,7 +47,7 @@ class RestoreDialog extends StatelessWidget {
 /// The restore is staged: the app restarts itself, or asks to be reopened when it cannot.
 Future<void> showRestartDialog(BuildContext context, WidgetRef ref) async {
   final l = context.l10n;
-  final restart = ref.read(appRestartProvider);
+  final ops = ref.read(backupOpsProvider);
   final started = ValueNotifier<bool?>(null);
   final dialog = showDialog<void>(
     context: context,
@@ -59,7 +60,13 @@ Future<void> showRestartDialog(BuildContext context, WidgetRef ref) async {
       ),
     ),
   );
-  started.value = await restart.restart();
+  try {
+    started.value = await ops.restartAfterRestore();
+  } on Object catch (e, st) {
+    AppLog.w('restart failed', e, st);
+    started.value = false;
+  }
   if (started.value == true) return;
   await dialog;
+  started.dispose();
 }

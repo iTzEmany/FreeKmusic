@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../data/repositories/backup_merge.dart' show MergeReport;
 import '../services/backup/restore_service.dart';
+import 'app_restart_provider.dart';
 import 'backup_providers.dart';
 import 'database_providers.dart';
 import 'daylist_providers.dart';
@@ -43,6 +45,17 @@ class BackupOps {
   /// Unpacks the zip for the full restore that runs at the next start.
   Future<void> stageReplace(File zip) async =>
       stageFullRestore(zip, await restoreStagingDir());
+
+  /// Closes the database (a Windows rename of an open file fails; elsewhere the old process
+  /// stops writing), then restarts the app. False: no restart possible, the user reopens.
+  Future<bool> restartAfterRestore() async {
+    try {
+      await _ref.read(databaseProvider).close();
+    } on Object catch (e, st) {
+      AppLog.w('database not closed before restart', e, st);
+    }
+    return _ref.read(appRestartProvider).restart();
+  }
 
   /// Merges the zip into the live library.
   Future<MergeReport> merge(File zip) async {
