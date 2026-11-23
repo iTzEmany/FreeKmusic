@@ -511,6 +511,21 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('desktop: the sidebar «Cerca» focuses the field (D-667)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    await h.pump(tester, const AppShell());
+    await tester.tap(find.descendant(of: find.byType(DesktopSidebar), matching: find.text('Cerca')));
+    await tester.pump(const Duration(milliseconds: 300));
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(AppShell)));
+    expect(container.read(navIndexProvider), NavTab.search.index);
+    expect(container.read(searchFocusProvider).hasFocus, isTrue);
+    await h.dispose(tester);
+  });
+
   test('without YouTube Ctrl+F always targets the Library', () {
     expect(ctrlFTargetsLibrary(youtube: false, tab: NavTab.home.index), isTrue);
     expect(ctrlFTargetsLibrary(youtube: true, tab: NavTab.home.index), isFalse);

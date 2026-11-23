@@ -41,14 +41,12 @@ class OnlinePageFrame extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final cc = context.cc;
     final key = selectionKey;
     final scroll = CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverAppBar(
           pinned: true,
-          backgroundColor: cc.bg,
           surfaceTintColor: Colors.transparent,
           title: Text(
             title,
@@ -80,7 +78,6 @@ class OnlinePageFrame extends ConsumerWidget {
       ),
     );
     return Scaffold(
-      backgroundColor: cc.bg,
       body: Column(
         children: [
           Expanded(
