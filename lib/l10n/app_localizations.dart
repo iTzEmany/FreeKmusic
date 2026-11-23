@@ -8421,6 +8421,24 @@ abstract class AppLocalizations {
   /// **'Invio non riuscito. Copia il testo, oppure aprilo su GitHub.'**
   String get reportSendFailed;
 
+  /// No description provided for @reportLogShortened.
+  ///
+  /// In it, this message translates to:
+  /// **'Il log è stato accorciato per stare nei limiti dell\'invio.'**
+  String get reportLogShortened;
+
+  /// No description provided for @reportSendRateLimited.
+  ///
+  /// In it, this message translates to:
+  /// **'Troppi invii di recente: riprova fra un\'ora, oppure copia il testo.'**
+  String get reportSendRateLimited;
+
+  /// No description provided for @reportSendUnsure.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna risposta: la segnalazione potrebbe essere già arrivata. Controlla su GitHub prima di riprovare, oppure copia il testo.'**
+  String get reportSendUnsure;
+
   /// No description provided for @reportAnonNote.
   ///
   /// In it, this message translates to:
@@ -10134,6 +10152,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Annulla tutto'**
   String get logCancelAll;
+
+  /// No description provided for @logImportsActionFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Operazione non riuscita su alcune importazioni (dettagli nel log)'**
+  String get logImportsActionFailed;
 
   /// No description provided for @logCancelAllTitle.
   ///

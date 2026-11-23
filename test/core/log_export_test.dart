@@ -67,4 +67,13 @@ void main() {
             platform: 'x'),
         isNull);
   });
+
+  test('more secrets: access_token, sig, key, Authorization, Android paths', () {
+    expect(r('GET /a?access_token=abc&x=1'), 'GET /a?access_token=***&x=1');
+    expect(r('u?sig=abc&signature=def&key=ghi'), 'u?sig=***&signature=***&key=***');
+    expect(r('Authorization: Bearer abc.def'), 'Authorization: ***');
+    expect(r('{"authorization":"x","access_token":"y"}'), '{"authorization":"***","access_token":"***"}');
+    expect(r('shopping=3'), 'shopping=3');
+    expect(r('/storage/emulated/0/Music/a.mp3 /data/user/0/app/x'), '<archivio>/Music/a.mp3 <archivio>/app/x');
+  });
 }

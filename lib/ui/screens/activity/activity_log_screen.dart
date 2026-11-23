@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
 import '../../../core/clock.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../providers/activity_providers.dart' show ActivityKind;
+import '../../../data/repositories/import_repository.dart'
+    show ImportStatus, PlaylistImportX;
 import '../../../providers/import_providers.dart';
 import '../../../providers/recognition_providers.dart';
 import '../../../services/recognition/track_identity.dart'
@@ -21,6 +24,7 @@ import '../../widgets/cc_sheet.dart';
 import '../../widgets/cc_tile.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/show_msg.dart';
 import '../library/second_opinion_log_screen.dart';
 import '../now_playing/proposal_card.dart' show identLabel, recogSourceLabel;
 import 'activity_log_entry.dart';
@@ -99,16 +103,13 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
   }
 
   void _showDetail(LogEntry e) => showCcSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => SafeArea(
-          child: LogDetail(
-            e,
-            sources: recogSourcesLine(context.l10n, e.detail),
-          ),
-        ),
-      );
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => SafeArea(
+      child: LogDetail(e, sources: recogSourcesLine(context.l10n, e.detail)),
+    ),
+  );
 
   /// «Come risolvere»: always the guide, even on a row already picked on desktop.
   void _how(LogRow row, bool wide) {
@@ -139,7 +140,17 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
       destructive: true,
     );
     if (!ok || !mounted) return;
-    await ref.read(playlistImportServiceProvider).cancelAll();
+    await _guarded(ref.read(playlistImportServiceProvider).cancelAll);
+  }
+
+  Future<void> _guarded(Future<void> Function() act) async {
+    final l = context.l10n;
+    try {
+      await act();
+    } on Object catch (e, st) {
+      AppLog.e('import bulk action failed', e, st);
+      if (mounted) showMsg(context, l.logImportsActionFailed);
+    }
   }
 
   @override
@@ -227,7 +238,9 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     final showPending =
         proposals.isNotEmpty &&
         (_filter == LogFilter.all || _filter == LogFilter.correction);
-    final importing = ref.watch(unfinishedImportsProvider).value?.isNotEmpty ?? false;
+    final unfinished = ref.watch(unfinishedImportsProvider).value ?? const [];
+    final importing = unfinished.isNotEmpty;
+    final running = unfinished.any((i) => i.state == ImportStatus.running);
     return CustomScrollView(
       slivers: [
         if (importing)
@@ -237,16 +250,23 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
               child: Wrap(
                 spacing: 8,
                 children: [
-                  TextButton.icon(
-                    key: const ValueKey('pause-all'),
-                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                    icon: const Icon(Icons.pause_rounded),
-                    label: Text(l.logPauseAll),
-                    onPressed: () => ref.read(playlistImportServiceProvider).pauseAll(),
-                  ),
+                  if (running)
+                    TextButton.icon(
+                      key: const ValueKey('pause-all'),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                      ),
+                      icon: const Icon(Icons.pause_rounded),
+                      label: Text(l.logPauseAll),
+                      onPressed: () => _guarded(
+                        ref.read(playlistImportServiceProvider).pauseAll,
+                      ),
+                    ),
                   TextButton.icon(
                     key: const ValueKey('cancel-all'),
-                    style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                    ),
                     icon: const Icon(Icons.close_rounded),
                     label: Text(l.logCancelAll),
                     onPressed: _cancelAll,

@@ -5416,6 +5416,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sending failed. Copy the text, or open it on GitHub.';
 
   @override
+  String get reportLogShortened =>
+      'The log was shortened to fit the sending limits.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Too many reports lately: try again in an hour, or copy the text.';
+
+  @override
+  String get reportSendUnsure =>
+      'No answer: the report may already have arrived. Check on GitHub before trying again, or copy the text.';
+
+  @override
   String get reportAnonNote =>
       'Anonymous sending: the intermediary service sees your IP address (GitHub does not), no account needed.';
 
@@ -6400,6 +6412,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logCancelAll => 'Cancel all';
+
+  @override
+  String get logImportsActionFailed =>
+      'The operation failed on some imports (details in the log)';
 
   @override
   String get logCancelAllTitle => 'Cancel all imports?';

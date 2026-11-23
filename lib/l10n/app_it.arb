@@ -3508,6 +3508,9 @@
   "reportSent": "Segnalazione inviata, grazie. La trovi qui:",
   "reportOpenSent": "Apri la segnalazione",
   "reportSendFailed": "Invio non riuscito. Copia il testo, oppure aprilo su GitHub.",
+  "reportLogShortened": "Il log è stato accorciato per stare nei limiti dell'invio.",
+  "reportSendRateLimited": "Troppi invii di recente: riprova fra un'ora, oppure copia il testo.",
+  "reportSendUnsure": "Nessuna risposta: la segnalazione potrebbe essere già arrivata. Controlla su GitHub prima di riprovare, oppure copia il testo.",
   "reportAnonNote": "Invio anonimo: il servizio intermedio vede l'indirizzo IP (GitHub no), nessun account richiesto.",
   "reportWhyDisabled": "Per inviare scrivi un titolo e una descrizione di almeno {n} caratteri.",
   "@reportWhyDisabled": {
@@ -4071,6 +4074,7 @@
   "logClearMenu": "Pulisci registro",
   "logPauseAll": "Ferma tutto",
   "logCancelAll": "Annulla tutto",
+  "logImportsActionFailed": "Operazione non riuscita su alcune importazioni (dettagli nel log)",
   "logCancelAllTitle": "Annullare tutte le importazioni?",
   "logCancelAllBody": "Le importazioni in corso si fermano per sempre. I brani già scaricati restano.",
   "logCancelAllConfirm": "Annulla tutto",

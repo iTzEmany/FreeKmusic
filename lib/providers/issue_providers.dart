@@ -7,6 +7,7 @@ import '../core/app_info.dart';
 import '../core/app_log.dart';
 import '../core/constants.dart';
 import '../core/issue_report.dart';
+import '../core/log_export.dart' show logHome;
 import '../core/paths.dart';
 import '../services/issue/issue_sender.dart';
 import '../services/issue/link_opener.dart';
@@ -26,8 +27,6 @@ final issueSenderProvider = Provider<IssueSender>(
 final issueTechInfoProvider = FutureProvider.autoDispose<TechInfo>((ref) async {
   final s = ref.read(settingsProvider);
   final device = await ref.read(linkOpenerProvider).deviceInfo();
-  final home =
-      Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
   var log = '';
   try {
     final dir = await appSupportDir();
@@ -50,7 +49,7 @@ final issueTechInfoProvider = FutureProvider.autoDispose<TechInfo>((ref) async {
     language: s.language,
     logLines: recentProblemLines(
       log,
-      home: home,
+      home: logHome(),
       deviceName: ref.read(deviceNameProvider),
     ),
   );

@@ -132,7 +132,9 @@ IssueDraft buildIssue({
   int maxUrl = kMaxIssueUrl,
   bool Function(String title, String body)? fits,
 }) {
-  final t = title.trim();
+  final t0 = title.trim();
+  // The service refuses a longer title (400): cut it, never the description.
+  final t = t0.length > kIssueTitleMax ? '${t0.substring(0, kIssueTitleMax - 1)}…' : t0;
   bool ok(String body) => fits != null ? fits(t, body) : _url(repo, t, body, kind).length <= maxUrl;
   var desc = description.trim();
   String compose(int? logLines, String note) {
@@ -145,7 +147,7 @@ IssueDraft buildIssue({
   final total = info?.logLines.length ?? 0;
   for (var n = total; n >= 0; n--) {
     final note = n < total
-        ? '_Log accorciato per stare in un indirizzo: ${n == 0 ? 'nessuna riga' : 'ultime $n righe su $total'}._'
+        ? '_Log accorciato per stare nei limiti dell\'invio: ${n == 0 ? 'nessuna riga' : 'ultime $n righe su $total'}._'
         : '';
     final body = compose(n, note);
     final url = _url(repo, t, body, kind);
@@ -159,7 +161,7 @@ IssueDraft buildIssue({
     }
   }
   // Even without log: shorten the description.
-  const note = '_Testo accorciato per stare in un indirizzo._';
+  const note = '_Testo accorciato per stare nei limiti dell\'invio._';
   while (desc.length > 50) {
     desc = '${desc.substring(0, (desc.length * 0.8).floor())}…';
     final body = compose(0, note);

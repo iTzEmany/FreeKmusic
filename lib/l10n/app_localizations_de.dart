@@ -5452,6 +5452,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Senden fehlgeschlagen. Kopiere den Text oder öffne ihn auf GitHub.';
 
   @override
+  String get reportLogShortened =>
+      'Das Protokoll wurde gekürzt, damit es in die Sendegrenzen passt.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Zu viele Meldungen in letzter Zeit: Versuche es in einer Stunde erneut oder kopiere den Text.';
+
+  @override
+  String get reportSendUnsure =>
+      'Keine Antwort: Die Meldung könnte schon angekommen sein. Prüfe auf GitHub, bevor du es erneut versuchst, oder kopiere den Text.';
+
+  @override
   String get reportAnonNote =>
       'Anonymer Versand: Der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.';
 
@@ -6444,6 +6456,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get logCancelAll => 'Alle abbrechen';
+
+  @override
+  String get logImportsActionFailed =>
+      'Der Vorgang ist bei einigen Importen fehlgeschlagen (Details im Protokoll)';
 
   @override
   String get logCancelAllTitle => 'Alle Importe abbrechen?';

@@ -2975,6 +2975,9 @@
   "reportSent": "Informe enviado, gracias. Lo encuentras aquí:",
   "reportOpenSent": "Abrir el informe",
   "reportSendFailed": "No se pudo enviar. Copia el texto o ábrelo en GitHub.",
+  "reportLogShortened": "El registro se acortó para ajustarse a los límites de envío.",
+  "reportSendRateLimited": "Demasiados envíos recientes: vuelve a intentarlo en una hora o copia el texto.",
+  "reportSendUnsure": "Sin respuesta: puede que el informe ya haya llegado. Compruébalo en GitHub antes de volver a intentarlo, o copia el texto.",
   "reportAnonNote": "Envío anónimo: el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.",
   "reportWhyDisabled": "Para enviar, escribe un título y una descripción de al menos {n} caracteres.",
   "@reportWhyDisabled": {
@@ -3400,6 +3403,7 @@
   "logClearMenu": "Vaciar registro",
   "logPauseAll": "Pausar todo",
   "logCancelAll": "Cancelar todo",
+  "logImportsActionFailed": "La operación falló en algunas importaciones (detalles en el registro)",
   "logCancelAllTitle": "¿Cancelar todas las importaciones?",
   "logCancelAllBody": "Las importaciones en curso se detienen para siempre. Las canciones ya descargadas se quedan.",
   "logCancelAllConfirm": "Cancelar todo",

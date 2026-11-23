@@ -3196,6 +3196,9 @@
   "reportSent": "Signalement envoyé, merci. Vous le trouvez ici :",
   "reportOpenSent": "Ouvrir le signalement",
   "reportSendFailed": "Échec de l’envoi. Copiez le texte, ou ouvrez-le sur GitHub.",
+  "reportLogShortened": "Le journal a été raccourci pour respecter les limites d’envoi.",
+  "reportSendRateLimited": "Trop d’envois récents : réessaie dans une heure, ou copie le texte.",
+  "reportSendUnsure": "Pas de réponse : le signalement est peut-être déjà arrivé. Vérifie sur GitHub avant de réessayer, ou copie le texte.",
   "reportAnonNote": "Envoi anonyme : le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.",
   "reportWhyDisabled": "Pour envoyer, écrivez un titre et une description d’au moins {n} caractères.",
   "@reportWhyDisabled": {
@@ -3621,6 +3624,7 @@
   "logClearMenu": "Vider le journal",
   "logPauseAll": "Tout mettre en pause",
   "logCancelAll": "Tout annuler",
+  "logImportsActionFailed": "L’opération a échoué sur certaines importations (détails dans le journal)",
   "logCancelAllTitle": "Annuler toutes les importations ?",
   "logCancelAllBody": "Les importations en cours s’arrêtent définitivement. Les titres déjà téléchargés restent.",
   "logCancelAllConfirm": "Tout annuler",

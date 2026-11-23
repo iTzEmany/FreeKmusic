@@ -1,16 +1,16 @@
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/log_export.dart' show redactLog;
+import '../../../core/log_export.dart' show logHome, redactLog;
 import '../../../core/platform.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../providers/activity_providers.dart';
 import '../../../providers/online_providers.dart' show trackCorrectionsProvider;
+import '../../../providers/share_providers.dart' show deviceNameProvider;
 import '../../../services/audio/codecore_audio_handler.dart' show PlaybackFailureReason;
 import '../../../services/import/playlist_import_service.dart';
 import '../../../services/tags/tag_writer.dart' show TagWriteReason;
@@ -424,7 +424,7 @@ class LogEntryCard extends StatelessWidget {
 
 /// The whole line: in the side panel on desktop, in a sheet on a phone.
 /// [onOpen] adds «Vedi i brani» (the second opinion and the completion).
-class LogDetail extends StatelessWidget {
+class LogDetail extends ConsumerWidget {
   const LogDetail(this.entry, {super.key, this.sources, this.onOpen, this.group = const []});
 
   final LogEntry entry;
@@ -435,7 +435,7 @@ class LogDetail extends StatelessWidget {
   final VoidCallback? onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
@@ -507,8 +507,8 @@ class LogDetail extends StatelessWidget {
               onPressed: () => ShellNav.open<void>(
                 context,
                 ReportIssueScreen(
-                  title: group.isEmpty ? text.title : l.logDlGroup(group.length),
-                  details: _reportDetails(text, sources),
+                  title: _redact(ref, group.isEmpty ? text.title : l.logDlGroup(group.length)),
+                  details: _redact(ref, [text.detail, ?sources, ?text.tech].where((s) => s.isNotEmpty).join('\n')),
                 ),
               ),
               icon: const Icon(Icons.bug_report_outlined),
@@ -521,9 +521,6 @@ class LogDetail extends StatelessWidget {
   }
 }
 
-/// The detail lines of an entry for a report, redacted like «Esporta log».
-String _reportDetails(LogText text, String? sources) {
-  final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
-  final lines = [text.detail, ?sources, ?text.tech].where((s) => s.isNotEmpty).join('\n');
-  return redactLog(lines, home: home);
-}
+/// Text of an entry for a report, redacted like «Esporta log».
+String _redact(WidgetRef ref, String text) =>
+    redactLog(text, home: logHome(), deviceName: ref.read(deviceNameProvider));

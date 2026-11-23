@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_info.dart';
+import '../../../core/app_log.dart';
 import '../../../core/issue_report.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/issue_providers.dart';
+import '../../../services/issue/issue_sender.dart' show IssueSendStatus;
 import '../../theme/tokens.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/show_msg.dart';
@@ -33,7 +35,8 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
   IssueKind _kind = IssueKind.bug;
   bool _attach = true;
   bool _sending = false;
-  bool _failed = false;
+  IssueSendStatus? _failure;
+  bool _shortened = false;
   String? _sentUrl;
 
   @override
@@ -59,13 +62,22 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
         : null,
   );
 
-  Future<void> _send(TechInfo? info) async {
-    final draft = _draft(info, forService: true);
+  Future<void> _send(TechInfo? loaded) async {
     setState(() {
       _sending = true;
-      _failed = false;
+      _failure = null;
     });
-    final url = await ref.read(issueSenderProvider).send(
+    // The preview may still be loading: what is sent must be what the preview shows.
+    var info = loaded;
+    if (_attach && info == null) {
+      try {
+        info = await ref.read(issueTechInfoProvider.future);
+      } on Object catch (e, st) {
+        AppLog.w('technical info for a report failed', e, st);
+      }
+    }
+    final draft = _draft(info, forService: true);
+    final r = await ref.read(issueSenderProvider).send(
       title: draft.title,
       body: draft.body,
       version: kAppVersion,
@@ -73,8 +85,9 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
     if (!mounted) return;
     setState(() {
       _sending = false;
-      _sentUrl = url;
-      _failed = url == null;
+      _shortened = draft.logTruncated;
+      _sentUrl = r.status == IssueSendStatus.sent ? r.url : null;
+      _failure = r.status == IssueSendStatus.sent ? null : r.status;
     });
   }
 
@@ -82,7 +95,10 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
     final l = context.l10n;
     final draft = _draft(info);
     final ok = await ref.read(linkOpenerProvider).open(draft.url);
-    if (ok) return;
+    if (ok) {
+      if (draft.logTruncated && mounted) showMsg(context, l.reportLogShortened);
+      return;
+    }
     await Clipboard.setData(ClipboardData(text: draft.plainText));
     if (!mounted) return;
     showMsg(context, l.reportOpenFailed);
@@ -90,9 +106,10 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
 
   Future<void> _copy(TechInfo? info) async {
     final l = context.l10n;
-    await Clipboard.setData(ClipboardData(text: _draft(info).plainText));
+    final draft = _draft(info);
+    await Clipboard.setData(ClipboardData(text: draft.plainText));
     if (!mounted) return;
-    showMsg(context, l.reportCopied);
+    showMsg(context, draft.logTruncated ? '${l.reportCopied}. ${l.reportLogShortened}' : l.reportCopied);
   }
 
   @override
@@ -157,6 +174,11 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
               ),
               if (_attach && info != null) _Preview(info: info),
               const SizedBox(height: 16),
+              if (_shortened)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: CcDims.gap8),
+                  child: Text(l.reportLogShortened, key: const ValueKey('report-shortened'), style: small),
+                ),
               if (sent != null)
                 _Sent(url: sent, onOpen: () => ref.read(linkOpenerProvider).open(sent))
               else ...[
@@ -202,11 +224,15 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
                       style: small,
                     ),
                   ),
-                if (_failed)
+                if (_failure != null)
                   Padding(
                     padding: const EdgeInsets.only(top: CcDims.gap8),
                     child: Text(
-                      l.reportSendFailed,
+                      switch (_failure!) {
+                        IssueSendStatus.rateLimited => l.reportSendRateLimited,
+                        IssueSendStatus.unsure => l.reportSendUnsure,
+                        _ => l.reportSendFailed,
+                      },
                       key: const ValueKey('report-send-failed'),
                       style: small?.copyWith(color: Theme.of(context).colorScheme.error),
                     ),

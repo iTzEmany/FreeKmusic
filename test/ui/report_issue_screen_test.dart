@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:codecore/core/issue_report.dart';
 import 'package:codecore/providers/issue_providers.dart';
 import 'package:codecore/services/issue/issue_sender.dart';
@@ -22,11 +24,11 @@ class _FakeOpener extends LinkOpener {
 
 class _FakeSender implements IssueSender {
   _FakeSender(this.result);
-  final String? result;
+  final IssueSendResult result;
   final sent = <String>[];
 
   @override
-  Future<String?> send({required String title, required String body, required String version}) async {
+  Future<IssueSendResult> send({required String title, required String body, required String version}) async {
     sent.add('$title|$body');
     return result;
   }
@@ -191,7 +193,7 @@ void main() {
     tester.view.physicalSize = const Size(600, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final sender = _FakeSender('https://github.com/o/r/issues/7');
+    final sender = _FakeSender(const IssueSendResult(IssueSendStatus.sent, 'https://github.com/o/r/issues/7'));
     final h = await pumpScreen(tester, endpoint: 'https://w.example/', sender: sender);
     await fill(tester);
     await tester.tap(find.byKey(const ValueKey('report-send')));
@@ -207,13 +209,52 @@ void main() {
     tester.view.physicalSize = const Size(600, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final h = await pumpScreen(tester, endpoint: 'https://w.example/', sender: _FakeSender(null));
+    final h = await pumpScreen(tester, endpoint: 'https://w.example/', sender: _FakeSender(const IssueSendResult(IssueSendStatus.rejected)));
     await fill(tester);
     await tester.tap(find.byKey(const ValueKey('report-send')));
     await tester.pump();
     await tester.pump();
     expect(find.byKey(const ValueKey('report-send-failed')), findsOneWidget);
     expect(find.byKey(const ValueKey('report-copy')), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  for (final st in [IssueSendStatus.rateLimited, IssueSendStatus.unsure]) {
+    testWidgets('send: $st shows its own message', (tester) async {
+      tester.view.physicalSize = const Size(600, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await pumpScreen(tester, endpoint: 'https://w.example/', sender: _FakeSender(IssueSendResult(st)));
+      await fill(tester);
+      await tester.tap(find.byKey(const ValueKey('report-send')));
+      await tester.pump();
+      await tester.pump();
+      final shown = (tester.widget(find.byKey(const ValueKey('report-send-failed'))) as Text).data!;
+      expect(shown, st == IssueSendStatus.rateLimited ? contains('Troppi invii') : contains('GitHub prima di riprovare'));
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('send waits for the technical info still loading', (tester) async {
+    tester.view.physicalSize = const Size(600, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final gate = Completer<TechInfo>();
+    final sender = _FakeSender(const IssueSendResult(IssueSendStatus.sent, 'https://github.com/o/r/issues/7'));
+    final h = await Harness.create(tester);
+    await h.pump(tester, const ReportIssueScreen(), extraOverrides: [
+      issueEndpointProvider.overrideWithValue('https://w.example/'),
+      issueSenderProvider.overrideWithValue(sender),
+      issueTechInfoProvider.overrideWith((ref) => gate.future),
+    ]);
+    await fill(tester);
+    await tester.tap(find.byKey(const ValueKey('report-send')));
+    await tester.pump();
+    expect(sender.sent, isEmpty);
+    gate.complete(_info);
+    await tester.pump();
+    await tester.pump();
+    expect(sender.sent.single, contains('Mi A3'));
     await h.dispose(tester);
   });
 

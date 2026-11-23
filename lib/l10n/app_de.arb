@@ -2975,6 +2975,9 @@
   "reportSent": "Meldung gesendet, danke. Du findest sie hier:",
   "reportOpenSent": "Meldung öffnen",
   "reportSendFailed": "Senden fehlgeschlagen. Kopiere den Text oder öffne ihn auf GitHub.",
+  "reportLogShortened": "Das Protokoll wurde gekürzt, damit es in die Sendegrenzen passt.",
+  "reportSendRateLimited": "Zu viele Meldungen in letzter Zeit: Versuche es in einer Stunde erneut oder kopiere den Text.",
+  "reportSendUnsure": "Keine Antwort: Die Meldung könnte schon angekommen sein. Prüfe auf GitHub, bevor du es erneut versuchst, oder kopiere den Text.",
   "reportAnonNote": "Anonymer Versand: Der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.",
   "reportWhyDisabled": "Zum Senden einen Titel und eine Beschreibung mit mindestens {n} Zeichen schreiben.",
   "@reportWhyDisabled": {
@@ -3400,6 +3403,7 @@
   "logClearMenu": "Protokoll leeren",
   "logPauseAll": "Alle anhalten",
   "logCancelAll": "Alle abbrechen",
+  "logImportsActionFailed": "Der Vorgang ist bei einigen Importen fehlgeschlagen (Details im Protokoll)",
   "logCancelAllTitle": "Alle Importe abbrechen?",
   "logCancelAllBody": "Laufende Importe werden endgültig beendet. Bereits geladene Titel bleiben erhalten.",
   "logCancelAllConfirm": "Alle abbrechen",

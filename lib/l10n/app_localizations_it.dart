@@ -5427,6 +5427,18 @@ class AppLocalizationsIt extends AppLocalizations {
       'Invio non riuscito. Copia il testo, oppure aprilo su GitHub.';
 
   @override
+  String get reportLogShortened =>
+      'Il log è stato accorciato per stare nei limiti dell\'invio.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Troppi invii di recente: riprova fra un\'ora, oppure copia il testo.';
+
+  @override
+  String get reportSendUnsure =>
+      'Nessuna risposta: la segnalazione potrebbe essere già arrivata. Controlla su GitHub prima di riprovare, oppure copia il testo.';
+
+  @override
   String get reportAnonNote =>
       'Invio anonimo: il servizio intermedio vede l\'indirizzo IP (GitHub no), nessun account richiesto.';
 
@@ -6414,6 +6426,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get logCancelAll => 'Annulla tutto';
+
+  @override
+  String get logImportsActionFailed =>
+      'Operazione non riuscita su alcune importazioni (dettagli nel log)';
 
   @override
   String get logCancelAllTitle => 'Annullare tutte le importazioni?';

@@ -5434,6 +5434,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Falha no envio. Copie o texto, ou abra-o no GitHub.';
 
   @override
+  String get reportLogShortened =>
+      'O registo foi encurtado para caber nos limites de envio.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Demasiados envios recentes: tenta de novo daqui a uma hora ou copia o texto.';
+
+  @override
+  String get reportSendUnsure =>
+      'Sem resposta: o relatório pode já ter chegado. Confirma no GitHub antes de tentar de novo, ou copia o texto.';
+
+  @override
   String get reportAnonNote =>
       'Envio anónimo: o serviço intermediário vê o seu endereço IP (o GitHub não), sem conta necessária.';
 
@@ -6423,6 +6435,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get logCancelAll => 'Cancelar tudo';
+
+  @override
+  String get logImportsActionFailed =>
+      'A operação falhou em algumas importações (detalhes no registo)';
 
   @override
   String get logCancelAllTitle => 'Cancelar todas as importações?';

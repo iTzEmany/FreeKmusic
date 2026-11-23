@@ -137,4 +137,48 @@ void main() {
     expect(fitsReportService(d.title, d.body, '1.0.0'), isTrue);
     expect(d.body, contains('Log accorciato'));
   });
+
+  test('a title over 120 is cut and the description survives', () {
+    final d = buildIssue(
+      repo: 'o/r',
+      kind: IssueKind.bug,
+      title: 'x' * 300,
+      description: 'una descrizione che deve restare intera',
+      info: _info.withLog(['[W] x']),
+      fits: (t, b) => fitsReportService(t, b, '1.0.0'),
+    );
+    expect(d.title.length, kIssueTitleMax);
+    expect(d.body, contains('una descrizione che deve restare intera'));
+    expect(d.body, contains('[W] x'));
+    expect(fitsReportService(d.title, d.body, '1.0.0'), isTrue);
+  });
+
+  test('fitsReportService: exact limits and a body that is long for a URL but fine here', () {
+    expect(fitsReportService('t' * 120, 'b', '1'), isTrue);
+    expect(fitsReportService('t' * 121, 'b', '1'), isFalse);
+    expect(fitsReportService('t', 'b' * 20000, '1'), isTrue);
+    expect(fitsReportService('t', 'b' * 19000, '1'), isTrue);
+    expect(fitsReportService('t', 'b' * 20001, '1'), isFalse);
+    final d = buildIssue(
+      repo: 'o/r',
+      kind: IssueKind.bug,
+      title: 't',
+      description: 'd' * 12000,
+      fits: (t, b) => fitsReportService(t, b, '1.0.0'),
+    );
+    expect(d.body.length, 12000, reason: 'not cut: the service takes it whole');
+    expect(d.logTruncated, isFalse);
+  });
+
+  test('a multibyte body is reduced even below 20000 characters', () {
+    final d = buildIssue(
+      repo: 'o/r',
+      kind: IssueKind.bug,
+      title: 't',
+      description: 'è' * 15000,
+      fits: (t, b) => fitsReportService(t, b, '1.0.0'),
+    );
+    expect(d.body.length, lessThan(15000));
+    expect(fitsReportService(d.title, d.body, '1.0.0'), isTrue);
+  });
 }

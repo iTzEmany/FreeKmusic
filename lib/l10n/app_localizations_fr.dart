@@ -5478,6 +5478,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de l’envoi. Copiez le texte, ou ouvrez-le sur GitHub.';
 
   @override
+  String get reportLogShortened =>
+      'Le journal a été raccourci pour respecter les limites d\'\'envoi.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Trop d\'\'envois récents : réessaie dans une heure, ou copie le texte.';
+
+  @override
+  String get reportSendUnsure =>
+      'Pas de réponse : le signalement est peut-être déjà arrivé. Vérifie sur GitHub avant de réessayer, ou copie le texte.';
+
+  @override
   String get reportAnonNote =>
       'Envoi anonyme : le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.';
 
@@ -6471,6 +6483,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logCancelAll => 'Tout annuler';
+
+  @override
+  String get logImportsActionFailed =>
+      'L\'\'opération a échoué sur certaines importations (détails dans le journal)';
 
   @override
   String get logCancelAllTitle => 'Annuler toutes les importations ?';

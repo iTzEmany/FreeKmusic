@@ -119,6 +119,29 @@ ImportRow row(int i, String title, String artist, int seconds) => ImportRow(
     durationMs: seconds * 1000,
     isrc: 'ISRC$i');
 
+/// A repository that can misbehave once, like an import changing mid-pass.
+class _Racy extends ImportRepository {
+  _Racy(super.db);
+  int? finishOnGet, thenRun, failPauseOf;
+  var _fired = false;
+
+  @override
+  Future<PlaylistImport?> get(int id) async {
+    if (!_fired && id == finishOnGet) {
+      _fired = true; // the block ends and the next one of its chain starts
+      await super.setStatus(id, ImportStatus.finished);
+      await super.setStatus(thenRun!, ImportStatus.running);
+    }
+    return super.get(id);
+  }
+
+  @override
+  Future<void> setStatus(int importId, ImportStatus status) {
+    if (importId == failPauseOf && status == ImportStatus.paused) throw StateError('db busy');
+    return super.setStatus(importId, status);
+  }
+}
+
 void main() {
   late AppDatabase db;
   late ImportRepository imports;
@@ -1013,6 +1036,32 @@ void main() {
       }
       await service.cancelAll();
       expect(await imports.watchUnfinished().first, isEmpty);
+    });
+
+    test('pauseAll leaves nothing running when a block ends during the pass', () async {
+      final racy = imports = _Racy(db);
+      rebuild();
+      final a = await service.start(rows250(), options: const ImportOptions(planFirst: true), blockSize: 100);
+      final b = await service.start(rows250(), options: const ImportOptions(planFirst: true), blockSize: 100);
+      await idle();
+      final chainB = await service.chainOf(b);
+      racy.finishOnGet = chainB[0].id;
+      racy.thenRun = chainB[1].id;
+      await service.pauseAll();
+      final open = await imports.watchUnfinished().first;
+      expect(open.where((i) => i.state == ImportStatus.running), isEmpty);
+      expect((await imports.get(a))!.state, ImportStatus.paused);
+    });
+
+    test('pauseAll goes on with the other imports when one fails', () async {
+      final racy = imports = _Racy(db);
+      rebuild();
+      final a = await service.start(rows250(), options: const ImportOptions(planFirst: true), blockSize: 100);
+      final b = await service.start(rows250(), options: const ImportOptions(planFirst: true), blockSize: 100);
+      await idle();
+      racy.failPauseOf = a;
+      await service.pauseAll();
+      expect((await imports.get(b))!.state, ImportStatus.paused);
     });
 
     test('pause, resume and cancel act on the whole import, from any block', () async {

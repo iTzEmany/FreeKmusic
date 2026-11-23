@@ -17,8 +17,12 @@ import 'package:intl/intl.dart';
 
 class _Svc extends Fake implements PlaylistImportService {
   int paused = 0, cancelled = 0;
+  bool failing = false;
   @override
-  Future<void> pauseAll() async => paused++;
+  Future<void> pauseAll() async {
+    paused++;
+    if (failing) throw StateError('db busy');
+  }
   @override
   Future<void> cancelAll() async => cancelled++;
 }
@@ -107,7 +111,7 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> pump(WidgetTester tester, {double scale = 1, bool backdrop = false, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage, bool importing = false, _Svc? svc}) async {
+  Future<void> pump(WidgetTester tester, {double scale = 1, bool backdrop = false, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage, bool importing = false, bool paused = false, _Svc? svc}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -116,7 +120,7 @@ void main() {
       ProviderScope(
         overrides: [
           activityLogProvider.overrideWith(() => firstPage == null ? _Log(only ?? entries) : _Paged(only ?? entries, firstPage)),
-          unfinishedImportsProvider.overrideWith((ref) => Stream.value([if (importing) _imp])),
+          unfinishedImportsProvider.overrideWith((ref) => Stream.value([if (importing) paused ? _imp.copyWith(status: ImportStatus.paused.index) : _imp])),
           if (svc != null) playlistImportServiceProvider.overrideWithValue(svc),
           proposalsProvider.overrideWith((ref) => Stream.value(proposals ? [_proposal] : const [])),
         ],
@@ -140,6 +144,21 @@ void main() {
     await pump(tester);
     expect(find.text('Ferma tutto'), findsNothing);
     expect(find.text('Annulla tutto'), findsNothing);
+  });
+
+  testWidgets('Ferma tutto is hidden when nothing runs', (tester) async {
+    await pump(tester, importing: true, paused: true, svc: _Svc());
+    expect(find.text('Ferma tutto'), findsNothing);
+    expect(find.text('Annulla tutto'), findsOneWidget);
+  });
+
+  testWidgets('a failing bulk action is shown, not thrown', (tester) async {
+    final svc = _Svc()..failing = true;
+    await pump(tester, importing: true, svc: svc);
+    await tester.tap(find.text('Ferma tutto'));
+    await tester.pump();
+    expect(svc.paused, 1);
+    expect(find.textContaining('non riuscita su alcune importazioni'), findsOneWidget);
   });
 
   testWidgets('Ferma tutto and Annulla tutto act on all imports, the second after asking', (tester) async {
