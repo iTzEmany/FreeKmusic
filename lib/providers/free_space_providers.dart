@@ -18,6 +18,9 @@ final freeSpaceServiceProvider = FutureProvider<FreeSpaceService>(
     platform: isAndroid ? deleteWithSystemDialog : null,
     playingIds: () => {?ref.read(audioHandlerProvider).currentTrack?.id},
     scanRunning: () => ref.read(scanStateProvider).running,
-    onFreed: () => unawaited(ref.read(audioHandlerProvider).resyncPreparer()),
+    onFreed: () {
+      ref.invalidate(downloadIndexProvider); // the index was edited in place
+      unawaited(ref.read(audioHandlerProvider).resyncPreparer());
+    },
   ),
 );

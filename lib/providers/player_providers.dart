@@ -1036,10 +1036,5 @@ final liveCurrentTrackProvider = StreamProvider<Track?>((ref) async* {
   // shadow row; then the row's data (lyrics and trivia appear as enrichment
   // ends) under the entry's own negative id, so the online menus and cover keep working.
   final row = ref.watch(currentShadowRowProvider);
-  // Once downloaded the row is a library file: it keeps its real id (the menu and the download state follow it).
-  yield row == null
-      ? ref.read(onlineEntriesProvider)?.trackOf(id)
-      : row.kind == kMusicKind
-          ? row
-          : row.copyWith(id: id);
+  yield row?.copyWith(id: id) ?? ref.read(onlineEntriesProvider)?.trackOf(id);
 });

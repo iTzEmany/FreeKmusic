@@ -39,3 +39,4 @@ D-695, D-696, D-697, D-665 (contesto), D-662, D-699. Rilievi F-16, F-17, F-21, F
 - Nessuna cosa in questa fase: la prova della barra di download sul Motorola è nella 147.
 
 ## Note di deviazione
+- 139.2: non usa `onlineEntries.bound` né `libraryRowSql`. `liveCurrentTrackProvider` resta con l'id negativo dopo il download (con l'id vero la review ha mostrato incoerenze: `SuggestedInfo`/`DownloadBar` spariscono, l'equalizzatore sparisce dal menu ⋮, «Elimina dal dispositivo» non toglie il brano dalla coda). Lo stato del brano corrente si legge con la chiave del flusso (`trackStateKey` ricava `source:id` dal path `online:` del brano sintetico). «Libera spazio» ed «Elimina dal dispositivo» invalidano `downloadIndexProvider`.
