@@ -65,13 +65,15 @@ class ResumeItem {
 }
 
 /// The latest of each area, the most recent first. [plays] are the latest
-/// play per area (albums and playlists come from [entries]); the playing
-/// queue wins its own area ([queueArea]) when that is track, podcast or daylist.
+/// play per area; an album or playlist play (with its context [name]) finds its
+/// entry in [entries], and without one the area falls back to the entry played
+/// last (a track of it, in any context). The playing queue wins its own area
+/// ([queueArea]) when that is track, podcast or daylist.
 List<ResumeItem> lastPerArea({
   Track? current,
   List<Track> queue = const [],
   ResumeArea? queueArea,
-  List<({ResumeArea area, Track track, int at})> plays = const [],
+  List<({ResumeArea area, Track track, int at, String? name})> plays = const [],
   List<Track> resumable = const [],
   List<LibraryEntry> entries = const [],
   List<SavedRadio> radios = const [],
@@ -88,6 +90,7 @@ List<ResumeItem> lastPerArea({
   }
 
   // Album, playlist and radio tiles need their entry/station: they come from [entries]/[radios].
+  final fromPlays = <ResumeArea>{};
   final playingArea = queueArea ?? (current == null ? null : ofTrack(current));
   if (current != null &&
       index >= 0 &&
@@ -104,7 +107,26 @@ List<ResumeItem> lastPerArea({
       ),
     );
   }
+  LibraryEntry? entryOf(ResumeArea area, Track t, String? name) {
+    for (final e in entries) {
+      if (area == ResumeArea.album
+          ? e.kind == LibraryKind.album && e.id == t.albumKey
+          : e.kind == LibraryKind.playlist && name != null && e.title == name) {
+        return e;
+      }
+    }
+    return null;
+  }
+
   for (final p in plays) {
+    if (p.area == ResumeArea.album || p.area == ResumeArea.playlist) {
+      final e = entryOf(p.area, p.track, p.name);
+      if (e == null) continue;
+      fromPlays.add(p.area);
+      offer(ResumeItem(p.area, p.at, entry: e));
+      continue;
+    }
+    if (index >= 0 && p.track.id == current!.id) continue;
     offer(
       ResumeItem(
         p.area,
@@ -116,16 +138,19 @@ List<ResumeItem> lastPerArea({
     );
   }
   for (final t in resumable) {
+    if (index >= 0 && t.id == current!.id) continue;
     offer(ResumeItem(ofTrack(t), t.lastPlayedAt ?? 0, track: t));
   }
   for (final e in entries) {
     final at = e.lastPlayedAt;
     if (at == null) continue;
     switch (e.kind) {
-      case LibraryKind.album:
+      case LibraryKind.album when !fromPlays.contains(ResumeArea.album):
         offer(ResumeItem(ResumeArea.album, at, entry: e));
-      case LibraryKind.playlist:
+      case LibraryKind.playlist when !fromPlays.contains(ResumeArea.playlist):
         offer(ResumeItem(ResumeArea.playlist, at, entry: e));
+      case LibraryKind.album || LibraryKind.playlist:
+        break;
       case LibraryKind.artist:
         break;
     }

@@ -42,8 +42,8 @@ void main() {
   test('one item per area, the latest of each, most recent first', () {
     final items = lastPerArea(
       plays: [
-        (area: ResumeArea.track, track: track(1), at: 50),
-        (area: ResumeArea.daylist, track: track(2), at: 40),
+        (area: ResumeArea.track, track: track(1), at: 50, name: null),
+        (area: ResumeArea.daylist, track: track(2), at: 40, name: null),
       ],
       resumable: [
         track(5, lastPlayedAt: 10),
@@ -70,7 +70,7 @@ void main() {
     final items = lastPerArea(
       current: track(1),
       queue: [track(0), track(1), track(2)],
-      plays: [(area: ResumeArea.track, track: track(9), at: 99)],
+      plays: [(area: ResumeArea.track, track: track(9), at: 99, name: null)],
       resumable: [track(1, lastPlayedAt: 3)],
     );
     expect(items, hasLength(1));
@@ -133,10 +133,47 @@ void main() {
 
   test('a podcast play gives the track tile, a radio never played (no last play) is absent', () {
     final items = lastPerArea(
-      plays: [(area: ResumeArea.podcast, track: track(3, kind: 1), at: 7)],
+      plays: [(area: ResumeArea.podcast, track: track(3, kind: 1), at: 7, name: null)],
       radios: [radio(null)],
     );
     expect(items.single.area, ResumeArea.podcast);
     expect(items.single.track!.id, 3);
+  });
+
+  LibraryEntry album(String key, String title, int played) => LibraryEntry(
+    kind: LibraryKind.album, id: key, title: title, count: 1, lastPlayedAt: played);
+  Track inAlbum(int id, String key) => track(id).copyWith(albumKey: key);
+
+  test('an album played as an album shows; a daylist that plays its tracks does not move the tiles', () {
+    final items = lastPerArea(
+      plays: [
+        (area: ResumeArea.album, track: inAlbum(1, 'x'), at: 10, name: 'X'),
+        (area: ResumeArea.daylist, track: inAlbum(2, 'y'), at: 90, name: null),
+      ],
+      // The daylist track bumped album y (MAX of the tracks' last play).
+      entries: [album('x', 'X', 10), album('y', 'Y', 90)],
+    );
+    expect(items.firstWhere((i) => i.area == ResumeArea.album).entry!.id, 'x');
+  });
+
+  test('a playlist play finds its playlist by name; without a play the entries decide', () {
+    final withPlay = lastPerArea(
+      plays: [(area: ResumeArea.playlist, track: track(1), at: 10, name: 'A')],
+      entries: [entry('A', 10, LibraryKind.playlist), entry('B', 90, LibraryKind.playlist)],
+    );
+    expect(withPlay.single.entry!.id, 'A');
+    final without = lastPerArea(entries: [entry('B', 90, LibraryKind.playlist)]);
+    expect(without.single.entry!.id, 'B');
+  });
+
+  test('the song that plays is not offered again by the daylist or the resumable ones', () {
+    final items = lastPerArea(
+      current: track(1),
+      queue: [track(1)],
+      queueArea: ResumeArea.daylist,
+      plays: [(area: ResumeArea.track, track: track(1), at: 99, name: null)],
+      resumable: [track(1, lastPlayedAt: 98)],
+    );
+    expect(items.map((i) => i.area), [ResumeArea.daylist]);
   });
 }

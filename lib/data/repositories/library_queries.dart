@@ -114,11 +114,22 @@ AlbumSummary albumSummaryFromRow(QueryRow r) {
 
 /// The latest play of a `Plays.context` value ([context] is the raw column).
 class LastPlay {
-  const LastPlay(this.context, this.track, this.at);
+  const LastPlay(this.context, this.track, this.at, {this.contextName});
   final int? context;
+
+  /// `Plays.contextName` (the album or playlist name), when set.
+  final String? contextName;
   final Track track;
   final int at;
 }
+
+/// [LibraryQueries.watchLastPlayPerContext]. SQLite gives the bare columns (t.*, p.context_name) of the row
+/// holding the MAX. `CROSS JOIN` fixes the order: the period first through `plays_at` (as in `listensSinceSql`).
+final lastPlayPerContextSql =
+    'SELECT p.context AS context, p.context_name AS context_name, MAX(p.played_at) AS at, t.* FROM plays p '
+    'CROSS JOIN tracks t ON t.id = p.track_id '
+    "WHERE p.played_at >= ? AND t.missing = 0 AND t.ignored = 0 AND ${libraryRowSql('t')} "
+    'GROUP BY p.context';
 
 class LibraryQueries {
   LibraryQueries(this._db);
@@ -255,11 +266,7 @@ ORDER BY g.k COLLATE NOCASE
         .millisecondsSinceEpoch;
     return _db
         .customSelect(
-          // SQLite gives the bare columns (t.*) of the row holding the MAX.
-          'SELECT p.context AS context, MAX(p.played_at) AS at, t.* FROM plays p '
-          'JOIN tracks t ON t.id = p.track_id '
-          'WHERE p.played_at >= ? AND t.missing = 0 AND t.ignored = 0 '
-          'GROUP BY p.context',
+          lastPlayPerContextSql,
           variables: [Variable<int>(since)],
           readsFrom: {_db.plays, _db.tracks},
         )
@@ -267,7 +274,12 @@ ORDER BY g.k COLLATE NOCASE
         .map(
           (rows) => [
             for (final r in rows)
-              LastPlay(r.read<int?>('context'), _db.tracks.map(r.data), r.read<int>('at')),
+              LastPlay(
+                r.read<int?>('context'),
+                _db.tracks.map(r.data),
+                r.read<int>('at'),
+                contextName: r.read<String?>('context_name'),
+              ),
           ],
         );
   }

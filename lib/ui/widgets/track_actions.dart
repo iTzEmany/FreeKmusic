@@ -432,7 +432,7 @@ List<TrackActionGroup> trackActions(
       if (ref.read(equalizerProvider) != null &&
           ref.read(currentTrackProvider).value?.id == track.id)
         TrackAction(Icons.equalizer_rounded, l.equalizer, () async {
-          ShellNav.open<void>(outer, const EqualizerScreen());
+          ShellNav.openOnTop<void>(outer, ref, const EqualizerScreen());
         }),
       if (track.kind != kStreamKind)
         TrackAction(

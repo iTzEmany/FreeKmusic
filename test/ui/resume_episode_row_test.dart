@@ -20,6 +20,9 @@ import 'package:codecore/ui/theme/tokens.dart';
 
 class _Spy implements PlayerController {
   final played = <List<int>>[];
+  int toggles = 0;
+  @override
+  Future<void> togglePlayPause() async => toggles++;
   @override
   Future<void> playFromList(
     List<Track> snapshot,
@@ -54,6 +57,7 @@ Future<_DaylistSpy> _pumpResume(
   List<LibraryEntry> entries = const [],
   List<SavedRadio> radios = const [],
   double? blockWidth,
+  _Spy? spy,
 }) async {
   final daylist = _DaylistSpy();
   await tester.pumpWidget(
@@ -67,7 +71,7 @@ Future<_DaylistSpy> _pumpResume(
         queueProvider.overrideWith((ref) => Stream.value(queue)),
         playContextProvider.overrideWithValue(source),
         recentEntriesProvider.overrideWithValue(entries),
-        playerControllerProvider.overrideWithValue(_Spy()),
+        playerControllerProvider.overrideWithValue(spy ?? _Spy()),
         daylistActionsProvider.overrideWithValue(daylist),
       ],
       child: MaterialApp(
@@ -119,6 +123,39 @@ void main() {
       expect(find.descendant(of: find.byKey(ValueKey('resume-$key')), matching: find.text(title)), findsOneWidget);
     });
   }
+
+  testWidgets('the tile of what plays pauses/resumes it on tap, one semantics node each tile', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final spy = _Spy();
+    await _pumpResume(
+      tester,
+      spy: spy,
+      source: const PlayContext(PlayContextKind.library),
+      current: _song(1),
+      queue: [_song(1)],
+      plays: [LastPlay(8, _song(2), 5)],
+    );
+    final now = find.byKey(const ValueKey('resume-track'));
+    expect(tester.getSemantics(now).label, contains('T1'));
+    expect(tester.getSemantics(find.byKey(const ValueKey('resume-daylist'))).label, contains('Daylist'));
+    await tester.tap(now);
+    expect(spy.toggles, 1);
+    expect(spy.played, isEmpty);
+    semantics.dispose();
+  });
+
+  testWidgets('an album or playlist with a blank title shows the fallback', (tester) async {
+    await _pumpResume(
+      tester,
+      plays: [LastPlay(0, _song(1), 5, contextName: ''), LastPlay(2, _song(2), 4, contextName: ' ')],
+      entries: [
+        const LibraryEntry(kind: LibraryKind.album, id: 'k', title: '', count: 1, lastPlayedAt: 5),
+        const LibraryEntry(kind: LibraryKind.playlist, id: 'p', title: ' ', count: 1, lastPlayedAt: 4),
+      ],
+    );
+    final l = AppLocalizations.of(tester.element(find.byType(ResumeList)));
+    expect(find.descendant(of: find.byKey(const ValueKey('resume-album')), matching: find.text(l.unknownAlbum)), findsOneWidget);
+  });
 
   testWidgets('a daylist from the plays starts it on tap', (tester) async {
     final daylist = await _pumpResume(tester, plays: [LastPlay(8, _song(1), 5)]);

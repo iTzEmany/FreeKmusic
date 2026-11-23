@@ -164,7 +164,7 @@ Gli episodi sono `kind = 1`. Soglie: `kEpisodeEdge` 10 s, `kEpisodeHeardAt` 0.95
 
 ## Trappole
 
-- **`PlayContextKind` solo in coda (fase 142)**: l'indice è salvato (prefs `lastContextKind`, `plays.context`); un valore sconosciuto (da una versione più nuova) si legge come `library` (`playContextOf`). La daylist suona con `daylist`.
+- **`PlayContextKind` solo in coda (fase 142)**: l'indice è salvato (prefs `lastContextKind`, `plays.context`); un valore sconosciuto (da una versione più nuova) si legge come `library` (`playContextOf`). La daylist suona con `daylist`. Un indice sconosciuto letto come `library` viene riscritto come `library.index` alla prima ripresa della coda: il tipo originale si perde.
 - **Limite errori e ripristino a freddo (fase 135)**: il limite è `>=` (prima `>` lasciava 4 errori); ogni ramo che salta o mostra un errore in `_loadCurrent` (anche `_skipOffline`, `_jumpToAvailable`, `notInLibrary`) deve rispettare `cold`, e ogni ramo che esce senza caricare deve ripubblicare `idle` (altrimenti lo spinner resta acceso).
 - **Promemoria karaoke**: `karaokeInUseProvider` riceve un Set nuovo a ogni brano; chi lo ascolta per un timer usa `.select((s) => s.isEmpty)` (fase 135).
 

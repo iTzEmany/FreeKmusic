@@ -10,12 +10,11 @@ final lastPlaysProvider = StreamProvider.autoDispose<List<LastPlay>>(
   (ref) => ref.watch(libraryQueriesProvider).watchLastPlayPerContext(),
 );
 
-/// The area a play context belongs to; albums and playlists are read from the
-/// library (their last play), radio from the stations. A kind from a newer
-/// version reads as the library.
+/// The area a play context belongs to; radio is read from the stations. A kind
+/// from a newer version reads as the library.
 ResumeArea? resumeAreaOf(PlayContextKind kind) => switch (kind) {
-  PlayContextKind.album ||
-  PlayContextKind.playlist ||
+  PlayContextKind.album => ResumeArea.album,
+  PlayContextKind.playlist => ResumeArea.playlist,
   PlayContextKind.radio => null,
   PlayContextKind.podcast => ResumeArea.podcast,
   PlayContextKind.daylist => ResumeArea.daylist,
@@ -38,15 +37,12 @@ final resumeItemsProvider = Provider.autoDispose<List<ResumeItem>>((ref) {
     queue: ref.watch(queueProvider).value ?? const [],
     queueArea: source == null
         ? null
-        : switch (source.kind) {
-            PlayContextKind.album => ResumeArea.album,
-            PlayContextKind.playlist => ResumeArea.playlist,
-            PlayContextKind.radio => ResumeArea.radio,
-            final k => resumeAreaOf(k),
-          },
+        : source.kind == PlayContextKind.radio
+        ? ResumeArea.radio
+        : resumeAreaOf(source.kind),
     plays: [
       for (final p in ref.watch(lastPlaysProvider).value ?? const <LastPlay>[])
-        if (area(p.context) case final a?) (area: a, track: p.track, at: p.at),
+        if (area(p.context) case final a?) (area: a, track: p.track, at: p.at, name: p.contextName),
     ],
     resumable: ref.watch(resumableTracksProvider).value ?? const [],
     entries: ref.watch(recentEntriesProvider),

@@ -32,10 +32,10 @@ class ResumeList extends ConsumerWidget {
     final items = ref.watch(resumeItemsProvider);
     if (items.isEmpty) return const SizedBox.shrink();
     final source = ref.watch(playContextProvider);
-    final playing = ref.watch(isPlayingProvider).value ?? false;
     final ctrl = ref.read(playerControllerProvider);
-    // What the queue plays now: a tap pauses/resumes it, never restarts it.
-    final nowTap = playing ? null : ctrl.togglePlayPause;
+    // What the queue plays now: a tap pauses/resumes it, never restarts it. The grid
+    // does not watch the play state (it would rebuild at every play/pause).
+    final nowTap = ctrl.togglePlayPause;
 
     Widget tile(ResumeItem r) {
       final t = r.track, e = r.entry;
@@ -49,8 +49,8 @@ class ResumeList extends ConsumerWidget {
       };
       final title = switch (r.area) {
         ResumeArea.track || ResumeArea.podcast => t!.title,
-        ResumeArea.album => e!.title ?? l.unknownAlbum,
-        ResumeArea.playlist => e!.title ?? l.navPlaylists,
+        ResumeArea.album => _orElse(e!.title, l.unknownAlbum),
+        ResumeArea.playlist => _orElse(e!.title, l.navPlaylists),
         ResumeArea.radio => r.radio!.name,
         ResumeArea.daylist => l.daylistTitle,
       };
@@ -131,6 +131,10 @@ class ResumeList extends ConsumerWidget {
     );
   }
 
+  /// A blank title (empty tag or name) reads as the fallback too, not only null.
+  String _orElse(String? title, String fallback) =>
+      title == null || title.trim().isEmpty ? fallback : title;
+
   String _queueSubtitle(
     BuildContext context,
     ResumeItem r,
@@ -191,6 +195,7 @@ class _ResumeTile extends StatelessWidget {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     return Semantics(
+      container: true,
       button: onTap != null,
       label: '$areaLabel, $title, $subtitle',
       excludeSemantics: true,

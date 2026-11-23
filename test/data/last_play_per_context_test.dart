@@ -1,6 +1,6 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -67,5 +67,29 @@ void main() {
     final r = await last();
     expect(r.containsKey(1), isFalse);
     expect(r.containsKey(2), isTrue);
+  });
+
+  test('a shadow row (an online entry that is not saved) is not a Riprendi track', () async {
+    final id = await db.into(db.tracks).insert(TracksCompanion.insert(
+      path: 'x', title: 'x', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
+      kind: const Value(2)));
+    await play(id, ago(5), 4);
+    expect((await last()).containsKey(4), isFalse);
+  });
+
+  test('the name of the context comes with its latest play', () async {
+    final a = await add('a');
+    await db.into(db.plays).insert(PlaysCompanion.insert(
+      trackId: a, playedAt: ago(9), context: const Value(1), contextName: const Value('Old')));
+    await db.into(db.plays).insert(PlaysCompanion.insert(
+      trackId: a, playedAt: ago(3), context: const Value(1), contextName: const Value('New')));
+    expect((await last())[1]!.contextName, 'New');
+  });
+
+  test('the query reads the period through plays_at', () async {
+    final rows = await db.customSelect(
+      'EXPLAIN QUERY PLAN $lastPlayPerContextSql',
+      variables: [Variable<int>(0)]).get();
+    expect(rows.map((r) => r.read<String>('detail')).join('\n'), contains('USING INDEX plays_at'));
   });
 }

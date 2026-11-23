@@ -15,10 +15,10 @@ Track track(int id) => Track(
 );
 
 void main() {
-  test('every play context kind has its area (album, playlist and radio come from elsewhere)', () {
+  test('every play context kind has its area (radio comes from the stations)', () {
     final expected = {
-      PlayContextKind.album: null,
-      PlayContextKind.playlist: null,
+      PlayContextKind.album: ResumeArea.album,
+      PlayContextKind.playlist: ResumeArea.playlist,
       PlayContextKind.radio: null,
       PlayContextKind.podcast: ResumeArea.podcast,
       PlayContextKind.daylist: ResumeArea.daylist,
@@ -37,7 +37,7 @@ void main() {
   for (final (raw, area) in <(int?, ResumeArea?)>[
     (null, ResumeArea.track),
     (-1, ResumeArea.track),
-    (0, null),
+    (0, null), // an album play with no entry in the library: no tile
     (7, null),
     (8, ResumeArea.daylist),
     (9, ResumeArea.track),

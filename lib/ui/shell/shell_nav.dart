@@ -11,6 +11,15 @@ abstract final class ShellNav {
   static Future<T?> open<T>(BuildContext context, Widget page) =>
       Navigator.of(context).push<T>(MaterialPageRoute<T>(builder: (_) => page));
 
+  /// From the root overlay (a menu's host, no tab navigator above [context]):
+  /// in the active tab so the shell stays on screen, or on the root navigator
+  /// when a root route (Now Playing) already covers the shell.
+  static Future<T?> openOnTop<T>(BuildContext context, WidgetRef ref, Widget page) {
+    final root = Navigator.of(context, rootNavigator: true);
+    final tab = ref.read(tabNavigatorKeysProvider)[ref.read(navIndexProvider)].currentState;
+    return (root.canPop() || tab == null ? root : tab).push<T>(MaterialPageRoute<T>(builder: (_) => page));
+  }
+
   /// True when a page pushed above the tab's root guards its exit (unsaved
   /// edits, a running job). The root itself may guard (the Library lens): it
   /// does not count.
