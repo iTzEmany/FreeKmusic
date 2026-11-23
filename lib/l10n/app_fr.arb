@@ -4249,6 +4249,9 @@
   },
   "modelsDownloading": "Téléchargement…",
   "modelsQueued": "En attente",
+  "modelsOffline": "Une connexion est nécessaire pour télécharger les modèles.",
+  "modelsLoadFailed": "Impossible de lire les modèles.",
+  "modelsCancelled": "Annulé. Le téléchargement d’une langue déjà lancé ne peut pas être arrêté.",
   "modelsDeleteOne": "Supprimer {name}",
   "@modelsDeleteOne": {
     "placeholders": {

@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
-import '../services/karaoke/separation_service.dart' show kKaraokeModelMegabytes;
+import '../services/karaoke/separation_service.dart'
+    show kKaraokeModelMegabytes;
 import '../services/lyrics/cedict_download.dart';
 import '../services/online/lyrics_translator.dart';
 import 'chinese_dictionary_providers.dart';
@@ -18,6 +19,8 @@ const int kTranslationModelBytes = translationModelMegabytes * kMb;
 const int kDictionaryEstimateBytes = 4 * kMb;
 // Two Spleeter ONNX files: the size the karaoke sheet already announces.
 const int kKaraokeEstimateBytes = kKaraokeModelMegabytes * kMb;
+
+String modelKey(ModelEntry e) => '${e.kind.name}:${e.id}';
 
 class ModelEntry {
   const ModelEntry({
@@ -45,10 +48,8 @@ class ModelEntry {
 }
 
 /// Space taken by the installed models.
-int installedModelsBytes(Iterable<ModelEntry> entries) => entries.fold(
-  0,
-  (sum, e) => e.installed ? sum + e.bytes : sum,
-);
+int installedModelsBytes(Iterable<ModelEntry> entries) =>
+    entries.fold(0, (sum, e) => e.installed ? sum + e.bytes : sum);
 
 /// The one list behind Settings → Modelli: translation languages (Android
 /// only), the Chinese dictionary and the karaoke model (Android only).
@@ -77,8 +78,18 @@ class ModelCatalogNotifier extends AsyncNotifier<List<ModelEntry>> {
     ref.watch(lyricsTranslatorProvider);
     ref.watch(translationModelsProvider);
     ref.watch(cedictPathProvider);
-    ref.watch(separationServiceProvider);
+    final karaoke = ref.watch(separationServiceProvider);
     ref.watch(chineseDictionaryProvider.select((s) => s.status));
+    if (karaoke != null) {
+      // Models fetched or deleted elsewhere (the karaoke sheet, the expiry); the
+      // progress ticks of a running job are skipped.
+      void changed() {
+        if (!karaoke.busy) ref.invalidateSelf();
+      }
+
+      karaoke.addListener(changed);
+      ref.onDispose(() => karaoke.removeListener(changed));
+    }
     return _load();
   }
 
@@ -99,7 +110,9 @@ class ModelCatalogNotifier extends AsyncNotifier<List<ModelEntry>> {
         );
       }
     }
-    final dictSize = await cedictInstalledSize(await ref.read(cedictPathProvider.future));
+    final dictSize = await cedictInstalledSize(
+      await ref.read(cedictPathProvider.future),
+    );
     entries.add(
       ModelEntry(
         kind: ModelKind.dictionary,
@@ -143,7 +156,8 @@ class ModelCatalogNotifier extends AsyncNotifier<List<ModelEntry>> {
       AppLog.w('model ${e.id} download failed', err, st);
       rethrow;
     } finally {
-      if (e.kind == ModelKind.translation) ref.invalidate(translationModelsProvider);
+      if (e.kind == ModelKind.translation)
+        ref.invalidate(translationModelsProvider);
       await _refresh(e);
       _release();
     }
@@ -189,4 +203,67 @@ class ModelCatalogNotifier extends AsyncNotifier<List<ModelEntry>> {
 final modelCatalogProvider =
     AsyncNotifierProvider.autoDispose<ModelCatalogNotifier, List<ModelEntry>>(
       ModelCatalogNotifier.new,
+    );
+
+/// The «Scarica selezionati» queue: lives here, not in the page, so it goes on
+/// when the page is left and shows again when it is reopened.
+class ModelQueueState {
+  const ModelQueueState({this.running, this.queued = const {}});
+
+  /// [modelKey] of the download running now.
+  final String? running;
+
+  /// [modelKey]s waiting for their turn.
+  final Set<String> queued;
+
+  bool get active => running != null || queued.isNotEmpty;
+}
+
+class ModelQueueNotifier extends Notifier<ModelQueueState> {
+  @override
+  ModelQueueState build() => const ModelQueueState();
+
+  /// Downloads [targets] one at a time (large files, one network); does nothing
+  /// while a queue is running. A failure goes to [onFailed] and the rest goes on.
+  Future<void> downloadAll(
+    List<ModelEntry> targets, {
+    void Function(ModelEntry)? onFailed,
+    void Function(ModelEntry)? onDone,
+  }) async {
+    if (state.active || targets.isEmpty) return;
+    // The catalog is autoDispose: keep it for the whole queue.
+    final keep = ref.listen(modelCatalogProvider, (_, _) {});
+    state = ModelQueueState(queued: {for (final e in targets) modelKey(e)});
+    try {
+      final catalog = ref.read(modelCatalogProvider.notifier);
+      for (final e in targets) {
+        final k = modelKey(e);
+        if (!state.queued.contains(k)) continue; // cancelled
+        state = ModelQueueState(
+          running: k,
+          queued: {...state.queued}..remove(k),
+        );
+        try {
+          await catalog.download(e);
+          onDone?.call(e);
+        } on Object {
+          // Already logged by the catalog.
+          onFailed?.call(e);
+        }
+        state = ModelQueueState(queued: state.queued);
+      }
+    } finally {
+      keep.close();
+      state = const ModelQueueState();
+    }
+  }
+
+  /// Drops what has not started. The running one goes on (a language model of
+  /// ML Kit cannot be stopped).
+  void cancelQueued() => state = ModelQueueState(running: state.running);
+}
+
+final modelQueueProvider =
+    NotifierProvider<ModelQueueNotifier, ModelQueueState>(
+      ModelQueueNotifier.new,
     );

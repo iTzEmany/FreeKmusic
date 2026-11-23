@@ -258,6 +258,19 @@ void main() {
     expect(other.exists(chineseDictionaryProvider), isFalse);
   });
 
+  test('«Scarica» and a lyrics run at once: one download on the same file', () async {
+    down.hang = true;
+    final n = c.read(chineseDictionaryProvider.notifier);
+    final only = n.downloadOnly().then<Object?>((_) => null, onError: (Object e) => e);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final ens = n.ensure(download: true);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(down.calls, 1);
+    await n.delete(); // cancels the download so the futures end
+    await only;
+    await ens;
+  });
+
   test('downloadOnly: a failure rethrows and is an error state', () async {
     final n = c.read(chineseDictionaryProvider.notifier);
     await expectLater(n.downloadOnly(), throwsA(isA<DioException>()));

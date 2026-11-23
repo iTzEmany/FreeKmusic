@@ -8277,6 +8277,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get modelsQueued => 'In der Warteschlange';
 
   @override
+  String get modelsOffline =>
+      'Zum Herunterladen der Modelle ist eine Verbindung nötig.';
+
+  @override
+  String get modelsLoadFailed => 'Die Modelle konnten nicht gelesen werden.';
+
+  @override
+  String get modelsCancelled =>
+      'Abgebrochen. Ein bereits gestarteter Sprachdownload lässt sich nicht stoppen.';
+
+  @override
   String modelsDeleteOne(String name) {
     return '$name löschen';
   }

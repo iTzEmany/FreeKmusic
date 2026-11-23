@@ -13003,6 +13003,24 @@ abstract class AppLocalizations {
   /// **'In coda'**
   String get modelsQueued;
 
+  /// No description provided for @modelsOffline.
+  ///
+  /// In it, this message translates to:
+  /// **'Serve la connessione per scaricare i modelli.'**
+  String get modelsOffline;
+
+  /// No description provided for @modelsLoadFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile leggere i modelli.'**
+  String get modelsLoadFailed;
+
+  /// No description provided for @modelsCancelled.
+  ///
+  /// In it, this message translates to:
+  /// **'Annullato. Il download già partito di una lingua non si può fermare.'**
+  String get modelsCancelled;
+
   /// No description provided for @modelsDeleteOne.
   ///
   /// In it, this message translates to:

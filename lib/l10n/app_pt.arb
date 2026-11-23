@@ -4214,6 +4214,9 @@
   },
   "modelsDownloading": "A transferir…",
   "modelsQueued": "Na fila",
+  "modelsOffline": "É preciso ligação para transferir os modelos.",
+  "modelsLoadFailed": "Não foi possível ler os modelos.",
+  "modelsCancelled": "Cancelado. A transferência de um idioma já iniciada não pode ser parada.",
   "modelsDeleteOne": "Eliminar {name}",
   "@modelsDeleteOne": {
     "placeholders": {

@@ -8268,6 +8268,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get modelsQueued => 'En cola';
 
   @override
+  String get modelsOffline =>
+      'Se necesita conexión para descargar los modelos.';
+
+  @override
+  String get modelsLoadFailed => 'No se pudieron leer los modelos.';
+
+  @override
+  String get modelsCancelled =>
+      'Cancelado. La descarga de un idioma ya iniciada no se puede detener.';
+
+  @override
   String modelsDeleteOne(String name) {
     return 'Eliminar $name';
   }

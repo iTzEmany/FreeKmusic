@@ -8311,6 +8311,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get modelsQueued => 'En attente';
 
   @override
+  String get modelsOffline =>
+      'Une connexion est nécessaire pour télécharger les modèles.';
+
+  @override
+  String get modelsLoadFailed => 'Impossible de lire les modèles.';
+
+  @override
+  String get modelsCancelled =>
+      'Annulé. Le téléchargement d’une langue déjà lancé ne peut pas être arrêté.';
+
+  @override
   String modelsDeleteOne(String name) {
     return 'Supprimer $name';
   }

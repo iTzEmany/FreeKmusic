@@ -4028,6 +4028,9 @@
   },
   "modelsDownloading": "Downloading…",
   "modelsQueued": "Queued",
+  "modelsOffline": "A connection is needed to download the models.",
+  "modelsLoadFailed": "Could not read the models.",
+  "modelsCancelled": "Cancelled. A language download that has already started cannot be stopped.",
   "modelsDeleteOne": "Delete {name}",
   "@modelsDeleteOne": {
     "placeholders": {

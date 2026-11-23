@@ -225,10 +225,13 @@ class SeparationService extends ChangeNotifier {
 
   /// Starts the job for [key] on [input] (a file path), replacing any running one.
   /// Follow it with [stateOf]; a base already in the cache makes no job.
-  Future<void> request(String key, String input) async {
+  /// [explicit] (the user's own start, not the automatic one) lifts «models
+  /// removed» (D-707).
+  Future<void> request(String key, String input, {bool explicit = false}) async {
     if (_activeKey == key) return;
     int? gen;
     try {
+      if (explicit) await allowModels();
       final existing = await cache.fileFor(karaokeFileKey('base', key));
       final voice = await cache.fileFor(karaokeFileKey('voice', key));
       if (_activeKey == key) return;
@@ -473,6 +476,29 @@ class SeparationService extends ChangeNotifier {
     return false;
   }
 
+  /// D-707: after «Elimina» the automatic start must not bring the models back.
+  /// A marker file beside the models folder, so it outlives a restart.
+  Future<File> _removedMark() async =>
+      File(p.join((await modelsRoot()).path, 'models', '$_modelDir.removed'));
+
+  Future<bool> modelsRemovedByUser() async => (await _removedMark()).exists();
+
+  /// The user started karaoke on purpose: the models may be fetched again.
+  Future<void> allowModels() => _setModelsRemoved(false);
+
+  Future<void> _setModelsRemoved(bool removed) async {
+    try {
+      final mark = await _removedMark();
+      if (removed) {
+        await mark.create(recursive: true);
+      } else if (await mark.exists()) {
+        await mark.delete();
+      }
+    } on Object catch (e, st) {
+      AppLog.w('separation: cannot update the «models removed» mark', e, st);
+    }
+  }
+
   Future<Directory> _modelsDir() async =>
       Directory(p.join((await modelsRoot()).path, 'models', _modelDir));
 
@@ -494,7 +520,10 @@ class SeparationService extends ChangeNotifier {
   /// Runs [f] after every model operation asked before it (one at a time: the
   /// downloads share the `.part` files and a delete must not cut one).
   Future<T> _exclusive<T>(Future<T> Function() f) {
-    final run = _modelsChain.then((_) => f());
+    // Listeners (the models catalog) look again when the files changed.
+    final run = _modelsChain
+        .then((_) => f())
+        .whenComplete(() => _disposed ? null : notifyListeners());
     _modelsChain = run.then((_) {}, onError: (_) {});
     return run;
   }
@@ -502,6 +531,7 @@ class SeparationService extends ChangeNotifier {
   /// Downloads the missing models (the catalogue's «Scarica»); throws when it
   /// fails. A second call while one runs shares it.
   Future<void> downloadModels([void Function(double)? onProgress]) {
+    unawaited(allowModels());
     return _downloading ??= ensureModels(
       _downloadToken = CancelToken(),
       onProgress ?? (_) {},
@@ -514,6 +544,7 @@ class SeparationService extends ChangeNotifier {
   /// Deletes the models; they are downloaded again by the next separation. A job
   /// or a download in progress is stopped first. Throws when the files stay.
   Future<void> deleteModels() async {
+    await _setModelsRemoved(true);
     _downloadToken?.cancel();
     if (_activeKey != null) {
       _stop();

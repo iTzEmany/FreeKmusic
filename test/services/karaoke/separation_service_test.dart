@@ -403,6 +403,21 @@ void main() {
       expect(await s.modelsMissing(), isTrue);
     });
 
+    test('«Elimina» raises the removed mark (D-707); a download or an explicit request lowers it', () async {
+      final s = withModels();
+      await s.downloadModels();
+      expect(await s.modelsRemovedByUser(), isFalse);
+      await s.deleteModels();
+      expect(await s.modelsRemovedByUser(), isTrue);
+      await s.request('karaoke:k', '/in.mp3');
+      expect(await s.modelsRemovedByUser(), isTrue);
+      await s.request('karaoke:k', '/in.mp3', explicit: true);
+      expect(await s.modelsRemovedByUser(), isFalse);
+      await s.deleteModels();
+      await s.downloadModels();
+      expect(await s.modelsRemovedByUser(), isFalse);
+    });
+
     test('a delete during a separation stops it first', () async {
       final s = withModels();
       await s.downloadModels();

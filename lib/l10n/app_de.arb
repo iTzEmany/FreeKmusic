@@ -4028,6 +4028,9 @@
   },
   "modelsDownloading": "Wird geladen…",
   "modelsQueued": "In der Warteschlange",
+  "modelsOffline": "Zum Herunterladen der Modelle ist eine Verbindung nötig.",
+  "modelsLoadFailed": "Die Modelle konnten nicht gelesen werden.",
+  "modelsCancelled": "Abgebrochen. Ein bereits gestarteter Sprachdownload lässt sich nicht stoppen.",
   "modelsDeleteOne": "{name} löschen",
   "@modelsDeleteOne": {
     "placeholders": {

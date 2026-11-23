@@ -4028,6 +4028,9 @@
   },
   "modelsDownloading": "Descargando…",
   "modelsQueued": "En cola",
+  "modelsOffline": "Se necesita conexión para descargar los modelos.",
+  "modelsLoadFailed": "No se pudieron leer los modelos.",
+  "modelsCancelled": "Cancelado. La descarga de un idioma ya iniciada no se puede detener.",
   "modelsDeleteOne": "Eliminar {name}",
   "@modelsDeleteOne": {
     "placeholders": {

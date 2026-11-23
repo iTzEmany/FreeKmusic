@@ -46,11 +46,11 @@ void main() {
     expect(c.read(translationModelsProvider).value, ['en']);
   });
 
-  test('a delete that fails keeps the model in the list', () async {
+  test('a delete that fails keeps the model in the list and rethrows', () async {
     final c = _container(_Translator({'en', 'it'}, failDelete: true));
     c.listen(translationModelsProvider, (_, _) {});
     await c.read(translationModelsProvider.future);
-    await c.read(translationModelsProvider.notifier).delete('it');
+    await expectLater(c.read(translationModelsProvider.notifier).delete('it'), throwsStateError);
     expect(c.read(translationModelsProvider).value, ['en', 'it']);
   });
 

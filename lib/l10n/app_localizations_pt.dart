@@ -8252,6 +8252,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get modelsQueued => 'Na fila';
 
   @override
+  String get modelsOffline => 'É preciso ligação para transferir os modelos.';
+
+  @override
+  String get modelsLoadFailed => 'Não foi possível ler os modelos.';
+
+  @override
+  String get modelsCancelled =>
+      'Cancelado. A transferência de um idioma já iniciada não pode ser parada.';
+
+  @override
   String modelsDeleteOne(String name) {
     return 'Eliminar $name';
   }

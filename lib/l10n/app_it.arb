@@ -4757,6 +4757,9 @@
   },
   "modelsDownloading": "In scaricamento…",
   "modelsQueued": "In coda",
+  "modelsOffline": "Serve la connessione per scaricare i modelli.",
+  "modelsLoadFailed": "Impossibile leggere i modelli.",
+  "modelsCancelled": "Annullato. Il download già partito di una lingua non si può fermare.",
   "modelsDeleteOne": "Elimina {name}",
   "@modelsDeleteOne": {
     "placeholders": {

@@ -29,6 +29,9 @@ D-673, D-662, D-699. Rilievo F-38 in [`../refactor/grande-revisione/analisi.md`]
 - Nessuna cosa in questa fase.
 
 ## Note di deviazione
+- Coda `_exclusive` in `SeparationService`: download, delete e `ensureModels` uno alla volta; un delete annulla il download in corso.
+- D-707: dopo «Elimina» il karaoke non riscarica i modelli da solo (brano in ascolto e prefetch); flag come file segnaposto accanto alla cartella dei modelli (non SharedPreferences: il servizio non le conosce), tolto da un avvio esplicito o da «Scarica».
+- La coda di «Scarica selezionati» sta in `modelQueueProvider` (non nello State della pagina); controllo della rete prima di partire e «Annulla».
 
 ## Da allineare (review di architettura della fase 143)
 - I 30 test `node --test` del Worker (`tools/report-worker/`) non girano in CI: aggiungere un passo in «Analyze and test» (`ci.yml`; node c'è su ubuntu-latest). Il contratto app↔Worker è duplicato (limiti in `lib/core/issue_report.dart` e `tools/report-worker/src/index.js`, codici in `issue_sender.dart`, repo in `kReleaseRepo` e `wrangler.toml`): un test Dart che legge `index.js` e confronta i limiti con le costanti Dart.

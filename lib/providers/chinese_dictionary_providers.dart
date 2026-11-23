@@ -159,6 +159,11 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     final gen = _generation;
     final gate = ref.read(cedictAutoGateProvider);
     final path = await _path;
+    final pending = _onlyRun;
+    if (pending != null) {
+      await pending.then((_) {}, onError: (_) {});
+      if (gen != _generation) return null; // «Elimina» came in meanwhile
+    }
     var downloading = false;
     // The download goes on when the page that asked for it is left.
     void Function()? closeKeep;
@@ -221,7 +226,13 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
 
   /// «Scarica» of the models page: downloads the file without parsing it into
   /// memory. Throws when it fails (state `error`).
-  Future<void> downloadOnly() async {
+  Future<void> downloadOnly() =>
+      _onlyRun ??= _downloadOnly().whenComplete(() => _onlyRun = null);
+
+  /// The «Scarica» run in progress: [_run] waits for it, one `.tmp` file only.
+  Future<void>? _onlyRun;
+
+  Future<void> _downloadOnly() async {
     final running = _loading;
     if (running != null) await running;
     final path = await _path;

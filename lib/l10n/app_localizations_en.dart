@@ -8217,6 +8217,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsQueued => 'Queued';
 
   @override
+  String get modelsOffline => 'A connection is needed to download the models.';
+
+  @override
+  String get modelsLoadFailed => 'Could not read the models.';
+
+  @override
+  String get modelsCancelled =>
+      'Cancelled. A language download that has already started cannot be stopped.';
+
+  @override
   String modelsDeleteOne(String name) {
     return 'Delete $name';
   }

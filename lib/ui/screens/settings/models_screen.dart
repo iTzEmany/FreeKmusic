@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
+import '../../../core/network_kind.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/chinese_dictionary_providers.dart';
@@ -15,8 +18,6 @@ import '../../widgets/confirm.dart';
 import '../../widgets/format_utils.dart';
 import '../../widgets/show_msg.dart';
 
-String _key(ModelEntry e) => '${e.kind.name}:${e.id}';
-
 /// The one entry of Settings → Online for models and dictionaries (D-673):
 /// a summary that opens [ModelsScreen].
 class ModelsTile extends ConsumerWidget {
@@ -25,14 +26,15 @@ class ModelsTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final entries = ref.watch(modelCatalogProvider).value;
+    final catalog = ref.watch(modelCatalogProvider);
+    final entries = catalog.value;
     final locale = Localizations.localeOf(context).toString();
     return ListTile(
       key: const ValueKey('models-tile'),
       leading: const Icon(Icons.model_training_rounded),
       title: Text(l.modelsTitle),
       subtitle: entries == null
-          ? null
+          ? (catalog.hasError ? Text(l.modelsLoadFailed) : null)
           : Text(
               l.modelsSummary(
                 entries.where((e) => e.installed).length,
@@ -57,9 +59,6 @@ class ModelsScreen extends ConsumerStatefulWidget {
 class _ModelsScreenState extends ConsumerState<ModelsScreen> {
   final _selected = <String>{};
 
-  /// The download queue (all the picked ones) and the one running now.
-  final _queued = <String>{};
-  String? _running;
   var _asking = false; // network probe or confirm dialog open
   var _deleting = false;
 
@@ -68,20 +67,26 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     final l = context.l10n;
     final locale = Localizations.localeOf(context).toString();
     final size = formatBytes(targets.fold(0, (s, e) => s + e.bytes), locale);
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _asking = true);
     try {
       // D-656: on a metered network the size is asked before downloading.
-      var metered = false;
+      var net = const NetworkKind();
       try {
-        metered = (await ref.read(networkProbeProvider).current()).metered;
+        net = await ref.read(networkProbeProvider).current();
       } on Object catch (e, st) {
         AppLog.w('models screen: network probe failed', e, st);
       }
       if (!mounted) return;
+      // Offline, an ML Kit download would stay «in progress» for ever.
+      if (!net.online) {
+        showMsgOn(messenger, l.modelsOffline);
+        return;
+      }
       final ok = await showConfirm(
         context,
         title: l.modelsDownloadTitle,
-        body: metered
+        body: net.metered
             ? l.modelsDownloadMeteredBody(size)
             : l.modelsDownloadBody(size),
         confirmLabel: l.chineseDictionaryDownload,
@@ -90,29 +95,19 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     } finally {
       if (mounted) setState(() => _asking = false);
     }
-    final messenger = ScaffoldMessenger.of(context);
-    final notifier = ref.read(modelCatalogProvider.notifier);
-    setState(() => _queued.addAll(targets.map(_key)));
-    // One at a time: the models are large and share the network.
-    for (final e in targets) {
-      if (!mounted) return; // the notifier finishes the one running by itself
-      setState(() => _running = _key(e));
-      var done = false;
-      try {
-        await notifier.download(e);
-        done = true;
-      } on Object catch (_) {
-        // Already logged by the catalog; tell the user and go on with the rest.
-        showMsgOn(messenger, l.modelsDownloadFailed(e.name));
-      }
-      if (mounted) {
-        setState(() {
-          _queued.remove(_key(e));
-          _running = null;
-          if (done) _selected.remove(_key(e));
-        });
-      }
-    }
+    // The queue is the notifier's: it goes on when this page is left.
+    unawaited(
+      ref
+          .read(modelQueueProvider.notifier)
+          .downloadAll(
+            targets,
+            onFailed: (e) =>
+                showMsgOn(messenger, l.modelsDownloadFailed(e.name)),
+            onDone: (e) {
+              if (mounted) setState(() => _selected.remove(modelKey(e)));
+            },
+          ),
+    );
   }
 
   Future<void> _delete(List<ModelEntry> targets) async {
@@ -140,7 +135,7 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           AppLog.w('models screen: delete ${e.id} failed', err, st);
           showMsgOn(messenger, l.modelsDeleteFailed(e.name));
         }
-        if (done && mounted) setState(() => _selected.remove(_key(e)));
+        if (done && mounted) setState(() => _selected.remove(modelKey(e)));
       }
     } finally {
       if (mounted) setState(() => _deleting = false);
@@ -151,25 +146,43 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final locale = Localizations.localeOf(context).toString();
-    final entries = ref.watch(modelCatalogProvider).value;
+    final catalog = ref.watch(modelCatalogProvider);
+    final entries = catalog.value;
     final dict = ref.watch(chineseDictionaryProvider);
+    final queue = ref.watch(modelQueueProvider);
     final theme = Theme.of(context).textTheme;
     if (entries == null) {
       return Scaffold(
         appBar: CcAppBar(title: l.modelsTitle),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: catalog.hasError
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l.modelsLoadFailed,
+                      key: const ValueKey('models-error'),
+                    ),
+                    TextButton(
+                      onPressed: () => ref.invalidate(modelCatalogProvider),
+                      child: Text(l.retry),
+                    ),
+                  ],
+                )
+              : const CircularProgressIndicator(),
+        ),
       );
     }
-    _selected.retainAll(entries.map(_key));
+    _selected.retainAll(entries.map(modelKey));
     final dictBusy = dict.status == ChineseDictionaryStatus.downloading;
     final picked = [
       for (final e in entries)
-        if (_selected.contains(_key(e))) e,
+        if (_selected.contains(modelKey(e))) e,
     ];
     final toDownload = picked.where((e) => !e.installed).toList();
     final toDelete = picked.where((e) => e.installed).toList();
     // Also a dictionary fetched by a lyrics page counts as «in progress».
-    final working = _queued.isNotEmpty || _asking || _deleting || dictBusy;
+    final working = queue.active || _asking || _deleting || dictBusy;
 
     Widget section(String title, ModelKind kind) {
       final items = entries.where((e) => e.kind == kind).toList();
@@ -189,7 +202,7 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
               child: Text(title, style: theme.titleSmall),
             ),
           ),
-          for (final e in items) _row(l, locale, e, dict),
+          for (final e in items) _row(l, locale, e, dict, queue),
         ],
       );
     }
@@ -243,6 +256,15 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                         : () => _delete(toDelete),
                     child: Text(l.modelsDeleteSelected(toDelete.length)),
                   ),
+                  if (queue.queued.isNotEmpty)
+                    TextButton(
+                      key: const ValueKey('models-cancel'),
+                      onPressed: () {
+                        ref.read(modelQueueProvider.notifier).cancelQueued();
+                        showMsg(context, l.modelsCancelled);
+                      },
+                      child: Text(l.cancel),
+                    ),
                 ],
               ),
             ),
@@ -257,13 +279,14 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     String locale,
     ModelEntry e,
     ChineseDictionaryState dict,
+    ModelQueueState queue,
   ) {
-    final k = _key(e);
+    final k = modelKey(e);
     final fromElsewhere =
         e.kind == ModelKind.dictionary &&
         dict.status == ChineseDictionaryStatus.downloading;
-    final running = _running == k || fromElsewhere;
-    final queued = _queued.contains(k) && !running;
+    final running = queue.running == k || fromElsewhere;
+    final queued = queue.queued.contains(k);
     final busy = running || queued;
     final size = formatBytes(e.bytes, locale);
     final failed =
@@ -279,7 +302,7 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
         : e.installed
         ? l.modelsInstalledSize(size)
         : l.modelsNotInstalledSize(size);
-    final working = _queued.isNotEmpty || _asking || _deleting || fromElsewhere;
+    final working = queue.active || _asking || _deleting || fromElsewhere;
     void toggle(bool? v) =>
         setState(() => v == true ? _selected.add(k) : _selected.remove(k));
     final picked = _selected.contains(k);

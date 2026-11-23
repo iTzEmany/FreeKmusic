@@ -210,7 +210,7 @@ class _SeparationRow extends ConsumerWidget {
           if (input != null)
             action(
               l.karaokeRetry,
-              () => unawaited(service.request(target.key, input)),
+              () => unawaited(service.request(target.key, input, explicit: true)),
             ),
         ],
       );
