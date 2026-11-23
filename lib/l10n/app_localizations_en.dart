@@ -5400,8 +5400,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t open the browser: the text was copied';
 
   @override
+  String get reportSend => 'Send';
+
+  @override
+  String get reportSending => 'Sending';
+
+  @override
+  String get reportSent => 'Report sent, thank you. You can find it here:';
+
+  @override
+  String get reportOpenSent => 'Open the report';
+
+  @override
+  String get reportSendFailed =>
+      'Sending failed. Copy the text, or open it on GitHub.';
+
+  @override
   String get reportLogShortened =>
-      'The log will be shortened to fit in the address';
+      'The log was shortened to fit the sending limits.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Too many reports lately: try again in an hour, or copy the text.';
+
+  @override
+  String get reportSendUnsure =>
+      'No answer: the report may already have arrived. Check on GitHub before trying again, or copy the text.';
+
+  @override
+  String get reportAnonNote =>
+      'Anonymous sending: it immediately creates a public issue on GitHub; the intermediary service sees your IP address (GitHub does not), no account needed.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'To send, write a title and a description of at least $n characters.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'To copy, write a title and a description of at least $n characters.';
+  }
 
   @override
   String get reportNoLog => 'No recent warnings or errors in the log';
@@ -6373,6 +6411,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logClearMenu => 'Clear log';
+
+  @override
+  String get logPauseAll => 'Pause all';
+
+  @override
+  String get logCancelAll => 'Cancel all';
+
+  @override
+  String get logImportsActionFailed =>
+      'The operation failed on some imports (details in the log)';
+
+  @override
+  String get logCancelAllTitle => 'Cancel all imports?';
+
+  @override
+  String get logCancelAllBody =>
+      'Imports in progress stop for good. Tracks already downloaded stay.';
+
+  @override
+  String get logCancelAllConfirm => 'Cancel all';
 
   @override
   String get logClearTitle => 'Clear the log?';

@@ -8,6 +8,7 @@ import 'package:codecore/services/online/enrich_parts.dart';
 import 'package:codecore/ui/screens/activity/enrich_round_screen.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:codecore/providers/enrich_completer_providers.dart';
+import 'package:flutter/widgets.dart' show ValueKey;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -50,6 +51,28 @@ void main() {
     expect(find.textContaining('Testo'), findsNWidgets(3));
     expect(find.textContaining('Curiosità'), findsNothing);
     await h.dispose(tester);
+  });
+
+  testWidgets('a stopped completion offers «Segnala», a normal round does not', (tester) async {
+    final h = await Harness.create(tester, tracks: 3);
+    const detail = {
+      'none': {'lyrics': [3]},
+    };
+    await h.pump(
+      tester,
+      EnrichRoundScreen(entry: LogEntry(at: DateTime(2026), item: _item, detail: const {...detail, 'noAnswer': true})),
+    );
+    expect(find.byKey(const ValueKey('log-report')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('log-report')));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('report-title')), findsOneWidget);
+    await h.dispose(tester);
+
+    final h2 = await Harness.create(tester, tracks: 3);
+    await h2.pump(tester, EnrichRoundScreen(entry: LogEntry(at: DateTime(2026), item: _item, detail: detail)));
+    expect(find.byKey(const ValueKey('log-report')), findsNothing);
+    await h2.dispose(tester);
   });
 
   testWidgets('a song with two parts is queued once', (tester) async {

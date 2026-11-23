@@ -2970,7 +2970,31 @@
   "reportCopied": "Text copied",
   "reportGithubNote": "A GitHub account is required; without one, copy the text and send it however you like.",
   "reportOpenFailed": "Couldn't open the browser: the text was copied",
-  "reportLogShortened": "The log will be shortened to fit in the address",
+  "reportSend": "Send",
+  "reportSending": "Sending",
+  "reportSent": "Report sent, thank you. You can find it here:",
+  "reportOpenSent": "Open the report",
+  "reportSendFailed": "Sending failed. Copy the text, or open it on GitHub.",
+  "reportLogShortened": "The log was shortened to fit the sending limits.",
+  "reportSendRateLimited": "Too many reports lately: try again in an hour, or copy the text.",
+  "reportSendUnsure": "No answer: the report may already have arrived. Check on GitHub before trying again, or copy the text.",
+  "reportAnonNote": "Anonymous sending: it immediately creates a public issue on GitHub; the intermediary service sees your IP address (GitHub does not), no account needed.",
+  "reportWhyDisabled": "To send, write a title and a description of at least {n} characters.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "To copy, write a title and a description of at least {n} characters.",
+  "@reportWhyDisabledCopy": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "No recent warnings or errors in the log",
   "reportUnknown": "Unknown",
   "iconAskTitle": "Change the app icon too?",
@@ -3385,6 +3409,12 @@
   "logFailedLabel": "Failed",
   "logStoppedLabel": "Stopped",
   "logClearMenu": "Clear log",
+  "logPauseAll": "Pause all",
+  "logCancelAll": "Cancel all",
+  "logImportsActionFailed": "The operation failed on some imports (details in the log)",
+  "logCancelAllTitle": "Cancel all imports?",
+  "logCancelAllBody": "Imports in progress stop for good. Tracks already downloaded stay.",
+  "logCancelAllConfirm": "Cancel all",
   "logClearTitle": "Clear the log?",
   "logClearConfirm": "Clear",
   "logPendingSub": "Corrections suggested for your songs",

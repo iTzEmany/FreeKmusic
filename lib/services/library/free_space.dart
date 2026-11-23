@@ -40,6 +40,7 @@ class FreeSpaceService {
     this.activeKeys,
     this.scanRunning,
     this.onFreed,
+    this.onShadowMerged,
     int Function()? nowMs,
   }) : _deleter = deleter ?? _deleteFile,
        _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
@@ -59,6 +60,9 @@ class FreeSpaceService {
 
   /// A scan running could insert a row at a path being freed: [freeSpace] waits (frees nothing).
   final bool Function()? scanRunning;
+
+  /// A shadow row was merged into the demoted row: queues and online entries follow (shadow, kept).
+  final void Function(int shadowId, int keepId)? onShadowMerged;
 
   /// Called after files were freed (the player drops what it prepared from them).
   final void Function()? onFreed;
@@ -105,7 +109,7 @@ class FreeSpaceService {
     final notDemoted = <int>[];
     for (final c in todo) {
       try {
-        if (await tracks.demoteToStream(c.track.id, c.key) == null) continue;
+        if (await tracks.demoteToStream(c.track.id, c.key, onMerged: onShadowMerged) == null) continue;
       } on Object catch (e, st) {
         AppLog.w('free space: row not demoted: ${c.track.path}', e, st);
         notDemoted.add(c.track.id);

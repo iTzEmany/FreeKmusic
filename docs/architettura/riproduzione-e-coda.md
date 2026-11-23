@@ -138,6 +138,7 @@ Gli episodi sono `kind = 1`. Soglie: `kEpisodeEdge` 10 s, `kEpisodeHeardAt` 0.95
 
 - Conteggio ascolti: `_beginListen`, `_tickPlayed`, `_endListen` scrivono in `plays`.
 - `_shadowId` (la riga ombra a cui vanno gli ascolti di un brano online in coda) segue `replaceQueueId` (riga ombra fusa in una scaricata: gli ascolti contano sulla riga tenuta) e si azzera in `removeTracks` (la riga cancellata non riceve ascolti).
+- `replaceQueueId(old, new)` è l'unico punto del riallaccio dopo una fusione di riga ombra: aggiorna coda (anche lo slot corrente, così «indietro» non porta a un id morto), `_shadowId`, `_source`, il brano corrente e (`online?.rebindRow`) le voci online. Per una voce online in corso (id negativo) il brano corrente e il suo slot restano com'erano: continua in streaming. Chi fonde ne propaga l'id cancellato: `demoteToStream` e `rekeyStream` lo danno al callback `onMerged` a transazione chiusa (Libera spazio e sostituzione dei brani spariti lo girano a `replaceQueueId`), `mergeStreamRow` lo restituisce a promozione e download.
 - Radio: `playStations`, ritentativi e riconnessione, titolo in onda da ICY. Le stazioni sono `RadioEntry` con id negativo.
 
 ## Invarianti da non rompere

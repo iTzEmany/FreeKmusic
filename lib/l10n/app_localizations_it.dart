@@ -5411,8 +5411,46 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile aprire il browser: il testo è stato copiato';
 
   @override
+  String get reportSend => 'Invia';
+
+  @override
+  String get reportSending => 'Invio in corso';
+
+  @override
+  String get reportSent => 'Segnalazione inviata, grazie. La trovi qui:';
+
+  @override
+  String get reportOpenSent => 'Apri la segnalazione';
+
+  @override
+  String get reportSendFailed =>
+      'Invio non riuscito. Copia il testo, oppure aprilo su GitHub.';
+
+  @override
   String get reportLogShortened =>
-      'Il log verrà accorciato per stare nell\'indirizzo';
+      'Il log è stato accorciato per stare nei limiti dell\'invio.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Troppi invii di recente: riprova fra un\'ora, oppure copia il testo.';
+
+  @override
+  String get reportSendUnsure =>
+      'Nessuna risposta: la segnalazione potrebbe essere già arrivata. Controlla su GitHub prima di riprovare, oppure copia il testo.';
+
+  @override
+  String get reportAnonNote =>
+      'Invio anonimo: crea subito una segnalazione pubblica su GitHub; il servizio intermedio vede l\'indirizzo IP (GitHub no), nessun account richiesto.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Per inviare scrivi un titolo e una descrizione di almeno $n caratteri.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Per copiare scrivi un titolo e una descrizione di almeno $n caratteri.';
+  }
 
   @override
   String get reportNoLog => 'Nessun avviso o errore recente nel log';
@@ -6387,6 +6425,26 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get logClearMenu => 'Pulisci registro';
+
+  @override
+  String get logPauseAll => 'Ferma tutto';
+
+  @override
+  String get logCancelAll => 'Annulla tutto';
+
+  @override
+  String get logImportsActionFailed =>
+      'Operazione non riuscita su alcune importazioni (dettagli nel log)';
+
+  @override
+  String get logCancelAllTitle => 'Annullare tutte le importazioni?';
+
+  @override
+  String get logCancelAllBody =>
+      'Le importazioni in corso si fermano per sempre. I brani già scaricati restano.';
+
+  @override
+  String get logCancelAllConfirm => 'Annulla tutto';
 
   @override
   String get logClearTitle => 'Pulire il registro?';

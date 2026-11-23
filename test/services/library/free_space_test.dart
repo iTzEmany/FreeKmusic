@@ -157,6 +157,23 @@ void main() {
     expect(await repo.getById(shadow), equals(null));
   });
 
+  test('the merge of the streamed copy is reported, so the queue follows the kept row', () async {
+    final id = await add('a.mp3', vid: 'a');
+    final shadow = await repo.ensureStreamRow(YtResult(id: 'a', title: 'S', channel: 'C', duration: null));
+    final merged = <(int, int)>[];
+    await FreeSpaceService(tracks: repo, index: index, nowMs: () => _now, onShadowMerged: (g, k) => merged.add((g, k))).freeSpace([id]);
+    expect(merged, [(shadow, id)]);
+  });
+
+  test('a throwing merge callback does not stop the file from being freed', () async {
+    final id = await add('a.mp3', vid: 'a');
+    final path = (await repo.getById(id))!.path;
+    await repo.ensureStreamRow(YtResult(id: 'a', title: 'S', channel: 'C', duration: null));
+    final r = await FreeSpaceService(tracks: repo, index: index, nowMs: () => _now, onShadowMerged: (g, k) => throw StateError('boom')).freeSpace([id]);
+    expect(r.freedIds, [id]);
+    expect(File(path).existsSync(), false);
+  });
+
   test('two index keys on one path: one candidate, both entries removed', () async {
     final id = await add('a.mp3', vid: 'a');
     await index.add('a2', (await repo.getById(id))!.path);

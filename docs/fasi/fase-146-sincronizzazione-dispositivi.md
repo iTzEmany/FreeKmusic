@@ -82,3 +82,6 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
 
 ## Da sapere su `PlayContextKind` (review di architettura della fase 142)
 - È un formato salvato (coda, `Plays.context`) ma vive in `providers/`: spostarlo nel livello dati con `PlayContextKind.fromIndex(int?)` e una sola decodifica (oggi duplicata in `player_providers.dart` `playContextOf` e `resume_providers.dart`); `lastPerArea` riceva il tipo e non l'area già calcolata. Gli ascolti sincronizzati da versioni diverse arrivano con indici che questa versione può non conoscere (letti come `library`).
+
+## Da sapere sul riallaccio dopo una fusione (review di architettura della fase 143)
+- `demoteToStream`/`rekeyStream` chiamano l'audio tramite la callback `onMerged`: più semplice restituire un record (`moved`, `gone`) e far chiamare `onShadowMerged` ai servizi. `replaceQueueId` oggi ha due significati scelti dal segno dell'id (fusione di riga ombra con id positivo e `includeCurrent`; voce online diventata brano con id negativo): due metodi con nome esplicito. Tutti i nuovi percorsi di fusione o rimappatura degli id della sincronizzazione devono passare da lì.

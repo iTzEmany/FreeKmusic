@@ -1,13 +1,16 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/log_export.dart' show logHome, redactLog;
 import '../../../core/platform.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/activity_log_providers.dart';
 import '../../../providers/activity_providers.dart';
 import '../../../providers/online_providers.dart' show trackCorrectionsProvider;
+import '../../../providers/share_providers.dart' show deviceNameProvider;
 import '../../../services/audio/codecore_audio_handler.dart' show PlaybackFailureReason;
 import '../../../services/import/playlist_import_service.dart';
 import '../../../services/tags/tag_writer.dart' show TagWriteReason;
@@ -16,6 +19,8 @@ import '../../widgets/tag_write_ui.dart' show tagReasonText;
 import '../../widgets/cc_tile.dart';
 import '../../widgets/playback_reason_text.dart';
 import '../import/import_labels.dart' show importStopText;
+import '../../shell/shell_nav.dart';
+import '../settings/report_issue_screen.dart';
 import '../../widgets/action_button.dart';
 import '../now_playing/proposal_card.dart' show identLabel;
 
@@ -419,7 +424,7 @@ class LogEntryCard extends StatelessWidget {
 
 /// The whole line: in the side panel on desktop, in a sheet on a phone.
 /// [onOpen] adds «Vedi i brani» (the second opinion and the completion).
-class LogDetail extends StatelessWidget {
+class LogDetail extends ConsumerWidget {
   const LogDetail(this.entry, {super.key, this.sources, this.onOpen, this.group = const []});
 
   final LogEntry entry;
@@ -430,7 +435,7 @@ class LogDetail extends StatelessWidget {
   final VoidCallback? onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
@@ -495,8 +500,27 @@ class LogDetail extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.tonal(onPressed: onOpen, child: Text(l.logOpenSongs)),
           ],
+          if (entry.failed || entry.stopped) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              key: const ValueKey('log-report'),
+              onPressed: () => ShellNav.open<void>(
+                context,
+                ReportIssueScreen(
+                  title: redactForReport(ref, group.isEmpty ? text.title : l.logDlGroup(group.length)),
+                  details: redactForReport(ref, [text.detail, ?sources, ?text.tech].where((s) => s.isNotEmpty).join('\n')),
+                ),
+              ),
+              icon: const Icon(Icons.bug_report_outlined),
+              label: Text(l.reportIssue),
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
+/// Text of an entry for a report, redacted like «Esporta log».
+String redactForReport(WidgetRef ref, String text) =>
+    redactLog(text, home: logHome(), deviceName: ref.read(deviceNameProvider));

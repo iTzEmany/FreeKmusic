@@ -21,8 +21,11 @@ void main() {
 
   var fileFor = <String>{};
 
+  void Function(int, int)? onMerged;
+
   VanishedTracks make() => VanishedTracks(
         tracks: repo,
+        onShadowMerged: (g, k) => onMerged?.call(g, k),
         hasFile: (k) async => fileFor.contains(k),
         search: (row) async {
           asked.add(row);
@@ -42,6 +45,7 @@ void main() {
     found = null;
     searchError = null;
     fileFor = {};
+    onMerged = null;
     id = (await repo.saveStream(yt('old')))!;
     await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(playCount: Value(3)));
   });
@@ -54,6 +58,19 @@ void main() {
     expect([t.path, t.playCount, t.saved], ['stream:youtube:new', 3, true]);
     expect(logged, [('Time', found)]);
     expect(asked.single.title, 'Time');
+  });
+
+  test('a shadow row at the new key is merged: the callback gets it, and one that throws changes nothing', () async {
+    found = yt('new', sec: 415);
+    final shadow = await repo.ensureStreamRow(yt('new', sec: 415));
+    final merged = <(int, int)>[];
+    onMerged = (g, k) {
+      merged.add((g, k));
+      throw StateError('boom');
+    };
+    expect(await make().handle(await row()), true);
+    expect(merged, [(shadow, id)]);
+    expect(logged, [('Time', found)]);
   });
 
   test('duration 3 s away, other title or other artist: only the log entry, the row stays', () async {

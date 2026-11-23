@@ -10,12 +10,15 @@ import '../../../providers/player_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../services/online/enrich_parts.dart';
 import '../../theme/app_theme.dart';
+import '../../shell/shell_nav.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/track_row.dart';
 import '../../theme/tokens.dart';
+import '../settings/report_issue_screen.dart';
+import 'activity_log_entry.dart' show logText, redactForReport;
 
 String enrichPartLabel(AppLocalizations l, EnrichPart p) => switch (p) {
   EnrichPart.meta => l.enrichPartMeta,
@@ -50,7 +53,27 @@ class EnrichRoundScreen extends ConsumerWidget {
     final ctrl = ref.read(playerControllerProvider);
     final extent = trackRowExtentOf(context, compact);
     return Scaffold(
-      appBar: CcAppBar(title: l.enrichRoundTitle),
+      appBar: CcAppBar(
+        title: l.enrichRoundTitle,
+        actions: [
+          if (entry.failed || entry.stopped)
+            IconButton(
+              key: const ValueKey('log-report'),
+              tooltip: l.reportIssue,
+              icon: const Icon(Icons.bug_report_outlined),
+              onPressed: () {
+                final text = logText(l, entry);
+                ShellNav.open<void>(
+                  context,
+                  ReportIssueScreen(
+                    title: redactForReport(ref, text.title),
+                    details: redactForReport(ref, [text.detail, ?text.tech].where((s) => s.isNotEmpty).join('\n')),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

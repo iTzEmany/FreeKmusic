@@ -30,6 +30,7 @@ final freeSpaceServiceProvider = FutureProvider<FreeSpaceService>(
           i.result.indexKey,
     },
     scanRunning: () => ref.read(scanStateProvider).running,
+    onShadowMerged: (gone, keep) => ref.read(audioHandlerProvider).replaceQueueId(gone, keep),
     onFreed: () {
       unawaited(ref.read(audioHandlerProvider).resyncPreparer());
       ref.invalidate(downloadIndexProvider); // the index was edited in place

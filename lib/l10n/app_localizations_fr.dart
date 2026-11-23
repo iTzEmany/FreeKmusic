@@ -5462,8 +5462,46 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’ouvrir le navigateur : le texte a été copié';
 
   @override
+  String get reportSend => 'Envoyer';
+
+  @override
+  String get reportSending => 'Envoi en cours';
+
+  @override
+  String get reportSent => 'Signalement envoyé, merci. Vous le trouvez ici :';
+
+  @override
+  String get reportOpenSent => 'Ouvrir le signalement';
+
+  @override
+  String get reportSendFailed =>
+      'Échec de l’envoi. Copiez le texte, ou ouvrez-le sur GitHub.';
+
+  @override
   String get reportLogShortened =>
-      'Le journal sera raccourci pour tenir dans l’adresse';
+      'Le journal a été raccourci pour respecter les limites d’envoi.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Trop d’envois récents : réessaie dans une heure, ou copie le texte.';
+
+  @override
+  String get reportSendUnsure =>
+      'Pas de réponse : le signalement est peut-être déjà arrivé. Vérifie sur GitHub avant de réessayer, ou copie le texte.';
+
+  @override
+  String get reportAnonNote =>
+      'Envoi anonyme : crée aussitôt un ticket public sur GitHub ; le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Pour envoyer, écrivez un titre et une description d’au moins $n caractères.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Pour copier, écrivez un titre et une description d’au moins $n caractères.';
+  }
 
   @override
   String get reportNoLog =>
@@ -6444,6 +6482,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logClearMenu => 'Vider le journal';
+
+  @override
+  String get logPauseAll => 'Tout mettre en pause';
+
+  @override
+  String get logCancelAll => 'Tout annuler';
+
+  @override
+  String get logImportsActionFailed =>
+      'L’opération a échoué sur certaines importations (détails dans le journal)';
+
+  @override
+  String get logCancelAllTitle => 'Annuler toutes les importations ?';
+
+  @override
+  String get logCancelAllBody =>
+      'Les importations en cours s’arrêtent définitivement. Les titres déjà téléchargés restent.';
+
+  @override
+  String get logCancelAllConfirm => 'Tout annuler';
 
   @override
   String get logClearTitle => 'Vider le journal ?';

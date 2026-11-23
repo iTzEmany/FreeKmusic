@@ -7,6 +7,7 @@ PlayQueue make(List<int> ids, {int start = 0}) =>
     PlayQueue(random: Random(7))..setItems(ids, startIndex: start);
 
 void main() {
+  replaceIdTests();
   test('putBack after the current moved on keeps the entry upcoming', () {
     final q = make([1, 2, 3, 4]);
     q.removeAt(1);
@@ -806,5 +807,16 @@ void main() {
       q.removeId(9);
       expect(q.revision, greaterThan(r));
     });
+  });
+}
+
+void replaceIdTests() {
+  test('replaceId with includeCurrent also swaps the current slot, so previous never lands on a dead id', () {
+    final q = make([1, 2, 3], start: 1);
+    expect(q.replaceId(2, 9), 0, reason: 'current slot is left alone by default');
+    expect(q.replaceId(2, 9, includeCurrent: true), 1);
+    expect(q.currentId, 9);
+    q.next();
+    expect(q.previous(), 9);
   });
 }

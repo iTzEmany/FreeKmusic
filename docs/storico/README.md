@@ -170,3 +170,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 139 | Stato vivo del brano e download (#216) | [`fase-139-stato-brano-download.md`](fasi/fase-139-stato-brano-download.md) |
 | 140 | Streaming per prima (#217) | [`fase-140-streaming-per-prima.md`](fasi/fase-140-streaming-per-prima.md) |
 | 141 | Collezioni: preferiti di album e playlist, testata a icone, scorrimento (#218) | [`fase-141-collezioni.md`](fasi/fase-141-collezioni.md) |
+| 142 | Home: Riprendi a griglia, Nuove uscite, daylist con il suo contesto (#219) | [`fase-142-riprendi-a-griglia.md`](fasi/fase-142-riprendi-a-griglia.md) |

@@ -5418,8 +5418,46 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível abrir o navegador: o texto foi copiado';
 
   @override
+  String get reportSend => 'Enviar';
+
+  @override
+  String get reportSending => 'A enviar';
+
+  @override
+  String get reportSent => 'Relatório enviado, obrigado. Encontra-o aqui:';
+
+  @override
+  String get reportOpenSent => 'Abrir o relatório';
+
+  @override
+  String get reportSendFailed =>
+      'Falha no envio. Copie o texto, ou abra-o no GitHub.';
+
+  @override
   String get reportLogShortened =>
-      'O registo será encurtado para caber no endereço';
+      'O registo foi encurtado para caber nos limites de envio.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Demasiados envios recentes: tenta de novo daqui a uma hora ou copia o texto.';
+
+  @override
+  String get reportSendUnsure =>
+      'Sem resposta: o relatório pode já ter chegado. Confirma no GitHub antes de tentar de novo, ou copia o texto.';
+
+  @override
+  String get reportAnonNote =>
+      'Envio anónimo: cria de imediato uma issue pública no GitHub; o serviço intermediário vê o seu endereço IP (o GitHub não), sem conta necessária.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Para enviar, escreva um título e uma descrição de pelo menos $n caracteres.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Para copiar, escreva um título e uma descrição de pelo menos $n caracteres.';
+  }
 
   @override
   String get reportNoLog => 'Sem avisos nem erros recentes no registo';
@@ -6396,6 +6434,26 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get logClearMenu => 'Limpar registo';
+
+  @override
+  String get logPauseAll => 'Pausar tudo';
+
+  @override
+  String get logCancelAll => 'Cancelar tudo';
+
+  @override
+  String get logImportsActionFailed =>
+      'A operação falhou em algumas importações (detalhes no registo)';
+
+  @override
+  String get logCancelAllTitle => 'Cancelar todas as importações?';
+
+  @override
+  String get logCancelAllBody =>
+      'As importações em curso param para sempre. As faixas já descarregadas ficam.';
+
+  @override
+  String get logCancelAllConfirm => 'Cancelar tudo';
 
   @override
   String get logClearTitle => 'Limpar o registo?';

@@ -2970,7 +2970,31 @@
   "reportCopied": "Texto copiado",
   "reportGithubNote": "Hace falta una cuenta de GitHub; sin ella, copia el texto y envíalo como prefieras.",
   "reportOpenFailed": "No se pudo abrir el navegador: el texto se copió",
-  "reportLogShortened": "El registro se acortará para caber en la dirección",
+  "reportSend": "Enviar",
+  "reportSending": "Enviando",
+  "reportSent": "Informe enviado, gracias. Lo encuentras aquí:",
+  "reportOpenSent": "Abrir el informe",
+  "reportSendFailed": "No se pudo enviar. Copia el texto o ábrelo en GitHub.",
+  "reportLogShortened": "El registro se acortó para ajustarse a los límites de envío.",
+  "reportSendRateLimited": "Demasiados envíos recientes: vuelve a intentarlo en una hora o copia el texto.",
+  "reportSendUnsure": "Sin respuesta: puede que el informe ya haya llegado. Compruébalo en GitHub antes de volver a intentarlo, o copia el texto.",
+  "reportAnonNote": "Envío anónimo: crea al instante una incidencia pública en GitHub; el servicio intermediario ve tu dirección IP (GitHub no), sin necesidad de cuenta.",
+  "reportWhyDisabled": "Para enviar, escribe un título y una descripción de al menos {n} caracteres.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Para copiar, escribe un título y una descripción de al menos {n} caracteres.",
+  "@reportWhyDisabledCopy": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Sin avisos ni errores recientes en el registro",
   "reportUnknown": "Desconocido",
   "iconAskTitle": "¿Cambiar también el icono de la app?",
@@ -3385,6 +3409,12 @@
   "logFailedLabel": "No se pudo",
   "logStoppedLabel": "Detenido",
   "logClearMenu": "Vaciar registro",
+  "logPauseAll": "Pausar todo",
+  "logCancelAll": "Cancelar todo",
+  "logImportsActionFailed": "La operación falló en algunas importaciones (detalles en el registro)",
+  "logCancelAllTitle": "¿Cancelar todas las importaciones?",
+  "logCancelAllBody": "Las importaciones en curso se detienen para siempre. Las canciones ya descargadas se quedan.",
+  "logCancelAllConfirm": "Cancelar todo",
   "logClearTitle": "¿Vaciar el registro?",
   "logClearConfirm": "Vaciar",
   "logPendingSub": "Correcciones sugeridas para tus canciones",

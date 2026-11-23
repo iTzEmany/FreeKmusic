@@ -2053,11 +2053,21 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   /// downloaded) at the same place of the queue. The entry now playing keeps
   /// streaming. Returns whether anything changed.
   bool replaceQueueId(int oldId, int newId) {
-    // A merged shadow row: its listens count on the kept row.
+    // A merged shadow row: its listens count on the kept row, and its online entries follow.
     if (_shadowId == oldId) {
       _shadowId = newId;
     }
-    if (_queue.replaceId(oldId, newId) == 0) return false;
+    online?.rebindRow(oldId, newId);
+    _source = _source?.map((i) => i == oldId ? newId : i).toList(); // like removeTracks, «Svuota» keeps following
+    // Only a library row (id > 0) is merged under the playing track; an online entry keeps streaming under its id.
+    final merged = oldId > 0;
+    final cur = _current;
+    if (merged && cur != null && cur.id == oldId) {
+      _current = cur.copyWith(id: newId); // the listen counts on the kept row
+      _trackController.add(_current);
+      mediaItem.add(_toMediaItem(_current!));
+    }
+    if (_queue.replaceId(oldId, newId, includeCurrent: merged) == 0) return false;
     _queueController.add(null);
     unawaited(_refreshWindow());
     return true;

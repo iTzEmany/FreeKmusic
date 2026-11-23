@@ -3191,7 +3191,31 @@
   "reportCopied": "Texte copié",
   "reportGithubNote": "Un compte GitHub est nécessaire ; sinon, copiez le texte et envoyez-le comme vous voulez.",
   "reportOpenFailed": "Impossible d’ouvrir le navigateur : le texte a été copié",
-  "reportLogShortened": "Le journal sera raccourci pour tenir dans l’adresse",
+  "reportSend": "Envoyer",
+  "reportSending": "Envoi en cours",
+  "reportSent": "Signalement envoyé, merci. Vous le trouvez ici :",
+  "reportOpenSent": "Ouvrir le signalement",
+  "reportSendFailed": "Échec de l’envoi. Copiez le texte, ou ouvrez-le sur GitHub.",
+  "reportLogShortened": "Le journal a été raccourci pour respecter les limites d’envoi.",
+  "reportSendRateLimited": "Trop d’envois récents : réessaie dans une heure, ou copie le texte.",
+  "reportSendUnsure": "Pas de réponse : le signalement est peut-être déjà arrivé. Vérifie sur GitHub avant de réessayer, ou copie le texte.",
+  "reportAnonNote": "Envoi anonyme : crée aussitôt un ticket public sur GitHub ; le service intermédiaire voit votre adresse IP (GitHub non), aucun compte requis.",
+  "reportWhyDisabled": "Pour envoyer, écrivez un titre et une description d’au moins {n} caractères.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Pour copier, écrivez un titre et une description d’au moins {n} caractères.",
+  "@reportWhyDisabledCopy": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Aucun avertissement ni erreur récente dans le journal",
   "reportUnknown": "Inconnu",
   "iconAskTitle": "Changer aussi l’icône de l’app ?",
@@ -3606,6 +3630,12 @@
   "logFailedLabel": "Échec",
   "logStoppedLabel": "Arrêté",
   "logClearMenu": "Vider le journal",
+  "logPauseAll": "Tout mettre en pause",
+  "logCancelAll": "Tout annuler",
+  "logImportsActionFailed": "L’opération a échoué sur certaines importations (détails dans le journal)",
+  "logCancelAllTitle": "Annuler toutes les importations ?",
+  "logCancelAllBody": "Les importations en cours s’arrêtent définitivement. Les titres déjà téléchargés restent.",
+  "logCancelAllConfirm": "Tout annuler",
   "logClearTitle": "Vider le journal ?",
   "logClearConfirm": "Vider",
   "logPendingSub": "Corrections proposées pour vos titres",

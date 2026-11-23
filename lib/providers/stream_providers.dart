@@ -124,10 +124,7 @@ final streamPromoterProvider = Provider<StreamPromoter>((ref) => StreamPromoter(
               ? downloadWorkDir()
               : (await resolveDownloadFolder(ref.read(folderRepositoryProvider), location: ref.read(settingsProvider).downloadLocation))!.$1
           : null,
-      onShadowMerged: (shadow, keep) {
-        ref.read(audioHandlerProvider).replaceQueueId(shadow, keep);
-        ref.read(onlineEntriesProvider)?.rebindRow(shadow, keep); // entries bound to the deleted shadow row
-      },
+      onShadowMerged: (gone, keep) => ref.read(audioHandlerProvider).replaceQueueId(gone, keep),
     ));
 
 /// Whether the device has a network now (always true off Android). AutoDispose: a missed

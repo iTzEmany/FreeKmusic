@@ -5436,8 +5436,46 @@ class AppLocalizationsDe extends AppLocalizations {
       'Browser konnte nicht geöffnet werden: Der Text wurde kopiert';
 
   @override
+  String get reportSend => 'Senden';
+
+  @override
+  String get reportSending => 'Wird gesendet';
+
+  @override
+  String get reportSent => 'Meldung gesendet, danke. Du findest sie hier:';
+
+  @override
+  String get reportOpenSent => 'Meldung öffnen';
+
+  @override
+  String get reportSendFailed =>
+      'Senden fehlgeschlagen. Kopiere den Text oder öffne ihn auf GitHub.';
+
+  @override
   String get reportLogShortened =>
-      'Das Protokoll wird gekürzt, damit es in die Adresse passt';
+      'Das Protokoll wurde gekürzt, damit es in die Sendegrenzen passt.';
+
+  @override
+  String get reportSendRateLimited =>
+      'Zu viele Meldungen in letzter Zeit: Versuche es in einer Stunde erneut oder kopiere den Text.';
+
+  @override
+  String get reportSendUnsure =>
+      'Keine Antwort: Die Meldung könnte schon angekommen sein. Prüfe auf GitHub, bevor du es erneut versuchst, oder kopiere den Text.';
+
+  @override
+  String get reportAnonNote =>
+      'Anonymer Versand: Er erstellt sofort ein öffentliches Issue auf GitHub; der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.';
+
+  @override
+  String reportWhyDisabled(int n) {
+    return 'Zum Senden einen Titel und eine Beschreibung mit mindestens $n Zeichen schreiben.';
+  }
+
+  @override
+  String reportWhyDisabledCopy(int n) {
+    return 'Zum Kopieren einen Titel und eine Beschreibung mit mindestens $n Zeichen schreiben.';
+  }
 
   @override
   String get reportNoLog =>
@@ -6417,6 +6455,26 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get logClearMenu => 'Protokoll leeren';
+
+  @override
+  String get logPauseAll => 'Alle anhalten';
+
+  @override
+  String get logCancelAll => 'Alle abbrechen';
+
+  @override
+  String get logImportsActionFailed =>
+      'Der Vorgang ist bei einigen Importen fehlgeschlagen (Details im Protokoll)';
+
+  @override
+  String get logCancelAllTitle => 'Alle Importe abbrechen?';
+
+  @override
+  String get logCancelAllBody =>
+      'Laufende Importe werden endgültig beendet. Bereits geladene Titel bleiben erhalten.';
+
+  @override
+  String get logCancelAllConfirm => 'Alle abbrechen';
 
   @override
   String get logClearTitle => 'Protokoll leeren?';

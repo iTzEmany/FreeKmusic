@@ -89,6 +89,7 @@ Sul desktop e sulle finestre larghe (`CcDims.wideBreakpoint`, 840) la shell dive
 - **Sfocatura**: `BlurredChrome` (`lib/ui/widgets/blurred_chrome.dart`) è l'unico effetto vetro, usato dal dock e da `LibraryIsland`. Segue «Dock e intestazioni sfocati»: sfocatura 20, con `surface2` all'alfa del tema × 0,78.
 - **Superfici trasparenti**: nell'editor del tema solo Superficie 1, 2 e 3 hanno l'alfa, con minimo 20 % (`hasAlphaToken`, `_fit` in `custom_theme.dart`). Il contrasto si calcola sul colore composto sopra lo sfondo (`Color.alphaBlend`).
 - **Registro**: con un tema con immagine o gradiente l'intestazione fissa dei giorni non dipinge `cc.bg` ma sfoca la pagina sotto. Gli errori di riproduzione sono una voce `playbackFailed`, una sola se lo stesso brano fallisce di fila. Il testo del motivo viene da `playbackReasonText`.
+- **Registro, importazioni**: in cima alla lista «Ferma tutto» e «Annulla tutto» (D-698) compaiono solo se c'è almeno un'importazione in corso («Ferma tutto» solo se una è `running`; `unfinishedImportsProvider`); agiscono su ogni catena con `pauseAll`/`cancelAll` del servizio, «Annulla tutto» chiede conferma.
 
 ### Fogli, dialoghi, menu
 Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio per le scelte** (elenchi, azioni, selettori). Ogni foglio si apre con `showCcSheet` (sempre sul navigator di radice, così copre dock e sidebar, 250 ms, zero con «Riduci animazioni»). I menu sono `showCcActionSheet` con `CcAction`. Dalla fase 138 un foglio senza `constraints` propri occupa `min(560, larghezza)` (`minWidth` in `showCcSheet`, un solo punto): un foglio con poco contenuto non resta stretto al centro. I campi di ricerca e il nome di una playlist non prendono il focus da soli (D-667): la tastiera si apre solo al tocco; Ctrl+F resta su desktop.
@@ -107,6 +108,10 @@ Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio 
 
 ### Avvisi (D-541)
 `showMsg(context, testo, {action, persist})` mostra un solo avviso alla volta (cancella quello corrente e la coda) ed è sicuro dopo un `await`. Con `showMsgOn(messenger, …)` si usa un messenger catturato prima, per avvisi dopo la chiusura di un foglio. Ogni avviso si chiude da solo: 4 s semplice, 3 s con azione, 5 s con azione e `persist: true`. Ha un conto alla rovescia, un anello sottile d'accento che si svuota in senso orario (`CcSnackContent`), escluso da TalkBack e fermo con «Riduci animazioni».
+
+### Segnalazione (`ReportIssueScreen`, fase 143)
+
+Larghezza massima 600 dp, scelta Bug/Idea senza icone, descrizione da 4 a 6 righe, anteprima delle informazioni tecniche alta al massimo 132 dp con scorrimento (nascosta finché non sono lette). Pulsanti in `Wrap` («Invia» solo con `kReportEndpoint` non vuoto, «Copia testo», «Apri su GitHub»); a campi incompleti una riga spiega perché sono spenti. Si apre vuota dalle Impostazioni o precompilata (`title:`, `details:`) dal tasto «Segnala un problema» di `LogDetail` (voci fallite o fermate, dettagli redatti con `redactLog`). Titolo e dettagli precompilati sono redatti con nome del dispositivo. «Invia» attende le informazioni tecniche se ancora in caricamento; se il log è stato accorciato lo dice (`reportLogShortened`). Dopo l'invio riuscito mostra il link della issue.
 
 ### Accessibilità e TalkBack
 - Ogni controllo è un solo nodo con il suo nome (`label` o `tooltip`). Le copertine stanno fuori dalla semantica salvo `semanticLabel` (`coverSemantics` in `cover_image.dart`).

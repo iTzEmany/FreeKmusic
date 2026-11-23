@@ -10,15 +10,27 @@ final _ipv6Full =
 final _ipv6Short = RegExp(
     r'(?<![\w:])(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){0,6})?::'
     r'(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){0,6})?(?:%\w+)?(?![\w:])');
-final _secretParam =
-    RegExp(r'\b((?:file)?token|pin)=[^&\s"]+', caseSensitive: false);
+// No `\b`: it would skip the prefix of access_token, file_token...
+final _secretParam = RegExp(
+    r'(?<![A-Za-z0-9])((?:[\w-]*token|pin|sig|signature|key|password))=[^&\s"]+',
+    caseSensitive: false);
+final _authHeader = RegExp(
+    r'''(authorization["']?\s*[:=]\s*)(?:(?:bearer|basic)\s+)?[^\s,;"']+''',
+    caseSensitive: false);
+final _androidPath = RegExp(r'/(?:storage/(?:emulated/\d+|[\w-]+)|data/user/\d+|data/data|sdcard)');
+// Tokens outside any header or parameter (GitHub tokens, `Bearer x`).
+final _bareToken = RegExp(r'\b(?:gh[pousr]_\w{20,}|github_pat_\w{10,})|(?<=Bearer )[\w.~+/=-]+', caseSensitive: false);
 final _secretJson = RegExp(
-    r'''("(?:file)?(?:token|pin)"\s*:\s*)"[^"]*"''',
+    r'''("(?:[\w-]*token|pin|sig|signature|key|password|authorization)"\s*:\s*)"[^"]*"''',
     caseSensitive: false);
 final _jamHeader =
     RegExp(r'''(x-jam-file["']?\s*[:=]\s*)[^\s,;"']+''', caseSensitive: false);
-final _posixUser = RegExp(r'(/(?:home|Users)/)[^/\s]+');
+final _posixUser = RegExp(r'(/(?:home|Users|media|run/media)/)[^/\s]+');
 final _winUser = RegExp(r'([A-Za-z]:[\\/]+Users[\\/]+)[^\\/\s]+');
+
+/// The home folder for [redactLog] (empty when the platform has none).
+String logHome() =>
+    Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
 
 /// Strips what identifies the person from a log: home folder, user name,
 /// addresses, device name, PIN and tokens.
@@ -30,6 +42,9 @@ String redactLog(String text, {required String home, String? deviceName}) {
   }
   s = s.replaceAllMapped(_posixUser, (m) => '${m[1]}<utente>');
   s = s.replaceAllMapped(_winUser, (m) => '${m[1]}<utente>');
+  s = s.replaceAll(_androidPath, '<archivio>');
+  s = s.replaceAll(_bareToken, '***');
+  s = s.replaceAllMapped(_authHeader, (m) => '${m[1]}***');
   s = s.replaceAllMapped(_secretParam, (m) => '${m[1]}=***');
   s = s.replaceAllMapped(_secretJson, (m) => '${m[1]}"***"');
   s = s.replaceAllMapped(_jamHeader, (m) => '${m[1]}***');

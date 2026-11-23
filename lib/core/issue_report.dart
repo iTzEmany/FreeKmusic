@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'log_export.dart';
 
 enum IssueKind { bug, idea }
@@ -107,8 +109,20 @@ String _url(String repo, String title, String body, IssueKind kind) =>
     'https://github.com/$repo/issues/new?title=${_enc(title)}'
     '&body=${_enc(body)}&labels=${kind == IssueKind.bug ? 'bug' : 'enhancement'}';
 
+/// What the anonymous-report service accepts (tools/report-worker): title and
+/// body lengths, and the JSON request under 32 KB (a margin is kept).
+const kIssueTitleMax = 120;
+const kIssueBodyMax = 20000;
+const kIssueJsonMax = 30000;
+
+/// For [buildIssue]`.fits`: the body and title go in a request the service takes.
+bool fitsReportService(String title, String body, String version) =>
+    title.length <= kIssueTitleMax &&
+    body.length <= kIssueBodyMax &&
+    utf8.encode(jsonEncode({'title': title, 'body': body, 'version': version})).length <= kIssueJsonMax;
+
 /// Builds the pre-filled «new issue» page. When the address would be too long
-/// the log goes first (oldest lines, then all), then the description.
+/// (or [fits] says no) the log goes first (oldest lines, then all), then the description.
 IssueDraft buildIssue({
   required String repo,
   required IssueKind kind,
@@ -116,11 +130,15 @@ IssueDraft buildIssue({
   required String description,
   TechInfo? info,
   int maxUrl = kMaxIssueUrl,
+  bool Function(String title, String body)? fits,
 }) {
-  final t = title.trim();
+  final t0 = title.trim();
+  // The service refuses a longer title (400): cut it, never the description.
+  final t = t0.length > kIssueTitleMax ? '${t0.substring(0, kIssueTitleMax - 1)}…' : t0;
+  bool ok(String body) => fits != null ? fits(t, body) : _url(repo, t, body, kind).length <= maxUrl;
   var desc = description.trim();
   String compose(int? logLines, String note) {
-    final parts = [desc];
+    final parts = ['Tipo: ${kind == IssueKind.bug ? 'Bug' : 'Idea'}', desc];
     if (info != null) parts.add('---\n${info.render(maxLogLines: logLines)}');
     if (note.isNotEmpty) parts.add(note);
     return parts.join('\n\n');
@@ -129,11 +147,11 @@ IssueDraft buildIssue({
   final total = info?.logLines.length ?? 0;
   for (var n = total; n >= 0; n--) {
     final note = n < total
-        ? '_Log accorciato per stare in un indirizzo: ${n == 0 ? 'nessuna riga' : 'ultime $n righe su $total'}._'
+        ? '_Log accorciato per stare nei limiti dell\'invio: ${n == 0 ? 'nessuna riga' : 'ultime $n righe su $total'}._'
         : '';
     final body = compose(n, note);
     final url = _url(repo, t, body, kind);
-    if (url.length <= maxUrl) {
+    if (ok(body)) {
       return IssueDraft(
         title: t,
         body: body,
@@ -143,12 +161,12 @@ IssueDraft buildIssue({
     }
   }
   // Even without log: shorten the description.
-  const note = '_Testo accorciato per stare in un indirizzo._';
+  const note = '_Testo accorciato per stare nei limiti dell\'invio._';
   while (desc.length > 50) {
     desc = '${desc.substring(0, (desc.length * 0.8).floor())}…';
     final body = compose(0, note);
     final url = _url(repo, t, body, kind);
-    if (url.length <= maxUrl) {
+    if (ok(body)) {
       return IssueDraft(
         title: t,
         body: body,

@@ -487,12 +487,13 @@ class PlayQueue {
   }
 
   /// Swaps every entry [oldId] for [newId], keeping its place, key and
-  /// shuffle position. The current entry is left alone (it is already loaded).
+  /// shuffle position. The current entry is left alone (it is already loaded)
+  /// unless [includeCurrent] (its row was merged into [newId]: going back must not reach [oldId]).
   /// Returns how many entries changed.
-  int replaceId(int oldId, int newId) {
+  int replaceId(int oldId, int newId, {bool includeCurrent = false}) {
     var n = 0;
     for (var i = 0; i < _items.length; i++) {
-      if (_items[i] == oldId && i != _pos) {
+      if (_items[i] == oldId && (includeCurrent || i != _pos)) {
         _items[i] = newId;
         n++;
       }

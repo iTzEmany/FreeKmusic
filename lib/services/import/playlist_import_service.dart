@@ -1283,6 +1283,32 @@ class PlaylistImportService {
     }
   }
 
+  /// One chain at a time: [act] on the first block of every unfinished import.
+  /// A block that ends meanwhile starts the next one of its chain, so the pass
+  /// repeats on the chains still running (a few times at most).
+  Future<void> _eachChain(Future<void> Function(int id) act) async {
+    var chains = groupImportChains(await imports.watchUnfinished().first);
+    for (var round = 0; round < 5 && chains.isNotEmpty; round++) {
+      for (final c in chains) {
+        try {
+          await act(c.first.id);
+        } on Object catch (e, st) {
+          AppLog.w('import ${c.first.id}: bulk action failed', e, st);
+        }
+      }
+      chains = [
+        for (final c in groupImportChains(await imports.watchUnfinished().first))
+          if (c.any((b) => b.state == ImportStatus.running)) c,
+      ];
+    }
+  }
+
+  /// «Ferma tutto»: pauses every import in progress.
+  Future<void> pauseAll() => _eachChain(pauseChain);
+
+  /// «Annulla tutto»: cancels every import in progress; what was downloaded stays.
+  Future<void> cancelAll() => _eachChain(cancelChain);
+
   void _emit(ImportEvent e) {
     if (!_events.isClosed) _events.add(e);
   }

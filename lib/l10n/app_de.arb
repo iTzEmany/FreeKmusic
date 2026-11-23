@@ -2970,7 +2970,31 @@
   "reportCopied": "Text kopiert",
   "reportGithubNote": "Ein GitHub-Konto ist nötig; ohne Konto den Text kopieren und beliebig weitergeben.",
   "reportOpenFailed": "Browser konnte nicht geöffnet werden: Der Text wurde kopiert",
-  "reportLogShortened": "Das Protokoll wird gekürzt, damit es in die Adresse passt",
+  "reportSend": "Senden",
+  "reportSending": "Wird gesendet",
+  "reportSent": "Meldung gesendet, danke. Du findest sie hier:",
+  "reportOpenSent": "Meldung öffnen",
+  "reportSendFailed": "Senden fehlgeschlagen. Kopiere den Text oder öffne ihn auf GitHub.",
+  "reportLogShortened": "Das Protokoll wurde gekürzt, damit es in die Sendegrenzen passt.",
+  "reportSendRateLimited": "Zu viele Meldungen in letzter Zeit: Versuche es in einer Stunde erneut oder kopiere den Text.",
+  "reportSendUnsure": "Keine Antwort: Die Meldung könnte schon angekommen sein. Prüfe auf GitHub, bevor du es erneut versuchst, oder kopiere den Text.",
+  "reportAnonNote": "Anonymer Versand: Er erstellt sofort ein öffentliches Issue auf GitHub; der Vermittlungsdienst sieht deine IP-Adresse (GitHub nicht), ein Konto ist nicht nötig.",
+  "reportWhyDisabled": "Zum Senden einen Titel und eine Beschreibung mit mindestens {n} Zeichen schreiben.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Zum Kopieren einen Titel und eine Beschreibung mit mindestens {n} Zeichen schreiben.",
+  "@reportWhyDisabledCopy": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Keine aktuellen Warnungen oder Fehler im Protokoll",
   "reportUnknown": "Unbekannt",
   "iconAskTitle": "Auch das App-Symbol ändern?",
@@ -3385,6 +3409,12 @@
   "logFailedLabel": "Fehlgeschlagen",
   "logStoppedLabel": "Angehalten",
   "logClearMenu": "Protokoll leeren",
+  "logPauseAll": "Alle anhalten",
+  "logCancelAll": "Alle abbrechen",
+  "logImportsActionFailed": "Der Vorgang ist bei einigen Importen fehlgeschlagen (Details im Protokoll)",
+  "logCancelAllTitle": "Alle Importe abbrechen?",
+  "logCancelAllBody": "Laufende Importe werden endgültig beendet. Bereits geladene Titel bleiben erhalten.",
+  "logCancelAllConfirm": "Alle abbrechen",
   "logClearTitle": "Protokoll leeren?",
   "logClearConfirm": "Leeren",
   "logPendingSub": "Korrekturvorschläge für deine Titel",

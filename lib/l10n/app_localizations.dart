@@ -8391,11 +8391,71 @@ abstract class AppLocalizations {
   /// **'Impossibile aprire il browser: il testo è stato copiato'**
   String get reportOpenFailed;
 
+  /// No description provided for @reportSend.
+  ///
+  /// In it, this message translates to:
+  /// **'Invia'**
+  String get reportSend;
+
+  /// No description provided for @reportSending.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio in corso'**
+  String get reportSending;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In it, this message translates to:
+  /// **'Segnalazione inviata, grazie. La trovi qui:'**
+  String get reportSent;
+
+  /// No description provided for @reportOpenSent.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri la segnalazione'**
+  String get reportOpenSent;
+
+  /// No description provided for @reportSendFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio non riuscito. Copia il testo, oppure aprilo su GitHub.'**
+  String get reportSendFailed;
+
   /// No description provided for @reportLogShortened.
   ///
   /// In it, this message translates to:
-  /// **'Il log verrà accorciato per stare nell\'indirizzo'**
+  /// **'Il log è stato accorciato per stare nei limiti dell\'invio.'**
   String get reportLogShortened;
+
+  /// No description provided for @reportSendRateLimited.
+  ///
+  /// In it, this message translates to:
+  /// **'Troppi invii di recente: riprova fra un\'ora, oppure copia il testo.'**
+  String get reportSendRateLimited;
+
+  /// No description provided for @reportSendUnsure.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna risposta: la segnalazione potrebbe essere già arrivata. Controlla su GitHub prima di riprovare, oppure copia il testo.'**
+  String get reportSendUnsure;
+
+  /// No description provided for @reportAnonNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Invio anonimo: crea subito una segnalazione pubblica su GitHub; il servizio intermedio vede l\'indirizzo IP (GitHub no), nessun account richiesto.'**
+  String get reportAnonNote;
+
+  /// No description provided for @reportWhyDisabled.
+  ///
+  /// In it, this message translates to:
+  /// **'Per inviare scrivi un titolo e una descrizione di almeno {n} caratteri.'**
+  String reportWhyDisabled(int n);
+
+  /// No description provided for @reportWhyDisabledCopy.
+  ///
+  /// In it, this message translates to:
+  /// **'Per copiare scrivi un titolo e una descrizione di almeno {n} caratteri.'**
+  String reportWhyDisabledCopy(int n);
 
   /// No description provided for @reportNoLog.
   ///
@@ -10086,6 +10146,42 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Pulisci registro'**
   String get logClearMenu;
+
+  /// No description provided for @logPauseAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Ferma tutto'**
+  String get logPauseAll;
+
+  /// No description provided for @logCancelAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Annulla tutto'**
+  String get logCancelAll;
+
+  /// No description provided for @logImportsActionFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Operazione non riuscita su alcune importazioni (dettagli nel log)'**
+  String get logImportsActionFailed;
+
+  /// No description provided for @logCancelAllTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Annullare tutte le importazioni?'**
+  String get logCancelAllTitle;
+
+  /// No description provided for @logCancelAllBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Le importazioni in corso si fermano per sempre. I brani già scaricati restano.'**
+  String get logCancelAllBody;
+
+  /// No description provided for @logCancelAllConfirm.
+  ///
+  /// In it, this message translates to:
+  /// **'Annulla tutto'**
+  String get logCancelAllConfirm;
 
   /// No description provided for @logClearTitle.
   ///

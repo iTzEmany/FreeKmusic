@@ -1,0 +1,7 @@
+name = "freekmusic-report"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# The GitHub token is the Worker secret GITHUB_TOKEN (wrangler secret put), never in this file.
+[vars]
+GITHUB_REPO = "iTzEmany/FreeKmusic"

@@ -3191,7 +3191,31 @@
   "reportCopied": "Texto copiado",
   "reportGithubNote": "É preciso uma conta do GitHub; sem ela, copie o texto e envie como preferir.",
   "reportOpenFailed": "Não foi possível abrir o navegador: o texto foi copiado",
-  "reportLogShortened": "O registo será encurtado para caber no endereço",
+  "reportSend": "Enviar",
+  "reportSending": "A enviar",
+  "reportSent": "Relatório enviado, obrigado. Encontra-o aqui:",
+  "reportOpenSent": "Abrir o relatório",
+  "reportSendFailed": "Falha no envio. Copie o texto, ou abra-o no GitHub.",
+  "reportLogShortened": "O registo foi encurtado para caber nos limites de envio.",
+  "reportSendRateLimited": "Demasiados envios recentes: tenta de novo daqui a uma hora ou copia o texto.",
+  "reportSendUnsure": "Sem resposta: o relatório pode já ter chegado. Confirma no GitHub antes de tentar de novo, ou copia o texto.",
+  "reportAnonNote": "Envio anónimo: cria de imediato uma issue pública no GitHub; o serviço intermediário vê o seu endereço IP (o GitHub não), sem conta necessária.",
+  "reportWhyDisabled": "Para enviar, escreva um título e uma descrição de pelo menos {n} caracteres.",
+  "@reportWhyDisabled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reportWhyDisabledCopy": "Para copiar, escreva um título e uma descrição de pelo menos {n} caracteres.",
+  "@reportWhyDisabledCopy": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reportNoLog": "Sem avisos nem erros recentes no registo",
   "reportUnknown": "Desconhecido",
   "iconAskTitle": "Mudar também o ícone do app?",
@@ -3606,6 +3630,12 @@
   "logFailedLabel": "Falhou",
   "logStoppedLabel": "Parado",
   "logClearMenu": "Limpar registo",
+  "logPauseAll": "Pausar tudo",
+  "logCancelAll": "Cancelar tudo",
+  "logImportsActionFailed": "A operação falhou em algumas importações (detalhes no registo)",
+  "logCancelAllTitle": "Cancelar todas as importações?",
+  "logCancelAllBody": "As importações em curso param para sempre. As faixas já descarregadas ficam.",
+  "logCancelAllConfirm": "Cancelar tudo",
   "logClearTitle": "Limpar o registo?",
   "logClearConfirm": "Limpar",
   "logPendingSub": "Correções sugeridas para as suas músicas",

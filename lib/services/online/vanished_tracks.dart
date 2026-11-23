@@ -25,7 +25,7 @@ bool isVideoGone(Object e) {
 /// again and, only when title, artist and duration (±[toleranceMs]) agree, moves the SAME row to
 /// the new key. Otherwise it only logs. [search] runs under the shared YouTube Music budget.
 class VanishedTracks {
-  VanishedTracks({required this.tracks, required this.search, required this.log, this.hasFile});
+  VanishedTracks({required this.tracks, required this.search, required this.log, this.hasFile, this.onShadowMerged});
 
   static const toleranceMs = 2000;
 
@@ -39,6 +39,9 @@ class VanishedTracks {
 
   /// Whether the replacement [key] is already a downloaded file (then no second row is made).
   final Future<bool> Function(String key)? hasFile;
+
+  /// A shadow row at the new key was merged into the moved row (shadow, kept): queues follow.
+  final void Function(int shadowId, int keepId)? onShadowMerged;
 
   final _busy = <int>{};
   final _tried = <int>{}; // one search and one entry per row per session
@@ -65,7 +68,7 @@ class VanishedTracks {
         return false;
       }
       final ok = found != null && _same(row, found) && !(await hasFile?.call(found.indexKey) ?? false);
-      final moved = ok && await tracks.rekeyStream(row.id, found.indexKey);
+      final moved = ok && await tracks.rekeyStream(row.id, found.indexKey, onMerged: onShadowMerged);
       done = true;
       await log(row, moved ? found : null);
       return moved;

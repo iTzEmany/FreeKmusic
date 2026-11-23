@@ -1,7 +1,9 @@
+import 'package:codecore/data/repositories/import_repository.dart' show ImportStatus;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/activity_log_providers.dart';
 import 'package:codecore/providers/activity_providers.dart';
+import 'package:codecore/providers/import_providers.dart';
 import 'package:codecore/providers/recognition_providers.dart';
 import 'package:codecore/services/recognition/track_identity.dart';
 import 'package:codecore/services/import/playlist_import_service.dart';
@@ -12,6 +14,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+
+class _Svc extends Fake implements PlaylistImportService {
+  int paused = 0, cancelled = 0;
+  bool failing = false;
+  @override
+  Future<void> pauseAll() async {
+    paused++;
+    if (failing) throw StateError('db busy');
+  }
+  @override
+  Future<void> cancelAll() async => cancelled++;
+}
 
 class _Log extends ActivityLogNotifier {
   _Log(this.entries);
@@ -62,6 +76,11 @@ LogEntry _dl(DateTime at, String name, {int? id}) => LogEntry(
   item: ActivityItem(kind: ActivityKind.download, key: 'k$name', name: name, running: false),
 );
 
+final _imp = PlaylistImport(
+  id: 1, playlistId: 1, sourceName: 'S', status: ImportStatus.running.index, createdAt: 0,
+  sourceKind: 'exportify', folderPath: null, numberFiles: false, linkOnly: false, planFirst: false, fetchCovers: false,
+);
+
 void main() {
   final now = DateTime.now();
   final noon = DateTime(now.year, now.month, now.day, 12);
@@ -92,7 +111,7 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> pump(WidgetTester tester, {double scale = 1, bool backdrop = false, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage}) async {
+  Future<void> pump(WidgetTester tester, {double scale = 1, bool backdrop = false, List<LogEntry>? only, Size size = const Size(400, 900), bool proposals = false, int? firstPage, bool importing = false, bool paused = false, _Svc? svc}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -101,6 +120,8 @@ void main() {
       ProviderScope(
         overrides: [
           activityLogProvider.overrideWith(() => firstPage == null ? _Log(only ?? entries) : _Paged(only ?? entries, firstPage)),
+          unfinishedImportsProvider.overrideWith((ref) => Stream.value([if (importing) paused ? _imp.copyWith(status: ImportStatus.paused.index) : _imp])),
+          if (svc != null) playlistImportServiceProvider.overrideWithValue(svc),
           proposalsProvider.overrideWith((ref) => Stream.value(proposals ? [_proposal] : const [])),
         ],
         child: MaterialApp(
@@ -118,6 +139,40 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 100));
   }
+
+  testWidgets('Ferma tutto and Annulla tutto are hidden without imports', (tester) async {
+    await pump(tester);
+    expect(find.text('Ferma tutto'), findsNothing);
+    expect(find.text('Annulla tutto'), findsNothing);
+  });
+
+  testWidgets('Ferma tutto is hidden when nothing runs', (tester) async {
+    await pump(tester, importing: true, paused: true, svc: _Svc());
+    expect(find.text('Ferma tutto'), findsNothing);
+    expect(find.text('Annulla tutto'), findsOneWidget);
+  });
+
+  testWidgets('a failing bulk action is shown, not thrown', (tester) async {
+    final svc = _Svc()..failing = true;
+    await pump(tester, importing: true, svc: svc);
+    await tester.tap(find.text('Ferma tutto'));
+    await tester.pump();
+    expect(svc.paused, 1);
+    expect(find.textContaining('non riuscita su alcune importazioni'), findsOneWidget);
+  });
+
+  testWidgets('Ferma tutto and Annulla tutto act on all imports, the second after asking', (tester) async {
+    final svc = _Svc();
+    await pump(tester, importing: true, svc: svc);
+    await tester.tap(find.text('Ferma tutto'));
+    expect(svc.paused, 1);
+    await tester.tap(find.text('Annulla tutto'));
+    await tester.pumpAndSettle();
+    expect(svc.cancelled, 0, reason: 'asks first');
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Annulla tutto')));
+    await tester.pumpAndSettle();
+    expect(svc.cancelled, 1);
+  });
 
   testWidgets('lines are grouped under Oggi, Ieri and the date', (tester) async {
     await pump(tester);
