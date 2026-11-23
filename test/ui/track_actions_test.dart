@@ -278,6 +278,7 @@ void main() {
     List<Override> extra = const [],
     StorageMode? mode,
     ValueNotifier<bool>? opener,
+    bool settle = true,
   }) async {
     tester.view.physicalSize = const Size(360, 900);
     tester.view.devicePixelRatio = 1;
@@ -311,7 +312,7 @@ void main() {
       ),
     );
     await tester.tap(find.text('open'));
-    await _settle(tester);
+    if (settle) await _settle(tester);
     return h;
   }
 
@@ -838,6 +839,7 @@ void main() {
     WidgetTester tester, {
     List<Override> extra = const [],
     bool stale = false,
+    bool settle = true,
   }) async {
     final dir = Directory.systemTemp.createTempSync('dl_idx');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -849,6 +851,7 @@ void main() {
       tester,
       (t) => t.copyWith(path: file.path),
       extra: [downloadIndexProvider.overrideWith((ref) async => index), ...extra],
+      settle: settle,
     );
   }
 
@@ -909,7 +912,9 @@ void main() {
   });
 
   testWidgets('«Libera spazio» is there from the first frame of the menu, and a double tap opens one sheet', (tester) async {
-    final h = await openDownloaded(tester);
+    final h = await openDownloaded(tester, settle: false);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100))); // the pre-check (a stat)
+    await tester.pump(); // one frame: the sheet's first
     expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget);
     await tester.tapAt(const Offset(5, 5)); // the barrier
     await _settle(tester);
@@ -917,6 +922,39 @@ void main() {
     await tester.tap(find.text('open'));
     await _settle(tester);
     expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget, reason: 'a second sheet would list it twice');
+    await h.dispose(tester);
+  });
+
+  testWidgets('a failing download index does not lock the menu: it reopens', (tester) async {
+    final h = await openSheet(tester, (t) => t, extra: [downloadIndexProvider.overrideWith((ref) async => throw StateError('boom'))]);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5)); // the barrier
+    await _settle(tester);
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the row unmounted during the download check: the menu opens anyway', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final loading = Completer<DownloadIndex>();
+    final opener = ValueNotifier(true);
+    final h = await openSheet(
+      tester,
+      (t) => t,
+      extra: [downloadIndexProvider.overrideWith((ref) => loading.future)],
+      opener: opener,
+      settle: false,
+    );
+    opener.value = false;
+    await tester.pump();
+    loading.complete(index);
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 

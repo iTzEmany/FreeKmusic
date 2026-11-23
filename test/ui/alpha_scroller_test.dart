@@ -109,10 +109,49 @@ void main() {
         ),
       ),
     );
-    await tester.pumpWidget(app(alphaScrollerMinItems));
-    expect(find.byType(Scrollbar), findsNothing);
-    await tester.pumpWidget(app(alphaScrollerMinItems - 1));
-    expect(find.byType(Scrollbar), findsOneWidget);
-    debugDefaultTargetPlatformOverride = null;
+    try {
+      await tester.pumpWidget(app(alphaScrollerMinItems));
+      expect(find.byType(Scrollbar), findsNothing);
+      await tester.pumpWidget(app(alphaScrollerMinItems - 1));
+      expect(find.byType(Scrollbar), findsOneWidget);
+    } finally {
+      debugDefaultTargetPlatformOverride = null; // must be unset before the test ends
+    }
+  });
+
+  testWidgets('desktop: the same list keeps its scroll position when the count crosses the threshold', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    final scroll = ScrollController();
+    final list = ListView.builder(controller: scroll, itemExtent: 50, itemCount: 500, itemBuilder: (_, i) => Text('row $i'));
+    late StateSetter set;
+    var n = alphaScrollerMinItems;
+    await tester.pumpWidget(
+      MaterialApp(
+        scrollBehavior: const AppScrollBehavior(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (_, setState) {
+              set = setState;
+              return AlphaScroller(controller: scroll, itemCount: n, child: list);
+            },
+          ),
+        ),
+      ),
+    );
+    try {
+      scroll.jumpTo(1000);
+      await tester.pump();
+      expect(find.byType(Scrollbar), findsNothing);
+      set(() => n = alphaScrollerMinItems - 1);
+      await tester.pump();
+      expect(scroll.offset, 1000);
+      expect(find.byType(Scrollbar), findsOneWidget);
+      set(() => n = alphaScrollerMinItems);
+      await tester.pump();
+      expect(scroll.offset, 1000);
+      expect(find.byType(Scrollbar), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }

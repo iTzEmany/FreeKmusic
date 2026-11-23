@@ -476,7 +476,8 @@ List<TrackActionGroup> trackActions(
   ];
 }
 
-bool _opening = false;
+/// Tracks whose menu is being prepared (a double tap on the same row must not open two sheets).
+final _opening = <int>{};
 
 /// The track sheet; [lead] goes first (e.g. «Rimuovi dalla playlist»). Also the
 /// desktop right click, and the ⋮ of a selection through [showTrackActionGroups].
@@ -486,32 +487,38 @@ Future<void> showTrackActions(
   Track track, {
   TrackAction? lead,
 }) async {
-  if (_opening) return; // a double tap while the first check runs
-  _opening = true;
+  if (!_opening.add(track.id)) return;
+  // Taken before the wait: the row may be unmounted by then, the root overlay is not.
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  final container = ProviderScope.containerOf(context, listen: false);
   var isDownloadedFile = false;
   try {
     // «Libera spazio» needs the file to be the very one downloaded: checked (a stat) before the sheet
     // opens, so it does not appear under an open menu and push the entries down.
     if (track.kind == kMusicKind) {
-      final index = await ProviderScope.containerOf(context, listen: false)
-          .read(downloadIndexProvider.future)
-          .timeout(const Duration(milliseconds: 500)); // a slow index must not hold the menu back
-      isDownloadedFile = await index.signatureMatchesPath(track.path);
+      // The whole check under one timeout: a slow index or stat must not hold the menu back.
+      isDownloadedFile = await (() async {
+        final index = await container.read(downloadIndexProvider.future);
+        return index.signatureMatchesPath(track.path);
+      })().timeout(const Duration(milliseconds: 500));
     }
+  } on TimeoutException {
+    AppLog.d('track menu: download check too slow, opening without it');
   } on Object catch (e, st) {
     AppLog.w('track menu: download check failed', e, st);
   } finally {
-    _opening = false;
+    _opening.remove(track.id);
   }
-  if (!context.mounted) return;
+  // The row that was tapped may be gone by now (its list changed): the root overlay stands in.
+  final anchor = context.mounted ? context : overlay?.context;
+  if (anchor == null || !anchor.mounted) return;
   // The menu follows the state of the song, not the Track it was opened with: a download
   // or a save swaps it for the library row and the groups are rebuilt (D-697).
-  final entryKey = ref.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
+  final entryKey = container.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
   final key = trackStateKey(track, streamKey: entryKey);
   // The caller (a row) may be unmounted while the sheet is open (its list changed), and the sheet itself is
   // gone once an action runs: a host in the root overlay, kept until the action is done, gives them a live
   // context and ref (a dialog and a delete after the confirm).
-  final container = ProviderScope.containerOf(context, listen: false);
   BuildContext? hostContext;
   WidgetRef? hostRef;
   final host = OverlayEntry(
@@ -523,7 +530,7 @@ Future<void> showTrackActions(
       },
     ),
   );
-  Overlay.maybeOf(context, rootOverlay: true)?.insert(host);
+  overlay?.insert(host);
   var hostGone = false;
   void dropHost() {
     if (hostGone) return;
@@ -538,13 +545,15 @@ Future<void> showTrackActions(
   Future<bool> pristine() async =>
       (await container.read(downloadIndexProvider.future)).signatureMatchesPath(live.path);
   // Always built with the host's context and ref: the caller (a row) may be gone by the time an action runs.
-  List<TrackActionGroup> build() => [
-    if (lead != null) TrackActionGroup('', [lead]),
-    ...trackActions(hostContext ?? context, hostRef ?? ref, live, row: liveRow, isDownloadedFile: isDownloadedFile),
-  ];
+  List<TrackActionGroup> build() => hostRef == null && !context.mounted
+      ? const [] // the host is not built yet and the caller is gone: the next frame fills the sheet
+      : [
+          if (lead != null) TrackActionGroup('', [lead]),
+          ...trackActions(hostContext ?? context, hostRef ?? ref, live, row: liveRow, isDownloadedFile: isDownloadedFile),
+        ];
 
   late List<TrackActionGroup> last;
-  List<TrackActionGroup> groups() => hostContext?.mounted == true ? last = build() : last;
+  List<TrackActionGroup> groups() => (hostContext ?? context).mounted ? last = build() : last;
   final changed = ValueNotifier(0);
   var closed = false;
   var calls = 0; // only the last call counts: an older lookup finishing late must not undo a newer one
@@ -572,33 +581,40 @@ Future<void> showTrackActions(
 
   // Listeners before the first build: an autoDispose provider read with none would build twice (a flicker).
   // A `#<id>` key with a negative id (a radio) has no row to follow.
-  final sub = key.startsWith('#') && isOnlineId(track.id)
-      ? null
-      : container.listen(trackStateProvider(key), (_, _) => follow());
-  // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
-  final indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
-  // The host builds on the next frame: until then the caller's context stands in, then the groups are rebuilt.
-  last = build();
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (!closed) changed.value++;
-  });
-  // The row of an entry saved before the sheet opened, and a later change of «Libera spazio».
-  if (track.kind == kMusicKind || ref.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow());
-  await showTrackActionGroups(
-    context,
-    last,
-    header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
-    refresh: changed,
-    regroup: groups,
-    onActionDone: dropHost,
-  ).then((chosen) {
+  ProviderSubscription<dynamic>? sub;
+  ProviderSubscription<dynamic>? indexSub;
+  try {
+    if (!(key.startsWith('#') && isOnlineId(track.id))) {
+      sub = container.listen(trackStateProvider(key), (_, _) => follow());
+    }
+    // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
+    indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
+    // The host builds on the next frame: until then the caller's context stands in, then the groups are rebuilt.
+    last = build();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!closed) changed.value++;
+    });
+    // The row of an entry saved before the sheet opened, and a later change of «Libera spazio».
+    if (track.kind == kMusicKind || container.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow());
+    final chosen = await showTrackActionGroups(
+      anchor,
+      last,
+      header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
+      refresh: changed,
+      regroup: groups,
+      onActionDone: dropHost,
+    );
     if (chosen == null) dropHost(); // closed without an action
-  }).whenComplete(() {
+  } on Object catch (e, st) {
+    AppLog.w('track menu: sheet failed', e, st);
+    dropHost(); // the host must not outlive a sheet that never opened
+    rethrow;
+  } finally {
     closed = true;
     sub?.close();
-    indexSub.close();
+    indexSub?.close();
     changed.dispose();
-  });
+  }
 }
 
 /// «Scarica» of an online song: «already in the library», or [start] (null: no
