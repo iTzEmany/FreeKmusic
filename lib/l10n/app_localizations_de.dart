@@ -8273,4 +8273,88 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return 'Du bist in einem getakteten Netz. $_temp0, etwa $mb MB: herunterladen?';
   }
+
+  @override
+  String get modelsTitle => 'Modelle und Wörterbücher';
+
+  @override
+  String modelsSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count installiert, $size',
+      one: '1 installiert, $size',
+      zero: 'Nichts installiert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsUsed(String size) {
+    return 'Belegter Speicher: $size';
+  }
+
+  @override
+  String modelsInstalledSize(String size) {
+    return 'Installiert, $size';
+  }
+
+  @override
+  String modelsNotInstalledSize(String size) {
+    return 'Nicht installiert, etwa $size';
+  }
+
+  @override
+  String get modelsDownloading => 'Wird geladen…';
+
+  @override
+  String modelsSelect(String name) {
+    return '$name auswählen';
+  }
+
+  @override
+  String modelsDeleteOne(String name) {
+    return '$name löschen';
+  }
+
+  @override
+  String modelsDownloadSelected(int count) {
+    return 'Auswahl laden ($count)';
+  }
+
+  @override
+  String modelsDeleteSelected(int count) {
+    return 'Auswahl löschen ($count)';
+  }
+
+  @override
+  String get modelsDownloadTitle => 'Ausgewählte Modelle laden?';
+
+  @override
+  String modelsDownloadBody(String size) {
+    return 'Es werden etwa $size geladen.';
+  }
+
+  @override
+  String modelsDownloadMeteredBody(String size) {
+    return 'Du bist in einem getakteten Netz. Es werden etwa $size geladen: fortfahren?';
+  }
+
+  @override
+  String get modelsDeleteTitle => 'Ausgewählte Modelle löschen?';
+
+  @override
+  String modelsDeleteBody(String size) {
+    return 'Es werden etwa $size frei. Du kannst sie hier erneut laden.';
+  }
+
+  @override
+  String modelsDownloadFailed(String name) {
+    return 'Download fehlgeschlagen: $name';
+  }
+
+  @override
+  String modelsDeleteFailed(String name) {
+    return 'Löschen nicht möglich: $name';
+  }
 }

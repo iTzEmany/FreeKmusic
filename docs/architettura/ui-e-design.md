@@ -72,6 +72,10 @@ La scrittura passa dagli Ops (`lib/providers/*_ops.dart`: `TrackOps`, `PlaylistO
 | `test/goldens/` | Aspetto delle schermate (solo Linux). |
 | `scripts/guardie.sh` | Lancia in pochi secondi arb, separatori, architettura, colori (e i golden se il ramo tocca `lib/ui`); è l'hook `pre-push`. |
 
+## Pagina Modelli e dizionari (D-673)
+
+`lib/ui/screens/settings/models_screen.dart`. In Impostazioni → Online e download c'è una sola voce, `ModelsTile`, con il riepilogo («3 installati, 120 MB») che apre `ModelsScreen`. La pagina legge solo `modelCatalogProvider` (D-24): tre sezioni (Traduzione, Dizionario, Karaoke; quelle senza voci non compaiono, quindi fuori da Android restano solo il dizionario), una casella per voce con nome, dimensione e stato, il totale occupato in cima. «Scarica selezionati» agisce sulle voci non installate e chiede conferma con la dimensione totale (su rete a consumo il testo lo dice, D-656, via `networkProbeProvider`); scarica una voce alla volta e segnala ogni errore con uno snackbar. «Elimina selezionati» e il cestino per voce chiedono conferma. Le voci in corso mostrano un indicatore con etichetta (con avanzamento solo per il dizionario, da `chineseDictionaryProvider`) e tengono fermi i pulsanti. Il download dal testo del brano non passa di qui. Test: `test/ui/models_screen_test.dart`.
+
 ## Come funziona
 
 ### Schede e dock

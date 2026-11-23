@@ -8237,4 +8237,88 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return 'Sei su una rete a consumo. $_temp0, circa $mb MB: scaricare?';
   }
+
+  @override
+  String get modelsTitle => 'Modelli e dizionari';
+
+  @override
+  String modelsSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count installati, $size',
+      one: '1 installato, $size',
+      zero: 'Nessuno installato',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsUsed(String size) {
+    return 'Spazio occupato: $size';
+  }
+
+  @override
+  String modelsInstalledSize(String size) {
+    return 'Installato, $size';
+  }
+
+  @override
+  String modelsNotInstalledSize(String size) {
+    return 'Non installato, circa $size';
+  }
+
+  @override
+  String get modelsDownloading => 'In scaricamento…';
+
+  @override
+  String modelsSelect(String name) {
+    return 'Seleziona $name';
+  }
+
+  @override
+  String modelsDeleteOne(String name) {
+    return 'Elimina $name';
+  }
+
+  @override
+  String modelsDownloadSelected(int count) {
+    return 'Scarica selezionati ($count)';
+  }
+
+  @override
+  String modelsDeleteSelected(int count) {
+    return 'Elimina selezionati ($count)';
+  }
+
+  @override
+  String get modelsDownloadTitle => 'Scaricare i modelli selezionati?';
+
+  @override
+  String modelsDownloadBody(String size) {
+    return 'Si scaricano circa $size.';
+  }
+
+  @override
+  String modelsDownloadMeteredBody(String size) {
+    return 'Sei su una rete a consumo. Si scaricano circa $size: continuare?';
+  }
+
+  @override
+  String get modelsDeleteTitle => 'Eliminare i modelli selezionati?';
+
+  @override
+  String modelsDeleteBody(String size) {
+    return 'Si liberano circa $size. Si possono scaricare di nuovo da qui.';
+  }
+
+  @override
+  String modelsDownloadFailed(String name) {
+    return 'Download non riuscito: $name';
+  }
+
+  @override
+  String modelsDeleteFailed(String name) {
+    return 'Impossibile eliminare: $name';
+  }
 }

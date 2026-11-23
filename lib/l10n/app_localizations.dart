@@ -13020,6 +13020,108 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Sei su una rete a consumo. {n, plural, one{1 brano} other{{n} brani}}, circa {mb} MB: scaricare?'**
   String keepOfflineMeteredAsk(int n, int mb);
+
+  /// No description provided for @modelsTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Modelli e dizionari'**
+  String get modelsTitle;
+
+  /// No description provided for @modelsSummary.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, =0{Nessuno installato} one{1 installato, {size}} other{{count} installati, {size}}}'**
+  String modelsSummary(int count, String size);
+
+  /// No description provided for @modelsUsed.
+  ///
+  /// In it, this message translates to:
+  /// **'Spazio occupato: {size}'**
+  String modelsUsed(String size);
+
+  /// No description provided for @modelsInstalledSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Installato, {size}'**
+  String modelsInstalledSize(String size);
+
+  /// No description provided for @modelsNotInstalledSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Non installato, circa {size}'**
+  String modelsNotInstalledSize(String size);
+
+  /// No description provided for @modelsDownloading.
+  ///
+  /// In it, this message translates to:
+  /// **'In scaricamento…'**
+  String get modelsDownloading;
+
+  /// No description provided for @modelsSelect.
+  ///
+  /// In it, this message translates to:
+  /// **'Seleziona {name}'**
+  String modelsSelect(String name);
+
+  /// No description provided for @modelsDeleteOne.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina {name}'**
+  String modelsDeleteOne(String name);
+
+  /// No description provided for @modelsDownloadSelected.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica selezionati ({count})'**
+  String modelsDownloadSelected(int count);
+
+  /// No description provided for @modelsDeleteSelected.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina selezionati ({count})'**
+  String modelsDeleteSelected(int count);
+
+  /// No description provided for @modelsDownloadTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Scaricare i modelli selezionati?'**
+  String get modelsDownloadTitle;
+
+  /// No description provided for @modelsDownloadBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Si scaricano circa {size}.'**
+  String modelsDownloadBody(String size);
+
+  /// No description provided for @modelsDownloadMeteredBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei su una rete a consumo. Si scaricano circa {size}: continuare?'**
+  String modelsDownloadMeteredBody(String size);
+
+  /// No description provided for @modelsDeleteTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Eliminare i modelli selezionati?'**
+  String get modelsDeleteTitle;
+
+  /// No description provided for @modelsDeleteBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Si liberano circa {size}. Si possono scaricare di nuovo da qui.'**
+  String modelsDeleteBody(String size);
+
+  /// No description provided for @modelsDownloadFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Download non riuscito: {name}'**
+  String modelsDownloadFailed(String name);
+
+  /// No description provided for @modelsDeleteFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile eliminare: {name}'**
+  String modelsDeleteFailed(String name);
 }
 
 class _AppLocalizationsDelegate

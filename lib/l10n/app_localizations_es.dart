@@ -8264,4 +8264,88 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return 'Estás en una red de uso medido. $_temp0, unos $mb MB: ¿descargar?';
   }
+
+  @override
+  String get modelsTitle => 'Modelos y diccionarios';
+
+  @override
+  String modelsSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instalados, $size',
+      one: '1 instalado, $size',
+      zero: 'Ninguno instalado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsUsed(String size) {
+    return 'Espacio ocupado: $size';
+  }
+
+  @override
+  String modelsInstalledSize(String size) {
+    return 'Instalado, $size';
+  }
+
+  @override
+  String modelsNotInstalledSize(String size) {
+    return 'No instalado, unos $size';
+  }
+
+  @override
+  String get modelsDownloading => 'Descargando…';
+
+  @override
+  String modelsSelect(String name) {
+    return 'Seleccionar $name';
+  }
+
+  @override
+  String modelsDeleteOne(String name) {
+    return 'Eliminar $name';
+  }
+
+  @override
+  String modelsDownloadSelected(int count) {
+    return 'Descargar seleccionados ($count)';
+  }
+
+  @override
+  String modelsDeleteSelected(int count) {
+    return 'Eliminar seleccionados ($count)';
+  }
+
+  @override
+  String get modelsDownloadTitle => '¿Descargar los modelos seleccionados?';
+
+  @override
+  String modelsDownloadBody(String size) {
+    return 'Se descargarán unos $size.';
+  }
+
+  @override
+  String modelsDownloadMeteredBody(String size) {
+    return 'Estás en una red de datos limitados. Se descargarán unos $size: ¿continuar?';
+  }
+
+  @override
+  String get modelsDeleteTitle => '¿Eliminar los modelos seleccionados?';
+
+  @override
+  String modelsDeleteBody(String size) {
+    return 'Se liberarán unos $size. Puedes descargarlos de nuevo desde aquí.';
+  }
+
+  @override
+  String modelsDownloadFailed(String name) {
+    return 'Descarga fallida: $name';
+  }
+
+  @override
+  String modelsDeleteFailed(String name) {
+    return 'No se pudo eliminar: $name';
+  }
 }

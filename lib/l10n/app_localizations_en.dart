@@ -8213,4 +8213,88 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'You are on a metered network. $_temp0, about $mb MB: download?';
   }
+
+  @override
+  String get modelsTitle => 'Models and dictionaries';
+
+  @override
+  String modelsSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count installed, $size',
+      one: '1 installed, $size',
+      zero: 'None installed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsUsed(String size) {
+    return 'Space used: $size';
+  }
+
+  @override
+  String modelsInstalledSize(String size) {
+    return 'Installed, $size';
+  }
+
+  @override
+  String modelsNotInstalledSize(String size) {
+    return 'Not installed, about $size';
+  }
+
+  @override
+  String get modelsDownloading => 'Downloading…';
+
+  @override
+  String modelsSelect(String name) {
+    return 'Select $name';
+  }
+
+  @override
+  String modelsDeleteOne(String name) {
+    return 'Delete $name';
+  }
+
+  @override
+  String modelsDownloadSelected(int count) {
+    return 'Download selected ($count)';
+  }
+
+  @override
+  String modelsDeleteSelected(int count) {
+    return 'Delete selected ($count)';
+  }
+
+  @override
+  String get modelsDownloadTitle => 'Download the selected models?';
+
+  @override
+  String modelsDownloadBody(String size) {
+    return 'About $size will be downloaded.';
+  }
+
+  @override
+  String modelsDownloadMeteredBody(String size) {
+    return 'You are on a metered network. About $size will be downloaded: continue?';
+  }
+
+  @override
+  String get modelsDeleteTitle => 'Delete the selected models?';
+
+  @override
+  String modelsDeleteBody(String size) {
+    return 'About $size will be freed. You can download them again from here.';
+  }
+
+  @override
+  String modelsDownloadFailed(String name) {
+    return 'Download failed: $name';
+  }
+
+  @override
+  String modelsDeleteFailed(String name) {
+    return 'Could not delete: $name';
+  }
 }

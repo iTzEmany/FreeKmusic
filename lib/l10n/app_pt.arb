@@ -4185,5 +4185,116 @@
         "type": "int"
       }
     }
+  },
+  "modelsTitle": "Modelos e dicionários",
+  "modelsSummary": "{count, plural, =0{Nenhum instalado} one{1 instalado, {size}} other{{count} instalados, {size}}}",
+  "@modelsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsUsed": "Espaço ocupado: {size}",
+  "@modelsUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsInstalledSize": "Instalado, {size}",
+  "@modelsInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsNotInstalledSize": "Não instalado, cerca de {size}",
+  "@modelsNotInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloading": "A transferir…",
+  "modelsSelect": "Selecionar {name}",
+  "@modelsSelect": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteOne": "Eliminar {name}",
+  "@modelsDeleteOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadSelected": "Transferir selecionados ({count})",
+  "@modelsDownloadSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDeleteSelected": "Eliminar selecionados ({count})",
+  "@modelsDeleteSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDownloadTitle": "Transferir os modelos selecionados?",
+  "modelsDownloadBody": "Serão transferidos cerca de {size}.",
+  "@modelsDownloadBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadMeteredBody": "Estás numa rede com consumo limitado. Serão transferidos cerca de {size}: continuar?",
+  "@modelsDownloadMeteredBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteTitle": "Eliminar os modelos selecionados?",
+  "modelsDeleteBody": "Serão libertados cerca de {size}. Podes transferi-los de novo aqui.",
+  "@modelsDeleteBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadFailed": "Falha na transferência: {name}",
+  "@modelsDownloadFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteFailed": "Não foi possível eliminar: {name}",
+  "@modelsDeleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

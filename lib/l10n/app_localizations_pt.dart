@@ -8248,4 +8248,88 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return 'Estás numa rede com tráfego limitado. $_temp0, cerca de $mb MB: descarregar?';
   }
+
+  @override
+  String get modelsTitle => 'Modelos e dicionários';
+
+  @override
+  String modelsSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instalados, $size',
+      one: '1 instalado, $size',
+      zero: 'Nenhum instalado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsUsed(String size) {
+    return 'Espaço ocupado: $size';
+  }
+
+  @override
+  String modelsInstalledSize(String size) {
+    return 'Instalado, $size';
+  }
+
+  @override
+  String modelsNotInstalledSize(String size) {
+    return 'Não instalado, cerca de $size';
+  }
+
+  @override
+  String get modelsDownloading => 'A transferir…';
+
+  @override
+  String modelsSelect(String name) {
+    return 'Selecionar $name';
+  }
+
+  @override
+  String modelsDeleteOne(String name) {
+    return 'Eliminar $name';
+  }
+
+  @override
+  String modelsDownloadSelected(int count) {
+    return 'Transferir selecionados ($count)';
+  }
+
+  @override
+  String modelsDeleteSelected(int count) {
+    return 'Eliminar selecionados ($count)';
+  }
+
+  @override
+  String get modelsDownloadTitle => 'Transferir os modelos selecionados?';
+
+  @override
+  String modelsDownloadBody(String size) {
+    return 'Serão transferidos cerca de $size.';
+  }
+
+  @override
+  String modelsDownloadMeteredBody(String size) {
+    return 'Estás numa rede com consumo limitado. Serão transferidos cerca de $size: continuar?';
+  }
+
+  @override
+  String get modelsDeleteTitle => 'Eliminar os modelos selecionados?';
+
+  @override
+  String modelsDeleteBody(String size) {
+    return 'Serão libertados cerca de $size. Podes transferi-los de novo aqui.';
+  }
+
+  @override
+  String modelsDownloadFailed(String name) {
+    return 'Falha na transferência: $name';
+  }
+
+  @override
+  String modelsDeleteFailed(String name) {
+    return 'Não foi possível eliminar: $name';
+  }
 }

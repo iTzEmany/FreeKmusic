@@ -21,7 +21,6 @@ import '../../widgets/cover_image.dart';
 import '../../../providers/folder_actions.dart';
 import '../library/folders_sheet.dart';
 import '../../../providers/share_providers.dart';
-import '../../../providers/translation_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../share/share_screen.dart';
 import '../../theme/tokens.dart';
@@ -48,8 +47,7 @@ import '../../../providers/jam_gate_providers.dart';
 import 'jam_gate_tiles.dart';
 import 'jam_remote_settings.dart';
 import 'trusted_devices_tiles.dart';
-import 'chinese_dictionary_tile.dart';
-import 'translation_models_tiles.dart';
+import 'models_screen.dart';
 import 'update_tiles.dart';
 import 'chart_country_tile.dart';
 import 'daylist_settings.dart';
@@ -494,15 +492,7 @@ List<SettingsGroup> _online(BuildContext context, WidgetRef ref) {
         title: l.settingsDownloads,
         children: const [DownloadSettingsTiles()],
       ),
-    if (ref.watch(lyricsTranslatorProvider) != null)
-      SettingsGroup(
-        title: l.translationModels,
-        children: const [TranslationModelsTiles()],
-      ),
-    SettingsGroup(
-      title: l.chineseDictionary,
-      children: const [ChineseDictionaryTile()],
-    ),
+    const SettingsGroup(children: [ModelsTile()]),
   ];
 }
 

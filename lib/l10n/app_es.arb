@@ -3999,5 +3999,116 @@
         "type": "int"
       }
     }
+  },
+  "modelsTitle": "Modelos y diccionarios",
+  "modelsSummary": "{count, plural, =0{Ninguno instalado} one{1 instalado, {size}} other{{count} instalados, {size}}}",
+  "@modelsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsUsed": "Espacio ocupado: {size}",
+  "@modelsUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsInstalledSize": "Instalado, {size}",
+  "@modelsInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsNotInstalledSize": "No instalado, unos {size}",
+  "@modelsNotInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloading": "Descargando…",
+  "modelsSelect": "Seleccionar {name}",
+  "@modelsSelect": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteOne": "Eliminar {name}",
+  "@modelsDeleteOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadSelected": "Descargar seleccionados ({count})",
+  "@modelsDownloadSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDeleteSelected": "Eliminar seleccionados ({count})",
+  "@modelsDeleteSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDownloadTitle": "¿Descargar los modelos seleccionados?",
+  "modelsDownloadBody": "Se descargarán unos {size}.",
+  "@modelsDownloadBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadMeteredBody": "Estás en una red de datos limitados. Se descargarán unos {size}: ¿continuar?",
+  "@modelsDownloadMeteredBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteTitle": "¿Eliminar los modelos seleccionados?",
+  "modelsDeleteBody": "Se liberarán unos {size}. Puedes descargarlos de nuevo desde aquí.",
+  "@modelsDeleteBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadFailed": "Descarga fallida: {name}",
+  "@modelsDownloadFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteFailed": "No se pudo eliminar: {name}",
+  "@modelsDeleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
