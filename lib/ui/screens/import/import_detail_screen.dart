@@ -14,6 +14,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/format_utils.dart';
+import '../../widgets/keep_offline_action.dart';
 import '../../widgets/segmented_blocks.dart';
 import 'import_labels.dart';
 import 'import_review_screen.dart';
@@ -96,6 +97,12 @@ class _ImportDetailScreenState extends ConsumerState<ImportDetailScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          if (p != null && !unfinished)
+            IconButton(
+              tooltip: l.keepOfflineAction,
+              icon: const Icon(Icons.download_rounded),
+              onPressed: () => keepOfflineIdsFlow(context, ref, [for (final r in rows) ?r.item.trackId]),
+            ),
           if (p != null && unfinished)
             IconButton(
               tooltip: p.paused ? l.csvImportResume : l.csvImportPause,
