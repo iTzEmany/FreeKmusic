@@ -1,12 +1,9 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/folder_actions.dart';
-import '../../../providers/folder_ops.dart';
 import '../../../providers/storage_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../core/storage_volumes.dart' show sdRootOf;
@@ -14,21 +11,13 @@ import '../../widgets/choice_dialog.dart';
 import '../../../services/online/media_publisher.dart' show publishesToMediaStore;
 
 /// D-579: where downloads (and the stream cache) go. Android: internal or the SD
-/// card, only with a card; desktop: a chosen folder, also added to the library.
+/// card, only with a card; desktop: the fixed folder (D-666).
 class DownloadLocationTile extends ConsumerWidget {
   const DownloadLocationTile({super.key});
 
   /// Stores the new location; the stream cache moves at the next start (`main` then drops the old one).
   Future<void> _set(WidgetRef ref, String v) async =>
       ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: v));
-
-  Future<void> _pick(WidgetRef ref) async {
-    final path = await FilePicker.getDirectoryPath();
-    if (path == null) return;
-    await _set(ref, path);
-    await ref.read(folderOpsProvider).libraryFolder(path);
-    await scanWithPermission(ref);
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,11 +28,11 @@ class DownloadLocationTile extends ConsumerWidget {
       return ListTile(
         leading: const Icon(Icons.folder_outlined),
         title: Text(l.downloadFolder),
+        // D-666: fixed, no picker. A folder chosen before stays until the user goes back to the default.
         subtitle: Text(location.isEmpty ? l.downloadFolderDefault : location),
         trailing: location.isEmpty
             ? null
             : IconButton(icon: const Icon(Icons.restart_alt), tooltip: l.downloadFolderReset, onPressed: () => set('')),
-        onTap: () => _pick(ref),
       );
     }
     final sds = ref.watch(sdVolumesProvider).value ?? const [];

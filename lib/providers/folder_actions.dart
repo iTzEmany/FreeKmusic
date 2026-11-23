@@ -23,12 +23,13 @@ Future<void> scanWithPermission(WidgetRef ref) async {
   await prefs.setBool(kScanNeedsPermission, false);
 }
 
-/// The one «add folder» flow: pick, store, scan.
-Future<void> addFolderAndScan(WidgetRef ref) async {
+/// The one «add folder» flow: pick, store, scan. Returns the picked folder (null when none).
+Future<String?> addFolderAndScan(WidgetRef ref) async {
   final path = await FilePicker.getDirectoryPath();
-  if (path == null) return;
+  if (path == null) return null;
   await ref.read(folderOpsProvider).add(path);
   await scanWithPermission(ref);
+  return path;
 }
 
 Future<void> addDefaultFolderAndScan(WidgetRef ref) async {
