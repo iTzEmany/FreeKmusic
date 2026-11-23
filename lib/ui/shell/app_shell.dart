@@ -161,12 +161,6 @@ class AppShell extends ConsumerWidget {
     void select(int i) {
       if (i == index) ShellNav.popToRoot(keys[i].currentState);
       if (i != index) ref.read(navIndexProvider.notifier).set(i);
-      // The Search button also gives the field the focus (and the keyboard).
-      if (i == NavTab.search.index) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => ref.read(searchFocusProvider).requestFocus(),
-        );
-      }
     }
 
     final items = [

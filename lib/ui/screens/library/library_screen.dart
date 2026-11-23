@@ -327,7 +327,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     controller: _searchController,
                     focusNode: _searchFocus,
                     hint: l.librarySearchHint,
-                    autofocus: true,
                     onQuery: (v) {
                       if (_searching) setState(() => _text = v);
                     },
