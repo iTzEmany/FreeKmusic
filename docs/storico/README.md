@@ -171,3 +171,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 140 | Streaming per prima (#217) | [`fase-140-streaming-per-prima.md`](fasi/fase-140-streaming-per-prima.md) |
 | 141 | Collezioni: preferiti di album e playlist, testata a icone, scorrimento (#218) | [`fase-141-collezioni.md`](fasi/fase-141-collezioni.md) |
 | 142 | Home: Riprendi a griglia, Nuove uscite, daylist con il suo contesto (#219) | [`fase-142-riprendi-a-griglia.md`](fasi/fase-142-riprendi-a-griglia.md) |
+| 143 | Registro e segnalazioni: Ferma/Annulla tutto, Segnala, invio anonimo tramite Worker (#220) | [`fase-143-registro-e-segnalazioni.md`](fasi/fase-143-registro-e-segnalazioni.md) |
