@@ -280,13 +280,13 @@ void main() {
       TrackUserData(ref: ref('ghost'), favorite: true),
       TrackUserData(ref: ref('a')),
     ]));
-    expect(r.notFound, ['ghost']);
+    expect(r.notFound.map((t) => t.title), ['ghost']);
     expect((await db.select(db.tracks).get()).length, before);
   });
 
   test('a local track the library lacks is not created and its title is reported', () async {
     final r = await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: ref('ghost'), favorite: true)]));
-    expect(r.notFound, ['ghost']);
+    expect(r.notFound.map((t) => (t.title, t.artist)), [('ghost', ref('ghost').artist)]);
     expect(await (db.select(db.tracks)..where((t) => t.title.equals('ghost'))).get(), isEmpty);
   });
 

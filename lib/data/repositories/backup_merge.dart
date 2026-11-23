@@ -45,12 +45,23 @@ class MergeReport {
   /// condition as [romanizations].
   final Set<int> handWritten = {};
 
-  /// Titles of the tracks the backup mentions that this library does not have.
-  final List<String> notFound = [];
+  /// The tracks the backup mentions that this library does not have.
+  final List<MissingTrack> notFound = [];
 
   @override
   String toString() => 'MergeReport($recognized recognized, ${notFound.length} not found, '
       '$favoritesAdded favourites, $playlistsCreated playlists)';
+}
+
+/// A track of the backup this library lacks.
+class MissingTrack {
+  const MissingTrack({required this.title, this.artist, this.streamKey});
+  final String title;
+  final String? artist;
+  final String? streamKey;
+
+  @override
+  String toString() => 'MissingTrack($title, $artist, $streamKey)';
 }
 
 bool _blank(String? s) => s == null || s.trim().isEmpty;
@@ -77,7 +88,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       // A streamed track has no file to find: its shadow row is made here, and marked saved when the backup says so.
       final id = u.ref.streamKey == null ? resolver.resolve(u.ref) : await _resolveItem(trackRepo, resolver, u.ref);
       if (id == null) {
-        report.notFound.add(u.ref.title);
+        report.notFound.add(MissingTrack(title: u.ref.title, artist: u.ref.artist, streamKey: u.ref.streamKey));
         continue;
       }
       final key = u.ref.streamKey;

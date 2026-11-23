@@ -128,6 +128,7 @@ Future<void> _restore(BuildContext context, WidgetRef ref) async {
 
 Future<void> _showMergeReport(BuildContext context, MergeReport r) {
   final l = context.l10n;
+  final missing = r.notFound.map((t) => t.artist == null || t.artist!.isEmpty ? t.title : '${t.title} — ${t.artist}').join('\n');
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -147,14 +148,14 @@ Future<void> _showMergeReport(BuildContext context, MergeReport r) {
           if (r.notFound.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(l.restoreNotFound, style: Theme.of(ctx).textTheme.titleSmall),
-            SelectableText(r.notFound.join('\n')),
+            SelectableText(missing),
           ],
         ]),
       ),
       actions: [
         if (r.notFound.isNotEmpty)
           TextButton(
-            onPressed: () => Clipboard.setData(ClipboardData(text: r.notFound.join('\n'))),
+            onPressed: () => Clipboard.setData(ClipboardData(text: missing)),
             child: Text(l.restoreCopyList),
           ),
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.close)),
