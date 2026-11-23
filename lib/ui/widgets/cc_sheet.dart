@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -25,7 +26,9 @@ Future<T?> showCcSheet<T>({
     // Always the root route: its barrier covers the dock (phone) and the sidebar, side
     // panel and player bar (wide), so a sheet is never drawn under them.
     useRootNavigator: true,
-    constraints: constraints,
+    // Full width up to the theme's 560 cap (F-30): a short sheet is not a narrow card.
+    constraints: constraints ??
+        BoxConstraints(minWidth: min(560, MediaQuery.sizeOf(context).width), maxWidth: 560),
     // Flutter's Italian scrimLabel is «Rete»: never leave the default.
     barrierLabel: barrierLabel ?? MaterialLocalizations.of(context).closeButtonLabel,
     sheetAnimationStyle: AnimationStyle(duration: d, reverseDuration: d),
