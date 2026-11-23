@@ -92,19 +92,27 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
       if (open != null) {
         open();
       } else {
-        showCcSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          showDragHandle: true,
-          builder: (_) => SafeArea(
-            child: LogDetail(
-              e,
-              sources: recogSourcesLine(context.l10n, e.detail),
-            ),
-          ),
-        );
+        _showDetail(e);
       }
     }
+  }
+
+  void _showDetail(LogEntry e) => showCcSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => SafeArea(
+          child: LogDetail(
+            e,
+            sources: recogSourcesLine(context.l10n, e.detail),
+          ),
+        ),
+      );
+
+  /// «Come risolvere»: always the guide, even on a row already picked on desktop.
+  void _how(LogRow row, bool wide) {
+    if (wide) setState(() => _selectedId = row.entry.id);
+    _showDetail(row.entry);
   }
 
   Future<void> _clear() async {
@@ -253,6 +261,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                       expanded: _open.contains(day.day),
                       selected: wide ? identical(sel, row) : null,
                       onTap: () => _tap(row, day.day, wide),
+                      onHow: () => _how(row, wide),
                     );
                   },
                 ),
